@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { GoalAchievedScreen } from '@/components/features/goals/celebrate/GoalAchievedScreen'
 import { MilestoneCheerSheet } from '@/components/features/goals/celebrate/MilestoneCheerSheet'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
+import { withDebtDerived } from '@/lib/goals/debtGoal'
 import { CHECKPOINTS } from '@/lib/goals/goalDetail'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -50,9 +51,13 @@ export function GoalCelebrationListener() {
       const ctx = buildGoalProgressContext(st, useSettingsStore.getState().monthFilter)
       const seen = load()
       let next: Celebration | null = null
-      for (const goal of st.goals) {
+      for (const stored of st.goals) {
+        // Linked pockets/debts still loading: progress would read as 0 and then jump, a false celebration.
+        if (!stored.linkedSavingsAccountIds.every((id) => st.savingsAccounts.some((a) => a.id === id))) continue
+        if (!stored.linkedDebtIds.every((id) => st.debts.some((d) => d.id === id))) continue
+        const goal = withDebtDerived(stored, ctx)
         if (goal.category === 'spending_control' || !((goal.targetAmount ?? 0) > 0)) continue
-        const current = computeGoalProgress(goal, ctx)
+        const current = computeGoalProgress(stored, ctx)
         const pct = goal.status === 'achieved' ? 100 : (current / (goal.targetAmount as number)) * 100
         const level = [...CHECKPOINTS].reverse().find((c) => pct >= c) ?? 0
         const before = seen[goal.id]

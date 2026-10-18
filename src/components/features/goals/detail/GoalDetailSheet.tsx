@@ -19,6 +19,7 @@ import type { GoalRow } from '@/hooks/useGoalRows'
 import { useLocale, useT } from '@/lib/i18n'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { checkpointInfo, coachView, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
+import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -44,7 +45,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
       incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses,
       budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, exchangeRates: st.exchangeRates,
       settings: st.settings, savingsAccounts: st.savingsAccounts, savingsTransactions: st.savingsTransactions,
-      updateGoal: st.updateGoal, achieveGoal: st.achieveGoal,
+      updateGoal: st.updateGoal, achieveGoal: st.achieveGoal, debts: st.debts, debtPayments: st.debtPayments,
     })),
   )
   const [menu, setMenu] = useState<DOMRect | null>(null)
@@ -55,16 +56,17 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
   const now = useMemo(() => new Date(), [])
   const today = now.toISOString().slice(0, 10)
   const isLimit = goal.category === 'spending_control'
+  const isDebt = goal.category === 'debt_freedom'
   const quarterly = goal.frequency === 'quarterly'
   const basis = useMemo(() => fundingBasis(s, now), [s, now])
   const keep = basis.usualKeep === null ? null : convertCurrency(basis.usualKeep, s.settings.baseCurrency, goal.currency, s.exchangeRates)
   const { icon: Icon, cat } = goalVisual(goal.category)
 
-  const monthlyRate = goalMonthlyRate(goal, keep)
-  const info = useMemo(
-    () => checkpointInfo({ goal, current, txs: s.savingsTransactions, monthlyRate, now, toGoal: (a, c) => convertCurrency(a, c, goal.currency, s.exchangeRates) }),
-    [goal, current, s.savingsTransactions, s.exchangeRates, monthlyRate, now],
-  )
+  const monthlyRate = goal.category === 'debt_freedom' ? debtMonthlyRate(goal, s.debts, s.exchangeRates) : goalMonthlyRate(goal, keep)
+  const info = useMemo(() => {
+    const ledger = goalLedger(goal, { savingsTransactions: s.savingsTransactions, debts: s.debts, debtPayments: s.debtPayments })
+    return checkpointInfo({ goal: ledger.goal, current, txs: ledger.txs, monthlyRate, now, toGoal: (a, c) => convertCurrency(a, c, goal.currency, s.exchangeRates) })
+  }, [goal, current, s.savingsTransactions, s.debts, s.debtPayments, s.exchangeRates, monthlyRate, now])
   const coach = useMemo(
     () => coachView({ goal, current, runs, usualKeep: keep, periodSavings: keep === null ? null : keep * (quarterly ? 3 : 1), now }),
     [goal, current, runs, keep, quarterly, now],
@@ -80,16 +82,25 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
     : status.kind === 'paused' ? 'chipPaused'
     : status.kind === 'over' ? 'chipOver'
     : status.kind === 'behind' ? 'chipBehind'
+    : isDebt ? 'chipDebt'
     : goal.fundingMode === 'manual' ? 'chipManual'
     : runs.length < 2 ? 'chipStarting'
     : 'chipOnTrack'
-  const chipTone = { chipAchieved: 'green', chipPaused: 'muted', chipOver: 'red', chipBehind: 'amber', chipManual: 'muted', chipStarting: 'muted', chipOnTrack: 'green' }[chipKind] as keyof typeof CHIP
+  const chipTone = { chipAchieved: 'green', chipPaused: 'muted', chipOver: 'red', chipBehind: 'amber', chipManual: 'muted', chipDebt: 'green', chipStarting: 'muted', chipOnTrack: 'green' }[chipKind] as keyof typeof CHIP
   const barTone: CheckpointTone = status.kind === 'over' ? 'over' : status.kind === 'behind' ? 'behind' : status.kind === 'paused' ? 'paused' : 'default'
   const basisAmount = isLimit ? goal.monthlySpendingLimit : goal.targetAmount
   const kindLabel = goal.category === 'debt_freedom' ? d.kindDebt : isLimit ? d.kindLimit : d.kindSave
 
   const pocket = s.savingsAccounts.find((a) => goal.linkedSavingsAccountIds.includes(a.id))
-  const rows: PlanRow[] = isLimit ? [] : [
+  const debtRows: PlanRow[] = [
+    {
+      key: 'debts',
+      label: d.planDebts,
+      value: s.debts.filter((x) => goal.linkedDebtIds.includes(x.id)).map((x) => x.name).join(', ') || d.noDebtLinked,
+    },
+    { key: 'finish', label: d.planFinish, value: goal.targetDate ? month(goal.targetDate) : '—', readOnly: true },
+  ]
+  const rows: PlanRow[] = isLimit ? [] : isDebt ? debtRows : [
     { key: 'finish', label: d.planFinish, value: goal.targetDate ? month(goal.targetDate) : '—' },
     {
       key: 'funding',
@@ -201,7 +212,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
               <Button size="cta-block" variant="outline" onClick={() => setEdit(true)}>{t.goals.home.actionAdjust}</Button>
             ) : (
               <Button size="cta-block" onClick={goal.category === 'debt_freedom' ? () => navigate('/debts') : onAddMoney}>
-                {t.goals.home.actionAddMoney}
+                {isDebt ? t.goals.home.actionPay : t.goals.home.actionAddMoney}
               </Button>
             )}
           </div>

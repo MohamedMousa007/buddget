@@ -6,6 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import type { GoalRow } from '@/hooks/useGoalRows'
 import { useT } from '@/lib/i18n'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
+import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
 import { goalInsight, goalMonthlyRate } from '@/lib/goals/goalDetail'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -17,6 +18,7 @@ export function GoalsInsight({ rows }: { rows: GoalRow[] }) {
     useShallow((st) => ({
       incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses, budgetCategories: st.budgetCategories,
       budgetPlans: st.budgetPlans, exchangeRates: st.exchangeRates, settings: st.settings, txs: st.savingsTransactions,
+      debts: st.debts, debtPayments: st.debtPayments,
     })),
   )
   const insight = useMemo(() => {
@@ -26,9 +28,9 @@ export function GoalsInsight({ rows }: { rows: GoalRow[] }) {
     return goalInsight({
       goals: rows.map((r) => r.goal),
       currentFor: (g) => current.get(g.id) ?? 0,
-      txs: s.txs,
+      ledgerFor: (g) => goalLedger(g, { savingsTransactions: s.txs, debts: s.debts, debtPayments: s.debtPayments }),
       toGoal: (g) => (a, c) => convertCurrency(a, c, g.currency, s.exchangeRates),
-      rateFor: (g) => goalMonthlyRate(g, keepBase === null ? null : convertCurrency(keepBase, s.settings.baseCurrency, g.currency, s.exchangeRates)),
+      rateFor: (g) => g.category === 'debt_freedom' ? debtMonthlyRate(g, s.debts, s.exchangeRates) : goalMonthlyRate(g, keepBase === null ? null : convertCurrency(keepBase, s.settings.baseCurrency, g.currency, s.exchangeRates)),
       now,
     })
   }, [rows, s])

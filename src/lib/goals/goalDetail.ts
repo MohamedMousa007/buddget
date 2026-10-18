@@ -173,7 +173,8 @@ export interface GoalInsight {
 export function goalInsight(input: {
   goals: Goal[]
   currentFor: (g: Goal) => number
-  txs: SavingsTransaction[]
+  /** The goal and the ledger its checkpoints are dated from (pocket deposits, or a debt's payments). */
+  ledgerFor: (g: Goal) => { goal: Goal; txs: SavingsTransaction[] }
   toGoal: (g: Goal) => (amount: number, from: SavingsTransaction['currency']) => number
   rateFor: (g: Goal) => number | null
   now: Date
@@ -184,7 +185,8 @@ export function goalInsight(input: {
   for (const goal of input.goals) {
     if (!(goal.targetAmount && goal.targetAmount > 0) || goal.category === 'spending_control') continue
     const rate = input.rateFor(goal)
-    const info = checkpointInfo({ goal, current: input.currentFor(goal), txs: input.txs, toGoal: input.toGoal(goal), monthlyRate: rate, now: input.now })
+    const ledger = input.ledgerFor(goal)
+    const info = checkpointInfo({ goal: ledger.goal, current: input.currentFor(goal), txs: ledger.txs, toGoal: input.toGoal(goal), monthlyRate: rate, now: input.now })
     milestones += info.nodes.filter((n) => n.reached && n.date?.startsWith(year)).length
     if (goal.status === 'active' && info.next && rate && rate > 0) {
       const days = Math.max(1, Math.ceil(((goal.targetAmount * info.next.pct) / 100 - input.currentFor(goal)) / (rate / 30)))

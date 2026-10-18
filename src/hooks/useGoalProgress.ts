@@ -5,12 +5,13 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
+import { withDebtDerived } from '@/lib/goals/debtGoal'
 import type { Goal } from '@/lib/store/types'
 
 /**
  * Live progress for a single goal: computed amount, percent toward target, and ETA months.
  */
-export function useGoalProgress(goal: Goal) {
+export function useGoalProgress(stored: Goal) {
   const { monthFilter } = useSettingsStore()
   const slice = useFinanceStore(
     useShallow((s) => ({
@@ -27,7 +28,8 @@ export function useGoalProgress(goal: Goal) {
 
   return useMemo(() => {
     const ctx = buildGoalProgressContext(slice, monthFilter)
-    const currentAmount = computeGoalProgress(goal, ctx)
+    const currentAmount = computeGoalProgress(stored, ctx)
+    const goal = withDebtDerived(stored, ctx)
 
     if (goal.category === 'spending_control' && goal.monthlySpendingLimit && goal.monthlySpendingLimit > 0) {
       const pct = Math.min(
@@ -55,5 +57,5 @@ export function useGoalProgress(goal: Goal) {
         : null
 
     return { currentAmount, percent, monthsRemaining }
-  }, [goal, slice, monthFilter])
+  }, [stored, slice, monthFilter])
 }

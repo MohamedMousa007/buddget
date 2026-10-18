@@ -2103,6 +2103,12 @@ export interface Dictionary {
       priority: (n: number) => string
       chipsAria: string
     }
+    debtPrompt: {
+      title: (name: string) => string
+      body: string
+      confirm: string
+      dismiss: string
+    }
     notify: {
       milestoneTitle: (name: string, pct: number) => string
       milestoneBody: (name: string, pct: number, amount: string) => string
@@ -2145,6 +2151,7 @@ export interface Dictionary {
       chipAchieved: string
       chipOver: string
       chipManual: string
+      chipDebt: string
       nextCheckpoint: (pct: number, months: number | null) => string
       allDone: string
       coachTitle: (n: number, quarterly: boolean) => string
@@ -2160,6 +2167,8 @@ export interface Dictionary {
       planEachQuarter: string
       planManual: string
       planPocket: string
+      planDebts: string
+      noDebtLinked: string
       eachValue: (amount: string, pct: number | null) => string
       pocketValue: (name: string, balance: string) => string
       noPocket: string
@@ -2227,6 +2236,10 @@ export interface Dictionary {
         appliesTo: string
         debts: string
         debtsTotal: string
+        debtTracked: string
+        noDebts: string
+        linkLead: string
+        linkSub: string
       }
       counselor: {
         zoneStretch: string
@@ -2320,6 +2333,7 @@ export interface Dictionary {
       actionReview: string
       actionReplan: string
       actionAddMoney: string
+      actionPay: string
       actionResume: string
       bannerBehind: (name: string, n: number, quarterly: boolean) => string
       bannerReplan: (name: string) => string

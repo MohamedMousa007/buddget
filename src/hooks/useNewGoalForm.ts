@@ -7,6 +7,7 @@ import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
 import { parseGoalText } from '@/lib/goals/goalAi'
 import { addMonthsIso, computePace, monthsUntil } from '@/lib/goals/goalPlan'
+import { trackedDebtIds } from '@/lib/goals/debtGoal'
 import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import {
@@ -74,6 +75,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [saveError, setSaveError] = useState(false)
   const submitted = useRef(false)
 
+  const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
   const kind = goalKind(category)
   const basis = useMemo(() => fundingBasis(s, now), [s, now])
   const target = num(targetAmount)
@@ -88,7 +90,6 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     sharePicked ?? (pace.ratio === null ? 100 : Math.min(100, Math.max(5, Math.ceil((pace.ratio * 100) / 5) * 5)))
   const setSharePct = setSharePicked
 
-  const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
   const debtsOwed = useMemo(() => {
     const ctx = { expenses: s.expenses, exchangeRates: s.exchangeRates, allDebts: s.debts }
     return activeDebts
@@ -113,16 +114,38 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     if (kind === 'debt') setTargetAmount(debtsOwed > 0 ? String(Math.round(debtsOwed * 100) / 100) : '')
   }, [kind, debtsOwed])
 
+  const tracked = useMemo(() => trackedDebtIds(s.goals), [s.goals])
+  const freeDebts = useMemo(() => activeDebts.filter((d) => !tracked.has(d.id)), [activeDebts, tracked])
+  // Debts a saving goal might really be about: owed by the user, not a revolving card, not already followed.
+  const linkable = useMemo(
+    () => freeDebts.filter((d) => d.debtType !== 'credit_card' && d.direction !== 'they_owe'),
+    [freeDebts],
+  )
+
   const pickCategory = useCallback(
-    (c: GoalCategory) => {
+    (c: GoalCategory, preset?: 'card' | 'debt') => {
       setCategory(c)
-      setName(defaultGoalName(c))
       setTargetAmount('')
-      setLinkedDebtIds(c === 'debt_freedom' ? s.debts.filter((d) => d.status !== 'cleared').map((d) => d.id) : [])
+      if (c === 'debt_freedom') {
+        const pool = freeDebts.filter((d) => (preset === 'card' ? d.debtType === 'credit_card' : d.debtType !== 'credit_card'))
+        setLinkedDebtIds(pool.map((d) => d.id))
+        setName(preset === 'card' ? 'Credit card' : defaultGoalName(c))
+      } else {
+        setLinkedDebtIds([])
+        setName(defaultGoalName(c))
+      }
       setStep(2)
     },
-    [s.debts],
+    [freeDebts],
   )
+
+  /** "Paying this off instead?": turn the goal into one that follows an existing debt, so nothing is duplicated. */
+  const linkInstead = useCallback((debtId: string, debtName: string) => {
+    setCategory('debt_freedom')
+    setName(debtName)
+    setTargetAmount('')
+    setLinkedDebtIds([debtId])
+  }, [])
 
   const toggleDebt = (id: string) =>
     setLinkedDebtIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
@@ -229,7 +252,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     targetDate, setTargetDate, frequency, setFrequency, alreadySaved, setAlreadySaved,
     fundingMode, setFundingMode, sharePct, setSharePct, fixedAmount, setFixedAmount,
     limit, setLimit, spendingCategory, setSpendingCategory,
-    activeDebts, linkedDebtIds, toggleDebt, debtsOwed,
+    activeDebts, tracked, linkable, linkInstead, linkedDebtIds, toggleDebt, debtsOwed,
     parsing, parseError, saveError, describe,
     basis, usualKeep, pace, running, otherShare, canNext2, submit,
     baseCurrency: s.settings.baseCurrency,

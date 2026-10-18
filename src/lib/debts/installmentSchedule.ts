@@ -9,7 +9,7 @@ export function installmentPaymentsCompleted(debt: Debt, paymentCount: number): 
   return Math.min(debt.installmentCount, Math.max(0, paymentCount))
 }
 
-function addByFrequency(start: Date, freq: NonNullable<Debt['installmentFrequency']>, periods: number): Date {
+export function addByFrequency(start: Date, freq: NonNullable<Debt['installmentFrequency']>, periods: number): Date {
   switch (freq) {
     case 'weekly':
       return addWeeks(start, periods)

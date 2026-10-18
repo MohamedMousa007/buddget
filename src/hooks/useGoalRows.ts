@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useGoalAllocationRuns } from '@/hooks/useGoalAllocationRuns'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
+import { withDebtDerived } from '@/lib/goals/debtGoal'
 import { getGoalStatus, type GoalStatusView } from '@/lib/goals/goalStatus'
 import type { Goal } from '@/lib/store/types'
 
@@ -39,8 +40,9 @@ export function useGoalRows(): GoalRow[] {
   return useMemo(() => {
     const ctx = buildGoalProgressContext(slice, monthFilter)
     const now = new Date()
-    const rows = slice.goals.map((goal): GoalRow => {
-      const current = computeGoalProgress(goal, ctx)
+    const rows = slice.goals.map((stored): GoalRow => {
+      const goal = withDebtDerived(stored, ctx)
+      const current = computeGoalProgress(stored, ctx)
       const basis = goal.category === 'spending_control' ? goal.monthlySpendingLimit : goal.targetAmount
       const percent = basis && basis > 0 ? Math.min(100, Math.round((current / basis) * 100)) : 0
       return { goal, current, percent, status: getGoalStatus({ goal, current, runs: runs[goal.id] ?? [], now }) }

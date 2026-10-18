@@ -1,6 +1,7 @@
 'use client'
 
 import { PageGrid } from '@/components/layout/PageGrid'
+import { DebtGoalPrompt } from '@/components/features/goals/DebtGoalPrompt'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CreditCard, HandCoins, Layers, Plus, ShieldCheck } from 'lucide-react'
@@ -140,6 +141,7 @@ export default function DebtsPage() {
       <PageGrid
           primary={
             <div className="px-4 pt-4 lg:px-0 lg:pt-0">
+                <DebtGoalPrompt />
                 <GoalLensList categories={['debt_freedom']} />
 
                 {noneActive ? (

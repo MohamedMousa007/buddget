@@ -23,6 +23,9 @@ import { formatCurrency } from '@/lib/utils/formatters'
 
 type Form = ReturnType<typeof useNewGoalForm>
 
+/** Save-for categories that are often really a loan or installment being paid off. */
+const DEBT_LIKE: ReadonlySet<string> = new Set(['car', 'house', 'education', 'phone_device', 'wedding', 'business'])
+
 const FIELD = 'h-[52px] rounded-[14px] bg-[var(--color-brand-elevated)]'
 const Label = ({ children }: { children: React.ReactNode }) => (
   <span className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{children}</span>
@@ -59,6 +62,19 @@ export function StepMakeItReal({ form }: { form: Form }) {
 
       {form.kind === 'save' ? (
         <>
+          {DEBT_LIKE.has(form.category) && form.linkable.length > 0 ? (
+            <div className="flex flex-col gap-2 rounded-2xl border border-[var(--color-brand-border)] p-3">
+              <p className="text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{f.linkLead}</p>
+              <p className="text-xs text-[var(--color-brand-text-secondary)]">{f.linkSub}</p>
+              <div className="flex flex-wrap gap-2">
+                {form.linkable.slice(0, 4).map((d) => (
+                  <OptionChip key={d.id} size="sm" onClick={() => form.linkInstead(d.id, d.name)}>
+                    {d.name}
+                  </OptionChip>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="flex flex-col gap-1.5">
             <Label>{f.targetDate}</Label>
             <DateStepper value={form.targetDate} now={form.now} onChange={form.setTargetDate} />
@@ -149,12 +165,25 @@ export function StepMakeItReal({ form }: { form: Form }) {
       ) : (
         <div className="flex flex-col gap-2">
           <Label>{f.debts}</Label>
+          {form.activeDebts.length === form.activeDebts.filter((d) => form.tracked.has(d.id)).length ? (
+            <p className="text-sm text-[var(--color-brand-text-secondary)]">{f.noDebts}</p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
-            {form.activeDebts.map((d) => (
-              <OptionChip key={d.id} size="sm" selected={form.linkedDebtIds.includes(d.id)} onClick={() => form.toggleDebt(d.id)}>
-                {d.name}
-              </OptionChip>
-            ))}
+            {form.activeDebts.map((d) => {
+              const taken = form.tracked.has(d.id)
+              return (
+                <OptionChip
+                  key={d.id}
+                  size="sm"
+                  disabled={taken}
+                  title={taken ? f.debtTracked : undefined}
+                  selected={form.linkedDebtIds.includes(d.id)}
+                  onClick={() => form.toggleDebt(d.id)}
+                >
+                  {d.name}
+                </OptionChip>
+              )
+            })}
           </div>
           <p className="text-xs text-[var(--color-brand-text-secondary)]">
             {f.debtsTotal}: <b className="font-mono-numbers">{formatCurrency(form.debtsOwed, form.baseCurrency, false)}</b>

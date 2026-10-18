@@ -727,10 +727,13 @@ export const useFinanceStore = create<FinanceStore>()(
             debts: state.debts.filter((d) => d.id !== id),
             debtPayments: state.debtPayments.filter((p) => p.debtId !== id),
             recurringDebtPayments: state.recurringDebtPayments.filter((r) => r.debtId !== id),
-            goals: state.goals.map((g) => ({
-              ...g,
-              linkedDebtIds: g.linkedDebtIds.filter((x) => x !== id),
-            })),
+            // A debt goal exists only to follow its debts: once the last one is deleted the goal goes too
+            // (an achieved goal stays as history).
+            goals: state.goals.flatMap((g) => {
+              if (!g.linkedDebtIds.includes(id)) return [g]
+              const linkedDebtIds = g.linkedDebtIds.filter((x) => x !== id)
+              return g.category === 'debt_freedom' && g.status !== 'achieved' && linkedDebtIds.length === 0 ? [] : [{ ...g, linkedDebtIds }]
+            }),
           }
           return {
             debts: nextState.debts,

@@ -110,7 +110,7 @@ export function GoalCard({
             onAction(goal, status.button.action)
           }}
         >
-          {t[ACTION_LABEL[status.button.action]]}
+          {goal.category === 'debt_freedom' && status.button.action === 'addMoney' ? t.actionPay : t[ACTION_LABEL[status.button.action]]}
         </Button>
       </div>
     </div>

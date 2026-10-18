@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
+import { trackedDebtIds } from '@/lib/goals/debtGoal'
 import { computePace } from '@/lib/goals/goalPlan'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -53,6 +54,7 @@ export function PlanEditorSheet({ goal, kind, current, onClose }: { goal: Goal; 
     [target, current, date, freq, usualKeep, now],
   )
   const otherShare = s.goals.filter((g) => g.id !== goal.id && g.status === 'active' && g.fundingMode === 'share').reduce((a, g) => a + (g.sharePct ?? 0), 0)
+  const takenElsewhere = useMemo(() => trackedDebtIds(s.goals, goal.id), [s.goals, goal.id])
   const upd = useFinanceStore((st) => st.updateGoal)
   const toggle = (list: string[], set: (v: string[]) => void, id: string) => set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
 
@@ -113,8 +115,14 @@ export function PlanEditorSheet({ goal, kind, current, onClose }: { goal: Goal; 
         />
       ) : goal.category === 'debt_freedom' ? (
         <div className="flex flex-wrap gap-2">
-          {s.debts.filter((d) => d.status !== 'cleared').map((d) => (
-            <OptionChip key={d.id} size="sm" selected={debtIds.includes(d.id)} onClick={() => toggle(debtIds, setDebtIds, d.id)}>
+          {s.debts.filter((d) => d.status !== 'cleared' || debtIds.includes(d.id)).map((d) => (
+            <OptionChip
+              key={d.id}
+              size="sm"
+              disabled={takenElsewhere.has(d.id)}
+              selected={debtIds.includes(d.id)}
+              onClick={() => toggle(debtIds, setDebtIds, d.id)}
+            >
               {d.name}
             </OptionChip>
           ))}

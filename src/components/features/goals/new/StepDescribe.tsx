@@ -18,6 +18,8 @@ const SAVE: GoalCategory[] = [
   'phone_device', 'gift', 'investment', 'family_support', 'sadaqah_charity', 'quality_of_life', 'custom',
 ]
 
+type Preset = 'card' | 'debt'
+
 function Tile({ category, label, onPick }: { category: GoalCategory; label: string; onPick: () => void }) {
   const { icon: Icon, cat } = goalVisual(category)
   return (
@@ -43,18 +45,18 @@ export function StepDescribe({
   parsing: boolean
   parseError: boolean
   onDescribe: (text: string) => void
-  onPick: (c: GoalCategory) => void
+  onPick: (c: GoalCategory, preset?: Preset) => void
 }) {
   const t = useT().goals
   const f = t.flow.s1
   const { online } = useNetworkStatus()
   const [text, setText] = useState('')
-  const group = (label: string, items: { c: GoalCategory; label: string }[]) => (
+  const group = (label: string, items: { c: GoalCategory; label: string; preset?: Preset }[]) => (
     <div className="flex flex-col gap-2">
       <h3 className={microClassName}>{label}</h3>
       <div className="grid grid-cols-4 gap-2">
         {items.map((i) => (
-          <Tile key={i.label} category={i.c} label={i.label} onPick={() => onPick(i.c)} />
+          <Tile key={i.label} category={i.c} label={i.label} onPick={() => onPick(i.c, i.preset)} />
         ))}
       </div>
     </div>
@@ -95,8 +97,8 @@ export function StepDescribe({
       ) : null}
       {group(f.groupSave, SAVE.map((c) => ({ c, label: t[goalCategoryLabelKey(c)] as string })))}
       {group(f.groupPay, [
-        { c: 'debt_freedom', label: f.payDebt },
-        { c: 'debt_freedom', label: f.payCard },
+        { c: 'debt_freedom', label: f.payDebt, preset: 'debt' },
+        { c: 'debt_freedom', label: f.payCard, preset: 'card' },
       ])}
       {group(f.groupControl, [
         { c: 'spending_control', label: f.limitMonthly },

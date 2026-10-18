@@ -2231,6 +2231,12 @@ export const en: Dictionary = {
       priority: (n) => `Priority ${n}`,
       chipsAria: 'Shares across goals',
     },
+    debtPrompt: {
+      title: (n) => `Track ${n} as a goal?`,
+      body: 'The goal follows this debt: progress, finish date and payments stay in sync.',
+      confirm: 'Track it',
+      dismiss: 'Not now',
+    },
     notify: {
       milestoneTitle: (n, p) => `${n} hit ${p}%`,
       milestoneBody: (n, p, a) => `${a} saved so far. ${p === 50 ? 'Halfway there.' : 'Keep it going.'}`,
@@ -2275,6 +2281,7 @@ export const en: Dictionary = {
       chipAchieved: 'Achieved',
       chipOver: 'Over limit',
       chipManual: 'You add money',
+      chipDebt: 'Following your debt',
       nextCheckpoint: (p, m) => (m === null ? `Next checkpoint: ${p}%.` : `Next checkpoint: ${p}% in about ${m} ${m === 1 ? 'month' : 'months'}.`),
       allDone: 'Every checkpoint reached.',
       coachTitle: (n, q) => `Behind for ${n} ${q ? (n === 1 ? 'quarter' : 'quarters') : n === 1 ? 'month' : 'months'}`,
@@ -2290,6 +2297,8 @@ export const en: Dictionary = {
       planEachQuarter: 'Each quarter',
       planManual: 'Funding',
       planPocket: 'Pocket',
+      planDebts: 'Following',
+      noDebtLinked: 'No debt linked',
       eachValue: (a, p) => (p === null ? a : `${a} \u00b7 ${p}% of savings`),
       pocketValue: (n, b) => `${n} \u00b7 ${b}`,
       noPocket: 'No pocket linked',
@@ -2357,6 +2366,10 @@ export const en: Dictionary = {
         appliesTo: 'Applies to',
         debts: 'Debts to pay off',
         debtsTotal: 'Total still owed',
+        debtTracked: 'Already has a goal',
+        noDebts: 'Every debt already has a goal, or none is added yet. Add one in Debts.',
+        linkLead: 'Paying this off instead?',
+        linkSub: 'Link it and the goal follows the debt. Nothing is saved separately.',
       },
       counselor: {
         zoneStretch: 'Stretch',
@@ -2451,6 +2464,7 @@ export const en: Dictionary = {
       actionReview: 'Review',
       actionReplan: 'Replan',
       actionAddMoney: 'Add money',
+      actionPay: 'Make payment',
       actionResume: 'Resume',
       bannerBehind: (name, n, q) =>
         `${name} has been behind for ${n} ${q ? (n === 1 ? 'quarter' : 'quarters') : n === 1 ? 'month' : 'months'}.`,
