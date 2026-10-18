@@ -8,6 +8,7 @@ import { GoalAddMoneySheet } from '@/components/features/goals/GoalAddMoneySheet
 import { GoalCard, type GoalCardAction } from '@/components/features/goals/GoalCard'
 import { NewGoalFlow } from '@/components/features/goals/new/NewGoalFlow'
 import type { FlowSeed } from '@/hooks/useNewGoalForm'
+import { GoalsInsight } from '@/components/features/goals/GoalsInsight'
 import { GoalsEmpty } from '@/components/features/goals/GoalsEmpty'
 import { TrophyChip } from '@/components/features/goals/TrophyChip'
 import { PageGrid } from '@/components/layout/PageGrid'
@@ -106,6 +107,7 @@ export default function GoalsPage() {
               <GoalsEmpty onStart={openAdd} />
             ) : (
               <>
+                <GoalsInsight rows={rows} />
                 <div className="flex items-center gap-2">
                   <SegmentedControl<'all' | 'active' | 'paused'>
                     ariaLabel={t.home.viewLabel}

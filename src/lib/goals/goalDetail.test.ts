@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Goal, SavingsTransaction } from '@/lib/store/types'
-import { checkpointInfo, coachView, normalizeRuns, replanPatch } from './goalDetail'
+import { checkpointInfo, coachView, goalInsight, goalMonthlyRate, normalizeRuns, replanPatch } from './goalDetail'
 import { getGoalStatus, periodStartMonth } from './goalStatus'
 
 const now = new Date(2026, 9, 18)
@@ -93,5 +93,25 @@ describe('normalizeRuns', () => {
       { id: 'b', accountId: 'p', type: 'deposit', amount: 100, currency: 'EGP', date: '2026-08-05' },
     ], baseToGoal: (n) => n, toGoal: (a) => a })
     expect(getGoalStatus({ goal: goal(), current: 200, runs: paid, now }).kind).not.toBe('behind')
+  })
+})
+
+describe('goalInsight', () => {
+  const year = new Date(2026, 9, 18)
+  it('counts milestones reached this year and finds the nearest next checkpoint', () => {
+    const g = goal({ fundingMode: 'fixed', monthlyContribution: 100 })
+    const txs = [tx('2026-03-01', 300), tx('2025-12-01', 100)]
+    const i = goalInsight({ goals: [g], currentFor: () => 400, txs, toGoal: () => (n) => n, rateFor: (x) => goalMonthlyRate(x, null), now: year })
+    expect(i.milestones).toBe(1)
+    expect(i.next).toMatchObject({ name: 'Trip', pct: 50 })
+    expect(i.next!.days).toBe(30)
+  })
+  it('is empty with no history and no pace', () => {
+    const i = goalInsight({ goals: [goal({ fundingMode: 'manual' })], currentFor: () => 0, txs: [], toGoal: () => (n) => n, rateFor: () => null, now: year })
+    expect(i).toEqual({ milestones: 0, next: null })
+  })
+  it('ignores limit goals', () => {
+    const i = goalInsight({ goals: [goal({ category: 'spending_control' })], currentFor: () => 500, txs: [], toGoal: () => (n) => n, rateFor: () => 100, now: year })
+    expect(i).toEqual({ milestones: 0, next: null })
   })
 })

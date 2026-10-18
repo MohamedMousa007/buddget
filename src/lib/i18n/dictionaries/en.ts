@@ -2461,6 +2461,10 @@ export const en: Dictionary = {
       addMoneyCta: 'Add money',
       checkpointsAria: (p, r) => `${p} percent, ${r} of 4 checkpoints reached`,
       emptyFilter: 'No goals here yet.',
+      insightMilestones: (n) => `${n} ${n === 1 ? 'milestone' : 'milestones'}`,
+      insightYear: 'reached this year.',
+      insightNext: (name, pct, when) => `${name} hits ${pct}% ${when}.`,
+      insightIn: (d) => (d < 14 ? `in about ${d} ${d === 1 ? 'day' : 'days'}` : d < 60 ? `in about ${Math.round(d / 7)} weeks` : `in about ${Math.round(d / 30)} months`),
     },
     achievedView: {
       goalsAchieved: 'goals achieved',

@@ -18,7 +18,7 @@ import { useGoalAllocationRuns } from '@/hooks/useGoalAllocationRuns'
 import type { GoalRow } from '@/hooks/useGoalRows'
 import { useLocale, useT } from '@/lib/i18n'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
-import { checkpointInfo, coachView, replanPatch } from '@/lib/goals/goalDetail'
+import { checkpointInfo, coachView, goalMonthlyRate, replanPatch } from '@/lib/goals/goalDetail'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
@@ -60,12 +60,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
   const keep = basis.usualKeep === null ? null : convertCurrency(basis.usualKeep, s.settings.baseCurrency, goal.currency, s.exchangeRates)
   const { icon: Icon, cat } = goalVisual(goal.category)
 
-  const monthlyRate =
-    goal.fundingMode === 'fixed' && goal.monthlyContribution
-      ? goal.monthlyContribution / (quarterly ? 3 : 1)
-      : goal.fundingMode === 'share' && keep && goal.sharePct
-        ? (keep * goal.sharePct) / 100
-        : null
+  const monthlyRate = goalMonthlyRate(goal, keep)
   const info = useMemo(
     () => checkpointInfo({ goal, current, txs: s.savingsTransactions, monthlyRate, now, toGoal: (a, c) => convertCurrency(a, c, goal.currency, s.exchangeRates) }),
     [goal, current, s.savingsTransactions, s.exchangeRates, monthlyRate, now],

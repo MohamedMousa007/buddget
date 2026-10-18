@@ -154,3 +154,42 @@ export function normalizeRuns(input: {
     return { period: r.period, planned: input.baseToGoal(r.planned), amount: input.baseToGoal(r.amount) + extra }
   })
 }
+
+/** What a funded goal's plan puts in per month, in the goal's currency; null for manual goals or unknown savings. */
+export function goalMonthlyRate(goal: Goal, usualKeepInGoalCurrency: number | null): number | null {
+  if (goal.fundingMode === 'fixed' && goal.monthlyContribution) return goal.monthlyContribution / (goal.frequency === 'quarterly' ? 3 : 1)
+  if (goal.fundingMode === 'share' && usualKeepInGoalCurrency && goal.sharePct) return (usualKeepInGoalCurrency * goal.sharePct) / 100
+  return null
+}
+
+export interface GoalInsight {
+  /** Checkpoints reached this calendar year across all goals. */
+  milestones: number
+  /** The nearest upcoming checkpoint of an active goal, when a pace is known. */
+  next: { name: string; pct: number; days: number } | null
+}
+
+/** One data-driven sentence for the home screen. Both parts can be absent; then nothing is shown. */
+export function goalInsight(input: {
+  goals: Goal[]
+  currentFor: (g: Goal) => number
+  txs: SavingsTransaction[]
+  toGoal: (g: Goal) => (amount: number, from: SavingsTransaction['currency']) => number
+  rateFor: (g: Goal) => number | null
+  now: Date
+}): GoalInsight {
+  const year = String(input.now.getFullYear())
+  let milestones = 0
+  let next: GoalInsight['next'] = null
+  for (const goal of input.goals) {
+    if (!(goal.targetAmount && goal.targetAmount > 0) || goal.category === 'spending_control') continue
+    const rate = input.rateFor(goal)
+    const info = checkpointInfo({ goal, current: input.currentFor(goal), txs: input.txs, toGoal: input.toGoal(goal), monthlyRate: rate, now: input.now })
+    milestones += info.nodes.filter((n) => n.reached && n.date?.startsWith(year)).length
+    if (goal.status === 'active' && info.next && rate && rate > 0) {
+      const days = Math.max(1, Math.ceil(((goal.targetAmount * info.next.pct) / 100 - input.currentFor(goal)) / (rate / 30)))
+      if (!next || days < next.days) next = { name: goal.name, pct: info.next.pct, days }
+    }
+  }
+  return { milestones, next }
+}

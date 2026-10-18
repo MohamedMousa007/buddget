@@ -78,7 +78,7 @@ export async function GET(request: Request) {
         service.from('goals').select('*').eq('user_id', userId).is('deleted_at', null),
         service.from('expenses').select('category, amount, currency, expense_date').eq('user_id', userId).gte('expense_date', startISO).lt('expense_date', endISO).is('deleted_at', null),
         service.from('income_events').select('amount, currency, status, received_date').eq('user_id', userId).gte('received_date', startISO).lt('received_date', endISO).is('deleted_at', null),
-        service.from('savings_transactions').select('amount, currency, kind, is_cash_flow, transaction_date').eq('user_id', userId).gte('transaction_date', startISO).lt('transaction_date', endISO).is('deleted_at', null),
+        service.from('savings_transactions').select('amount, currency, kind, is_cash_flow, transaction_date, source').eq('user_id', userId).gte('transaction_date', startISO).lt('transaction_date', endISO).is('deleted_at', null),
       ])
 
       const base = ((profileR.data?.base_currency as string | null) ?? 'EGP') as Currency
@@ -97,7 +97,9 @@ export async function GET(request: Request) {
         .filter((e) => (e.category as string) === 'Savings')
         .reduce((sum, e) => sum + toBase(Number(e.amount) || 0, (e.currency as string) ?? base), 0)
       const deposits = (txR.data ?? [])
-        .filter((t) => (t.kind as string) === 'deposit' && t.is_cash_flow !== false)
+        // Our own sweep and goal-funding deposits are the carry itself, not money the user set aside:
+        // counting them would shrink the carry on a rerun of the same cycle.
+        .filter((t) => (t.kind as string) === 'deposit' && t.is_cash_flow !== false && (t.source as string | null) !== 'carry')
         .reduce((sum, t) => sum + toBase(Number(t.amount) || 0, (t.currency as string) ?? base), 0)
       const allocated = savTagged + deposits
 
@@ -146,6 +148,11 @@ export async function GET(request: Request) {
 
       // Post the carry: a real deposit dated to the closed month's last day.
       const carryInPocketCcy = convertCurrency(remainder, base, accounts.find((a) => a.id === pocketId)?.currency ?? base, rates)
+      // A rerun after a crash must not sweep twice: the deposit's note is unique per cycle.
+      const { data: alreadySwept } = await service
+        .from('savings_transactions').select('id').eq('user_id', userId).eq('source', 'carry')
+        .eq('notes', `Month-end carry · ${monthKey}`).is('deleted_at', null).limit(1).maybeSingle()
+      if (!alreadySwept) {
       await service.from('savings_transactions').insert({
         user_id: userId, account_id: pocketId, kind: 'deposit', amount: carryInPocketCcy,
         currency: accounts.find((a) => a.id === pocketId)?.currency ?? base, transaction_date: postDate,
@@ -156,6 +163,7 @@ export async function GET(request: Request) {
       const { data: liveBal } = await service.from('savings_accounts').select('current_balance').eq('id', pocketId).single()
       const prevBal = Number(liveBal?.current_balance ?? destAcc?.currentBalance ?? 0)
       await service.from('savings_accounts').update({ current_balance: prevBal + carryInPocketCcy }).eq('id', pocketId)
+      }
 
       await service.from('savings_month_summary').insert({
         user_id: userId, month_key: monthKey, target: 0, allocated, carry, saved, currency: base, pocket_id: pocketId, closed_at: now.toISOString(),

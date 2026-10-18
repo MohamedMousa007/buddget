@@ -2464,6 +2464,10 @@ export const ar: Dictionary = {
       addMoneyCta: 'إضافة مال',
       checkpointsAria: (p, r) => `${p} بالمئة، ${r} من 4 نقاط تحقق`,
       emptyFilter: 'لا توجد أهداف هنا بعد.',
+      insightMilestones: (n) => `${n} ${n === 1 ? 'محطة' : 'محطات'}`,
+      insightYear: 'هذا العام.',
+      insightNext: (name, pct, when) => `${name} يبلغ ${pct}% ${when}.`,
+      insightIn: (d) => (d < 14 ? `خلال ${d} ${d === 1 ? 'يوم' : 'أيام'} تقريبًا` : d < 60 ? `خلال ${Math.round(d / 7)} أسابيع تقريبًا` : `خلال ${Math.round(d / 30)} أشهر تقريبًا`),
     },
     achievedView: {
       goalsAchieved: 'هدف محقق',

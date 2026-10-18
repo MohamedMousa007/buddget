@@ -2329,6 +2329,10 @@ export interface Dictionary {
       addMoneyCta: string
       checkpointsAria: (pct: number, reached: number) => string
       emptyFilter: string
+      insightMilestones: (n: number) => string
+      insightYear: string
+      insightNext: (name: string, pct: number, when: string) => string
+      insightIn: (days: number) => string
     }
     achievedView: {
       goalsAchieved: string

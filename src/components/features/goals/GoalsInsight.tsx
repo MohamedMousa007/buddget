@@ -1,0 +1,50 @@
+'use client'
+
+import { useMemo } from 'react'
+import { Flame } from 'lucide-react'
+import { useShallow } from 'zustand/react/shallow'
+import type { GoalRow } from '@/hooks/useGoalRows'
+import { useT } from '@/lib/i18n'
+import { fundingBasis } from '@/lib/goals/fundingBasis'
+import { goalInsight, goalMonthlyRate } from '@/lib/goals/goalDetail'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { convertCurrency } from '@/lib/utils/currency'
+
+/** One sentence under the header: milestones reached this year and the next checkpoint in sight. Hidden when empty. */
+export function GoalsInsight({ rows }: { rows: GoalRow[] }) {
+  const t = useT().goals.home
+  const s = useFinanceStore(
+    useShallow((st) => ({
+      incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses, budgetCategories: st.budgetCategories,
+      budgetPlans: st.budgetPlans, exchangeRates: st.exchangeRates, settings: st.settings, txs: st.savingsTransactions,
+    })),
+  )
+  const insight = useMemo(() => {
+    const now = new Date()
+    const keepBase = fundingBasis(s, now).usualKeep
+    const current = new Map(rows.map((r) => [r.goal.id, r.current]))
+    return goalInsight({
+      goals: rows.map((r) => r.goal),
+      currentFor: (g) => current.get(g.id) ?? 0,
+      txs: s.txs,
+      toGoal: (g) => (a, c) => convertCurrency(a, c, g.currency, s.exchangeRates),
+      rateFor: (g) => goalMonthlyRate(g, keepBase === null ? null : convertCurrency(keepBase, s.settings.baseCurrency, g.currency, s.exchangeRates)),
+      now,
+    })
+  }, [rows, s])
+
+  if (insight.milestones === 0 && !insight.next) return null
+  return (
+    <p className="flex items-start gap-2 text-sm text-[var(--color-brand-text-secondary)]">
+      <Flame className="mt-0.5 size-[18px] shrink-0 text-[var(--color-brand-amber)]" aria-hidden />
+      <span>
+        {insight.milestones > 0 ? (
+          <>
+            <b className="font-semibold text-[var(--color-brand-text-primary)]">{t.insightMilestones(insight.milestones)}</b> {t.insightYear}{' '}
+          </>
+        ) : null}
+        {insight.next ? t.insightNext(insight.next.name, insight.next.pct, t.insightIn(insight.next.days)) : null}
+      </span>
+    </p>
+  )
+}
