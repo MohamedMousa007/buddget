@@ -10,7 +10,6 @@ import { AddDebtSheet } from './AddDebtSheet'
 import { AddRecurringDebtPaymentSheet } from './AddRecurringDebtPaymentSheet'
 import { AddCreditCardSheet } from './AddCreditCardSheet'
 import { PaymentMethodsSheet } from './PaymentMethodsSheet'
-import { AddGoalSheet } from './AddGoalSheet'
 import { LifestyleSheet } from './LifestyleSheet'
 import { HouseholdRentSheet } from './HouseholdRentSheet'
 import { EditExpenseSheet } from './EditExpenseSheet'
@@ -24,7 +23,7 @@ import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useRecurringSavingsScheduler } from '@/hooks/useRecurringSavingsScheduler'
 
 export function ModalProvider() {
-  const { setActiveModal, activeModal, openAiChatWithSeed } = useSettingsStore()
+  const { setActiveModal, openAiChatWithSeed } = useSettingsStore()
   const t = useT()
   const requireAuth = useRequireAuthAction()
   useRecurringSavingsScheduler()
@@ -41,11 +40,6 @@ export function ModalProvider() {
       <AddRecurringDebtPaymentSheet />
       <AddCreditCardSheet />
       <PaymentMethodsSheet />
-      <AddGoalSheet
-        open={activeModal === 'addGoal'}
-        onClose={() => setActiveModal(null)}
-        editingGoal={null}
-      />
       <LifestyleSheet />
       <HouseholdRentSheet />
       <EditExpenseSheet />
