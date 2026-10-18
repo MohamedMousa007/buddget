@@ -26,6 +26,13 @@ These rules ap
   - Web bundle for native is built inside the workflows via `npm run cap:build` — never bare `npx cap sync`.
   - Linear bot (`scripts/linear-bot.sh`) is inactive: native builds are on-demand only.
 
+## Component Reuse (STRICT, overrides handoffs)
+- **Golden rule:** reuse an existing component and the app's current design system first. Create a new component only when the thing is truly new (nothing existing does the job).
+- **Handoffs and "no deviation":** a design handoff, or an instruction like "match exactly / no deviation", does NOT bypass this rule. Map the design onto existing components and tokens. The only bypass is the user explicitly saying to skip this rule for that task.
+- **Raise an alert instead of building around it** when the design cannot be done with an existing component, or needs a significant size/structure change that would not fit it. State what differs and wait for the user's call.
+- **Never reshape an existing component to fit a new design.** Existing behaviour and appearance stay as they are. Needed variation is added as a new variant/prop (additive, default unchanged), the standard design-system approach.
+- Before writing any new UI component, search `src/components/ui` and `src/components/features` for an existing one (e.g. heroes use `HeroBand`; sheets, chips, cards, rows have shared primitives) and say which one is reused.
+
 ## Code Style
 - **Enterprise structure:** Clean module boundaries, single-responsibility files.
 - **Clean Code:** No defensive checks for impossible states. No backwards-compat shims for unreleased code. No comments that restate the code.
