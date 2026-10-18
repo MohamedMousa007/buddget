@@ -2373,6 +2373,8 @@ export type Database = {
           sms_tracking_enabled: boolean
           sub_due_reminders: boolean
           sub_price_alerts: boolean
+          goal_alerts: boolean
+          goal_progress_alerts: boolean
           theme: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step: string | null
           tutorials_completed: string[]
@@ -2395,6 +2397,8 @@ export type Database = {
           sms_tracking_enabled?: boolean
           sub_due_reminders?: boolean
           sub_price_alerts?: boolean
+          goal_alerts?: boolean
+          goal_progress_alerts?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]
@@ -2417,6 +2421,8 @@ export type Database = {
           sms_tracking_enabled?: boolean
           sub_due_reminders?: boolean
           sub_price_alerts?: boolean
+          goal_alerts?: boolean
+          goal_progress_alerts?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]

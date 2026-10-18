@@ -62,6 +62,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   smsTrackingEnabled: false,
   subDueReminders: true,
   subPriceAlerts: true,
+  goalProgressAlerts: true,
+  goalAlerts: true,
 }
 
 export const DEFAULT_PROFILE: UserProfile = {

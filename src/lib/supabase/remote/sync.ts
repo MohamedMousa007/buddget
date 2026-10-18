@@ -265,6 +265,8 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
         smsTrackingEnabled: false,
         subDueReminders: true,
         subPriceAlerts: true,
+        goalProgressAlerts: true,
+        goalAlerts: true,
       }
 
   return {
@@ -352,6 +354,8 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
         smsTrackingEnabled: false,
         subDueReminders: true,
         subPriceAlerts: true,
+        goalProgressAlerts: true,
+        goalAlerts: true,
       }
 
   const plans = (planR.data ?? []).map((plan) =>

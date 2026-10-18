@@ -156,6 +156,8 @@ describe('settings mapper', () => {
       smsTrackingEnabled: true,
       subDueReminders: false,
       subPriceAlerts: true,
+      goalProgressAlerts: true,
+      goalAlerts: true,
     }
     const row = settingsToRow(s, UID)
     const back = settingsFromRow({ ...row, updated_at: '' } as never, {

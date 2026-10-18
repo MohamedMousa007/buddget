@@ -810,6 +810,10 @@ export interface AppSettings {
   subDueReminders: boolean
   /** Subscription price-rise and trial-ending alerts. Synced via `user_settings.sub_price_alerts`. */
   subPriceAlerts: boolean
+  /** Milestone and achievement celebrations/pushes. Synced via `user_settings.goal_progress_alerts`. */
+  goalProgressAlerts: boolean
+  /** Behind-plan alerts. Synced via `user_settings.goal_alerts`. */
+  goalAlerts: boolean
 }
 
 export type GoalStatus = 'active' | 'achieved' | 'paused' | 'cancelled'

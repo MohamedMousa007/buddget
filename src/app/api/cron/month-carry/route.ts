@@ -18,6 +18,8 @@ import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
 import { convertCurrency } from '@/lib/utils/currency'
 import { allocateGoalFunding } from '@/lib/server/allocateGoalFunding'
 import { emitNotification } from '@/lib/server/emitNotification'
+import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
+import { goalMilestoneAlert, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 
 export const maxDuration = 60
@@ -50,7 +52,7 @@ export async function GET(request: Request) {
   for (let offset = 0; ; offset += PAGE) {
     const { data: settings, error } = await service
       .from('user_settings')
-      .select('user_id, month_start_day')
+      .select('user_id, month_start_day, language, goal_progress_alerts')
       .range(offset, offset + PAGE - 1)
     if (error || !settings || settings.length === 0) break
 
@@ -107,7 +109,21 @@ export async function GET(request: Request) {
       const goals = (goalsR.data ?? []).map(goalFromRow)
       const postDate = new Date(end.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
       // Funded goals draw first (priority order); the rest is unassigned and stays free.
-      const remainder = await allocateGoalFunding({ service, userId, monthKey, carry, base, rates, goals, accounts, postDate })
+      const dict = getServerDictionary(s.language as string | null)
+      const celebrate = (s.goal_progress_alerts as boolean | null) ?? true
+      const remainder = await allocateGoalFunding({
+        service, userId, monthKey, carry, base, rates, goals, accounts, postDate,
+        onCheckpoint: async (goal, pct, saved) => {
+          if (pct >= 100) await service.from('goals').update({ status: 'achieved', achieved_at: now.toISOString() }).eq('id', goal.id)
+          if (!celebrate) return
+          const a = goalMilestoneAlert(goal, pct, saved)
+          const { title, body } = renderGoalAlert(dict, a)
+          await emitNotification(service, {
+            userId, category: a.type, severity: a.severity, dedupeKey: a.dedupeKey, title, body, metadata: { goalId: goal.id },
+            push: { data: { kind: 'notification', notifType: a.type }, collapseKey: a.dedupeKey.slice(0, 60) },
+          })
+        },
+      })
       if (remainder <= 0) {
         // Nothing to sweep, but record the closed cycle so it isn't reconsidered.
         await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry, saved, currency: base, closed_at: now.toISOString() })

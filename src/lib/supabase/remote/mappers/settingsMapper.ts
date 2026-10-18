@@ -23,6 +23,8 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     sms_tracking_enabled: s.smsTrackingEnabled,
     sub_due_reminders: s.subDueReminders,
     sub_price_alerts: s.subPriceAlerts,
+    goal_progress_alerts: s.goalProgressAlerts,
+    goal_alerts: s.goalAlerts,
   }
 }
 
@@ -57,6 +59,8 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     smsTrackingEnabled: row.sms_tracking_enabled ?? false,
     subDueReminders: row.sub_due_reminders ?? true,
     subPriceAlerts: row.sub_price_alerts ?? true,
+    goalProgressAlerts: row.goal_progress_alerts ?? true,
+    goalAlerts: row.goal_alerts ?? true,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

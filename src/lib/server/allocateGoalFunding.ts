@@ -1,6 +1,7 @@
 import type { createServiceRoleClient } from '@/lib/supabase/service'
 import { allocateMonth } from '@/lib/goals/allocateMonth'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { crossedCheckpoints } from '@/lib/notifications/evaluateGoalAlerts'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { Currency, Goal, SavingsAccount } from '@/lib/store/types'
 
@@ -20,6 +21,8 @@ interface Ctx {
   goals: Goal[]
   accounts: SavingsAccount[]
   postDate: string
+  /** Called for each checkpoint a deposit crosses; 100 means the goal is complete. */
+  onCheckpoint?: (goal: Goal, pct: number, saved: number) => Promise<void>
 }
 
 /**
@@ -91,6 +94,14 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
     const { data: bal } = await service.from('savings_accounts').select('current_balance').eq('id', pocket.id).single()
     await service.from('savings_accounts').update({ current_balance: Number(bal?.current_balance ?? 0) + inPocket }).eq('id', pocket.id)
     left -= amount
+    const original = c.goals.find((g) => g.id === goal.id)
+    if (original && goal.targetAmount) {
+      const after = current[goal.id] + amount
+      for (const pct of crossedCheckpoints(current[goal.id], after, goal.targetAmount)) {
+        await c.onCheckpoint?.(original, pct, convertCurrency(after, base, original.currency, rates))
+      }
+      current[goal.id] = after
+    }
   }
   return Math.max(0, left)
 }

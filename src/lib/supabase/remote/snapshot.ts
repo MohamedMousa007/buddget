@@ -83,6 +83,8 @@ export function emptySnapshot(): Snapshot {
       smsTrackingEnabled: false,
         subDueReminders: true,
         subPriceAlerts: true,
+        goalProgressAlerts: true,
+        goalAlerts: true,
     },
     financialGoalsNotes: '',
     activeBudgetPlanId: null,

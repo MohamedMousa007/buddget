@@ -151,6 +151,8 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
         [
           ['subDueReminders', t.subscriptions.ui.notifications.dueReminders, t.subscriptions.ui.notifications.dueRemindersHint],
           ['subPriceAlerts', t.subscriptions.ui.notifications.priceAlerts, t.subscriptions.ui.notifications.priceAlertsHint],
+          ['goalProgressAlerts', t.goals.notify.progressLabel, t.goals.notify.progressHint],
+          ['goalAlerts', t.goals.notify.alertsLabel, t.goals.notify.alertsHint],
         ] as const
       ).map(([key, title, hint]) => (
         <div key={key} className="flex min-h-12 items-center justify-between gap-3">

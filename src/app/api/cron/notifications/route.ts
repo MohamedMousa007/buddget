@@ -16,6 +16,9 @@ import { emitNotification } from '@/lib/server/emitNotification'
 import { evaluateSubscriptionAlerts, renderSubscriptionAlert } from '@/lib/notifications/evaluateSubscriptionAlerts'
 import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionMapper'
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
+import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
+import { evaluateGoalAlerts, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
+import { median } from '@/lib/goals/fundingScenario'
 
 export const maxDuration = 60
 
@@ -37,7 +40,7 @@ export async function GET(request: Request) {
   for (let offset = 0; ; offset += PAGE) {
     const { data: settingsRows, error } = await service
       .from('user_settings')
-      .select('user_id, language, month_start_day, sub_due_reminders, sub_price_alerts')
+      .select('user_id, language, month_start_day, sub_due_reminders, sub_price_alerts, goal_alerts')
       .range(offset, offset + PAGE - 1)
     if (error) {
       console.error('[cron/notifications] user_settings query failed', error)
@@ -119,6 +122,49 @@ export async function GET(request: Request) {
             push: { data: { kind: 'notification', notifType: a.type }, collapseKey: a.dedupeKey.slice(0, 60) },
           })
           if (created) emitted++
+        }
+      }
+
+      // Behind-plan goals: one alert a month, after the second missed cycle.
+      if ((s.goal_alerts as boolean | null) ?? true) {
+        const { data: goalRows } = await service
+          .from('goals').select('*').eq('user_id', userId).is('deleted_at', null).eq('status', 'active').neq('funding_mode', 'manual')
+        if (goalRows && goalRows.length > 0) {
+          const ids = goalRows.map((g) => g.id as string)
+          const [runsR, summaryR, accR] = await Promise.all([
+            service.from('goal_allocation_runs').select('goal_id, period, planned, amount').in('goal_id', ids),
+            service.from('savings_month_summary').select('saved, currency').eq('user_id', userId).order('month_key', { ascending: false }).limit(3),
+            service.from('savings_accounts').select('id, current_balance, currency').eq('user_id', userId).is('deleted_at', null),
+          ])
+          const runsByGoal: Record<string, { period: string; planned: number; amount: number }[]> = {}
+          for (const r of runsR.data ?? []) {
+            ;(runsByGoal[r.goal_id as string] ??= []).push({ period: r.period as string, planned: Number(r.planned), amount: Number(r.amount) })
+          }
+          const summaries = summaryR.data ?? []
+          const goals = goalRows.map(goalFromRow)
+          const alerts = evaluateGoalAlerts({
+            today: now,
+            goals,
+            runsByGoal,
+            enabled: true,
+            // Same-currency only: no FX on the server here, so a cross-currency goal gets no suggested amounts.
+            usualKeepFor: (g) => {
+              const same = summaries.filter((x) => x.currency === g.currency).map((x) => Number(x.saved))
+              return same.length ? median(same) : null
+            },
+            currentFor: (g) =>
+              g.manualCurrentAmount +
+              (accR.data ?? []).filter((a) => g.linkedSavingsAccountIds.includes(a.id as string) && a.currency === g.currency).reduce((sum, a) => sum + Number(a.current_balance), 0),
+          })
+          for (const a of alerts) {
+            const { title, body } = renderGoalAlert(dict, a)
+            const { created } = await emitNotification(service, {
+              userId, category: a.type, severity: a.severity, dedupeKey: a.dedupeKey, title, body,
+              metadata: { goalId: a.goalId },
+              push: { data: { kind: 'notification', notifType: a.type }, collapseKey: a.dedupeKey.slice(0, 60) },
+            })
+            if (created) emitted++
+          }
         }
       }
 

@@ -2087,6 +2087,36 @@ export interface Dictionary {
     confirmDelete: string
     deleteGoal: string
     celebration: (name: string) => string
+    notify: {
+      milestoneTitle: (name: string, pct: number) => string
+      milestoneBody: (name: string, pct: number, amount: string) => string
+      achievedTitle: (name: string) => string
+      achievedBody: (name: string, amount: string) => string
+      behindTitle: (name: string) => string
+      behindBody: (name: string, n: number, quarterly: boolean, moveTo: string | null, raise: string | null) => string
+      progressLabel: string
+      progressHint: string
+      alertsLabel: string
+      alertsHint: string
+    }
+    celebrate: {
+      cheerTitle: (pct: number) => string
+      cheerBody: (name: string, amount: string) => string
+      keepGoing: string
+      streakChip: (n: number) => string
+      nextChip: (pct: number) => string
+      kicker: string
+      youDidIt: string
+      summary: (name: string, months: number) => string
+      statMonths: string
+      statDeposits: string
+      statStreak: string
+      setNext: string
+      share: string
+      shareText: (name: string) => string
+      moveToWealth: string
+      close: string
+    }
     detail: {
       more: string
       kindSave: string
