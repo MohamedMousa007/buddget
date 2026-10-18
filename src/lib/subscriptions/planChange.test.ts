@@ -38,9 +38,9 @@ describe('planForAmount', () => {
   })
 
   it('will not compare a USD-quoted plan to a charge in another currency', () => {
-    // ChatGPT Plus is $20 worldwide; a 20 EGP charge is not that plan.
+    // ChatGPT Plus web is $20 in the Gulf; a 20 AED charge is not that plan.
     const chatgpt: Sub = {
-      brandKey: 'chatgpt_plus', catalogRegion: 'egypt', currency: 'EGP',
+      brandKey: 'chatgpt_plus', catalogRegion: 'uae', currency: 'AED',
       planId: 'chatgpt_plus_plus', amount: 20,
     }
     expect(planForAmount(chatgpt, 20)).toBeNull()

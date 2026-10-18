@@ -1,0 +1,326 @@
+[
+ {
+  "id": "tabby",
+  "name": "Tabby / Tabby Plus",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://tabby.ai/en-AE/help-business/marketing/marketing-guidelines",
+   "https://docs.tabby.ai/marketing/brand-assets"
+  ],
+  "paraphrase": "Tabby marketing guidelines page (UAE) is addressed to merchants: use official logos/colours, do not alter. Says nothing on permission or on non-merchant referential use; points to a separate brand book (not read). docs.tabby.ai brand-assets page itself returned 404 on fetch; only a search summary supports it.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Guidance is for merchants/partners, so no positive evidence for a third-party tracker. Brand book and Tabby website T&Cs not read (T&C URLs 404). Ask Tabby partnerships for written OK if the logo matters."
+ },
+ {
+  "id": "tamara",
+  "name": "Tamara",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://files.tamara.co/public/merchant/merchant-kit-10102025/tamara-merchant-kit-en.pdf"
+  ],
+  "paraphrase": "Tamara merchant kit (Oct 2025 PDF) aimed at merchants: keep gradient logo unaltered, approved colours only, preserve clear space. PDF text could not be extracted by my tools; contents known only from a search summary.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Merchant-only kit; no third-party/referential statement verified. Tamara site terms not reached (404)."
+ },
+ {
+  "id": "fitness_time",
+  "name": "Fitness Time (Leejam)",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.leejam.com.sa"
+  ],
+  "paraphrase": "Leejam site reachable; no terms/logo page found (guessed terms URLs 404).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "No policy found; unknown is not allowed. Listed company, active brand."
+ },
+ {
+  "id": "golds_gym",
+  "name": "Gold's Gym",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.goldsgym.com"
+  ],
+  "paraphrase": "No terms-of-use page reachable at tried URLs (404); no brand-use page found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Franchised global brand; licensing-heavy. Unknown."
+ },
+ {
+  "id": "anytime_fitness",
+  "name": "Anytime Fitness",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.anytimefitness.com/terms-of-use/"
+  ],
+  "paraphrase": "Terms of Use: trademarks, service marks and trade dress on the site are owned by Anytime Fitness and others; nothing grants a licence to use any displayed trademark without prior written permission of the owner.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "Explicit written-permission requirement for any trademark use; we have no permission. US-site terms, but the group brand is global."
+ },
+ {
+  "id": "absher",
+  "name": "Absher",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://absher.sa"
+  ],
+  "paraphrase": "absher.sa redirects (302); no logo/IP terms found; searches returned nothing from MOI/NIC.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Government/transport-authority mark; no logo-use page found. Such marks often carry statutory or regulatory protection and a tracker tile could imply official affiliation. Ministry of Interior platform; implying affiliation is the main risk."
+ },
+ {
+  "id": "sadad",
+  "name": "Sadad",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.sama.gov.sa/en-us/payment/pages/sadad.aspx"
+  ],
+  "paraphrase": "sadad.com redirects to SAMA's payment page; no logo-use rules found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Government/transport-authority mark; no logo-use page found. Such marks often carry statutory or regulatory protection and a tracker tile could imply official affiliation. Central-bank-linked scheme brand."
+ },
+ {
+  "id": "the_national",
+  "name": "The National",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.thenationalnews.com/terms-and-conditions/"
+  ],
+  "paraphrase": "Terms: site material, including images, is protected by copyright/trademark and owned by The National FZ LLC; use other than personal, non-commercial use is a violation and prohibited.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "Commercial use of site material expressly prohibited. Masthead is a newspaper title mark; initials only."
+ },
+ {
+  "id": "gulf_news",
+  "name": "Gulf News",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://gulfnews.com/about-gulf-news/term-conditions",
+   "https://store.gulfnews.com/terms-conditions1"
+  ],
+  "paraphrase": "Per search summary, Gulf News store terms bar copying/reproducing site content except for personal use without owner's prior written permission; no logo-specific clause seen. Main terms page not read directly (guessed URLs 404).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Leans restrictive (likely RED if main terms mirror the store terms) but not verified; treat as unsafe."
+ },
+ {
+  "id": "etisalat_uae",
+  "name": "e& (Etisalat) Mobile UAE",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.eand.com/en/terms-and-conditions.html"
+  ],
+  "paraphrase": "Website T&Cs: site content (incl. images) is protected by copyright and trademark; may not be copied, reproduced, republished or transmitted without Etisalat's prior written permission; personal use only, no commercial use. No separate brand-centre page found (guessed URL 404).",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Telecom operator, UAE-regulated; no referential-use carve-out. e& rebrand marks also strongly guarded."
+ },
+ {
+  "id": "du_mobile",
+  "name": "du Mobile (postpaid)",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.du.ae/privacypolicy"
+  ],
+  "paraphrase": "du privacy policy has no IP/logo text; main T&C/legal pages not reached. No brand portal found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown, not allowed. Same operator risk profile as e&."
+ },
+ {
+  "id": "du_home",
+  "name": "du Home Internet (fibre and 5G)",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.du.ae/privacypolicy"
+  ],
+  "paraphrase": "As du_mobile: no du brand/logo page or IP clause found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown."
+ },
+ {
+  "id": "etisalat_elife",
+  "name": "e& eLife home fibre",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.eand.com/en/terms-and-conditions.html"
+  ],
+  "paraphrase": "Same e&/Etisalat website T&Cs: no reproduction of site content without prior written permission; personal use only.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Product sub-brand of e&; same restrictions."
+ },
+ {
+  "id": "virgin_uae",
+  "name": "Virgin Mobile UAE",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.virginmobile.ae/legal/"
+  ],
+  "paraphrase": "Legal hub lists documents only; footer claims all rights reserved; no logo clause seen. Virgin mark is licensed from Virgin Enterprises (group trademark policy not reviewed).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Licensed-mark brand adds a second owner."
+ },
+ {
+  "id": "smiles_uae",
+  "name": "Smiles (e& rewards)",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.eand.com/en/terms-and-conditions.html"
+  ],
+  "paraphrase": "No Smiles-specific terms reachable (guessed URL 404); parent e& terms prohibit reproduction without permission.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "e& group brand; treat like e&."
+ },
+ {
+  "id": "deliveroo_plus",
+  "name": "Deliveroo Plus",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://a.storyblok.com/f/62776/x/627b5853d1/uae_terms-of-service-june-2026-docx-en-ar-c-docx.pdf"
+  ],
+  "paraphrase": "Deliveroo UAE terms of service PDF (June 2026) exists but IP section not read; deliveroo.ae returned 403 to curl.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown. Deliveroo is large and litigious about marks generally (not verified for trackers)."
+ },
+ {
+  "id": "fitness_first",
+  "name": "Fitness First",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://uae.fitnessfirstme.com/terms-and-condition"
+  ],
+  "paraphrase": "Conditions of Use: Fitness First owns site text and graphics; no incorporating any part into another work. Nothing on trademarks or logos specifically.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Restrictive on reuse of site content; no referential-use permission."
+ },
+ {
+  "id": "gymnation",
+  "name": "Gymnation",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://gymnation.com"
+  ],
+  "paraphrase": "No terms page reachable (404); no brand page found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown."
+ },
+ {
+  "id": "classpass",
+  "name": "ClassPass",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://classpass.com/terms"
+  ],
+  "paraphrase": "Terms exist (US version updated Oct 2025) but returned 403 to curl; trademark clause not read. Only a third-party logo site claimed written permission is required (unverified).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown; Mindbody/ClassPass is a US company with standard marks policy."
+ },
+ {
+  "id": "salik",
+  "name": "Salik",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.rta.ae/wps/portal/rta/ae/home/terms-and-conditions"
+  ],
+  "paraphrase": "RTA terms page loaded but showed no content; salik.rta.ae unreachable. No logo rules found. RTA identity manual exists but only as an unverified third-party copy.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Government/transport-authority mark; no logo-use page found. Such marks often carry statutory or regulatory protection and a tracker tile could imply official affiliation. Dubai government emblem law (2025) restricts the Dubai emblem for commercial use; applicability to Salik/RTA marks not established."
+ },
+ {
+  "id": "darb",
+  "name": "Darb",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.rta.ae/wps/portal/rta/ae/home/terms-and-conditions"
+  ],
+  "paraphrase": "No Darb (Abu Dhabi ITC toll) logo/terms page found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Government/transport-authority mark; no logo-use page found. Such marks often carry statutory or regulatory protection and a tracker tile could imply official affiliation."
+ },
+ {
+  "id": "nol_card",
+  "name": "Nol card",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.nol.ae"
+  ],
+  "paraphrase": "nol.ae homepage reachable, no logo or IP page found; RTA-owned scheme.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Government/transport-authority mark; no logo-use page found. Such marks often carry statutory or regulatory protection and a tracker tile could imply official affiliation."
+ },
+ {
+  "id": "hafilat",
+  "name": "Hafilat",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.hafilat.ae"
+  ],
+  "paraphrase": "hafilat.ae reachable; no logo/IP terms found (guessed terms URL 404). Abu Dhabi ITC scheme.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Government/transport-authority mark; no logo-use page found. Such marks often carry statutory or regulatory protection and a tracker tile could imply official affiliation."
+ }
+]

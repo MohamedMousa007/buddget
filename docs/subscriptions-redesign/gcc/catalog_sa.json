@@ -1,0 +1,4904 @@
+[
+ {
+  "id": "netflix",
+  "name": "Netflix",
+  "name_ar": "نتفليكس",
+  "category": "Video streaming",
+  "aliases": [
+   "NETFLIX.COM",
+   "NETFLIX",
+   "Netflix International B.V.",
+   "NETFLIX SERVICES",
+   "نتفليكس"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "netflix_basic",
+    "name": "Basic",
+    "cycle": "monthly",
+    "price": 35,
+    "currency": "SAR",
+    "sar_approx": 35,
+    "vat": "incl",
+    "notes": "720p, 1 screen",
+    "source_url": "https://help.netflix.com/en/node/24926/sa",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "netflix_standard",
+    "name": "Standard",
+    "cycle": "monthly",
+    "price": 49,
+    "currency": "SAR",
+    "sar_approx": 49,
+    "vat": "incl",
+    "notes": "1080p, 2 screens",
+    "source_url": "https://help.netflix.com/en/node/24926/sa",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "netflix_premium",
+    "name": "Premium",
+    "cycle": "monthly",
+    "price": 71,
+    "currency": "SAR",
+    "sar_approx": 71,
+    "vat": "incl",
+    "notes": "4K, 4 screens",
+    "source_url": "https://help.netflix.com/en/node/24926/sa",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard, mada (debit), Apple Pay; stc/Mobily/Zain carrier billing and Netflix gift cards in KSA (not re-verified)",
+  "cancel_url_or_hint": "netflix.com/cancelplan",
+  "notes": "No ad-supported tier listed on the SA/AE help pages (only Basic/Standard/Premium).",
+  "logo_file": "../logos/netflix.svg"
+ },
+ {
+  "id": "spotify",
+  "name": "Spotify",
+  "name_ar": "سبوتيفاي",
+  "category": "Music & audio",
+  "aliases": [
+   "SPOTIFY",
+   "SPOTIFY AB",
+   "SPOTIFY P1*",
+   "Spotify Premium",
+   "سبوتيفاي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "spotify_standard",
+    "name": "Premium Standard",
+    "cycle": "monthly",
+    "price": 23.99,
+    "currency": "SAR",
+    "sar_approx": 23.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.spotify.com/sa-en/premium/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "spotify_platinum",
+    "name": "Premium Platinum (up to 3 accounts)",
+    "cycle": "monthly",
+    "price": 59.99,
+    "currency": "SAR",
+    "sar_approx": 59.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.spotify.com/sa-en/premium/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "spotify_student",
+    "name": "Premium Student",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "SAR",
+    "sar_approx": 12.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.spotify.com/sa-en/premium/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "spotify_standard_prepaid_1y",
+    "name": "Premium Standard prepaid 1 year (no auto-renew)",
+    "cycle": "yearly",
+    "price": 239,
+    "currency": "SAR",
+    "sar_approx": 239,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.spotify.com/sa-en/premium/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard, mada, Apple Pay, mobile operator billing (offered on page), prepaid 12-month pass",
+  "cancel_url_or_hint": "spotify.com/account/subscription/cancel",
+  "notes": "Only Standard, Platinum and Student are offered (no Duo/Family plan listed on sa-en or ae-en pages). 6 months at 11.99 SAR promo for new users in KSA (to 8 Nov 2026).",
+  "logo_file": "../logos/spotify.svg"
+ },
+ {
+  "id": "apple_music",
+  "name": "Apple Music",
+  "name_ar": "أبل ميوزك",
+  "category": "Music & audio",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE MUSIC",
+   "ITUNES.COM/BILL",
+   "ابل ميوزك"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "apple_music_individual",
+    "name": "Individual",
+    "cycle": "monthly",
+    "price": 23.99,
+    "currency": "SAR",
+    "sar_approx": 23.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/apple-music/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "apple_music_family",
+    "name": "Family",
+    "cycle": "monthly",
+    "price": 39.99,
+    "currency": "SAR",
+    "sar_approx": 39.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/apple-music/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "apple_music_student",
+    "name": "Student",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "SAR",
+    "sar_approx": 12.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/apple-music/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Apple ID balance, Visa/Mastercard/mada via Apple Pay, carrier billing",
+  "cancel_url_or_hint": "Settings > Apple ID > Subscriptions",
+  "notes": "Statement shows APPLE.COM/BILL for all Apple services.",
+  "logo_file": "../logos/apple_music.svg"
+ },
+ {
+  "id": "icloud",
+  "name": "iCloud+",
+  "name_ar": "آيكلاود",
+  "category": "Software & productivity",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "ICLOUD",
+   "ITUNES.COM/BILL",
+   "ايكلاود",
+   "آيكلاود"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "icloud_50gb",
+    "name": "50GB",
+    "cycle": "monthly",
+    "price": 3.99,
+    "currency": "SAR",
+    "sar_approx": 3.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/icloud/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_200gb",
+    "name": "200GB",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "SAR",
+    "sar_approx": 12.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/icloud/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_2tb",
+    "name": "2TB",
+    "cycle": "monthly",
+    "price": 44.99,
+    "currency": "SAR",
+    "sar_approx": 44.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/icloud/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_6tb",
+    "name": "6TB",
+    "cycle": "monthly",
+    "price": 129.99,
+    "currency": "SAR",
+    "sar_approx": 129.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/icloud/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "icloud_12tb",
+    "name": "12TB",
+    "cycle": "monthly",
+    "price": 269.99,
+    "currency": "SAR",
+    "sar_approx": 269.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.apple.com/sa/icloud/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Apple ID balance, cards via Apple Pay",
+  "cancel_url_or_hint": "Settings > Apple ID > iCloud > Manage Storage > Change plan > Downgrade",
+  "notes": "iCloud+ includes Apple TV and Apple Arcade in both countries (per apple.com/sa|ae/icloud). apple.com/ae|sa/apple-one redirects to iCloud+: Apple One bundles are not sold.",
+  "logo_file": "../logos/icloud.svg"
+ },
+ {
+  "id": "playstation_plus",
+  "name": "PlayStation Plus",
+  "name_ar": "بلايستيشن بلس",
+  "category": "Gaming",
+  "aliases": [
+   "PLAYSTATION NETWORK",
+   "SONY INTERACTIVE ENTERTAINMENT",
+   "PLAYSTATION PLUS",
+   "SIE",
+   "بلايستيشن"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "ps_plus_essential_1m",
+    "name": "Essential 1 month",
+    "cycle": "monthly",
+    "price": 33.99,
+    "currency": "SAR",
+    "sar_approx": 33.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_essential_3m",
+    "name": "Essential 3 months",
+    "cycle": "quarterly",
+    "price": 85.99,
+    "currency": "SAR",
+    "sar_approx": 85.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_essential_12m",
+    "name": "Essential 12 months",
+    "cycle": "yearly",
+    "price": 243.99,
+    "currency": "SAR",
+    "sar_approx": 243.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_extra_1m",
+    "name": "Extra 1 month",
+    "cycle": "monthly",
+    "price": 49.99,
+    "currency": "SAR",
+    "sar_approx": 49.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_extra_3m",
+    "name": "Extra 3 months",
+    "cycle": "quarterly",
+    "price": 141.99,
+    "currency": "SAR",
+    "sar_approx": 141.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_extra_12m",
+    "name": "Extra 12 months",
+    "cycle": "yearly",
+    "price": 399.99,
+    "currency": "SAR",
+    "sar_approx": 399.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_deluxe_1m",
+    "name": "Deluxe 1 month",
+    "cycle": "monthly",
+    "price": 59.99,
+    "currency": "SAR",
+    "sar_approx": 59.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_deluxe_3m",
+    "name": "Deluxe 3 months",
+    "cycle": "quarterly",
+    "price": 164.99,
+    "currency": "SAR",
+    "sar_approx": 164.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ps_plus_deluxe_12m",
+    "name": "Deluxe 12 months",
+    "cycle": "yearly",
+    "price": 469.99,
+    "currency": "SAR",
+    "sar_approx": 469.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.playstation.com/en-sa/ps-plus/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "PSN wallet top-up cards, Visa/Mastercard/mada, Apple Pay",
+  "cancel_url_or_hint": "PlayStation Store > Subscriptions > Cancel (or account.sonyentertainmentnetwork.com)",
+  "notes": "Per-store pricing: a SA-store account pays SAR, a UAE-store account AED. Tiers: Essential / Extra / Deluxe.",
+  "logo_file": "../logos/playstation_plus.svg"
+ },
+ {
+  "id": "amazon_prime",
+  "name": "Amazon Prime (amazon.sa / amazon.ae)",
+  "name_ar": "أمازون برايم",
+  "category": "Video streaming",
+  "aliases": [
+   "AMAZON PRIME",
+   "AMZN PRIME",
+   "PRIME VIDEO",
+   "AMAZON.AE",
+   "AMAZON.SA",
+   "AMAZON DIGITAL",
+   "امازون برايم",
+   "أمازون"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "prime_monthly",
+    "name": "Prime",
+    "cycle": "monthly",
+    "price": 16,
+    "currency": "SAR",
+    "sar_approx": 16,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.amazon.sa/prime",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "prime_yearly",
+    "name": "Prime",
+    "cycle": "yearly",
+    "price": 140,
+    "currency": "SAR",
+    "sar_approx": 140,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.amazon.sa/prime",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada, Apple Pay, Amazon gift balance",
+  "cancel_url_or_hint": "amazon.sa|amazon.ae > Account > Prime > End membership",
+  "notes": "Prime = shipping + Prime Video + Prime Gaming; AE membership page also lists Deliveroo Plus (AED 228/yr value) as a perk. Intro offers: 3 months at 8/month.",
+  "logo_file": "../logos/amazon_prime_video.svg"
+ },
+ {
+  "id": "disney_plus",
+  "name": "Disney+",
+  "name_ar": "ديزني بلس",
+  "category": "Video streaming",
+  "aliases": [
+   "DISNEY PLUS",
+   "DISNEYPLUS",
+   "DISNEY+",
+   "DISNEY STREAMING",
+   "ديزني بلس",
+   "ديزني"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "disney_monthly",
+    "name": "Disney+",
+    "cycle": "monthly",
+    "price": 49.99,
+    "currency": "SAR",
+    "sar_approx": 49.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.disneyplus.com/en-sa",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "disney_yearly",
+    "name": "Disney+",
+    "cycle": "yearly",
+    "price": 449.9,
+    "currency": "SAR",
+    "sar_approx": 449.9,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.disneyplus.com/en-sa",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard, Apple Pay, App Store/Google Play, operator bundles (stc, du, e&)",
+  "cancel_url_or_hint": "disneyplus.com > Account > Subscription",
+  "notes": "disneyplus.com help states the same figure (49.99 / 449.90 per year) for both countries.",
+  "logo_file": "../logos/disney_plus.svg"
+ },
+ {
+  "id": "apple_tv",
+  "name": "Apple TV (Apple TV+)",
+  "name_ar": "أبل تي في",
+  "category": "Video streaming",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE TV+",
+   "APPLE TV",
+   "ابل تي في",
+   "ابل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "via Apple ID",
+  "cancel_url_or_hint": "Settings > Apple ID > Subscriptions",
+  "notes": "apple.com/sa|ae/apple-tv-plus: \"Apple TV is available with an iCloud+ subscription\"; no standalone AED/SAR price is shown on the page (standalone availability unverified). Do not prefill a standalone price. apple.com/ae and /sa say Apple TV is available with iCloud+ (included); no standalone AED/SAR price found. See icloud.",
+  "logo_file": "../logos/apple_tv_plus.svg"
+ },
+ {
+  "id": "apple_one",
+  "name": "Apple One",
+  "name_ar": "أبل ون",
+  "category": "Software & productivity",
+  "aliases": [
+   "APPLE.COM/BILL"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "n/a",
+  "cancel_url_or_hint": "n/a",
+  "notes": "Not sold in KSA/UAE: apple.com/sa|ae/apple-one redirects to the iCloud+ page.",
+  "logo_file": "../logos/icloud.svg"
+ },
+ {
+  "id": "microsoft_365",
+  "name": "Microsoft 365",
+  "name_ar": "مايكروسوفت 365",
+  "category": "Software & productivity",
+  "aliases": [
+   "MICROSOFT*MICROSOFT 365",
+   "MSFT *MICROSOFT 365",
+   "MICROSOFT*SUBSCRIPTION",
+   "MICROSOFT 365",
+   "MSFT *E0",
+   "MICROSOFT*OFFICE",
+   "مايكروسوفت"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "ms365_personal_y",
+    "name": "Personal",
+    "cycle": "yearly",
+    "price": 429.99,
+    "currency": "SAR",
+    "sar_approx": 429.99,
+    "vat": "incl",
+    "notes": "\"429.99 SAR/year\"",
+    "source_url": "https://www.microsoft.com/en-sa/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5bf",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ms365_personal_m",
+    "name": "Personal",
+    "cycle": "monthly",
+    "price": 42.99,
+    "currency": "SAR",
+    "sar_approx": 42.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.microsoft.com/en-sa/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5bf",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ms365_family_y",
+    "name": "Family",
+    "cycle": "yearly",
+    "price": 559.99,
+    "currency": "SAR",
+    "sar_approx": 559.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.microsoft.com/en-sa/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5dm",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "ms365_family_m",
+    "name": "Family",
+    "cycle": "monthly",
+    "price": 55.99,
+    "currency": "SAR",
+    "sar_approx": 55.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.microsoft.com/en-sa/microsoft-365/p/microsoft-365-personal/cfq7ttc0k5dm",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada, Apple Pay",
+  "cancel_url_or_hint": "account.microsoft.com/services > Cancel subscription",
+  "notes": "UAE Microsoft Store page (en-ae) displays no price (reads 2026-10-17).",
+  "logo_file": "../logos/microsoft_365.svg"
+ },
+ {
+  "id": "shahid",
+  "name": "Shahid (MBC)",
+  "name_ar": "شاهد",
+  "category": "Video streaming",
+  "aliases": [
+   "SHAHID",
+   "MBC SHAHID",
+   "SHAHID.NET",
+   "MBC GROUP",
+   "APPLE.COM/BILL",
+   "GOOGLE *MBC Shahid",
+   "شاهد",
+   "ام بي سي شاهد"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "shahid_vip",
+    "name": "Shahid VIP",
+    "cycle": "monthly",
+    "price": 44.99,
+    "currency": "SAR",
+    "sar_approx": 44.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id879915134",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "shahid_vip_sports",
+    "name": "Shahid VIP | Sports",
+    "cycle": "monthly",
+    "price": 69.99,
+    "currency": "SAR",
+    "sar_approx": 69.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id879915134",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "shahid_ultimate",
+    "name": "Shahid Ultimate",
+    "cycle": "monthly",
+    "price": 89.99,
+    "currency": "SAR",
+    "sar_approx": 89.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id879915134",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "shahid_vip_bigtime",
+    "name": "Shahid VIP | BigTime",
+    "cycle": "monthly",
+    "price": 54.99,
+    "currency": "SAR",
+    "sar_approx": 54.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id879915134",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "shahid_vip_yearly",
+    "name": "Shahid VIP (yearly)",
+    "cycle": "yearly",
+    "price": 449.99,
+    "currency": "SAR",
+    "sar_approx": 449.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id879915134",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play subscriptions, or shahid.net account, or operator (stc/du/e&) direct billing",
+  "notes": "Web (shahid.net) geolocates to EGP here; prices below are App Store storefront prices, web may be lower. stc Saudi add-on Shahid VIP ~30 SAR/month seen on stc home page (unverified).",
+  "logo_file": "../logos/shahid_vip.svg"
+ },
+ {
+  "id": "stc_tv",
+  "name": "stc tv / stc play",
+  "name_ar": "stc tv",
+  "category": "Video streaming",
+  "aliases": [
+   "STC TV",
+   "STC PLAY",
+   "INTIGRAL",
+   "JAWWY",
+   "APPLE.COM/BILL",
+   "stc tv",
+   "اس تي سي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "stc_tv_lite",
+    "name": "stc tv Lite/Premium (promo)",
+    "cycle": "monthly",
+    "price": 15.0,
+    "currency": "SAR",
+    "sar_approx": 15.0,
+    "vat": "unknown",
+    "notes": "stc official: special offer 15 SAR/month; App Store 'Premium Monthly Subscription' SAR 15",
+    "source_url": "https://STC.COM.SA/content/stc/sa/en/personal/lifestyle/stctv.html",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "stc_tv_monthly",
+    "name": "stc tv Monthly (App Store)",
+    "cycle": "monthly",
+    "price": 32.99,
+    "currency": "SAR",
+    "sar_approx": 32.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id1315586892",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "stc bill, card, Apple/Google billing",
+  "cancel_url_or_hint": "App Store/Google Play, or stc bill (mystc app)",
+  "notes": "Jawwy TV rebranded to stc tv; free with some stc Mofawtar/Tamayouz plans, 15 SAR/month special offer on stc.com.sa.",
+  "logo_file": "logos/stc.jpg"
+ },
+ {
+  "id": "jawwy_tv",
+  "name": "Jawwy TV",
+  "name_ar": "جوّي",
+  "category": "Video streaming",
+  "aliases": [
+   "JAWWY",
+   "جوي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "See stc tv",
+  "notes": "Rebranded to stc tv; no separate plans.",
+  "logo_file": "logos/jawwy_tv.png"
+ },
+ {
+  "id": "osn_plus",
+  "name": "OSN+",
+  "name_ar": "او اس ان بلس",
+  "category": "Video streaming",
+  "aliases": [
+   "OSN",
+   "OSN+",
+   "OSNPLUS",
+   "OSN STREAMING",
+   "APPLE.COM/BILL",
+   "او اس ان"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "osn_plus_standard",
+    "name": "OSN+ Standard",
+    "cycle": "monthly",
+    "price": 48.99,
+    "currency": "SAR",
+    "sar_approx": 48.99,
+    "vat": "unknown",
+    "notes": "Mobily + App Store agree",
+    "source_url": "https://mobily.com.sa/web/en/personal/mobile/direct-billing-services/osn",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_plus_premium",
+    "name": "OSN+ Premium",
+    "cycle": "monthly",
+    "price": 69.99,
+    "currency": "SAR",
+    "sar_approx": 69.99,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://mobily.com.sa/web/en/personal/mobile/direct-billing-services/osn",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "osn_plus_standard_ads",
+    "name": "OSN+ Standard with ads",
+    "cycle": "monthly",
+    "price": 34.99,
+    "currency": "SAR",
+    "sar_approx": 34.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id862390640",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "osn_plus_mobile",
+    "name": "OSN+ Mobile",
+    "cycle": "monthly",
+    "price": 34.99,
+    "currency": "SAR",
+    "sar_approx": 34.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id862390640",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "osn_plus_standard_yearly",
+    "name": "OSN+ Standard yearly",
+    "cycle": "yearly",
+    "price": 489.99,
+    "currency": "SAR",
+    "sar_approx": 489.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id862390640",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "osn_plus_premium_yearly",
+    "name": "OSN+ Premium yearly",
+    "cycle": "yearly",
+    "price": 699.99,
+    "currency": "SAR",
+    "sar_approx": 699.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id862390640",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Mobily/stc direct billing, Apple/Google",
+  "cancel_url_or_hint": "App Store/Google Play, osnplus.com account, or operator billing (Mobily keyword cancel)",
+  "notes": "osnplus.com geolocates; prices from Mobily official page and App Store SA/AE storefronts.",
+  "logo_file": "../logos/osn_plus.svg"
+ },
+ {
+  "id": "starzplay",
+  "name": "STARZPLAY",
+  "name_ar": "ستارزبلاي",
+  "category": "Video streaming",
+  "aliases": [
+   "STARZPLAY",
+   "STARZ PLAY",
+   "PLAYCO ENTERTAINMENT",
+   "APPLE.COM/BILL",
+   "ستارزبلاي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "starzplay_basic",
+    "name": "STARZPLAY Monthly",
+    "cycle": "monthly",
+    "price": 45.99,
+    "currency": "SAR",
+    "sar_approx": 45.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web); multiple SKUs listed",
+    "source_url": "https://apps.apple.com/sa/app/id962284784",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "starzplay_max",
+    "name": "STARZPLAY MAX",
+    "cycle": "monthly",
+    "price": 49.99,
+    "currency": "SAR",
+    "sar_approx": 49.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web); multiple SKUs listed",
+    "source_url": "https://apps.apple.com/sa/app/id962284784",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "starzplay_sports",
+    "name": "STARZPLAY Sports",
+    "cycle": "monthly",
+    "price": 44.99,
+    "currency": "SAR",
+    "sar_approx": 44.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web); multiple SKUs listed",
+    "source_url": "https://apps.apple.com/sa/app/id962284784",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "starzplay_plus",
+    "name": "STARZPLAY PLUS",
+    "cycle": "monthly",
+    "price": 34.99,
+    "currency": "SAR",
+    "sar_approx": 34.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web); multiple SKUs listed",
+    "source_url": "https://apps.apple.com/sa/app/id962284784",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play, starzplay.com, operator billing (e& bundles)",
+  "notes": "App Store lists several legacy monthly SKUs; main tiers below.",
+  "logo_file": "../logos/starzplay.svg"
+ },
+ {
+  "id": "anghami",
+  "name": "Anghami Plus",
+  "name_ar": "أنغامي",
+  "category": "Music & audio",
+  "aliases": [
+   "ANGHAMI",
+   "ANGHAMI PLUS",
+   "APPLE.COM/BILL",
+   "GOOGLE *Anghami",
+   "أنغامي",
+   "انغامي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "anghami_plus",
+    "name": "Anghami Plus",
+    "cycle": "monthly",
+    "price": 22.99,
+    "currency": "SAR",
+    "sar_approx": 22.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id545395155",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "anghami_student",
+    "name": "Anghami Plus Student",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "SAR",
+    "sar_approx": 11.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id545395155",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "anghami_lite",
+    "name": "Anghami Plus Lite",
+    "cycle": "monthly",
+    "price": 3.99,
+    "currency": "SAR",
+    "sar_approx": 3.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id545395155",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play or anghami.com account, operator billing",
+  "notes": "Prime members in KSA/UAE get Anghami Plus promo.",
+  "logo_file": "../logos/anghami.svg"
+ },
+ {
+  "id": "tod",
+  "name": "TOD by beIN",
+  "name_ar": "تود",
+  "category": "Video streaming",
+  "aliases": [
+   "TOD",
+   "BEIN MEDIA GROUP",
+   "TOD FOR ADVERTISING",
+   "APPLE.COM/BILL",
+   "تود"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play or tod.tv",
+  "notes": "SA price not verified (App Store SA returned no SKUs).",
+  "logo_file": "logos/tod.svg"
+ },
+ {
+  "id": "beinsports",
+  "name": "beIN CONNECT",
+  "name_ar": "بي اوت كونكت",
+  "category": "Video streaming",
+  "aliases": [
+   "BEIN",
+   "BEIN SPORTS",
+   "BEIN CONNECT",
+   "BEIN MEDIA",
+   "بي ان"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "beIN account / operator",
+  "notes": "UAE 2023 (The National): Premium Dh110, Kick Off Dh73, Together Dh48 per month; no SAR source; KSA availability restricted.",
+  "logo_file": "../logos/beinsports.svg"
+ },
+ {
+  "id": "crunchyroll",
+  "name": "Crunchyroll",
+  "name_ar": "كرانشي رول",
+  "category": "Video streaming",
+  "aliases": [
+   "CRUNCHYROLL",
+   "CRUNCHYROLL.COM",
+   "APPLE.COM/BILL",
+   "كرانشي رول"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "crunchyroll_fan",
+    "name": "Crunchyroll Fan",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "SAR",
+    "sar_approx": 19.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id329913454",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "crunchyroll_mega_fan",
+    "name": "Crunchyroll Mega Fan",
+    "cycle": "monthly",
+    "price": 23.99,
+    "currency": "SAR",
+    "sar_approx": 23.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id329913454",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "crunchyroll_ultimate_fan",
+    "name": "Crunchyroll Ultimate Fan",
+    "cycle": "monthly",
+    "price": 59.99,
+    "currency": "SAR",
+    "sar_approx": 59.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id329913454",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "crunchyroll_mega_fan_yearly",
+    "name": "Crunchyroll Mega Fan yearly",
+    "cycle": "yearly",
+    "price": 209.99,
+    "currency": "SAR",
+    "sar_approx": 209.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id329913454",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play or crunchyroll.com",
+  "notes": "",
+  "logo_file": "../logos/crunchyroll.svg"
+ },
+ {
+  "id": "viu",
+  "name": "Viu",
+  "name_ar": "فيو",
+  "category": "Video streaming",
+  "aliases": [
+   "VIU",
+   "VUCLIP",
+   "VIU PREMIUM",
+   "APPLE.COM/BILL",
+   "فيو"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "viu_premium",
+    "name": "Viu Premium",
+    "cycle": "monthly",
+    "price": 29.99,
+    "currency": "SAR",
+    "sar_approx": 29.99,
+    "vat": "unknown",
+    "notes": "Mobily SA page lists SAR 30/month; App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id1044543328",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "viu_premium_yearly",
+    "name": "Viu Premium yearly",
+    "cycle": "yearly",
+    "price": 239.99,
+    "currency": "SAR",
+    "sar_approx": 239.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id1044543328",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play, Mobily keyword cancel",
+  "notes": "",
+  "logo_file": "../logos/viu.svg"
+ },
+ {
+  "id": "youtube_premium",
+  "name": "YouTube Premium",
+  "name_ar": "يوتيوب بريميوم",
+  "category": "Video streaming",
+  "aliases": [
+   "GOOGLE *YouTubePremium",
+   "GOOGLE *YOUTUBE PREMIUM",
+   "GOOGLE YOUTUBEPREMIUM",
+   "YOUTUBE PREMIUM",
+   "GOOGLE*YOUTUBE",
+   "APPLE.COM/BILL",
+   "يوتيوب بريميوم"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "youtube_premium_individual_ios",
+    "name": "YouTube Premium Individual (iOS)",
+    "cycle": "monthly",
+    "price": 39.99,
+    "currency": "SAR",
+    "sar_approx": 39.99,
+    "vat": "unknown",
+    "notes": "App Store SA; web price unverified",
+    "source_url": "https://apps.apple.com/sa/app/id544007664",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "youtube_premium_family_ios",
+    "name": "YouTube Premium Family (iOS)",
+    "cycle": "monthly",
+    "price": 74.99,
+    "currency": "SAR",
+    "sar_approx": 74.99,
+    "vat": "unknown",
+    "notes": "App Store SA; web price unverified",
+    "source_url": "https://apps.apple.com/sa/app/id544007664",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "youtube_premium_lite_ios",
+    "name": "YouTube Premium Lite (iOS)",
+    "cycle": "monthly",
+    "price": 21.99,
+    "currency": "SAR",
+    "sar_approx": 21.99,
+    "vat": "unknown",
+    "notes": "App Store SA",
+    "source_url": "https://apps.apple.com/sa/app/id544007664",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "youtube.com/paid_memberships or Apple/Google subscriptions",
+  "notes": "UAE news: individual 26.99 to 29.99, family 49.99 to 57.99 (Sept 2026). KSA web price not found; App Store SA/AE prices are higher (Apple billing).",
+  "logo_file": "../logos/youtube_premium.svg"
+ },
+ {
+  "id": "youtube_music",
+  "name": "YouTube Music Premium",
+  "name_ar": "يوتيوب ميوزك",
+  "category": "Music & audio",
+  "aliases": [
+   "GOOGLE *YouTubeMusic",
+   "GOOGLE *YOUTUBE MUSIC",
+   "YOUTUBE MUSIC",
+   "APPLE.COM/BILL",
+   "يوتيوب ميوزك"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "youtube_music_individual_ios",
+    "name": "YouTube Music (iOS)",
+    "cycle": "monthly",
+    "price": 31.99,
+    "currency": "SAR",
+    "sar_approx": 31.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id544007664",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "youtube.com/paid_memberships",
+  "notes": "Included in YouTube Premium.",
+  "logo_file": "../logos/youtube_music.svg"
+ },
+ {
+  "id": "hbo_max",
+  "name": "HBO Max",
+  "name_ar": "اتش بي او ماكس",
+  "category": "Video streaming",
+  "aliases": [
+   "HBO MAX",
+   "اتش بي او"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "n/a",
+  "notes": "Not available in KSA/UAE as a standalone service as of search; HBO content streams on OSN+.",
+  "logo_file": "../logos/hbo_max.svg"
+ },
+ {
+  "id": "weyyak",
+  "name": "Weyyak",
+  "name_ar": "وياك",
+  "category": "Video streaming",
+  "aliases": [
+   "WEYYAK",
+   "Z5X GLOBAL",
+   "APPLE.COM/BILL",
+   "وياك"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "weyyak_monthly",
+    "name": "Weyyak Monthly",
+    "cycle": "monthly",
+    "price": 18.99,
+    "currency": "SAR",
+    "sar_approx": 18.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id1226514781",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "weyyak_weekly",
+    "name": "Weyyak Weekly",
+    "cycle": "weekly",
+    "price": 5.99,
+    "currency": "SAR",
+    "sar_approx": 5.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id1226514781",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "weyyak_yearly",
+    "name": "Weyyak Yearly",
+    "cycle": "yearly",
+    "price": 149.99,
+    "currency": "SAR",
+    "sar_approx": 149.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id1226514781",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play",
+  "notes": "",
+  "logo_file": "logos/weyyak.png"
+ },
+ {
+  "id": "mubi",
+  "name": "Mubi",
+  "name_ar": "موبي",
+  "category": "Video streaming",
+  "aliases": [
+   "MUBI",
+   "MUBI.COM",
+   "موبي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "mubi.com account",
+  "notes": "No AED/SAR price found; USD 14.99/month standard seen on review site.",
+  "logo_file": "../logos/mubi.svg"
+ },
+ {
+  "id": "deezer",
+  "name": "Deezer",
+  "name_ar": "ديزر",
+  "category": "Music & audio",
+  "aliases": [
+   "DEEZER",
+   "DEEZER.COM",
+   "APPLE.COM/BILL",
+   "ديزر"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "deezer_premium",
+    "name": "Deezer Premium",
+    "cycle": "monthly",
+    "price": 27.99,
+    "currency": "SAR",
+    "sar_approx": 27.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id292738169",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "deezer_family",
+    "name": "Deezer Family",
+    "cycle": "monthly",
+    "price": 36.99,
+    "currency": "SAR",
+    "sar_approx": 36.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id292738169",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "App Store/Google Play or deezer.com",
+  "notes": "",
+  "logo_file": "../logos/deezer.svg"
+ },
+ {
+  "id": "audible",
+  "name": "Audible",
+  "name_ar": "اوديبل",
+  "category": "Music & audio",
+  "aliases": [
+   "AUDIBLE",
+   "AUDIBLE.COM",
+   "AUDIBLE*",
+   "APPLE.COM/BILL",
+   "اوديبل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "audible_standard_ios",
+    "name": "Audible iOS Standard Plan",
+    "cycle": "monthly",
+    "price": 39.99,
+    "currency": "SAR",
+    "sar_approx": 39.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id379693831",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "audible.com account / Apple subscriptions",
+  "notes": "GCC users get US/UK-style plans.",
+  "logo_file": "../logos/audible.svg"
+ },
+ {
+  "id": "storytel",
+  "name": "Storytel",
+  "name_ar": "ستوريتل",
+  "category": "Music & audio",
+  "aliases": [
+   "STORYTEL",
+   "STORYTEL AB",
+   "APPLE.COM/BILL",
+   "ستوريتل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "storytel_unlimited",
+    "name": "Storytel Unlimited",
+    "cycle": "monthly",
+    "price": 34.99,
+    "currency": "SAR",
+    "sar_approx": 34.99,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://storytel.com/sa/ar",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "storytel_unlimited_6m",
+    "name": "Storytel Unlimited 6 months",
+    "cycle": "quarterly",
+    "price": 192.0,
+    "currency": "SAR",
+    "sar_approx": 192.0,
+    "vat": "unknown",
+    "notes": "6-month cycle (save 9%)",
+    "source_url": "https://storytel.com/sa/ar",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "storytel_unlimited_yearly",
+    "name": "Storytel Unlimited yearly",
+    "cycle": "yearly",
+    "price": 299.0,
+    "currency": "SAR",
+    "sar_approx": 299.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://storytel.com/sa/ar",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "storytel.com account or App Store",
+  "notes": "SA plan name Unlimited; UAE billed in USD on web.",
+  "logo_file": "../logos/storytel.png"
+ },
+ {
+  "id": "kindle_unlimited",
+  "name": "Kindle Unlimited",
+  "name_ar": "كيندل انلميتد",
+  "category": "Music & audio",
+  "aliases": [
+   "AMAZON KINDLE UNLIMITED",
+   "KINDLE SVCS",
+   "AMAZON.AE",
+   "AMAZON.SA",
+   "كيندل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "amazon account > Memberships",
+  "notes": "Price not verified; amazon.ae/sa pages not scrapable. Availability in KSA/UAE unconfirmed.",
+  "logo_file": "../logos/kindle_unlimited.svg"
+ },
+ {
+  "id": "netflix_ads",
+  "name": "Netflix Standard with ads (note only)",
+  "name_ar": "نتفلكس",
+  "category": "Video streaming",
+  "aliases": [
+   "NETFLIX.COM",
+   "نتفلكس"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "netflix.com",
+  "notes": "No confirmed AED/SAR ads-tier price found; ignore unless lead verifies.",
+  "logo_file": "../logos/netflix.svg"
+ },
+ {
+  "id": "arab_news_plus",
+  "name": "Arab News+",
+  "name_ar": "عرب نيوز",
+  "category": "News & media",
+  "aliases": [
+   "ARAB NEWS",
+   "عرب نيوز"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "n/a",
+  "notes": "Price not found.",
+  "logo_file": "logos/arab_news.png"
+ },
+ {
+  "id": "nytimes",
+  "name": "The New York Times",
+  "name_ar": "نيويورك تايمز",
+  "category": "News & media",
+  "aliases": [
+   "NYTIMES",
+   "NYTIMES.COM",
+   "NYT DIGITAL",
+   "APPLE.COM/BILL",
+   "نيويورك تايمز"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "nytimes_news",
+    "name": "NYT News (iOS)",
+    "cycle": "monthly",
+    "price": 34.99,
+    "currency": "SAR",
+    "sar_approx": 34.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id284862083",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "nytimes_all_access",
+    "name": "NYT All Access (iOS)",
+    "cycle": "monthly",
+    "price": 49.99,
+    "currency": "SAR",
+    "sar_approx": 49.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id284862083",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "nytimes.com account / Apple subscriptions",
+  "notes": "",
+  "logo_file": "../logos/nytimes.svg"
+ },
+ {
+  "id": "medium",
+  "name": "Medium",
+  "name_ar": "ميديوم",
+  "category": "News & media",
+  "aliases": [
+   "MEDIUM",
+   "MEDIUM.COM",
+   "A MEDIUM CORPORATION",
+   "APPLE.COM/BILL",
+   "ميديوم"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "medium_member",
+    "name": "Medium Membership",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "SAR",
+    "sar_approx": 19.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web); cheaper SKUs 17.99/18.99 also listed",
+    "source_url": "https://apps.apple.com/sa/app/id828256236",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "medium_member_yearly",
+    "name": "Medium Membership yearly",
+    "cycle": "yearly",
+    "price": 199.99,
+    "currency": "SAR",
+    "sar_approx": 199.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id828256236",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "medium.com settings / Apple subscriptions",
+  "notes": "",
+  "logo_file": "../logos/medium.svg"
+ },
+ {
+  "id": "telegram_premium",
+  "name": "Telegram Premium",
+  "name_ar": "تيليجرام بريميوم",
+  "category": "Social & other",
+  "aliases": [
+   "TELEGRAM",
+   "TELEGRAM PREMIUM",
+   "APPLE.COM/BILL",
+   "GOOGLE *Telegram",
+   "تيليجرام"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "telegram_premium_monthly",
+    "name": "Telegram Premium",
+    "cycle": "monthly",
+    "price": 20.99,
+    "currency": "SAR",
+    "sar_approx": 20.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id686449807",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "Apple/Google subscriptions",
+  "notes": "",
+  "logo_file": "../logos/telegram_premium.svg"
+ },
+ {
+  "id": "x_premium",
+  "name": "X Premium",
+  "name_ar": "اكس بريميوم",
+  "category": "Social & other",
+  "aliases": [
+   "X CORP",
+   "TWITTER",
+   "X PREMIUM",
+   "APPLE.COM/BILL",
+   "X.COM",
+   "اكس"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "x_premium_basic",
+    "name": "X Basic",
+    "cycle": "monthly",
+    "price": 10.0,
+    "currency": "SAR",
+    "sar_approx": 10.0,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id333903271",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "x_premium_premium",
+    "name": "X Premium",
+    "cycle": "monthly",
+    "price": 30.0,
+    "currency": "SAR",
+    "sar_approx": 30.0,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id333903271",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "X settings / Apple subscriptions",
+  "notes": "",
+  "logo_file": "../logos/x_premium.svg"
+ },
+ {
+  "id": "snapchat_plus",
+  "name": "Snapchat+",
+  "name_ar": "سناب شات بلس",
+  "category": "Social & other",
+  "aliases": [
+   "SNAP INC",
+   "SNAPCHAT",
+   "SNAPCHAT+",
+   "APPLE.COM/BILL",
+   "GOOGLE *Snapchat",
+   "سناب"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "snapchat_plus_monthly",
+    "name": "Snapchat+",
+    "cycle": "monthly",
+    "price": 16.99,
+    "currency": "SAR",
+    "sar_approx": 16.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id447188370",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "Snapchat settings > Snapchat+",
+  "notes": "",
+  "logo_file": "../logos/snapchat_plus.svg"
+ },
+ {
+  "id": "tinder",
+  "name": "Tinder",
+  "name_ar": "تيندر",
+  "category": "Social & other",
+  "aliases": [
+   "TINDER",
+   "MATCH GROUP",
+   "APPLE.COM/BILL",
+   "GOOGLE *Tinder",
+   "تيندر"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "tinder_gold",
+    "name": "Tinder Gold",
+    "cycle": "monthly",
+    "price": 59.99,
+    "currency": "SAR",
+    "sar_approx": 59.99,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web); multiple durations/SKUs",
+    "source_url": "https://apps.apple.com/sa/app/id547702041",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "tinder_platinum",
+    "name": "Tinder Platinum",
+    "cycle": "monthly",
+    "price": 85.0,
+    "currency": "SAR",
+    "sar_approx": 85.0,
+    "vat": "unknown",
+    "notes": "App Store in-app price (Apple billing, often above web)",
+    "source_url": "https://apps.apple.com/sa/app/id547702041",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "Apple/Google subscriptions",
+  "notes": "",
+  "logo_file": "../logos/tinder.svg"
+ },
+ {
+  "id": "bumble",
+  "name": "Bumble",
+  "name_ar": "بامبل",
+  "category": "Social & other",
+  "aliases": [
+   "BUMBLE",
+   "BUMBLE TRADING",
+   "APPLE.COM/BILL",
+   "GOOGLE *Bumble",
+   "بامبل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Card, Apple/Google billing, STC Pay",
+  "cancel_url_or_hint": "Apple/Google subscriptions",
+  "notes": "SA storefront price not read.",
+  "logo_file": "../logos/bumble.svg"
+ },
+ {
+  "id": "stc",
+  "name": "stc Mobile (postpaid Mofawtar / Quicknet)",
+  "name_ar": "stc جوال مفوتر",
+  "category": "Telecom & internet",
+  "aliases": [
+   "STC",
+   "SAUDI TELECOM",
+   "STC SAUDI ARABIA",
+   "STC PAY",
+   "MYSTC",
+   "STC BILL",
+   "اس تي سي",
+   "شركة الاتصالات السعودية",
+   "إس تي سي",
+   "فاتورة stc"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "stc_basic_plus",
+    "name": "mofawtar basic+",
+    "cycle": "monthly",
+    "price": 90,
+    "currency": "SAR",
+    "sar_approx": 90,
+    "vat": "incl",
+    "notes": "10GB data, 15GB social, 300 min within stc; price may be promo window (page cites limited-time offers)",
+    "source_url": "https://www.stc.com.sa/en/personal/mobile/packages/postpaid.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_2_lite",
+    "name": "mofawtar 2 lite",
+    "cycle": "monthly",
+    "price": 145,
+    "currency": "SAR",
+    "sar_approx": 145,
+    "vat": "incl",
+    "notes": "25GB, 35GB social, unlimited stc calls; price may be promo window (page cites limited-time offers)",
+    "source_url": "https://www.stc.com.sa/en/personal/mobile/packages/postpaid.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_2_extra",
+    "name": "mofawtar 2 extra",
+    "cycle": "monthly",
+    "price": 180,
+    "currency": "SAR",
+    "sar_approx": 180,
+    "vat": "incl",
+    "notes": "55GB, unlimited social; price may be promo window (page cites limited-time offers)",
+    "source_url": "https://www.stc.com.sa/en/personal/mobile/packages/postpaid.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_3_plus",
+    "name": "mofawtar 3+",
+    "cycle": "monthly",
+    "price": 264.5,
+    "currency": "SAR",
+    "sar_approx": 264.5,
+    "vat": "incl",
+    "notes": "110GB, unlimited calls all networks, 2GB GCC roaming; price may be promo window (page cites limited-time offers)",
+    "source_url": "https://www.stc.com.sa/en/personal/mobile/packages/postpaid.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_flex",
+    "name": "mofawtar flex",
+    "cycle": "monthly",
+    "price": 370,
+    "currency": "SAR",
+    "sar_approx": 370,
+    "vat": "incl",
+    "notes": "150GB, 4GB roaming, 200 intl min; price may be promo window (page cites limited-time offers)",
+    "source_url": "https://www.stc.com.sa/en/personal/mobile/packages/postpaid.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_4_extra",
+    "name": "mofawtar 4 extra",
+    "cycle": "monthly",
+    "price": 460,
+    "currency": "SAR",
+    "sar_approx": 460,
+    "vat": "incl",
+    "notes": "Unlimited data, 10GB roaming, includes stc tv premium; price may be promo window (page cites limited-time offers)",
+    "source_url": "https://www.stc.com.sa/en/personal/mobile/packages/postpaid.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_max",
+    "name": "mofawtar max",
+    "cycle": "monthly",
+    "price": 920,
+    "currency": "SAR",
+    "sar_approx": 920,
+    "vat": "incl",
+    "notes": "Unlimited data and roaming, stc tv premium, 2 free multiSIM; price may be promo window (page cites limited-time offers)",
+    "source_url": "https://www.stc.com.sa/en/personal/mobile/packages/postpaid.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Bill via SADAD, mada, Visa/Mastercard, Apple Pay, stc pay wallet, mystc app auto-pay, Tamara/BNPL for devices",
+  "cancel_url_or_hint": "mystc app, call 900, or stc store; postpaid has no fixed term on Mofawtar but device/subsidy plans carry commitment",
+  "notes": "Prices on stc.com.sa include 15% VAT. Mofawtar 4 extra/max include stc tv premium. 'STC PAY' on statements is the wallet, not the telco bill.",
+  "logo_file": "logos/stc.jpg"
+ },
+ {
+  "id": "mobily",
+  "name": "Mobily Mobile (postpaid)",
+  "name_ar": "موبايلي جوال مفوتر",
+  "category": "Telecom & internet",
+  "aliases": [
+   "MOBILY",
+   "MOBILY KSA",
+   "ETIHAD ETISALAT",
+   "MOBILY BILL",
+   "موبايلي",
+   "اتحاد اتصالات",
+   "فاتورة موبايلي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "mobily_postpaid_200",
+    "name": "Postpaid 200",
+    "cycle": "monthly",
+    "price": 230,
+    "currency": "SAR",
+    "sar_approx": 230,
+    "vat": "incl",
+    "notes": "97GB, unlimited minutes, 200 SMS; setup fee 57.5 SAR",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/mobile/postpaid/postpaid-200",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_postpaid_400",
+    "name": "Postpaid 400",
+    "cycle": "monthly",
+    "price": 460,
+    "currency": "SAR",
+    "sar_approx": 460,
+    "vat": "incl",
+    "notes": "Unlimited data (FUP), 400 SMS; setup fee 57.5 SAR",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/mobile/postpaid/postpaid-400",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_postpaid_150",
+    "name": "Postpaid 150",
+    "cycle": "monthly",
+    "price": 172.5,
+    "currency": "SAR",
+    "sar_approx": 172.5,
+    "vat": "incl",
+    "notes": "56GB, unlimited minutes (via search snippet of official page)",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/mobile/postpaid/postpaid-150",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "mobily_postpaid_300",
+    "name": "Postpaid 300",
+    "cycle": "monthly",
+    "price": 345,
+    "currency": "SAR",
+    "sar_approx": 345,
+    "vat": "incl",
+    "notes": "150GB, unlimited minutes",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/mobile/postpaid/postpaid-300",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "mobily_postpaid_xstream",
+    "name": "Postpaid XStream",
+    "cycle": "monthly",
+    "price": 255,
+    "currency": "SAR",
+    "sar_approx": 255,
+    "vat": "incl",
+    "notes": "90GB; XStream tiers bundle streaming (OSN+/Mobily TV)",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/mobile/postpaid/postpaid-xstream",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "SADAD, mada, Visa/Mastercard, Apple Pay, Mobily app auto-pay, carrier balance (prepaid)",
+  "cancel_url_or_hint": "Mobily app, 1100 call, store; one-time setup fee SAR 57.5 on new postpaid",
+  "notes": "All Mobily prices VAT inclusive. Mobily site was partly under maintenance on 2026-10-17, so some tiers (65/100/XStream Plus/Max) not readable.",
+  "logo_file": "logos/mobily.png"
+ },
+ {
+  "id": "zain_ksa",
+  "name": "Zain KSA Mobile (postpaid)",
+  "name_ar": "زين السعودية جوال مفوتر",
+  "category": "Telecom & internet",
+  "aliases": [
+   "ZAIN",
+   "ZAIN KSA",
+   "ZAIN SAUDI",
+   "MOBILE TELECOM CO",
+   "زين",
+   "زين السعودية",
+   "شركة اتصالات الجوال"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "zain_postpaid_75",
+    "name": "Postpaid 75",
+    "cycle": "monthly",
+    "price": 75,
+    "currency": "SAR",
+    "sar_approx": 75,
+    "vat": "incl",
+    "notes": "10GB, 400 min; paid extra data SIM SAR 35/month",
+    "source_url": "https://shop.sa.zain.com/mobile-plans/voice/postpaid-voice-plans",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "zain_postpaid_120",
+    "name": "Postpaid 120",
+    "cycle": "monthly",
+    "price": 120,
+    "currency": "SAR",
+    "sar_approx": 120,
+    "vat": "incl",
+    "notes": "30GB, 1000 min; paid extra data SIM SAR 35/month",
+    "source_url": "https://shop.sa.zain.com/mobile-plans/voice/postpaid-voice-plans",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "zain_postpaid_180",
+    "name": "Postpaid 180",
+    "cycle": "monthly",
+    "price": 180,
+    "currency": "SAR",
+    "sar_approx": 180,
+    "vat": "incl",
+    "notes": "50GB, 1300 min; paid extra data SIM SAR 35/month",
+    "source_url": "https://shop.sa.zain.com/mobile-plans/voice/postpaid-voice-plans",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "zain_postpaid_250",
+    "name": "Postpaid 250",
+    "cycle": "monthly",
+    "price": 250,
+    "currency": "SAR",
+    "sar_approx": 250,
+    "vat": "incl",
+    "notes": "110GB, 1500 min, Bronze number, 2GB GCC roaming; paid extra data SIM SAR 35/month",
+    "source_url": "https://shop.sa.zain.com/mobile-plans/voice/postpaid-voice-plans",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "zain_postpaid_420",
+    "name": "Postpaid 420",
+    "cycle": "monthly",
+    "price": 420,
+    "currency": "SAR",
+    "sar_approx": 420,
+    "vat": "incl",
+    "notes": "Unlimited internet, Silver number, 8GB roaming; paid extra data SIM SAR 35/month",
+    "source_url": "https://shop.sa.zain.com/mobile-plans/voice/postpaid-voice-plans",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "zain_postpaid_650",
+    "name": "Postpaid 650",
+    "cycle": "monthly",
+    "price": 650,
+    "currency": "SAR",
+    "sar_approx": 650,
+    "vat": "incl",
+    "notes": "Unlimited, Gold number, device subsidy 4600; paid extra data SIM SAR 35/month",
+    "source_url": "https://shop.sa.zain.com/mobile-plans/voice/postpaid-voice-plans",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "zain_postpaid_black",
+    "name": "Black",
+    "cycle": "monthly",
+    "price": 1000,
+    "currency": "SAR",
+    "sar_approx": 1000,
+    "vat": "incl",
+    "notes": "Black: unlimited, Platinum number, 2 free data SIMs; paid extra data SIM SAR 35/month",
+    "source_url": "https://shop.sa.zain.com/mobile-plans/voice/postpaid-voice-plans",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "SADAD, mada, Visa/Mastercard, Apple Pay, Zain app auto-pay",
+  "cancel_url_or_hint": "Zain app, 959 call centre or store; refundable deposit may apply",
+  "notes": "Zain shop pages state 15% VAT included. Tier names Bronze/Silver/Gold/Platinum are vanity-number classes.",
+  "logo_file": "logos/zain_ksa.png"
+ },
+ {
+  "id": "salam_ksa",
+  "name": "Salam Mobile (postpaid)",
+  "name_ar": "سلام موبايل",
+  "category": "Telecom & internet",
+  "aliases": [
+   "SALAM",
+   "SALAM MOBILE",
+   "SALAM TELECOM",
+   "سلام",
+   "سلام موبايل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "salam_solo_74",
+    "name": "Solo 74",
+    "cycle": "monthly",
+    "price": 85.68,
+    "currency": "SAR",
+    "sar_approx": 85.68,
+    "vat": "incl",
+    "notes": "20GB data, 450 min (search snippet of official page)",
+    "source_url": "https://salammobile.sa/?p=3416",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "salam_solo_99",
+    "name": "Solo 99",
+    "cycle": "monthly",
+    "price": 113.85,
+    "currency": "SAR",
+    "sar_approx": 113.85,
+    "vat": "incl",
+    "notes": "35GB, 1000 min, per 30 days",
+    "source_url": "https://salammobile.sa/?p=4638",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "salam_solo_digital_esim",
+    "name": "Solo Digital eSIM",
+    "cycle": "monthly",
+    "price": 171.35,
+    "currency": "SAR",
+    "sar_approx": 171.35,
+    "vat": "incl",
+    "notes": "59GB, list price; 50% off first 3 months for new eSIM",
+    "source_url": "https://salammobile.sa/?p=3997",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, SADAD",
+  "cancel_url_or_hint": "Salam app / customer care",
+  "notes": "MVNO on Mobily network; Solo postpaid plans, prices incl VAT.",
+  "logo_file": "logos/salam_ksa.png"
+ },
+ {
+  "id": "virgin_ksa",
+  "name": "Virgin Mobile KSA",
+  "name_ar": "فيرجن موبايل السعودية",
+  "category": "Telecom & internet",
+  "aliases": [
+   "VIRGIN MOBILE",
+   "VIRGIN MOBILE KSA",
+   "VIRGIN MOBILE SAUDI",
+   "فيرجن موبايل",
+   "فيرجن"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "virgin_switch_120",
+    "name": "Switch 120",
+    "cycle": "monthly",
+    "price": 138,
+    "currency": "SAR",
+    "sar_approx": 138,
+    "vat": "incl",
+    "notes": "35GB, no contract; plans auto-switch with usage; 365 includes Starzplay or stcTV on listed tiers",
+    "source_url": "https://virginmobile.sa/en/switch-postpaid-plans/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "virgin_switch_150",
+    "name": "Switch 150",
+    "cycle": "monthly",
+    "price": 172.5,
+    "currency": "SAR",
+    "sar_approx": 172.5,
+    "vat": "incl",
+    "notes": "55GB, no contract; plans auto-switch with usage; 365 includes Starzplay or stcTV on listed tiers",
+    "source_url": "https://virginmobile.sa/en/switch-postpaid-plans/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "virgin_switch_180",
+    "name": "Switch 180",
+    "cycle": "monthly",
+    "price": 207,
+    "currency": "SAR",
+    "sar_approx": 207,
+    "vat": "incl",
+    "notes": "75GB, no contract; plans auto-switch with usage; 365 includes Starzplay or stcTV on listed tiers",
+    "source_url": "https://virginmobile.sa/en/switch-postpaid-plans/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "virgin_switch_200",
+    "name": "Switch 200",
+    "cycle": "monthly",
+    "price": 230,
+    "currency": "SAR",
+    "sar_approx": 230,
+    "vat": "incl",
+    "notes": "90GB, no contract; plans auto-switch with usage; 365 includes Starzplay or stcTV on listed tiers",
+    "source_url": "https://virginmobile.sa/en/switch-postpaid-plans/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "virgin_switch_250",
+    "name": "Switch 250",
+    "cycle": "monthly",
+    "price": 287.5,
+    "currency": "SAR",
+    "sar_approx": 287.5,
+    "vat": "incl",
+    "notes": "120GB, no contract; plans auto-switch with usage; 365 includes Starzplay or stcTV on listed tiers",
+    "source_url": "https://virginmobile.sa/en/switch-postpaid-plans/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "virgin_switch_300",
+    "name": "Switch 300",
+    "cycle": "monthly",
+    "price": 345,
+    "currency": "SAR",
+    "sar_approx": 345,
+    "vat": "incl",
+    "notes": "150GB, no contract; plans auto-switch with usage; 365 includes Starzplay or stcTV on listed tiers",
+    "source_url": "https://virginmobile.sa/en/switch-postpaid-plans/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "virgin_switch_365",
+    "name": "Switch 365",
+    "cycle": "monthly",
+    "price": 419.75,
+    "currency": "SAR",
+    "sar_approx": 419.75,
+    "vat": "incl",
+    "notes": "Unlimited, no contract; plans auto-switch with usage; 365 includes Starzplay or stcTV on listed tiers",
+    "source_url": "https://virginmobile.sa/en/switch-postpaid-plans/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "virgin_vnet_355",
+    "name": "Vnet 355 (5G home)",
+    "cycle": "monthly",
+    "price": 408.25,
+    "currency": "SAR",
+    "sar_approx": 408.25,
+    "vat": "incl",
+    "notes": "Unlimited 5G, 18-month commitment, free router",
+    "source_url": "https://virginmobile.sa/en/postpaid-broadband-en/",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, SADAD, Virgin app",
+  "cancel_url_or_hint": "Virgin Mobile app; switch/pause anytime, no contract on Switch plans (Vnet has 18-month commitment)",
+  "notes": "MVNO on stc network. Arabic homepage says prices exclude VAT, but English Switch table says 'Price (with VAT)': 250 plan = 287.5 SAR incl VAT.",
+  "logo_file": "logos/virgin_ksa.png"
+ },
+ {
+  "id": "lebara_ksa",
+  "name": "Lebara KSA",
+  "name_ar": "ليبارا السعودية",
+  "category": "Telecom & internet",
+  "aliases": [
+   "LEBARA",
+   "LEBARA KSA",
+   "LEBARA MOBILE",
+   "ليبارا"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, SADAD, voucher",
+  "cancel_url_or_hint": "Lebara app",
+  "notes": "Mostly prepaid; no official postpaid price list readable (JS site). Not verified.",
+  "logo_file": "logos/lebara_ksa.png"
+ },
+ {
+  "id": "stc_home",
+  "name": "stc Baity (home fiber and 5G)",
+  "name_ar": "stc بيتي",
+  "category": "Telecom & internet",
+  "aliases": [
+   "STC",
+   "STC BAITY",
+   "SAUDI TELECOM",
+   "STC HOME",
+   "بيتي",
+   "اس تي سي",
+   "stc بيتي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "stc_baity_fiber_basic",
+    "name": "baity fiber basic 300Mbps",
+    "cycle": "monthly",
+    "price": 287.5,
+    "currency": "SAR",
+    "sar_approx": 287.5,
+    "vat": "incl",
+    "notes": "free modem/install, stc tv",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_fiber_stream",
+    "name": "baity fiber stream 500Mbps",
+    "cycle": "monthly",
+    "price": 402.5,
+    "currency": "SAR",
+    "sar_approx": 402.5,
+    "vat": "incl",
+    "notes": "stc tv + 1 streaming sub of choice (Netflix/Disney+/Thmanyah/Shahid/OSN+)",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_fiber_ent",
+    "name": "baity fiber entertainment 500Mbps",
+    "cycle": "monthly",
+    "price": 460,
+    "currency": "SAR",
+    "sar_approx": 460,
+    "vat": "incl",
+    "notes": "stc tv + 2 streaming subs of choice",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_stream_lite",
+    "name": "baity stream lite 500Mbps",
+    "cycle": "monthly",
+    "price": 345,
+    "currency": "SAR",
+    "sar_approx": 345,
+    "vat": "incl",
+    "notes": "free modem, stc tv",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_data_lite",
+    "name": "baity data lite",
+    "cycle": "monthly",
+    "price": 30,
+    "currency": "SAR",
+    "sar_approx": 30,
+    "vat": "incl",
+    "notes": "1Mbps unlimited",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_5g_basic",
+    "name": "baity 5G basic 200Mbps",
+    "cycle": "monthly",
+    "price": 299,
+    "currency": "SAR",
+    "sar_approx": 299,
+    "vat": "incl",
+    "notes": "unlimited, stc tv",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_5g_ent",
+    "name": "baity 5G entertainment",
+    "cycle": "monthly",
+    "price": 353,
+    "currency": "SAR",
+    "sar_approx": 353,
+    "vat": "incl",
+    "notes": "stc tv + Thmanyah",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_5g_unl",
+    "name": "baity 5G unlimited",
+    "cycle": "monthly",
+    "price": 402.5,
+    "currency": "SAR",
+    "sar_approx": 402.5,
+    "vat": "incl",
+    "notes": "max 5G speed",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_ent_pro",
+    "name": "baity fiber entertainment pro 500Mbps",
+    "cycle": "monthly",
+    "price": 690,
+    "currency": "SAR",
+    "sar_approx": 690,
+    "vat": "incl",
+    "notes": "stc tv + 2 streaming subs, device offer up to 5520",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles-plus.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_stream_pro",
+    "name": "baity fiber stream pro 500Mbps",
+    "cycle": "monthly",
+    "price": 575,
+    "currency": "SAR",
+    "sar_approx": 575,
+    "vat": "incl",
+    "notes": "stc tv + 1 streaming sub",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles-plus.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_max",
+    "name": "baity fiber max 1Gbps",
+    "cycle": "monthly",
+    "price": 920,
+    "currency": "SAR",
+    "sar_approx": 920,
+    "vat": "incl",
+    "notes": "stc tv + 4 streaming subs",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles-plus.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_5g_pro",
+    "name": "baity 5G unlimited pro",
+    "cycle": "monthly",
+    "price": 696,
+    "currency": "SAR",
+    "sar_approx": 696,
+    "vat": "incl",
+    "notes": "stc tv + 1 streaming sub, device offer",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles-plus.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "stc_baity_5g_max",
+    "name": "baity 5G max",
+    "cycle": "monthly",
+    "price": 862,
+    "currency": "SAR",
+    "sar_approx": 862,
+    "vat": "incl",
+    "notes": "stc tv, MBC Shahid VIP, device offer",
+    "source_url": "https://www.stc.com.sa/content/stc/sa/en/personal/homepackages/baity-bundles-plus.html",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "SADAD, mada, Visa/Mastercard, Apple Pay, mystc auto-pay, Tamara for prepaid bundles",
+  "cancel_url_or_hint": "mystc app or call 900",
+  "notes": "Entertainment tiers bundle stc tv plus streaming choices (Netflix, Disney+, Thmanyah Premium, MBC Shahid, OSN+). Prices incl 15% VAT; first-offer 2 months noted on page.",
+  "logo_file": "logos/stc.jpg"
+ },
+ {
+  "id": "mobily_home",
+  "name": "Mobily Home Fiber / FTTR / 5G",
+  "name_ar": "موبايلي فايبر المنزلي",
+  "category": "Telecom & internet",
+  "aliases": [
+   "MOBILY",
+   "MOBILY FIBER",
+   "MOBILY HOME",
+   "موبايلي",
+   "موبايلي فايبر"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "mobily_fiber_200",
+    "name": "Home Fiber Postpaid 200",
+    "cycle": "monthly",
+    "price": 230,
+    "currency": "SAR",
+    "sar_approx": 230,
+    "vat": "incl",
+    "notes": "12 billing cycles contract; early fee 97.75/cycle",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_300",
+    "name": "Home Fiber Postpaid 300",
+    "cycle": "monthly",
+    "price": 172.5,
+    "currency": "SAR",
+    "sar_approx": 172.5,
+    "vat": "incl",
+    "notes": "promo 'starting from' price; standard 287.5 after offer",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_400",
+    "name": "Home Fiber Postpaid 400",
+    "cycle": "monthly",
+    "price": 207,
+    "currency": "SAR",
+    "sar_approx": 207,
+    "vat": "incl",
+    "notes": "promo 'starting from'; standard 345",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_500",
+    "name": "Home Fiber Postpaid 500",
+    "cycle": "monthly",
+    "price": 241.5,
+    "currency": "SAR",
+    "sar_approx": 241.5,
+    "vat": "incl",
+    "notes": "promo 'starting from'; standard 402.5",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_gamers",
+    "name": "Home Fiber Gamers 500Mbps",
+    "cycle": "monthly",
+    "price": 402.5,
+    "currency": "SAR",
+    "sar_approx": 402.5,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_1gb",
+    "name": "Home Fiber Postpaid 1Gb",
+    "cycle": "monthly",
+    "price": 552,
+    "currency": "SAR",
+    "sar_approx": 552,
+    "vat": "incl",
+    "notes": "promo 'starting from'; standard 920",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_fttr400",
+    "name": "Home FTTR 400",
+    "cycle": "monthly",
+    "price": 402.5,
+    "currency": "SAR",
+    "sar_approx": 402.5,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_fttr500",
+    "name": "Home FTTR 500",
+    "cycle": "monthly",
+    "price": 460,
+    "currency": "SAR",
+    "sar_approx": 460,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "mobily_fiber_fttr1g",
+    "name": "Home FTTR 1 Gbps",
+    "cycle": "monthly",
+    "price": 920,
+    "currency": "SAR",
+    "sar_approx": 920,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://www.mobily.com.sa/web/en/personal/home/fiber-postpaid/fiber-postpaid",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "SADAD, mada, Visa/Mastercard, Apple Pay, Mobily app",
+  "cancel_url_or_hint": "Mobily app/store; early-termination fee SAR 97.75 per remaining cycle",
+  "notes": "12 billing-cycle contract on 200/300 plans; free router, install, fixed voice; higher tiers bundle Mobily TV/OSN+/Prime.",
+  "logo_file": "logos/mobily.png"
+ },
+ {
+  "id": "zain_home",
+  "name": "Zain Home (5G and Fiber)",
+  "name_ar": "زين المنزل",
+  "category": "Telecom & internet",
+  "aliases": [
+   "ZAIN",
+   "ZAIN KSA",
+   "ZAIN HOME",
+   "زين",
+   "زين المنزل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "zain_fiber_lite",
+    "name": "Fiber Home Lite",
+    "cycle": "monthly",
+    "price": 199,
+    "currency": "SAR",
+    "sar_approx": 199,
+    "vat": "unknown",
+    "notes": "aggregator only; 18-month contract reported",
+    "source_url": "https://giraffy.com/ksa/en/providers/zain",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "zain_5g_basic",
+    "name": "5G Home Basic",
+    "cycle": "monthly",
+    "price": 199,
+    "currency": "SAR",
+    "sar_approx": 199,
+    "vat": "unknown",
+    "notes": "aggregator only",
+    "source_url": "https://giraffy.com/ksa/en/providers/zain",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "zain_5g_black",
+    "name": "5G Home Black",
+    "cycle": "monthly",
+    "price": 500,
+    "currency": "SAR",
+    "sar_approx": 500,
+    "vat": "unknown",
+    "notes": "aggregator only",
+    "source_url": "https://giraffy.com/ksa/en/providers/zain",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "SADAD, mada, Visa/Mastercard, Apple Pay",
+  "cancel_url_or_hint": "Zain app / 959",
+  "notes": "Official Zain home prices not readable; only aggregator figures (low). Fiber contracts reportedly 18 months.",
+  "logo_file": "logos/zain_ksa.png"
+ },
+ {
+  "id": "xbox_game_pass",
+  "name": "Xbox Game Pass",
+  "name_ar": "إكس بوكس غيم باس",
+  "category": "Gaming",
+  "aliases": [
+   "MICROSOFT*XBOX GAME PASS",
+   "MICROSOFT *XBOX",
+   "XBOX GAME PASS",
+   "MSFT *XBOX",
+   "مايكروسوفت اكس بوكس"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "xbox_game_pass_essential",
+    "name": "Game Pass Essential",
+    "cycle": "monthly",
+    "price": 29.99,
+    "currency": "SAR",
+    "sar_approx": 29.99,
+    "vat": "unknown",
+    "notes": "existing app listing 29.99/39.99/60.99 SAR; secondary source said Ultimate 84.99 SAR (Oct 2025) and a retailer 39.99 SAR promo; unverified",
+    "source_url": "https://tbreak.com/xbox-game-pass-price-increase-50-percent-ultimate-2999/",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "xbox_game_pass_premium",
+    "name": "Game Pass Premium",
+    "cycle": "monthly",
+    "price": 39.99,
+    "currency": "SAR",
+    "sar_approx": 39.99,
+    "vat": "unknown",
+    "notes": "existing app listing 29.99/39.99/60.99 SAR; secondary source said Ultimate 84.99 SAR (Oct 2025) and a retailer 39.99 SAR promo; unverified",
+    "source_url": "https://tbreak.com/xbox-game-pass-price-increase-50-percent-ultimate-2999/",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "xbox_game_pass_ultimate",
+    "name": "Game Pass Ultimate",
+    "cycle": "monthly",
+    "price": 60.99,
+    "currency": "SAR",
+    "sar_approx": 60.99,
+    "vat": "unknown",
+    "notes": "Conflicting: 60.99 (app), 84.99 (Oct 2025 news), 39.99 retailer promo. Unverified",
+    "source_url": "https://tbreak.com/xbox-game-pass-price-increase-50-percent-ultimate-2999/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "account.microsoft.com/services > Manage > Cancel",
+  "notes": "Tiers Essential/Premium/Ultimate/PC. Sources conflict on KSA price; Microsoft raised Ultimate to 29.99 USD in Oct 2025 then cut it in 2026 in some markets. Verify on official Xbox page.",
+  "logo_file": "../logos/xbox_game_pass.svg"
+ },
+ {
+  "id": "nintendo_switch_online",
+  "name": "Nintendo Switch Online",
+  "name_ar": "نينتندو سويتش أونلاين",
+  "category": "Gaming",
+  "aliases": [
+   "NINTENDO",
+   "NINTENDO *SWITCH ONLINE",
+   "NINTENDO ESHOP",
+   "نينتندو"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "nintendo_switch_online_individual_12m",
+    "name": "Individual 12 months",
+    "cycle": "yearly",
+    "price": 19.99,
+    "currency": "USD",
+    "sar_approx": 74.96,
+    "vat": "unknown",
+    "notes": "Global USD price; Middle East eShop local pricing unverified",
+    "source_url": "https://en-americas-support.nintendo.com/app/answers/detail/a_id/41194/p/989/c/973",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "nintendo_switch_online_family_12m",
+    "name": "Family 12 months",
+    "cycle": "yearly",
+    "price": 34.99,
+    "currency": "USD",
+    "sar_approx": 131.21,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://en-americas-support.nintendo.com/app/answers/detail/a_id/41194/p/989/c/973",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard, eShop gift cards, PayPal",
+  "cancel_url_or_hint": "Nintendo Account > Shop Menu > Auto-renewal off",
+  "notes": "UAE/KSA eShop sells in USD or regional cards; no official AED/SAR price found.",
+  "logo_file": "../logos/nintendo_switch_online.svg"
+ },
+ {
+  "id": "ea_play",
+  "name": "EA Play",
+  "name_ar": "إي إيه بلاي",
+  "category": "Gaming",
+  "aliases": [
+   "EA *PLAY",
+   "ELECTRONIC ARTS",
+   "EA.COM",
+   "اي ايه بلاي"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "ea_play_monthly",
+    "name": "EA Play",
+    "cycle": "monthly",
+    "price": 4.99,
+    "currency": "USD",
+    "sar_approx": 18.71,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.ea.com/ea-play",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "ea_play_yearly",
+    "name": "EA Play",
+    "cycle": "yearly",
+    "price": 29.99,
+    "currency": "USD",
+    "sar_approx": 112.46,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.ea.com/ea-play",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "ea.com > Account > Payment & Billing > Cancel",
+  "notes": "Billed in USD in GCC; unverified",
+  "logo_file": "../logos/ea_play.svg"
+ },
+ {
+  "id": "ubisoft_plus",
+  "name": "Ubisoft+",
+  "name_ar": "يوبيسوفت بلس",
+  "category": "Gaming",
+  "aliases": [
+   "UBISOFT",
+   "UBISOFT+",
+   "UBISOFT ENTERTAINMENT",
+   "يوبيسوفت"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "ubisoft_plus_classics",
+    "name": "Ubisoft+ Classics",
+    "cycle": "monthly",
+    "price": 7.99,
+    "currency": "USD",
+    "sar_approx": 29.96,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.ubisoft.com/en-us/ubisoft-plus",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "ubisoft_plus_premium",
+    "name": "Ubisoft+ Premium",
+    "cycle": "monthly",
+    "price": 17.99,
+    "currency": "USD",
+    "sar_approx": 67.46,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.ubisoft.com/en-us/ubisoft-plus",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "store.ubisoft.com account > Subscriptions",
+  "notes": "USD pricing; Classics tier 7.99 USD, Premium 17.99 USD (memory)",
+  "logo_file": "../logos/ubisoft_plus.svg"
+ },
+ {
+  "id": "roblox_premium",
+  "name": "Roblox Premium",
+  "name_ar": "روبلوكس بريميوم",
+  "category": "Gaming",
+  "aliases": [
+   "ROBLOX",
+   "ROBLOX.COM",
+   "APPLE.COM/BILL ROBLOX",
+   "GOOGLE *ROBLOX",
+   "روبلوكس"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "roblox_premium_450",
+    "name": "Premium 450 Robux",
+    "cycle": "monthly",
+    "price": 4.99,
+    "currency": "USD",
+    "sar_approx": 18.71,
+    "vat": "unknown",
+    "notes": "USD web price; app store local",
+    "source_url": "https://www.roblox.com/premium/membership",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "roblox_premium_1000",
+    "name": "Premium 1000 Robux",
+    "cycle": "monthly",
+    "price": 9.99,
+    "currency": "USD",
+    "sar_approx": 37.46,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.roblox.com/premium/membership",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "roblox_premium_2200",
+    "name": "Premium 2200 Robux",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "USD",
+    "sar_approx": 74.96,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.roblox.com/premium/membership",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "roblox.com Settings > Billing, or App Store/Google Play subscriptions",
+  "notes": "Tiers 450/1000/2200 Robux per month; local pricing not verified",
+  "logo_file": "../logos/roblox_premium.svg"
+ },
+ {
+  "id": "discord_nitro",
+  "name": "Discord Nitro",
+  "name_ar": "ديسكورد نيترو",
+  "category": "Gaming",
+  "aliases": [
+   "DISCORD",
+   "DISCORD.COM",
+   "DISCORD* NITRO",
+   "APPLE.COM/BILL DISCORD",
+   "GOOGLE *DISCORD",
+   "ديسكورد"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "discord_nitro_monthly_usd",
+    "name": "Nitro",
+    "cycle": "monthly",
+    "price": 9.99,
+    "currency": "USD",
+    "sar_approx": 37.46,
+    "vat": "unknown",
+    "notes": "SAR not read; web is USD",
+    "source_url": "https://discord.com/nitro",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "discord_nitro_basic_usd",
+    "name": "Nitro Basic",
+    "cycle": "monthly",
+    "price": 2.99,
+    "currency": "USD",
+    "sar_approx": 11.21,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://discord.com/nitro",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "Discord > User Settings > Subscriptions",
+  "notes": "AED prices read from App Store UAE storefront (store-billed, incl VAT). Web billing is USD.",
+  "logo_file": "../logos/discord_nitro.svg"
+ },
+ {
+  "id": "apple_arcade",
+  "name": "Apple Arcade",
+  "name_ar": "آبل أركيد",
+  "category": "Gaming",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE ARCADE",
+   "آبل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "apple_arcade_monthly",
+    "name": "Apple Arcade",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "SAR",
+    "sar_approx": 19.99,
+    "vat": "unknown",
+    "notes": "From memory; apple.com/sa not parsed",
+    "source_url": "https://www.apple.com/sa/apple-arcade/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Apple ID: card, Apple Pay, carrier billing",
+  "cancel_url_or_hint": "Settings > Apple ID > Subscriptions",
+  "notes": "Also included in Apple One tiers (not iCloud+ alone). Verify: Apple Arcade is part of Apple One, not iCloud+.",
+  "logo_file": "../logos/apple_arcade.svg"
+ },
+ {
+  "id": "google_play_pass",
+  "name": "Google Play Pass",
+  "name_ar": "جوجل بلاي باس",
+  "category": "Gaming",
+  "aliases": [
+   "GOOGLE *PLAY PASS",
+   "GOOGLE*PLAYPASS",
+   "GOOGLE PLAY",
+   "جوجل بلاي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Google Play: card, carrier billing, gift card",
+  "cancel_url_or_hint": "Play Store > Payments & subscriptions > Subscriptions",
+  "notes": "Availability in KSA/UAE unverified; possibly not available",
+  "logo_file": "../logos/google_play_pass.svg"
+ },
+ {
+  "id": "google_one",
+  "name": "Google One / Google AI",
+  "name_ar": "جوجل ون",
+  "category": "Cloud & dev",
+  "aliases": [
+   "GOOGLE *Google One",
+   "GOOGLE *GOOGLE ONE",
+   "GOOGLE *Google AI",
+   "GOOGLE*GSUITE",
+   "جوجل ون"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "google_one_ai_pro",
+    "name": "Google AI Pro (2TB)",
+    "cycle": "monthly",
+    "price": 79.99,
+    "currency": "SAR",
+    "sar_approx": 79.99,
+    "vat": "unknown",
+    "notes": "SA not verified; estimate",
+    "source_url": "https://one.google.com/about/plans",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "google_one_ai_plus",
+    "name": "Google AI Plus",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "SAR",
+    "sar_approx": 19.99,
+    "vat": "unknown",
+    "notes": "Estimate",
+    "source_url": "https://one.google.com/about/plans",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "google_one_100gb",
+    "name": "Google One 100GB",
+    "cycle": "monthly",
+    "price": 7.99,
+    "currency": "SAR",
+    "sar_approx": 7.99,
+    "vat": "unknown",
+    "notes": "Memory; unverified",
+    "source_url": "https://one.google.com/about/plans",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Google Play/Google payments: card, carrier, gift card",
+  "cancel_url_or_hint": "one.google.com > Settings > Cancel membership",
+  "notes": "AI Plus/Pro/Ultra bundle Google One storage + Gemini.",
+  "logo_file": "../logos/google_one.svg"
+ },
+ {
+  "id": "gemini",
+  "name": "Gemini (Google AI plans)",
+  "name_ar": "جيميني",
+  "category": "AI tools",
+  "aliases": [
+   "GOOGLE *Google AI",
+   "GOOGLE *GOOGLE ONE",
+   "جوجل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Google payments",
+  "cancel_url_or_hint": "one.google.com > Cancel",
+  "notes": "Paid Gemini = Google AI Plus/Pro/Ultra; see google_one plans. No separate Gemini price.",
+  "logo_file": "../logos/google_ai_pro.svg"
+ },
+ {
+  "id": "dropbox",
+  "name": "Dropbox",
+  "name_ar": "دروب بوكس",
+  "category": "Cloud & dev",
+  "aliases": [
+   "DROPBOX",
+   "DROPBOX*",
+   "DROPBOX INC",
+   "دروب بوكس"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "dropbox_plus_y",
+    "name": "Plus (2TB)",
+    "cycle": "yearly",
+    "price": 119.88,
+    "currency": "USD",
+    "sar_approx": 449.55,
+    "vat": "unknown",
+    "notes": "~11.99/mo billed yearly; USD",
+    "source_url": "https://www.dropbox.com/plans",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "dropbox_plus_m",
+    "name": "Plus (2TB)",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "sar_approx": 44.96,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.dropbox.com/plans",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "dropbox.com Settings > Plan > Cancel",
+  "notes": "Billed in USD",
+  "logo_file": "../logos/dropbox.svg"
+ },
+ {
+  "id": "adobe_cc",
+  "name": "Adobe Creative Cloud",
+  "name_ar": "أدوبي كرييتف كلاود",
+  "category": "Software & productivity",
+  "aliases": [
+   "ADOBE",
+   "ADOBE *CREATIVE CLOUD",
+   "ADOBE SYSTEMS",
+   "ADOBE.COM",
+   "أدوبي"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "adobe_cc_all_apps",
+    "name": "All Apps",
+    "cycle": "monthly",
+    "price": 59.99,
+    "currency": "USD",
+    "sar_approx": 224.96,
+    "vat": "unknown",
+    "notes": "US price; GCC local price unverified",
+    "source_url": "https://www.adobe.com/creativecloud/plans.html",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "adobe_cc_single_app",
+    "name": "Single app",
+    "cycle": "monthly",
+    "price": 22.99,
+    "currency": "USD",
+    "sar_approx": 86.21,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.adobe.com/creativecloud/plans.html",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "account.adobe.com > Plans > Manage > Cancel (early cancel fee on annual-billed-monthly)",
+  "notes": "UAE/KSA have local-currency pricing on adobe.com/ae; not read",
+  "logo_file": "../logos/adobe_creative_cloud.svg"
+ },
+ {
+  "id": "canva",
+  "name": "Canva",
+  "name_ar": "كانفا",
+  "category": "Software & productivity",
+  "aliases": [
+   "CANVA",
+   "CANVA* ",
+   "APPLE.COM/BILL CANVA",
+   "GOOGLE *CANVA",
+   "كانفا"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "canva_pro_m",
+    "name": "Canva Pro",
+    "cycle": "monthly",
+    "price": 49.99,
+    "currency": "SAR",
+    "sar_approx": 49.99,
+    "vat": "unknown",
+    "notes": "Estimate; SA storefront not read",
+    "source_url": "https://www.canva.com/pricing/",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "canva_pro_y",
+    "name": "Canva Pro",
+    "cycle": "yearly",
+    "price": 449.99,
+    "currency": "SAR",
+    "sar_approx": 449.99,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.canva.com/pricing/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "canva.com Account settings > Billing > Cancel",
+  "notes": "AED read from App Store UAE storefront",
+  "logo_file": "../logos/canva.svg"
+ },
+ {
+  "id": "notion",
+  "name": "Notion",
+  "name_ar": "نوشن",
+  "category": "Software & productivity",
+  "aliases": [
+   "NOTION",
+   "NOTION LABS",
+   "NOTION.SO",
+   "نوشن"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "notion_plus_m",
+    "name": "Plus",
+    "cycle": "monthly",
+    "price": 12,
+    "currency": "USD",
+    "sar_approx": 45.0,
+    "vat": "unknown",
+    "notes": "10 USD/mo billed yearly; 12 monthly; Notion AI bundled in Business",
+    "source_url": "https://www.notion.com/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "Notion Settings > Plans > Downgrade/Cancel",
+  "notes": "USD billed",
+  "logo_file": "../logos/notion.svg"
+ },
+ {
+  "id": "zoom",
+  "name": "Zoom",
+  "name_ar": "زووم",
+  "category": "Software & productivity",
+  "aliases": [
+   "ZOOM.US",
+   "ZOOM VIDEO COMM",
+   "ZOOM.COM",
+   "زووم"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "zoom_pro_m",
+    "name": "Zoom Workplace Pro",
+    "cycle": "monthly",
+    "price": 16.99,
+    "currency": "USD",
+    "sar_approx": 63.71,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://zoom.us/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "zoom.us Account > Billing > Cancel",
+  "notes": "USD billed",
+  "logo_file": "../logos/zoom.svg"
+ },
+ {
+  "id": "slack",
+  "name": "Slack",
+  "name_ar": "سلاك",
+  "category": "Software & productivity",
+  "aliases": [
+   "SLACK",
+   "SLACK TECHNOLOGIES",
+   "SLACK.COM",
+   "سلاك"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "slack_pro_m",
+    "name": "Slack Pro (per user)",
+    "cycle": "monthly",
+    "price": 8.75,
+    "currency": "USD",
+    "sar_approx": 32.81,
+    "vat": "unknown",
+    "notes": "Per user, USD",
+    "source_url": "https://slack.com/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "Workspace admin: Settings > Billing > Cancel",
+  "notes": "USD billed, per user",
+  "logo_file": "../logos/slack.svg"
+ },
+ {
+  "id": "grammarly",
+  "name": "Grammarly",
+  "name_ar": "جرامرلي",
+  "category": "Software & productivity",
+  "aliases": [
+   "GRAMMARLY",
+   "GRAMMARLY.COM",
+   "جرامرلي"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "grammarly_pro_y",
+    "name": "Pro",
+    "cycle": "yearly",
+    "price": 144,
+    "currency": "USD",
+    "sar_approx": 540.0,
+    "vat": "unknown",
+    "notes": "12 USD/mo billed annually",
+    "source_url": "https://www.grammarly.com/plans",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "grammarly_pro_m",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 30,
+    "currency": "USD",
+    "sar_approx": 112.5,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.grammarly.com/plans",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "grammarly.com/account > Subscription > Cancel",
+  "notes": "USD billed",
+  "logo_file": "../logos/grammarly.svg"
+ },
+ {
+  "id": "figma",
+  "name": "Figma",
+  "name_ar": "فيجما",
+  "category": "Software & productivity",
+  "aliases": [
+   "FIGMA",
+   "FIGMA.COM",
+   "فيجما"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "figma_pro_full_m",
+    "name": "Professional Full seat",
+    "cycle": "monthly",
+    "price": 20,
+    "currency": "USD",
+    "sar_approx": 75.0,
+    "vat": "unknown",
+    "notes": "Per seat, 16 billed annually",
+    "source_url": "https://www.figma.com/pricing/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "Figma account settings > Billing",
+  "notes": "USD billed, per seat",
+  "logo_file": "../logos/figma.svg"
+ },
+ {
+  "id": "onepassword",
+  "name": "1Password",
+  "name_ar": "ون باسوورد",
+  "category": "Software & productivity",
+  "aliases": [
+   "1PASSWORD",
+   "AGILEBITS",
+   "AGILEBITS INC",
+   "ون باسوورد"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "onepassword_individual_y",
+    "name": "Individual",
+    "cycle": "yearly",
+    "price": 35.88,
+    "currency": "USD",
+    "sar_approx": 134.55,
+    "vat": "unknown",
+    "notes": "2.99/mo billed annually",
+    "source_url": "https://1password.com/pricing/password-manager",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "onepassword_families_y",
+    "name": "Families",
+    "cycle": "yearly",
+    "price": 59.88,
+    "currency": "USD",
+    "sar_approx": 224.55,
+    "vat": "unknown",
+    "notes": "4.99/mo billed annually",
+    "source_url": "https://1password.com/pricing/password-manager",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "my.1password.com > Billing > Cancel",
+  "notes": "USD billed",
+  "logo_file": "../logos/onepassword.svg"
+ },
+ {
+  "id": "bitwarden",
+  "name": "Bitwarden",
+  "name_ar": "بيتواردن",
+  "category": "Software & productivity",
+  "aliases": [
+   "BITWARDEN",
+   "BITWARDEN INC",
+   "بيتواردن"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "bitwarden_premium_y",
+    "name": "Premium",
+    "cycle": "yearly",
+    "price": 19.8,
+    "currency": "USD",
+    "sar_approx": 74.25,
+    "vat": "unknown",
+    "notes": "Verify; price rose from 10 to 19.80",
+    "source_url": "https://bitwarden.com/pricing/",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "bitwarden_families_y",
+    "name": "Families",
+    "cycle": "yearly",
+    "price": 47.88,
+    "currency": "USD",
+    "sar_approx": 179.55,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://bitwarden.com/pricing/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "vault.bitwarden.com > Subscription",
+  "notes": "USD billed",
+  "logo_file": "../logos/bitwarden.svg"
+ },
+ {
+  "id": "chatgpt",
+  "name": "ChatGPT",
+  "name_ar": "شات جي بي تي",
+  "category": "AI tools",
+  "aliases": [
+   "OPENAI *CHATGPT SUBSCR",
+   "OPENAI",
+   "CHATGPT SUBSCRIPTION",
+   "APPLE.COM/BILL OPENAI",
+   "GOOGLE *OPENAI",
+   "اوبن اي اي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "chatgpt_go",
+    "name": "ChatGPT Go",
+    "cycle": "monthly",
+    "price": 35.0,
+    "currency": "SAR",
+    "sar_approx": 35.0,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/chatgpt/id6448311069",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "chatgpt_plus",
+    "name": "ChatGPT Plus",
+    "cycle": "monthly",
+    "price": 89.99,
+    "currency": "SAR",
+    "sar_approx": 89.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/chatgpt/id6448311069",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "chatgpt_pro100",
+    "name": "ChatGPT Pro 100",
+    "cycle": "monthly",
+    "price": 429.99,
+    "currency": "SAR",
+    "sar_approx": 429.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/chatgpt/id6448311069",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "chatgpt_pro200",
+    "name": "ChatGPT Pro 200",
+    "cycle": "monthly",
+    "price": 899.99,
+    "currency": "SAR",
+    "sar_approx": 899.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/chatgpt/id6448311069",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "chatgpt_pro500",
+    "name": "ChatGPT Pro 500",
+    "cycle": "monthly",
+    "price": 2149.99,
+    "currency": "SAR",
+    "sar_approx": 2149.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/chatgpt/id6448311069",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "ChatGPT Settings > Manage subscription (or App Store/Play)",
+  "notes": "Prices below are App Store storefront (store-billed local currency, incl VAT). Web billing via card is typically USD.",
+  "logo_file": "../logos/chatgpt.svg"
+ },
+ {
+  "id": "claude",
+  "name": "Claude",
+  "name_ar": "كلود",
+  "category": "AI tools",
+  "aliases": [
+   "ANTHROPIC",
+   "CLAUDE.AI SUBSCRIPTION",
+   "ANTHROPIC, PBC",
+   "APPLE.COM/BILL ANTHROPIC",
+   "GOOGLE *ANTHROPIC",
+   "انثروبيك"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "claude_pro",
+    "name": "Claude Pro",
+    "cycle": "monthly",
+    "price": 89.99,
+    "currency": "SAR",
+    "sar_approx": 89.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/claude-by-anthropic/id6473753684",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "claude_pro_y",
+    "name": "Claude Pro",
+    "cycle": "yearly",
+    "price": 999.99,
+    "currency": "SAR",
+    "sar_approx": 999.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/claude-by-anthropic/id6473753684",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "claude_max5",
+    "name": "Claude Max 5x",
+    "cycle": "monthly",
+    "price": 499.99,
+    "currency": "SAR",
+    "sar_approx": 499.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/claude-by-anthropic/id6473753684",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "claude_max20",
+    "name": "Claude Max 20x",
+    "cycle": "monthly",
+    "price": 999.99,
+    "currency": "SAR",
+    "sar_approx": 999.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/claude-by-anthropic/id6473753684",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "claude.ai Settings > Billing > Cancel (or App Store/Play)",
+  "notes": "App Store local prices below; web billing is USD (Pro 20, Max 100/200).",
+  "logo_file": "../logos/claude_pro.svg"
+ },
+ {
+  "id": "perplexity",
+  "name": "Perplexity",
+  "name_ar": "بيربلكسيتي",
+  "category": "AI tools",
+  "aliases": [
+   "PERPLEXITY",
+   "PERPLEXITY AI",
+   "APPLE.COM/BILL PERPLEXITY",
+   "بيربلكسيتي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "perplexity_pro",
+    "name": "Perplexity Pro",
+    "cycle": "monthly",
+    "price": 89.99,
+    "currency": "SAR",
+    "sar_approx": 89.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/perplexity-ask-anything/id1668000334",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "perplexity_pro_y",
+    "name": "Perplexity Pro",
+    "cycle": "yearly",
+    "price": 899.99,
+    "currency": "SAR",
+    "sar_approx": 899.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/perplexity-ask-anything/id1668000334",
+    "checked_at": "2026-10-17",
+    "confidence": "high"
+   },
+   {
+    "id": "perplexity_max",
+    "name": "Perplexity Max",
+    "cycle": "yearly",
+    "price": 899.99,
+    "currency": "SAR",
+    "sar_approx": 899.99,
+    "vat": "incl",
+    "notes": "App Store KSA; the Max row in storefront shows 899.99, cycle unclear",
+    "source_url": "https://apps.apple.com/sa/app/perplexity-ask-anything/id1668000334",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "perplexity.ai Settings > Account > Manage subscription",
+  "notes": "App Store local prices",
+  "logo_file": "../logos/perplexity.svg"
+ },
+ {
+  "id": "cursor",
+  "name": "Cursor",
+  "name_ar": "كيرسر",
+  "category": "Cloud & dev",
+  "aliases": [
+   "CURSOR",
+   "ANYSPHERE",
+   "CURSOR.COM",
+   "ANYSPHERE INC",
+   "كيرسر"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "cursor_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 20,
+    "currency": "USD",
+    "sar_approx": 75.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://cursor.com/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "cursor_ultra",
+    "name": "Ultra",
+    "cycle": "monthly",
+    "price": 200,
+    "currency": "USD",
+    "sar_approx": 750.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://cursor.com/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "cursor.com/dashboard > Billing",
+  "notes": "USD billed",
+  "logo_file": "../logos/cursor.png"
+ },
+ {
+  "id": "github_copilot",
+  "name": "GitHub Copilot",
+  "name_ar": "جيتهاب كوبايلوت",
+  "category": "Cloud & dev",
+  "aliases": [
+   "GITHUB",
+   "GITHUB.COM",
+   "GITHUB, INC",
+   "GITHUB COPILOT",
+   "جيتهاب"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "github_copilot_pro_m",
+    "name": "Copilot Pro",
+    "cycle": "monthly",
+    "price": 10,
+    "currency": "USD",
+    "sar_approx": 37.5,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://github.com/features/copilot/plans",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "github.com/settings/billing > Copilot",
+  "notes": "USD billed; free tier exists",
+  "logo_file": "../logos/github_copilot.svg"
+ },
+ {
+  "id": "midjourney",
+  "name": "Midjourney",
+  "name_ar": "ميدجورني",
+  "category": "AI tools",
+  "aliases": [
+   "MIDJOURNEY",
+   "MIDJOURNEY INC",
+   "ميدجورني"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "midjourney_basic",
+    "name": "Basic",
+    "cycle": "monthly",
+    "price": 10,
+    "currency": "USD",
+    "sar_approx": 37.5,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://docs.midjourney.com/hc/en-us/articles/27870484040333",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "midjourney_standard",
+    "name": "Standard",
+    "cycle": "monthly",
+    "price": 30,
+    "currency": "USD",
+    "sar_approx": 112.5,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://docs.midjourney.com/hc/en-us/articles/27870484040333",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "midjourney_pro",
+    "name": "Pro",
+    "cycle": "monthly",
+    "price": 60,
+    "currency": "USD",
+    "sar_approx": 225.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://docs.midjourney.com/hc/en-us/articles/27870484040333",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "midjourney.com/account > Manage subscription",
+  "notes": "USD billed",
+  "logo_file": "../logos/midjourney.svg"
+ },
+ {
+  "id": "nordvpn",
+  "name": "NordVPN",
+  "name_ar": "نورد في بي إن",
+  "category": "Cloud & dev",
+  "aliases": [
+   "NORDVPN",
+   "NORDSEC",
+   "NORDVPN.COM",
+   "TEFINCOM",
+   "نورد"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "nordvpn_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "USD",
+    "sar_approx": 48.71,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://nordvpn.com/pricing/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app, also crypto",
+  "cancel_url_or_hint": "my.nordaccount.com > Billing > Subscriptions",
+  "notes": "USD billed, long-term deals vary",
+  "logo_file": "../logos/nordvpn.svg"
+ },
+ {
+  "id": "expressvpn",
+  "name": "ExpressVPN",
+  "name_ar": "اكسبرس في بي إن",
+  "category": "Cloud & dev",
+  "aliases": [
+   "EXPRESSVPN",
+   "EXPRESSVPN.COM",
+   "EXPRESS VPN",
+   "اكسبرس"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "expressvpn_monthly",
+    "name": "Monthly",
+    "cycle": "monthly",
+    "price": 12.95,
+    "currency": "USD",
+    "sar_approx": 48.56,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.expressvpn.com/order",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "expressvpn.com/subscriptions",
+  "notes": "USD billed",
+  "logo_file": "../logos/expressvpn.svg"
+ },
+ {
+  "id": "surfshark",
+  "name": "Surfshark",
+  "name_ar": "سيرفشارك",
+  "category": "Cloud & dev",
+  "aliases": [
+   "SURFSHARK",
+   "SURFSHARK.COM",
+   "SURFSHARK LTD",
+   "سيرفشارك"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "surfshark_monthly",
+    "name": "Starter monthly",
+    "cycle": "monthly",
+    "price": 15.45,
+    "currency": "USD",
+    "sar_approx": 57.94,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://surfshark.com/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "my.surfshark.com > Subscription",
+  "notes": "USD billed",
+  "logo_file": "../logos/surfshark.svg"
+ },
+ {
+  "id": "proton",
+  "name": "Proton",
+  "name_ar": "بروتون",
+  "category": "Cloud & dev",
+  "aliases": [
+   "PROTON",
+   "PROTON AG",
+   "PROTON.ME",
+   "بروتون"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "proton_unlimited_m",
+    "name": "Proton Unlimited",
+    "cycle": "monthly",
+    "price": 12.99,
+    "currency": "USD",
+    "sar_approx": 48.71,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://proton.me/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "account.proton.me > Dashboard > Cancel",
+  "notes": "Billed in USD/EUR/CHF",
+  "logo_file": "../logos/proton.svg"
+ },
+ {
+  "id": "duolingo",
+  "name": "Duolingo",
+  "name_ar": "دولينجو",
+  "category": "Education & learning",
+  "aliases": [
+   "DUOLINGO",
+   "DUOLINGO.COM",
+   "APPLE.COM/BILL DUOLINGO",
+   "GOOGLE *DUOLINGO",
+   "دولينجو"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "duolingo_super_y",
+    "name": "Super",
+    "cycle": "yearly",
+    "price": 209.99,
+    "currency": "SAR",
+    "sar_approx": 209.99,
+    "vat": "incl",
+    "notes": "App Store KSA",
+    "source_url": "https://apps.apple.com/sa/app/duolingo-language-lessons/id570060128",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "duolingo_super_m",
+    "name": "Super",
+    "cycle": "monthly",
+    "price": 34.99,
+    "currency": "SAR",
+    "sar_approx": 34.99,
+    "vat": "incl",
+    "notes": "49.99 also listed (likely Max monthly)",
+    "source_url": "https://apps.apple.com/sa/app/duolingo-language-lessons/id570060128",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "duolingo_max_y",
+    "name": "Max (est.)",
+    "cycle": "yearly",
+    "price": 299.99,
+    "currency": "SAR",
+    "sar_approx": 299.99,
+    "vat": "incl",
+    "notes": "Label unconfirmed",
+    "source_url": "https://apps.apple.com/sa/app/duolingo-language-lessons/id570060128",
+    "checked_at": "2026-10-17",
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "App Store/Play subscriptions or duolingo.com Settings",
+  "notes": "Prices from App Store storefront, KSA & UAE",
+  "logo_file": "../logos/duolingo.svg"
+ },
+ {
+  "id": "coursera_plus",
+  "name": "Coursera Plus",
+  "name_ar": "كورسيرا بلس",
+  "category": "Education & learning",
+  "aliases": [
+   "COURSERA",
+   "COURSERA.ORG",
+   "COURSERA INC",
+   "كورسيرا"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "coursera_plus_monthly",
+    "name": "Coursera Plus",
+    "cycle": "monthly",
+    "price": 59,
+    "currency": "USD",
+    "sar_approx": 221.25,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.coursera.org/courseraplus",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "coursera_plus_yearly",
+    "name": "Coursera Plus",
+    "cycle": "yearly",
+    "price": 399,
+    "currency": "USD",
+    "sar_approx": 1496.25,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.coursera.org/courseraplus",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "coursera.org Settings > Subscriptions",
+  "notes": "USD billed; id differs from Egypt catalog 'coursera'",
+  "logo_file": "../logos/coursera.svg"
+ },
+ {
+  "id": "linkedin_premium",
+  "name": "LinkedIn Premium",
+  "name_ar": "لينكد إن بريميوم",
+  "category": "Education & learning",
+  "aliases": [
+   "LINKEDIN",
+   "LINKEDIN PREMIUM",
+   "LINKEDIN SN",
+   "APPLE.COM/BILL LINKEDIN",
+   "لينكد إن"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "linkedin_premium_career_m",
+    "name": "Premium Career",
+    "cycle": "monthly",
+    "price": 179.99,
+    "currency": "SAR",
+    "sar_approx": 179.99,
+    "vat": "incl",
+    "notes": "99.99 also listed (likely annual-per-month/promo)",
+    "source_url": "https://apps.apple.com/sa/app/linkedin-network-job-finder/id288429040",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   },
+   {
+    "id": "linkedin_premium_business_m",
+    "name": "Premium Business",
+    "cycle": "monthly",
+    "price": 299.99,
+    "currency": "SAR",
+    "sar_approx": 299.99,
+    "vat": "incl",
+    "notes": "",
+    "source_url": "https://apps.apple.com/sa/app/linkedin-network-job-finder/id288429040",
+    "checked_at": "2026-10-17",
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "LinkedIn > Me > Premium > Manage > Cancel (or App Store)",
+  "notes": "App Store prices; several tiers, labels partly ambiguous",
+  "logo_file": "../logos/linkedin_premium.svg"
+ },
+ {
+  "id": "masterclass",
+  "name": "MasterClass",
+  "name_ar": "ماستر كلاس",
+  "category": "Education & learning",
+  "aliases": [
+   "MASTERCLASS",
+   "MASTERCLASS.COM",
+   "ماستر كلاس"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "masterclass_standard_y",
+    "name": "Standard",
+    "cycle": "yearly",
+    "price": 120,
+    "currency": "USD",
+    "sar_approx": 450.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.masterclass.com/plans",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "masterclass_plus_y",
+    "name": "Plus",
+    "cycle": "yearly",
+    "price": 180,
+    "currency": "USD",
+    "sar_approx": 675.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.masterclass.com/plans",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "masterclass.com Account > Cancel",
+  "notes": "USD billed",
+  "logo_file": "../logos/masterclass.svg"
+ },
+ {
+  "id": "skillshare",
+  "name": "Skillshare",
+  "name_ar": "سكيل شير",
+  "category": "Education & learning",
+  "aliases": [
+   "SKILLSHARE",
+   "SKILLSHARE.COM",
+   "سكيل شير"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "skillshare_annual",
+    "name": "Premium annual",
+    "cycle": "yearly",
+    "price": 168,
+    "currency": "USD",
+    "sar_approx": 630.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.skillshare.com/en/membership",
+    "checked_at": null,
+    "confidence": "low"
+   },
+   {
+    "id": "skillshare_monthly",
+    "name": "Premium monthly",
+    "cycle": "monthly",
+    "price": 32,
+    "currency": "USD",
+    "sar_approx": 120.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.skillshare.com/en/membership",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "skillshare.com/settings/payments",
+  "notes": "USD billed",
+  "logo_file": "../logos/skillshare.svg"
+ },
+ {
+  "id": "udemy",
+  "name": "Udemy",
+  "name_ar": "يوديمي",
+  "category": "Education & learning",
+  "aliases": [
+   "UDEMY",
+   "UDEMY.COM",
+   "UDEMY, INC",
+   "يوديمي"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "udemy_personal_m",
+    "name": "Personal Plan",
+    "cycle": "monthly",
+    "price": 20,
+    "currency": "USD",
+    "sar_approx": 75.0,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.udemy.com/personal-plan/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "Udemy Account > Subscriptions",
+  "notes": "Mostly one-time courses; Personal Plan USD",
+  "logo_file": "../logos/udemy.svg"
+ },
+ {
+  "id": "noon_academy",
+  "name": "Noon Academy",
+  "name_ar": "نون أكاديمي",
+  "category": "Education & learning",
+  "aliases": [
+   "NOON ACADEMY",
+   "NOONACADEMY",
+   "نون اكاديمي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Cards, mada, Apple Pay, STC Pay",
+  "cancel_url_or_hint": "In-app Subscription settings",
+  "notes": "KSA-native (Saudi). SAR prices not found.",
+  "logo_file": "logos/noon_academy.svg"
+ },
+ {
+  "id": "calm",
+  "name": "Calm",
+  "name_ar": "كالم",
+  "category": "Fitness & health",
+  "aliases": [
+   "CALM",
+   "CALM.COM",
+   "APPLE.COM/BILL CALM",
+   "GOOGLE *CALM",
+   "كالم"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "calm_yearly",
+    "name": "Calm Premium",
+    "cycle": "yearly",
+    "price": 69.99,
+    "currency": "USD",
+    "sar_approx": 262.46,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.calm.com/pricing",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "App Store/Play subscriptions or calm.com account",
+  "notes": "App Store UAE page did not expose IAP list; USD prices",
+  "logo_file": "../logos/calm.png"
+ },
+ {
+  "id": "headspace",
+  "name": "Headspace",
+  "name_ar": "هيدسبيس",
+  "category": "Fitness & health",
+  "aliases": [
+   "HEADSPACE",
+   "HEADSPACE.COM",
+   "APPLE.COM/BILL HEADSPACE",
+   "هيدسبيس"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "headspace_yearly_usd",
+    "name": "Headspace Plus",
+    "cycle": "yearly",
+    "price": 69.99,
+    "currency": "USD",
+    "sar_approx": 262.46,
+    "vat": "unknown",
+    "notes": "SAR not read",
+    "source_url": "https://www.headspace.com/subscriptions",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "App Store/Play or headspace.com account",
+  "notes": "AED from App Store UAE",
+  "logo_file": "../logos/headspace.svg"
+ },
+ {
+  "id": "whoop",
+  "name": "Whoop",
+  "name_ar": "ووب",
+  "category": "Fitness & health",
+  "aliases": [
+   "WHOOP",
+   "WHOOP INC",
+   "ووب"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "whoop_one_y",
+    "name": "One (annual)",
+    "cycle": "yearly",
+    "price": 199,
+    "currency": "USD",
+    "sar_approx": 746.25,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.whoop.com/membership/",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "my.whoop.com membership",
+  "notes": "Membership tiers One/Peak/Life, USD, ships to GCC; unverified",
+  "logo_file": "logos/whoop.png"
+ },
+ {
+  "id": "strava",
+  "name": "Strava",
+  "name_ar": "سترافا",
+  "category": "Fitness & health",
+  "aliases": [
+   "STRAVA",
+   "STRAVA INC",
+   "APPLE.COM/BILL STRAVA",
+   "سترافا"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "strava_monthly_usd",
+    "name": "Strava Subscription",
+    "cycle": "monthly",
+    "price": 11.99,
+    "currency": "USD",
+    "sar_approx": 44.96,
+    "vat": "unknown",
+    "notes": "SAR not read",
+    "source_url": "https://www.strava.com/subscribe",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "App Store/Play or strava.com settings",
+  "notes": "AED from App Store UAE",
+  "logo_file": "../logos/strava.svg"
+ },
+ {
+  "id": "myfitnesspal",
+  "name": "MyFitnessPal",
+  "name_ar": "ماي فيتنس بال",
+  "category": "Fitness & health",
+  "aliases": [
+   "MYFITNESSPAL",
+   "MYFITNESSPAL.COM",
+   "APPLE.COM/BILL MYFITNESSPAL",
+   "ماي فيتنس بال"
+  ],
+  "billing_currency": "USD",
+  "plans": [
+   {
+    "id": "myfitnesspal_premium_y",
+    "name": "Premium",
+    "cycle": "yearly",
+    "price": 79.99,
+    "currency": "USD",
+    "sar_approx": 299.96,
+    "vat": "unknown",
+    "notes": "",
+    "source_url": "https://www.myfitnesspal.com/premium",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "Visa/Mastercard/mada (SA), Visa/Mastercard (AE), Apple Pay; App Store/Google Play billing where bought in-app",
+  "cancel_url_or_hint": "App Store/Play or myfitnesspal.com",
+  "notes": "USD billed",
+  "logo_file": "../logos/myfitnesspal.svg"
+ },
+ {
+  "id": "apple_fitness",
+  "name": "Apple Fitness+",
+  "name_ar": "آبل فيتنس بلس",
+  "category": "Fitness & health",
+  "aliases": [
+   "APPLE.COM/BILL",
+   "APPLE FITNESS+",
+   "آبل"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "Apple ID",
+  "cancel_url_or_hint": "Settings > Apple ID > Subscriptions",
+  "notes": "Fitness+ not offered in KSA/UAE (supported countries exclude them); included in Apple One Premier only where available. Verify.",
+  "logo_file": "../logos/apple_fitness.svg"
+ },
+ {
+  "id": "noon_one",
+  "name": "noon One (noon VIP)",
+  "name_ar": "نون ون",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "NOON ONE",
+   "NOON.COM",
+   "NOON",
+   "NOON VIP",
+   "NOON ONE MEMBERSHIP",
+   "نون",
+   "نون ون"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "noon_one_yearly",
+    "name": "noon One (annual)",
+    "cycle": "yearly",
+    "price": 99,
+    "currency": "SAR",
+    "sar_approx": 99,
+    "vat": "unknown",
+    "notes": "memory, unverified",
+    "source_url": "",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, STC Pay, Tabby, Tamara, cash on delivery",
+  "cancel_url_or_hint": "noon app > Account > noon One > Manage membership > Cancel auto-renew",
+  "notes": "noon VIP merged into noon One; covers shopping, food, grocery. Bank cards (ENBD noon One card) bundle year 1 free.",
+  "logo_file": "logos/noon_one.png"
+ },
+ {
+  "id": "careem_plus",
+  "name": "Careem Plus",
+  "name_ar": "كريم بلس",
+  "category": "Mobility",
+  "aliases": [
+   "CAREEM",
+   "CAREEM PLUS",
+   "CAREEM *RIDE",
+   "CAREEM NOW",
+   "CAREEM FOOD",
+   "كريم",
+   "كريم بلس"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "careem_plus_monthly",
+    "name": "Careem Plus monthly",
+    "cycle": "monthly",
+    "price": 19.99,
+    "currency": "SAR",
+    "sar_approx": 19.99,
+    "vat": "unknown",
+    "notes": "memory, unverified",
+    "source_url": "",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, Careem Pay, cash",
+  "cancel_url_or_hint": "Careem app > Careem Plus > Manage > Cancel",
+  "notes": "Egypt-pass notes say AED 29/mo from Jul 2026 (help.careem.com), not verified; aggregator shows 19.99. Careem Pay is a wallet, not a subscription.",
+  "logo_file": "../logos/careem_plus.svg"
+ },
+ {
+  "id": "uber_one",
+  "name": "Uber One",
+  "name_ar": "أوبر ون",
+  "category": "Mobility",
+  "aliases": [
+   "UBER *ONE",
+   "UBER ONE",
+   "UBER *TRIP",
+   "UBER EATS",
+   "UBER   *ONE",
+   "اوبر",
+   "أوبر ون"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "uber_one_monthly",
+    "name": "Uber One monthly",
+    "cycle": "monthly",
+    "price": 17,
+    "currency": "SAR",
+    "sar_approx": 17,
+    "vat": "unknown",
+    "notes": "seen in search snippet of Uber SA page, not fetched directly",
+    "source_url": "https://www.uber.com/sa/ar/u/rewards",
+    "checked_at": null,
+    "confidence": "medium"
+   },
+   {
+    "id": "uber_one_yearly",
+    "name": "Uber One annual",
+    "cycle": "yearly",
+    "price": 170,
+    "currency": "SAR",
+    "sar_approx": 170,
+    "vat": "unknown",
+    "notes": "same source",
+    "source_url": "https://www.uber.com/sa/ar/u/rewards",
+    "checked_at": null,
+    "confidence": "medium"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, cash (rides)",
+  "cancel_url_or_hint": "Uber app > Account > Uber One > Manage membership > Cancel",
+  "notes": "",
+  "logo_file": "../logos/uber_one.svg"
+ },
+ {
+  "id": "mrsool",
+  "name": "Mrsool",
+  "name_ar": "مرسول",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "MRSOOL",
+   "MRSOOL.CO",
+   "MRSOOL APP",
+   "مرسول"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, STC Pay, cash",
+  "cancel_url_or_hint": "Mrsool app > Profile > Prime/Plus > cancel",
+  "notes": "Mrsool Plus/Prime price not verified; not available in UAE",
+  "logo_file": "../logos/mrsool.svg"
+ },
+ {
+  "id": "jahez",
+  "name": "Jahez",
+  "name_ar": "جاهز",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "JAHEZ",
+   "JAHEZ INTERNATIONAL",
+   "JAHEZ APP",
+   "جاهز"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, STC Pay, Tabby, cash",
+  "cancel_url_or_hint": "Jahez app > Account > subscription > cancel",
+  "notes": "Jahez Plus price not verified",
+  "logo_file": "logos/jahez.svg"
+ },
+ {
+  "id": "hungerstation_pro",
+  "name": "HungerStation Plus / Pro",
+  "name_ar": "هنقرستيشن بلس",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "HUNGERSTATION",
+   "HUNGERSTATION PLUS",
+   "HUNGER STATION",
+   "HUNGERSTATION.COM",
+   "هنقرستيشن"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "hungerstation_pro_monthly",
+    "name": "HungerStation Plus monthly",
+    "cycle": "monthly",
+    "price": 19,
+    "currency": "SAR",
+    "sar_approx": 19,
+    "vat": "unknown",
+    "notes": "aggregator, 2026-03 date claimed",
+    "source_url": "https://subger.com/en/service/hungerstation-extra-sa",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, STC Pay, cash",
+  "cancel_url_or_hint": "HungerStation app > Account > Plus > Cancel subscription",
+  "notes": "Plus passed 10M subscribers (2025); aggregator calls it Extra/Pro",
+  "logo_file": "logos/hungerstation_pro.png"
+ },
+ {
+  "id": "toyou",
+  "name": "ToYou",
+  "name_ar": "تو يو",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "TOYOU",
+   "TO YOU",
+   "تو يو"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, STC Pay, cash",
+  "cancel_url_or_hint": "in-app",
+  "notes": "subscription plan not verified",
+  "logo_file": "logos/toyou.png"
+ },
+ {
+  "id": "nana",
+  "name": "Nana",
+  "name_ar": "نعناع",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "NANA",
+   "NANA DIRECT",
+   "نعناع"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, STC Pay, cash",
+  "cancel_url_or_hint": "in-app",
+  "notes": "subscription plan not verified",
+  "logo_file": "logos/nana.png"
+ },
+ {
+  "id": "carrefour",
+  "name": "Carrefour (MAF Share / Carrefour Plus)",
+  "name_ar": "كارفور",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "CARREFOUR",
+   "MAF CARREFOUR",
+   "CARREFOUR UAE",
+   "MAJID AL FUTTAIM",
+   "SHARE",
+   "كارفور"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, STC Pay, Tabby",
+  "cancel_url_or_hint": "Carrefour app > Account > subscription",
+  "notes": "SHARE loyalty is free; paid delivery pass price not verified",
+  "logo_file": "../logos/carrefour_mylo.svg"
+ },
+ {
+  "id": "lulu",
+  "name": "Lulu Hypermarket",
+  "name_ar": "لولو",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "LULU HYPERMARKET",
+   "LULU",
+   "LULU EXPRESS",
+   "لولو"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay",
+  "cancel_url_or_hint": "n/a (no paid plan known)",
+  "notes": "retailer, no subscription",
+  "logo_file": "logos/lulu.png"
+ },
+ {
+  "id": "namshi",
+  "name": "Namshi VIP / Club",
+  "name_ar": "نمشي",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "NAMSHI",
+   "NAMSHI.COM",
+   "نمشي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, Tabby, Tamara, COD",
+  "cancel_url_or_hint": "Namshi app > Account > VIP",
+  "notes": "VIP price not verified",
+  "logo_file": "logos/namshi.png"
+ },
+ {
+  "id": "shein_club",
+  "name": "Shein Club",
+  "name_ar": "شي إن كلوب",
+  "category": "Food, shopping & delivery",
+  "aliases": [
+   "SHEIN",
+   "SHEIN.COM",
+   "SHEIN CLUB",
+   "SHEIN CLUB MEMBERSHIP",
+   "شي ان",
+   "شين"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, Tabby, Tamara, COD",
+  "cancel_url_or_hint": "Shein app > Me > Club > cancel renewal",
+  "notes": "price not verified",
+  "logo_file": "logos/shein_club.png"
+ },
+ {
+  "id": "tabby",
+  "name": "Tabby / Tabby Plus",
+  "name_ar": "تابي",
+  "category": "Financial & government",
+  "aliases": [
+   "TABBY",
+   "TABBY.AI",
+   "TABBY FZ",
+   "TABBY PLUS",
+   "تابي"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay",
+  "cancel_url_or_hint": "BNPL, not a subscription; Tabby Plus cancel in app",
+  "notes": "BNPL; installment repayments appear as TABBY. Plus tier price not verified",
+  "logo_file": "logos/tabby.svg"
+ },
+ {
+  "id": "tamara",
+  "name": "Tamara",
+  "name_ar": "تمارا",
+  "category": "Financial & government",
+  "aliases": [
+   "TAMARA",
+   "TAMARA CO",
+   "TAMARA FINANCE",
+   "تمارا"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay",
+  "cancel_url_or_hint": "BNPL, not a subscription",
+  "notes": "BNPL installments; no paid tier verified",
+  "logo_file": "logos/tamara.png"
+ },
+ {
+  "id": "fitness_time",
+  "name": "Fitness Time (Leejam)",
+  "name_ar": "فتنس تايم",
+  "category": "Fitness & health",
+  "aliases": [
+   "FITNESS TIME",
+   "LEEJAM",
+   "LEEJAM SPORTS",
+   "FITNESS TIME LADIES",
+   "فيتنس تايم",
+   "ليجام"
+  ],
+  "billing_currency": "SAR",
+  "plans": [
+   {
+    "id": "fitness_time_monthly",
+    "name": "Fitness Time entry (aggregator)",
+    "cycle": "monthly",
+    "price": 350,
+    "currency": "SAR",
+    "sar_approx": 350,
+    "vat": "unknown",
+    "notes": "aggregator, unreliable",
+    "source_url": "https://subger.com/en/service/fitness-time-sa",
+    "checked_at": null,
+    "confidence": "low"
+   }
+  ],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay, Tabby, Tamara",
+  "cancel_url_or_hint": "branch visit or app",
+  "notes": "KSA only; tiers vary by club",
+  "logo_file": "logos/fitness_time.png"
+ },
+ {
+  "id": "golds_gym",
+  "name": "Gold's Gym",
+  "name_ar": "جولدز جيم",
+  "category": "Fitness & health",
+  "aliases": [
+   "GOLDS GYM",
+   "GOLD'S GYM",
+   "جولدز جيم"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard, Apple Pay",
+  "cancel_url_or_hint": "branch",
+  "notes": "prices vary by club, not verified",
+  "logo_file": "logos/golds_gym.png"
+ },
+ {
+  "id": "anytime_fitness",
+  "name": "Anytime Fitness",
+  "name_ar": "أني تايم فتنس",
+  "category": "Fitness & health",
+  "aliases": [
+   "ANYTIME FITNESS",
+   "أني تايم"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, Visa/Mastercard",
+  "cancel_url_or_hint": "branch",
+  "notes": "prices vary, not verified",
+  "logo_file": "logos/anytime_fitness.png"
+ },
+ {
+  "id": "absher",
+  "name": "Absher",
+  "name_ar": "أبشر",
+  "category": "Financial & government",
+  "aliases": [
+   "ABSHER",
+   "MOI",
+   "أبشر"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, bank",
+  "cancel_url_or_hint": "n/a",
+  "notes": "note-only, no plans",
+  "logo_file": "logos/absher.svg"
+ },
+ {
+  "id": "sadad",
+  "name": "Sadad",
+  "name_ar": "سداد",
+  "category": "Financial & government",
+  "aliases": [
+   "SADAD",
+   "SADAD PAYMENT",
+   "سداد"
+  ],
+  "billing_currency": "SAR",
+  "plans": [],
+  "payment_methods_accepted_in_saudi": "mada, bank",
+  "cancel_url_or_hint": "n/a",
+  "notes": "note-only, no plans",
+  "logo_file": "logos/sadad.svg"
+ }
+]

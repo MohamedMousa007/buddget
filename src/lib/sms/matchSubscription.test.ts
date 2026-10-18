@@ -134,10 +134,10 @@ describe('matchSubscription — cycles, trials, currency', () => {
   })
 
   it('stores the proposed plan amount in the SUBSCRIPTION currency, not the SMS currency', async () => {
-    // Sub is priced in USD (ChatGPT, $20 Plus); the bank SMS arrives in EGP. pending_amount is
+    // Sub is priced in USD (ChatGPT web, $20 Plus in the Gulf); the bank SMS arrives in EGP. pending_amount is
     // later adopted as the sub amount, so it must be 20, not 1000.
     const chatgptFree = netflix({
-      brand_key: 'chatgpt_plus', amount: 8, currency: 'USD', plan_id: 'chatgpt_plus_legacy', catalog_region: 'egypt',
+      brand_key: 'chatgpt_plus', amount: 8, currency: 'USD', plan_id: 'chatgpt_plus_legacy', catalog_region: 'uae',
     })
     const res = await match([chatgptFree], { merchant: 'OPENAI *CHATGPT', amount: 1000, currency: 'EGP', day: '2026-07-10' })
     expect(res?.planChange).toMatchObject({ planId: 'chatgpt_plus_plus', direction: 'upgrade', chargedAmount: 20 })
@@ -158,7 +158,26 @@ describe('matchSubscription — cycles, trials, currency', () => {
   })
 
   it('does not link a plain gym purchase to the generic Gym Membership entry', async () => {
-    await expect(match([netflix({ brand_key: 'gym' })], { merchant: "GOLD'S GYM CAIRO" })).resolves.toBeNull()
+    await expect(match([netflix({ brand_key: 'gym' })], { merchant: 'Fitness Gym Maadi' })).resolves.toBeNull()
+    await expect(match([netflix({ brand_key: 'gym' })], { merchant: 'Gym Club' })).resolves.toBeNull()
+  })
+
+  it('links a Uber One renewal but never an Uber ride', async () => {
+    const uberOne = netflix({ id: 'sub_uber', brand_key: 'uber_one', amount: 85, plan_id: 'uber_one_monthly', catalog_region: 'egypt' })
+    await expect(match([uberOne], { merchant: 'UBER *ONE', amount: 85 })).resolves.toEqual({ subscriptionId: 'sub_uber', planChange: null })
+    await expect(match([uberOne], { merchant: 'UBER *TRIP HELP.UBER.COM', amount: 85 })).resolves.toBeNull()
+  })
+
+  it('links an Arabic-billed telecom charge and proposes the plan change', async () => {
+    const vodafone = netflix({ id: 'sub_vf', brand_key: 'vodafone_eg', amount: 115, plan_id: 'vodafone_eg_flex_115', catalog_region: 'egypt' })
+    await expect(match([vodafone], { merchant: 'فودافون مصر', amount: 115 })).resolves.toEqual({ subscriptionId: 'sub_vf', planChange: null })
+    const res = await match([vodafone], { merchant: 'VODAFONE EGYPT', amount: 175 })
+    expect(res?.planChange).toMatchObject({ planId: 'vodafone_eg_flex_175', direction: 'upgrade' })
+  })
+
+  it('matches an Apple-billed Gulf price in AED for a ChatGPT App Store sub', async () => {
+    const gpt = netflix({ id: 'sub_gpt', brand_key: 'chatgpt_plus', amount: 79.99, currency: 'AED', plan_id: 'chatgpt_plus_plus_appstore', catalog_region: 'uae' })
+    await expect(match([gpt], { merchant: 'OPENAI *CHATGPT SUBSCR', amount: 79.99, currency: 'AED' })).resolves.toEqual({ subscriptionId: 'sub_gpt', planChange: null })
   })
 
   it('does not link a charge at a month-boundary neighbour of the billing day incorrectly', async () => {
