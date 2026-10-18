@@ -165,7 +165,13 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
       setDraft((d) => {
         if (next === d.currency) return d
         const converted = tryConvertCurrency(d.amount, d.currency, next, exchangeRates)
-        return { ...d, currency: next, amount: converted == null ? d.amount : round2(converted) }
+        const share = d.myShare == null ? null : tryConvertCurrency(d.myShare, d.currency, next, exchangeRates)
+        return {
+          ...d,
+          currency: next,
+          amount: converted == null ? d.amount : round2(converted),
+          myShare: share == null ? d.myShare : round2(share),
+        }
       })
     },
     [exchangeRates],
@@ -195,7 +201,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   const canSubmit =
     draft.name.trim().length > 0 &&
     draft.amount > 0 &&
-    (draft.sharedWith.length === 0 || (draft.myShare != null && draft.myShare > 0))
+    (draft.sharedWith.length === 0 || (draft.myShare != null && draft.myShare > 0 && draft.myShare <= draft.amount))
 
   const submit = useCallback(() => {
     if (!canSubmit) return

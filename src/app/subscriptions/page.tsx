@@ -14,6 +14,8 @@ import { SubscriptionsHero } from '@/components/features/subscriptions/Subscript
 import { SubscriptionsRail } from '@/components/features/subscriptions/SubscriptionsRail'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { hasHydrated } from '@/hooks/remote/hydrateGuard'
 import { useHydrateExpenses, useHydrateSubscriptions } from '@/hooks/remote'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useSubscriptionsHome } from '@/hooks/useSubscriptionsHome'
@@ -30,6 +32,7 @@ const WRAP = 'mx-auto w-full max-w-[1100px] px-4 py-4'
 export default function SubscriptionsPage() {
   useHydrateSubscriptions()
   useHydrateExpenses()
+  const { user } = useAuth()
   const t = useT()
   const ui = t.subscriptions.ui
   const { periodLabel: formatMonth } = useSubscriptionDates()
@@ -59,9 +62,12 @@ export default function SubscriptionsPage() {
   const home = useSubscriptionsHome(segment)
 
   // Log-mode subscriptions write their own expense once the charge is due.
+  // Only once expenses are hydrated: otherwise every cycle looks unpaid and gets logged twice.
+  const uid = user?.id
+  const expensesReady = !uid || hasHydrated(uid, 'expenses')
   useEffect(() => {
-    if (dataReady) logDue()
-  }, [dataReady, logDue])
+    if (dataReady && expensesReady) logDue()
+  }, [dataReady, expensesReady, logDue])
 
   const openAdd = (brandKey: string | null = null) => {
     setEditing(null)

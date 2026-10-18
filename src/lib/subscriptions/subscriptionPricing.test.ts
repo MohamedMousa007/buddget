@@ -27,8 +27,20 @@ describe('priceChange', () => {
   it('stays quiet while a plan change is pending', () => {
     expect(priceChange({ ...plan, pendingPlanId: 'netflix_premium' }, [charge('s', '2026-10-19', 270)])).toBeNull()
   })
-  it('compares against my share of a shared plan', () => {
+  it('does not flag a shared plan recorded as my share', () => {
     expect(priceChange({ ...plan, amount: 270, myShare: 135 }, [charge('s', '2026-10-19', 135)])).toBeNull()
+  })
+})
+
+describe('shared plans', () => {
+  it('a full-price bank charge is not a price rise', () => {
+    expect(priceChange({ ...plan, amount: 100, myShare: 25 }, [charge('s', '2026-10-19', 100)])).toBeNull()
+  })
+  it('derives the FX rate from the full price, not my share', () => {
+    const usd = { id: 's', amount: 20, myShare: 5, currency: 'USD' as const }
+    const f = fxEstimate(usd, 'EGP', { USD_EGP: 53.45 }, [charge('s', '2026-09-21', 1090, 'EGP')])
+    expect(f.rate).toBeCloseTo(54.5, 5)
+    expect(f.estimate).toBeCloseTo(272.5, 5)
   })
 })
 

@@ -42,7 +42,7 @@ export function buildRecurringExpenseFromSubscription(
     id: recurringId,
     description: `${sub.name}${sub.planName ? ` (${sub.planName})` : ''}`,
     category: sub.expenseCategory || 'Enjoyment',
-    amount: subscriptionToMonthlyPlannerAmount(sub.amount, sub.billingCycle),
+    amount: subscriptionToMonthlyPlannerAmount(sub.myShare ?? sub.amount, sub.billingCycle),
     currency: sub.currency,
     paymentMethodId: pm,
     dayOfMonth: Math.min(31, Math.max(1, sub.billingDay)),

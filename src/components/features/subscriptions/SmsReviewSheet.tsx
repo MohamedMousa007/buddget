@@ -44,8 +44,8 @@ function useResolveFind() {
       updateSubscription(find.match.id, { tracking: 'sms' })
     } else if (brand) {
       const plan = planForAmount({ brandKey: brand.key, catalogRegion: region, currency: find.currency as Currency }, find.amount)
-      subId = addSubscription(
-        draftToSubscription(
+      subId = addSubscription({
+        ...draftToSubscription(
           {
             name: brand.name,
             brandKey: brand.key,
@@ -68,7 +68,9 @@ function useResolveFind() {
           null,
           localTodayISO(),
         ),
-      )
+        // The first-charge date is clamped into a month; the detected day is the real billing day.
+        billingDay: find.billingDay,
+      })
     }
     if (subId) linkCharges(subId, chargesToLink(find, expenses, find.currency))
   }

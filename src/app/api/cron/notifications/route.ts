@@ -92,11 +92,12 @@ export async function GET(request: Request) {
         .is('deleted_at', null)
         .in('status', ['active', 'trial'])
       if (subRows && subRows.length > 0) {
-        const since = format(new Date(now.getTime() - 120 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+        const since = format(new Date(now.getTime() - 400 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
         const { data: expRows } = await service
           .from('expenses')
           .select('*')
           .eq('user_id', userId)
+          .is('deleted_at', null)
           .in('linked_subscription_id', subRows.map((r) => r.id as string))
           .gte('expense_date', since)
         const subAlerts = evaluateSubscriptionAlerts({

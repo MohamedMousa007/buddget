@@ -37,11 +37,12 @@ export function priceChange(
 ): PriceChange | null {
   if (sub.pendingPlanId) return null
   const last = lastCharge(sub.id, expenses)
-  const plan = chargeAmount(sub)
+  const plan = sub.amount
   if (!last || last.currency !== sub.currency || plan <= 0) return null
-  const diff = (last.amount - plan) / plan
-  if (Math.abs(diff) <= PRICE_CHANGE_THRESHOLD) return null
-  return { from: plan, to: last.amount, pct: Math.round(diff * 1000) / 10 }
+  // A shared plan is charged in full by the bank but may be recorded as my share: either is the plan price.
+  const near = (target: number) => Math.abs(last.amount - target) / target <= PRICE_CHANGE_THRESHOLD
+  if (near(plan) || (sub.myShare != null && sub.myShare > 0 && near(sub.myShare))) return null
+  return { from: plan, to: last.amount, pct: Math.round(((last.amount - plan) / plan) * 1000) / 10 }
 }
 
 export interface FxEstimate {
@@ -66,11 +67,12 @@ export function fxEstimate(
   expenses: Charge[]
 ): FxEstimate {
   const amount = chargeAmount(sub)
+  const full = sub.amount
   const quoted = convertCurrency(1, sub.currency, baseCurrency, rates)
   if (sub.currency === baseCurrency) return { estimate: amount, rate: 1, refined: false, drift: 0 }
   const last = lastCharge(sub.id, expenses)
-  if (last && last.currency === baseCurrency && amount > 0 && quoted > 0) {
-    const rate = last.amount / amount
+  if (last && last.currency === baseCurrency && full > 0 && quoted > 0) {
+    const rate = last.amount / full
     return { estimate: amount * rate, rate, refined: true, drift: rate / quoted - 1 }
   }
   return { estimate: amount * quoted, rate: quoted, refined: false, drift: 0 }
