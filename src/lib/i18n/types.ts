@@ -2194,6 +2194,30 @@ export interface Dictionary {
     }
     flow: {
       close: string
+      chat: {
+        title: string
+        placeholder: string
+        send: string
+        cont: string
+        amountMissing: string
+        dateMissing: string
+        failed: string
+        retry: string
+        skip: string
+        paceLine: (amount: string, quarterly: boolean) => string
+        ofTarget: (amount: string) => string
+        greeting: string
+      }
+      advice: {
+        emergency: (amount: string) => string
+        use: string
+        covered: string
+      }
+      status: {
+        cost: string[]
+        chat: string[]
+        slow: string
+      }
       back: string
       stepAria: (n: number, total: number) => string
       nextFund: string

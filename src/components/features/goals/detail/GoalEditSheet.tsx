@@ -59,7 +59,7 @@ export function GoalEditSheet({ goal, onClose }: { goal: Goal; onClose: () => vo
             <div className="min-w-0 flex-1">
               <AmountField value={amount} onChange={setAmount} className={FIELD} aria-label={limit ? t.goals.monthlyLimit : t.goals.targetAmount} />
             </div>
-            <div className="w-32 shrink-0">
+            <div className="shrink-0">
               <FiatCurrencyField value={currency} onChange={setCurrency} compact className={FIELD} />
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { CurrencySign, hasCurrencySign } from '@/components/ui/CurrencyMark'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { CURRENCY_META } from '@/lib/constants/currencyMeta'
 import { cn } from '@/lib/utils'
@@ -38,14 +39,14 @@ export function CurrencyField({ value, onChange, className, id, includeGold = fa
         onClick={() => setOpen(true)}
         className={cn(
           'flex items-center justify-between gap-2 text-start',
-          compact && 'h-11 min-h-11 w-24 px-3',
+          compact && 'h-11 min-h-11 w-auto min-w-[88px] px-3',
           className,
         )}
       >
         <span className="flex min-w-0 items-center gap-2">
-          <span className="font-mono-numbers text-sm font-semibold leading-none text-[var(--color-brand-text-muted)]">
-            {meta?.symbol ?? value}
-          </span>
+          {hasCurrencySign(value) ? (
+            <CurrencySign code={value} className="font-mono-numbers text-sm font-semibold leading-none text-[var(--color-brand-text-muted)]" />
+          ) : null}
           <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
             {value}
           </span>
@@ -55,7 +56,7 @@ export function CurrencyField({ value, onChange, className, id, includeGold = fa
             </span>
           )}
         </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" />
+        <ChevronDown className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
       </button>
       <CurrencySheet
         open={open}

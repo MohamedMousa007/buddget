@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Search, Check, X } from 'lucide-react'
+import { CurrencySign, hasCurrencySign } from '@/components/ui/CurrencyMark'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { CURRENCY_META, COMMON_CURRENCIES } from '@/lib/constants/currencyMeta'
@@ -142,8 +143,8 @@ export function CurrencySheet({
                     : 'border border-transparent',
                 )}
               >
-                <span className="w-9 shrink-0 text-center font-mono-numbers text-sm font-semibold leading-none text-[var(--color-brand-text-muted)]">
-                  {meta?.symbol ?? r.code}
+                <span className="flex w-9 shrink-0 items-center justify-center font-mono-numbers text-sm font-semibold leading-none text-[var(--color-brand-text-muted)]">
+                  {hasCurrencySign(r.code) ? <CurrencySign code={r.code} /> : null}
                 </span>
                 <span className="w-11 shrink-0 text-start font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">
                   {r.code}

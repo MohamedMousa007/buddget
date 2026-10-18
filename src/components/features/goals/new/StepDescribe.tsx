@@ -37,13 +37,9 @@ function Tile({ category, label, onPick }: { category: GoalCategory; label: stri
 }
 
 export function StepDescribe({
-  parsing,
-  parseError,
   onDescribe,
   onPick,
 }: {
-  parsing: boolean
-  parseError: boolean
   onDescribe: (text: string) => void
   onPick: (c: GoalCategory, preset?: Preset) => void
 }) {
@@ -72,12 +68,12 @@ export function StepDescribe({
           className="flex flex-col gap-2.5 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3.5"
           onSubmit={(e) => {
             e.preventDefault()
-            if (text.trim() && !parsing) onDescribe(text.trim())
+            if (text.trim()) onDescribe(text.trim())
           }}
         >
           <p className="flex items-center gap-2 text-[13px] font-semibold text-[var(--color-brand-text-primary)]">
-            <BuddgyIcon size={24} mood={parsing ? 'thinking' : 'idle'} />
-            {parsing ? f.reading : f.buddgyLine}
+            <BuddgyIcon size={24} />
+            {f.buddgyLine}
           </p>
           <div className="flex items-center gap-2">
             <Input
@@ -88,11 +84,10 @@ export function StepDescribe({
               aria-label={f.buddgyLine}
               className="h-12 flex-1 rounded-full bg-[var(--color-brand-card)] px-4"
             />
-            <IconButton type="submit" variant="solid" size="lg" shape="round" aria-label={f.send} disabled={parsing || !text.trim()}>
+            <IconButton type="submit" variant="solid" size="lg" shape="round" aria-label={f.send} disabled={!text.trim()}>
               <Send />
             </IconButton>
           </div>
-          {parseError ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{f.parseFailed}</p> : null}
         </form>
       ) : null}
       {group(f.groupSave, SAVE.map((c) => ({ c, label: t[goalCategoryLabelKey(c)] as string })))}

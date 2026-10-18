@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ChevronLeft, X } from 'lucide-react'
 import { SplitSavingsSheet } from '@/components/features/goals/SplitSavingsSheet'
 import { ModalShell } from '@/components/modals/ModalShell'
+import { GoalChat } from '@/components/features/goals/new/GoalChat'
 import { StepDescribe } from '@/components/features/goals/new/StepDescribe'
 import { StepFundIt, useFundCopy } from '@/components/features/goals/new/StepFundIt'
 import { StepMakeItReal } from '@/components/features/goals/new/StepMakeItReal'
@@ -19,6 +20,8 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
   const form = useNewGoalForm(seed, onClose)
   const fund = useFundCopy(form)
   const [split, setSplit] = useState(false)
+  // Free text from the empty state or step 1 opens a conversation with Buddgy instead of filling fields silently.
+  const [chat, setChat] = useState<string | null>(seed?.text ?? null)
   const total = form.kind === 'save' ? 3 : 2
   const step = Math.min(form.step, total) as 1 | 2 | 3
   const last = step === total
@@ -34,6 +37,27 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
 
   const next = () => (last ? form.submit() : form.setStep((step + 1) as 2 | 3))
   const nextLabel = last ? t.start : form.kind === 'save' ? t.nextFund : t.next
+
+  if (chat !== null) {
+    const leave = () => {
+      setChat(null)
+      form.setStep(2)
+    }
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-12 shrink-0 items-center gap-2 ps-3 pe-3">
+          <IconButton aria-label={t.back} onClick={() => setChat(null)}>
+            <ChevronLeft className="rtl:rotate-180" />
+          </IconButton>
+          <p className="flex-1 text-center text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.chat.title}</p>
+          <IconButton aria-label={t.close} onClick={onClose}>
+            <X />
+          </IconButton>
+        </div>
+        <GoalChat key={chat} form={form} firstText={chat || null} onContinue={leave} onManual={leave} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -57,7 +81,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
       </div>
       <div className="native-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pb-4 pt-1 md:px-6 [&>*]:shrink-0">
         {step === 1 ? (
-          <StepDescribe parsing={form.parsing} parseError={form.parseError} onDescribe={form.describe} onPick={form.pickCategory} />
+          <StepDescribe onDescribe={setChat} onPick={form.pickCategory} />
         ) : step === 2 ? (
           <StepMakeItReal form={form} />
         ) : (

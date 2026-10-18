@@ -13,6 +13,7 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { CurrencyMark } from '@/components/ui/CurrencyMark'
 import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
 import { AmountTextInput } from '@/components/ui/AmountTextInput'
 import { useNumberPad } from '@/components/ui/useNumberPad'
@@ -73,7 +74,7 @@ export function AmountField({
           : { opacity: 0.6 }
       }
     >
-      {currency}
+      {currency ? <CurrencyMark code={currency} /> : null}
     </span>
   )
 

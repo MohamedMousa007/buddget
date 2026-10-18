@@ -5,8 +5,9 @@ import { useShallow } from 'zustand/react/shallow'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
-import { parseGoalText } from '@/lib/goals/goalAi'
+import type { ParsedGoal } from '@/lib/goals/goalAi'
 import { addMonthsIso, computePace, monthsUntil } from '@/lib/goals/goalPlan'
+import { averageMonthlySpend, fieldAdvice } from '@/lib/goals/fieldAdvice'
 import { trackedDebtIds } from '@/lib/goals/debtGoal'
 import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -56,7 +57,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [draft] = useState<NewGoalDraft | null>(() => (seed?.category || seed?.text ? null : loadDraft()))
   const [step, setStep] = useState<1 | 2 | 3>(draft?.step ?? (seed?.category ? 2 : 1))
   const [category, setCategory] = useState<GoalCategory>(draft?.category ?? seed?.category ?? 'custom')
-  const [name, setName] = useState(draft?.name ?? (seed?.category ? defaultGoalName(seed.category) : (seed?.text ?? '')))
+  const [name, setName] = useState(draft?.name ?? (seed?.category ? defaultGoalName(seed.category) : ''))
   const [targetAmount, setTargetAmount] = useState(draft?.targetAmount ?? '')
   const [currency, setCurrency] = useState<Currency>((draft?.currency as Currency) ?? baseCcy)
   const [targetDate, setTargetDate] = useState(() =>
@@ -70,8 +71,6 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [limit, setLimit] = useState(draft?.monthlySpendingLimit ?? '')
   const [spendingCategory, setSpendingCategory] = useState(draft?.spendingCategory ?? '')
   const [linkedDebtIds, setLinkedDebtIds] = useState<string[]>(draft?.linkedDebtIds ?? [])
-  const [parsing, setParsing] = useState(false)
-  const [parseError, setParseError] = useState(false)
   const [saveError, setSaveError] = useState(false)
   const submitted = useRef(false)
 
@@ -109,10 +108,11 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
       )
   }, [activeDebts, linkedDebtIds, s])
 
-  // Keep a debt goal's target in step with what the chosen debts still owe.
-  useEffect(() => {
-    if (kind === 'debt') setTargetAmount(debtsOwed > 0 ? String(Math.round(debtsOwed * 100) / 100) : '')
-  }, [kind, debtsOwed])
+  const monthlySpend = useMemo(() => {
+    const base = averageMonthlySpend(s.expenses, now)
+    return base === null ? null : convertCurrency(base, s.settings.baseCurrency, currency, s.exchangeRates)
+  }, [s.expenses, s.settings.baseCurrency, s.exchangeRates, currency, now])
+  const advice = fieldAdvice({ category, target, saved: num(alreadySaved), monthlySpendInCcy: monthlySpend })
 
   const tracked = useMemo(() => trackedDebtIds(s.goals), [s.goals])
   const freeDebts = useMemo(() => activeDebts.filter((d) => !tracked.has(d.id)), [activeDebts, tracked])
@@ -150,35 +150,13 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const toggleDebt = (id: string) =>
     setLinkedDebtIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
 
-  /** Free text from step 1 or the empty state: Buddgy fills what it can; failure keeps the text as the name. */
-  const describe = useCallback(
-    async (text: string) => {
-      setParsing(true)
-      setParseError(false)
-      try {
-        const p = await parseGoalText(text, { currency, now })
-        setCategory(p.category)
-        setName(p.name)
-        if (p.target) setTargetAmount(String(p.target))
-        if (p.date) setTargetDate(p.date)
-        setStep(2)
-      } catch {
-        setParseError(true)
-        setName(text)
-      } finally {
-        setParsing(false)
-      }
-    },
-    [currency, now],
-  )
-
-  // Seeded from the empty state's free text: parse once on mount.
-  const seeded = useRef(false)
-  useEffect(() => {
-    if (seeded.current || !seed?.text) return
-    seeded.current = true
-    void describe(seed.text)
-  }, [seed?.text, describe])
+  /** Buddgy's chat shaped (or reshaped) the goal: fill what it settled, keep the rest. */
+  const applyDraft = useCallback((p: ParsedGoal) => {
+    setCategory(p.category)
+    setName(p.name)
+    if (p.target) setTargetAmount(String(p.target))
+    if (p.date) setTargetDate(p.date)
+  }, [])
 
   useEffect(() => {
     if (submitted.current) return
@@ -193,7 +171,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const otherShare = running.filter((g) => g.fundingMode === 'share').reduce((sum, g) => sum + (g.sharePct ?? 0), 0)
 
   const canNext2 =
-    kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && target > 0 : target > 0 && name.trim().length > 0
+    kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && debtsOwed > 0 : target > 0 && name.trim().length > 0
 
   const submit = useCallback(() => {
     const st = useFinanceStore.getState()
@@ -219,7 +197,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
         })
       } else if (kind === 'debt') {
         st.addGoal({
-          ...common, targetAmount: target, targetDate: null, monthlyContribution: null, monthlySpendingLimit: null,
+          ...common, targetAmount: Math.round(debtsOwed * 100) / 100, targetDate: null, monthlyContribution: null, monthlySpendingLimit: null,
           linkedSavingsAccountIds: [], linkedDebtIds,
         })
       } else {
@@ -244,7 +222,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     submitted.current = true
     clearDraft()
     onDone()
-  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone])
+  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone])
 
   return {
     now, step, setStep, category, pickCategory, kind, name, setName, targetAmount, setTargetAmount,
@@ -252,8 +230,8 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     targetDate, setTargetDate, frequency, setFrequency, alreadySaved, setAlreadySaved,
     fundingMode, setFundingMode, sharePct, setSharePct, fixedAmount, setFixedAmount,
     limit, setLimit, spendingCategory, setSpendingCategory,
-    activeDebts, tracked, linkable, linkInstead, linkedDebtIds, toggleDebt, debtsOwed,
-    parsing, parseError, saveError, describe,
+    advice, activeDebts, tracked, linkable, linkInstead, linkedDebtIds, toggleDebt, debtsOwed,
+    saveError, applyDraft,
     basis, usualKeep, pace, running, otherShare, canNext2, submit,
     baseCurrency: s.settings.baseCurrency,
     convert: (n: number, from: Currency, to: Currency) => convertCurrency(n, from, to, s.exchangeRates),

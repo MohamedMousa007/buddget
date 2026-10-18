@@ -22,14 +22,22 @@ export interface CostEstimate {
 
 const firstJson = (text: string) => text.match(/\{[\s\S]*\}/)?.[0]
 
+/**
+ * These are short extraction/estimate calls, so the model's own "thinking" is switched off and the
+ * reply capped: with default thinking the proxy's model spent most of its time reasoning before it
+ * wrote one small JSON object.
+ */
+const QUICK = { thinkingConfig: { thinkingLevel: 'minimal' }, maxOutputTokens: 400, temperature: 0.2 }
+
 async function askJson(prompt: string, opts: { grounded?: boolean; signal?: AbortSignal }): Promise<string> {
   const res = await generateWithFallback(
     {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: QUICK,
       grounded: opts.grounded,
       tier: opts.grounded ? undefined : 'fast',
     },
-    { signal: opts.signal },
+    { signal: opts.signal, maxAttempts: 2 },
   )
   await throwIfAiProxyNotOk(res)
   const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
@@ -79,15 +87,21 @@ export function parseCostReply(text: string): CostEstimate {
   return { options, assumption: String(o.assumption ?? '').trim() }
 }
 
-/** Three priced options for what the goal usually costs, using live local prices. */
+const costCache = new Map<string, CostEstimate>()
+
+/** Three priced options for what the goal usually costs, using live local prices. Asked once per goal per session. */
 export async function estimateGoalCost(
   input: { name: string; category: string; currency: string; country?: string },
   signal?: AbortSignal,
 ): Promise<CostEstimate> {
+  const key = [input.name, input.category, input.currency, input.country ?? ''].join('|').toLowerCase()
+  const hit = costCache.get(key)
+  if (hit) return hit
   const where = input.country ? ` in ${input.country}` : ''
   const prompt =
-    `Estimate what "${input.name}" (${input.category}) typically costs${where}, in ${input.currency}, at current prices. ` +
-    `Give exactly three options from cheaper to pricier. Reply with ONLY JSON: ` +
-    `{"options":[{"label":"<2-4 words>","amount":<number>}],"assumption":"<one short sentence of what is assumed>"}.`
-  return parseCostReply(await askJson(prompt, { grounded: true, signal }))
+    `Typical current cost of "${input.name}" (${input.category})${where}, in ${input.currency}: three options, cheaper to pricier. ` +
+    `JSON only: {"options":[{"label":"<2-4 words>","amount":<number>}],"assumption":"<one short sentence>"}`
+  const estimate = parseCostReply(await askJson(prompt, { grounded: true, signal }))
+  costCache.set(key, estimate)
+  return estimate
 }

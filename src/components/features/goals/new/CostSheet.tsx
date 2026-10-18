@@ -8,6 +8,7 @@ import { ModalTitle } from '@/components/modals/ModalTitle'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { BuddgyStatus } from '@/components/features/goals/new/BuddgyStatus'
 import { useT } from '@/lib/i18n'
 import { estimateGoalCost, type CostEstimate } from '@/lib/goals/goalAi'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -28,7 +29,8 @@ export function CostSheet({
   onUse: (amount: number) => void
   onClose: () => void
 }) {
-  const t = useT().goals.flow.cost
+  const ts = useT().goals.flow
+  const t = ts.cost
   const tc = useT().common
   const [res, setRes] = useState<{ key: string; est?: CostEstimate; failed?: boolean } | null>(null)
   const [picked, setPicked] = useState(1)
@@ -41,13 +43,22 @@ export function CostSheet({
   useEffect(() => {
     if (!open) return
     const ctrl = new AbortController()
+    // A reply that never comes becomes a retry prompt instead of an endless spinner.
+    const giveUp = setTimeout(() => {
+      ctrl.abort()
+      setRes({ key, failed: true })
+    }, 30_000)
     estimateGoalCost({ name, category: categoryLabel, currency }, ctrl.signal)
       .then((e) => {
         setRes({ key, est: e })
         setPicked(Math.min(1, e.options.length - 1))
       })
       .catch(() => !ctrl.signal.aborted && setRes({ key, failed: true }))
-    return () => ctrl.abort()
+      .finally(() => clearTimeout(giveUp))
+    return () => {
+      clearTimeout(giveUp)
+      ctrl.abort()
+    }
   }, [open, name, categoryLabel, currency, key])
 
   const chosen = est?.options[picked]
@@ -65,7 +76,8 @@ export function CostSheet({
       </div>
       <div className="mt-3 flex flex-col gap-3 pb-4">
         <p className="rounded-2xl rounded-es-[4px] bg-[var(--color-brand-elevated)] p-3 text-sm text-[var(--color-brand-text-primary)]">
-          {failed ? t.retry : est ? t.bubble : t.loading}
+          {failed ? t.retry : est ? t.bubble : null}
+          {!failed && !est ? <BuddgyStatus steps={ts.status.cost} /> : null}
         </p>
         {est ? (
           <div role="radiogroup" aria-label={t.title} className="flex flex-col gap-2">

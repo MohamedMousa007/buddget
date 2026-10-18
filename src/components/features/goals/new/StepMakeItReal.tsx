@@ -34,6 +34,7 @@ const Label = ({ children }: { children: React.ReactNode }) => (
 export function StepMakeItReal({ form }: { form: Form }) {
   const t = useT()
   const f = t.goals.flow.s2
+  const adv = t.goals.flow.advice
   const { online } = useNetworkStatus()
   const [costOpen, setCostOpen] = useState(false)
   const { icon: Icon, cat } = goalVisual(form.category)
@@ -85,10 +86,23 @@ export function StepMakeItReal({ form }: { form: Form }) {
               <div className="min-w-0 flex-1">
                 <AmountField value={form.targetAmount} onChange={form.setTargetAmount} className={FIELD} aria-label={f.target} />
               </div>
-              <div className="w-32 shrink-0">
+              <div className="shrink-0">
                 <FiatCurrencyField value={form.currency} onChange={form.setCurrency} compact className={FIELD} />
               </div>
             </div>
+            {form.advice ? (
+              <p className="flex items-center gap-2 rounded-xl bg-[var(--color-brand-primary-soft)] px-3 py-2 text-[13px] text-[var(--color-brand-text-primary)]">
+                <BuddgyIcon size={20} className="shrink-0" />
+                <span className="min-w-0 flex-1">
+                  {form.advice.kind === 'covered' ? adv.covered : adv.emergency(formatCurrency(form.advice.amount, form.currency, false))}
+                </span>
+                {form.advice.kind === 'emergency' ? (
+                  <OptionChip size="sm" onClick={() => form.setTargetAmount(String((form.advice as { amount: number }).amount))}>
+                    {adv.use}
+                  </OptionChip>
+                ) : null}
+              </p>
+            ) : null}
             {online ? (
               <Button variant="link" size="touch" onClick={() => setCostOpen(true)} className="justify-start px-0 text-[13px]">
                 <BuddgyIcon size={20} />
@@ -141,7 +155,7 @@ export function StepMakeItReal({ form }: { form: Form }) {
               <div className="min-w-0 flex-1">
                 <AmountField value={form.limit} onChange={form.setLimit} className={FIELD} aria-label={f.limit} />
               </div>
-              <div className="w-32 shrink-0">
+              <div className="shrink-0">
                 <FiatCurrencyField value={form.currency} onChange={form.setCurrency} compact className={FIELD} />
               </div>
             </div>
