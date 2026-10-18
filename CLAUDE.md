@@ -27,11 +27,13 @@ These rules ap
   - Linear bot (`scripts/linear-bot.sh`) is inactive: native builds are on-demand only.
 
 ## Component Reuse (STRICT, overrides handoffs)
-- **Golden rule:** reuse an existing component and the app's current design system first. Create a new component only when the thing is truly new (nothing existing does the job).
-- **Handoffs and "no deviation":** a design handoff, or an instruction like "match exactly / no deviation", does NOT bypass this rule. Map the design onto existing components and tokens. The only bypass is the user explicitly saying to skip this rule for that task.
-- **Raise an alert instead of building around it** when the design cannot be done with an existing component, or needs a significant size/structure change that would not fit it. State what differs and wait for the user's call.
-- **Never reshape an existing component to fit a new design.** Existing behaviour and appearance stay as they are. Needed variation is added as a new variant/prop (additive, default unchanged), the standard design-system approach.
-- Before writing any new UI component, search `src/components/ui` and `src/components/features` for an existing one (e.g. heroes use `HeroBand`; sheets, chips, cards, rows have shared primitives) and say which one is reused.
+- **Golden rule:** reuse an existing component and the app's current design system first. Create a new *primitive* only when the thing is truly new. A composition built from existing parts is not a new component: name what is reused.
+- **Handoffs and "no deviation":** a design handoff, or "match exactly / no deviation", does NOT bypass this rule. Map the design onto existing components and tokens. The only bypass is the user explicitly saying to skip it for that task.
+- **Raise an alert instead of building around it** when the design cannot be done with an existing component, or needs a significant size/structure change. State what differs and wait for the user's call.
+- **Never reshape an existing component to fit a new design.** Appearance and default behaviour stay as they are. Needed variation is a new variant/prop (additive, default unchanged).
+- **Allowed edits to existing components:** bug fixes, accessibility fixes and token changes, only with tests, no change to the default look, and a note to the user.
+- **Variant limit:** when a component would get its 3rd or 4th variant, propose promoting the pattern to its own component and let the user decide.
+- Before writing any UI, search `src/components/ui` and `src/components/features` (heroes use `HeroBand`; sheets, chips, cards, rows have shared primitives) and say which one is reused.
 
 ## Code Style
 - **Enterprise structure:** Clean module boundaries, single-responsibility files.
