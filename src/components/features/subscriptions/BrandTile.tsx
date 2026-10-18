@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { brandInitials, brandTileColors } from '@/lib/constants/brandTile'
 import { logoAllowed } from '@/lib/constants/logoPolicy'
 import { cn } from '@/lib/utils'
 
@@ -29,6 +30,7 @@ export function BrandTile({
   className?: string
 }) {
   const s = SIZES[size]
+  const colors = brandTileColors(brandKey)
   return (
     <div
       aria-hidden
@@ -37,6 +39,7 @@ export function BrandTile({
         s.box,
         className,
       )}
+      style={colors && !(brandKey && logoAllowed(brandKey)) ? { backgroundColor: colors.bg } : undefined}
     >
       {brandKey && logoAllowed(brandKey) ? (
         <Image
@@ -47,8 +50,11 @@ export function BrandTile({
           className={cn('size-full object-contain', s.pad)}
         />
       ) : (
-        <span className={cn('font-bold text-[var(--color-brand-primary-ink)]', s.text)}>
-          {name.trim().slice(0, 2)}
+        <span
+          className={cn('font-bold tracking-wide', !colors && 'text-[var(--color-brand-primary-ink)]', s.text)}
+          style={colors ? { color: colors.fg } : undefined}
+        >
+          {brandInitials(brandKey, name)}
         </span>
       )}
     </div>
