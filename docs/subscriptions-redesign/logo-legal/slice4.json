@@ -1,0 +1,329 @@
+[
+ {
+  "id": "apple_fitness",
+  "name": "Apple Fitness+",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html",
+   "https://www.apple.com/legal/intellectual-property/trademark/appletmlist.html"
+  ],
+  "paraphrase": "Apple says only Apple/authorised resellers/licensees may use the Apple Logo in advertising; others need an express written licence to use it on websites/products. Word marks allowed in 'compatible with' phrasing, not prominent, no implied endorsement. Fitness+ is a listed Apple service mark. Page does not mention apps or Fitness+ logo specifically.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Use a text name 'Apple Fitness+' (nominative word mark, no Apple logo) with initials tile. Apple is a litigious, strict brand owner; no licensed-asset route for subscription trackers found."
+ },
+ {
+  "id": "strava",
+  "name": "Strava",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "No modification or recolour beyond placing on brand tile",
+   "No implied endorsement/partnership",
+   "Add non-affiliation line in About/Legal ('Logos are trademarks of their owners, shown for identification')",
+   "If used: logo must not be part of app icon/name, not more prominent than your branding, unaltered, never animated"
+  ],
+  "policy_urls": [
+   "https://developers.strava.com/guidelines/"
+  ],
+  "paraphrase": "Strava API brand guidelines: reference only as 'Powered by Strava'/'Compatible with Strava'; truthful plain-text mentions fine; do not use any part of a Strava logo as app icon; do not modify/animate logos; no implied endorsement. These bind API users; Buddget does not use the Strava API for this tile.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Guidelines target API integrators; the logo-as-identifier use is not explicitly covered. Plain text name is clearly allowed; a wordmark-as-text alternative is safer."
+ },
+ {
+  "id": "myfitnesspal",
+  "name": "MyFitnessPal Premium",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.myfitnesspal.com/terms-of-service"
+  ],
+  "paraphrase": "Terms say MFP owns its trademarks/trade dress, unauthorised use prohibited, no trademark licence granted expressly or implicitly. No brand kit located.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Generic ToS bar on unauthorised use; no referential-use carve-out found. Text name safer."
+ },
+ {
+  "id": "calm",
+  "name": "Calm",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.calm.com/blog/press",
+   "https://www.calm.com/terms"
+  ],
+  "paraphrase": "Press page offers a press kit with logos for media (press@calm.com). Per a third-party summary of Calm's Terms (original page returned 403, not verified), trademarks/logos may not be used without prior written permission.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "RED is provisional pending reading the original ToS; press kit is for press, not apps. Partnerships contact: partnerships@calm.com."
+ },
+ {
+  "id": "headspace",
+  "name": "Headspace",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.headspace.com/terms-and-conditions"
+  ],
+  "paraphrase": "No brand guidelines found. A third-party summary says Headspace Terms grant no licence to use, alter or copy its marks. Original Terms fetch timed out; unverified.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Stylised distinctive orange dot mark; text name safer."
+ },
+ {
+  "id": "golds_gym_egypt",
+  "name": "Gold's Gym Egypt",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "Gold's Gym site unreachable (connection refused); no guidelines found. Egypt operator may be a franchisee with separate brand control.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Gold's Gym is a well-known protected mark with franchise structure; franchisee logo ownership unclear."
+ },
+ {
+  "id": "gym_generic",
+  "name": "Gym / sports club (generic)",
+  "rating": "GREEN",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Use a neutral generic icon (own artwork) - no third-party logo exists"
+  ],
+  "policy_urls": [],
+  "paraphrase": "Generic category with no brand; no third-party mark involved.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "Not a brand; use own generic dumbbell/club icon."
+ },
+ {
+  "id": "vezeeta",
+  "name": "Vezeeta",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. T&C URL guessed returned 404.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "No policy found. Initials safe default."
+ },
+ {
+  "id": "chefaa",
+  "name": "Chefaa",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. ",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Local startup; not researched in depth. Initials default."
+ },
+ {
+  "id": "talabat_pro",
+  "name": "talabat Pro",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.talabat.com/uae/terms"
+  ],
+  "paraphrase": "Per-country ToS pages exist (contracting entity varies); search snippets did not surface an IP clause and I did not read it fully. Delivery Hero group brand.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Large corporate owner; no referential-use permission found."
+ },
+ {
+  "id": "noon_one",
+  "name": "noon VIP / noon One",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.noon.com/egypt-en/terms-of-use/"
+  ],
+  "paraphrase": "Terms page fetch timed out; content unknown.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unverified."
+ },
+ {
+  "id": "careem_plus",
+  "name": "Careem Plus",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://brand.careem.com/"
+  ],
+  "paraphrase": "Careem has a public brand site (sections: Logo, Downloads & Links) but its logo-usage text could not be retrieved; whether third-party use is allowed is unknown. Owned by Uber group.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Check brand.careem.com Logo and Downloads pages manually; may contain partner usage rules."
+ },
+ {
+  "id": "uber_one",
+  "name": "Uber One",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://assets.uber.com/",
+   "https://www.uber.com/legal/en/document/?name=general-terms-of-use&country=united-states&lang=en"
+  ],
+  "paraphrase": "Uber's brand assets site says outside parties must get authorisation to display the Uber logo or reference Uber One. Uber general terms (s.3) bar use of Uber names/logos other than incidentally using the Services without written permission, including in app titles.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Request process not found. Plain text name 'Uber One' as a label is the safer path."
+ },
+ {
+  "id": "breadfast",
+  "name": "Breadfast",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. ",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Local brand; unverified."
+ },
+ {
+  "id": "elmenus",
+  "name": "elmenus",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. ",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Local brand; unverified."
+ },
+ {
+  "id": "instashop",
+  "name": "InstaShop",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. Owned by Delivery Hero.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unverified."
+ },
+ {
+  "id": "rabbit",
+  "name": "Rabbit",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. ",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Local brand; unverified."
+ },
+ {
+  "id": "mrsool",
+  "name": "Mrsool",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. ",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Saudi brand; unverified."
+ },
+ {
+  "id": "carrefour",
+  "name": "Carrefour MyClub",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No legal notice or brand page retrieved. Carrefour has enforced its marks against confusingly similar names/logos (China 2010, India, WIPO domain cases) but nothing found about referential use.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Majid Al Futtaim franchises Carrefour in Egypt/GCC. Enforcement history is against look-alikes, not identification."
+ },
+ {
+  "id": "we_telecom",
+  "name": "WE (Telecom Egypt)",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. ",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "State-owned telco; unverified."
+ },
+ {
+  "id": "vodafone_egypt",
+  "name": "Vodafone Egypt (mobile & home)",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://web.vodafone.com.eg//en/terms-and-condition"
+  ],
+  "paraphrase": "Vodafone group brand centre not found. Affiliate programme terms (UK, via Awin) forbid altering logos and require approval for own creative; Egypt T&C not read.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Group affiliate rule indicates strict no-alteration stance."
+ },
+ {
+  "id": "orange_egypt",
+  "name": "Orange Egypt",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://boosted.orange.com/docs/5.0/about/brand"
+  ],
+  "paraphrase": "Orange brand docs (via Boosted, a third-party-hosted Orange design system) say the master logo is a registered trademark not to be altered, distorted or animated, with clear-space rules. No explicit third-party referential permission seen. EE/Orange affiliate terms require not claiming to be an official site.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Square logo placed on a tile risks clear-space breach."
+ },
+ {
+  "id": "etisalat_egypt",
+  "name": "e& Egypt (Etisalat)",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset guidelines page located or reachable via search/fetch; ToS/IP clause not read. ",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Search found no e& guidelines."
+ },
+ {
+  "id": "starlink_egypt",
+  "name": "Starlink Egypt",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "No modification or recolour beyond placing on brand tile",
+   "No implied endorsement/partnership",
+   "Add non-affiliation line in About/Legal ('Logos are trademarks of their owners, shown for identification')"
+  ],
+  "policy_urls": [
+   "https://spacex.com/trademark",
+   "https://starlink.com/legal/documents/DOC-1004-25903-60"
+  ],
+  "paraphrase": "SpaceX/Starlink policy: names and logos should not be used to endorse any product, entity or idea without written permission; acknowledges fair use doctrine may allow some uses. Contact media@spacex.com.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Most permissive policy in the slice, but still no explicit permission. Text wordmark is safer if risk-averse. Egypt availability of Starlink is itself a separate question."
+ }
+]

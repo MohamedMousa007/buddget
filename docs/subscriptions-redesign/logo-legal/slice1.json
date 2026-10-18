@@ -1,0 +1,466 @@
+[
+ {
+  "id": "netflix",
+  "name": "Netflix",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Use only the N monogram/logo from brand.netflix.com assets, no recolouring beyond Netflix's own colour variants (rules page text not readable here - verify manually)"
+  ],
+  "policy_urls": [
+   "https://help.netflix.com/legal/notices",
+   "https://brand.netflix.com/en/"
+  ],
+  "paraphrase": "Legal notices: don't use Netflix marks as your own or in ways implying sponsorship/endorsement; only licensees may put the name/logo on products. Brand site exists for partner use (JS-rendered, content not readable by fetch).",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "No explicit permission or prohibition for referential use found. Brand site rules unverified. A monochrome N on brand colour is a modification risk."
+ },
+ {
+  "id": "shahid",
+  "name": "Shahid (MBC)",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Brand renamed MBC Shahid (effective 2 Jan 2026 per trade press): confirm the logo asset is the current one"
+  ],
+  "policy_urls": [
+   "https://www.mbc.net",
+   "https://shahid.net"
+  ],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Saudi-owned MBC Group; no public brand kit found. Verify the current MBC Shahid logo and consider initials until confirmed."
+ },
+ {
+  "id": "watchit",
+  "name": "Watch iT",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Egyptian service; no brand page found."
+ },
+ {
+  "id": "amazon_prime",
+  "name": "Amazon Prime (Egypt)",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Use text 'Prime Video' / 'Amazon Prime' as plain name only (nominative), no logo"
+  ],
+  "policy_urls": [
+   "https://advertising.amazon.com/ad-specs/en/policy/brand-usage",
+   "https://videocentral.amazon.com/support/marketing-guidelines",
+   "https://digprjsurvey.amazon.com/csad/help/node/GNYNL3A8HPATWCH8"
+  ],
+  "paraphrase": "Amazon Trademark Usage Guidelines are written for licensees/partners with express permission; marks only in materials approved in advance in writing; no altering. Prime Video partner guide allows only the text 'Available on Prime Video', not the logo. Contact trademarks@amazon.com.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Guidelines target licensees, not referential use, so arguably not directly applicable, but the written-approval requirement is explicit. Text name is safer."
+ },
+ {
+  "id": "disney_plus",
+  "name": "Disney+",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Prefer official Disney+ asset only; consider initials if risk appetite is low"
+  ],
+  "policy_urls": [
+   "https://disneytermsofuse.com/",
+   "https://www.disneyplus.com/legal/subscriber-agreement"
+  ],
+  "paraphrase": "Could not read any Disney trademark clause or public Disney+ third-party logo guideline (terms pages returned only section titles). Circulating 'Disney Brand Identity Guidelines' PDFs on random domains are unverified and ignored.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Disney is widely regarded as an active IP enforcer (general reputation, not verified here). Stylised, highly recognisable mark."
+ },
+ {
+  "id": "hbo_max",
+  "name": "HBO Max",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Use only an official HBO Max colour variant; don't outline/distort or set within text",
+   "Exceptions to logo colour rules need approval from brand team (HBOMax_Brand_Team@wbd.com): a custom one-colour-on-brand-tile treatment may count as an exception - ask or use an official variant"
+  ],
+  "policy_urls": [
+   "https://brand.hbomax.com/logos"
+  ],
+  "paraphrase": "Public brand site gives lockup and logo-treatment rules for partners (4 colour options, don't distort, logo stands alone) but no licence terms for third parties; colour exceptions need brand-team approval.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "No explicit permission or prohibition for referential use. Logo should stand alone, which a tile satisfies."
+ },
+ {
+  "id": "apple_tv",
+  "name": "Apple TV (Apple TV+)",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Apple word mark 'Apple TV' as plain text is permitted referentially under Apple's guidelines; do not use the Apple logo/Apple TV logotype"
+  ],
+  "policy_urls": [
+   "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html"
+  ],
+  "paraphrase": "Apple's guidelines say the Apple logo or other Apple-owned symbols may not be used by third parties without an express written licence; only word marks may be used in a referential phrase, not as part of a product name, and without implying endorsement.",
+  "checked_at": "2026-10-17",
+  "confidence": "high",
+  "notes": "Clear published prohibition on the logo. Wordmark-as-text is the safer alternative."
+ },
+ {
+  "id": "youtube_premium",
+  "name": "YouTube Premium",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text 'YouTube Premium' as name only",
+   "Google API-service branding rules apply only if using YouTube API"
+  ],
+  "policy_urls": [
+   "https://brand.youtube",
+   "https://partnermarketinghub.withgoogle.com/brands/google/branding-guidelines/how-to-show-googles-brand/",
+   "https://developers.google.com/youtube/branding"
+  ],
+  "paraphrase": "YouTube brand site (per search summaries of current and archived versions) requires special approval via a Brand Use Request Form for use of YouTube brand elements and bars standalone logo use; Google's guidelines require permission for product icons and bar implying endorsement.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "brand.youtube page text itself could not be read by fetch; approval requirement taken from search snippets and archived versions - verify manually. Google brand is actively policed."
+ },
+ {
+  "id": "osn_plus",
+  "name": "OSN+",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [
+   "https://www.osnplus.com/en-ae/terms-and-conditions"
+  ],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Terms page fetched but only cookie banner rendered."
+ },
+ {
+  "id": "starzplay",
+  "name": "STARZPLAY",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Verify current branding (Starz/Lionsgate ownership changes)"
+  ],
+  "policy_urls": [
+   "https://www.starzplay.com/en/terms-and-conditions"
+  ],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Terms page returned 403."
+ },
+ {
+  "id": "viu",
+  "name": "Viu",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "No brand page found."
+ },
+ {
+  "id": "crunchyroll",
+  "name": "Crunchyroll",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [
+   "https://www.crunchyroll.com/tos"
+  ],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Rebranded July 2024 (new eye symbol); use only the current official mark. No official press kit located; ToS page body did not load. Sony-owned."
+ },
+ {
+  "id": "mubi",
+  "name": "MUBI",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [
+   "https://www.mubi.com/en/terms"
+  ],
+  "paraphrase": "MUBI Terms of Use read: IP section concerns copyright and DMCA and content reproduction; no trademark or logo clause, no brand/press page linked.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Absence of a clause is not permission. Simple wordmark, likely low enforcement appetite (unverified)."
+ },
+ {
+  "id": "tod",
+  "name": "TOD (beIN)",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "beIN Media Group is an active rights enforcer in sports piracy (general reputation, not verified here); consider initials."
+ },
+ {
+  "id": "beinsports",
+  "name": "beIN Sports / beIN CONNECT",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Consider initials: beIN is an aggressive rights enforcer in sports broadcasting (general reputation)"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "No brand page found."
+ },
+ {
+  "id": "yango_play",
+  "name": "Yango Play",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Yandex-group brand; no guidelines found."
+ },
+ {
+  "id": "weyyak",
+  "name": "Weyyak",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "No brand page found."
+ },
+ {
+  "id": "jawwy_tv",
+  "name": "Jawwy TV",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "STC (Saudi) service; not researched beyond search. Verify service still operating under this name."
+ },
+ {
+  "id": "swvl",
+  "name": "Swvl",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [
+   "https://trademark.justia.com/owners/swvl-3803672"
+  ],
+  "paraphrase": "No brand guidelines found; Swvl holds US trademark filings for its image marks (ownership confirmed, no usage rules).",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Registered mark; terms page not read."
+ },
+ {
+  "id": "indrive",
+  "name": "inDrive",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [],
+  "paraphrase": "No official brand/asset-usage page or trademark clause could be located or read in this pass (search returned nothing official, or page blocked/unreachable); status unknown, not 'allowed'.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Terms page 403. 2023-24 rebrand: use current logo only."
+ },
+ {
+  "id": "nytimes",
+  "name": "The New York Times",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text 'The New York Times' (word-only marks are not covered by the logo restriction) with trademark notice per NYT policy"
+  ],
+  "policy_urls": [
+   "https://thenewyorktimeshelpcenter.helpjuice.com/policies/115014792207-Trademarks",
+   "https://www.niemanlab.org/2009/02/nyt-threatens-news-aggregator-over-use-of-logo-newsers-reply-ill-put-a-skull-and-crossbones-in-its-place/"
+  ],
+  "paraphrase": "NYT trademark policy: marks may be referenced only for its own products; logos and design marks require prior written authorization; no implying sponsorship. Contact rights@nytimes.com. Precedent: 2009 NYT counsel demanded news aggregator Newser stop using its logo.",
+  "checked_at": "2026-10-17",
+  "confidence": "high",
+  "notes": "Explicit prohibition plus enforcement history against an aggregator."
+ },
+ {
+  "id": "economist",
+  "name": "The Economist",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text name only"
+  ],
+  "policy_urls": [
+   "https://www.toolongdidntread.it.com/companies/the-economist/terms/v/20260729_rev01"
+  ],
+  "paraphrase": "A third-party copy of Economist Terms of Use says its trademarks incl. name and logos may not be used for any purpose without written permission from The Economist Group.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "economist.com was blocked to fetch; clause taken from a mirror, verify on the official site. Conservative RED pending verification."
+ },
+ {
+  "id": "medium",
+  "name": "Medium",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service"
+  ],
+  "policy_urls": [
+   "https://help.medium.com/hc/en-us/articles/213690137-Trademark-Policy"
+  ],
+  "paraphrase": "Medium's trademark policy (via search summary) bars confusing uses of others' marks and treats nominative fair use (referring to a company by its mark) as generally tolerated; no separate third-party logo guideline found.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Help page returned 403 to fetch; summary from search. The M monogram on a tile is simple and low-risk."
+ },
+ {
+  "id": "substack",
+  "name": "Substack",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Use only logos from Substack's brand page; no change to colour, proportion or font",
+   "Leave white space around logo; don't place it where it suggests link to another business"
+  ],
+  "policy_urls": [
+   "https://substack.com/brand"
+  ],
+  "paraphrase": "Substack brand page: use only its published logos, unaltered (no colour/proportion change), accurate references to the company allowed where law permits, anything else needs advance written permission; no implied partnership.",
+  "checked_at": "2026-10-17",
+  "confidence": "high",
+  "notes": "Recolouring is expressly forbidden, so a one-colour mark on brand colour conflicts unless Substack's own white-on-orange variant is used. Stricter than most YELLOW."
+ },
+ {
+  "id": "patreon",
+  "name": "Patreon",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Show as identification only, unmodified, official asset",
+   "Neutral tile; no 'official', 'partner' or 'endorsed' wording",
+   "In-app/store disclaimer: names and logos are trademarks of their owners; Buddget is not affiliated",
+   "Remove on request (takedown readiness); keep initials fallback wired per service",
+   "Use official Patreon mark only, digital contexts only, don't alter or distort"
+  ],
+  "policy_urls": [
+   "https://www.patreon.com/brand",
+   "https://support.patreon.com/hc/en-us/articles/216539323-Use-Patreon-s-logo-to-promote-my-Patreon"
+  ],
+  "paraphrase": "Patreon brand page permits creators to use its marks to show a Patreon presence, digital only, no altering, no confusingly similar marks; it forbids uses that mislead or conflict with its terms. Third-party apps are not specifically addressed; brand@patreon.com for questions.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Permission is framed for creators, not trackers. Consider emailing brand@patreon.com."
+ }
+]

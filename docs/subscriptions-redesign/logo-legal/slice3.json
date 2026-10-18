@@ -1,0 +1,442 @@
+[
+ {
+  "id": "spotify",
+  "name": "Spotify",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Unmodified icon only, monochrome (black on light / white on dark) unless on black/white",
+   "Min 21px; clear space = half icon height",
+   "Do not pair with our own branding over artwork; no implied partnership"
+  ],
+  "policy_urls": [
+   "https://developer.spotify.com/documentation/design"
+  ],
+  "paraphrase": "Design guidelines govern partners using Spotify content/metadata (attribution with logo). No clause for a tracker referencing the service. Forbids altering the logo and pairing Spotify with other brands.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Not a Spotify integration, so guidelines apply only by analogy. Wordmark-as-text safer."
+ },
+ {
+  "id": "apple_music",
+  "name": "Apple Music",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html"
+  ],
+  "paraphrase": "Apple says third parties need an express written trademark licence for Apple-owned logos/graphic symbols; only word marks may be used referentially (e.g. 'compatible with') and less prominently than own name.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Page does not name the Apple Music logo specifically; general rule applied. Plain text name is acceptable."
+ },
+ {
+  "id": "apple_arcade",
+  "name": "Apple Arcade",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html"
+  ],
+  "paraphrase": "Same Apple rule: logos need express written licence; text word mark referential use only.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Same note as Apple Music."
+ },
+ {
+  "id": "playstation_plus",
+  "name": "PlayStation Plus",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "If a logo is wanted: contact Sony Official Licensing Program"
+  ],
+  "policy_urls": [
+   "https://www.playstation.com/en-us/legal/copyright-and-trademark-notice/"
+  ],
+  "paraphrase": "Sony notice lists marks and reserves rights; gives no third-party usage rules; points to an Official Licensing Program page (not read).",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Sony is a known IP enforcer; marks are stylised. Conservative fallback."
+ },
+ {
+  "id": "xbox_game_pass",
+  "name": "Xbox Game Pass",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks"
+  ],
+  "paraphrase": "Microsoft guidelines say not to use its logos, icons or designs in any manner without permission; word marks may be used to accurately describe a product without implying endorsement.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "xbox.com/en-US/legal/trademarks returned 404. Text name OK."
+ },
+ {
+  "id": "nintendo_switch_online",
+  "name": "Nintendo Switch Online",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.nintendo.com/en-gb/Legal-information/Copyright/Copyright-625949.html"
+  ],
+  "paraphrase": "Nintendo's copyright page (read directly) bars third-party use of its logos/trademarks with non-Nintendo products or services or where customers could be confused, and says it generally declines permission requests.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "Known aggressive enforcer. Plain-text name only."
+ },
+ {
+  "id": "discord_nitro",
+  "name": "Discord Nitro",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Unmodified Discord symbol in colour, black or white only",
+   "Only where Discord brand is clear nearby (else full logo)",
+   "Do not imply Discord affiliation; digital use only"
+  ],
+  "policy_urls": [
+   "https://discord.com/branding"
+  ],
+  "paraphrase": "Discord marks need permission for most uses; allowed to state you use Discord without implying affiliation; do not edit/recolour. No tracker-specific clause.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Weak fit with the 'say you are a Discord user' allowance. Wordmark text safer."
+ },
+ {
+  "id": "twitch",
+  "name": "Twitch Turbo / subs",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://brand.twitch.com/"
+  ],
+  "paraphrase": "Brand page only offers an official asset download; no stated rules on third-party use or permission found.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Full guidelines not located."
+ },
+ {
+  "id": "linkedin_premium",
+  "name": "LinkedIn Premium",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "If used: official asset only, unmodified, clearly separate from LinkedIn"
+  ],
+  "policy_urls": [
+   "https://brand.linkedin.com/policies"
+  ],
+  "paraphrase": "LinkedIn allows use only as described in its guidelines or with express written permission, official assets only, must not suggest sponsorship; may ask you to stop.",
+  "checked_at": "2026-10-17",
+  "confidence": "medium",
+  "notes": "Close to RED on strictness."
+ },
+ {
+  "id": "duolingo",
+  "name": "Duolingo Super",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://design.duolingo.com/identity/logos"
+  ],
+  "paraphrase": "Duolingo design site gives logo colour/clear-space/no-recolour rules but nothing on third-party permission; ToS reportedly grants no trademark licence (secondary summary).",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Mascot is distinctive; character art riskier than wordmark."
+ },
+ {
+  "id": "udemy",
+  "name": "Udemy (courses / Personal Plan)",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://support.udemy.com/hc/en-us/articles/8926724282519-Trademark-Guidelines-For-Instructors"
+  ],
+  "paraphrase": "Udemy trademark guidelines (search summary of official support page; direct fetch returned 403) require Udemy written permission for its logos.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Primary page still unreadable (HTTP 403); not confirmed first-hand."
+ },
+ {
+  "id": "snapchat_plus",
+  "name": "Snapchat+",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://developers.snap.com/snap-kit/app-review/brand-guidelines",
+   "https://snap.com/en-US/ad-policies"
+  ],
+  "paraphrase": "Snap Kit guidelines name the Ghost logo as something third-party apps must not use as their own branding; ads may not use Snap trademarks outside brand guidelines. No general referential-use rule found.",
+  "checked_at": "2026-10-17",
+  "confidence": "low",
+  "notes": "Context is developer/ad programmes, not identification use; leaning RED if challenged."
+ },
+ {
+  "id": "anghami",
+  "name": "Anghami",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://docs.sdk.anghami.com/license"
+  ],
+  "paraphrase": "No public brand guidelines found. SDK licence says Anghami is a trademark and marks must follow guidelines supplied under a developer agreement.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unofficial logo aggregators are not a licence."
+ },
+ {
+  "id": "deezer",
+  "name": "Deezer",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://brandkit.pro/brand/deezer"
+  ],
+  "paraphrase": "Official guidelines (reportedly deezerbrand.com) not retrieved; only aggregator pages found, one marking the logo editorial-use-only.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Check deezerbrand.com manually."
+ },
+ {
+  "id": "audible",
+  "name": "Audible",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://advertising.amazon.com/resources/ad-policy/brand-usage"
+  ],
+  "paraphrase": "No Audible-specific policy found. Amazon's ad policy says Amazon marks beyond the 'available at Amazon' logo need written approval; its trademark guidelines target licensees and bar altering logos or implying endorsement.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Amazon is a heavy brand enforcer; policy is for advertising/licensees, not identification use."
+ },
+ {
+  "id": "storytel",
+  "name": "Storytel",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://press.storytel.com/about-us"
+  ],
+  "paraphrase": "No official logo usage guide found; press room exists at press.storytel.com (not inspected for terms).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ },
+ {
+  "id": "kindle_unlimited",
+  "name": "Kindle Unlimited",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://advertising.amazon.com/resources/ad-policy/brand-usage"
+  ],
+  "paraphrase": "No Kindle-specific logo policy found. Amazon's ad policy lists 'Kindle' among terms third parties may not use in ads without approval.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Same Amazon caveats as Audible."
+ },
+ {
+  "id": "youtube_music",
+  "name": "YouTube Music Premium",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://brand.youtube",
+   "https://developers.google.com/youtube/branding"
+  ],
+  "paraphrase": "YouTube brand hub (via search summary) requires approval via a form for some contexts, forbids altering the logo, and says the logo should not be used alone without approval; API branding rules forbid implying endorsement.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "YouTube Music icon not specifically covered. Google 'Third Party Use' terms require consent for uncovered uses."
+ },
+ {
+  "id": "scribd",
+  "name": "Scribd / Everand",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official Scribd/Everand brand guidelines found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Owner's brand pages not located."
+ },
+ {
+  "id": "ea_play",
+  "name": "EA Play",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.ea.com/tr-tr/compete/guidelines"
+  ],
+  "paraphrase": "No EA Play logo policy found; EA's tournament guidelines forbid implying EA endorsement and note EA has not cleared third-party content.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ },
+ {
+  "id": "ubisoft_plus",
+  "name": "Ubisoft+",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.ubisoft.com/legal/documents/videopolicy"
+  ],
+  "paraphrase": "No Ubisoft logo/Ubisoft+ policy found; video policy covers game footage only.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ },
+ {
+  "id": "google_play_pass",
+  "name": "Google Play Pass",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://developer.android.com/games/pgs/branding",
+   "https://developer.android.com/distribute/tools/promote/brand"
+  ],
+  "paraphrase": "Google pages (via search summary) say uses beyond the guidelines need prior written consent, Google Play-mark creatives need brand-team approval, and Google logos must not be used in app icons.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Guidelines target developers promoting their apps; Google Brand Resource Center not read. Could soften to YELLOW on review. Text name acceptable."
+ },
+ {
+  "id": "roblox_premium",
+  "name": "Roblox Premium",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://en.help.roblox.com/hc/articles/115001708126"
+  ],
+  "paraphrase": "Roblox usage guidelines (via search summary) say the logo is not allowed except via the official badge, limited to select partners, and unsolicited requests are not granted.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": ""
+ },
+ {
+  "id": "fortnite_crew",
+  "name": "Fortnite Crew",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://legal.epicgames.com/fortnite/eula/uefn",
+   "https://legal.epicgames.com/epicgames/intellectual-property-faq"
+  ],
+  "paraphrase": "Epic bars creators from using Fortnite/Epic logos in experiences or their promotion; says third-party logos generally need the rightsholder's permission. No rule for trackers.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Creator-programme terms apply only by analogy; leaning RED."
+ },
+ {
+  "id": "coursera",
+  "name": "Coursera Plus",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.coursera.org/about/press"
+  ],
+  "paraphrase": "Coursera press page (read) has no usage rules; points to a press kit and press@coursera.org.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "No explicit permission or prohibition found."
+ },
+ {
+  "id": "skillshare",
+  "name": "Skillshare",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://conductatlas.com/platform/skillshare/skillshare-terms-of-service/provision/CA-P-034037/no-right-to-use-skillshare-trademarks-or-brand/"
+  ],
+  "paraphrase": "ToS reportedly grants no right to use Skillshare trademarks/logos (secondary summary only).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Primary ToS not read."
+ },
+ {
+  "id": "masterclass",
+  "name": "MasterClass",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official guidelines found; affiliate material says supplied creatives must be used as-is (secondary).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ },
+ {
+  "id": "telegram_premium",
+  "name": "Telegram Premium",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official Telegram brand guidelines found; ToS page read contains none.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Check telegram.org/tos/brand manually."
+ },
+ {
+  "id": "x_premium",
+  "name": "X Premium",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://docs.x.com/ja/developer-terms/display-requirements"
+  ],
+  "paraphrase": "Only developer display requirements found (X logo shown with X content); no general third-party logo policy; brand toolkit page returned 402.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ },
+ {
+  "id": "tinder",
+  "name": "Tinder",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/press guidelines found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Match Group is an active IP enforcer; flame is a distinctive mark."
+ },
+ {
+  "id": "bumble",
+  "name": "Bumble",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [],
+  "paraphrase": "No official brand/press guidelines found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ }
+]

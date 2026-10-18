@@ -1,0 +1,485 @@
+[
+ {
+  "id": "microsoft_365",
+  "name": "Microsoft 365",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text name only to describe compatibility"
+  ],
+  "policy_urls": [
+   "https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks"
+  ],
+  "paraphrase": "Logos, product icons and designs generally need an express licence; names may truthfully describe compatibility without implying endorsement; icons not allowed as app icons.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "Text wordmark safer."
+ },
+ {
+  "id": "google_one",
+  "name": "Google One / Google AI plans",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://partnermarketinghub.withgoogle.com/brands/google/trademarks-and-terms/terms-and-conditions/",
+   "https://partnermarketinghub.withgoogle.com/brands/google/overview/"
+  ],
+  "paraphrase": "Google must approve a request before its logos/brand features are used; approval is per-request and revocable; fuller guidance only for co-branding partners.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "Referential/text use not addressed on page read."
+ },
+ {
+  "id": "icloud",
+  "name": "iCloud+",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.apple.com/legal/intellectual-property/guidelinesfor3rdparties.html"
+  ],
+  "paraphrase": "Apple logos/graphic symbols need an express written licence; word marks may be used referentially (e.g. 'compatible with') if less prominent than own name and no endorsement implied.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "iCloud-specific logo rule not found; text name is the safe option."
+ },
+ {
+  "id": "dropbox",
+  "name": "Dropbox",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Own app branding more prominent",
+   "Logo unmodified, no recolour/distortion",
+   "No sponsorship/endorsement implication",
+   "Consider emailing Dropbox for commercial confirmation"
+  ],
+  "policy_urls": [
+   "https://www.dropbox.com/branding"
+  ],
+  "paraphrase": "Check with Dropbox before commercial use; may say product works with Dropbox and link with logo per guidelines; no editing/recolouring or implied affiliation.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Page asks to check before commercial use; no approval obtained. Text alternative is safer."
+ },
+ {
+  "id": "notion",
+  "name": "Notion",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Use only official brand elements, unmodified",
+   "Attribution line per Notion guidelines",
+   "No implied endorsement"
+  ],
+  "policy_urls": [
+   "https://notion.notion.site/Notion-Trademark-Usage-Guidelines-9826313c686a4f6e9d8a48347162714b"
+  ],
+  "paraphrase": "Per search snippets of Notion's guidelines: descriptive reference to how a product relates to Notion is allowed; only listed brand elements permitted; permission revocable; attribution required.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Official page not directly readable (fetch returned no text); relies on search summary. Verify."
+ },
+ {
+  "id": "slack",
+  "name": "Slack",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Follow Slack brand guidelines exactly",
+   "Send mockup to Slack for uses outside guidelines"
+  ],
+  "policy_urls": [
+   "https://slack.com/media-kit"
+  ],
+  "paraphrase": "Third parties may use Slack logos/assets without separate agreement if they follow the brand guidelines; uses outside guidelines need written approval; revocable.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Closest to GREEN, but detailed guideline rules (e.g. non-integration use) not read; kept YELLOW."
+ },
+ {
+  "id": "zoom",
+  "name": "Zoom",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://brand.zoom.us/usage-legal",
+   "https://explore.zoom.us/brandguidelines"
+  ],
+  "paraphrase": "Per search summaries: stylised marks/icons/logos need written licence or express permission (brand@zoom.us); word marks may be used descriptively.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Official page fetch failed/returned empty; based on search results. Verify before relying."
+ },
+ {
+  "id": "adobe_cc",
+  "name": "Adobe Creative Cloud",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text name with attribution if used"
+  ],
+  "policy_urls": [
+   "https://www.adobe.com/legal/permissions/trademarks.html"
+  ],
+  "paraphrase": "Adobe allows trademarks (not logos) to identify products; logos generally need licence or written authorisation via form.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": ""
+ },
+ {
+  "id": "canva",
+  "name": "Canva Pro",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.canva.dev/docs/connect/guidelines/brand"
+  ],
+  "paraphrase": "Logo downloadable only for approved integration uses (entry point / Powered by Canva); not for unrelated uses; no alteration; text 'works with' allowed.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Rules are for Canva integrations; our use is not one."
+ },
+ {
+  "id": "grammarly",
+  "name": "Grammarly",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Prefer text name",
+   "Unmodified logo",
+   "No endorsement"
+  ],
+  "policy_urls": [
+   "https://www.grammarly.com/press"
+  ],
+  "paraphrase": "No official guideline text retrieved (press page redirects to superhuman.com/press, not read).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown; treat cautiously."
+ },
+ {
+  "id": "figma",
+  "name": "Figma",
+  "rating": "GREEN",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Truthful, fair, non-misleading identification",
+   "Unmodified logo, no recolour",
+   "Not merged with own branding",
+   "No implied affiliation"
+  ],
+  "policy_urls": [
+   "https://www.figma.com/using-the-figma-brand/"
+  ],
+  "paraphrase": "Third parties may use Figma marks to identify Figma or its products if truthful and not misleading; may use name/logos to link to Figma; no modification; revocable.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Guidance aimed at integrations/informational content; broadly covers identification."
+ },
+ {
+  "id": "evernote",
+  "name": "Evernote",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Credit Bending Spoons US Inc. as owner, 'used under license'",
+   "Unaltered logo, own branding more prominent",
+   "No implied endorsement"
+  ],
+  "policy_urls": [
+   "https://evernote.com/legal/trademark-use"
+  ],
+  "paraphrase": "Logo/app icon may link to service or show compatibility, subject to a trademark licence (attribution, quality, indemnity, auto-termination); no altering or confusing use.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Use binds to licence terms with indemnity; consider text."
+ },
+ {
+  "id": "onepassword",
+  "name": "1Password",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Use only media-kit logo, unmodified"
+  ],
+  "policy_urls": [
+   "https://1password.com/press"
+  ],
+  "paraphrase": "Press page says media kit contains logos and brand guidelines; no usage terms visible.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Media-kit terms not read."
+ },
+ {
+  "id": "bitwarden",
+  "name": "Bitwarden Premium",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Written permission advisable",
+   "Unmodified, no endorsement"
+  ],
+  "policy_urls": [
+   "https://bitwarden.com/brand/",
+   "https://github.com/bitwarden/server/blob/main/TRADEMARK_GUIDELINES.md"
+  ],
+  "paraphrase": "Brand page covers only Bitwarden's own usage; trademark policy says third-party use of marks needs written agreement/permission (aimed at forks/branding).",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ },
+ {
+  "id": "nordvpn",
+  "name": "NordVPN",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://nordsecurity.com/trademark-policy"
+  ],
+  "paraphrase": "Explicit written consent needed for Nord marks/logos; narrow exception for word marks to truthfully identify; no recolouring or modification.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": ""
+ },
+ {
+  "id": "expressvpn",
+  "name": "ExpressVPN",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Prefer text"
+  ],
+  "policy_urls": [
+   "https://www.expressvpn.com/press"
+  ],
+  "paraphrase": "Could not reach official press/brand page (connection reset); nothing confirmed.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown."
+ },
+ {
+  "id": "surfshark",
+  "name": "Surfshark",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://surfshark.com/press/assets"
+  ],
+  "paraphrase": "Assets licensed for personal/non-commercial use only; commercial use requires written permission (media@surfshark.com).",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "From search summary of official page."
+ },
+ {
+  "id": "proton",
+  "name": "Proton (VPN/Mail/Drive)",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Prefer text"
+  ],
+  "policy_urls": [
+   "https://proton.me/legal/terms"
+  ],
+  "paraphrase": "No logo-usage page found; fetch timed out.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown."
+ },
+ {
+  "id": "chatgpt",
+  "name": "ChatGPT (OpenAI)",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Own branding more prominent",
+   "No OpenAI marks in app name",
+   "Follow openai.com/brand guide"
+  ],
+  "policy_urls": [
+   "https://openai.com/brand/"
+  ],
+  "paraphrase": "OpenAI publishes a third-party brand guide (prominence, clear space, revocable permission, naming limits); fetch blocked (403) so specifics from search summary.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": ""
+ },
+ {
+  "id": "claude",
+  "name": "Claude (Anthropic)",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.anthropic.com/legal/trademark-guidelines"
+  ],
+  "paraphrase": "Third parties may use Anthropic logos only with prior written approval for specific uses; no alteration; no implied endorsement; plain-text referential use not addressed.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": ""
+ },
+ {
+  "id": "google_ai_pro",
+  "name": "Google AI Pro (Gemini)",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://partnermarketinghub.withgoogle.com/brands/google/trademarks-and-terms/terms-and-conditions/"
+  ],
+  "paraphrase": "Google brand features require approval via request form; revocable.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": "No Gemini-specific rule found."
+ },
+ {
+  "id": "perplexity",
+  "name": "Perplexity Pro",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Prefer text"
+  ],
+  "policy_urls": [
+   "https://www.perplexity.ai"
+  ],
+  "paraphrase": "No official brand guideline located.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown; Perplexity is itself a litigant in trademark cases, no evidence of tracker enforcement."
+ },
+ {
+  "id": "cursor",
+  "name": "Cursor",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Use downloaded brand asset unmodified",
+   "Call it plain 'Cursor'"
+  ],
+  "policy_urls": [
+   "https://cursor.com/brand"
+  ],
+  "paraphrase": "Brand page offers an asset package and naming guidance but no stated third-party logo terms.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": ""
+ },
+ {
+  "id": "github_copilot",
+  "name": "GitHub Copilot",
+  "rating": "YELLOW",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "If a mark is used, GitHub Invertocat unmodified and less prominent than Buddget"
+  ],
+  "policy_urls": [
+   "https://brand.github.com/foundations/logo"
+  ],
+  "paraphrase": "GitHub permits logos to show integration, forbids recolouring or use as own icon, and requires written permission for other uses; Copilot has no standalone logo since 2025.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Use initials/text for Copilot."
+ },
+ {
+  "id": "midjourney",
+  "name": "Midjourney",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Reproduce mark exactly",
+   "Add non-affiliation disclaimer"
+  ],
+  "policy_urls": [
+   "https://docs.midjourney.com/docs/trademark-policy"
+  ],
+  "paraphrase": "Trademark policy (Aug 2023, via search summary) requires exact reproduction and a non-endorsement disclaimer; no use in business/product names.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Direct fetch 403."
+ },
+ {
+  "id": "aws",
+  "name": "AWS",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text 'AWS' only"
+  ],
+  "policy_urls": [
+   "https://aws.amazon.com/trademark-guidelines/"
+  ],
+  "paraphrase": "Fair use limited to plain text with no logos; any other logo use needs prior written permission.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": ""
+ },
+ {
+  "id": "godaddy",
+  "name": "GoDaddy",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [],
+  "policy_urls": [
+   "https://www.godaddy.com/legal/agreements/brand-guidelines-and-permissions"
+  ],
+  "paraphrase": "Logos protected; permission requests (permissions@godaddy.com) evaluated case by case; many refused as implying endorsement.",
+  "checked_at": "2026-10-18",
+  "confidence": "medium",
+  "notes": "Via search summary; direct fetch 403."
+ },
+ {
+  "id": "namecheap",
+  "name": "Namecheap",
+  "rating": "YELLOW",
+  "recommendation": "USE_LOGO_WITH_CONDITIONS",
+  "conditions": [
+   "Prefer text"
+  ],
+  "policy_urls": [
+   "https://www.namecheap.com"
+  ],
+  "paraphrase": "No official brand guideline found.",
+  "checked_at": "2026-10-18",
+  "confidence": "low",
+  "notes": "Unknown."
+ },
+ {
+  "id": "cloudflare",
+  "name": "Cloudflare",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text word mark as adjective only"
+  ],
+  "policy_urls": [
+   "https://www.cloudflare.com/trademark/"
+  ],
+  "paraphrase": "Logos off-limits without written permission; word marks usable to refer to services.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": ""
+ },
+ {
+  "id": "digitalocean",
+  "name": "DigitalOcean",
+  "rating": "RED",
+  "recommendation": "USE_INITIALS",
+  "conditions": [
+   "Plain text with non-affiliation statement"
+  ],
+  "policy_urls": [
+   "https://www.digitalocean.com/legal/trademark-usage-guidelines"
+  ],
+  "paraphrase": "Logos/designs need prior approval; referential use allowed in plain text; no stylising; forum staff reply says no logos on third-party apps without agreement.",
+  "checked_at": "2026-10-18",
+  "confidence": "high",
+  "notes": ""
+ }
+]

@@ -2,10 +2,11 @@
 
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { logoAllowed } from '@/lib/constants/logoPolicy'
 
 /**
- * Renders the brand’s app icon from `/public/subscription-icons/{brandKey}.png`.
- * On load error, falls back to a rounded square with `initial` (and optional `emoji` as label).
+ * Renders the brand’s app icon from `/public/subscription-icons/{brandKey}.png`, but only for brands the
+ * logo policy allows (`logoPolicy.ts`); every other brand gets the initials tile. On load error, falls back to a rounded square with `initial` (and optional `emoji` as label).
  */
 export function SubscriptionBrandIcon({
   brandKey,
@@ -27,7 +28,7 @@ export function SubscriptionBrandIcon({
   const radius = size === 'lg' ? 'rounded-xl' : size === 'sm' ? 'rounded-lg' : 'rounded-md'
   const label = (initial || emoji || '?').trim()
 
-  if (brandKey) {
+  if (brandKey && logoAllowed(brandKey)) {
     return (
       <div
         className={cn('relative shrink-0 overflow-hidden bg-[var(--color-brand-elevated)]', radius, className)}
