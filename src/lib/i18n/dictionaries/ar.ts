@@ -2316,6 +2316,7 @@ export const ar: Dictionary = {
       deleteMoveSub: 'ينتقل الرصيد ثم يُحذف الهدف.',
       deleteConfirm: 'حذف الهدف',
       noOtherPocket: 'لا توجد محفظة أخرى لنقل المال إليها.',
+      deleteNoPocket: 'سيُحذف الهدف فقط. حساباتك ومعاملاتك لا تتأثر.',
     },
     flow: {
       close: 'إغلاق',
@@ -2442,6 +2443,7 @@ export const ar: Dictionary = {
       pausedWas: (d) => `متوقف \u00b7 كان ${d}`,
       ofTarget: (t) => `من ${t}`,
       statusOver: (a) => `تجاوز بمقدار ${a}`,
+      statusOverdue: 'تجاوز تاريخه المستهدف',
       statusLeft: (a) => `متبقي ${a} هذا الشهر`,
       statusDue: (d) => (d === 0 ? 'مستحق اليوم' : `مستحق خلال ${d} يوم`),
       statusBehind: (n, q) => `متأخر ${n} ${q ? 'ربع' : 'شهر'}`,

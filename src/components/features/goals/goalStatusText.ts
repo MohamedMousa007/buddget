@@ -6,12 +6,13 @@ import { formatCurrency } from '@/lib/utils/formatters'
 type Home = Dictionary['goals']['home']
 
 export function goalStatusText(v: GoalStatusView, goal: Goal, t: Home): string {
-  const q = goal.frequency === 'quarterly'
+  // Cycles are monthly for every goal, so behind/streak always count months.
+  const q = false
   const money = (n: number) => formatCurrency(n, goal.currency, false)
   switch (v.kind) {
     case 'over': return t.statusOver(money(v.params.amount ?? 0))
     case 'underLimit': return t.statusLeft(money(v.params.amount ?? 0))
-    case 'due': return t.statusDue(v.params.count ?? 0)
+    case 'due': return (v.params.count ?? 0) < 0 ? t.statusOverdue : t.statusDue(v.params.count ?? 0)
     case 'behind': return t.statusBehind(v.params.count ?? 1, q)
     case 'oneDeposit': return t.statusOneDeposit
     case 'streak': return t.statusStreak(v.params.count ?? 3, q)

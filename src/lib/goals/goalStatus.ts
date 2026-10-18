@@ -79,7 +79,7 @@ export function getGoalStatus({ goal, current, runs: allRuns, now }: GoalStatusI
   if (goal.targetDate && goal.status === 'active') {
     const days = Math.ceil((new Date(`${goal.targetDate}T00:00:00`).getTime() - now.getTime()) / DAY)
     if (days <= 30) {
-      return { kind: 'due', icon: 'Calendar', tone: 'ink', button: { action: 'review', variant: 'outline' }, params: { count: Math.max(0, days) } }
+      return { kind: 'due', icon: 'Calendar', tone: 'ink', button: { action: 'review', variant: 'outline' }, params: { count: days } }
     }
   }
   const hasPlan = goal.fundingMode !== 'manual'

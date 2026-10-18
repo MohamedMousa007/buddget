@@ -52,7 +52,7 @@ export function CoachCard({
       <div className="flex items-start gap-2.5">
         <BuddgyIcon size={24} mood="worried" />
         <div>
-          <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.coachTitle(coach.behindCount, quarterly)}</p>
+          <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.coachTitle(coach.behindCount, false)}</p>
           <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{t.coachShort(money(coach.shortfall), sinceLabel)}</p>
         </div>
       </div>

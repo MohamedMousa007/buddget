@@ -1,6 +1,6 @@
 import type { Goal, SavingsTransaction } from '@/lib/store/types'
 import { addMonthsIso, replanOptions, type ReplanOptions } from '@/lib/goals/goalPlan'
-import { runsSincePlan, type AllocationRun } from '@/lib/goals/goalStatus'
+import { periodStartMonth, runsSincePlan, type AllocationRun } from '@/lib/goals/goalStatus'
 
 export const CHECKPOINTS = [25, 50, 75, 100] as const
 
@@ -80,7 +80,7 @@ export function coachView(input: {
 }): CoachView | null {
   const { goal, current, now } = input
   if (goal.fundingMode === 'manual' || !goal.targetDate) return null
-  const runs = runsSincePlan(goal, input.runs).sort((a, b) => a.period.localeCompare(b.period))
+  const runs = [...runsSincePlan(goal, input.runs)].sort((a, b) => a.period.localeCompare(b.period))
   const planned = runs.reduce((s, r) => s + r.planned, 0)
   const paid = runs.reduce((s, r) => s + r.amount, 0)
   const shortfall = planned - paid
@@ -117,4 +117,40 @@ export function replanPatch(
   return goal.fundingMode === 'share' && sharePct !== null
     ? { sharePct: Math.min(100, sharePct), planStart: today }
     : { fundingMode: 'fixed', sharePct: null, monthlyContribution: Math.ceil(perPeriod), planStart: today }
+}
+
+/**
+ * Cycle history in the goal's own currency, with money the user added by hand counted toward the
+ * cycle it landed in. Cron runs store base-currency figures and only what the cron paid, so without
+ * this a goal the user funds themselves would read as behind.
+ */
+export function normalizeRuns(input: {
+  goal: Goal
+  runs: AllocationRun[]
+  txs: SavingsTransaction[]
+  /** Base-currency run figures into the goal's currency. */
+  baseToGoal: (n: number) => number
+  toGoal: (amount: number, from: SavingsTransaction['currency']) => number
+}): AllocationRun[] {
+  const { goal, runs, txs } = input
+  const manual = txs.filter(
+    (t) =>
+      t.type === 'deposit' &&
+      goal.linkedSavingsAccountIds.includes(t.accountId) &&
+      t.source !== 'carry' &&
+      t.source !== 'goal_opening',
+  )
+  return runs.map((r) => {
+    const start = periodStartMonth(r.period)
+    const span = r.period.includes('-Q') ? 3 : 1
+    const inCycle = manual.filter((t) => {
+      const m = t.date.slice(0, 7)
+      if (m < start) return false
+      const [y, mo] = start.split('-').map(Number)
+      const end = new Date(y, mo - 1 + span, 1)
+      return m < `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}`
+    })
+    const extra = inCycle.reduce((s, t) => s + input.toGoal(t.amount, t.currency), 0)
+    return { period: r.period, planned: input.baseToGoal(r.planned), amount: input.baseToGoal(r.amount) + extra }
+  })
 }

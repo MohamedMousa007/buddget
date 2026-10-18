@@ -10,7 +10,8 @@ export interface NewGoalDraft {
   frequency: GoalFrequency
   alreadySaved: string
   fundingMode: GoalFundingMode
-  sharePct: number
+  /** null = still using the suggested share. */
+  sharePct: number | null
   fixedAmount: string
   monthlySpendingLimit: string
   spendingCategory: string

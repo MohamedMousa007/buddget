@@ -162,7 +162,7 @@ export function SettingsAppPreferencesSection({ store }: SettingsAppPreferencesS
           </div>
           <Switch
             size="touch"
-            checked={store.settings[key]}
+            checked={store.settings[key] ?? true}
             onCheckedChange={(val) => store.updateSettings({ [key]: val })}
           />
         </div>

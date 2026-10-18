@@ -2181,6 +2181,7 @@ export interface Dictionary {
       deleteMoveSub: string
       deleteConfirm: string
       noOtherPocket: string
+      deleteNoPocket: string
     }
     flow: {
       close: string
@@ -2307,6 +2308,7 @@ export interface Dictionary {
       pausedWas: (date: string) => string
       ofTarget: (target: string) => string
       statusOver: (amount: string) => string
+      statusOverdue: string
       statusLeft: (amount: string) => string
       statusDue: (days: number) => string
       statusBehind: (n: number, quarterly: boolean) => string

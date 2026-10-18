@@ -48,7 +48,7 @@ export function evaluateGoalAlerts(i: EvaluateGoalAlertsInput): GoalAlert[] {
       goalId: goal.id,
       name: goal.name,
       count: coach.behindCount,
-      quarterly: q,
+      quarterly: false,
       moveTo: coach.options.moveDate ? format(new Date(`${coach.options.moveDate.targetDate}T00:00:00`), 'MMM yyyy') : null,
       raise: `${goal.currency} ${formatFixed2(Math.ceil(coach.options.keepDate.perPeriod))}`,
     })

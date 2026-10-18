@@ -19,6 +19,7 @@ import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
 import { evaluateGoalAlerts, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
 import { median } from '@/lib/goals/fundingScenario'
+import { normalizeRuns } from '@/lib/goals/goalDetail'
 
 export const maxDuration = 60
 
@@ -136,12 +137,25 @@ export async function GET(request: Request) {
             service.from('savings_month_summary').select('saved, currency').eq('user_id', userId).order('month_key', { ascending: false }).limit(3),
             service.from('savings_accounts').select('id, current_balance, currency').eq('user_id', userId).is('deleted_at', null),
           ])
-          const runsByGoal: Record<string, { period: string; planned: number; amount: number }[]> = {}
-          for (const r of runsR.data ?? []) {
-            ;(runsByGoal[r.goal_id as string] ??= []).push({ period: r.period as string, planned: Number(r.planned), amount: Number(r.amount) })
-          }
           const summaries = summaryR.data ?? []
-          const goals = goalRows.map(goalFromRow)
+          // Run figures are in the user's base currency (summary currency); no FX here, so only same-currency goals.
+          const baseCcy = (summaries[0]?.currency as string | undefined) ?? null
+          const goals = goalRows.map(goalFromRow).filter((g) => g.currency === baseCcy)
+          const linked = [...new Set(goals.flatMap((g) => g.linkedSavingsAccountIds))]
+          const { data: txRows } = linked.length
+            ? await service.from('savings_transactions').select('account_id, amount, currency, transaction_date, source, kind').in('account_id', linked).eq('kind', 'deposit').eq('currency', baseCcy as never).is('deleted_at', null).limit(5000)
+            : { data: [] }
+          const txs = (txRows ?? []).map((t) => ({
+            id: '', accountId: t.account_id as string, type: 'deposit' as const, amount: Number(t.amount),
+            currency: t.currency as never, date: t.transaction_date as string, source: (t.source as string | null) ?? undefined,
+          }))
+          const rawRuns: Record<string, { period: string; planned: number; amount: number }[]> = {}
+          for (const r of runsR.data ?? []) {
+            ;(rawRuns[r.goal_id as string] ??= []).push({ period: r.period as string, planned: Number(r.planned), amount: Number(r.amount) })
+          }
+          const runsByGoal = Object.fromEntries(
+            goals.map((g) => [g.id, normalizeRuns({ goal: g, runs: rawRuns[g.id] ?? [], txs, baseToGoal: (n) => n, toGoal: (a) => a })]),
+          )
           const alerts = evaluateGoalAlerts({
             today: now,
             goals,

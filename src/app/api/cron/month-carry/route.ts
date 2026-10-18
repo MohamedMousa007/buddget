@@ -124,7 +124,7 @@ export async function GET(request: Request) {
           })
         },
       })
-      if (remainder <= 0) {
+      if (remainder < 0.01) {
         // Nothing to sweep, but record the closed cycle so it isn't reconsidered.
         await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry, saved, currency: base, closed_at: now.toISOString() })
         continue

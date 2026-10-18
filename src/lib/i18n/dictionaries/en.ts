@@ -2311,6 +2311,7 @@ export const en: Dictionary = {
       deleteMoveSub: 'The balance moves, then the goal is removed.',
       deleteConfirm: 'Delete goal',
       noOtherPocket: 'You have no other pocket to move the money to.',
+      deleteNoPocket: 'This removes the goal. Your accounts and transactions are not touched.',
     },
     flow: {
       close: 'Close',
@@ -2438,6 +2439,7 @@ export const en: Dictionary = {
       pausedWas: (d) => `Paused \u00b7 was ${d}`,
       ofTarget: (t) => `of ${t}`,
       statusOver: (a) => `Over by ${a}`,
+      statusOverdue: 'Past its target date',
       statusLeft: (a) => `${a} left this month`,
       statusDue: (d) => (d === 0 ? 'Due today' : `Due in ${d} days`),
       statusBehind: (n, q) => `Behind ${n} ${q ? (n === 1 ? 'quarter' : 'quarters') : n === 1 ? 'month' : 'months'}`,

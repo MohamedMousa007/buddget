@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { useLocale, useT } from '@/lib/i18n'
@@ -25,6 +26,7 @@ export function CounselorCard({
   onUseTarget: (amount: number) => void
 }) {
   const t = useT().goals.flow.counselor
+  const [keptKey, setKeptKey] = useState<string | null>(null)
   const { locale } = useLocale()
   const month = (iso: string) =>
     new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
@@ -73,7 +75,7 @@ export function CounselorCard({
         ) : null}
       </div>
       <p className="text-[13px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
-      {stretch && (pace.altDate || pace.altTarget) ? (
+      {stretch && (pace.altDate || pace.altTarget) && keptKey !== `${targetDate}|${pace.altDate}|${pace.altTarget}` ? (
         <div className="grid grid-cols-2 gap-2">
           <Button
             size="touch"
@@ -81,7 +83,7 @@ export function CounselorCard({
           >
             {pace.altDate ? t.useDate(month(pace.altDate)) : t.useTarget(money(pace.altTarget ?? 0))}
           </Button>
-          <Button size="touch" variant="outline">
+          <Button size="touch" variant="outline" onClick={() => setKeptKey(`${targetDate}|${pace.altDate}|${pace.altTarget}`)}>
             {pace.altDate ? t.keepDate(month(targetDate)) : t.keepTarget}
           </Button>
         </div>

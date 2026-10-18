@@ -41,7 +41,9 @@ export function DeleteGoalSheet({ goal, onClose, onDeleted }: { goal: Goal; onCl
         </Button>
       }
     >
-      {owned.length > 0 ? (
+      {owned.length === 0 ? (
+        <p className="text-sm text-[var(--color-brand-text-secondary)]">{t.deleteNoPocket}</p>
+      ) : (
         <>
           <p className="text-sm text-[var(--color-brand-text-secondary)]">{t.deleteBody}</p>
           <div role="radiogroup" aria-label={t.deleteBody} className="flex flex-col gap-2">
@@ -65,7 +67,7 @@ export function DeleteGoalSheet({ goal, onClose, onDeleted }: { goal: Goal; onCl
             </div>
           ) : null}
         </>
-      ) : null}
+      )}
     </SheetFrame>
   )
 }

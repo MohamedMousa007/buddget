@@ -33,7 +33,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
         : null
 
   const next = () => (last ? form.submit() : form.setStep((step + 1) as 2 | 3))
-  const nextLabel = last ? (form.kind === 'save' ? t.start : t.next) : form.kind === 'save' ? t.nextFund : t.next
+  const nextLabel = last ? t.start : form.kind === 'save' ? t.nextFund : t.next
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

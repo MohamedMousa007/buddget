@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Goal, SavingsTransaction } from '@/lib/store/types'
-import { checkpointInfo, coachView, replanPatch } from './goalDetail'
+import { checkpointInfo, coachView, normalizeRuns, replanPatch } from './goalDetail'
 import { getGoalStatus, periodStartMonth } from './goalStatus'
 
 const now = new Date(2026, 9, 18)
@@ -70,5 +70,28 @@ describe('periodStartMonth', () => {
   it('maps quarters to their first month', () => {
     expect(periodStartMonth('2026-Q4')).toBe('2026-10')
     expect(periodStartMonth('2026-07')).toBe('2026-07')
+  })
+})
+
+describe('normalizeRuns', () => {
+  const runs = [{ period: '2026-08', planned: 100, amount: 0 }, { period: '2026-Q3', planned: 300, amount: 0 }]
+  const txs: SavingsTransaction[] = [
+    { id: '1', accountId: 'p', type: 'deposit', amount: 40, currency: 'EGP', date: '2026-08-10' },
+    { id: '2', accountId: 'p', type: 'deposit', amount: 99, currency: 'EGP', date: '2026-08-11', source: 'carry' },
+    { id: '3', accountId: 'p', type: 'deposit', amount: 99, currency: 'EGP', date: '2026-08-12', source: 'goal_opening' },
+    { id: '4', accountId: 'x', type: 'deposit', amount: 99, currency: 'EGP', date: '2026-08-12' },
+    { id: '5', accountId: 'p', type: 'deposit', amount: 10, currency: 'EGP', date: '2026-09-30' },
+  ]
+  it('counts hand-added deposits in their cycle and converts currency', () => {
+    const out = normalizeRuns({ goal: goal(), runs, txs, baseToGoal: (n) => n * 2, toGoal: (a) => a })
+    expect(out[0]).toEqual({ period: '2026-08', planned: 200, amount: 40 })
+    expect(out[1]).toEqual({ period: '2026-Q3', planned: 600, amount: 50 })
+  })
+  it('so a self-funded goal is not behind', () => {
+    const paid = normalizeRuns({ goal: goal(), runs: [{ period: '2026-07', planned: 100, amount: 0 }, { period: '2026-08', planned: 100, amount: 0 }], txs: [
+      { id: 'a', accountId: 'p', type: 'deposit', amount: 100, currency: 'EGP', date: '2026-07-05' },
+      { id: 'b', accountId: 'p', type: 'deposit', amount: 100, currency: 'EGP', date: '2026-08-05' },
+    ], baseToGoal: (n) => n, toGoal: (a) => a })
+    expect(getGoalStatus({ goal: goal(), current: 200, runs: paid, now }).kind).not.toBe('behind')
   })
 })

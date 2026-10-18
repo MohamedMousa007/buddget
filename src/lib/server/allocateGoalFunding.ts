@@ -1,14 +1,13 @@
 import type { createServiceRoleClient } from '@/lib/supabase/service'
 import { allocateMonth } from '@/lib/goals/allocateMonth'
-import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { crossedCheckpoints } from '@/lib/notifications/evaluateGoalAlerts'
+import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { Currency, Goal, SavingsAccount } from '@/lib/store/types'
 
 type Service = ReturnType<typeof createServiceRoleClient>
 
-const isQuarterEnd = (monthKey: string) => ['03', '06', '09', '12'].includes(monthKey.slice(5, 7))
-const quarterKey = (monthKey: string) => `${monthKey.slice(0, 4)}-Q${Math.ceil(Number(monthKey.slice(5, 7)) / 3)}`
+const cents = (n: number) => Math.round(n * 100) / 100
 
 interface Ctx {
   service: Service
@@ -27,28 +26,25 @@ interface Ctx {
 
 /**
  * Pays funded goals (share / fixed) from the cycle's savings, priority order, one deposit per goal.
- * Idempotent per (goal, period) via goal_allocation_runs: the run row is claimed before money moves.
+ * Every goal is funded each cycle (a quarterly goal only changes how its pace is shown); one run row
+ * per (goal, cycle) is the idempotency key and the history behind "behind"/streak.
+ *
+ * Safe to re-run: a goal that already has its run row is not paid again and its amount is deducted from
+ * what is left, so a cron that died half-way never sweeps the same money twice. A failed payment removes
+ * its claim so the next run can retry it.
  * Returns the base amount left for the default destination.
  */
 export async function allocateGoalFunding(c: Ctx): Promise<number> {
   const { service, userId, monthKey, base, rates } = c
   const conv = (n: number, from: string) => convertCurrency(n, from, base, rates)
 
-  const quarterly = isQuarterEnd(monthKey)
-  let quarterSavings = c.carry
-  if (quarterly) {
-    const { data: prior } = await service
-      .from('savings_month_summary').select('carry').eq('user_id', userId)
-      .lt('month_key', monthKey).order('month_key', { ascending: false }).limit(2)
-    quarterSavings += (prior ?? []).reduce((s, r) => s + Number(r.carry || 0), 0)
-  }
-
   const due = c.goals
-    .filter((g) => g.status === 'active' && g.fundingMode !== 'manual' && (g.frequency === 'monthly' || quarterly))
+    .filter((g) => g.status === 'active' && g.fundingMode !== 'manual')
     .map((g) => ({
       ...g,
       targetAmount: g.targetAmount === null ? null : conv(g.targetAmount, g.currency),
-      monthlyContribution: g.monthlyContribution === null ? null : conv(g.monthlyContribution, g.currency),
+      // A quarterly goal's fixed amount is per quarter; it is funded monthly.
+      monthlyContribution: g.monthlyContribution === null ? null : conv(g.monthlyContribution, g.currency) / (g.frequency === 'quarterly' ? 3 : 1),
     }))
   if (due.length === 0) return c.carry
 
@@ -58,42 +54,59 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
     current[g.id] = conv(g.manualCurrentAmount, g.currency) + linked.reduce((s, a) => s + conv(a.currentBalance, a.currency), 0)
   }
 
-  const monthly = due.filter((g) => g.frequency === 'monthly')
-  const quarterlyGoals = due.filter((g) => g.frequency === 'quarterly')
-  const lines = [
-    ...allocateMonth({ goals: monthly, periodSavings: c.carry, current }),
-    ...allocateMonth({ goals: quarterlyGoals, periodSavings: quarterSavings, current }),
-  ]
-  let left = c.carry
+  const { data: existing } = await service
+    .from('goal_allocation_runs').select('goal_id, amount').eq('user_id', userId).eq('period', monthKey)
+  const done = new Map((existing ?? []).map((r) => [r.goal_id as string, Number(r.amount)]))
 
+  let left = c.carry
+  for (const [goalId, amount] of done) if (due.some((g) => g.id === goalId)) left = cents(left - amount)
+
+  const lines = allocateMonth({ goals: due, periodSavings: c.carry, current })
   for (const line of lines) {
+    if (done.has(line.goalId)) continue
     const goal = due.find((g) => g.id === line.goalId)!
-    const period = goal.frequency === 'quarterly' ? quarterKey(monthKey) : monthKey
+    const amount = Math.max(0, cents(Math.min(line.amount, left)))
+
     const { error: claimed } = await service.from('goal_allocation_runs').insert({
-      user_id: userId, goal_id: goal.id, period, planned: line.planned, amount: Math.min(line.amount, left),
+      user_id: userId, goal_id: goal.id, period: monthKey, planned: line.planned, amount,
     })
-    if (claimed) continue // already run for this period (unique goal_id+period)
-    const amount = Math.min(line.amount, left)
+    if (claimed) continue
     if (amount <= 0) continue
 
-    let pocket = c.accounts.filter(isEligibleCarryPocket).find((a) => goal.linkedSavingsAccountIds.includes(a.id))
-    if (!pocket) {
-      const { data: created } = await service.from('savings_accounts').insert({
-        user_id: userId, name: `${goal.name} pocket`, category: 'savings', type: 'vault', currency: base,
-        current_balance: 0, opening_balance: 0, is_emergency_cover: false,
-      }).select('*').single()
-      if (!created) continue
-      await service.from('goals').update({ linked_savings_account_ids: [...goal.linkedSavingsAccountIds, created.id] }).eq('id', goal.id)
-      pocket = { id: created.id, currency: base, currentBalance: 0 } as SavingsAccount
+    const release = async () => {
+      await service.from('goal_allocation_runs').delete().eq('goal_id', goal.id).eq('period', monthKey)
     }
-    const inPocket = convertCurrency(amount, base, pocket.currency, rates)
-    await service.from('savings_transactions').insert({
-      user_id: userId, account_id: pocket.id, kind: 'deposit', amount: inPocket, currency: pocket.currency,
-      transaction_date: c.postDate, is_cash_flow: true, source: 'carry', notes: `Goal funding · ${goal.name} · ${period}`,
-    })
-    const { data: bal } = await service.from('savings_accounts').select('current_balance').eq('id', pocket.id).single()
-    await service.from('savings_accounts').update({ current_balance: Number(bal?.current_balance ?? 0) + inPocket }).eq('id', pocket.id)
-    left -= amount
+    try {
+      let pocket = c.accounts.filter(isEligibleCarryPocket).find((a) => goal.linkedSavingsAccountIds.includes(a.id))
+      if (!pocket) {
+        const { data: created, error } = await service.from('savings_accounts').insert({
+          user_id: userId, name: `${goal.name} pocket`, category: 'savings', type: 'vault', currency: base,
+          current_balance: 0, opening_balance: 0, is_emergency_cover: false,
+        }).select('id').single()
+        if (error || !created) throw new Error('pocket create failed')
+        const { error: linkErr } = await service.from('goals').update({ linked_savings_account_ids: [...goal.linkedSavingsAccountIds, created.id] }).eq('id', goal.id)
+        if (linkErr) throw new Error('pocket link failed')
+        pocket = { id: created.id, currency: base, currentBalance: 0 } as SavingsAccount
+      }
+      const inPocket = convertCurrency(amount, base, pocket.currency, rates)
+      const { data: tx, error: txErr } = await service.from('savings_transactions').insert({
+        user_id: userId, account_id: pocket.id, kind: 'deposit', amount: inPocket, currency: pocket.currency,
+        transaction_date: c.postDate, is_cash_flow: true, source: 'carry', notes: `Goal funding · ${goal.name} · ${monthKey}`,
+      }).select('id').single()
+      if (txErr || !tx) throw new Error('deposit failed')
+      const { data: bal } = await service.from('savings_accounts').select('current_balance').eq('id', pocket.id).single()
+      const { error: balErr } = await service.from('savings_accounts').update({ current_balance: Number(bal?.current_balance ?? 0) + inPocket }).eq('id', pocket.id)
+      if (balErr) {
+        await service.from('savings_transactions').delete().eq('id', tx.id)
+        throw new Error('balance update failed')
+      }
+    } catch (e) {
+      console.error('[allocateGoalFunding]', goal.id, monthKey, e)
+      await release()
+      continue
+    }
+
+    left = cents(left - amount)
     const original = c.goals.find((g) => g.id === goal.id)
     if (original && goal.targetAmount) {
       const after = current[goal.id] + amount

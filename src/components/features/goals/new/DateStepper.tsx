@@ -47,11 +47,10 @@ export function DateStepper({ value, now, onChange }: { value: string; now: Date
     onPointerUp: stop,
     onPointerLeave: stop,
     onPointerCancel: stop,
-    onKeyDown: (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        move(dir)
-      }
+    // Pointer presses are handled above (hold to repeat); a click with no pointer (keyboard, screen
+    // reader, switch control) steps once.
+    onClick: (e: React.MouseEvent) => {
+      if (e.detail === 0) move(dir)
     },
   })
 

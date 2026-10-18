@@ -6,7 +6,7 @@ import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
 import { parseGoalText } from '@/lib/goals/goalAi'
-import { addMonthsIso, computePace } from '@/lib/goals/goalPlan'
+import { addMonthsIso, computePace, monthsUntil } from '@/lib/goals/goalPlan'
 import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import {
@@ -58,7 +58,9 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [name, setName] = useState(draft?.name ?? (seed?.category ? defaultGoalName(seed.category) : (seed?.text ?? '')))
   const [targetAmount, setTargetAmount] = useState(draft?.targetAmount ?? '')
   const [currency, setCurrency] = useState<Currency>((draft?.currency as Currency) ?? baseCcy)
-  const [targetDate, setTargetDate] = useState(draft?.targetDate ?? addMonthsIso(now, 12))
+  const [targetDate, setTargetDate] = useState(() =>
+    draft?.targetDate && monthsUntil(now, draft.targetDate) >= 1 ? draft.targetDate : addMonthsIso(now, 12),
+  )
   const [frequency, setFrequency] = useState(draft?.frequency ?? 'monthly')
   const [alreadySaved, setAlreadySaved] = useState(draft?.alreadySaved ?? '')
   const [fundingMode, setFundingMode] = useState(draft?.fundingMode ?? 'share')
@@ -158,10 +160,10 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   useEffect(() => {
     if (submitted.current) return
     saveDraft({
-      step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePct,
+      step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePct: sharePicked,
       fixedAmount, monthlySpendingLimit: limit, spendingCategory, linkedDebtIds,
     })
-  }, [step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePct, fixedAmount, limit, spendingCategory, linkedDebtIds])
+  }, [step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePicked, fixedAmount, limit, spendingCategory, linkedDebtIds])
 
   const running = s.goals.filter((g) => g.status === 'active' && g.category !== 'spending_control' && g.category !== 'debt_freedom')
   const nextPriority = s.goals.reduce((m, g) => Math.max(m, g.priority + 1), 0)
@@ -173,7 +175,8 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const submit = useCallback(() => {
     const st = useFinanceStore.getState()
     const goalName = name.trim() || defaultGoalName(category)
-    const ccy = clampFiatToAllowed(st.settings, currency)
+    // A debt goal's target is the debts' base-currency total, so it is always saved in the base currency.
+    const ccy = clampFiatToAllowed(st.settings, kind === 'debt' ? st.settings.baseCurrency : currency)
     try {
       const common = {
         name: goalName,
@@ -197,18 +200,19 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
           linkedSavingsAccountIds: [], linkedDebtIds,
         })
       } else {
-        const pocketId = st.addSavingsAccount({ name: `${goalName} pocket`, category: 'savings', type: 'vault', currency: ccy })
-        if (num(alreadySaved) > 0) {
-          st.depositToSavings(pocketId, num(alreadySaved), ccy, goalName, { mode: 'declare', source: 'goal_opening' })
-        }
-        st.addGoal({
+        const goalId = st.addGoal({
           ...common, targetAmount: target, targetDate, monthlySpendingLimit: null,
-          linkedSavingsAccountIds: [pocketId], linkedDebtIds: [],
+          linkedSavingsAccountIds: [], linkedDebtIds: [],
           fundingMode,
           sharePct: fundingMode === 'share' ? sharePct : null,
           monthlyContribution: fundingMode === 'fixed' && num(fixedAmount) > 0 ? num(fixedAmount) : null,
           frequency,
         })
+        const pocketId = st.addSavingsAccount({ name: `${goalName} pocket`, category: 'savings', type: 'vault', currency: ccy })
+        st.updateGoal(goalId, { linkedSavingsAccountIds: [pocketId] })
+        if (num(alreadySaved) > 0) {
+          st.depositToSavings(pocketId, num(alreadySaved), ccy, goalName, { mode: 'declare', source: 'goal_opening' })
+        }
       }
     } catch {
       setSaveError(true)

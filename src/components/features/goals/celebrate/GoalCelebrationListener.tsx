@@ -60,7 +60,7 @@ export function GoalCelebrationListener() {
         if (before === undefined || level > before) seen[goal.id] = level
       }
       save(seen)
-      if (next && st.settings.goalProgressAlerts) setActive(next)
+      if (next && st.settings.goalProgressAlerts !== false) setActive(next)
     }
     const first = setTimeout(check, 0)
     const unsub = useFinanceStore.subscribe(check)

@@ -19,6 +19,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 function Row({
   goal, index, last, keep, onMove,
 }: { goal: Goal; index: number; last: boolean; keep: number | null; onMove: (dir: -1 | 1) => void }) {
+  // `keep` arrives in the goal's own currency
   const t = useT().goals.split
   const controls = useDragControls()
   const { icon: Icon, cat } = goalVisual(goal.category)
@@ -90,8 +91,8 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
   const ordered = order.map((id) => byId.get(id)).filter((g): g is Goal => Boolean(g))
   const total = ordered.reduce((sum, g) => sum + (g.sharePct ?? 0), 0)
   const base = useMemo(() => fundingBasis(s, new Date()), [s])
-  const ccy = ordered[0]?.currency ?? s.settings.baseCurrency
-  const keep = base.usualKeep === null ? null : convertCurrency(base.usualKeep, s.settings.baseCurrency, ccy, s.exchangeRates)
+  const ccy = s.settings.baseCurrency
+  const keep = base.usualKeep
 
   const move = (i: number, dir: -1 | 1) =>
     setOrder((o) => {
@@ -127,7 +128,14 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
       ) : null}
       <Reorder.Group axis="y" values={order} onReorder={setOrder} className="flex flex-col gap-2.5">
         {ordered.map((g, i) => (
-          <Row key={g.id} goal={g} index={i} last={i === ordered.length - 1} keep={keep} onMove={(d) => move(i, d)} />
+          <Row
+            key={g.id}
+            goal={g}
+            index={i}
+            last={i === ordered.length - 1}
+            keep={base.usualKeep === null ? null : convertCurrency(base.usualKeep, s.settings.baseCurrency, g.currency, s.exchangeRates)}
+            onMove={(d) => move(i, d)}
+          />
         ))}
       </Reorder.Group>
       <p className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.total(total)}</p>
