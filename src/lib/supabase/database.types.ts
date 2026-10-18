@@ -2682,6 +2682,7 @@ export type Database = {
         | "investment"
         | "debt_freedom"
         | "quality_of_life"
+        | "business"
       goal_status: "active" | "paused" | "achieved"
       gold_karat: "18" | "21" | "22" | "24"
       income_event_status:
@@ -2946,6 +2947,7 @@ export const Constants = {
         "investment",
         "debt_freedom",
         "quality_of_life",
+        "business",
       ],
       goal_status: ["active", "paused", "achieved"],
       gold_karat: ["18", "21", "22", "24"],

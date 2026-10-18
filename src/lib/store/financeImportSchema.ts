@@ -499,6 +499,7 @@ export const importDataSchema = z.object({
           'investment',
           'debt_freedom',
           'quality_of_life',
+          'business',
           'spending_control',
           'retirement',
           'custom',

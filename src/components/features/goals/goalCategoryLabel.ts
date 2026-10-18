@@ -19,6 +19,7 @@ export function goalCategoryLabelKey(category: GoalCategory): keyof Dictionary['
     quality_of_life: 'categoryQualityOfLife',
     spending_control: 'categorySpendingControl',
     retirement: 'categoryRetirement',
+    business: 'categoryBusiness',
     custom: 'categoryCustom',
   }
   return m[category]

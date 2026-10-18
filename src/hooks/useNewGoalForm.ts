@@ -1,0 +1,235 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
+import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
+import { fundingBasis } from '@/lib/goals/fundingBasis'
+import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
+import { parseGoalText } from '@/lib/goals/goalAi'
+import { addMonthsIso, computePace } from '@/lib/goals/goalPlan'
+import { clearDraft, loadDraft, saveDraft, type NewGoalDraft } from '@/lib/goals/newGoalDraft'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import {
+  calculateDebtRemaining,
+  calculateDebtRemainingInBaseCurrency,
+} from '@/lib/utils/calculations'
+import { convertCurrency } from '@/lib/utils/currency'
+import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import type { Currency, ExpenseCategory, GoalCategory } from '@/lib/store/types'
+
+export type GoalKind = 'save' | 'debt' | 'limit'
+export const goalKind = (c: GoalCategory): GoalKind =>
+  c === 'debt_freedom' ? 'debt' : c === 'spending_control' ? 'limit' : 'save'
+
+export interface FlowSeed {
+  category?: GoalCategory
+  text?: string
+}
+
+const emojiFor = (c: GoalCategory) => GOAL_CATEGORIES.find((x) => x.value === c)?.emoji ?? '✏️'
+const num = (s: string) => {
+  const n = parseFloat(s)
+  return Number.isFinite(n) ? n : 0
+}
+
+export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
+  const s = useFinanceStore(
+    useShallow((st) => ({
+      settings: st.settings,
+      exchangeRates: st.exchangeRates,
+      incomeEvents: st.incomeEvents,
+      incomeSources: st.incomeSources,
+      expenses: st.expenses,
+      budgetCategories: st.budgetCategories,
+      budgetPlans: st.budgetPlans,
+      goals: st.goals,
+      debts: st.debts,
+      debtPayments: st.debtPayments,
+      goldPricePerGram: st.goldPricePerGram,
+      goldPriceAvailable: st.goldPriceAvailable,
+    })),
+  )
+  const now = useMemo(() => new Date(), [])
+  const baseCcy = clampFiatToAllowed(s.settings, s.settings.baseCurrency)
+
+  const [draft] = useState<NewGoalDraft | null>(() => (seed?.category || seed?.text ? null : loadDraft()))
+  const [step, setStep] = useState<1 | 2 | 3>(draft?.step ?? (seed?.category ? 2 : 1))
+  const [category, setCategory] = useState<GoalCategory>(draft?.category ?? seed?.category ?? 'custom')
+  const [name, setName] = useState(draft?.name ?? (seed?.category ? defaultGoalName(seed.category) : (seed?.text ?? '')))
+  const [targetAmount, setTargetAmount] = useState(draft?.targetAmount ?? '')
+  const [currency, setCurrency] = useState<Currency>((draft?.currency as Currency) ?? baseCcy)
+  const [targetDate, setTargetDate] = useState(draft?.targetDate ?? addMonthsIso(now, 12))
+  const [frequency, setFrequency] = useState(draft?.frequency ?? 'monthly')
+  const [alreadySaved, setAlreadySaved] = useState(draft?.alreadySaved ?? '')
+  const [fundingMode, setFundingMode] = useState(draft?.fundingMode ?? 'share')
+  const [sharePicked, setSharePicked] = useState<number | null>(draft?.sharePct ?? null)
+  const [fixedAmount, setFixedAmount] = useState(draft?.fixedAmount ?? '')
+  const [limit, setLimit] = useState(draft?.monthlySpendingLimit ?? '')
+  const [spendingCategory, setSpendingCategory] = useState(draft?.spendingCategory ?? '')
+  const [linkedDebtIds, setLinkedDebtIds] = useState<string[]>(draft?.linkedDebtIds ?? [])
+  const [parsing, setParsing] = useState(false)
+  const [parseError, setParseError] = useState(false)
+  const [saveError, setSaveError] = useState(false)
+  const submitted = useRef(false)
+
+  const kind = goalKind(category)
+  const basis = useMemo(() => fundingBasis(s, now), [s, now])
+  const target = num(targetAmount)
+  const usualKeep = basis.usualKeep === null ? null : convertCurrency(basis.usualKeep, s.settings.baseCurrency, currency, s.exchangeRates)
+  const pace = useMemo(
+    () => computePace({ target, saved: num(alreadySaved), targetDate, frequency, usualKeep, now }),
+    [target, alreadySaved, targetDate, frequency, usualKeep, now],
+  )
+
+  // Until the user moves the slider, suggest the share that lands the goal on its date (100% when unknown).
+  const sharePct =
+    sharePicked ?? (pace.ratio === null ? 100 : Math.min(100, Math.max(5, Math.ceil((pace.ratio * 100) / 5) * 5)))
+  const setSharePct = setSharePicked
+
+  const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
+  const debtsOwed = useMemo(() => {
+    const ctx = { expenses: s.expenses, exchangeRates: s.exchangeRates, allDebts: s.debts }
+    return activeDebts
+      .filter((d) => linkedDebtIds.includes(d.id))
+      .reduce(
+        (sum, d) =>
+          sum +
+          calculateDebtRemainingInBaseCurrency(
+            calculateDebtRemaining(d, s.debtPayments, ctx),
+            d,
+            s.settings.baseCurrency,
+            s.exchangeRates,
+            s.goldPricePerGram,
+            s.goldPriceAvailable,
+          ),
+        0,
+      )
+  }, [activeDebts, linkedDebtIds, s])
+
+  // Keep a debt goal's target in step with what the chosen debts still owe.
+  useEffect(() => {
+    if (kind === 'debt') setTargetAmount(debtsOwed > 0 ? String(Math.round(debtsOwed * 100) / 100) : '')
+  }, [kind, debtsOwed])
+
+  const pickCategory = useCallback(
+    (c: GoalCategory) => {
+      setCategory(c)
+      setName(defaultGoalName(c))
+      setTargetAmount('')
+      setLinkedDebtIds(c === 'debt_freedom' ? s.debts.filter((d) => d.status !== 'cleared').map((d) => d.id) : [])
+      setStep(2)
+    },
+    [s.debts],
+  )
+
+  const toggleDebt = (id: string) =>
+    setLinkedDebtIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+
+  /** Free text from step 1 or the empty state: Buddgy fills what it can; failure keeps the text as the name. */
+  const describe = useCallback(
+    async (text: string) => {
+      setParsing(true)
+      setParseError(false)
+      try {
+        const p = await parseGoalText(text, { currency, now })
+        setCategory(p.category)
+        setName(p.name)
+        if (p.target) setTargetAmount(String(p.target))
+        if (p.date) setTargetDate(p.date)
+        setStep(2)
+      } catch {
+        setParseError(true)
+        setName(text)
+      } finally {
+        setParsing(false)
+      }
+    },
+    [currency, now],
+  )
+
+  // Seeded from the empty state's free text: parse once on mount.
+  const seeded = useRef(false)
+  useEffect(() => {
+    if (seeded.current || !seed?.text) return
+    seeded.current = true
+    void describe(seed.text)
+  }, [seed?.text, describe])
+
+  useEffect(() => {
+    if (submitted.current) return
+    saveDraft({
+      step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePct,
+      fixedAmount, monthlySpendingLimit: limit, spendingCategory, linkedDebtIds,
+    })
+  }, [step, category, name, targetAmount, currency, targetDate, frequency, alreadySaved, fundingMode, sharePct, fixedAmount, limit, spendingCategory, linkedDebtIds])
+
+  const running = s.goals.filter((g) => g.status === 'active' && g.category !== 'spending_control' && g.category !== 'debt_freedom')
+  const nextPriority = s.goals.reduce((m, g) => Math.max(m, g.priority + 1), 0)
+  const otherShare = running.filter((g) => g.fundingMode === 'share').reduce((sum, g) => sum + (g.sharePct ?? 0), 0)
+
+  const canNext2 =
+    kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && target > 0 : target > 0 && name.trim().length > 0
+
+  const submit = useCallback(() => {
+    const st = useFinanceStore.getState()
+    const goalName = name.trim() || defaultGoalName(category)
+    const ccy = clampFiatToAllowed(st.settings, currency)
+    try {
+      const common = {
+        name: goalName,
+        emoji: emojiFor(category),
+        category,
+        currency: ccy,
+        priority: nextPriority,
+        status: 'active' as const,
+        notes: null,
+      }
+      if (kind === 'limit') {
+        st.addGoal({
+          ...common, targetAmount: null, targetDate: null, monthlyContribution: null,
+          monthlySpendingLimit: num(limit),
+          spendingCategory: spendingCategory ? (spendingCategory as ExpenseCategory) : null,
+          linkedSavingsAccountIds: [], linkedDebtIds: [],
+        })
+      } else if (kind === 'debt') {
+        st.addGoal({
+          ...common, targetAmount: target, targetDate: null, monthlyContribution: null, monthlySpendingLimit: null,
+          linkedSavingsAccountIds: [], linkedDebtIds,
+        })
+      } else {
+        const pocketId = st.addSavingsAccount({ name: `${goalName} pocket`, category: 'savings', type: 'vault', currency: ccy })
+        if (num(alreadySaved) > 0) {
+          st.depositToSavings(pocketId, num(alreadySaved), ccy, goalName, { mode: 'declare', source: 'goal_opening' })
+        }
+        st.addGoal({
+          ...common, targetAmount: target, targetDate, monthlySpendingLimit: null,
+          linkedSavingsAccountIds: [pocketId], linkedDebtIds: [],
+          fundingMode,
+          sharePct: fundingMode === 'share' ? sharePct : null,
+          monthlyContribution: fundingMode === 'fixed' && num(fixedAmount) > 0 ? num(fixedAmount) : null,
+          frequency,
+        })
+      }
+    } catch {
+      setSaveError(true)
+      return
+    }
+    submitted.current = true
+    clearDraft()
+    onDone()
+  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone])
+
+  return {
+    now, step, setStep, category, pickCategory, kind, name, setName, targetAmount, setTargetAmount,
+    currency, setCurrency: (c: Currency) => setCurrency(clampFiatToAllowed(s.settings, c)),
+    targetDate, setTargetDate, frequency, setFrequency, alreadySaved, setAlreadySaved,
+    fundingMode, setFundingMode, sharePct, setSharePct, fixedAmount, setFixedAmount,
+    limit, setLimit, spendingCategory, setSpendingCategory,
+    activeDebts, linkedDebtIds, toggleDebt, debtsOwed,
+    parsing, parseError, saveError, describe,
+    basis, usualKeep, pace, running, otherShare, canNext2, submit,
+    baseCurrency: s.settings.baseCurrency,
+    convert: (n: number, from: Currency, to: Currency) => convertCurrency(n, from, to, s.exchangeRates),
+    discard: () => { clearDraft() },
+  }
+}

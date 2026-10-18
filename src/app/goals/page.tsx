@@ -6,6 +6,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { AchievedView } from '@/components/features/goals/AchievedView'
 import { GoalAddMoneySheet } from '@/components/features/goals/GoalAddMoneySheet'
 import { GoalCard, type GoalCardAction } from '@/components/features/goals/GoalCard'
+import { NewGoalFlow } from '@/components/features/goals/new/NewGoalFlow'
+import type { FlowSeed } from '@/hooks/useNewGoalForm'
 import { GoalsEmpty } from '@/components/features/goals/GoalsEmpty'
 import { TrophyChip } from '@/components/features/goals/TrophyChip'
 import { PageGrid } from '@/components/layout/PageGrid'
@@ -44,6 +46,7 @@ export default function GoalsPage() {
   )
   const rows = useGoalRows()
   const [view, setViewState] = useState<View>(readView)
+  const [flow, setFlow] = useState<FlowSeed | null | false>(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState<Goal | null>(null)
   const [moneyGoal, setMoneyGoal] = useState<Goal | null>(null)
@@ -78,10 +81,7 @@ export default function GoalsPage() {
     [running],
   )
 
-  const openAdd = () => {
-    setEditing(null)
-    setSheetOpen(true)
-  }
+  const openAdd = (seed: FlowSeed = {}) => setFlow(seed)
   const openEdit = (g: Goal) => {
     setEditing(g)
     setSheetOpen(true)
@@ -142,7 +142,7 @@ export default function GoalsPage() {
                       {count}
                     </span>
                   </h2>
-                  <Button size="touch" onClick={openAdd}>
+                  <Button size="touch" onClick={() => openAdd()}>
                     <Plus aria-hidden />
                     {t.home.newGoal}
                   </Button>
@@ -153,7 +153,7 @@ export default function GoalsPage() {
                 ) : null}
 
                 {view === 'achieved' ? (
-                  <AchievedView goals={achieved} base={baseCurrency} rates={rates} onNewGoal={openAdd} />
+                  <AchievedView goals={achieved} base={baseCurrency} rates={rates} onNewGoal={() => openAdd()} />
                 ) : visible.length === 0 ? (
                   <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{t.home.emptyFilter}</p>
                 ) : (
@@ -174,6 +174,7 @@ export default function GoalsPage() {
         }
       />
       <AddGoalSheet open={sheetOpen} onClose={() => { setSheetOpen(false); setEditing(null) }} editingGoal={editing} />
+      <NewGoalFlow open={flow !== false} seed={flow || null} onClose={() => setFlow(false)} />
       <GoalAddMoneySheet goal={moneyGoal} onClose={() => setMoneyGoal(null)} />
     </div>
   )

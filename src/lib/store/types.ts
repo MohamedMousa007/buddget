@@ -830,6 +830,7 @@ export type GoalCategory =
   | 'quality_of_life'
   | 'spending_control'
   | 'retirement'
+  | 'business'
   | 'custom'
 
 export type GoalFundingMode = 'share' | 'fixed' | 'manual'

@@ -2087,6 +2087,115 @@ export interface Dictionary {
     confirmDelete: string
     deleteGoal: string
     celebration: (name: string) => string
+    flow: {
+      close: string
+      back: string
+      stepAria: (n: number, total: number) => string
+      nextFund: string
+      next: string
+      start: string
+      saveError: string
+      s1: {
+        title: string
+        sub: string
+        buddgyLine: string
+        placeholder: string
+        send: string
+        reading: string
+        parseFailed: string
+        groupSave: string
+        groupPay: string
+        groupControl: string
+        payDebt: string
+        payCard: string
+        limitMonthly: string
+        limitCategory: string
+      }
+      s2: {
+        title: string
+        sub: string
+        name: string
+        targetDate: string
+        monthsAway: (n: number) => string
+        earlier: string
+        later: string
+        target: string
+        askBuddgy: string
+        save: string
+        monthly: string
+        quarterly: string
+        alreadySaved: string
+        optional: string
+        summary: (amount: string, quarterly: boolean, date: string) => string
+        limit: string
+        appliesTo: string
+        debts: string
+        debtsTotal: string
+      }
+      counselor: {
+        zoneStretch: string
+        zoneComfortable: string
+        stretchTitle: string
+        stretchBody: (date: string) => string
+        comfortTitle: string
+        comfortBody: string
+        unknownTitle: string
+        unknownBody: string
+        paceAsked: string
+        usuallyKeep: string
+        useDate: (date: string) => string
+        keepDate: (date: string) => string
+        useTarget: (amount: string) => string
+        keepTarget: string
+        smallerTarget: (amount: string) => string
+      }
+      cost: {
+        title: string
+        sub: (category: string) => string
+        bubble: string
+        loading: string
+        retry: string
+        retryCta: string
+        use: (amount: string) => string
+      }
+      s3: {
+        title: string
+        sub: (name: string) => string
+        pillA: string
+        pillB: string
+        pillC: string
+        pocketLead: string
+        pocketName: (name: string) => string
+        pocketTail: string
+        share: string
+        shareSub: string
+        fixed: string
+        fixedMonthly: string
+        fixedQuarterly: string
+        fixedAmount: string
+        manual: string
+        manualSub: string
+        baseA: (amount: string) => string
+        baseB: (amount: string) => string
+        baseC: string
+        resultA: (amount: string) => string
+        resultB: (amount: string) => string
+        resultC: string
+        totalA: (pct: number, free: number) => string
+        totalOver: (pct: number) => string
+        totalC: string
+        tipA: (date: string) => string
+        tipB: (at: string, from: string, to: string, base: string) => string
+        tipC: string
+        tipFixed: (date: string) => string
+        tipManual: string
+        summaryShare: (amount: string, name: string) => string
+        summaryNone: (name: string) => string
+        sliderText: (pct: number, amount: string) => string
+        perMonth: string
+        perQuarter: string
+      }
+    }
     home: {
       viewLabel: string
       viewAll: string
@@ -2169,6 +2278,7 @@ export interface Dictionary {
     categoryInvestment: string
     categoryDebtFreedom: string
     categoryQualityOfLife: string
+    categoryBusiness: string
     categorySpendingControl: string
     categoryRetirement: string
     categoryCustom: string

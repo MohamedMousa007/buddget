@@ -108,3 +108,9 @@ export function replanOptions(i: ReplanInput): ReplanOptions {
     : null
   return { moveDate, keepDate: { perPeriod: required, sharePct } }
 }
+
+/** `YYYY-MM-01` when `remaining` is paid off at `perPeriod` per period; null when nothing is saved per period. */
+export function projectedFinish(remaining: number, perPeriod: number, frequency: GoalFrequency, now: Date): string | null {
+  if (!(perPeriod > 0)) return null
+  return addMonthsIso(now, Math.max(1, Math.ceil(remaining / perPeriod)) * step(frequency))
+}

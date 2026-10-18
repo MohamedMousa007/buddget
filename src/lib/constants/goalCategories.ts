@@ -14,6 +14,7 @@ export const GOAL_CATEGORIES = [
   { value: 'quality_of_life', emoji: '⭐', label: 'Quality life + savings' },
   { value: 'spending_control', emoji: '📉', label: 'Control spending' },
   { value: 'retirement', emoji: '🏖️', label: 'Retirement' },
+  { value: 'business', emoji: '💼', label: 'Business' },
   { value: 'custom', emoji: '✏️', label: 'Custom goal' },
 ] as const
 

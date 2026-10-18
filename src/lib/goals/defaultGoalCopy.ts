@@ -18,6 +18,7 @@ export function defaultGoalName(category: GoalCategory): string {
     quality_of_life: 'Quality of Life',
     spending_control: 'Spending Control',
     retirement: 'Retirement',
+    business: 'Business',
     custom: 'My Goal',
   }
   return m[category] ?? 'My Goal'

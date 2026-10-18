@@ -1,6 +1,6 @@
 import {
   BookOpen, Briefcase, Car, Coins, Gift, GraduationCap, Heart, Home, LineChart, Plane,
-  Shield, Smartphone, Sparkles, TrendingDown, Unlock, Users, type LucideIcon,
+  Shield, Smartphone, Sparkles, Store, TrendingDown, Unlock, Users, type LucideIcon,
 } from 'lucide-react'
 import type { GoalCategory } from '@/lib/store/types'
 
@@ -26,6 +26,7 @@ const VISUAL: Record<GoalCategory, GoalVisual> = {
   quality_of_life: { icon: Sparkles, cat: 5 },
   spending_control: { icon: TrendingDown, cat: 3 },
   retirement: { icon: Briefcase, cat: 1 },
+  business: { icon: Store, cat: 2 },
   custom: { icon: Coins, cat: 1 },
 }
 
