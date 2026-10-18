@@ -19,6 +19,8 @@ const MOMENTS = [
   ['vacation', 'vacation'],
   ['car', 'car'],
   ['home', 'house'],
+  ['education', 'education'],
+  ['other', 'custom'],
 ] as const
 
 export interface StartGoalSeed {
