@@ -3,8 +3,6 @@ import { settingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import {
   APP_SETTING_COVERAGE,
-  ROOM_IDS,
-  ROOM_ROUTE,
   SETTINGS_REGISTRY,
   SETTING_BY_ID,
   SETTING_IDS,
@@ -18,24 +16,21 @@ describe('settings registry', () => {
     expect(new Set(SETTINGS_REGISTRY.map((s) => s.id)).size).toBe(SETTING_IDS.length)
   })
 
-  it('puts every entry in a known room', () => {
-    for (const s of SETTINGS_REGISTRY) expect(ROOM_IDS).toContain(s.room)
+  it('puts every entry in a group that has a name', () => {
+    for (const s of SETTINGS_REGISTRY) expect(settingsHubCopy.en.groupName[s.group].length).toBeGreaterThan(1)
   })
 
-  it('has English and Arabic copy for every setting and room', () => {
+  it('has English and Arabic copy for every setting and group', () => {
     for (const locale of ['en', 'ar'] as const) {
       for (const id of SETTING_IDS) {
         expect(settingsHubCopy[locale].items[id].label.length).toBeGreaterThan(1)
       }
-      for (const r of ROOM_IDS) {
-        expect(settingsHubCopy[locale].rooms[r].title.length).toBeGreaterThan(1)
-        expect(settingsHubCopy[locale].rooms[r].remark.length).toBeGreaterThan(1)
-      }
+      for (const group of Object.values(settingsHubCopy[locale].groupName)) expect(group.length).toBeGreaterThan(1)
     }
   })
 
   it('routes only to pages the shell can render (or the legal pages)', () => {
-    const pages = new Set<string>([...Object.values(ROOM_ROUTE), ...SETTINGS_REGISTRY.map((s) => s.route)])
+    const pages = new Set<string>(SETTINGS_REGISTRY.map((s) => s.route))
     for (const route of pages) {
       expect(route.startsWith('/legal/') || isShellPath(route), route).toBe(true)
     }
@@ -55,9 +50,9 @@ describe('searchSettings', () => {
 
   it('finds settings by label, keyword and synonym', () => {
     expect(top('currency')).toBe('baseCurrency')
-    expect(top('salary day')).toBe('payCycle')
     expect(top('dark mode')).toBe('theme')
-    expect(searchSettings('cards', 'en')).toContain('paymentMethods')
+    expect(top('delete account')).toBe('deleteAccount')
+    expect(searchSettings('household', 'en')).toContain('household')
   })
 
   it('ranks a label prefix above a keyword-only hit', () => {
@@ -66,11 +61,11 @@ describe('searchSettings', () => {
   })
 
   it('requires every word to match', () => {
-    expect(searchSettings('salary banana', 'en')).toEqual([])
+    expect(searchSettings('theme banana', 'en')).toEqual([])
   })
 
   it('searches Arabic labels and tolerates letter variants', () => {
-    expect(top('يوم الراتب', 'ar')).toBe('payCycle')
+    expect(top('حذف الحساب', 'ar')).toBe('deleteAccount')
     expect(searchSettings('اشتراك', 'ar')).toContain('subDueReminders')
     expect(searchSettings('إشتراك', 'ar')).toContain('subDueReminders')
     expect(top('الوضع الداكن', 'ar')).toBeDefined()

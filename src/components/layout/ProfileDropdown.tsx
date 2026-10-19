@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { ProgressRing } from '@/components/ui/ProgressRing'
-import { IconButton } from '@/components/ui/IconButton'
-import { QuickChanges } from '@/components/features/settings/QuickChanges'
+import { QuickActions } from '@/components/features/settings/QuickActions'
+import { Badge } from '@/components/ui/badge'
 import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
 import { useStaffAccess } from '@/hooks/useStaffAccess'
@@ -128,38 +128,45 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           className="native-scroll absolute end-0 top-full z-50 mt-2 max-h-[calc(100dvh-6rem)] w-[19rem] overflow-y-auto rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-[0_24px_50px_-16px_rgba(0,0,0,0.7)]"
           role="menu"
         >
-          {user ? (
-            <div className="flex items-center gap-1 pe-3">
-              <Link
-                href="/settings/you"
-                onClick={delayedClose}
+          {user && pct < 100 ? (
+            <>
+              <button
+                type="button"
+                data-raw-button-ok="menu row sharing itemClass with the other profile menu items, tinted as the CTA"
+                onClick={() => setSetupOpen(true)}
+                aria-label={t.setup.chipAria(pct)}
+                className={cn(itemClass, 'min-h-11 bg-[var(--color-brand-primary-soft)] font-semibold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70')}
                 role="menuitem"
-                className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
               >
-                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)]">
-                  {avatarSrc ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarSrc} alt="" className="size-full object-cover" width={44} height={44} />
-                  ) : (
-                    <User className="size-5 text-[var(--color-brand-text-secondary)]" />
-                  )}
+                <ProgressRing pct={pct} size={20} stroke={3} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)" />
+                <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.setup.chipLabel} · <span className="font-mono-numbers">{pct}%</span></span>
+              </button>
+              <Divider />
+            </>
+          ) : null}
+          {user ? (
+            <Link
+              href="/settings/profile"
+              onClick={delayedClose}
+              role="menuitem"
+              className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)]">
+                {avatarSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarSrc} alt="" className="size-full object-cover" width={44} height={44} />
+                ) : (
+                  <User className="size-5 text-[var(--color-brand-text-secondary)]" />
+                )}
+              </span>
+              <span className={cn('min-w-0 flex-1', locale === 'ar' && 'text-end')}>
+                <span className="flex items-center gap-2">
+                  <span className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{displayName}</span>
+                  {isStaff ? <Badge variant="brand" size="xs">{copy.menu.admin}</Badge> : null}
                 </span>
-                <span className={cn('min-w-0', locale === 'ar' && 'text-end')}>
-                  <span className="block truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{displayName}</span>
-                  {displayEmail ? <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{displayEmail}</span> : null}
-                </span>
-              </Link>
-              {pct < 100 ? (
-                <IconButton
-                  variant="tinted"
-                  shape="round"
-                  aria-label={t.setup.chipAria(pct)}
-                  onClick={() => setSetupOpen(true)}
-                >
-                  <ProgressRing pct={pct} size={24} stroke={3} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)" />
-                </IconButton>
-              ) : null}
-            </div>
+                {displayEmail ? <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{displayEmail}</span> : null}
+              </span>
+            </Link>
           ) : (
             <button
               type="button"
@@ -173,7 +180,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             </button>
           )}
 
-          <QuickChanges variant="menu" />
+          <QuickActions variant="menu" />
           <Divider />
 
           {link('/goals', Target, t.nav.goals)}

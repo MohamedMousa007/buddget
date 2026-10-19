@@ -7,9 +7,9 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { SettingId } from '@/lib/settings/registry'
 import type { Currency } from '@/lib/store/types'
 
-/** Settings that flip in place. Security toggles (two-step) stay on the Account page behind their own flow. */
+/** Settings that flip in place. Two-step, SMS and notifications have their own flows on the settings page. */
 export const TOGGLE_SETTING_IDS = [
-  'secondaryCurrency', 'onlyMyCurrencies', 'goldStrip', 'showCents',
+  'secondaryCurrency', 'goldStrip', 'showCents',
   'subDueReminders', 'subPriceAlerts', 'goalProgressAlerts', 'goalAlerts',
   'tips', 'learning', 'voiceReadAloud',
 ] as const satisfies readonly SettingId[]
@@ -60,7 +60,6 @@ export function useSettingToggle(id: ToggleSettingId): SettingToggle {
           })
           return
         }
-        case 'onlyMyCurrencies': return updateSettings({ showAllCurrenciesInForms: !next })
         case 'goldStrip': return updateSettings({ wealthGoldStrip: next ? 'collapsed' : 'hidden' })
         case 'showCents': return updateSettings({ showCentsInDashboard: next })
         case 'subDueReminders': return updateSettings({ subDueReminders: next })
@@ -78,7 +77,6 @@ export function useSettingToggle(id: ToggleSettingId): SettingToggle {
   const on = (() => {
     switch (id) {
       case 'secondaryCurrency': return settings.showSecondaryCurrency
-      case 'onlyMyCurrencies': return !settings.showAllCurrenciesInForms
       case 'goldStrip': return settings.wealthGoldStrip !== 'hidden'
       case 'showCents': return settings.showCentsInDashboard
       case 'subDueReminders': return settings.subDueReminders ?? true

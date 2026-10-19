@@ -17,7 +17,7 @@ type NavResult = ReturnType<Nav>
 
 const INCOME_TYPES: readonly IncomeSourceType[] = ['salary', 'bonus', 'side_hustle', 'rental', 'investment', 'savings', 'debt', 'gift', 'refund', 'other']
 const METHOD_TYPES: readonly PaymentMethodType[] = ['cash', 'bank_account', 'debit_card', 'credit_card', 'prepaid_card', 'wallet', 'bnpl', 'other']
-const SETTING_MODAL: Partial<Record<SettingAction, string>> = { paymentMethods: 'paymentMethods', household: 'householdRent', lifestyle: 'lifestyle' }
+const SETTING_MODAL: Partial<Record<SettingAction, string>> = { household: 'householdRent', lifestyle: 'lifestyle' }
 
 const refused = (message: string): NavResult => ({ ok: false, message })
 const opened = (what: string): NavResult => ({ ok: true, message: `Opened ${what}.` })
@@ -35,7 +35,10 @@ const open_setting: Nav = (args) => {
   const entry = SETTING_BY_ID[id]
   const modal = entry.action ? SETTING_MODAL[entry.action] : undefined
   if (modal) ui().setActiveModal(modal)
-  else {
+  else if (entry.action && entry.action !== 'household' && entry.action !== 'lifestyle') {
+    navigate('/settings')
+    ui().openSettingsSheet(entry.action)
+  } else {
     ui().setSettingsFocusId(id)
     navigate(entry.route)
   }

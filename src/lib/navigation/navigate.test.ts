@@ -19,7 +19,7 @@ describe('isShellPath', () => {
   it('recognizes shell routes (normalized)', () => {
     expect(isShellPath('/')).toBe(true)
     expect(isShellPath('/expenses')).toBe(true)
-    expect(isShellPath('/settings/account')).toBe(true)
+    expect(isShellPath('/settings/memory')).toBe(true)
   })
   it('rejects non-shell / special routes', () => {
     expect(isShellPath('/admin')).toBe(false)

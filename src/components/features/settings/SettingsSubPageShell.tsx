@@ -3,16 +3,15 @@
 import { useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { navigate } from '@/lib/navigation/navigate'
-import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
-import { PageBody, PageContainer } from '@/components/layout/PageContainer'
-import { IconButton } from '@/components/ui/IconButton'
+import { PageBody } from '@/components/layout/PageContainer'
+import { Button } from '@/components/ui/button'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useLocale, useT } from '@/lib/i18n'
 
 interface Props {
   title: string
   children: React.ReactNode
-  /** Where the back arrow goes: the room this page belongs to, or the hub. */
+  /** Where the back control goes. Defaults to the settings page. */
   backHref?: string
 }
 
@@ -20,9 +19,8 @@ const HIGHLIGHT = ['bg-[var(--color-brand-primary-soft)]']
 const HIGHLIGHT_MS = 1800
 
 /**
- * Chrome for every settings page: back arrow, title, and the arrival highlight for
- * settings search (scrolls to the row whose `data-setting-id` was asked for).
- * Settings apply the moment they change, so there is no Save button.
+ * Body chrome for a settings screen that is not the settings page itself: a back control and the title inline,
+ * under the app's own header (there is no second header bar), plus the arrival highlight for settings search.
  */
 export function SettingsSubPageShell({ title, children, backHref = '/settings' }: Props) {
   const { locale } = useLocale()
@@ -44,25 +42,18 @@ export function SettingsSubPageShell({ title, children, backHref = '/settings' }
     return () => cancelAnimationFrame(frame)
   }, [focusId, setFocusId])
 
+  const Back = locale === 'ar' ? ChevronRight : ChevronLeft
   return (
-    <div>
-      <PageHeader>
-        <PageContainer className="px-0 lg:px-0">
-          <PageHeaderContent>
-            <div className="flex items-center gap-1">
-              <IconButton onClick={() => navigate(backHref)} aria-label={t.common.back}>
-                {locale === 'ar' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-              </IconButton>
-              <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
-            </div>
-          </PageHeaderContent>
-        </PageContainer>
-      </PageHeader>
-      <div ref={bodyRef}>
-        <PageBody narrow className="space-y-4">
-          {children}
-        </PageBody>
-      </div>
+    <div ref={bodyRef}>
+      <PageBody narrow className="space-y-4">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="touch" onClick={() => navigate(backHref)} aria-label={t.common.back} className="-ms-2 px-2">
+            <Back className="size-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
+        </div>
+        {children}
+      </PageBody>
     </div>
   )
 }

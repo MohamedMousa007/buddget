@@ -19,19 +19,8 @@ import BudgetSetupPage from '@/app/budget-setup/page'
 import NotificationsPage from '@/app/notifications/page'
 import SettingsPage from '@/app/settings/page'
 import SettingsProfilePage from '@/app/settings/profile/page'
-import SettingsAccountPage from '@/app/settings/account/page'
-import SettingsCurrencyPage from '@/app/settings/currency/page'
-import SettingsYouPage from '@/app/settings/you/page'
-import SettingsMoneyPage from '@/app/settings/money/page'
-import SettingsPayCyclePage from '@/app/settings/pay-cycle/page'
-import SettingsAlertsPage from '@/app/settings/alerts/page'
-import SettingsBuddgyPage from '@/app/settings/buddgy/page'
-import SettingsLookPage from '@/app/settings/look/page'
-import SettingsHelpPage from '@/app/settings/help/page'
-import SettingsFeedbackPage from '@/app/settings/feedback/page'
-import SettingsAiPage from '@/app/settings/ai/page'
-import SettingsDataPage from '@/app/settings/data/page'
 import SettingsSmsPage from '@/app/settings/sms/page'
+import SettingsMemoryPage from '@/app/settings/memory/page'
 
 const VIEW_MAP: Record<string, ComponentType> = {
   '/': FlowPage,
@@ -53,19 +42,8 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/notifications': NotificationsPage,
   '/settings': SettingsPage,
   '/settings/profile': SettingsProfilePage,
-  '/settings/account': SettingsAccountPage,
-  '/settings/currency': SettingsCurrencyPage,
-  '/settings/you': SettingsYouPage,
-  '/settings/money': SettingsMoneyPage,
-  '/settings/pay-cycle': SettingsPayCyclePage,
-  '/settings/alerts': SettingsAlertsPage,
-  '/settings/buddgy': SettingsBuddgyPage,
-  '/settings/look': SettingsLookPage,
-  '/settings/help': SettingsHelpPage,
-  '/settings/feedback': SettingsFeedbackPage,
-  '/settings/ai': SettingsAiPage,
-  '/settings/data': SettingsDataPage,
   '/settings/sms': SettingsSmsPage,
+  '/settings/memory': SettingsMemoryPage,
 }
 
 /**

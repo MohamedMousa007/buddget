@@ -62,14 +62,12 @@ describe('open_screen', () => {
 
 describe('open_setting', () => {
   it('navigates to the settings page and asks it to highlight the row', () => {
-    expect(nav('open_setting', { setting: 'payCycle' }).ok).toBe(true)
-    expect(navigate).toHaveBeenCalledWith('/settings/money')
-    expect(modal().settingsFocusId).toBe('payCycle')
+    expect(nav('open_setting', { setting: 'budgetEntryMode' }).ok).toBe(true)
+    expect(navigate).toHaveBeenCalledWith('/settings/memory')
+    expect(modal().settingsFocusId).toBe('budgetEntryMode')
   })
 
   it('opens sheet-backed settings as modals instead', () => {
-    nav('open_setting', { setting: 'paymentMethods' })
-    expect(modal().activeModal).toBe('paymentMethods')
     nav('open_setting', { setting: 'household' })
     expect(modal().activeModal).toBe('householdRent')
     nav('open_setting', { setting: 'lifestyle' })
@@ -79,9 +77,10 @@ describe('open_setting', () => {
 
   it('does not run the reset-tips action and offers every non-destructive setting', () => {
     useSettingsStore.setState({ dismissedBanners: ['x'] })
-    nav('open_setting', { setting: 'resetTips' })
+    nav('open_setting', { setting: 'exportData' })
     expect(modal().dismissedBanners).toEqual(['x'])
-    expect(navigate).toHaveBeenCalledWith('/settings/data')
+    expect(navigate).toHaveBeenCalledWith('/settings')
+    expect(modal().settingsSheet).toBe('export')
     const spec = TOOLS.get('open_setting')!.spec.params.properties!.setting.enum!
     expect(spec).toEqual(SETTINGS_REGISTRY.filter((s) => s.kind !== 'danger').map((s) => s.id))
     expect(spec).not.toContain('deleteAccount')

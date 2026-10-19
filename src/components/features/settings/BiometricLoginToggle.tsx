@@ -16,9 +16,11 @@ import {
 
 interface BiometricLoginToggleProps {
   userEmail?: string
+  /** Drop the card chrome so the toggle sits as a row inside another card. */
+  bare?: boolean
 }
 
-export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
+export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLoginToggleProps) {
   const t = useT()
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState<BiometryType>(null)
@@ -73,7 +75,7 @@ export function BiometricLoginToggle({ userEmail }: BiometricLoginToggleProps) {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-1">
+    <div className={bare ? 'px-4 py-3' : 'rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 space-y-1'}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Icon className="h-5 w-5 text-[var(--color-brand-primary-ink)]" />

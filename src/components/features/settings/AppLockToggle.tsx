@@ -8,6 +8,8 @@ import { Switch } from '@/components/ui/switch'
 
 interface AppLockToggleProps {
   userEmail?: string
+  /** Drop the card chrome so the toggle sits as a row inside another card. */
+  bare?: boolean
 }
 
 /**
@@ -15,7 +17,7 @@ interface AppLockToggleProps {
  * is enabled for this account — it just requires the unlock prompt on cold launch
  * in addition to the signed-out re-login flow.
  */
-export function AppLockToggle({ userEmail }: AppLockToggleProps) {
+export function AppLockToggle({ userEmail, bare = false }: AppLockToggleProps) {
   const t = useT()
   const [show, setShow] = useState(false)
   const [enabled, setEnabledState] = useState(false)
@@ -50,7 +52,7 @@ export function AppLockToggle({ userEmail }: AppLockToggleProps) {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
+    <div className={bare ? 'px-4 py-3' : 'rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4'}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Lock className="h-5 w-5 text-[var(--color-brand-primary-ink)]" />

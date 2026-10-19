@@ -26,19 +26,8 @@ export const SHELL_PATHS = [
   '/notifications',
   '/settings',
   '/settings/profile',
-  '/settings/account',
-  '/settings/currency',
-  '/settings/you',
-  '/settings/money',
-  '/settings/pay-cycle',
-  '/settings/alerts',
-  '/settings/buddgy',
-  '/settings/look',
-  '/settings/help',
-  '/settings/feedback',
-  '/settings/ai',
-  '/settings/data',
   '/settings/sms',
+  '/settings/memory',
 ] as const
 
 const SHELL_PATH_SET: ReadonlySet<string> = new Set(SHELL_PATHS)

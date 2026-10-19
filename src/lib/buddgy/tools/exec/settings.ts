@@ -150,9 +150,9 @@ function show(key: Key, v: View, ctx: ToolContext): string {
   const value = current(key, v)
   if (typeof value === 'boolean') return value ? L.on : L.off
   switch (key) {
-    case 'theme': return value === 'light' ? hub.themeLight : value === 'dark' ? hub.themeDark : hub.themeAuto
+    case 'theme': return value === 'light' ? hub.themeLight : value === 'dark' ? hub.themeDark : L.auto
     case 'language': return value === 'ar' ? L.arabic : L.english
-    case 'budgetEntryMode': return value === 'amount' ? hub.moneyPage.entryAmount : hub.moneyPage.entryPercent
+    case 'budgetEntryMode': return value === 'amount' ? hub.memory.entryAmount : hub.memory.entryPercent
     case 'monthStartDay': return L.day(Number(value))
     case 'secondaryCurrency': return value === 'off' ? L.off : String(value)
     default: return String(value)
@@ -164,9 +164,9 @@ function fieldFor(key: Key, v: View, ctx: ToolContext, label: string): EditableF
   const hub = settingsHubCopy[ctx.locale]
   const options = ((): { value: string; label: string }[] => {
     switch (key) {
-      case 'theme': return [{ value: 'light', label: hub.themeLight }, { value: 'dark', label: hub.themeDark }, { value: 'system', label: hub.themeAuto }]
+      case 'theme': return [{ value: 'light', label: hub.themeLight }, { value: 'dark', label: hub.themeDark }, { value: 'system', label: L.auto }]
       case 'language': return [{ value: 'en', label: L.english }, { value: 'ar', label: L.arabic }]
-      case 'budgetEntryMode': return [{ value: 'amount', label: hub.moneyPage.entryAmount }, { value: 'percent_of_income', label: hub.moneyPage.entryPercent }]
+      case 'budgetEntryMode': return [{ value: 'amount', label: hub.memory.entryAmount }, { value: 'percent_of_income', label: hub.memory.entryPercent }]
       case 'monthStartDay': return Array.from({ length: PAY_CYCLE_MAX_DAY }, (_, i) => ({ value: String(i + 1), label: L.day(i + 1) }))
       case 'baseCurrency': return FIAT_CURRENCIES.map((c) => ({ value: c, label: c }))
       case 'secondaryCurrency': return [{ value: 'off', label: L.off }, ...FIAT_CURRENCIES.filter((c) => c !== v.s.baseCurrency).map((c) => ({ value: c, label: c }))]
@@ -193,7 +193,12 @@ type Built =
   | { error: ProposeResult }
   | { key: Key; patch: Patch; base?: BasePatch; message: string; proposal: Proposal }
 
-const labelOf = (key: Key, ctx: ToolContext): string => settingsHubCopy[ctx.locale].items[key === 'monthStartDay' ? 'payCycle' : key].label
+const labelOf = (key: Key, ctx: ToolContext): string => {
+  const L = settingsLabels(ctx.locale)
+  if (key === 'monthStartDay') return L.monthStart
+  if (key === 'onlyMyCurrencies') return L.onlyMine
+  return settingsHubCopy[ctx.locale].items[key].label
+}
 
 function buildChange(args: Record<string, unknown>, ctx: ToolContext): Built {
   const key = CHANGEABLE_SETTINGS.find((k) => k === args.setting)
@@ -231,10 +236,10 @@ function buildChange(args: Record<string, unknown>, ctx: ToolContext): Built {
 }
 
 function cycleEffect(day: number, ctx: ToolContext): string {
-  const c = settingsHubCopy[ctx.locale].payCycle
+  const c = settingsLabels(ctx.locale)
   const cycle = currentCycle(ctx.now, day)
   const fmt = (d: Date) => format(d, 'd MMM', { locale: ctx.locale === 'ar' ? arEG : enUS })
-  return `${c.range(fmt(cycle.start), fmt(cycle.end))}. ${c.note}`
+  return `${c.range(fmt(cycle.start), fmt(cycle.end))}. ${c.cycleNote}`
 }
 
 function baseEffect(from: Currency, to: Currency, rates: Record<string, number>, ctx: ToolContext): string {

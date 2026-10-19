@@ -1,6 +1,6 @@
 import { useLocale } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/types'
-import type { RoomId, SettingId } from '@/lib/settings/registry'
+import type { GroupId, SettingId } from '@/lib/settings/registry'
 
 export interface SettingItemCopy {
   label: string
@@ -12,46 +12,85 @@ export interface SettingItemCopy {
 
 export interface SettingsHubCopy {
   title: string
-  searchPlaceholder: string
   searchLabel: string
+  searchPlaceholder: string
   clearSearch: string
-  hostLine: string
-  setupRing: (left: number) => string
+  close: string
+  back: string
+  footer: string
+  recent: string
+  suggestions: string
+  suggestionList: string[]
+  groupName: Record<GroupId, string>
+  search: { noResults: (q: string) => string; noResultsHint: string; reportMissing: string; open: string; hint: string }
+  profileHint: string
   quickTitle: string
-  mainCurrency: string
-  mainShort: string
-  alsoShow: string
-  secondShort: string
-  secondCurrency: string
-  addSecond: string
-  noSecond: string
-  swap: string
   language: string
   theme: string
   themeLight: string
-  themeAuto: string
   themeDark: string
-  roomsCap: string
-  footer: string
-  back: string
-  rooms: Record<RoomId, { title: string; remark: string }>
-  status: {
-    you: string
-    money: (base: string, second: string | null, day: number) => string
-    alerts: (on: number, total: number) => string
-    buddgy: (tips: boolean, sms: boolean) => string
-    look: (theme: string, language: string) => string
-    data: string
-    help: string
+  currencyTile: string
+  convertTile: string
+  convertHint: string
+  convertTitle: string
+  showCents: string
+  security: { title: string; subtitle: string; signIn: string; account: string; memberSince: string }
+  sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string }
+  ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string; voiceHint: string; deviceOnly: string }
+  notif: { title: string; master: string; on: string; off: string; blocked: string; unsupported: string; pushHint: string; subs: string; goals: string; dueHint: string; priceHint: string; progressHint: string; behindHint: string }
+  data: {
+    title: string
+    export: string
+    exportHint: string
+    csv: string
+    csvHint: string
+    backup: string
+    backupHint: string
+    import: string
+    importHint: string
+    syncedNote: string
+    deleteCta: string
+    deleteHint: string
+  }
+  help: {
+    title: string
+    feedback: string
+    feedbackHint: string
+    bug: string
+    idea: string
+    terms: string
+    privacy: string
+    about: string
+    aboutHint: string
+    version: string
+    story: string[]
+    web: string
+    contact: string
+    madeWith: string
+  }
+  memory: {
+    title: string
+    intro: string
+    household: string
+    householdEmpty: string
+    rent: string
+    lifestyle: string
+    budget: string
+    entry: string
+    entryAmount: string
+    entryPercent: string
+    gold: string
+    goldHint: string
+    learned: string
+    learnedEmpty: string
+    forget: string
+    onboarding: string
+    onboardingEmpty: string
+    edit: string
+    source: Record<'chat' | 'manual' | 'budget' | 'onboarding', string>
   }
   items: Record<SettingId, SettingItemCopy>
-  search: {
-    noResults: (q: string) => string
-    noResultsHint: string
-    reportMissing: string
-    inRoom: (room: string) => string
-  }
-  menu: { helpFeedback: string; openSettings: string; signIn: string; closeMenu: string; adminPortal: string }
+  menu: { helpFeedback: string; openSettings: string; signIn: string; closeMenu: string; adminPortal: string; admin: string }
   currency: {
     pickTitle: string
     sheetTitle: (next: string) => string
@@ -64,143 +103,156 @@ export interface SettingsHubCopy {
     toast: (next: string) => string
     undo: string
   }
-  payCycle: {
-    title: string
-    question: string
-    hint: string
-    decrease: string
-    increase: string
-    today: string
-    current: string
-    note: string
-    paydays: string
-    paydaysHint: string
-    range: (from: string, to: string) => string
-  }
-  you: { account: string; security: string; money: string; signedOutHint: string }
-  moneyPage: {
-    currency: string
-    cycle: string
-    wallets: string
-    rules: string
-    entryTitle: string
-    entryAmount: string
-    entryPercent: string
-    goldHint: string
-    onlyMineHint: string
-    secondHint: (name: string) => string
-    paymentMethodsHint: (n: number) => string
-    householdHint: string
-    lifestyleHint: string
-    converterHint: string
-  }
-  alertsPage: {
-    master: string
-    subscriptions: string
-    goals: string
-    allowed: string
-    blocked: string
-    notAsked: string
-    unsupported: string
-    pushHint: string
-    dueHint: string
-    priceHint: string
-    progressHint: string
-    behindHint: string
-  }
-  buddgyPage: { assistant: string; assistantHint: (tips: boolean, learning: boolean) => string; voice: string; voiceHint: string; deviceOnly: string; tracking: string; trackingHint: string }
-  lookPage: { appearance: string; text: string; centsHint: string; languageHint: string }
-  dataPage: { tools: string; resetTips: string; resetTipsHint: string; resetTipsDone: string }
-  helpPage: { support: string; legal: string; about: string; version: string; feedbackHint: string }
 }
 
 const en: SettingsHubCopy = {
   title: 'Settings',
-  searchPlaceholder: 'Try “salary day” or “dark mode”',
   searchLabel: 'Search settings',
-  clearSearch: 'Clear search',
-  hostLine: 'Pick a room. I’ll keep the switches warm.',
-  setupRing: (n) => (n === 1 ? '1 thing left' : `${n} things left`),
-  quickTitle: 'Quick changes',
-  mainCurrency: 'Main currency',
-  mainShort: 'Main',
-  alsoShow: 'Also show',
-  secondShort: 'Second',
-  secondCurrency: 'Second currency',
-  addSecond: 'Add',
-  noSecond: 'No second currency',
-  swap: 'Swap main and second currency',
+  searchPlaceholder: 'Search settings',
+  clearSearch: 'Clear',
+  close: 'Close',
+  back: 'Back',
+  footer: 'Exchange rates by exchangerate-api.com',
+  recent: 'Recent',
+  suggestions: 'Try asking for',
+  suggestionList: ['Dark mode', 'Delete account', 'Notifications', 'Currency', 'Export data'],
+  groupName: {
+    profile: 'Profile',
+    security: 'Account',
+    quick: 'Quick actions',
+    autoTrack: 'Auto-track',
+    ai: 'Buddgy & AI',
+    memory: 'Memory',
+    notifications: 'Notifications',
+    data: 'Data',
+    help: 'Help & about',
+  },
+  search: {
+    noResults: (q) => `Nothing called “${q}”`,
+    noResultsHint: 'Try a shorter word, like “dark” or “alerts”.',
+    reportMissing: 'Tell us what’s missing',
+    open: 'Open',
+    hint: 'Jump to any setting. Switches work right here.',
+  },
+  profileHint: 'View and edit your profile',
+  quickTitle: 'Quick actions',
   language: 'Language',
   theme: 'Theme',
   themeLight: 'Light',
-  themeAuto: 'Auto',
   themeDark: 'Dark',
-  roomsCap: 'Rooms',
-  footer: 'Exchange rates by exchangerate-api.com',
-  back: 'Back',
-  rooms: {
-    you: { title: 'You', remark: 'Lock the door behind you.' },
-    money: { title: 'Money', remark: 'Tell me when your month really starts.' },
-    alerts: { title: 'Alerts', remark: 'I only ping when it matters.' },
-    buddgy: { title: 'Buddgy & auto-track', remark: 'I learn, you stay in charge.' },
-    look: { title: 'Look & language', remark: 'Dress the app your way.' },
-    data: { title: 'Data & privacy', remark: 'Your numbers, your call.' },
-    help: { title: 'Help & about', remark: 'Stuck? I’ve got you.' },
+  currencyTile: 'Currency',
+  convertTile: 'Convert',
+  convertHint: 'Rates',
+  convertTitle: 'Currency converter',
+  showCents: 'Show cents',
+  security: { title: 'Sign-in & security', subtitle: 'Password, two-step, biometrics, app lock', signIn: 'Sign in to manage your account and security.', account: 'Account', memberSince: 'Member since' },
+  sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up' },
+  ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned', voiceHint: 'Speak answers in voice chats', deviceOnly: 'This device only' },
+  notif: {
+    title: 'Notifications',
+    master: 'Notifications',
+    on: 'On for this device',
+    off: 'Off',
+    blocked: 'Blocked in your device settings',
+    unsupported: 'Not available on this browser',
+    pushHint: 'Allow notifications in your device settings to switch this on.',
+    subs: 'Subscriptions',
+    goals: 'Goals',
+    dueHint: 'The day before a renewal',
+    priceHint: 'When a price changes or a trial ends',
+    progressHint: 'At 25, 50, 75 and 100%',
+    behindHint: 'Only when you slip, never nagging',
   },
-  status: {
-    you: 'Profile, sign-in, security',
-    money: (base, second, day) => `${base}${second ? ` + ${second}` : ''} · month starts day ${day}`,
-    alerts: (on, total) => `${on} of ${total} on`,
-    buddgy: (tips, sms) => `Tips ${tips ? 'on' : 'off'} · SMS ${sms ? 'on' : 'off'}`,
-    look: (theme, language) => `${theme} · ${language}`,
-    data: 'Export, restore, reset',
-    help: 'Feedback, legal, version',
+  data: {
+    title: 'Your data',
+    export: 'Export',
+    exportHint: 'Download your data',
+    csv: 'Expenses (CSV)',
+    csvHint: 'Opens in Excel or Sheets',
+    backup: 'Backup file',
+    backupHint: 'Move this device’s data to another device',
+    import: 'Import a backup',
+    importHint: 'Restore from a backup file',
+    syncedNote: 'Your data is saved to your account, so there is nothing to back up.',
+    deleteCta: 'Delete my account',
+    deleteHint: 'Permanently removes your account and all its data.',
+  },
+  help: {
+    title: 'Help & about',
+    feedback: 'Send feedback',
+    feedbackHint: 'Report a bug or suggest a feature',
+    bug: 'Bug',
+    idea: 'Feature',
+    terms: 'Terms of use',
+    privacy: 'Privacy policy',
+    about: 'About Buddget',
+    aboutHint: 'Version, story and contact',
+    version: 'Version',
+    story: [
+      'Buddget started with a simple annoyance: money apps that make you type every coffee and think in one currency.',
+      'So it reads your bank texts, understands more than one currency, and keeps your month honest without a spreadsheet.',
+      'Your data stays yours. We build it in the open with the people who use it, so tell us what to fix next.',
+    ],
+    web: 'buddget.app',
+    contact: 'support@buddget.app',
+    madeWith: 'Made with care for people who count in more than one currency.',
+  },
+  memory: {
+    title: 'Memory',
+    intro: 'What Buddgy knows about your money. It uses this to size budgets and answer you, and it updates as you chat.',
+    household: 'Household & rent',
+    householdEmpty: 'Not set yet',
+    rent: 'Monthly rent',
+    lifestyle: 'Lifestyle',
+    budget: 'Budget answers',
+    entry: 'Budget entry',
+    entryAmount: 'Amount',
+    entryPercent: '% of income',
+    gold: 'Gold price strip',
+    goldHint: 'Live gold price on Wealth',
+    learned: 'Learned from chats',
+    learnedEmpty: 'Nothing yet. Tell Buddgy things like “I share rent with a roommate” and it will remember.',
+    forget: 'Forget',
+    onboarding: 'Getting to know you',
+    onboardingEmpty: 'Questions Buddgy asks as you use the app will show up here.',
+    edit: 'Edit',
+    source: { chat: 'From a chat', manual: 'You added', budget: 'From your budget', onboarding: 'From setup' },
   },
   items: {
     profile: { label: 'Profile', keywords: 'name avatar photo picture phone country city اسم صورة', exact: ['profile', 'name', 'avatar', 'الملف الشخصي'] },
-    account: { label: 'Account & security', keywords: 'email member sign out login حساب' },
-    password: { label: 'Change password', keywords: 'security login كلمة السر كلمة المرور' },
+    password: { label: 'Change password', keywords: 'security login كلمة السر كلمة المرور', exact: ['password'] },
     twoFactor: { label: 'Two-step sign-in', keywords: '2fa otp email code security التحقق بخطوتين' },
-    biometric: { label: 'Face ID & app lock', keywords: 'fingerprint biometric lock touch pin بصمة قفل' },
-    deleteAccount: { label: 'Delete account', keywords: 'remove erase close account حذف الحساب' },
-    paymentMethods: { label: 'Payment methods', keywords: 'card bank visa wallet account بطاقة بنك وسائل الدفع', exact: ['cards', 'card', 'payment', 'بطاقات', 'بطاقة'] },
+    biometric: { label: 'Face ID & fingerprint', keywords: 'biometric touch unlock بصمة وجه' },
+    appLock: { label: 'App lock', keywords: 'pin passcode lock قفل التطبيق' },
+    deleteAccount: { label: 'Delete account', keywords: 'remove erase close account حذف الحساب', exact: ['delete account', 'delete', 'حذف الحساب'] },
     baseCurrency: { label: 'Main currency', keywords: 'currency egp usd dollar pound euro عملة جنيه دولار', exact: ['currency', 'عملة'] },
-    secondaryCurrency: { label: 'Show a second currency', keywords: 'secondary also exchange عملة ثانية' },
-    onlyMyCurrencies: { label: 'Only my currencies in forms', keywords: 'hide currencies picker العملات' },
-    converter: { label: 'Currency converter', keywords: 'rate exchange calculate تحويل العملات' },
-    payCycle: { label: 'Month starts on', keywords: 'pay cycle salary day payday month start budget راتب يوم الراتب بداية الشهر', exact: ['salary day', 'pay cycle', 'payday', 'يوم الراتب'] },
+    secondaryCurrency: { label: 'Second currency', keywords: 'secondary also exchange عملة ثانية' },
+    converter: { label: 'Currency converter', keywords: 'rate exchange calculate convert تحويل العملات' },
+    theme: { label: 'Theme', keywords: 'dark mode light night appearance مظهر داكن فاتح وضع الوضع الداكن ليلي', exact: ['dark mode', 'theme', 'dark', 'الوضع الداكن', 'داكن'] },
+    language: { label: 'Language', keywords: 'arabic english عربي انجليزي لغة', exact: ['language', 'لغة'] },
+    showCents: { label: 'Show cents', keywords: 'decimals pennies قروش هللة' },
+    sms: { label: 'SMS tracking', keywords: 'bank auto track messages رسائل بنك', exact: ['sms', 'رسائل'] },
+    tips: { label: 'Buddgy tips', keywords: 'nudge suggestion assistant ai نصائح', exact: ['tips', 'نصائح'] },
+    learning: { label: 'Learn from chats', keywords: 'memory assistant ai تعلم' },
+    memories: { label: 'Memory', keywords: 'memories forget household rent budget answers ذاكرة', exact: ['memory', 'ذاكرة'] },
+    voiceReadAloud: { label: 'Read answers aloud', keywords: 'voice speak tts mute صوت' },
     household: { label: 'Household & rent', keywords: 'family rent home people ايجار اسرة' },
     lifestyle: { label: 'Lifestyle', keywords: 'food transport habits نمط الحياة' },
     budgetEntryMode: { label: 'Budget entry', keywords: 'percent income amount budget ميزانية نسبة' },
     goldStrip: { label: 'Gold price strip', keywords: 'xau wealth ذهب' },
+    pushStatus: { label: 'Notifications', keywords: 'push permission allow alerts إشعارات تنبيهات', exact: ['notifications', 'alerts', 'إشعارات'] },
     subDueReminders: { label: 'Subscription reminders', keywords: 'due renew bill notification اشتراك تذكير' },
     subPriceAlerts: { label: 'Price-rise alerts', keywords: 'trial price increase notification سعر' },
     goalProgressAlerts: { label: 'Goal milestones', keywords: 'progress achievement notification هدف' },
     goalAlerts: { label: 'Behind-plan alerts', keywords: 'late goal notification متأخر' },
-    pushStatus: { label: 'Push notifications', keywords: 'permission allow notification إشعارات' },
-    tips: { label: 'Buddgy tips', keywords: 'nudge suggestion assistant ai نصائح', exact: ['tips', 'نصائح'] },
-    learning: { label: 'Learn from chats', keywords: 'memory assistant ai تعلم' },
-    memories: { label: 'What Buddgy remembers', keywords: 'memories forget ذاكرة' },
-    voiceReadAloud: { label: 'Read answers aloud', keywords: 'voice speak tts mute صوت' },
-    sms: { label: 'SMS tracking', keywords: 'bank auto track messages رسائل بنك', exact: ['sms', 'رسائل'] },
-    theme: { label: 'Theme', keywords: 'dark mode light night appearance مظهر داكن فاتح وضع الوضع الداكن ليلي', exact: ['dark mode', 'theme', 'dark', 'الوضع الداكن', 'داكن'] },
-    language: { label: 'Language', keywords: 'arabic english عربي انجليزي لغة', exact: ['language', 'لغة'] },
-    showCents: { label: 'Show cents', keywords: 'decimals pennies قروش هللة' },
     exportData: { label: 'Export data', keywords: 'backup download csv json نسخة احتياطية تصدير', exact: ['export', 'backup', 'تصدير'] },
-    restoreBackup: { label: 'Restore a backup', keywords: 'import upload json استعادة' },
-    resetTips: { label: 'Reset tips & prompts', keywords: 'dismissed banners hints إعادة ضبط' },
-    startFresh: { label: 'Start fresh', keywords: 'delete erase wipe reset data ابدأ من جديد مسح', exact: ['reset', 'delete data', 'مسح'] },
-    feedback: { label: 'Report an issue', keywords: 'bug idea feedback support ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },
+    restoreBackup: { label: 'Import a backup', keywords: 'restore upload json استعادة استيراد' },
+    feedback: { label: 'Send feedback', keywords: 'bug idea feature support report ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },
     terms: { label: 'Terms of use', keywords: 'legal شروط' },
     privacy: { label: 'Privacy policy', keywords: 'legal data خصوصية' },
+    about: { label: 'About Buddget', keywords: 'version story contact social حول الإصدار' },
   },
-  search: {
-    noResults: (q) => `Nothing called “${q}”`,
-    noResultsHint: 'Try “salary”, “dark” or “cards”.',
-    reportMissing: 'Tell us what’s missing',
-    inRoom: (room) => room,
-  },
-  menu: { helpFeedback: 'Help & feedback', openSettings: 'Settings', signIn: 'Sign in', closeMenu: 'Close menu', adminPortal: 'Admin portal' },
+  menu: { helpFeedback: 'Help & feedback', openSettings: 'Settings', signIn: 'Sign in', closeMenu: 'Close menu', adminPortal: 'Admin portal', admin: 'Admin' },
   currency: {
     pickTitle: 'Main currency',
     sheetTitle: (next) => `Switch main currency to ${next}?`,
@@ -213,156 +265,156 @@ const en: SettingsHubCopy = {
     toast: (next) => `Main currency is now ${next}`,
     undo: 'Undo',
   },
-  payCycle: {
-    title: 'Pay cycle',
-    question: 'My month starts on day',
-    hint: 'Usually the day your salary lands.',
-    decrease: 'Earlier day',
-    increase: 'Later day',
-    today: 'today',
-    current: 'Your current cycle',
-    note: 'Past entries keep their dates; your months are cut differently from now on.',
-    paydays: 'Paydays',
-    paydaysHint: 'Salary, rent and other regular income',
-    range: (from, to) => `${from} → ${to}`,
-  },
-  you: { account: 'Account', security: 'Sign-in & security', money: 'Money', signedOutHint: 'Sign in to manage your account and security.' },
-  moneyPage: {
-    currency: 'Currency',
-    cycle: 'Pay cycle',
-    wallets: 'Cards & accounts',
-    rules: 'Money rules',
-    entryTitle: 'Budget entry',
-    entryAmount: 'Amount',
-    entryPercent: '% of income',
-    goldHint: 'Live gold price on Wealth',
-    onlyMineHint: 'Hides the rest from pickers',
-    secondHint: (name) => name,
-    paymentMethodsHint: (n) => (n === 1 ? '1 card or account' : `${n} cards & accounts`),
-    householdHint: 'Helps Buddgy size your budget',
-    lifestyleHint: 'Food and transport habits',
-    converterHint: 'Convert any amount',
-  },
-  alertsPage: {
-    master: 'Notifications',
-    subscriptions: 'Subscriptions',
-    goals: 'Goals',
-    allowed: 'Allowed on this device',
-    blocked: 'Blocked in phone settings',
-    notAsked: 'Not asked yet',
-    unsupported: 'Not available here',
-    pushHint: 'Allow notifications in your phone settings to get these alerts.',
-    dueHint: 'The day before a renewal',
-    priceHint: 'When a price changes or a trial ends',
-    progressHint: 'At 25, 50, 75 and 100%',
-    behindHint: 'Only when you slip, never nagging',
-  },
-  buddgyPage: {
-    assistant: 'Assistant',
-    assistantHint: (tips, learning) => `Tips ${tips ? 'on' : 'off'} · learning ${learning ? 'on' : 'off'}`,
-    voice: 'Read answers aloud',
-    voiceHint: 'Buddgy speaks its answers in voice chats',
-    deviceOnly: 'This device only',
-    tracking: 'Auto-track',
-    trackingHint: 'Log bank texts as expenses',
-  },
-  lookPage: { appearance: 'Appearance', text: 'Language & numbers', centsHint: 'Show amounts with decimals', languageHint: 'English or Arabic' },
-  dataPage: {
-    tools: 'Tidy up',
-    resetTips: 'Reset tips & prompts',
-    resetTipsHint: 'Bring back banners you dismissed',
-    resetTipsDone: 'Tips and prompts are back',
-  },
-  helpPage: { support: 'Support', legal: 'Legal', about: 'About', version: 'Version', feedbackHint: 'Bugs, ideas, anything' },
 }
 
 const ar: SettingsHubCopy = {
   title: 'الإعدادات',
-  searchPlaceholder: 'جرّب «يوم الراتب» أو «الوضع الداكن»',
-  searchLabel: 'ابحث في الإعدادات',
-  clearSearch: 'مسح البحث',
-  hostLine: 'اختار قسم، وأنا أظبط الباقي.',
-  setupRing: (n) => (n === 1 ? 'باقي خطوة واحدة' : `باقي ${n} خطوات`),
-  quickTitle: 'تغييرات سريعة',
-  mainCurrency: 'العملة الأساسية',
-  mainShort: 'الأساسية',
-  alsoShow: 'عرض أيضًا',
-  secondShort: 'الثانية',
-  secondCurrency: 'العملة الثانية',
-  addSecond: 'إضافة',
-  noSecond: 'بدون عملة ثانية',
-  swap: 'تبديل العملة الأساسية والثانية',
+  searchLabel: 'دوّر في الإعدادات',
+  searchPlaceholder: 'دوّر في الإعدادات',
+  clearSearch: 'مسح',
+  close: 'إغلاق',
+  back: 'رجوع',
+  footer: 'أسعار الصرف من exchangerate-api.com',
+  recent: 'الأخيرة',
+  suggestions: 'جرّب تدوّر على',
+  suggestionList: ['الوضع الداكن', 'حذف الحساب', 'الإشعارات', 'العملة', 'تصدير البيانات'],
+  groupName: {
+    profile: 'الملف الشخصي',
+    security: 'الحساب',
+    quick: 'إجراءات سريعة',
+    autoTrack: 'التتبع التلقائي',
+    ai: 'بادجي والذكاء الاصطناعي',
+    memory: 'الذاكرة',
+    notifications: 'الإشعارات',
+    data: 'البيانات',
+    help: 'المساعدة وحول',
+  },
+  search: {
+    noResults: (q) => `مفيش حاجة اسمها “${q}”`,
+    noResultsHint: 'جرّب كلمة أقصر زي “داكن” أو “تنبيهات”.',
+    reportMissing: 'قولّنا إيه الناقص',
+    open: 'فتح',
+    hint: 'روح لأي إعداد. المفاتيح بتشتغل هنا مباشرة.',
+  },
+  profileHint: 'شوف ملفك وعدّله',
+  quickTitle: 'إجراءات سريعة',
   language: 'اللغة',
   theme: 'المظهر',
   themeLight: 'فاتح',
-  themeAuto: 'تلقائي',
   themeDark: 'داكن',
-  roomsCap: 'الأقسام',
-  footer: 'أسعار الصرف من exchangerate-api.com',
-  back: 'رجوع',
-  rooms: {
-    you: { title: 'أنت', remark: 'اقفل الباب وراك.' },
-    money: { title: 'المال', remark: 'قولي الشهر بيبدأ إمتى بجد.' },
-    alerts: { title: 'التنبيهات', remark: 'مش هنبّهك غير لما يفرق.' },
-    buddgy: { title: 'بادجي والتتبع التلقائي', remark: 'أنا بتعلّم وانت اللي بتقرر.' },
-    look: { title: 'المظهر واللغة', remark: 'غيّر شكل التطبيق على كيفك.' },
-    data: { title: 'البيانات والخصوصية', remark: 'أرقامك، وانت اللي تقرر.' },
-    help: { title: 'المساعدة وحول التطبيق', remark: 'محتاج مساعدة؟ أنا معاك.' },
+  currencyTile: 'العملة',
+  convertTile: 'تحويل',
+  convertHint: 'الأسعار',
+  convertTitle: 'محوّل العملات',
+  showCents: 'إظهار القروش',
+  security: { title: 'الدخول والأمان', subtitle: 'كلمة المرور والتحقق بخطوتين والبصمة وقفل التطبيق', signIn: 'سجّل دخولك عشان تدير حسابك وأمانه.', account: 'الحساب', memberSince: 'عضو منذ' },
+  sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائي', iosHint: 'بيتظبط بـ Shortcut', on: 'بيتابع رسائل البنك', off: 'مقفول', guide: 'إعداد' },
+  ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'بيقترح نصايح في وقتها', learningHint: 'بيفتكر معلومات مفيدة من كلامك معاه', memoryHint: 'الأسرة وإجابات الميزانية واللي اتعلّمه بادجي', voiceHint: 'بينطق الإجابات في المحادثات الصوتية', deviceOnly: 'على الجهاز ده بس' },
+  notif: {
+    title: 'الإشعارات',
+    master: 'الإشعارات',
+    on: 'مفعّلة على الجهاز ده',
+    off: 'مقفولة',
+    blocked: 'محظورة من إعدادات الجهاز',
+    unsupported: 'مش متاحة في المتصفح ده',
+    pushHint: 'اسمح بالإشعارات من إعدادات جهازك عشان تفعّلها.',
+    subs: 'الاشتراكات',
+    goals: 'الأهداف',
+    dueHint: 'قبل التجديد بيوم',
+    priceHint: 'لما السعر يتغير أو التجربة تخلص',
+    progressHint: 'عند ٢٥ و٥٠ و٧٥ و١٠٠٪',
+    behindHint: 'بس لما تتأخر، من غير إزعاج',
   },
-  status: {
-    you: 'الملف الشخصي والأمان',
-    money: (base, second, day) => `${base}${second ? ` + ${second}` : ''} · الشهر يبدأ يوم ${day}`,
-    alerts: (on, total) => `${on} من ${total} مفعّلة`,
-    buddgy: (tips, sms) => `النصائح ${tips ? 'تعمل' : 'متوقفة'} · الرسائل ${sms ? 'تعمل' : 'متوقفة'}`,
-    look: (theme, language) => `${theme} · ${language}`,
-    data: 'تصدير واستعادة وإعادة ضبط',
-    help: 'الملاحظات والشروط والإصدار',
+  data: {
+    title: 'بياناتك',
+    export: 'تصدير',
+    exportHint: 'نزّل بياناتك',
+    csv: 'المصروفات (CSV)',
+    csvHint: 'بيفتح في إكسل أو جوجل شيت',
+    backup: 'ملف نسخة احتياطية',
+    backupHint: 'انقل بيانات الجهاز ده لجهاز تاني',
+    import: 'استيراد نسخة احتياطية',
+    importHint: 'استرجع من ملف نسخة احتياطية',
+    syncedNote: 'بياناتك محفوظة في حسابك، مفيش داعي لنسخة احتياطية.',
+    deleteCta: 'احذف حسابي',
+    deleteHint: 'بيمسح حسابك وكل بياناته نهائي.',
+  },
+  help: {
+    title: 'المساعدة وحول',
+    feedback: 'أرسل ملاحظاتك',
+    feedbackHint: 'بلّغ عن مشكلة أو اقترح فكرة',
+    bug: 'خطأ',
+    idea: 'ميزة',
+    terms: 'شروط الاستخدام',
+    privacy: 'سياسة الخصوصية',
+    about: 'حول بادجت',
+    aboutHint: 'الإصدار والقصة والتواصل',
+    version: 'الإصدار',
+    story: [
+      'بادجت بدأ من حاجة بسيطة بتضايق: تطبيقات فلوس بتخليك تكتب كل قهوة وتفكر بعملة واحدة.',
+      'عشان كده بيقرأ رسائل البنك وبيفهم أكتر من عملة وبيخلي شهرك مظبوط من غير جدول بيانات.',
+      'بياناتك فضلة بتاعتك. بنبنيه مع اللي بيستخدموه، فقولّنا نصلح إيه بعد كده.',
+    ],
+    web: 'buddget.app',
+    contact: 'support@buddget.app',
+    madeWith: 'اتعمل بحب لكل اللي بيحسبوا بأكتر من عملة.',
+  },
+  memory: {
+    title: 'الذاكرة',
+    intro: 'اللي بادجي عارفه عن فلوسك. بيستخدمه يقدّر الميزانيات ويرد عليك، وبيتحدّث وانت بتكلمه.',
+    household: 'الأسرة والإيجار',
+    householdEmpty: 'لم يُحدَّد بعد',
+    rent: 'الإيجار الشهري',
+    lifestyle: 'نمط الحياة',
+    budget: 'إجابات الميزانية',
+    entry: 'إدخال الميزانية',
+    entryAmount: 'مبلغ',
+    entryPercent: '٪ من الدخل',
+    gold: 'شريط سعر الذهب',
+    goldHint: 'سعر الذهب المباشر في الثروة',
+    learned: 'ما تعلّمه من المحادثات',
+    learnedEmpty: 'لسه مفيش حاجة. قول لبادجي حاجة زي “باتشارك الإيجار مع زميل” وهيفتكر.',
+    forget: 'نسيان',
+    onboarding: 'التعرّف عليك',
+    onboardingEmpty: 'الأسئلة اللي بادجي بيسألها وانت بتستخدم التطبيق هتظهر هنا.',
+    edit: 'تعديل',
+    source: { chat: 'من محادثة', manual: 'أضفته أنت', budget: 'من ميزانيتك', onboarding: 'من الإعداد' },
   },
   items: {
     profile: { label: 'الملف الشخصي', keywords: 'name avatar photo picture phone country city اسم صورة', exact: ['profile', 'name', 'avatar', 'الملف الشخصي'] },
-    account: { label: 'الحساب والأمان', keywords: 'email member sign out login حساب' },
-    password: { label: 'تغيير كلمة المرور', keywords: 'security login كلمة السر' },
-    twoFactor: { label: 'التحقق بخطوتين', keywords: '2fa otp email code security' },
-    biometric: { label: 'بصمة الوجه وقفل التطبيق', keywords: 'fingerprint biometric lock touch pin بصمة قفل' },
-    deleteAccount: { label: 'حذف الحساب', keywords: 'remove erase close account' },
-    paymentMethods: { label: 'وسائل الدفع', keywords: 'card bank visa wallet account بطاقة بنك', exact: ['cards', 'card', 'payment', 'بطاقات', 'بطاقة'] },
+    password: { label: 'تغيير كلمة المرور', keywords: 'security login كلمة السر كلمة المرور password', exact: ['password'] },
+    twoFactor: { label: 'التحقق بخطوتين', keywords: '2fa otp email code security التحقق بخطوتين' },
+    biometric: { label: 'بصمة الوجه والإصبع', keywords: 'biometric touch unlock بصمة وجه' },
+    appLock: { label: 'قفل التطبيق', keywords: 'pin passcode lock قفل التطبيق' },
+    deleteAccount: { label: 'حذف الحساب', keywords: 'remove erase close account delete حذف الحساب', exact: ['delete account', 'delete', 'حذف الحساب'] },
     baseCurrency: { label: 'العملة الأساسية', keywords: 'currency egp usd dollar pound euro عملة جنيه دولار', exact: ['currency', 'عملة'] },
-    secondaryCurrency: { label: 'عرض عملة ثانية', keywords: 'secondary also exchange عملة ثانية' },
-    onlyMyCurrencies: { label: 'عملاتي فقط في النماذج', keywords: 'hide currencies picker العملات' },
-    converter: { label: 'محوّل العملات', keywords: 'rate exchange calculate تحويل' },
-    payCycle: { label: 'بداية الشهر', keywords: 'pay cycle salary day payday month start budget راتب يوم الراتب بداية الشهر', exact: ['salary day', 'pay cycle', 'payday', 'يوم الراتب'] },
-    household: { label: 'الأسرة والإيجار', keywords: 'family rent home people ايجار اسرة' },
-    lifestyle: { label: 'نمط الحياة', keywords: 'food transport habits' },
-    budgetEntryMode: { label: 'إدخال الميزانية', keywords: 'percent income amount budget ميزانية نسبة' },
-    goldStrip: { label: 'شريط سعر الذهب', keywords: 'xau wealth ذهب' },
-    subDueReminders: { label: 'تذكير الاشتراكات', keywords: 'due renew bill notification اشتراك تذكير' },
-    subPriceAlerts: { label: 'تنبيهات رفع الأسعار', keywords: 'trial price increase notification سعر' },
-    goalProgressAlerts: { label: 'مراحل الأهداف', keywords: 'progress achievement notification هدف' },
-    goalAlerts: { label: 'تنبيه التأخر عن الخطة', keywords: 'late goal notification متأخر' },
-    pushStatus: { label: 'الإشعارات', keywords: 'push permission allow notification إشعارات' },
-    tips: { label: 'نصائح بادجي', keywords: 'nudge suggestion assistant ai نصائح', exact: ['tips', 'نصائح'] },
-    learning: { label: 'التعلّم من المحادثات', keywords: 'memory assistant ai تعلم' },
-    memories: { label: 'ما يتذكره بادجي', keywords: 'memories forget ذاكرة' },
+    secondaryCurrency: { label: 'العملة الثانية', keywords: 'secondary also exchange عملة ثانية' },
+    converter: { label: 'محوّل العملات', keywords: 'rate exchange calculate convert تحويل العملات' },
+    theme: { label: 'المظهر', keywords: 'dark mode light night appearance theme مظهر داكن فاتح وضع الوضع الداكن ليلي', exact: ['dark mode', 'theme', 'dark', 'الوضع الداكن', 'داكن'] },
+    language: { label: 'اللغة', keywords: 'arabic english language عربي انجليزي لغة', exact: ['language', 'لغة'] },
+    showCents: { label: 'إظهار القروش', keywords: 'decimals pennies cents قروش هللة' },
+    sms: { label: 'تتبع الرسائل', keywords: 'bank auto track messages sms رسائل بنك', exact: ['sms', 'رسائل'] },
+    tips: { label: 'نصائح بادجي', keywords: 'nudge suggestion assistant ai tips نصائح', exact: ['tips', 'نصائح'] },
+    learning: { label: 'التعلّم من المحادثات', keywords: 'memory assistant ai learn تعلم' },
+    memories: { label: 'الذاكرة', keywords: 'memories forget household rent budget answers memory ذاكرة', exact: ['memory', 'ذاكرة'] },
     voiceReadAloud: { label: 'قراءة الإجابات بصوت عال', keywords: 'voice speak tts mute صوت' },
-    sms: { label: 'تتبع الرسائل', keywords: 'bank auto track messages رسائل بنك', exact: ['sms', 'رسائل'] },
-    theme: { label: 'المظهر', keywords: 'dark mode light night appearance داكن فاتح وضع الوضع الداكن ليلي', exact: ['dark mode', 'theme', 'dark', 'الوضع الداكن', 'داكن'] },
-    language: { label: 'اللغة', keywords: 'arabic english عربي انجليزي لغة', exact: ['language', 'لغة'] },
-    showCents: { label: 'إظهار القروش', keywords: 'decimals pennies هللة' },
-    exportData: { label: 'تصدير البيانات', keywords: 'backup download csv json نسخة احتياطية', exact: ['export', 'backup', 'تصدير'] },
-    restoreBackup: { label: 'استعادة نسخة احتياطية', keywords: 'import upload json استعادة' },
-    resetTips: { label: 'إعادة ضبط النصائح', keywords: 'dismissed banners hints' },
-    startFresh: { label: 'ابدأ من جديد', keywords: 'delete erase wipe reset data مسح', exact: ['reset', 'delete data', 'مسح'] },
-    feedback: { label: 'الإبلاغ عن مشكلة', keywords: 'bug idea feedback support ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },
-    terms: { label: 'شروط الاستخدام', keywords: 'legal شروط' },
-    privacy: { label: 'سياسة الخصوصية', keywords: 'legal data خصوصية' },
+    household: { label: 'الأسرة والإيجار', keywords: 'family rent home people household ايجار اسرة' },
+    lifestyle: { label: 'نمط الحياة', keywords: 'food transport habits lifestyle نمط الحياة' },
+    budgetEntryMode: { label: 'إدخال الميزانية', keywords: 'percent income amount budget ميزانية نسبة' },
+    goldStrip: { label: 'شريط سعر الذهب', keywords: 'xau wealth gold ذهب' },
+    pushStatus: { label: 'الإشعارات', keywords: 'push permission allow alerts notifications إشعارات تنبيهات', exact: ['notifications', 'alerts', 'إشعارات'] },
+    subDueReminders: { label: 'تذكير الاشتراكات', keywords: 'due renew bill notification اشتراك تذكير' },
+    subPriceAlerts: { label: 'تنبيهات ارتفاع السعر', keywords: 'trial price increase notification سعر' },
+    goalProgressAlerts: { label: 'محطات الأهداف', keywords: 'progress achievement notification هدف' },
+    goalAlerts: { label: 'تنبيهات التأخر عن الخطة', keywords: 'late goal notification متأخر' },
+    exportData: { label: 'تصدير البيانات', keywords: 'backup download csv json export نسخة احتياطية تصدير', exact: ['export', 'backup', 'تصدير'] },
+    restoreBackup: { label: 'استيراد نسخة احتياطية', keywords: 'restore upload json import استعادة استيراد' },
+    feedback: { label: 'أرسل ملاحظاتك', keywords: 'bug idea feature support report feedback ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },
+    terms: { label: 'شروط الاستخدام', keywords: 'legal terms شروط' },
+    privacy: { label: 'سياسة الخصوصية', keywords: 'legal data privacy خصوصية' },
+    about: { label: 'حول بادجت', keywords: 'version story contact social about حول الإصدار' },
   },
-  search: {
-    noResults: (q) => `مفيش حاجة اسمها «${q}»`,
-    noResultsHint: 'جرّب «راتب» أو «داكن» أو «بطاقات».',
-    reportMissing: 'قولنا إيه الناقص',
-    inRoom: (room) => room,
-  },
-  menu: { helpFeedback: 'المساعدة والملاحظات', openSettings: 'الإعدادات', signIn: 'تسجيل الدخول', closeMenu: 'إغلاق القائمة', adminPortal: 'لوحة الإدارة' },
+  menu: { helpFeedback: 'المساعدة والملاحظات', openSettings: 'الإعدادات', signIn: 'تسجيل الدخول', closeMenu: 'إغلاق القائمة', adminPortal: 'لوحة الإدارة', admin: 'مسؤول' },
   currency: {
     pickTitle: 'العملة الأساسية',
     sheetTitle: (next) => `نبدّل العملة الأساسية إلى ${next}؟`,
@@ -375,71 +427,12 @@ const ar: SettingsHubCopy = {
     toast: (next) => `العملة الأساسية الآن ${next}`,
     undo: 'تراجع',
   },
-  payCycle: {
-    title: 'دورة الراتب',
-    question: 'الشهر عندي يبدأ يوم',
-    hint: 'غالبًا يوم نزول الراتب.',
-    decrease: 'يوم أبكر',
-    increase: 'يوم أبعد',
-    today: 'اليوم',
-    current: 'دورتك الحالية',
-    note: 'الحركات القديمة بتحتفظ بتواريخها، والشهور بتتقسم بشكل مختلف من الآن.',
-    paydays: 'أيام الراتب',
-    paydaysHint: 'الراتب والإيجار وأي دخل منتظم',
-    range: (from, to) => `${from} ← ${to}`,
-  },
-  you: { account: 'الحساب', security: 'الدخول والأمان', money: 'المال', signedOutHint: 'سجّل الدخول لإدارة حسابك وأمانك.' },
-  moneyPage: {
-    currency: 'العملة',
-    cycle: 'دورة الراتب',
-    wallets: 'البطاقات والحسابات',
-    rules: 'قواعد الفلوس',
-    entryTitle: 'إدخال الميزانية',
-    entryAmount: 'مبلغ',
-    entryPercent: '٪ من الدخل',
-    goldHint: 'سعر الذهب المباشر في الثروة',
-    onlyMineHint: 'يخفي بقية العملات من القوائم',
-    secondHint: (name) => name,
-    paymentMethodsHint: (n) => `${n} بطاقة وحساب`,
-    householdHint: 'تساعد بادجي في تقدير ميزانيتك',
-    lifestyleHint: 'عادات الأكل والمواصلات',
-    converterHint: 'حوّل أي مبلغ',
-  },
-  alertsPage: {
-    master: 'الإشعارات',
-    subscriptions: 'الاشتراكات',
-    goals: 'الأهداف',
-    allowed: 'مسموحة على هذا الجهاز',
-    blocked: 'محظورة من إعدادات الهاتف',
-    notAsked: 'لم نطلب الإذن بعد',
-    unsupported: 'غير متاحة هنا',
-    pushHint: 'فعّل الإشعارات من إعدادات الهاتف لتصلك هذه التنبيهات.',
-    dueHint: 'قبل التجديد بيوم',
-    priceHint: 'عند تغيّر السعر أو انتهاء التجربة',
-    progressHint: 'عند ٢٥ و٥٠ و٧٥ و١٠٠٪',
-    behindHint: 'فقط عند التأخر، بدون إزعاج',
-  },
-  buddgyPage: {
-    assistant: 'المساعد',
-    assistantHint: (tips, learning) => `النصائح ${tips ? 'تعمل' : 'متوقفة'} · التعلّم ${learning ? 'يعمل' : 'متوقف'}`,
-    voice: 'قراءة الإجابات بصوت عال',
-    voiceHint: 'بادجي بينطق إجاباته في المحادثات الصوتية',
-    deviceOnly: 'على هذا الجهاز فقط',
-    tracking: 'التتبع التلقائي',
-    trackingHint: 'سجّل رسائل البنك كمصروفات',
-  },
-  lookPage: { appearance: 'المظهر', text: 'اللغة والأرقام', centsHint: 'إظهار المبالغ بالكسور', languageHint: 'الإنجليزية أو العربية' },
-  dataPage: {
-    tools: 'ترتيب',
-    resetTips: 'إعادة ضبط النصائح',
-    resetTipsHint: 'إرجاع اللافتات التي أغلقتها',
-    resetTipsDone: 'رجعت النصائح واللافتات',
-  },
-  helpPage: { support: 'الدعم', legal: 'قانوني', about: 'حول', version: 'الإصدار', feedbackHint: 'أخطاء وأفكار وأي شيء' },
+
 }
 
 export const settingsHubCopy: Record<Locale, SettingsHubCopy> = { en, ar }
 
 export function useSettingsHubCopy(): SettingsHubCopy {
-  return settingsHubCopy[useLocale().locale]
+  const { locale } = useLocale()
+  return settingsHubCopy[locale]
 }

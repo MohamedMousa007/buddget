@@ -1,28 +1,14 @@
 import type { AppSettings } from '@/lib/store/types'
 
-export type RoomId = 'you' | 'money' | 'alerts' | 'buddgy' | 'look' | 'data' | 'help'
-
-export const ROOM_IDS: readonly RoomId[] = ['you', 'money', 'alerts', 'buddgy', 'look', 'data', 'help']
-
-export const ROOM_ROUTE: Record<RoomId, string> = {
-  you: '/settings/you',
-  money: '/settings/money',
-  alerts: '/settings/alerts',
-  buddgy: '/settings/buddgy',
-  look: '/settings/look',
-  data: '/settings/data',
-  help: '/settings/help',
-}
+export type GroupId = 'profile' | 'security' | 'quick' | 'autoTrack' | 'ai' | 'memory' | 'notifications' | 'data' | 'help'
 
 export const SETTING_IDS = [
-  'profile', 'account', 'password', 'twoFactor', 'biometric', 'deleteAccount', 'paymentMethods',
-  'baseCurrency', 'secondaryCurrency', 'onlyMyCurrencies', 'converter', 'payCycle',
+  'profile', 'password', 'twoFactor', 'biometric', 'appLock', 'deleteAccount',
+  'baseCurrency', 'secondaryCurrency', 'converter', 'theme', 'language', 'showCents',
+  'sms', 'tips', 'learning', 'memories', 'voiceReadAloud',
   'household', 'lifestyle', 'budgetEntryMode', 'goldStrip',
-  'subDueReminders', 'subPriceAlerts', 'goalProgressAlerts', 'goalAlerts', 'pushStatus',
-  'tips', 'learning', 'memories', 'voiceReadAloud', 'sms',
-  'theme', 'language', 'showCents',
-  'exportData', 'restoreBackup', 'resetTips', 'startFresh',
-  'feedback', 'terms', 'privacy',
+  'pushStatus', 'subDueReminders', 'subPriceAlerts', 'goalProgressAlerts', 'goalAlerts',
+  'exportData', 'restoreBackup', 'feedback', 'terms', 'privacy', 'about',
 ] as const
 
 export type SettingId = (typeof SETTING_IDS)[number]
@@ -31,18 +17,17 @@ export type SettingId = (typeof SETTING_IDS)[number]
 export type SettingKind = 'toggle' | 'value' | 'nav' | 'danger'
 
 /** Opens a sheet instead of a page. */
-export type SettingAction = 'paymentMethods' | 'household' | 'lifestyle' | 'resetTips'
+export type SettingAction = 'household' | 'lifestyle' | 'currencies' | 'converter' | 'feedback' | 'about' | 'export' | 'deleteAccount'
 
 export type SettingIconKey =
-  | 'user' | 'shield' | 'key' | 'lock' | 'trash' | 'card' | 'coins' | 'swap' | 'calendar' | 'home' | 'chart'
-  | 'bell' | 'target' | 'repeat' | 'buddgy' | 'mic' | 'message' | 'sun' | 'globe' | 'download' | 'upload'
-  | 'refresh' | 'help' | 'file'
+  | 'user' | 'shield' | 'key' | 'lock' | 'trash' | 'coins' | 'swap' | 'home' | 'chart' | 'bell' | 'buddgy' | 'mic'
+  | 'message' | 'sun' | 'globe' | 'download' | 'upload' | 'help' | 'file' | 'info' | 'brain' | 'target' | 'repeat'
 
 export interface SettingEntry {
   id: SettingId
-  room: RoomId
+  group: GroupId
   kind: SettingKind
-  /** Page that holds the control. */
+  /** Page that holds the control. Almost everything sits on the settings page itself. */
   route: string
   icon: SettingIconKey
   action?: SettingAction
@@ -51,47 +36,46 @@ export interface SettingEntry {
 }
 
 const e = (
-  id: SettingId, room: RoomId, kind: SettingKind, route: string, icon: SettingIconKey,
+  id: SettingId, group: GroupId, kind: SettingKind, route: string, icon: SettingIconKey,
   extra: Pick<SettingEntry, 'action' | 'needsAuth'> = {},
-): SettingEntry => ({ id, room, kind, route, icon, ...extra })
+): SettingEntry => ({ id, group, kind, route, icon, ...extra })
+
+const HUB = '/settings'
+const MEMORY = '/settings/memory'
 
 export const SETTINGS_REGISTRY: readonly SettingEntry[] = [
-  e('profile', 'you', 'nav', '/settings/you', 'user'),
-  e('account', 'you', 'nav', '/settings/you', 'shield', { needsAuth: true }),
-  e('password', 'you', 'nav', '/settings/you', 'key', { needsAuth: true }),
-  e('twoFactor', 'you', 'toggle', '/settings/you', 'shield', { needsAuth: true }),
-  e('biometric', 'you', 'nav', '/settings/you', 'lock', { needsAuth: true }),
-  e('deleteAccount', 'you', 'danger', '/settings/you', 'trash', { needsAuth: true }),
-  e('paymentMethods', 'money', 'nav', '/settings/money', 'card', { action: 'paymentMethods' }),
-  e('baseCurrency', 'money', 'value', '/settings/money', 'coins'),
-  e('secondaryCurrency', 'money', 'toggle', '/settings/money', 'swap'),
-  e('onlyMyCurrencies', 'money', 'toggle', '/settings/money', 'coins'),
-  e('converter', 'money', 'nav', '/settings/money', 'swap'),
-  e('payCycle', 'money', 'value', '/settings/money', 'calendar'),
-  e('household', 'money', 'nav', '/settings/money', 'home', { action: 'household' }),
-  e('lifestyle', 'money', 'nav', '/settings/money', 'home', { action: 'lifestyle' }),
-  e('budgetEntryMode', 'money', 'value', '/settings/money', 'chart'),
-  e('goldStrip', 'money', 'toggle', '/settings/money', 'coins'),
-  e('subDueReminders', 'alerts', 'toggle', '/settings/alerts', 'repeat'),
-  e('subPriceAlerts', 'alerts', 'toggle', '/settings/alerts', 'repeat'),
-  e('goalProgressAlerts', 'alerts', 'toggle', '/settings/alerts', 'target'),
-  e('goalAlerts', 'alerts', 'toggle', '/settings/alerts', 'target'),
-  e('pushStatus', 'alerts', 'value', '/settings/alerts', 'bell'),
-  e('tips', 'buddgy', 'toggle', '/settings/buddgy', 'buddgy'),
-  e('learning', 'buddgy', 'toggle', '/settings/buddgy', 'buddgy'),
-  e('memories', 'buddgy', 'nav', '/settings/buddgy', 'buddgy'),
-  e('voiceReadAloud', 'buddgy', 'toggle', '/settings/buddgy', 'mic'),
-  e('sms', 'buddgy', 'nav', '/settings/buddgy', 'message', { needsAuth: true }),
-  e('theme', 'look', 'value', '/settings/look', 'sun'),
-  e('language', 'look', 'value', '/settings/look', 'globe'),
-  e('showCents', 'look', 'toggle', '/settings/look', 'coins'),
-  e('exportData', 'data', 'nav', '/settings/data', 'download'),
-  e('restoreBackup', 'data', 'nav', '/settings/data', 'upload'),
-  e('resetTips', 'data', 'nav', '/settings/data', 'refresh', { action: 'resetTips' }),
-  e('startFresh', 'data', 'danger', '/settings/data', 'trash'),
-  e('feedback', 'help', 'nav', '/settings/help', 'help'),
+  e('profile', 'profile', 'nav', '/settings/profile', 'user'),
+  e('password', 'security', 'nav', HUB, 'key', { needsAuth: true }),
+  e('twoFactor', 'security', 'toggle', HUB, 'shield', { needsAuth: true }),
+  e('biometric', 'security', 'toggle', HUB, 'lock', { needsAuth: true }),
+  e('appLock', 'security', 'toggle', HUB, 'lock'),
+  e('deleteAccount', 'data', 'danger', HUB, 'trash', { needsAuth: true, action: 'deleteAccount' }),
+  e('baseCurrency', 'quick', 'value', HUB, 'coins', { action: 'currencies' }),
+  e('secondaryCurrency', 'quick', 'value', HUB, 'swap', { action: 'currencies' }),
+  e('converter', 'quick', 'nav', HUB, 'swap', { action: 'converter' }),
+  e('theme', 'quick', 'toggle', HUB, 'sun'),
+  e('language', 'quick', 'toggle', HUB, 'globe'),
+  e('showCents', 'quick', 'toggle', HUB, 'coins', { action: 'currencies' }),
+  e('sms', 'autoTrack', 'toggle', HUB, 'message', { needsAuth: true }),
+  e('tips', 'ai', 'toggle', HUB, 'buddgy'),
+  e('learning', 'ai', 'toggle', HUB, 'brain'),
+  e('memories', 'ai', 'nav', MEMORY, 'brain'),
+  e('voiceReadAloud', 'ai', 'toggle', HUB, 'mic'),
+  e('household', 'memory', 'nav', MEMORY, 'home', { action: 'household' }),
+  e('lifestyle', 'memory', 'nav', MEMORY, 'home', { action: 'lifestyle' }),
+  e('budgetEntryMode', 'memory', 'value', MEMORY, 'chart'),
+  e('goldStrip', 'memory', 'toggle', MEMORY, 'coins'),
+  e('pushStatus', 'notifications', 'toggle', HUB, 'bell'),
+  e('subDueReminders', 'notifications', 'toggle', HUB, 'repeat'),
+  e('subPriceAlerts', 'notifications', 'toggle', HUB, 'repeat'),
+  e('goalProgressAlerts', 'notifications', 'toggle', HUB, 'target'),
+  e('goalAlerts', 'notifications', 'toggle', HUB, 'target'),
+  e('exportData', 'data', 'nav', HUB, 'download', { action: 'export' }),
+  e('restoreBackup', 'data', 'nav', HUB, 'upload', { action: 'export' }),
+  e('feedback', 'help', 'nav', HUB, 'help', { action: 'feedback' }),
   e('terms', 'help', 'nav', '/legal/terms', 'file'),
   e('privacy', 'help', 'nav', '/legal/privacy', 'file'),
+  e('about', 'help', 'nav', HUB, 'info', { action: 'about' }),
 ]
 
 export const SETTING_BY_ID: Readonly<Record<SettingId, SettingEntry>> = Object.fromEntries(
@@ -109,12 +93,12 @@ export const APP_SETTING_COVERAGE: Record<keyof AppSettings, SettingId | 'intern
   theme: 'theme',
   language: 'language',
   showCentsInDashboard: 'showCents',
-  monthStartDay: 'payCycle',
+  monthStartDay: 'internal',
   budgetEntryMode: 'budgetEntryMode',
   enableAI: 'internal',
   aiProvider: 'internal',
   noIncomeDeclared: 'internal',
-  showAllCurrenciesInForms: 'onlyMyCurrencies',
+  showAllCurrenciesInForms: 'internal',
   twoFactorEmailEnabled: 'twoFactor',
   legacyOnboardingMigratedAt: 'internal',
   dashboardLayout: 'internal',

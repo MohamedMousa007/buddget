@@ -337,6 +337,7 @@ export function ModalShell({
                     className={cn(
                       'flex min-h-0 flex-1 flex-col',
                       !scrollChild && 'overflow-y-auto overscroll-y-contain touch-pan-y',
+                      corner ? 'lg:pt-4' : 'md:pt-4',
                       padContent && 'px-5 pb-5',
                     )}
                   >

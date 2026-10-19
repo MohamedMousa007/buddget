@@ -118,6 +118,15 @@ interface SettingsState {
   removeBuddgyNote: (note: string) => void
   /** Mute spoken-aloud answers in the voice flow (persisted). */
   voiceSpeakMuted: boolean
+  /** The settings-page sheet being asked to open (from search or Buddgy). Not persisted. */
+  settingsSheet: SettingsSheetId | null
+  openSettingsSheet: (sheet: SettingsSheetId | null) => void
+  /** The person switched notifications off in Settings (persisted). The OS permission is separate. */
+  pushOptOut: boolean
+  setPushOptOut: (off: boolean) => void
+  /** Latest settings searches, newest first (persisted). */
+  recentSettingSearches: string[]
+  rememberSettingSearch: (query: string) => void
   /** When opening add-debt sheet from "Record payment" on a card */
   debtSheetPaymentOnly: boolean
   debtSheetPrefillDebtId: string | null
@@ -173,6 +182,8 @@ function getCurrentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
+export type SettingsSheetId = 'currencies' | 'converter' | 'feedback' | 'about' | 'export' | 'deleteAccount'
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
@@ -226,6 +237,16 @@ export const useSettingsStore = create<SettingsState>()(
         set((st) => ({ buddgyNotes: [...st.buddgyNotes.filter((n) => !notes.includes(n)), ...notes].slice(-20) })),
       removeBuddgyNote: (note) => set((st) => ({ buddgyNotes: st.buddgyNotes.filter((n) => n !== note) })),
       voiceSpeakMuted: false,
+      settingsSheet: null,
+      openSettingsSheet: (sheet) => set({ settingsSheet: sheet }),
+      pushOptOut: false,
+      setPushOptOut: (off) => set({ pushOptOut: off }),
+      recentSettingSearches: [],
+      rememberSettingSearch: (query) =>
+        set((st) => {
+          const q = query.trim()
+          return q ? { recentSettingSearches: [q, ...st.recentSettingSearches.filter((r) => r !== q)].slice(0, 5) } : st
+        }),
       debtSheetPaymentOnly: false,
       debtSheetPrefillDebtId: null,
       debtSheetPresetFamily: null,
@@ -321,6 +342,8 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => createSafeLocalStorage()),
       partialize: (state) => ({
         voiceSpeakMuted: state.voiceSpeakMuted,
+        pushOptOut: state.pushOptOut,
+        recentSettingSearches: state.recentSettingSearches,
         buddgyOrb: state.buddgyOrb,
         dismissedBanners: state.dismissedBanners,
         snoozedBanners: state.snoozedBanners,

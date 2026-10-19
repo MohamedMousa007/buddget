@@ -6,6 +6,7 @@ import { isNative } from '@/lib/native/isNative'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
 import { cleanupOldReceiptImages } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
 interface NativeBootstrapProps {
   session: Session | null
@@ -44,6 +45,7 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
       const accessToken = tokenRef.current
       if (!accessToken) return
       try {
+        if (useSettingsStore.getState().pushOptOut) return
         await registerPushNotifications({
           accessToken,
           userId,
