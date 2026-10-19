@@ -19,13 +19,13 @@ export function SafetyBlockBody({ view, block, mode, onOpenLine, onAdd }: BlockB
   const { monthsHeld, targetMonths, liquid, essentialsMonthly, reachedMonth } = view.extras.safety
   const line = block.lines[0]
   const month = mode === 'month'
-  const planned = line && essentialsMonthly > 0 ? line.amount / essentialsMonthly : 0
+  const planned = line && essentialsMonthly > 0 ? block.total / essentialsMonthly : 0
   const gauge = coverGauge(monthsHeld, targetMonths, month ? planned : 0)
   const close = formatDayMonth(toIsoDate(cycleCloseDate(new Date(), view.dayOfCycle, view.daysInCycle)))
 
   const trail = month
     ? line
-      ? { tone: 'pri' as const, icon: Clock, text: t.safety.atClose(money(line.amount), close) }
+      ? { tone: 'pri' as const, icon: Clock, text: t.safety.atClose(money(block.total), close) }
       : null
     : monthsHeld >= targetMonths
       ? { tone: 'ok' as const, icon: Flag, text: t.safety.targetReached }

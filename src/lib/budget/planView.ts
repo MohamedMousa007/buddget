@@ -247,6 +247,7 @@ export function buildPlanView(i: PlanViewInput): PlanView {
         planned: l.amount,
         monthsOverCap: i.monthsOverCapByLine[l.line.id] ?? 0,
         avg3: l.average,
+        fixed: l.line.locked === true || (l.line.linkType ?? 'none') !== 'none',
       })),
       subscriptionsLive: i.subscriptions.monthly,
       subscriptionsPlanned: totals.subscriptions,

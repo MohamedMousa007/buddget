@@ -37,6 +37,8 @@ describe('insight rules', () => {
     const lines = [{ id: 'l1', name: 'Dining', block: 'everyday' as const, planned: 500, monthsOverCap: 3, avg3: null }]
     expect(run({ lines })[0].action).toBe('cap')
     expect(run({ lines: [{ ...lines[0], monthsOverCap: 2 }] })).toEqual([])
+    const fixed = run({ lines: [{ id: 'l1', name: 'Dining', block: 'everyday', planned: 500, monthsOverCap: 3, avg3: 650, fixed: true }] })
+    expect(fixed[0].action).toBe('openLine')
   })
 
   it('housing share above 35%', () => {

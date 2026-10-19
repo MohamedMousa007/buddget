@@ -21,6 +21,8 @@ export interface InsightLine {
   planned: number
   monthsOverCap: number
   avg3: number | null
+  /** Locked or linked: the app never rewrites its amount on its own. */
+  fixed?: boolean
 }
 
 export interface InsightsInput {
@@ -73,7 +75,7 @@ export function lineOverCapInsights(i: InsightsInput): Candidate[] {
       return {
         id: `lineOverCap:${l.id}`, kind: 'lineOverCap', severity: 'warn', lineId: l.id,
         params: { name: l.name, months: l.monthsOverCap, planned: l.planned, ...(raiseTo != null ? { avg3: raiseTo } : {}) },
-        action: raiseTo != null ? 'raise' : 'cap', mood: 'worried',
+        action: l.fixed ? 'openLine' : raiseTo != null ? 'raise' : 'cap', mood: 'worried',
         impact: raiseTo != null ? raiseTo - l.planned : l.planned,
       } satisfies Candidate
     })
