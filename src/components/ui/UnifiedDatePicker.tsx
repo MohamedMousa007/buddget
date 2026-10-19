@@ -64,7 +64,7 @@ export interface UnifiedDatePickerProps {
 }
 
 /**
- * App-wide date picker: a centered popup with a red header, a constant-size
+ * App-wide date picker: a centered popup with a teal header, a constant-size
  * 6-row day grid (adjacent-month days for a fixed frame), a month grid, and a
  * searchable year dropdown. Day-only — timestamps are set server-side. Tapping a
  * day confirms and closes instantly.
@@ -159,12 +159,12 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   const yearList = q ? YEARS.filter((yr) => String(yr).includes(q)) : YEARS
 
   const activePill =
-    'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer border text-white'
-  const monthPill = `${activePill} font-bold text-sm border-white/30 ${
-    isMonths ? 'bg-white/30' : 'bg-white/15'
+    'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer border text-[var(--flow-band-fg)] border-[var(--flow-band-mix)]'
+  const monthPill = `${activePill} font-bold text-sm ${
+    isMonths ? 'bg-[var(--flow-band-mix)]' : 'bg-[color-mix(in_oklab,var(--flow-band-fg)_12%,transparent)]'
   }`
-  const yearPill = `${activePill} font-bold text-sm font-mono-numbers border-white/30 ${
-    isYears ? 'bg-white/30' : 'bg-white/15'
+  const yearPill = `${activePill} font-bold text-sm font-mono-numbers ${
+    isYears ? 'bg-[var(--flow-band-mix)]' : 'bg-[color-mix(in_oklab,var(--flow-band-fg)_12%,transparent)]'
   }`
 
   // Portal to <body> so `fixed` isn't trapped by a transformed ancestor when the
@@ -193,22 +193,22 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
         <div
           className="flex items-center justify-between px-3.5 pt-3 pb-2.5"
           style={{
-            background: 'linear-gradient(160deg,#F40612,#C5070F)',
-            boxShadow: '0 6px 18px -8px rgba(18,176,160,.6)',
+            background: 'linear-gradient(160deg, var(--flow-band-b), var(--flow-band-a))',
+            boxShadow: '0 6px 18px -8px color-mix(in oklab, var(--color-brand-primary) 60%, transparent)',
           }}
         >
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setModeToggle('months')} className={monthPill}>
               <span className="whitespace-nowrap">{ar ? MON_AR[m] : MONS[m]}</span>
               <ChevronDown
-                className="w-3.5 h-3.5 text-white/80 transition-transform"
+                className="w-3.5 h-3.5 opacity-80 transition-transform"
                 style={{ transform: isMonths ? 'rotate(180deg)' : 'rotate(0deg)' }}
               />
             </button>
             <button type="button" onClick={() => setModeToggle('years')} className={yearPill}>
               <span>{y}</span>
               <ChevronDown
-                className="w-3.5 h-3.5 text-white/80 transition-transform"
+                className="w-3.5 h-3.5 opacity-80 transition-transform"
                 style={{ transform: isYears ? 'rotate(180deg)' : 'rotate(0deg)' }}
               />
             </button>
@@ -218,7 +218,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
               <>
                 <IconButton
                   aria-label={ar ? 'السابق' : 'Previous'}
-                  variant="onBrand"
+                  variant="onBand"
                   size="sm"
                   onClick={() => (isMonths ? shiftYear(-1) : shiftMonth(-1))}
                 >
@@ -226,7 +226,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 </IconButton>
                 <IconButton
                   aria-label={ar ? 'التالي' : 'Next'}
-                  variant="onBrand"
+                  variant="onBand"
                   size="sm"
                   onClick={() => (isMonths ? shiftYear(1) : shiftMonth(1))}
                 >
@@ -236,7 +236,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
             ) : null}
             <IconButton
               aria-label={ar ? 'إغلاق' : 'Close'}
-              variant="onBrand"
+              variant="onBand"
               size="sm"
               onClick={onClose}
               className="ms-0.5"
@@ -267,7 +267,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   const bg = isSel
                     ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                     : isToday
-                      ? 'bg-[rgba(18,176,160,.12)] text-[var(--color-brand-primary-ink)]'
+                      ? 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]'
                       : c.out
                         ? 'text-[var(--color-brand-text-muted)]'
                         : 'text-[var(--color-brand-text-primary)]'
@@ -277,11 +277,11 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                       type="button"
                       onClick={() => pick(c)}
                       className={`relative flex items-center justify-center rounded-md cursor-pointer text-sm font-semibold border-none transition-colors ${bg}`}
-                      style={isSel ? { boxShadow: '0 4px 12px rgba(18,176,160,.4)' } : undefined}
+                      style={isSel ? { boxShadow: '0 4px 12px color-mix(in oklab, var(--color-brand-primary) 40%, transparent)' } : undefined}
                     >
                       {c.d}
                       {isToday && !isSel ? (
-                        <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#FF3B44]" />
+                        <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--color-brand-primary)]" />
                       ) : null}
                     </button>
                   )
@@ -298,7 +298,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 const cls = isCur
                   ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] border-[var(--color-brand-primary)]'
                   : isTM
-                    ? 'bg-[rgba(18,176,160,.1)] text-[var(--color-brand-primary-ink)] border-[rgba(18,176,160,.45)]'
+                    ? 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)] border-[var(--color-brand-primary)]/45'
                     : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] border-[var(--color-brand-border)]'
                 return (
                   <button
@@ -339,7 +339,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   const cls = on
                     ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] border-[var(--color-brand-primary)]'
                     : isTY
-                      ? 'bg-[rgba(18,176,160,.1)] text-[var(--color-brand-primary-ink)] border-[rgba(18,176,160,.4)]'
+                      ? 'bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)] border-[var(--color-brand-primary)]/40'
                       : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] border-[var(--color-brand-border)]'
                   return (
                     <button

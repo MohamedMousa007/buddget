@@ -53,3 +53,6 @@ Migrations `0123_admin_portal_core`, `0124_admin_support_monetization`, `0125_ad
 
 ## Inviting teammates
 Add teammate (Team & roles) creates the staff record and emails a one-tap link (Supabase auth mailer: account invite for new emails, magic link for existing accounts) pointing at `/auth/callback?next=/admin`. The callback forwards to `/admin/accept`, which reads the session from the link, signs the person in and opens the portal, where first-time setup (admin password + authenticator) runs. For invited people the link sign-in replaces the Buddget account password check during setup. "Resend invite" is on any teammate who has not finished setup. Sends are rate limited (30/hour per inviter, 5/hour per address) and audited. Requirements: `${APP_URL}/auth/callback` in Supabase Auth redirect URLs, and customise the Invite / Magic Link email templates in the Supabase dashboard if the default wording is not wanted.
+
+## Opening the portal
+Sign in to Buddget with a staff email, open the profile menu and choose **Admin portal** (or go straight to `/admin` on the app's domain, e.g. https://buddget.app/admin). First visit: set an admin password and scan the authenticator QR, then the portal unlocks. The profile-menu entry only shows for staff, and only once the build containing the admin API is deployed.

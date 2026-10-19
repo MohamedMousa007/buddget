@@ -1,17 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeftRight, Monitor, Moon, Sun } from 'lucide-react'
+import { ChevronDown, Moon, Sun, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
-import { cn } from '@/lib/utils'
 import { BaseCurrencyChangeSheet } from '@/components/features/settings/BaseCurrencyChangeSheet'
 import { CurrencyMark } from '@/components/ui/CurrencyMark'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
+import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
+import { Switch } from '@/components/ui/switch'
 import { LanguageToggle } from '@/components/ui/LanguageToggle'
-import { OptionChip } from '@/components/ui/OptionChip'
-import { SegmentedControl } from '@/components/ui/SegmentedControl'
-import { SelectableCard } from '@/components/ui/SelectableCard'
 import { defaultSecondCurrency } from '@/hooks/useSettingToggle'
 import { useBaseCurrencySwitch } from '@/hooks/useBaseCurrencySwitch'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -21,7 +19,6 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { AppSettings, Currency } from '@/lib/store/types'
 
 type Theme = AppSettings['theme']
-const THEME_ORDER: Theme[] = ['light', 'dark', 'system']
 
 interface QuickChangesProps {
   /** `card` fills the settings hub, `currency` is its currency half alone, `menu` is the one-row strip in the profile popover. */
@@ -40,10 +37,9 @@ function useQuickChanges() {
     updateSettings({ theme })
     applyTheme(theme)
   }
-  const swap = () => {
-    if (!second) return
-    base.request(second)
-  }
+  const dark =
+    settings.theme === 'dark' ||
+    (settings.theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   const pickSecond = (code: string) => {
     updateSettings({ secondaryCurrency: code as Currency, showSecondaryCurrency: true })
     setPicking(null)
@@ -52,7 +48,7 @@ function useQuickChanges() {
     setPicking(null)
     base.request(code as Currency)
   }
-  return { settings, rates, base, second, picking, setPicking, setTheme, swap, pickSecond, pickMain }
+  return { settings, rates, base, second, picking, setPicking, setTheme, dark, updateSettings, pickSecond, pickMain }
 }
 
 function Sheets({ q }: { q: ReturnType<typeof useQuickChanges> }) {
@@ -88,100 +84,70 @@ function Sheets({ q }: { q: ReturnType<typeof useQuickChanges> }) {
   )
 }
 
+interface QuickChangesProps {
+  /** `card` fills the settings hub, `menu` is the profile popover, `currency` is the two currency rows alone. */
+  variant: 'card' | 'currency' | 'menu'
+}
+
+function Row({ label, children, compact }: { label: string; children: React.ReactNode; compact?: boolean }) {
+  return (
+    <div className={`flex items-center justify-between gap-3 px-4 ${compact ? 'min-h-12' : 'min-h-14'}`}>
+      <span className="min-w-0 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
+      <div className="flex shrink-0 items-center gap-1.5">{children}</div>
+    </div>
+  )
+}
+
+function CurrencyButton({ code, label, onClick }: { code: string | null; label: string; onClick: () => void }) {
+  return (
+    <Button variant="outline" size="touch" aria-label={label} onClick={onClick} className="min-w-[7rem] justify-between px-3">
+      <span className="flex items-center gap-2">
+        {code ? <CurrencyMark code={code} /> : null}
+        <span className={code ? 'font-mono-numbers font-bold' : 'font-medium text-[var(--color-brand-text-muted)]'}>{code ?? '+'}</span>
+      </span>
+      <ChevronDown className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />
+    </Button>
+  )
+}
+
 /**
- * The things people change most: main and second currency, language, theme. The same
- * controls sit on the settings hub and in the profile popover, both backed by the app's
- * real currency picker, language toggle and segmented control.
+ * The things people change most, one labelled row each so the controls line up: language, theme,
+ * main currency, second currency. The hub and the profile popover share it, backed by the app's real
+ * currency picker, language toggle and switch. Theme is a light/dark switch; "Auto" lives in Look.
  */
 export function QuickChanges({ variant }: QuickChangesProps) {
   const copy = useSettingsHubCopy()
   const q = useQuickChanges()
   const { settings } = q
-  const theme = settings.theme
-
-  const themeLabel = { light: copy.themeLight, dark: copy.themeDark, system: copy.themeAuto }
-  const themeIcon = { light: <Sun />, dark: <Moon />, system: <Monitor /> }
-
-  if (variant === 'menu') {
-    const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]
-    return (
-      <>
-        <div className="flex flex-wrap items-center gap-2 px-3.5 pb-3 pt-3">
-          <OptionChip size="md" selected={false} onClick={() => q.setPicking('main')} aria-label={copy.mainCurrency}>
-            <span className="font-mono-numbers font-bold">{settings.baseCurrency}</span>
-          </OptionChip>
-          <OptionChip
-            size="md"
-            selected={q.second !== null}
-            onClick={() => q.setPicking('second')}
-            aria-label={copy.alsoShow}
-            title={copy.alsoShow}
-          >
-            <span className="font-mono-numbers font-bold">{q.second ? `+ ${q.second}` : '+'}</span>
-          </OptionChip>
-          <LanguageToggle compact className="ms-auto" />
-          <IconButton
-            variant="tinted"
-            aria-label={`${copy.theme}: ${themeLabel[theme]}`}
-            onClick={() => q.setTheme(next)}
-          >
-            {themeIcon[theme]}
-          </IconButton>
-        </div>
-        <Sheets q={q} />
-      </>
-    )
-  }
+  const compact = variant === 'menu'
+  const showApp = variant !== 'currency'
 
   return (
     <>
-      <div className="space-y-3 p-4">
-        {variant === 'card' ? (
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.quickTitle}</p>
+      <div className="divide-y divide-[var(--color-brand-border)]">
+        {showApp ? (
+          <Row label={copy.language} compact={compact}>
+            <LanguageToggle compact />
+          </Row>
         ) : null}
-        <div className="flex items-center gap-2">
-          <SelectableCard as="action" layout="list" className="min-h-14 min-w-0 flex-1 gap-2.5 px-3" onClick={() => q.setPicking('main')} aria-label={copy.mainCurrency}>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary-soft)] text-[11px] font-bold text-[var(--color-brand-primary-ink)]">
-              <CurrencyMark code={settings.baseCurrency} />
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-[11px] leading-tight text-[var(--color-brand-text-muted)]">{copy.mainShort}</span>
-              <span className="font-mono-numbers block text-[15px] font-bold leading-tight">{settings.baseCurrency}</span>
-            </span>
-          </SelectableCard>
-          <IconButton
-            variant="outlined"
-            size="md"
-            aria-label={copy.swap}
-            disabled={!q.second}
-            onClick={q.swap}
-          >
-            <ArrowLeftRight />
-          </IconButton>
-          <SelectableCard as="action" layout="list" className="min-h-14 min-w-0 flex-1 gap-2.5 px-3" onClick={() => q.setPicking('second')} aria-label={copy.alsoShow}>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-sunken)] text-[11px] font-bold text-[var(--color-brand-text-secondary)]">
-              {q.second ? <CurrencyMark code={q.second} /> : '+'}
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-[11px] leading-tight text-[var(--color-brand-text-muted)]">{copy.secondShort}</span>
-              <span className={cn('block truncate text-[15px] font-bold leading-tight', q.second && 'font-mono-numbers')}>{q.second ?? copy.addSecond}</span>
-            </span>
-          </SelectableCard>
-        </div>
-        {variant === 'card' ? (
-          <>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{copy.language}</span>
-              <LanguageToggle compact />
-            </div>
-            <SegmentedControl<Theme>
-              ariaLabel={copy.theme}
-              value={theme}
-              onChange={q.setTheme}
-              options={THEME_ORDER.map((value) => ({ value, label: themeLabel[value], icon: themeIcon[value] }))}
-            />
-          </>
+        {showApp ? (
+          <Row label={copy.theme} compact={compact}>
+            <Sun className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />
+            <Switch size="touch" aria-label={`${copy.theme}: ${q.dark ? copy.themeDark : copy.themeLight}`} checked={q.dark} onCheckedChange={(on) => q.setTheme(on ? 'dark' : 'light')} />
+            <Moon className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />
+          </Row>
         ) : null}
+        <Row label={copy.mainCurrency} compact={compact}>
+          <CurrencyButton code={settings.baseCurrency} label={copy.mainCurrency} onClick={() => q.setPicking('main')} />
+        </Row>
+        <Row label={copy.secondCurrency} compact={compact}>
+          <CurrencyButton code={q.second} label={copy.secondCurrency} onClick={() => q.setPicking('second')} />
+          {q.second ? (
+            <IconButton variant="ghost" shape="round" aria-label={copy.noSecond} onClick={() => q.updateSettings({ showSecondaryCurrency: false })}>
+              <X />
+            </IconButton>
+          ) : null}
+        </Row>
       </div>
       <Sheets q={q} />
     </>

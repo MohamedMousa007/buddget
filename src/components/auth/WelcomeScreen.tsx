@@ -19,7 +19,7 @@ function tickerItemStyle(delaySeconds: number): CSSProperties {
     left: 0,
     right: 0,
     bottom: 0,
-    fontSize: '19px',
+    fontSize: 'clamp(19px, 1.9vw, 28px)',
     fontWeight: 400,
     letterSpacing: '-0.3px',
     lineHeight: 1.25,
@@ -91,8 +91,8 @@ export function WelcomeScreen() {
             position: 'absolute',
             top: '35%',
             left: '50%',
-            width: '400px',
-            height: '400px',
+            width: 'clamp(400px, 60vw, 760px)',
+            height: 'clamp(400px, 60vw, 760px)',
             borderRadius: '50%',
             background: 'radial-gradient(circle, rgba(31,195,178,.28), transparent 68%)',
             filter: 'blur(8px)',
@@ -117,13 +117,13 @@ export function WelcomeScreen() {
           }}
         >
           {/* Wordmark — always Latin / LTR */}
-          <BuddgetWordmark height={24} className="dark" />
+          <BuddgetWordmark className="dark h-auto w-[clamp(210px,54vw,300px)] md:w-[clamp(300px,34vw,440px)] xl:w-[clamp(400px,26vw,520px)]" />
 
           {/* Greeting */}
           <p
             style={{
-              marginTop: '22px',
-              fontSize: '18px',
+              marginTop: 'clamp(22px, 3.2vw, 36px)',
+              fontSize: 'clamp(18px, 1.8vw, 26px)',
               fontWeight: 400,
               color: 'rgba(255,255,255,.60)',
             }}
@@ -145,8 +145,8 @@ export function WelcomeScreen() {
             position: 'absolute',
             left: '36px',
             right: '36px',
-            bottom: '70px',
-            height: isArabic ? '60px' : '54px',
+            bottom: 'clamp(70px, 9vh, 120px)',
+            height: isArabic ? 'clamp(60px, 5vw, 84px)' : 'clamp(54px, 4.6vw, 76px)',
             textAlign: 'center',
             zIndex: 10,
           }}

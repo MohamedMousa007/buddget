@@ -8,12 +8,15 @@ import { SettingsToggleRow } from '@/components/features/settings/SettingsToggle
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { ROOM_TONE } from '@/components/features/settings/roomMeta'
 import { useOpenSetting } from '@/hooks/useOpenSetting'
-import { useSettingValue } from '@/hooks/useSettingValue'
+import { PayCycleBody } from '@/components/features/settings/rooms/PayCycleBody'
+import { SettingsCurrencySection } from '@/components/features/settings/SettingsCurrencySection'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { AppSettings } from '@/lib/store/types'
 
 type EntryMode = AppSettings['budgetEntryMode']
+
+const caption = 'px-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]'
 
 export default function SettingsMoneyPage() {
   const copy = useSettingsHubCopy()
@@ -22,34 +25,20 @@ export default function SettingsMoneyPage() {
   const settings = useFinanceStore((s) => s.settings)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
   const methodCount = useFinanceStore((s) => s.paymentMethods.length)
-  const second = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
+  const store = useFinanceStore()
   const m = copy.moneyPage
 
   return (
     <SettingsSubPageShell title={copy.rooms.money.title}>
-      <SettingsSection title={m.currency}>
-        <SettingsRow
-          icon={SETTING_ICONS.coins}
-          tone={tone}
-          title={copy.items.baseCurrency.label}
-          subtitle={second ? `+ ${second}` : copy.noSecond}
-          value={useSettingValue('baseCurrency')}
-          href="/settings/currency"
-          settingId="baseCurrency"
-        />
-      </SettingsSection>
+      <section className="space-y-3">
+        <p className={caption}>{m.currency}</p>
+        <SettingsCurrencySection store={store} />
+      </section>
 
-      <SettingsSection title={m.cycle}>
-        <SettingsRow
-          icon={SETTING_ICONS.calendar}
-          tone={tone}
-          title={copy.items.payCycle.label}
-          subtitle={copy.payCycle.hint}
-          value={useSettingValue('payCycle')}
-          href="/settings/pay-cycle"
-          settingId="payCycle"
-        />
-      </SettingsSection>
+      <section className="space-y-3">
+        <p className={caption}>{m.cycle}</p>
+        <PayCycleBody />
+      </section>
 
       <SettingsSection title={m.wallets}>
         <SettingsRow

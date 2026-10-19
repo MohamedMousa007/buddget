@@ -82,6 +82,10 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
     crew: t.profile.avatarGroupCrew,
     people: t.profile.avatarGroupPeople,
     headwear: t.profile.avatarGroupHeadwear,
+    toon: t.profile.avatarGroupToon,
+    explorer: t.profile.avatarGroupExplorer,
+    ears: t.profile.avatarGroupEars,
+    emoji: t.profile.avatarGroupEmoji,
   }
   const visible = AVATAR_PRESETS.filter((p) => group === 'all' || p.group === group)
   const bgByHex = new Map(AVATAR_BACKGROUNDS.map((b) => [b.main, b.key]))

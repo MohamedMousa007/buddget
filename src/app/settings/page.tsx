@@ -5,7 +5,6 @@ import { Search, User, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { PageBody } from '@/components/layout/PageContainer'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { QuickChanges } from '@/components/features/settings/QuickChanges'
@@ -113,7 +112,7 @@ export default function SettingsPage() {
           <>
             {user ? (
               <Card
-                render={<Link href="/settings/profile" />}
+                render={<Link href="/settings/you" />}
                 padding="none"
                 className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--color-brand-elevated)]"
               >
@@ -137,20 +136,13 @@ export default function SettingsPage() {
               </Card>
             ) : null}
 
-            <div className="flex items-end gap-2.5">
-              <span className="shrink-0 text-[var(--color-brand-primary-ink)]">
-                <BuddgyIcon mood={tipsOn ? 'talking' : 'sleepy'} size={40} strokeWidth={1.6} alive />
-              </span>
-              <p className="rounded-2xl rounded-es-sm bg-[var(--color-brand-primary-soft)] px-3.5 py-2.5 text-[13.5px] font-semibold leading-snug text-[var(--color-brand-primary-ink)]">
-                {left > 0 && user ? copy.setupRing(left) : copy.hostLine}
-              </p>
-            </div>
+            <section>
+              <p className="px-1 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.quickTitle}</p>
+              <Card padding="none" className="overflow-hidden">
+                <QuickChanges variant="card" />
+              </Card>
+            </section>
 
-            <Card padding="none">
-              <QuickChanges variant="card" />
-            </Card>
-
-            <p className="px-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.roomsCap}</p>
             <div className="space-y-3">
               {GROUPS.map((rooms) => (
                 <SettingsSection key={rooms[0]}>

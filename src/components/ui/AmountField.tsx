@@ -78,19 +78,22 @@ export function AmountField({
     </span>
   )
 
-  const caret = (
+  // Sits inside the value's own span, so it follows the last digit whatever the field's layout does.
+  const caret = isOpen ? (
     <span
+      aria-hidden
       style={{
+        display: 'inline-block',
         width: 2,
-        height: compactSize ? 22 : 26,
+        height: '1.05em',
+        marginInlineStart: 1,
         borderRadius: 2,
-        flexShrink: 0,
+        verticalAlign: '-0.15em',
         background: 'var(--color-brand-primary)',
-        display: isOpen ? 'block' : 'none',
-        animation: 'npBlink 1.1s steps(1) infinite',
+        animation: 'npBlink 1.06s steps(1) infinite',
       }}
     />
-  )
+  ) : null
 
   if (!native) {
     const active = focused
@@ -174,10 +177,6 @@ export function AmountField({
         }
       >
         {showPrefix && !glass && unit}
-        {/* Caret precedes the placeholder when empty (like a real input) and
-            follows the digits once typing starts — the value span shrink-wraps
-            so the caret hugs the text instead of the field's far edge. */}
-        {!value && caret}
         <span
           style={
             glass
@@ -198,9 +197,8 @@ export function AmountField({
               : { flex: '0 1 auto', minWidth: 0, textAlign: 'start', opacity: value ? 1 : 0.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
           }
         >
-          {value || ph}
+          {value ? <>{value}{caret}</> : <>{caret}{ph}</>}
         </span>
-        {value ? caret : null}
         {showPrefix && glass && unit}
       </button>
       {pad}

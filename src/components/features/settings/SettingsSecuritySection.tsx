@@ -38,6 +38,7 @@ export function SettingsSecuritySection({ store }: SettingsSecuritySectionProps)
         </div>
         <Switch
           size="touch"
+          aria-label={t.settings.twoFaToggle}
           checked={store.settings.twoFactorEmailEnabled}
           onCheckedChange={(val) => store.updateSettings({ twoFactorEmailEnabled: val })}
         />

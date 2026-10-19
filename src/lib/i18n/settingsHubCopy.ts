@@ -22,6 +22,7 @@ export interface SettingsHubCopy {
   mainShort: string
   alsoShow: string
   secondShort: string
+  secondCurrency: string
   addSecond: string
   noSecond: string
   swap: string
@@ -50,7 +51,7 @@ export interface SettingsHubCopy {
     reportMissing: string
     inRoom: (room: string) => string
   }
-  menu: { helpFeedback: string; openSettings: string; signIn: string; closeMenu: string }
+  menu: { helpFeedback: string; openSettings: string; signIn: string; closeMenu: string; adminPortal: string }
   currency: {
     pickTitle: string
     sheetTitle: (next: string) => string
@@ -125,6 +126,7 @@ const en: SettingsHubCopy = {
   mainShort: 'Main',
   alsoShow: 'Also show',
   secondShort: 'Second',
+  secondCurrency: 'Second currency',
   addSecond: 'Add',
   noSecond: 'No second currency',
   swap: 'Swap main and second currency',
@@ -198,7 +200,7 @@ const en: SettingsHubCopy = {
     reportMissing: 'Tell us what’s missing',
     inRoom: (room) => room,
   },
-  menu: { helpFeedback: 'Help & feedback', openSettings: 'Settings', signIn: 'Sign in', closeMenu: 'Close menu' },
+  menu: { helpFeedback: 'Help & feedback', openSettings: 'Settings', signIn: 'Sign in', closeMenu: 'Close menu', adminPortal: 'Admin portal' },
   currency: {
     pickTitle: 'Main currency',
     sheetTitle: (next) => `Switch main currency to ${next}?`,
@@ -286,6 +288,7 @@ const ar: SettingsHubCopy = {
   mainShort: 'الأساسية',
   alsoShow: 'عرض أيضًا',
   secondShort: 'الثانية',
+  secondCurrency: 'العملة الثانية',
   addSecond: 'إضافة',
   noSecond: 'بدون عملة ثانية',
   swap: 'تبديل العملة الأساسية والثانية',
@@ -359,7 +362,7 @@ const ar: SettingsHubCopy = {
     reportMissing: 'قولنا إيه الناقص',
     inRoom: (room) => room,
   },
-  menu: { helpFeedback: 'المساعدة والملاحظات', openSettings: 'الإعدادات', signIn: 'تسجيل الدخول', closeMenu: 'إغلاق القائمة' },
+  menu: { helpFeedback: 'المساعدة والملاحظات', openSettings: 'الإعدادات', signIn: 'تسجيل الدخول', closeMenu: 'إغلاق القائمة', adminPortal: 'لوحة الإدارة' },
   currency: {
     pickTitle: 'العملة الأساسية',
     sheetTitle: (next) => `نبدّل العملة الأساسية إلى ${next}؟`,

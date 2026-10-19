@@ -3,7 +3,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useMemo, useRef, useState } from 'react'
-import { ShieldCheck, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -18,26 +18,6 @@ import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { ProgressRing } from '@/components/ui/ProgressRing'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
-import { useStaffAccess } from '@/hooks/useStaffAccess'
-import { navigate } from '@/lib/navigation/navigate'
-
-/** Shortcut to the admin portal; rendered only for staff, at any role level. */
-function AdminPortalButton() {
-  const isStaff = useStaffAccess()
-  if (!isStaff) return null
-  return (
-    <IconButton
-      aria-label="Admin portal"
-      variant="tinted"
-      size="sm"
-      shape="round"
-      className="size-9"
-      onClick={() => navigate('/admin')}
-    >
-      <ShieldCheck className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
-    </IconButton>
-  )
-}
 
 /** The avatar that opens ProfileDropdown — the mobile header's, and Flow's own header's. */
 export function ProfileAvatarWithMenu({ className }: { className?: string }) {
@@ -125,13 +105,13 @@ export function AuthNavButtons({
     if (layout === 'mobile') {
       return (
         <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
-          <><AdminPortalButton /><ProfileAvatarWithMenu /></>
+          <ProfileAvatarWithMenu />
         </div>
       )
     }
     return (
       <div className={cn('flex flex-nowrap items-center gap-1.5 sm:gap-2', className)}>
-        <><AdminPortalButton /><ProfileAvatarWithMenu /></>
+        <ProfileAvatarWithMenu />
       </div>
     )
   }
@@ -149,7 +129,7 @@ export function AuthNavButtons({
     // Redesign: no notification bell on the mobile header — avatar only.
     return (
       <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
-        <><AdminPortalButton /><ProfileAvatarWithMenu /></>
+        <ProfileAvatarWithMenu />
       </div>
     )
   }
@@ -177,7 +157,7 @@ export function AuthNavButtons({
       ) : !isNative() ? (
         <NotificationInbox />
       ) : null}
-      <><AdminPortalButton /><ProfileAvatarWithMenu /></>
+      <ProfileAvatarWithMenu />
     </div>
   )
 }

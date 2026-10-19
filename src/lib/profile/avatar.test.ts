@@ -4,6 +4,8 @@ import {
   AVATAR_GROUPS,
   AVATAR_PRESETS,
   avatarDataUri,
+  contrastRatio,
+  separateFrom,
   avatarSvg,
   encodeAvatarId,
   parseAvatarId,
@@ -28,9 +30,9 @@ function tagsBalance(svg: string): boolean {
 }
 
 describe('avatar set', () => {
-  it('ships 32 presets with unique ids across the three groups', () => {
-    expect(AVATAR_PRESETS).toHaveLength(32)
-    expect(new Set(AVATAR_PRESETS.map((p) => p.id)).size).toBe(32)
+  it('ships 70 presets with unique ids across every group', () => {
+    expect(AVATAR_PRESETS).toHaveLength(70)
+    expect(new Set(AVATAR_PRESETS.map((p) => p.id)).size).toBe(70)
     for (const g of AVATAR_GROUPS) expect(AVATAR_PRESETS.some((p) => p.group === g)).toBe(true)
   })
 
@@ -54,7 +56,7 @@ describe('avatar set', () => {
   })
 
   it('produces distinct artwork per preset', () => {
-    expect(new Set(AVATAR_PRESETS.map((p) => avatarSvg(p.id))).size).toBe(32)
+    expect(new Set(AVATAR_PRESETS.map((p) => avatarSvg(p.id))).size).toBe(70)
   })
 
   it('returns an img-ready data URI and memoises it', () => {
@@ -70,17 +72,21 @@ describe('avatar set', () => {
     expect(encodeAvatarId('nour', 'nope')).toBe('nour')
   })
 
-  it('maps legacy ids onto the new set, smileys onto the robots', () => {
-    const ids = new Set(AVATAR_PRESETS.map((p) => p.id))
-    for (const legacy of ['toon_a', 'toon_h', 'adv_felix', 'adv_luna', 'be_buddy', 'be_rex']) {
-      const id = resolveAvatarId(legacy)!
-      expect(ids.has(id)).toBe(true)
-      expect(AVATAR_PRESETS.find((p) => p.id === id)!.group).not.toBe('crew')
-      expect(resolveAvatarId(legacy)).toBe(id)
+  it('keeps the original toon, explorer, big-ears and emoji ids as their own characters', () => {
+    for (const id of ['toon_a', 'toon_h', 'adv_felix', 'adv_luna', 'be_buddy', 'be_rex', 'fe_alpha', 'fe_delta']) {
+      expect(resolveAvatarId(id)).toBe(id)
+      expect(resolveAvatarId(`${id}:violet`)).toBe(id)
     }
-    for (const smiley of ['fe_alpha', 'fe_beta', 'fe_gamma', 'fe_delta']) {
-      expect(AVATAR_PRESETS.find((p) => p.id === resolveAvatarId(smiley))!.group).toBe('crew')
-    }
+    expect(AVATAR_PRESETS.find((p) => p.id === 'fe_alpha')!.group).toBe('emoji')
+    expect(AVATAR_PRESETS.find((p) => p.id === 'toon_a')!.group).toBe('toon')
+  })
+
+  it('maps unknown legacy ids onto a stable character of the same kind', () => {
+    const smiley = resolveAvatarId('fe_unknown')!
+    expect(AVATAR_PRESETS.find((p) => p.id === smiley)!.group).toBe('emoji')
+    const toon = resolveAvatarId('toon_zzz')!
+    expect(['crew', 'emoji']).not.toContain(AVATAR_PRESETS.find((p) => p.id === toon)!.group)
+    expect(resolveAvatarId('toon_zzz')).toBe(toon)
   })
 
   it('rejects unknown and empty ids', () => {
@@ -149,5 +155,32 @@ describe('photo upload helpers', () => {
 
   it('accepts the JPEG data URL the cropper produces', () => {
     expect(isValidImageDataUrl('data:image/jpeg;base64,/9j/4AAQSkZJRg==')).toBe(true)
+  })
+})
+
+describe('background contrast', () => {
+  it('separateFrom leaves clear colours alone and fixes ones that blend in', () => {
+    expect(separateFrom('#FFFFFF', ['#243B6B'])).toBe('#FFFFFF')
+    const fixed = separateFrom('#12B0A0', ['#12B0A0', '#7FE0D3'])
+    expect(fixed).not.toBe('#12B0A0')
+    expect(contrastRatio(fixed, '#12B0A0')).toBeGreaterThanOrEqual(1.8)
+    expect(contrastRatio(fixed, '#7FE0D3')).toBeGreaterThanOrEqual(1.8)
+  })
+
+  it('keeps the main torso colour clear of every background for every character', () => {
+    for (const p of AVATAR_PRESETS.filter((x) => x.group !== 'emoji' && x.group !== 'crew')) {
+      for (const b of AVATAR_BACKGROUNDS) {
+        const svg = avatarSvg(encodeAvatarId(p.id, b.key))!
+        const torso = /<path d="M8 100C8 80 28 71 50 71S92 80 92 100Z" fill="(#[0-9a-fA-F]{6})"/.exec(svg)?.[1]
+        expect(torso, `${p.id} on ${b.key}`).toBeDefined()
+        expect(contrastRatio(torso!, b.main), `${p.id} on ${b.key}`).toBeGreaterThanOrEqual(1.8)
+        expect(contrastRatio(torso!, b.soft), `${p.id} on ${b.key}`).toBeGreaterThanOrEqual(1.8)
+      }
+    }
+  })
+
+  it('puts a neutral disc behind skin that would melt into the background', () => {
+    const svg = avatarSvg('omar:orange')!
+    expect(svg).toContain('opacity=".26"')
   })
 })

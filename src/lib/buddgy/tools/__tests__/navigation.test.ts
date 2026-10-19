@@ -63,7 +63,7 @@ describe('open_screen', () => {
 describe('open_setting', () => {
   it('navigates to the settings page and asks it to highlight the row', () => {
     expect(nav('open_setting', { setting: 'payCycle' }).ok).toBe(true)
-    expect(navigate).toHaveBeenCalledWith('/settings/pay-cycle')
+    expect(navigate).toHaveBeenCalledWith('/settings/money')
     expect(modal().settingsFocusId).toBe('payCycle')
   })
 

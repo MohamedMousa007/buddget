@@ -118,9 +118,9 @@ export function LandingGate() {
           {/* Large centred wordmark */}
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="flex justify-center">
-              <BuddgetWordmark height={24} />
+              <BuddgetWordmark className="h-auto w-[clamp(180px,52vw,240px)] sm:w-[clamp(240px,34vw,320px)]" />
             </h1>
-            <p className="mt-2 text-xs sm:text-sm text-[var(--color-brand-text-muted)]">
+            <p className="mt-3 text-sm sm:text-base text-[var(--color-brand-text-muted)]">
               {t.brand.tagline}
             </p>
           </div>

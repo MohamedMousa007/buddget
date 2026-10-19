@@ -1544,6 +1544,10 @@ export interface Dictionary {
     avatarGroupCrew: string
     avatarGroupPeople: string
     avatarGroupHeadwear: string
+    avatarGroupToon: string
+    avatarGroupExplorer: string
+    avatarGroupEars: string
+    avatarGroupEmoji: string
     avatarBackground: string
     avatarUseAvatar: string
     avatarUseThis: string

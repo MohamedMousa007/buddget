@@ -51,7 +51,7 @@ export function SettingsSmsTrackingSection() {
             <Label className="text-sm text-[var(--color-brand-text-secondary)]">
               {t.smsTracking.toggleLabel}
             </Label>
-            <Switch checked={isEnabled} onCheckedChange={toggle} disabled={loading} />
+            <Switch aria-label={t.smsTracking.toggleLabel} checked={isEnabled} onCheckedChange={toggle} disabled={loading} />
           </div>
         ) : (
           // iOS, not yet set up: show ONLY the setup CTA (no switch).

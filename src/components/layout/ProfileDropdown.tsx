@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState, type ComponentType, type RefO
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import {
-  BarChart3, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Search, Settings, Target, User,
+  BarChart3, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Settings, ShieldCheck, Target, User,
 } from 'lucide-react'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { ProgressRing } from '@/components/ui/ProgressRing'
@@ -12,6 +12,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { QuickChanges } from '@/components/features/settings/QuickChanges'
 import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
+import { useStaffAccess } from '@/hooks/useStaffAccess'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -47,7 +48,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const { user, signOut, openAuthModal } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
-  const setFocusId = useSettingsStore((s) => s.setSettingsFocusId)
+  const isStaff = useStaffAccess()
   const prevPathname = useRef(pathname)
   const { pct } = useSetupProgress()
   const [setupOpen, setSetupOpen] = useState(false)
@@ -106,12 +107,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     onClose()
   }
 
-  const openSettingsSearch = () => {
-    setFocusId('search')
-    navigate('/settings')
-    onClose()
-  }
-
   if (!open && !setupOpen) return null
 
   const avatarSrc = resolveProfileAvatarSrc(profile)
@@ -136,7 +131,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           {user ? (
             <div className="flex items-center gap-1 pe-3">
               <Link
-                href="/settings/profile"
+                href="/settings/you"
                 onClick={delayedClose}
                 role="menuitem"
                 className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
@@ -197,16 +192,20 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
           {link('/reports', BarChart3, t.nav.reports)}
           <Divider />
 
-          <div className="flex items-center pe-2">
-            <Link href="/settings" onClick={delayedClose} className={cn(itemClass, 'flex-1')} role="menuitem">
-              <Settings className="size-[18px] shrink-0" />
-              <span className={localeInlineLabelClass(locale)}>{copy.menu.openSettings}</span>
-            </Link>
-            <IconButton variant="ghost" aria-label={copy.searchLabel} onClick={openSettingsSearch}>
-              <Search />
-            </IconButton>
-          </div>
+          {link('/settings', Settings, copy.menu.openSettings)}
           {link('/settings/help', CircleHelp, copy.menu.helpFeedback)}
+          {isStaff ? (
+            <button
+              type="button"
+              data-raw-button-ok="menu row sharing itemClass with the other profile menu items"
+              onClick={() => { onClose(); navigate('/admin') }}
+              className={itemClass}
+              role="menuitem"
+            >
+              <ShieldCheck className="size-[18px] shrink-0" />
+              <span className={localeInlineLabelClass(locale)}>{copy.menu.adminPortal}</span>
+            </button>
+          ) : null}
 
           {user ? (
             <>

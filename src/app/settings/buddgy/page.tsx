@@ -1,43 +1,36 @@
 'use client'
 
-import { SettingsRow } from '@/components/features/settings/SettingsRow'
+import { AssistantBody } from '@/components/features/settings/rooms/AssistantBody'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
+import { SettingsSmsTrackingSection } from '@/components/features/settings/SettingsSmsTrackingSection'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
 import { SettingsToggleRow } from '@/components/features/settings/SettingsToggleRow'
-import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { ROOM_TONE } from '@/components/features/settings/roomMeta'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
+const caption = 'px-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]'
+
+/** The assistant's tips, learning and memories, then bank-text auto-tracking, on one screen. */
 export default function SettingsBuddgyPage() {
   const copy = useSettingsHubCopy()
   const b = copy.buddgyPage
   const { user } = useAuth()
-  const tone = ROOM_TONE.buddgy
-  const tips = useSettingsStore((s) => s.buddgyNudges)
-  const learning = useSettingsStore((s) => s.buddgyLearning)
-  const memories = useFinanceStore((s) => s.buddgyMemories.length)
 
   return (
     <SettingsSubPageShell title={copy.rooms.buddgy.title}>
-      <SettingsSection title={b.assistant}>
-        <SettingsRow
-          icon={SETTING_ICONS.buddgy}
-          tone={tone}
-          title={copy.items.tips.label}
-          subtitle={b.assistantHint(tips, learning)}
-          value={memories ? String(memories) : undefined}
-          href="/settings/ai"
-          settingId="memories"
-        />
-        <SettingsToggleRow id="voiceReadAloud" tone={tone} hint={b.voiceHint} tag={b.deviceOnly} />
-      </SettingsSection>
-      {user ? (
-        <SettingsSection title={b.tracking}>
-          <SettingsRow icon={SETTING_ICONS.message} tone={tone} title={copy.items.sms.label} subtitle={b.trackingHint} href="/settings/sms" settingId="sms" />
+      <section className="space-y-3">
+        <p className={caption}>{b.assistant}</p>
+        <AssistantBody />
+        <SettingsSection>
+          <SettingsToggleRow id="voiceReadAloud" tone={ROOM_TONE.buddgy} hint={b.voiceHint} tag={b.deviceOnly} />
         </SettingsSection>
+      </section>
+      {user ? (
+        <section className="space-y-3" data-setting-id="sms">
+          <p className={caption}>{b.tracking}</p>
+          <SettingsSmsTrackingSection />
+        </section>
       ) : null}
     </SettingsSubPageShell>
   )
