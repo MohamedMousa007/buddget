@@ -33,7 +33,7 @@ export function SettingsDataManagementSection({
   const t = useT()
 
   return (
-    <section className="glass-card rounded-2xl p-5 space-y-4">
+    <Card render={<section />} padding="lg" className="space-y-4">
       <div className="flex items-center gap-2 mb-2">
         <Database className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
@@ -125,6 +125,6 @@ export function SettingsDataManagementSection({
           </div>
         )}
       </div>
-    </section>
+    </Card>
   )
 }

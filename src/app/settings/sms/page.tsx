@@ -18,7 +18,7 @@ export default function SettingsSmsPage() {
   if (!user) return null
 
   return (
-    <SettingsSubPageShell title={t.settings.hub.sms}>
+    <SettingsSubPageShell title={t.settings.hub.sms} backHref="/settings/buddgy">
       <SettingsSmsTrackingSection />
     </SettingsSubPageShell>
   )

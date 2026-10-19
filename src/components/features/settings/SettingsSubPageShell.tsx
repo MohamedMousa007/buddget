@@ -1,137 +1,68 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { navigate } from '@/lib/navigation/navigate'
+import { useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { navigate } from '@/lib/navigation/navigate'
 import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
 import { PageBody, PageContainer } from '@/components/layout/PageContainer'
-import { SettingsSaveButton } from '@/components/features/settings/SettingsSaveButton'
-import { flushFinanceNow } from '@/components/sync/SupabaseFinanceSync'
-import { useActionToast } from '@/components/ui/ActionToast'
-import { Scrim } from '@/components/ui/Scrim'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { registerBackGuard } from '@/lib/navigation/backGuard'
-import { useLocale, useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
-import { Button } from '@/components/ui/button'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useLocale, useT } from '@/lib/i18n'
 
 interface Props {
   title: string
   children: React.ReactNode
-  /** Show the "Save" header action (force-push to server). Default true. */
-  showSave?: boolean
+  /** Where the back arrow goes: the room this page belongs to, or the hub. */
+  backHref?: string
 }
 
-export function SettingsSubPageShell({ title, children, showSave = true }: Props) {
+const HIGHLIGHT = ['bg-[var(--color-brand-primary-soft)]']
+const HIGHLIGHT_MS = 1800
+
+/**
+ * Chrome for every settings page: back arrow, title, and the arrival highlight for
+ * settings search (scrolls to the row whose `data-setting-id` was asked for).
+ * Settings apply the moment they change, so there is no Save button.
+ */
+export function SettingsSubPageShell({ title, children, backHref = '/settings' }: Props) {
   const { locale } = useLocale()
   const t = useT()
-  const isRtl = locale === 'ar'
-  const showToast = useActionToast()
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const confirmOpenRef = useRef(confirmOpen)
-  useEffect(() => { confirmOpenRef.current = confirmOpen }, [confirmOpen])
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const focusId = useSettingsStore((s) => s.settingsFocusId)
+  const setFocusId = useSettingsStore((s) => s.setSettingsFocusId)
 
-  // Sections write to the store on change (live feedback); dirty = drifted
-  // from the mount snapshot, discard = restore that snapshot. The selector
-  // makes dirtiness reactive so the Save button can show/hide itself.
-  const snapshotRef = useRef(useFinanceStore.getState().settings)
-  const [, bumpBaseline] = useState(0) // re-render when the saved baseline moves
-  const settings = useFinanceStore((s) => s.settings)
-  const dirty = JSON.stringify(settings) !== JSON.stringify(snapshotRef.current)
-  const isDirty = () =>
-    JSON.stringify(useFinanceStore.getState().settings) !== JSON.stringify(snapshotRef.current)
-
-  useEffect(() => registerBackGuard(() => {
-    if (confirmOpenRef.current) {
-      setConfirmOpen(false)
-      return true
-    }
-    if (!isDirty()) return false
-    setConfirmOpen(true)
-    return true
-  }), [])
-
-  const goBack = () => navigate('/settings')
-
-  const onBackClick = () => {
-    if (isDirty()) setConfirmOpen(true)
-    else goBack()
-  }
-
-  const onSaveAndLeave = async () => {
-    setConfirmOpen(false)
-    try {
-      await flushFinanceNow()
-      showToast(t.common.savedSynced)
-    } catch {
-      // best-effort; next auto-flush retries
-    }
-    goBack()
-  }
-
-  const onDiscardAndLeave = () => {
-    useFinanceStore.getState().updateSettings(snapshotRef.current)
-    setConfirmOpen(false)
-    goBack()
-  }
+  useEffect(() => {
+    if (!focusId) return
+    const frame = requestAnimationFrame(() => {
+      const el = bodyRef.current?.querySelector<HTMLElement>(`[data-setting-id="${CSS.escape(focusId)}"]`)
+      setFocusId(null)
+      if (!el) return
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      el.classList.add(...HIGHLIGHT)
+      window.setTimeout(() => el.classList.remove(...HIGHLIGHT), HIGHLIGHT_MS)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [focusId, setFocusId])
 
   return (
     <div>
       <PageHeader>
         <PageContainer className="px-0 lg:px-0">
-        <PageHeaderContent>
-          <div className="flex items-center gap-1">
-            <IconButton onClick={onBackClick} aria-label={t.common.back}>
-              {isRtl
-                ? <ChevronRight className="h-5 w-5" />
-                : <ChevronLeft className="h-5 w-5" />}
-            </IconButton>
-            <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
-            {showSave ? <div className="ms-auto"><SettingsSaveButton dirty={dirty} onSaved={() => { snapshotRef.current = useFinanceStore.getState().settings; bumpBaseline((n) => n + 1) }} /></div> : null}
-          </div>
-        </PageHeaderContent>
+          <PageHeaderContent>
+            <div className="flex items-center gap-1">
+              <IconButton onClick={() => navigate(backHref)} aria-label={t.common.back}>
+                {locale === 'ar' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+              </IconButton>
+              <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
+            </div>
+          </PageHeaderContent>
         </PageContainer>
       </PageHeader>
-      <PageBody narrow className="space-y-4">
-        {children}
-      </PageBody>
-
-      <AnimatePresence>
-        {confirmOpen ? (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
-            <Scrim label={t.common.close} onClick={() => setConfirmOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: 12, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-6 shadow-2xl"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="settings-unsaved-title"
-            >
-              <h2 id="settings-unsaved-title" className="text-base font-semibold text-[var(--color-brand-text-primary)]">
-                {t.settings.unsavedTitle}
-              </h2>
-              <p className="mt-1 text-sm text-[var(--color-brand-text-secondary)] leading-relaxed">
-                {t.settings.unsavedBody}
-              </p>
-              <div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                <Button variant="outline" size="touch" onClick={() => setConfirmOpen(false)}>
-                  {t.common.cancel}
-                </Button>
-                <Button variant="destructive" size="touch" onClick={onDiscardAndLeave}>
-                  {t.profile.discard}
-                </Button>
-                <Button size="touch" onClick={() => void onSaveAndLeave()}>
-                  {t.common.save}
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        ) : null}
-      </AnimatePresence>
+      <div ref={bodyRef}>
+        <PageBody narrow className="space-y-4">
+          {children}
+        </PageBody>
+      </div>
     </div>
   )
 }

@@ -21,6 +21,7 @@ import { ownsHeader } from '@/lib/navigation/ownsHeader'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
+import { useCycleAwareMonth } from '@/hooks/useCycleAwareMonth'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { WidgetSync } from '@/lib/native/WidgetSync'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -398,6 +399,7 @@ function isBareAuthRoute(pathname: string | null) {
 
 export function AppShell({ children }: AppShellProps) {
   useThemeSync()
+  useCycleAwareMonth()
   const pathname = usePathname()
   const navPath = useNavPath()
   const bare = isBareAuthRoute(pathname)

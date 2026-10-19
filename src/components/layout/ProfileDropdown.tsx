@@ -1,11 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useCallback, useState, type RefObject } from 'react'
+import { useEffect, useRef, useCallback, useState, type ComponentType, type RefObject } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { User, Settings, LogOut, CreditCard, Target, BarChart3, CalendarClock } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import {
+  BarChart3, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Search, Settings, Target, User,
+} from 'lucide-react'
+import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { ProgressRing } from '@/components/ui/ProgressRing'
+import { IconButton } from '@/components/ui/IconButton'
+import { QuickChanges } from '@/components/features/settings/QuickChanges'
 import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
 import { useShallow } from 'zustand/react/shallow'
@@ -14,8 +18,10 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
+import { navigate } from '@/lib/navigation/navigate'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
+import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 
 interface ProfileDropdownProps {
   open: boolean
@@ -25,15 +31,23 @@ interface ProfileDropdownProps {
 }
 
 const itemClass =
-  'flex items-center gap-3 px-4 py-3 text-sm font-medium text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)] transition-colors duration-150 cursor-pointer w-full text-start'
+  'flex w-full min-h-11 cursor-pointer items-center gap-3 px-4 py-2.5 text-start text-sm font-medium text-[var(--color-brand-text-secondary)] transition-colors duration-150 hover:bg-[var(--color-brand-elevated)] hover:text-[var(--color-brand-text-primary)]'
+
+type Glyph = ComponentType<{ className?: string }>
+
+function Divider() {
+  return <div className="border-t border-[var(--color-brand-border)]" />
+}
 
 export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdownProps) {
   const pathname = useNavPath()
   const t = useT()
+  const copy = useSettingsHubCopy()
   const { locale } = useLocale()
-  const { user, signOut } = useAuth()
+  const { user, signOut, openAuthModal } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
+  const setFocusId = useSettingsStore((s) => s.setSettingsFocusId)
   const prevPathname = useRef(pathname)
   const { pct } = useSetupProgress()
   const [setupOpen, setSetupOpen] = useState(false)
@@ -50,6 +64,8 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     // any menu-item onClick has already committed — prevents unmounting the
     // dropdown before navigation fires on Android WebView.
     const handler = (e: MouseEvent) => {
+      // A sheet opened from the menu (currency picker, confirm) is portalled outside it and owns its own dismissal.
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         onClose()
       }
@@ -61,7 +77,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"][aria-modal="true"]')) onClose()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -90,98 +106,125 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     onClose()
   }
 
+  const openSettingsSearch = () => {
+    setFocusId('search')
+    navigate('/settings')
+    onClose()
+  }
+
   if (!open && !setupOpen) return null
 
   const avatarSrc = resolveProfileAvatarSrc(profile)
   const displayName = profile.name || t.common.user
   const displayEmail = user?.email || profile.email || ''
 
+  const link = (href: string, Icon: Glyph, label: string) => (
+    <Link key={href} href={href} onClick={delayedClose} className={itemClass} role="menuitem">
+      <Icon className="size-[18px] shrink-0" />
+      <span className={localeInlineLabelClass(locale)}>{label}</span>
+    </Link>
+  )
+
   return (
     <>
-    <SetupChecklistSheet open={setupOpen} onClose={() => { setSetupOpen(false); onClose() }} />
-    {open ? (
-    <div
-      className="absolute top-full end-0 mt-2 z-50 w-64 bg-[var(--color-brand-card)] border border-[var(--color-brand-border)] rounded-2xl shadow-[0_24px_50px_-16px_rgba(0,0,0,0.7)] overflow-hidden"
-      role="menu"
-    >
-      {pct < 100 ? (
-        <>
+      <SetupChecklistSheet open={setupOpen} onClose={() => { setSetupOpen(false); onClose() }} />
+      {open ? (
+        <div
+          className="native-scroll absolute end-0 top-full z-50 mt-2 max-h-[calc(100dvh-6rem)] w-[19rem] overflow-y-auto rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-[0_24px_50px_-16px_rgba(0,0,0,0.7)]"
+          role="menu"
+        >
+          {user ? (
+            <div className="flex items-center gap-1 pe-3">
+              <Link
+                href="/settings/profile"
+                onClick={delayedClose}
+                role="menuitem"
+                className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)]">
+                  {avatarSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarSrc} alt="" className="size-full object-cover" width={44} height={44} />
+                  ) : (
+                    <User className="size-5 text-[var(--color-brand-text-secondary)]" />
+                  )}
+                </span>
+                <span className={cn('min-w-0', locale === 'ar' && 'text-end')}>
+                  <span className="block truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{displayName}</span>
+                  {displayEmail ? <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{displayEmail}</span> : null}
+                </span>
+              </Link>
+              {pct < 100 ? (
+                <IconButton
+                  variant="tinted"
+                  shape="round"
+                  aria-label={t.setup.chipAria(pct)}
+                  onClick={() => setSetupOpen(true)}
+                >
+                  <ProgressRing pct={pct} size={24} stroke={3} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)" />
+                </IconButton>
+              ) : null}
+            </div>
+          ) : (
+            <button
+              type="button"
+              data-raw-button-ok="menu row sharing itemClass, tinted as the sign-in call to action"
+              onClick={() => { onClose(); openAuthModal('/', null, 'signin') }}
+              className={cn(itemClass, 'bg-[var(--color-brand-primary-soft)] font-semibold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70')}
+              role="menuitem"
+            >
+              <LogIn className="size-[18px] shrink-0" />
+              <span className={localeInlineLabelClass(locale)}>{copy.menu.signIn}</span>
+            </button>
+          )}
+
+          <QuickChanges variant="menu" />
+          <Divider />
+
+          {link('/goals', Target, t.nav.goals)}
+          {link('/paydays', CalendarClock, t.nav.paydays)}
+          {link('/subscriptions', RotateCwClock, t.nav.subscriptions)}
           <button
             type="button"
-            data-raw-button-ok="menu row sharing itemClass with the other profile menu items, tinted as the CTA"
-            onClick={() => setSetupOpen(true)}
-            aria-label={t.setup.chipAria(pct)}
-            className={cn(itemClass, 'min-h-11 bg-[var(--color-brand-primary-soft)] font-semibold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70')}
+            data-raw-button-ok="menu row sharing itemClass with the other profile menu items"
+            onClick={() => { setActiveModal('paymentMethods'); onClose() }}
+            className={itemClass}
             role="menuitem"
           >
-            <ProgressRing pct={pct} size={20} stroke={3} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)" />
-            <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.setup.chipLabel} · <span className="font-mono-numbers">{pct}%</span></span>
+            <CreditCard className="size-[18px] shrink-0" />
+            <span className={localeInlineLabelClass(locale)}>{t.paymentMethods.title}</span>
           </button>
-          <div className="border-t border-[var(--color-brand-border)]" />
-        </>
-      ) : null}
-      <div className="flex items-center gap-3 px-4 py-3.5">
-        <div className="w-11 h-11 rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0">
-          {avatarSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarSrc} alt="" className="w-full h-full object-cover" width={44} height={44} />
-          ) : (
-            <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
-          )}
-        </div>
-        <div className={cn('min-w-0', locale === 'ar' && 'text-end')}>
-          <p className="text-sm font-bold text-[var(--color-brand-text-primary)] truncate">{displayName}</p>
-          {displayEmail ? (
-            <p className="text-xs text-[var(--color-brand-text-muted)] truncate">{displayEmail}</p>
+          {link('/reports', BarChart3, t.nav.reports)}
+          <Divider />
+
+          <div className="flex items-center pe-2">
+            <Link href="/settings" onClick={delayedClose} className={cn(itemClass, 'flex-1')} role="menuitem">
+              <Settings className="size-[18px] shrink-0" />
+              <span className={localeInlineLabelClass(locale)}>{copy.menu.openSettings}</span>
+            </Link>
+            <IconButton variant="ghost" aria-label={copy.searchLabel} onClick={openSettingsSearch}>
+              <Search />
+            </IconButton>
+          </div>
+          {link('/settings/help', CircleHelp, copy.menu.helpFeedback)}
+
+          {user ? (
+            <>
+              <Divider />
+              <button
+                type="button"
+                data-raw-button-ok="menu row sharing itemClass, tinted as the destructive sign-out"
+                onClick={handleSignOut}
+                className={cn(itemClass, 'font-semibold text-[var(--color-brand-red)] hover:text-[var(--color-brand-red)]')}
+                role="menuitem"
+              >
+                <LogOut className="size-[18px] shrink-0" />
+                <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
+              </button>
+            </>
           ) : null}
         </div>
-      </div>
-
-      <div className="border-t border-[var(--color-brand-border)]" />
-
-      <Link href="/settings/profile" onClick={delayedClose} className={itemClass} role="menuitem">
-        <User className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.profile.editProfile}</span>
-      </Link>
-      <button
-        type="button"
-        onClick={() => { setActiveModal('paymentMethods'); onClose() }}
-        className={itemClass}
-        role="menuitem"
-      >
-        <CreditCard className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.paymentMethods.title}</span>
-      </button>
-      <Link href="/paydays" onClick={delayedClose} className={itemClass} role="menuitem">
-        <CalendarClock className="w-4 h-4 shrink-0" />
-        <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.nav.paydays}</span>
-        <Badge variant="brand" size="xs">{t.paydays.menuNew}</Badge>
-      </Link>
-      <Link href="/goals" onClick={delayedClose} className={itemClass} role="menuitem">
-        <Target className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.nav.goals}</span>
-      </Link>
-      <Link href="/reports" onClick={delayedClose} className={itemClass} role="menuitem">
-        <BarChart3 className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.nav.reports}</span>
-      </Link>
-      <Link href="/settings/" onClick={delayedClose} className={itemClass} role="menuitem">
-        <Settings className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.profileDropdown.settings}</span>
-      </Link>
-
-      <div className="border-t border-[var(--color-brand-border)]" />
-      <button
-        type="button"
-        onClick={handleSignOut}
-        className={cn(itemClass, 'font-semibold text-[var(--color-brand-red)] hover:text-[var(--color-brand-red)]')}
-        role="menuitem"
-      >
-        <LogOut className="w-4 h-4 shrink-0" />
-        <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
-      </button>
-    </div>
-    ) : null}
+      ) : null}
     </>
   )
 }
