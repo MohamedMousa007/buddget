@@ -1,43 +1,35 @@
-import { NextResponse } from 'next/server'
-import type { User } from '@supabase/supabase-js'
-import { verifyAdminPin } from '@/lib/server/adminAuth'
-import { createServiceRoleClient } from '@/lib/supabase/service'
+import { guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json()
-    const denied = verifyAdminPin(body?.pin, req)
-    if (denied) return denied
+interface DirectoryRow {
+  id: string
+  email: string | null
+  name: string | null
+  [key: string]: unknown
+}
 
-    const admin = createServiceRoleClient()
-    const perPage = Math.min(Number(body?.perPage) || 100, 500)
-    const page = Math.max(Number(body?.page) || 1, 1)
+const ORDERS = new Set(['created_desc', 'created_asc', 'active_desc', 'expenses_desc', 'email_asc'])
+const STATES = new Set(['banned', 'unconfirmed', 'sms', 'inactive'])
 
-    const { data, error } = await admin.auth.admin.listUsers({
-      page,
-      perPage,
-    })
+export async function GET(req: Request) {
+  const g = await guardAdmin(req, { permission: 'users.view' })
+  if (!g.ok) return g.res
+  const { ctx } = g
+  const url = new URL(req.url)
+  const order = url.searchParams.get('order') ?? 'created_desc'
+  const state = url.searchParams.get('state')
 
-    if (error) {
-      console.error('admin/users listUsers failed:', error)
-      return NextResponse.json({ error: 'Failed to list users' }, { status: 500 })
-    }
-
-    const users =
-      data.users?.map((u: User) => ({
-        id: u.id,
-        email: u.email,
-        created_at: u.created_at,
-        last_sign_in_at: u.last_sign_in_at,
-      })) ?? []
-
-    return NextResponse.json({
-      users,
-      total: users.length,
-      page,
-      perPage,
-    })
-  } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  const { data, error } = await ctx.service.rpc('admin_user_directory', {
+    p_search: url.searchParams.get('q') || undefined,
+    p_limit: Math.min(Math.max(Math.floor(Number(url.searchParams.get('limit'))) || 25, 1), 100),
+    p_offset: Math.max(Number(url.searchParams.get('offset')) || 0, 0),
+    p_order: ORDERS.has(order) ? order : 'created_desc',
+    p_plan: url.searchParams.get('plan') || undefined,
+    p_state: state && STATES.has(state) ? state : undefined,
+  })
+  if (error) {
+    console.error('[admin/users] directory failed', error.message)
+    return json({ error: 'Could not load users.' }, 500)
   }
+  const result = data as { total: number; rows: DirectoryRow[] }
+  return json({ total: result.total, rows: result.rows.map((r) => ({ ...r, email: maskIf(ctx, r.email) })) })
 }

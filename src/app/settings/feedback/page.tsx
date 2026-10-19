@@ -41,7 +41,7 @@ export default function SettingsFeedbackPage() {
   }
 
   return (
-    <SettingsSubPageShell title={t.settings.hub.feedback} showSave={false}>
+    <SettingsSubPageShell title={t.settings.hub.feedback} backHref="/settings/help">
       {done ? (
         <div className="flex flex-col items-center gap-4 py-12 text-center">
           <CheckCircle className="w-12 h-12 text-[var(--color-brand-green)]" />

@@ -7,6 +7,8 @@ import type { Locale } from '@/lib/i18n/types'
 
 interface LanguageToggleProps {
   className?: string
+  /** Short “EN | ع” labels with no icons, for tight rows such as the profile menu. Default look is unchanged. */
+  compact?: boolean
 }
 
 /**
@@ -21,7 +23,7 @@ interface LanguageToggleProps {
  * The old `size` prop is gone: both call sites passed "sm", and the segmented
  * control has one height so the switcher matches every other segmented row.
  */
-export function LanguageToggle({ className }: LanguageToggleProps) {
+export function LanguageToggle({ className, compact = false }: LanguageToggleProps) {
   const { locale, setLocale } = useLocale()
   const t = useT()
 
@@ -32,10 +34,17 @@ export function LanguageToggle({ className }: LanguageToggleProps) {
       onChange={setLocale}
       fill={false}
       className={className}
-      options={[
-        { value: 'en', label: 'EN', icon: <Globe /> },
-        { value: 'ar', label: 'AR', icon: <MoonStar /> },
-      ]}
+      options={
+        compact
+          ? [
+              { value: 'en', label: 'EN' },
+              { value: 'ar', label: 'ع' },
+            ]
+          : [
+              { value: 'en', label: 'EN', icon: <Globe /> },
+              { value: 'ar', label: 'AR', icon: <MoonStar /> },
+            ]
+      }
     />
   )
 }

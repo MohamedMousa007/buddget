@@ -1,142 +1,180 @@
 'use client'
 
-import { PageBody } from '@/components/layout/PageContainer'
-import { User, Shield, Palette, Globe, MessageSquare, Database, FileText, Bug, Sparkles } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Search, User, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
+import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
+import { PageBody } from '@/components/layout/PageContainer'
+import { PageHeader, PageHeaderContent } from '@/components/layout/PageHeader'
+import { QuickChanges } from '@/components/features/settings/QuickChanges'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
-import { SkeletonList } from '@/components/ui/SkeletonList'
+import { SettingsSearchResults } from '@/components/features/settings/SettingsSearchResults'
+import { SettingsSection } from '@/components/features/settings/SettingsSection'
+import { ROOM_ICONS } from '@/components/features/settings/settingIcons'
+import { ROOM_TONE } from '@/components/features/settings/roomMeta'
 import { Card } from '@/components/ui/card'
-import { useT, useLocale } from '@/lib/i18n'
+import { IconButton } from '@/components/ui/IconButton'
+import { Input } from '@/components/ui/input'
+import { ProgressRing } from '@/components/ui/ProgressRing'
+import { SkeletonList } from '@/components/ui/SkeletonList'
+import { useSetupProgress } from '@/hooks/useSetupProgress'
+import { useLocale, useT } from '@/lib/i18n'
+import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
+import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
+import { ROOM_ROUTE, type RoomId } from '@/lib/settings/registry'
+import { searchSettings } from '@/lib/settings/search'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { cn } from '@/lib/utils'
 
-function SectionHeader({ label }: { label: string }) {
-  return (
-    <p className="px-1 pt-5 pb-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
-      {label}
-    </p>
-  )
-}
-
-function SectionCard({ children }: { children: React.ReactNode }) {
-  return (
-    <Card padding="none" divide className="overflow-hidden">
-      {children}
-    </Card>
-  )
-}
+const GROUPS: RoomId[][] = [['you', 'money', 'alerts'], ['buddgy', 'look', 'data'], ['help']]
 
 export default function SettingsPage() {
   const t = useT()
+  const copy = useSettingsHubCopy()
   const { locale } = useLocale()
   const { user } = useAuth()
+  const [query, setQuery] = useState('')
+  const { steps, pct } = useSetupProgress()
 
-  const { profile, dataReady } = useFinanceStore(
-    useShallow((s) => ({
-      profile: s.profile,
-      dataReady: s.dataReady,
-    })),
+  const { profile, settings, dataReady } = useFinanceStore(
+    useShallow((s) => ({ profile: s.profile, settings: s.settings, dataReady: s.dataReady })),
   )
+  const tipsOn = useSettingsStore((s) => s.buddgyNudges)
+  const focusId = useSettingsStore((s) => s.settingsFocusId)
+  const setFocusId = useSettingsStore((s) => s.setSettingsFocusId)
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  // The profile menu's search button lands here asking for the field.
+  useEffect(() => {
+    if (focusId !== 'search') return
+    searchRef.current?.querySelector('input')?.focus()
+    setFocusId(null)
+  }, [focusId, dataReady, setFocusId])
+
+  const results = useMemo(() => searchSettings(query, locale, Boolean(user)), [query, locale, user])
+  const searching = query.trim().length > 0
 
   if (!dataReady) return <div className="p-4"><SkeletonList rows={8} /></div>
 
   const avatarSrc = resolveProfileAvatarSrc(profile)
-  const displayName = profile.name || t.common.user
-  const displayEmail = user?.email || profile.email || ''
+  const left = steps.filter((s) => !s.done).length
+  const alertsOn = [settings.subDueReminders, settings.subPriceAlerts, settings.goalProgressAlerts, settings.goalAlerts].filter((v) => v ?? true).length
+  const themeName = { light: copy.themeLight, dark: copy.themeDark, system: copy.themeAuto }[settings.theme]
+  const second = settings.showSecondaryCurrency ? settings.secondaryCurrency : null
+
+  const status: Record<RoomId, string> = {
+    you: copy.status.you,
+    money: copy.status.money(settings.baseCurrency, second, settings.monthStartDay),
+    alerts: copy.status.alerts(alertsOn, 4),
+    buddgy: copy.status.buddgy(tipsOn, settings.smsTrackingEnabled),
+    look: copy.status.look(themeName, locale === 'ar' ? 'العربية' : 'English'),
+    data: copy.status.data,
+    help: copy.status.help,
+  }
 
   return (
     <div>
-      <PageBody>
-        {/* Identity header */}
-        {user && (
-          <Card
-            render={<Link href="/settings/profile" />}
-            padding="none"
-            className="flex items-center gap-3 px-4 py-3.5 mb-2 hover:bg-[var(--color-brand-elevated)]"
-          >
-            <div className="w-12 h-12 rounded-full overflow-hidden border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center shrink-0">
-              {avatarSrc
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={avatarSrc} alt="" className="w-full h-full object-cover" width={48} height={48} />
-                : <User className="w-6 h-6 text-[var(--color-brand-text-secondary)]" />}
-            </div>
-            <div className={cn('flex-1 min-w-0', locale === 'ar' && 'text-end')}>
-              <p className="text-base font-semibold text-[var(--color-brand-text-primary)] truncate">{displayName}</p>
-              {displayEmail ? (
-                <p className="text-xs text-[var(--color-brand-text-muted)] truncate">{displayEmail}</p>
-              ) : null}
-            </div>
-          </Card>
-        )}
-
-        <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-6">
-        {/* Account */}
-        {user && (
-          <div>
-            <SectionHeader label={t.settings.hub.sectionAccount} />
-            <SectionCard>
-              <SettingsRow icon={User} title={t.settings.hub.profile} subtitle={t.settings.hub.profileSubtitle} href="/settings/profile" />
-              <SettingsRow icon={Shield} title={t.settings.hub.account} subtitle={t.settings.hub.accountSubtitle} href="/settings/account" />
-            </SectionCard>
-          </div>
-        )}
-
-        {/* Preferences */}
-        <div>
-        <SectionHeader label={t.settings.hub.sectionPreferences} />
-        <SectionCard>
-          <SettingsRow icon={Palette} title={t.settings.hub.display} subtitle={t.settings.hub.displaySubtitle} href="/settings/display" />
-          <SettingsRow icon={Globe} title={t.settings.hub.currency} subtitle={t.settings.hub.currencySubtitle} href="/settings/currency" />
-          <SettingsRow icon={Sparkles} title={t.buddgy.settingsTitle} subtitle={t.buddgy.settingsSubtitle} href="/settings/ai" />
-        </SectionCard>
-        </div>
-
-        {/* Data & Tracking */}
-        <div>
-        <SectionHeader label={t.settings.hub.sectionDataTracking} />
-        <SectionCard>
-          {user && (
-            <SettingsRow icon={MessageSquare} title={t.settings.hub.sms} subtitle={t.settings.hub.smsSubtitle} href="/settings/sms" />
-          )}
-          <SettingsRow icon={Database} title={t.settings.hub.data} subtitle={t.settings.hub.dataSubtitle} href="/settings/data" />
-        </SectionCard>
-        </div>
-
-        {/* More */}
-        <div>
-        <SectionHeader label={t.settings.hub.sectionMore} />
-        <SectionCard>
-          <SettingsRow icon={Bug} title={t.settings.hub.feedback} subtitle={t.settings.hub.feedbackSubtitle} href="/settings/feedback" />
-        </SectionCard>
-        </div>
-
-        {/* Legal */}
-        <div>
-        <SectionHeader label={t.settings.hub.sectionLegal} />
-        <SectionCard>
-          <SettingsRow icon={FileText} title={t.settings.hub.terms} href="/legal/terms" />
-          <SettingsRow icon={FileText} title={t.settings.hub.privacy} href="/legal/privacy" />
-        </SectionCard>
-        </div>
-
-        </div>
-
-        <div className="text-center text-xs text-[var(--color-brand-text-muted)] pt-6 space-y-1">
-          <p>{t.settings.footer}</p>
-          <p>
-            <a
-              href="https://www.exchangerate-api.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-[var(--color-brand-text-secondary)]"
+      <PageHeader>
+        <PageHeaderContent width="narrow">
+          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{copy.title}</h1>
+        </PageHeaderContent>
+      </PageHeader>
+      <PageBody narrow className="space-y-4">
+        <div ref={searchRef} className="relative">
+          <Search className="pointer-events-none absolute start-3.5 top-1/2 size-[18px] -translate-y-1/2 text-[var(--color-brand-text-muted)]" aria-hidden />
+          <Input
+            size="brand"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={copy.searchPlaceholder}
+            aria-label={copy.searchLabel}
+            className="ps-10 pe-11"
+          />
+          {searching ? (
+            <IconButton
+              aria-label={copy.clearSearch}
+              size="sm"
+              shape="round"
+              onClick={() => setQuery('')}
+              className="absolute end-1.5 top-1/2 -translate-y-1/2"
             >
-              {t.settings.ratesAttribution}
-            </a>
-          </p>
+              <X />
+            </IconButton>
+          ) : null}
         </div>
+
+        {searching ? (
+          <SettingsSearchResults ids={results} query={query} />
+        ) : (
+          <>
+            {user ? (
+              <Card
+                render={<Link href="/settings/profile" />}
+                padding="none"
+                className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--color-brand-elevated)]"
+              >
+                <span className="size-12 shrink-0 overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)] ring-offset-2 ring-offset-[var(--color-brand-card)]">
+                  {avatarSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarSrc} alt="" className="size-full object-cover" width={48} height={48} />
+                  ) : (
+                    <span className="flex size-full items-center justify-center"><User className="size-6 text-[var(--color-brand-text-secondary)]" /></span>
+                  )}
+                </span>
+                <span className={cn('min-w-0 flex-1', locale === 'ar' && 'text-end')}>
+                  <span className="block truncate text-base font-semibold text-[var(--color-brand-text-primary)]">{profile.name || t.common.user}</span>
+                  <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{user.email || profile.email}</span>
+                </span>
+                {left > 0 ? (
+                  <ProgressRing pct={pct} size={40} stroke={4} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)">
+                    <span className="font-mono-numbers text-[10px] font-bold text-[var(--color-brand-primary-ink)]">{pct}%</span>
+                  </ProgressRing>
+                ) : null}
+              </Card>
+            ) : null}
+
+            <div className="flex items-end gap-2.5">
+              <span className="shrink-0 text-[var(--color-brand-primary-ink)]">
+                <BuddgyIcon mood={tipsOn ? 'talking' : 'sleepy'} size={40} strokeWidth={1.6} alive />
+              </span>
+              <p className="rounded-2xl rounded-es-sm bg-[var(--color-brand-primary-soft)] px-3.5 py-2.5 text-[13.5px] font-semibold leading-snug text-[var(--color-brand-primary-ink)]">
+                {left > 0 && user ? copy.setupRing(left) : copy.hostLine}
+              </p>
+            </div>
+
+            <Card padding="none">
+              <QuickChanges variant="card" />
+            </Card>
+
+            <p className="px-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.roomsCap}</p>
+            <div className="space-y-3">
+              {GROUPS.map((rooms) => (
+                <SettingsSection key={rooms[0]}>
+                  {rooms.map((room) => (
+                    <SettingsRow
+                      key={room}
+                      icon={ROOM_ICONS[room]}
+                      tone={ROOM_TONE[room]}
+                      title={copy.rooms[room].title}
+                      subtitle={status[room]}
+                      href={ROOM_ROUTE[room]}
+                    />
+                  ))}
+                </SettingsSection>
+              ))}
+            </div>
+          </>
+        )}
+
+        <p className="pt-4 text-center text-xs text-[var(--color-brand-text-muted)]">
+          <a href="https://www.exchangerate-api.com/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline hover:text-[var(--color-brand-text-secondary)]">
+            {copy.footer}
+          </a>
+        </p>
       </PageBody>
     </div>
   )

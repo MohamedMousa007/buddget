@@ -1,6 +1,7 @@
 'use client'
 
 import { isNative } from '@/lib/native/isNative'
+import { dataUrlToBytes } from '@/lib/utils/dataUrl'
 import {
   isDocumentScannerAvailable,
   scanDocumentPages,
@@ -206,7 +207,6 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
-  const res = await fetch(dataUrl)
-  const blob = await res.blob()
-  return new File([blob], filename, { type: blob.type || 'image/jpeg' })
+  const { mime, bytes } = dataUrlToBytes(dataUrl)
+  return new File([bytes], filename, { type: mime })
 }

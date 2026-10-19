@@ -30,4 +30,4 @@ Personal finance app (Next.js): expenses, income, budgets, debts, savings, repor
 
 ## Deploy (Vercel)
 
-See **[`docs/VERCEL_DEPLOY.md`](docs/VERCEL_DEPLOY.md)**. Short version: push to GitHub → import repo on Vercel → set **Root Directory** only if the app is in a subfolder → add **`GEMINI_API_KEY`**, **`ADMIN_PIN`**, **`NEXT_PUBLIC_APP_URL`**.
+See **[`docs/VERCEL_DEPLOY.md`](docs/VERCEL_DEPLOY.md)**. Short version: push to GitHub → import repo on Vercel → set **Root Directory** only if the app is in a subfolder → add **`GEMINI_API_KEY`**, **`NEXT_PUBLIC_APP_URL`**.

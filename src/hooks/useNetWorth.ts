@@ -5,10 +5,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRates } from '@/hooks/useRates'
-import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
-import { convertCurrency } from '@/lib/utils/currency'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
-import { totalInvestmentValue } from '@/lib/savings/holdingValuation'
+import { computeNetWorth } from '@/lib/savings/netWorth'
 
 /**
  * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
@@ -44,69 +42,33 @@ export function useNetWorth() {
     }))
   )
 
-  return useMemo(() => {
-    const base = settings.baseCurrency
-    const goldOk = goldPriceAvailable !== false
-    let totalSavings = 0
-    let totalInvestments = 0
-    // A null valuation means the asset can't be priced (no FX path, e.g. BTC before live
-    // crypto pricing). Exclude it and flag incomplete — never count it at its raw unit value.
-    let valuationIncomplete = false
-    for (const a of savingsAccounts) {
-      const v = savingsAccountBalanceInBase(a, base, exchangeRates, goldPricePerGram, goldOk)
-      if (v === null) {
-        valuationIncomplete = true
-        continue
-      }
-      if (a.category === 'investment') totalInvestments += v
-      else totalSavings += v
-    }
-
-    // v3 investment holdings (gold/crypto/stock/property), valued at quantity × live price.
-    // The holdings' native EGP values convert into the user's base currency for the rollup.
-    const holdings = totalInvestmentValue(investmentHoldings, lookup)
-    if (holdings.anyUnpriced) valuationIncomplete = true
-    totalInvestments += convertCurrency(holdings.total, 'EGP', base, exchangeRates)
-
-    const monthlyFlow = stats.totalIncome - stats.cashOutflow
-    const netWorth = totalSavings + totalInvestments + monthlyFlow - stats.debtRemainingTotal
-
-    const netWorthSecondary =
-      settings.showSecondaryCurrency && settings.secondaryCurrency
-        ? convertCurrency(netWorth, base, settings.secondaryCurrency, exchangeRates)
-        : null
-
-    const hasGoldSavings = savingsAccounts.some((a) => a.currency === 'XAU')
-    const hasGoldDebt = debts.some((d) => d.isGold)
-    const netWorthGoldIncomplete = !goldOk && (hasGoldSavings || hasGoldDebt)
-    // Generalised: gold OR any other unpriceable holding (e.g. crypto pre-live-pricing).
-    const netWorthIncomplete = netWorthGoldIncomplete || valuationIncomplete
-
-    return {
-      netWorth,
-      netWorthSecondary,
-      totalSavings,
-      totalInvestments,
-      totalDebt: stats.debtRemainingTotal,
-      monthlyIncome: stats.totalIncome,
-      monthlyFlow,
-      baseCurrency: base,
-      netWorthGoldIncomplete,
-      netWorthIncomplete,
-    }
-  }, [
-    savingsAccounts,
-    investmentHoldings,
-    lookup,
-    debts,
-    settings.baseCurrency,
-    settings.secondaryCurrency,
-    settings.showSecondaryCurrency,
-    exchangeRates,
-    goldPricePerGram,
-    goldPriceAvailable,
-    stats.totalIncome,
-    stats.cashOutflow,
-    stats.debtRemainingTotal,
-  ])
+  return useMemo(
+    () =>
+      computeNetWorth({
+        savingsAccounts,
+        investmentHoldings,
+        debts,
+        settings,
+        exchangeRates,
+        goldPricePerGram,
+        goldPriceAvailable,
+        lookup,
+        monthlyIncome: stats.totalIncome,
+        cashOutflow: stats.cashOutflow,
+        debtRemaining: stats.debtRemainingTotal,
+      }),
+    [
+      savingsAccounts,
+      investmentHoldings,
+      lookup,
+      debts,
+      settings,
+      exchangeRates,
+      goldPricePerGram,
+      goldPriceAvailable,
+      stats.totalIncome,
+      stats.cashOutflow,
+      stats.debtRemainingTotal,
+    ],
+  )
 }
