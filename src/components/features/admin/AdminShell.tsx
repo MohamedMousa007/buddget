@@ -127,11 +127,11 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
               }}
             >
               <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" aria-hidden />
-              <Input aria-label="Search users" placeholder="Find a user by email, name or id" value={query} onChange={(e) => setQuery(e.target.value)} className="h-10 ps-9" />
+              <Input aria-label="Search users" placeholder="Find a user by email, name or id" value={query} onChange={(e) => setQuery(e.target.value)} className="h-11 ps-9" />
             </form>
           ) : null}
         </header>
-        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] lg:px-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1400px] max-md:[&_button]:min-h-11 max-md:[&_input]:min-h-11 max-md:[&_select]:min-h-11 px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] lg:px-8">{children}</main>
       </div>
     </div>
   )

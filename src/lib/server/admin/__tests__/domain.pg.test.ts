@@ -163,7 +163,7 @@ describe.skipIf(!pgEnabled)('admin domain routes (real Postgres)', () => {
 
     it('turns a failing SMS into a ticket carrying its raw text internally', async () => {
       const [{ id }] = await q<{ id: string }>(`insert into sms_parse_log (user_id, source, raw_body, status, sender, failure_code) values ($1,'x','Your CIB card ending 1234 was charged EGP 55','failed','CIB','null_amount') returning id`, [u.id])
-      const r = await post(smsLogsPost, agent, { op: 'create_ticket', id })
+      const r = await post(smsLogsPost, lead, { op: 'create_ticket', id })
       expect(r.status).toBe(200)
       const [tk] = await q<{ source: string; category: string; subject: string; tags: string[]; user_id: string }>(`select * from support_tickets`)
       expect(tk).toMatchObject({ source: 'sms_queue', category: 'sms', user_id: u.id, tags: ['null_amount'] })
@@ -359,9 +359,15 @@ describe.skipIf(!pgEnabled)('admin domain routes (real Postgres)', () => {
     })
 
     it('the error queue holds failures and logged-but-never-delivered messages, not fresh or rejected ones', async () => {
-      const r = await call(smsLogs, { ...as(agent), query: { queue: 'errors' } })
+      const r = await call(smsLogs, { ...as(lead), query: { queue: 'errors' } })
       expect(r.status).toBe(200)
       expect(r.body.rows.map((x: { raw_body: string }) => x.raw_body).sort()).toEqual(['addfail', 'bad', 'stuck'])
+    })
+
+    it('hides raw message bodies from staff without users.pii', async () => {
+      const r = await call(smsLogs, { ...as(agent), query: { queue: 'errors' } })
+      expect(r.body.rows.length).toBeGreaterThan(0)
+      for (const row of r.body.rows) expect(row.raw_body).toBeNull()
     })
 
     it('filters, paginates by cursor, and joins the user’s email (masked without PII)', async () => {

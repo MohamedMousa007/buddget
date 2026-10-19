@@ -80,7 +80,7 @@ export function UnlockScreen({ name, biometricEnrolled, onUnlocked }: { name: st
         </Field>
         {error ? <Notice tone="negative">{error}</Notice> : null}
         <Button type="submit" size="cta-block" loading={busy} disabled={!password || !code.trim()}><Lock />Unlock</Button>
-        <AppLink href="/" className="block text-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]">← Back to Buddget</AppLink>
+        <AppLink href="/" className="flex min-h-11 items-center justify-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]">← Back to Buddget</AppLink>
       </form>
     </AuthFrame>
   )

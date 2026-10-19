@@ -43,7 +43,7 @@ export function DataTable<T>({
 
   return (
     <>
-      <div className="hidden overflow-x-auto md:block">
+      <div className="hidden overflow-x-auto md:block" tabIndex={0} role="region" aria-label="Results table">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-[var(--color-brand-border)] text-start">

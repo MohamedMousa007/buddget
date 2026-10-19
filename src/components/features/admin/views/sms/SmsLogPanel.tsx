@@ -111,7 +111,7 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
                         <td colSpan={9} className="space-y-3 px-4 py-4">
                           <div>
                             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Raw SMS</p>
-                            <pre className="max-h-40 select-text overflow-y-auto whitespace-pre-wrap break-all rounded-lg bg-[var(--color-brand-card)] p-3 font-mono text-[11px] leading-relaxed text-[var(--color-brand-text-secondary)]">{row.raw_body}</pre>
+                            <pre className="max-h-40 select-text overflow-y-auto whitespace-pre-wrap break-all rounded-lg bg-[var(--color-brand-card)] p-3 font-mono text-[11px] leading-relaxed text-[var(--color-brand-text-secondary)]">{row.raw_body ?? 'Hidden — requires the users.pii permission'}</pre>
                           </div>
                           {row.failure_code ? <p className="text-[var(--color-brand-amber)]">{row.status === 'failed' ? 'Failure' : 'Rejected'}: {FAILURE_LABELS[row.failure_code] ?? row.failure_code} <span className="font-mono">({row.failure_code})</span></p> : null}
                           <p className="text-[var(--color-brand-text-muted)]">

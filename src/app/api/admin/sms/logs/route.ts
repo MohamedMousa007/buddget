@@ -49,7 +49,7 @@ export async function GET(req: Request) {
   }
 
   return json({
-    rows: rows.map((r) => ({ ...r, email: maskIf(ctx, emails.get(r.user_id)) })),
+    rows: rows.map((r) => ({ ...r, raw_body: ctx.canSeePii ? r.raw_body : null, email: maskIf(ctx, emails.get(r.user_id)) })),
     nextCursor: rows.length === limit ? rows[rows.length - 1]!.received_at : null,
   })
 }
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     author_type: 'system',
     author_label: 'SMS queue',
     internal: true,
-    body: `Status: ${log.status}\nFailure: ${log.failure_code ?? '—'}\nMethod: ${log.parse_method ?? '—'}\nReceived: ${log.received_at}\n\n${log.raw_body}`.slice(0, 10000),
+    body: `Status: ${log.status}\nFailure: ${log.failure_code ?? '—'}\nMethod: ${log.parse_method ?? '—'}\nReceived: ${log.received_at}\n\n${ctx.canSeePii ? log.raw_body : '[message hidden: requires users.pii]'}`.slice(0, 10000),
   })
   await ctx.audit('support.ticket_from_sms', { targetType: 'ticket', targetId: ticket.id, summary: `Opened ticket #${ticket.number} from SMS log` })
   return json({ ok: true, ticketId: ticket.id, number: ticket.number })

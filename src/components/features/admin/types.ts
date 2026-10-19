@@ -88,7 +88,7 @@ export interface SmsTrackedRow {
   kind: string | null
   failure_code: string | null
   confidence: number | null
-  raw_body: string
+  raw_body: string | null
   received_at: string
   is_duplicate: boolean
   parse_method: string | null

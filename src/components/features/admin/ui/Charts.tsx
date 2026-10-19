@@ -118,7 +118,7 @@ export function RetentionGrid({ cohorts }: { cohorts: ReadonlyArray<{ cohort_wee
   const visible = cohorts.map((c, i) => ({ ...c, age: cohorts.length - 1 - i })).filter((c) => c.size > 0)
   if (visible.length === 0) return <p className="py-4 text-sm text-[var(--color-brand-text-muted)]">No signups in this window.</p>
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Retention cohorts">
       <table className="w-full min-w-[520px] border-separate border-spacing-1 text-xs">
         <thead>
           <tr className="text-[var(--color-brand-text-muted)]">
