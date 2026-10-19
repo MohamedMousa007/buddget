@@ -10,9 +10,10 @@ import { debtMonthlyRate, goalLedger } from '@/lib/goals/debtGoal'
 import { goalInsight, goalMonthlyRate } from '@/lib/goals/goalDetail'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
+import { cn } from '@/lib/utils'
 
 /** One sentence under the header: milestones reached this year and the next checkpoint in sight. Hidden when empty. */
-export function GoalsInsight({ rows }: { rows: GoalRow[] }) {
+export function GoalsInsight({ rows, className }: { rows: GoalRow[]; className?: string }) {
   const t = useT().goals.home
   const s = useFinanceStore(
     useShallow((st) => ({
@@ -37,7 +38,7 @@ export function GoalsInsight({ rows }: { rows: GoalRow[] }) {
 
   if (insight.milestones === 0 && !insight.next) return null
   return (
-    <p className="flex items-start gap-2 text-sm text-[var(--color-brand-text-secondary)]">
+    <p className={cn('flex items-start gap-2 text-sm text-[var(--color-brand-text-secondary)]', className)}>
       <Flame className="mt-0.5 size-[18px] shrink-0 text-[var(--color-brand-amber)]" aria-hidden />
       <span>
         {insight.milestones > 0 ? (

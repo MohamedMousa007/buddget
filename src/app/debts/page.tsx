@@ -14,6 +14,7 @@ import { DebtFamilyTabs } from '@/components/features/debts/redesign/DebtFamilyT
 import { BorrowHeroCard } from '@/components/features/debts/redesign/BorrowHeroCard'
 import { CreditCardHeroCard } from '@/components/features/debts/redesign/CreditCardHeroCard'
 import { InstallmentHeroCard } from '@/components/features/debts/redesign/InstallmentHeroCard'
+import { DebtsEmptyDesktop } from '@/components/features/debts/redesign/DebtsEmptyDesktop'
 import { DebtPaymentsFeed } from '@/components/features/debts/redesign/DebtPaymentsFeed'
 import { ClearedVaultSheet } from '@/components/features/debts/redesign/ClearedVaultSheet'
 import { ChargesSheet, type ChargesSheetTarget } from '@/components/features/debts/redesign/ChargesSheet'
@@ -145,8 +146,9 @@ export default function DebtsPage() {
                 <GoalLensList categories={['debt_freedom']} />
 
                 {noneActive ? (
+                  <>
                   <EmptyState
-                    className="mt-2"
+                    className="mt-2 lg:hidden"
                     icon={
                       <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
                         <ShieldCheck className="h-7 w-7" aria-hidden />
@@ -160,6 +162,12 @@ export default function DebtsPage() {
                       </Button>
                     }
                   />
+                  <DebtsEmptyDesktop
+                    title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
+                    description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}
+                    onAdd={addDebt}
+                  />
+                  </>
                 ) : (
                   <>
                     <div className="mt-5 lg:mt-0">

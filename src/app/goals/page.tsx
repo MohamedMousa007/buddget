@@ -14,6 +14,7 @@ import { TrophyChip } from '@/components/features/goals/TrophyChip'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { GoalDetailSheet } from '@/components/features/goals/detail/GoalDetailSheet'
 import { Button } from '@/components/ui/button'
+import { StatTile } from '@/components/ui/StatTile'
 import { PromptBanner } from '@/components/ui/PromptBanner'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
@@ -101,13 +102,14 @@ export default function GoalsPage() {
   return (
     <div>
       <PageGrid
+        wide={empty}
         primary={
           <div className="flex min-w-0 flex-col gap-3.5 px-4 pb-4 pt-4 lg:px-0 lg:pb-0 lg:pt-0">
             {empty ? (
               <GoalsEmpty onStart={openAdd} />
             ) : (
               <>
-                <GoalsInsight rows={rows} />
+                <GoalsInsight rows={rows} className="lg:hidden" />
                 <div className="flex items-center gap-2">
                   <SegmentedControl<'all' | 'active' | 'paused'>
                     ariaLabel={t.home.viewLabel}
@@ -171,6 +173,18 @@ export default function GoalsPage() {
               </>
             )}
           </div>
+        }
+        secondary={
+          empty ? undefined : (
+            <div className="hidden flex-col gap-4 lg:flex">
+              <div className="grid grid-cols-3 gap-2">
+                <StatTile compact label={t.home.viewActive} value={running.length} onClick={() => setView('active')} />
+                <StatTile compact label={t.home.viewPaused} value={paused.length} onClick={() => setView('paused')} />
+                <StatTile compact label={t.achieved} value={achieved.length} tone="positive" onClick={() => setView('achieved')} />
+              </div>
+              <GoalsInsight rows={rows} />
+            </div>
+          )
         }
       />
       {detailRow ? (

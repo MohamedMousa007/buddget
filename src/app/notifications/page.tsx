@@ -9,6 +9,8 @@ import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { useT } from '@/lib/i18n'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { StatTile } from '@/components/ui/StatTile'
+import { cn } from '@/lib/utils'
 
 const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
   critical: 'var(--color-brand-red)',
@@ -35,10 +37,28 @@ export default function NotificationsPage() {
     return { connected: false, label: t.smsTracking.iosStatusWaiting }
   }, [isEnabled, lastReceivedAt, t])
 
+  const smsCard = (className?: string) =>
+    smsStatus ? (
+      <Card
+        padding="none"
+        className={cn(
+          'flex items-center gap-2.5 px-4 py-3',
+          smsStatus.connected ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-text-muted)]',
+          className,
+        )}
+      >
+        {smsStatus.connected ? <ShieldCheck className="h-4 w-4 shrink-0" /> : <MessageSquare className="h-4 w-4 shrink-0" />}
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[var(--color-brand-text-primary)]">{t.smsTracking.sectionTitle}</p>
+          <p className="text-xs text-[var(--color-brand-text-secondary)] truncate">{smsStatus.label}</p>
+        </div>
+      </Card>
+    ) : null
+
   return (
     <div>
-      <PageBody narrow className="space-y-4 animate-[dashboardIn_0.35s_ease-out]">
-        <div className="flex items-center justify-between">
+      <PageBody narrow className="flex flex-col gap-4 lg:max-w-[var(--page-max-wide)] animate-[dashboardIn_0.35s_ease-out] lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-6">
+        <div className="flex items-center justify-between lg:col-span-2">
           <div className="flex items-center gap-2.5">
             <span className="h-9 w-9 rounded-xl flex items-center justify-center bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary-ink)]">
               <Bell className="h-4 w-4" />
@@ -65,26 +85,7 @@ export default function NotificationsPage() {
           ) : null}
         </div>
 
-        {smsStatus ? (
-          <Card
-            padding="none"
-            className={`flex items-center gap-2.5 px-4 py-3 ${
-              smsStatus.connected ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-text-muted)]'
-            }`}
-          >
-            {smsStatus.connected ? (
-              <ShieldCheck className="h-4 w-4 shrink-0" />
-            ) : (
-              <MessageSquare className="h-4 w-4 shrink-0" />
-            )}
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-[var(--color-brand-text-primary)]">
-                {t.smsTracking.sectionTitle}
-              </p>
-              <p className="text-xs text-[var(--color-brand-text-secondary)] truncate">{smsStatus.label}</p>
-            </div>
-          </Card>
-        ) : null}
+        {smsCard('lg:hidden')}
 
         {notifications.length > 0 ? (
           <Card render={<ul />} padding="none" divide>
@@ -113,6 +114,13 @@ export default function NotificationsPage() {
             <p className="mt-3 text-sm text-[var(--color-brand-text-secondary)]">{t.notifications.emptyState}</p>
           </Card>
         )}
+        <aside className="hidden flex-col gap-4 lg:flex">
+          <div className="grid grid-cols-2 gap-2">
+            <StatTile compact label={t.notifications.unreadLabel} value={unreadCount} tone={unreadCount > 0 ? 'brand' : 'default'} />
+            <StatTile compact label={t.notifications.totalLabel} value={notifications.length} />
+          </div>
+          {smsCard()}
+        </aside>
       </PageBody>
     </div>
   )

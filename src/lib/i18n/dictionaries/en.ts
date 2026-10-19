@@ -329,6 +329,7 @@ export const en: Dictionary = {
 
   debtMoves: {
     title: 'Recent moves',
+    empty: 'Nothing here yet',
     sheetTitle: 'Filter moves',
     moveType: 'Move',
     moveAll: 'All',
@@ -1902,6 +1903,8 @@ export const en: Dictionary = {
   notifications: {
     title: 'Notifications',
     markAllRead: 'Mark all read',
+    unreadLabel: 'Unread',
+    totalLabel: 'Total',
     emptyState: "You\u2019re all caught up \uD83C\uDF89",
     budgetAlertTitle: (category) => `Heads up on ${category} \uD83D\uDC40`,
     budgetAlertBodyOver: (pct, category) => `You\u2019ve used ${Math.round(pct)}% of your ${category} budget. Time to ease up a little!`,

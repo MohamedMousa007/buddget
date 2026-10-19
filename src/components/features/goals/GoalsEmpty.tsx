@@ -35,8 +35,8 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
   const [text, setText] = useState('')
   const submit = () => onStart({ text: text.trim() || undefined })
   return (
-    <div className="flex flex-col gap-3">
-      <section className="flex flex-col gap-2.5 rounded-3xl bg-[var(--color-brand-primary-soft)] px-4 py-3.5">
+    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:gap-4">
+      <section className="flex flex-col gap-2.5 rounded-3xl lg:col-span-3 lg:px-6 lg:py-5 bg-[var(--color-brand-primary-soft)] px-4 py-3.5">
         <div className="flex items-center gap-3">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-card)] shadow-sm">
             <BuddgyIcon mood="happy" size={32} />
@@ -69,8 +69,8 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
         ) : null}
       </section>
 
-      <h3 className={microClassName}>{t.momentsLabel}</h3>
-      <div className="grid grid-cols-2 gap-2">
+      <h3 className={`${microClassName} lg:col-span-3`}>{t.momentsLabel}</h3>
+      <div className="grid grid-cols-2 gap-2 lg:col-span-3 lg:grid-cols-3 lg:gap-3">
         {MOMENTS.map(([key, category]) => {
           const { icon: Icon, cat } = goalVisual(category)
           return (
@@ -98,7 +98,7 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
         })}
       </div>
 
-      <section className="flex flex-col gap-2 rounded-2xl border-[1.5px] border-dashed border-[var(--color-brand-border)] p-3">
+      <section className="flex flex-col gap-2 rounded-2xl border-[1.5px] border-dashed border-[var(--color-brand-border)] p-3 lg:col-span-3 lg:p-5">
         <h3 className={microClassName}>{t.includesTitle}</h3>
         <CheckpointBar percent={50} />
         {[
@@ -113,7 +113,7 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
         ))}
       </section>
 
-      <Button size="touch" variant="outline" className="w-full" onClick={() => onStart({})}>
+      <Button size="touch" variant="outline" className="w-full lg:col-span-3 lg:mx-auto lg:w-72" onClick={() => onStart({})}>
         {t.startScratch}
       </Button>
     </div>

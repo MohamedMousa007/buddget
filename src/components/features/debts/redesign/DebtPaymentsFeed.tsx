@@ -125,7 +125,16 @@ export function DebtPaymentsFeed({
     }))
   }, [shown])
 
-  if (moves.length === 0) return null
+  if (moves.length === 0) {
+    return (
+      <div className="hidden lg:block">
+        <h2 className="text-[17px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{tm.title}</h2>
+        <p className="mt-4 rounded-2xl border-[1.5px] border-dashed border-[var(--color-brand-border)] px-4 py-10 text-center text-sm text-[var(--color-brand-text-muted)]">
+          {tm.empty}
+        </p>
+      </div>
+    )
+  }
 
   const patch = (p: Partial<MoveFilters>) => setFilters((f) => ({ ...f, ...p }))
   const rangeLabel: Record<RangeKey, string> = { any: tm.anyTime, today: t.common.today, yesterday: t.common.yesterday, week: tm.thisWeek, month: tm.thisMonth, custom: tm.custom }

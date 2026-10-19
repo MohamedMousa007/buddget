@@ -187,9 +187,9 @@ export function PaydaysPage() {
           </div>
         </>
       ) : streams.length === 0 ? (
-        <div className="mx-auto max-w-[var(--page-max)]">
+        <div className="mx-auto max-w-[var(--page-max)] lg:max-w-none">
           {header(null)}
-          <div className="mx-4 mt-6">
+          <div className="mx-4 mt-6 lg:mx-auto lg:mt-10 lg:max-w-md">
             <EmptyState
               title={t.paydays.emptyTitle}
               description={t.paydays.emptyBody}
@@ -200,10 +200,10 @@ export function PaydaysPage() {
               }
             />
           </div>
-          <p className="mx-[18px] my-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+          <p className="mx-[18px] my-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)] lg:mx-0 lg:mt-8 lg:text-center">
             {t.paydays.startWithOne}
           </p>
-          <div className="mx-4 flex flex-col gap-2">
+          <div className="mx-4 flex flex-col gap-2 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-4">
             {STARTERS.map((s) => (
               <SelectableCard key={s.type} as="action" surface="card" layout="row" onClick={() => add({ sourceType: s.type, name: t.paydays[s.name] as string })}>
                 <span className="flex w-full items-center gap-3 text-start">
@@ -221,7 +221,7 @@ export function PaydaysPage() {
           </div>
         </div>
       ) : (
-        <div className={detail ? 'lg:grid lg:grid-cols-[26rem_minmax(0,1fr)] lg:items-start lg:gap-x-6' : 'mx-auto max-w-[var(--page-max)]'}>
+        <div className={detail ? 'lg:grid lg:grid-cols-[26rem_minmax(0,1fr)] lg:items-start lg:gap-x-6' : 'mx-auto max-w-[var(--page-max)] lg:max-w-none'}>
         <div className={cn(detail && 'hidden lg:block lg:border-e lg:border-[var(--color-hairline)] lg:pe-6')}>
           {header(
             reordering ? (
@@ -240,7 +240,7 @@ export function PaydaysPage() {
               </div>
             ),
           )}
-          <div className="mx-[18px] mt-1.5 flex flex-col gap-2">
+          <div className="mx-[18px] mt-1.5 flex flex-col gap-2 lg:mx-0">
             <p className="text-[13px] text-[var(--color-brand-text-secondary)]">
               {fillSlots(t.paydays.receivedLine, {
                 month: monthName,
@@ -257,9 +257,9 @@ export function PaydaysPage() {
             </div>
           </div>
           {reordering ? (
-            <p className="mx-[18px] mt-3.5 text-[12.5px] text-[var(--color-brand-text-secondary)]">{t.paydays.reorderHelp}</p>
+            <p className="mx-[18px] mt-3.5 text-[12.5px] text-[var(--color-brand-text-secondary)] lg:mx-0">{t.paydays.reorderHelp}</p>
           ) : null}
-          <div ref={listRef} className="mx-4 mt-3.5 flex flex-col gap-2.5">
+          <div ref={listRef} className={cn('mx-4 mt-3.5 flex flex-col gap-2.5 lg:mx-0', !detail && !reordering && 'lg:grid lg:grid-cols-2 lg:gap-4 xl:grid-cols-3', reordering && !detail && 'lg:max-w-[var(--page-max)]')}>
             {shown.map((s, i) => {
               const pm = methodLabel(paymentMethods.find((m) => m.id === s.paymentMethodId))
               return (
@@ -291,7 +291,7 @@ export function PaydaysPage() {
             })}
           </div>
           {!reordering ? (
-            <p className="mx-[18px] mt-4 text-[12.5px] leading-[1.45] text-[var(--color-brand-text-muted)]">{t.paydays.oneTimeNote}</p>
+            <p className="mx-[18px] mt-4 text-[12.5px] leading-[1.45] text-[var(--color-brand-text-muted)] lg:mx-0">{t.paydays.oneTimeNote}</p>
           ) : null}
         </div>
         {detail ? (
