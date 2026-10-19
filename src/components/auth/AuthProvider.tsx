@@ -226,6 +226,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthModalMessage(null)
   }, [])
 
+  // New accounts get one welcome email. The server decides (atomic once-only claim); this only asks once per device.
+  const welcomeUserId = user?.id ?? null
+  useEffect(() => {
+    if (!welcomeUserId) return
+    const flag = `bdg-welcome-asked:${welcomeUserId}`
+    try {
+      if (localStorage.getItem(flag)) return
+    } catch {
+      return
+    }
+    void import('@/lib/apiBase')
+      .then(({ apiFetchAuth }) => apiFetchAuth('/api/auth/welcome', { method: 'POST' }))
+      .then((res) => {
+        if (res.ok) localStorage.setItem(flag, '1')
+      })
+      .catch(() => undefined)
+  }, [welcomeUserId])
+
   const t = useT()
   const wasAuthedRef = useRef(false)
   /** Set by `signOut()` just before telling Supabase to end the session.

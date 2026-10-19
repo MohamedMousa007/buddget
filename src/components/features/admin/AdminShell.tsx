@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import * as Icons from 'lucide-react'
 import { Menu, Lock, ArrowLeft, Search, X } from 'lucide-react'
 import { BuddgetWordmark } from '@/components/brand'
+import { isNativeShellBuild } from '@/lib/native/isNative'
 import { appOrigin } from '@/lib/apiBase'
 import { AppLink } from '@/components/ui/AppLink'
 import { IconButton } from '@/components/ui/IconButton'
@@ -93,8 +94,9 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
           </div>
           {status.session?.method === 'sso' ? null : <IconButton aria-label="Lock the portal" size="sm" onClick={onLock}><Lock /></IconButton>}
         </div>
-        <AppLink href={`${appOrigin()}/`} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
-          <ArrowLeft className="size-4" aria-hidden />Back to Buddget
+        {/* In the apps the portal is its own bundled page: a plain anchor reloads the app shell, and never leaves the bundle for the website. */}
+        <AppLink href={isNativeShellBuild() ? '/' : `${appOrigin()}/`} onClick={isNativeShellBuild() ? (e) => { e.preventDefault(); window.location.assign('/') } : undefined} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
+          <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden />Back to Buddget
         </AppLink>
       </div>
     </div>

@@ -16,6 +16,7 @@ interface Copy {
   /** Label above the code box; omit for no code. */
   code?: string
   button?: string
+  buttonUrl?: string
   /** A "what happens next" / fallback paragraph shown under the main action. */
   extra?: string
   noteTitle: string
@@ -33,7 +34,7 @@ function build(locale: EmailLocale, c: Copy, withExpiry: boolean): TemplateConte
     { ...(newBlock('heading') as Extract<EmailBlock, { type: 'heading' }>), eyebrow: c.eyebrow ?? '', text: c.title },
     { ...(newBlock('paragraph') as Extract<EmailBlock, { type: 'paragraph' }>), text: c.intro },
   ]
-  if (c.button) blocks.push({ ...(newBlock('button') as Extract<EmailBlock, { type: 'button' }>), label: c.button })
+  if (c.button) blocks.push({ ...(newBlock('button') as Extract<EmailBlock, { type: 'button' }>), label: c.button, url: c.buttonUrl ?? '{{link}}' })
   if (c.code) blocks.push({ ...(newBlock('code') as Extract<EmailBlock, { type: 'code' }>), label: c.code })
   if (withExpiry) blocks.push({ ...(newBlock('paragraph') as Extract<EmailBlock, { type: 'paragraph' }>), text: CHROME[locale].expiry })
   if (c.extra) blocks.push({ ...(newBlock('paragraph') as Extract<EmailBlock, { type: 'paragraph' }>), text: c.extra })
@@ -98,8 +99,8 @@ const COPY: Record<string, { en: Copy; ar: Copy; expiry: boolean }> = {
   },
   welcome: {
     expiry: false,
-    en: { subject: 'Welcome to Buddget', preheader: 'Your account is ready.', title: 'Welcome to Buddget', intro: 'Hi {{first_name}}, your account is ready. Track what you spend, plan your month and stay on top of your goals.', noteTitle: 'Need a hand?', noteText: 'Reply to {{support_email}} and we’ll help.' },
-    ar: { subject: 'أهلًا بك في Buddget', preheader: 'حسابك جاهز.', title: 'أهلًا بك في Buddget', intro: 'مرحبًا {{first_name}}، حسابك جاهز. تابع مصروفاتك وخطط لشهرك وحقق أهدافك.', noteTitle: 'تحتاج مساعدة؟', noteText: 'راسلنا على {{support_email}} وسنساعدك.' },
+    en: { subject: 'Welcome to Buddget, {{first_name}}', preheader: 'We’re so glad you’re here. Here’s how to get started.', eyebrow: 'Welcome', title: 'Welcome to Buddget, {{first_name}}', intro: 'We’re so glad you’re here. Buddget helps you see where your money goes, plan your month and reach the goals that matter to you, without the spreadsheets.', button: 'Open Buddget', buttonUrl: 'https://buddget.app', extra: 'A good first step: add your first expense, or let Buddget read your bank SMS, and your month starts to take shape.', noteTitle: 'We’re here to help.', noteText: 'Questions or ideas? Write to {{support_email}}. A real person reads every message.' },
+    ar: { subject: 'أهلًا بك في Buddget يا {{first_name}}', preheader: 'سعداء بانضمامك. إليك كيف تبدأ.', eyebrow: 'أهلًا بك', title: 'أهلًا بك في Buddget يا {{first_name}}', intro: 'سعداء جدًا بانضمامك. يساعدك Buddget على معرفة أين تذهب أموالك، والتخطيط لشهرك، وتحقيق أهدافك المهمة، بدون جداول معقدة.', button: 'افتح Buddget', buttonUrl: 'https://buddget.app', extra: 'خطوة أولى مناسبة: أضف أول مصروف لك، أو دع Buddget يقرأ رسائل البنك، وسيبدأ شهرك بالاتضاح.', noteTitle: 'نحن هنا لمساعدتك.', noteText: 'لديك سؤال أو فكرة؟ راسلنا على {{support_email}}. شخص حقيقي يقرأ كل رسالة.' },
   },
 }
 

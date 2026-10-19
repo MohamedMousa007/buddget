@@ -80,7 +80,7 @@ The same deployment serves both hosts (`src/middleware.ts`, pure routing in `src
 3. Vercel: nothing required (domain already linked). `NEXT_PUBLIC_ADMIN_HOST` only if the host differs from `admin.buddget.app`.
 
 ## Emails (templates, send log)
-Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engineer hold both). Migration `0133_email_templates` adds `email_scenarios`, `email_templates` (one draft + one published row per key and language), `email_template_versions` (every publish, restorable) and `email_log` (never holds codes, links or variables). Service role only.
+Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engineer hold both). Migration `0136_email_templates` adds `email_scenarios`, `email_templates` (one draft + one published row per key and language), `email_template_versions` (every publish, restorable) and `email_log` (never holds codes, links or variables). Service role only.
 - **Code:** `src/lib/email/*` is pure and shared with the editor preview (variables, block renderer, built-in English/Arabic copy, validation). `src/lib/server/email/*` has `renderEmail` (published template in the person's language from `user_settings.language`, falling back to English then the compiled copy, so a bad edit never blocks a sign-in; 30s cache, invalidated on publish), `sendTemplatedEmail(key, recipient, vars, opts)` (Resend, Idempotency-Key, 4s timeout, logs to `email_log`) and webhook signature checking.
 - **Custom scenarios:** create one in Emails > New email, then call `sendTemplatedEmail('your_key', { email, id }, { ...vars })`.
 - **Delivery status:** point a Resend webhook at `/api/webhooks/resend` and set `RESEND_WEBHOOK_SECRET`.
@@ -88,3 +88,6 @@ Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engine
 - **Replacing Supabase's mailer (the hook):** `/api/auth/email-hook` handles sign-up, invite, magic link / code, recovery, email change (two emails when secure change is on), re-authentication and the password/email-changed notices. Phone, identity and MFA notices are acknowledged and not mailed. Emails > Setup shows the checklist and proves the hook is live (last hook email, 24h counts).
 - Admin unlock codes no longer touch Supabase's mailer: `emailCode.ts` mints the OTP with `generateLink` and mails `admin_unlock_code` itself.
 - Admin invites already go through `sendTemplatedEmail('invite_admin', ...)`.
+- **Welcome email:** `POST /api/auth/welcome` (called once per device after sign-in by `AuthProvider`) claims `profiles.welcome_email_sent_at` with one atomic UPDATE, so it is sent exactly once per account and only to accounts under 72 hours old; migration `0137` marks every existing account as welcomed. A failed send releases the claim.
+- **Seeding:** `src/instrumentation.ts` makes sure all built-in emails (English and Arabic, v1, published) exist whenever a server instance starts.
+- **In the apps:** the portal is the bundled `/admin` page (shield icon in the profile menu, staff only). It talks to the production API with the app session; "Back to Buddget" reloads the app shell.

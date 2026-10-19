@@ -39,6 +39,7 @@ const STASH_TARGETS = [
   { from: 'src/app/api', to: '.cap-stash/api' },
   { from: 'src/middleware.ts', to: '.cap-stash/middleware.ts' },
   { from: 'src/proxy.ts', to: '.cap-stash/proxy.ts' },
+  { from: 'src/instrumentation.ts', to: '.cap-stash/instrumentation.ts' },
   { from: 'src/app/auth/callback', to: '.cap-stash/auth-callback' },
   { from: 'src/app/setup', to: '.cap-stash/setup' },
   { from: 'src/app/sitemap.ts', to: '.cap-stash/sitemap.ts' },
