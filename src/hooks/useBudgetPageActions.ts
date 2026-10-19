@@ -12,6 +12,7 @@ import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { upgradeLegacyLines } from '@/lib/budget/legacyUpgrade'
 import { patchInBase } from '@/lib/budget/lineEdit'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { convertCurrency } from '@/lib/utils/currency'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 
@@ -87,8 +88,13 @@ export function useBudgetPageActions(view: PlanView | null) {
   const moveFreeToBuffer = useCallback(() => {
     if (!view || !planId || view.free <= 0) return
     const buffer = view.blocks.grow.lines.find((l) => l.line.name.trim().toLowerCase() === 'buffer')
-    if (buffer) patchLine(buffer.line.id, { amount: buffer.amount + view.free })
-    else {
+    const rates = store.getState().exchangeRates
+    const cur = buffer?.line.currency ?? view.base
+    // Only a plain line in its own currency can be topped up in place; otherwise a fresh Buffer line is exact.
+    if (buffer && buffer.line.subcategories.length === 0) {
+      const add = Math.round(convertCurrency(view.free, view.base, cur, rates) * 100) / 100
+      patchLine(buffer.line.id, { amount: buffer.line.amount + add })
+    } else {
       store.getState().addPlanCategory(planId, {
         name: 'Buffer', icon: 'layers', amount: view.free, block: 'grow', isSavings: true,
         currency: view.base, linkType: 'none', linkIds: [], dueDay: null, essential: false, locked: false,

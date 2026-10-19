@@ -27,9 +27,10 @@ export function usePlanActions() {
       // Created as a draft so the copy does not take over; ready once its lines are in.
       const copy = s.addBudgetPlan(page.planNames.copyOf(source.name), { status: 'draft', origin: 'clone', intent: source.intent })
       s.updateBudgetPlan(copy, { status: 'ready', categories: duplicatePlanCategories(source, newId) })
+      toast(d.deck.duplicated(page.planNames.copyOf(source.name)))
       return copy
     },
-    [page, store],
+    [d, page, store, toast],
   )
 
   const createBlank = useCallback(() => {

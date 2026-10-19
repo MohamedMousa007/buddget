@@ -28,7 +28,7 @@ export function PlanBar({ planName, mode, onModeChange, onOpenPlans, expanded, o
           layout="row"
           surface="card"
           onClick={onOpenPlans}
-          aria-label={c.switchPlan}
+          aria-label={`${c.switchPlan}: ${planName}`}
           aria-expanded={expanded}
           className="h-14 min-w-0 flex-1 gap-3 px-3 py-0"
         >

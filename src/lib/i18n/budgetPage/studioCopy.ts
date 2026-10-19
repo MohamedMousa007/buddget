@@ -23,7 +23,8 @@ export interface BudgetStudioCopy {
   saved: string
   slider: { low: string; high: string }
   stepper: { less: string; more: string; unit: (n: number) => string }
-  building: { title: string; steps: [string, string, string]; offline: string }
+  building: { title: string; steps: [string, string, string]; offline: string; error: string; retry: string }
+  back: string
   q: Record<string, StudioQuestionCopy>
   review: {
     title: string
@@ -81,7 +82,10 @@ const en: BudgetStudioCopy = {
     title: 'Building your plan',
     steps: ['Sizing your bills and debts', 'Matching your spending habits', 'Writing the reasons'],
     offline: 'Built from your numbers. Buddgy could not add notes this time.',
+    error: 'Something went wrong while building your plan. Your answers are saved.',
+    retry: 'Try again',
   },
+  back: 'Previous question',
   q: {
     confirmIncome: { label: 'Your income is about {n} a month. Right?', why: 'Every line is sized against this number.' },
     income: { label: 'What do you take home each month?', why: 'A plan needs an income to divide.' },
@@ -166,7 +170,10 @@ const ar: BudgetStudioCopy = {
     title: 'نبني خطتك',
     steps: ['حساب الفواتير والديون', 'مطابقة عادات إنفاقك', 'كتابة الأسباب'],
     offline: 'بُنيت من أرقامك. لم يستطع بادي إضافة ملاحظات هذه المرة.',
+    error: 'حدث خطأ أثناء بناء خطتك. إجاباتك محفوظة.',
+    retry: 'حاول مجددًا',
   },
+  back: 'السؤال السابق',
   q: {
     confirmIncome: { label: 'دخلك حوالي {n} شهريًا. صحيح؟', why: 'كل بند يُحسب على هذا الرقم.' },
     income: { label: 'كم تستلم شهريًا؟', why: 'الخطة تحتاج دخلًا لتقسيمه.' },

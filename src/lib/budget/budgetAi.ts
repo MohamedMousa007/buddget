@@ -165,12 +165,17 @@ export interface AdjustLine {
   linked: boolean
 }
 
-export const toAdjustLines = (lines: readonly BudgetPlanCategory[], blockOf: (c: BudgetPlanCategory) => BudgetBlock): AdjustLine[] =>
+/** Lines as the model sees them: amounts are the effective monthly values in the budget currency. */
+export const toAdjustLines = (
+  lines: readonly BudgetPlanCategory[],
+  blockOf: (c: BudgetPlanCategory) => BudgetBlock,
+  amountOf: (c: BudgetPlanCategory) => number,
+): AdjustLine[] =>
   lines.map((c) => ({
     id: c.id,
     name: c.name,
     block: blockOf(c),
-    amount: c.amount,
+    amount: Math.round(amountOf(c)),
     locked: !!c.locked,
     linked: (c.linkType ?? 'none') !== 'none',
   }))

@@ -16,6 +16,7 @@ export interface BudgetDeckCopy {
     setActive: string
     continueBuilding: string
     duplicate: string
+    duplicated: (name: string) => string
     history: string
     more: string
     rename: string
@@ -104,6 +105,7 @@ export const budgetDeckCopyEn: BudgetDeckCopy = {
     setActive: 'Set active',
     continueBuilding: 'Continue building',
     duplicate: 'Duplicate',
+    duplicated: (name) => `${name} created`,
     history: 'History',
     more: 'More',
     rename: 'Rename',
@@ -192,6 +194,7 @@ export const budgetDeckCopyAr: BudgetDeckCopy = {
     setActive: 'تعيين كنشطة',
     continueBuilding: 'متابعة البناء',
     duplicate: 'نسخ',
+    duplicated: (name) => `تم إنشاء ${name}`,
     history: 'السجل',
     more: 'المزيد',
     rename: 'إعادة تسمية',

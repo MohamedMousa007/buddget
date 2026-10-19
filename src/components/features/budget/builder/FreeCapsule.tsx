@@ -18,7 +18,7 @@ export function FreeCapsule({ view, onToBuffer }: { view: PlanView; onToBuffer: 
   const pct = view.income > 0 ? (Math.abs(view.free) / view.income) * 100 : 0
   const denom = Math.max(view.income, view.flow.reduce((s, x) => s + x.amount, 0)) || 1
   return (
-    <Card padding="md" className="sticky top-0 z-10 flex flex-col gap-3 shadow-md">
+    <Card padding="md" className="sticky top-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))] z-10 lg:top-[var(--app-header-h-lg)] flex flex-col gap-3 shadow-md">
       <div className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <span className={microClassName}>{c.left}</span>

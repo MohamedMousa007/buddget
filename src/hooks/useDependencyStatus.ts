@@ -1,5 +1,6 @@
 'use client'
 
+import { isLivePlan } from '@/lib/budget/activePlan'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -21,7 +22,7 @@ export function useDependencyStatus(): DependencyStatus {
       debtCount: s.debts.length,
       savingsCount: s.savingsAccounts.length,
       goalCount: s.goals.length,
-      hasBudget: s.budgetPlans.some((p) => p.categories.some((c) => effectivePlanCategoryAmount(c) > 0)),
+      hasBudget: s.budgetPlans.filter(isLivePlan).some((p) => p.categories.some((c) => effectivePlanCategoryAmount(c) > 0)),
     })),
   )
 

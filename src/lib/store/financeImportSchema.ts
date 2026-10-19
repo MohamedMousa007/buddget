@@ -228,6 +228,23 @@ export const importDataSchema = z.object({
       })
     )
     .optional(),
+  budgetPlanActivations: z
+    .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: z.string(), createdAt: z.string() }))
+    .optional(),
+  buddgyMemories: z
+    .array(
+      z.object({
+        id: z.string(),
+        text: z.string().max(280),
+        kind: z.enum(['fact', 'preference', 'constraint']),
+        source: z.enum(['budget', 'chat', 'settings']),
+        status: z.enum(['proposed', 'active']),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+      }),
+    )
+    .max(40)
+    .optional(),
   budgetPlans: z
     .array(
       z.object({

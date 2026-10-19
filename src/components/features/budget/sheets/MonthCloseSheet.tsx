@@ -22,18 +22,20 @@ export interface MonthCloseSheetProps {
   onApply: (p: CloseProposal) => void
   /** Marks the cycle closed, applied or not. */
   onFinish: () => void
+  /** Dismiss without marking the cycle closed, so the card stays until Done is pressed. */
+  onDismiss: () => void
 }
 
 /** The month in numbers, the lines that overran, and small one-tap fixes. */
-export function MonthCloseSheet({ open, close, base, month, onApply, onFinish }: MonthCloseSheetProps) {
+export function MonthCloseSheet({ open, close, base, month, onApply, onFinish, onDismiss }: MonthCloseSheetProps) {
   return (
-    <ModalShell open={open && close != null} onBackdropClick={onFinish} padContent>
-      {open && close ? <CloseBody close={close} base={base} month={month} onApply={onApply} onFinish={onFinish} /> : null}
+    <ModalShell open={open && close != null} onBackdropClick={onDismiss} padContent>
+      {open && close ? <CloseBody close={close} base={base} month={month} onApply={onApply} onFinish={onFinish} onDismiss={onDismiss} /> : null}
     </ModalShell>
   )
 }
 
-function CloseBody({ close, base, month, onApply, onFinish }: Omit<MonthCloseSheetProps, 'open' | 'close'> & { close: MonthCloseState }) {
+function CloseBody({ close, base, month, onApply, onFinish, onDismiss }: Omit<MonthCloseSheetProps, 'open' | 'close'> & { close: MonthCloseState }) {
   const c = useBudgetCloseCopy().sheet
   const [applied, setApplied] = useState<ReadonlySet<string>>(new Set())
   const money = (n: number) => formatCurrency(n, base, false)
@@ -44,7 +46,7 @@ function CloseBody({ close, base, month, onApply, onFinish }: Omit<MonthCloseShe
 
   return (
     <div className="flex flex-col gap-4 pt-1">
-      <ModalSheetHeader title={c.title(month)} onClose={onFinish} titleRowClassName="mb-0" />
+      <ModalSheetHeader title={c.title(month)} onClose={onDismiss} titleRowClassName="mb-0" />
 
       <Card padding="md" className="flex flex-col gap-3">
         <div className="flex justify-between">

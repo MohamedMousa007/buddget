@@ -1783,6 +1783,8 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state,
             ...data,
             budgetPlans: data.budgetPlans ?? state.budgetPlans,
+            budgetPlanActivations: data.budgetPlanActivations ?? state.budgetPlanActivations,
+            buddgyMemories: data.buddgyMemories ?? state.buddgyMemories,
             activeBudgetPlanId:
               data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
             financialGoalsNotes:
@@ -1815,6 +1817,8 @@ export const useFinanceStore = create<FinanceStore>()(
           subscriptions: state.subscriptions,
           budgetCategories: state.budgetCategories,
           budgetPlans: state.budgetPlans,
+          budgetPlanActivations: state.budgetPlanActivations,
+          buddgyMemories: state.buddgyMemories,
           activeBudgetPlanId: state.activeBudgetPlanId,
           financialGoalsNotes: state.financialGoalsNotes,
           savingsHoldings: state.savingsHoldings,

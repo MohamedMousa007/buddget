@@ -13,6 +13,11 @@ const ctx = { income: 10000, subscriptionsLive: 400, debtMinimums: { d1: 500 }, 
 const sum = (d: PlanDraft) => d.lines.reduce((s, l) => s + l.amount, 0)
 
 describe('repairDraft', () => {
+  it('renames duplicates to names that are really unique', () => {
+    const r = repairDraft(draft([L({ name: 'Dining', amount: 100 }), L({ name: 'Dining 2', amount: 100 }), L({ name: 'Dining', amount: 100 })]), ctx)
+    const names = r.draft.lines.map((l) => l.name.toLowerCase())
+    expect(new Set(names).size).toBe(names.length)
+  })
   it('sends the remainder to a buffer so the sum equals income', () => {
     const r = repairDraft(draft([L({ name: 'Rent', amount: 4000, block: 'bills' }), L({ name: 'Food', amount: 2000 })]), ctx)
     expect(r.ok).toBe(true)

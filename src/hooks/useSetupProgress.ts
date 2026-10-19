@@ -1,5 +1,6 @@
 'use client'
 
+import { isLivePlan } from '@/lib/budget/activePlan'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { effectivePlanCategoryAmount } from '@/lib/budget/budgetPlans'
@@ -43,7 +44,7 @@ export function useSetupProgress(): SetupProgress {
   const snap = useFinanceStore(
     useShallow((s) => ({
       hasPayday: s.incomeSources.some((i) => i.isRecurring),
-      hasBudget: s.budgetPlans.some((p) => p.categories.some((c) => effectivePlanCategoryAmount(c) > 0)),
+      hasBudget: s.budgetPlans.filter(isLivePlan).some((p) => p.categories.some((c) => effectivePlanCategoryAmount(c) > 0)),
       hasTransaction: s.expenses.length + s.incomeEvents.length > 0,
     })),
   )

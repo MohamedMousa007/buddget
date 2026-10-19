@@ -96,7 +96,9 @@ export function repairDraft(input: PlanDraft, ctx: ValidationContext): Validatio
 
     const key = line.name.trim().toLowerCase()
     if (seen.has(key)) {
-      line.name = `${line.name} 2`
+      let n = 2
+      while (seen.has(`${line.name} ${n}`.trim().toLowerCase())) n++
+      line.name = `${line.name} ${n}`
       changes.push(`renamed duplicate ${line.name}`)
     }
     seen.add(line.name.trim().toLowerCase())

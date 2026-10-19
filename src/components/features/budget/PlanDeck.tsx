@@ -155,7 +155,7 @@ export function PlanDeck(p: PlanDeckProps) {
             anchor={menu}
             onClose={() => setMenu(null)}
             items={[
-              { label: compareLabel, icon: <GitCompare className="size-4" />, onSelect: () => p.onCompare(selected.id) },
+              ...(p.plans.length > 1 ? [{ label: compareLabel, icon: <GitCompare className="size-4" />, onSelect: () => p.onCompare(selected.id) }] : []),
               { label: c.rename, icon: <Pencil className="size-4" />, onSelect: () => setRenaming(selected.id) },
               { label: c.delete, icon: <Trash2 className="size-4" />, destructive: true, onSelect: () => p.onDelete(selected.id) },
             ]}

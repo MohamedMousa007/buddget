@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageBody } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,9 @@ import { ReviewPage } from './studio/ReviewPage'
 import { AdjustSheet } from './sheets/AdjustSheet'
 import { MonthCloseCard } from './MonthCloseCard'
 import { PlanRail } from './PlanRail'
+import { LINKED_ROUTE } from './chromeFormat'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
+import { cycleKeyOf } from '@/lib/budget/activations'
 import { StressTestSheet } from './sheets/StressTestSheet'
 import { useBudgetStressCopy } from './useStressCopy'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
@@ -51,13 +54,6 @@ import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetStudioCopy } from './useStudioCopy'
 import { useBudgetPageCopy } from './usePageCopy'
 import type { ChapterView } from '@/lib/budget/planView.types'
-
-const LINKED_ROUTE: Partial<Record<BudgetBlock, string>> = {
-  subscriptions: '/subscriptions',
-  debts: '/debts',
-  goals: '/goals',
-  safety: '/wealth',
-}
 
 /** The Budget page: the active plan as chapters of blocks, with a This month overlay. */
 export function BudgetPlanPage({ ready }: { ready: boolean }) {
@@ -96,6 +92,27 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     setBuilding(id)
   }, [])
   const startBuild = useCallback(() => setCreating(true), [])
+  // Leaving the builder with nothing in the draft removes it, so empty drafts do not pile up.
+  const exitBuilder = useCallback(() => {
+    const id = building
+    setBuilding(null)
+    const s = store.getState()
+    const draft = id ? s.budgetPlans.find((p) => p.id === id) : undefined
+    if (draft && draft.status === 'draft' && draft.categories.length === 0) s.deleteBudgetPlan(draft.id)
+  }, [building, store])
+  // The takeover screens are state, not routes: the hardware back steps out one level instead of leaving the tab.
+  useEffect(() => {
+    if (!building && !studio && !review && !creating) return
+    return registerBackGuard(() => {
+      if (building) exitBuilder()
+      else if (studio) {
+        setStudio(null)
+        setCreating(true)
+      } else if (review) setReview(null)
+      else setCreating(false)
+      return true
+    })
+  }, [building, studio, review, creating, exitBuilder])
   const finishBuild = useCallback(
     (id: string) => {
       setBuilding(null)
@@ -176,7 +193,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     )
   }
 
-  if (building) return <ManualBuilder planId={building} startEmpty={buildEmpty} onExit={() => setBuilding(null)} onFinish={finishBuild} />
+  if (building) return <ManualBuilder planId={building} startEmpty={buildEmpty} onExit={exitBuilder} onFinish={finishBuild} />
 
   if (studio) {
     return (
@@ -234,12 +251,15 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   if (!view) {
     return (
       <PageBody className="space-y-4">
-        <EmptyPlan onStarter={act.createStarterPlan} onBlank={startBuild} />
+        <EmptyPlan onStarter={act.createStarterPlan} onBlank={startBuild} onBuildWithBuddgy={() => setStudio({ intent: null })} />
       </PageBody>
     )
   }
 
   const base = view.base
+  // The month the activation really takes over from follows the pay cycle, not the calendar.
+  const cycleKey = cycleKeyOf(new Date(), store.getState().settings.monthStartDay)
+  const cycleMonthLabel = new Date(Number(cycleKey.slice(0, 4)), Number(cycleKey.slice(5, 7)) - 1, 1).toLocaleDateString(locale, { month: 'long' })
   const closeMonth = monthClose
     ? new Date(Number(monthClose.cycleKey.slice(0, 4)), Number(monthClose.cycleKey.slice(5, 7)) - 1, 1).toLocaleDateString(locale, { month: 'long' })
     : ''
@@ -289,7 +309,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
       ) : null}
       {mode === 'plan' && monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
       </div>
-      <aside className="flex flex-col gap-4 lg:sticky lg:top-5 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-[calc(var(--app-header-h-lg)+1.25rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1">
         <FlowStrip view={view} onFix={onFix} onJump={jump} />
         <InsightsChip insights={view.insights} onOpen={() => setInsightsOpen(true)} />
         <PlanRail
@@ -380,7 +400,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         next={activateId ? summaries[activateId] ?? null : null}
         now={summaries[view.plan.id] ?? null}
         base={base}
-        monthLabel={new Date().toLocaleDateString(locale, { month: 'long' })}
+        monthLabel={cycleMonthLabel}
         onConfirm={() => activateId && planActions.activate(activateId)}
         onClose={() => setActivateId(null)}
       />
@@ -402,6 +422,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         base={base}
         month={closeMonth}
         onApply={(p) => act.patchLine(p.lineId, { amount: p.to })}
+        onDismiss={() => setCloseOpen(false)}
         onFinish={() => {
           setCloseOpen(false)
           if (monthClose) useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)

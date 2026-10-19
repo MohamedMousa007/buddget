@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ChevronLeft, Pencil, TriangleAlert } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { PageBody } from '@/components/layout/PageContainer'
@@ -13,6 +13,8 @@ import type { BudgetChapter } from '@/lib/budget/blocks'
 import { findLineView } from '@/lib/budget/planView'
 import type { BudgetBlock } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
+import { navigate } from '@/lib/navigation/navigate'
+import { LINKED_ROUTE } from '../chromeFormat'
 import { FlowStrip } from '../FlowStrip'
 import { PlanChapters } from '../PlanChapters'
 import { AddLineSheet } from '../sheets/AddLineSheet'
@@ -38,6 +40,7 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
   const [lineId, setLineId] = useState<string | null>(null)
   const [addBlock, setAddBlock] = useState<BudgetBlock | null>(null)
   const [adjusting, setAdjusting] = useState(false)
+  const activating = useRef(false)
 
   const selected = useMemo(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
@@ -82,7 +85,14 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
         {estimated > 0 ? <p className="text-xs text-[var(--color-brand-amber)]">{c.estimated(estimated)}</p> : null}
       </Card>
 
-      <FlowStrip view={view} onFix={act.moveFreeToBuffer} onJump={() => {}} />
+      <FlowStrip
+        view={view}
+        onFix={act.moveFreeToBuffer}
+        onJump={(b) => {
+          setCollapsed(new Set())
+          requestAnimationFrame(() => document.getElementById(`block-${b}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+        }}
+      />
 
       <PlanChapters
         view={view}
@@ -98,11 +108,18 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
         onOpenLine={setLineId}
         onLineAction={(l) => setLineId(l.line.id)}
         onAdd={setAddBlock}
-        onOpenLinked={() => {}}
+        onOpenLinked={(b) => {
+          const route = LINKED_ROUTE[b]
+          if (route) navigate(route)
+        }}
       />
 
       <Card padding="md" className="flex flex-col gap-2">
-        <Button size="cta" className="w-full" onClick={() => onActivate(planId)}>
+        <Button size="cta" className="w-full" onClick={() => {
+            if (activating.current) return
+            activating.current = true
+            onActivate(planId)
+          }}>
           {c.activate}
         </Button>
         <div className="flex gap-2">

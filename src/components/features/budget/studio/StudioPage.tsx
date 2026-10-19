@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ListChecks, X } from 'lucide-react'
+import { Check, ChevronLeft, ListChecks, X } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { PageBody } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
@@ -70,6 +70,10 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   const [saved, setSaved] = useState(false)
   const [focusId, setFocusId] = useState<string | null>(null)
   const [knownOpen, setKnownOpen] = useState(false)
+  // Question ids answered or skipped this session, newest last, so Back can undo them one by one.
+  const [trail, setTrail] = useState<string[]>([])
+  const [attempt, setAttempt] = useState(0)
+  const [buildError, setBuildError] = useState(false)
   const building = useRef(false)
 
   const next = visibleQuestions(facts, state)[0]
@@ -95,6 +99,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     if (Object.keys(financial).length > 0) patch.financialProfile = { ...s.profile.financialProfile, ...financial }
     if (Object.keys(patch).length > 0) s.updateProfile(patch)
     setSaved(question.writes.kind === 'profile' || question.writes.kind === 'financial')
+    setTrail((t) => [...t, question.id])
     setFocusId(null)
     commit(answered)
   }
@@ -102,8 +107,13 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   useEffect(() => {
     if (next || focusId || building.current) return
     building.current = true
+    setBuildError(false)
+    let cancelled = false
     const controller = new AbortController()
+    // A model that never answers must not hold the build forever.
+    const timer = setTimeout(() => controller.abort(), 30_000)
     void (async () => {
+      try {
       const engine = buildPlan(merged)
       const ctx = (d: PlanDraft) => ({
         income: d.income,
@@ -113,6 +123,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
       })
       const base0 = repairDraft(engine, ctx(engine)).draft
       const refined = await refineDraft(merged, base0, controller.signal)
+      if (cancelled) return
       const folded = refined.ok ? applyRefinement(base0, refined.data) : null
       const final = folded ? repairDraft(folded, ctx(folded)).draft : base0
       const s = store.getState()
@@ -126,10 +137,21 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
       s.updateBudgetPlan(id, { categories: draftToCategories(final, newId, s.settings.baseCurrency) })
       useSettingsStore.getState().clearBudgetStudioDraft()
       onBuilt(id, !folded)
+      } catch {
+        if (!cancelled) setBuildError(true)
+      } finally {
+        clearTimeout(timer)
+      }
     })()
-    return () => controller.abort()
-    // The build runs once, when the last question is answered.
-  }, [next, focusId]) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      // Leaving mid-build must not create a plan afterwards, and a remount may start the build again.
+      cancelled = true
+      building.current = false
+      controller.abort()
+      clearTimeout(timer)
+    }
+    // The build runs when the last question is answered, and again on retry.
+  }, [next, focusId, attempt]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const knownRows: KnownRow[] = QUESTIONS.filter(
     (x) => x.writes.kind !== 'none' && x.control !== 'confirm' && x.askIf(merged, state) && (x.id in state.answers || x.prefill(merged) != null),
@@ -138,11 +160,35 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     return { id: x.id, label: copy?.label ?? x.id, value: formatKnown(x, defaultValue(x, facts, state), copy, ui, money) }
   })
 
-  if (!q) return <BuildingScreen />
+  const goBack = () => {
+    const last = trail.at(-1)
+    if (!last) return
+    setTrail((t) => t.slice(0, -1))
+    setFocusId(last)
+    commit({ ...state, answers: Object.fromEntries(Object.entries(state.answers).filter(([k]) => k !== last)), skipped: state.skipped.filter((k) => k !== last) })
+  }
+
+  if (!q) {
+    return (
+      <BuildingScreen
+        error={buildError}
+        onRetry={() => {
+          building.current = false
+          setAttempt((a) => a + 1)
+        }}
+        onClose={onClose}
+      />
+    )
+  }
 
   return (
     <PageBody className="space-y-4 lg:pb-6">
       <div className="flex items-center gap-2">
+        {trail.length > 0 ? (
+          <IconButton variant="outlined" aria-label={ui.back} onClick={goBack}>
+            <ChevronLeft className="rtl:rotate-180" />
+          </IconButton>
+        ) : null}
         <IconButton variant="outlined" aria-label={ui.close} onClick={onClose}>
           <X />
         </IconButton>
@@ -175,6 +221,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         saved={saved}
         onAnswer={(v) => answer(q, v)}
         onSkip={() => {
+          setTrail((t) => [...t, q.id])
           setFocusId(null)
           commit(skipQuestion(state, q.id))
         }}
@@ -272,8 +319,9 @@ function QuestionStep({ question: q, initial, confirmN, base, saved, onAnswer, o
   )
 }
 
-function BuildingScreen() {
-  const ui = useBudgetStudioCopy().building
+function BuildingScreen({ error, onRetry, onClose }: { error: boolean; onRetry: () => void; onClose: () => void }) {
+  const copy = useBudgetStudioCopy()
+  const ui = copy.building
   const [step, setStep] = useState(0)
   useEffect(() => {
     const t = setInterval(() => setStep((s) => Math.min(s + 1, ui.steps.length - 1)), 2200)
@@ -284,8 +332,18 @@ function BuildingScreen() {
       <BuddgyIcon mood="thinking" size={88} />
       <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{ui.title}</h1>
       <p className="text-sm text-[var(--color-brand-text-secondary)]" aria-live="polite">
-        {ui.steps[step]}
+        {error ? ui.error : ui.steps[step]}
       </p>
+      {error ? (
+        <div className="flex w-full max-w-xs flex-col gap-2">
+          <Button size="cta" className="w-full" onClick={onRetry}>
+            {ui.retry}
+          </Button>
+          <Button size="touch" variant="ghost" className="w-full" onClick={onClose}>
+            {copy.close}
+          </Button>
+        </div>
+      ) : null}
     </PageBody>
   )
 }

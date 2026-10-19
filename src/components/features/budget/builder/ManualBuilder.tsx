@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -49,6 +49,7 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
   const [started, setStarted] = useState(() => startEmpty || (view?.plan.categories.length ?? 0) > 0)
   const [lineId, setLineId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const finishing = useRef(false)
 
   const facts = useMemo(() => buildFactsFromStore(store.getState(), new Date()), [store])
   const suggestions = useMemo(() => suggestionsByBlock(templateDraft(facts, 'mine')), [facts])
@@ -75,6 +76,8 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
   }
 
   const finish = () => {
+    if (finishing.current) return
+    finishing.current = true
     store.getState().updateBudgetPlan(planId, { status: 'ready' })
     onFinish(planId)
   }

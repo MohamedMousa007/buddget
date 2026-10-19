@@ -59,7 +59,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
     abort.current?.abort()
     abort.current = new AbortController()
     setPhase({ kind: 'loading' })
-    const res = await requestAdjust(toAdjustLines(plan.categories, lineBlock), text, view.base, view.income, abort.current.signal)
+    const res = await requestAdjust(toAdjustLines(plan.categories, lineBlock, (c) => effectivePlanCategoryAmountInBase(c, view.base, store.getState().exchangeRates)), text, view.base, view.income, abort.current.signal)
     if (!res.ok) {
       setPhase({ kind: 'error', message: res.reason === 'quota' ? c.quota : res.reason === 'unavailable' ? c.unavailable : c.failed })
       return
