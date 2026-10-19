@@ -37,6 +37,12 @@ export function usePlanActions() {
     s.updateBudgetPlan(id, { status: 'ready' })
   }, [page, store])
 
+  /** A draft the manual builder fills in; it stays out of the way until the user finishes it. */
+  const createDraft = useCallback(
+    () => store.getState().addBudgetPlan(page.planNames.fresh, { status: 'draft', origin: 'manual' }),
+    [page, store],
+  )
+
   const rename = useCallback((id: string, name: string) => store.getState().updateBudgetPlan(id, { name }), [store])
 
   const remove = useCallback(
@@ -60,5 +66,5 @@ export function usePlanActions() {
     [d, store, toast],
   )
 
-  return { duplicate, createBlank, rename, remove, activate }
+  return { duplicate, createBlank, createDraft, rename, remove, activate }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Ellipsis, GitCompare, History, Pencil, Plus, Star, Trash2 } from 'lucide-react'
+import { Copy, Ellipsis, GitCompare, Hammer, History, Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
@@ -30,6 +30,8 @@ export interface PlanDeckProps {
   onHistory: () => void
   onCompare: (id: string) => void
   onNew: () => void
+  /** Resume the builder for a draft plan. */
+  onContinue: (id: string) => void
 }
 
 /** Swipeable cards of every budget with the actions for the selected one. */
@@ -124,10 +126,17 @@ export function PlanDeck(p: PlanDeckProps) {
             />
           ) : null}
           <div className="grid grid-cols-2 gap-2">
-            <Button size="touch" disabled={isActive} onClick={() => p.onActivate(selected.id)}>
-              <Star />
-              {c.setActive}
-            </Button>
+            {selected.status === 'draft' ? (
+              <Button size="touch" onClick={() => p.onContinue(selected.id)}>
+                <Hammer />
+                {c.continueBuilding}
+              </Button>
+            ) : (
+              <Button size="touch" disabled={isActive} onClick={() => p.onActivate(selected.id)}>
+                <Star />
+                {c.setActive}
+              </Button>
+            )}
             <Button size="touch" variant="outline" onClick={() => p.onDuplicate(selected.id)}>
               <Copy />
               {c.duplicate}

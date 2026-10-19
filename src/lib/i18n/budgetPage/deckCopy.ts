@@ -14,6 +14,7 @@ export interface BudgetDeckCopy {
     newPlan: string
     newPlanSub: string
     setActive: string
+    continueBuilding: string
     duplicate: string
     history: string
     more: string
@@ -101,6 +102,7 @@ export const budgetDeckCopyEn: BudgetDeckCopy = {
     newPlan: 'New plan',
     newPlanSub: 'Start fresh, with a template, or copy one',
     setActive: 'Set active',
+    continueBuilding: 'Continue building',
     duplicate: 'Duplicate',
     history: 'History',
     more: 'More',
@@ -188,6 +190,7 @@ export const budgetDeckCopyAr: BudgetDeckCopy = {
     newPlan: 'خطة جديدة',
     newPlanSub: 'ابدأ من الصفر أو من قالب أو انسخ خطة',
     setActive: 'تعيين كنشطة',
+    continueBuilding: 'متابعة البناء',
     duplicate: 'نسخ',
     history: 'السجل',
     more: 'المزيد',

@@ -33,6 +33,7 @@ import { AddLineSheet } from './sheets/AddLineSheet'
 import { ActivateSheet } from './sheets/ActivateSheet'
 import { ComparePlansSheet } from './sheets/ComparePlansSheet'
 import { PlanDeck } from './PlanDeck'
+import { ManualBuilder } from './builder/ManualBuilder'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetPageCopy } from './usePageCopy'
 import type { ChapterView } from '@/lib/budget/planView.types'
@@ -48,6 +49,7 @@ const LINKED_ROUTE: Partial<Record<BudgetBlock, string>> = {
 export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const t = useBudgetPageCopy()
   const planActions = usePlanActions()
+  const store = useFinanceStore
   const deckCopy = useBudgetDeckCopy()
   const { locale } = useLocale()
   const [mode, setMode] = useState<PlanMode>('plan')
@@ -63,6 +65,16 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [activateId, setActivateId] = useState<string | null>(null)
   const [compare, setCompare] = useState<{ a: string; b: string } | null>(null)
   const [upgradeLater, setUpgradeLater] = useState(false)
+  const [building, setBuilding] = useState<string | null>(null)
+  const startBuild = useCallback(() => setBuilding(planActions.createDraft()), [planActions])
+  const finishBuild = useCallback(
+    (id: string) => {
+      setBuilding(null)
+      if (store.getState().activeBudgetPlanId) setActivateId(id)
+      else planActions.activate(id)
+    },
+    [planActions, store],
+  )
 
   const { plans, activeId, activations, rates } = useFinanceStore(
     useShallow((s) => ({
@@ -142,10 +154,12 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     )
   }
 
+  if (building) return <ManualBuilder planId={building} onExit={() => setBuilding(null)} onFinish={finishBuild} />
+
   if (!view) {
     return (
       <PageBody className="space-y-4">
-        <EmptyPlan onStarter={act.createStarterPlan} onBlank={act.createBlankPlan} />
+        <EmptyPlan onStarter={act.createStarterPlan} onBlank={startBuild} />
       </PageBody>
     )
   }
@@ -189,7 +203,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           onDelete={planActions.remove}
           onHistory={() => navigate('/budget-history')}
           onCompare={(id) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id })}
-          onNew={planActions.createBlank}
+          onNew={startBuild}
+          onContinue={setBuilding}
         />
       ) : null}
       <FlowStrip view={view} onFix={onFix} onJump={jump} />
@@ -288,7 +303,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         onClose={() => setMenuAnchor(null)}
         items={[
           { label: deckCopy.deck.history, icon: <History className="size-4" />, onSelect: () => navigate('/budget-history') },
-          { label: deckCopy.deck.newPlan, icon: <Plus className="size-4" />, onSelect: planActions.createBlank },
+          { label: deckCopy.deck.newPlan, icon: <Plus className="size-4" />, onSelect: startBuild },
         ]}
       />
     </PageBody>
