@@ -59,6 +59,7 @@ export function profileToRow(
     default_carry_pocket_id: p.defaultCarryPocketId ?? null,
     emergency_fund_config: (p.emergencyFundConfig ?? {}) as ProfileInsert['emergency_fund_config'],
     zakat_config: (p.zakatConfig ?? {}) as ProfileInsert['zakat_config'],
+    financial_profile: (p.financialProfile ?? null) as ProfileInsert['financial_profile'],
     // display_name is NOT written here — it's server-authoritative. Omitting
     // it keeps PostgREST's existing value on upsert-conflict.
   }
@@ -90,6 +91,7 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     defaultCarryPocketId: row.default_carry_pocket_id ?? null,
     emergencyFundConfig: emptyToNull(row.emergency_fund_config) as UserProfile['emergencyFundConfig'],
     zakatConfig: emptyToNull(row.zakat_config) as UserProfile['zakatConfig'],
+    financialProfile: emptyToNull(row.financial_profile) as UserProfile['financialProfile'],
     createdAt: row.created_at,
   }
   const extras: ProfileExtras = {

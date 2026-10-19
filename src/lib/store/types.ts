@@ -374,6 +374,61 @@ export interface BudgetPlanCategory {
   /** When true, this row is a savings allocation target — not counted as a planned expense. */
   isSavings?: boolean
   subcategories: BudgetPlanSubcategory[]
+  /** Which block of the plan the line lives in. Absent on pre-v2 rows (treated as `everyday`). */
+  block?: BudgetBlock
+  /** Where the amount comes from. `none` = typed by the user; anything else is derived live. */
+  linkType?: BudgetLinkType
+  /** Ids of the linked debts or goal (subscriptions and emergency link by type alone). */
+  linkIds?: string[]
+  /** Day of month the bill is due (bills block). */
+  dueDay?: number | null
+  /** Counts toward essentials (runway, essentials share). */
+  essential?: boolean
+  /** Buddgy's adjust-by-text never changes a locked line. */
+  locked?: boolean
+  /** One-line "why this amount" from the AI builder. */
+  rationale?: string | null
+  confidence?: BudgetLineConfidence | null
+  /** Ledger categories that count against this line (replaces guessing from the name). */
+  expenseCategories?: string[]
+}
+
+/** The seven blocks every plan is split into. */
+export type BudgetBlock = 'bills' | 'subscriptions' | 'debts' | 'everyday' | 'safety' | 'goals' | 'grow'
+export type BudgetLinkType = 'none' | 'subscriptions' | 'debts' | 'goal' | 'emergency'
+export type BudgetLineConfidence = 'high' | 'estimated'
+/** `draft` plans are invisible to stats and the switcher until confirmed. */
+export type BudgetPlanStatus = 'draft' | 'ready' | 'archived'
+export type BudgetPlanIntent = 'balanced' | 'saver' | 'debt_crusher' | 'custom'
+export type BudgetPlanOrigin = 'ai' | 'manual' | 'template' | 'clone'
+
+/** Why the AI built the plan the way it did (shown in review). */
+export interface BudgetPlanRationale {
+  reasons: string[]
+  risks?: string[]
+}
+
+/** Which plan was active from which cycle; each month resolves to the latest row at or before it. */
+export interface BudgetPlanActivation {
+  id: string
+  planId: string
+  /** First day of the cycle (`YYYY-MM-DD`) the plan took over. */
+  effectiveFrom: string
+  createdAt: string
+}
+
+/** What the budget studio learns about the user, beyond the typed profile columns. */
+export interface FinancialProfile {
+  housing?: 'rent' | 'own' | 'family' | 'company'
+  dependents?: number
+  supportsOthers?: boolean
+  incomeStability?: 'fixed' | 'variable' | 'mixed'
+  hasCar?: boolean
+  priorities?: string[]
+  /** 0 = save hard, 100 = live comfortably. */
+  securityLean?: number
+  payoffStrategy?: 'avalanche' | 'snowball' | 'minimums'
+  investInterest?: boolean
 }
 
 /** Who the budget is for (planner / household). */
@@ -407,6 +462,14 @@ export interface BudgetPlan {
   buddgyFlow?: BuddgyFlowDraft | null
   /** User finished guided plan builder (Done). Cleared when rebuilding. */
   buddgyGuidedComplete?: boolean
+  /** Absent on pre-v2 rows (treated as `ready`). */
+  status?: BudgetPlanStatus
+  intent?: BudgetPlanIntent
+  origin?: BudgetPlanOrigin
+  /** Overrides income from sources when set. */
+  incomeOverride?: number | null
+  rationale?: BudgetPlanRationale | null
+  engineVersion?: string | null
 }
 
 export type SavingsBucket = 'liquid' | 'investment'
@@ -739,6 +802,8 @@ export interface UserProfile {
   emergencyFundConfig?: EmergencyFundConfig | null
   /** v3 zakat settings. Synced via `profiles.zakat_config`. */
   zakatConfig?: ZakatConfig | null
+  /** Budget studio answers beyond the typed fields. Synced via `profiles.financial_profile`. */
+  financialProfile?: FinancialProfile | null
   createdAt: string
 }
 
@@ -1026,10 +1091,20 @@ export interface FinanceStore {
   updateBudgetCategory: (category: string, amount: number, percentOfIncome?: number | null) => void
   /** Replace all budget rows (e.g. onboarding preset). */
   setBudgetCategories: (categories: BudgetCategory[]) => void
-  addBudgetPlan: (name: string) => string
+  /** Creates a plan and makes it active, unless it is a draft (drafts activate only on confirm). */
+  addBudgetPlan: (
+    name: string,
+    options?: Partial<Pick<BudgetPlan, 'status' | 'intent' | 'origin' | 'rationale' | 'engineVersion'>>
+  ) => string
   updateBudgetPlan: (
     planId: string,
-    updates: Partial<Pick<BudgetPlan, 'name' | 'categories' | 'household' | 'buddgyFlow' | 'buddgyGuidedComplete'>>
+    updates: Partial<
+      Pick<
+        BudgetPlan,
+        | 'name' | 'categories' | 'household' | 'buddgyFlow' | 'buddgyGuidedComplete'
+        | 'status' | 'intent' | 'origin' | 'incomeOverride' | 'rationale' | 'engineVersion'
+      >
+    >
   ) => void
     /** Merge household / buddgyFlow into the active plan (guided setup). */
   updateBudgetMeta: (

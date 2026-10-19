@@ -122,6 +122,42 @@ export type Database = {
         }
         Relationships: []
       }
+      buddgy_memories: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          id: string
+          kind: string
+          source: string
+          status: string
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          source?: string
+          status?: string
+          text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          kind?: string
+          source?: string
+          status?: string
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       budget_categories: {
         Row: {
           amount: number
@@ -136,6 +172,15 @@ export type Database = {
           sort_order: number
           updated_at: string
           user_id: string
+          block: string
+          confidence: string | null
+          due_day: number | null
+          essential: boolean
+          expense_categories: string[]
+          link_ids: string[]
+          link_type: string
+          locked: boolean
+          rationale: string | null
         }
         Insert: {
           amount?: number
@@ -150,6 +195,15 @@ export type Database = {
           sort_order?: number
           updated_at?: string
           user_id: string
+          block?: string
+          confidence?: string | null
+          due_day?: number | null
+          essential?: boolean
+          expense_categories?: string[]
+          link_ids?: string[]
+          link_type?: string
+          locked?: boolean
+          rationale?: string | null
         }
         Update: {
           amount?: number
@@ -164,6 +218,15 @@ export type Database = {
           sort_order?: number
           updated_at?: string
           user_id?: string
+          block?: string
+          confidence?: string | null
+          due_day?: number | null
+          essential?: boolean
+          expense_categories?: string[]
+          link_ids?: string[]
+          link_type?: string
+          locked?: boolean
+          rationale?: string | null
         }
         Relationships: [
           {
@@ -183,6 +246,9 @@ export type Database = {
           feedback_text: string
           id: string
           user_id: string
+          ops: Json | null
+          outcome: string | null
+          plan_id: string | null
         }
         Insert: {
           budget_after?: Json
@@ -191,6 +257,9 @@ export type Database = {
           feedback_text: string
           id?: string
           user_id: string
+          ops?: Json | null
+          outcome?: string | null
+          plan_id?: string | null
         }
         Update: {
           budget_after?: Json
@@ -199,8 +268,43 @@ export type Database = {
           feedback_text?: string
           id?: string
           user_id?: string
+          ops?: Json | null
+          outcome?: string | null
+          plan_id?: string | null
         }
         Relationships: []
+      }
+      budget_plan_activations: {
+        Row: {
+          created_at: string
+          effective_from: string
+          id: string
+          plan_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from: string
+          id?: string
+          plan_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          id?: string
+          plan_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_plan_activations_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       budget_plans: {
         Row: {
@@ -213,6 +317,12 @@ export type Database = {
           name: string
           updated_at: string
           user_id: string
+          engine_version: string | null
+          income_override: number | null
+          intent: string
+          origin: string
+          rationale: Json | null
+          status: string
         }
         Insert: {
           buddgy_flow?: Json | null
@@ -224,6 +334,12 @@ export type Database = {
           name: string
           updated_at?: string
           user_id: string
+          engine_version?: string | null
+          income_override?: number | null
+          intent?: string
+          origin?: string
+          rationale?: Json | null
+          status?: string
         }
         Update: {
           buddgy_flow?: Json | null
@@ -235,6 +351,12 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+          engine_version?: string | null
+          income_override?: number | null
+          intent?: string
+          origin?: string
+          rationale?: Json | null
+          status?: string
         }
         Relationships: []
       }
@@ -1081,6 +1203,7 @@ export type Database = {
           transport_mode: string | null
           updated_at: string
           zakat_config: Json
+          financial_profile: Json | null
         }
         Insert: {
           active_budget_plan_id?: string | null
@@ -1112,6 +1235,7 @@ export type Database = {
           transport_mode?: string | null
           updated_at?: string
           zakat_config?: Json
+          financial_profile?: Json | null
         }
         Update: {
           active_budget_plan_id?: string | null
@@ -1143,6 +1267,7 @@ export type Database = {
           transport_mode?: string | null
           updated_at?: string
           zakat_config?: Json
+          financial_profile?: Json | null
         }
         Relationships: []
       }

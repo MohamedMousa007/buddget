@@ -1,6 +1,13 @@
 import type {
+  BudgetBlock,
+  BudgetLineConfidence,
+  BudgetLinkType,
   BudgetPlan,
   BudgetPlanCategory,
+  BudgetPlanIntent,
+  BudgetPlanOrigin,
+  BudgetPlanRationale,
+  BudgetPlanStatus,
   BudgetPlanSubcategory,
   BudgetHousehold,
   Currency,
@@ -14,6 +21,7 @@ import type {
   BudgetSubcategoryInsert,
 } from '@/lib/supabase/remote/types'
 import type { Json } from '@/lib/supabase/database.types'
+import { isSavingsPlanCategory } from '@/lib/budget/budgetPlans'
 
 /**
  * A BudgetPlan is stored across 3 tables. These mappers convert one plan at a time;
@@ -28,6 +36,12 @@ export function budgetPlanToRow(p: BudgetPlan, userId: string): BudgetPlanInsert
     household: p.household ?? null,
     buddgy_flow: (p.buddgyFlow ?? null) as Json,
     buddgy_guided_complete: !!p.buddgyGuidedComplete,
+    status: p.status ?? 'ready',
+    intent: p.intent ?? 'custom',
+    origin: p.origin ?? 'manual',
+    income_override: p.incomeOverride ?? null,
+    rationale: (p.rationale ?? null) as Json,
+    engine_version: p.engineVersion ?? null,
     created_at: p.createdAt,
     ...(p.updatedAt ? { updated_at: p.updatedAt } : {}),
   }
@@ -48,8 +62,17 @@ export function budgetCategoryToRow(
     icon: c.icon,
     amount: c.amount,
     currency: c.currency ?? baseCurrency,
-    is_savings: !!c.isSavings,
+    is_savings: isSavingsPlanCategory(c),
     sort_order: sortOrder,
+    block: c.block ?? 'everyday',
+    link_type: c.linkType ?? 'none',
+    link_ids: c.linkIds ?? [],
+    due_day: c.dueDay ?? null,
+    essential: c.essential ?? false,
+    locked: c.locked ?? false,
+    rationale: c.rationale ?? null,
+    confidence: c.confidence ?? null,
+    expense_categories: c.expenseCategories ?? [],
   }
 }
 
@@ -102,6 +125,15 @@ export function assembleBudgetPlan({ plan, categories, subcategories }: Assemble
     currency: c.currency as Currency,
     isSavings: c.is_savings,
     subcategories: subsByCategory.get(c.id) ?? [],
+    block: c.block as BudgetBlock,
+    linkType: c.link_type as BudgetLinkType,
+    linkIds: c.link_ids,
+    dueDay: c.due_day,
+    essential: c.essential,
+    locked: c.locked,
+    rationale: c.rationale,
+    confidence: c.confidence as BudgetLineConfidence | null,
+    expenseCategories: c.expense_categories,
   }))
 
   return {
@@ -113,5 +145,11 @@ export function assembleBudgetPlan({ plan, categories, subcategories }: Assemble
     household: (plan.household as BudgetHousehold | null) ?? null,
     buddgyFlow: (plan.buddgy_flow as BudgetPlan['buddgyFlow']) ?? null,
     buddgyGuidedComplete: plan.buddgy_guided_complete ?? false,
+    status: plan.status as BudgetPlanStatus,
+    intent: plan.intent as BudgetPlanIntent,
+    origin: plan.origin as BudgetPlanOrigin,
+    incomeOverride: plan.income_override,
+    rationale: (plan.rationale as BudgetPlanRationale | null) ?? null,
+    engineVersion: plan.engine_version,
   }
 }

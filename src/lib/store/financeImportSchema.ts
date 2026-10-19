@@ -237,6 +237,12 @@ export const importDataSchema = z.object({
         updatedAt: z.string().optional(),
         household: z.enum(['solo', 'partner', 'family']).nullable().optional(),
         buddgyGuidedComplete: z.boolean().optional(),
+        status: z.enum(['draft', 'ready', 'archived']).optional(),
+        intent: z.enum(['balanced', 'saver', 'debt_crusher', 'custom']).optional(),
+        origin: z.enum(['ai', 'manual', 'template', 'clone']).optional(),
+        incomeOverride: z.number().min(0).nullable().optional(),
+        rationale: z.object({ reasons: z.array(z.string()), risks: z.array(z.string()).optional() }).nullable().optional(),
+        engineVersion: z.string().nullable().optional(),
         buddgyFlow: z
           .object({
             rentIncludesUtilities: z.boolean().optional(),
@@ -268,6 +274,15 @@ export const importDataSchema = z.object({
             amount: z.number(),
             currency: fiatCurrencySchema.optional(),
             isSavings: z.boolean().optional(),
+            block: z.enum(['bills', 'subscriptions', 'debts', 'everyday', 'safety', 'goals', 'grow']).optional(),
+            linkType: z.enum(['none', 'subscriptions', 'debts', 'goal', 'emergency']).optional(),
+            linkIds: z.array(z.string()).optional(),
+            dueDay: z.number().int().min(1).max(31).nullable().optional(),
+            essential: z.boolean().optional(),
+            locked: z.boolean().optional(),
+            rationale: z.string().nullable().optional(),
+            confidence: z.enum(['high', 'estimated']).nullable().optional(),
+            expenseCategories: z.array(z.string()).optional(),
             subcategories: z.array(
               z.object({
                 id: z.string(),

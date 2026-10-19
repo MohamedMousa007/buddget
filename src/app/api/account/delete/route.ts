@@ -15,9 +15,11 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
  */
 const USER_ID_TABLES = [
   // Budget shape
+  'buddgy_memories',
   'budget_subcategories',
   'budget_categories',
   'budget_feedback',
+  'budget_plan_activations',
   'budget_plans',
   // Transactions
   'expenses',

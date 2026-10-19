@@ -12,6 +12,7 @@ const FINANCIAL_TABLES = [
   'budget_subcategories',
   'budget_categories',
   'budget_feedback',
+  'budget_plan_activations',
   'budget_plans',
   'expenses',
   'recurring_expenses',

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import { format } from 'date-fns'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -130,6 +131,11 @@ function migrateSavingsHoldingsToLedger(
  * this change we emitted `${Date.now()}_${rand}` strings which every list-
  * sync upsert silently rejected, leaving data only in the legacy JSONB blob.
  */
+/** Drops `undefined` values so a partial patch never overwrites a field with nothing. */
+function definedOnly<T extends object>(o: T): Partial<T> {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>
+}
+
 function generateId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
@@ -1043,7 +1049,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
       setBudgetCategories: (categories) => set({ budgetCategories: categories }),
 
-      addBudgetPlan: (name) => {
+      addBudgetPlan: (name, options) => {
         const id = generateId()
         const trimmed = name.trim() || 'New plan'
         set((state) => ({
@@ -1056,9 +1062,14 @@ export const useFinanceStore = create<FinanceStore>()(
               createdAt: new Date().toISOString(),
               household: null,
               buddgyFlow: null,
+              status: options?.status ?? 'ready',
+              intent: options?.intent ?? 'custom',
+              origin: options?.origin ?? 'manual',
+              rationale: options?.rationale ?? null,
+              engineVersion: options?.engineVersion ?? null,
             },
           ],
-          activeBudgetPlanId: id,
+          activeBudgetPlanId: options?.status === 'draft' ? state.activeBudgetPlanId : id,
         }))
         return id
       },
@@ -1067,28 +1078,17 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           budgetPlans: state.budgetPlans.map((p) => {
             if (p.id !== planId) return p
-            const nextName =
-              updates.name !== undefined ? updates.name.trim() || p.name : p.name
-            const nextCategories =
-              updates.categories !== undefined ? updates.categories : p.categories
-            const nextHousehold =
-              updates.household !== undefined ? updates.household : p.household
-            const nextBuddgyGuidedComplete =
-              updates.buddgyGuidedComplete !== undefined ? updates.buddgyGuidedComplete : p.buddgyGuidedComplete
-            let nextBuddgyFlow = p.buddgyFlow
-            if (updates.buddgyFlow !== undefined) {
-              nextBuddgyFlow =
-                updates.buddgyFlow === null ?
-                  null
-                : { ...(p.buddgyFlow ?? {}), ...updates.buddgyFlow }
-            }
+            const { name, buddgyFlow, ...rest } = updates
             return {
               ...p,
-              name: nextName,
-              categories: nextCategories,
-              household: nextHousehold,
-              buddgyGuidedComplete: nextBuddgyGuidedComplete,
-              buddgyFlow: nextBuddgyFlow,
+              ...definedOnly(rest),
+              name: name !== undefined ? name.trim() || p.name : p.name,
+              buddgyFlow:
+                buddgyFlow === undefined
+                  ? p.buddgyFlow
+                  : buddgyFlow === null
+                    ? null
+                    : { ...(p.buddgyFlow ?? {}), ...buddgyFlow },
               updatedAt: new Date().toISOString(),
             }
           }),
@@ -1160,7 +1160,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const next = state.budgetPlans.filter((p) => p.id !== planId)
           let active = state.activeBudgetPlanId
           if (active === planId) {
-            active = next[0]?.id ?? null
+            active = selectActivePlan(next, null)?.id ?? null
           }
           return { budgetPlans: next, activeBudgetPlanId: active }
         }),
@@ -1177,6 +1177,7 @@ export const useFinanceStore = create<FinanceStore>()(
               category.currency ?? state.settings.baseCurrency
             )
             const row: BudgetPlanCategory = {
+              ...definedOnly(category),
               id: catId,
               name: category.name.trim() || 'Category',
               icon: category.icon || '📦',
@@ -1210,20 +1211,15 @@ export const useFinanceStore = create<FinanceStore>()(
                         id: s.id || generateId(),
                         name: (s.name || '').trim() || 'Subcategory',
                         amount: Number.isFinite(s.amount) ? s.amount : 0,
+                        ...(s.icon ? { icon: s.icon } : {}),
                       }))
                     : c.subcategories
+                const { amount, currency } = updates
                 return {
                   ...c,
-                  ...(updates.name !== undefined ? { name: updates.name } : {}),
-                  ...(updates.icon !== undefined ? { icon: updates.icon } : {}),
-                  ...(updates.amount !== undefined
-                    ? { amount: Number.isFinite(updates.amount) ? updates.amount : 0 }
-                    : {}),
-                  ...(updates.currency !== undefined
-                    ? {
-                        currency: clampFiatToAllowed(state.settings, updates.currency),
-                      }
-                    : {}),
+                  ...definedOnly(updates),
+                  ...(amount !== undefined ? { amount: Number.isFinite(amount) ? amount : 0 } : {}),
+                  ...(currency !== undefined ? { currency: clampFiatToAllowed(state.settings, currency) } : {}),
                   subcategories: nextSubs,
                 }
               }),
