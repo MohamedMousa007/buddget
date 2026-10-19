@@ -21,7 +21,7 @@ export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
 /** Routes that light each tab: the tab's own page plus its aliases and the pages it owns. */
 export const BOTTOM_NAV_TAB_PATHS: Record<string, ReadonlySet<string>> = {
   '/flow': new Set(['/', '/flow', '/expenses', '/income', '/paydays']),
-  '/budget-setup': new Set(['/budget-setup', '/subscriptions']),
+  '/budget-setup': new Set(['/budget-setup', '/budget-history', '/subscriptions']),
   '/wealth': new Set(['/wealth', '/savings', '/investment']),
   '/debts': new Set(['/debts']),
 }
@@ -40,7 +40,7 @@ export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['n
   if (pathname.startsWith('/savings')) return 'wealth'
   if (pathname.startsWith('/investment')) return 'wealth'
   if (pathname.startsWith('/subscriptions')) return 'subscriptions'
-  if (pathname.startsWith('/budget-setup')) return 'budgetSetup'
+  if (pathname.startsWith('/budget-setup') || pathname.startsWith('/budget-history')) return 'budgetSetup'
   if (pathname.startsWith('/settings')) return 'settings'
   if (pathname.startsWith('/reports')) return 'reports'
   if (pathname.startsWith('/goals')) return 'goals'

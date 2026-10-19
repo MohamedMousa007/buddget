@@ -73,14 +73,14 @@ type TrackedSliceKey =
   | 'activeBudgetPlanId' | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses'
   | 'recurringExpenses' | 'subscriptions' | 'debts' | 'debtPayments'
   | 'recurringDebtPayments' | 'savingsAccounts' | 'savingsHoldings'
-  | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans'
+  | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans' | 'budgetPlanActivations'
 
 const TRACKED_SLICES: readonly TrackedSliceKey[] = [
   'profile', 'settings', 'financialGoalsNotes',
   'activeBudgetPlanId', 'paymentMethods', 'incomeSources', 'incomeEvents', 'expenses',
   'recurringExpenses', 'subscriptions', 'debts', 'debtPayments',
   'recurringDebtPayments', 'savingsAccounts', 'savingsHoldings',
-  'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'budgetPlans',
+  'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'budgetPlans', 'budgetPlanActivations',
 ]
 
 /**
@@ -455,6 +455,7 @@ async function runFullSync(
     recurringSavingsDeposits: merged.recurringSavingsDeposits,
     goals: merged.goals,
     budgetPlans: merged.budgetPlans,
+    budgetPlanActivations: merged.budgetPlanActivations,
   })
   // Apply the server theme synchronously so the <html> class is already
   // correct before the loading splash is removed.

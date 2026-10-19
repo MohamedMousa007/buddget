@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useGoalRows } from '@/hooks/useGoalRows'
 import { selectActivePlan } from '@/lib/budget/activePlan'
+import { planForMonth } from '@/lib/budget/activations'
 import { debtExtras, debtPaidByDebt, goalExtras, liquidSavings, liveDebts, paydayDayOf, subscriptionsExtras, subscriptionsLive } from '@/lib/budget/liveLinks'
 import { lineHistory, spendByLine } from '@/lib/budget/lineSpend'
 import { buildPlanView } from '@/lib/budget/planView'
@@ -42,13 +43,18 @@ export function usePlanView(mode: PlanMode): PlanView | null {
       budgetCategories: st.budgetCategories,
       budgetPlans: st.budgetPlans,
       activeBudgetPlanId: st.activeBudgetPlanId,
+      budgetPlanActivations: st.budgetPlanActivations,
       goldPricePerGram: st.goldPricePerGram,
       goldPriceAvailable: st.goldPriceAvailable,
     }))
   )
 
   return useMemo(() => {
-    const plan = selectActivePlan(s.budgetPlans, s.activeBudgetPlanId)
+    // Plan mode designs the active plan; This month shows the plan that governed that month.
+    const plan =
+      mode === 'month'
+        ? planForMonth(s.budgetPlans, s.budgetPlanActivations, monthFilter, s.activeBudgetPlanId)
+        : selectActivePlan(s.budgetPlans, s.activeBudgetPlanId)
     if (!plan) return null
 
     const now = new Date()

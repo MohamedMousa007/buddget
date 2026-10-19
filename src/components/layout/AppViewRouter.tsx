@@ -9,6 +9,7 @@ import { useNavPath } from '@/lib/navigation/navStore'
 // impossible. Keep keys in sync with `SHELL_PATHS`.
 import FlowPage from '@/app/flow/page'
 import PaydaysPage from '@/app/paydays/page'
+import BudgetHistoryPage from '@/app/budget-history/page'
 import DebtsPage from '@/app/debts/page'
 import WealthPage from '@/app/wealth/page'
 import SubscriptionsPage from '@/app/subscriptions/page'
@@ -32,6 +33,7 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/expenses': FlowPage,
   '/income': FlowPage,
   '/paydays': PaydaysPage,
+  '/budget-history': BudgetHistoryPage,
   '/debts': DebtsPage,
   '/wealth': WealthPage,
   // Savings and Investment merged into Wealth; both paths still resolve.

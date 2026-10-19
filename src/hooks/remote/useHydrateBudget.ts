@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { activationFromRow } from '@/lib/supabase/remote/mappers/budgetActivationMapper'
 import { assembleBudgetPlan } from '@/lib/supabase/remote/mappers/budgetPlanMapper'
 import { hasHydrated, markHydrated } from '@/hooks/remote/hydrateGuard'
 import { mergeById, type MergableRow } from '@/hooks/remote/mergeById'
@@ -22,10 +23,11 @@ export function useHydrateBudget(): void {
 
     ;(async () => {
       try {
-        const [pR, cR, scR] = await Promise.all([
+        const [pR, cR, scR, aR] = await Promise.all([
           supabase.from('budget_plans').select('*').eq('user_id', uid).is('deleted_at', null),
           supabase.from('budget_categories').select('*').eq('user_id', uid).is('deleted_at', null),
           supabase.from('budget_subcategories').select('*').eq('user_id', uid).is('deleted_at', null),
+          supabase.from('budget_plan_activations').select('*').eq('user_id', uid).is('deleted_at', null),
         ])
         if (cancelled) return
         if (!pR.data) return
@@ -39,6 +41,10 @@ export function useHydrateBudget(): void {
         const local = useFinanceStore.getState().budgetPlans
         useFinanceStore.setState({
           budgetPlans: mergeById(local as unknown as MergableRow[], plans as unknown as MergableRow[]) as typeof local,
+          budgetPlanActivations: mergeById(
+            useFinanceStore.getState().budgetPlanActivations as unknown as MergableRow[],
+            (aR.data ?? []).map(activationFromRow) as unknown as MergableRow[],
+          ) as unknown as ReturnType<typeof useFinanceStore.getState>['budgetPlanActivations'],
         })
         markHydrated(uid, 'budget')
       } catch (e) {

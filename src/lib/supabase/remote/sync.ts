@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { activationFromRow, activationToRow } from '@/lib/supabase/remote/mappers/budgetActivationMapper'
 import type { Database } from '@/lib/supabase/database.types'
 import type { Snapshot } from './snapshot'
 import type { HasId } from './types'
@@ -188,7 +189,16 @@ export async function flushDiff(
 
   flushBudgetPlans(runner, userId, prev, next, next.settings.baseCurrency)
 
-  return runner.drain()
+  const result = await runner.drain()
+  // Activations reference plans (FK), so they commit only after the plan rows above are in.
+  const activationRunner = new OpRunner(client)
+  emitList(activationRunner, 'budget_plan_activations', next.budgetPlanActivations, prev.budgetPlanActivations, activationToRow, userId)
+  const activationResult = await activationRunner.drain()
+  return {
+    anyError: result.anyError || activationResult.anyError,
+    errors: [...result.errors, ...activationResult.errors],
+    writes: result.writes + activationResult.writes,
+  }
 }
 
 function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next: Snapshot, baseCurrency: Currency) {
@@ -290,6 +300,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
     recurringSavingsDeposits: [],
     goals: [],
     budgetPlans: [],
+    budgetPlanActivations: [],
   }
 }
 
@@ -303,7 +314,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     pmR, incomeR, incomeEvtR, expenseR, receiptR, recExpR, subR,
     debtR, debtPayR, recDebtR,
     saR, shR, stR, rsdR,
-    goalR, planR, catR, subcatR,
+    goalR, planR, catR, subcatR, activationR,
   ] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
@@ -325,6 +336,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     client.from('budget_plans').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('budget_categories').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('budget_subcategories').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('budget_plan_activations').select('*').eq('user_id', userId).is('deleted_at', null),
   ])
 
   if (!profileR.data) return null
@@ -387,5 +399,6 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     recurringSavingsDeposits: (rsdR.data ?? []).map(recurringSavingsDepositFromRow),
     goals: (goalR.data ?? []).map(goalFromRow),
     budgetPlans: plans,
+    budgetPlanActivations: (activationR.data ?? []).map(activationFromRow),
   }
 }

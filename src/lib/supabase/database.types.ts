@@ -277,6 +277,7 @@ export type Database = {
       budget_plan_activations: {
         Row: {
           created_at: string
+          deleted_at: string | null
           effective_from: string
           id: string
           plan_id: string
@@ -284,6 +285,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           effective_from: string
           id?: string
           plan_id: string
@@ -291,6 +293,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           effective_from?: string
           id?: string
           plan_id?: string

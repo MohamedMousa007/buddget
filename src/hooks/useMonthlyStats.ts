@@ -1,6 +1,6 @@
 'use client'
 
-import { selectActivePlan } from '@/lib/budget/activePlan'
+import { planForMonth } from '@/lib/budget/activations'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -73,6 +73,7 @@ export function useMonthlyStats() {
     incomeEvents,
     budgetCategories,
     budgetPlans,
+    budgetPlanActivations,
     activeBudgetPlanId,
     savingsHoldings,
     savingsAccounts,
@@ -90,6 +91,7 @@ export function useMonthlyStats() {
       incomeEvents: s.incomeEvents,
       budgetCategories: s.budgetCategories,
       budgetPlans: s.budgetPlans,
+      budgetPlanActivations: s.budgetPlanActivations,
       activeBudgetPlanId: s.activeBudgetPlanId,
       savingsHoldings: s.savingsHoldings,
       savingsAccounts: s.savingsAccounts,
@@ -175,7 +177,8 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
-    const activePlan = selectActivePlan(budgetPlans, activeBudgetPlanId)
+    // A past month is judged by the plan that was active then; the current month by the active plan.
+    const activePlan = planForMonth(budgetPlans, budgetPlanActivations, monthFilter, activeBudgetPlanId)
     /** Plan drives dashboard category rows only when it has at least one category row. */
     const planForCategoryBar =
       activePlan != null && activePlan.categories.length > 0 ? activePlan : null
@@ -373,6 +376,7 @@ export function useMonthlyStats() {
     incomeEvents,
     budgetCategories,
     budgetPlans,
+    budgetPlanActivations,
     activeBudgetPlanId,
     savingsHoldings,
     savingsAccounts,

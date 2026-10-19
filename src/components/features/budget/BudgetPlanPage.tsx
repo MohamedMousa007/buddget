@@ -6,9 +6,13 @@ import { PageBody } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { SkeletonList } from '@/components/ui/SkeletonList'
-import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
+import { usePlanActions } from '@/hooks/usePlanActions'
+import { CardActionMenu } from '@/components/ui/CardActionMenu'
+import { History, Plus } from 'lucide-react'
+import { summarizePlan } from '@/lib/budget/planSummary'
+import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
 import { navigate } from '@/lib/navigation/navigate'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -28,8 +32,9 @@ import { UpgradeBanner } from './UpgradeBanner'
 import { BLOCK_BODIES } from './blocks'
 import { LineSheet } from './sheets/LineSheet'
 import { AddLineSheet } from './sheets/AddLineSheet'
-import { PlanListSheet } from './sheets/PlanListSheet'
-import { useBudgetBlocksCopy } from './useBlocksCopy'
+import { ActivateSheet } from './sheets/ActivateSheet'
+import { PlanDeck } from './PlanDeck'
+import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetPageCopy } from './usePageCopy'
 import type { ChapterView } from '@/lib/budget/planView.types'
 
@@ -40,13 +45,12 @@ const LINKED_ROUTE: Partial<Record<BudgetBlock, string>> = {
   safety: '/wealth',
 }
 
-const newId = () => crypto.randomUUID()
-
 /** The Budget page: the active plan as chapters of blocks, with a This month overlay. */
 export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const t = useBudgetPageCopy()
-  const blocksCopy = useBudgetBlocksCopy()
-  const confirm = useConfirm()
+  const planActions = usePlanActions()
+  const deckCopy = useBudgetDeckCopy()
+  const { locale } = useLocale()
   const [mode, setMode] = useState<PlanMode>('plan')
   const view = usePlanView(mode)
   const act = useBudgetPageActions(view)
@@ -54,11 +58,20 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [lineId, setLineId] = useState<string | null>(null)
   const [addBlock, setAddBlock] = useState<BudgetBlock | null>(null)
   const [insightsOpen, setInsightsOpen] = useState(false)
-  const [plansOpen, setPlansOpen] = useState(false)
+  const [deckOpen, setDeckOpen] = useState(false)
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
+  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
+  const [activateId, setActivateId] = useState<string | null>(null)
   const [upgradeLater, setUpgradeLater] = useState(false)
 
-  const { plans, activeId } = useFinanceStore(useShallow((s) => ({ plans: s.budgetPlans, activeId: s.activeBudgetPlanId })))
-  const store = useFinanceStore
+  const { plans, activeId, activations, rates } = useFinanceStore(
+    useShallow((s) => ({
+      plans: s.budgetPlans,
+      activeId: s.activeBudgetPlanId,
+      activations: s.budgetPlanActivations,
+      rates: s.exchangeRates,
+    })),
+  )
 
   const selectedLine = useMemo<LineView | null>(() => {
     if (!view || !lineId) return null
@@ -121,30 +134,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     else jump('everyday')
   }, [act, jump, view])
 
-  const duplicatePlan = useCallback(
-    (id: string) => {
-      const s = store.getState()
-      const source = s.budgetPlans.find((p) => p.id === id)
-      if (!source) return
-      const copy = s.addBudgetPlan(t.planNames.copyOf(source.name), { status: 'draft', origin: 'clone', intent: source.intent })
-      s.updateBudgetPlan(copy, {
-        status: 'ready',
-        categories: source.categories.map((c) => ({
-          ...c,
-          id: newId(),
-          subcategories: c.subcategories.map((sc) => ({ ...sc, id: newId() })),
-        })),
-      })
-    },
-    [store, t],
-  )
-
-  const newBlankPlan = useCallback(() => {
-    const s = store.getState()
-    const id = s.addBudgetPlan(t.planNames.fresh, { status: 'draft', origin: 'manual' })
-    s.updateBudgetPlan(id, { status: 'ready' })
-  }, [store, t])
-
   if (!ready) {
     return (
       <PageBody className="space-y-4">
@@ -162,15 +151,46 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   }
 
   const base = view.base
+  const summaries = Object.fromEntries(plans.map((p) => [p.id, summarizePlan(p, view.income, base, rates)]))
+  const sinceKey = activations
+    .filter((a) => a.planId === activeId)
+    .map((a) => a.effectiveFrom.slice(0, 7))
+    .sort()
+    .pop()
+  const activeSince = sinceKey
+    ? new Date(Number(sinceKey.slice(0, 4)), Number(sinceKey.slice(5, 7)) - 1, 1).toLocaleDateString(locale, { month: 'short' })
+    : null
   return (
     <PageBody className="space-y-4 lg:pb-6">
       <PlanBar
         planName={view.plan.name}
         mode={mode}
         onModeChange={setMode}
-        onOpenPlans={() => setPlansOpen(true)}
-        onOpenMenu={() => setPlansOpen(true)}
+        expanded={deckOpen}
+        onOpenPlans={() => {
+          setSelectedPlanId(view.plan.id)
+          setDeckOpen((v) => !v)
+        }}
+        onOpenMenu={setMenuAnchor}
       />
+      {deckOpen ? (
+        <PlanDeck
+          plans={plans}
+          activeId={activeId}
+          selectedId={selectedPlanId ?? view.plan.id}
+          summaries={summaries}
+          income={view.income}
+          base={base}
+          activeSince={activeSince}
+          onSelect={setSelectedPlanId}
+          onActivate={setActivateId}
+          onDuplicate={planActions.duplicate}
+          onRename={planActions.rename}
+          onDelete={planActions.remove}
+          onHistory={() => navigate('/budget-history')}
+          onNew={planActions.createBlank}
+        />
+      ) : null}
       <FlowStrip view={view} onFix={onFix} onJump={jump} />
       <InsightsChip insights={view.insights} onOpen={() => setInsightsOpen(true)} />
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
@@ -259,16 +279,24 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           setAddBlock(null)
         }}
       />
-      <PlanListSheet
-        open={plansOpen}
-        plans={plans}
-        activeId={activeId}
-        onClose={() => setPlansOpen(false)}
-        onActivate={(id) => store.getState().setActiveBudgetPlanId(id)}
-        onRename={(id, name) => store.getState().updateBudgetPlan(id, { name })}
-        onDuplicate={duplicatePlan}
-        onDelete={(id) => store.getState().deleteBudgetPlan(id)}
-        onNew={newBlankPlan}
+      <ActivateSheet
+        open={activateId != null}
+        plan={plans.find((p) => p.id === activateId) ?? null}
+        current={view.plan}
+        next={activateId ? summaries[activateId] ?? null : null}
+        now={summaries[view.plan.id] ?? null}
+        base={base}
+        monthLabel={new Date().toLocaleDateString(locale, { month: 'long' })}
+        onConfirm={() => activateId && planActions.activate(activateId)}
+        onClose={() => setActivateId(null)}
+      />
+      <CardActionMenu
+        anchor={menuAnchor}
+        onClose={() => setMenuAnchor(null)}
+        items={[
+          { label: deckCopy.deck.history, icon: <History className="size-4" />, onSelect: () => navigate('/budget-history') },
+          { label: deckCopy.deck.newPlan, icon: <Plus className="size-4" />, onSelect: planActions.createBlank },
+        ]}
       />
     </PageBody>
   )

@@ -417,6 +417,12 @@ export interface BudgetPlanActivation {
   createdAt: string
 }
 
+/** State to restore when the user undoes an activation. */
+export interface BudgetActivationUndo {
+  activeBudgetPlanId: string | null
+  activations: BudgetPlanActivation[]
+}
+
 /** What the budget studio learns about the user, beyond the typed profile columns. */
 export interface FinancialProfile {
   housing?: 'rent' | 'own' | 'family' | 'company'
@@ -955,6 +961,8 @@ export interface FinanceStore {
   budgetPlans: BudgetPlan[]
   /** Selected plan for dashboard caps and planner UI; ignored when `budgetPlans` is empty. */
   activeBudgetPlanId: string | null
+  /** Which plan was active from which cycle (history log). */
+  budgetPlanActivations: BudgetPlanActivation[]
   savingsHoldings: SavingsHolding[]
   /** v3 investment positions (gold/crypto/stock/property), valued at quantity × live price. */
   investmentHoldings: InvestmentHolding[]
@@ -1115,6 +1123,9 @@ export interface FinanceStore {
   replaceBudgetPlanCategories: (planId: string, categories: BudgetPlanCategory[]) => void
   deleteBudgetPlan: (planId: string) => void
   setActiveBudgetPlanId: (id: string | null) => void
+  /** Makes a plan active from `cycleKey` (`YYYY-MM`) onward and logs it. Returns what Undo needs. */
+  activateBudgetPlan: (planId: string, cycleKey: string) => BudgetActivationUndo
+  restoreBudgetActivation: (undo: BudgetActivationUndo) => void
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void

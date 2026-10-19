@@ -1,0 +1,49 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { planForMonth } from '@/lib/budget/activations'
+import type { BudgetPlan } from '@/lib/store/types'
+
+const plan = (id: string, createdAt: string): BudgetPlan => ({ id, name: id, categories: [], createdAt, status: 'ready' })
+
+describe('activateBudgetPlan', () => {
+  beforeEach(() => {
+    useFinanceStore.setState({
+      budgetPlans: [plan('old', '2026-07-10T00:00:00Z'), plan('new', '2026-10-01T00:00:00Z')],
+      budgetPlanActivations: [],
+      activeBudgetPlanId: 'old',
+    })
+  })
+
+  it('keeps earlier months with the plan that was active, and the new plan from the cycle on', () => {
+    useFinanceStore.getState().activateBudgetPlan('new', '2026-10')
+    const s = useFinanceStore.getState()
+    expect(s.activeBudgetPlanId).toBe('new')
+    expect(planForMonth(s.budgetPlans, s.budgetPlanActivations, '2026-08', s.activeBudgetPlanId)?.id).toBe('old')
+    expect(planForMonth(s.budgetPlans, s.budgetPlanActivations, '2026-10', s.activeBudgetPlanId)?.id).toBe('new')
+    expect(planForMonth(s.budgetPlans, s.budgetPlanActivations, '2027-03', s.activeBudgetPlanId)?.id).toBe('new')
+  })
+
+  it('undo restores the active plan and the log', () => {
+    const undo = useFinanceStore.getState().activateBudgetPlan('new', '2026-10')
+    useFinanceStore.getState().restoreBudgetActivation(undo)
+    const s = useFinanceStore.getState()
+    expect(s.activeBudgetPlanId).toBe('old')
+    expect(s.budgetPlanActivations).toEqual([])
+  })
+
+  it('a second switch in the same cycle replaces the first', () => {
+    const st = useFinanceStore.getState()
+    st.activateBudgetPlan('new', '2026-10')
+    st.activateBudgetPlan('old', '2026-10')
+    const rows = useFinanceStore.getState().budgetPlanActivations.filter((a) => a.effectiveFrom === '2026-10-01')
+    expect(rows.map((r) => r.planId)).toEqual(['old'])
+  })
+
+  it('an old plan created in the switch month still covers the months before it', () => {
+    useFinanceStore.setState({ budgetPlans: [plan('old', '2026-10-05T00:00:00Z'), plan('new', '2026-10-06T00:00:00Z')] })
+    useFinanceStore.getState().activateBudgetPlan('new', '2026-10')
+    const s = useFinanceStore.getState()
+    expect(planForMonth(s.budgetPlans, s.budgetPlanActivations, '2026-09', s.activeBudgetPlanId)?.id).toBe('old')
+    expect(planForMonth(s.budgetPlans, s.budgetPlanActivations, '2026-10', s.activeBudgetPlanId)?.id).toBe('new')
+  })
+})

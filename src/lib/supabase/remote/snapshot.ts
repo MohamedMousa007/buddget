@@ -1,4 +1,5 @@
-import type { FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, InvestmentHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
+import type {
+  BudgetPlanActivation, FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, InvestmentHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
 
 /**
  * Mirror of the finance store slices we persist to Supabase. Used to compute diffs
@@ -25,6 +26,7 @@ export interface Snapshot {
   recurringSavingsDeposits: RecurringSavingsDeposit[]
   goals: Goal[]
   budgetPlans: BudgetPlan[]
+  budgetPlanActivations: BudgetPlanActivation[]
 }
 
 /** Copy the parts of the Zustand store that map to DB rows. Plain JSON; safe to `deepEqual` on. */
@@ -33,7 +35,7 @@ export function snapshot(state: Pick<FinanceStore,
   | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses' | 'receipts' | 'recurringExpenses'
   | 'subscriptions' | 'debts' | 'debtPayments' | 'recurringDebtPayments'
   | 'savingsAccounts' | 'investmentHoldings' | 'savingsTransactions' | 'recurringSavingsDeposits'
-  | 'goals' | 'budgetPlans'
+  | 'goals' | 'budgetPlans' | 'budgetPlanActivations'
 >): Snapshot {
   return {
     profile: state.profile,
@@ -56,6 +58,7 @@ export function snapshot(state: Pick<FinanceStore,
     recurringSavingsDeposits: state.recurringSavingsDeposits,
     goals: state.goals,
     budgetPlans: state.budgetPlans,
+    budgetPlanActivations: state.budgetPlanActivations,
   }
 }
 
@@ -104,5 +107,6 @@ export function emptySnapshot(): Snapshot {
     recurringSavingsDeposits: [],
     goals: [],
     budgetPlans: [],
+    budgetPlanActivations: [],
   }
 }

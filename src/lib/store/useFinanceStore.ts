@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { format } from 'date-fns'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
@@ -19,6 +20,7 @@ import {
   createFreshDefaultProfile,
 } from './defaultFinanceData'
 import type {
+  BudgetActivationUndo,
   BudgetPlanCategory,
   Currency,
   DebtCurrency,
@@ -177,6 +179,7 @@ export const useFinanceStore = create<FinanceStore>()(
       subscriptions: [],
       budgetCategories: DEFAULT_BUDGET,
       budgetPlans: [],
+      budgetPlanActivations: [],
       activeBudgetPlanId: null,
       savingsHoldings: [],
       investmentHoldings: [],
@@ -1167,6 +1170,33 @@ export const useFinanceStore = create<FinanceStore>()(
 
       setActiveBudgetPlanId: (id) => set({ activeBudgetPlanId: id }),
 
+      activateBudgetPlan: (planId, cycleKey) => {
+        const undo: BudgetActivationUndo = {
+          activeBudgetPlanId: get().activeBudgetPlanId,
+          activations: get().budgetPlanActivations,
+        }
+        set((state) => {
+          const now = new Date().toISOString()
+          let log = state.budgetPlanActivations
+          const previous = state.budgetPlans.find((p) => p.id === state.activeBudgetPlanId)
+          // First recorded switch: the plan that has been active until now keeps the months before it.
+          if (log.length === 0 && previous && previous.id !== planId) {
+            // Never later than the cycle before the switch, so earlier months stay with the old plan.
+            const created = cycleKeyOf(new Date(previous.createdAt), 1)
+            const before = prevKey(cycleKey)
+            log = recordActivation(log, previous.id, created < before ? created : before, generateId, now)
+          }
+          return {
+            budgetPlanActivations: recordActivation(log, planId, cycleKey, generateId, now),
+            activeBudgetPlanId: planId,
+          }
+        })
+        return undo
+      },
+
+      restoreBudgetActivation: (undo) =>
+        set({ activeBudgetPlanId: undo.activeBudgetPlanId, budgetPlanActivations: undo.activations }),
+
       addPlanCategory: (planId, category) => {
         const catId = generateId()
         set((state) => ({
@@ -1790,6 +1820,7 @@ export const useFinanceStore = create<FinanceStore>()(
           recurringExpenses: [],
           budgetCategories: DEFAULT_BUDGET,
           budgetPlans: [],
+          budgetPlanActivations: [],
           activeBudgetPlanId: null,
           financialGoalsNotes: '',
           savingsHoldings: [],
@@ -1906,6 +1937,7 @@ export const useFinanceStore = create<FinanceStore>()(
             lastGoldFetch: p.lastGoldFetch ?? null,
             goldPriceAvailable: typeof p.goldPriceAvailable === 'boolean' ? p.goldPriceAvailable : true,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
+            budgetPlanActivations: Array.isArray(p.budgetPlanActivations) ? p.budgetPlanActivations : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId
@@ -1938,6 +1970,7 @@ export const useFinanceStore = create<FinanceStore>()(
           return {
             ...p,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
+            budgetPlanActivations: Array.isArray(p.budgetPlanActivations) ? p.budgetPlanActivations : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId
