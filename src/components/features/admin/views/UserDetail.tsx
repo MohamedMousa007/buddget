@@ -10,7 +10,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FEATURE_CATALOG, LIMIT_CATALOG, LIMIT_KEYS, type LimitKey } from '@/lib/entitlements/limits'
 import { adminNavigate } from '../adminRouter'
 import { useAdminQuery } from '../adminClient'
-import { ago, dateTime, num } from '../format'
+import { ago, dateTime, num, personLabel } from '../format'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
 import { Field } from '../ui/Field'
@@ -53,15 +53,15 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
   if (!data) return <><Back /><Loading rows={8} /></>
 
   const banned = !!data.auth.banned_until && new Date(data.auth.banned_until) > new Date()
-  const name = data.profile?.name ?? data.auth.email ?? 'Unknown user'
+  const who = personLabel({ name: data.profile?.name, email: data.auth.email, id })
   const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.delete') : true))
 
   return (
     <>
       <Back />
       <PageHeader
-        title={name}
-        description={data.auth.email}
+        title={who.primary}
+        description={who.secondary ?? undefined}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {banned ? <Pill tone="bad">Suspended</Pill> : null}

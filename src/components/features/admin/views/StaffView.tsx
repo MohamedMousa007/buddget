@@ -47,8 +47,8 @@ export default function StaffView({ status }: { status: AdminStatus }) {
   const columns: Column<Member>[] = [
     { key: 'who', header: 'Teammate', cell: (m) => (
       <div className="flex min-w-0 items-center gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--color-brand-primary-soft)] text-sm font-semibold text-[var(--color-brand-primary-ink)]">{(m.display_name ?? m.email).slice(0, 1).toUpperCase()}</span>
-        <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]">{m.display_name ?? m.email}{m.isOwner ? <Crown className="ms-1.5 inline size-3.5 text-[var(--color-brand-gold)]" aria-label="Owner" /> : null}</p>{m.display_name ? <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{m.email}</p> : null}</div>
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--color-brand-primary-soft)] text-sm font-semibold text-[var(--color-brand-primary-ink)]">{(m.display_name?.trim() || m.email).slice(0, 1).toUpperCase()}</span>
+        <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]">{m.display_name?.trim() || m.email}{m.isOwner ? <Crown className="ms-1.5 inline size-3.5 text-[var(--color-brand-gold)]" aria-label="Owner" /> : null}</p>{m.display_name?.trim() ? <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{m.email}</p> : null}</div>
       </div>
     ) },
     { key: 'role', header: 'Role', cell: (m) => <span className="flex items-center gap-1.5">{roleName.get(m.role_key) ?? m.role_key}{m.extra_permissions.length ? <Pill tone="brand">+{m.extra_permissions.length}</Pill> : null}</span> },
@@ -198,7 +198,7 @@ function MemberSheet({ member, data, canManage, onClose, onDone }: { member: Mem
   }
 
   return (
-    <AdminSheet open title={member.display_name ?? member.email} onClose={onClose} wide>
+    <AdminSheet open title={member.display_name?.trim() || member.email} onClose={onClose} wide>
       <div className="space-y-4">
         {member.isOwner ? <Notice tone="info"><span className="flex items-center gap-2"><Lock className="size-4" aria-hidden />The owner account is permanent. Its role and access can’t be changed from the portal, by anyone.</span></Notice> : null}
         <div className="grid gap-4 sm:grid-cols-2">
@@ -216,7 +216,7 @@ function MemberSheet({ member, data, canManage, onClose, onDone }: { member: Mem
             <Button size="cta-block" loading={busy === 'save'} onClick={() => void guarded('save', { op: 'update', displayName: name, department, roleKey, extraPermissions: extra }, 'Changing a role or permissions signs that person out of the portal. Confirm it’s you.', { success: 'Saved' })}>Save changes</Button>
             <div className="flex flex-wrap gap-2">
               {member.status === 'active'
-                ? <Button variant="outline" size="touch" loading={busy === 'suspend'} onClick={() => void run('suspend', { op: 'suspend', id: member.id }, { success: 'Suspended', confirm: { title: `Suspend ${member.display_name ?? member.email}?`, body: 'They lose portal access immediately.', destructive: true } })}>Suspend</Button>
+                ? <Button variant="outline" size="touch" loading={busy === 'suspend'} onClick={() => void run('suspend', { op: 'suspend', id: member.id }, { success: 'Suspended', confirm: { title: `Suspend ${member.display_name?.trim() || member.email}?`, body: 'They lose portal access immediately.', destructive: true } })}>Suspend</Button>
                 : <Button variant="outline" size="touch" loading={busy === 'restore'} onClick={() => void run('restore', { op: 'restore', id: member.id }, { success: 'Restored' })}>Restore</Button>}
               {!member.secured && member.status === 'active' ? <Button variant="outline" size="touch" loading={busy === 'resend'} onClick={() => void run('resend', { op: 'resend_invite', id: member.id }, { success: 'Invite sent' })}>Resend invite</Button> : null}
               {member.user_id ? <Button variant="outline" size="touch" onClick={() => void guarded('reset', { op: 'reset_credentials' }, 'This signs them out and forces them to set up their admin password again.', { success: 'Security reset' })}>Reset their security</Button> : null}

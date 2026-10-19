@@ -8,7 +8,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectField } from '@/components/ui/SelectField'
 import { adminNavigate, useAdminRoute } from '../adminRouter'
 import { useAdminQuery } from '../adminClient'
-import { ago, num, shortDate } from '../format'
+import { ago, num, personLabel, shortDate } from '../format'
 import { DataTable, type Column } from '../ui/DataTable'
 import { Toolbar } from '../ui/Field'
 import { Notice, PageHeader, Panel } from '../ui/Panel'
@@ -75,15 +75,18 @@ function UserList({ initialQuery, initialState }: { initialQuery: string; initia
   const columns: Column<UserRow>[] = [
     {
       key: 'user', header: 'User',
-      cell: (u) => (
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--color-brand-primary-soft)] text-sm font-semibold text-[var(--color-brand-primary-ink)]">{(u.name ?? u.email ?? '?').slice(0, 1).toUpperCase()}</span>
-          <div className="min-w-0">
-            <p className="truncate font-medium text-[var(--color-brand-text-primary)]">{u.name ?? u.email ?? u.id.slice(0, 8)}</p>
-            {u.name ? <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{u.email}</p> : null}
+      cell: (u) => {
+        const who = personLabel(u)
+        return (
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--color-brand-primary-soft)] text-sm font-semibold text-[var(--color-brand-primary-ink)]">{who.initial}</span>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-[var(--color-brand-text-primary)]">{who.primary}</p>
+              {who.secondary ? <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{who.secondary}</p> : null}
+            </div>
           </div>
-        </div>
-      ),
+        )
+      },
     },
     { key: 'status', header: 'Status', cell: (u) => (isBanned(u) ? <Pill tone="bad">Suspended</Pill> : !u.confirmed ? <Pill tone="warn">Unverified</Pill> : <Pill tone="good">Good</Pill>) },
     { key: 'plan', header: 'Plan', cell: (u) => <span className="flex items-center gap-1.5">{u.plan_key}{u.plan_status !== 'active' ? <StatusPill status={u.plan_status} /> : null}</span> },

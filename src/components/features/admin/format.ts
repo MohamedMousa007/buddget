@@ -36,3 +36,13 @@ export function money(cents: number | null | undefined, currency = 'USD'): strin
   if (cents == null) return '—'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: cents % 100 === 0 ? 0 : 2 }).format(cents / 100)
 }
+
+/** How a person is shown in the portal: the best identity we have, then the next one down, never blank. */
+export function personLabel(p: { name?: string | null; email?: string | null; id: string }): { primary: string; secondary: string | null; initial: string } {
+  const name = p.name?.trim() || null
+  const email = p.email?.trim() || null
+  const shortId = p.id.slice(0, 8)
+  const primary = name ?? email ?? `User ${shortId}`
+  const secondary = name ? email : email ? `ID ${shortId}` : null
+  return { primary, secondary, initial: (primary.match(/[\p{L}\p{N}]/u)?.[0] ?? '?').toUpperCase() }
+}

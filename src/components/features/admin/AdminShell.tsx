@@ -85,10 +85,10 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
       <div className="shrink-0 space-y-2 border-t border-[var(--color-brand-border)] p-3 safe-area-bottom">
         <div className="flex items-center gap-3 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5">
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[var(--color-brand-primary)] text-sm font-bold text-[var(--color-brand-on-primary)]">
-            {(status.staff?.name ?? status.staff?.email ?? '?').slice(0, 1).toUpperCase()}
+            {(status.staff?.name?.trim() || status.staff?.email || '?').slice(0, 1).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{status.staff?.name ?? status.staff?.email}</p>
+            <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{status.staff?.name?.trim() || status.staff?.email}</p>
             <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{status.staff?.roleName}</p>
           </div>
           {status.session?.method === 'sso' ? null : <IconButton aria-label="Lock the portal" size="sm" onClick={onLock}><Lock /></IconButton>}

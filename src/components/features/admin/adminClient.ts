@@ -71,9 +71,20 @@ export interface Query<T> {
   refresh: () => Promise<void>
 }
 
-/** GET a admin endpoint; refetches when `path` changes. Keeps the previous data visible while reloading. */
+// Last good response per path: going back to a list shows it at once while a fresh copy loads behind it.
+const MAX_CACHED = 60
+const responseCache = new Map<string, unknown>()
+const remember = (path: string, data: unknown) => {
+  responseCache.delete(path)
+  responseCache.set(path, data)
+  if (responseCache.size > MAX_CACHED) responseCache.delete(responseCache.keys().next().value as string)
+}
+// Nothing from a locked session may outlive it.
+if (typeof window !== 'undefined') window.addEventListener(ADMIN_LOCKED_EVENT, () => responseCache.clear())
+
+/** GET a admin endpoint; refetches when `path` changes. Shows the last response for that path immediately, then revalidates. */
 export function useAdminQuery<T>(path: string | null): Query<T> {
-  const [data, setData] = useState<T | null>(null)
+  const [data, setData] = useState<T | null>(() => (path !== null ? ((responseCache.get(path) as T | undefined) ?? null) : null))
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(path !== null)
   const seq = useRef(0)
@@ -81,9 +92,12 @@ export function useAdminQuery<T>(path: string | null): Query<T> {
   const load = useCallback(async () => {
     if (path === null) return
     const mine = ++seq.current
+    const cached = responseCache.get(path) as T | undefined
+    if (cached !== undefined) setData(cached)
     setLoading(true)
     try {
       const next = await adminFetch<T>(path)
+      remember(path, next)
       if (mine === seq.current) {
         setData(next)
         setError(null)
