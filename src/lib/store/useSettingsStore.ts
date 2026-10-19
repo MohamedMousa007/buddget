@@ -97,6 +97,9 @@ interface SettingsState {
   logBuddgyNudge: (id: string) => void
   /** Facts the user asked Buddgy to remember — device-local, fed into every prompt (persisted). */
   buddgyNotes: string[]
+  /** `YYYY-MM` cycles whose month-close prompt is done, applied or dismissed. */
+  budgetClosedCycles: string[]
+  closeBudgetCycle: (cycleKey: string) => void
   /** When false, chat stops saving new notes. */
   buddgyLearning: boolean
   setBuddgyLearning: (on: boolean) => void
@@ -196,6 +199,9 @@ export const useSettingsStore = create<SettingsState>()(
           return { buddgyNudgeLog: { day, count: prev.count + 1, lastAt: Date.now(), seen: [...prev.seen, id] } }
         }),
       buddgyNotes: [],
+      budgetClosedCycles: [],
+      closeBudgetCycle: (cycleKey) =>
+        set((st) => (st.budgetClosedCycles.includes(cycleKey) ? st : { budgetClosedCycles: [...st.budgetClosedCycles, cycleKey].slice(-24) })),
       buddgyLearning: true,
       setBuddgyLearning: (on) => set({ buddgyLearning: on }),
       clearBuddgyNotes: () => set({ buddgyNotes: [] }),
@@ -303,6 +309,7 @@ export const useSettingsStore = create<SettingsState>()(
         buddgyNudges: state.buddgyNudges,
         buddgyNudgeLog: state.buddgyNudgeLog,
         buddgyNotes: state.buddgyNotes,
+        budgetClosedCycles: state.budgetClosedCycles,
         buddgyLearning: state.buddgyLearning,
       }),
     }

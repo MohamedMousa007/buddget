@@ -39,6 +39,10 @@ import { CreateChooser } from './builder/CreateChooser'
 import { StudioPage } from './studio/StudioPage'
 import { ReviewPage } from './studio/ReviewPage'
 import { AdjustSheet } from './sheets/AdjustSheet'
+import { MonthCloseCard } from './MonthCloseCard'
+import { MonthCloseSheet } from './sheets/MonthCloseSheet'
+import { useMonthClose } from '@/hooks/useMonthClose'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetStudioCopy } from './useStudioCopy'
 import { useBudgetPageCopy } from './usePageCopy'
@@ -77,6 +81,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [studio, setStudio] = useState<{ intent: CreateIntent | null } | null>(null)
   const [review, setReview] = useState<{ id: string; aiNote: boolean } | null>(null)
   const [adjusting, setAdjusting] = useState(false)
+  const monthClose = useMonthClose()
+  const [closeOpen, setCloseOpen] = useState(false)
   const [buildEmpty, setBuildEmpty] = useState(false)
   const openBuilder = useCallback((id: string, empty = false) => {
     setCreating(false)
@@ -235,6 +241,9 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   }
 
   const base = view.base
+  const closeMonth = monthClose
+    ? new Date(Number(monthClose.cycleKey.slice(0, 4)), Number(monthClose.cycleKey.slice(5, 7)) - 1, 1).toLocaleDateString(locale, { month: 'long' })
+    : ''
   const summaries = Object.fromEntries(plans.map((p) => [p.id, summarizePlan(p, view.income, base, rates)]))
   const sinceKey = activations
     .filter((a) => a.planId === activeId)
@@ -277,6 +286,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           onContinue={(id) => openBuilder(id)}
         />
       ) : null}
+      {mode === 'plan' && monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
       <FlowStrip view={view} onFix={onFix} onJump={jump} />
       <InsightsChip insights={view.insights} onOpen={() => setInsightsOpen(true)} />
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
@@ -369,6 +379,17 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         onClose={() => setCompare(null)}
       />
       <AdjustSheet open={adjusting} view={view} onClose={() => setAdjusting(false)} />
+      <MonthCloseSheet
+        open={closeOpen}
+        close={monthClose}
+        base={base}
+        month={closeMonth}
+        onApply={(p) => act.patchLine(p.lineId, { amount: p.to })}
+        onFinish={() => {
+          setCloseOpen(false)
+          if (monthClose) useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)
+        }}
+      />
       <CardActionMenu
         anchor={menuAnchor}
         onClose={() => setMenuAnchor(null)}
