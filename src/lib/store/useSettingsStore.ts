@@ -304,6 +304,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       reset: () => {
         get().resetSettings()
+        // Persisted per-account fields: left in memory they would carry into the next sign-in in the same tab.
+        set({ budgetClosedCycles: [], budgetStudioDraft: null, buddgyNotes: [] })
       },
     }),
     {

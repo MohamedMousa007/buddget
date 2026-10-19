@@ -43,6 +43,8 @@ export interface BudgetFacts {
   /** 0 = save hard, 100 = live comfortably. */
   securityLean: number
   payoffStrategy: 'avalanche' | 'snowball' | 'minimums'
+  /** Extra a month the user wants to send at the target debt; the plan gives it what slack allows. */
+  extraPayoff?: number
   investInterest: boolean
 }
 

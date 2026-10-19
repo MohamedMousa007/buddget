@@ -130,6 +130,17 @@ describe('buildPlan', () => {
     expect(find(mins, (l) => l.name.startsWith('Extra payoff'))).toBeUndefined()
   })
 
+  it('gives the extra payoff the user asked for, within what the plan has to spare', () => {
+    const debts = [{ id: 'a', name: 'Card', minimum: 100, balance: 9000, apr: 30, kind: 'credit_card' as const }]
+    const paced = find(buildPlan({ ...base, debts }), (l) => l.name.startsWith('Extra payoff'))!.amount
+    const asked = find(buildPlan({ ...base, debts, extraPayoff: paced + 200 }), (l) => l.name.startsWith('Extra payoff'))!.amount
+    expect(asked).toBeGreaterThan(paced)
+    const tiny = find(buildPlan({ ...base, debts, extraPayoff: 10 }), (l) => l.name.startsWith('Extra payoff'))!.amount
+    expect(tiny).toBe(10)
+    const plan = buildPlan({ ...base, debts, extraPayoff: 1_000_000 })
+    expect(plan.free).toBeGreaterThanOrEqual(0)
+  })
+
   it('couple with kids in Egypt, variable income: sized on the floor with a surplus risk', () => {
     const p = buildPlan({
       ...base,

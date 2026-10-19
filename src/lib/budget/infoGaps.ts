@@ -202,6 +202,7 @@ export const QUESTIONS: readonly Question[] = [
     min: 0,
     step: 50,
     writes: { kind: 'facts', key: 'extraPayoff' },
+    toFacts: (v) => ({ extraPayoff: v as number }),
   }),
 
   q('emergencyMonths', 'secure', 'important', 'stepper', {

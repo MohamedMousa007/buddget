@@ -246,7 +246,8 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
   // Extra payoff is paced, not maximal: enough to clear the target in about two to three years on top of
   // its minimum, so the rest of the slack still builds the safety net and goals.
   const paceCap = payoffTarget ? Math.ceil(payoffTarget.balance / (wantsDebt ? PAYOFF_PACE_PRIORITY_MONTHS : PAYOFF_PACE_MONTHS)) : 0
-  const extraPayoff = payoffTarget ? takeSlack(wantsDebt ? 0.6 : 0.4, paceCap) : 0
+  const askedExtra = Math.round(f.extraPayoff ?? 0)
+  const extraPayoff = !payoffTarget ? 0 : askedExtra > 0 ? takeSlack(1, Math.min(askedExtra, payoffTarget.balance)) : takeSlack(wantsDebt ? 0.6 : 0.4, paceCap)
 
   const targetMonths = Math.max(f.emergencyTargetMonths, f.incomeStability !== 'fixed' || f.dependents >= 1 ? 6 : 0)
   const gap = Math.max(0, targetMonths * essentials - f.liquidSavings)

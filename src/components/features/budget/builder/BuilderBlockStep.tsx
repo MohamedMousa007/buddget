@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { CalendarDays, Plus, Trash2 } from 'lucide-react'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import type { BlockView, LineView } from '@/lib/budget/planView.types'
 import { findAdded } from '@/lib/budget/templates'
 import type { BudgetBlock, BudgetPlanCategory, Currency } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
+import { reconcileTyped } from '@/lib/ui/typedAmount'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { percentText } from '../chromeFormat'
 import { LineIcon } from '../LineIcon'
@@ -97,9 +99,9 @@ export function BuilderBlockStep(p: BuilderBlockStepProps) {
             </div>
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <AmountField
-                  value={String(l.amount)}
-                  onChange={(v) => p.onAmount(l, Number(v) || 0)}
+                <LineAmount
+                  stored={l.amount}
+                  onCommit={(amount) => p.onAmount(l, amount)}
                   currency={p.base}
                   label={c.amountOf(l.line.name)}
                   disabled={linked}
@@ -122,5 +124,28 @@ export function BuilderBlockStep(p: BuilderBlockStepProps) {
         {c.addLine(blockName)}
       </Button>
     </div>
+  )
+}
+
+/** Amount box that keeps what is being typed ("1.", empty) while every keystroke also lands in the plan. */
+function LineAmount({ stored, onCommit, currency, label, disabled }: {
+  stored: number
+  onCommit: (amount: number) => void
+  currency: Currency
+  label: string
+  disabled: boolean
+}) {
+  const [typed, setTyped] = useState(String(stored))
+  return (
+    <AmountField
+      value={reconcileTyped(typed, stored)}
+      onChange={(v) => {
+        setTyped(v)
+        onCommit(Number(v) || 0)
+      }}
+      currency={currency}
+      label={label}
+      disabled={disabled}
+    />
   )
 }

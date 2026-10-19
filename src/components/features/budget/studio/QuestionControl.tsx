@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import type { Question } from '@/lib/budget/infoGaps'
 import type { Currency } from '@/lib/store/types'
+import { reconcileTyped } from '@/lib/ui/typedAmount'
 import type { BudgetStudioCopy, StudioQuestionCopy } from '@/lib/i18n/budgetPage/studioCopy'
 
 export interface QuestionControlProps {
@@ -92,12 +94,7 @@ export function QuestionControl({ question: q, copy, ui, base, value, onChange }
     }
     case 'amount':
       return (
-        <AmountField
-          value={value == null ? '' : String(value)}
-          onChange={(v) => onChange(v === '' ? undefined : Number(v))}
-          currency={base}
-          label={copy.label}
-        />
+        <StudioAmount value={typeof value === 'number' ? value : undefined} onChange={onChange} currency={base} label={copy.label} />
       )
     case 'slider':
       return (
@@ -121,4 +118,25 @@ export function QuestionControl({ question: q, copy, ui, base, value, onChange }
     default:
       return null
   }
+}
+
+/** Amount answer that keeps what is being typed ("1.", empty) instead of reformatting the stored number under the cursor. */
+function StudioAmount({ value, onChange, currency, label }: {
+  value: number | undefined
+  onChange: (v: number | undefined) => void
+  currency: Currency
+  label: string
+}) {
+  const [typed, setTyped] = useState(value == null ? '' : String(value))
+  return (
+    <AmountField
+      value={value == null ? '' : reconcileTyped(typed, value)}
+      onChange={(v) => {
+        setTyped(v)
+        onChange(v === '' ? undefined : Number(v) || 0)
+      }}
+      currency={currency}
+      label={label}
+    />
+  )
 }
