@@ -1,3 +1,5 @@
+import { configuredAdminHost, normalizeHost } from '@/lib/admin/host'
+
 /**
  * Resolves the absolute origin used by client-side `fetch` calls.
  *
@@ -13,14 +15,22 @@
  */
 export function apiUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') ?? ''
-  if (!base) return path
+  if (!base || onAdminHost()) return path
   if (!path.startsWith('/')) return `${base}/${path}`
   return `${base}${path}`
 }
 
 /** True when the static bundle should call the deployed API origin. */
 export function usesRemoteApi(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_API_BASE_URL?.trim())
+  return Boolean(process.env.NEXT_PUBLIC_API_BASE_URL?.trim()) && !onAdminHost()
+}
+
+/**
+ * The admin portal's own web host serves its API itself, with cookies. Sending its calls to the app's origin
+ * would be cross-origin, so they stay relative there even when a remote API base is configured for native.
+ */
+export function onAdminHost(): boolean {
+  return typeof window !== 'undefined' && normalizeHost(window.location.hostname) === configuredAdminHost()
 }
 
 /**
