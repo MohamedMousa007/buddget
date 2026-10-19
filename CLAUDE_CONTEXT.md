@@ -1,5 +1,5 @@
 # CLAUDE_CONTEXT.md — Buddget System Snapshot
-> Updated: 2026-10-16 (migrations section + native CI); other sections may lag. Re-generate after major architecture changes.
+> Updated: 2026-10-19 (Buddgy AI gateway + quota tables); other sections may lag. Re-generate after major architecture changes.
 
 ---
 
@@ -11,7 +11,7 @@
 | Styling | Tailwind CSS v4 + CSS custom properties |
 | State | Zustand v5 (`src/lib/store/types.ts`) |
 | Backend | Supabase (PostgreSQL + RLS + Auth) |
-| AI | Groq SDK (chat/parse), custom `/api/ai` proxy |
+| AI | Gemini via `/api/buddgy/turn` gateway (chat) and `/api/ai` proxy (legacy surfaces); Groq whisper (voice) |
 | Web deploy | Vercel (SSR + API routes) |
 | Native | Capacitor 8 — iOS + Android shells |
 | Native web layer | Static export (`out/`) served inside WebView |
@@ -24,7 +24,7 @@
 
 ---
 
-## Database — Migration Log (latest repo file 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
+## Database — Migration Log (latest repo file 0127 = admin portal: 0123 staff/roles/credentials/sessions/audit, 0124 support + plans/entitlements/loyalty/flags/settings, 0125 `admin_*` analytics functions, 0126 `admin_rate_hit` limiter, 0127 analytics perf (BRIN index, faster retention/directory); previous 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
 
 Live project: `ydihurtbcnoflhormgzi` (ap-southeast-1). Verified 2026-10-16: live tables/columns == `src/lib/supabase/database.types.ts` (41 tables). Latest applied: `income_sources_sort_order` (= repo 0109). Repo file numbers and applied migration names drift (e.g. repo 0108 = applied `0104_debt_payments_funded_from_savings`); compare schema, not names. Session-start check: `list_migrations`, then regenerate types and diff.
 
@@ -205,7 +205,7 @@ Native platform classes on `<body>`: `platform-native`, `platform-ios`, `platfor
 | Receipt scan | `/api/receipt/scan` | — |
 | AI budget planner | `/api/budget/regenerate` | `budget_feedback` |
 | Onboarding | `/onboarding` | `profiles.onboarding_version`, `profiles.lite_mode` |
-| Admin | `/admin`, `/api/admin/*` | `app_analytics_events`, `api_rate_limits` |
+| Admin portal | `/admin` (one page, in-memory views), `/api/admin/*`, `/api/entitlements/me` | `admin_*`, `support_*`, `plans`, `user_entitlements`, `loyalty_*`, `feature_flags`, `platform_settings` — see `docs/ADMIN_PORTAL.md` |
 | Auth | `/auth/callback`, `/reset-password/*` | Supabase Auth + `profiles` |
 
 ---
@@ -224,6 +224,16 @@ Seven blocks (bills, subscriptions, debts, everyday, safety, goals, grow) in thr
 - **Typed amounts**: builder and Studio amount boxes keep the text being typed (`reconcileTyped`) while each keystroke also lands in the plan.
 - **AI limit**: `/api/budget/ai` is capped at 15 calls per user per hour through the shared `api_rate_hit` RPC (all instances).
 - **Not built yet**: per-line rollover, Studio "What I know" drawer.
+
+## Buddgy AI (gateway + tools)
+
+Brain on the server, hands on the device. Full guide: `docs/buddgy/INTERNAL_GUIDE.md`.
+- **Gateway**: `POST /api/buddgy/turn` (SSE). Server owns prompt, tool schema, model tier (`INTENT_CONFIG`), quota and usage logging (`src/lib/server/ai/**`). Tool declarations are narrowed per request by `select.ts`. Key goes in a header, never the URL.
+- **Tools**: `src/lib/buddgy/tools/specs/*` (what the model sees) + `exec/*` (run on the device against the live store). Reads return compact JSON; writes are PROPOSALS (`propose`), applied only after the user approves a card (`apply`, re-validated, returns `undo`). Entities are referenced by 6-char refs (`refs.ts`), never fuzzy-matched.
+- **Client**: `useBuddgyChat` + `src/lib/buddgy/client/*` (context slice, rule-based history compression, tool loop, local fast path `src/lib/buddgy/local/*` for quick-add and common questions at zero tokens). Chat UI in `components/features/ai-chat/*`.
+- **Quota "wheel"** (hidden, server-enforced): tables `ai_chats`, `ai_usage_events`, `ai_reservations`; RPCs `ai_quota_reserve/settle/release`, `ai_effective_limits`. Limits are flat keys in `plans.limits` with per-user `user_entitlements.limit_overrides` (same resolution as the entitlement layer: override, plan, default; `null` = unlimited); SQL defaults are the generous launch values (`ai_default_limits()`). Keys: `ai_chat_units_soft/hard`, `ai_chat_turns`, `ai_chats_per_hour/day`, `ai_units_5h/24h/7d`, `ai_req_per_min`, `ai_idle_minutes`, plus the catalog keys `ai_chat_per_day`, `receipt_scans_per_month`, `voice_entries_per_day`. Surfaces are switched off per user with `feature_overrides` false (`ai_assistant`, `receipt_scanning`, `sms_tracking`, `ai_voice`, `ai_budget`, `ai_tool_<domain>`).
+- Every AI route (`/api/ai`, budget, receipt, voice, sms main parse) reserves and settles through `src/lib/server/ai/quota.ts`.
+- Sync: re-adding a deleted id now clears the tombstone (`emitList` inserts send `deleted_at: null`), which is what makes undo of deletes real.
 
 ## Capacitor Native Config
 

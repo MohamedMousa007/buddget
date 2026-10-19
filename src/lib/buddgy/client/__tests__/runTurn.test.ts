@@ -1,0 +1,95 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { TurnEvent } from '@/lib/buddgy/protocol'
+
+const apiFetchAuth = vi.fn()
+vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: (...a: unknown[]) => apiFetchAuth(...a) }))
+
+import { executeCalls, runTurn, TurnFailure } from '@/lib/buddgy/client/runTurn'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+
+const sse = (events: TurnEvent[]) =>
+  new Response(events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join(''), { headers: { 'Content-Type': 'text/event-stream' } })
+
+const meta: TurnEvent = { t: 'meta', chatId: '11111111-1111-1111-1111-111111111111', newChat: true, rolled: false, soft: false, tier: 'fast' }
+const done: TurnEvent = { t: 'done', units: 0, finish: 'STOP', truncated: false }
+
+const base = { text: 'hi', history: [], chatId: null, locale: 'en' as const, intent: 'answer' as const, route: '/' }
+
+beforeEach(() => {
+  apiFetchAuth.mockReset()
+  useFinanceStore.setState({
+    expenses: [],
+    paymentMethods: [{ id: 'a1a1a1a1-0000-0000-0000-000000000001', name: 'Cash', type: 'cash', currency: 'EGP', isDefault: true } as never],
+    settings: { ...useFinanceStore.getState().settings, baseCurrency: 'EGP' },
+  })
+})
+
+describe('runTurn', () => {
+  it('streams text and returns the chat id', async () => {
+    apiFetchAuth.mockResolvedValueOnce(sse([meta, { t: 'text', d: 'Hel' }, { t: 'text', d: 'lo' }, done]))
+    const seen: string[] = []
+    const out = await runTurn({ ...base, onText: (t) => seen.push(t) })
+    expect(seen).toEqual(['Hel', 'Hello'])
+    expect(out).toMatchObject({ text: 'Hello', chatId: meta.t === 'meta' ? meta.chatId : null, proposals: [] })
+    expect(apiFetchAuth).toHaveBeenCalledTimes(1)
+  })
+
+  it('ends the turn after a proposal-only batch without another hop', async () => {
+    apiFetchAuth.mockResolvedValueOnce(
+      sse([
+        meta,
+        { t: 'text', d: 'Adding it.' },
+        { t: 'calls', parts: [{ functionCall: { name: 'add_expense', args: {} } }], calls: [{ name: 'add_expense', args: { description: 'Coffee', amount: 45, category: 'Food' } }] },
+        done,
+      ]),
+    )
+    const out = await runTurn({ ...base, text: 'coffee 45', intent: 'action', onText: () => undefined })
+    expect(apiFetchAuth).toHaveBeenCalledTimes(1)
+    expect(out.proposals).toHaveLength(1)
+    expect(out.text).toBe('Adding it.')
+  })
+
+  it('goes back to the model with read results and drops the lead-in text', async () => {
+    apiFetchAuth
+      .mockResolvedValueOnce(
+        sse([meta, { t: 'text', d: 'Let me check.' }, { t: 'calls', parts: [{ functionCall: { name: 'get_summary', args: {} } }], calls: [{ name: 'get_summary', args: {} }] }, done]),
+      )
+      .mockResolvedValueOnce(sse([{ ...meta, newChat: false }, { t: 'text', d: 'You spent 0.' }, done]))
+    const seen: string[] = []
+    const out = await runTurn({ ...base, onText: (t) => seen.push(t) })
+    expect(apiFetchAuth).toHaveBeenCalledTimes(2)
+    const second = JSON.parse((apiFetchAuth.mock.calls[1][1] as { body: string }).body)
+    expect(second.hop).toBe(true)
+    expect(second.messages.at(-1)).toMatchObject({ role: 'tool', results: [{ name: 'get_summary' }] })
+    expect(out.text).toBe('You spent 0.')
+    expect(out.reads.map((r) => r.tool)).toEqual(['get_summary'])
+    expect(seen).toContain('')
+  })
+
+  it('maps quota, auth and offline failures', async () => {
+    apiFetchAuth.mockResolvedValueOnce(new Response(JSON.stringify({ layer: 'window_5h', resetAt: '2026-10-19T18:00:00Z' }), { status: 429 }))
+    await expect(runTurn({ ...base, onText: () => undefined })).rejects.toMatchObject({ detail: { kind: 'quota', layer: 'window_5h' } })
+    apiFetchAuth.mockResolvedValueOnce(new Response('{}', { status: 401 }))
+    await expect(runTurn({ ...base, onText: () => undefined })).rejects.toMatchObject({ detail: { kind: 'unauthorized' } })
+    apiFetchAuth.mockResolvedValueOnce(sse([meta, { t: 'error', code: 'blocked' }]))
+    await expect(runTurn({ ...base, onText: () => undefined })).rejects.toBeInstanceOf(TurnFailure)
+  })
+})
+
+describe('executeCalls', () => {
+  const ctx = { now: new Date('2026-10-19T12:00:00'), locale: 'en' as const }
+
+  it('reports unknown tools and failed proposals to the model', () => {
+    const r = executeCalls([{ name: 'nope', args: {} }, { name: 'add_expense', args: { description: 'x', amount: -1, category: 'Food' } }], ctx)
+    expect(r.needsModel).toBe(true)
+    expect(r.proposals).toEqual([])
+    expect(r.results[0].response).toEqual({ error: 'unknown_tool' })
+    expect(r.results[1].response).toMatchObject({ error: expect.any(String) })
+  })
+
+  it('tells the model a proposal is pending, never done', () => {
+    const r = executeCalls([{ name: 'add_expense', args: { description: 'Coffee', amount: 45, category: 'Food' } }], ctx)
+    expect(r.needsModel).toBe(false)
+    expect(r.results[0].response).toMatchObject({ status: 'pending_user_approval' })
+  })
+})

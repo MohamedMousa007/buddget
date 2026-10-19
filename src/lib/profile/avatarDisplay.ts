@@ -1,5 +1,5 @@
 import type { UserProfile } from '@/lib/store/types'
-import { cartoonAvatarUrlForPreset } from '@/lib/onboarding/cartoonAvatars'
+import { avatarDataUri } from '@/lib/profile/avatarArt'
 
 /** Resolved image src for header / profile, or null to show fallback icon. */
 export function resolveProfileAvatarSrc(profile: Pick<UserProfile, 'avatar' | 'avatarPresetId'>): string | null {
@@ -10,9 +10,5 @@ export function resolveProfileAvatarSrc(profile: Pick<UserProfile, 'avatar' | 'a
     }
   }
   const preset = profile.avatarPresetId?.trim()
-  if (preset) {
-    return cartoonAvatarUrlForPreset(preset)
-  }
-  return null
+  return preset ? avatarDataUri(preset) : null
 }
-

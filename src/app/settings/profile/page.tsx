@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Pencil } from 'lucide-react'
+import { User, Camera } from 'lucide-react'
 import { CountrySelect } from '@/components/ui/CountrySelect'
 import { ProfileFieldRow } from '@/components/profile/ProfileFieldRow'
 import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
@@ -16,28 +16,27 @@ export default function SettingsProfilePage() {
   const { t } = p
 
   return (
-    <SettingsSubPageShell title={t.settings.hub.profile}>
+    <SettingsSubPageShell title={t.settings.hub.profile} backHref="/settings/you">
       <Card padding="none" className="p-6">
         <div className="flex flex-col sm:flex-row gap-6">
           <div className="w-32 shrink-0 flex flex-col items-center">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full overflow-hidden ring-2 ring-[var(--color-brand-primary)] bg-[var(--color-brand-elevated)] flex items-center justify-center">
                 {p.avatarSrc
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={p.avatarSrc} alt="" className="w-full h-full object-cover" width={96} height={96} />
                   : <User className="w-10 h-10 text-[var(--color-brand-text-secondary)]" />}
               </div>
-              {p.editMode && (
-                <IconButton
-                  onClick={() => p.setAvatarModalOpen(true)}
-                  aria-label={t.profile.changeAvatar}
-                  size="sm"
-                  shape="round"
-                  className="absolute bottom-0 end-0"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-white" />
-                </IconButton>
-              )}
+              <IconButton
+                onClick={() => p.setAvatarModalOpen(true)}
+                aria-label={t.profile.changeAvatar}
+                variant="brand"
+                size="sm"
+                shape="round"
+                className="absolute bottom-0 end-0"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </IconButton>
             </div>
             {!p.editMode && (
               <Button variant="outline" size="touch" onClick={p.enterEditMode} className="mt-3 w-full">

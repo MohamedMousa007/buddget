@@ -85,6 +85,11 @@ interface SettingsState {
   /** Payday to open on arrival at Paydays ("Open in Paydays"); consumed once. */
   paydayFocusId: string | null
   setPaydayFocusId: (id: string | null) => void
+  /** Setting to scroll to and highlight on arrival from settings search; consumed once. */
+  settingsFocusId: string | null
+  setSettingsFocusId: (id: string | null) => void
+  /** Bring back every banner and prompt the user dismissed or snoozed. */
+  restoreDismissedPrompts: () => void
   monthFilter: string
   /** Pre-filled AI chat input (e.g. voice "Open in chat" hands off the transcript). */
   aiChatSeed: string | null
@@ -191,6 +196,9 @@ export const useSettingsStore = create<SettingsState>()(
       paydayPrefill: null,
       paydayFocusId: null,
       setPaydayFocusId: (id) => set({ paydayFocusId: id }),
+      settingsFocusId: null,
+      setSettingsFocusId: (id) => set({ settingsFocusId: id }),
+      restoreDismissedPrompts: () => set({ dismissedBanners: [], snoozedBanners: {}, hiddenStatusUntil: {} }),
       monthFilter: getCurrentMonth(),
       aiChatSeed: null,
       aiChatSeedSend: false,

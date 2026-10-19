@@ -13,6 +13,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { audioMimeToExt } from '@/lib/voice/audioMime'
 
 export const maxDuration = 30
@@ -25,6 +26,11 @@ const EGYPT_FIRST_PROMPT = [
   'Egyptian Arabic phrases: متشكر, دفعت, اشتريت, جنيه, خصم, عملية شراء.',
   'Formats expected: "spent 250 EGP at Talabat", "دفعت ٥٠ جنيه في كافيه", "120 dirhams at Carrefour", "200 جنيه taxi to office".',
 ].join(' ')
+
+/** A spoken expense is seconds long; anything past this is not one. */
+const MAX_AUDIO_BYTES = 8 * 1024 * 1024
+/** Audio is billed by length, not tokens: one unit per ~20 bytes keeps it on the same wheel. */
+const BYTES_PER_UNIT = 20
 
 export async function POST(request: NextRequest) {
   const started = Date.now()
@@ -55,8 +61,8 @@ export async function POST(request: NextRequest) {
     }
     if (!body.audio) return NextResponse.json({ error: 'Missing audio field' }, { status: 400 })
     const buffer = Buffer.from(body.audio, 'base64')
-    if (buffer.byteLength > 25 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Audio exceeds 25 MB' }, { status: 413 })
+    if (buffer.byteLength > MAX_AUDIO_BYTES) {
+      return NextResponse.json({ error: 'Audio too large' }, { status: 413 })
     }
     audio = new Blob([buffer], { type: body.mimeType || 'audio/mp4' })
     language = body.language?.trim() || 'en'
@@ -71,12 +77,18 @@ export async function POST(request: NextRequest) {
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Missing audio blob' }, { status: 400 })
     }
-    if (file.size > 25 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Audio exceeds 25 MB' }, { status: 413 })
+    if (file.size > MAX_AUDIO_BYTES) {
+      return NextResponse.json({ error: 'Audio too large' }, { status: 413 })
     }
     audio = file
     language = (form.get('language') as string | null)?.trim() || 'en'
   }
+
+  const units = Math.round(audio.size / BYTES_PER_UNIT)
+  const quota = await reserveAiQuota({ userId: user.id, feature: 'voice', estUnits: units })
+  if (!quota.allowed) return quotaDeniedResponse(quota)
+  const spent = (status: 'ok' | 'error') =>
+    settleAiQuota(quota, { model: 'whisper-large-v3', tier: 'transcribe', latencyMs: Date.now() - started, usage: { promptTokens: units, cachedTokens: 0, outputTokens: 0 }, status })
 
   try {
     const groq = new Groq({ apiKey })
@@ -105,12 +117,14 @@ export async function POST(request: NextRequest) {
       result = await transcribe()
     }
 
+    await spent('ok')
     console.info(`[VOICE:transcribe] ok user=${user.id} latency=${Date.now() - started}ms bytes=${audio.size}`)
     return NextResponse.json({
       text: result.text ?? '',
       language: (result as { language?: string }).language ?? language,
     })
   } catch (err) {
+    await spent('error')
     const msg = err instanceof Error ? err.message : 'Unknown transcription error'
     console.error(`[VOICE:transcribe] fail status=502 user=${user.id} latency=${Date.now() - started}ms err=${msg}`)
     return NextResponse.json({ error: msg, stage: 'transcribe' }, { status: 502 })

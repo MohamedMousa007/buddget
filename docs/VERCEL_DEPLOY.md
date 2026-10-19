@@ -72,14 +72,14 @@ git push origin main
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase **anon public** key (same screen). |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase **service_role** key — **server only**, never `NEXT_PUBLIC_*`. Needed for admin user list & survey APIs. |
 | `GEMINI_API_KEY` | Required for `/api/ai`. Get a key from [Google AI Studio](https://aistudio.google.com/apikey). |
-| `ADMIN_PIN` | Strong secret for `/admin` (never use a placeholder like `1234` in production). |
+| `ADMIN_AUTH_SECRET` | Optional. Pins the key that encrypts staff authenticator secrets (otherwise derived from `SUPABASE_SECRET_KEY`). `ADMIN_PIN` is retired. |
 | `NEXT_PUBLIC_APP_URL` | Production: `https://buddget.app` (exact origin, no trailing slash). |
 
 Redeploy after changing env vars (**Deployments → … → Redeploy**).
 
 **Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to `https://buddget.app` (exact origin, no path). Under **Redirect URLs**, add `https://buddget.app/**` (and dev `http://localhost:3000/**`) so **password recovery** can return to `/auth/callback`. Sign-in uses **email + password**; signup confirmation can use a **6-digit OTP** when enabled — see [`supabase/README.md`](../supabase/README.md).
 
-**Admin:** `/admin` shows a PIN gate in the app; entering the correct **ADMIN_PIN** unlocks the panel. Server APIs still validate the PIN / service role. Middleware does not redirect anonymous users away from `/admin`.
+**Admin:** `/admin` is the staff portal — sign in to Buddget, then unlock it with the admin password + authenticator (see `docs/ADMIN_PORTAL.md`). Only accounts in `admin_staff` can open it.
 
 ## 4. Smoke checks after deploy
 

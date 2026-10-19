@@ -1,15 +1,19 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { SquarePen, X } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { BuddgyIcon, type BuddgyMood } from '@/components/ai/BuddgyIcon'
 import { useBuddgyMood } from '@/lib/ai/useBuddgyMood'
 import { IconButton } from '@/components/ui/IconButton'
-import type { BuddgyBeat } from '@/hooks/useAIChat'
+import type { BuddgyBeat } from '@/lib/buddgy/client/chatTypes'
+import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
 
 export interface AIChatHeaderProps {
   onClose: () => void
+  onNewChat: () => void
+  /** A thread exists to start over from. */
+  canReset: boolean
   beat: BuddgyBeat | null
   isLoading: boolean
   /** The reply is being written out right now. */
@@ -50,8 +54,9 @@ function useBeatMood(beat: BuddgyBeat | null, isLoading: boolean, streaming: boo
 }
 
 /** Title row for the AI assistant sheet — a live Buddgy avatar + title. */
-export function AIChatHeader({ onClose, beat, isLoading, streaming }: AIChatHeaderProps) {
+export function AIChatHeader({ onClose, onNewChat, canReset, beat, isLoading, streaming }: AIChatHeaderProps) {
   const t = useT()
+  const copy = useBuddgyChatCopy()
   const surface = useBuddgyMood()
   const chatMood = useBeatMood(beat, isLoading, streaming)
   const mood = surface === 'offline' ? 'offline' : chatMood
@@ -79,9 +84,14 @@ export function AIChatHeader({ onClose, beat, isLoading, streaming }: AIChatHead
           {isLoading && !streaming ? t.buddgy.thinking : t.ai.headerSubtitle}
         </p>
       </div>
+      {canReset ? (
+        <IconButton onClick={onNewChat} aria-label={copy.newChat} variant="tinted" size="sm" shape="round">
+          <SquarePen className="h-4 w-4" strokeWidth={2.2} />
+        </IconButton>
+      ) : null}
       <IconButton
         onClick={onClose}
-        aria-label="Close chat"
+        aria-label={copy.close}
         variant="tinted"
         size="sm"
         shape="round"

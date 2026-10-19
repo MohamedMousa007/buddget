@@ -10,7 +10,7 @@ export default function SettingsCurrencyPage() {
   const store = useFinanceStore()
 
   return (
-    <SettingsSubPageShell title={t.settings.hub.currency}>
+    <SettingsSubPageShell title={t.settings.hub.currency} backHref="/settings/money">
       <SettingsCurrencySection store={store} />
     </SettingsSubPageShell>
   )

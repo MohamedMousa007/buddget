@@ -113,6 +113,12 @@ export async function middleware(request: NextRequest) {
     new Promise<null>((resolve) => setTimeout(() => resolve(null), AUTH_CHECK_TIMEOUT_MS)),
   ])
 
+  // The portal and its API never get cached or indexed, whatever sits in front of the app.
+  if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
+    supabaseResponse.headers.set('Cache-Control', 'no-store')
+    supabaseResponse.headers.set('X-Robots-Tag', 'noindex, nofollow')
+  }
+
   if (pathname.startsWith('/api')) {
     return withNativeApiCors(request, supabaseResponse)
   }
@@ -144,7 +150,7 @@ export async function middleware(request: NextRequest) {
 
   const isAuthCallback = pathname === AUTH_CALLBACK || pathname.startsWith(`${AUTH_CALLBACK}/`)
   const isResetPassword = pathname.startsWith('/reset-password')
-  const isAdmin = pathname.startsWith('/admin')
+  const isAdmin = pathname.startsWith('/admin') && pathname !== '/admin/accept'
 
   if (isAuthCallback || isResetPassword) {
     return supabaseResponse

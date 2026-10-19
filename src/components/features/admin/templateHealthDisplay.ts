@@ -6,7 +6,7 @@
  * while these rules (which tier/health a row shows, how failures are expressed, what each
  * filter includes) are exactly the parts worth pinning down.
  */
-import type { SmsTemplateRow } from '@/types/admin'
+import type { SmsTemplateRow } from './types'
 
 export interface Chip {
   label: string
