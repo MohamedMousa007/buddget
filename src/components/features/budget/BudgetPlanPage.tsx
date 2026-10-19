@@ -10,10 +10,11 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { usePlanActions } from '@/hooks/usePlanActions'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
-import { History, Plus } from 'lucide-react'
+import { History, Plus, Sparkles } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
+import type { CreateIntent } from '@/lib/budget/templates'
 import { navigate } from '@/lib/navigation/navigate'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { BUDGET_BLOCKS, BLOCK_CHAPTER } from '@/lib/budget/blocks'
@@ -35,7 +36,11 @@ import { ComparePlansSheet } from './sheets/ComparePlansSheet'
 import { PlanDeck } from './PlanDeck'
 import { ManualBuilder } from './builder/ManualBuilder'
 import { CreateChooser } from './builder/CreateChooser'
+import { StudioPage } from './studio/StudioPage'
+import { ReviewPage } from './studio/ReviewPage'
+import { AdjustSheet } from './sheets/AdjustSheet'
 import { useBudgetDeckCopy } from './useDeckCopy'
+import { useBudgetStudioCopy } from './useStudioCopy'
 import { useBudgetPageCopy } from './usePageCopy'
 import type { ChapterView } from '@/lib/budget/planView.types'
 
@@ -52,6 +57,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const planActions = usePlanActions()
   const store = useFinanceStore
   const deckCopy = useBudgetDeckCopy()
+  const studioCopy = useBudgetStudioCopy()
   const { locale } = useLocale()
   const [mode, setMode] = useState<PlanMode>('plan')
   const view = usePlanView(mode)
@@ -68,6 +74,9 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [upgradeLater, setUpgradeLater] = useState(false)
   const [building, setBuilding] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [studio, setStudio] = useState<{ intent: CreateIntent | null } | null>(null)
+  const [review, setReview] = useState<{ id: string; aiNote: boolean } | null>(null)
+  const [adjusting, setAdjusting] = useState(false)
   const [buildEmpty, setBuildEmpty] = useState(false)
   const openBuilder = useCallback((id: string, empty = false) => {
     setCreating(false)
@@ -164,14 +173,46 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
 
   if (building) return <ManualBuilder planId={building} startEmpty={buildEmpty} onExit={() => setBuilding(null)} onFinish={finishBuild} />
 
+  if (studio) {
+    return (
+      <StudioPage
+        intent={studio.intent}
+        onClose={() => setStudio(null)}
+        onBuilt={(id, aiNote) => {
+          setStudio(null)
+          setReview({ id, aiNote })
+        }}
+      />
+    )
+  }
+
+  if (review) {
+    return (
+      <ReviewPage
+        planId={review.id}
+        aiNote={review.aiNote}
+        onClose={() => setReview(null)}
+        onEdit={(id) => {
+          setReview(null)
+          openBuilder(id)
+        }}
+        onActivate={(id) => {
+          setReview(null)
+          store.getState().updateBudgetPlan(id, { status: 'ready' })
+          finishBuild(id)
+        }}
+      />
+    )
+  }
+
   if (creating) {
     return (
       <CreateChooser
         plans={plans}
         drafts={plans.filter((p) => p.status === 'draft')}
-        onIntent={async (intent) => {
-          const id = await planActions.createForIntent(intent)
-          if (id) openBuilder(id)
+        onIntent={(intent) => {
+          setCreating(false)
+          setStudio({ intent })
         }}
         onBlank={() => openBuilder(planActions.createDraft(), true)}
         onTemplate={() => openBuilder(planActions.createDraft())}
@@ -327,11 +368,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         onChange={(a, b) => setCompare({ a, b })}
         onClose={() => setCompare(null)}
       />
+      <AdjustSheet open={adjusting} view={view} onClose={() => setAdjusting(false)} />
       <CardActionMenu
         anchor={menuAnchor}
         onClose={() => setMenuAnchor(null)}
         items={[
           { label: deckCopy.deck.history, icon: <History className="size-4" />, onSelect: () => navigate('/budget-history') },
+          { label: studioCopy.adjust.title, icon: <Sparkles className="size-4" />, onSelect: () => setAdjusting(true) },
           { label: deckCopy.deck.newPlan, icon: <Plus className="size-4" />, onSelect: startBuild },
         ]}
       />

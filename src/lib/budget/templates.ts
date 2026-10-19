@@ -72,10 +72,9 @@ export type CreateIntent = 'save' | 'debt' | 'overspending' | 'goal' | 'organise
 
 export const CREATE_INTENTS: readonly CreateIntent[] = ['save', 'debt', 'overspending', 'goal', 'organise']
 
-export const INTENT_TEMPLATE: Record<CreateIntent, BuildTemplate> = {
-  save: 'saver',
-  debt: 'debt',
-  overspending: 'essentials',
-  goal: 'saver',
-  organise: 'mine',
+/** Priorities an intent implies, seeded as the studio's priorities answer. Overspending and organise leave it to the user. */
+export const INTENT_PRIORITIES: Partial<Record<CreateIntent, string[]>> = {
+  save: ['safety', 'invest'],
+  debt: ['debt', 'safety'],
+  goal: ['goals', 'safety'],
 }
