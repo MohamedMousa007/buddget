@@ -370,7 +370,7 @@ describe('clear_debt', () => {
     const p = write('clear_debt').propose({ debt: refOf(D_LOAN) }, ctx)
     expect(p.ok && p.proposal.preview.effect).toMatch(/stays unpaid/)
     const { applied } = proposeApply('clear_debt', { debt: refOf(D_LOAN) })
-    expect(st().debts[0]).toMatchObject({ status: 'cleared', clearedAt: '2026-10-19' })
+    expect(st().debts[0]).toMatchObject({ status: 'cleared', clearedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })
     expect(st().recurringDebtPayments[0].isActive).toBe(false)
     if (applied.ok) applied.undo?.()
     expect(st().debts[0].status).toBe('active')

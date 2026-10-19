@@ -3,6 +3,7 @@ import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
 import { requireAiUser } from '@/lib/server/ai/auth'
 import {
   callGemini,
+  retryOnOverload,
   clampGenerationConfig,
   LEGACY_MODEL,
   tapStreamUsage,
@@ -112,13 +113,13 @@ export async function POST(req: Request) {
     grant = quota
 
     const wantStream = stream === true
-    let response = await callGemini(model, apiKey, geminiBody, wantStream)
+    let response = await retryOnOverload(() => callGemini(model, apiKey, geminiBody, wantStream), model)
     // A tier model this key can't reach or doesn't accept (404/403/400) falls back to
     // the legacy model rather than taking Buddgy offline. 429 is quota, not the model.
     if (response.status >= 400 && response.status < 500 && response.status !== 429 && model !== LEGACY_MODEL) {
       console.error(`[AI] model=${model} status=${response.status}, falling back to ${LEGACY_MODEL}`)
       model = LEGACY_MODEL
-      response = await callGemini(model, apiKey, geminiBody, wantStream)
+      response = await retryOnOverload(() => callGemini(model, apiKey, geminiBody, wantStream), model)
     }
 
     const estInput = Math.ceil((JSON.stringify(contents).length + JSON.stringify(systemInstruction ?? '').length) / 4)
