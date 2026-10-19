@@ -116,7 +116,11 @@ function emitList<T extends HasId, TN extends TableName>(
   userId: string
 ) {
   const diff = diffLists(next, prev)
-  const writes = [...diff.inserts, ...diff.updates].map((x) => toRow(x, userId))
+  // An insert clears any tombstone left by an earlier delete of the same id, so undoing a delete
+  // (re-adding the row) comes back live. Plain updates leave `deleted_at` alone: an edit made
+  // offline must not resurrect a row another device deleted.
+  const revived = diff.inserts.map((x) => ({ ...toRow(x, userId), deleted_at: null }) as Database['public']['Tables'][TN]['Insert'])
+  const writes = [...revived, ...diff.updates.map((x) => toRow(x, userId))]
   runner.upsert(table, writes, `${String(table)}.upsert`)
   // User-owned tables soft-delete: stamp `deleted_at = now()` so the
   // deletion is reconcilable across devices. Hydrate filters

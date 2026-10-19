@@ -1,69 +1,95 @@
 'use client'
 
+import type { ComponentType, CSSProperties, ReactNode } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { useLocale } from '@/lib/i18n'
-import type { LucideIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+/** Which category hue tints the icon chip; `neutral` is the plain elevated chip. */
+export type RowTone = 1 | 2 | 3 | 4 | 5 | 6 | 'neutral'
 
 interface SettingsRowProps {
-  icon?: LucideIcon
-  iconColor?: string
+  icon?: ComponentType<{ className?: string }>
+  tone?: RowTone
   title: string
   subtitle?: string
+  /** Current value, shown mono at the end of the row before the chevron. */
+  value?: string
   href?: string
   onClick?: () => void
-  trailing?: React.ReactNode
+  trailing?: ReactNode
   destructive?: boolean
+  /** Lets settings search scroll to and highlight this row. */
+  settingId?: string
+}
+
+export function SettingsChip({ icon: Icon, tone = 'neutral', destructive = false }: { icon: ComponentType<{ className?: string }>; tone?: RowTone; destructive?: boolean }) {
+  const hue = destructive ? 'var(--color-brand-red)' : tone === 'neutral' ? undefined : `var(--color-cat-${tone})`
+  const style: CSSProperties | undefined = hue
+    ? { color: hue, background: `color-mix(in oklab, ${hue} 15%, var(--color-brand-card))` }
+    : undefined
+  return (
+    <span
+      style={style}
+      className={cn(
+        'flex size-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] group-hover/row:-rotate-6 group-hover/row:scale-110',
+        !hue && 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
+      )}
+    >
+      <Icon className="size-[19px]" />
+    </span>
+  )
 }
 
 export function SettingsRow({
-  icon: Icon,
-  iconColor,
+  icon,
+  tone = 'neutral',
   title,
   subtitle,
+  value,
   href,
   onClick,
   trailing,
   destructive = false,
+  settingId,
 }: SettingsRowProps) {
   const { locale } = useLocale()
   const isRtl = locale === 'ar'
 
   const defaultTrailing = trailing ?? (
     isRtl
-      ? <ChevronLeft className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" />
-      : <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" />
+      ? <ChevronLeft className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" />
+      : <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" />
   )
 
   const content = (
     <>
-      {Icon && (
-        <span className="w-8 h-8 rounded-xl bg-[var(--color-brand-elevated)] shrink-0 flex items-center justify-center">
-          <Icon className={`h-4 w-4 ${destructive ? 'text-[var(--color-brand-red)]' : (iconColor ?? 'text-[var(--color-brand-text-secondary)]')}`} />
-        </span>
-      )}
-      <span className="flex-1 min-w-0">
-        <span className={`block text-sm font-medium leading-tight ${destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]'}`}>
+      {icon ? <SettingsChip icon={icon} tone={tone} destructive={destructive} /> : null}
+      <span className="min-w-0 flex-1">
+        <span className={cn('block text-[15px] font-semibold leading-tight', destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]', isRtl && 'text-end')}>
           {title}
         </span>
-        {subtitle && (
-          <span className="block text-xs text-[var(--color-brand-text-muted)] mt-0.5 leading-tight">
+        {subtitle ? (
+          <span className={cn('mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]', isRtl && 'text-end')}>
             {subtitle}
           </span>
-        )}
+        ) : null}
       </span>
+      {value ? <span className="font-mono-numbers shrink-0 text-xs text-[var(--color-brand-text-muted)]">{value}</span> : null}
       {defaultTrailing}
     </>
   )
 
-  const baseClass = 'flex items-center gap-3 px-4 min-h-11 w-full text-start transition-colors hover:bg-[var(--color-brand-elevated)] py-2'
+  const baseClass =
+    'group/row flex items-center gap-3 px-4 min-h-14 w-full text-start transition-[background-color,transform] duration-200 hover:bg-[var(--color-brand-elevated)] active:scale-[0.985] py-2'
 
   if (href) {
-    return <Link href={href} className={baseClass}>{content}</Link>
+    return <Link href={href} data-setting-id={settingId} className={baseClass}>{content}</Link>
   }
 
   return (
-    <button type="button" onClick={onClick} className={baseClass}>
+    <button type="button" data-setting-id={settingId} onClick={onClick} className={baseClass}>
       {content}
     </button>
   )

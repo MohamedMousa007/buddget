@@ -1,0 +1,78 @@
+import type { BuddgyLocale } from '@/lib/buddgy/protocol'
+import type { IncomeSourceType } from '@/lib/store/types'
+
+const EN = {
+  addOneTime: 'Add income',
+  addRecurring: 'Add recurring income',
+  changeIncome: 'Change income',
+  deleteIncome: 'Delete income',
+  markReceived: 'Mark payday received',
+  name: 'Name',
+  amount: 'Amount',
+  frequency: 'Frequency',
+  paydays: 'Paydays (day of month)',
+  type: 'Type',
+  method: 'Received in',
+  dateReceived: 'Received on',
+  payday: 'Payday',
+  status: 'Status',
+  notes: 'Notes',
+  duplicateWarning: 'Looks like income you already logged.',
+  lastSource: 'This is your last income source. Budget figures will show no income until you add one.',
+  derivedDays: 'The other paydays were filled in from the first one.',
+  received: 'Received in full',
+  partial: (short: string) => `Partial, ${short} short`,
+  frequencies: { monthly: 'Monthly', biweekly: 'Twice a month', weekly: 'Weekly', one_time: 'One time' },
+  types: {
+    salary: 'Salary',
+    bonus: 'Bonus',
+    side_hustle: 'Side hustle',
+    rental: 'Rental',
+    investment: 'Investment',
+    savings: 'Savings',
+    debt: 'Borrowed',
+    gift: 'Gift',
+    refund: 'Refund',
+    other: 'Other',
+  } satisfies Record<IncomeSourceType, string>,
+}
+
+type Labels = typeof EN
+
+const AR: Labels = {
+  addOneTime: 'إضافة دخل',
+  addRecurring: 'إضافة دخل متكرر',
+  changeIncome: 'تعديل دخل',
+  deleteIncome: 'حذف دخل',
+  markReceived: 'تأكيد استلام الراتب',
+  name: 'الاسم',
+  amount: 'المبلغ',
+  frequency: 'التكرار',
+  paydays: 'أيام الدفع (من الشهر)',
+  type: 'النوع',
+  method: 'استُلم في',
+  dateReceived: 'تاريخ الاستلام',
+  payday: 'يوم الدفع',
+  status: 'الحالة',
+  notes: 'ملاحظات',
+  duplicateWarning: 'يبدو أنه دخل سجّلته من قبل.',
+  lastSource: 'هذا آخر مصدر دخل لديك. ستظهر الميزانية بلا دخل حتى تضيف مصدرًا جديدًا.',
+  derivedDays: 'تم تحديد باقي أيام الدفع تلقائيًا انطلاقًا من اليوم الأول.',
+  received: 'استُلم بالكامل',
+  partial: (short) => `جزئي، ينقص ${short}`,
+  frequencies: { monthly: 'شهريًا', biweekly: 'مرتين في الشهر', weekly: 'أسبوعيًا', one_time: 'مرة واحدة' },
+  types: {
+    salary: 'راتب',
+    bonus: 'مكافأة',
+    side_hustle: 'عمل إضافي',
+    rental: 'إيجار',
+    investment: 'استثمار',
+    savings: 'مدخرات',
+    debt: 'دين',
+    gift: 'هدية',
+    refund: 'استرداد',
+    other: 'أخرى',
+  },
+}
+
+export const incomeLabels = (locale: BuddgyLocale): Labels => (locale === 'ar' ? AR : EN)

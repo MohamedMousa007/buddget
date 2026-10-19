@@ -1538,18 +1538,38 @@ export interface Dictionary {
     changePassword: string
 
     avatarModalTitle: string
-    avatarTabPick: string
-    avatarTabUpload: string
-    avatarTabRemove: string
-    avatarUploadPhoto: string
-    avatarChooseDifferent: string
-    avatarClickToUpload: string
-    avatarClickToUploadHint: string
-    avatarNoPhoto: string
-    avatarRemoveDesc: string
+    avatarTabAvatars: string
+    avatarTabPhoto: string
+    avatarGroupAll: string
+    avatarGroupCrew: string
+    avatarGroupPeople: string
+    avatarGroupHeadwear: string
+    avatarBackground: string
+    avatarUseAvatar: string
     avatarUseThis: string
-    avatarTooLarge: string
-    avatarInvalidFormat: string
+    avatarTakePhoto: string
+    avatarTakePhotoHint: string
+    avatarChoosePhoto: string
+    avatarChoosePhotoHint: string
+    avatarResizeHint: string
+    avatarFrameTitle: string
+    avatarFrameHint: string
+    avatarZoomIn: string
+    avatarZoomOut: string
+    avatarChooseAgain: string
+    avatarProcessing: string
+    avatarRemove: string
+    avatarRemoveHint: string
+    avatarCameraBlockedTitle: string
+    avatarCameraBlockedBody: string
+    avatarTooBigTitle: string
+    avatarTooBigBody: string
+    avatarBadTypeTitle: string
+    avatarBadTypeBody: string
+    avatarFailedTitle: string
+    avatarFailedBody: string
+    avatarChooseAnother: string
+    avatarUseAvatarInstead: string
 
     onboardingTitle: string
     onboardingDoneBody: string
@@ -1574,9 +1594,6 @@ export interface Dictionary {
     deleteAccountSuccessBody: string
     deleteAccountSuccessButton: string
 
-    photoTitle: string
-    photoDesc: string
-    removePhoto: string
   }
 
   budgetPlanner: {

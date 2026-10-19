@@ -32,7 +32,7 @@ export default function SettingsAccountPage() {
   if (!p.user) return null
 
   return (
-    <SettingsSubPageShell title={t.settings.hub.account}>
+    <SettingsSubPageShell title={t.settings.hub.account} backHref="/settings/you">
       {/* Account info */}
       <Card padding="none" className="p-6">
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">

@@ -1,88 +1,39 @@
 'use client'
 
-import { Globe } from 'lucide-react'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
-import { FiatCurrencyField } from '@/components/ui/CurrencyField'
-import { useT } from '@/lib/i18n'
-import type { Currency, FinanceStore } from '@/lib/store/types'
+import { Card } from '@/components/ui/card'
+import { QuickChanges } from '@/components/features/settings/QuickChanges'
 import { CurrencyConverter } from '@/components/features/settings/CurrencyConverter'
+import { SettingsSection } from '@/components/features/settings/SettingsSection'
+import { SettingsToggleRow } from '@/components/features/settings/SettingsToggleRow'
+import { ROOM_TONE } from '@/components/features/settings/roomMeta'
+import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import type { FinanceStore } from '@/lib/store/types'
 
 export interface SettingsCurrencySectionProps {
   store: FinanceStore
 }
 
-const CURRENCY_FIELD_CLASS =
-  'mt-1 w-full h-11 px-3 rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]'
-
 /**
- * Primary/secondary currency, form picker restriction, and interactive rate converter.
+ * Main and second currency, the form-picker restriction, and the live rate converter.
+ * Picking either currency goes through the app's shared currency sheet; a main-currency change asks first.
  */
 export function SettingsCurrencySection({ store }: SettingsCurrencySectionProps) {
-  const t = useT()
+  const copy = useSettingsHubCopy()
+  const second = useFinanceStore((s) => (s.settings.showSecondaryCurrency ? s.settings.secondaryCurrency : null))
 
   return (
-    <section className="glass-card rounded-2xl p-5 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Globe className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
-        <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
-          {t.settings.currencyTitle}
-        </h2>
-      </div>
-      <div>
-        <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.settings.mainCurrencyLabel}</Label>
-        <FiatCurrencyField
-          value={store.settings.baseCurrency}
-          onChange={(next) => store.updateSettings({ baseCurrency: next })}
-          className={CURRENCY_FIELD_CLASS}
-        />
-        <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1">
-          {t.settings.mainCurrencyHint}
-        </p>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div>
-          <Label className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.secondaryToggle}</Label>
-          <p className="text-[10px] text-[var(--color-brand-text-muted)]">
-            {t.settings.secondaryHint}
-          </p>
-        </div>
-        <Switch
-          checked={store.settings.showSecondaryCurrency}
-          onCheckedChange={(val) => store.updateSettings({ showSecondaryCurrency: val })}
-        />
-      </div>
-
-      {store.settings.showSecondaryCurrency ? (
-        <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.settings.secondaryCurrencyLabel}</Label>
-          <FiatCurrencyField
-            value={store.settings.secondaryCurrency ?? store.settings.baseCurrency}
-            onChange={(next) => store.updateSettings({ secondaryCurrency: next as Currency })}
-            className={CURRENCY_FIELD_CLASS}
-          />
-        </div>
-      ) : null}
-
-      <div className="flex items-center justify-between gap-4 pt-2">
-        <div className="min-w-0">
-          <Label className="text-sm text-[var(--color-brand-text-primary)]">{t.settings.onlyMyCurrencies}</Label>
-          <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-1 leading-relaxed">
-            {t.settings.onlyMyCurrenciesDesc}
-          </p>
-        </div>
-        <Switch
-          checked={!store.settings.showAllCurrenciesInForms}
-          onCheckedChange={(val) => store.updateSettings({ showAllCurrenciesInForms: !val })}
-          className="shrink-0"
-        />
-      </div>
-
-      <Separator className="bg-[var(--color-brand-border)]" />
-
-      <CurrencyConverter store={store} />
-    </section>
+    <>
+      <Card padding="none" data-setting-id="baseCurrency">
+        <QuickChanges variant="currency" />
+      </Card>
+      <SettingsSection>
+        <SettingsToggleRow id="secondaryCurrency" tone={ROOM_TONE.money} hint={second ?? undefined} />
+        <SettingsToggleRow id="onlyMyCurrencies" tone={ROOM_TONE.money} hint={copy.moneyPage.onlyMineHint} />
+      </SettingsSection>
+      <Card padding="lg" data-setting-id="converter">
+        <CurrencyConverter store={store} />
+      </Card>
+    </>
   )
 }

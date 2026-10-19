@@ -2,6 +2,7 @@
 
 import { ShieldCheck } from 'lucide-react'
 import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { useT } from '@/lib/i18n'
 import type { FinanceStore } from '@/lib/store/types'
@@ -20,7 +21,7 @@ export function SettingsSecuritySection({ store }: SettingsSecuritySectionProps)
   const t = useT()
 
   return (
-    <section className="glass-card rounded-2xl p-5 space-y-4">
+    <Card render={<section />} padding="lg" className="space-y-4" data-setting-id="twoFactor">
       <div className="flex items-center gap-2 mb-2">
         <ShieldCheck className="w-5 h-5 text-[var(--color-brand-primary-ink)]" />
         <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
@@ -36,6 +37,7 @@ export function SettingsSecuritySection({ store }: SettingsSecuritySectionProps)
           </p>
         </div>
         <Switch
+          size="touch"
           checked={store.settings.twoFactorEmailEnabled}
           onCheckedChange={(val) => store.updateSettings({ twoFactorEmailEnabled: val })}
         />
@@ -44,6 +46,6 @@ export function SettingsSecuritySection({ store }: SettingsSecuritySectionProps)
       <p className="text-xs text-[var(--color-brand-text-muted)] border-t border-[var(--color-brand-border)] pt-3 leading-relaxed">
         {t.settings.twoFaFooter}
       </p>
-    </section>
+    </Card>
   )
 }

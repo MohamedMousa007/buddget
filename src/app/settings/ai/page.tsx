@@ -24,7 +24,7 @@ export default function SettingsAiPage() {
   useEffect(migrateLegacyNotes, [])
 
   return (
-    <SettingsSubPageShell title={t.buddgy.settingsTitle} showSave={false}>
+    <SettingsSubPageShell title={t.buddgy.settingsTitle} backHref="/settings/buddgy">
       <Card padding="md" className="flex items-center gap-3">
         <span className="shrink-0 text-[var(--color-brand-text)]">
           <BuddgyIcon mood={nudges ? 'talking' : 'sleepy'} size={40} strokeWidth={1.75} filled alive />

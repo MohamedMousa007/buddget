@@ -138,8 +138,8 @@ function definedOnly<T extends object>(o: T): Partial<T> {
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>
 }
 
-const MEMORY_CAP = 40
-const MEMORY_MAX_CHARS = 280
+export const MEMORY_CAP = 40
+export const MEMORY_MAX_CHARS = 280
 
 function generateId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
