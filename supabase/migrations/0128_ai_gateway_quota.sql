@@ -51,22 +51,26 @@ create policy ai_chats_select_own on public.ai_chats
 create policy ai_usage_events_select_own on public.ai_usage_events
   for select to authenticated using ((select auth.uid()) = user_id);
 
--- Launch defaults: deliberately generous so nobody meets a limit before pricing is decided.
--- Tighten per plan by writing plans.limits->'ai' (e.g. units_5h 60000, units_24h 150000).
+-- Limits use the platform's flat key style (plans.limits / user_entitlements.limit_overrides),
+-- resolved with the same rules as src/lib/entitlements/resolve.ts: override, then plan, then default;
+-- a number sets the limit, an explicit JSON null means unlimited, anything malformed is ignored.
+-- Launch defaults are deliberately generous so nobody meets a limit before pricing is decided.
 create or replace function public.ai_default_limits() returns jsonb
 language sql immutable as $$
   select jsonb_build_object(
-    'chat_units_soft', 30000,
-    'chat_units_hard', 60000,
-    'chat_turns', 40,
-    'chats_per_hour', 30,
-    'chats_per_day', 100,
-    'units_5h', 600000,
-    'units_24h', 1500000,
-    'units_7d', 6000000,
-    'req_per_min', 30,
-    'idle_minutes', 30,
-    'disabled', '[]'::jsonb
+    'ai_chat_units_soft', 30000,
+    'ai_chat_units_hard', 60000,
+    'ai_chat_turns', 40,
+    'ai_chats_per_hour', 30,
+    'ai_chats_per_day', 100,
+    'ai_units_5h', 600000,
+    'ai_units_24h', 1500000,
+    'ai_units_7d', 6000000,
+    'ai_req_per_min', 30,
+    'ai_idle_minutes', 30,
+    'ai_chat_per_day', null,
+    'receipt_scans_per_month', null,
+    'voice_entries_per_day', null
   )
 $$;
 
@@ -75,41 +79,62 @@ language plpgsql stable security definer set search_path = public as $$
 declare
   d jsonb := public.ai_default_limits();
   merged jsonb := public.ai_default_limits();
-  v_plan text;
-  v_over jsonb;
+  v_ent public.user_entitlements%rowtype;
+  v_status text;
   v_limits jsonb;
+  v_over jsonb;
+  v_feat jsonb;
+  v_disabled jsonb := '[]'::jsonb;
   layer jsonb;
   k text;
   v jsonb;
+  mapped text;
 begin
-  select e.plan_key, e.limit_overrides into v_plan, v_over
-  from public.user_entitlements e
-  where e.user_id = p_user
-    and e.status not in ('canceled', 'expired', 'suspended')
-    and (e.current_period_end is null or e.current_period_end > now())
-  order by e.current_period_end desc nulls first
-  limit 1;
-
-  if v_plan is not null then
-    select p.limits into v_limits from public.plans p where p.key = v_plan;
+  select * into v_ent from public.user_entitlements where user_id = p_user;
+  v_status := coalesce(v_ent.status, 'active');
+  -- Same rules as src/lib/entitlements/resolve.ts: a lapsed trial or paid period falls back to the default plan.
+  if v_ent.user_id is not null then
+    if v_status = 'trialing' and v_ent.trial_ends_at is not null and v_ent.trial_ends_at <= now() then v_status := 'expired'; end if;
+    if v_status = 'active' and v_ent.current_period_end is not null and v_ent.current_period_end <= now() then v_status := 'expired'; end if;
+    if v_status in ('active', 'trialing', 'past_due') then
+      select p.limits into v_limits from public.plans p where p.key = v_ent.plan_key;
+    end if;
+    v_over := v_ent.limit_overrides;
+    v_feat := v_ent.feature_overrides;
   end if;
   if v_limits is null then
     select p.limits into v_limits from public.plans p where p.is_default order by p.created_at limit 1;
   end if;
 
-  -- Only known keys of the right JSON type are accepted, so a malformed plan or override
-  -- can never null out a limit: anything else falls back to the default for that key.
-  foreach layer in array array[v_limits -> 'ai', v_over -> 'ai'] loop
+  -- Known keys only. A number sets the limit, an explicit JSON null means unlimited, anything else is ignored.
+  foreach layer in array array[v_limits, v_over] loop
     if layer is not null and jsonb_typeof(layer) = 'object' then
       for k, v in select * from jsonb_each(layer) loop
-        if d ? k and jsonb_typeof(v) = jsonb_typeof(d -> k) then
+        if d ? k and (jsonb_typeof(v) = 'null' or (jsonb_typeof(v) = 'number' and (v #>> '{}')::numeric >= 0)) then
           merged := merged || jsonb_build_object(k, v);
         end if;
       end loop;
     end if;
   end loop;
 
-  return merged;
+  -- A feature switched off for this user (feature_overrides.<name> = false) disables the matching AI surface.
+  if v_feat is not null and jsonb_typeof(v_feat) = 'object' then
+    for k, v in select * from jsonb_each(v_feat) loop
+      if v = 'false'::jsonb then
+        mapped := case k
+          when 'ai_assistant' then 'chat'
+          when 'receipt_scanning' then 'receipt'
+          when 'sms_tracking' then 'sms'
+          when 'ai_voice' then 'voice'
+          when 'ai_budget' then 'budget'
+          else case when k like 'ai\_tool\_%' then 'tool:' || substr(k, 9) else null end
+        end;
+        if mapped is not null then v_disabled := v_disabled || to_jsonb(mapped); end if;
+      end if;
+    end loop;
+  end if;
+
+  return merged || jsonb_build_object('disabled', v_disabled);
 end;
 $$;
 
@@ -144,8 +169,34 @@ begin
     union all
     select created_at from public.ai_reservations where user_id = p_user and not settled and created_at > t - interval '60 seconds'
   ) x;
-  if v_cnt >= (L ->> 'req_per_min')::numeric then
+  if v_cnt >= (L ->> 'ai_req_per_min')::numeric then
     return jsonb_build_object('allowed', false, 'layer', 'rate', 'reset_at', v_first + interval '60 seconds');
+  end if;
+
+  -- Per-feature counters from the plan catalog (null = unlimited).
+  if p_feature = 'chat' and (L ->> 'ai_chat_per_day') is not null then
+    select count(*), min(x.created_at) into v_cnt, v_first from (
+      select created_at from public.ai_usage_events where user_id = p_user and feature = 'chat' and created_at > t - interval '24 hours'
+      union all
+      select created_at from public.ai_reservations where user_id = p_user and feature = 'chat' and not settled and expires_at > t
+    ) x;
+    if v_cnt >= (L ->> 'ai_chat_per_day')::numeric then
+      return jsonb_build_object('allowed', false, 'layer', 'chat_messages_day', 'reset_at', v_first + interval '24 hours');
+    end if;
+  end if;
+  if p_feature = 'receipt' and (L ->> 'receipt_scans_per_month') is not null then
+    select count(*), min(created_at) into v_cnt, v_first
+    from public.ai_usage_events where user_id = p_user and feature = 'receipt' and status = 'ok' and created_at > t - interval '30 days';
+    if v_cnt >= (L ->> 'receipt_scans_per_month')::numeric then
+      return jsonb_build_object('allowed', false, 'layer', 'receipts_month', 'reset_at', v_first + interval '30 days');
+    end if;
+  end if;
+  if p_feature = 'voice' and (L ->> 'voice_entries_per_day') is not null then
+    select count(*), min(created_at) into v_cnt, v_first
+    from public.ai_usage_events where user_id = p_user and feature = 'voice' and status = 'ok' and created_at > t - interval '24 hours';
+    if v_cnt >= (L ->> 'voice_entries_per_day')::numeric then
+      return jsonb_build_object('allowed', false, 'layer', 'voice_day', 'reset_at', v_first + interval '24 hours');
+    end if;
   end if;
 
   if v_base = 'chat' then
@@ -158,34 +209,34 @@ begin
       if v_chat.chat_id is null
          or v_chat.closed
          or v_chat.last_at < t - interval '10 minutes'
-         or v_chat.units >= (L ->> 'chat_units_hard')::numeric * 1.5 then
+         or v_chat.units >= (L ->> 'ai_chat_units_hard')::numeric * 1.5 then
         return jsonb_build_object('allowed', false, 'layer', 'rate', 'reset_at', t + interval '60 seconds');
       end if;
       v_chat_id := v_chat.chat_id;
     else
       if v_chat.chat_id is null
          or v_chat.closed
-         or v_chat.last_at < t - ((L ->> 'idle_minutes')::float8 * interval '1 minute') then
+         or v_chat.last_at < t - ((L ->> 'ai_idle_minutes')::float8 * interval '1 minute') then
         v_new := true;
-      elsif v_chat.turns >= (L ->> 'chat_turns')::numeric
-         or v_chat.units >= (L ->> 'chat_units_hard')::numeric then
+      elsif v_chat.turns >= (L ->> 'ai_chat_turns')::numeric
+         or v_chat.units >= (L ->> 'ai_chat_units_hard')::numeric then
         update public.ai_chats set closed = true where chat_id = v_chat.chat_id;
         v_new := true;
         v_rolled := true;
       else
         v_chat_id := v_chat.chat_id;
-        v_soft := v_chat.units >= (L ->> 'chat_units_soft')::numeric;
+        v_soft := v_chat.units >= (L ->> 'ai_chat_units_soft')::numeric;
       end if;
 
       if v_new then
         select count(*), min(started_at) into v_cnt, v_first
         from public.ai_chats where user_id = p_user and started_at > t - interval '1 hour';
-        if v_cnt >= (L ->> 'chats_per_hour')::numeric then
+        if v_cnt >= (L ->> 'ai_chats_per_hour')::numeric then
           return jsonb_build_object('allowed', false, 'layer', 'chats_hour', 'reset_at', v_first + interval '1 hour');
         end if;
         select count(*), min(started_at) into v_cnt, v_first
         from public.ai_chats where user_id = p_user and started_at > t - interval '24 hours';
-        if v_cnt >= (L ->> 'chats_per_day')::numeric then
+        if v_cnt >= (L ->> 'ai_chats_per_day')::numeric then
           return jsonb_build_object('allowed', false, 'layer', 'chats_day', 'reset_at', v_first + interval '24 hours');
         end if;
       end if;
@@ -194,9 +245,9 @@ begin
 
   for w in
     select * from (values
-      ('window_5h', interval '5 hours', 'units_5h'),
-      ('window_24h', interval '24 hours', 'units_24h'),
-      ('window_7d', interval '7 days', 'units_7d')
+      ('window_5h', interval '5 hours', 'ai_units_5h'),
+      ('window_24h', interval '24 hours', 'ai_units_24h'),
+      ('window_7d', interval '7 days', 'ai_units_7d')
     ) as v(layer, span, limit_key)
   loop
     select coalesce(sum(x.units), 0), min(x.created_at) into v_used, v_first from (

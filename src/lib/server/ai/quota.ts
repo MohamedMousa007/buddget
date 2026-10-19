@@ -13,6 +13,9 @@ export type QuotaLayer =
   | 'window_5h'
   | 'window_24h'
   | 'window_7d'
+  | 'chat_messages_day'
+  | 'receipts_month'
+  | 'voice_day'
   | 'unavailable'
 
 export interface QuotaGrant {

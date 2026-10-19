@@ -97,30 +97,34 @@ Measure before tuning: `ai_usage_events` records prompt, cached and output token
 
 Every AI call reserves quota before the model runs and settles real usage after. One unit = 1 fresh input token; cached input = 0.1; output (including thinking) = 4. Defined in `src/lib/server/ai/units.ts`.
 
-Layers (all per user, rolling windows, server-enforced, evaluated atomically under an advisory lock):
+Layers (all per user, rolling windows, server-enforced, evaluated atomically under an advisory lock). Keys are flat, in the same style as the platform's limit catalog (`src/lib/entitlements/limits.ts` on the admin portal), and resolve the same way: individual override, then the user's plan, then the default. A number sets the limit, an explicit JSON `null` means unlimited, anything malformed is ignored.
 
 | Key | Launch default | Meaning |
 |---|---|---|
-| `chat_units_soft` / `chat_units_hard` | 30000 / 60000 | Per chat. Soft: client compresses harder. Hard: chat closes and rolls into a new one. |
-| `chat_turns` | 40 | Turns per chat |
-| `chats_per_hour` / `chats_per_day` | 30 / 100 | New chats, stops chat-hopping |
-| `units_5h` / `units_24h` / `units_7d` | 600k / 1.5M / 6M | Rolling windows |
-| `req_per_min` | 30 | Abuse guard |
-| `idle_minutes` | 30 | A chat idle this long starts fresh |
-| `disabled` | [] | Feature names (`chat`, `voice`, `receipt`, `budget`, `sms`, `proxy`) and `tool:<domain>` entries switched off |
+| `ai_chat_units_soft` / `ai_chat_units_hard` | 30000 / 60000 | Per chat. Soft: client compresses harder. Hard: chat closes and rolls into a new one. |
+| `ai_chat_turns` | 40 | Turns per chat |
+| `ai_chats_per_hour` / `ai_chats_per_day` | 30 / 100 | New chats, stops chat-hopping |
+| `ai_units_5h` / `ai_units_24h` / `ai_units_7d` | 600k / 1.5M / 6M | Rolling windows |
+| `ai_req_per_min` | 30 | Abuse guard |
+| `ai_idle_minutes` | 30 | A chat idle this long starts fresh |
+| `ai_chat_per_day` | unlimited | Chat messages per day (existing catalog key) |
+| `receipt_scans_per_month` | unlimited | Successful receipt scans in 30 days (existing catalog key) |
+| `voice_entries_per_day` | unlimited | Successful voice transcriptions in 24 hours (existing catalog key) |
 
-Suggested free tier once pricing is decided: `chat_units_soft` 20000, `chat_units_hard` 40000, `chat_turns` 25, `chats_per_hour` 6, `chats_per_day` 20, `units_5h` 60000, `units_24h` 150000, `units_7d` 600000. An average chat is about 11k units (about 6 turns), a heavy advice chat about 25k.
+Switching a surface off for one user: set `feature_overrides` to `false` for `ai_assistant` (chat), `receipt_scanning`, `sms_tracking`, `ai_voice`, `ai_budget`, or `ai_tool_<domain>` (for example `ai_tool_budget` removes the budget write tools). The entitlement rules (lapsed trial or period falls back to the default plan; `past_due` still keeps the plan) match `src/lib/entitlements/resolve.ts`.
+
+Suggested free tier once pricing is decided: `ai_chat_units_soft` 20000, `ai_chat_units_hard` 40000, `ai_chat_turns` 25, `ai_chats_per_hour` 6, `ai_chats_per_day` 20, `ai_units_5h` 60000, `ai_units_24h` 150000, `ai_units_7d` 600000. An average chat is about 11k units (about 6 turns), a heavy advice chat about 25k.
 
 Where to change them:
-- Per plan: `plans.limits` JSON, under the `ai` key, e.g. `{"ai": {"units_5h": 60000}}`.
-- Per user: `user_entitlements.limit_overrides`, same `ai` key. Overrides win over the plan; the plan wins over the defaults in `ai_default_limits()`.
-- Plan resolution: the user's active `user_entitlements.plan_key`, otherwise the plan with `is_default`.
+- Per plan: `plans.limits` (flat keys), for example `{"ai_units_5h": 60000}`.
+- Per user: `user_entitlements.limit_overrides` and `feature_overrides`.
+- Plan resolution: the user's entitlement row, otherwise the plan with `is_default`.
 
 Example:
 
 ```sql
-update plans set limits = jsonb_set(coalesce(limits,'{}'), '{ai}', '{"units_5h":60000,"units_24h":150000}') where key = 'free';
-update user_entitlements set limit_overrides = jsonb_set(coalesce(limit_overrides,'{}'), '{ai}', '{"disabled":["tool:budget"]}') where user_id = '...';
+update plans set limits = limits || '{"ai_units_5h":60000,"ai_units_24h":150000}' where key = 'free';
+update user_entitlements set feature_overrides = feature_overrides || '{"ai_tool_budget": false}' where user_id = '...';
 ```
 
 What users see: nothing, until a limit is hit. Then the chat shows a friendly "resting until X" message (copy in `buddgyChatCopy.ts`). There are no meters. Approving an already proposed card is never blocked by a limit, and the local fast path always works.
@@ -144,7 +148,7 @@ from ai_usage_events where created_at > now() - interval '7 days' group by 1,2,3
 - **Prompt injection**: tool results and user data (names, notes) are declared data, not instructions. Writes are only ever proposals; nothing the model says applies a change by itself.
 - **Honesty**: success messages ("Done") come from the executor after a real write. The model only ever says what it will do.
 - **Privacy**: no conversation storage; usage rows hold counts only. Each turn sends the small context slice plus whatever read tools return. The provider key is sent in a header, not the URL. `GET /api/ai` no longer reveals models or limits.
-- **Kill switches**: `settings.enableAI` hides the orb for that user; `disabled` in limits switches features or tool domains off per plan or per user.
+- **Kill switches**: `settings.enableAI` hides the orb for that user; `feature_overrides` set to false switches a surface or tool domain off per user (see section 6).
 
 ## 8. Sync and undo
 
@@ -170,7 +174,7 @@ Deletes are soft (`deleted_at`). Before this work, re-adding a deleted id stayed
 
 | Symptom | Check |
 |---|---|
-| "Buddgy is resting" for everyone | `ai_usage_events` volume; `ai_default_limits()`; a plan with a low `ai` limit; `feature_flags`/`disabled` |
+| "Buddgy is resting" for everyone | `ai_usage_events` volume; `ai_default_limits()`; a plan with a low `ai_*` limit; `feature_overrides` set to false |
 | One user blocked | `select ai_effective_limits('<uuid>')` (service role) to see the merged limits; their recent `ai_usage_events` |
 | Empty or blocked replies | Gateway logs `[buddgy]` with finish reason; Gemini safety blocks surface as "blocked" to the user |
 | Tool calls failing after a model change | Gemini thought signatures must round-trip: `turn.ts` echoes raw parts unchanged; verify after switching models |
