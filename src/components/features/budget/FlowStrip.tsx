@@ -35,7 +35,7 @@ export function FlowStrip({ view, onFix, onJump }: FlowStripProps) {
       <div className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <span className={microClassName}>{month ? f.monthLabel : f.planLabel}</span>
-          <span className="font-mono-numbers text-[28px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
+          <span className="font-mono-numbers whitespace-nowrap text-[28px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
             {money(month ? view.flow.reduce((s, x) => s + view.blocks[x.block].spent, 0) : view.income)}
           </span>
         </div>

@@ -40,6 +40,7 @@ import { StudioPage } from './studio/StudioPage'
 import { ReviewPage } from './studio/ReviewPage'
 import { AdjustSheet } from './sheets/AdjustSheet'
 import { MonthCloseCard } from './MonthCloseCard'
+import { PlanRail } from './PlanRail'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -255,6 +256,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     : null
   return (
     <PageBody className="space-y-4 lg:pb-6">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-6">
+      <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-1">
       <PlanBar
         planName={view.plan.name}
         mode={mode}
@@ -287,8 +290,21 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         />
       ) : null}
       {mode === 'plan' && monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
-      <FlowStrip view={view} onFix={onFix} onJump={jump} />
-      <InsightsChip insights={view.insights} onOpen={() => setInsightsOpen(true)} />
+      </div>
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-5 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <FlowStrip view={view} onFix={onFix} onJump={jump} />
+        <InsightsChip insights={view.insights} onOpen={() => setInsightsOpen(true)} />
+        <PlanRail
+          plans={plans}
+          activeId={activeId}
+          onActivate={setActivateId}
+          onContinue={(id) => openBuilder(id)}
+          onCompare={() => setCompare({ a: view.plan.id, b: plans.find((p) => p.id !== view.plan.id)?.id ?? view.plan.id })}
+          onNew={startBuild}
+          onHistory={() => navigate('/budget-history')}
+        />
+      </aside>
+      <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-2">
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
         <UpgradeBanner
           lineCount={view.plan.categories.length}
@@ -330,6 +346,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           </Button>
         </Card>
       ) : null}
+      </div>
+      </div>
 
       <InsightsSheet
         open={insightsOpen}

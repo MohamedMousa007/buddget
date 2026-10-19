@@ -218,7 +218,8 @@ Seven blocks (bills, subscriptions, debts, everyday, safety, goals, grow) in thr
 - **AI**: `POST /api/budget/ai` ops `build` (refines the engine draft: rationale, amounts within 25%) and `adjust` (text to ops). The model never writes: the client previews, applies via the store and logs `budget_feedback`. Per-user daily cap is in-memory per instance. Every AI failure falls back to the engine draft or manual editing.
 - **Memory**: `buddgy_memories` synced through `buddgyMemories` in the finance store (cap 40, dedupe); chat auto-learns unless `buddgyLearning` is off; budget proposals need an explicit toggle. Manager in `/settings/ai`.
 - **Month close**: `monthClose.buildClose` + `useMonthClose` turn the finished cycle (if the active plan governed it, spend existed, first 15 days of the new cycle) into a summary and up to 4 raise/lower proposals; `MonthCloseCard`/`MonthCloseSheet` on the Plan tab; done cycles in `budgetClosedCycles` (settings store, device-local).
-- **Not built yet**: desktop rail layout, stress test, per-line rollover, Studio "What I know" drawer, studio state persistence.
+- **Desktop**: at `lg` the Plan page is a two-column grid; `FlowStrip`, `InsightsChip` and `PlanRail` (all budgets, set active/continue, compare, new, history) sit in a sticky 22rem right rail; below `lg` the same elements stack as before.
+- **Not built yet**: stress test, per-line rollover, Studio "What I know" drawer, studio state persistence.
 
 ## Capacitor Native Config
 
