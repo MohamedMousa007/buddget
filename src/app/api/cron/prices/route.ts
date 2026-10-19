@@ -14,9 +14,6 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export const maxDuration = 60
 
-/** Admin analytics reads at most 90 days; keep a margin and drop the rest so the table stays small. */
-const ANALYTICS_RETENTION_DAYS = 120
-
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
   const auth = request.headers.get('authorization') ?? ''
@@ -25,9 +22,9 @@ export async function GET(request: Request) {
   }
 
   const result = await runPriceRefresh()
-  const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86_400_000).toISOString()
-  const { error: pruneError } = await createServiceRoleClient().from('app_analytics_events').delete().lt('created_at', cutoff)
-  if (pruneError) console.error('[cron/prices] analytics retention failed', pruneError)
+  // Summarises old analytics before removing them, and clears finished quota bookkeeping.
+  const { error: housekeepingError } = await createServiceRoleClient().rpc('housekeeping', { p_analytics_days: 120 })
+  if (housekeepingError) console.error('[cron/prices] housekeeping failed', housekeepingError.message)
   const status = result.error ? 500 : 200
   return NextResponse.json(result, { status })
 }

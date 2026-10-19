@@ -10,6 +10,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { retryOnOverload } from '@/lib/server/ai/gemini'
 import { getUserEntitlements } from '@/lib/entitlements/server'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
@@ -67,22 +68,26 @@ async function askGated(userId: string, apiKey: string, system: string, user: st
 async function askModel(apiKey: string, system: string, user: string, schema: object, thinking: number): Promise<{ data: unknown | null; usage: TokenUsage }> {
   const none: TokenUsage = { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }
   try {
-    const res = await fetch(URL_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      signal: AbortSignal.timeout(45_000),
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: user }] }],
-        generationConfig: {
-          temperature: 0.3,
-          responseMimeType: 'application/json',
-          responseSchema: schema,
-          maxOutputTokens: MAX_OUTPUT_TOKENS,
-          thinkingConfig: { thinkingBudget: thinking },
-        },
-      }),
-    })
+    const res = await retryOnOverload(
+      () =>
+        fetch(URL_BASE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          signal: AbortSignal.timeout(45_000),
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: system }] },
+            contents: [{ role: 'user', parts: [{ text: user }] }],
+            generationConfig: {
+              temperature: 0.3,
+              responseMimeType: 'application/json',
+              responseSchema: schema,
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+              thinkingConfig: { thinkingBudget: thinking },
+            },
+          }),
+        }),
+      MODEL,
+    )
     if (!res.ok) return { data: null, usage: none }
     const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
     const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('').trim()

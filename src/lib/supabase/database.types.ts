@@ -599,6 +599,42 @@ export type Database = {
         }
         Relationships: []
       }
+      app_analytics_daily: {
+        Row: {
+          active_seconds: number
+          day: string
+          first_event_at: string
+          heartbeats: number
+          last_event_at: string
+          paths: Json
+          sessions: number
+          user_id: string
+          visibility_events: number
+        }
+        Insert: {
+          active_seconds?: number
+          day: string
+          first_event_at: string
+          heartbeats?: number
+          last_event_at: string
+          paths?: Json
+          sessions?: number
+          user_id: string
+          visibility_events?: number
+        }
+        Update: {
+          active_seconds?: number
+          day?: string
+          first_event_at?: string
+          heartbeats?: number
+          last_event_at?: string
+          paths?: Json
+          sessions?: number
+          user_id?: string
+          visibility_events?: number
+        }
+        Relationships: []
+      }
       app_analytics_events: {
         Row: {
           created_at: string
@@ -3610,6 +3646,7 @@ export type Database = {
       admin_user_overview: { Args: { p_user: string }; Returns: Json }
       ai_default_limits: { Args: never; Returns: Json }
       ai_effective_limits: { Args: { p_user: string }; Returns: Json }
+      housekeeping: { Args: { p_analytics_days?: number }; Returns: Json }
       ai_quota_status: { Args: { p_user: string }; Returns: Json }
       ai_quota_release: {
         Args: { p_reservation: string; p_user: string }

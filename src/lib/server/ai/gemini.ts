@@ -57,6 +57,15 @@ const RETRYABLE = new Set([429, 500, 502, 503, 504])
 const CONNECT_TIMEOUT_MS = 10_000
 const RETRY_DELAY_MS = 500
 
+/** One more try when Google is overloaded or rate-limiting (429/5xx); anything else, including a network error, is the caller's to handle. */
+export async function retryOnOverload(call: () => Promise<Response>, label: string): Promise<Response> {
+  const first = await call()
+  if (!RETRYABLE.has(first.status)) return first
+  console.error(`[gemini] ${label} answered ${first.status}, retrying once`)
+  await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
+  return call()
+}
+
 /**
  * A streamed Gemini call that survives a bad moment: the primary model gets two tries, then `fallback` gets one.
  * Each failure is logged with Google's own answer, so "Buddgy is down" is never a guess. Only a caller abort stops early.

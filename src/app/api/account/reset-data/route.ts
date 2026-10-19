@@ -31,6 +31,7 @@ const FINANCIAL_TABLES = [
   'payment_methods',
   'notifications',
   'app_analytics_events',
+  'app_analytics_daily',
   'user_settings',
 ] as const
 
