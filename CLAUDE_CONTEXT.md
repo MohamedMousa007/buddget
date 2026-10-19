@@ -24,7 +24,7 @@
 
 ---
 
-## Database — Migration Log (latest repo file 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
+## Database — Migration Log (latest repo file 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
 
 Live project: `ydihurtbcnoflhormgzi` (ap-southeast-1). Verified 2026-10-16: live tables/columns == `src/lib/supabase/database.types.ts` (41 tables). Latest applied: `income_sources_sort_order` (= repo 0109). Repo file numbers and applied migration names drift (e.g. repo 0108 = applied `0104_debt_payments_funded_from_savings`); compare schema, not names. Session-start check: `list_migrations`, then regenerate types and diff.
 
