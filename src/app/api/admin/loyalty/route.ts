@@ -40,6 +40,7 @@ export async function POST(req: Request) {
     const t = body.tier
     if (!KEY_RE.test(t.key ?? '')) return bad('Tier key must be lowercase letters, numbers or underscores.')
     if (!t.name?.trim()) return bad('Give the tier a name.')
+    if (t.status !== undefined && !['draft', 'active', 'archived'].includes(t.status)) return bad('Invalid status.')
     const { error } = await ctx.service.from('loyalty_tiers').upsert({
       key: t.key,
       name: t.name.trim().slice(0, 40),

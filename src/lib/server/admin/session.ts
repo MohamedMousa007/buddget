@@ -1,12 +1,15 @@
 import type { ServiceClient } from '@/lib/supabase/service'
 import { randomToken, sha256Hex } from './crypto'
 
-export const ADMIN_COOKIE = 'bdg_admin'
+/** `__Host-` pins the cookie to this exact origin (Secure, Path=/, no Domain), so a sibling subdomain cannot plant one. */
+export const ADMIN_COOKIE = process.env.NODE_ENV === 'production' ? '__Host-bdg_admin' : 'bdg_admin'
 export const ADMIN_SESSION_HEADER = 'x-admin-session'
 export const ADMIN_CSRF_HEADER = 'x-requested-with'
 export const ADMIN_CSRF_VALUE = 'buddget-admin'
 
 export const SESSION_ABSOLUTE_MS = 12 * 60 * 60 * 1000
+/** A biometric unlock rests on a secret stored on the phone, so it is held to a shorter leash than password + code. */
+export const BIOMETRIC_SESSION_MS = 4 * 60 * 60 * 1000
 export const SESSION_IDLE_MS = 60 * 60 * 1000
 const TOUCH_EVERY_MS = 60 * 1000
 
@@ -39,7 +42,8 @@ export async function createAdminSession(
   input: { userId: string; method: SessionMethod; ip: string; userAgent: string | null },
 ): Promise<{ token: string; expiresAt: string; id: string }> {
   const token = randomToken()
-  const expiresAt = new Date(Date.now() + SESSION_ABSOLUTE_MS).toISOString()
+  const lifetime = input.method === 'biometric' ? BIOMETRIC_SESSION_MS : SESSION_ABSOLUTE_MS
+  const expiresAt = new Date(Date.now() + lifetime).toISOString()
   const { data, error } = await service
     .from('admin_sessions')
     .insert({

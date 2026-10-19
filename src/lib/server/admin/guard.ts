@@ -59,12 +59,10 @@ export async function guardAdmin(req: Request, opts: GuardOptions = {}): Promise
     return deny(403, 'Missing request header.', 'csrf')
   }
 
-  let session: AdminSessionRow | null = null
-  if (!opts.sessionOptional) {
-    const token = readSessionToken(req)
-    session = token ? await validateAdminSession(service, token, user.id) : null
-    if (!session) return deny(401, 'Admin session locked. Unlock the portal to continue.', 'locked')
-  }
+  // Resolved even when optional, so endpoints like logout can act on the session that was presented.
+  const token = readSessionToken(req)
+  const session = token ? await validateAdminSession(service, token, user.id) : null
+  if (!session && !opts.sessionOptional) return deny(401, 'Admin session locked. Unlock the portal to continue.', 'locked')
 
   const needed = opts.permission ? (Array.isArray(opts.permission) ? opts.permission : [opts.permission]) as readonly Permission[] : []
   if (needed.length > 0 && !canAny(staffCtx.permissions, needed)) {

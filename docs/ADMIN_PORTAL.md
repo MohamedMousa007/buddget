@@ -45,3 +45,8 @@ No new variable is required. Optional: `ADMIN_AUTH_SECRET` (pins the encryption 
 ## Database
 
 Migrations `0123_admin_portal_core`, `0124_admin_support_monetization`, `0125_admin_analytics_functions`. All tables are service-role only (RLS on, no policies, grants revoked). Analytics come from `admin_*` SQL functions callable only by `service_role`.
+
+## QA and hardening notes
+- Biometric unlocks last 4h (password + code: 12h). In production the session cookie is `__Host-bdg_admin`.
+- Rate limiting uses `admin_rate_hit` (migration 0126); analytics perf indexes/functions are in 0127.
+- Integration tests run the real route handlers against a local Postgres: `bash scripts/qa/setup.sh`, then `QA_PG_URL=… npx vitest run --fileParallelism=false src/lib/server/admin` (the `*.pg.test.ts` files skip without `QA_PG_URL`).

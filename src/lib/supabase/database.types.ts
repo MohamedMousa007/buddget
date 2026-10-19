@@ -292,6 +292,133 @@ export type Database = {
           },
         ]
       }
+      ai_chats: {
+        Row: {
+          chat_id: string
+          closed: boolean
+          last_at: string
+          started_at: string
+          turns: number
+          units: number
+          user_id: string
+        }
+        Insert: {
+          chat_id?: string
+          closed?: boolean
+          last_at?: string
+          started_at?: string
+          turns?: number
+          units?: number
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          closed?: boolean
+          last_at?: string
+          started_at?: string
+          turns?: number
+          units?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_reservations: {
+        Row: {
+          chat_id: string | null
+          created_at: string
+          est_units: number
+          expires_at: string
+          feature: string
+          id: string
+          settled: boolean
+          user_id: string
+        }
+        Insert: {
+          chat_id?: string | null
+          created_at?: string
+          est_units?: number
+          expires_at: string
+          feature: string
+          id?: string
+          settled?: boolean
+          user_id: string
+        }
+        Update: {
+          chat_id?: string | null
+          created_at?: string
+          est_units?: number
+          expires_at?: string
+          feature?: string
+          id?: string
+          settled?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_reservations_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chats"
+            referencedColumns: ["chat_id"]
+          },
+        ]
+      }
+      ai_usage_events: {
+        Row: {
+          cached_tokens: number
+          chat_id: string | null
+          created_at: string
+          feature: string
+          id: number
+          in_tokens: number
+          latency_ms: number | null
+          model: string | null
+          out_tokens: number
+          status: string
+          tier: string | null
+          units: number
+          user_id: string
+        }
+        Insert: {
+          cached_tokens?: number
+          chat_id?: string | null
+          created_at?: string
+          feature: string
+          id?: never
+          in_tokens?: number
+          latency_ms?: number | null
+          model?: string | null
+          out_tokens?: number
+          status?: string
+          tier?: string | null
+          units?: number
+          user_id: string
+        }
+        Update: {
+          cached_tokens?: number
+          chat_id?: string | null
+          created_at?: string
+          feature?: string
+          id?: never
+          in_tokens?: number
+          latency_ms?: number | null
+          model?: string | null
+          out_tokens?: number
+          status?: string
+          tier?: string | null
+          units?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_events_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chats"
+            referencedColumns: ["chat_id"]
+          },
+        ]
+      }
       api_rate_limits: {
         Row: {
           hits: number
@@ -3294,6 +3421,10 @@ export type Database = {
       }
       admin_feature_adoption: { Args: never; Returns: Json }
       admin_overview: { Args: never; Returns: Json }
+      admin_rate_hit: {
+        Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
+        Returns: boolean
+      }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_signup_series: {
         Args: { p_days?: number }
@@ -3315,6 +3446,37 @@ export type Database = {
         Returns: Json
       }
       admin_user_overview: { Args: { p_user: string }; Returns: Json }
+      ai_default_limits: { Args: never; Returns: Json }
+      ai_effective_limits: { Args: { p_user: string }; Returns: Json }
+      ai_quota_release: {
+        Args: { p_reservation: string; p_user: string }
+        Returns: undefined
+      }
+      ai_quota_reserve: {
+        Args: {
+          p_chat: string
+          p_est: number
+          p_feature: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      ai_quota_settle: {
+        Args: {
+          p_cached: number
+          p_in: number
+          p_latency: number
+          p_model: string
+          p_out: number
+          p_reservation: string
+          p_status: string
+          p_tier: string
+          p_units: number
+          p_user: string
+        }
+        Returns: undefined
+      }
+      ai_tmp_probe: { Args: never; Returns: undefined }
       api_rate_hit: {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean

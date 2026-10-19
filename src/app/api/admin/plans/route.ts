@@ -1,4 +1,4 @@
-import { FEATURE_CATALOG, LIMIT_CATALOG, isLimitKey } from '@/lib/entitlements/limits'
+import { FEATURE_CATALOG, LIMIT_CATALOG, isFeatureKey, isLimitKey } from '@/lib/entitlements/limits'
 import { can } from '@/lib/admin/permissions'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import type { Json } from '@/lib/supabase/database.types'
@@ -60,13 +60,14 @@ export async function POST(req: Request) {
     const p = body.plan
     if (!KEY_RE.test(p.key ?? '')) return bad('Plan key must be lowercase letters, numbers or underscores.')
     if (!p.name?.trim()) return bad('Give the plan a name.')
+    if (p.status !== undefined && !['draft', 'active', 'archived'].includes(p.status)) return bad('Invalid status.')
     const limits: Record<string, number | null> = {}
     for (const [k, v] of Object.entries(p.limits ?? {})) {
       if (!isLimitKey(k)) return bad(`Unknown limit: ${k}`)
       if (v !== null && (typeof v !== 'number' || v < 0)) return bad(`Invalid value for ${k}`)
       limits[k] = v
     }
-    const features = (p.features ?? []).filter((f) => f in FEATURE_CATALOG)
+    const features = (p.features ?? []).filter((f) => typeof f === 'string' && isFeatureKey(f))
     const money = (n: number | null | undefined) => (n == null ? null : Math.max(0, Math.floor(n)))
     const { data: existing } = await ctx.service.from('plans').select('key, is_default').eq('key', p.key).maybeSingle()
     if (existing?.is_default && p.status && p.status !== 'active') return bad('The default plan must stay active.')

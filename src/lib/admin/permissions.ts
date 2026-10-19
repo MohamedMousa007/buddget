@@ -46,7 +46,7 @@ export const OWNER_ONLY: readonly Permission[] = ['users.delete']
 export const PERMISSION_KEYS = Object.keys(PERMISSIONS) as Permission[]
 
 export function isPermission(value: string): value is Permission {
-  return value in PERMISSIONS
+  return Object.hasOwn(PERMISSIONS, value)
 }
 
 export type PermissionSet = ReadonlySet<string>

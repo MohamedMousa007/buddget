@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { deleteUserCompletely } from '@/lib/server/deleteAccount'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { sendNativePush } from '@/lib/server/sendNativePush'
-import { isLimitKey } from '@/lib/entitlements/limits'
+import { isFeatureKey, isLimitKey } from '@/lib/entitlements/limits'
 import { can, type Permission } from '@/lib/admin/permissions'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { appOrigin } from '@/lib/apiBase'
@@ -165,7 +165,7 @@ export async function POST(req: Request, { params }: Params) {
         limits[k] = v === null ? null : Math.floor(v)
       }
       const features: Record<string, boolean> = {}
-      for (const [k, v] of Object.entries(body.features ?? {})) if (typeof v === 'boolean') features[k] = v
+      for (const [k, v] of Object.entries(body.features ?? {})) if (isFeatureKey(k) && typeof v === 'boolean') features[k] = v
       const { data: existing } = await ctx.service.from('user_entitlements').select('user_id').eq('user_id', id).maybeSingle()
       let error: { message: string } | null
       if (existing) {

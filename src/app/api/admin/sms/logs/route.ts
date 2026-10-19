@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const userId = url.searchParams.get('userId')
   const sender = url.searchParams.get('sender')
   const cursor = url.searchParams.get('cursor')
-  const limit = Math.min(Number(url.searchParams.get('limit')) || 50, 200)
+  const limit = Math.min(Math.max(Math.floor(Number(url.searchParams.get('limit'))) || 50, 1), 200)
 
   let q = ctx.service.from('sms_parse_log').select(COLUMNS).order('received_at', { ascending: false }).limit(limit)
   if (queue === 'errors') {
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
   if (status) q = q.eq('status', status)
   if (userId && UUID_RE.test(userId)) q = q.eq('user_id', userId)
   if (sender) q = q.ilike('sender', `%${sender.replace(/[%,()]/g, '')}%`)
-  if (cursor) q = q.lt('received_at', cursor)
+  if (cursor && !Number.isNaN(Date.parse(cursor))) q = q.lt('received_at', cursor)
 
   const { data, error } = await q
   if (error) {

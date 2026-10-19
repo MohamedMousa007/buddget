@@ -98,7 +98,7 @@ export async function verifyAccountOwnership(user: User, accountPassword: unknow
 }
 
 export async function allowAttempt(service: ServiceClient, key: string, windowSeconds: number, max: number): Promise<boolean> {
-  const { data, error } = await service.rpc('api_rate_hit', { p_key: key, p_window_seconds: windowSeconds, p_max_hits: max })
+  const { data, error } = await service.rpc('admin_rate_hit', { p_key: key, p_window_seconds: windowSeconds, p_max_hits: max })
   if (error) {
     console.error('[admin/auth] rate-limit rpc failed', error.message)
     return false

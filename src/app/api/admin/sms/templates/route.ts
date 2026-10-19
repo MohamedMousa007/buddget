@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     const safe: { updated_at: string; ai_enabled?: boolean; regex_pattern?: string } = { updated_at: now }
     if (typeof patch?.ai_enabled === 'boolean') safe.ai_enabled = patch.ai_enabled
     if (typeof patch?.regex_pattern === 'string') {
+      if (patch.regex_pattern.length > 2000) return bad('Regex is too long.')
       try { new RegExp(patch.regex_pattern) } catch { return bad('Invalid regex pattern.') }
       safe.regex_pattern = patch.regex_pattern
     }

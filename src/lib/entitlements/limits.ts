@@ -62,7 +62,7 @@ export type LimitKey = keyof typeof LIMIT_CATALOG
 export const LIMIT_KEYS = Object.keys(LIMIT_CATALOG) as LimitKey[]
 
 export function isLimitKey(value: string): value is LimitKey {
-  return value in LIMIT_CATALOG
+  return Object.hasOwn(LIMIT_CATALOG, value)
 }
 
 /** Boolean capabilities a plan can include. Reserved names so plans and flags agree on spelling. */
@@ -77,3 +77,7 @@ export const FEATURE_CATALOG = {
 } as const
 
 export type FeatureKey = keyof typeof FEATURE_CATALOG
+
+export function isFeatureKey(value: string): value is FeatureKey {
+  return Object.hasOwn(FEATURE_CATALOG, value)
+}

@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
   const { data, error } = await ctx.service.rpc('admin_user_directory', {
     p_search: url.searchParams.get('q') || undefined,
-    p_limit: Math.min(Number(url.searchParams.get('limit')) || 25, 100),
+    p_limit: Math.min(Math.max(Math.floor(Number(url.searchParams.get('limit'))) || 25, 1), 100),
     p_offset: Math.max(Number(url.searchParams.get('offset')) || 0, 0),
     p_order: ORDERS.has(order) ? order : 'created_desc',
     p_plan: url.searchParams.get('plan') || undefined,
