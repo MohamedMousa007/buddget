@@ -10,12 +10,8 @@
  */
 import { NextResponse } from 'next/server'
 import { runPriceRefresh } from '@/lib/prices/runPriceRefresh'
-import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export const maxDuration = 60
-
-/** Admin analytics reads at most 90 days; keep a margin and drop the rest so the table stays small. */
-const ANALYTICS_RETENTION_DAYS = 120
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
@@ -25,12 +21,6 @@ export async function GET(request: Request) {
   }
 
   const result = await runPriceRefresh()
-  const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86_400_000).toISOString()
-  const { error: pruneError } = await createServiceRoleClient().from('app_analytics_events').delete().lt('created_at', cutoff)
-  if (pruneError) console.error('[cron/prices] analytics retention failed', pruneError)
-  const week = new Date(Date.now() - 7 * 86_400_000).toISOString()
-  const { error: reservationError } = await createServiceRoleClient().from('ai_reservations').delete().lt('created_at', week).or(`settled.eq.true,expires_at.lt.${new Date().toISOString()}`)
-  if (reservationError) console.error('[cron/prices] reservation cleanup failed', reservationError)
   const status = result.error ? 500 : 200
   return NextResponse.json(result, { status })
 }

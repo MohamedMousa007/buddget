@@ -36,6 +36,7 @@ const USER_ID_TABLES = [
   'payment_methods',
   'notifications',
   'app_analytics_events',
+  'app_analytics_daily',
   // Singletons
   'user_settings',
 ] as const

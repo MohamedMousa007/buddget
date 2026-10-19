@@ -443,6 +443,42 @@ export type Database = {
         }
         Relationships: []
       }
+      app_analytics_daily: {
+        Row: {
+          active_seconds: number
+          day: string
+          first_event_at: string
+          heartbeats: number
+          last_event_at: string
+          paths: Json
+          sessions: number
+          user_id: string
+          visibility_events: number
+        }
+        Insert: {
+          active_seconds?: number
+          day: string
+          first_event_at: string
+          heartbeats?: number
+          last_event_at: string
+          paths?: Json
+          sessions?: number
+          user_id: string
+          visibility_events?: number
+        }
+        Update: {
+          active_seconds?: number
+          day?: string
+          first_event_at?: string
+          heartbeats?: number
+          last_event_at?: string
+          paths?: Json
+          sessions?: number
+          user_id?: string
+          visibility_events?: number
+        }
+        Relationships: []
+      }
       app_analytics_events: {
         Row: {
           created_at: string
