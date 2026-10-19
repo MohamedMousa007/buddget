@@ -32,6 +32,8 @@ export const PERMISSIONS = {
   'flags.manage': 'Change feature flags and rollouts',
   'platform.view': 'See platform health and configuration',
   'platform.manage': 'Change platform configuration (AI limits, maintenance)',
+  'emails.view': 'See email templates and the send log',
+  'emails.manage': 'Edit, publish and test email templates',
   'staff.view': 'See staff and roles',
   'staff.manage': 'Invite staff and change their roles',
   'audit.view': 'Read the audit log',

@@ -14,6 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_log: {
+        Row: {
+          id: string
+          created_at: string
+          user_id: string | null
+          to_email: string
+          template_key: string
+          locale: string
+          provider_message_id: string | null
+          status: string
+          error: string | null
+          latency_ms: number | null
+          source: string
+          is_test: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          to_email: string
+          template_key: string
+          locale: string
+          provider_message_id?: string | null
+          status: string
+          error?: string | null
+          latency_ms?: number | null
+          source: string
+          is_test?: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          user_id?: string | null
+          to_email?: string
+          template_key?: string
+          locale?: string
+          provider_message_id?: string | null
+          status?: string
+          error?: string | null
+          latency_ms?: number | null
+          source?: string
+          is_test?: boolean
+        }
+        Relationships: []
+      }
+      email_scenarios: {
+        Row: {
+          key: string
+          name: string
+          description: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          key: string
+          name: string
+          description?: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          key?: string
+          name?: string
+          description?: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      email_template_versions: {
+        Row: {
+          id: string
+          key: string
+          locale: string
+          version: number
+          subject: string
+          preheader: string
+          html: string
+          mode: string
+          blocks: Json
+          published_by: string | null
+          published_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          locale: string
+          version: number
+          subject: string
+          preheader?: string
+          html: string
+          mode: string
+          blocks?: Json
+          published_by?: string | null
+          published_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          locale?: string
+          version?: number
+          subject?: string
+          preheader?: string
+          html?: string
+          mode?: string
+          blocks?: Json
+          published_by?: string | null
+          published_at?: string
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          id: string
+          key: string
+          locale: string
+          subject: string
+          preheader: string
+          html: string
+          mode: string
+          blocks: Json
+          status: string
+          version: number
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          locale: string
+          subject: string
+          preheader?: string
+          html: string
+          mode?: string
+          blocks?: Json
+          status: string
+          version: number
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          locale?: string
+          subject?: string
+          preheader?: string
+          html?: string
+          mode?: string
+          blocks?: Json
+          status?: string
+          version?: number
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string

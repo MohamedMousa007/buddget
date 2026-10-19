@@ -37,7 +37,7 @@ async function emailInvite(ctx: AdminContext, email: string): Promise<boolean> {
   const allowed =
     (await allowAttempt(ctx.service, `admin-invite-by:${ctx.staff.id}`, 3600, 30)) &&
     (await allowAttempt(ctx.service, `admin-invite-to:${email}`, 3600, 5))
-  const sent = allowed && (await sendStaffInviteEmail(ctx.service, email))
+  const sent = allowed && (await sendStaffInviteEmail(ctx.service, email, { inviterName: ctx.staff.display_name ?? undefined }))
   await ctx.audit(sent ? 'staff.invite_email' : 'staff.invite_email_failed', { targetType: 'staff', targetId: email, summary: sent ? `Emailed an invite to ${email}` : `Could not email ${email}` })
   return sent
 }

@@ -78,3 +78,11 @@ The same deployment serves both hosts (`src/middleware.ts`, pure routing in `src
 1. Supabase Auth, URL Configuration: add `https://admin.buddget.app/**` to *Redirect URLs* (keep `https://buddget.app/**`). Without it invite links fall back to the Site URL.
 2. Optionally customise the *Magic Link* email template so it shows the 6-digit code (`{{ .Token }}`); the app's email sign-in already relies on this, and the admin portal uses the same email.
 3. Vercel: nothing required (domain already linked). `NEXT_PUBLIC_ADMIN_HOST` only if the host differs from `admin.buddget.app`.
+
+## Emails (templates, send log)
+Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engineer hold both). Migration `0133_email_templates` adds `email_scenarios`, `email_templates` (one draft + one published row per key and language), `email_template_versions` (every publish, restorable) and `email_log` (never holds codes, links or variables). Service role only.
+- **Code:** `src/lib/email/*` is pure and shared with the editor preview (variables, block renderer, built-in English/Arabic copy, validation). `src/lib/server/email/*` has `renderEmail` (published template in the person's language from `user_settings.language`, falling back to English then the compiled copy, so a bad edit never blocks a sign-in; 30s cache, invalidated on publish), `sendTemplatedEmail(key, recipient, vars, opts)` (Resend, Idempotency-Key, 4s timeout, logs to `email_log`) and webhook signature checking.
+- **Custom scenarios:** create one in Emails > New email, then call `sendTemplatedEmail('your_key', { email, id }, { ...vars })`.
+- **Delivery status:** point a Resend webhook at `/api/webhooks/resend` and set `RESEND_WEBHOOK_SECRET`.
+- **Replacing Supabase's mailer:** Authentication > Hooks > Send Email > HTTPS, `https://buddget.app/api/auth/email-hook`, secret into `SEND_EMAIL_HOOK_SECRET`. Handles sign-up, magic link / code, recovery and re-authentication; other types (email change, invites) return an error, so do not enable the hook until those are covered or accepted.
+- Admin invites already go through `sendTemplatedEmail('invite_admin', ...)`.

@@ -1,0 +1,192 @@
+import { parseBlocks, type EmailBlock } from '@/lib/email/blocks'
+import { blankTemplate } from '@/lib/email/defaults'
+import { withPreheader } from '@/lib/email/render'
+import { BUILTIN_SCENARIOS, CUSTOM_KEY_RE, EMAIL_LOCALES, builtinScenario, customScenario, type EmailLocale } from '@/lib/email/scenarios'
+import { hasErrors, validateTemplate, MAX_HTML_BYTES } from '@/lib/email/validate'
+import { EMAIL_VARIABLES } from '@/lib/email/variables'
+import { allowAttempt } from '@/lib/server/admin/credentials'
+import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
+import { TEMPLATE_COLUMNS, asRow, ensureSeeded, findScenario, htmlFor } from '@/lib/server/email/catalog'
+import { sendTemplatedEmail } from '@/lib/server/email/send'
+import { invalidateTemplate } from '@/lib/server/email/store'
+import type { Json } from '@/lib/supabase/database.types'
+
+const isLocale = (v: unknown): v is EmailLocale => (EMAIL_LOCALES as readonly unknown[]).includes(v)
+
+export async function GET(req: Request) {
+  const g = await guardAdmin(req, { permission: 'emails.view' })
+  if (!g.ok) return g.res
+  const { service } = g.ctx
+  await ensureSeeded(service)
+  const key = new URL(req.url).searchParams.get('key')
+
+  if (key) {
+    const scenario = await findScenario(service, key)
+    if (!scenario) return bad('Unknown email.', 404)
+    const [rows, versions] = await Promise.all([
+      service.from('email_templates').select(`locale, ${TEMPLATE_COLUMNS}`).eq('key', key),
+      service.from('email_template_versions').select('locale, version, published_at').eq('key', key).order('version', { ascending: false }).limit(60),
+    ])
+    const locales = Object.fromEntries(EMAIL_LOCALES.map((l) => {
+      const mine = (rows.data ?? []).filter((r) => r.locale === l)
+      return [l, { published: asRow(mine.find((r) => r.status === 'published')), draft: asRow(mine.find((r) => r.status === 'draft')) }]
+    }))
+    return json({
+      scenario,
+      locales,
+      versions: versions.data ?? [],
+      blank: Object.fromEntries(EMAIL_LOCALES.map((l) => [l, blankTemplate(l)])),
+      samples: Object.fromEntries(Object.entries(EMAIL_VARIABLES).map(([k, v]) => [k, v.sample])),
+    })
+  }
+
+  const [rows, custom] = await Promise.all([
+    service.from('email_templates').select('key, locale, status, version, updated_at'),
+    service.from('email_scenarios').select('key, name, description'),
+  ])
+  const scenarios = [...BUILTIN_SCENARIOS, ...(custom.data ?? []).map((c) => customScenario(c.key, c.name, c.description))]
+  return json({
+    scenarios: scenarios.map((s) => ({
+      ...s,
+      locales: Object.fromEntries(EMAIL_LOCALES.map((l) => {
+        const mine = (rows.data ?? []).filter((r) => r.key === s.key && r.locale === l)
+        const published = mine.find((r) => r.status === 'published')
+        const draft = mine.find((r) => r.status === 'draft')
+        const latest = [published?.updated_at, draft?.updated_at].filter(Boolean).sort().pop() ?? null
+        return [l, { state: draft ? 'draft' : published ? 'published' : 'none', version: published?.version ?? 0, updatedAt: latest }]
+      })),
+    })),
+  })
+}
+
+interface Body {
+  op?: string
+  key?: string
+  locale?: unknown
+  version?: number
+  name?: string
+  description?: string
+  subject?: string
+  preheader?: string
+  mode?: string
+  html?: string
+  blocks?: unknown
+  vars?: Record<string, string>
+}
+
+type Content = { subject: string; preheader: string; mode: 'visual' | 'html'; html: string; blocks: EmailBlock[] }
+
+function readContent(b: Body, locale: EmailLocale): Content | string {
+  if (typeof b.subject !== 'string' || typeof b.preheader !== 'string' || typeof b.html !== 'string') return 'Missing content.'
+  if (b.mode !== 'visual' && b.mode !== 'html') return 'Unknown mode.'
+  const blocks = parseBlocks(b.blocks ?? [])
+  if (!blocks) return 'The blocks are not valid.'
+  const c: Content = { subject: b.subject.slice(0, 200), preheader: b.preheader.slice(0, 300), mode: b.mode, html: b.html, blocks }
+  c.html = c.mode === 'visual' ? htmlFor(c, locale) : withPreheader(c.html, c.preheader)
+  if (new TextEncoder().encode(c.html).length > MAX_HTML_BYTES) return 'The email is over 100 KB.'
+  return c
+}
+
+export async function POST(req: Request) {
+  const g = await guardAdmin(req, { permission: 'emails.manage' })
+  if (!g.ok) return g.res
+  const { ctx } = g
+  const { service } = ctx
+  const b = await readJson<Body>(req)
+  if (!b?.op) return bad('Unknown action.')
+
+  if (b.op === 'createScenario') {
+    const key = (b.key ?? '').trim()
+    const name = (b.name ?? '').trim().slice(0, 80)
+    if (!CUSTOM_KEY_RE.test(key)) return bad('Use a slug: lowercase letters, numbers and underscores, starting with a letter.')
+    if (!name) return bad('Give the email a name.')
+    if (builtinScenario(key)) return bad('That key is taken by a built-in email.')
+    const { error } = await service.from('email_scenarios').insert({ key, name, description: (b.description ?? '').slice(0, 200), created_by: ctx.staff.id })
+    if (error) return bad(error.code === '23505' ? 'That key already exists.' : 'Could not create the email.', error.code === '23505' ? 409 : 500)
+    await ctx.audit('emails.scenario_create', { targetType: 'email', targetId: key, summary: `Created email scenario ${key}` })
+    return json({ ok: true })
+  }
+
+  const key = b.key ?? ''
+  const scenario = await findScenario(service, key)
+  if (!scenario) return bad('Unknown email.', 404)
+
+  if (b.op === 'deleteScenario') {
+    if (!scenario.custom) return bad('Built-in emails can’t be deleted.')
+    await service.from('email_templates').delete().eq('key', key)
+    await service.from('email_template_versions').delete().eq('key', key)
+    await service.from('email_scenarios').delete().eq('key', key)
+    invalidateTemplate(key)
+    await ctx.audit('emails.scenario_delete', { targetType: 'email', targetId: key, summary: `Deleted email scenario ${key}` })
+    return json({ ok: true })
+  }
+
+  if (!isLocale(b.locale)) return bad('Unknown language.')
+  const locale = b.locale
+
+  const published = asRow((await service.from('email_templates').select(TEMPLATE_COLUMNS).eq('key', key).eq('locale', locale).eq('status', 'published').maybeSingle()).data)
+  const draftVersion = (published?.version ?? 0) + 1
+
+  const saveDraft = async (c: Content): Promise<string | null> => {
+    const row = { key, locale, ...c, blocks: c.blocks as unknown as Json, status: 'draft', version: draftVersion, updated_by: ctx.staff.id, updated_at: new Date().toISOString() }
+    const { data: existing } = await service.from('email_templates').select('id').eq('key', key).eq('locale', locale).eq('status', 'draft').maybeSingle()
+    const { error } = existing ? await service.from('email_templates').update(row).eq('id', existing.id) : await service.from('email_templates').insert(row)
+    return error ? error.message : null
+  }
+
+  if (b.op === 'saveDraft') {
+    const c = readContent(b, locale)
+    if (typeof c === 'string') return bad(c)
+    if (/<script[\s>]/i.test(c.html)) return bad('Scripts are not allowed in email.')
+    const failed = await saveDraft(c)
+    if (failed) return bad('Could not save the draft.', 500)
+    await ctx.audit('emails.draft_save', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Saved draft of ${key} (${locale})` })
+    return json({ ok: true, version: draftVersion })
+  }
+
+  if (b.op === 'discardDraft') {
+    await service.from('email_templates').delete().eq('key', key).eq('locale', locale).eq('status', 'draft')
+    await ctx.audit('emails.draft_discard', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Discarded draft of ${key} (${locale})` })
+    return json({ ok: true })
+  }
+
+  if (b.op === 'publish') {
+    const draft = asRow((await service.from('email_templates').select(TEMPLATE_COLUMNS).eq('key', key).eq('locale', locale).eq('status', 'draft').maybeSingle()).data)
+    if (!draft) return bad('Save a draft first.')
+    const issues = validateTemplate(scenario, draft)
+    if (hasErrors(issues)) return json({ error: issues.find((i) => i.level === 'error')!.message, issues }, 422)
+    const snapshot = { key, locale, version: draft.version, subject: draft.subject, preheader: draft.preheader, html: draft.html, mode: draft.mode, blocks: draft.blocks as unknown as Json, published_by: ctx.staff.id }
+    const snap = await service.from('email_template_versions').upsert(snapshot, { onConflict: 'key,locale,version' })
+    if (snap.error) return bad('Could not publish.', 500)
+    await service.from('email_templates').delete().eq('key', key).eq('locale', locale).eq('status', 'published')
+    const promote = await service.from('email_templates').update({ status: 'published', updated_by: ctx.staff.id, updated_at: new Date().toISOString() }).eq('key', key).eq('locale', locale).eq('status', 'draft')
+    if (promote.error) return bad('Could not publish.', 500)
+    invalidateTemplate(key)
+    await ctx.audit('emails.publish', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Published ${key} (${locale}) v${draft.version}`, metadata: { version: draft.version } })
+    return json({ ok: true, version: draft.version })
+  }
+
+  if (b.op === 'revert') {
+    const { data: v } = await service.from('email_template_versions').select('subject, preheader, html, mode, blocks').eq('key', key).eq('locale', locale).eq('version', b.version ?? -1).maybeSingle()
+    if (!v) return bad('That version no longer exists.', 404)
+    const blocks = parseBlocks(v.blocks) ?? []
+    const failed = await saveDraft({ subject: v.subject, preheader: v.preheader, html: v.html, mode: v.mode === 'html' ? 'html' : 'visual', blocks })
+    if (failed) return bad('Could not restore the version.', 500)
+    await ctx.audit('emails.revert', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Restored ${key} (${locale}) v${b.version} as a draft`, metadata: { version: b.version } })
+    return json({ ok: true })
+  }
+
+  if (b.op === 'test') {
+    const c = readContent(b, locale)
+    if (typeof c === 'string') return bad(c)
+    const to = ctx.user.email
+    if (!to) return bad('Your account has no email address.')
+    if (!(await allowAttempt(service, `email-test:${ctx.staff.id}`, 3600, 10))) return bad('Too many test emails. Try again in an hour.', 429)
+    const samples = Object.fromEntries(Object.entries(EMAIL_VARIABLES).map(([k, v]) => [k, v.sample]))
+    const sent = await sendTemplatedEmail(key, { email: to, id: ctx.user.id, locale }, { ...samples, ...(b.vars ?? {}), email: to }, { service, source: 'admin', test: true, override: { subject: c.subject, preheader: c.preheader, html: c.html } })
+    await ctx.audit('emails.test_send', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Sent a test of ${key} (${locale})` })
+    return sent.ok ? json({ ok: true }) : bad('The test email could not be sent. Check the send log.', 502)
+  }
+
+  return bad('Unknown action.')
+}
