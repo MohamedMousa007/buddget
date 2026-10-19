@@ -233,6 +233,7 @@ export interface Dictionary {
 
   debtMoves: {
     title: string
+    empty: string
     sheetTitle: string
     moveType: string
     moveAll: string
@@ -1780,6 +1781,8 @@ export interface Dictionary {
   notifications: {
     title: string
     markAllRead: string
+    unreadLabel: string
+    totalLabel: string
     emptyState: string
     budgetAlertTitle: (category: string) => string
     budgetAlertBodyOver: (pct: number, category: string) => string

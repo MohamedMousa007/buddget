@@ -333,6 +333,7 @@ export const ar: Dictionary = {
   debtMoves: {
     // TODO(ar-review): drafts
     title: 'آخر الحركات',
+    empty: 'لا شيء هنا بعد',
     sheetTitle: 'تصفية الحركات',
     moveType: 'الحركة',
     moveAll: 'الكل',
@@ -1908,6 +1909,8 @@ export const ar: Dictionary = {
   notifications: {
     title: 'الإشعارات',
     markAllRead: 'تعليم الكل كمقروء',
+    unreadLabel: 'غير مقروء',
+    totalLabel: 'الإجمالي',
     emptyState: 'أنت على اطلاع بكل شيء 🎉',
     budgetAlertTitle: (category) => `تنبيه على ${category} 👀`,
     budgetAlertBodyOver: (pct, category) => `استخدمت ${Math.round(pct)}٪ من ميزانية ${category}. حان وقت التخفيف قليلاً!`,

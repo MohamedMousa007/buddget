@@ -101,6 +101,7 @@ export default function SubscriptionsPage() {
     <div>
       <SubscriptionsHero hero={dataReady ? home.hero : null} base={home.base} loading={!dataReady} />
       <PageGrid
+        wide={empty}
         primary={
           <div className="flex min-w-0 flex-col gap-3.5 px-4 pb-4 pt-4 lg:px-0 lg:pb-0 lg:pt-0">
             {empty ? (

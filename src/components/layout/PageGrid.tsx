@@ -7,6 +7,8 @@ export interface PageGridProps {
   secondary?: ReactNode
   /** Phone only: show the rail before `primary` (a rail that sits above the main column on phone). */
   railFirst?: boolean
+  /** Without `secondary`, fill the wide column instead of the narrow one. */
+  wide?: boolean
   className?: string
 }
 
@@ -23,11 +25,11 @@ const BODY_PT = 'lg:pt-[var(--page-body-pt)]'
  * 22rem sticky rail split off by a vertical hairline; both start at the same y. Without
  * `secondary`, one column centred at `--page-max`. Phone spacing stays with the children.
  */
-export function PageGrid({ primary, secondary, railFirst, className }: PageGridProps) {
+export function PageGrid({ primary, secondary, railFirst, wide, className }: PageGridProps) {
   if (!secondary) {
     return (
       <div className={cn('w-full lg:border-t', PAGE_HAIRLINE)}>
-        <div className={cn(SHELL, BODY_PT, 'max-w-[var(--page-max)]', className)}>{primary}</div>
+        <div className={cn(SHELL, BODY_PT, wide ? 'max-w-[var(--page-max)] lg:max-w-[var(--page-max-wide)]' : 'max-w-[var(--page-max)]', className)}>{primary}</div>
       </div>
     )
   }

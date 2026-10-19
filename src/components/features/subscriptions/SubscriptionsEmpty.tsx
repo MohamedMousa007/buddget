@@ -32,21 +32,23 @@ export function SubscriptionsEmpty({
   })
   return (
     <div className="flex flex-col gap-3.5">
-      <h2 className="text-[17px] font-semibold text-[var(--color-brand-text-primary)]">{ui.empty.title}</h2>
-      <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{ui.empty.sub}</p>
-      <div className="grid grid-cols-3 gap-2">
+      <h2 className="text-[17px] font-semibold text-[var(--color-brand-text-primary)] lg:text-center">{ui.empty.title}</h2>
+      <p className="text-[13px] text-[var(--color-brand-text-secondary)] lg:text-center">{ui.empty.sub}</p>
+      <div className="grid grid-cols-3 gap-2 lg:grid-cols-6 lg:gap-3">
         {tiles.map(({ brand, price }) => (
           <BrandPriceTile key={brand.key} brand={brand} price={price} variant="quick" onPick={() => onPickBrand(brand.key)} />
         ))}
       </div>
-      <Button size="cta-block" onClick={onAdd}>
-        <Plus aria-hidden />
-        {t.subscriptions.addSubscription}
-      </Button>
-      <Button size="cta-block" variant="outline" onClick={onScan}>
-        <MessageSquare aria-hidden />
-        {ui.empty.scan}
-      </Button>
+      <div className="flex flex-col gap-3.5 lg:flex-row lg:justify-center">
+        <Button size="cta-block" className="lg:w-72" onClick={onAdd}>
+          <Plus aria-hidden />
+          {t.subscriptions.addSubscription}
+        </Button>
+        <Button size="cta-block" variant="outline" className="lg:w-72" onClick={onScan}>
+          <MessageSquare aria-hidden />
+          {ui.empty.scan}
+        </Button>
+      </div>
     </div>
   )
 }
