@@ -27,7 +27,7 @@ const DEFAULT_TARGET_MONTHS = 3
 export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
   const stats = useMonthlyStats()
   const goalRows = useGoalRows()
-  const { monthFilter } = useSettingsStore()
+  const monthFilter = useSettingsStore((st) => st.monthFilter)
   const s = useFinanceStore(
     useShallow((st) => ({
       profile: st.profile,
