@@ -409,6 +409,17 @@ export interface BudgetPlanRationale {
 }
 
 /** Which plan was active from which cycle; each month resolves to the latest row at or before it. */
+/** One thing Buddgy remembers about the user. Written only after the user agrees; 'proposed' is reserved for pending suggestions. */
+export interface BuddgyMemory {
+  id: string
+  text: string
+  kind: 'fact' | 'preference' | 'constraint'
+  source: 'budget' | 'chat' | 'settings'
+  status: 'proposed' | 'active'
+  createdAt: string
+  updatedAt: string
+}
+
 export interface BudgetPlanActivation {
   id: string
   planId: string
@@ -963,6 +974,7 @@ export interface FinanceStore {
   activeBudgetPlanId: string | null
   /** Which plan was active from which cycle (history log). */
   budgetPlanActivations: BudgetPlanActivation[]
+  buddgyMemories: BuddgyMemory[]
   savingsHoldings: SavingsHolding[]
   /** v3 investment positions (gold/crypto/stock/property), valued at quantity × live price. */
   investmentHoldings: InvestmentHolding[]
@@ -1126,6 +1138,9 @@ export interface FinanceStore {
   /** Makes a plan active from `cycleKey` (`YYYY-MM`) onward and logs it. Returns what Undo needs. */
   activateBudgetPlan: (planId: string, cycleKey: string) => BudgetActivationUndo
   restoreBudgetActivation: (undo: BudgetActivationUndo) => void
+  /** Saves a remembered fact; null when it is a duplicate or the 40-fact cap is reached. */
+  addBuddgyMemory: (text: string, source: BuddgyMemory['source'], kind?: BuddgyMemory['kind']) => string | null
+  removeBuddgyMemory: (id: string) => void
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void

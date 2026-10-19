@@ -97,6 +97,10 @@ interface SettingsState {
   logBuddgyNudge: (id: string) => void
   /** Facts the user asked Buddgy to remember — device-local, fed into every prompt (persisted). */
   buddgyNotes: string[]
+  /** When false, chat stops saving new notes. */
+  buddgyLearning: boolean
+  setBuddgyLearning: (on: boolean) => void
+  clearBuddgyNotes: () => void
   addBuddgyNotes: (notes: string[]) => void
   removeBuddgyNote: (note: string) => void
   /** Mute spoken-aloud answers in the voice flow (persisted). */
@@ -192,6 +196,9 @@ export const useSettingsStore = create<SettingsState>()(
           return { buddgyNudgeLog: { day, count: prev.count + 1, lastAt: Date.now(), seen: [...prev.seen, id] } }
         }),
       buddgyNotes: [],
+      buddgyLearning: true,
+      setBuddgyLearning: (on) => set({ buddgyLearning: on }),
+      clearBuddgyNotes: () => set({ buddgyNotes: [] }),
       // ponytail: newest 20 kept; a smarter merge (dedupe by meaning) if notes start contradicting.
       addBuddgyNotes: (notes) =>
         set((st) => ({ buddgyNotes: [...st.buddgyNotes.filter((n) => !notes.includes(n)), ...notes].slice(-20) })),
@@ -296,6 +303,7 @@ export const useSettingsStore = create<SettingsState>()(
         buddgyNudges: state.buddgyNudges,
         buddgyNudgeLog: state.buddgyNudgeLog,
         buddgyNotes: state.buddgyNotes,
+        buddgyLearning: state.buddgyLearning,
       }),
     }
   )

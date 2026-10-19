@@ -1999,8 +1999,11 @@ export const en: Dictionary = {
     tipsHint: 'Buddgy occasionally suggests something useful for the screen you’re on. Max 3 a day.',
     remembered: (note) => `Remembered: ${note}`,
     memoriesTitle: 'What Buddgy remembers',
-    memoriesHint: 'Tell Buddgy things like “my salary lands on the 25th”. Stored on this device only.',
+    memoriesHint: 'Tell Buddgy things like “my salary lands on the 25th”. Synced to your account; forget any of them here.',
     memoriesEmpty: 'Nothing yet.',
+    learningTitle: 'Learn from our chats',
+    learningHint: 'When off, Buddgy stops saving new notes from chat. Budget notes always ask first.',
+    memorySource: { budget: 'From your budget', chat: 'From chat', settings: 'Added by you' },
     forget: 'Forget',
   },
 

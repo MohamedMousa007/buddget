@@ -6,6 +6,7 @@ import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -23,7 +24,7 @@ type Phase =
   | { kind: 'idle' }
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
-  | { kind: 'preview'; reply: string; result: OpsResult; text: string }
+  | { kind: 'preview'; reply: string; result: OpsResult; text: string; proposals: string[] }
 
 const newId = () => crypto.randomUUID()
 
@@ -47,6 +48,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
   const toast = useActionToast()
   const store = useFinanceStore
   const [text, setText] = useState('')
+  const [declined, setDeclined] = useState<ReadonlySet<string>>(new Set())
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
   const abort = useRef<AbortController | null>(null)
   const plan = view.plan
@@ -66,7 +68,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
     setPhase(
       result.applied.length === 0
         ? { kind: 'error', message: res.data.reply || c.nothing }
-        : { kind: 'preview', reply: res.data.reply, result, text },
+        : { kind: 'preview', reply: res.data.reply, result, text, proposals: res.data.memoryProposals },
     )
   }
 
@@ -74,8 +76,10 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
     const before = plan.categories
     const after = p.result.lines
     store.getState().replaceBudgetPlanCategories(plan.id, after)
+    const remembered = p.proposals.filter((x) => !declined.has(x))
+    for (const x of remembered) store.getState().addBuddgyMemory(x, 'budget')
     void logAdjustFeedback({ planId: plan.id, text: p.text, ops: p.result.applied, before, after, outcome: 'applied' })
-    toast(c.applied, {
+    toast(remembered.length > 0 ? c.remembered : c.applied, {
       undoLabel: c.undo,
       undo: () => {
         store.getState().replaceBudgetPlanCategories(plan.id, before)
@@ -114,6 +118,30 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
               </div>
             ))}
           </div>
+          {phase.proposals.length > 0 ? (
+            <div className="flex flex-col gap-1 rounded-2xl border border-[var(--color-brand-border)] p-3">
+              <p className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{c.remember}</p>
+              {phase.proposals.map((x) => (
+                <div key={x} className="flex min-h-[44px] items-center gap-3">
+                  <span className="flex-1 text-sm text-[var(--color-brand-text-primary)]">{x}</span>
+                  <Switch
+                    size="touch"
+                    aria-label={x}
+                    checked={!declined.has(x)}
+                    onCheckedChange={(on) =>
+                      setDeclined((prev) => {
+                        const next = new Set(prev)
+                        if (on) next.delete(x)
+                        else next.add(x)
+                        return next
+                      })
+                    }
+                  />
+                </div>
+              ))}
+              <p className="text-xs text-[var(--color-brand-text-muted)]">{c.rememberHint}</p>
+            </div>
+          ) : null}
           {phase.result.rejected.length > 0 ? (
             <p className="text-xs text-[var(--color-brand-text-secondary)]">{c.rejected(phase.result.rejected.length)}</p>
           ) : null}

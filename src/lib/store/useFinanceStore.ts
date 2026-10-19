@@ -138,6 +138,9 @@ function definedOnly<T extends object>(o: T): Partial<T> {
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>
 }
 
+const MEMORY_CAP = 40
+const MEMORY_MAX_CHARS = 280
+
 function generateId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
     return globalThis.crypto.randomUUID()
@@ -180,6 +183,7 @@ export const useFinanceStore = create<FinanceStore>()(
       budgetCategories: DEFAULT_BUDGET,
       budgetPlans: [],
       budgetPlanActivations: [],
+      buddgyMemories: [],
       activeBudgetPlanId: null,
       savingsHoldings: [],
       investmentHoldings: [],
@@ -1197,6 +1201,18 @@ export const useFinanceStore = create<FinanceStore>()(
       restoreBudgetActivation: (undo) =>
         set({ activeBudgetPlanId: undo.activeBudgetPlanId, budgetPlanActivations: undo.activations }),
 
+      addBuddgyMemory: (text, source, kind = 'fact') => {
+        const clean = text.replace(/\s+/g, ' ').trim().slice(0, MEMORY_MAX_CHARS)
+        const existing = get().buddgyMemories
+        if (!clean || existing.length >= MEMORY_CAP || existing.some((m) => m.text.toLowerCase() === clean.toLowerCase())) return null
+        const now = new Date().toISOString()
+        const id = generateId()
+        set({ buddgyMemories: [...existing, { id, text: clean, kind, source, status: 'active', createdAt: now, updatedAt: now }] })
+        return id
+      },
+
+      removeBuddgyMemory: (id) => set((state) => ({ buddgyMemories: state.buddgyMemories.filter((m) => m.id !== id) })),
+
       addPlanCategory: (planId, category) => {
         const catId = generateId()
         set((state) => ({
@@ -1821,6 +1837,7 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetCategories: DEFAULT_BUDGET,
           budgetPlans: [],
           budgetPlanActivations: [],
+          buddgyMemories: [],
           activeBudgetPlanId: null,
           financialGoalsNotes: '',
           savingsHoldings: [],
@@ -1938,6 +1955,7 @@ export const useFinanceStore = create<FinanceStore>()(
             goldPriceAvailable: typeof p.goldPriceAvailable === 'boolean' ? p.goldPriceAvailable : true,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             budgetPlanActivations: Array.isArray(p.budgetPlanActivations) ? p.budgetPlanActivations : [],
+            buddgyMemories: Array.isArray(p.buddgyMemories) ? p.buddgyMemories : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId
@@ -1971,6 +1989,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...p,
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             budgetPlanActivations: Array.isArray(p.budgetPlanActivations) ? p.budgetPlanActivations : [],
+            buddgyMemories: Array.isArray(p.buddgyMemories) ? p.buddgyMemories : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId

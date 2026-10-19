@@ -1884,6 +1884,9 @@ export interface Dictionary {
     memoriesTitle: string
     memoriesHint: string
     memoriesEmpty: string
+    learningTitle: string
+    learningHint: string
+    memorySource: { budget: string; chat: string; settings: string }
     forget: string
   }
 

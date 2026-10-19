@@ -20,6 +20,7 @@ const USER_ID_TABLES = [
   'budget_categories',
   'budget_feedback',
   'budget_plan_activations',
+  'buddgy_memories',
   'budget_plans',
   // Transactions
   'expenses',

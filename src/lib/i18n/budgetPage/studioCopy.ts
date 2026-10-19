@@ -54,6 +54,9 @@ export interface BudgetStudioCopy {
     applied: string
     undo: string
     rejected: (n: number) => string
+    remember: string
+    rememberHint: string
+    remembered: string
   }
 }
 
@@ -134,6 +137,9 @@ const en: BudgetStudioCopy = {
     applied: 'Plan updated',
     undo: 'Undo',
     rejected: (n) => `${n} ${n === 1 ? 'change was' : 'changes were'} skipped (locked, linked or invalid)`,
+    remember: 'Remember for next time',
+    rememberHint: 'Saved to your account. You can forget it anytime in Buddgy settings.',
+    remembered: 'Plan updated. Buddgy will remember that.',
   },
 }
 
@@ -193,6 +199,9 @@ const ar: BudgetStudioCopy = {
     cancel: 'إلغاء',
     applied: 'تم تحديث الخطة',
     undo: 'تراجع',
+    remember: 'تذكّر للمرة القادمة',
+    rememberHint: 'يُحفظ في حسابك ويمكنك حذفه في إعدادات بادي.',
+    remembered: 'تم تحديث الخطة. سيتذكر بادي ذلك.',
   },
 }
 

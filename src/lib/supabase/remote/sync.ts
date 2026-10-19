@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { memoryFromRow, memoryToRow } from '@/lib/supabase/remote/mappers/buddgyMemoryMapper'
 import { activationFromRow, activationToRow } from '@/lib/supabase/remote/mappers/budgetActivationMapper'
 import type { Database } from '@/lib/supabase/database.types'
 import type { Snapshot } from './snapshot'
@@ -186,6 +187,7 @@ export async function flushDiff(
   emitList(runner, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
   emitList(runner, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)
   emitList(runner, 'goals', next.goals, prev.goals, goalToRow, userId)
+  emitList(runner, 'buddgy_memories', next.buddgyMemories, prev.buddgyMemories, memoryToRow, userId)
 
   flushBudgetPlans(runner, userId, prev, next, next.settings.baseCurrency)
 
@@ -301,6 +303,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
     goals: [],
     budgetPlans: [],
     budgetPlanActivations: [],
+    buddgyMemories: [],
   }
 }
 
@@ -314,7 +317,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     pmR, incomeR, incomeEvtR, expenseR, receiptR, recExpR, subR,
     debtR, debtPayR, recDebtR,
     saR, shR, stR, rsdR,
-    goalR, planR, catR, subcatR, activationR,
+    goalR, planR, catR, subcatR, activationR, memoryR,
   ] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
@@ -337,6 +340,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     client.from('budget_categories').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('budget_subcategories').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('budget_plan_activations').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('buddgy_memories').select('*').eq('user_id', userId).is('deleted_at', null),
   ])
 
   if (!profileR.data) return null
@@ -400,5 +404,6 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     goals: (goalR.data ?? []).map(goalFromRow),
     budgetPlans: plans,
     budgetPlanActivations: (activationR.data ?? []).map(activationFromRow),
+    buddgyMemories: (memoryR.data ?? []).map(memoryFromRow),
   }
 }

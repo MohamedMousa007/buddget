@@ -7,6 +7,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type ExpensePrefill } from '@/lib/store/useSettingsStore'
 import { type AIResponse } from '@/lib/ai/gemini'
 import { runAiCommand } from '@/lib/ai/runAiCommand'
+import { activeMemoryTexts, learnFromChat, migrateLegacyNotes } from '@/lib/ai/memoryActions'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import {
@@ -120,10 +121,10 @@ export function useAIChat() {
         mode: 'chat',
         history,
         screen: pathname,
-        notes: useSettingsStore.getState().buddgyNotes,
+        notes: (migrateLegacyNotes(), activeMemoryTexts()),
         onText: setStreamingText,
       })
-      if (response.notes?.length) useSettingsStore.getState().addBuddgyNotes(response.notes)
+      if (response.notes?.length) learnFromChat(response.notes)
 
       const mood = moodForReply(response)
       setMessages((prev) => [
