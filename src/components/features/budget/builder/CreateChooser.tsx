@@ -41,7 +41,7 @@ export function CreateChooser(p: CreateChooserProps) {
     <PageBody className="space-y-4 lg:pb-6">
       <div className="flex items-center gap-2">
         <IconButton variant="outlined" aria-label={closeLabel} onClick={copying ? () => setCopying(false) : p.onClose}>
-          {copying ? <ChevronLeft /> : <X />}
+          {copying ? <ChevronLeft className="rtl:rotate-180" /> : <X />}
         </IconButton>
         <span className="flex-1" />
         <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-3 text-xs font-semibold text-[var(--color-brand-text-secondary)]">
@@ -56,7 +56,7 @@ export function CreateChooser(p: CreateChooserProps) {
           {p.plans.map((pl) => (
             <Button key={pl.id} variant="outline" className="h-14 w-full justify-between" onClick={() => p.onCopy(pl.id)}>
               <span className="truncate">{pl.name}</span>
-              <ChevronRight aria-hidden />
+              <ChevronRight className="rtl:rotate-180" aria-hidden />
             </Button>
           ))}
         </div>
@@ -80,7 +80,7 @@ export function CreateChooser(p: CreateChooserProps) {
                 <span className="truncate text-[15px] font-semibold">{c.continueDraft(d.name)}</span>
                 <span className="text-xs font-normal text-[var(--color-brand-text-secondary)]">{c.draftSub}</span>
               </span>
-              <ChevronRight aria-hidden />
+              <ChevronRight className="rtl:rotate-180" aria-hidden />
             </Button>
           ))}
 
@@ -96,7 +96,7 @@ export function CreateChooser(p: CreateChooserProps) {
                     <span className="text-[17px] font-semibold">{c.intents[i].name}</span>
                     <span className="whitespace-normal text-[13px] font-normal text-[var(--color-brand-text-secondary)]">{c.intents[i].sub}</span>
                   </span>
-                  <ChevronRight aria-hidden />
+                  <ChevronRight className="rtl:rotate-180" aria-hidden />
                 </Button>
               )
             })}

@@ -193,7 +193,7 @@ Native platform classes on `<body>`: `platform-native`, `platform-ios`, `platfor
 |---|---|---|
 | Expenses | `/expenses` | `expenses` |
 | Income | `/income` | `income_sources` |
-| Budget | `/budget-setup` | `budget_plans`, `budget_categories`, `budget_subcategories` |
+| Budget | `/budget-setup`, `/budget-history` | `budget_plans`, `budget_categories`, `budget_subcategories`, `budget_plan_activations`, `budget_feedback`, `buddgy_memories` |
 | Savings | `/savings` | savings tables |
 | Debts | `/debts` | `debts`, `debt_payments` |
 | Subscriptions | `/subscriptions` | `subscriptions` |
@@ -209,6 +209,15 @@ Native platform classes on `<body>`: `platform-native`, `platform-ios`, `platfor
 | Auth | `/auth/callback`, `/reset-password/*` | Supabase Auth + `profiles` |
 
 ---
+
+## Budget v2 (planning brain)
+
+Seven blocks (bills, subscriptions, debts, everyday, safety, goals, grow) in three chapters (must pay, live, secure). One plan is active and applies to every month; `budget_plan_activations` logs which plan governed which cycle and `planForMonth` resolves it (past months keep their plan). Plans are created only by the user (draft, ready, archived).
+- **Domain** (`src/lib/budget/`, pure and tested): `engine.buildPlan` (deterministic waterfall), `validate.repairDraft`, `ops.applyOps` (set/add/remove/move/rename/lock on known line ids), `infoGaps` (studio question graph), `templates`, `budgetAi` (prompts, schemas, parsers), `planView.buildPlanView` (read model), `comparePlans`, `activations`.
+- **UI** (`src/components/features/budget/`): `BudgetPlanPage` (Plan / This month), `PlanDeck`, `builder/` (`CreateChooser`, `ManualBuilder`), `studio/` (`StudioPage` card by card, `ReviewPage`), `sheets/` (Line, AddLine, Activate, Compare, PastPlan, Adjust). Copy lives in `src/lib/i18n/budgetPage/*` (en/ar, not in the typed dictionary).
+- **AI**: `POST /api/budget/ai` ops `build` (refines the engine draft: rationale, amounts within 25%) and `adjust` (text to ops). The model never writes: the client previews, applies via the store and logs `budget_feedback`. Per-user daily cap is in-memory per instance. Every AI failure falls back to the engine draft or manual editing.
+- **Memory**: `buddgy_memories` synced through `buddgyMemories` in the finance store (cap 40, dedupe); chat auto-learns unless `buddgyLearning` is off; budget proposals need an explicit toggle. Manager in `/settings/ai`.
+- **Not built yet**: month-close ritual, desktop rail layout, stress test, per-line rollover, Studio "What I know" drawer, studio state persistence.
 
 ## Capacitor Native Config
 

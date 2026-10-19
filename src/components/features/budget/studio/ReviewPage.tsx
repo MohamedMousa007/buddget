@@ -55,7 +55,7 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
     <PageBody className="space-y-4 lg:pb-6">
       <div className="flex items-center gap-2">
         <IconButton variant="outlined" aria-label={c.close} onClick={onClose}>
-          <ChevronLeft />
+          <ChevronLeft className="rtl:rotate-180" />
         </IconButton>
         <h1 className="flex-1 text-lg font-bold text-[var(--color-brand-text-primary)]">{c.title}</h1>
       </div>

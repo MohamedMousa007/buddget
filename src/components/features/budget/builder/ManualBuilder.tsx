@@ -82,7 +82,7 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
     <PageBody className="space-y-4 lg:pb-6">
       <div className="flex items-center gap-2">
         <IconButton variant="outlined" aria-label={c.close} onClick={onExit}>
-          <ChevronLeft />
+          <ChevronLeft className="rtl:rotate-180" />
         </IconButton>
         <div className="min-w-0 flex-1">
           <h1 className="text-lg font-bold leading-tight text-[var(--color-brand-text-primary)]">{c.title}</h1>
@@ -161,13 +161,13 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
 
           <Card padding="md" className="flex gap-2">
             <Button size="cta" variant="outline" className="flex-1" disabled={step === 0} onClick={() => setStep(step - 1)}>
-              <ChevronLeft aria-hidden />
+              <ChevronLeft className="rtl:rotate-180" aria-hidden />
               {c.previous}
             </Button>
             {step < LAST ? (
               <Button size="cta" className="flex-[1.4]" onClick={() => setStep(step + 1)}>
                 {c.next}
-                <ChevronRight aria-hidden />
+                <ChevronRight className="rtl:rotate-180" aria-hidden />
               </Button>
             ) : (
               <Button size="cta" className="flex-[1.4]" onClick={finish}>
