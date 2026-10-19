@@ -10,7 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { usePlanActions } from '@/hooks/usePlanActions'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
-import { History, Plus, Sparkles } from 'lucide-react'
+import { Gauge, History, Plus, Sparkles } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
@@ -41,6 +41,8 @@ import { ReviewPage } from './studio/ReviewPage'
 import { AdjustSheet } from './sheets/AdjustSheet'
 import { MonthCloseCard } from './MonthCloseCard'
 import { PlanRail } from './PlanRail'
+import { StressTestSheet } from './sheets/StressTestSheet'
+import { useBudgetStressCopy } from './useStressCopy'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -84,6 +86,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [adjusting, setAdjusting] = useState(false)
   const monthClose = useMonthClose()
   const [closeOpen, setCloseOpen] = useState(false)
+  const [stressOpen, setStressOpen] = useState(false)
+  const stressCopy = useBudgetStressCopy()
   const [buildEmpty, setBuildEmpty] = useState(false)
   const openBuilder = useCallback((id: string, empty = false) => {
     setCreating(false)
@@ -397,6 +401,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         onClose={() => setCompare(null)}
       />
       <AdjustSheet open={adjusting} view={view} onClose={() => setAdjusting(false)} />
+      <StressTestSheet open={stressOpen} view={view} onClose={() => setStressOpen(false)} />
       <MonthCloseSheet
         open={closeOpen}
         close={monthClose}
@@ -414,6 +419,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         items={[
           { label: deckCopy.deck.history, icon: <History className="size-4" />, onSelect: () => navigate('/budget-history') },
           { label: studioCopy.adjust.title, icon: <Sparkles className="size-4" />, onSelect: () => setAdjusting(true) },
+          { label: stressCopy.menu, icon: <Gauge className="size-4" />, onSelect: () => setStressOpen(true) },
           { label: deckCopy.deck.newPlan, icon: <Plus className="size-4" />, onSelect: startBuild },
         ]}
       />
