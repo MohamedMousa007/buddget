@@ -406,7 +406,9 @@ export function AppShell({ children }: AppShellProps) {
   useCycleAwareMonth()
   const pathname = usePathname()
   const navPath = useNavPath()
-  const bare = isBareAuthRoute(pathname)
+  // The admin host serves the portal at its root, which the browser still reports as "/".
+  const shellPath = navPath === '/admin' ? '/admin' : pathname
+  const bare = isBareAuthRoute(shellPath)
 
   // Keep the in-memory shell in sync with browser back/forward + iOS swipe-back.
   useEffect(() => bindPopState(), [])
@@ -416,7 +418,7 @@ export function AppShell({ children }: AppShellProps) {
       <div className="min-h-[100dvh] bg-[var(--color-brand-bg)]">
         {children}
         {/* The portal builds its own dialogs; the consumer add-expense FAB has no place in it. */}
-        {!isAdminRoute(pathname) ? <ModalProvider /> : null}
+        {!isAdminRoute(shellPath) ? <ModalProvider /> : null}
       </div>
     )
   }

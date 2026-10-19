@@ -42,14 +42,15 @@ const e = (
 
 const HUB = '/settings'
 const MEMORY = '/settings/memory'
+const SECURITY = '/settings/security'
 
 export const SETTINGS_REGISTRY: readonly SettingEntry[] = [
   e('profile', 'profile', 'nav', '/settings/profile', 'user'),
-  e('password', 'security', 'nav', HUB, 'key', { needsAuth: true }),
-  e('twoFactor', 'security', 'toggle', HUB, 'shield', { needsAuth: true }),
-  e('biometric', 'security', 'toggle', HUB, 'lock', { needsAuth: true }),
-  e('appLock', 'security', 'toggle', HUB, 'lock'),
-  e('deleteAccount', 'data', 'danger', HUB, 'trash', { needsAuth: true, action: 'deleteAccount' }),
+  e('password', 'security', 'nav', SECURITY, 'key', { needsAuth: true }),
+  e('twoFactor', 'security', 'toggle', SECURITY, 'shield', { needsAuth: true }),
+  e('biometric', 'security', 'toggle', SECURITY, 'lock', { needsAuth: true }),
+  e('appLock', 'security', 'toggle', SECURITY, 'lock'),
+  e('deleteAccount', 'security', 'danger', SECURITY, 'trash', { needsAuth: true, action: 'deleteAccount' }),
   e('baseCurrency', 'quick', 'value', HUB, 'coins', { action: 'currencies' }),
   e('secondaryCurrency', 'quick', 'value', HUB, 'swap', { action: 'currencies' }),
   e('converter', 'quick', 'nav', HUB, 'swap', { action: 'converter' }),

@@ -21,6 +21,7 @@ import SettingsPage from '@/app/settings/page'
 import SettingsProfilePage from '@/app/settings/profile/page'
 import SettingsSmsPage from '@/app/settings/sms/page'
 import SettingsMemoryPage from '@/app/settings/memory/page'
+import SettingsSecurityPage from '@/app/settings/security/page'
 
 const VIEW_MAP: Record<string, ComponentType> = {
   '/': FlowPage,
@@ -44,6 +45,7 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/settings/profile': SettingsProfilePage,
   '/settings/sms': SettingsSmsPage,
   '/settings/memory': SettingsMemoryPage,
+  '/settings/security': SettingsSecurityPage,
 }
 
 /**

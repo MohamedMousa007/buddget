@@ -8,6 +8,7 @@ import { CurrencyMark } from '@/components/ui/CurrencyMark'
 import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { defaultSecondCurrency } from '@/hooks/useSettingToggle'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { useLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -39,8 +40,9 @@ const COPY = {
     second: 'Second',
     off: 'Off',
     offHint: 'Amounts show in your main currency only',
-    previewTitle: 'How it looks in the app',
-    previewOff: 'Turn on a second currency to see amounts in both.',
+    previewTitle: 'How a second currency shows',
+    sampleTxn: 'Groceries',
+    previewOff: 'Pick a currency below and every amount in Flow and on your heroes shows its equivalent underneath.',
     close: 'Close',
     tabs: 'Currency to change',
   },
@@ -50,8 +52,9 @@ const COPY = {
     second: 'الثانية',
     off: 'إيقاف',
     offHint: 'تظهر المبالغ بالعملة الأساسية فقط',
-    previewTitle: 'هكذا تظهر في التطبيق',
-    previewOff: 'فعّل عملة ثانية لترى المبالغ بالعملتين.',
+    previewTitle: 'إزاي بتظهر العملة الثانية',
+    sampleTxn: 'بقالة',
+    previewOff: 'اختار عملة من تحت وكل مبلغ في فلو وعلى شاشاتك الرئيسية هيظهر تحته المقابل.',
     close: 'إغلاق',
     tabs: 'العملة المراد تغييرها',
   },
@@ -74,7 +77,8 @@ export function CurrencyDualSheet({ open, onClose, base, second, rates, onPickMa
   }
   useEscapeClose(open, onClose)
 
-  const converted = second ? tryConvertCurrency(SAMPLE, base, second, rates) : null
+  const sampleSecond = defaultSecondCurrency(base)
+  const sampleConverted = tryConvertCurrency(SAMPLE, base, sampleSecond, rates)
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
@@ -96,20 +100,21 @@ export function CurrencyDualSheet({ open, onClose, base, second, rates, onPickMa
           ]}
         />
 
-        <div className="shrink-0 rounded-2xl bg-[var(--color-brand-elevated)] px-4 py-3" aria-live="polite">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.previewTitle}</p>
-          <p className="font-mono-numbers mt-1 flex items-baseline gap-1.5 text-2xl font-bold text-[var(--color-brand-text-primary)]">
-            <span className="text-lg text-[var(--color-brand-text-secondary)]"><CurrencyMark code={base} /></span>
-            {fmt(SAMPLE)}
-          </p>
-          {second && converted !== null ? (
-            <p className="font-mono-numbers mt-0.5 flex items-baseline gap-1 text-sm font-semibold text-[var(--color-brand-text-muted)]">
-              ≈ <CurrencyMark code={second} /> {fmt(converted)}
-            </p>
-          ) : (
-            <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{second ? c.offHint : c.previewOff}</p>
-          )}
-        </div>
+        {tab === 'second' && second === null ? (
+          <div className="shrink-0 space-y-2 rounded-2xl bg-[var(--color-brand-elevated)] px-4 py-3" aria-live="polite">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.previewTitle}</p>
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-brand-card)] px-3 py-2">
+              <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.sampleTxn}</span>
+              <span className="text-end">
+                <span className="font-mono-numbers block text-sm font-bold text-[var(--color-brand-text-primary)]"><CurrencyMark code={base} /> {fmt(SAMPLE)}</span>
+                {sampleConverted !== null ? (
+                  <span className="font-mono-numbers block text-xs text-[var(--color-brand-text-muted)]">≈ <CurrencyMark code={sampleSecond} /> {fmt(sampleConverted)}</span>
+                ) : null}
+              </span>
+            </div>
+            <p className="text-xs text-[var(--color-brand-text-muted)]">{c.previewOff}</p>
+          </div>
+        ) : null}
 
         {tab === 'main' ? (
           <CurrencyList key="main" value={base} base={base} onSelect={onPickMain} />

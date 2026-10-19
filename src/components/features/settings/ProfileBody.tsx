@@ -1,6 +1,6 @@
 'use client'
 
-import { User, Camera } from 'lucide-react'
+import { User, Camera, LogOut } from 'lucide-react'
 import { CountrySelect } from '@/components/ui/CountrySelect'
 import { ProfileFieldRow } from '@/components/profile/ProfileFieldRow'
 import { getProfileCountryDisplayLabel } from '@/lib/profile/countryOptions'
@@ -97,6 +97,17 @@ export function ProfileBody({ p }: { p: ReturnType<typeof useProfilePage> }) {
           </div>
         )}
       </Card>
+
+      {p.user ? (
+        <Button
+          variant="outline"
+          size="cta-block"
+          onClick={() => void p.handleSignOut()}
+          className="mt-4 border-[var(--color-brand-red)]/30 text-[var(--color-brand-red)] hover:bg-[var(--color-brand-red-soft)] hover:text-[var(--color-brand-red)]"
+        >
+          <LogOut className="size-4" />{t.common.signOut}
+        </Button>
+      ) : null}
 
       <AvatarPickerModal open={p.avatarModalOpen} onClose={() => p.setAvatarModalOpen(false)} store={p.store} />
     </>

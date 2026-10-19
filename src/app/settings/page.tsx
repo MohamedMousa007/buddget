@@ -6,16 +6,14 @@ import { PageBody } from '@/components/layout/PageContainer'
 import { QuickActions } from '@/components/features/settings/QuickActions'
 import { AiCard } from '@/components/features/settings/hub/AiCard'
 import { DataCard } from '@/components/features/settings/hub/DataCard'
-import { DeleteAccountCta } from '@/components/features/settings/hub/DeleteAccountCta'
 import { HelpCard } from '@/components/features/settings/hub/HelpCard'
 import { NotificationsCard } from '@/components/features/settings/hub/NotificationsCard'
 import { ProfileBanner } from '@/components/features/settings/hub/ProfileBanner'
-import { SecurityCard } from '@/components/features/settings/hub/SecurityCard'
+import { SecurityEntry } from '@/components/features/settings/hub/SecurityCard'
 import { SettingsSearch } from '@/components/features/settings/hub/SettingsSearch'
 import { SmsCard } from '@/components/features/settings/hub/SmsCard'
 import { Card } from '@/components/ui/card'
 import { SkeletonList } from '@/components/ui/SkeletonList'
-import { useProfilePage } from '@/hooks/useProfilePage'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -27,7 +25,6 @@ const HIGHLIGHT_MS = 1800
 export default function SettingsPage() {
   const copy = useSettingsHubCopy()
   const { user } = useAuth()
-  const p = useProfilePage()
   const dataReady = useFinanceStore((s) => s.dataReady)
   const focusId = useSettingsStore((s) => s.settingsFocusId)
   const setFocusId = useSettingsStore((s) => s.setSettingsFocusId)
@@ -53,17 +50,16 @@ export default function SettingsPage() {
   return (
     <div ref={bodyRef}>
       <PageBody narrow className="space-y-4">
-        <ProfileBanner onSearch={() => setSearching(true)} />
+        <ProfileBanner />
         <Card padding="none">
-          <QuickActions variant="hub" />
+          <QuickActions variant="hub" onSearch={() => setSearching(true)} />
         </Card>
-        <SecurityCard p={p} />
+        {user ? <SecurityEntry /> : null}
         {user ? <SmsCard /> : null}
         <AiCard />
         <NotificationsCard />
         <DataCard />
         <HelpCard />
-        {user ? <DeleteAccountCta p={p} /> : null}
         <p className="pt-2 text-center text-xs text-[var(--color-brand-text-muted)]">
           <a href="https://www.exchangerate-api.com/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline hover:text-[var(--color-brand-text-secondary)]">
             {copy.footer}

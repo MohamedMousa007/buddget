@@ -10,13 +10,13 @@ import { useLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { Currency } from '@/lib/store/types'
 
-/** A round badge carrying the currency's sign; fills with brand teal when `selected`. */
+/** The currency's sign on its own, set large so the symbol itself stands out; teal when `selected`. */
 export function CurrencyBadge({ code, selected = false, className, children }: { code: string; selected?: boolean; className?: string; children?: React.ReactNode }) {
   return (
     <span
       className={cn(
-        'flex size-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold leading-none',
-        selected ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'bg-[var(--color-brand-sunken)] text-[var(--color-brand-text-secondary)]',
+        'flex w-10 shrink-0 items-center justify-center text-[22px] font-bold leading-none',
+        selected ? 'text-[var(--color-brand-primary-ink)]' : 'text-[var(--color-brand-text-primary)]',
         className,
       )}
     >
@@ -74,7 +74,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
         onClick={() => onSelect(code)}
         aria-pressed={selected}
         className={cn(
-          'flex min-h-14 w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-start transition-colors',
+          'flex min-h-12 w-full items-center gap-2 rounded-xl px-2 py-1.5 text-start transition-colors',
           selected ? 'bg-[var(--color-brand-primary-soft)]' : 'hover:bg-[var(--color-brand-elevated)]',
         )}
       >
@@ -118,7 +118,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
           <>
             {leading}
             <p className={caption}>{locale === 'ar' ? 'الأكثر استخدامًا' : 'Common'}</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
               {common.map((code) => {
                 const selected = code === value
                 return (
@@ -129,14 +129,14 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
                     aria-pressed={selected}
                     aria-label={`${nameOf(code)} ${code}`}
                     className={cn(
-                      'flex min-h-[76px] flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-2.5 transition-colors',
+                      'flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl border px-1 py-1.5 transition-colors',
                       selected
                         ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-soft)]'
                         : 'border-[var(--color-brand-border)] hover:bg-[var(--color-brand-elevated)]',
                     )}
                   >
-                    <CurrencyBadge code={code} selected={selected} className="size-9" />
-                    <span className="font-mono-numbers text-xs font-bold text-[var(--color-brand-text-primary)]">{code}</span>
+                    <CurrencyBadge code={code} selected={selected} className="h-5 w-auto text-lg" />
+                    <span className="font-mono-numbers text-[10px] font-semibold text-[var(--color-brand-text-muted)]">{code}</span>
                   </button>
                 )
               })}

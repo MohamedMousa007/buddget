@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { normalizePath, getNavPath, setNavPath } from './navStore'
+import { normalizePath, getNavPath, setNavPath, shellPathFor } from './navStore'
 import { isShellPath } from './shellRoutes'
 import { navigate } from './navigate'
 
@@ -71,5 +71,15 @@ describe('navigate', () => {
   it('non-shell with query keeps the query after the slash', () => {
     navigate('/legal/privacy?ref=x')
     expect(assign).toHaveBeenCalledWith('/legal/privacy/?ref=x')
+  })
+})
+
+describe('shellPathFor', () => {
+  it('shows the admin portal at the root of the admin host, and the app everywhere else', () => {
+    expect(shellPathFor('/', 'admin.buddget.app')).toBe('/admin')
+    expect(shellPathFor('/', 'ADMIN.buddget.app:443')).toBe('/admin')
+    expect(shellPathFor('/', 'buddget.app')).toBe('/')
+    expect(shellPathFor('/', 'localhost')).toBe('/')
+    expect(shellPathFor('/admin/accept', 'admin.buddget.app')).toBe('/admin/accept')
   })
 })

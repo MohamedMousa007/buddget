@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeftRight, Coins, Languages, Moon, Sun, X } from 'lucide-react'
+import { ArrowLeftRight, Moon, Search, Sun, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { BaseCurrencyChangeSheet } from '@/components/features/settings/BaseCurrencyChangeSheet'
@@ -20,34 +20,32 @@ import { cn } from '@/lib/utils'
 import type { Currency } from '@/lib/store/types'
 
 interface TileProps {
-  compact?: boolean
-  icon: React.ReactNode
+  /** Glyph inside the button: an icon, or a short mark such as the language's initials. */
+  children: React.ReactNode
   label: string
-  state: string
   active?: boolean
   onClick: () => void
   settingId?: string
 }
 
-/** One quick-settings tile: glyph on top, name, current state. Filled teal when it is "on". */
-function Tile({ icon, label, state, active = false, onClick, settingId, compact = false }: TileProps) {
+/** One quick-settings button: a single glyph, named for assistive tech and as a tooltip. Filled teal when "on". */
+function Tile({ children, label, active = false, onClick, settingId }: TileProps) {
   return (
     <button
       type="button"
       data-setting-id={settingId}
-      data-raw-button-ok="quick-settings tile: a square toggle-style control, not a text button"
+      data-raw-button-ok="quick-settings button: a compact glyph-only toggle, not a text button"
+      aria-label={label}
+      title={label}
       onClick={onClick}
       className={cn(
-        'flex min-h-[76px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl py-2 text-center transition-colors active:scale-[0.97]',
-        compact ? 'px-0.5' : 'px-1.5',
+        'flex h-12 min-w-0 flex-1 items-center justify-center rounded-xl text-sm font-bold transition-colors active:scale-[0.96] [&_svg]:size-5',
         active
           ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
           : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] hover:bg-[var(--color-brand-sunken)]',
       )}
     >
-      <span className="flex size-6 items-center justify-center [&_svg]:size-5">{icon}</span>
-      <span className={cn('max-w-full truncate font-semibold leading-tight', compact ? 'text-[10.5px]' : 'text-[11px]')}>{label}</span>
-      <span className={cn('font-mono-numbers max-w-full truncate text-[10px] leading-tight', active ? 'opacity-85' : 'text-[var(--color-brand-text-muted)]')}>{state}</span>
+      {children}
     </button>
   )
 }
@@ -68,7 +66,7 @@ function CentsRow() {
  * currencies (main and optional second, in one picker) and the converter. Shared by the settings page and the
  * profile menu; the `menu` variant is tighter.
  */
-export function QuickActions({ variant }: { variant: 'hub' | 'menu' }) {
+export function QuickActions({ variant, onSearch }: { variant: 'hub' | 'menu'; onSearch?: () => void }) {
   const copy = useSettingsHubCopy()
   const { locale, setLocale } = useLocale()
   const { settings, rates, updateSettings } = useFinanceStore(
@@ -101,32 +99,23 @@ export function QuickActions({ variant }: { variant: 'hub' | 'menu' }) {
   return (
     <>
       <div className={cn('flex gap-2', variant === 'menu' ? 'px-3 py-3' : 'p-3')} role="group" aria-label={copy.quickTitle}>
-        <Tile
-          compact={variant === 'menu'}
-          settingId="language"
-          icon={<Languages />}
-          label={copy.language}
-          state={locale === 'ar' ? 'العربية' : 'English'}
-          onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}
-        />
-        <Tile
-          compact={variant === 'menu'}
-          settingId="theme"
-          icon={dark ? <Moon /> : <Sun />}
-          label={copy.theme}
-          state={dark ? copy.themeDark : copy.themeLight}
-          active={dark}
-          onClick={toggleTheme}
-        />
-        <Tile
-          compact={variant === 'menu'}
-          settingId="baseCurrency"
-          icon={<Coins />}
-          label={copy.currencyTile}
-          state={second ? `${settings.baseCurrency} + ${second}` : settings.baseCurrency}
-          onClick={() => setPicking(true)}
-        />
-        <Tile compact={variant === 'menu'} settingId="converter" icon={<ArrowLeftRight />} label={copy.convertTile} state={copy.convertHint} onClick={() => setConverting(true)} />
+        <Tile settingId="language" label={`${copy.language}: ${locale === 'ar' ? 'العربية' : 'English'}`} onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}>
+          <span className="font-mono-numbers">{locale === 'ar' ? 'ع' : 'EN'}</span>
+        </Tile>
+        <Tile settingId="theme" label={`${copy.theme}: ${dark ? copy.themeDark : copy.themeLight}`} active={dark} onClick={toggleTheme}>
+          {dark ? <Moon /> : <Sun />}
+        </Tile>
+        <Tile settingId="baseCurrency" label={`${copy.currencyTile}: ${settings.baseCurrency}${second ? ` + ${second}` : ''}`} onClick={() => setPicking(true)}>
+          <span className="font-mono-numbers">{settings.baseCurrency}</span>
+        </Tile>
+        <Tile settingId="converter" label={copy.convertTitle} onClick={() => setConverting(true)}>
+          <ArrowLeftRight />
+        </Tile>
+        {onSearch ? (
+          <Tile label={copy.searchLabel} onClick={onSearch}>
+            <Search />
+          </Tile>
+        ) : null}
       </div>
 
       <CurrencyDualSheet

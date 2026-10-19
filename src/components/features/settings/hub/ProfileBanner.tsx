@@ -1,11 +1,10 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Search, User } from 'lucide-react'
+import { ChevronLeft, ChevronRight, User } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { Card } from '@/components/ui/card'
-import { IconButton } from '@/components/ui/IconButton'
 import { ProgressRing } from '@/components/ui/ProgressRing'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
 import { useLocale, useT } from '@/lib/i18n'
@@ -14,8 +13,8 @@ import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { cn } from '@/lib/utils'
 
-/** The signed-in person's card (opens the profile) with the settings search button beside it. */
-export function ProfileBanner({ onSearch }: { onSearch: () => void }) {
+/** The signed-in person's card; it opens the profile. */
+export function ProfileBanner() {
   const t = useT()
   const copy = useSettingsHubCopy()
   const { locale } = useLocale()
@@ -26,12 +25,12 @@ export function ProfileBanner({ onSearch }: { onSearch: () => void }) {
   const Chevron = locale === 'ar' ? ChevronLeft : ChevronRight
 
   return (
-    <div className="flex items-center gap-2">
+    <>
       {user ? (
         <Card
           render={<Link href="/settings/profile" />}
           padding="none"
-          className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-[var(--color-brand-elevated)]"
+          className="flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--color-brand-elevated)]"
         >
           <span className="size-12 shrink-0 overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)] ring-offset-2 ring-offset-[var(--color-brand-card)]">
             {avatarSrc ? (
@@ -53,11 +52,8 @@ export function ProfileBanner({ onSearch }: { onSearch: () => void }) {
           <Chevron className="size-5 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
         </Card>
       ) : (
-        <div className="min-w-0 flex-1 px-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{copy.title}</div>
+        <div className="px-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{copy.title}</div>
       )}
-      <IconButton variant="tinted" size="lg" shape="round" aria-label={copy.searchLabel} onClick={onSearch} className="size-12 shrink-0">
-        <Search />
-      </IconButton>
-    </div>
+    </>
   )
 }

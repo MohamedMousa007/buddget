@@ -1,6 +1,7 @@
 'use client'
 
 import { useSyncExternalStore } from 'react'
+import { configuredAdminHost, normalizeHost } from '@/lib/admin/host'
 
 /**
  * Source of truth for the in-memory view shell. `navigate()` pushes to the
@@ -20,7 +21,18 @@ export function normalizePath(path: string): string {
   return noQuery.replace(/\/+$/, '')
 }
 
-let currentPath = typeof window !== 'undefined' ? normalizePath(window.location.pathname) : '/'
+/**
+ * The shell view for a browser location. The admin host serves the portal at its root (the server rewrites `/` to
+ * `/admin`), so the shell must not mistake that `/` for the Flow home page.
+ */
+export function shellPathFor(pathname: string, hostname: string): string {
+  const path = normalizePath(pathname)
+  return path === '/' && normalizeHost(hostname) === configuredAdminHost() ? '/admin' : path
+}
+
+const browserPath = () => shellPathFor(window.location.pathname, window.location.hostname)
+
+let currentPath = typeof window !== 'undefined' ? browserPath() : '/'
 const listeners = new Set<() => void>()
 
 export function getNavPath(): string {
@@ -47,7 +59,7 @@ export function useNavPath(): string {
 /** Keep the store in sync with browser back/forward. Call once at app root. */
 export function bindPopState(): () => void {
   if (typeof window === 'undefined') return () => {}
-  const onPop = () => setNavPath(window.location.pathname)
+  const onPop = () => setNavPath(browserPath())
   window.addEventListener('popstate', onPop)
   return () => window.removeEventListener('popstate', onPop)
 }

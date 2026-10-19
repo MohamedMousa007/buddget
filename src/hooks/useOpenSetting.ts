@@ -25,8 +25,10 @@ export function useOpenSetting() {
         case 'feedback':
         case 'about':
         case 'export':
-        case 'deleteAccount':
           navigate('/settings')
+          return openSheet(entry.action)
+        case 'deleteAccount':
+          navigate(entry.route)
           return openSheet(entry.action)
         default:
           setFocusId(id)
