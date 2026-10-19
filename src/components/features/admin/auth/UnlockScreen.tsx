@@ -67,7 +67,7 @@ export function UnlockScreen({ name, email, biometricEnrolled, onUnlocked }: { n
   }, [canBiometric, biometric])
 
   return (
-    <AuthFrame title={`Welcome back${name ? `, ${name.split(' ')[0]}` : ''}`} subtitle="Unlock the portal with your admin password and the code we email you.">
+    <AuthFrame title={`Welcome back${name ? `, ${name.split(' ')[0]}` : ''}`} subtitle="Unlock the portal with your admin password and the code we email you." account={email}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void submit() }}>
         {canBiometric ? (
           <>

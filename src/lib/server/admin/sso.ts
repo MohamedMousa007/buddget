@@ -17,8 +17,9 @@ export async function resolveSsoSession(
   user: User,
   staffCtx: StaffContext,
   meta: { ip: string; userAgent: string | null },
+  loaded?: Awaited<ReturnType<typeof loadCredentials>>,
 ): Promise<AdminSessionRow | null> {
-  const cred = await loadCredentials(service, user.id)
+  const cred = loaded === undefined ? await loadCredentials(service, user.id) : loaded
   if (!cred?.setup_completed_at || !cred.sso_enabled) return null
 
   const now = Date.now()

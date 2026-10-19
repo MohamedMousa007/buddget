@@ -21,17 +21,17 @@ export async function GET(req: Request) {
   const ctx = await resolveStaff(service, user)
   if (!ctx || ctx.staff.status !== 'active') return NextResponse.json({ isStaff: false, signedIn: true }, { headers })
 
-  const cred = await loadCredentials(service, user.id)
+  // Independent lookups run together: each is a round trip to the database.
   const token = readSessionToken(req)
-  const own = token ? await validateAdminSession(service, token, user.id) : null
-  const session = own ?? (await resolveSsoSession(service, user, ctx, { ip: clientIp(req), userAgent: req.headers.get('user-agent') }))
-
-  let biometricEnrolled = false
-  if (cred?.setup_completed_at) {
-    const deviceId = await resolveDeviceId(req)
-    const { data } = await service.from('admin_biometric_devices').select('device_id').eq('device_id', deviceId).eq('user_id', user.id).maybeSingle()
-    biometricEnrolled = !!data
-  }
+  const [cred, own, biometric] = await Promise.all([
+    loadCredentials(service, user.id),
+    token ? validateAdminSession(service, token, user.id) : Promise.resolve(null),
+    resolveDeviceId(req).then((deviceId) =>
+      service.from('admin_biometric_devices').select('device_id').eq('device_id', deviceId).eq('user_id', user.id).maybeSingle(),
+    ),
+  ])
+  const session = own ?? (await resolveSsoSession(service, user, ctx, { ip: clientIp(req), userAgent: req.headers.get('user-agent') }, cred))
+  const biometricEnrolled = Boolean(cred?.setup_completed_at && biometric.data)
 
   return NextResponse.json(
     {

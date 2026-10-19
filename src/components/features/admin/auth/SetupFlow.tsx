@@ -51,7 +51,7 @@ export function SetupFlow({ email, resume, onDone }: { email: string; resume: bo
 
   if (step === 'password') {
     return (
-      <AuthFrame title="Secure your access" subtitle="Choose a password for the admin portal. It is separate from your Buddget password.">
+      <AuthFrame title="Secure your access" subtitle="One-time setup. Choose a password for the admin portal, separate from your Buddget one. After this, being signed in to Buddget opens it." account={email}>
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void submitPassword() }}>
           <Field label="New admin password" hint="12+ characters with upper case, lower case and a number. Use something unique.">
             <Input size="brand" type="password" autoComplete="new-password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -67,7 +67,7 @@ export function SetupFlow({ email, resume, onDone }: { email: string; resume: bo
   }
 
   return (
-    <AuthFrame title="Check your inbox" subtitle="Enter the code we emailed you to confirm it is really you.">
+    <AuthFrame title="Check your inbox" subtitle="Enter the code we emailed you to confirm it is really you." account={email}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void submitCode() }}>
         <EmailCodeInput value={code} onChange={setCode} email={email} alreadySent={sent} disabled={busy} />
         {error ? <Notice tone="negative">{error}</Notice> : null}
