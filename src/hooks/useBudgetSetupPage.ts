@@ -1,5 +1,6 @@
 'use client'
 
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useCallback, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -56,10 +57,7 @@ export function useBudgetSetupPage() {
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
 
-  const activePlan = useMemo(() => {
-    if (budgetPlans.length === 0) return null
-    return budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0]
-  }, [budgetPlans, activeBudgetPlanId])
+  const activePlan = useMemo(() => selectActivePlan(budgetPlans, activeBudgetPlanId), [budgetPlans, activeBudgetPlanId])
 
   const totalIncome = useMemo(() => {
     if (settings.noIncomeDeclared && incomeSources.length === 0) return 0

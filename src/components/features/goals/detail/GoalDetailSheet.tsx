@@ -43,7 +43,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
   const s = useFinanceStore(
     useShallow((st) => ({
       incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses,
-      budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, exchangeRates: st.exchangeRates,
+      budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, activeBudgetPlanId: st.activeBudgetPlanId, exchangeRates: st.exchangeRates,
       settings: st.settings, savingsAccounts: st.savingsAccounts, savingsTransactions: st.savingsTransactions,
       updateGoal: st.updateGoal, achieveGoal: st.achieveGoal, debts: st.debts, debtPayments: st.debtPayments,
     })),

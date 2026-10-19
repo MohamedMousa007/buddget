@@ -1,9 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useT } from '@/lib/i18n'
@@ -71,7 +69,6 @@ export function useNotifications() {
   const stats = useMonthlyStats()
   const t = useT()
   const { monthFilter } = useSettingsStore()
-  const budgetCategories = useFinanceStore(useShallow((s) => s.budgetCategories))
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
   const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
@@ -112,21 +109,19 @@ export function useNotifications() {
     const list: AppNotification[] = []
     const now = new Date().toISOString()
 
-    for (const cat of budgetCategories) {
-      if (cat.category === 'Savings') continue
-      const cap = stats.categoryBudgetCaps[cat.category] ?? 0
-      if (cap <= 0) continue
-      const spent = stats.categorySpending[cat.category] ?? 0
+    for (const [category, cap] of Object.entries(stats.categoryBudgetCaps)) {
+      if (category === 'Savings' || cap <= 0) continue
+      const spent = stats.categorySpending[category] ?? 0
       const pct = (spent / cap) * 100
       if (pct > 80) {
         list.push({
-          id: `budget_alert:${cat.category}:${monthFilter}`,
+          id: `budget_alert:${category}:${monthFilter}`,
           type: 'budget_alert',
-          title: t.notifications.budgetAlertTitle(cat.category),
+          title: t.notifications.budgetAlertTitle(category),
           body:
             pct >= 100
-              ? t.notifications.budgetAlertBodyOver(pct, cat.category)
-              : t.notifications.budgetAlertBodyUnder(pct, cat.category, 100 - Math.round(pct)),
+              ? t.notifications.budgetAlertBodyOver(pct, category)
+              : t.notifications.budgetAlertBodyUnder(pct, category, 100 - Math.round(pct)),
           severity: pct >= 100 ? 'critical' : 'warning',
           createdAt: now,
         })
@@ -154,7 +149,7 @@ export function useNotifications() {
     }
 
     return list
-  }, [budgetCategories, monthFilter, stats, t])
+  }, [monthFilter, stats, t])
 
   const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,

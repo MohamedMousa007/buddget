@@ -1,11 +1,13 @@
 import type { FinanceStore } from '@/lib/store/types'
 import { calculateMonthlyIncome } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
+import { selectActivePlan } from '@/lib/budget/activePlan'
+import { totalPlannedExpensesForPlan } from '@/lib/budget/budgetPlans'
 import { detectFundingScenario, getUsualKeep, type FundingScenario } from '@/lib/goals/fundingScenario'
 
 type Slice = Pick<
   FinanceStore,
-  'incomeEvents' | 'incomeSources' | 'expenses' | 'budgetCategories' | 'budgetPlans' | 'exchangeRates' | 'settings'
+  'incomeEvents' | 'incomeSources' | 'expenses' | 'budgetCategories' | 'budgetPlans' | 'activeBudgetPlanId' | 'exchangeRates' | 'settings'
 >
 
 export interface FundingBasis {
@@ -27,11 +29,12 @@ export function fundingBasis(s: Slice, now: Date): FundingBasis {
     currentMonth: current,
   })
 
+  const plan = selectActivePlan(s.budgetPlans, s.activeBudgetPlanId)
+  const planned = plan
+    ? totalPlannedExpensesForPlan(plan, base, s.exchangeRates)
+    : s.budgetCategories.reduce((sum, c) => sum + convertCurrency(c.budgetedAmount, c.currency, base, s.exchangeRates), 0)
   const budgetSavings =
-    scenario === 'A'
-      ? calculateMonthlyIncome(s.incomeSources, base, s.exchangeRates) -
-        s.budgetCategories.reduce((sum, c) => sum + convertCurrency(c.budgetedAmount, c.currency, base, s.exchangeRates), 0)
-      : undefined
+    scenario === 'A' ? calculateMonthlyIncome(s.incomeSources, base, s.exchangeRates) - planned : undefined
 
   const months = [1, 2, 3].map((i) => monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1))).reverse()
   const monthlyNets = months.flatMap((m) => {

@@ -89,8 +89,10 @@ export function getMonthRange(monthStr: string, monthStartDay = 1): { start: Dat
 
   const year = date.getFullYear()
   const month = date.getMonth()
-  const start = new Date(year, month, monthStartDay)
-  const nextCycleStart = new Date(year, month + 1, monthStartDay)
+  // Clamped to 28 like the month-carry cron, so a 29-31 start day cannot roll into the next month.
+  const day = Math.min(28, monthStartDay)
+  const start = new Date(year, month, day)
+  const nextCycleStart = new Date(year, month + 1, day)
 
   return {
     start,

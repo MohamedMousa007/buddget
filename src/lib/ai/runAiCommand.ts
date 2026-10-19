@@ -1,4 +1,5 @@
 import type { FinanceStore } from '@/lib/store/types'
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import {
   buildSystemPrompt,
   buildVoiceExtractPrompt,
@@ -144,8 +145,7 @@ export async function runAiCommand({
   const budgetPlanContext =
     mode === 'chat'
       ? (() => {
-          const activePlan =
-            store.budgetPlans.find((p) => p.id === store.activeBudgetPlanId) ?? store.budgetPlans[0]
+          const activePlan = selectActivePlan(store.budgetPlans, store.activeBudgetPlanId)
           return activePlan
             ? {
                 planId: activePlan.id,

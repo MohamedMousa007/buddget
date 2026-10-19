@@ -1,5 +1,6 @@
 'use client'
 
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -174,10 +175,7 @@ export function useMonthlyStats() {
       settings.baseCurrency,
       exchangeRates
     )
-    const activePlan =
-      budgetPlans.length > 0
-        ? budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0]
-        : null
+    const activePlan = selectActivePlan(budgetPlans, activeBudgetPlanId)
     /** Plan drives dashboard category rows only when it has at least one category row. */
     const planForCategoryBar =
       activePlan != null && activePlan.categories.length > 0 ? activePlan : null

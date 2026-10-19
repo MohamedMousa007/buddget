@@ -1,5 +1,6 @@
 'use client'
 
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useMemo } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
@@ -20,10 +21,7 @@ export function usePlanCategories() {
   const activePlanId = useFinanceStore((s) => s.activeBudgetPlanId)
   const plans = useFinanceStore((s) => s.budgetPlans)
 
-  const activePlan = useMemo(
-    () => (activePlanId ? plans.find((p) => p.id === activePlanId) : plans[0]) ?? null,
-    [activePlanId, plans],
-  )
+  const activePlan = useMemo(() => selectActivePlan(plans, activePlanId), [activePlanId, plans])
 
   const planCategories: BudgetPlanCategory[] = useMemo(
     () => (activePlan !== null && activePlan.categories.length > 0 ? activePlan.categories : []),

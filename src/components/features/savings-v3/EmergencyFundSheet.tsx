@@ -1,5 +1,6 @@
 'use client'
 
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Info, Minus, Plus, Shield, Sparkles } from 'lucide-react'
@@ -64,7 +65,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
   const [aiError, setAiError] = useState<string | null>(null)
   const [aiNote, setAiNote] = useState<string | null>(null)
 
-  const activePlan = budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0]
+  const activePlan = selectActivePlan(budgetPlans, activeBudgetPlanId) ?? undefined
   const derived = useMemo(
     () => deriveSimpleMonth({ profile, activePlan, debts, baseCurrency: currency, exchangeRates }),
     [profile, activePlan, debts, currency, exchangeRates],

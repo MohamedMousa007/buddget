@@ -43,7 +43,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
       incomeSources: st.incomeSources,
       expenses: st.expenses,
       budgetCategories: st.budgetCategories,
-      budgetPlans: st.budgetPlans,
+      budgetPlans: st.budgetPlans, activeBudgetPlanId: st.activeBudgetPlanId,
       goals: st.goals,
       debts: st.debts,
       debtPayments: st.debtPayments,

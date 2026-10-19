@@ -1,5 +1,6 @@
 'use client'
 
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react'
@@ -117,7 +118,7 @@ export default function WealthPage() {
     [pockets, coverPocketIds, base, exchangeRates, goldPricePerGram, goldOk],
   )
   const simpleMonth = useMemo(
-    () => deriveSimpleMonth({ profile, activePlan: budgetPlans.find((p) => p.id === activeBudgetPlanId) ?? budgetPlans[0], debts, baseCurrency: base, exchangeRates, override: profile.emergencyFundConfig?.monthlyEssentials }),
+    () => deriveSimpleMonth({ profile, activePlan: selectActivePlan(budgetPlans, activeBudgetPlanId) ?? undefined, debts, baseCurrency: base, exchangeRates, override: profile.emergencyFundConfig?.monthlyEssentials }),
     [profile, budgetPlans, activeBudgetPlanId, debts, base, exchangeRates],
   )
   const targetMonths = profile.emergencyFundConfig?.targetMonths ?? 3

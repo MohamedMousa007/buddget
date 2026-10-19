@@ -79,7 +79,7 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
   const s = useFinanceStore(
     useShallow((st) => ({
       goals: st.goals, incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses,
-      budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, exchangeRates: st.exchangeRates, settings: st.settings,
+      budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, activeBudgetPlanId: st.activeBudgetPlanId, exchangeRates: st.exchangeRates, settings: st.settings,
     })),
   )
   const shared = useMemo(

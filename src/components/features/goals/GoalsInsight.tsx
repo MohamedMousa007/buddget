@@ -17,7 +17,7 @@ export function GoalsInsight({ rows }: { rows: GoalRow[] }) {
   const s = useFinanceStore(
     useShallow((st) => ({
       incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses, budgetCategories: st.budgetCategories,
-      budgetPlans: st.budgetPlans, exchangeRates: st.exchangeRates, settings: st.settings, txs: st.savingsTransactions,
+      budgetPlans: st.budgetPlans, activeBudgetPlanId: st.activeBudgetPlanId, exchangeRates: st.exchangeRates, settings: st.settings, txs: st.savingsTransactions,
       debts: st.debts, debtPayments: st.debtPayments,
     })),
   )

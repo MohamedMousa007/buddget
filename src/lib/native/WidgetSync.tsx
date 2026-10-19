@@ -1,5 +1,7 @@
 'use client'
 
+import { selectActivePlan } from '@/lib/budget/activePlan'
+import { totalExpenseBudgetFromPlan } from '@/lib/budget/budgetPlans'
 import { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -30,7 +32,7 @@ export function WidgetSync() {
       expenses: s.expenses,
       baseCurrency: s.settings.baseCurrency,
       language: s.settings.language,
-      monthlyBudgetTotal: sumBudget(s.budgetCategories),
+      monthlyBudgetTotal: planBudgetTotal(s),
       monthlyBudgetCurrency: s.settings.baseCurrency,
       monthStartDay: s.settings.monthStartDay,
       exchangeRates: s.exchangeRates,
@@ -101,6 +103,13 @@ export function WidgetSync() {
   }, [snapshot])
 
   return null
+}
+
+function planBudgetTotal(s: ReturnType<typeof useFinanceStore.getState>): number {
+  const plan = selectActivePlan(s.budgetPlans, s.activeBudgetPlanId)
+  return plan
+    ? totalExpenseBudgetFromPlan(plan, s.settings.baseCurrency, s.exchangeRates)
+    : sumBudget(s.budgetCategories)
 }
 
 function sumBudget(rows: Array<{ budgetedAmount: number; category: string }>): number {

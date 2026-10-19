@@ -30,7 +30,7 @@ export function PlanEditorSheet({ goal, kind, current, onClose }: { goal: Goal; 
   const s = useFinanceStore(
     useShallow((st) => ({
       incomeEvents: st.incomeEvents, incomeSources: st.incomeSources, expenses: st.expenses,
-      budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, exchangeRates: st.exchangeRates,
+      budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, activeBudgetPlanId: st.activeBudgetPlanId, exchangeRates: st.exchangeRates,
       settings: st.settings, goals: st.goals, savingsAccounts: st.savingsAccounts, debts: st.debts,
     })),
   )
