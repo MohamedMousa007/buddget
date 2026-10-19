@@ -22,3 +22,11 @@ describe('comparePlans', () => {
     ])
   })
 })
+
+describe('comparePlans duplicate names', () => {
+  it('adds same-named lines in a block instead of letting the last one win', () => {
+    const split: BudgetPlan = { ...A, categories: [line({ id: '1', name: 'Groceries', amount: 1200 }), line({ id: '4', name: 'groceries', amount: 800 })] }
+    const one: BudgetPlan = { ...A, categories: [line({ id: '5', name: 'Groceries', amount: 2000 })] }
+    expect(comparePlans(split, one, 'AED', {}).lines).toEqual([])
+  })
+})

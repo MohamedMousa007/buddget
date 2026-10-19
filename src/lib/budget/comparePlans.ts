@@ -31,8 +31,16 @@ const key = (block: BudgetBlock, name: string) => `${block}:${name.trim().toLowe
 export function comparePlans(a: BudgetPlan, b: BudgetPlan, base: Currency, rates: Record<string, number>): PlanComparison {
   const ta = blockTotals(a, base, rates)
   const tb = blockTotals(b, base, rates)
-  const lineMap = (plan: BudgetPlan) =>
-    new Map(plan.categories.map((c) => [key(lineBlock(c), c.name), { block: lineBlock(c), name: c.name, amount: effectivePlanCategoryAmountInBase(c, base, rates) }]))
+  const lineMap = (plan: BudgetPlan) => {
+    const out = new Map<string, { block: BudgetBlock; name: string; amount: number }>()
+    for (const c of plan.categories) {
+      const k = key(lineBlock(c), c.name)
+      const amount = effectivePlanCategoryAmountInBase(c, base, rates)
+      const seen = out.get(k)
+      out.set(k, seen ? { ...seen, amount: seen.amount + amount } : { block: lineBlock(c), name: c.name, amount })
+    }
+    return out
+  }
   const la = lineMap(a)
   const lb = lineMap(b)
   const keys = new Set([...la.keys(), ...lb.keys()])
