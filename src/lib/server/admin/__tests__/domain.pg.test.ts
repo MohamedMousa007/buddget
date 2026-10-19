@@ -500,6 +500,11 @@ describe.skipIf(!pgEnabled)('admin domain routes (real Postgres)', () => {
       expect((await post(loyaltyPost, admin, { op: 'upsert_tier', tier: { key: 'st', name: 'S', status: 'live' } })).status).toBe(400)
     })
 
+    it('stores plan limits as whole numbers so SQL and TypeScript resolve them identically', async () => {
+      expect((await post(plansPost, finance, { op: 'upsert', plan: { key: 'frac', name: 'F', limits: { ai_units_5h: 1000.9 } } })).status).toBe(200)
+      expect((await q<{ v: number }>(`select (limits->>'ai_units_5h')::numeric v from plans where key='frac'`))[0]!.v).toBe(1000)
+    })
+
     it('refuses an oversized SMS regex', async () => {
       const [{ id }] = await q<{ id: string }>(`insert into sms_tracking_templates_ai (sender, regex_pattern, template_sample, mapping_rules) values ('CIB','a','s','{}') returning id`)
       expect((await post(smsTemplates, admin, { op: 'update', id, patch: { regex_pattern: 'a'.repeat(2001) } })).status).toBe(400)

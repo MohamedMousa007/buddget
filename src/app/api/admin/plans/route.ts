@@ -64,8 +64,8 @@ export async function POST(req: Request) {
     const limits: Record<string, number | null> = {}
     for (const [k, v] of Object.entries(p.limits ?? {})) {
       if (!isLimitKey(k)) return bad(`Unknown limit: ${k}`)
-      if (v !== null && (typeof v !== 'number' || v < 0)) return bad(`Invalid value for ${k}`)
-      limits[k] = v
+      if (v !== null && (typeof v !== 'number' || !Number.isFinite(v) || v < 0)) return bad(`Invalid value for ${k}`)
+      limits[k] = v === null ? null : Math.floor(v)
     }
     const features = (p.features ?? []).filter((f) => typeof f === 'string' && isFeatureKey(f))
     const money = (n: number | null | undefined) => (n == null ? null : Math.max(0, Math.floor(n)))
