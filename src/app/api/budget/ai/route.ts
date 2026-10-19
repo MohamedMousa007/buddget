@@ -10,6 +10,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { usageFromPayload } from '@/lib/server/ai/gemini'
+import { estimateUnits, type TokenUsage } from '@/lib/server/ai/units'
 import {
   ADJUST_SCHEMA,
   BUILD_SCHEMA,
@@ -45,11 +48,24 @@ async function overQuota(userId: string): Promise<boolean> {
   return data === false
 }
 
-async function askModel(apiKey: string, system: string, user: string, schema: object, thinking: number): Promise<unknown | null> {
+const MAX_OUTPUT_TOKENS = 4096
+
+/** Quota-gated model call: reserve first, settle with the real token usage after. */
+async function askGated(userId: string, apiKey: string, system: string, user: string, schema: object, thinking: number): Promise<{ denied: NextResponse } | { data: unknown | null }> {
+  const started = Date.now()
+  const quota = await reserveAiQuota({ userId, feature: 'budget', estUnits: estimateUnits(system.length + user.length, MAX_OUTPUT_TOKENS) })
+  if (!quota.allowed) return { denied: quotaDeniedResponse(quota) }
+  const { data, usage } = await askModel(apiKey, system, user, schema, thinking)
+  await settleAiQuota(quota, { model: MODEL, tier: 'smart', latencyMs: Date.now() - started, usage, status: data ? 'ok' : 'error' })
+  return { data }
+}
+
+async function askModel(apiKey: string, system: string, user: string, schema: object, thinking: number): Promise<{ data: unknown | null; usage: TokenUsage }> {
+  const none: TokenUsage = { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }
   try {
-    const res = await fetch(`${URL_BASE}?key=${apiKey}`, {
+    const res = await fetch(URL_BASE, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       signal: AbortSignal.timeout(45_000),
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
@@ -58,17 +74,17 @@ async function askModel(apiKey: string, system: string, user: string, schema: ob
           temperature: 0.3,
           responseMimeType: 'application/json',
           responseSchema: schema,
-          maxOutputTokens: 4096,
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
           thinkingConfig: { thinkingBudget: thinking },
         },
       }),
     })
-    if (!res.ok) return null
+    if (!res.ok) return { data: null, usage: none }
     const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
     const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('').trim()
-    return text ? JSON.parse(text) : null
+    return { data: text ? JSON.parse(text) : null, usage: usageFromPayload(payload) }
   } catch {
-    return null
+    return { data: null, usage: none }
   }
 }
 
@@ -94,7 +110,9 @@ export async function POST(req: NextRequest) {
     if (!facts || !draft || !Array.isArray(draft.lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     if (await overQuota(user.id)) return NextResponse.json({ error: 'Budget AI limit reached, try again later' }, { status: 429 })
     const m = buildMessages(facts, draft)
-    const out = applyRefinement(draft, await askModel(apiKey, m.system, m.user, BUILD_SCHEMA, 1024))
+    const asked = await askGated(user.id, apiKey, m.system, m.user, BUILD_SCHEMA, 1024)
+    if ('denied' in asked) return asked.denied
+    const out = applyRefinement(draft, asked.data)
     return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not refine the plan' }, { status: 502 })
   }
 
@@ -104,7 +122,9 @@ export async function POST(req: NextRequest) {
     if (!text || text.length > MAX_ADJUST_CHARS || !Array.isArray(lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     if (await overQuota(user.id)) return NextResponse.json({ error: 'Budget AI limit reached, try again later' }, { status: 429 })
     const m = adjustMessages(lines, text, /^[A-Za-z]{3}$/.test(String(body.currency)) ? String(body.currency) : '', Number(body.income) || 0)
-    const out = parseAdjust(await askModel(apiKey, m.system, m.user, ADJUST_SCHEMA, 512))
+    const asked = await askGated(user.id, apiKey, m.system, m.user, ADJUST_SCHEMA, 512)
+    if ('denied' in asked) return asked.denied
+    const out = parseAdjust(asked.data)
     return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not read that' }, { status: 502 })
   }
 

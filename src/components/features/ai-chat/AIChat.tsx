@@ -3,15 +3,13 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { WifiOff } from 'lucide-react'
-import { useAIChat } from '@/hooks/useAIChat'
-import { useT } from '@/lib/i18n'
-import { useNetworkStatus } from '@/hooks/useNetworkStatus'
+import { useBuddgyChat } from '@/hooks/useBuddgyChat'
+import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { AIChatHeader } from '@/components/features/ai-chat/AIChatHeader'
 import { AIChatEmptyState } from '@/components/features/ai-chat/AIChatEmptyState'
 import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageList'
-import { AIChatTypingIndicator } from '@/components/features/ai-chat/AIChatTypingIndicator'
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
 import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
 import { useDismissable } from '@/hooks/useDismissable'
@@ -87,24 +85,10 @@ function computePanel(orb: BuddgyOrbPosition): PanelGeometry | null {
  */
 export function AIChat() {
   const {
-    isOpen,
-    close,
-    messages,
-    input,
-    setInput,
-    isLoading,
-    streamingText,
-    beat,
-    handleSend,
-    handleConfirm,
-    handleEdit,
-    messagesEndRef,
-    lastUserContentBefore,
-    baseCurrency,
-  } = useAIChat()
-
-  const t = useT()
-  const { online } = useNetworkStatus()
+    isOpen, close, items, input, setInput, busy, step, beat, online, bottomRef, newChat, send, stop, retry, keepGoing,
+    applyProposal, dismissProposal, reviseProposal, undoApplied,
+  } = useBuddgyChat()
+  const copy = useBuddgyChatCopy()
   const orb = useSettingsStore((s) => s.buddgyOrb)
   const [panel, setPanel] = useState<PanelGeometry | null>(() => computePanel(orb))
 
@@ -148,37 +132,39 @@ export function AIChat() {
             transition={{ type: 'spring', stiffness: 380, damping: 32, opacity: { duration: 0.14 } }}
             className="fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
           >
-            <AIChatHeader onClose={close} beat={beat} isLoading={isLoading} streaming={Boolean(streamingText)} />
+            <AIChatHeader onClose={close} onNewChat={newChat} canReset={items.length > 0} beat={beat} isLoading={busy} streaming={busy && items.at(-1)?.role === 'buddgy' && (items.at(-1)?.text ?? '') !== ''} />
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.length === 0 ? (
-                <AIChatEmptyState onPickSuggestion={(prompt) => void handleSend(prompt)} />
+              {items.length === 0 ? (
+                <AIChatEmptyState onPickSuggestion={(prompt) => void send(prompt)} />
               ) : (
                 <AIChatMessageList
-                  messages={messages}
-                  baseCurrency={baseCurrency}
-                  lastUserContentBefore={lastUserContentBefore}
-                  onConfirm={handleConfirm}
-                  onEdit={handleEdit}
+                  items={items}
+                  step={step}
+                  onApply={applyProposal}
+                  onDismiss={dismissProposal}
+                  onRevise={reviseProposal}
+                  onUndo={undoApplied}
+                  onRetry={retry}
+                  onContinue={keepGoing}
                 />
               )}
-
-              {isLoading ? <AIChatTypingIndicator text={streamingText} /> : null}
-              <div ref={messagesEndRef} />
+              <div ref={bottomRef} />
             </div>
 
             {!online && (
               <div className="flex items-center gap-2 border-t border-[var(--color-brand-border)] px-4 py-2.5 text-xs text-[var(--color-brand-text-muted)]">
                 <WifiOff className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                {t.pendingCaptures.buddgyOffline}
+                {copy.offline}
               </div>
             )}
 
             <AIChatComposer
               value={input}
               onChange={setInput}
-              onSend={() => void handleSend()}
-              disabled={isLoading || !online}
+              onSend={() => void send()}
+              onStop={stop}
+              busy={busy}
             />
           </motion.div>
         </>

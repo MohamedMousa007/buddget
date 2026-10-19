@@ -13,6 +13,9 @@
  */
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { usageFromPayload } from '@/lib/server/ai/gemini'
+import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { addUsage, estimateUnits, EMPTY_USAGE, type TokenUsage } from '@/lib/server/ai/units'
 
 // Gemini thinking + a long itemized output + one retry can exceed Vercel's
 // short default function duration — sibling AI routes all set this too.
@@ -20,6 +23,9 @@ export const maxDuration = 60
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const MAX_OUTPUT_TOKENS = 8192
+/** A photo costs roughly this many input tokens to read. */
+const TOKENS_PER_IMAGE = 1300
 
 const SYSTEM_PROMPT = `You extract an itemized expense from photos of a receipt for a user in Egypt or the GCC.
 If multiple images are provided, they are CONSECUTIVE sections of the SAME receipt — stitch them into ONE result. Do not duplicate a line that spans a page break, and do not treat the images as separate receipts.
@@ -98,16 +104,16 @@ class GeminiError extends Error {
  * Calls Gemini with bounded retries + exponential backoff on transient failures
  * (429, 5xx, network errors, empty/blocked candidates). Returns the raw model text.
  */
-async function callGeminiText(apiKey: string, requestBody: unknown): Promise<string> {
+async function callGeminiText(apiKey: string, requestBody: unknown, spent: { usage: TokenUsage }): Promise<string> {
   let lastErr: GeminiError | null = null
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (attempt > 0) await sleep(400 * 2 ** (attempt - 1)) // 400ms, 800ms
 
     let res: Response
     try {
-      res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      res = await fetch(GEMINI_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify(requestBody),
       })
     } catch {
@@ -120,6 +126,8 @@ async function callGeminiText(apiKey: string, requestBody: unknown): Promise<str
       usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; totalTokenCount?: number }
       error?: { message?: string }
     } | null
+
+    if (payload) spent.usage = addUsage(spent.usage, usageFromPayload(payload))
 
     if (!res.ok || !payload) {
       const msg = payload?.error?.message || `Gemini returned ${res.status}`
@@ -235,22 +243,28 @@ export async function POST(request: NextRequest) {
       // room (8192) and cap thinking (2048) so it stays for accuracy but can never
       // consume the whole budget. Both are ceilings — billing is on tokens actually
       // produced, so this doesn't raise cost on normal receipts.
-      maxOutputTokens: 8192,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
       thinkingConfig: { thinkingBudget: 2048 },
       responseSchema: RESPONSE_SCHEMA,
     },
   }
 
+  const quota = await reserveAiQuota({ userId: user.id, feature: 'receipt', estUnits: estimateUnits(SYSTEM_PROMPT.length + images.length * TOKENS_PER_IMAGE * 4, MAX_OUTPUT_TOKENS) })
+  if (!quota.allowed) return quotaDeniedResponse(quota)
+
   const startedAt = Date.now()
+  const spent = { usage: EMPTY_USAGE }
   let raw: string
   try {
-    raw = await callGeminiText(apiKey, requestBody)
+    raw = await callGeminiText(apiKey, requestBody, spent)
     console.log(`[receipt/scan] elapsed ${Date.now() - startedAt}ms images ${images.length}`)
   } catch (e) {
     const err = e instanceof GeminiError ? e : new GeminiError('AI service error', 502, false)
     console.error('[receipt/scan] gemini error', err.message)
+    await settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - startedAt, usage: spent.usage, status: 'error' })
     return NextResponse.json({ error: err.message }, { status: err.status })
   }
+  await settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - startedAt, usage: spent.usage, status: 'ok' })
 
   let parsed: Record<string, unknown>
   try {

@@ -18,6 +18,7 @@ import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
@@ -53,6 +54,8 @@ import { emitNotification } from '@/lib/server/emitNotification'
 export const maxDuration = 60
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
+/** Typical cost of one SMS parse (prompt plus a short JSON answer) in quota units. */
+const SMS_PARSE_UNITS = 1500
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
 const RATE_LIMIT_PER_DAY = 100
@@ -792,10 +795,24 @@ export async function POST(request: Request) {
     // template insufficient on its own.
     const exemplar = await fetchCorrectionExemplar(service, message)
 
+    // Same wheel as every other AI surface; an SMS parse is about this many tokens in and out.
+    const quota = await reserveAiQuota({ userId, feature: 'sms', estUnits: SMS_PARSE_UNITS })
+    if (!quota.allowed) {
+      await service.from('sms_parse_log')
+        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new' })
+        .eq('id', logId)
+      return quotaDeniedResponse(quota)
+    }
+    const geminiStarted = Date.now()
+    const settleSms = (status: 'ok' | 'error') =>
+      settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - geminiStarted, usage: { promptTokens: SMS_PARSE_UNITS, cachedTokens: 0, outputTokens: 0 }, status })
+
     // Call Gemini.
     try {
       parsed = await callGemini(apiKey, message, exemplar)
+      await settleSms('ok')
     } catch (e) {
+      await settleSms('error')
       console.error('[sms/parse] gemini failed', e)
       await service.from('sms_parse_log')
         .update({ status: 'failed', failure_code: 'gemini_error', parse_method: 'ai_new' })

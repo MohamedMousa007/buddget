@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { checkAIStatus } from '@/lib/ai/gemini'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { BuddgyIcon, buddgyMoodColor, type BuddgyMood } from '@/components/ai/BuddgyIcon'
 import { BuddgyNudgeWatcher } from '@/components/ai/BuddgyNudgeWatcher'
@@ -35,6 +36,7 @@ const clampTop = (top: number) => Math.max(70, Math.min(window.innerHeight - 150
 export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
   const t = useT()
   const [aiEnabled, setAiEnabled] = useState(false)
+  const userAllowsAi = useFinanceStore((s) => s.settings.enableAI)
   const { orb, setBuddgyOrb, chatOpen, anyModal, nudgesOn } = useSettingsStore(
     useShallow((s) => ({
       orb: s.buddgyOrb,
@@ -122,7 +124,7 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
     btn.addEventListener('lostpointercapture', end)
   }
 
-  if (!aiEnabled) return null
+  if (!aiEnabled || !userAllowsAi) return null
 
   const mood: BuddgyMood =
     surfaceMood !== 'idle' ? surfaceMood
