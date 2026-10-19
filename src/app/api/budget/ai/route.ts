@@ -27,6 +27,7 @@ const MODEL = process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-2.5-flash'
 const URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 const DAILY_LIMIT = 40
 const MAX_BODY_CHARS = 60_000
+const MAX_ADJUST_CHARS = 500
 
 // ponytail: per-instance counter, resets on cold start; move to a table if abuse shows up.
 const usage = new Map<string, { day: string; count: number }>()
@@ -82,12 +83,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  if (overQuota(user.id)) return NextResponse.json({ error: 'Daily budget AI limit reached' }, { status: 429 })
-
   if (body.op === 'build') {
     const facts = body.facts as BudgetFacts | undefined
     const draft = body.draft as PlanDraft | undefined
     if (!facts || !draft || !Array.isArray(draft.lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    if (overQuota(user.id)) return NextResponse.json({ error: 'Daily budget AI limit reached' }, { status: 429 })
     const m = buildMessages(facts, draft)
     const out = applyRefinement(draft, await askModel(apiKey, m.system, m.user, BUILD_SCHEMA, 1024))
     return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not refine the plan' }, { status: 502 })
@@ -96,7 +96,8 @@ export async function POST(req: NextRequest) {
   if (body.op === 'adjust') {
     const text = typeof body.text === 'string' ? body.text.trim() : ''
     const lines = body.lines as AdjustLine[] | undefined
-    if (!text || !Array.isArray(lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    if (!text || text.length > MAX_ADJUST_CHARS || !Array.isArray(lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    if (overQuota(user.id)) return NextResponse.json({ error: 'Daily budget AI limit reached' }, { status: 429 })
     const m = adjustMessages(lines, text, String(body.currency ?? ''), Number(body.income) || 0)
     const out = parseAdjust(await askModel(apiKey, m.system, m.user, ADJUST_SCHEMA, 512))
     return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not read that' }, { status: 502 })

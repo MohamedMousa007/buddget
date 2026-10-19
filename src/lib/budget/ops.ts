@@ -55,6 +55,7 @@ function check(lines: BudgetPlanCategory[], op: PlanOp, opts: OpsOptions): Rejec
   switch (op.op) {
     case 'set':
       if (isLinked(line)) return 'linked'
+      if (line.subcategories.length) return 'invalid'
       return validAmount(op.amount, opts.maxAmount) ? null : 'invalid'
     case 'remove':
     case 'move':

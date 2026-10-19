@@ -34,6 +34,12 @@ describe('applyOps', () => {
     expect(r.rejected.map((x) => x.reason)).toEqual(['locked', 'locked', 'linked', 'linked'])
     expect(r.lines).toEqual(before)
   })
+  it('rejects setting a line whose amount comes from its subcategories', () => {
+    const split = [line({ id: 'f', name: 'Food', amount: 0, subcategories: [{ id: 'f1', name: 'Fresh', amount: 300 }] })]
+    const r = applyOps(split, [{ op: 'set', id: 'f', amount: 900 }], opts)
+    expect(r.rejected.map((x) => x.reason)).toEqual(['invalid'])
+    expect(r.lines).toEqual(split)
+  })
   it('rejects unknown ids, bad amounts and duplicate names', () => {
     const r = applyOps(before, [
       { op: 'set', id: 'nope', amount: 1 },

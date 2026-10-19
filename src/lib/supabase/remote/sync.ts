@@ -193,13 +193,23 @@ export async function flushDiff(
 
   const result = await runner.drain()
   // Activations reference plans (FK), so they commit only after the plan rows above are in.
-  const activationRunner = new OpRunner(client)
-  emitList(activationRunner, 'budget_plan_activations', next.budgetPlanActivations, prev.budgetPlanActivations, activationToRow, userId)
-  const activationResult = await activationRunner.drain()
+  // A re-switch in the same cycle replaces the row, and the one-live-row-per-cycle index would reject
+  // the new row while the old one is still live, so the tombstone lands first.
+  const activationDiff = diffLists(next.budgetPlanActivations, prev.budgetPlanActivations)
+  const staleRunner = new OpRunner(client)
+  staleRunner.tombstone('budget_plan_activations', activationDiff.deletes, 'budget_plan_activations.tombstone')
+  const staleResult = await staleRunner.drain()
+  const freshRunner = new OpRunner(client)
+  freshRunner.upsert(
+    'budget_plan_activations',
+    [...activationDiff.inserts, ...activationDiff.updates].map((a) => activationToRow(a, userId)),
+    'budget_plan_activations.upsert'
+  )
+  const freshResult = await freshRunner.drain()
   return {
-    anyError: result.anyError || activationResult.anyError,
-    errors: [...result.errors, ...activationResult.errors],
-    writes: result.writes + activationResult.writes,
+    anyError: result.anyError || staleResult.anyError || freshResult.anyError,
+    errors: [...result.errors, ...staleResult.errors, ...freshResult.errors],
+    writes: result.writes + staleResult.writes + freshResult.writes,
   }
 }
 

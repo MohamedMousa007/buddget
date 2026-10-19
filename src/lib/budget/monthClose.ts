@@ -67,6 +67,7 @@ export function buildClose(lines: readonly CloseLine[]): MonthClose {
       proposals.push({ lineId: l.id, name: l.name, kind: 'raise', from: l.cap, to, months: l.monthsOver, average: to, weight: to - l.cap })
     } else if (l.average < l.cap * LOWER_BELOW_CAP && l.spent < l.cap * LOWER_BELOW_CAP) {
       const to = Math.round(l.average * LOWER_PADDING)
+      if (to < 1) continue
       proposals.push({ lineId: l.id, name: l.name, kind: 'lower', from: l.cap, to, months: 0, average: Math.round(l.average), weight: l.cap - to })
     }
   }

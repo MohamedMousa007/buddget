@@ -18,6 +18,11 @@ describe('buildClose', () => {
     expect(c.summary.over).toEqual([{ id: 'dining', name: 'dining', by: 300 }])
   })
 
+  it('never proposes lowering a line to zero', () => {
+    const c = buildClose([line({ id: 'unused', cap: 400, spent: 0, average: 0 })])
+    expect(c.proposals).toEqual([])
+  })
+
   it('proposes the biggest fixes first: lowering a line that stays low, raising one that kept overrunning', () => {
     const c = buildClose([
       line({ id: 'dining', cap: 1000, spent: 1250, average: 1200, monthsOver: 3 }),
