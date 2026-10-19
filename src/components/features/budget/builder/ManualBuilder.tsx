@@ -30,12 +30,14 @@ const LAST = BUDGET_BLOCKS.length - 1
 
 export interface ManualBuilderProps {
   planId: string
+  /** Skip the template picker and start on an empty first block. */
+  startEmpty?: boolean
   onExit: () => void
   onFinish: (planId: string) => void
 }
 
 /** Block-by-block plan builder over a draft plan. Every edit lands in the store immediately. */
-export function ManualBuilder({ planId, onExit, onFinish }: ManualBuilderProps) {
+export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: ManualBuilderProps) {
   const c = useBudgetBuilderCopy()
   const blockNames = useBudgetSheetsCopy().blocks
   const alert = useAlert()
@@ -43,7 +45,7 @@ export function ManualBuilder({ planId, onExit, onFinish }: ManualBuilderProps) 
   const act = useBudgetPageActions(view)
   const store = useFinanceStore
   const [step, setStep] = useState(0)
-  const [started, setStarted] = useState(() => (view?.plan.categories.length ?? 0) > 0)
+  const [started, setStarted] = useState(() => startEmpty || (view?.plan.categories.length ?? 0) > 0)
   const [lineId, setLineId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
 

@@ -34,6 +34,7 @@ import { ActivateSheet } from './sheets/ActivateSheet'
 import { ComparePlansSheet } from './sheets/ComparePlansSheet'
 import { PlanDeck } from './PlanDeck'
 import { ManualBuilder } from './builder/ManualBuilder'
+import { CreateChooser } from './builder/CreateChooser'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetPageCopy } from './usePageCopy'
 import type { ChapterView } from '@/lib/budget/planView.types'
@@ -66,7 +67,14 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [compare, setCompare] = useState<{ a: string; b: string } | null>(null)
   const [upgradeLater, setUpgradeLater] = useState(false)
   const [building, setBuilding] = useState<string | null>(null)
-  const startBuild = useCallback(() => setBuilding(planActions.createDraft()), [planActions])
+  const [creating, setCreating] = useState(false)
+  const [buildEmpty, setBuildEmpty] = useState(false)
+  const openBuilder = useCallback((id: string, empty = false) => {
+    setCreating(false)
+    setBuildEmpty(empty)
+    setBuilding(id)
+  }, [])
+  const startBuild = useCallback(() => setCreating(true), [])
   const finishBuild = useCallback(
     (id: string) => {
       setBuilding(null)
@@ -154,7 +162,28 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     )
   }
 
-  if (building) return <ManualBuilder planId={building} onExit={() => setBuilding(null)} onFinish={finishBuild} />
+  if (building) return <ManualBuilder planId={building} startEmpty={buildEmpty} onExit={() => setBuilding(null)} onFinish={finishBuild} />
+
+  if (creating) {
+    return (
+      <CreateChooser
+        plans={plans}
+        drafts={plans.filter((p) => p.status === 'draft')}
+        onIntent={async (intent) => {
+          const id = await planActions.createForIntent(intent)
+          if (id) openBuilder(id)
+        }}
+        onBlank={() => openBuilder(planActions.createDraft(), true)}
+        onTemplate={() => openBuilder(planActions.createDraft())}
+        onCopy={(id) => {
+          const copy = planActions.duplicate(id)
+          if (copy) openBuilder(copy)
+        }}
+        onContinue={openBuilder}
+        onClose={() => setCreating(false)}
+      />
+    )
+  }
 
   if (!view) {
     return (
@@ -204,7 +233,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           onHistory={() => navigate('/budget-history')}
           onCompare={(id) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id })}
           onNew={startBuild}
-          onContinue={setBuilding}
+          onContinue={(id) => openBuilder(id)}
         />
       ) : null}
       <FlowStrip view={view} onFix={onFix} onJump={jump} />

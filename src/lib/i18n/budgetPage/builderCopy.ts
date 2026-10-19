@@ -1,5 +1,5 @@
 import type { BudgetBlock } from '@/lib/store/types'
-import type { BuildTemplate } from '@/lib/budget/templates'
+import type { BuildTemplate, CreateIntent } from '@/lib/budget/templates'
 
 /** Copy for the manual builder. Money arrives pre-formatted. */
 export interface BudgetBuilderCopy {
@@ -28,6 +28,20 @@ export interface BudgetBuilderCopy {
   start: { title: string; sub: string; blank: string; templates: Record<BuildTemplate, { name: string; sub: string }> }
   needIncome: string
   readyToast: string
+  create: {
+    title: string
+    sub: string
+    buddgyAsks: string
+    about: string
+    intents: Record<CreateIntent, { name: string; sub: string }>
+    orBuild: string
+    blank: string
+    template: string
+    copy: string
+    copyTitle: string
+    continueDraft: (name: string) => string
+    draftSub: string
+  }
 }
 
 const hintsEn: Record<BudgetBlock, string> = {
@@ -83,6 +97,26 @@ export const budgetBuilderCopyEn: BudgetBuilderCopy = {
   },
   needIncome: 'Add your income under Flow first. Templates are sized on it.',
   readyToast: 'Plan ready',
+  create: {
+    title: 'What should your money do?',
+    sub: 'Pick the closest one. Buddgy shapes the plan around it, and you can change anything.',
+    buddgyAsks: 'Buddgy asks',
+    about: 'About 3 minutes',
+    intents: {
+      save: { name: 'Save more', sub: 'Raise your savings rate without feeling it' },
+      debt: { name: 'Clear debt', sub: 'Aim spare money at the costliest debt first' },
+      overspending: { name: 'Stop overspending', sub: 'Set caps from what you really spend' },
+      goal: { name: 'Plan a big goal', sub: 'A trip, a new phone, a home deposit' },
+      organise: { name: 'Just organise it', sub: 'Put every dirham in a place, no pressure' },
+    },
+    orBuild: 'or build it yourself',
+    blank: 'Blank',
+    template: 'Template',
+    copy: 'Copy a plan',
+    copyTitle: 'Copy which plan?',
+    continueDraft: (name) => `Continue ${name}`,
+    draftSub: 'Your unfinished draft',
+  },
 }
 
 export const budgetBuilderCopyAr: BudgetBuilderCopy = {
@@ -136,4 +170,24 @@ export const budgetBuilderCopyAr: BudgetBuilderCopy = {
   },
   needIncome: 'أضف دخلك من صفحة التدفق أولًا. القوالب تعتمد عليه.',
   readyToast: 'الخطة جاهزة',
+  create: {
+    title: 'ماذا تريد أن يفعل مالك؟',
+    sub: 'اختر الأقرب. يبني بادي الخطة حوله ويمكنك تغيير أي شيء.',
+    buddgyAsks: 'بادي يسأل',
+    about: 'حوالي 3 دقائق',
+    intents: {
+      save: { name: 'ادخار أكثر', sub: 'ارفع نسبة ادخارك دون أن تشعر' },
+      debt: { name: 'سداد الدين', sub: 'وجّه الفائض إلى أغلى دين أولًا' },
+      overspending: { name: 'وقف الإفراط في الإنفاق', sub: 'حدّد سقوفًا من إنفاقك الفعلي' },
+      goal: { name: 'التخطيط لهدف كبير', sub: 'رحلة أو هاتف جديد أو دفعة منزل' },
+      organise: { name: 'تنظيم فقط', sub: 'ضع كل درهم في مكانه دون ضغط' },
+    },
+    orBuild: 'أو ابنِها بنفسك',
+    blank: 'فارغة',
+    template: 'قالب',
+    copy: 'نسخ خطة',
+    copyTitle: 'نسخ أي خطة؟',
+    continueDraft: (name) => `متابعة ${name}`,
+    draftSub: 'مسودتك غير المكتملة',
+  },
 }

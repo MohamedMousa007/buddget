@@ -66,3 +66,16 @@ export function suggestionToCategory(s: DraftLine, id: string, currency: Currenc
     expenseCategories: s.expenseCategories,
   }
 }
+
+/** What the user wants their money to do; picks the starting template and the plan's intent. */
+export type CreateIntent = 'save' | 'debt' | 'overspending' | 'goal' | 'organise'
+
+export const CREATE_INTENTS: readonly CreateIntent[] = ['save', 'debt', 'overspending', 'goal', 'organise']
+
+export const INTENT_TEMPLATE: Record<CreateIntent, BuildTemplate> = {
+  save: 'saver',
+  debt: 'debt',
+  overspending: 'essentials',
+  goal: 'saver',
+  organise: 'mine',
+}
