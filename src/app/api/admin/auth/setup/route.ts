@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   await ctx.audit('auth.setup_started')
-  const sent = await sendEmailCode(ctx.user.email)
+  const sent = await sendEmailCode(ctx.service, ctx.user.email, ctx.user.id)
   if (!sent.ok) return bad(sent.status === 429 ? 'Please wait a minute before asking for another code.' : 'We could not send the code. Try again.', sent.status)
   return json({ ok: true })
 }

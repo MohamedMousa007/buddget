@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, History, Send } from 'lucide-react'
+import { ArrowLeft, History, Send, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
@@ -131,9 +131,20 @@ export function EmailEditor({ scenarioKey, canManage, onBack }: { scenarioKey: s
   const publish = () =>
     act('publish', async () => {
       if (dirtyOf(locale) || w.origin === 'new') await saveDraft()
-      await adminPost('/api/admin/emails', { op: 'publish', key: scenarioKey, locale })
+      const res = await adminPost<{ translated: EmailLocale | null; translateNote: string | null }>('/api/admin/emails', { op: 'publish', key: scenarioKey, locale })
       await load(locale)
+      if (res.translated && !dirtyOf(res.translated)) await load(res.translated)
+      if (res.translated) toast(`${LOCALE_LABEL[locale]} published. Buddgy drafted ${LOCALE_LABEL[res.translated]}: review it, edit if needed, then publish.`)
+      else if (res.translateNote && !res.translateNote.includes('already') && !res.translateNote.includes('by hand')) toast(res.translateNote)
     }, `${LOCALE_LABEL[locale]} published`, false)
+
+  const translate = async () => {
+    if (w.origin !== 'new' && !(await confirm({ title: `Rewrite ${LOCALE_LABEL[locale]} with Buddgy?`, body: `This replaces the ${LOCALE_LABEL[locale]} draft with a fresh translation of the ${LOCALE_LABEL[other]} version. You can edit it afterwards.`, confirmLabel: 'Translate' }))) return
+    await act('translate', async () => {
+      await adminPost('/api/admin/emails', { op: 'translate', key: scenarioKey, locale })
+      await load(locale)
+    }, `${LOCALE_LABEL[locale]} drafted by Buddgy: review it before publishing`, false)
+  }
 
   const restore = async (version: number) => {
     if (dirtyOf(locale) && !(await confirm({ title: 'Replace your unsaved changes?', destructive: true, confirmLabel: 'Restore' }))) return
@@ -144,6 +155,7 @@ export function EmailEditor({ scenarioKey, canManage, onBack }: { scenarioKey: s
     }, `Version ${version} restored as a draft`, false)
   }
 
+  const other: EmailLocale = locale === 'en' ? 'ar' : 'en'
   const published = detail.locales[locale].published
   const status = w.origin === 'new' ? 'Not saved yet' : w.origin === 'draft' ? `Draft v${w.version}` : `Published v${w.version}`
   const errorsPresent = hasErrors(issues)
@@ -200,6 +212,7 @@ export function EmailEditor({ scenarioKey, canManage, onBack }: { scenarioKey: s
                 <Button size="touch" variant="outline" loading={busy === 'save'} disabled={!dirtyOf(locale) && w.origin !== 'new'} onClick={() => void act('save', saveDraft, 'Draft saved', false)}>Save draft</Button>
                 <Button size="touch" loading={busy === 'publish'} disabled={errorsPresent || (w.origin === 'published' && !dirtyOf(locale))} onClick={() => void publish()}>Publish</Button>
                 <Button size="touch" variant="outline" loading={busy === 'test'} disabled={errorsPresent} onClick={() => void act('test', () => adminPost('/api/admin/emails', { op: 'test', key: scenarioKey, locale, ...content, vars: samples[locale] }), 'Test email sent to you', false)}><Send />Send test</Button>
+                <Button size="touch" variant="outline" loading={busy === 'translate'} onClick={() => void translate()}><Sparkles />Translate from {LOCALE_LABEL[other]}</Button>
                 <Button size="touch" variant="ghost" onClick={() => setHistory(true)}><History />History</Button>
                 {w.origin === 'draft' && published ? (
                   <Button size="touch" variant="ghost" onClick={async () => { if (await confirm({ title: 'Discard this draft?', body: 'The published version stays live.', destructive: true, confirmLabel: 'Discard' })) await act('discard', async () => { await adminPost('/api/admin/emails', { op: 'discardDraft', key: scenarioKey, locale }); await load(locale) }, 'Draft discarded', false) }}>Discard draft</Button>

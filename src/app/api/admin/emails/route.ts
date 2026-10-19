@@ -6,7 +6,7 @@ import { hasErrors, validateTemplate, MAX_HTML_BYTES } from '@/lib/email/validat
 import { EMAIL_VARIABLES } from '@/lib/email/variables'
 import { allowAttempt } from '@/lib/server/admin/credentials'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
-import { TEMPLATE_COLUMNS, asRow, ensureSeeded, findScenario, htmlFor } from '@/lib/server/email/catalog'
+import { TEMPLATE_COLUMNS, asRow, ensureSeeded, findScenario, htmlFor, translateInto, writeDraft } from '@/lib/server/email/catalog'
 import { sendTemplatedEmail } from '@/lib/server/email/send'
 import { invalidateTemplate } from '@/lib/server/email/store'
 import type { Json } from '@/lib/supabase/database.types'
@@ -124,24 +124,14 @@ export async function POST(req: Request) {
   if (!isLocale(b.locale)) return bad('Unknown language.')
   const locale = b.locale
 
-  const published = asRow((await service.from('email_templates').select(TEMPLATE_COLUMNS).eq('key', key).eq('locale', locale).eq('status', 'published').maybeSingle()).data)
-  const draftVersion = (published?.version ?? 0) + 1
-
-  const saveDraft = async (c: Content): Promise<string | null> => {
-    const row = { key, locale, ...c, blocks: c.blocks as unknown as Json, status: 'draft', version: draftVersion, updated_by: ctx.staff.id, updated_at: new Date().toISOString() }
-    const { data: existing } = await service.from('email_templates').select('id').eq('key', key).eq('locale', locale).eq('status', 'draft').maybeSingle()
-    const { error } = existing ? await service.from('email_templates').update(row).eq('id', existing.id) : await service.from('email_templates').insert(row)
-    return error ? error.message : null
-  }
-
   if (b.op === 'saveDraft') {
     const c = readContent(b, locale)
     if (typeof c === 'string') return bad(c)
     if (/<script[\s>]/i.test(c.html)) return bad('Scripts are not allowed in email.')
-    const failed = await saveDraft(c)
-    if (failed) return bad('Could not save the draft.', 500)
+    const saved = await writeDraft(service, key, locale, c, ctx.staff.id)
+    if ('error' in saved) return bad('Could not save the draft.', 500)
     await ctx.audit('emails.draft_save', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Saved draft of ${key} (${locale})` })
-    return json({ ok: true, version: draftVersion })
+    return json({ ok: true, version: saved.version })
   }
 
   if (b.op === 'discardDraft') {
@@ -163,15 +153,41 @@ export async function POST(req: Request) {
     if (promote.error) return bad('Could not publish.', 500)
     invalidateTemplate(key)
     await ctx.audit('emails.publish', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Published ${key} (${locale}) v${draft.version}`, metadata: { version: draft.version } })
-    return json({ ok: true, version: draft.version })
+    // The other language follows automatically, as a draft to review, unless someone has already worked on it.
+    let translated: EmailLocale | null = null
+    let translateNote: string | null = null
+    try {
+      const t = await translateInto(service, key, locale, ctx.staff.id, false)
+      if ('locale' in t) {
+        translated = t.locale
+        await ctx.audit('emails.auto_translate', { targetType: 'email', targetId: `${key}:${t.locale}`, summary: `Buddgy drafted ${key} (${t.locale}) from ${locale}` })
+      } else translateNote = t.skipped
+    } catch (e) {
+      console.error('[emails/translate]', e instanceof Error ? e.message : e)
+      translateNote = 'Buddgy could not translate it this time. Use “Translate with Buddgy” to retry.'
+    }
+    return json({ ok: true, version: draft.version, translated, translateNote })
+  }
+
+  if (b.op === 'translate') {
+    const from: EmailLocale = locale === 'en' ? 'ar' : 'en'
+    try {
+      const t = await translateInto(service, key, from, ctx.staff.id, true)
+      if ('skipped' in t) return bad(t.skipped)
+      await ctx.audit('emails.auto_translate', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Buddgy drafted ${key} (${locale}) from ${from}` })
+      return json({ ok: true })
+    } catch (e) {
+      console.error('[emails/translate]', e instanceof Error ? e.message : e)
+      return bad('Buddgy could not translate it. Try again in a moment.', 502)
+    }
   }
 
   if (b.op === 'revert') {
     const { data: v } = await service.from('email_template_versions').select('subject, preheader, html, mode, blocks').eq('key', key).eq('locale', locale).eq('version', b.version ?? -1).maybeSingle()
     if (!v) return bad('That version no longer exists.', 404)
     const blocks = parseBlocks(v.blocks) ?? []
-    const failed = await saveDraft({ subject: v.subject, preheader: v.preheader, html: v.html, mode: v.mode === 'html' ? 'html' : 'visual', blocks })
-    if (failed) return bad('Could not restore the version.', 500)
+    const restored = await writeDraft(service, key, locale, { subject: v.subject, preheader: v.preheader, html: v.html, mode: v.mode === 'html' ? 'html' : 'visual', blocks }, ctx.staff.id)
+    if ('error' in restored) return bad('Could not restore the version.', 500)
     await ctx.audit('emails.revert', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Restored ${key} (${locale}) v${b.version} as a draft`, metadata: { version: b.version } })
     return json({ ok: true })
   }

@@ -11,6 +11,8 @@ export const EMAIL_VARIABLES = {
   support_email: { label: 'Support email', sample: 'support@buddget.app' },
   inviter_name: { label: 'Inviter name', sample: 'Mohamed' },
   role: { label: 'Role', sample: 'Administrator' },
+  new_email: { label: 'New email address', sample: 'sara.new@example.com' },
+  old_email: { label: 'Previous email address', sample: 'sara@example.com' },
   year: { label: 'Year', sample: String(new Date().getFullYear()) },
 } as const
 

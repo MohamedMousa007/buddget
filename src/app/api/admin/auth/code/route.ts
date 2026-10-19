@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     !(await allowAttempt(ctx.service, `admin-code-ip:${ctx.ip}`, 3600, 30))
   if (throttled) return bad('Too many codes requested. Try again later.', 429)
 
-  const sent = await sendEmailCode(ctx.user.email)
+  const sent = await sendEmailCode(ctx.service, ctx.user.email, ctx.user.id)
   if (!sent.ok) return bad(sent.status === 429 ? 'Please wait a minute before asking for another code.' : 'We could not send the code. Try again.', sent.status)
   await ctx.audit('auth.code_sent')
   return json({ ok: true })

@@ -63,8 +63,8 @@ const COPY: Record<string, { en: Copy; ar: Copy; expiry: boolean }> = {
   },
   email_change: {
     expiry: true,
-    en: { subject: 'Confirm your new Buddget email', preheader: 'Confirm the new email address for your account.', title: 'Confirm your new email', intro: 'Tap the button to make this the email address for your Buddget account, or use the code below.', button: 'Confirm email', code: 'Confirmation code', noteTitle: 'Didn’t ask for this?', noteText: 'Your email stays the same until you confirm. If this wasn’t you, change your password.' },
-    ar: { subject: 'أكّد بريدك الجديد في Buddget', preheader: 'أكّد عنوان البريد الإلكتروني الجديد لحسابك.', title: 'أكّد بريدك الإلكتروني الجديد', intro: 'اضغط على الزر لجعل هذا العنوان بريد حسابك في Buddget، أو استخدم الرمز أدناه.', button: 'تأكيد البريد', code: 'رمز التأكيد', noteTitle: 'لم تطلب هذا؟', noteText: 'يبقى بريدك كما هو حتى تؤكد. إذا لم تكن أنت، غيّر كلمة المرور.' },
+    en: { subject: 'Confirm your new Buddget email', preheader: 'Confirm the new email address for your account.', title: 'Confirm your new email', intro: 'Someone asked to change the email address of your Buddget account to {{new_email}}. Tap the button to confirm it, or use the code below.', button: 'Confirm email', code: 'Confirmation code', noteTitle: 'Didn’t ask for this?', noteText: 'Your email stays the same until you confirm. If this wasn’t you, change your password.' },
+    ar: { subject: 'أكّد بريدك الجديد في Buddget', preheader: 'أكّد عنوان البريد الإلكتروني الجديد لحسابك.', title: 'أكّد بريدك الإلكتروني الجديد', intro: 'طُلب تغيير البريد الإلكتروني لحسابك في Buddget إلى {{new_email}}. اضغط على الزر للتأكيد، أو استخدم الرمز أدناه.', button: 'تأكيد البريد', code: 'رمز التأكيد', noteTitle: 'لم تطلب هذا؟', noteText: 'يبقى بريدك كما هو حتى تؤكد. إذا لم تكن أنت، غيّر كلمة المرور.' },
   },
   reauthentication: {
     expiry: true,
@@ -80,6 +80,21 @@ const COPY: Record<string, { en: Copy; ar: Copy; expiry: boolean }> = {
     expiry: true,
     en: { subject: 'Your Buddget admin portal code', preheader: 'Your admin portal code is {{code}}.', eyebrow: 'Admin portal', title: 'Your admin code', intro: 'Enter this code to continue in the admin portal.', code: 'Admin code', noteTitle: 'Didn’t ask for this?', noteText: 'Someone may know your password. Change it and tell the team.' },
     ar: { subject: 'رمز لوحة إدارة Buddget', preheader: 'رمز لوحة الإدارة هو {{code}}.', eyebrow: 'لوحة الإدارة', title: 'رمز الإدارة', intro: 'أدخل هذا الرمز للمتابعة في لوحة الإدارة.', code: 'رمز الإدارة', noteTitle: 'لم تطلب هذا؟', noteText: 'ربما يعرف أحدهم كلمة مرورك. غيّرها وأبلغ الفريق.' },
+  },
+  invite_user: {
+    expiry: false,
+    en: { subject: 'You’re invited to Buddget', preheader: 'Accept your invitation and set up your account.', title: 'You’re invited to Buddget', intro: 'You’ve been invited to join Buddget, the app that makes managing your money simple. Accept the invitation to create your account.', button: 'Accept invitation', extra: 'Button not working? Paste this link into your browser:\n{{link}}', noteTitle: 'Weren’t expecting this?', noteText: 'Ignore this email and no account is created.' },
+    ar: { subject: 'دعوة للانضمام إلى Buddget', preheader: 'اقبل الدعوة وأنشئ حسابك.', title: 'تمت دعوتك إلى Buddget', intro: 'تمت دعوتك للانضمام إلى Buddget، التطبيق الذي يجعل إدارة أموالك أسهل. اقبل الدعوة لإنشاء حسابك.', button: 'قبول الدعوة', extra: 'الزر لا يعمل؟ الصق هذا الرابط في المتصفح:\n{{link}}', noteTitle: 'لم تكن تتوقع هذا؟', noteText: 'تجاهل هذه الرسالة ولن يتم إنشاء أي حساب.' },
+  },
+  password_changed: {
+    expiry: false,
+    en: { subject: 'Your Buddget password was changed', preheader: 'Your password was just changed.', title: 'Your password was changed', intro: 'The password for your Buddget account was just changed.', noteTitle: 'Wasn’t you?', noteText: 'Reset your password right away and contact {{support_email}}.' },
+    ar: { subject: 'تم تغيير كلمة مرور Buddget', preheader: 'تم تغيير كلمة مرورك للتو.', title: 'تم تغيير كلمة المرور', intro: 'تم تغيير كلمة مرور حسابك في Buddget للتو.', noteTitle: 'لم تكن أنت؟', noteText: 'أعد تعيين كلمة المرور فورًا وتواصل معنا على {{support_email}}.' },
+  },
+  email_changed: {
+    expiry: false,
+    en: { subject: 'Your Buddget email was changed', preheader: 'The email address on your account changed.', title: 'Your email was changed', intro: 'The email address for your Buddget account changed from {{old_email}} to {{new_email}}.', noteTitle: 'Wasn’t you?', noteText: 'Contact {{support_email}} right away.' },
+    ar: { subject: 'تم تغيير بريدك في Buddget', preheader: 'تغيّر البريد الإلكتروني لحسابك.', title: 'تم تغيير بريدك الإلكتروني', intro: 'تغيّر البريد الإلكتروني لحسابك في Buddget من {{old_email}} إلى {{new_email}}.', noteTitle: 'لم تكن أنت؟', noteText: 'تواصل معنا فورًا على {{support_email}}.' },
   },
   welcome: {
     expiry: false,

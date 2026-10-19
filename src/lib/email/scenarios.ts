@@ -23,10 +23,13 @@ export const BUILTIN_SCENARIOS: readonly EmailScenario[] = [
   { key: 'confirm_signup', name: 'Confirm sign-up', usedIn: 'New account: verify the email address', vars: [...BASE, 'code', 'link', 'expires_in'], requiresAny: ['code', 'link'], required: [] },
   { key: 'sign_in_code', name: 'Sign-in code / magic link', usedIn: 'Email sign-in (OTP or magic link)', vars: [...BASE, 'code', 'link', 'expires_in'], requiresAny: ['code', 'link'], required: [] },
   { key: 'password_reset', name: 'Password reset', usedIn: 'Forgot password', vars: [...BASE, 'code', 'link', 'expires_in'], requiresAny: ['code', 'link'], required: [] },
-  { key: 'email_change', name: 'Email change', usedIn: 'Changing the account email', vars: [...BASE, 'code', 'link', 'expires_in'], requiresAny: ['code', 'link'], required: [] },
+  { key: 'email_change', name: 'Email change', usedIn: 'Changing the account email (sent to the current and the new address)', vars: [...BASE, 'code', 'link', 'expires_in', 'new_email'], requiresAny: ['code', 'link'], required: [] },
   { key: 'reauthentication', name: 'Re-authentication', usedIn: 'Sensitive actions that need a fresh code', vars: [...BASE, 'code', 'expires_in'], requiresAny: ['code'], required: ['code'] },
   { key: 'invite_admin', name: 'Admin invite', usedIn: 'Team & roles: invite a teammate', vars: [...BASE, 'link', 'inviter_name', 'role', 'expires_in'], requiresAny: ['link'], required: ['link'] },
   { key: 'admin_unlock_code', name: 'Admin unlock code', usedIn: 'Admin portal: setup and step-up code', vars: [...BASE, 'code', 'expires_in'], requiresAny: ['code'], required: ['code'] },
+  { key: 'invite_user', name: 'App invite', usedIn: 'Inviting someone to create a Buddget account', vars: [...BASE, 'code', 'link', 'expires_in'], requiresAny: ['link'], required: [] },
+  { key: 'password_changed', name: 'Password changed notice', usedIn: 'Security notice after a password change', vars: BASE, requiresAny: [], required: [] },
+  { key: 'email_changed', name: 'Email changed notice', usedIn: 'Security notice after the email address changed', vars: [...BASE, 'old_email', 'new_email'], requiresAny: [], required: [] },
   { key: 'welcome', name: 'Welcome', usedIn: 'After the first sign-in', vars: BASE, requiresAny: [], required: [] },
 ]
 

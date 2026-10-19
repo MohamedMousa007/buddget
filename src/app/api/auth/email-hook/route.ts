@@ -1,19 +1,8 @@
 import { NextResponse } from 'next/server'
+import { planAuthEmails, type HookPayload } from '@/lib/server/email/authHook'
 import { sendTemplatedEmail } from '@/lib/server/email/send'
 import { verifySignedWebhook } from '@/lib/server/email/webhook'
 import { requireSupabaseUrl } from '@/lib/supabase/env'
-
-const SCENARIO: Record<string, string> = {
-  signup: 'confirm_signup',
-  magiclink: 'sign_in_code',
-  recovery: 'password_reset',
-  reauthentication: 'reauthentication',
-}
-
-interface HookPayload {
-  user?: { id?: string; email?: string; user_metadata?: { full_name?: string; name?: string } }
-  email_data?: { token?: string; token_hash?: string; redirect_to?: string; email_action_type?: string }
-}
 
 const fail = (message: string, status: number) => NextResponse.json({ error: { http_code: status, message } }, { status })
 
@@ -38,19 +27,18 @@ export async function POST(req: Request) {
   } catch {
     return fail('Bad body', 400)
   }
-  const type = payload.email_data?.email_action_type ?? ''
-  const key = SCENARIO[type]
-  const user = payload.user
-  if (!key || !user?.email) return fail(`Unsupported email type: ${type || 'unknown'}`, 422)
+  const plan = planAuthEmails(payload, requireSupabaseUrl())
+  if (!plan.ok) {
+    if (plan.ignored) return NextResponse.json({})
+    return fail(plan.error, 422)
+  }
 
-  const hash = payload.email_data?.token_hash ?? ''
-  const link = `${requireSupabaseUrl()}/auth/v1/verify?token=${encodeURIComponent(hash)}&type=${encodeURIComponent(type)}&redirect_to=${encodeURIComponent(payload.email_data?.redirect_to ?? '')}`
+  const user = payload.user!
   const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name
-  const sent = await sendTemplatedEmail(
-    key,
-    { email: user.email, id: user.id ?? null, fullName, firstName: fullName?.split(' ')[0] },
-    { code: payload.email_data?.token, link },
-    { source: 'auth_hook' },
+  const results = await Promise.all(
+    plan.emails.map((e) =>
+      sendTemplatedEmail(e.key, { email: e.to, id: user.id ?? null, fullName, firstName: fullName?.split(' ')[0] }, e.vars, { source: 'auth_hook' }),
+    ),
   )
-  return sent.ok ? NextResponse.json({}) : fail('Could not send the email', 502)
+  return results.every((r) => r.ok) ? NextResponse.json({}) : fail('Could not send the email', 502)
 }

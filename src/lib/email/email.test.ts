@@ -62,7 +62,7 @@ describe('built-in templates', () => {
     const s = BUILTIN_SCENARIOS.find((x) => x.key === key)!
     const t = render(key, locale)
     expect(hasErrors(validateTemplate(s, t))).toBe(false)
-    const vars = withDefaults({ code: '123456', link: 'https://x.test/?a=1&b=2', inviter_name: 'Mo', role: 'Admin' }, locale)
+    const vars = withDefaults({ code: '123456', link: 'https://x.test/?a=1&b=2', inviter_name: 'Mo', role: 'Admin', new_email: 'n@x.com', old_email: 'o@x.com' }, locale)
     expect(missingVariables(t, vars)).toEqual([])
     expect(renderTemplate(t, vars).html).not.toContain('{{')
   })
@@ -80,5 +80,27 @@ describe('validateTemplate', () => {
   it('enforces the 100 KB limit and blocks scripts', () => {
     expect(hasErrors(validateTemplate(signIn, { ...base, html: `{{code}}${'x'.repeat(101 * 1024)}` }))).toBe(true)
     expect(hasErrors(validateTemplate(signIn, { ...base, html: '{{code}}<script>1</script>' }))).toBe(true)
+  })
+})
+
+import { applyStrings, collectStrings, validateTranslation } from './translate'
+
+describe('translation helpers', () => {
+  const src = builtinTemplate('sign_in_code', 'en')!
+  it('round-trips the readable text and leaves links, codes and images alone', () => {
+    const strings = collectStrings(src)
+    expect(strings).toContain(src.subject)
+    expect(strings).not.toContain('{{link}}')
+    const out = applyStrings(src, strings.map((s) => `«${s}»`))
+    expect(out.subject).toBe(`«${src.subject}»`)
+    expect(out.blocks.find((b) => b.type === 'button')).toMatchObject({ url: '{{link}}' })
+    expect(out.blocks.find((b) => b.type === 'code')).toMatchObject({ value: '{{code}}' })
+  })
+  it('rejects a translation that drops, adds or renames a variable, or changes the count', () => {
+    const src2 = ['Code {{code}}', 'Hello']
+    expect(validateTranslation(src2, ['الرمز {{code}}', 'مرحبا'])).toBe(true)
+    expect(validateTranslation(src2, ['الرمز', 'مرحبا'])).toBe(false)
+    expect(validateTranslation(src2, ['الرمز {{code}}', 'مرحبا {{link}}'])).toBe(false)
+    expect(validateTranslation(src2, ['الرمز {{code}}'])).toBe(false)
   })
 })
