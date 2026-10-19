@@ -14,6 +14,7 @@ import { LineIcon } from '@/components/features/budget/LineIcon'
 import { TintedTile } from '@/components/features/budget/TintedTile'
 import { useBudgetSheetsCopy } from '@/components/features/budget/useSheetsCopy'
 import { BLOCK_META } from '@/lib/budget/blocks'
+import { lineEditPatch } from '@/lib/budget/lineEdit'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -50,7 +51,8 @@ function LineForm({
   const confirm = useConfirm()
   const { line } = lv
   const linked = !!line.linkType && line.linkType !== 'none'
-  const [amount, setAmount] = useState(String(Math.round(lv.amount * 100) / 100))
+  const shown = Math.round(lv.amount * 100) / 100
+  const [amount, setAmount] = useState(String(shown))
   const [essential, setEssential] = useState(!!line.essential)
   const [locked, setLocked] = useState(!!line.locked)
   const [dueDay, setDueDay] = useState<number | null>(lv.dueDay ?? line.dueDay ?? null)
@@ -63,10 +65,7 @@ function LineForm({
   const categories = line.expenseCategories ?? []
 
   const save = () => {
-    const patch: Partial<BudgetPlanCategory> = { essential, locked }
-    if (!linked) patch.amount = value
-    if (lv.block === 'bills') patch.dueDay = dueDay
-    onSave(patch)
+    onSave(lineEditPatch({ shown, value, base: view.base, linked, essential, locked, isBill: lv.block === 'bills', dueDay }))
     onClose()
   }
 

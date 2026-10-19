@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BudgetPlan, BudgetPlanCategory } from '@/lib/store/types'
 import type { DebtExtras, GoalExtras } from '@/lib/budget/planView.types'
-import { buildPlanView, cycleDayOf, isBalanced, type PlanViewInput } from '@/lib/budget/planView'
+import { buildPlanView, cycleDayOf, findLineView, isBalanced, type PlanViewInput } from '@/lib/budget/planView'
 
 let n = 0
 const line = (name: string, amount: number, extra: Partial<BudgetPlanCategory> = {}): BudgetPlanCategory => ({
@@ -284,5 +284,17 @@ describe('insights', () => {
     const f = line('Dining', 500)
     const v = buildPlanView(input(plan([f]), { monthsOverCapByLine: { [f.id]: 4 }, averageByLine: { [f.id]: 800 } }))
     expect(v.insights.find((x) => x.kind === 'lineOverCap')).toMatchObject({ lineId: f.id, action: 'raise' })
+  })
+})
+
+describe('findLineView', () => {
+  it('finds a line in any block, not just the first', () => {
+    const rent = line('Rent', 4000, { block: 'bills' })
+    const fun = line('Fun', 300, { block: 'everyday' })
+    const buffer = line('Buffer', 500, { block: 'grow' })
+    const view = buildPlanView(input(plan([rent, fun, buffer])))
+    expect(findLineView(view, fun.id)?.line.name).toBe('Fun')
+    expect(findLineView(view, buffer.id)?.line.name).toBe('Buffer')
+    expect(findLineView(view, 'nope')).toBeNull()
   })
 })

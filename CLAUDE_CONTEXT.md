@@ -220,7 +220,9 @@ Seven blocks (bills, subscriptions, debts, everyday, safety, goals, grow) in thr
 - **Month close**: `monthClose.buildClose` + `useMonthClose` turn the finished cycle (if the active plan governed it, spend existed, first 15 days of the new cycle) into a summary and up to 4 raise/lower proposals; `MonthCloseCard`/`MonthCloseSheet` on the Plan tab; done cycles in `budgetClosedCycles` (settings store, device-local).
 - **Desktop**: at `lg` the Plan page is a two-column grid; `FlowStrip`, `InsightsChip` and `PlanRail` (all budgets, set active/continue, compare, new, history) sit in a sticky 22rem right rail; below `lg` the same elements stack as before.
 - **Stress test**: `stressTest.stressPlan` (income down, bills up, everyday up; trims growth, then wants, then essentials to a floor; never locked/linked) shown read-only in `StressTestSheet` from the plan menu.
-- **Not built yet**: per-line rollover, Studio "What I know" drawer, studio state persistence.
+- **Studio resume**: an unfinished run is kept in the settings store (`budgetStudioDraft`, device-local, 7 days) and picked up when the same starting point reopens.
+- **AI limit**: `/api/budget/ai` is capped at 15 calls per user per hour through the shared `api_rate_hit` RPC (all instances).
+- **Not built yet**: per-line rollover, Studio "What I know" drawer.
 
 ## Capacitor Native Config
 

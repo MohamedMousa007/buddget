@@ -1166,10 +1166,15 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           const next = state.budgetPlans.filter((p) => p.id !== planId)
           let active = state.activeBudgetPlanId
+          let log = state.budgetPlanActivations.filter((a) => a.planId !== planId)
           if (active === planId) {
             active = selectActivePlan(next, null)?.id ?? null
+            // The fallback plan must govern this cycle, or months would keep resolving to an older plan.
+            if (active && log.length > 0) {
+              log = recordActivation(log, active, cycleKeyOf(new Date(), state.settings.monthStartDay), generateId, new Date().toISOString())
+            }
           }
-          return { budgetPlans: next, activeBudgetPlanId: active }
+          return { budgetPlans: next, activeBudgetPlanId: active, budgetPlanActivations: log }
         }),
 
       setActiveBudgetPlanId: (id) => set({ activeBudgetPlanId: id }),

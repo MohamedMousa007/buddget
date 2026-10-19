@@ -9,7 +9,8 @@ import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/IconButton'
 import { usePlanView } from '@/hooks/usePlanView'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
-import { BUDGET_BLOCKS, type BudgetChapter } from '@/lib/budget/blocks'
+import type { BudgetChapter } from '@/lib/budget/blocks'
+import { findLineView } from '@/lib/budget/planView'
 import type { BudgetBlock } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { FlowStrip } from '../FlowStrip'
@@ -38,14 +39,7 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
   const [addBlock, setAddBlock] = useState<BudgetBlock | null>(null)
   const [adjusting, setAdjusting] = useState(false)
 
-  const selected = useMemo(() => {
-    if (!view || !lineId) return null
-    for (const b of BUDGET_BLOCKS) {
-      const found = view.blocks[b].lines.find((l) => l.line.id === lineId)
-      if (found) return found
-    }
-    return null
-  }, [view, lineId])
+  const selected = useMemo(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
   if (!view) return null
   const rationale = view.plan.rationale

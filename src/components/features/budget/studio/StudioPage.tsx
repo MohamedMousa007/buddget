@@ -7,6 +7,8 @@ import { PageBody } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { resumeStudioDraft } from '@/lib/budget/studioDraft'
 import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
 import { refineDraft } from '@/lib/budget/budgetAiClient'
@@ -56,6 +58,8 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   const store = useFinanceStore
   const facts = useMemo(() => buildFactsFromStore(store.getState(), new Date()), [store])
   const [state, setState] = useState<StudioState>(() => {
+    const resumed = resumeStudioDraft(useSettingsStore.getState().budgetStudioDraft, intent, Date.now())
+    if (resumed) return resumed
     const s = createState()
     return intent && INTENT_PRIORITIES[intent] ? applyAnswer(s, 'priorities', INTENT_PRIORITIES[intent]) : s
   })
@@ -70,6 +74,11 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   const stage = q?.stage ?? 'priorities'
   const money = (n: number) => formatCurrency(n, base, false)
 
+  const commit = (next: StudioState) => {
+    useSettingsStore.getState().saveBudgetStudioDraft({ intent, state: next, savedAt: Date.now() })
+    setState(next)
+  }
+
   const answer = (question: Question, value: unknown) => {
     const next = applyAnswer(state, question.id, value)
     const { profile, financial } = answersToProfilePatch(next)
@@ -79,7 +88,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     if (Object.keys(financial).length > 0) patch.financialProfile = { ...s.profile.financialProfile, ...financial }
     if (Object.keys(patch).length > 0) s.updateProfile(patch)
     setSaved(question.writes.kind === 'profile' || question.writes.kind === 'financial')
-    setState(next)
+    commit(next)
   }
 
   useEffect(() => {
@@ -106,6 +115,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         engineVersion: ENGINE_VERSION,
       })
       s.updateBudgetPlan(id, { categories: draftToCategories(final, newId, s.settings.baseCurrency) })
+      useSettingsStore.getState().clearBudgetStudioDraft()
       onBuilt(id, !refined.ok)
     })()
     return () => controller.abort()
@@ -145,7 +155,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         base={base}
         saved={saved}
         onAnswer={(v) => answer(q, v)}
-        onSkip={() => setState(skipQuestion(state, q.id))}
+        onSkip={() => commit(skipQuestion(state, q.id))}
       />
     </PageBody>
   )

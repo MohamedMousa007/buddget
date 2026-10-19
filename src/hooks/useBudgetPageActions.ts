@@ -10,6 +10,7 @@ import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
 import { repairDraft } from '@/lib/budget/validate'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { upgradeLegacyLines } from '@/lib/budget/legacyUpgrade'
+import { patchInBase } from '@/lib/budget/lineEdit'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
@@ -50,15 +51,11 @@ export function useBudgetPageActions(view: PlanView | null) {
     toast(t.starterBuilt)
   }, [alert, store, t, toast])
 
-  const createBlankPlan = useCallback(() => {
-    store.getState().addBudgetPlan(t.planNames.starter)
-  }, [store, t])
-
   const patchLine = useCallback(
     (lineId: string, patch: Partial<BudgetPlanCategory>) => {
-      if (planId) store.getState().updatePlanCategory(planId, lineId, patch)
+      if (planId && view) store.getState().updatePlanCategory(planId, lineId, patchInBase(patch, view.base))
     },
-    [planId, store],
+    [planId, store, view],
   )
 
   const deleteLine = useCallback(
@@ -109,7 +106,6 @@ export function useBudgetPageActions(view: PlanView | null) {
 
   return {
     createStarterPlan,
-    createBlankPlan,
     patchLine,
     deleteLine,
     addLine,

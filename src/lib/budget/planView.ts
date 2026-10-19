@@ -66,6 +66,15 @@ export function cycleDayOf(start: Date, daysInCycle: number, dueDay: number): nu
   return null
 }
 
+/** The view of one line, wherever its block is. */
+export function findLineView(view: PlanView, lineId: string): LineView | null {
+  for (const block of BUDGET_BLOCKS) {
+    const found = view.blocks[block].lines.find((l) => l.line.id === lineId)
+    if (found) return found
+  }
+  return null
+}
+
 export function isBalanced(free: number, income: number): boolean {
   return Math.abs(free) <= Math.max(1, income * 0.002)
 }

@@ -13,6 +13,7 @@ import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { BLOCK_META, BUDGET_BLOCKS } from '@/lib/budget/blocks'
+import { findLineView } from '@/lib/budget/planView'
 import { BUILD_TEMPLATES, suggestionToCategory, suggestionsByBlock, templateDraft, type BuildTemplate } from '@/lib/budget/templates'
 import type { DraftLine } from '@/lib/budget/facts'
 import type { LineView } from '@/lib/budget/planView.types'
@@ -55,7 +56,7 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
   if (!view) return null
   const base = view.base
   const block = BUDGET_BLOCKS[step]
-  const selectedLine = lineId ? view.blocks.bills.lines.find((l) => l.line.id === lineId) ?? null : null
+  const selectedLine = lineId ? findLineView(view, lineId) : null
 
   const apply = async (t: BuildTemplate | null) => {
     if (t) {

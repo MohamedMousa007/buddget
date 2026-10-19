@@ -5,10 +5,11 @@
  *   { op: 'build',  facts, draft }            -> { data: PlanDraft }   engine draft refined with rationale
  *   { op: 'adjust', lines, text, currency, income } -> { data: AdjustResult }
  * The model never writes anything: the client previews and applies the result.
- * Auth: Supabase session required. Per-user daily cap (in-memory, per server instance).
+ * Auth: Supabase session required. Per-user hourly cap shared across instances (`api_rate_hit`).
  */
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import {
   ADJUST_SCHEMA,
   BUILD_SCHEMA,
@@ -25,19 +26,23 @@ export const dynamic = 'force-dynamic'
 
 const MODEL = process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-2.5-flash'
 const URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
-const DAILY_LIMIT = 40
+// api_rate_hit prunes counters older than an hour, so the window cannot be longer.
+const RATE_WINDOW_SECONDS = 3600
+const RATE_MAX_HITS = 15
 const MAX_BODY_CHARS = 60_000
 const MAX_ADJUST_CHARS = 500
 
-// ponytail: per-instance counter, resets on cold start; move to a table if abuse shows up.
-const usage = new Map<string, { day: string; count: number }>()
-
-function overQuota(userId: string): boolean {
-  const day = new Date().toISOString().slice(0, 10)
-  const u = usage.get(userId)
-  const next = u && u.day === day ? { day, count: u.count + 1 } : { day, count: 1 }
-  usage.set(userId, next)
-  return next.count > DAILY_LIMIT
+async function overQuota(userId: string): Promise<boolean> {
+  const { data, error } = await createServiceRoleClient().rpc('api_rate_hit', {
+    p_key: `budget-ai:${userId}`,
+    p_window_seconds: RATE_WINDOW_SECONDS,
+    p_max_hits: RATE_MAX_HITS,
+  })
+  if (error) {
+    console.error('[budget/ai] rate-limit rpc failed', error.message)
+    return true
+  }
+  return data === false
 }
 
 async function askModel(apiKey: string, system: string, user: string, schema: object, thinking: number): Promise<unknown | null> {
@@ -87,7 +92,7 @@ export async function POST(req: NextRequest) {
     const facts = body.facts as BudgetFacts | undefined
     const draft = body.draft as PlanDraft | undefined
     if (!facts || !draft || !Array.isArray(draft.lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-    if (overQuota(user.id)) return NextResponse.json({ error: 'Daily budget AI limit reached' }, { status: 429 })
+    if (await overQuota(user.id)) return NextResponse.json({ error: 'Budget AI limit reached, try again later' }, { status: 429 })
     const m = buildMessages(facts, draft)
     const out = applyRefinement(draft, await askModel(apiKey, m.system, m.user, BUILD_SCHEMA, 1024))
     return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not refine the plan' }, { status: 502 })
@@ -97,8 +102,8 @@ export async function POST(req: NextRequest) {
     const text = typeof body.text === 'string' ? body.text.trim() : ''
     const lines = body.lines as AdjustLine[] | undefined
     if (!text || text.length > MAX_ADJUST_CHARS || !Array.isArray(lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-    if (overQuota(user.id)) return NextResponse.json({ error: 'Daily budget AI limit reached' }, { status: 429 })
-    const m = adjustMessages(lines, text, String(body.currency ?? ''), Number(body.income) || 0)
+    if (await overQuota(user.id)) return NextResponse.json({ error: 'Budget AI limit reached, try again later' }, { status: 429 })
+    const m = adjustMessages(lines, text, /^[A-Za-z]{3}$/.test(String(body.currency)) ? String(body.currency) : '', Number(body.income) || 0)
     const out = parseAdjust(await askModel(apiKey, m.system, m.user, ADJUST_SCHEMA, 512))
     return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not read that' }, { status: 502 })
   }

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import type { IncomeSourceType, PaymentMethodType } from '@/lib/store/types'
+import type { StudioDraft } from '@/lib/budget/studioDraft'
 // Type-only: erased at compile time, so this does not create a runtime cycle
 // between the store and the component that renders the mood.
 import type { BuddgyMood } from '@/components/ai/BuddgyIcon'
@@ -100,6 +101,10 @@ interface SettingsState {
   /** `YYYY-MM` cycles whose month-close prompt is done, applied or dismissed. */
   budgetClosedCycles: string[]
   closeBudgetCycle: (cycleKey: string) => void
+  /** The unfinished budget Studio run, so leaving mid-flow loses nothing (persisted). */
+  budgetStudioDraft: StudioDraft | null
+  saveBudgetStudioDraft: (draft: StudioDraft) => void
+  clearBudgetStudioDraft: () => void
   /** When false, chat stops saving new notes. */
   buddgyLearning: boolean
   setBuddgyLearning: (on: boolean) => void
@@ -202,6 +207,9 @@ export const useSettingsStore = create<SettingsState>()(
       budgetClosedCycles: [],
       closeBudgetCycle: (cycleKey) =>
         set((st) => (st.budgetClosedCycles.includes(cycleKey) ? st : { budgetClosedCycles: [...st.budgetClosedCycles, cycleKey].slice(-24) })),
+      budgetStudioDraft: null,
+      saveBudgetStudioDraft: (draft) => set({ budgetStudioDraft: draft }),
+      clearBudgetStudioDraft: () => set({ budgetStudioDraft: null }),
       buddgyLearning: true,
       setBuddgyLearning: (on) => set({ buddgyLearning: on }),
       clearBuddgyNotes: () => set({ buddgyNotes: [] }),
@@ -310,6 +318,7 @@ export const useSettingsStore = create<SettingsState>()(
         buddgyNudgeLog: state.buddgyNudgeLog,
         buddgyNotes: state.buddgyNotes,
         budgetClosedCycles: state.budgetClosedCycles,
+        budgetStudioDraft: state.budgetStudioDraft,
         buddgyLearning: state.buddgyLearning,
       }),
     }

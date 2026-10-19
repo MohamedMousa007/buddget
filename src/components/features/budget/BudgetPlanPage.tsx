@@ -17,7 +17,8 @@ import { usePlanView } from '@/hooks/usePlanView'
 import type { CreateIntent } from '@/lib/budget/templates'
 import { navigate } from '@/lib/navigation/navigate'
 import { formatCurrency } from '@/lib/utils/formatters'
-import { BUDGET_BLOCKS, BLOCK_CHAPTER } from '@/lib/budget/blocks'
+import { BLOCK_CHAPTER } from '@/lib/budget/blocks'
+import { findLineView } from '@/lib/budget/planView'
 import type { LineAction } from '@/lib/budget/lineStatus'
 import type { Insight } from '@/lib/budget/insights'
 import type { LineView, PlanMode } from '@/lib/budget/planView.types'
@@ -113,14 +114,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     })),
   )
 
-  const selectedLine = useMemo<LineView | null>(() => {
-    if (!view || !lineId) return null
-    for (const block of BUDGET_BLOCKS) {
-      const found = view.blocks[block].lines.find((l) => l.line.id === lineId)
-      if (found) return found
-    }
-    return null
-  }, [view, lineId])
+  const selectedLine = useMemo<LineView | null>(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
   const jump = useCallback(
     (block: BudgetBlock) => {
