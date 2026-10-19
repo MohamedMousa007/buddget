@@ -213,7 +213,8 @@ function toOp(x: unknown): PlanOp | null {
     case 'rename':
       return id && name ? { op: 'rename', id, name } : null
     case 'lock':
-      return id && typeof x.locked === 'boolean' ? { op: 'lock', id, locked: x.locked } : null
+      // The model may lock a line for the user, never unlock one.
+      return id && x.locked === true ? { op: 'lock', id, locked: true } : null
     default:
       return null
   }
@@ -231,4 +232,67 @@ export function parseAdjust(raw: unknown): AdjustResult | null {
       ? raw.memoryProposals.map((s) => clean(s, 120)).filter((s): s is string => !!s).slice(0, 2)
       : [],
   }
+}
+
+const MAX_LINES = 60
+const INTENTS = ['balanced', 'saver', 'debt_crusher', 'custom']
+const LINK_TYPES = ['none', 'subscriptions', 'debts', 'goal', 'emergency']
+const str = (v: unknown, max: number): string | null => (typeof v === 'string' && v.length > 0 && v.length <= max ? v : null)
+const fin = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+const strip = (s: string) => s.replace(/["<>]/g, '')
+
+/** Rebuilds the build request from untrusted JSON; null when it is not a plan the engine could have produced. */
+export function validateBuildInput(body: Record<string, unknown>): { facts: BudgetFacts; draft: PlanDraft } | null {
+  const f = body.facts
+  const d = body.draft
+  if (!isObj(f) || !isObj(d) || !Array.isArray(d.lines) || d.lines.length === 0 || d.lines.length > MAX_LINES) return null
+  const income = fin(d.income)
+  const currency = str(f.baseCurrency, 3)
+  if (income === null || !currency || typeof d.intent !== 'string' || !INTENTS.includes(d.intent)) return null
+  const lines: DraftLine[] = []
+  for (const x of d.lines) {
+    if (!isObj(x)) return null
+    const name = str(x.name, 80)
+    const amount = fin(x.amount)
+    if (!name || amount === null || !isBlock(x.block) || typeof x.linkType !== 'string' || !LINK_TYPES.includes(x.linkType)) return null
+    lines.push({
+      block: x.block, name: strip(name), icon: 'layers', amount, linkType: x.linkType as DraftLine['linkType'], linkIds: [],
+      dueDay: null, essential: x.essential === true, isSavings: x.isSavings === true, expenseCategories: [],
+      rationale: str(x.rationale, MAX_TEXT) ?? '', confidence: x.confidence === 'estimated' ? 'estimated' : 'high',
+    })
+  }
+  const debts = Array.isArray(f.debts) ? f.debts.slice(0, 40).filter(isObj).map((x) => ({ apr: fin(x.apr), balance: fin(x.balance) ?? 0 })) : []
+  const facts = {
+    baseCurrency: strip(currency),
+    country: typeof f.country === 'string' ? strip(f.country.slice(0, 40)) : null,
+    incomeStability: str(f.incomeStability, 12) ?? 'fixed',
+    household: str(f.household, 12) ?? 'solo',
+    dependents: fin(f.dependents) ?? 0,
+    housing: typeof f.housing === 'string' ? strip(f.housing.slice(0, 12)) : null,
+    lifestyle: str(f.lifestyle, 12) ?? 'balanced',
+    priorities: Array.isArray(f.priorities) ? f.priorities.slice(0, 6).map((p) => strip(String(p).slice(0, 12))) : [],
+    securityLean: fin(f.securityLean) ?? 50,
+    debts,
+    goals: Array.isArray(f.goals) ? f.goals.slice(0, 40).map(() => ({})) : [],
+  } as unknown as BudgetFacts
+  const draft: PlanDraft = { name: 'Plan', intent: d.intent as PlanDraft['intent'], income, lines, reasons: [], risks: [], free: 0 }
+  return { facts, draft }
+}
+
+/** Rebuilds the adjust request from untrusted JSON. */
+export function validateAdjustInput(body: Record<string, unknown>): { lines: AdjustLine[]; text: string; currency: string; income: number } | null {
+  const text = typeof body.text === 'string' ? body.text.trim() : ''
+  const currency = str(body.currency, 3)
+  const income = fin(body.income)
+  if (!text || !currency || income === null || !Array.isArray(body.lines) || body.lines.length === 0 || body.lines.length > 120) return null
+  const lines: AdjustLine[] = []
+  for (const x of body.lines) {
+    if (!isObj(x)) return null
+    const id = str(x.id, 64)
+    const name = str(x.name, 80)
+    const amount = fin(x.amount)
+    if (!id || !name || amount === null || !isBlock(x.block)) return null
+    lines.push({ id, name: strip(name), block: x.block, amount, locked: x.locked === true, linked: x.linked === true })
+  }
+  return { lines, text, currency: strip(currency), income }
 }

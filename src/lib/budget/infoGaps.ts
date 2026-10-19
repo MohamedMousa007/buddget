@@ -260,7 +260,7 @@ function debtAprQuestion(d: FactDebt): Question {
   }
 }
 
-function questionById(id: string): Question | undefined {
+export function questionById(id: string): Question | undefined {
   return BY_ID.get(id)
 }
 

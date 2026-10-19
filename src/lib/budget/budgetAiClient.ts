@@ -22,9 +22,9 @@ async function call<T>(body: unknown, signal?: AbortSignal): Promise<Outcome<T>>
   }
 }
 
-/** Engine draft in, refined draft out. Any failure is a reason, never a throw: callers keep the engine draft. */
+/** Engine draft in, the model's refinement out (fold it in with `applyRefinement`). Any failure is a reason, never a throw. */
 export const refineDraft = (facts: BudgetFacts, draft: PlanDraft, signal?: AbortSignal) =>
-  call<PlanDraft>({ op: 'build', facts, draft }, signal)
+  call<unknown>({ op: 'build', facts, draft }, signal)
 
 export const requestAdjust = (lines: AdjustLine[], text: string, currency: string, income: number, signal?: AbortSignal) =>
   call<AdjustResult>({ op: 'adjust', lines, text, currency, income }, signal)

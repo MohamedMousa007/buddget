@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, ListChecks, X } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { PageBody } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { resumeStudioDraft } from '@/lib/budget/studioDraft'
 import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
 import { refineDraft } from '@/lib/budget/budgetAiClient'
+import { applyRefinement } from '@/lib/budget/budgetAi'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { repairDraft } from '@/lib/budget/validate'
 import {
@@ -21,6 +22,8 @@ import {
   createState,
   defaultValue,
   mergeFacts,
+  QUESTIONS,
+  questionById,
   readiness,
   skipQuestion,
   visibleQuestions,
@@ -34,6 +37,7 @@ import { microClassName } from '@/lib/ui/microLabelStyle'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useBudgetPageCopy } from '../usePageCopy'
 import { useBudgetStudioCopy } from '../useStudioCopy'
+import { KnownSheet, type KnownRow } from './KnownSheet'
 import { QuestionControl } from './QuestionControl'
 
 const newId = () => crypto.randomUUID()
@@ -64,10 +68,13 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     return intent && INTENT_PRIORITIES[intent] ? applyAnswer(s, 'priorities', INTENT_PRIORITIES[intent]) : s
   })
   const [saved, setSaved] = useState(false)
+  const [focusId, setFocusId] = useState<string | null>(null)
+  const [knownOpen, setKnownOpen] = useState(false)
   const building = useRef(false)
 
-  const queue = visibleQuestions(facts, state)
-  const q = queue[0]
+  const next = visibleQuestions(facts, state)[0]
+  // A row picked in "What I know" reopens its question even though it is already answered.
+  const q = (focusId ? questionById(focusId) : undefined) ?? next
   const merged = mergeFacts(facts, state)
   const ready = readiness(facts, state)
   const base = facts.baseCurrency
@@ -80,19 +87,20 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   }
 
   const answer = (question: Question, value: unknown) => {
-    const next = applyAnswer(state, question.id, value)
-    const { profile, financial } = answersToProfilePatch(next)
+    const answered = applyAnswer(state, question.id, value)
+    const { profile, financial } = answersToProfilePatch(answered)
     const s = store.getState()
     const patch: Record<string, unknown> = { ...profile }
     if (profile.emergencyFundConfig) patch.emergencyFundConfig = { ...s.profile.emergencyFundConfig, ...profile.emergencyFundConfig }
     if (Object.keys(financial).length > 0) patch.financialProfile = { ...s.profile.financialProfile, ...financial }
     if (Object.keys(patch).length > 0) s.updateProfile(patch)
     setSaved(question.writes.kind === 'profile' || question.writes.kind === 'financial')
-    commit(next)
+    setFocusId(null)
+    commit(answered)
   }
 
   useEffect(() => {
-    if (q || building.current) return
+    if (next || focusId || building.current) return
     building.current = true
     const controller = new AbortController()
     void (async () => {
@@ -105,7 +113,8 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
       })
       const base0 = repairDraft(engine, ctx(engine)).draft
       const refined = await refineDraft(merged, base0, controller.signal)
-      const final = refined.ok ? repairDraft(refined.data, ctx(refined.data)).draft : base0
+      const folded = refined.ok ? applyRefinement(base0, refined.data) : null
+      const final = folded ? repairDraft(folded, ctx(folded)).draft : base0
       const s = store.getState()
       const id = s.addBudgetPlan(page.planNames.fresh, {
         status: 'draft',
@@ -116,11 +125,18 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
       })
       s.updateBudgetPlan(id, { categories: draftToCategories(final, newId, s.settings.baseCurrency) })
       useSettingsStore.getState().clearBudgetStudioDraft()
-      onBuilt(id, !refined.ok)
+      onBuilt(id, !folded)
     })()
     return () => controller.abort()
     // The build runs once, when the last question is answered.
-  }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [next, focusId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const knownRows: KnownRow[] = QUESTIONS.filter(
+    (x) => x.writes.kind !== 'none' && x.control !== 'confirm' && x.askIf(merged, state) && (x.id in state.answers || x.prefill(merged) != null),
+  ).map((x) => {
+    const copy = ui.q[x.id]
+    return { id: x.id, label: copy?.label ?? x.id, value: formatKnown(x, defaultValue(x, facts, state), copy, ui, money) }
+  })
 
   if (!q) return <BuildingScreen />
 
@@ -145,6 +161,9 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
           </div>
         </div>
         <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{ui.progress(ready.percent)}</span>
+        <IconButton variant="outlined" aria-label={ui.known.open} onClick={() => setKnownOpen(true)}>
+          <ListChecks />
+        </IconButton>
       </div>
 
       <QuestionStep
@@ -155,10 +174,36 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         base={base}
         saved={saved}
         onAnswer={(v) => answer(q, v)}
-        onSkip={() => commit(skipQuestion(state, q.id))}
+        onSkip={() => {
+          setFocusId(null)
+          commit(skipQuestion(state, q.id))
+        }}
+      />
+      <KnownSheet
+        open={knownOpen}
+        rows={knownRows}
+        onPick={(id) => {
+          setKnownOpen(false)
+          setFocusId(id)
+        }}
+        onClose={() => setKnownOpen(false)}
       />
     </PageBody>
   )
+}
+
+function formatKnown(
+  x: Question,
+  value: unknown,
+  copy: { opts?: Record<string, string> } | undefined,
+  ui: ReturnType<typeof useBudgetStudioCopy>,
+  money: (n: number) => string,
+): string {
+  if (value == null) return '-'
+  if (Array.isArray(value)) return value.map((v) => copy?.opts?.[String(v)] ?? String(v)).join(', ') || '-'
+  if (typeof value === 'boolean') return value ? ui.known.yes : ui.known.no
+  if (typeof value === 'number') return x.id === 'income' || x.id === 'rent' || x.id === 'extraPayoff' ? money(value) : String(value)
+  return copy?.opts?.[String(value)] ?? String(value)
 }
 
 interface StepProps {

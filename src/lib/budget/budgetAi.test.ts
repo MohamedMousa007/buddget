@@ -46,3 +46,29 @@ describe('parseAdjust', () => {
     expect(parseAdjust({ ops: [] })).toBeNull()
   })
 })
+
+import { validateAdjustInput, validateBuildInput } from '@/lib/budget/budgetAi'
+
+describe('input validation', () => {
+  const goodDraft = { intent: 'balanced', income: 1000, lines: [{ name: 'Dining', block: 'everyday', amount: 100, linkType: 'none' }] }
+  const goodFacts = { baseCurrency: 'AED', debts: [], goals: [] }
+
+  it('accepts a real build request and strips delimiter characters', () => {
+    const r = validateBuildInput({ facts: { ...goodFacts, country: 'U"A<E' }, draft: goodDraft })
+    expect(r?.draft.lines[0].name).toBe('Dining')
+    expect(r?.facts.country).toBe('UAE')
+  })
+
+  it('rejects malformed build and adjust requests instead of throwing', () => {
+    expect(validateBuildInput({ facts: goodFacts, draft: { ...goodDraft, intent: 'x"><evil' } })).toBeNull()
+    expect(validateBuildInput({ facts: goodFacts, draft: { ...goodDraft, lines: [{ name: 5, block: 'everyday', amount: 1, linkType: 'none' }] } })).toBeNull()
+    expect(validateBuildInput({ facts: {}, draft: goodDraft })).toBeNull()
+    expect(validateAdjustInput({ text: 'x', currency: 'AED', income: 1, lines: [{ id: 'a', name: 'n', block: 'nope', amount: 1 }] })).toBeNull()
+    expect(validateAdjustInput({ text: 'cut dining', currency: 'AED"', income: 5, lines: [{ id: 'a', name: 'Dining', block: 'everyday', amount: 1 }] })).toBeNull()
+  })
+
+  it('the model can lock a line but never unlock one', () => {
+    const r = parseAdjust({ reply: 'ok', ops: [{ op: 'lock', id: 'r', locked: false }, { op: 'lock', id: 'r', locked: true }], memoryProposals: [] })!
+    expect(r.ops).toEqual([{ op: 'lock', id: 'r', locked: true }])
+  })
+})

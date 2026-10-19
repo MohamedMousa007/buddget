@@ -21,9 +21,9 @@ import {
   applyRefinement,
   buildMessages,
   parseAdjust,
-  type AdjustLine,
+  validateAdjustInput,
+  validateBuildInput,
 } from '@/lib/budget/budgetAi'
-import type { BudgetFacts, PlanDraft } from '@/lib/budget/facts'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -109,23 +109,22 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.op === 'build') {
-    const facts = body.facts as BudgetFacts | undefined
-    const draft = body.draft as PlanDraft | undefined
-    if (!facts || !draft || !Array.isArray(draft.lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    const input = validateBuildInput(body)
+    if (!input) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     if (await overQuota(user.id)) return NextResponse.json({ error: 'Budget AI limit reached, try again later' }, { status: 429 })
-    const m = buildMessages(facts, draft)
+    const m = buildMessages(input.facts, input.draft)
     const asked = await askGated(user.id, apiKey, m.system, m.user, BUILD_SCHEMA, 1024)
     if ('denied' in asked) return asked.denied
-    const out = applyRefinement(draft, asked.data)
-    return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not refine the plan' }, { status: 502 })
+    // The client folds the refinement into its own full draft; the server only vouches that it is usable.
+    return applyRefinement(input.draft, asked.data)
+      ? NextResponse.json({ data: asked.data }) : NextResponse.json({ error: 'AI could not refine the plan' }, { status: 502 })
   }
 
   if (body.op === 'adjust') {
-    const text = typeof body.text === 'string' ? body.text.trim() : ''
-    const lines = body.lines as AdjustLine[] | undefined
-    if (!text || text.length > MAX_ADJUST_CHARS || !Array.isArray(lines)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    const input = validateAdjustInput(body)
+    if (!input || input.text.length > MAX_ADJUST_CHARS) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     if (await overQuota(user.id)) return NextResponse.json({ error: 'Budget AI limit reached, try again later' }, { status: 429 })
-    const m = adjustMessages(lines, text, /^[A-Za-z]{3}$/.test(String(body.currency)) ? String(body.currency) : '', Number(body.income) || 0)
+    const m = adjustMessages(input.lines, input.text, input.currency, input.income)
     const asked = await askGated(user.id, apiKey, m.system, m.user, ADJUST_SCHEMA, 512)
     if ('denied' in asked) return asked.denied
     const out = parseAdjust(asked.data)
