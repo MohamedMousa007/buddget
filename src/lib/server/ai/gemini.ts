@@ -17,9 +17,12 @@ const THINKING_BUDGET: Record<string, number> = { minimal: 0, low: 512, medium: 
 /** Hard ceiling on output tokens any caller can request. */
 export const MAX_OUTPUT_TOKENS_CAP = 8192
 
+/** Overridable so tests and proxies can stand in for Google. */
+const API_BASE = process.env.GEMINI_API_BASE?.trim().replace(/\/+$/, '') || 'https://generativelanguage.googleapis.com/v1beta'
+
 export function geminiUrl(model: string, stream: boolean): string {
   const method = stream ? 'streamGenerateContent?alt=sse' : 'generateContent'
-  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}`
+  return `${API_BASE}/models/${model}:${method}`
 }
 
 /** 2.x models speak `thinkingBudget`; 3.x speak `thinkingLevel`. */

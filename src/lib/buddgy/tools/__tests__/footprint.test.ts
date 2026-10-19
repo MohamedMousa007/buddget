@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_SPECS, SPEC_BY_NAME } from '@/lib/buddgy/tools/specs'
-import { toGeminiDeclaration } from '@/lib/buddgy/tools/spec'
+import { toGeminiDeclaration, type JsonSchema } from '@/lib/buddgy/tools/spec'
 import { SYSTEM_PROMPT } from '@/lib/server/ai/buddgy/prompt'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 
@@ -27,5 +27,30 @@ describe('registry', () => {
 
   it('deletes are strong', () => {
     for (const s of ALL_SPECS) if (/^delete_/.test(s.name)) expect(s.risk).toBe('strong')
+  })
+
+  it('declares schemas Gemini accepts', () => {
+    const walk = (schema: JsonSchema, where: string) => {
+      if (schema.type === 'object') {
+        const props = Object.keys(schema.properties ?? {})
+        expect(props.length, `${where}: object needs properties`).toBeGreaterThan(0)
+        for (const r of schema.required ?? []) expect(props, `${where}: required ${r} missing`).toContain(r)
+        for (const [k, v] of Object.entries(schema.properties ?? {})) walk(v, `${where}.${k}`)
+      }
+      if (schema.type === 'array') {
+        expect(schema.items, `${where}: array needs items`).toBeDefined()
+        walk(schema.items!, `${where}[]`)
+      }
+      if (schema.enum) {
+        expect(schema.type, `${where}: enum on non-string`).toBe('string')
+        expect(schema.enum.length, `${where}: empty enum`).toBeGreaterThan(0)
+        expect(new Set(schema.enum).size, `${where}: duplicate enum values`).toBe(schema.enum.length)
+      }
+    }
+    for (const s of ALL_SPECS) {
+      expect(s.name, 'tool name').toMatch(/^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/)
+      expect(s.description.length, `${s.name}: description`).toBeGreaterThan(10)
+      if (Object.keys(s.params.properties ?? {}).length > 0) walk(s.params, s.name)
+    }
   })
 })

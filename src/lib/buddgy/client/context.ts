@@ -1,3 +1,4 @@
+import { differenceInCalendarDays } from 'date-fns'
 import { getMonthRange } from '@/lib/utils/calculations'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
@@ -31,7 +32,7 @@ export function renderContext(i: ContextInput): string {
   const lines = [
     `${format(i.now, 'yyyy-MM-dd EEE HH:mm')} · cycle ${i.cycleStart}→${i.cycleEnd} (day ${i.cycleDay}/${i.cycleLength})`,
     `user ${i.firstName || '—'} · lang ${i.language} · base ${i.baseCurrency}${i.secondaryCurrency ? ` · also ${i.secondaryCurrency}` : ''}`,
-    `month: income ${r0(i.income)} · spent ${r0(i.spent)} · left ${r0(i.leftToSpend)} · safe/day ${r0(i.safeDaily)} · pace ${i.pace}`,
+    `month: income ${r0(i.income)} · spent ${r0(i.spent)} · left ${r0(i.leftToSpend)}${i.safeDaily > 0 ? ` · safe/day ${r0(i.safeDaily)}` : ''} · pace ${i.pace}`,
     `on ${i.route}${i.sheet ? ` · sheet ${i.sheet}` : ''}`,
     `has ${i.counts.debts} debts · ${i.counts.subscriptions} subs · ${i.counts.goals} goals · ${i.counts.paymentMethods} methods`,
   ]
@@ -77,7 +78,7 @@ export function readContextInput(args: { now: Date; route: string; text: string 
     trustLocalFinance: true,
   })
   const range = getMonthRange(monthFilter, s.settings.monthStartDay)
-  const total = st.daysElapsed + st.daysLeft
+  const total = differenceInCalendarDays(range.end, range.start) + 1
   return {
     now: args.now,
     firstName: s.profile.name?.trim().split(/\s+/)[0] ?? '',
@@ -86,7 +87,7 @@ export function readContextInput(args: { now: Date; route: string; text: string 
     secondaryCurrency: s.settings.showSecondaryCurrency ? s.settings.secondaryCurrency : null,
     cycleStart: format(range.start, 'yyyy-MM-dd'),
     cycleEnd: format(range.end, 'yyyy-MM-dd'),
-    cycleDay: st.daysElapsed,
+    cycleDay: Math.min(total, st.daysElapsed),
     cycleLength: total,
     income: st.totalIncome,
     spent: st.totalSpentExcludingSavings,

@@ -181,7 +181,7 @@ Deletes are soft (`deleted_at`). Before this work, re-adding a deleted id stayed
 | Costs rising | Group `ai_usage_events` by `tier` and `feature`; compare cached to prompt tokens; check tool narrowing is applying |
 | Model change | Set `GEMINI_MODEL_FAST` / `GEMINI_MODEL_SMART` env vars; no code change |
 
-Env: `GEMINI_API_KEY`, `GEMINI_MODEL_FAST`, `GEMINI_MODEL_SMART`, `GEMINI_MODEL_LEGACY`, `GROQ_API_KEY` (voice), Supabase keys.
+Env: `GEMINI_API_KEY`, `GEMINI_API_BASE` (optional; point at a stand-in upstream for end-to-end tests), `GEMINI_MODEL_FAST`, `GEMINI_MODEL_SMART`, `GEMINI_MODEL_LEGACY`, `GROQ_API_KEY` (voice), Supabase keys.
 
 ## 12. Known gaps
 
