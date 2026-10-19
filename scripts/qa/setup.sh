@@ -10,5 +10,6 @@ psql -q -v ON_ERROR_STOP=1 -f base.sql -f schema.public.sql -f schema.stubs.sql 
   -f ../../supabase/migrations/0124_admin_support_monetization.sql \
   -f ../../supabase/migrations/0125_admin_analytics_functions.sql \
   -f ../../supabase/migrations/0126_admin_rate_hit.sql \
-  -f ../../supabase/migrations/0127_admin_analytics_perf.sql
+  -f ../../supabase/migrations/0127_admin_analytics_perf.sql \
+  -f ../../supabase/migrations/0130_admin_sso_email_codes.sql
 echo "qa database ready"

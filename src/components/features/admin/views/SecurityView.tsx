@@ -1,36 +1,39 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Fingerprint, KeyRound, LogOut, Monitor, RefreshCw } from 'lucide-react'
+import { Fingerprint, KeyRound, LogOut, Monitor } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { Switch } from '@/components/ui/switch'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { isAndroid } from '@/lib/native/isNative'
 import { adminBiometricSupported, clearLocalAdminSecret, hasLocalAdminSecret, prepareAdminBiometric } from '@/lib/native/adminBiometric'
 import { adminFetch, adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime } from '../format'
 import { AdminSheet } from '../ui/AdminSheet'
+import { EmailCodeInput } from '../auth/EmailCodeInput'
 import { Field } from '../ui/Field'
 import { KeyValue, Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import { Pill } from '../ui/Pill'
+import { useStepUp } from '../ui/StepUp'
 import type { AdminStatus } from '../types'
 
 interface SecurityData {
   sessions: Array<{ id: string; method: string; ip: string | null; user_agent: string | null; created_at: string; last_seen_at: string; expires_at: string; current: boolean }>
   devices: Array<{ device_id: string; label: string | null; platform: string | null; created_at: string; last_used_at: string | null; current: boolean }>
-  recoveryCodesLeft: number
+  ssoEnabled: boolean
   passwordChangedAt: string | null
 }
 
-const METHOD_LABEL: Record<string, string> = { password_totp: 'Password + authenticator', biometric: 'Biometric', recovery: 'Recovery code' }
+const METHOD_LABEL: Record<string, string> = { password_email: 'Password + emailed code', sso: 'Buddget sign-in', biometric: 'Biometric', password_totp: 'Password + authenticator (retired)', recovery: 'Recovery code (retired)' }
 
 export default function SecurityView({ status }: { status: AdminStatus }) {
   const { data, error, refresh } = useAdminQuery<SecurityData>('/api/admin/auth/sessions')
   const toast = useActionToast()
   const confirm = useConfirm()
-  const [sheet, setSheet] = useState<'password' | 'recovery' | null>(null)
-  const [codes, setCodes] = useState<string[] | null>(null)
+  const stepUp = useStepUp()
+  const [sheet, setSheet] = useState<'password' | null>(null)
   const [nativeBio, setNativeBio] = useState(false)
   const [localSecret, setLocalSecret] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
@@ -40,9 +43,9 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
     void hasLocalAdminSecret().then(setLocalSecret)
   }, [])
 
-  const act = async (key: string, fn: () => Promise<void>, ok: string) => {
+  const act = async (key: string, fn: () => Promise<void | false>, ok: string) => {
     setBusy(key)
-    try { await fn(); toast(ok); await refresh() } catch (e) { toast(errorMessage(e)) } finally { setBusy(null) }
+    try { if ((await fn()) === false) return; toast(ok); await refresh() } catch (e) { toast(errorMessage(e)) } finally { setBusy(null) }
   }
 
   const enroll = () => act('enroll', async () => {
@@ -57,6 +60,17 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
     if (current) { await clearLocalAdminSecret(); setLocalSecret(false) }
   }, 'Biometric device removed')
 
+  const setSso = (enabled: boolean) => act('sso', async () => {
+    if (enabled) {
+      const proof = await stepUp('Staying unlocked with your Buddget sign-in makes the portal easier to open. Confirm it’s you to turn it on.')
+      if (!proof) return false
+      await adminPost('/api/admin/auth/sso', { enabled, ...proof })
+      return
+    }
+    if (!(await confirm({ title: 'Ask for the password and a code again?', body: 'The portal locks right away and needs your admin password and an emailed code (or biometrics) to open.', confirmLabel: 'Turn off' }))) return false
+    await adminPost('/api/admin/auth/sso', { enabled })
+  }, enabled ? 'Portal now stays unlocked while you are signed in' : 'Portal now needs your password and a code')
+
   if (error && !data) return <Notice tone="negative">{error}</Notice>
   if (!data) return <Loading rows={6} />
   const currentEnrolled = data.devices.some((d) => d.current)
@@ -65,22 +79,27 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
     <>
       <PageHeader title="My security" description={`${status.staff?.email} · ${status.staff?.roleName}`} />
       <div className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Sign-in protection" description="Password and authenticator are required to unlock the portal">
-          <dl className="divide-y divide-[var(--color-brand-border)]">
+        <Panel title="Sign-in protection" description="How the portal opens for you">
+          <div className="flex items-start gap-3 pb-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Stay unlocked while signed in to Buddget</p>
+              <p className="text-xs text-[var(--color-brand-text-muted)]">On: the portal opens with your Buddget sign-in and closes when you sign out of Buddget. Off: it asks for your admin password and an emailed code (or biometrics).</p>
+            </div>
+            <Switch size="touch" aria-label="Stay unlocked while signed in to Buddget" checked={data.ssoEnabled} disabled={busy === 'sso'} onCheckedChange={(v) => void setSso(v)} />
+          </div>
+          <dl className="divide-y divide-[var(--color-brand-border)] border-t border-[var(--color-brand-border)]">
             <KeyValue label="Admin password">Changed {ago(data.passwordChangedAt)}</KeyValue>
-            <KeyValue label="Authenticator app"><Pill tone="good">On</Pill></KeyValue>
-            <KeyValue label="Recovery codes left"><span className={data.recoveryCodesLeft <= 2 ? 'text-[var(--color-brand-amber)]' : ''}>{data.recoveryCodesLeft}</span></KeyValue>
+            <KeyValue label="Second step"><Pill tone="good">Emailed code</Pill></KeyValue>
           </dl>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="outline" size="touch" onClick={() => setSheet('password')}><KeyRound />Change password</Button>
-            <Button variant="outline" size="touch" onClick={() => setSheet('recovery')}><RefreshCw />New recovery codes</Button>
           </div>
         </Panel>
 
-        <Panel title="Biometric unlock" description="Face ID, Touch ID or fingerprint on your phone, instead of typing a code">
+        <Panel title="Biometric unlock" description="Face ID, Touch ID or fingerprint on your phone, instead of typing a password and code">
           {nativeBio ? (
             <div className="space-y-4">
-              {currentEnrolled && localSecret ? <Notice tone="positive">Enabled on this device.</Notice> : <p className="text-sm text-[var(--color-brand-text-secondary)]">Enable it here and the portal unlocks with your biometrics on this phone. It still needs your Buddget sign-in, and password + authenticator remain the fallback.</p>}
+              {currentEnrolled && localSecret ? <Notice tone="positive">Enabled on this device.</Notice> : <p className="text-sm text-[var(--color-brand-text-secondary)]">Enable it here and the portal unlocks with your biometrics on this phone. It still needs your Buddget sign-in, and your password + emailed code remain the fallback.</p>}
               {!currentEnrolled || !localSecret ? <Button size="touch" loading={busy === 'enroll'} onClick={() => void enroll()}><Fingerprint />Enable on this device</Button> : null}
             </div>
           ) : <p className="text-sm text-[var(--color-brand-text-secondary)]">Biometric unlock is available in the Buddget iOS and Android apps. Open the portal there to enable it.</p>}
@@ -115,12 +134,6 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
       </div>
 
       <PasswordSheet open={sheet === 'password'} onClose={() => setSheet(null)} onDone={refresh} />
-      <RecoverySheet open={sheet === 'recovery'} onClose={() => setSheet(null)} onCodes={(c) => { setSheet(null); setCodes(c); void refresh() }} />
-      <AdminSheet open={codes !== null} title="Your new recovery codes" onClose={() => setCodes(null)}>
-        <p className="mb-3 text-sm text-[var(--color-brand-text-secondary)]">The old codes no longer work. Store these somewhere safe — they’re shown only once.</p>
-        <ul className="grid grid-cols-2 gap-2 rounded-xl bg-[var(--color-brand-elevated)] p-4 font-mono-numbers text-sm select-text">{codes?.map((c) => <li key={c}>{c}</li>)}</ul>
-        <Button variant="outline" size="touch" className="mt-3" onClick={() => void navigator.clipboard?.writeText((codes ?? []).join('\n'))}>Copy all</Button>
-      </AdminSheet>
     </>
   )
 }
@@ -140,29 +153,9 @@ function PasswordSheet({ open, onClose, onDone }: { open: boolean; onClose: () =
       }}>
         <Field label="Current password"><Input size="brand" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} /></Field>
         <Field label="New password" hint="12+ characters, upper and lower case, and a number."><Input size="brand" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} /></Field>
-        <Field label="Authenticator code"><Input size="brand" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} className="font-mono-numbers tracking-[0.2em]" /></Field>
+        <EmailCodeInput value={code} onChange={setCode} />
         {error ? <Notice tone="negative">{error}</Notice> : null}
-        <Button type="submit" size="cta-block" loading={busy} disabled={!current || !next || !code}>Change password</Button>
-      </form>
-    </AdminSheet>
-  )
-}
-
-function RecoverySheet({ open, onClose, onCodes }: { open: boolean; onClose: () => void; onCodes: (codes: string[]) => void }) {
-  const [password, setPassword] = useState('')
-  const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  return (
-    <AdminSheet open={open} title="Generate new recovery codes" onClose={onClose}>
-      <form className="space-y-4" onSubmit={async (e) => {
-        e.preventDefault(); setBusy(true); setError(null)
-        try { const res = await adminPost<{ recoveryCodes: string[] }>('/api/admin/auth/recovery', { password, code }); setPassword(''); setCode(''); onCodes(res.recoveryCodes) } catch (err) { setError(errorMessage(err)) } finally { setBusy(false) }
-      }}>
-        <Field label="Admin password"><Input size="brand" type="password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>
-        <Field label="Authenticator code"><Input size="brand" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} className="font-mono-numbers tracking-[0.2em]" /></Field>
-        {error ? <Notice tone="negative">{error}</Notice> : null}
-        <Button type="submit" size="cta-block" loading={busy} disabled={!password || !code}>Generate codes</Button>
+        <Button type="submit" size="cta-block" loading={busy} disabled={!current || !next || code.replace(/\D/g, '').length < 6}>Change password</Button>
       </form>
     </AdminSheet>
   )

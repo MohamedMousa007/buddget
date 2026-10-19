@@ -1,14 +1,10 @@
 import {
-  createCipheriv,
-  createDecipheriv,
   createHash,
-  hkdfSync,
   randomBytes,
   scrypt as scryptCb,
   timingSafeEqual,
 } from 'node:crypto'
 import { promisify } from 'node:util'
-import { getSupabaseSecretKey } from '@/lib/supabase/env'
 
 const scrypt = promisify(scryptCb) as (pw: string, salt: Buffer, len: number, opts: { N: number; r: number; p: number; maxmem: number }) => Promise<Buffer>
 
@@ -53,46 +49,4 @@ export function passwordProblem(password: string): string | null {
   }
   if (/^(.)\1+$/.test(password)) return 'Password is too repetitive.'
   return null
-}
-
-/**
- * Key for encrypting TOTP secrets at rest and nothing else. `ADMIN_AUTH_SECRET` pins it explicitly;
- * otherwise it derives from the Supabase secret key, so the portal works with no extra configuration.
- */
-function dataKey(): Buffer {
-  const material = process.env.ADMIN_AUTH_SECRET?.trim() || getSupabaseSecretKey()
-  if (!material) throw new Error('Admin portal needs ADMIN_AUTH_SECRET or SUPABASE_SECRET_KEY')
-  return Buffer.from(hkdfSync('sha256', material, 'buddget-admin', 'totp-secret-v1', 32))
-}
-
-export function encryptSecret(plain: string): string {
-  const iv = randomBytes(12)
-  const cipher = createCipheriv('aes-256-gcm', dataKey(), iv)
-  const body = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()])
-  return `v1.${iv.toString('base64url')}.${cipher.getAuthTag().toString('base64url')}.${body.toString('base64url')}`
-}
-
-export function decryptSecret(packed: string): string {
-  const [v, iv, tag, body] = packed.split('.')
-  if (v !== 'v1' || !iv || !tag || !body) throw new Error('Unreadable secret')
-  const decipher = createDecipheriv('aes-256-gcm', dataKey(), Buffer.from(iv, 'base64url'))
-  decipher.setAuthTag(Buffer.from(tag, 'base64url'))
-  return Buffer.concat([decipher.update(Buffer.from(body, 'base64url')), decipher.final()]).toString('utf8')
-}
-
-/** 10 single-use recovery codes, formatted `xxxxx-xxxxx`. Only their hashes are stored. */
-export function generateRecoveryCodes(count = 10): { codes: string[]; hashes: string[] } {
-  const codes = Array.from({ length: count }, () => {
-    const raw = randomBytes(5).toString('hex')
-    return `${raw.slice(0, 5)}-${raw.slice(5)}`
-  })
-  return { codes, hashes: codes.map(hashRecoveryCode) }
-}
-
-export function normalizeRecoveryCode(input: string): string {
-  return input.trim().toLowerCase().replace(/\s+/g, '')
-}
-
-export function hashRecoveryCode(code: string): string {
-  return sha256Hex(`recovery:${normalizeRecoveryCode(code)}`)
 }

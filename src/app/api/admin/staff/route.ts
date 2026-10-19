@@ -2,7 +2,7 @@ import { OWNER_EMAIL, OWNER_ROLE, PERMISSIONS, can, isPermission, outranks, OWNE
 import { bad, guardAdmin, json, readJson, type AdminContext } from '@/lib/server/admin/guard'
 import { allowAttempt } from '@/lib/server/admin/credentials'
 import { sendStaffInviteEmail } from '@/lib/server/admin/inviteEmail'
-import { stepUp } from '@/lib/server/admin/stepUp'
+import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { revokeAllAdminSessions } from '@/lib/server/admin/session'
 import { UUID_RE } from '@/lib/server/admin/targets'
 
@@ -16,10 +16,10 @@ export async function GET(req: Request) {
   const [staff, roles, creds, sessions] = await Promise.all([
     service.from('admin_staff').select('id, email, user_id, display_name, department, role_key, extra_permissions, status, created_at, last_login_at').order('created_at'),
     service.from('admin_roles').select('key, name, description, rank, permissions, is_system').order('rank'),
-    service.from('admin_credentials').select('user_id, totp_confirmed_at'),
+    service.from('admin_credentials').select('user_id, setup_completed_at'),
     service.from('admin_sessions').select('user_id').is('revoked_at', null).gt('expires_at', new Date().toISOString()),
   ])
-  const secured = new Set((creds.data ?? []).filter((c) => c.totp_confirmed_at).map((c) => c.user_id))
+  const secured = new Set((creds.data ?? []).filter((c) => c.setup_completed_at).map((c) => c.user_id))
   const live = new Map<string, number>()
   for (const s of sessions.data ?? []) live.set(s.user_id, (live.get(s.user_id) ?? 0) + 1)
   return json({
@@ -60,6 +60,7 @@ export async function POST(req: Request) {
     op?: string
     id?: string
     code?: string
+    stepUpPassword?: string
     email?: string
     displayName?: string
     department?: string
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
     const { data: existing } = await ctx.service.from('admin_roles').select('is_system, rank').eq('key', r.key).maybeSingle()
     if (existing?.is_system) return bad('System roles cannot be edited.', 403)
     if (existing && !outranks(ctx.role.rank, existing.rank)) return bad('You cannot edit a role at or above your level.', 403)
-    if (!(await stepUp(ctx, body.code))) return bad('Enter a valid authenticator code to confirm.', 401)
+    if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
     const { error } = await ctx.service.from('admin_roles').upsert({ key: r.key, name: r.name.trim().slice(0, 40), description: (r.description ?? '').slice(0, 200), rank, permissions: perms, is_system: false })
     if (error) return bad('Could not save the role.', 500)
     await ctx.audit('staff.role_upsert', { targetType: 'role', targetId: r.key, summary: `Saved role ${r.key}`, metadata: { permissions: perms, rank } })
@@ -152,7 +153,7 @@ export async function POST(req: Request) {
     if (body.displayName !== undefined) patch.display_name = body.displayName.trim().slice(0, 60) || null
     if (body.department !== undefined) patch.department = body.department.trim().slice(0, 40) || null
     if (Object.keys(patch).length === 0) return bad('Nothing to change.')
-    if ((patch.role_key || patch.extra_permissions) && !(await stepUp(ctx, body.code))) return bad('Enter a valid authenticator code to confirm.', 401)
+    if ((patch.role_key || patch.extra_permissions) && !(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
     const { error } = await ctx.service.from('admin_staff').update(patch).eq('id', member.id)
     if (error) return bad('Could not update.', 500)
     if (patch.role_key || patch.extra_permissions) {
@@ -171,7 +172,7 @@ export async function POST(req: Request) {
   }
 
   if (body.op === 'reset_credentials') {
-    if (!(await stepUp(ctx, body.code))) return bad('Enter a valid authenticator code to confirm.', 401)
+    if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
     if (member.user_id) {
       await revokeAllAdminSessions(ctx.service, member.user_id)
       await ctx.service.from('admin_credentials').delete().eq('user_id', member.user_id)
@@ -182,7 +183,7 @@ export async function POST(req: Request) {
   }
 
   if (body.op === 'remove') {
-    if (!(await stepUp(ctx, body.code))) return bad('Enter a valid authenticator code to confirm.', 401)
+    if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
     if (member.user_id) {
       await revokeAllAdminSessions(ctx.service, member.user_id)
       await ctx.service.from('admin_credentials').delete().eq('user_id', member.user_id)

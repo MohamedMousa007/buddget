@@ -7,7 +7,7 @@ import { can, type Permission } from '@/lib/admin/permissions'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { appOrigin } from '@/lib/apiBase'
 import { bad, guardAdmin, json, maskEmail, readJson } from '@/lib/server/admin/guard'
-import { stepUp } from '@/lib/server/admin/stepUp'
+import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { blockedTarget, UUID_RE } from '@/lib/server/admin/targets'
 import type { Json } from '@/lib/supabase/database.types'
 
@@ -65,7 +65,7 @@ type Op =
   | { op: 'remove_biometric' }
   | { op: 'send_password_reset' }
   | { op: 'verify_email' }
-  | { op: 'delete'; code: string }
+  | { op: 'delete'; code?: string; stepUpPassword?: string }
 
 const REQUIRES: Record<Op['op'], Permission> = {
   note: 'users.edit',
@@ -234,7 +234,7 @@ export async function POST(req: Request, { params }: Params) {
       return json({ ok: true })
     }
     case 'delete': {
-      if (!(await stepUp(ctx, body.code))) return bad('Enter a valid authenticator code to confirm.', 401)
+      if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
       const result = await deleteUserCompletely(ctx.service, id)
       if (!result.ok) return bad(result.error, 500)
       await log('user.delete', 'Permanently deleted user', { partialErrors: result.partialErrors })

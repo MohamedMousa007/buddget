@@ -91,6 +91,8 @@ export type Database = {
           password_changed_at: string
           password_hash: string
           recovery_hashes: string[]
+          setup_completed_at: string | null
+          sso_enabled: boolean
           totp_confirmed_at: string | null
           totp_last_step: number | null
           totp_secret_enc: string | null
@@ -104,6 +106,8 @@ export type Database = {
           password_changed_at?: string
           password_hash: string
           recovery_hashes?: string[]
+          setup_completed_at?: string | null
+          sso_enabled?: boolean
           totp_confirmed_at?: string | null
           totp_last_step?: number | null
           totp_secret_enc?: string | null
@@ -117,6 +121,8 @@ export type Database = {
           password_changed_at?: string
           password_hash?: string
           recovery_hashes?: string[]
+          setup_completed_at?: string | null
+          sso_enabled?: boolean
           totp_confirmed_at?: string | null
           totp_last_step?: number | null
           totp_secret_enc?: string | null

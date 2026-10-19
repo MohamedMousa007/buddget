@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, serializeCookieHeader } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseCookieToSet } from '@/lib/supabase/cookieTypes'
 import {
@@ -7,6 +7,16 @@ import {
   requireSupabaseUrl,
 } from '@/lib/supabase/env'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
+import { appHostFor, configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
+import {
+  COOKIE_DOMAIN_MARKER,
+  domainCookieOptions,
+  hostOnlyExpiryOptions,
+  markerCookieOptions,
+  parseCookiesPreferLast,
+  planCookieDomain,
+  supabaseCookieDomain,
+} from '@/lib/supabase/cookieDomain'
 
 /** Simple in-process limiter for unauthenticated public FX/gold routes (best-effort per isolate). */
 const PUBLIC_API_WINDOW_MS = 60_000
@@ -54,7 +64,18 @@ function buildCsp(nonce: string): string {
 }
 
 export async function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname
+  const host = request.headers.get('host')
+  const hostRoute = decideHostRoute({ host, pathname: request.nextUrl.pathname, search: request.nextUrl.search })
+  if (hostRoute.kind === 'redirect') return NextResponse.redirect(hostRoute.url, 307)
+  const onAdminHost = normalizeHost(host) === configuredAdminHost()
+  // On the admin host `/` is served by the /admin page; every check below sees the page that is really served.
+  const pathname = hostRoute.kind === 'rewrite' ? hostRoute.pathname : request.nextUrl.pathname
+  const next = () => {
+    if (hostRoute.kind !== 'rewrite') return NextResponse.next({ request })
+    const url = request.nextUrl.clone()
+    url.pathname = hostRoute.pathname
+    return NextResponse.rewrite(url, { request })
+  }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   const csp = buildCsp(nonce)
@@ -80,24 +101,30 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api')) {
       return withNativeApiCors(request, NextResponse.next())
     }
-    const response = NextResponse.next({ request })
+    const response = next()
     response.headers.set('Content-Security-Policy', csp)
     return response
   }
 
-  let supabaseResponse = NextResponse.next({ request })
+  let supabaseResponse = next()
+  const cookieDomain = supabaseCookieDomain(request.nextUrl.hostname)
+  const writtenAuthCookies = new Set<string>()
 
   const supabase = createServerClient(
     requireSupabaseUrl(),
     requireSupabasePublishableKey(),
     {
+      cookieOptions: cookieDomain ? { domain: cookieDomain } : undefined,
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return cookieDomain ? parseCookiesPreferLast(request.headers.get('cookie')) : request.cookies.getAll()
         },
         setAll(cookiesToSet: SupabaseCookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value }) => {
+            request.cookies.set(name, value)
+            writtenAuthCookies.add(name)
+          })
+          supabaseResponse = next()
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -112,6 +139,15 @@ export async function middleware(request: NextRequest) {
     supabase.auth.getUser().then((r) => r.data.user, () => null),
     new Promise<null>((resolve) => setTimeout(() => resolve(null), AUTH_CHECK_TIMEOUT_MS)),
   ])
+
+  // Retire host-only auth cookies once the shared-domain cookie is in use (see cookieDomain.ts). Raw Set-Cookie
+  // headers: a response cookie jar is keyed by name and could not hold the domain cookie and its host-only expiry.
+  const plan = planCookieDomain({ domain: cookieDomain, cookieHeader: request.headers.get('cookie'), written: [...writtenAuthCookies] })
+  if (cookieDomain) {
+    plan.rewrite.forEach(({ name, value }) => supabaseResponse.cookies.set(name, value, domainCookieOptions(cookieDomain)))
+    if (plan.markDone) supabaseResponse.cookies.set(COOKIE_DOMAIN_MARKER, '1', markerCookieOptions)
+    plan.expireHostOnly.forEach((name) => supabaseResponse.headers.append('Set-Cookie', serializeCookieHeader(name, '', hostOnlyExpiryOptions)))
+  }
 
   // The portal and its API never get cached or indexed, whatever sits in front of the app.
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
@@ -158,6 +194,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     if (isAdmin) {
+      if (onAdminHost) return NextResponse.redirect(`https://${appHostFor(configuredAdminHost())}/`, 307)
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)

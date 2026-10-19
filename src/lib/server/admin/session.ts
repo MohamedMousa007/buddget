@@ -13,7 +13,9 @@ export const BIOMETRIC_SESSION_MS = 4 * 60 * 60 * 1000
 export const SESSION_IDLE_MS = 60 * 60 * 1000
 const TOUCH_EVERY_MS = 60 * 1000
 
-export type SessionMethod = 'password_totp' | 'biometric' | 'recovery'
+/** `sso` is never stored: it is the app sign-in itself. `password_totp` and `recovery` only exist on sessions created before the email-code rework. */
+export type SessionMethod = 'password_email' | 'biometric' | 'sso' | 'password_totp' | 'recovery'
+export type StoredSessionMethod = Exclude<SessionMethod, 'sso'>
 
 export interface AdminSessionRow {
   id: string
@@ -39,7 +41,7 @@ export function readSessionToken(req: Request): string | null {
 
 export async function createAdminSession(
   service: ServiceClient,
-  input: { userId: string; method: SessionMethod; ip: string; userAgent: string | null },
+  input: { userId: string; method: StoredSessionMethod; ip: string; userAgent: string | null },
 ): Promise<{ token: string; expiresAt: string; id: string }> {
   const token = randomToken()
   const lifetime = input.method === 'biometric' ? BIOMETRIC_SESSION_MS : SESSION_ABSOLUTE_MS
@@ -100,4 +102,11 @@ export function sessionCookie(token: string, expiresAt: string): string {
 export function clearedSessionCookie(): string {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${ADMIN_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure}`
+}
+
+/** Id of the app-session-backed pseudo session; it has no row, so it can be neither revoked nor listed from the table. */
+export const SSO_SESSION_ID = 'sso'
+
+export function storedSessionId(session: Pick<AdminSessionRow, 'id'> | null): string | undefined {
+  return session && session.id !== SSO_SESSION_ID ? session.id : undefined
 }

@@ -30,7 +30,7 @@ import { GET as staffGet, POST as staffPost } from '@/app/api/admin/staff/route'
 import { GET as auditGet } from '@/app/api/admin/audit/route'
 import { GET as sessionsGet, DELETE as sessionsDelete } from '@/app/api/admin/auth/sessions/route'
 import { POST as passwordPost } from '@/app/api/admin/auth/password/route'
-import { POST as recoveryPost } from '@/app/api/admin/auth/recovery/route'
+import { POST as ssoPost } from '@/app/api/admin/auth/sso/route'
 import { POST as deviceAdd, DELETE as deviceDel } from '@/app/api/admin/auth/biometric/device/route'
 
 const ROLES = ['owner', 'admin', 'support_lead', 'support_agent', 'engineer', 'finance', 'growth', 'viewer'] as const
@@ -92,7 +92,7 @@ describe.skipIf(!pgEnabled)('admin RBAC (real Postgres)', () => {
       { name: 'my sessions', handler: sessionsGet, perm: null },
       { name: 'revoke sessions', handler: sessionsDelete, method: 'DELETE', perm: null, body: { id: ZERO } },
       { name: 'change password', handler: passwordPost, method: 'POST', perm: null, body: {} },
-      { name: 'recovery codes', handler: recoveryPost, method: 'POST', perm: null, body: {} },
+      { name: 'sso switch', handler: ssoPost, method: 'POST', perm: null, body: {} },
       { name: 'enroll biometric', handler: deviceAdd, method: 'POST', perm: null, body: {} },
       { name: 'remove biometric', handler: deviceDel, method: 'DELETE', perm: null },
     ]

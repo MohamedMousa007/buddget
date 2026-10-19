@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OWNER_EMAIL } from '@/lib/admin/permissions'
 import { adminPool, closePools, pgEnabled } from './harness/pgSupabase'
-import { call, clearStep, codeFor, makeStaff, makeUser, q, resetRateLimits, resetWorld, unlock, type Staff, type TestUser } from './harness/world'
+import { call, codeFor, makeStaff, makeUser, q, resetRateLimits, resetWorld, unlock, type Staff, type TestUser } from './harness/world'
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', async () => (await import('./harness/mocks')).serviceMock())
@@ -22,7 +22,7 @@ describe.skipIf(!pgEnabled)('user management (real Postgres)', () => {
 
   const act = (who: Staff, token: string, id: string, body: Record<string, unknown>) =>
     call(userPost, { method: 'POST', as: who, token, params: { id }, body })
-  const fresh = async (who: Staff) => { await clearStep(who.id); return codeFor(who) }
+  const fresh = async (who: Staff) => codeFor(who)
 
   beforeAll(async () => {
     process.env.ADMIN_AUTH_SECRET = 'qa-secret'

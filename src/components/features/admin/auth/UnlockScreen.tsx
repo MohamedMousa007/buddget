@@ -5,15 +5,18 @@ import { Fingerprint, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AppLink } from '@/components/ui/AppLink'
+import { appOrigin } from '@/lib/apiBase'
 import { adminBiometricSupported, readAdminSecretWithBiometric } from '@/lib/native/adminBiometric'
 import { Notice } from '../ui/Panel'
 import { Field } from '../ui/Field'
 import { adminPost, errorMessage, setAdminToken } from '../adminClient'
 import { AuthFrame } from './AuthFrame'
+import { EmailCodeInput } from './EmailCodeInput'
 
-interface Unlocked { token: string; expiresAt: string; recoveryCodesLeft?: number }
+interface Unlocked { token: string; expiresAt: string }
 
-export function UnlockScreen({ name, biometricEnrolled, onUnlocked }: { name: string; biometricEnrolled: boolean; onUnlocked: () => void }) {
+/** Shown when the person turned off "stay unlocked with Buddget sign-in": admin password + emailed code, or biometrics. */
+export function UnlockScreen({ name, email, biometricEnrolled, onUnlocked }: { name: string; email: string; biometricEnrolled: boolean; onUnlocked: () => void }) {
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -64,7 +67,7 @@ export function UnlockScreen({ name, biometricEnrolled, onUnlocked }: { name: st
   }, [canBiometric, biometric])
 
   return (
-    <AuthFrame title={`Welcome back${name ? `, ${name.split(' ')[0]}` : ''}`} subtitle="Unlock the portal with your password and authenticator code.">
+    <AuthFrame title={`Welcome back${name ? `, ${name.split(' ')[0]}` : ''}`} subtitle="Unlock the portal with your admin password and the code we email you.">
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void submit() }}>
         {canBiometric ? (
           <>
@@ -75,12 +78,10 @@ export function UnlockScreen({ name, biometricEnrolled, onUnlocked }: { name: st
         <Field label="Admin password">
           <Input size="brand" type="password" autoComplete="current-password" autoFocus={!canBiometric} value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
-        <Field label="Authenticator or recovery code">
-          <Input size="brand" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} className="font-mono-numbers tracking-[0.2em]" />
-        </Field>
+        <EmailCodeInput value={code} onChange={setCode} email={email} disabled={busy} />
         {error ? <Notice tone="negative">{error}</Notice> : null}
-        <Button type="submit" size="cta-block" loading={busy} disabled={!password || !code.trim()}><Lock />Unlock</Button>
-        <AppLink href="/" className="flex min-h-11 items-center justify-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]">← Back to Buddget</AppLink>
+        <Button type="submit" size="cta-block" loading={busy} disabled={!password || code.replace(/\D/g, '').length < 6}><Lock />Unlock</Button>
+        <AppLink href={`${appOrigin()}/`} className="flex min-h-11 items-center justify-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]">← Back to Buddget</AppLink>
       </form>
     </AuthFrame>
   )

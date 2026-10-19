@@ -11,6 +11,7 @@ import {
   validateAdminSession,
   type AdminSessionRow,
 } from './session'
+import { resolveSsoSession } from './sso'
 import { resolveStaff, type StaffContext } from './staff'
 
 export interface AdminContext extends StaffContext {
@@ -44,7 +45,7 @@ interface GuardOptions {
 
 /**
  * Every admin endpoint goes through here. Layers, in order: signed-in account, active staff record,
- * CSRF header on mutations, an unlocked admin session bound to the same account, then the permission.
+ * CSRF header on mutations, an unlocked admin session (own token, or the app sign-in when the person's SSO switch is on), then the permission.
  */
 export async function guardAdmin(req: Request, opts: GuardOptions = {}): Promise<GuardResult> {
   const { user } = await resolveRouteUser(req)
@@ -61,7 +62,10 @@ export async function guardAdmin(req: Request, opts: GuardOptions = {}): Promise
 
   // Resolved even when optional, so endpoints like logout can act on the session that was presented.
   const token = readSessionToken(req)
-  const session = token ? await validateAdminSession(service, token, user.id) : null
+  let session = token ? await validateAdminSession(service, token, user.id) : null
+  const ip = clientIp(req)
+  const userAgent = req.headers.get('user-agent')
+  session ??= await resolveSsoSession(service, user, staffCtx, { ip, userAgent })
   if (!session && !opts.sessionOptional) return deny(401, 'Admin session locked. Unlock the portal to continue.', 'locked')
 
   const needed = opts.permission ? (Array.isArray(opts.permission) ? opts.permission : [opts.permission]) as readonly Permission[] : []
@@ -69,8 +73,6 @@ export async function guardAdmin(req: Request, opts: GuardOptions = {}): Promise
     return deny(403, 'Your role does not allow this.', 'forbidden')
   }
 
-  const ip = clientIp(req)
-  const userAgent = req.headers.get('user-agent')
   return {
     ok: true,
     ctx: {
