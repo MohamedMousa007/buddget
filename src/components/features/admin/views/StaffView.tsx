@@ -158,7 +158,7 @@ function InviteSheet({ data, onClose, onDone }: { data: StaffData; onClose: () =
   return (
     <AdminSheet open title="Add a teammate" onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-sm text-[var(--color-brand-text-secondary)]">We email them a link that signs them in and opens the portal, where they set their admin password and authenticator. They can also sign in to Buddget with this email and use the admin icon beside their profile.</p>
+        <p className="text-sm text-[var(--color-brand-text-secondary)]">We email them a link that signs them in and opens the portal, where they set their admin password and confirm it with an emailed code. They can also sign in to Buddget with this email and use the admin icon beside their profile.</p>
         <Field label="Email"><Input size="brand" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Name"><Input size="brand" value={name} onChange={(e) => setName(e.target.value)} /></Field>
@@ -193,8 +193,8 @@ function MemberSheet({ member, data, canManage, onClose, onDone }: { member: Mem
   const editable = canManage && !member.isOwner && (data.roles.find((r) => r.key === member.role_key)?.rank ?? 0) > data.actorRank
 
   const guarded = async (key: string, body: Record<string, unknown>, why: string, opts: Parameters<typeof run>[2]) => {
-    const code = await stepUp(why)
-    if (code) await run(key, { ...body, id: member.id, code }, opts)
+    const proof = await stepUp(why)
+    if (proof) await run(key, { ...body, id: member.id, ...proof }, opts)
   }
 
   return (
@@ -208,18 +208,18 @@ function MemberSheet({ member, data, canManage, onClose, onDone }: { member: Mem
         {!member.isOwner ? <Field label="Role"><SelectField aria-label="Role" value={roleKey} onChange={setRoleKey} items={roles.some((r) => r.value === roleKey) ? roles : [...roles, { value: roleKey, label: data.roles.find((r) => r.key === roleKey)?.name ?? roleKey, description: '' }]} className="h-12 w-full" disabled={!editable} /></Field> : null}
         {!member.isOwner ? <div><p className="mb-2 text-xs font-medium text-[var(--color-brand-text-secondary)]">Extra permissions on top of the role</p><PermissionPicker data={data} value={extra} onChange={setExtra} inherited={currentRole?.permissions ?? []} /></div> : null}
         <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-brand-text-muted)]">
-          <Pill tone={member.secured ? 'good' : 'warn'}>{member.secured ? '2FA on' : 'Not secured yet'}</Pill>
+          <Pill tone={member.secured ? 'good' : 'warn'}>{member.secured ? 'Set up' : 'Not secured yet'}</Pill>
           <span>{member.liveSessions} active session{member.liveSessions === 1 ? '' : 's'} · last sign-in {ago(member.last_login_at)}</span>
         </div>
         {editable ? (
           <div className="space-y-3 border-t border-[var(--color-brand-border)] pt-4">
-            <Button size="cta-block" loading={busy === 'save'} onClick={() => void guarded('save', { op: 'update', displayName: name, department, roleKey, extraPermissions: extra }, 'Changing a role or permissions signs that person out of the portal. Enter your authenticator code.', { success: 'Saved' })}>Save changes</Button>
+            <Button size="cta-block" loading={busy === 'save'} onClick={() => void guarded('save', { op: 'update', displayName: name, department, roleKey, extraPermissions: extra }, 'Changing a role or permissions signs that person out of the portal. Confirm it’s you.', { success: 'Saved' })}>Save changes</Button>
             <div className="flex flex-wrap gap-2">
               {member.status === 'active'
                 ? <Button variant="outline" size="touch" loading={busy === 'suspend'} onClick={() => void run('suspend', { op: 'suspend', id: member.id }, { success: 'Suspended', confirm: { title: `Suspend ${member.display_name ?? member.email}?`, body: 'They lose portal access immediately.', destructive: true } })}>Suspend</Button>
                 : <Button variant="outline" size="touch" loading={busy === 'restore'} onClick={() => void run('restore', { op: 'restore', id: member.id }, { success: 'Restored' })}>Restore</Button>}
               {!member.secured && member.status === 'active' ? <Button variant="outline" size="touch" loading={busy === 'resend'} onClick={() => void run('resend', { op: 'resend_invite', id: member.id }, { success: 'Invite sent' })}>Resend invite</Button> : null}
-              {member.user_id ? <Button variant="outline" size="touch" onClick={() => void guarded('reset', { op: 'reset_credentials' }, 'This signs them out and forces them to set up password and authenticator again.', { success: 'Security reset' })}>Reset their security</Button> : null}
+              {member.user_id ? <Button variant="outline" size="touch" onClick={() => void guarded('reset', { op: 'reset_credentials' }, 'This signs them out and forces them to set up their admin password again.', { success: 'Security reset' })}>Reset their security</Button> : null}
               <Button variant="destructive" size="touch" onClick={() => void guarded('remove', { op: 'remove' }, 'Removing a teammate revokes all their access.', { success: 'Removed', confirm: { title: 'Remove from the team?', destructive: true } })}>Remove</Button>
             </div>
           </div>
@@ -245,7 +245,7 @@ function RoleSheet({ role, data, onClose, onDone }: { role: Role; data: StaffDat
         <Field label="Rank" hint={`Must be above ${data.actorRank}. Higher numbers have less authority.`}><Input size="brand" type="number" value={r.rank} onChange={(e) => setR({ ...r, rank: Number(e.target.value) })} /></Field>
         <PermissionPicker data={data} value={r.permissions} onChange={(permissions) => setR({ ...r, permissions })} />
         <Button size="cta-block" loading={busy === 'role'} disabled={!r.key || !r.name.trim()} onClick={async () => {
-          const code = await stepUp('Creating or changing a role changes what staff can do. Enter your authenticator code.')
+          const code = await stepUp('Creating or changing a role changes what staff can do. Confirm it’s you.')
           if (code) await run('role', { op: 'upsert_role', code, role: { key: r.key, name: r.name, description: r.description, permissions: r.permissions, rank: r.rank } }, { success: 'Role saved' })
         }}>Save role</Button>
         {!isNew ? <Button variant="destructive" size="touch" onClick={() => void run('delrole', { op: 'delete_role', key: r.key }, { success: 'Role deleted', confirm: { title: `Delete ${r.name}?`, destructive: true } })}>Delete role</Button> : null}

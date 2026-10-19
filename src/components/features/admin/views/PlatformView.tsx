@@ -53,7 +53,7 @@ export default function PlatformView({ status }: { status: AdminStatus }) {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">Secrets live in the host environment (Vercel) and are never shown here. Set <code>ADMIN_AUTH_SECRET</code> to pin the key that encrypts staff authenticator secrets; until then it is derived from the Supabase secret key.</p>
+          <p className="mt-3 text-xs text-[var(--color-brand-text-muted)]">Secrets live in the host environment (Vercel) and are never shown here.</p>
         </Panel>
 
         <AiThrottle data={data} canManage={canManage} onSaved={refresh} />

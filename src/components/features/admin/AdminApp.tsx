@@ -75,13 +75,13 @@ export function AdminApp() {
   }
 
   const { status } = phase
-  if (!status.isStaff) return <NoAccess />
+  if (!status.isStaff) return <NoAccess signedIn={status.signedIn !== false} />
 
   if (status.setup !== 'complete') {
-    return <SetupFlow hasAccountPassword={!!status.hasAccountPassword} email={status.staff?.email ?? ''} onDone={() => void refresh()} />
+    return <SetupFlow email={status.staff?.email ?? ''} resume={status.setup === 'confirm_email'} onDone={() => void refresh()} />
   }
   if (!status.session) {
-    return <UnlockScreen name={status.staff?.name ?? ''} biometricEnrolled={!!status.biometricEnrolled} onUnlocked={() => void refresh()} />
+    return <UnlockScreen name={status.staff?.name ?? ''} email={status.staff?.email ?? ''} biometricEnrolled={!!status.biometricEnrolled} onUnlocked={() => void refresh()} />
   }
 
   const perms = new Set(status.permissions ?? [])

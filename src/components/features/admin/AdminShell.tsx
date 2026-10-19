@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import * as Icons from 'lucide-react'
 import { Menu, Lock, ArrowLeft, Search, X } from 'lucide-react'
 import { BuddgetWordmark } from '@/components/brand'
+import { appOrigin } from '@/lib/apiBase'
 import { AppLink } from '@/components/ui/AppLink'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
@@ -90,9 +91,9 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
             <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{status.staff?.name ?? status.staff?.email}</p>
             <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{status.staff?.roleName}</p>
           </div>
-          <IconButton aria-label="Lock the portal" size="sm" onClick={onLock}><Lock /></IconButton>
+          {status.session?.method === 'sso' ? null : <IconButton aria-label="Lock the portal" size="sm" onClick={onLock}><Lock /></IconButton>}
         </div>
-        <AppLink href="/" className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
+        <AppLink href={`${appOrigin()}/`} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
           <ArrowLeft className="size-4" aria-hidden />Back to Buddget
         </AppLink>
       </div>

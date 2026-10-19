@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { OWNER_EMAIL } from '@/lib/admin/permissions'
 import { adminPool, closePools, pgEnabled } from './harness/pgSupabase'
-import { call, clearStep, codeFor, makeStaff, makeUser, q, resetRateLimits, resetWorld, unlock, type Staff } from './harness/world'
+import { call, codeFor, makeStaff, makeUser, q, resetRateLimits, resetWorld, unlock, type Staff } from './harness/world'
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', async () => (await import('./harness/mocks')).serviceMock())
@@ -20,7 +20,7 @@ describe.skipIf(!pgEnabled)('team & roles (real Postgres)', () => {
   let tOwner: string, tAdmin: string, tLead: string
 
   /** A fresh authenticator code for `who` that has not been spent yet. */
-  const fresh = async (who: Staff) => { await clearStep(who.id); return codeFor(who) }
+  const fresh = async (who: Staff) => codeFor(who)
   const act = async (who: Staff, token: string, body: Record<string, unknown>) => {
     return call(staffPost, { method: 'POST', as: who, token, body })
   }

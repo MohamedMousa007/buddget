@@ -18,8 +18,8 @@ export async function POST(req: Request) {
   if (!secret) return bad('Missing secret.')
 
   const cred = await loadCredentials(ctx.service, ctx.user.id)
-  if (!cred?.totp_confirmed_at) return bad('Finish security setup first.', 409)
-  if (isLocked(cred)) return bad('Locked after failed attempts. Use your password and code.', 429)
+  if (!cred?.setup_completed_at) return bad('Finish security setup first.', 409)
+  if (isLocked(cred)) return bad('Locked after failed attempts. Use your password and emailed code.', 429)
   if (!(await allowAttempt(ctx.service, `admin-bio:${ctx.user.id}`, 900, 12))) return bad('Too many attempts.', 429)
 
   const deviceId = await resolveDeviceId(req)

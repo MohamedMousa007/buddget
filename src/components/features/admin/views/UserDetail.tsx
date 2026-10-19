@@ -386,9 +386,9 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
         {can('users.delete') ? (
           <Panel title="Danger zone" description="Permanent. Deletes the account and all of their data.">
             <Button variant="destructive-solid" size="touch" loading={busy === 'delete'} onClick={async () => {
-              const code = await stepUp('Deleting a user is permanent. Enter your authenticator code to confirm.')
-              if (!code) return
-              if (await run('delete', { op: 'delete', code }, { success: 'User deleted', confirm: { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased.`, destructive: true, confirmLabel: 'Delete forever' } })) adminNavigate('users')
+              const proof = await stepUp('Deleting a user is permanent. Confirm it’s you.')
+              if (!proof) return
+              if (await run('delete', { op: 'delete', ...proof }, { success: 'User deleted', confirm: { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased.`, destructive: true, confirmLabel: 'Delete forever' } })) adminNavigate('users')
             }}><Trash2 />Delete user</Button>
           </Panel>
         ) : null}
