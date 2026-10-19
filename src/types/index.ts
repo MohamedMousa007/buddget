@@ -10,10 +10,3 @@ export type {
   UserProfile,
   AppSettings,
 } from '@/lib/store/types'
-
-export type {
-  AdminConfig,
-  AdminUserRow,
-  AdminAnalyticsSnapshot,
-  AiRuntimeSlice,
-} from './admin'

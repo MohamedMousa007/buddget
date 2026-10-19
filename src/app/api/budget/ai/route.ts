@@ -10,6 +10,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { getUserEntitlements } from '@/lib/entitlements/server'
 import {
   ADJUST_SCHEMA,
   BUILD_SCHEMA,
@@ -28,15 +29,18 @@ const MODEL = process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-2.5-flash'
 const URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 // api_rate_hit prunes counters older than an hour, so the window cannot be longer.
 const RATE_WINDOW_SECONDS = 3600
-const RATE_MAX_HITS = 15
 const MAX_BODY_CHARS = 60_000
 const MAX_ADJUST_CHARS = 500
 
 async function overQuota(userId: string): Promise<boolean> {
-  const { data, error } = await createServiceRoleClient().rpc('api_rate_hit', {
+  const service = createServiceRoleClient()
+  const { limits } = await getUserEntitlements(service, userId)
+  const maxHits = limits.ai_budget_per_hour
+  if (maxHits === null) return false
+  const { data, error } = await service.rpc('api_rate_hit', {
     p_key: `budget-ai:${userId}`,
     p_window_seconds: RATE_WINDOW_SECONDS,
-    p_max_hits: RATE_MAX_HITS,
+    p_max_hits: maxHits,
   })
   if (error) {
     console.error('[budget/ai] rate-limit rpc failed', error.message)

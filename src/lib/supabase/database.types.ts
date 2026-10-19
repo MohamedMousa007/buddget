@@ -14,6 +14,284 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          id: number
+          ip: string | null
+          metadata: Json
+          summary: string | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          ip?: string | null
+          metadata?: Json
+          summary?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          ip?: string | null
+          metadata?: Json
+          summary?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      admin_biometric_devices: {
+        Row: {
+          created_at: string
+          device_id: string
+          label: string | null
+          last_used_at: string | null
+          platform: string | null
+          secret_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          label?: string | null
+          last_used_at?: string | null
+          platform?: string | null
+          secret_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          label?: string | null
+          last_used_at?: string | null
+          platform?: string | null
+          secret_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_credentials: {
+        Row: {
+          created_at: string
+          failed_attempts: number
+          locked_until: string | null
+          password_changed_at: string
+          password_hash: string
+          recovery_hashes: string[]
+          totp_confirmed_at: string | null
+          totp_last_step: number | null
+          totp_secret_enc: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          password_changed_at?: string
+          password_hash: string
+          recovery_hashes?: string[]
+          totp_confirmed_at?: string | null
+          totp_last_step?: number | null
+          totp_secret_enc?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          password_changed_at?: string
+          password_hash?: string
+          recovery_hashes?: string[]
+          totp_confirmed_at?: string | null
+          totp_last_step?: number | null
+          totp_secret_enc?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_roles: {
+        Row: {
+          created_at: string
+          description: string
+          is_system: boolean
+          key: string
+          name: string
+          permissions: string[]
+          rank: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          is_system?: boolean
+          key: string
+          name: string
+          permissions?: string[]
+          rank: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          is_system?: boolean
+          key?: string
+          name?: string
+          permissions?: string[]
+          rank?: number
+        }
+        Relationships: []
+      }
+      admin_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip: string | null
+          last_seen_at: string
+          method: string
+          revoked_at: string | null
+          token_hash: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          method: string
+          revoked_at?: string | null
+          token_hash: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          last_seen_at?: string
+          method?: string
+          revoked_at?: string | null
+          token_hash?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_staff: {
+        Row: {
+          created_at: string
+          department: string | null
+          display_name: string | null
+          email: string
+          extra_permissions: string[]
+          id: string
+          invited_by: string | null
+          last_login_at: string | null
+          role_key: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          display_name?: string | null
+          email: string
+          extra_permissions?: string[]
+          id?: string
+          invited_by?: string | null
+          last_login_at?: string | null
+          role_key: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          display_name?: string | null
+          email?: string
+          extra_permissions?: string[]
+          id?: string
+          invited_by?: string | null
+          last_login_at?: string | null
+          role_key?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_staff_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_staff_role_key_fkey"
+            columns: ["role_key"]
+            isOneToOne: false
+            referencedRelation: "admin_roles"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      admin_user_notes: {
+        Row: {
+          author_label: string | null
+          body: string
+          created_at: string
+          id: string
+          pinned: boolean
+          staff_id: string | null
+          user_id: string
+        }
+        Insert: {
+          author_label?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          staff_id?: string | null
+          user_id: string
+        }
+        Update: {
+          author_label?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          staff_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_user_notes_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_rate_limits: {
         Row: {
           hits: number
@@ -161,72 +439,72 @@ export type Database = {
       budget_categories: {
         Row: {
           amount: number
+          block: string
+          confidence: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           deleted_at: string | null
-          icon: string
-          id: string
-          is_savings: boolean
-          name: string
-          plan_id: string
-          sort_order: number
-          updated_at: string
-          user_id: string
-          block: string
-          confidence: string | null
           due_day: number | null
           essential: boolean
           expense_categories: string[]
+          icon: string
+          id: string
+          is_savings: boolean
           link_ids: string[]
           link_type: string
           locked: boolean
+          name: string
+          plan_id: string
           rationale: string | null
+          sort_order: number
+          updated_at: string
+          user_id: string
         }
         Insert: {
           amount?: number
+          block?: string
+          confidence?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
+          due_day?: number | null
+          essential?: boolean
+          expense_categories?: string[]
           icon?: string
           id?: string
           is_savings?: boolean
+          link_ids?: string[]
+          link_type?: string
+          locked?: boolean
           name: string
           plan_id: string
+          rationale?: string | null
           sort_order?: number
           updated_at?: string
           user_id: string
-          block?: string
-          confidence?: string | null
-          due_day?: number | null
-          essential?: boolean
-          expense_categories?: string[]
-          link_ids?: string[]
-          link_type?: string
-          locked?: boolean
-          rationale?: string | null
         }
         Update: {
           amount?: number
+          block?: string
+          confidence?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
-          icon?: string
-          id?: string
-          is_savings?: boolean
-          name?: string
-          plan_id?: string
-          sort_order?: number
-          updated_at?: string
-          user_id?: string
-          block?: string
-          confidence?: string | null
           due_day?: number | null
           essential?: boolean
           expense_categories?: string[]
+          icon?: string
+          id?: string
+          is_savings?: boolean
           link_ids?: string[]
           link_type?: string
           locked?: boolean
+          name?: string
+          plan_id?: string
           rationale?: string | null
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -245,10 +523,10 @@ export type Database = {
           created_at: string
           feedback_text: string
           id: string
-          user_id: string
           ops: Json | null
           outcome: string | null
           plan_id: string | null
+          user_id: string
         }
         Insert: {
           budget_after?: Json
@@ -256,10 +534,10 @@ export type Database = {
           created_at?: string
           feedback_text: string
           id?: string
-          user_id: string
           ops?: Json | null
           outcome?: string | null
           plan_id?: string | null
+          user_id: string
         }
         Update: {
           budget_after?: Json
@@ -267,12 +545,20 @@ export type Database = {
           created_at?: string
           feedback_text?: string
           id?: string
-          user_id?: string
           ops?: Json | null
           outcome?: string | null
           plan_id?: string | null
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "budget_feedback_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "budget_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       budget_plan_activations: {
         Row: {
@@ -315,51 +601,51 @@ export type Database = {
           buddgy_guided_complete: boolean
           created_at: string
           deleted_at: string | null
+          engine_version: string | null
           household: Database["public"]["Enums"]["budget_household"] | null
           id: string
-          name: string
-          updated_at: string
-          user_id: string
-          engine_version: string | null
           income_override: number | null
           intent: string
+          name: string
           origin: string
           rationale: Json | null
           status: string
+          updated_at: string
+          user_id: string
         }
         Insert: {
           buddgy_flow?: Json | null
           buddgy_guided_complete?: boolean
           created_at?: string
           deleted_at?: string | null
+          engine_version?: string | null
           household?: Database["public"]["Enums"]["budget_household"] | null
           id?: string
-          name: string
-          updated_at?: string
-          user_id: string
-          engine_version?: string | null
           income_override?: number | null
           intent?: string
+          name: string
           origin?: string
           rationale?: Json | null
           status?: string
+          updated_at?: string
+          user_id: string
         }
         Update: {
           buddgy_flow?: Json | null
           buddgy_guided_complete?: boolean
           created_at?: string
           deleted_at?: string | null
+          engine_version?: string | null
           household?: Database["public"]["Enums"]["budget_household"] | null
           id?: string
-          name?: string
-          updated_at?: string
-          user_id?: string
-          engine_version?: string | null
           income_override?: number | null
           intent?: string
+          name?: string
           origin?: string
           rationale?: Json | null
           status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -738,6 +1024,50 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string
+          enabled: boolean
+          key: string
+          plan_keys: string[]
+          platforms: string[]
+          rollout_pct: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          key: string
+          plan_keys?: string[]
+          platforms?: string[]
+          rollout_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          key?: string
+          plan_keys?: string[]
+          platforms?: string[]
+          rollout_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_flags_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goal_allocation_runs: {
         Row: {
           amount: number
@@ -766,7 +1096,15 @@ export type Database = {
           planned?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "goal_allocation_runs_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       goals: {
         Row: {
@@ -1040,6 +1378,115 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_accounts: {
+        Row: {
+          lifetime_points: number
+          points_balance: number
+          tier_key: string | null
+          tier_locked: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          lifetime_points?: number
+          points_balance?: number
+          tier_key?: string | null
+          tier_locked?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          lifetime_points?: number
+          points_balance?: number
+          tier_key?: string | null
+          tier_locked?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_accounts_tier_key_fkey"
+            columns: ["tier_key"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      loyalty_ledger: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          delta: number
+          id: number
+          reason: string
+          ref: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          delta: number
+          id?: never
+          reason: string
+          ref?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          delta?: number
+          id?: never
+          reason?: string
+          ref?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_ledger_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_tiers: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string
+          key: string
+          min_points: number
+          name: string
+          perks: Json
+          sort_order: number
+          status: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string
+          key: string
+          min_points?: number
+          name: string
+          perks?: Json
+          sort_order?: number
+          status?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string
+          key?: string
+          min_points?: number
+          name?: string
+          perks?: Json
+          sort_order?: number
+          status?: string
+        }
+        Relationships: []
+      }
       merchant_categories: {
         Row: {
           category: Database["public"]["Enums"]["expense_category"]
@@ -1175,6 +1622,86 @@ export type Database = {
         }
         Relationships: []
       }
+      plans: {
+        Row: {
+          created_at: string
+          currency: string
+          description: string
+          features: string[]
+          is_default: boolean
+          key: string
+          limits: Json
+          name: string
+          price_monthly_cents: number | null
+          price_yearly_cents: number | null
+          sort_order: number
+          status: string
+          trial_days: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          description?: string
+          features?: string[]
+          is_default?: boolean
+          key: string
+          limits?: Json
+          name: string
+          price_monthly_cents?: number | null
+          price_yearly_cents?: number | null
+          sort_order?: number
+          status?: string
+          trial_days?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          description?: string
+          features?: string[]
+          is_default?: boolean
+          key?: string
+          limits?: Json
+          name?: string
+          price_monthly_cents?: number | null
+          price_yearly_cents?: number | null
+          sort_order?: number
+          status?: string
+          trial_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           active_budget_plan_id: string | null
@@ -1191,6 +1718,7 @@ export type Database = {
           email: string | null
           emergency_fund_config: Json
           financial_goals_notes: string
+          financial_profile: Json | null
           food_frequency: string | null
           gender: string | null
           household: string | null
@@ -1206,7 +1734,6 @@ export type Database = {
           transport_mode: string | null
           updated_at: string
           zakat_config: Json
-          financial_profile: Json | null
         }
         Insert: {
           active_budget_plan_id?: string | null
@@ -1223,6 +1750,7 @@ export type Database = {
           email?: string | null
           emergency_fund_config?: Json
           financial_goals_notes?: string
+          financial_profile?: Json | null
           food_frequency?: string | null
           gender?: string | null
           household?: string | null
@@ -1238,7 +1766,6 @@ export type Database = {
           transport_mode?: string | null
           updated_at?: string
           zakat_config?: Json
-          financial_profile?: Json | null
         }
         Update: {
           active_budget_plan_id?: string | null
@@ -1255,6 +1782,7 @@ export type Database = {
           email?: string | null
           emergency_fund_config?: Json
           financial_goals_notes?: string
+          financial_profile?: Json | null
           food_frequency?: string | null
           gender?: string | null
           household?: string | null
@@ -1270,7 +1798,6 @@ export type Database = {
           transport_mode?: string | null
           updated_at?: string
           zakat_config?: Json
-          financial_profile?: Json | null
         }
         Relationships: []
       }
@@ -2357,28 +2884,28 @@ export type Database = {
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           deleted_at: string | null
+          ends_on: string | null
           expense_category: Database["public"]["Enums"]["expense_category"]
           id: string
           linked_recurring_expense_id: string | null
+          my_share: number | null
           name: string
           next_billing_date: string | null
           notes: string | null
+          paused_at: string | null
           payment_method_id: string | null
           pending_amount: number | null
-          pending_plan_id: string | null
-          ends_on: string | null
-          my_share: number | null
-          paused_at: string | null
           pending_plan_from: string | null
+          pending_plan_id: string | null
+          plan_id: string | null
+          plan_name: string | null
           price_history: Json
           reminder: boolean
           shared_with: string[] | null
-          tracking: string
-          trial_end: string | null
-          plan_id: string | null
-          plan_name: string | null
           start_date: string
           status: Database["public"]["Enums"]["subscription_status"]
+          tracking: string
+          trial_end: string | null
           updated_at: string
           user_id: string
         }
@@ -2392,28 +2919,28 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
+          ends_on?: string | null
           expense_category?: Database["public"]["Enums"]["expense_category"]
           id?: string
           linked_recurring_expense_id?: string | null
+          my_share?: number | null
           name: string
           next_billing_date?: string | null
           notes?: string | null
+          paused_at?: string | null
           payment_method_id?: string | null
           pending_amount?: number | null
-          pending_plan_id?: string | null
-          ends_on?: string | null
-          my_share?: number | null
-          paused_at?: string | null
           pending_plan_from?: string | null
+          pending_plan_id?: string | null
+          plan_id?: string | null
+          plan_name?: string | null
           price_history?: Json
           reminder?: boolean
           shared_with?: string[] | null
-          tracking?: string
-          trial_end?: string | null
-          plan_id?: string | null
-          plan_name?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["subscription_status"]
+          tracking?: string
+          trial_end?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2427,28 +2954,28 @@ export type Database = {
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           deleted_at?: string | null
+          ends_on?: string | null
           expense_category?: Database["public"]["Enums"]["expense_category"]
           id?: string
           linked_recurring_expense_id?: string | null
+          my_share?: number | null
           name?: string
           next_billing_date?: string | null
           notes?: string | null
+          paused_at?: string | null
           payment_method_id?: string | null
           pending_amount?: number | null
-          pending_plan_id?: string | null
-          ends_on?: string | null
-          my_share?: number | null
-          paused_at?: string | null
           pending_plan_from?: string | null
+          pending_plan_id?: string | null
+          plan_id?: string | null
+          plan_name?: string | null
           price_history?: Json
           reminder?: boolean
           shared_with?: string[] | null
-          tracking?: string
-          trial_end?: string | null
-          plan_id?: string | null
-          plan_name?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["subscription_status"]
+          tracking?: string
+          trial_end?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2458,6 +2985,116 @@ export type Database = {
             columns: ["payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_messages: {
+        Row: {
+          author_label: string | null
+          author_staff_id: string | null
+          author_type: string
+          body: string
+          created_at: string
+          id: string
+          internal: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_label?: string | null
+          author_staff_id?: string | null
+          author_type: string
+          body: string
+          created_at?: string
+          id?: string
+          internal?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_label?: string | null
+          author_staff_id?: string | null
+          author_type?: string
+          body?: string
+          created_at?: string
+          id?: string
+          internal?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_author_staff_id_fkey"
+            columns: ["author_staff_id"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assignee_id: string | null
+          category: string
+          created_at: string
+          first_response_at: string | null
+          id: string
+          number: number
+          priority: string
+          requester_email: string | null
+          resolved_at: string | null
+          source: string
+          status: string
+          subject: string
+          tags: string[]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assignee_id?: string | null
+          category?: string
+          created_at?: string
+          first_response_at?: string | null
+          id?: string
+          number?: never
+          priority?: string
+          requester_email?: string | null
+          resolved_at?: string | null
+          source?: string
+          status?: string
+          subject: string
+          tags?: string[]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assignee_id?: string | null
+          category?: string
+          created_at?: string
+          first_response_at?: string | null
+          id?: string
+          number?: never
+          priority?: string
+          requester_email?: string | null
+          resolved_at?: string | null
+          source?: string
+          status?: string
+          subject?: string
+          tags?: string[]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
             referencedColumns: ["id"]
           },
         ]
@@ -2486,12 +3123,77 @@ export type Database = {
         }
         Relationships: []
       }
+      user_entitlements: {
+        Row: {
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          feature_overrides: Json
+          granted_by: string | null
+          limit_overrides: Json
+          note: string | null
+          plan_key: string
+          source: string
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          feature_overrides?: Json
+          granted_by?: string | null
+          limit_overrides?: Json
+          note?: string | null
+          plan_key: string
+          source?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          feature_overrides?: Json
+          granted_by?: string | null
+          limit_overrides?: Json
+          note?: string | null
+          plan_key?: string
+          source?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_entitlements_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_entitlements_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       user_settings: {
         Row: {
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout: Database["public"]["Enums"]["dashboard_layout"]
           enable_ai: boolean
+          goal_alerts: boolean
+          goal_progress_alerts: boolean
           language: Database["public"]["Enums"]["locale_code"]
           month_start_day: number
           no_income_declared: boolean
@@ -2501,8 +3203,6 @@ export type Database = {
           sms_tracking_enabled: boolean
           sub_due_reminders: boolean
           sub_price_alerts: boolean
-          goal_alerts: boolean
-          goal_progress_alerts: boolean
           theme: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step: string | null
           tutorials_completed: string[]
@@ -2516,6 +3216,8 @@ export type Database = {
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           enable_ai?: boolean
+          goal_alerts?: boolean
+          goal_progress_alerts?: boolean
           language?: Database["public"]["Enums"]["locale_code"]
           month_start_day?: number
           no_income_declared?: boolean
@@ -2525,8 +3227,6 @@ export type Database = {
           sms_tracking_enabled?: boolean
           sub_due_reminders?: boolean
           sub_price_alerts?: boolean
-          goal_alerts?: boolean
-          goal_progress_alerts?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]
@@ -2540,6 +3240,8 @@ export type Database = {
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
           enable_ai?: boolean
+          goal_alerts?: boolean
+          goal_progress_alerts?: boolean
           language?: Database["public"]["Enums"]["locale_code"]
           month_start_day?: number
           no_income_declared?: boolean
@@ -2549,8 +3251,6 @@ export type Database = {
           sms_tracking_enabled?: boolean
           sub_due_reminders?: boolean
           sub_price_alerts?: boolean
-          goal_alerts?: boolean
-          goal_progress_alerts?: boolean
           theme?: Database["public"]["Enums"]["theme_mode"]
           tutorial_current_step?: string | null
           tutorials_completed?: string[]
@@ -2584,6 +3284,37 @@ export type Database = {
         Args: { p_recurring_expense: Json; p_subscription: Json }
         Returns: Json
       }
+      admin_activity_series: {
+        Args: { p_days?: number }
+        Returns: {
+          active_users: number
+          day: string
+          sessions: number
+        }[]
+      }
+      admin_feature_adoption: { Args: never; Returns: Json }
+      admin_overview: { Args: never; Returns: Json }
+      admin_retention: { Args: { p_weeks?: number }; Returns: Json }
+      admin_signup_series: {
+        Args: { p_days?: number }
+        Returns: {
+          day: string
+          signups: number
+        }[]
+      }
+      admin_sms_health: { Args: { p_days?: number }; Returns: Json }
+      admin_user_directory: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_order?: string
+          p_plan?: string
+          p_search?: string
+          p_state?: string
+        }
+        Returns: Json
+      }
+      admin_user_overview: { Args: { p_user: string }; Returns: Json }
       api_rate_hit: {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
@@ -2880,7 +3611,12 @@ export type Database = {
         | "other"
         | "stablecoin"
         | "vault"
-      subscription_billing_cycle: "weekly" | "monthly" | "quarterly" | "semiannual" | "yearly"
+      subscription_billing_cycle:
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "yearly"
+        | "semiannual"
       subscription_status: "active" | "paused" | "cancelled" | "trial"
       theme_mode: "dark" | "light"
     }
@@ -3153,7 +3889,13 @@ export const Constants = {
         "stablecoin",
         "vault",
       ],
-      subscription_billing_cycle: ["weekly", "monthly", "quarterly", "semiannual", "yearly"],
+      subscription_billing_cycle: [
+        "weekly",
+        "monthly",
+        "quarterly",
+        "yearly",
+        "semiannual",
+      ],
       subscription_status: ["active", "paused", "cancelled", "trial"],
       theme_mode: ["dark", "light"],
     },

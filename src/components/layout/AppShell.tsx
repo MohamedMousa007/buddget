@@ -388,12 +388,16 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
-const BARE_ROUTES = ['/reset-password', '/legal', '/offline', '/install']
+const BARE_ROUTES = ['/reset-password', '/legal', '/offline', '/install', '/admin']
 
 /** Routes that render without sidebar, headers, FAB or bottom nav. */
 function isBareAuthRoute(pathname: string | null) {
   if (!pathname) return false
   return BARE_ROUTES.some((r) => pathname === r || pathname.startsWith(`${r}/`) || (r === '/reset-password' && pathname.startsWith(r)))
+}
+
+function isAdminRoute(pathname: string | null) {
+  return pathname === '/admin' || !!pathname?.startsWith('/admin/')
 }
 
 export function AppShell({ children }: AppShellProps) {
@@ -409,7 +413,8 @@ export function AppShell({ children }: AppShellProps) {
     return (
       <div className="min-h-[100dvh] bg-[var(--color-brand-bg)]">
         {children}
-        <ModalProvider />
+        {/* The portal builds its own dialogs; the consumer add-expense FAB has no place in it. */}
+        {!isAdminRoute(pathname) ? <ModalProvider /> : null}
       </div>
     )
   }

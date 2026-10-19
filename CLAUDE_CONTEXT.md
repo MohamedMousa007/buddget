@@ -24,7 +24,7 @@
 
 ---
 
-## Database — Migration Log (latest repo file 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
+## Database — Migration Log (latest repo file 0125 = admin portal: 0123 staff/roles/credentials/sessions/audit, 0124 support + plans/entitlements/loyalty/flags/settings, 0125 `admin_*` analytics functions; previous 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
 
 Live project: `ydihurtbcnoflhormgzi` (ap-southeast-1). Verified 2026-10-16: live tables/columns == `src/lib/supabase/database.types.ts` (41 tables). Latest applied: `income_sources_sort_order` (= repo 0109). Repo file numbers and applied migration names drift (e.g. repo 0108 = applied `0104_debt_payments_funded_from_savings`); compare schema, not names. Session-start check: `list_migrations`, then regenerate types and diff.
 
@@ -205,7 +205,7 @@ Native platform classes on `<body>`: `platform-native`, `platform-ios`, `platfor
 | Receipt scan | `/api/receipt/scan` | — |
 | AI budget planner | `/api/budget/regenerate` | `budget_feedback` |
 | Onboarding | `/onboarding` | `profiles.onboarding_version`, `profiles.lite_mode` |
-| Admin | `/admin`, `/api/admin/*` | `app_analytics_events`, `api_rate_limits` |
+| Admin portal | `/admin` (one page, in-memory views), `/api/admin/*`, `/api/entitlements/me` | `admin_*`, `support_*`, `plans`, `user_entitlements`, `loyalty_*`, `feature_flags`, `platform_settings` — see `docs/ADMIN_PORTAL.md` |
 | Auth | `/auth/callback`, `/reset-password/*` | Supabase Auth + `profiles` |
 
 ---
