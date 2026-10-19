@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowUpDown, Briefcase, Building2, ChevronLeft, ChevronRight, Plus, TrendingUp, type LucideIcon } from 'lucide-react'
+import { ArrowUpDown, Briefcase, CalendarCog, Building2, ChevronLeft, ChevronRight, Plus, TrendingUp, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -12,6 +12,7 @@ import { PageContainer } from '@/components/layout/PageContainer'
 import { StatusBarCover } from '@/components/layout/StatusBarCover'
 import { PaydayCard, type PaydayBadgeVariant } from '@/components/features/income/PaydayCard'
 import { PaydayDetail } from '@/components/features/income/PaydayDetail'
+import { PayCycleSheet } from '@/components/features/income/PayCycleSheet'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type PaydayPrefill } from '@/lib/store/useSettingsStore'
@@ -86,6 +87,7 @@ export function PaydaysPage() {
     useSettingsStore.getState().setPaydayFocusId(null)
   }, [])
   const [order, setOrder] = useState<string[] | null>(null)
+  const [cycleOpen, setCycleOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -179,6 +181,7 @@ export function PaydaysPage() {
   return (
     <PageContainer wide className="px-0 lg:px-6">
       <StatusBarCover background="var(--color-brand-bg)" />
+      <PayCycleSheet open={cycleOpen} onClose={() => setCycleOpen(false)} />
       {!dataReady ? (
         <>
           {header(null)}
@@ -230,6 +233,9 @@ export function PaydaysPage() {
               </Button>
             ) : (
               <div className="flex gap-1">
+                <IconButton variant="ghost" size="md" aria-label={locale === 'ar' ? 'دورة الراتب' : 'Pay cycle'} onClick={() => setCycleOpen(true)}>
+                  <CalendarCog className="size-5" strokeWidth={1.75} />
+                </IconButton>
                 <IconButton variant="ghost" size="md" aria-label={t.paydays.reorderAria} onClick={() => setOrder(streams.map((s) => s.id))}>
                   <ArrowUpDown className="size-5" strokeWidth={1.75} />
                 </IconButton>
