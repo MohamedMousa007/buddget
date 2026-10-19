@@ -28,6 +28,14 @@ export interface BuddgyChatCopy {
   localTag: string
   quickAddLead: string
   quickAddDone: string
+  usage: {
+    title: string
+    aria: (pct: number) => string
+    rows: Record<'chat' | 'h5' | 'd1' | 'chats', string>
+    unlimited: string
+    resets: (at: string) => string
+    percentUsed: (pct: number) => string
+  }
 }
 
 const hhmm = (iso: string | null, locale: Locale) =>
@@ -79,6 +87,14 @@ const en: BuddgyChatCopy = {
   localTag: 'Instant',
   quickAddLead: 'Got it. Here is what I will add:',
   quickAddDone: 'Got it.',
+  usage: {
+    title: 'Your Buddgy usage',
+    aria: (pct) => `Buddgy usage, ${pct}% used`,
+    rows: { chat: 'This chat', h5: 'Last 5 hours', d1: 'Today', chats: 'Chats today' },
+    unlimited: 'No limit',
+    resets: (at) => `Resets ${at}`,
+    percentUsed: (pct) => `${pct}% used`,
+  },
 }
 
 const ar: BuddgyChatCopy = {
@@ -111,6 +127,14 @@ const ar: BuddgyChatCopy = {
   localTag: 'فوري',
   quickAddLead: 'تمام. ده اللي هضيفه:',
   quickAddDone: 'تمام.',
+  usage: {
+    title: 'استخدامك لبادجي',
+    aria: (pct) => `استخدام بادجي، ${pct}٪ مستخدم`,
+    rows: { chat: 'هذه المحادثة', h5: 'آخر ٥ ساعات', d1: 'اليوم', chats: 'محادثات اليوم' },
+    unlimited: 'بلا حد',
+    resets: (at) => `يتجدد ${at}`,
+    percentUsed: (pct) => `${pct}٪ مستخدم`,
+  },
 }
 
 export const buddgyChatCopy: Record<Locale, BuddgyChatCopy> = { en, ar }

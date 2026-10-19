@@ -165,6 +165,7 @@ export function AIChat() {
               onSend={() => void send()}
               onStop={stop}
               busy={busy}
+              usageKey={`${busy}:${items.length === 0}`}
             />
           </motion.div>
         </>

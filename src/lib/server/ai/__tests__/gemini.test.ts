@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { clampGenerationConfig, MAX_OUTPUT_TOKENS_CAP, tapStreamUsage } from '@/lib/server/ai/gemini'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { callGeminiResilient, clampGenerationConfig, MAX_OUTPUT_TOKENS_CAP, tapStreamUsage } from '@/lib/server/ai/gemini'
 
 describe('clampGenerationConfig', () => {
   it('caps requested output tokens', () => {
@@ -31,5 +31,32 @@ describe('tapStreamUsage', () => {
     const text = await new Response(out).text()
     expect(text).toBe(frames.join(''))
     expect(reported).toEqual({ usage: { promptTokens: 40, cachedTokens: 8, outputTokens: 5 }, completed: true })
+  })
+})
+
+describe('callGeminiResilient', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const ok = () => new Response('data: {}\n\n', { status: 200 })
+
+  it('retries the primary once, then falls back to the other model', async () => {
+    const urls: string[] = []
+    const fetchMock = vi.fn(async (url: string) => {
+      urls.push(url)
+      return urls.length < 3 ? new Response('overloaded', { status: 503 }) : ok()
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const out = await callGeminiResilient(['model-a', 'model-b'], 'k', {})
+    expect(out.model).toBe('model-b')
+    expect(urls.map((u) => (u.includes('model-a') ? 'a' : 'b')).join('')).toBe('aab')
+  })
+
+  it('does not retry a request the model rejected', async () => {
+    const fetchMock = vi.fn(async () => new Response('bad', { status: 400 }))
+    vi.stubGlobal('fetch', fetchMock)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const out = await callGeminiResilient(['model-a', 'model-b'], 'k', {})
+    expect(out.res.status).toBe(400)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })

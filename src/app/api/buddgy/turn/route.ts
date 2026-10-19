@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { SPEC_BY_NAME, ALL_SPECS } from '@/lib/buddgy/tools/specs'
 import { toGeminiDeclaration } from '@/lib/buddgy/tools/spec'
 import { requireAiUser } from '@/lib/server/ai/auth'
-import { callGemini, TIER_MODELS } from '@/lib/server/ai/gemini'
+import { callGeminiResilient, TIER_MODELS } from '@/lib/server/ai/gemini'
 import { INTENT_CONFIG, SYSTEM_PROMPT } from '@/lib/server/ai/buddgy/prompt'
 import { selectSpecs } from '@/lib/server/ai/buddgy/select'
 import { buildContents, turnEventStream } from '@/lib/server/ai/buddgy/turn'
@@ -45,9 +45,10 @@ export async function POST(req: Request) {
   })
   if (!quota.allowed) return quotaDeniedResponse(quota)
 
+  let usedModel = model
   const estInputTokens = Math.ceil((JSON.stringify(contents).length + SYSTEM_PROMPT.length) / 4)
   const settleFailed = () =>
-    settleAiQuota(quota, { model, tier: cfg.tier, latencyMs: Date.now() - started, usage: { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }, status: 'error' })
+    settleAiQuota(quota, { model: usedModel, tier: cfg.tier, latencyMs: Date.now() - started, usage: { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }, status: 'error' })
 
   let upstream: Response
   try {
@@ -63,7 +64,10 @@ export async function POST(req: Request) {
         thinkingConfig: { thinkingBudget: cfg.thinkingBudget },
       },
     }
-    upstream = await callGemini(model, apiKey, body, true, req.signal)
+    const other = cfg.tier === 'fast' ? TIER_MODELS.smart : TIER_MODELS.fast
+    const called = await callGeminiResilient(other === model ? [model] : [model, other], apiKey, body, req.signal)
+    upstream = called.res
+    usedModel = called.model
   } catch {
     await settleFailed()
     return NextResponse.json({ error: 'upstream' }, { status: 502 })
@@ -79,7 +83,7 @@ export async function POST(req: Request) {
     async (outcome) => {
       // An abort before Gemini reported usage still consumed the prompt; never settle it as free.
       const usage = outcome.usage.promptTokens === 0 && outcome.status === 'aborted' ? { promptTokens: estInputTokens, cachedTokens: 0, outputTokens: 0 } : outcome.usage
-      await settleAiQuota(quota, { model, tier: cfg.tier, latencyMs: Date.now() - started, usage, status: outcome.status })
+      await settleAiQuota(quota, { model: usedModel, tier: cfg.tier, latencyMs: Date.now() - started, usage, status: outcome.status })
       console.info(`[buddgy] user=${auth.userId} tier=${cfg.tier} units=${computeUnits(usage)} finish=${outcome.finish}`)
     },
   )

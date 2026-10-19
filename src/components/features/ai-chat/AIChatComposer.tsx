@@ -4,6 +4,7 @@ import { Send, Square } from 'lucide-react'
 import { IconButton } from '@/components/ui/IconButton'
 import { Textarea } from '@/components/ui/textarea'
 import { useBuddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
+import { QuotaWheel } from '@/components/features/ai-chat/QuotaWheel'
 
 export interface AIChatComposerProps {
   value: string
@@ -12,10 +13,12 @@ export interface AIChatComposerProps {
   onStop: () => void
   busy: boolean
   placeholder?: string
+  /** Changes when the wheel should re-read usage: a turn finished, a new chat began. */
+  usageKey: string
 }
 
 /** Message box: Enter sends, Shift+Enter breaks the line, and it never fires mid-IME-composition. */
-export function AIChatComposer({ value, onChange, onSend, onStop, busy, placeholder }: AIChatComposerProps) {
+export function AIChatComposer({ value, onChange, onSend, onStop, busy, placeholder, usageKey }: AIChatComposerProps) {
   const copy = useBuddgyChatCopy()
   return (
     <div className="border-t border-[var(--color-brand-border)] p-3">
@@ -34,6 +37,7 @@ export function AIChatComposer({ value, onChange, onSend, onStop, busy, placehol
           }}
           className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-sm text-[var(--color-brand-text-primary)] placeholder:text-[var(--color-brand-text-muted)]"
         />
+        <QuotaWheel refreshKey={usageKey} />
         {busy ? (
           <IconButton onClick={onStop} aria-label={copy.stop} size="md" className="shrink-0">
             <Square className="size-4 fill-current" aria-hidden />

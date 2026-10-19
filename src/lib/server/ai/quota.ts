@@ -67,13 +67,20 @@ export async function reserveAiQuota(args: {
     return { allowed: true, userId: args.userId, reservationId: null, chatId: args.chatId ?? null, newChat: false, rolled: false, soft: false, disabled: [] }
   }
   try {
-    const { data, error } = await createServiceRoleClient().rpc('ai_quota_reserve', {
-      p_user: args.userId,
-      // The generated RPC type requires a string; the function treats NULL as "no chat yet".
-      p_chat: (args.chatId ?? null) as string,
-      p_feature: args.feature,
-      p_est: Math.max(0, Math.round(args.estUnits)),
-    })
+    const reserve = () =>
+      createServiceRoleClient().rpc('ai_quota_reserve', {
+        p_user: args.userId,
+        // The generated RPC type requires a string; the function treats NULL as "no chat yet".
+        p_chat: (args.chatId ?? null) as string,
+        p_feature: args.feature,
+        p_est: Math.max(0, Math.round(args.estUnits)),
+      })
+    let { data, error } = await reserve()
+    // The database can blink (a 503 for a second); one retry turns that into a slow message, not a dead one.
+    if (error || !data) {
+      await new Promise((r) => setTimeout(r, 400))
+      ;({ data, error } = await reserve())
+    }
     if (error || !data) {
       console.error('[ai-quota] reserve failed', error?.message)
       return { allowed: false, layer: 'unavailable', resetAt: null }

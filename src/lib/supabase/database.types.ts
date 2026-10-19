@@ -3454,6 +3454,7 @@ export type Database = {
       admin_user_overview: { Args: { p_user: string }; Returns: Json }
       ai_default_limits: { Args: never; Returns: Json }
       ai_effective_limits: { Args: { p_user: string }; Returns: Json }
+      ai_quota_status: { Args: { p_user: string }; Returns: Json }
       ai_quota_release: {
         Args: { p_reservation: string; p_user: string }
         Returns: undefined

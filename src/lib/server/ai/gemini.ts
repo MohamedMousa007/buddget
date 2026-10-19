@@ -52,6 +52,46 @@ export function callGemini(model: string, apiKey: string, body: Record<string, u
   })
 }
 
+const RETRYABLE = new Set([429, 500, 502, 503, 504])
+/** Gemini either answers within this or it is treated as down; the stream itself is not timed. */
+const CONNECT_TIMEOUT_MS = 10_000
+const RETRY_DELAY_MS = 500
+
+/**
+ * A streamed Gemini call that survives a bad moment: the primary model gets two tries, then `fallback` gets one.
+ * Each failure is logged with Google's own answer, so "Buddgy is down" is never a guess. Only a caller abort stops early.
+ */
+export async function callGeminiResilient(
+  models: readonly string[],
+  apiKey: string,
+  body: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<{ res: Response; model: string }> {
+  const plan = [models[0], models[0], ...models.slice(1)]
+  let last: { res: Response; model: string } | null = null
+  for (const [i, model] of plan.entries()) {
+    if (signal?.aborted) break
+    if (i > 0) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
+    const ctl = new AbortController()
+    signal?.addEventListener('abort', () => ctl.abort(), { once: true })
+    const timer = setTimeout(() => ctl.abort(), CONNECT_TIMEOUT_MS)
+    try {
+      const res = await callGemini(model, apiKey, body, true, ctl.signal)
+      if (res.ok && res.body) return { res, model }
+      console.error(`[gemini] ${model} answered ${res.status}: ${(await res.clone().text().catch(() => '')).slice(0, 300)}`)
+      last = { res, model }
+      if (!RETRYABLE.has(res.status)) break
+    } catch (e) {
+      if (signal?.aborted) throw e
+      console.error(`[gemini] ${model} ${ctl.signal.aborted ? `gave no answer in ${CONNECT_TIMEOUT_MS}ms` : 'failed'}:`, e instanceof Error ? e.message : e)
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  if (last) return last
+  throw new Error('gemini unreachable')
+}
+
 export function usageFromPayload(payload: unknown): TokenUsage {
   const meta = (payload as { usageMetadata?: Parameters<typeof usageFromGemini>[0] } | null)?.usageMetadata
   return usageFromGemini(meta)
