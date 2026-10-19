@@ -6,10 +6,11 @@ import { labels } from '@/lib/buddgy/tools/copy'
 import type { EditableField, Proposal } from '@/lib/buddgy/tools/proposal'
 import { refOf, resolveByRefOrName, resolveRef } from '@/lib/buddgy/tools/refs'
 import { expensesSpecs } from '@/lib/buddgy/tools/specs/expenses'
-import { fin } from '@/lib/buddgy/tools/stores'
+import { fin, ui } from '@/lib/buddgy/tools/stores'
 import type { ToolContext, WriteImpl } from '@/lib/buddgy/tools/types'
 import { fail, makeProposal, money, num, ok, parseIsoDate, text } from '@/lib/buddgy/tools/writeKit'
 import type { Currency, Expense, ExpenseCategory, FinanceStore } from '@/lib/store/types'
+import { projectedIncomeForMonth } from '@/lib/utils/calculations'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { localTodayISO } from '@/lib/utils/localDate'
 
@@ -62,7 +63,19 @@ function resolveMethod(s: FinanceStore, input: unknown): { id: string; guessed: 
 }
 
 const monthIncome = (s: FinanceStore): number =>
-  s.incomeSources.reduce((sum, i) => sum + (tryConvertCurrency(i.amount, i.currency, s.settings.baseCurrency, s.exchangeRates) ?? 0), 0)
+  projectedIncomeForMonth(s.incomeSources, s.settings.baseCurrency, s.exchangeRates, ui().monthFilter, s.settings.monthStartDay)
+
+/** Entries proposed moments ago, so two identical calls in one model turn cannot both auto-apply. */
+const proposedLately = new Map<string, number>()
+const SAME_TURN_MS = 15_000
+
+function seenJustNow(key: string): boolean {
+  const now = Date.now()
+  for (const [k, at] of proposedLately) if (now - at > SAME_TURN_MS) proposedLately.delete(k)
+  const seen = proposedLately.has(key)
+  proposedLately.set(key, now)
+  return seen
+}
 
 function previewFields(s: FinanceStore, ctx: ToolContext, e: { description: string; amount: number; currency: string; category: string; date: string; paymentMethodId: string }): EditableField[] {
   const L = labels(ctx.locale)
@@ -99,7 +112,9 @@ const add_expense: WriteImpl = {
     )
     const income = monthIncome(s)
     const small = income > 0 && inBase <= income * AUTO_APPLY_INCOME_SHARE
-    const risk = small && !recent && requestedCategory !== null ? 'auto' : 'approve'
+    const twin = seenJustNow(`${description.toLowerCase()}|${amount}|${currency}|${date}`)
+    const duplicate = Boolean(recent) || twin
+    const risk = small && !duplicate && requestedCategory !== null && args.recurring !== true ? 'auto' : 'approve'
     const methodName = s.paymentMethods.find((m) => m.id === method.id)?.name
 
     const clean = { description, amount, currency, category, date, method: method.id ? refOf(method.id) : undefined, notes: text(args.notes, 200), recurring: args.recurring === true }
@@ -121,7 +136,7 @@ const add_expense: WriteImpl = {
             { label: L.date, value: date },
           ],
           fields: previewFields(s, ctx, { description, amount, currency, category, date, paymentMethodId: method.id }),
-          ...(recent ? { effect: L.duplicateWarning } : {}),
+          ...(duplicate ? { effect: L.duplicateWarning } : {}),
         },
       }),
     )

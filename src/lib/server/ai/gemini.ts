@@ -30,8 +30,11 @@ export function configFor(model: string, config: Record<string, unknown> | undef
   return { ...config, thinkingConfig: { thinkingBudget: THINKING_BUDGET[thinking.thinkingLevel] ?? 0 } }
 }
 
+const ALLOWED_CONFIG_KEYS = ['temperature', 'topP', 'topK', 'maxOutputTokens', 'responseMimeType', 'responseSchema', 'thinkingConfig', 'stopSequences', 'candidateCount']
+
 export function clampGenerationConfig(config: Record<string, unknown> | undefined): Record<string, unknown> {
-  const out = { ...(config ?? {}) }
+  const out: Record<string, unknown> = {}
+  for (const key of ALLOWED_CONFIG_KEYS) if (config && key in config) out[key] = config[key]
   const requested = typeof out.maxOutputTokens === 'number' ? out.maxOutputTokens : 2048
   out.maxOutputTokens = Math.min(MAX_OUTPUT_TOKENS_CAP, Math.max(16, Math.floor(requested)))
   return out
@@ -57,16 +60,16 @@ export function usageFromPayload(payload: unknown): TokenUsage {
  */
 export function tapStreamUsage(
   body: ReadableStream<Uint8Array>,
-  onDone: (usage: TokenUsage, completed: boolean) => void,
+  onDone: (usage: TokenUsage, completed: boolean) => void | Promise<void>,
 ): ReadableStream<Uint8Array> {
   const decoder = new TextDecoder()
   let tail = ''
   let usage = EMPTY_USAGE
   let finished = false
-  const finish = (completed: boolean) => {
+  const finish = async (completed: boolean) => {
     if (finished) return
     finished = true
-    onDone(usage, completed)
+    await onDone(usage, completed)
   }
   const scan = (text: string) => {
     tail += text
@@ -88,12 +91,12 @@ export function tapStreamUsage(
         scan(decoder.decode(chunk, { stream: true }))
         controller.enqueue(chunk)
       },
-      flush() {
+      async flush() {
         scan('\n')
-        finish(true)
+        await finish(true)
       },
       cancel() {
-        finish(false)
+        void finish(false)
       },
     } as Transformer<Uint8Array, Uint8Array>),
   )

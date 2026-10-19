@@ -48,6 +48,9 @@ import { localTodayISO } from '@/lib/utils/localDate'
 
 const LIST_CAP = 15
 const PAYMENTS_SHOWN = 10
+const NOTE_CAP = 80
+const RECENT_MS = 2 * 60_000
+const justAdded = (createdAt: string) => Date.now() - new Date(createdAt).getTime() < RECENT_MS
 const KARATS: GoldKarat[] = [24, 22, 21, 18]
 const FREQUENCIES = ['weekly', 'monthly', 'quarterly', 'annually'] as const
 type Frequency = (typeof FREQUENCIES)[number]
@@ -138,7 +141,7 @@ const get_debt: ReadImpl = (args, ctx) => {
     ...(d.debtType === 'credit_card'
       ? { limit: d.creditLimit, dueDay: d.paymentDueDay, graceDays: d.gracePeriodDays, minPercent: d.minimumPaymentPercent, usedPct: util === null ? undefined : Math.round(util * 100) }
       : {}),
-    ...(d.notes ? { notes: d.notes } : {}),
+    ...(d.notes ? { notes: text(d.notes, NOTE_CAP) } : {}),
     fullyPaid: isDebtFullyPaid(d, s.debtPayments, ctxBal),
     payments: payments.slice(0, PAYMENTS_SHOWN).map((p) => ({
       ref: refOf(p.id),
@@ -250,6 +253,16 @@ const add_debt: WriteImpl = {
     const again = add_debt.propose(proposal.args, ctx)
     if (!again.ok) return { ok: false, error: again.error }
     const a = again.proposal.args as unknown as PersonalArgs
+    const twin = fin().debts.some(
+      (d) =>
+        justAdded(d.createdAt) &&
+        d.debtType === 'personal' &&
+        d.name.toLowerCase() === a.name.toLowerCase() &&
+        (d.personName ?? d.person).toLowerCase() === a.person.toLowerCase() &&
+        d.startingBalance === a.amount &&
+        dirOf(d) === a.direction,
+    )
+    if (twin) return { ok: false, error: 'Already added' }
     const isGold = a.currency === 'XAU'
     const id = fin().addDebt({
       name: a.name,
@@ -377,6 +390,8 @@ const add_installment_plan: WriteImpl = {
     if (!again.ok) return { ok: false, error: again.error }
     const a = again.proposal.args as unknown as PlanArgs
     const s = fin()
+    const twin = s.debts.some((d) => justAdded(d.createdAt) && d.debtType === 'installment' && d.name.toLowerCase() === a.item.toLowerCase() && d.startingBalance === a.total)
+    if (twin) return { ok: false, error: 'Already added' }
     const card = a.card ? resolveRef(s.debts, a.card) : null
     const id = s.addDebt({
       name: a.item,
@@ -597,9 +612,7 @@ const record_debt_payment: WriteImpl = {
     const p = planPayment(proposal.args, ctx)
     if (p.error) return { ok: false, error: reason(p.error) }
     const { s, debt, amount, payCur, date, pmId, computed, notes } = p
-    const savedDebt = debt
-    const savedSchedules = s.recurringDebtPayments.filter((r) => r.debtId === debt.id)
-    const savedGoals = s.goals
+    const { debts: debtsBefore, recurringDebtPayments: schedulesBefore, goals: goalsBefore } = s
     const paymentsBefore = new Set(s.debtPayments.map((x) => x.id))
     const expensesBefore = new Set(s.expenses.map((x) => x.id))
 
@@ -637,6 +650,7 @@ const record_debt_payment: WriteImpl = {
     const addedPayments = new Set(now.debtPayments.filter((x) => !paymentsBefore.has(x.id)).map((x) => x.id))
     const addedExpenses = new Set(now.expenses.filter((x) => !expensesBefore.has(x.id)).map((x) => x.id))
     const shown = payCur === 'XAU' ? `${amount} g` : money(amount, payCur)
+    const { debts: debtsAfter, recurringDebtPayments: schedulesAfter, goals: goalsAfter } = now
     return {
       ok: true,
       message: `${debtTitle(debt)} · ${shown}`,
@@ -644,9 +658,9 @@ const record_debt_payment: WriteImpl = {
         useFinanceStore.setState((st) => ({
           debtPayments: st.debtPayments.filter((x) => !addedPayments.has(x.id)),
           expenses: st.expenses.filter((x) => !addedExpenses.has(x.id)),
-          debts: putBack(st.debts, [savedDebt], true),
-          recurringDebtPayments: putBack(st.recurringDebtPayments, savedSchedules),
-          goals: putBack(st.goals, savedGoals),
+          debts: revertRows(st.debts, debtsBefore, debtsAfter, changedKeys(debtsBefore, debtsAfter), true),
+          recurringDebtPayments: revertRows(st.recurringDebtPayments, schedulesBefore, schedulesAfter, changedKeys(schedulesBefore, schedulesAfter)),
+          goals: revertRows(st.goals, goalsBefore, goalsAfter, changedKeys(goalsBefore, goalsAfter), true),
         })),
     }
   },
@@ -772,10 +786,15 @@ const update_debt: WriteImpl = {
     const p = planUpdate(proposal.args, ctx)
     if (p.error) return { ok: false, error: reason(p.error) }
     const { d, patch } = p
-    const previous: Record<string, unknown> = {}
-    for (const key of Object.keys(patch)) previous[key] = d[key as keyof Debt]
+    const before = fin().debts
     fin().updateDebt(d.id, patch)
-    return { ok: true, message: debtTitle(d), undo: () => fin().updateDebt(d.id, previous as DebtPatch) }
+    const after = fin().debts
+    const keys = changedKeys(before, after)
+    return {
+      ok: true,
+      message: debtTitle(d),
+      undo: () => useFinanceStore.setState((st) => ({ debts: revertRows(st.debts, before, after, keys, true) })),
+    }
   },
 }
 

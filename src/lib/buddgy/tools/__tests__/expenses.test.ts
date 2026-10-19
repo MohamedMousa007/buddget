@@ -5,6 +5,8 @@ import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense, PaymentMethod } from '@/lib/store/types'
 
+const SALARY = { id: 'i1', name: 'Salary', amount: 100000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 1, paydayDays: [1], sourceType: 'salary', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' } as never
+
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
 
 const pm = (id: string, name: string, isDefault: boolean): PaymentMethod =>
@@ -92,14 +94,14 @@ describe('add_expense', () => {
   })
 
   it('needs approval, not auto-apply, when the category was not given', () => {
-    useFinanceStore.setState({ incomeSources: [{ id: 'i1', amount: 100000, currency: 'EGP' } as never] })
+    useFinanceStore.setState({ incomeSources: [SALARY] })
     const r = write('add_expense').propose({ description: 'x', amount: 5, category: undefined }, ctx)
     expect(r.ok && r.proposal.risk).toBe('approve')
   })
 
   it('flags a just-added duplicate and refuses auto-apply', () => {
     useFinanceStore.setState({
-      incomeSources: [{ id: 'i1', amount: 100000, currency: 'EGP' } as never],
+      incomeSources: [SALARY],
       expenses: [expense(E1, { description: 'Coffee', amount: 45, date: '2026-10-19', createdAt: new Date().toISOString() })],
     })
     const r = write('add_expense').propose({ description: 'Coffee', amount: 45, category: 'Food', date: '2026-10-19' }, ctx)
@@ -107,9 +109,21 @@ describe('add_expense', () => {
     expect(r.ok && r.proposal.preview.effect).toBeTruthy()
   })
 
+  it('does not auto-apply a recurring entry, or the second of two identical calls in one turn', () => {
+    useFinanceStore.setState({ incomeSources: [SALARY] })
+    const add = write('add_expense')
+    const recurring = add.propose({ description: 'Gym', amount: 40, category: 'Health', recurring: true }, ctx)
+    expect(recurring.ok && recurring.proposal.risk).toBe('approve')
+    const first = add.propose({ description: 'Tea', amount: 20, category: 'Food' }, ctx)
+    const second = add.propose({ description: 'Tea', amount: 20, category: 'Food' }, ctx)
+    expect(first.ok && first.proposal.risk).toBe('auto')
+    expect(second.ok && second.proposal.risk).toBe('approve')
+    expect(second.ok && second.proposal.preview.effect).toBeTruthy()
+  })
+
   it('auto-applies a small, fully specified add', () => {
-    useFinanceStore.setState({ incomeSources: [{ id: 'i1', amount: 100000, currency: 'EGP' } as never] })
-    const r = write('add_expense').propose({ description: 'Coffee', amount: 45, category: 'Food' }, ctx)
+    useFinanceStore.setState({ incomeSources: [SALARY] })
+    const r = write('add_expense').propose({ description: 'Falafel', amount: 33, category: 'Food' }, ctx)
     expect(r.ok && r.proposal.risk).toBe('auto')
   })
 })

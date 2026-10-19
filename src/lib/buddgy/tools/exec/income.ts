@@ -2,7 +2,7 @@ import { defineTools } from '@/lib/buddgy/tools/define'
 import { incomeLabels } from '@/lib/buddgy/tools/exec/incomeCopy'
 import { resolvePaymentMethod } from '@/lib/buddgy/tools/exec/payments'
 import type { EditableField, PreviewRow, ProposeResult } from '@/lib/buddgy/tools/proposal'
-import { restoreRows } from '@/lib/buddgy/tools/exec/restoreKit'
+import { restoreRows, revertRows } from '@/lib/buddgy/tools/exec/restoreKit'
 import { refOf, resolveByRefOrName } from '@/lib/buddgy/tools/refs'
 import { incomeSpecs } from '@/lib/buddgy/tools/specs/income'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
@@ -102,6 +102,21 @@ const list_income: ReadImpl = (args, ctx) => {
   }
 }
 
+/** Income lands in a bank or cash account: the usual method is only used when it is not a credit card. */
+function incomeMethod(s: FinanceStore, input: unknown): { id: string } | { error: ReturnType<typeof fail> } {
+  const method = resolvePaymentMethod(s, input)
+  if ('error' in method || (input !== undefined && input !== null && input !== '')) return method
+  return { id: s.paymentMethods.find((m) => m.id === method.id)?.type === 'credit_card' ? '' : method.id }
+}
+
+/** Puts `noIncomeDeclared` back only when the apply flipped it and nobody has changed it since. */
+function flagRestorer(before: boolean): () => void {
+  const after = fin().settings.noIncomeDeclared
+  return () => {
+    if (before !== after && fin().settings.noIncomeDeclared === after) fin().updateSettings({ noIncomeDeclared: before })
+  }
+}
+
 function methodRow(s: FinanceStore, label: string, id: string): PreviewRow[] {
   const name = s.paymentMethods.find((m) => m.id === id)?.name
   return name ? [{ label, value: name }] : []
@@ -122,7 +137,7 @@ const add_income: WriteImpl = {
     if (!recurring && frequency !== 'one_time') return fail('Frequency must be monthly, biweekly, weekly or one_time.')
     const type = (args.type === undefined ? (recurring ? 'salary' : 'other') : args.type) as IncomeSourceType
     if (!ADDABLE_TYPES.includes(type)) return fail('Unknown income type.', `Use one of: ${ADDABLE_TYPES.join(', ')}.`)
-    const method = resolvePaymentMethod(s, args.method)
+    const method = incomeMethod(s, args.method)
     if ('error' in method) return method.error
     const notes = text(args.notes, 200)
 
@@ -166,6 +181,7 @@ const add_income: WriteImpl = {
     if (args.paydayDays !== undefined) return fail('One-time income has no payday days.')
     const date = args.date === undefined ? localTodayISO(ctx.now) : parseIsoDate(args.date)
     if (!date) return fail('The date must be a real date like 2026-10-19.')
+    if (date > localTodayISO(ctx.now)) return fail('Money received once cannot be dated in the future.', 'Use the real received date, or add a recurring source for expected pay.')
     rows.splice(3, 0, { label: L.dateReceived, value: date })
     fields.push({ key: 'date', label: L.dateReceived, kind: 'date', value: date })
     const duplicate = s.incomeEvents.some((e) => !e.templateId && e.receivedDate === date && e.amount === amount && e.name.trim().toLowerCase() === name.toLowerCase())
@@ -184,10 +200,9 @@ const add_income: WriteImpl = {
     if (!again.ok) return { ok: false, error: again.error }
     const a = again.proposal.args
     const s = fin()
-    const method = resolvePaymentMethod(s, a.method)
+    const method = incomeMethod(s, a.method)
     if ('error' in method) return { ok: false, error: 'That payment method no longer exists.' }
     const flag = s.settings.noIncomeDeclared
-    const restoreFlag = () => fin().updateSettings({ noIncomeDeclared: flag })
     const name = a.name as string
     const common = {
       name,
@@ -203,6 +218,7 @@ const add_income: WriteImpl = {
       const before = new Set(s.incomeEvents.map((e) => e.id))
       s.addIncomeEvent({ ...common, receivedDate: a.date as string, status: 'confirmed' })
       const created = fin().incomeEvents.find((e) => !before.has(e.id))
+      const restoreFlag = flagRestorer(flag)
       return {
         ok: true,
         message,
@@ -227,6 +243,7 @@ const add_income: WriteImpl = {
       paydayDriftDays: PAYDAY_DRIFT_DAYS,
     })
     const created = fin().incomeSources.find((i) => !before.has(i.id))
+    const restoreFlag = flagRestorer(flag)
     return {
       ok: true,
       message,
@@ -374,10 +391,15 @@ const update_income: WriteImpl = {
       if (!('error' in m) && m.id) patch.paymentMethodId = m.id
     }
     if (a.notes !== undefined) patch.notes = text(a.notes, 200)
-    const previous: Record<string, unknown> = {}
-    for (const key of Object.keys(patch) as (keyof SourcePatch)[]) previous[key] = i[key]
+    const before = s.incomeSources
     s.updateIncomeSource(i.id, patch)
-    return { ok: true, message: patch.name ?? i.name, undo: () => fin().updateIncomeSource(i.id, previous as Partial<IncomeSource>) }
+    const after = fin().incomeSources
+    const keys = Object.keys(patch) as (keyof IncomeSource)[]
+    return {
+      ok: true,
+      message: patch.name ?? i.name,
+      undo: () => useFinanceStore.setState((st) => ({ incomeSources: revertRows(st.incomeSources, before, after, keys, true) })),
+    }
   },
 }
 
@@ -417,13 +439,14 @@ const delete_income: WriteImpl = {
     const before = fin().incomeSources
     const flag = fin().settings.noIncomeDeclared
     fin().deleteIncomeSource(removed.id)
+    const flagAfter = fin().settings.noIncomeDeclared
     return {
       ok: true,
       message: removed.name,
       undo: () => {
         useFinanceStore.setState((st) => ({
           incomeSources: restoreRows(st.incomeSources, before, new Set([removed.id])),
-          ...(st.settings.noIncomeDeclared !== flag ? { settings: { ...st.settings, noIncomeDeclared: flag } } : {}),
+          ...(flag !== flagAfter && st.settings.noIncomeDeclared === flagAfter ? { settings: { ...st.settings, noIncomeDeclared: flag } } : {}),
         }))
       },
     }
@@ -548,13 +571,14 @@ const mark_payday_received: WriteImpl = {
       ...(source.paymentMethodId ? { paymentMethodId: source.paymentMethodId } : {}),
     })
     const created = fin().incomeEvents.find((e) => !before.has(e.id))
+    const restoreFlag = flagRestorer(flag)
     return {
       ok: true,
       message,
       undo: created
         ? () => {
             fin().deleteIncomeEvent(created.id)
-            fin().updateSettings({ noIncomeDeclared: flag })
+            restoreFlag()
           }
         : undefined,
     }

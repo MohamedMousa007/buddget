@@ -3,7 +3,7 @@ import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import type { Debt, DebtPayment, PaymentMethod, RecurringDebtPayment } from '@/lib/store/types'
+import type { Debt, DebtPayment, Goal, PaymentMethod, RecurringDebtPayment } from '@/lib/store/types'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
 
@@ -461,5 +461,46 @@ describe('delete_debt_payment', () => {
 
   it('fails on an unknown ref', () => {
     expect(write('delete_debt_payment').propose({ payment: 'zzzzzz' }, ctx).ok).toBe(false)
+  })
+})
+
+describe('audit fixes', () => {
+  it('payment undo keeps goal edits made after the payment', () => {
+    useFinanceStore.setState({ goals: [{ id: '77777777-0000-0000-0000-000000000001', name: 'Trip', linkedDebtIds: [], linkedSavingsAccountIds: [], updatedAt: '2026-10-01T00:00:00.000Z' } as unknown as Goal] })
+    const { applied } = proposeApply('record_debt_payment', { debt: 'Car loan', amount: 100 })
+    useFinanceStore.setState((s) => ({ goals: s.goals.map((g) => ({ ...g, name: 'Trip 2' })) }))
+    if (applied.ok) applied.undo?.()
+    expect(st().goals[0].name).toBe('Trip 2')
+    expect(st().debtPayments).toHaveLength(0)
+  })
+
+  it('update_debt undo leaves a key edited after apply alone', () => {
+    const { applied } = proposeApply('update_debt', { debt: 'Car loan', name: 'Auto', amount: 1500 })
+    useFinanceStore.setState((s) => ({ debts: s.debts.map((d) => ({ ...d, name: 'Mine' })) }))
+    if (applied.ok) applied.undo?.()
+    expect(st().debts[0]).toMatchObject({ name: 'Mine', startingBalance: 1000 })
+  })
+
+  it('refuses a second identical add_debt and add_installment_plan in one turn', () => {
+    const debtArgs = { name: 'Phone', person: 'Omar', direction: 'i_owe', amount: 300 }
+    const d1 = write('add_debt').propose(debtArgs, ctx)
+    const d2 = write('add_debt').propose(debtArgs, ctx)
+    if (!d1.ok || !d2.ok) throw new Error('propose failed')
+    expect(write('add_debt').apply(d1.proposal, ctx).ok).toBe(true)
+    expect(write('add_debt').apply(d2.proposal, ctx)).toMatchObject({ ok: false, error: 'Already added' })
+    expect(st().debts).toHaveLength(2)
+
+    const planArgs = { item: 'Fridge', total: 1200, count: 12 }
+    const p1 = write('add_installment_plan').propose(planArgs, ctx)
+    const p2 = write('add_installment_plan').propose(planArgs, ctx)
+    if (!p1.ok || !p2.ok) throw new Error('propose failed')
+    expect(write('add_installment_plan').apply(p1.proposal, ctx).ok).toBe(true)
+    expect(write('add_installment_plan').apply(p2.proposal, ctx)).toMatchObject({ ok: false, error: 'Already added' })
+    expect(st().debts).toHaveLength(3)
+  })
+
+  it('get_debt caps notes at 80 characters', () => {
+    useFinanceStore.setState({ debts: [debt(D_LOAN, { notes: 'x'.repeat(200) })] })
+    expect((read('get_debt', { debt: 'Car loan' }) as { notes: string }).notes).toHaveLength(80)
   })
 })

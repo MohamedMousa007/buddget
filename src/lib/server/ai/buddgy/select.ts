@@ -70,5 +70,7 @@ export function selectSpecs(all: readonly ToolSpec[], req: { messages: WireMessa
 
   const anyWrite = [...wanted].some((d) => !ALWAYS.has(d))
   if (!anyWrite) return [...all]
+  // Almost any money sentence can turn out to be an expense ("log my rent"), so it rides along.
+  wanted.add('expenses')
   return all.filter((s) => s.kind !== 'write' || wanted.has(s.domain))
 }

@@ -123,3 +123,14 @@ describe('forget_memory', () => {
     expect(write('forget_memory').apply(p.proposal, ctx).ok).toBe(false)
   })
 })
+
+describe('forget_memory undo', () => {
+  it('does nothing when learning was paused after the forget', () => {
+    const p = write('forget_memory').propose({ ref: refOf(M1) }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    const applied = write('forget_memory').apply(p.proposal, ctx)
+    useSettingsStore.setState({ buddgyLearning: false })
+    if (applied.ok) applied.undo?.()
+    expect(state().buddgyMemories.map((m) => m.id)).toEqual([M2])
+  })
+})

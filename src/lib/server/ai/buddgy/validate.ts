@@ -38,7 +38,7 @@ export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>):
   if (carry !== undefined && (typeof carry !== 'string' || carry.length > TURN_LIMITS.maxCarryChars)) return { ok: false, reason: 'carry' }
   if (typeof locale !== 'string' || !LOCALES.includes(locale as BuddgyLocale)) return { ok: false, reason: 'locale' }
   if (intent !== undefined && !INTENTS.includes(intent as BuddgyIntent)) return { ok: false, reason: 'intent' }
-  if (chatId !== undefined && (typeof chatId !== 'string' || !/^[0-9a-f-]{36}$/i.test(chatId))) return { ok: false, reason: 'chatId' }
+  if (chatId !== undefined && (typeof chatId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(chatId))) return { ok: false, reason: 'chatId' }
 
   let total = 0
   const clean: WireMessage[] = []

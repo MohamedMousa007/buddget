@@ -45,6 +45,10 @@ export function useBuddgyChat() {
   const chatIdRef = useRef<string | null>(null)
   const softRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
+  /** Read synchronously so two quick sends cannot both start; `busy` state lags a render. */
+  const busyRef = useRef(false)
+  /** Identifies the turn in flight, so a finished or cancelled turn never clears a newer one. */
+  const turnSeqRef = useRef(0)
   const lastActivityRef = useRef(Date.now())
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -69,6 +73,8 @@ export function useBuddgyChat() {
     commit([])
     chatIdRef.current = null
     softRef.current = false
+    turnSeqRef.current += 1
+    busyRef.current = false
     setBusy(false)
     setStep(null)
     setBeat(null)
@@ -161,7 +167,7 @@ export function useBuddgyChat() {
   const send = useCallback(
     async (override?: string) => {
       const text = (override ?? input).trim()
-      if (!text || busy) return
+      if (!text || busyRef.current) return
       if (!guardSignedIn()) return
       if (override === undefined) setInput('')
 
@@ -186,6 +192,8 @@ export function useBuddgyChat() {
         } else {
           patchBuddgy(replyId, (it) => ({ ...it, text: local.text, status: 'done', local: true }))
           finishWithProposals(replyId, local.proposals)
+          // "Got it." must not stand next to a card that says it could not apply.
+          patchBuddgy(replyId, (it) => (it.proposals.some((p) => p.status === 'failed') ? { ...it, text: '' } : it))
         }
         setBeat({ mood: 'happy', at: Date.now() })
         return
@@ -199,6 +207,8 @@ export function useBuddgyChat() {
 
       const controller = new AbortController()
       abortRef.current = controller
+      const seq = ++turnSeqRef.current
+      busyRef.current = true
       setBusy(true)
       const { messages, carry } = compressHistory(prior, softRef.current)
       try {
@@ -214,7 +224,11 @@ export function useBuddgyChat() {
           now,
           onText: (partial) => patchBuddgy(replyId, (it) => ({ ...it, text: partial })),
           onStep: setStep,
+          onChat: (id) => {
+            if (turnSeqRef.current === seq) chatIdRef.current = id
+          },
         })
+        if (turnSeqRef.current !== seq) return
         chatIdRef.current = out.chatId
         softRef.current = out.soft
         patchBuddgy(replyId, (it) => ({ ...it, text: out.text, reads: out.reads, status: 'done', truncated: out.truncated }))
@@ -229,12 +243,15 @@ export function useBuddgyChat() {
           setBeat({ mood: 'error', at: Date.now() })
         }
       } finally {
-        abortRef.current = null
-        setBusy(false)
-        setStep(null)
+        if (turnSeqRef.current === seq) {
+          abortRef.current = null
+          busyRef.current = false
+          setBusy(false)
+          setStep(null)
+        }
       }
     },
-    [busy, commit, finishWithProposals, guardSignedIn, input, locale, online, pathname, patchBuddgy],
+    [commit, finishWithProposals, guardSignedIn, input, locale, online, pathname, patchBuddgy],
   )
 
   const stop = useCallback(() => abortRef.current?.abort(), [])

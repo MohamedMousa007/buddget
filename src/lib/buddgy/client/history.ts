@@ -6,6 +6,8 @@ export const VERBATIM_ITEMS = 6
 /** Once a chat passes its soft budget, only the latest exchange stays word for word. */
 const VERBATIM_ITEMS_SOFT = 2
 const CARRY_MAX = 1000
+/** A past reply is trimmed so one long answer can never push the next request over the server's size cap. */
+const MODEL_TEXT_MAX = 2800
 const SNIP = 70
 
 const snip = (s: string) => {
@@ -38,7 +40,7 @@ export function compressHistory(items: ChatItem[], soft = false): { messages: Wi
     if (item.role === 'user') {
       messages.push({ role: 'user', text: item.text })
     } else {
-      const text = `${item.text}${outcomeNote(item)}`.trim()
+      const text = `${item.text.slice(0, MODEL_TEXT_MAX)}${outcomeNote(item)}`.trim().slice(0, 3900)
       if (text) messages.push({ role: 'model', text })
     }
   }

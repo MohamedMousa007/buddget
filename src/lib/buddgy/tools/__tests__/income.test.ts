@@ -371,3 +371,36 @@ describe('mark_payday_received', () => {
     expect(state().incomeEvents).toHaveLength(1)
   })
 })
+
+describe('audit fixes', () => {
+  it('undo leaves noIncomeDeclared alone when apply did not flip it', () => {
+    useFinanceStore.setState({ settings: { ...state().settings, noIncomeDeclared: false } })
+    const add = write('add_income')
+    const p = add.propose({ name: 'Gift', amount: 100, frequency: 'one_time' }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    const applied = add.apply(p.proposal, ctx)
+    useFinanceStore.setState({ settings: { ...state().settings, noIncomeDeclared: true } })
+    if (applied.ok) applied.undo?.()
+    expect(state().settings.noIncomeDeclared).toBe(true)
+  })
+
+  it('does not default to a credit card and rejects a future one-time date', () => {
+    useFinanceStore.setState({ paymentMethods: [{ ...pm(PM_CARD, 'CIB Card', true), type: 'credit_card' } as PaymentMethod] })
+    const add = write('add_income')
+    const p = add.propose({ name: 'Gift', amount: 100, frequency: 'one_time' }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    add.apply(p.proposal, ctx)
+    expect(state().incomeEvents[0].paymentMethodId).toBeUndefined()
+    expect(add.propose({ name: 'Gift', amount: 100, frequency: 'one_time', date: '2026-12-01' }, ctx)).toMatchObject({ ok: false })
+  })
+
+  it('update_income undo keeps a field edited after apply', () => {
+    const upd = write('update_income')
+    const p = upd.propose({ ref: refOf(SALARY), amount: 25000, name: 'Pay' }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    const applied = upd.apply(p.proposal, ctx)
+    useFinanceStore.setState((s) => ({ incomeSources: s.incomeSources.map((i) => (i.id === SALARY ? { ...i, name: 'Mine' } : i)) }))
+    if (applied.ok) applied.undo?.()
+    expect(state().incomeSources.find((i) => i.id === SALARY)).toMatchObject({ name: 'Mine', amount: 20000 })
+  })
+})

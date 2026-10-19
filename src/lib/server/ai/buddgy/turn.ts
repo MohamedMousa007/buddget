@@ -44,22 +44,23 @@ const frame = (e: TurnEvent) => encoder.encode(`data: ${JSON.stringify(e)}\n\n`)
 export function turnEventStream(
   upstream: ReadableStream<Uint8Array>,
   head: TurnEvent,
-  onFinish: (outcome: TurnOutcome) => void,
+  onFinish: (outcome: TurnOutcome) => void | Promise<void>,
 ): ReadableStream<Uint8Array> {
   const decoder = new TextDecoder()
   const reader = upstream.getReader()
   let settled = false
-  const settle = (o: TurnOutcome) => {
+  // Shared with cancel(): an aborted request still settles whatever Gemini had reported.
+  let usage = EMPTY_USAGE
+  const settle = async (o: TurnOutcome) => {
     if (settled) return
     settled = true
-    onFinish(o)
+    await onFinish(o)
   }
 
   return new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(frame(head))
       let buffer = ''
-      let usage = EMPTY_USAGE
       let finish = 'STOP'
       let blocked = false
       let sawText = false
@@ -121,12 +122,12 @@ export function turnEventStream(
           controller.enqueue(frame({ t: 'calls', parts, calls }))
         } else if (!sawText) {
           controller.enqueue(frame({ t: 'error', code: blocked || finish === 'SAFETY' ? 'blocked' : 'empty' }))
-          settle({ usage, finish, status: 'error' })
+          await settle({ usage, finish, status: 'error' })
           controller.close()
           return
         }
         controller.enqueue(frame({ t: 'done', units: 0, finish, truncated: finish === 'MAX_TOKENS' }))
-        settle({ usage, finish, status: 'ok' })
+        await settle({ usage, finish, status: 'ok' })
         controller.close()
       } catch {
         try {
@@ -135,12 +136,12 @@ export function turnEventStream(
         } catch {
           // client already went away
         }
-        settle({ usage, finish, status: 'aborted' })
+        await settle({ usage, finish, status: 'aborted' })
       }
     },
     cancel() {
       void reader.cancel().catch(() => undefined)
-      settle({ usage: EMPTY_USAGE, finish: 'ABORTED', status: 'aborted' })
+      void settle({ usage, finish: 'ABORTED', status: 'aborted' })
     },
   })
 }

@@ -2,9 +2,11 @@ import { defineTools } from '@/lib/buddgy/tools/define'
 import { merchantKey } from '@/lib/ai/buddgyLookup'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import { reportsSpecs } from '@/lib/buddgy/tools/specs/reports'
+import { cycleKeyOf } from '@/lib/budget/activations'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl } from '@/lib/buddgy/tools/types'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import type { Expense, FinanceStore } from '@/lib/store/types'
 
@@ -22,7 +24,7 @@ export function spendRows(s: FinanceStore): { e: Expense; amount: number }[] {
   const base = s.settings.baseCurrency
   return s.expenses
     .map((e) => ({ e, amount: expenseAmountInBase(e, base, s.exchangeRates) }))
-    .filter((x) => x.amount > 0)
+    .filter((x) => x.amount > 0 && !isNonSpendCategory(x.e.category) && x.e.category !== 'Savings')
 }
 
 const get_summary: ReadImpl = (args) => {
@@ -127,7 +129,7 @@ const spend_breakdown: ReadImpl = (args) => {
   const rows = spendRows(s).filter(({ e }) => (!from || e.date >= from) && (!to || e.date <= to))
   const key = ({ e }: { e: Expense }) =>
     by === 'method' ? (methodName.get(e.paymentMethodId) ?? 'Unassigned')
-    : by === 'month' ? e.date.slice(0, 7)
+    : by === 'month' ? cycleKeyOf(new Date(`${e.date}T00:00:00`), s.settings.monthStartDay)
     : by === 'day' ? e.date
     : by === 'merchant' ? merchantKey(e.description)
     : e.category

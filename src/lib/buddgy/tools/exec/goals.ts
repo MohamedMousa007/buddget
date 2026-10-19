@@ -1,7 +1,7 @@
 import { defineTools } from '@/lib/buddgy/tools/define'
 import { goalCategoryName, goalLabels } from '@/lib/buddgy/tools/exec/goalsCopy'
 import { restoreRows } from '@/lib/buddgy/tools/exec/restoreKit'
-import { inPocketCurrency, ledgerUndo, no, pick, snapshotLedger, type Refusal } from '@/lib/buddgy/tools/exec/wealthKit'
+import { inPocketCurrency, ledgerUndo, no, pick, posted, snapshotLedger, type Refusal } from '@/lib/buddgy/tools/exec/wealthKit'
 import type { EditableField, PreviewRow, Proposal } from '@/lib/buddgy/tools/proposal'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import { goalsSpecs } from '@/lib/buddgy/tools/specs/goals'
@@ -20,6 +20,8 @@ import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { localTodayISO } from '@/lib/utils/localDate'
 
+const FUNDING_MODES: readonly GoalFundingMode[] = ['share', 'fixed', 'manual']
+const RECENT_MS = 2 * 60_000
 const r2 = (n: number) => Math.round(n * 100) / 100
 const GOAL_HINT = 'Find it with list_goals first.'
 const SAVING_CATEGORIES = GOAL_CATEGORIES.map((c) => c.value).filter((v) => v !== 'debt_freedom' && v !== 'spending_control') as GoalCategory[]
@@ -151,6 +153,14 @@ const add_goal: WriteImpl = {
     const a = again.proposal.args
     const s = fin()
     const name = a.name as string
+    const twin = s.goals.some(
+      (g) =>
+        Date.now() - new Date(g.createdAt).getTime() < RECENT_MS &&
+        g.name.trim().toLowerCase() === name.toLowerCase() &&
+        g.targetAmount === a.target &&
+        g.currency === a.currency,
+    )
+    if (twin) return { ok: false, error: 'Already added' }
     const ccy = a.currency as Currency
     const category = a.category as GoalCategory
     const goalId = s.addGoal({
@@ -243,6 +253,7 @@ function planUpdate(args: Record<string, unknown>, ctx: ToolContext): UpdatePlan
 
   if (!funding) {
     if (!isSaving(goal)) return no('Only a savings goal has funding.')
+    if (args.funding !== undefined && !FUNDING_MODES.includes(args.funding as GoalFundingMode)) return no('Funding must be share, fixed or manual.')
     const mode = (args.funding ?? goal.fundingMode) as GoalFundingMode
     if (args.sharePct !== undefined && mode !== 'share') return no('A share only applies when funding is "share".', 'Send funding "share" with it.')
     if (args.monthly !== undefined && mode !== 'fixed') return no('A monthly amount only applies when funding is "fixed".', 'Send funding "fixed" with it.')
@@ -339,7 +350,8 @@ function planFund(args: Record<string, unknown>, ctx: ToolContext): FundPlan | R
   const landed = inPocketCurrency(s, amount, ccy.currency, target)
   if ('error' in landed) return no(landed.error)
   const { current } = progress(s, goal)
-  const inGoal = tryConvertCurrency(landed.amount, target.currency, goal.currency, s.exchangeRates) ?? 0
+  const inGoal = tryConvertCurrency(landed.amount, target.currency, goal.currency, s.exchangeRates)
+  if (inGoal === null) return no(`No exchange rate from ${target.currency} to ${goal.currency}.`, 'Ask for the amount in the goal currency.')
   const inBase = tryConvertCurrency(amount, ccy.currency, s.settings.baseCurrency, s.exchangeRates) ?? amount
   const after = current + inGoal
 
@@ -395,6 +407,13 @@ const add_to_goal: WriteImpl = {
       s.updateGoal(goal.id, { linkedSavingsAccountIds: [...goal.linkedSavingsAccountIds, pocketId] })
     }
     s.depositToSavings(pocketId, plan.amount, plan.currency, goal.name, { mode: plan.mode })
+    if (!posted(before)) {
+      if (created) {
+        fin().updateGoal(goal.id, { linkedSavingsAccountIds: goal.linkedSavingsAccountIds })
+        fin().deleteSavingsAccount(created)
+      }
+      return { ok: false, error: 'The deposit was not recorded.' }
+    }
     const revert = ledgerUndo(before)
     return {
       ok: true,

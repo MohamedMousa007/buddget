@@ -121,14 +121,20 @@ export async function POST(req: Request) {
       response = await callGemini(model, apiKey, geminiBody, wantStream)
     }
 
+    const estInput = Math.ceil((JSON.stringify(contents).length + JSON.stringify(systemInstruction ?? '').length) / 4)
     const settle = (usage: Parameters<typeof settleAiQuota>[1]['usage'], status: 'ok' | 'error' | 'aborted') =>
-      settleAiQuota(quota, { model, tier: tierName, latencyMs: Date.now() - started, usage, status })
+      settleAiQuota(quota, {
+        model,
+        tier: tierName,
+        latencyMs: Date.now() - started,
+        // An abort before usage was reported still consumed the prompt; never settle it as free.
+        usage: status === 'aborted' && usage.promptTokens === 0 ? { promptTokens: estInput, cachedTokens: 0, outputTokens: 0 } : usage,
+        status,
+      })
 
     if (wantStream && response.ok && response.body) {
       console.info(`[AI] ok stream user=${userId} model=${model} ttfb=${Date.now() - started}ms`)
-      const tapped = tapStreamUsage(response.body, (usage, completed) => {
-        void settle(usage, completed ? 'ok' : 'aborted')
-      })
+      const tapped = tapStreamUsage(response.body, (usage, completed) => settle(usage, completed ? 'ok' : 'aborted'))
       return new Response(tapped, {
         headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform' },
       })

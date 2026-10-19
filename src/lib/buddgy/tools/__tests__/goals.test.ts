@@ -343,3 +343,33 @@ describe('delete_goal', () => {
     expect(p.ok && del.apply(p.proposal, ctx).ok).toBe(false)
   })
 })
+
+describe('audit fixes', () => {
+  it('update_goal rejects an unknown funding mode', () => {
+    const p = write('update_goal').propose({ goal: 'Car', funding: 'auto' }, ctx)
+    expect(p).toMatchObject({ ok: false })
+  })
+
+  it('add_to_goal fails and leaves no empty pocket when the deposit is refused', () => {
+    useFinanceStore.setState({ goals: [goal(G1, { linkedSavingsAccountIds: [] })] })
+    const real = st().depositToSavings
+    useFinanceStore.setState({ depositToSavings: () => {} })
+    const p = write('add_to_goal').propose({ goal: 'Car', amount: 100 }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    const applied = write('add_to_goal').apply(p.proposal, ctx)
+    useFinanceStore.setState({ depositToSavings: real })
+    expect(applied).toMatchObject({ ok: false })
+    expect(st().savingsAccounts.map((a) => a.id).sort()).toEqual([P1, P2].sort())
+    expect(st().goals.find((g) => g.id === G1)?.linkedSavingsAccountIds).toEqual([])
+  })
+
+  it('a second identical add_goal approval does not double-create', () => {
+    const args = { name: 'Laptop', target: 5000 }
+    const a = write('add_goal').propose(args, ctx)
+    const b = write('add_goal').propose(args, ctx)
+    if (!a.ok || !b.ok) throw new Error('propose failed')
+    expect(write('add_goal').apply(a.proposal, ctx).ok).toBe(true)
+    expect(write('add_goal').apply(b.proposal, ctx)).toMatchObject({ ok: false, error: 'Already added' })
+    expect(st().goals.filter((g) => g.name === 'Laptop')).toHaveLength(1)
+  })
+})

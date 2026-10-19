@@ -101,7 +101,8 @@ export function ledgerUndo(before: LedgerSnapshot): () => void {
     const was = before.goals.get(g.id)
     if (was && (was.status !== g.status || was.achievedAt !== g.achievedAt)) reopened.set(g.id, was)
   }
-  const flagChanged = s.settings.noIncomeDeclared !== before.noIncomeDeclared
+  const flagWritten = s.settings.noIncomeDeclared
+  const flagChanged = flagWritten !== before.noIncomeDeclared
   return () =>
     useFinanceStore.setState((st) => ({
       savingsTransactions: st.savingsTransactions.filter((t) => !addedTx.has(t.id)),
@@ -110,7 +111,7 @@ export function ledgerUndo(before: LedgerSnapshot): () => void {
         deltas.has(a.id) ? { ...a, currentBalance: Math.max(0, a.currentBalance - (deltas.get(a.id) as number)) } : a,
       ),
       goals: st.goals.map((g) => (reopened.has(g.id) ? { ...g, ...reopened.get(g.id) } : g)),
-      ...(flagChanged ? { settings: { ...st.settings, noIncomeDeclared: before.noIncomeDeclared } } : {}),
+      ...(flagChanged && st.settings.noIncomeDeclared === flagWritten ? { settings: { ...st.settings, noIncomeDeclared: before.noIncomeDeclared } } : {}),
     }))
 }
 

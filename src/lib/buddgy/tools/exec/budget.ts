@@ -10,13 +10,14 @@ import { fail, makeProposal, money, num, ok, text } from '@/lib/buddgy/tools/wri
 import { isLivePlan, selectActivePlan } from '@/lib/budget/activePlan'
 import { cycleKeyOf } from '@/lib/budget/activations'
 import { BLOCK_META, BUDGET_BLOCKS, lineBlock, planIncome } from '@/lib/budget/blocks'
-import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
+import { effectivePlanCategoryAmountInBase, planCategoryCurrency } from '@/lib/budget/budgetPlans'
 import { debtPaidByDebt } from '@/lib/budget/liveLinks'
 import { spendByLine } from '@/lib/budget/lineSpend'
 import { applyOps, type OpsResult, type PlanOp } from '@/lib/budget/ops'
 import { summarizePlan } from '@/lib/budget/planSummary'
 import type { BudgetBlock, BudgetPlan, BudgetPlanCategory, FinanceStore } from '@/lib/store/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { tryConvertCurrency } from '@/lib/utils/currency'
 import { calculateCategorySpending, filterExpensesByMonth, projectedIncomeForMonth } from '@/lib/utils/calculations'
 
 const MAX_OPS = 12
@@ -121,11 +122,18 @@ function lineChoices(lines: readonly BudgetPlanCategory[]) {
   return lines.map((c) => ({ id: refOf(c.id), label: c.name }))
 }
 
-function parseOps(plan: BudgetPlan, input: unknown): { ops: PlanOp[]; clean: CleanOp[] } | { error: ProposeResult } {
+interface LocalSkip {
+  name: string
+  why: string
+}
+
+function parseOps(s: FinanceStore, plan: BudgetPlan, input: unknown): { ops: PlanOp[]; clean: CleanOp[]; skips: LocalSkip[] } | { error: ProposeResult } {
   if (!Array.isArray(input) || input.length === 0) return { error: fail('Send at least one op.') }
   if (input.length > MAX_OPS) return { error: fail(`At most ${MAX_OPS} ops per call.`) }
   const ops: PlanOp[] = []
   const clean: CleanOp[] = []
+  const skips: LocalSkip[] = []
+  const base = s.settings.baseCurrency
   for (const raw of input as Record<string, unknown>[]) {
     const op = OP_NAMES.find((o) => o === raw?.op)
     if (!op) return { error: fail(`Unknown op "${String(raw?.op)}".`, `Use one of: ${OP_NAMES.join(', ')}.`) }
@@ -148,8 +156,11 @@ function parseOps(plan: BudgetPlan, input: unknown): { ops: PlanOp[]; clean: Cle
 
     if (op === 'set') {
       if (amount === undefined) return { error: fail('set needs an amount.') }
-      ops.push({ op, id, amount })
       clean.push({ op, line, amount })
+      const cur = planCategoryCurrency(hit.item, base)
+      const inLine = cur === base ? amount : tryConvertCurrency(amount, base, cur, s.exchangeRates)
+      if (inLine === null) skips.push({ name: hit.item.name, why: `no exchange rate from ${base} to ${cur}` })
+      else ops.push({ op, id, amount: cur === base ? amount : round2(inLine) })
     } else if (op === 'move') {
       if (!block) return { error: fail('move needs a block.', `Use one of: ${BUDGET_BLOCKS.join(', ')}.`) }
       ops.push({ op, id, block })
@@ -167,7 +178,7 @@ function parseOps(plan: BudgetPlan, input: unknown): { ops: PlanOp[]; clean: Cle
       clean.push({ op, line })
     }
   }
-  return { ops, clean }
+  return { ops, clean, skips }
 }
 
 const reasonOf = (r: ProposeResult): string => (r.ok ? '' : r.error)
@@ -183,23 +194,31 @@ function buildAdjust(args: Record<string, unknown>, ctx: ToolContext): AdjustBui
   const pinned = typeof args.planRef === 'string' ? resolveRef(s.budgetPlans, args.planRef) : null
   const plan = pinned ? (pinned.kind === 'one' ? pinned.item : null) : activePlan(s)
   if (!plan) return { error: fail('There is no active budget plan.', 'Offer the Budget Studio.') }
-  const parsed = parseOps(plan, args.ops)
+  const parsed = parseOps(s, plan, args.ops)
   if ('error' in parsed) return parsed
 
   const base = s.settings.baseCurrency
   const income = incomeOf(s, plan)
-  const result = applyOps(plan.categories, parsed.ops, { newId, maxAmount: Math.max(income, 1) * 10 })
+  const cap = Math.max(income, 1) * 10
+  const converted = parsed.ops.flatMap((o) => (o.op === 'set' && planCategoryCurrency(plan.categories.find((x) => x.id === o.id) as BudgetPlanCategory, base) !== base ? [o.amount] : []))
+  const result = applyOps(plan.categories, parsed.ops, { newId, maxAmount: Math.max(cap, ...converted) })
 
   const nameOf = (op: PlanOp) => (op.op === 'add' ? op.line.name : (plan.categories.find((x) => x.id === op.id)?.name ?? '—'))
-  const skipped = result.rejected.map((r) => `${nameOf(r.op)} (${L.reasons[r.reason]})`)
+  const skipped = [...parsed.skips.map((k) => `${k.name} (${k.why})`), ...result.rejected.map((r) => `${nameOf(r.op)} (${L.reasons[r.reason]})`)]
   if (result.applied.length === 0) return { error: fail('Nothing could be changed.', skipped.join('; ')) }
 
   const prev = new Map(plan.categories.map((x) => [x.id, x]))
   const rows: PreviewRow[] = []
+  const shown = (line: BudgetPlanCategory | undefined, amount: number | null) => {
+    const cur = line ? planCategoryCurrency(line, base) : base
+    const own = money(amount ?? 0, cur)
+    return cur === base ? own : `${own} (${money(tryConvertCurrency(amount ?? 0, cur, base, s.exchangeRates) ?? 0, base)})`
+  }
   for (const d of result.diff) {
-    if (d.kind === 'changed') rows.push({ label: d.name, before: money(d.before ?? 0, base), value: money(d.after ?? 0, base) })
-    else if (d.kind === 'added') rows.push({ label: d.name, before: '—', value: money(d.after ?? 0, base) })
-    else if (d.kind === 'removed') rows.push({ label: d.name, before: money(d.before ?? 0, base), value: L.removed })
+    const line = prev.get(d.id)
+    if (d.kind === 'changed') rows.push({ label: d.name, before: shown(line, d.before), value: shown(line, d.after) })
+    else if (d.kind === 'added') rows.push({ label: d.name, before: '—', value: shown(undefined, d.after) })
+    else if (d.kind === 'removed') rows.push({ label: d.name, before: shown(line, d.before), value: L.removed })
   }
   for (const line of result.lines) {
     const p = prev.get(line.id)
@@ -210,6 +229,7 @@ function buildAdjust(args: Record<string, unknown>, ctx: ToolContext): AdjustBui
   }
   if (rows.length === 0) return { error: fail('Nothing would change.') }
   const changes = rows.length
+  for (const k of parsed.skips) rows.push({ label: L.skipped, value: `${k.name} · ${k.why}` })
   for (const r of result.rejected) rows.push({ label: L.skipped, value: `${nameOf(r.op)} · ${L.reasons[r.reason]}` })
 
   const total = result.lines.reduce((sum, l) => sum + effectivePlanCategoryAmountInBase(l, base, s.exchangeRates), 0)

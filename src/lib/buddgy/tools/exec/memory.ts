@@ -96,7 +96,13 @@ const forget_memory: WriteImpl = {
     if (hit.kind !== 'one') return { ok: false, error: 'That memory no longer exists.' }
     const m = hit.item
     fin().removeBuddgyMemory(m.id)
-    return { ok: true, message: m.text, undo: () => fin().addBuddgyMemory(m.text, m.source, m.kind) }
+    return {
+      ok: true,
+      message: m.text,
+      undo: () => {
+        if (ui().buddgyLearning) fin().addBuddgyMemory(m.text, m.source, m.kind)
+      },
+    }
   },
 }
 

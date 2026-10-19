@@ -20,6 +20,10 @@ describe('selectSpecs', () => {
     expect(d.has('goals')).toBe(false)
   })
 
+  it('keeps expenses available whenever any write is wanted', () => {
+    expect(writeDomains(sel('log my rent 4000')).has('expenses')).toBe(true)
+  })
+
   it('understands Arabic', () => {
     expect(writeDomains(sel('عندي قسط جديد')).has('debts')).toBe(true)
     expect(writeDomains(sel('غير العملة')).has('settings')).toBe(true)

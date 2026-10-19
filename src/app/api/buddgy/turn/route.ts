@@ -45,44 +45,42 @@ export async function POST(req: Request) {
   })
   if (!quota.allowed) return quotaDeniedResponse(quota)
 
-  const tools = selectSpecs(ALL_SPECS.filter((t) => !quota.disabled.includes(`tool:${t.domain}`)), turn)
-
-  const body: Record<string, unknown> = {
-    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents,
-    tools: [{ functionDeclarations: tools.map(toGeminiDeclaration) }],
-    toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
-    generationConfig: {
-      maxOutputTokens: cfg.maxOutputTokens,
-      temperature: 0.4,
-      thinkingConfig: { thinkingBudget: cfg.thinkingBudget },
-    },
-  }
+  const estInputTokens = Math.ceil((JSON.stringify(contents).length + SYSTEM_PROMPT.length) / 4)
+  const settleFailed = () =>
+    settleAiQuota(quota, { model, tier: cfg.tier, latencyMs: Date.now() - started, usage: { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }, status: 'error' })
 
   let upstream: Response
   try {
+    const tools = selectSpecs(ALL_SPECS.filter((t) => !quota.disabled.includes(`tool:${t.domain}`)), turn)
+    const body: Record<string, unknown> = {
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents,
+      tools: [{ functionDeclarations: tools.map(toGeminiDeclaration) }],
+      toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
+      generationConfig: {
+        maxOutputTokens: cfg.maxOutputTokens,
+        temperature: 0.4,
+        thinkingConfig: { thinkingBudget: cfg.thinkingBudget },
+      },
+    }
     upstream = await callGemini(model, apiKey, body, true, req.signal)
   } catch {
-    await settleAiQuota(quota, { model, tier: cfg.tier, latencyMs: Date.now() - started, usage: { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }, status: 'error' })
+    await settleFailed()
     return NextResponse.json({ error: 'upstream' }, { status: 502 })
   }
   if (!upstream.ok || !upstream.body) {
-    await settleAiQuota(quota, { model, tier: cfg.tier, latencyMs: Date.now() - started, usage: { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }, status: 'error' })
+    await settleFailed()
     return NextResponse.json({ error: 'upstream', status: upstream.status }, { status: upstream.status === 429 ? 429 : 502 })
   }
 
   const stream = turnEventStream(
     upstream.body,
     { t: 'meta', chatId: quota.chatId, newChat: quota.newChat, rolled: quota.rolled, soft: quota.soft, tier: cfg.tier },
-    (outcome) => {
-      void settleAiQuota(quota, {
-        model,
-        tier: cfg.tier,
-        latencyMs: Date.now() - started,
-        usage: outcome.usage,
-        status: outcome.status,
-      })
-      console.info(`[buddgy] user=${auth.userId} tier=${cfg.tier} units=${computeUnits(outcome.usage)} finish=${outcome.finish}`)
+    async (outcome) => {
+      // An abort before Gemini reported usage still consumed the prompt; never settle it as free.
+      const usage = outcome.usage.promptTokens === 0 && outcome.status === 'aborted' ? { promptTokens: estInputTokens, cachedTokens: 0, outputTokens: 0 } : outcome.usage
+      await settleAiQuota(quota, { model, tier: cfg.tier, latencyMs: Date.now() - started, usage, status: outcome.status })
+      console.info(`[buddgy] user=${auth.userId} tier=${cfg.tier} units=${computeUnits(usage)} finish=${outcome.finish}`)
     },
   )
   return new Response(stream, {

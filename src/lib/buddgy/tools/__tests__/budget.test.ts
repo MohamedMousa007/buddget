@@ -356,3 +356,26 @@ describe('delete_budget_plan', () => {
     expect(write('delete_budget_plan').apply(p.proposal, ctx).ok).toBe(false)
   })
 })
+
+describe('adjust_budget foreign-currency lines', () => {
+  const withKwd = (rates: Record<string, number>) => {
+    useFinanceStore.setState({
+      exchangeRates: rates,
+      budgetPlans: [plan(P1, 'October plan', { categories: [line(L_FOOD, 'Food', 40, { currency: 'KWD' })] })],
+    })
+  }
+
+  it('converts a base amount into the line currency', () => {
+    withKwd({ KWD_EGP: 160 })
+    const p = write('adjust_budget').propose({ ops: [{ op: 'set', line: 'Food', amount: 2000 }] }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    expect(write('adjust_budget').apply(p.proposal, ctx).ok).toBe(true)
+    expect(lines()[0].amount).toBe(12.5)
+  })
+
+  it('skips the op when there is no rate', () => {
+    withKwd({})
+    const p = write('adjust_budget').propose({ ops: [{ op: 'set', line: 'Food', amount: 2000 }] }, ctx)
+    expect(p).toMatchObject({ ok: false })
+  })
+})

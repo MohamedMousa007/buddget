@@ -30,6 +30,16 @@ const assetOf = (s: FinanceStore, input: unknown) => pick(s.investmentHoldings, 
 const goalNames = (s: FinanceStore, ...pocketIds: string[]) =>
   [...new Set(pocketIds.flatMap((id) => goalsOnPocket(s, id).map((g) => g.name)))].join(', ')
 
+const RECENT_MS = 2 * 60_000
+
+/** The app values every holding in EGP whatever the base currency, so a typed worth is stored as EGP. */
+function typedWorthInEgp(s: FinanceStore, value: number): { egp: number } | { error: Refusal } {
+  const base = s.settings.baseCurrency
+  const egp = tryConvertCurrency(value, base, 'EGP', s.exchangeRates)
+  if (egp === null) return { error: no(`No exchange rate from ${base} to EGP, and holdings are valued in EGP.`, 'Ask the user for the worth in EGP.') }
+  return { egp: r2(egp) }
+}
+
 const holdingValueBase = (s: FinanceStore, h: InvestmentHolding): number | null => {
   const v = valueInvestmentHolding(h, priceLookup())
   return v.priced && v.value !== null ? tryConvertCurrency(v.value, 'EGP', s.settings.baseCurrency, s.exchangeRates) : null
@@ -468,6 +478,7 @@ interface AssetPlan {
   holding: NewHolding
   grams: number | null
   unit: GoldUnit
+  typedWorth?: { amount: number; currency: Currency }
 }
 
 function planAsset(args: Record<string, unknown>): AssetPlan | Refusal {
@@ -487,10 +498,13 @@ function planAsset(args: Record<string, unknown>): AssetPlan | Refusal {
     if (value === undefined || value <= 0) return no('A property needs its worth above zero.')
     const size = args.size === undefined ? 0 : num(args.size)
     if (size === undefined || size < 0) return no('The size cannot be negative.')
+    const worth = typedWorthInEgp(s, value)
+    if ('error' in worth) return worth.error
     return {
       grams: null,
       unit: 'grams',
-      holding: { assetType: 'property', name: text(args.name, 40) ?? 'Property', quantity: size, propertyValue: value, sharePercent: 100, currency: base, ...(purchaseDate ? { purchaseDate } : {}) },
+      typedWorth: { amount: value, currency: base },
+      holding: { assetType: 'property', name: text(args.name, 40) ?? 'Property', quantity: size, propertyValue: worth.egp, sharePercent: 100, currency: 'EGP', ...(purchaseDate ? { purchaseDate } : {}) },
     }
   }
   if (quantity === undefined || quantity <= 0) return no('The quantity must be above zero.')
@@ -531,7 +545,10 @@ const add_investment_holding: WriteImpl = {
       ...(h.karat ? [{ label: L.karat, value: `${h.karat}k` }] : []),
       ...(h.symbol ? [{ label: L.symbol, value: h.symbol }] : []),
       ...(h.assetType === 'property'
-        ? [{ label: L.value, value: money(h.propertyValue as number, h.currency) }, ...(h.quantity > 0 ? [{ label: L.size, value: String(h.quantity) }] : [])]
+        ? [
+            { label: L.value, value: plan.typedWorth && plan.typedWorth.currency !== h.currency ? `${money(plan.typedWorth.amount, plan.typedWorth.currency)} = ${money(h.propertyValue as number, h.currency)}` : money(h.propertyValue as number, h.currency) },
+            ...(h.quantity > 0 ? [{ label: L.size, value: String(h.quantity) }] : []),
+          ]
         : [{ label: L.quantity, value: plan.grams !== null && plan.unit !== 'grams' ? `${num(args.quantity)} ${plan.unit} (${r2(plan.grams)} g)` : plan.grams !== null ? `${r2(plan.grams)} g` : String(h.quantity) }]),
       ...(h.unitCost !== undefined ? [{ label: L.paid, value: money(r2(h.unitCost * h.quantity), h.costBasisCurrency as string) }] : []),
       ...(h.purchaseDate ? [{ label: L.date, value: h.purchaseDate }] : []),
@@ -556,6 +573,17 @@ const add_investment_holding: WriteImpl = {
   apply(proposal) {
     const plan = planAsset(proposal.args)
     if ('ok' in plan) return { ok: false, error: plan.error }
+    const h = plan.holding
+    const twin = fin().investmentHoldings.some(
+      (x) =>
+        Date.now() - new Date(x.createdAt).getTime() < RECENT_MS &&
+        x.assetType === h.assetType &&
+        x.name === h.name &&
+        x.symbol === h.symbol &&
+        x.quantity === h.quantity &&
+        x.propertyValue === h.propertyValue,
+    )
+    if (twin) return { ok: false, error: 'Already added' }
     const id = fin().addInvestmentHolding(plan.holding)
     return { ok: true, message: plan.holding.name, undo: () => fin().deleteInvestmentHolding(id) }
   },
@@ -592,11 +620,14 @@ function planAssetEdit(args: Record<string, unknown>, ctx: ToolContext): AssetEd
   }
   if (args.value !== undefined) {
     if (h.assetType !== 'property') return no('Only a property has a typed worth.', 'Send quantity instead.')
-    const v = num(args.value)
-    if (v === undefined || v <= 0) return no('The worth must be above zero.')
-    if (v !== h.propertyValue) {
-      patch.propertyValue = v
-      rows.push({ label: L.value, before: money(h.propertyValue ?? 0, h.currency), value: money(v, h.currency) })
+    const typed = num(args.value)
+    if (typed === undefined || typed <= 0) return no('The worth must be above zero.')
+    const worth = typedWorthInEgp(s, typed)
+    if ('error' in worth) return worth.error
+    if (worth.egp !== h.propertyValue) {
+      patch.propertyValue = worth.egp
+      patch.currency = 'EGP'
+      rows.push({ label: L.value, before: money(h.propertyValue ?? 0, 'EGP'), value: money(worth.egp, 'EGP') })
     }
   }
   if (rows.length === 0) return no('Nothing would change.')

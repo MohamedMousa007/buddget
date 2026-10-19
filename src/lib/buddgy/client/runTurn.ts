@@ -36,6 +36,8 @@ export interface RunTurnArgs {
   onText: (textSoFar: string) => void
   /** A read tool is running. */
   onStep?: (label: string) => void
+  /** The server-issued chat id, as soon as it is known, so a failed turn still keeps its chat. */
+  onChat?: (chatId: string) => void
   now?: Date
 }
 
@@ -63,6 +65,14 @@ interface CallsResult {
   needsModel: boolean
 }
 
+/** Keeps one tool result from blowing the request-size cap on the next hop. */
+const MAX_RESULT_CHARS = 5000
+
+function clampResult(response: unknown): unknown {
+  const json = JSON.stringify(response)
+  return json !== undefined && json.length > MAX_RESULT_CHARS ? { truncated: true, partial: json.slice(0, MAX_RESULT_CHARS) } : response
+}
+
 export function executeCalls(calls: WireToolCall[], ctx: ToolContext): CallsResult {
   const results: WireToolResult[] = []
   const proposals: Proposal[] = []
@@ -78,7 +88,7 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext): CallsResu
     }
     try {
       if (entry.read) {
-        results.push({ name: call.name, response: entry.read(call.args, ctx) })
+        results.push({ name: call.name, response: clampResult(entry.read(call.args, ctx)) })
         reads.push({ tool: call.name, label: readLabel(call.name, ctx.locale) })
         needsModel = true
       } else if (entry.write) {
@@ -143,9 +153,11 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
 
     let calls: WireToolCall[] | null = null
     let parts: unknown[] = []
+    let finished = false
     for await (const ev of readTurnEvents(res)) {
       if (ev.t === 'meta') {
         chatId = ev.chatId ?? chatId
+        if (ev.chatId) args.onChat?.(ev.chatId)
         rolled ||= ev.rolled
         soft ||= ev.soft
       } else if (ev.t === 'text') {
@@ -155,11 +167,14 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
         calls = ev.calls
         parts = ev.parts
       } else if (ev.t === 'done') {
+        finished = true
         truncated ||= ev.truncated
       } else if (ev.t === 'error') {
         throw toFailure(ev)
       }
     }
+    // A stream that ends with neither a result nor a done frame was cut off mid-reply.
+    if (!calls && !finished) throw new TurnFailure({ kind: 'failed' })
     if (!calls) break
 
     const ran = executeCalls(calls, ctx)

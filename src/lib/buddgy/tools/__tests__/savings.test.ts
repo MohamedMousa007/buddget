@@ -476,3 +476,32 @@ describe('investment holdings', () => {
     expect(st().investmentHoldings).toEqual([holding(H1)])
   })
 })
+
+describe('audit fixes', () => {
+  const setBase = (base: string, rates: Record<string, number>) =>
+    useFinanceStore.setState({ exchangeRates: rates, settings: { ...useFinanceStore.getState().settings, baseCurrency: base as never } })
+
+  it('stores a property worth in EGP for a non-EGP base and says so', () => {
+    setBase('USD', { USD_EGP: 50, EGP_USD: 0.02 })
+    const p = write('add_investment_holding').propose({ type: 'property', name: 'Flat', value: 1000 }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    expect(p.proposal.preview.rows.find((r) => r.label === 'Value')?.value).toMatch(/=/)
+    expect(write('add_investment_holding').apply(p.proposal, ctx).ok).toBe(true)
+    expect(useFinanceStore.getState().investmentHoldings[0]).toMatchObject({ propertyValue: 50000, currency: 'EGP' })
+  })
+
+  it('refuses a property when base is not EGP and no rate exists', () => {
+    setBase('KWD', {})
+    expect(write('add_investment_holding').propose({ type: 'property', value: 1000 }, ctx)).toMatchObject({ ok: false })
+  })
+
+  it('a second identical add_investment_holding approval does not double-create', () => {
+    const args = { type: 'property', name: 'Flat', value: 1000 }
+    const a = write('add_investment_holding').propose(args, ctx)
+    const b = write('add_investment_holding').propose(args, ctx)
+    if (!a.ok || !b.ok) throw new Error('propose failed')
+    expect(write('add_investment_holding').apply(a.proposal, ctx).ok).toBe(true)
+    expect(write('add_investment_holding').apply(b.proposal, ctx)).toMatchObject({ ok: false, error: 'Already added' })
+    expect(useFinanceStore.getState().investmentHoldings).toHaveLength(1)
+  })
+})

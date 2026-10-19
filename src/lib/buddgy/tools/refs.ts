@@ -28,11 +28,12 @@ export function resolveByRefOrName<T extends { id: string }>(
   value: unknown,
   nameOf: (item: T) => string,
 ): RefMatch<T> {
-  const byRef = resolveRef(items, value)
-  if (byRef.kind !== 'none') return byRef
   if (typeof value !== 'string' || value.trim() === '') return { kind: 'none' }
+  // An exact name wins over a ref lookup, so a method called "Dead" or "2026" is never hijacked by a uuid prefix.
   const name = value.trim().toLowerCase()
   const named = items.filter((i) => nameOf(i).trim().toLowerCase() === name)
   if (named.length === 1) return { kind: 'one', item: named[0] }
+  const byRef = resolveRef(items, value)
+  if (byRef.kind !== 'none') return byRef
   return named.length === 0 ? { kind: 'none' } : { kind: 'many', items: named }
 }

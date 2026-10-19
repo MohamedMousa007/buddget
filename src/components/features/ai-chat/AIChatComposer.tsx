@@ -22,6 +22,7 @@ export function AIChatComposer({ value, onChange, onSend, onStop, busy, placehol
       <div className="flex items-end gap-2">
         <Textarea
           rows={1}
+          maxLength={2000}
           dir="auto"
           placeholder={placeholder ?? copy.composerPlaceholder}
           value={value}
