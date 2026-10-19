@@ -39,6 +39,8 @@ const STASH_TARGETS = [
   { from: 'src/app/api', to: '.cap-stash/api' },
   { from: 'src/middleware.ts', to: '.cap-stash/middleware.ts' },
   { from: 'src/proxy.ts', to: '.cap-stash/proxy.ts' },
+  // Integration tests import the API route handlers stashed above, so they can't type-check in this build.
+  { from: 'src/lib/server/admin/__tests__', to: '.cap-stash/admin-tests' },
   { from: 'src/instrumentation.ts', to: '.cap-stash/instrumentation.ts' },
   { from: 'src/app/auth/callback', to: '.cap-stash/auth-callback' },
   { from: 'src/app/setup', to: '.cap-stash/setup' },
