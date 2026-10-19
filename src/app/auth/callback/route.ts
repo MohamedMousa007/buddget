@@ -38,7 +38,10 @@ export async function GET(request: Request) {
   const origin = requestUrl.origin
   const destination = safeRedirect(origin, nextParam)
 
+  const toAdmin = new URL(destination).pathname.startsWith('/admin')
+
   if (oauthError) {
+    if (toAdmin) return NextResponse.redirect(`${origin}/admin/accept?error=1`)
     const reason =
       oauthError === 'access_denied'
         ? 'access_denied'
@@ -55,5 +58,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(oauthFailureRedirect(origin, 'exchange_failed'))
   }
 
+  // Invite and magic links arrive with the session in the URL fragment, which only the browser can read.
+  if (toAdmin) return NextResponse.redirect(`${origin}/admin/accept`)
   return NextResponse.redirect(oauthFailureRedirect(origin, 'missing_code'))
 }

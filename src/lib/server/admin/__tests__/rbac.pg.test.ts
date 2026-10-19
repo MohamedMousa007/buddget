@@ -6,6 +6,7 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', async () => (await import('./harness/mocks')).serviceMock())
 vi.mock('@/lib/supabase/resolveRouteUser', async () => (await import('./harness/mocks')).routeUserMock())
 vi.mock('@/lib/auth/resolveDeviceId', async () => (await import('./harness/mocks')).deviceMock())
+vi.mock('@/lib/server/admin/inviteEmail', () => ({ sendStaffInviteEmail: async () => true }))
 vi.mock('@supabase/supabase-js', async () => (await import('./harness/mocks')).supabaseJsMock())
 
 import { POST as login } from '@/app/api/admin/auth/login/route'

@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectField } from '@/components/ui/SelectField'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useAdminQuery } from '../adminClient'
 import { ago } from '../format'
 import { useAdminAction } from '../useAdminAction'
@@ -151,17 +153,29 @@ function InviteSheet({ data, onClose, onDone }: { data: StaffData; onClose: () =
   const [name, setName] = useState('')
   const [department, setDepartment] = useState('')
   const [roleKey, setRoleKey] = useState(roles[0]?.value ?? '')
+  const [sendEmail, setSendEmail] = useState(true)
+  const toast = useActionToast()
   return (
     <AdminSheet open title="Add a teammate" onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-sm text-[var(--color-brand-text-secondary)]">They sign in to Buddget with this email, then open the admin icon beside their profile to set up their password and authenticator.</p>
+        <p className="text-sm text-[var(--color-brand-text-secondary)]">We email them a link that signs them in and opens the portal, where they set their admin password and authenticator. They can also sign in to Buddget with this email and use the admin icon beside their profile.</p>
         <Field label="Email"><Input size="brand" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Name"><Input size="brand" value={name} onChange={(e) => setName(e.target.value)} /></Field>
           <Field label="Department"><Input size="brand" value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Support, Finance…" /></Field>
         </div>
         <Field label="Role"><SelectField aria-label="Role" value={roleKey} onChange={setRoleKey} items={roles} className="h-12 w-full" /></Field>
-        <Button size="cta-block" loading={busy === 'invite'} disabled={!email.trim() || !roleKey} onClick={async () => { if (await run('invite', { op: 'invite', email, displayName: name, department, roleKey }, { success: 'Teammate added' })) onClose() }}>Add teammate</Button>
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--color-brand-border)] px-4 py-3">
+          <span className="text-sm text-[var(--color-brand-text)]">Email them an invite link</span>
+          <Switch size="touch" checked={sendEmail} onCheckedChange={setSendEmail} aria-label="Email them an invite link" />
+        </div>
+        <Button size="cta-block" loading={busy === 'invite'} disabled={!email.trim() || !roleKey} onClick={async () => {
+          let emailed = true
+          const ok = await run('invite', { op: 'invite', email, displayName: name, department, roleKey, sendEmail }, { success: sendEmail ? 'Teammate added, invite sent' : 'Teammate added', then: (res: { emailSent?: boolean }) => { emailed = res.emailSent !== false } })
+          if (!ok) return
+          if (sendEmail && !emailed) toast('Added, but the invite email could not be sent. Open them and press Resend invite.')
+          onClose()
+        }}>Add teammate</Button>
       </div>
     </AdminSheet>
   )
@@ -204,6 +218,7 @@ function MemberSheet({ member, data, canManage, onClose, onDone }: { member: Mem
               {member.status === 'active'
                 ? <Button variant="outline" size="touch" loading={busy === 'suspend'} onClick={() => void run('suspend', { op: 'suspend', id: member.id }, { success: 'Suspended', confirm: { title: `Suspend ${member.display_name ?? member.email}?`, body: 'They lose portal access immediately.', destructive: true } })}>Suspend</Button>
                 : <Button variant="outline" size="touch" loading={busy === 'restore'} onClick={() => void run('restore', { op: 'restore', id: member.id }, { success: 'Restored' })}>Restore</Button>}
+              {!member.secured && member.status === 'active' ? <Button variant="outline" size="touch" loading={busy === 'resend'} onClick={() => void run('resend', { op: 'resend_invite', id: member.id }, { success: 'Invite sent' })}>Resend invite</Button> : null}
               {member.user_id ? <Button variant="outline" size="touch" onClick={() => void guarded('reset', { op: 'reset_credentials' }, 'This signs them out and forces them to set up password and authenticator again.', { success: 'Security reset' })}>Reset their security</Button> : null}
               <Button variant="destructive" size="touch" onClick={() => void guarded('remove', { op: 'remove' }, 'Removing a teammate revokes all their access.', { success: 'Removed', confirm: { title: 'Remove from the team?', destructive: true } })}>Remove</Button>
             </div>

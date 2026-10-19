@@ -1,5 +1,7 @@
 import { OWNER_EMAIL, OWNER_ROLE, PERMISSIONS, can, isPermission, outranks, OWNER_ONLY } from '@/lib/admin/permissions'
 import { bad, guardAdmin, json, readJson, type AdminContext } from '@/lib/server/admin/guard'
+import { allowAttempt } from '@/lib/server/admin/credentials'
+import { sendStaffInviteEmail } from '@/lib/server/admin/inviteEmail'
 import { stepUp } from '@/lib/server/admin/stepUp'
 import { revokeAllAdminSessions } from '@/lib/server/admin/session'
 import { UUID_RE } from '@/lib/server/admin/targets'
@@ -30,6 +32,16 @@ export async function GET(req: Request) {
   })
 }
 
+/** Sends the sign-in link, within limits that stop the mailer being used to spam someone. */
+async function emailInvite(ctx: AdminContext, email: string): Promise<boolean> {
+  const allowed =
+    (await allowAttempt(ctx.service, `admin-invite-by:${ctx.staff.id}`, 3600, 30)) &&
+    (await allowAttempt(ctx.service, `admin-invite-to:${email}`, 3600, 5))
+  const sent = allowed && (await sendStaffInviteEmail(ctx.service, email))
+  await ctx.audit(sent ? 'staff.invite_email' : 'staff.invite_email_failed', { targetType: 'staff', targetId: email, summary: sent ? `Emailed an invite to ${email}` : `Could not email ${email}` })
+  return sent
+}
+
 async function roleRank(ctx: AdminContext, key: string): Promise<{ rank: number; permissions: string[] } | null> {
   const { data } = await ctx.service.from('admin_roles').select('rank, permissions').eq('key', key).maybeSingle()
   return data
@@ -53,6 +65,7 @@ export async function POST(req: Request) {
     department?: string
     roleKey?: string
     extraPermissions?: string[]
+    sendEmail?: boolean
     role?: { key: string; name: string; description?: string; permissions: string[]; rank?: number }
     key?: string
   }>(req)
@@ -77,7 +90,8 @@ export async function POST(req: Request) {
     })
     if (error) return bad(error.code === '23505' ? 'That person is already on the team.' : 'Could not add them.', error.code === '23505' ? 409 : 500)
     await ctx.audit('staff.invite', { targetType: 'staff', targetId: email, summary: `Added ${email} as ${body.roleKey}` })
-    return json({ ok: true })
+    if (body.sendEmail === false) return json({ ok: true, emailSent: false })
+    return json({ ok: true, emailSent: await emailInvite(ctx, email) })
   }
 
   if (body.op === 'upsert_role') {
@@ -110,12 +124,17 @@ export async function POST(req: Request) {
   }
 
   if (!body.id || !UUID_RE.test(body.id)) return bad('Unknown staff member.')
-  const { data: member } = await ctx.service.from('admin_staff').select('id, email, user_id, role_key, extra_permissions').eq('id', body.id).maybeSingle()
+  const { data: member } = await ctx.service.from('admin_staff').select('id, email, user_id, role_key, extra_permissions, status').eq('id', body.id).maybeSingle()
   if (!member) return bad('Staff member not found.', 404)
   if (member.role_key === OWNER_ROLE) return bad('The owner account cannot be changed.', 403)
   const memberRole = await roleRank(ctx, member.role_key)
   if (!memberRole || !outranks(ctx.role.rank, memberRole.rank)) return bad('That person is at or above your level.', 403)
   const target = { targetType: 'staff', targetId: member.email }
+
+  if (body.op === 'resend_invite') {
+    if (member.status !== 'active') return bad('Restore this person before inviting them again.')
+    return json({ ok: true, emailSent: await emailInvite(ctx, member.email) })
+  }
 
   if (body.op === 'update') {
     const patch: { role_key?: string; extra_permissions?: string[]; display_name?: string | null; department?: string | null } = {}

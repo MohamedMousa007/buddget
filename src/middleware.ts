@@ -150,7 +150,7 @@ export async function middleware(request: NextRequest) {
 
   const isAuthCallback = pathname === AUTH_CALLBACK || pathname.startsWith(`${AUTH_CALLBACK}/`)
   const isResetPassword = pathname.startsWith('/reset-password')
-  const isAdmin = pathname.startsWith('/admin')
+  const isAdmin = pathname.startsWith('/admin') && pathname !== '/admin/accept'
 
   if (isAuthCallback || isResetPassword) {
     return supabaseResponse

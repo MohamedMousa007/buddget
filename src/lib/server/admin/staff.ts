@@ -11,6 +11,7 @@ export interface StaffMember {
   role_key: string
   extra_permissions: string[]
   status: 'active' | 'suspended'
+  invited_by: string | null
   last_login_at: string | null
 }
 
@@ -20,7 +21,7 @@ export interface StaffContext {
   permissions: Set<string>
 }
 
-const STAFF_COLUMNS = 'id, email, user_id, display_name, department, role_key, extra_permissions, status, last_login_at'
+const STAFF_COLUMNS = 'id, email, user_id, display_name, department, role_key, extra_permissions, status, invited_by, last_login_at'
 
 /**
  * Staff emails are stored lowercase and matched exactly: a pattern match (`ilike`) would treat `_` and `%` in an

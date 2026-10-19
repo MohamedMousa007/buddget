@@ -7,6 +7,8 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', async () => (await import('./harness/mocks')).serviceMock())
 vi.mock('@/lib/supabase/resolveRouteUser', async () => (await import('./harness/mocks')).routeUserMock())
 vi.mock('@/lib/auth/resolveDeviceId', async () => (await import('./harness/mocks')).deviceMock())
+const mail = vi.hoisted(() => ({ send: vi.fn(async (_email: string) => true) }))
+vi.mock('@/lib/server/admin/inviteEmail', () => ({ sendStaffInviteEmail: (_s: unknown, email: string) => mail.send(email) }))
 vi.mock('@supabase/supabase-js', async () => (await import('./harness/mocks')).supabaseJsMock())
 
 import { POST as login } from '@/app/api/admin/auth/login/route'
@@ -54,6 +56,48 @@ describe.skipIf(!pgEnabled)('team & roles (real Postgres)', () => {
       expect(me.liveSessions).toBe(1)
       // never leaks credential material
       expect(JSON.stringify(r.body)).not.toMatch(/password_hash|totp_secret|recovery_hashes|token_hash/)
+    })
+  })
+
+  describe('invite email', () => {
+    beforeEach(() => { mail.send.mockClear(); mail.send.mockResolvedValue(true) })
+
+    it('emails the sign-in link when someone is added, and records it', async () => {
+      const r = await act(admin, tAdmin, { op: 'invite', email: 'Mail@X.com', roleKey: 'viewer' })
+      expect(r.body).toMatchObject({ ok: true, emailSent: true })
+      expect(mail.send).toHaveBeenCalledWith('mail@x.com')
+      expect((await q(`select 1 from admin_audit_log where action='staff.invite_email' and target_id='mail@x.com'`)).length).toBe(1)
+    })
+
+    it('adds without emailing when asked not to', async () => {
+      const r = await act(admin, tAdmin, { op: 'invite', email: 'quiet@x.com', roleKey: 'viewer', sendEmail: false })
+      expect(r.body).toMatchObject({ ok: true, emailSent: false })
+      expect(mail.send).not.toHaveBeenCalled()
+    })
+
+    it('still adds the person and reports it when the email cannot be sent', async () => {
+      mail.send.mockResolvedValue(false)
+      const r = await act(admin, tAdmin, { op: 'invite', email: 'fail@x.com', roleKey: 'viewer' })
+      expect(r.body).toMatchObject({ ok: true, emailSent: false })
+      expect((await q(`select 1 from admin_staff where email='fail@x.com'`)).length).toBe(1)
+      expect((await q(`select 1 from admin_audit_log where action='staff.invite_email_failed'`)).length).toBe(1)
+    })
+
+    it('resends to a pending teammate, but not to suspended people or those above your level', async () => {
+      await act(admin, tAdmin, { op: 'invite', email: 'again@x.com', roleKey: 'viewer', sendEmail: false })
+      const [{ id }] = await q<{ id: string }>(`select id from admin_staff where email='again@x.com'`)
+      expect((await act(admin, tAdmin, { op: 'resend_invite', id })).body).toMatchObject({ emailSent: true })
+      expect(mail.send).toHaveBeenCalledWith('again@x.com')
+      await q(`update admin_staff set status='suspended' where id=$1`, [id])
+      expect((await act(admin, tAdmin, { op: 'resend_invite', id })).status).toBe(400)
+      expect((await act(lead, tLead, { op: 'resend_invite', id: admin.staffId })).status).toBe(403)
+    })
+
+    it('limits how often one address can be emailed', async () => {
+      await act(admin, tAdmin, { op: 'invite', email: 'spam@x.com', roleKey: 'viewer', sendEmail: false })
+      const [{ id }] = await q<{ id: string }>(`select id from admin_staff where email='spam@x.com'`)
+      for (let i = 0; i < 5; i++) expect((await act(admin, tAdmin, { op: 'resend_invite', id })).body.emailSent).toBe(true)
+      expect((await act(admin, tAdmin, { op: 'resend_invite', id })).body.emailSent).toBe(false)
     })
   })
 

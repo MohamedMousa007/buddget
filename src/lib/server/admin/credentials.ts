@@ -83,9 +83,14 @@ export async function clearFailures(service: ServiceClient, userId: string): Pro
  * First-time setup is the one moment an attacker holding a stolen app session could claim a staff
  * account, so it re-proves the account: its password when it has one, otherwise a very recent sign-in.
  */
-export async function verifyAccountOwnership(user: User, accountPassword: unknown): Promise<boolean> {
-  const hasPassword = (user.identities ?? []).some((i) => i.provider === 'email')
-  if (hasPassword) {
+export function accountHasPassword(user: User, invited: boolean): boolean {
+  // An emailed invite creates an email identity with no password the person knows, so for them the sign-in
+  // through the invite link is the proof instead.
+  return !invited && (user.identities ?? []).some((i) => i.provider === 'email')
+}
+
+export async function verifyAccountOwnership(user: User, accountPassword: unknown, invited: boolean): Promise<boolean> {
+  if (accountHasPassword(user, invited)) {
     if (typeof accountPassword !== 'string' || !accountPassword || !user.email) return false
     const probe = createClient(requireSupabaseUrl(), requireSupabasePublishableKey(), {
       auth: { persistSession: false, autoRefreshToken: false },

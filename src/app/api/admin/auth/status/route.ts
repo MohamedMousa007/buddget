@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
-import { loadCredentials } from '@/lib/server/admin/credentials'
+import { accountHasPassword, loadCredentials } from '@/lib/server/admin/credentials'
 import { readSessionToken, validateAdminSession } from '@/lib/server/admin/session'
 import { resolveStaff } from '@/lib/server/admin/staff'
 
@@ -36,7 +36,7 @@ export async function GET(req: Request) {
       staff: { name: ctx.staff.display_name, email: ctx.staff.email, role: ctx.role.key, roleName: ctx.role.name, rank: ctx.role.rank },
       permissions: [...ctx.permissions],
       setup: cred?.totp_confirmed_at ? 'complete' : cred ? 'confirm_totp' : 'needed',
-      hasAccountPassword: (user.identities ?? []).some((i) => i.provider === 'email'),
+      hasAccountPassword: accountHasPassword(user, ctx.staff.invited_by !== null),
       session: session ? { method: session.method, expiresAt: session.expires_at, createdAt: session.created_at } : null,
       biometricEnrolled,
     },

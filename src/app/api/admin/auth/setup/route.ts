@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   if (existing?.totp_confirmed_at) return bad('Security is already set up. Change it from My security.', 409)
 
   if (!(await allowAttempt(ctx.service, `admin-setup:${ctx.user.id}`, 900, 10))) return bad('Too many attempts. Try again later.', 429)
-  if (!(await verifyAccountOwnership(ctx.user, body.accountPassword))) {
+  if (!(await verifyAccountOwnership(ctx.user, body.accountPassword, ctx.staff.invited_by !== null))) {
     return bad('Confirm your Buddget account password (or sign in again) to continue.', 401)
   }
   const problem = passwordProblem(body.password)

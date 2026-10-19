@@ -50,3 +50,6 @@ Migrations `0123_admin_portal_core`, `0124_admin_support_monetization`, `0125_ad
 - Biometric unlocks last 4h (password + code: 12h). In production the session cookie is `__Host-bdg_admin`.
 - Rate limiting uses `admin_rate_hit` (migration 0126); analytics perf indexes/functions are in 0127.
 - Integration tests run the real route handlers against a local Postgres: `bash scripts/qa/setup.sh`, then `QA_PG_URL=… npx vitest run --fileParallelism=false src/lib/server/admin` (the `*.pg.test.ts` files skip without `QA_PG_URL`).
+
+## Inviting teammates
+Add teammate (Team & roles) creates the staff record and emails a one-tap link (Supabase auth mailer: account invite for new emails, magic link for existing accounts) pointing at `/auth/callback?next=/admin`. The callback forwards to `/admin/accept`, which reads the session from the link, signs the person in and opens the portal, where first-time setup (admin password + authenticator) runs. For invited people the link sign-in replaces the Buddget account password check during setup. "Resend invite" is on any teammate who has not finished setup. Sends are rate limited (30/hour per inviter, 5/hour per address) and audited. Requirements: `${APP_URL}/auth/callback` in Supabase Auth redirect URLs, and customise the Invite / Magic Link email templates in the Supabase dashboard if the default wording is not wanted.
