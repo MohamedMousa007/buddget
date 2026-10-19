@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Ellipsis, History, Pencil, Plus, Star, Trash2 } from 'lucide-react'
+import { Copy, Ellipsis, GitCompare, History, Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
@@ -28,12 +28,15 @@ export interface PlanDeckProps {
   onRename: (id: string, name: string) => void
   onDelete: (id: string) => void
   onHistory: () => void
+  onCompare: (id: string) => void
   onNew: () => void
 }
 
 /** Swipeable cards of every budget with the actions for the selected one. */
 export function PlanDeck(p: PlanDeckProps) {
-  const c = useBudgetDeckCopy().deck
+  const copy = useBudgetDeckCopy()
+  const c = copy.deck
+  const compareLabel = copy.compare.action
   const [menu, setMenu] = useState<DOMRect | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const selected = p.plans.find((x) => x.id === p.selectedId) ?? p.plans[0]
@@ -143,6 +146,7 @@ export function PlanDeck(p: PlanDeckProps) {
             anchor={menu}
             onClose={() => setMenu(null)}
             items={[
+              { label: compareLabel, icon: <GitCompare className="size-4" />, onSelect: () => p.onCompare(selected.id) },
               { label: c.rename, icon: <Pencil className="size-4" />, onSelect: () => setRenaming(selected.id) },
               { label: c.delete, icon: <Trash2 className="size-4" />, destructive: true, onSelect: () => p.onDelete(selected.id) },
             ]}

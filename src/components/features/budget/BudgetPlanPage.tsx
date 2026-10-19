@@ -23,16 +23,15 @@ import type { LineView, PlanMode } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
 import { PlanBar } from './PlanBar'
 import { FlowStrip } from './FlowStrip'
-import { ChapterCard } from './ChapterCard'
-import { BlockShell } from './BlockShell'
+import { PlanChapters } from './PlanChapters'
 import { InsightsChip } from './InsightsChip'
 import { InsightsSheet } from './InsightsSheet'
 import { EmptyPlan } from './EmptyPlan'
 import { UpgradeBanner } from './UpgradeBanner'
-import { BLOCK_BODIES } from './blocks'
 import { LineSheet } from './sheets/LineSheet'
 import { AddLineSheet } from './sheets/AddLineSheet'
 import { ActivateSheet } from './sheets/ActivateSheet'
+import { ComparePlansSheet } from './sheets/ComparePlansSheet'
 import { PlanDeck } from './PlanDeck'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetPageCopy } from './usePageCopy'
@@ -62,6 +61,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const [activateId, setActivateId] = useState<string | null>(null)
+  const [compare, setCompare] = useState<{ a: string; b: string } | null>(null)
   const [upgradeLater, setUpgradeLater] = useState(false)
 
   const { plans, activeId, activations, rates } = useFinanceStore(
@@ -188,6 +188,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           onRename={planActions.rename}
           onDelete={planActions.remove}
           onHistory={() => navigate('/budget-history')}
+          onCompare={(id) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id })}
           onNew={planActions.createBlank}
         />
       ) : null}
@@ -201,43 +202,25 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         />
       ) : null}
 
-      {view.chapters.map((chapter, i) => (
-        <ChapterCard
-          key={chapter.chapter}
-          chapter={chapter}
-          index={i + 1}
-          mode={mode}
-          base={base}
-          expanded={!collapsed.has(chapter.chapter)}
-          onToggle={() =>
-            setCollapsed((prev) => {
-              const next = new Set(prev)
-              if (!next.delete(chapter.chapter)) next.add(chapter.chapter)
-              return next
-            })
-          }
-        >
-          {chapter.blocks.map((block) => {
-            const Body = BLOCK_BODIES[block.block]
-            return (
-              <BlockShell key={block.block} id={`block-${block.block}`} block={block} mode={mode} base={base}>
-                <Body
-                  view={view}
-                  block={block}
-                  mode={mode}
-                  onOpenLine={setLineId}
-                  onLineAction={onLineAction}
-                  onAdd={setAddBlock}
-                  onOpenLinked={(b) => {
-                    const route = LINKED_ROUTE[b]
-                    if (route) navigate(route)
-                  }}
-                />
-              </BlockShell>
-            )
-          })}
-        </ChapterCard>
-      ))}
+      <PlanChapters
+        view={view}
+        mode={mode}
+        collapsed={collapsed}
+        onToggle={(chapter) =>
+          setCollapsed((prev) => {
+            const next = new Set(prev)
+            if (!next.delete(chapter)) next.add(chapter)
+            return next
+          })
+        }
+        onOpenLine={setLineId}
+        onLineAction={onLineAction}
+        onAdd={setAddBlock}
+        onOpenLinked={(b) => {
+          const route = LINKED_ROUTE[b]
+          if (route) navigate(route)
+        }}
+      />
 
       {mode === 'month' && view.unassignedSpend > 0 ? (
         <Card className="flex items-center gap-3">
@@ -289,6 +272,16 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         monthLabel={new Date().toLocaleDateString(locale, { month: 'long' })}
         onConfirm={() => activateId && planActions.activate(activateId)}
         onClose={() => setActivateId(null)}
+      />
+      <ComparePlansSheet
+        open={compare != null && plans.length > 1}
+        plans={plans}
+        aId={compare?.a ?? null}
+        bId={compare?.b ?? null}
+        base={base}
+        rates={rates}
+        onChange={(a, b) => setCompare({ a, b })}
+        onClose={() => setCompare(null)}
       />
       <CardActionMenu
         anchor={menuAnchor}

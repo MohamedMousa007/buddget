@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowLeftRight, ChevronLeft, Copy, History } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeftRight, ChevronLeft, Copy, Eye, History } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -26,6 +27,7 @@ import { calculateTotalSpentExcludingSavings, filterExpensesByMonth, getMonthRan
 import { formatCurrency } from '@/lib/utils/formatters'
 import { differenceInCalendarDays } from 'date-fns'
 import { blockColor } from './chromeFormat'
+import { PastPlanSheet } from './sheets/PastPlanSheet'
 import { useBudgetDeckCopy } from './useDeckCopy'
 
 const monthName = (key: string, locale: string, withYear = false) => {
@@ -45,6 +47,7 @@ export function PlanHistoryPage() {
   const c = useBudgetDeckCopy().history
   const { locale } = useLocale()
   const actions = usePlanActions()
+  const [viewId, setViewId] = useState<string | null>(null)
   const { dataReady, plans, activations, activeId, expenses, base, rates, startDay } = useFinanceStore(
     useShallow((s) => ({
       dataReady: s.dataReady,
@@ -155,10 +158,16 @@ export function PlanHistoryPage() {
                       ) : null}
                     </div>
                     {!current ? (
-                      <Button size="touch" variant="outline" className="mt-3 w-full" onClick={() => actions.duplicate(span.plan.id)}>
-                        <Copy />
-                        {c.duplicate}
-                      </Button>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <Button size="touch" variant="outline" onClick={() => setViewId(span.plan.id)}>
+                          <Eye />
+                          {c.view}
+                        </Button>
+                        <Button size="touch" variant="outline" onClick={() => actions.duplicate(span.plan.id)}>
+                          <Copy />
+                          {c.duplicate}
+                        </Button>
+                      </div>
                     ) : null}
                   </Card>
                   {older ? (
@@ -180,6 +189,7 @@ export function PlanHistoryPage() {
           </>
         )}
       </div>
+      <PastPlanSheet planId={viewId} onClose={() => setViewId(null)} />
     </PageContainer>
   )
 }

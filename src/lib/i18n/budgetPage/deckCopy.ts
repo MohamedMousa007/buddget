@@ -47,6 +47,18 @@ export interface BudgetDeckCopy {
     done: (name: string) => string
     undo: string
   }
+  compare: {
+    title: string
+    a: string
+    b: string
+    total: string
+    blocks: string
+    differs: string
+    onlyIn: (name: string) => string
+    match: string
+    close: string
+    action: string
+  }
   history: {
     title: string
     back: string
@@ -65,6 +77,7 @@ export interface BudgetDeckCopy {
     firstPlan: (date: string) => string
     range: (from: string, to: string) => string
     duplicate: string
+    view: string
     onPlan: string
     kept: (percent: number) => string
     over: (amount: string) => string
@@ -121,6 +134,18 @@ export const budgetDeckCopyEn: BudgetDeckCopy = {
     done: (name) => `${name} is now active`,
     undo: 'Undo',
   },
+  compare: {
+    title: 'Compare budgets',
+    a: 'Budget A',
+    b: 'Budget B',
+    total: 'Planned total',
+    blocks: 'By block',
+    differs: 'What differs',
+    onlyIn: (name) => `Only in ${name}`,
+    match: 'These two budgets have the same lines and amounts.',
+    close: 'Close',
+    action: 'Compare',
+  },
   history: {
     title: 'Plan history',
     back: 'Back to Budget',
@@ -139,6 +164,7 @@ export const budgetDeckCopyEn: BudgetDeckCopy = {
     firstPlan: (date) => `First plan created ${date}`,
     range: (from, to) => `${from} to ${to}`,
     duplicate: 'Duplicate',
+    view: 'View',
     onPlan: 'On plan',
     kept: (p) => `Under plan by ${p}%`,
     over: (a) => `Over by ${a}`,
@@ -195,6 +221,18 @@ export const budgetDeckCopyAr: BudgetDeckCopy = {
     done: (name) => `${name} هي الآن النشطة`,
     undo: 'تراجع',
   },
+  compare: {
+    title: 'مقارنة الميزانيات',
+    a: 'الميزانية أ',
+    b: 'الميزانية ب',
+    total: 'الإجمالي المخطط',
+    blocks: 'حسب القسم',
+    differs: 'ما الذي يختلف',
+    onlyIn: (name) => `فقط في ${name}`,
+    match: 'الميزانيتان متطابقتان في البنود والمبالغ.',
+    close: 'إغلاق',
+    action: 'مقارنة',
+  },
   history: {
     title: 'سجل الخطط',
     back: 'العودة إلى الميزانية',
@@ -213,6 +251,7 @@ export const budgetDeckCopyAr: BudgetDeckCopy = {
     firstPlan: (date) => `أُنشئت أول خطة في ${date}`,
     range: (from, to) => `من ${from} إلى ${to}`,
     duplicate: 'نسخ',
+    view: 'عرض',
     onPlan: 'ضمن الخطة',
     kept: (p) => `أقل من الخطة بـ ${p}%`,
     over: (a) => `تجاوز بـ ${a}`,

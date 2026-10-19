@@ -24,7 +24,7 @@ const DEFAULT_TARGET_MONTHS = 3
  * debts, goals and savings for the selected cycle. Null when there is no live plan. The caller
  * hydrates the stores.
  */
-export function usePlanView(mode: PlanMode): PlanView | null {
+export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
   const stats = useMonthlyStats()
   const goalRows = useGoalRows()
   const { monthFilter } = useSettingsStore()
@@ -51,8 +51,9 @@ export function usePlanView(mode: PlanMode): PlanView | null {
 
   return useMemo(() => {
     // Plan mode designs the active plan; This month shows the plan that governed that month.
-    const plan =
-      mode === 'month'
+    const plan = planId
+      ? (s.budgetPlans.find((p) => p.id === planId) ?? null)
+      : mode === 'month'
         ? planForMonth(s.budgetPlans, s.budgetPlanActivations, monthFilter, s.activeBudgetPlanId)
         : selectActivePlan(s.budgetPlans, s.activeBudgetPlanId)
     if (!plan) return null
@@ -108,5 +109,5 @@ export function usePlanView(mode: PlanMode): PlanView | null {
         targetMonths: config?.targetMonths ?? DEFAULT_TARGET_MONTHS,
       },
     })
-  }, [s, stats, goalRows, monthFilter, mode])
+  }, [s, stats, goalRows, monthFilter, mode, planId])
 }
