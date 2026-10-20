@@ -6,6 +6,7 @@ import { Menu, Lock, ArrowLeft, Search, X } from 'lucide-react'
 import { BuddgetWordmark } from '@/components/brand'
 import { isNativeShellBuild } from '@/lib/native/isNative'
 import { appOrigin } from '@/lib/apiBase'
+import { navigate } from '@/lib/navigation/navigate'
 import { AppLink } from '@/components/ui/AppLink'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
@@ -95,7 +96,7 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
           {status.session?.method === 'sso' ? null : <IconButton aria-label="Lock the portal" size="sm" onClick={onLock}><Lock /></IconButton>}
         </div>
         {/* In the apps the portal is its own bundled page: a plain anchor reloads the app shell, and never leaves the bundle for the website. */}
-        <AppLink href={isNativeShellBuild() ? '/' : `${appOrigin()}/`} onClick={isNativeShellBuild() ? (e) => { e.preventDefault(); window.location.assign('/') } : undefined} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
+        <AppLink href={isNativeShellBuild() ? '/' : `${appOrigin()}/`} onClick={isNativeShellBuild() ? (e) => { e.preventDefault(); navigate('/') } : undefined} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
           <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden />Back to Buddget
         </AppLink>
       </div>

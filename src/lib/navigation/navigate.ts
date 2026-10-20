@@ -2,6 +2,7 @@
 
 import { normalizePath, setNavPath } from './navStore'
 import { isShellPath } from './shellRoutes'
+import { isNativeShellBuild } from '@/lib/native/isNative'
 
 /** Add a trailing slash to the path portion (keep query/hash) so a hard load
  *  resolves the static-export file at `<route>/index.html`. Root stays `/`. */
@@ -27,7 +28,8 @@ export interface NavigateOptions {
 export function navigate(href: string, opts: NavigateOptions = {}): void {
   if (typeof window === 'undefined') return
   const path = normalizePath(href)
-  if (isShellPath(path)) {
+  // The apps bundle the portal as an in-memory view too: a document load of /admin can land on the wrong page in the WebView.
+  if (isShellPath(path) || (path === '/admin' && isNativeShellBuild())) {
     if (opts.replace) window.history.replaceState(null, '', href)
     else window.history.pushState(null, '', href)
     setNavPath(path)

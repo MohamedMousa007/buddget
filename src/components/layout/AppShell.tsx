@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { apiUrl } from '@/lib/apiBase'
 import { Sidebar } from './Sidebar'
@@ -35,6 +35,8 @@ import { useT } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+
+const AdminApp = lazy(() => import('@/components/features/admin/AdminApp').then((m) => ({ default: m.AdminApp })))
 
 /**
  * Fires on every native app startup and on auth changes. Handles two platforms:
@@ -276,7 +278,7 @@ export function AppShell({ children }: AppShellProps) {
   if (bare) {
     return (
       <div className="min-h-[100dvh] bg-[var(--color-brand-bg)]">
-        {children}
+        {shellPath === '/admin' ? <Suspense fallback={null}><AdminApp /></Suspense> : children}
         {/* The portal builds its own dialogs; the consumer add-expense FAB has no place in it. */}
         {!isAdminRoute(shellPath) ? <ModalProvider /> : null}
       </div>
