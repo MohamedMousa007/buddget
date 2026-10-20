@@ -42,6 +42,7 @@ const STASH_TARGETS = [
   // Integration tests import the API route handlers stashed above, so they can't type-check in this build.
   { from: 'src/lib/server/admin/__tests__', to: '.cap-stash/admin-tests' },
   { from: 'src/instrumentation.ts', to: '.cap-stash/instrumentation.ts' },
+  { from: 'src/instrumentation-node.ts', to: '.cap-stash/instrumentation-node.ts' },
   { from: 'src/app/auth/callback', to: '.cap-stash/auth-callback' },
   { from: 'src/app/setup', to: '.cap-stash/setup' },
   { from: 'src/app/sitemap.ts', to: '.cap-stash/sitemap.ts' },

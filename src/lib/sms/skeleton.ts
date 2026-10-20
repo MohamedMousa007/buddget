@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash } from 'crypto'
 import { redactBody } from '@/lib/sms/adjudicator'
 
 /**
