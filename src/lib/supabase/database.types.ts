@@ -14,6 +14,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      sms_stats_outbox: {
+        Row: {
+          id: number
+          created_at: string
+          sender: string | null
+          is_txn: boolean
+          kw: string[]
+          kw_lang: string[]
+          template_id: string | null
+          user_id: string | null
+          bump_match: boolean
+          ccy_sender: string | null
+          ccy_currency: Database["public"]["Enums"]["currency_code"] | null
+          ccy_confirmed: boolean | null
+          skeleton_key: string | null
+          sender_key: string | null
+          redacted_body: string | null
+          kind: string | null
+          parse_method: string | null
+          currency: string | null
+          parsed_ok: boolean | null
+        }
+        Insert: {
+          id?: never
+          created_at?: string
+          sender?: string | null
+          is_txn?: boolean
+          kw?: string[]
+          kw_lang?: string[]
+          template_id?: string | null
+          user_id?: string | null
+          bump_match?: boolean
+          ccy_sender?: string | null
+          ccy_currency?: Database["public"]["Enums"]["currency_code"] | null
+          ccy_confirmed?: boolean | null
+          skeleton_key?: string | null
+          sender_key?: string | null
+          redacted_body?: string | null
+          kind?: string | null
+          parse_method?: string | null
+          currency?: string | null
+          parsed_ok?: boolean | null
+        }
+        Update: {
+          kw?: string[]
+        }
+        Relationships: []
+      }
+      sms_corpus: {
+        Row: {
+          skeleton_key: string
+          sender_key: string | null
+          redacted_body: string
+          kind: string | null
+          parse_method: string | null
+          currency: string | null
+          matched_template_id: string | null
+          seen_count: number
+          ok_count: number
+          first_seen: string
+          last_seen: string
+        }
+        Insert: {
+          skeleton_key: string
+          sender_key?: string | null
+          redacted_body: string
+          kind?: string | null
+          parse_method?: string | null
+          currency?: string | null
+          matched_template_id?: string | null
+          seen_count?: number
+          ok_count?: number
+          first_seen?: string
+          last_seen?: string
+        }
+        Update: {
+          seen_count?: number
+        }
+        Relationships: []
+      }
+      admin_metrics_cache: {
+        Row: {
+          key: string
+          value: Json
+          computed_at: string
+        }
+        Insert: {
+          key: string
+          value: Json
+          computed_at?: string
+        }
+        Update: {
+          key?: string
+          value?: Json
+          computed_at?: string
+        }
+        Relationships: []
+      }
       email_log: {
         Row: {
           id: string
@@ -2781,6 +2879,7 @@ export type Database = {
       }
       sms_parse_log: {
         Row: {
+          harvested_at: string | null
           account_last4: string | null
           acked_at: string | null
           amount: number | null
@@ -2824,6 +2923,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          harvested_at?: string | null
           account_last4?: string | null
           acked_at?: string | null
           amount?: number | null
@@ -2867,6 +2967,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          harvested_at?: string | null
           account_last4?: string | null
           acked_at?: string | null
           amount?: number | null
@@ -3600,6 +3701,11 @@ export type Database = {
       }
     }
     Functions: {
+      analytics_touch: {
+        Args: { p_seconds?: number; p_sessions?: number; p_paths?: Json }
+        Returns: undefined
+      }
+      admin_refresh_metrics: { Args: never; Returns: undefined }
       add_debt_payment_with_expense: {
         Args: { p_expense: Json; p_payment: Json }
         Returns: Json

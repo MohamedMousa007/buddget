@@ -8,7 +8,7 @@
  * Auth: Supabase session required. Per-user hourly cap shared across instances (`api_rate_hit`).
  */
 import { NextResponse, type NextRequest } from 'next/server'
-import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { retryOnOverload } from '@/lib/server/ai/gemini'
 import { getUserEntitlements } from '@/lib/entitlements/server'
@@ -98,7 +98,7 @@ async function askModel(apiKey: string, system: string, user: string, schema: ob
 }
 
 export async function POST(req: NextRequest) {
-  const { user } = await resolveRouteUser(req)
+  const user = await resolveRouteIdentity(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.GEMINI_API_KEY?.trim()

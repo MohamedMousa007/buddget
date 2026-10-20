@@ -2,57 +2,55 @@
 
 import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
+import { createAnalyticsBuffer } from '@/lib/analytics/buffer'
 import { createClient } from '@/lib/supabase/client'
 
-const HEARTBEAT_INTERVAL_MS = 45_000
-const HEARTBEAT_CHUNK_SEC = 45
+const FLUSH_INTERVAL_MS = 120_000
 
+/**
+ * Activity reporting: visible time, session starts and page visits are buffered and sent as one small batch every
+ * couple of minutes and whenever the app is hidden (one upsert per user per day on the server).
+ */
 export function AnalyticsHeartbeat({ userId }: { userId: string }) {
   const pathname = usePathname()
-  const sentSession = useRef(false)
+  const buffer = useRef<ReturnType<typeof createAnalyticsBuffer> | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
+    const buf = createAnalyticsBuffer({
+      send: async (report) => {
+        const { error } = await supabase.rpc('analytics_touch', { p_seconds: report.seconds, p_sessions: report.sessions, p_paths: report.paths })
+        return !error
+      },
+    })
+    buffer.current = buf
+    buf.startSession()
+    const visible = () => document.visibilityState === 'visible'
+    buf.setVisible(visible())
 
-    async function emit(type: string, metadata: Record<string, unknown> = {}) {
-      const { error } = await supabase.from('app_analytics_events').insert({
-        user_id: userId,
-        event_type: type,
-        metadata,
-      })
-      if (error) {
-        console.warn('[analytics]', type, error.message)
-      }
+    const onVisibility = () => {
+      buf.setVisible(visible())
+      if (!visible()) void buf.flush()
     }
-
-    if (!sentSession.current) {
-      sentSession.current = true
-      void emit('session_start', { path: pathname })
-    }
-
-    const tick = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-        void emit('heartbeat', {
-          path: pathname,
-          seconds: HEARTBEAT_CHUNK_SEC,
-        })
-      }
-    }
-
-    const id = window.setInterval(tick, HEARTBEAT_INTERVAL_MS)
-
-    const onVis = () => {
-      if (document.visibilityState === 'visible') {
-        void emit('visibility_visible', { path: pathname })
-      }
-    }
-    document.addEventListener('visibilitychange', onVis)
+    const onHide = () => void buf.flush()
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', onHide)
+    const id = window.setInterval(() => {
+      if (visible()) void buf.flush()
+    }, FLUSH_INTERVAL_MS)
 
     return () => {
       window.clearInterval(id)
-      document.removeEventListener('visibilitychange', onVis)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', onHide)
+      void buf.flush()
+      buffer.current = null
     }
-  }, [userId, pathname])
+  }, [userId])
+
+  useEffect(() => {
+    buffer.current?.visit(pathname)
+  }, [pathname, userId])
 
   return null
 }

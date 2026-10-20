@@ -136,7 +136,7 @@ export async function middleware(request: NextRequest) {
   // Never let a slow auth backend take the whole site down (504 MIDDLEWARE_INVOCATION_TIMEOUT):
   // the session refresh is best-effort, the client refreshes its own session.
   const user = await Promise.race([
-    supabase.auth.getUser().then((r) => r.data.user, () => null),
+    supabase.auth.getClaims().then((r) => r.data?.claims ?? null, () => null),
     new Promise<null>((resolve) => setTimeout(() => resolve(null), AUTH_CHECK_TIMEOUT_MS)),
   ])
 

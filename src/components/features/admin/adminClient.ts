@@ -71,32 +71,49 @@ export interface Query<T> {
   refresh: () => Promise<void>
 }
 
-// Last good response per path: going back to a list shows it at once while a fresh copy loads behind it.
+// Last good response per path: going back to a list shows it at once. A response younger than STALE_MS is not
+// refetched on remount (switching tabs back and forth costs nothing); older ones revalidate behind the cached copy.
 const MAX_CACHED = 60
-const responseCache = new Map<string, unknown>()
+const STALE_MS = 15_000
+const responseCache = new Map<string, { data: unknown; at: number }>()
+const inflight = new Map<string, Promise<unknown>>()
 const remember = (path: string, data: unknown) => {
   responseCache.delete(path)
-  responseCache.set(path, data)
+  responseCache.set(path, { data, at: Date.now() })
   if (responseCache.size > MAX_CACHED) responseCache.delete(responseCache.keys().next().value as string)
 }
 // Nothing from a locked session may outlive it.
-if (typeof window !== 'undefined') window.addEventListener(ADMIN_LOCKED_EVENT, () => responseCache.clear())
+if (typeof window !== 'undefined') window.addEventListener(ADMIN_LOCKED_EVENT, () => { responseCache.clear(); inflight.clear() })
+
+/** One request per path at a time: identical concurrent GETs share the same promise. */
+function fetchOnce<T>(path: string): Promise<T> {
+  let p = inflight.get(path) as Promise<T> | undefined
+  if (!p) {
+    p = adminFetch<T>(path).finally(() => inflight.delete(path))
+    inflight.set(path, p)
+  }
+  return p
+}
 
 /** GET a admin endpoint; refetches when `path` changes. Shows the last response for that path immediately, then revalidates. */
 export function useAdminQuery<T>(path: string | null): Query<T> {
-  const [data, setData] = useState<T | null>(() => (path !== null ? ((responseCache.get(path) as T | undefined) ?? null) : null))
+  const [data, setData] = useState<T | null>(() => (path !== null ? ((responseCache.get(path)?.data as T | undefined) ?? null) : null))
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(path !== null)
   const seq = useRef(0)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     if (path === null) return
     const mine = ++seq.current
-    const cached = responseCache.get(path) as T | undefined
-    if (cached !== undefined) setData(cached)
+    const cached = responseCache.get(path)
+    if (cached !== undefined) setData(cached.data as T)
+    if (!force && cached !== undefined && Date.now() - cached.at < STALE_MS) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
-      const next = await adminFetch<T>(path)
+      const next = await fetchOnce<T>(path)
       remember(path, next)
       if (mine === seq.current) {
         setData(next)
@@ -113,5 +130,6 @@ export function useAdminQuery<T>(path: string | null): Query<T> {
     void load()
   }, [load])
 
-  return { data, error, loading, refresh: load }
+  const refresh = useCallback(() => load(true), [load])
+  return { data, error, loading, refresh }
 }

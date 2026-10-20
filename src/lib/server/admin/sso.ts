@@ -26,6 +26,7 @@ export async function resolveSsoSession(
   const last = staffCtx.staff.last_login_at ? new Date(staffCtx.staff.last_login_at).getTime() : 0
   if (now - last > LOGIN_STAMP_EVERY_MS) {
     await service.from('admin_staff').update({ last_login_at: new Date(now).toISOString() }).eq('id', staffCtx.staff.id)
+    staffCtx.staff.last_login_at = new Date(now).toISOString()
     await writeAudit(service, { actorId: user.id, actorEmail: user.email ?? null, action: 'auth.login', metadata: { via: 'sso' }, ip: meta.ip })
   }
   const since = user.last_sign_in_at ?? new Date(now).toISOString()

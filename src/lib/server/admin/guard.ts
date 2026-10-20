@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { User } from '@supabase/supabase-js'
 import { can, canAny, type Permission } from '@/lib/admin/permissions'
-import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { resolveRouteIdentity, resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient, type ServiceClient } from '@/lib/supabase/service'
 import { writeAudit } from './audit'
+import { loadCredentials } from './credentials'
 import {
   ADMIN_CSRF_HEADER,
   ADMIN_CSRF_VALUE,
@@ -47,16 +48,52 @@ interface GuardOptions {
  * Every admin endpoint goes through here. Layers, in order: signed-in account, active staff record,
  * CSRF header on mutations, an unlocked admin session (own token, or the app sign-in when the person's SSO switch is on), then the permission.
  */
+/**
+ * Reads are the portal's bulk traffic. The caller's identity is verified locally from the JWT, and the staff record,
+ * role and credentials are remembered for a few seconds, so a screen costs one cheap check instead of five round
+ * trips. Every write skips this: it asks the Auth server (so a revoked session stops at once) and reads staff,
+ * role and credentials fresh, so a suspension or role change is never one request late for a destructive action.
+ */
+const STAFF_CACHE_MS = 20_000
+interface CachedStaff {
+  at: number
+  user: User
+  staffCtx: StaffContext
+  cred: Awaited<ReturnType<typeof loadCredentials>>
+}
+const staffCache = new Map<string, CachedStaff>()
+
 export async function guardAdmin(req: Request, opts: GuardOptions = {}): Promise<GuardResult> {
-  const { user } = await resolveRouteUser(req)
-  if (!user) return deny(401, 'Sign in to continue.', 'unauthenticated')
+  const readOnly = req.method === 'GET' || req.method === 'HEAD'
+  if (!readOnly) staffCache.clear()
+
+  let hit: CachedStaff | undefined
+  if (readOnly) {
+    const identity = await resolveRouteIdentity(req)
+    if (!identity) return deny(401, 'Sign in to continue.', 'unauthenticated')
+    const cached = staffCache.get(identity.id)
+    if (cached && Date.now() - cached.at < STAFF_CACHE_MS) hit = cached
+  }
 
   const service = createServiceRoleClient()
-  const staffCtx = await resolveStaff(service, user)
-  if (!staffCtx) return deny(403, 'Not authorized.', 'not_staff')
-  if (staffCtx.staff.status !== 'active') return deny(403, 'This staff account is suspended.', 'suspended')
+  let user: User
+  let staffCtx: StaffContext
+  let cred: CachedStaff['cred']
+  if (hit) {
+    ;({ user, staffCtx, cred } = hit)
+  } else {
+    const resolved = await resolveRouteUser(req)
+    if (!resolved.user) return deny(401, 'Sign in to continue.', 'unauthenticated')
+    user = resolved.user
+    const found = await resolveStaff(service, user)
+    if (!found) return deny(403, 'Not authorized.', 'not_staff')
+    if (found.staff.status !== 'active') return deny(403, 'This staff account is suspended.', 'suspended')
+    staffCtx = found
+    cred = await loadCredentials(service, user.id)
+    if (readOnly) staffCache.set(user.id, { at: Date.now(), user, staffCtx, cred })
+  }
 
-  if (req.method !== 'GET' && req.method !== 'HEAD' && req.headers.get(ADMIN_CSRF_HEADER) !== ADMIN_CSRF_VALUE) {
+  if (!readOnly && req.headers.get(ADMIN_CSRF_HEADER) !== ADMIN_CSRF_VALUE) {
     return deny(403, 'Missing request header.', 'csrf')
   }
 
@@ -65,7 +102,7 @@ export async function guardAdmin(req: Request, opts: GuardOptions = {}): Promise
   let session = token ? await validateAdminSession(service, token, user.id) : null
   const ip = clientIp(req)
   const userAgent = req.headers.get('user-agent')
-  session ??= await resolveSsoSession(service, user, staffCtx, { ip, userAgent })
+  session ??= await resolveSsoSession(service, user, staffCtx, { ip, userAgent }, cred)
   if (!session && !opts.sessionOptional) return deny(401, 'Admin session locked. Unlock the portal to continue.', 'locked')
 
   const needed = opts.permission ? (Array.isArray(opts.permission) ? opts.permission : [opts.permission]) as readonly Permission[] : []

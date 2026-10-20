@@ -14,10 +14,12 @@ const cache = new Map<string, boolean>()
 export function useStaffAccess(): boolean {
   const { user } = useAuth()
   const uid = user?.id ?? null
+  // Only accounts the server has already marked as staff ask: everyone else never calls an admin endpoint.
+  const flagged = user?.app_metadata?.is_staff === true
   const [, setTick] = useState(0)
 
   useEffect(() => {
-    if (!uid || cache.has(uid)) return
+    if (!uid || !flagged || cache.has(uid)) return
     let live = true
     apiFetchAuth('/api/admin/auth/status')
       .then((res) => (res.ok ? (res.json() as Promise<{ isStaff?: boolean }>) : { isStaff: false }))
@@ -27,7 +29,7 @@ export function useStaffAccess(): boolean {
         if (live) setTick((n) => n + 1)
       })
     return () => { live = false }
-  }, [uid])
+  }, [uid, flagged])
 
   return uid ? (cache.get(uid) ?? false) : false
 }

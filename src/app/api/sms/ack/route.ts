@@ -12,6 +12,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { looksLikeJwt, resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 
 const bodySchema = z.object({ logId: z.string().uuid() })
 
@@ -21,8 +22,10 @@ async function resolveUserId(req: Request): Promise<string | null> {
   if (!bearer) return null
   const service = createServiceRoleClient()
 
-  const { data: jwtUser } = await service.auth.getUser(bearer)
-  if (jwtUser?.user) return jwtUser.user.id
+  if (looksLikeJwt(bearer)) {
+    const identity = await resolveRouteIdentity(req)
+    if (identity) return identity.id
+  }
 
   const { data: tokenRow } = await service
     .from('sms_ingest_tokens')

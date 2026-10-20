@@ -12,7 +12,7 @@
  * Auth: Supabase session required.
  */
 import { NextResponse, type NextRequest } from 'next/server'
-import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { addUsage, estimateUnits, EMPTY_USAGE, type TokenUsage } from '@/lib/server/ai/units'
@@ -187,7 +187,7 @@ function extractJson(text: string): string | null {
 }
 
 export async function POST(request: NextRequest) {
-  const { user } = await resolveRouteUser(request)
+  const user = await resolveRouteIdentity(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.GEMINI_API_KEY?.trim()

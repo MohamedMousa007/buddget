@@ -1,4 +1,5 @@
-import type { User } from '@supabase/supabase-js'
+import { createClient as createJwtClient, type SupabaseClient, type User } from '@supabase/supabase-js'
+import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { createClient as createServerSupabase } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -32,5 +33,53 @@ export async function resolveRouteUser(
     return { user: data.user }
   } catch (e) {
     return { user: null, error: e instanceof Error ? e.message : 'auth_failed' }
+  }
+}
+
+export interface RouteIdentity {
+  id: string
+  email: string | null
+}
+
+/** Three base64url parts: a JWT. Opaque tokens (SMS ingest tokens) are not, and must never cost an Auth round trip. */
+export function looksLikeJwt(token: string): boolean {
+  return /^[\w-]+\.[\w-]+\.[\w-]*$/.test(token)
+}
+
+// One verifier for the process: supabase-js keeps the JWKS cached on the client, so verification is local after the first call.
+let verifier: SupabaseClient | null = null
+function jwtVerifier(): SupabaseClient {
+  verifier ??= createJwtClient(requireSupabaseUrl(), requireSupabasePublishableKey(), { auth: { persistSession: false, autoRefreshToken: false } })
+  return verifier
+}
+
+function identityOf(claims: { sub?: string; role?: string; email?: string } | null | undefined): RouteIdentity | null {
+  return claims?.sub && claims.role === 'authenticated' ? { id: claims.sub, email: claims.email ?? null } : null
+}
+
+/**
+ * Who is calling, without asking the Auth server: the JWT's signature and expiry are checked locally against the
+ * project's published signing key. Use it wherever only the id (and email) matter. Sensitive or admin-mutating
+ * paths keep `resolveRouteUser`, which asks the Auth server and so also notices a revoked session at once.
+ */
+export async function resolveRouteIdentity(request: Request): Promise<RouteIdentity | null> {
+  const auth = request.headers.get('authorization') ?? ''
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
+  if (bearer) {
+    if (!looksLikeJwt(bearer)) return null
+    try {
+      const { data } = await jwtVerifier().auth.getClaims(bearer)
+      const id = identityOf(data?.claims)
+      if (id) return id
+    } catch {
+      /* fall through to the session cookie */
+    }
+  }
+  try {
+    const supabase = await createServerSupabase()
+    const { data } = await supabase.auth.getClaims()
+    return identityOf(data?.claims)
+  } catch {
+    return null
   }
 }

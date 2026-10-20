@@ -18,6 +18,7 @@ import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { looksLikeJwt, resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
@@ -25,7 +26,8 @@ import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNative
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
-import { runAdjudication, runZeroVarianceCheck } from '@/lib/sms/runAdjudication'
+import { runAdjudication } from '@/lib/sms/runAdjudication'
+import { recordSmsStats } from '@/lib/sms/statsOutbox'
 import { checkPlausibility, checkCurrencyAgainstAccount, checkCrossTemplateContradiction } from '@/lib/sms/templateHealth'
 import { getCuratedDbTemplates, TEMPLATE_COLUMNS } from '@/lib/sms/curatedDbCache'
 import {
@@ -44,7 +46,6 @@ import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
-import { extractKeywords } from '@/lib/sms/keywordExtractor'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { getUserLocale } from '@/lib/server/userLocale'
 import { emitNotification } from '@/lib/server/emitNotification'
@@ -61,10 +62,9 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 const RATE_LIMIT_PER_DAY = 100
 const CONFIRM_CONFIDENCE = 0.6
 const PATTERN_LEARN_CONFIDENCE = 0.9
-// Share of parses that trigger the background health sweep (adjudication + zero-variance).
-// A maintenance pass, not per-message logic — at any real volume this still fires many times a
-// day, while keeping the sweep off the hot path of the other ~90%.
-const HEALTH_SWEEP_SAMPLE_RATE = 0.1
+// Share of parses that trigger the background adjudication pass (the zero-variance check runs on a database
+// schedule). A maintenance pass, not per-message logic; it costs an AI call, so it is kept rare.
+const HEALTH_SWEEP_SAMPLE_RATE = 0.02
 
 const bodySchema = z.object({
   message: z.string().min(1).max(2000),
@@ -560,8 +560,10 @@ async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
   const service = createServiceRoleClient()
 
   // First try Supabase JWT (mobile shell forwards `session.access_token`).
-  const { data: jwtUser } = await service.auth.getUser(bearer)
-  if (jwtUser?.user) return { userId: jwtUser.user.id }
+  if (looksLikeJwt(bearer)) {
+    const identity = await resolveRouteIdentity(req)
+    if (identity) return { userId: identity.id }
+  }
 
   // Fallback: bearer token from sms_ingest_tokens (legacy / shortcut bridge).
   const { data: tokenRow } = await service
@@ -603,44 +605,12 @@ export async function POST(request: Request) {
   const { message, sender, source, receivedAt } = parsedBody.data
   const service = createServiceRoleClient()
 
-  // ponytail: self-healing — resolve rows stuck at 'processing' >2 min (Vercel kill before DB update)
-  void service.from('sms_parse_log')
-    .update({ status: 'failed', failure_code: 'timed_out' })
-    .eq('user_id', userId)
-    .eq('status', 'processing')
-    .lt('parsed_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
-
   // sms_hash identifies the row for /api/sms/confirm + the FCM sms_confirm push.
   const hash = computeSmsHash(message)
   const nowIso = receivedAt ?? new Date().toISOString()
 
-  // Idempotency: a WorkManager/Shortcut retry of an SMS that already produced a
-  // transaction (or is awaiting confirmation) must not post a duplicate.
-  const { data: priorRows } = await service
-    .from('sms_parse_log')
-    .select('id, expense_id, income_id, debt_payment_id, awaiting_confirmation, status, paired_log_id')
-    .eq('user_id', userId)
-    .eq('sms_hash', hash)
-    .neq('status', 'rejected')
-    .limit(5)
-  const dupe = (priorRows ?? []).find(
-    (r) =>
-      r.expense_id ||
-      r.income_id ||
-      r.debt_payment_id ||
-      r.awaiting_confirmation ||
-      r.paired_log_id ||
-      r.status === 'processing',
-  )
-  if (dupe) {
-    return NextResponse.json({
-      ok: true,
-      duplicate: true,
-      expenseId: dupe.expense_id ?? null,
-      incomeId: dupe.income_id ?? null,
-    })
-  }
-
+  // Idempotency: a WorkManager/Shortcut retry of an SMS we already hold hits the unique (user_id, sms_hash)
+  // index in the insert below, which answers with the prior row. No separate lookup.
   const { data: logRow, error: logErr } = await service
     .from('sms_parse_log')
     .insert({
@@ -688,8 +658,9 @@ export async function POST(request: Request) {
   const rejectReason = isNonTransaction(message)
   if (rejectReason) {
     await service.from('sms_parse_log')
-      .update({ status: 'rejected', failure_code: 'not_transaction', parse_method: 'fully_curated' })
+      .update({ status: 'rejected', failure_code: 'not_transaction', parse_method: 'fully_curated', harvested_at: new Date().toISOString() })
       .eq('id', logId)
+    after(() => recordSmsStats(service, { userId, senderKey: effectiveSender(sender, message, null), message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: null, parseMethod: 'fully_curated', currencyCode: null }))
     return NextResponse.json({ ok: false, reason: 'not_transaction', rejected: rejectReason })
   }
 
@@ -857,8 +828,10 @@ export async function POST(request: Request) {
         confidence: parsed.confidence ?? 0,
         failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
         parse_method: parseMethod,
+        harvested_at: new Date().toISOString(),
       })
       .eq('id', logId)
+    after(() => recordSmsStats(service, { userId, senderKey, message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: parsed.kind ?? null, parseMethod, currencyCode: null }))
     return NextResponse.json({ ok: false, reason: 'not_transaction' })
   }
 
@@ -884,8 +857,10 @@ export async function POST(request: Request) {
         category: parsed.category,
         failure_code: 'low_confidence',
         parse_method: parseMethod,
+        harvested_at: new Date().toISOString(),
       })
       .eq('id', logId)
+    after(() => recordSmsStats(service, { userId, senderKey, message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: parsed.kind ?? null, parseMethod, currencyCode: parsed.currency ?? null }))
     return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
   }
 
@@ -967,32 +942,26 @@ export async function POST(request: Request) {
   const provisionalConfirm =
     (currencyProvisional || quarantinedFallback) && !addFailed && postedSomething
 
-  // Learn the (user, sender) currency for next time — confirmed when it came from
-  // a literal/known mapping, provisional otherwise. Best-effort, after response.
-  if (senderKey && !addFailed && (postedSomething || tx.outcome === 'income_matched')) {
-    const learnConfirmed = !currencyProvisional
-    // resolveCurrency guarantees a supported code; the DB column is an enum.
-    const ccy = parsed.currency as Database['public']['Enums']['currency_code']
-    after(() => service.rpc('learn_sms_sender_currency', {
-      p_user: userId, p_sender: senderKey, p_currency: ccy, p_confirmed: learnConfirmed,
-    }))
-  }
+  const success = !addFailed && (postedSomething || tx.outcome === 'income_matched')
+  // Everything statistical about this SMS (keyword and sender pools, the learned sender currency, the template's
+  // match count and contributor, the corpus skeleton) is ONE insert; a scheduled drain applies them in batches.
+  after(() =>
+    recordSmsStats(service, {
+      userId,
+      senderKey,
+      message,
+      templateId: matchedTemplateId,
+      // resolveCurrency guarantees a supported code; the DB column is an enum.
+      currency: success && senderKey ? { value: parsed.currency as Database['public']['Enums']['currency_code'], confirmed: !currencyProvisional } : null,
+      isTransaction: success,
+      parsedOk: success,
+      kind: tx.kind ?? parsed.kind ?? null,
+      parseMethod,
+      currencyCode: parsed.currency ?? null,
+    }),
+  )
 
-  // Keyword + sender frequency pools (Phase-2 data). Collect from any confirmed
-  // transaction tier (curated/template/AI), best-effort, after the response.
-  if (!addFailed && (postedSomething || tx.outcome === 'income_matched')) {
-    const tokens = extractKeywords(message)
-    after(async () => {
-      try {
-        if (senderKey) await service.rpc('bump_sms_sender', { p_sender: senderKey, p_is_txn: true })
-        for (const tk of tokens) {
-          await service.rpc('bump_sms_keyword', { p_keyword: tk.keyword, p_lang: tk.lang })
-        }
-      } catch (e) {
-        console.warn('[sms/parse] keyword pooling failed', e)
-      }
-    })
-  }
+  const preAck = !addFailed && !provisionalConfirm && (postedSomething || tx.outcome === 'income_matched')
 
   // Promote the log row with the full parse result + an HONEST add status.
   // add_failed keeps parsed_ok=true and awaiting_confirmation=true so the row
@@ -1001,7 +970,11 @@ export async function POST(request: Request) {
     .from('sms_parse_log')
     .update({
       parsed_ok: true,
-      status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : 'logged',
+      // A transaction that exists in-app is confirmed at once (the old separate pre-ack write), unless the row still
+      // awaits the user or is a paired leg. Push delivery is tracked separately.
+      status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : preAck ? 'confirmed' : 'logged',
+      ...(preAck && tx.outcome !== 'transfer_paired' ? { acked_at: new Date().toISOString(), confirmed_at: new Date().toISOString() } : {}),
+      harvested_at: new Date().toISOString(),
       failure_code: addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
@@ -1035,14 +1008,6 @@ export async function POST(request: Request) {
   if (promoteErr) {
     console.error('[sms/parse] log promote failed', promoteErr)
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
-  }
-
-  // Server-side pre-ack: the transaction exists in-app now, so confirm it
-  // immediately instead of leaving it "Not confirmed" for hours until the native
-  // app opens and the client catch-up ACK fires. Push delivery is tracked
-  // separately. Only for rows where a transaction was actually created or matched.
-  if (!addFailed && !provisionalConfirm && (postedSomething || tx.outcome === 'income_matched')) {
-    await service.rpc('sms_mark_acked', { p_log_id: logId, p_user_id: userId })
   }
 
   // Localize push + notification copy to the account's language.
@@ -1326,7 +1291,7 @@ export async function POST(request: Request) {
         for (const o of outcomes) {
           try {
             if (o.result === 'agreed') {
-              await recordTemplateUser(o.templateId, userId, service)
+              await recordSmsStats(service, { userId, senderKey: null, message: '', templateId: o.templateId, countMatch: false, currency: null, isTransaction: false, parsedOk: false, kind: null, parseMethod: null, currencyCode: null })
             } else {
               // Matched but extracted something else — a defect in that template, recorded as a
               // soft signal. Judged as a RATE against match_count, never as an absolute count.
@@ -1344,20 +1309,6 @@ export async function POST(request: Request) {
     }
   }
 
-  // Record this user against the matched template for an accurate distinct-user count
-  // (drives the promotion min_unique_users gate).
-  if (matchedTemplateId) {
-    const tid = matchedTemplateId
-    after(async () => {
-      // `match_count` gates promotion (min_match_count) and is the only evidence in the
-      // admin panel that a learned template does anything. A bare `void rpc(...)` at match
-      // time is frozen the instant the response returns, so every template sat at 0 matches
-      // forever and nothing could ever become eligible.
-      await service.rpc('increment_sms_template_match_count', { p_id: tid })
-      await recordTemplateUser(tid, userId, service)
-    })
-  }
-
   // Background maintenance — adjudication + the zero-variance sweep. These are questions about
   // the template population's history, not about the message in hand, so they need not run on
   // every SMS: sampling ~1-in-N keeps them timely (they fire many times a day at any real volume)
@@ -1371,9 +1322,6 @@ export async function POST(request: Request) {
           askModel: (system, user) => askModelJson(key, system, user),
         })
         if (res.adjudicated > 0) console.log('[sms/adjudication]', res)
-        // Free, deterministic, no AI: catches a capture group locked onto a constant.
-        const zv = await runZeroVarianceCheck(service)
-        if (zv > 0) console.log('[sms/health] zero-variance quarantined', zv)
       })
     }
   }

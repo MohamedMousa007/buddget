@@ -10,6 +10,7 @@
  */
 import { NextResponse } from 'next/server'
 import { runPriceRefresh } from '@/lib/prices/runPriceRefresh'
+import { harvestLegacySms } from '@/lib/sms/harvest'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export const maxDuration = 60
@@ -22,9 +23,13 @@ export async function GET(request: Request) {
   }
 
   const result = await runPriceRefresh()
-  // Summarises old analytics before removing them, and clears finished quota bookkeeping.
-  const { error: housekeepingError } = await createServiceRoleClient().rpc('housekeeping', { p_analytics_days: 120 })
-  if (housekeepingError) console.error('[cron/prices] housekeeping failed', housekeepingError.message)
+  // Retention and rollups run inside the database (pg_cron). This only sweeps up SMS text that predates the
+  // ingest-time harvest, so raw bodies can be removed after 30 days without losing what they taught.
+  const harvested = await harvestLegacySms(createServiceRoleClient(), 500).catch((e) => {
+    console.error('[cron/prices] sms harvest failed', e instanceof Error ? e.message : e)
+    return 0
+  })
+  if (harvested > 0) console.log('[cron/prices] sms rows harvested', harvested)
   const status = result.error ? 500 : 200
   return NextResponse.json(result, { status })
 }

@@ -12,7 +12,7 @@
  */
 import { NextResponse, type NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
-import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { audioMimeToExt } from '@/lib/voice/audioMime'
 
@@ -34,7 +34,7 @@ const BYTES_PER_UNIT = 20
 
 export async function POST(request: NextRequest) {
   const started = Date.now()
-  const { user } = await resolveRouteUser(request)
+  const user = await resolveRouteIdentity(request)
   if (!user) {
     console.error('[VOICE:transcribe] fail status=401 reason=unauthorized')
     return NextResponse.json({ error: 'Unauthorized', stage: 'transcribe' }, { status: 401 })
