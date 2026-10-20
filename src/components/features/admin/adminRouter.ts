@@ -29,6 +29,11 @@ let current: AdminRoute = parse()
 let snapshotKey = JSON.stringify(current)
 const listeners = new Set<() => void>()
 
+/** Re-read the address bar: the portal can be re-entered by an in-app navigation that fires no popstate. */
+export function syncAdminRoute(): void {
+  publish()
+}
+
 function publish(): void {
   const next = parse()
   const key = JSON.stringify(next)

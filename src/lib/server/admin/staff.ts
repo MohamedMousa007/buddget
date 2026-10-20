@@ -61,11 +61,6 @@ export async function resolveStaff(service: ServiceClient, user: User): Promise<
 
   if (!staff) return null
 
-  // The app reads this claim to decide whether to look the person up at all (see useStaffAccess); the server stays the authority.
-  if (user.app_metadata?.is_staff !== true) {
-    void service.auth.admin.updateUserById(user.id, { app_metadata: { ...user.app_metadata, is_staff: true } }).catch(() => undefined)
-  }
-
   const { data: role } = await service.from('admin_roles').select('key, name, rank, permissions').eq('key', staff.role_key).single()
   if (!role) return null
 

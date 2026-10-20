@@ -31,7 +31,7 @@ function SignedInAs({ email }: { email: string }) {
 /** Centered card used by every pre-portal screen (no access, setup, unlock). */
 export function AuthFrame({ title, subtitle, children, wide = false, account }: { title: string; subtitle?: string; children: ReactNode; wide?: boolean; account?: string }) {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center px-4 py-10 safe-area-bottom">
+    <div className="flex min-h-[100dvh] items-center justify-center px-4 py-10 pt-[calc(2.5rem+env(safe-area-inset-top,0px))] safe-area-bottom">
       <div className={wide ? 'w-full max-w-lg' : 'w-full max-w-sm'}>
         <div className="mb-6 flex flex-col items-center text-center">
           <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-[var(--color-brand-primary-soft)]">

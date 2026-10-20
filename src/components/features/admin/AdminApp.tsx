@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { AdminShell } from './AdminShell'
 import { ADMIN_LOCKED_EVENT, adminFetch, adminPost, setAdminToken } from './adminClient'
-import { adminNavigate, useAdminRoute } from './adminRouter'
+import { adminNavigate, syncAdminRoute, useAdminRoute } from './adminRouter'
 import { AuthFrame } from './auth/AuthFrame'
 import { NoAccess } from './auth/NoAccess'
 import { SetupFlow } from './auth/SetupFlow'
@@ -80,6 +80,10 @@ export function AdminApp() {
       writeCachedStatus(null)
       setPhase({ kind: 'error', message: e instanceof Error ? e.message : 'Could not reach the server.' })
     }
+  }, [])
+
+  useEffect(() => {
+    syncAdminRoute()
   }, [])
 
   useEffect(() => {
