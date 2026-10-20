@@ -77,6 +77,11 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
     </nav>
   )
 
+  const backToApp = () => {
+    if (isNativeShellBuild()) navigate('/')
+    else window.location.assign(`${appOrigin()}/`)
+  }
+
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center gap-3 border-b border-[var(--color-brand-border)] px-5">
@@ -134,6 +139,7 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
               <Input aria-label="Search users" placeholder="Find a user by email, name or id" value={query} onChange={(e) => setQuery(e.target.value)} className="h-11 ps-9" />
             </form>
           ) : null}
+          <IconButton aria-label="Back to Buddget" variant="tinted" className={cn(!canSearchUsers && 'ms-auto')} onClick={backToApp}><ArrowLeft className="rtl:rotate-180" /></IconButton>
         </header>
         <main className="mx-auto w-full max-w-[1400px] max-md:[&_button]:min-h-11 max-md:[&_input]:min-h-11 max-md:[&_select]:min-h-11 px-4 py-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] lg:px-8">{children}</main>
       </div>
