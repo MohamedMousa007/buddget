@@ -18,17 +18,6 @@ export async function GET(req: Request) {
   const cursor = p.get('cursor')
   if (status && !(STATUSES as readonly string[]).includes(status)) return bad('Unknown status.')
 
-  // Counts follow every filter except status, so the chips always show how the window splits.
-  const base = () => {
-    let query = ctx.service.from('email_log').select('id', { count: 'exact', head: true })
-    if (template) query = query.eq('template_key', template)
-    if (locale) query = query.eq('locale', locale)
-    if (from) query = query.gte('created_at', from)
-    if (to) query = query.lte('created_at', to)
-    if (q && ctx.canSeePii) query = query.ilike('to_email', `%${q}%`)
-    return query
-  }
-
   let rows = ctx.service
     .from('email_log')
     .select('id, created_at, user_id, to_email, template_key, locale, provider_message_id, status, error, latency_ms, source, is_test')
@@ -42,9 +31,16 @@ export async function GET(req: Request) {
   if (q && ctx.canSeePii) rows = rows.ilike('to_email', `%${q}%`)
   if (cursor) rows = rows.lt('created_at', cursor)
 
-  const [list, ...counts] = await Promise.all([rows, ...STATUSES.map((s) => base().eq('status', s))])
+  // Counts follow every filter except status, so the chips always show how the window splits: one grouped query.
+  const [list, grouped] = await Promise.all([
+    rows,
+    ctx.service.rpc('admin_email_status_counts', {
+      p_template: template ?? undefined, p_locale: locale ?? undefined, p_from: from ?? undefined, p_to: to ?? undefined,
+      p_q: q && ctx.canSeePii ? q : undefined,
+    }),
+  ])
   if (list.error) return bad('Could not load the log.', 500)
-  const byStatus = Object.fromEntries(STATUSES.map((s, i) => [s, counts[i]!.count ?? 0])) as Record<(typeof STATUSES)[number], number>
+  const byStatus = Object.fromEntries(STATUSES.map((s) => [s, grouped.data?.find((r) => r.status === s)?.n ?? 0])) as Record<(typeof STATUSES)[number], number>
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0)
   const failed = FAILED.reduce((a, s) => a + byStatus[s as (typeof STATUSES)[number]], 0)
   const page = (list.data ?? []).slice(0, PAGE)

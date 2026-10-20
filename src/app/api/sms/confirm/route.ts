@@ -7,6 +7,7 @@
  *
  * Auth: Supabase session cookie (web) or Bearer JWT (native via apiFetchAuth).
  */
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -27,6 +28,8 @@ const bodySchema = z
   .refine((d) => !!d.logId || !!d.hash, { message: 'Provide logId or hash' })
 
 export async function POST(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const userId = await resolveApiUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

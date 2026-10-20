@@ -3,6 +3,7 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { hostOnlyExpiryOptions, parseCookiesPreferLast, supabaseCookieDomain } from '@/lib/supabase/cookieDomain'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { isNative } from '@/lib/native/isNative'
+import '@/lib/clientInfo'
 
 // Singleton native client — one instance shared across AuthProvider, apiBase,
 // and any other caller. Multiple instances each have their own in-memory

@@ -111,7 +111,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
         try {
           // Prices piggyback on the same gesture — best-effort, never blocks the finance sync.
           await Promise.race([
-            Promise.all([syncFinanceNow(), refreshAssetPrices().catch(() => {})]),
+            Promise.all([syncFinanceNow(), refreshAssetPrices({ force: true }).catch(() => {})]),
             sleep(SYNC_TIMEOUT),
           ])
         } catch { /* best-effort; next auto-flush retries */ }

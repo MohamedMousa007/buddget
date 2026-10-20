@@ -28,7 +28,7 @@ import {
   budgetSubcategoryToRow,
   assembleBudgetPlan,
 } from './mappers/budgetPlanMapper'
-import type { Currency } from '@/lib/store/types'
+import type { AppSettings, Currency } from '@/lib/store/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 type Client = SupabaseClient<Database>
@@ -38,6 +38,35 @@ export interface FlushResult {
   anyError: boolean
   errors: string[]
   writes: number
+}
+
+
+/** Settings for an account that has no `user_settings` row yet. */
+export function defaultServerSettings(baseCurrency: Currency, secondaryCurrency: Currency | null): AppSettings {
+  return {
+    baseCurrency,
+    secondaryCurrency,
+    showSecondaryCurrency: false,
+    theme: 'dark',
+    language: 'en',
+    showCentsInDashboard: true,
+    monthStartDay: 1,
+    budgetEntryMode: 'amount',
+    enableAI: true,
+    aiProvider: 'gemini',
+    noIncomeDeclared: false,
+    showAllCurrenciesInForms: true,
+    twoFactorEmailEnabled: false,
+    legacyOnboardingMigratedAt: null,
+    dashboardLayout: 'standard',
+    tutorialsCompleted: [],
+    tutorialCurrentStep: null,
+    smsTrackingEnabled: false,
+    subDueReminders: true,
+    subPriceAlerts: true,
+    goalProgressAlerts: true,
+    goalAlerts: true,
+  }
 }
 
 class OpRunner {
@@ -270,30 +299,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
   const secondary = (profileR.data.secondary_currency ?? null) as Currency | null
   const settings = settingsR.data
     ? settingsFromRow(settingsR.data, { baseCurrency: extras.baseCurrency, secondaryCurrency: secondary })
-    : {
-        baseCurrency: extras.baseCurrency,
-        secondaryCurrency: secondary,
-        showSecondaryCurrency: false,
-        theme: 'dark' as const,
-        language: 'en' as const,
-        showCentsInDashboard: true,
-        monthStartDay: 1,
-        budgetEntryMode: 'amount' as const,
-        enableAI: true,
-        aiProvider: 'gemini' as const,
-        noIncomeDeclared: false,
-        showAllCurrenciesInForms: true,
-        twoFactorEmailEnabled: false,
-        legacyOnboardingMigratedAt: null,
-        dashboardLayout: 'standard' as const,
-        tutorialsCompleted: [] as string[],
-        tutorialCurrentStep: null as string | null,
-        smsTrackingEnabled: false,
-        subDueReminders: true,
-        subPriceAlerts: true,
-        goalProgressAlerts: true,
-        goalAlerts: true,
-      }
+    : defaultServerSettings(extras.baseCurrency, secondary)
 
   return {
     profile,
@@ -363,30 +369,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
   const secondary = (profileR.data.secondary_currency ?? null) as Currency | null
   const settings = settingsR.data
     ? settingsFromRow(settingsR.data, { baseCurrency: extras.baseCurrency, secondaryCurrency: secondary })
-    : {
-        baseCurrency: extras.baseCurrency,
-        secondaryCurrency: secondary,
-        showSecondaryCurrency: false,
-        theme: 'dark' as const,
-        language: 'en' as const,
-        showCentsInDashboard: true,
-        monthStartDay: 1,
-        budgetEntryMode: 'amount' as const,
-        enableAI: true,
-        aiProvider: 'gemini' as const,
-        noIncomeDeclared: false,
-        showAllCurrenciesInForms: true,
-        twoFactorEmailEnabled: false,
-        legacyOnboardingMigratedAt: null,
-        dashboardLayout: 'standard' as const,
-        tutorialsCompleted: [] as string[],
-        tutorialCurrentStep: null as string | null,
-        smsTrackingEnabled: false,
-        subDueReminders: true,
-        subPriceAlerts: true,
-        goalProgressAlerts: true,
-        goalAlerts: true,
-      }
+    : defaultServerSettings(extras.baseCurrency, secondary)
 
   const plans = (planR.data ?? []).map((plan) =>
     assembleBudgetPlan({

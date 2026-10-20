@@ -3701,6 +3701,18 @@ export type Database = {
       }
     }
     Functions: {
+      notification_candidate_users: { Args: never; Returns: string[] }
+      publish_email_template: { Args: { p_key: string; p_locale: string; p_staff: string }; Returns: number }
+      admin_entitlement_counts: { Args: never; Returns: { plan_key: string; status: string; n: number }[] }
+      admin_loyalty_summary: { Args: never; Returns: Json }
+      admin_ticket_counts: { Args: never; Returns: { status: string; priority: string; assignee_id: string | null; n: number }[] }
+      admin_push_platform_counts: { Args: never; Returns: { platform: string; n: number }[] }
+      admin_email_status_counts: {
+        Args: { p_template?: string; p_locale?: string; p_from?: string; p_to?: string; p_q?: string }
+        Returns: { status: string; n: number }[]
+      }
+      sync_pull: { Args: { p_since?: string }; Returns: Json }
+      sync_table_delta: { Args: { p_table: string; p_win: string }; Returns: Json }
       analytics_touch: {
         Args: { p_seconds?: number; p_sessions?: number; p_paths?: Json }
         Returns: undefined

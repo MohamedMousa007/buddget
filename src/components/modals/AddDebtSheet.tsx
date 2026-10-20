@@ -19,12 +19,10 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
 import { shortDate } from '@/lib/utils/shortDate'
-import { useHydrateDebts } from '@/hooks/remote'
 import { formatWhole } from '@/lib/utils/formatters'
 
 /** Loads debts only while the sheet is open, so the always-mounted sheet adds no startup queries. */
 function HydrateDebtsWhileOpen() {
-  useHydrateDebts()
   return null
 }
 

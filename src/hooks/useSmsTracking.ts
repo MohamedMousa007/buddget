@@ -113,12 +113,12 @@ export function useSmsTracking() {
     // phone's forwarded SMS as this device's connection.
     const fetchLastReceived = async () => {
       const supabase = createClient()
-      const { data: userRes } = await supabase.auth.getUser()
-      if (!userRes?.user) return
+      const uid = await currentUserId()
+      if (!uid) return
       const { data } = await supabase
         .from('sms_parse_log')
         .select('received_at')
-        .eq('user_id', userRes.user.id)
+        .eq('user_id', uid)
         .order('received_at', { ascending: false })
         .limit(1)
         .maybeSingle()
@@ -127,12 +127,12 @@ export function useSmsTracking() {
 
     const fetchTodayCount = async () => {
       const supabase = createClient()
-      const { data: userRes } = await supabase.auth.getUser()
-      if (!userRes?.user) return
+      const uid = await currentUserId()
+      if (!uid) return
       const { data } = await supabase
         .from('sms_parse_today')
         .select('parsed_count_today')
-        .eq('user_id', userRes.user.id)
+        .eq('user_id', uid)
         .maybeSingle()
       setTodayCount((data as { parsed_count_today?: number } | null)?.parsed_count_today ?? 0)
     }

@@ -12,7 +12,6 @@ import { IconButton } from '@/components/ui/IconButton'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { StatusBarCover } from '@/components/layout/StatusBarCover'
-import { useHydrateBudget, useHydrateExpenses } from '@/hooks/remote'
 import { usePlanActions } from '@/hooks/usePlanActions'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useLocale } from '@/lib/i18n'
@@ -42,8 +41,6 @@ const nextKey = (key: string) => {
 
 /** Which plan governed which months. Read only: past months never change. */
 export function PlanHistoryPage() {
-  useHydrateBudget()
-  useHydrateExpenses()
   const c = useBudgetDeckCopy().history
   const { locale } = useLocale()
   const actions = usePlanActions()

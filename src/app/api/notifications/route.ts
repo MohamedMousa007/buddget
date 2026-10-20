@@ -1,3 +1,4 @@
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
@@ -11,7 +12,9 @@ const patchSchema = z.object({
  * GET — list notifications (newest first).
  * PATCH — mark as read by id(s) or all.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const supabase = await createClient()
   const { data: claimsData } = await supabase.auth.getClaims()
   const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
@@ -41,6 +44,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   let json: unknown
   try {
     json = await request.json()

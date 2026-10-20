@@ -91,3 +91,8 @@ Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engine
 - **Welcome email:** `POST /api/auth/welcome` (called once per device after sign-in by `AuthProvider`) claims `profiles.welcome_email_sent_at` with one atomic UPDATE, so it is sent exactly once per account and only to accounts under 72 hours old; migration `0137` marks every existing account as welcomed. A failed send releases the claim.
 - **Seeding:** `src/instrumentation.ts` makes sure all built-in emails (English and Arabic, v1, published) exist whenever a server instance starts.
 - **In the apps:** the portal is the bundled `/admin` page (shield icon in the profile menu, staff only). It talks to the production API with the app session; "Back to Buddget" reloads the app shell.
+
+## Performance notes (2026-10-20)
+- Admin reads: identity is verified locally from the JWT and staff, role and credentials are remembered for 20 s per instance; every write skips that and asks the Auth server and the database fresh.
+- Overview and analytics are served from `admin_metrics_cache` (refreshed every 15 minutes by pg_cron; anything missing or older than 45 minutes is computed live). Activity numbers read `app_activity_days` (daily rollup plus not-yet-rolled raw events); DAU is "active today (UTC)".
+- Minimum app version (Platform): releases below it are refused (426) by the database and by the API, and the app shows an update screen with the links entered there.

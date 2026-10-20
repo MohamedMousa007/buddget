@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   const target = { targetType: 'sms_template', targetId: id }
 
   if (op === 'list') {
-    const { data, error } = await service.from(TABLE).select('*').order('match_count', { ascending: false })
+    const { data, error } = await service.from(TABLE).select('*').order('match_count', { ascending: false }).limit(500)
     if (error) return bad('Failed to load templates.', 500)
     return json({ templates: data ?? [] })
   }

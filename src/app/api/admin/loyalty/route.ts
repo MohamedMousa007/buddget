@@ -10,17 +10,12 @@ export async function GET(req: Request) {
   const { service } = g.ctx
   const [tiers, accounts, ledger] = await Promise.all([
     service.from('loyalty_tiers').select('*').order('min_points'),
-    service.from('loyalty_accounts').select('tier_key, points_balance, lifetime_points'),
+    service.rpc('admin_loyalty_summary'),
     service.from('loyalty_ledger').select('id, user_id, delta, reason, created_at').order('created_at', { ascending: false }).limit(25),
   ])
   if (tiers.error) return bad('Could not load loyalty.', 500)
-  const byTier: Record<string, number> = {}
-  let outstanding = 0
-  for (const a of accounts.data ?? []) {
-    byTier[a.tier_key ?? 'none'] = (byTier[a.tier_key ?? 'none'] ?? 0) + 1
-    outstanding += a.points_balance
-  }
-  return json({ tiers: tiers.data ?? [], byTier, members: accounts.data?.length ?? 0, outstandingPoints: outstanding, ledger: ledger.data ?? [], programLive: false })
+  const summary = (accounts.data ?? {}) as { by_tier?: Record<string, number>; members?: number; outstanding?: number }
+  return json({ tiers: tiers.data ?? [], byTier: summary.by_tier ?? {}, members: summary.members ?? 0, outstandingPoints: summary.outstanding ?? 0, ledger: ledger.data ?? [], programLive: false })
 }
 
 export async function POST(req: Request) {

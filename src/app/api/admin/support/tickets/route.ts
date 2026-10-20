@@ -31,21 +31,22 @@ export async function GET(req: Request) {
   const [tickets, staff, counts] = await Promise.all([
     q,
     ctx.service.from('admin_staff').select('id, display_name, email').eq('status', 'active'),
-    ctx.service.from('support_tickets').select('status, priority, assignee_id'),
+    ctx.service.rpc('admin_ticket_counts'),
   ])
   if (tickets.error) return bad('Could not load tickets.', 500)
 
-  const all = counts.data ?? []
-  const open = all.filter((t) => t.status === 'open' || t.status === 'pending')
+  const rows = counts.data ?? []
+  const sum = (pred: (r: (typeof rows)[number]) => boolean) => rows.filter(pred).reduce((a, r) => a + r.n, 0)
+  const isOpen = (r: (typeof rows)[number]) => r.status === 'open' || r.status === 'pending'
   return json({
     tickets: (tickets.data ?? []).map((t) => ({ ...t, requester_email: maskIf(ctx, t.requester_email) })),
     staff: (staff.data ?? []).map((s) => ({ id: s.id, name: s.display_name ?? s.email })),
     counts: {
-      active: open.length,
-      mine: open.filter((t) => t.assignee_id === ctx.staff.id).length,
-      unassigned: open.filter((t) => !t.assignee_id).length,
-      urgent: open.filter((t) => t.priority === 'urgent').length,
-      resolved: all.filter((t) => t.status === 'resolved').length,
+      active: sum(isOpen),
+      mine: sum((r) => isOpen(r) && r.assignee_id === ctx.staff.id),
+      unassigned: sum((r) => isOpen(r) && !r.assignee_id),
+      urgent: sum((r) => isOpen(r) && r.priority === 'urgent'),
+      resolved: sum((r) => r.status === 'resolved'),
     },
     me: ctx.staff.id,
   })

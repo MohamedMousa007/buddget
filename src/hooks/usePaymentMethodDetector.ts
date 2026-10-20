@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { sharedFetch } from '@/lib/query/sharedFetch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { PAYMENT_BRANDS, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { paymentTypeFromSms } from '@/lib/payment/smsPaymentType'
@@ -67,13 +68,17 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
   useEffect(() => {
     if (!smsEnabled) return
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    void createClient()
-      .from('sms_parse_log')
-      .select('account_last4, bank_name, sender, payment_instrument, raw_body')
-      .eq('parsed_ok', true)
-      .not('account_last4', 'is', null)
-      .gte('created_at', since)
-      .then(({ data }) => {
+    void sharedFetch('sms-accounts', 60_000, async () => {
+      const { data } = await createClient()
+        .from('sms_parse_log')
+        .select('account_last4, bank_name, sender, payment_instrument, raw_body')
+        .eq('parsed_ok', true)
+        .not('account_last4', 'is', null)
+        .gte('created_at', since)
+        .limit(300)
+      return data
+    })
+      .then((data) => {
         if (!data) return
         const linked = new Set(
           paymentMethods.filter((pm) => pm.last4).map((pm) => pm.last4!),
@@ -100,6 +105,7 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
         }
         setDetected(result)
       })
+      .catch(() => undefined)
   }, [smsEnabled, paymentMethods])
 
   return detected

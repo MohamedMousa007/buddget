@@ -14,7 +14,6 @@ import { SpendingPacePanel } from '@/components/reports/SpendingPacePanel'
 import { ReportsSavingsPanel } from '@/components/reports/ReportsSavingsPanel'
 import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { useHydrateExpenses, useHydrateIncome, useHydrateDebts, useHydrateSavings } from '@/hooks/remote'
 
 const MonthlyChart = dynamic(
   () => import('@/components/reports/MonthlyChart').then((m) => ({ default: m.MonthlyChart })),
@@ -27,10 +26,6 @@ const CategoryPieChart = dynamic(
 )
 
 export default function ReportsPage() {
-  useHydrateExpenses()
-  useHydrateIncome()
-  useHydrateDebts()
-  useHydrateSavings()
   const r = useReportsPage()
   const stats = useMonthlyStats()
 

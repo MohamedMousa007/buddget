@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
+import { sharedFetch } from '@/lib/query/sharedFetch'
 import { normalizeRuns } from '@/lib/goals/goalDetail'
 import type { AllocationRun } from '@/lib/goals/goalStatus'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -23,11 +24,17 @@ export function useGoalAllocationRuns(): Record<string, AllocationRun[]> {
     const uid = user?.id
     if (!uid) return
     let cancelled = false
-    createClient()
-      .from('goal_allocation_runs')
-      .select('goal_id, period, planned, amount')
-      .eq('user_id', uid)
-      .then(({ data }) => {
+    // Shared by every goal screen that mounts this hook, and bounded: one row per goal per month grows for ever.
+    sharedFetch(`goal-runs:${uid}`, 60_000, async () => {
+      const { data } = await createClient()
+        .from('goal_allocation_runs')
+        .select('goal_id, period, planned, amount')
+        .eq('user_id', uid)
+        .order('period', { ascending: false })
+        .limit(1500)
+      return data
+    })
+      .then((data) => {
         if (cancelled || !data) return
         const by: Record<string, AllocationRun[]> = {}
         for (const r of data) {
@@ -35,6 +42,7 @@ export function useGoalAllocationRuns(): Record<string, AllocationRun[]> {
         }
         setRaw(by)
       })
+      .catch(() => undefined)
     return () => {
       cancelled = true
     }

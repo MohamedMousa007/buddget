@@ -9,6 +9,7 @@
  * path was removed, so `parseLogId` is the sole input.
  */
 
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -19,6 +20,8 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   // ── Resolve user_id from session OR bearer token ─────────────────────────
   let userId: string | null = null
 

@@ -24,7 +24,7 @@
 
 ---
 
-## Database — Migration Log (latest repo file 0127 = admin portal: 0123 staff/roles/credentials/sessions/audit, 0124 support + plans/entitlements/loyalty/flags/settings, 0125 `admin_*` analytics functions, 0126 `admin_rate_hit` limiter, 0127 analytics perf (BRIN index, faster retention/directory); previous 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
+## Database — Migration Log (latest repo file 0147; 0136 email templates, 0137 welcome flag, 0138 hygiene (no-op update suppression, HOT-friendly indexes, unlogged telemetry), 0139 analytics v2 (`analytics_touch`, `app_activity_days`, `admin_metrics_cache`, pg_cron), 0140 SMS v2 (stats outbox + drain, `sms_corpus`, retention), 0141 retention (`housekeeping`, tombstones 90d), 0142 `sync_pull` (delta sync), 0143 nudge channel policies, 0144 client gate (`app_client_gate` via `pgrst.db_pre_request`), 0145 admin grouped counts, 0146 atomic email publish, 0147 notification candidates; earlier: 0127 = admin portal: 0123 staff/roles/credentials/sessions/audit, 0124 support + plans/entitlements/loyalty/flags/settings, 0125 `admin_*` analytics functions, 0126 `admin_rate_hit` limiter, 0127 analytics perf (BRIN index, faster retention/directory); previous 0121 = Budget v2: plan status/intent/origin, line block/links/due_day/essential/locked, `budget_plan_activations`, `buddgy_memories`, `profiles.financial_profile`; previous 0119; goals v3 = 0116 funding + goal_allocation_runs, 0117 business category, 0118 plan_start, 0119 goal alert switches; subscriptions redesign = 0114 + 0115)
 
 Live project: `ydihurtbcnoflhormgzi` (ap-southeast-1). Verified 2026-10-16: live tables/columns == `src/lib/supabase/database.types.ts` (41 tables). Latest applied: `income_sources_sort_order` (= repo 0109). Repo file numbers and applied migration names drift (e.g. repo 0108 = applied `0104_debt_payments_funded_from_savings`); compare schema, not names. Session-start check: `list_migrations`, then regenerate types and diff.
 
@@ -260,3 +260,12 @@ Brain on the server, hands on the device. Full guide: `docs/buddgy/INTERNAL_GUID
 | Route middleware | `src/middleware.ts` |
 | Capacitor config | `capacitor.config.ts` |
 | Migrations | `supabase/migrations/` |
+
+
+## Scaling architecture (2026-10-20; full plan in docs/DB_SCALING_PLAN.md)
+- **Sync:** one `sync_pull(since)` RPC returns what changed (tombstones included); cursor per account + store version in localStorage (`src/lib/supabase/remote/{delta,cursor}.ts`); the old 22-query `pullAll` is only the fallback. Per-page hydrate hooks are gone.
+- **Instant SMS:** the server nudges the private Broadcast channel `user:<id>` after saving (`src/lib/server/realtime/nudge.ts`); the app answers with one delta pull (`SmsNudgeSync`). Postgres Changes is retired client-side; drop `sms_parse_log` from the `supabase_realtime` publication once old releases are cut off.
+- **Per-SMS statistics** go to the UNLOGGED `sms_stats_outbox` (one insert), drained every 5 min by pg_cron; the redacted corpus (`sms_corpus`) keeps the knowledge, raw text is removed after 30 days once harvested.
+- **Analytics:** one upsert per user per day (`analytics_touch`, buffered client-side); admin reads `app_activity_days` and the 15-minute `admin_metrics_cache`.
+- **Retention** runs in `housekeeping()` (pg_cron 01:30 UTC). **Force update:** admin Platform > Minimum app version, enforced in PostgREST (`app_client_gate`) and our API (`clientGate.ts`); the app shows `UpdateGate`.
+- **Auth:** JWTs are verified locally (`getClaims`); admin reads are cached 20 s, admin writes always ask the Auth server.

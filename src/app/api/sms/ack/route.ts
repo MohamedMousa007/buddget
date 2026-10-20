@@ -9,6 +9,7 @@
  * Auth: Supabase JWT (mobile) or bearer token from `sms_ingest_tokens`.
  * Idempotent: re-acking a confirmed row is a no-op.
  */
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -38,6 +39,8 @@ async function resolveUserId(req: Request): Promise<string | null> {
 }
 
 export async function POST(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const userId = await resolveUserId(request)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

@@ -24,7 +24,15 @@ function sanitizeSetting(key: SettingKey, value: Record<string, unknown>): Json 
   const ios = text(value.ios, 12)
   const android = text(value.android, 12)
   if ((ios && !ver.test(ios)) || (android && !ver.test(android))) return null
-  return { ios, android }
+  // Where the update screen sends people: https links only (TestFlight, Play, the APK download).
+  const link = (v: unknown) => {
+    const u = text(v, 300)
+    return u === '' || /^https:\/\//i.test(u) ? u : null
+  }
+  const iosUrl = link(value.ios_url)
+  const androidUrl = link(value.android_url)
+  if (iosUrl === null || androidUrl === null) return null
+  return { ios, android, ios_url: iosUrl, android_url: androidUrl }
 }
 
 export async function GET(req: Request) {

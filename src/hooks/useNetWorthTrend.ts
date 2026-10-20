@@ -32,9 +32,19 @@ export function useNetWorthTrend(netWorth: number, currency: string, ready: bool
       const supabase = createClient()
       const now = new Date()
       const since = new Date(now.getTime() - DAYS * 86_400_000)
-      await supabase
-        .from('net_worth_snapshots')
-        .upsert({ user_id: userId, day: isoDay(now), net_worth: netWorth, currency }, { onConflict: 'user_id,day' })
+      // Written only when today's figure actually changed: the same value is not sent again on every visit or edit.
+      const stamp = `bdg-nw:${userId}:${isoDay(now)}:${currency}`
+      const rounded = netWorth.toFixed(2)
+      let already = false
+      try { already = window.localStorage.getItem(stamp) === rounded } catch { /* storage unavailable: write */ }
+      if (!already) {
+        const { error } = await supabase
+          .from('net_worth_snapshots')
+          .upsert({ user_id: userId, day: isoDay(now), net_worth: netWorth, currency }, { onConflict: 'user_id,day' })
+        if (!error) {
+          try { window.localStorage.setItem(stamp, rounded) } catch { /* ignore */ }
+        }
+      }
       const { data } = await supabase
         .from('net_worth_snapshots')
         .select('day, net_worth')

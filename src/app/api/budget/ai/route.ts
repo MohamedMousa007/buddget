@@ -7,6 +7,7 @@
  * The model never writes anything: the client previews and applies the result.
  * Auth: Supabase session required. Per-user hourly cap shared across instances (`api_rate_hit`).
  */
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -98,6 +99,8 @@ async function askModel(apiKey: string, system: string, user: string, schema: ob
 }
 
 export async function POST(req: NextRequest) {
+  const outdated = await gateOutdatedClient(req)
+  if (outdated) return outdated
   const user = await resolveRouteIdentity(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

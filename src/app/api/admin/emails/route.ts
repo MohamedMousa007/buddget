@@ -6,7 +6,7 @@ import { hasErrors, validateTemplate, MAX_HTML_BYTES } from '@/lib/email/validat
 import { EMAIL_VARIABLES } from '@/lib/email/variables'
 import { allowAttempt } from '@/lib/server/admin/credentials'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
-import { TEMPLATE_COLUMNS, asRow, ensureSeeded, findScenario, htmlFor, translateInto, writeDraft } from '@/lib/server/email/catalog'
+import { TEMPLATE_COLUMNS, asRow, findScenario, htmlFor, translateInto, writeDraft } from '@/lib/server/email/catalog'
 import { sendTemplatedEmail } from '@/lib/server/email/send'
 import { invalidateTemplate } from '@/lib/server/email/store'
 import type { Json } from '@/lib/supabase/database.types'
@@ -17,7 +17,6 @@ export async function GET(req: Request) {
   const g = await guardAdmin(req, { permission: 'emails.view' })
   if (!g.ok) return g.res
   const { service } = g.ctx
-  await ensureSeeded(service)
   const key = new URL(req.url).searchParams.get('key')
 
   if (key) {
@@ -145,12 +144,8 @@ export async function POST(req: Request) {
     if (!draft) return bad('Save a draft first.')
     const issues = validateTemplate(scenario, draft)
     if (hasErrors(issues)) return json({ error: issues.find((i) => i.level === 'error')!.message, issues }, 422)
-    const snapshot = { key, locale, version: draft.version, subject: draft.subject, preheader: draft.preheader, html: draft.html, mode: draft.mode, blocks: draft.blocks as unknown as Json, published_by: ctx.staff.id }
-    const snap = await service.from('email_template_versions').upsert(snapshot, { onConflict: 'key,locale,version' })
-    if (snap.error) return bad('Could not publish.', 500)
-    await service.from('email_templates').delete().eq('key', key).eq('locale', locale).eq('status', 'published')
-    const promote = await service.from('email_templates').update({ status: 'published', updated_by: ctx.staff.id, updated_at: new Date().toISOString() }).eq('key', key).eq('locale', locale).eq('status', 'draft')
-    if (promote.error) return bad('Could not publish.', 500)
+    const published = await service.rpc('publish_email_template', { p_key: key, p_locale: locale, p_staff: ctx.staff.id })
+    if (published.error || published.data == null) return bad('Could not publish.', 500)
     invalidateTemplate(key)
     await ctx.audit('emails.publish', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Published ${key} (${locale}) v${draft.version}`, metadata: { version: draft.version } })
     // The other language follows automatically, as a draft to review, unless someone has already worked on it.

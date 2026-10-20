@@ -16,7 +16,6 @@ import { PayCycleSheet } from '@/components/features/income/PayCycleSheet'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore, type PaydayPrefill } from '@/lib/store/useSettingsStore'
-import { useHydrateIncome, useHydrateIncomeEvents } from '@/hooks/remote'
 import { navigate } from '@/lib/navigation/navigate'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
@@ -62,8 +61,6 @@ const STARTERS: { type: IncomeSourceType; icon: LucideIcon; name: keyof Dictiona
  * never lives here — it is a row in Flow.
  */
 export function PaydaysPage() {
-  useHydrateIncome()
-  useHydrateIncomeEvents()
   const t = useT()
   const { locale } = useLocale()
   const { dataReady, incomeSources, incomeEvents, paymentMethods, monthStartDay, base, rates, updateIncomeSource } = useFinanceStore(

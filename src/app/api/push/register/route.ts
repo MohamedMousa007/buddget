@@ -7,6 +7,7 @@
  *
  * Auth: bearer Supabase JWT (mobile) OR signed-in cookie session (web).
  */
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -21,6 +22,8 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const userId = await resolveApiUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -78,6 +81,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const userId = await resolveApiUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

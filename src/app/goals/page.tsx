@@ -19,7 +19,6 @@ import { PromptBanner } from '@/components/ui/PromptBanner'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useGoalRows, type GoalRow } from '@/hooks/useGoalRows'
-import { useHydrateDebts, useHydrateGoals, useHydrateSavings } from '@/hooks/remote'
 import { useT } from '@/lib/i18n'
 import { navigate } from '@/lib/navigation/navigate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -39,9 +38,6 @@ function readView(): View {
 }
 
 export default function GoalsPage() {
-  useHydrateGoals()
-  useHydrateSavings()
-  useHydrateDebts()
   const t = useT().goals
   const { dataReady, baseCurrency, rates, updateGoal } = useFinanceStore(
     useShallow((s) => ({ dataReady: s.dataReady, baseCurrency: s.settings.baseCurrency, rates: s.exchangeRates, updateGoal: s.updateGoal })),

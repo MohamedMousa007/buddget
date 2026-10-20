@@ -1,3 +1,4 @@
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { SPEC_BY_NAME, ALL_SPECS } from '@/lib/buddgy/tools/specs'
 import { toGeminiDeclaration } from '@/lib/buddgy/tools/spec'
@@ -16,6 +17,8 @@ export const dynamic = 'force-dynamic'
 const KNOWN_TOOLS: ReadonlySet<string> = new Set(SPEC_BY_NAME.keys())
 
 export async function POST(req: Request) {
+  const outdated = await gateOutdatedClient(req)
+  if (outdated) return outdated
   const started = Date.now()
   const auth = await requireAiUser(req)
   if ('denied' in auth) return auth.denied

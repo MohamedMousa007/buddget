@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { createClient } from '@/lib/supabase/client'
+import { sharedFetch } from '@/lib/query/sharedFetch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
@@ -40,19 +41,21 @@ export function useSubscriptionDetector(): SubscriptionDetection {
   useEffect(() => {
     if (!smsEnabled) return
     const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
-    void createClient()
-      .from('sms_parse_log')
-      .select('merchant, merchant_normalized, clean_title, amount, currency, day, raw_sms_summary')
-      .eq('parsed_ok', true)
-      .in('kind', ['purchase', 'online_purchase'])
-      .gte('created_at', since)
-      // Ascending so the last row is genuinely the LATEST sighting, not arbitrary DB order.
-      .order('day', { ascending: true })
-      .then(({ data }) => {
-        if (!data) return
-        setRows(data as ChargeRow[])
-        setScanned(data.length)
-      })
+    void sharedFetch('sms-charges', 60_000, async () => {
+      const { data } = await createClient()
+        .from('sms_parse_log')
+        .select('merchant, merchant_normalized, clean_title, amount, currency, day, raw_sms_summary')
+        .eq('parsed_ok', true)
+        .in('kind', ['purchase', 'online_purchase'])
+        .gte('created_at', since)
+        // Ascending so the last row is genuinely the LATEST sighting, not arbitrary DB order.
+        .order('day', { ascending: true })
+      return data
+    }).then((data) => {
+      if (!data) return
+      setRows(data as ChargeRow[])
+      setScanned(data.length)
+    }).catch(() => undefined)
   }, [smsEnabled])
 
   return useMemo(() => {

@@ -23,7 +23,9 @@ import { normalizeRuns } from '@/lib/goals/goalDetail'
 
 export const maxDuration = 60
 
-const PAGE = 1000
+const PAGE = 500
+const CONCURRENCY = 8
+const TIME_BUDGET_MS = 48_000
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
@@ -37,27 +39,43 @@ export async function GET(request: Request) {
   const monthStr = format(now, 'yyyy-MM')
   let emitted = 0
   let scanned = 0
+  const started = Date.now()
 
-  for (let offset = 0; ; offset += PAGE) {
-    const { data: settingsRows, error } = await service
+  // Only users with something that can alert get the full evaluation (the rest still get the month-end notice, which
+  // needs no data). The run is resumable: if it nears the time limit it stores where it stopped and the next run
+  // continues from there, so nobody is starved however many accounts there are.
+  const { data: candidateIds } = await service.rpc('notification_candidate_users')
+  const candidates = new Set<string>((candidateIds ?? []) as string[])
+  const { data: cursorRow } = await service.from('platform_settings').select('value').eq('key', 'notification_cron_cursor').maybeSingle()
+  let cursor = String((cursorRow?.value as { after?: string } | null)?.after ?? '')
+
+  let stoppedEarly = false
+  for (;;) {
+    let query = service
       .from('user_settings')
       .select('user_id, language, month_start_day, sub_due_reminders, sub_price_alerts, goal_alerts')
-      .range(offset, offset + PAGE - 1)
+      .order('user_id', { ascending: true })
+      .limit(PAGE)
+    if (cursor) query = query.gt('user_id', cursor)
+    const { data: settingsRows, error } = await query
     if (error) {
       console.error('[cron/notifications] user_settings query failed', error)
       break
     }
     if (!settingsRows || settingsRows.length === 0) break
 
-    for (const s of settingsRows) {
+    const handleUser = async (s: (typeof settingsRows)[number]) => {
       scanned++
+      const full = candidates.has(s.user_id as string)
       const userId = s.user_id as string
 
-      const { data: recurringRows } = await service
-        .from('recurring_debt_payments')
-        .select('id, debt_id, amount, currency, next_due_date, is_active')
-        .eq('user_id', userId)
-        .eq('is_active', true)
+      const { data: recurringRows } = full
+        ? await service
+            .from('recurring_debt_payments')
+            .select('id, debt_id, amount, currency, next_due_date, is_active')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+        : { data: [] }
 
       const recurring = (recurringRows ?? []).map((r) => ({
         id: r.id as string,
@@ -89,12 +107,14 @@ export async function GET(request: Request) {
 
       const dict = getServerDictionary(s.language as string | null)
 
-      const { data: subRows } = await service
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .is('deleted_at', null)
-        .in('status', ['active', 'trial'])
+      const { data: subRows } = full
+        ? await service
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .in('status', ['active', 'trial'])
+        : { data: [] }
       if (subRows && subRows.length > 0) {
         const since = format(new Date(now.getTime() - 400 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
         const { data: expRows } = await service
@@ -127,7 +147,7 @@ export async function GET(request: Request) {
       }
 
       // Behind-plan goals: one alert a month, after the second missed cycle.
-      if ((s.goal_alerts as boolean | null) ?? true) {
+      if (full && ((s.goal_alerts as boolean | null) ?? true)) {
         const { data: goalRows } = await service
           .from('goals').select('*').eq('user_id', userId).is('deleted_at', null).eq('status', 'active').neq('funding_mode', 'manual')
         if (goalRows && goalRows.length > 0) {
@@ -198,8 +218,21 @@ export async function GET(request: Request) {
       }
     }
 
+    // A handful of users at a time: the work per user is waiting on the database, not computing.
+    for (let i = 0; i < settingsRows.length; i += CONCURRENCY) {
+      if (Date.now() - started > TIME_BUDGET_MS) {
+        stoppedEarly = true
+        break
+      }
+      const batch = settingsRows.slice(i, i + CONCURRENCY)
+      await Promise.all(batch.map((row) => handleUser(row).catch((e) => console.error('[cron/notifications] user failed', e instanceof Error ? e.message : e))))
+      cursor = batch[batch.length - 1]!.user_id as string
+    }
+    if (stoppedEarly) break
+
     if (settingsRows.length < PAGE) break
   }
 
-  return NextResponse.json({ ok: true, scanned, emitted })
+  await service.from('platform_settings').upsert({ key: 'notification_cron_cursor', value: { after: stoppedEarly ? cursor : '' } })
+  return NextResponse.json({ ok: true, scanned, emitted, partial: stoppedEarly })
 }

@@ -1,6 +1,6 @@
 # Database scalability and reliability plan
 
-Status: proposal, nothing in this document has been applied. Written 2026-10-20 after a read-only audit of the live
+Status: executed in part on 2026-10-20 (see section 12). The remaining items are listed there. Written 2026-10-20 after a read-only audit of the live
 Supabase project (`ydihurtbcnoflhormgzi`), the migrations, and the app code (client sync, server routes, admin,
 SMS pipeline, crons, email).
 
@@ -360,3 +360,20 @@ allowance per compute tier; the SMS parse route's behaviour beyond the sections 
 - "51 unused indexes, drop them" is withdrawn (see section 9).
 - "Admin queries are not the cause" stands for database load, but the admin portal's slowness is real and comes
   from round-trip count (section 4, F16-F18).
+
+---
+
+## 12. Execution status (2026-10-20)
+
+Constraints given: no compute upgrade yet; raw SMS kept 30 days with the learning harvested first; analytics reduced to what growth needs; old app releases are forced to update; tombstones 90 days.
+
+**Done and live (database):** 0138-0147 (hygiene, analytics v2, SMS v2, retention, sync_pull, nudge policies, client gate, admin counts, atomic email publish, notification candidates), pg_cron jobs (analytics rollup, admin metrics, cron log trim, SMS outbox drain, stuck-row heal, zero-variance sweep, SMS retention, housekeeping), `pgrst.db_pre_request` set (enforces nothing until a minimum version is set).
+
+**Done in code:** local JWT verification (middleware and hot routes), admin guard cache and cached metrics, analytics buffer, SMS route (one statistics insert, folded ack, no dupe pre-select, no per-request heal), harvest of legacy SMS text into the corpus, delta sync with fallback, nudge channel (server and app), push-tap handlers on delta, hydrate hooks removed, price/resume/detector/goal/counterparty de-duplication, admin grouped counts, atomic email publish, price-refresh debounce on attempts, resumable notification cron with candidate filter, update gate and app-config.
+
+**Cut over by you (runbook):**
+1. Ship the new native builds (iOS and Android, client version 1.1.0).
+2. When they are on both channels: set Platform > Minimum app version to 1.1.0 for iOS and Android (with the update links). Releases below it stop connecting (426 from the database and the API) and the new ones show the update screen.
+3. Then drop the old change feed: `ALTER PUBLICATION supabase_realtime DROP TABLE public.sms_parse_log;` and delete `/api/sms/ack`.
+
+**Not done (and why):** compute upsize (declined for now); partitioning of `sms_parse_log` (not needed while raw text is removed at 30 days; revisit past ~1M rows); AI quota counter rework and a queue for notification fan-out (the cron is resumable and filtered instead); on-device SMS parsing (needs a native release of its own); `admin_audit_log` partitioning (blocked by its immutability trigger, still tiny); payment-method read memo inside the SMS dispatch (its tests stub per-call queries and need a deliberate rewrite).

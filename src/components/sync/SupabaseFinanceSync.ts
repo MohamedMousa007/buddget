@@ -6,6 +6,11 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
 import {
   pullAll,
+  pullDelta,
+  applyDelta,
+  readSyncCursor,
+  writeSyncCursor,
+  clearSyncCursors,
   flushDiff,
   snapshot,
   emptySnapshot,
@@ -135,6 +140,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
   // With cache-first the UI is interactive during the background pull, so this
   // replaces the old `dataReady=false` gate as the "don't double-diff" lock.
   const reconciling = useRef(false)
+  const runAgain = useRef(false)
 
   useEffect(() => {
     hydrated.current = false
@@ -160,8 +166,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
         lastPulledUserId = userId
-        // Pre-seed the hydrate guard so per-page useHydrate* hooks skip their
-        // own fetches (they'd otherwise race the reconcile on first mount).
+        // Mark the slices hydrated for pages that wait on them.
         for (const slice of ['expenses','income','incomeEvents','debts','goals','savings','subscriptions','budget']) {
           markHydrated(userId, slice)
         }
@@ -193,13 +198,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         new Promise<void>((r) => setTimeout(r, 3500)),
       ])
       try {
-        // Always pull the full snapshot before flipping dataReady — even on a
-        // warm start where this user's data is already in localStorage. Skipping
-        // the pull (the old `profile.id === userId && hasLocalData` early-return)
-        // lifted the splash on CACHED numbers, then the per-page `useHydrate*`
-        // hooks refetched and merged server rows after mount, visibly changing
-        // the dashboard totals. Pulling here marks every slice hydrated so those
-        // hooks short-circuit → the splash covers the whole sync, no flicker.
+        // Pull before flipping dataReady, even on a warm start: lifting the splash on cached numbers and then
+        // merging server rows visibly changes the dashboard totals. The pull is one small delta request.
         await runFullSync(supabase, userId)
       } catch (e) {
         console.error('[finance sync] pull failed', e)
@@ -276,15 +276,23 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // Re-baseline the flush snapshots afterwards so merged server rows aren't
     // seen as fresh local writes.
     pendingSync = async () => {
-      // Single in-flight reconcile — mount warm-start, reconnect, and PTR all
-      // funnel here; overlapping runs would diff against a shifting baseline.
-      if (reconciling.current) return
+      // Single in-flight reconcile — mount warm-start, reconnect, PTR and nudges all funnel here; overlapping runs
+      // would diff against a shifting baseline. A request that arrives mid-run (a nudge for a message saved after
+      // this pull started) is not dropped: it makes the run go once more.
+      if (reconciling.current) {
+        runAgain.current = true
+        return
+      }
       reconciling.current = true
       try {
-        await flush()
-        await runFullSync(supabase, userId)
-        prevSnap.current = snapshot(useFinanceStore.getState())
-        lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+        for (let pass = 0; pass < 3; pass++) {
+          runAgain.current = false
+          await flush()
+          await runFullSync(supabase, userId)
+          prevSnap.current = snapshot(useFinanceStore.getState())
+          lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+          if (!runAgain.current) break
+        }
       } finally {
         reconciling.current = false
       }
@@ -339,7 +347,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const onShow = () => {
       if (syncSuspended || !hydrated.current) return
       const now = Date.now()
-      if (now - lastResumeSync < 10_000) return
+      if (now - lastResumeSync < 30_000) return
       lastResumeSync = now
       void pendingSync?.().catch((e) => console.error('[finance sync] resume reconcile failed', e))
     }
@@ -418,22 +426,47 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 }
 
 /**
- * Pull the full server snapshot and merge it into the store. Shared by the
- * mount hydrate and the imperative `syncFinanceNow()` (pull-to-refresh).
- * Does NOT touch `dataReady` — callers own the loading affordance.
+ * Bring the store up to date with the server and merge. Shared by the mount hydrate and the imperative
+ * `syncFinanceNow()` (pull-to-refresh, resume, nudges). One request: the rows that changed since this device last
+ * caught up (everything, on a first pull). If the delta call fails for any reason the proven full pull takes over,
+ * so sync never depends on the new path. Does NOT touch `dataReady` — callers own the loading affordance.
  */
 async function runFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<void> {
+  // A cursor only means something next to a store that holds this account's data.
+  const hasLocalCopy = useFinanceStore.getState().profile.id === userId
+  const since = hasLocalCopy ? readSyncCursor(userId, storeVersion()) : null
+  try {
+    const delta = await pullDelta(supabase, since)
+    if (!delta) return
+    // Re-snapshot right before the merge so edits made during the round-trip aren't clobbered.
+    const merged = applyDelta(snapshot(useFinanceStore.getState()), delta)
+    applyMerged(merged, userId)
+    writeSyncCursor(userId, storeVersion(), delta.cursor)
+  } catch (e) {
+    console.warn('[finance sync] delta pull failed, using the full pull', e)
+    clearSyncCursors()
+    await runLegacyFullSync(supabase, userId)
+  }
+}
+
+/** The persisted store's schema version: a migration that rewrites local data must also restart the cursor. */
+function storeVersion(): number {
+  return useFinanceStore.persist.getOptions().version ?? 0
+}
+
+async function runLegacyFullSync(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<void> {
   const server = await pullAll(supabase, userId)
   if (!server) return
-  // Re-snapshot right before the merge so edits made during the
-  // pullAll round-trip aren't clobbered.
-  const latestLocal = snapshot(useFinanceStore.getState())
-  const merged = mergeSnapshots(latestLocal, server)
-  // Server always wins for singletons — settings flush instantly so
-  // the DB is always up to date by the time this pull completes.
+  applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server), userId)
+}
+
+function applyMerged(merged: Snapshot, userId: string): void {
   useFinanceStore.setState({
     profile: merged.profile,
     settings: merged.settings,

@@ -23,7 +23,6 @@ import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { firstNonEmptyFamily, type DebtFamily } from '@/lib/debts/debtFamily'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
-import { useHydrateDebts, useHydrateGoals } from '@/hooks/remote'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -31,8 +30,6 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 export default function DebtsPage() {
-  useHydrateDebts()
-  useHydrateGoals()
   const dataReady = useFinanceStore((s) => s.dataReady)
   const { settings, exchangeRates } = useFinanceStore(
     useShallow((s) => ({ settings: s.settings, exchangeRates: s.exchangeRates })),

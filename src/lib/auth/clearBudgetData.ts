@@ -1,3 +1,4 @@
+import { clearSyncCursors } from '@/lib/supabase/remote/cursor'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clearPendingAiJobs } from '@/lib/store/usePendingAiJobs'
@@ -48,6 +49,8 @@ export function clearBudgetData(): void {
       /* restricted storage */
     }
   }
+
+  clearSyncCursors()
 
   try {
     useFinanceStore.getState().reset()

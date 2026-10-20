@@ -8,7 +8,6 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { AMOUNT_MAX, AMOUNT_MIN, amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore, type FlowSegment } from '@/lib/store/useExpenseFilterStore'
 import type { IncomeSourceType } from '@/lib/store/types'
-import { useHydrateDebts, useHydrateExpenses, useHydrateIncome, useHydrateIncomeEvents, useHydrateSavings } from '@/hooks/remote'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { navigate } from '@/lib/navigation/navigate'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
@@ -45,11 +44,6 @@ const COLLAPSE_AT = 94
  * filters; payday questions only surface on In, and only when they would change a number.
  */
 export default function FlowPage() {
-  useHydrateExpenses()
-  useHydrateIncome()
-  useHydrateIncomeEvents()
-  useHydrateDebts()
-  useHydrateSavings()
   const t = useT()
   const dataReady = useFinanceStore((s) => s.dataReady)
   const hasHistory = useFinanceStore((s) => s.expenses.length + s.incomeEvents.length > 0)

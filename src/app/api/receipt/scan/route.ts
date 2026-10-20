@@ -11,6 +11,7 @@
  *
  * Auth: Supabase session required.
  */
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
@@ -187,6 +188,8 @@ function extractJson(text: string): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const user = await resolveRouteIdentity(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

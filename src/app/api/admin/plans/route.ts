@@ -12,19 +12,20 @@ export async function GET(req: Request) {
 
   const [plans, entitlements, expiring] = await Promise.all([
     service.from('plans').select('*').order('sort_order').order('created_at'),
-    service.from('user_entitlements').select('plan_key, status'),
+    service.rpc('admin_entitlement_counts'),
     service.from('user_entitlements').select('user_id, plan_key, trial_ends_at').eq('status', 'trialing').not('trial_ends_at', 'is', null).order('trial_ends_at').limit(20),
   ])
   if (plans.error) return bad('Could not load plans.', 500)
 
   const members: Record<string, Record<string, number>> = {}
+  let explicit = 0
   for (const e of entitlements.data ?? []) {
     members[e.plan_key] ??= {}
-    members[e.plan_key]![e.status] = (members[e.plan_key]![e.status] ?? 0) + 1
+    members[e.plan_key]![e.status] = (members[e.plan_key]![e.status] ?? 0) + e.n
+    explicit += e.n
   }
   const { count: totalUsers } = await service.from('profiles').select('id', { count: 'exact', head: true })
   const defaultKey = plans.data?.find((p) => p.is_default)?.key
-  const explicit = (entitlements.data ?? []).length
   if (defaultKey) members[defaultKey] = { ...members[defaultKey], implicit: Math.max((totalUsers ?? 0) - explicit, 0) }
 
   return json({

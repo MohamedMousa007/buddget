@@ -3,7 +3,6 @@
 import { AppLink } from '@/components/ui/AppLink'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useGoalProgress } from '@/hooks/useGoalProgress'
-import { useHydrateGoals } from '@/hooks/remote'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { Goal, GoalCategory } from '@/lib/store/types'
 
@@ -30,7 +29,6 @@ function GoalLensLine({ goal }: { goal: Goal }) {
  * lives only on /goals; Budget shows spending limits, Debts shows debt-freedom goals.
  */
 export function GoalLensList({ categories }: { categories: GoalCategory[] }) {
-  useHydrateGoals()
   const goals = useFinanceStore((s) => s.goals)
   const shown = goals.filter((g) => g.status === 'active' && categories.includes(g.category))
   if (shown.length === 0) return null

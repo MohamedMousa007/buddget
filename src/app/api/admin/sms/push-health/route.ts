@@ -4,8 +4,12 @@ import { guardAdmin, json } from '@/lib/server/admin/guard'
 export async function GET(req: Request) {
   const g = await guardAdmin(req, { permission: 'sms.view' })
   if (!g.ok) return g.res
-  const { data } = await g.ctx.service.from('push_tokens').select('platform')
+  const { data } = await g.ctx.service.rpc('admin_push_platform_counts')
   const byPlatform: Record<string, number> = {}
-  for (const row of data ?? []) byPlatform[row.platform ?? 'unknown'] = (byPlatform[row.platform ?? 'unknown'] ?? 0) + 1
-  return json({ configured: getFirebaseAdmin() !== null, tokens: data?.length ?? 0, byPlatform })
+  let tokens = 0
+  for (const row of data ?? []) {
+    byPlatform[row.platform] = row.n
+    tokens += row.n
+  }
+  return json({ configured: getFirebaseAdmin() !== null, tokens, byPlatform })
 }

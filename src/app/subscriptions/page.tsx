@@ -19,7 +19,6 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { hasHydrated } from '@/hooks/remote/hydrateGuard'
-import { useHydrateExpenses, useHydrateSubscriptions } from '@/hooks/remote'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useSubscriptionsHome } from '@/hooks/useSubscriptionsHome'
 import { catalogRegionOf } from '@/lib/subscriptions/catalogDisplay'
@@ -31,8 +30,6 @@ import type { Subscription } from '@/lib/store/types'
 import type { Segment } from '@/lib/subscriptions/subscriptionRows'
 
 export default function SubscriptionsPage() {
-  useHydrateSubscriptions()
-  useHydrateExpenses()
   const { user } = useAuth()
   const t = useT()
   const ui = t.subscriptions.ui

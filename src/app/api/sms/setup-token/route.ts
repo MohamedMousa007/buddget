@@ -8,12 +8,15 @@
  * Auth: session cookie (user must be signed in).
  */
 
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 
 export async function GET(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const userId = await resolveApiUserId(request)
 
   if (!userId) {
@@ -57,6 +60,8 @@ export async function GET(request: Request) {
 
 /** DELETE — rotates the token (deactivates current, issues new). */
 export async function DELETE(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const userId = await resolveApiUserId(request)
 
   if (!userId) {

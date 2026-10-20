@@ -14,6 +14,7 @@
  *  - Confidence >= 0.6 → expense/income auto-added immediately.
  *  - Confidence < 0.6 → ignored (logged but not stored as an expense).
  */
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import crypto from 'crypto'
@@ -49,6 +50,7 @@ import { resolveCurrency } from '@/lib/sms/currencyResolver'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { getUserLocale } from '@/lib/server/userLocale'
 import { emitNotification } from '@/lib/server/emitNotification'
+import { nudgeUser } from '@/lib/server/realtime/nudge'
 
 // Gemini takes 5–8 s and after() work (push + 15 s pattern learning) counts
 // toward the function cap — the default would kill learning mid-call.
@@ -581,6 +583,8 @@ async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: Request) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const { userId } = await resolveUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -1009,6 +1013,9 @@ export async function POST(request: Request) {
     console.error('[sms/parse] log promote failed', promoteErr)
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
+
+  // Instant, in the foreground: nudge the user's devices to pull the delta (best effort; the push below covers the rest).
+  after(() => nudgeUser(userId, 'sms', { logId }))
 
   // Localize push + notification copy to the account's language.
   const dict = getServerDictionary(await getUserLocale(service, userId))

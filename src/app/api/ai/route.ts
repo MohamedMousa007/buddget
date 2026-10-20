@@ -1,3 +1,4 @@
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { getEffectiveAiRuntimeConfig } from '@/lib/server/aiRuntimeConfig'
 import { requireAiUser } from '@/lib/server/ai/auth'
@@ -45,6 +46,8 @@ function isRateLimited(key: string, max: number, windowMs: number): boolean {
 }
 
 export async function POST(req: Request) {
+  const outdated = await gateOutdatedClient(req)
+  if (outdated) return outdated
   const started = Date.now()
   let grant: QuotaGrant | null = null
   let model = LEGACY_MODEL

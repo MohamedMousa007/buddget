@@ -10,6 +10,7 @@
  *
  * Auth: Supabase session required (matches `/api/ai`).
  */
+import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
 import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
@@ -33,6 +34,8 @@ const MAX_AUDIO_BYTES = 8 * 1024 * 1024
 const BYTES_PER_UNIT = 20
 
 export async function POST(request: NextRequest) {
+  const outdated = await gateOutdatedClient(request)
+  if (outdated) return outdated
   const started = Date.now()
   const user = await resolveRouteIdentity(request)
   if (!user) {

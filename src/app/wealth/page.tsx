@@ -30,7 +30,6 @@ import { useHiddenStatus } from '@/hooks/useHiddenStatus'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useNetWorthTrend } from '@/hooks/useNetWorthTrend'
-import { useHydrateGoals, useHydrateSavings } from '@/hooks/remote'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useT } from '@/lib/i18n'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
@@ -51,8 +50,6 @@ import { formatWhole } from '@/lib/utils/formatters'
 const COLLAPSE_AT = 150
 
 export default function WealthPage() {
-  useHydrateSavings()
-  useHydrateGoals()
   useEnsureMonthlySavingsVault()
   const t = useT().wealthPage
   const dataReady = useFinanceStore((s) => s.dataReady)

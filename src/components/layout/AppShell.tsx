@@ -32,15 +32,9 @@ import { isAndroid } from '@/lib/native/isNative'
 import { runBackGuards } from '@/lib/navigation/backGuard'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
-import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
-import { incomeEventFromRow } from '@/lib/supabase/remote/mappers/incomeEventMapper'
-import { debtPaymentFromRow } from '@/lib/supabase/remote/mappers/debtPaymentMapper'
 import { createClient } from '@/lib/supabase/client'
-import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionMapper'
-import { mergeById, type MergableRow } from '@/hooks/remote/mergeById'
-import type { ExpenseRow } from '@/lib/supabase/remote/types'
-import type { IncomeEventRow } from '@/lib/supabase/remote/types'
-import type { DebtPaymentRow } from '@/lib/supabase/remote/types'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 
 /**
  * Fires on every native app startup and on auth changes. Handles two platforms:
@@ -157,159 +151,25 @@ function SmsStartupSync() {
 }
 
 /**
- * addExpense/addIncomeSource append blindly — these guards make SMS-driven
- * store updates idempotent across the realtime INSERT+UPDATE pair and the
- * FCM push handler racing each other for the same row.
+ * Instant SMS updates. The server nudges the user's private channel when a message has been parsed and saved; one small
+ * delta pull (flush, pull what changed, re-baseline) brings the new transaction in. No change-feed subscription and no
+ * per-row fetches. A missed nudge is covered by the push notification and by the pull on open and resume.
  */
-function addExpenseIfMissing(row: ExpenseRow): void {
-  // Ingest the server row VERBATIM (real id, timestamps). Routing through
-  // addExpense would regenerate the id, duplicating the row on the next flush
-  // and breaking dedup. upsertServerExpense keeps the local copy keyed to the
-  // server PK so flushDiff stays idempotent.
-  useFinanceStore.getState().upsertServerExpense(expenseFromRow(row))
-  if (row.linked_subscription_id) void pullLinkedSubscription(row.linked_subscription_id)
-}
-
-/**
- * SMS dispatch can park a detected plan change (`pending_plan_id`) on the subscription row
- * just before it creates the linked expense. Hydration only runs once per session, so without
- * this the "you moved to Premium" prompt would not appear until the next cold start.
- */
-async function pullLinkedSubscription(subscriptionId: string): Promise<void> {
-  try {
-    const { data } = await createClient()
-      .from('subscriptions')
-      .select('*')
-      .eq('id', subscriptionId)
-      .is('deleted_at', null)
-      .maybeSingle()
-    if (!data) return
-    const server = subscriptionFromRow(data)
-    useFinanceStore.setState((state) => {
-      const winner = mergeById(
-        state.subscriptions as unknown as MergableRow[],
-        [server] as unknown as MergableRow[]
-      ).find((r) => r.id === server.id) as unknown as typeof server
-      const at = state.subscriptions.findIndex((x) => x.id === server.id)
-      // In place: a mergeById round-trip would reorder the list and hop the card to the top.
-      if (at < 0) return { subscriptions: [...state.subscriptions, winner] }
-      const next = [...state.subscriptions]
-      next[at] = winner
-      return { subscriptions: next }
-    })
-  } catch { /* the next hydrate catches up */ }
-}
-
-function addIncomeEventIfMissing(row: IncomeEventRow): void {
-  useFinanceStore.getState().upsertServerIncomeEvent(incomeEventFromRow(row))
-}
-
-function addDebtPaymentIfMissing(row: DebtPaymentRow): void {
-  useFinanceStore.getState().upsertServerDebtPayment(debtPaymentFromRow(row))
-}
-
-/**
- * Confirms back to the server that an SMS-tracked row actually rendered in the
- * app — the signal that promotes the parse log to status='confirmed'. Without
- * this, a row stays 'logged'/'notified' and is flagged undelivered after 2 min.
- * Fire-and-forget; bearer-authed to match /api/sms/ack.
- */
-async function ackSms(logId: string | undefined): Promise<void> {
-  if (!logId) return
-  try {
-    const supabase = createClient()
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    if (!token) return
-    await fetch(apiUrl('/api/sms/ack'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ logId }),
-    })
-  } catch { /* fire-and-forget */ }
-}
-
-/**
- * Subscribes to Supabase realtime events on sms_parse_log. The parse route
- * claims a row first (parsed_ok=false) and promotes it via UPDATE once the
- * expense/income exists, so BOTH events are observed and filtered client-side
- * on the presence of a linked id. RLS scopes events to the authenticated user.
- */
-function SmsRealtimeSync() {
+function SmsNudgeSync() {
   const smsEnabled = useFinanceStore((s) => s.settings.smsTrackingEnabled)
   const dataReady = useFinanceStore((s) => s.dataReady)
+  const { user } = useAuth()
+  const userId = user?.id ?? null
 
   useEffect(() => {
-    if (!dataReady || !smsEnabled) return
+    if (!dataReady || !smsEnabled || !userId) return
     const supabase = createClient()
-    const onRow = async (payload: { new: { id?: string; expense_id?: string | null; income_id?: string | null; debt_payment_id?: string | null; awaiting_confirmation?: boolean } }) => {
-      const row = payload.new
-      let rendered = false
-      if (row.expense_id) {
-        const { data } = await supabase
-          .from('expenses')
-          .select('*')
-          .eq('id', row.expense_id)
-          .single()
-        if (data) { addExpenseIfMissing(data as ExpenseRow); rendered = true }
-      }
-      if (row.income_id) {
-        const { data } = await supabase
-          .from('income_events')
-          .select('*')
-          .eq('id', row.income_id)
-          .single()
-        if (data) { addIncomeEventIfMissing(data as IncomeEventRow); rendered = true }
-      }
-      if (row.debt_payment_id) {
-        // CC payoff: pull the debt payment so the card balance updates live.
-        const { data } = await supabase
-          .from('debt_payments')
-          .select('*')
-          .eq('id', row.debt_payment_id)
-          .single()
-        if (data) { addDebtPaymentIfMissing(data as DebtPaymentRow); rendered = true }
-      }
-      // Skip ack for rows still awaiting user action (currency_provisional, add_failed).
-      // sms_mark_acked sets status='confirmed' without clearing awaiting_confirmation,
-      // which permanently traps those rows in the SMS review sheet.
-      if (rendered && !row.awaiting_confirmation) void ackSms(row.id)
-    }
-
-    // ponytail: catch-up ack — rows processed while app was closed/backgrounded
-    // never fire a realtime event the subscription can see, so they stay 'logged'
-    // or 'notified' forever. On mount, ack any such rows that already have a
-    // linked transaction (expense/income/debt_payment).
-    void (async () => {
-      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      const { data: pending } = await supabase
-        .from('sms_parse_log')
-        .select('id')
-        .in('status', ['logged', 'notified'])
-        .eq('awaiting_confirmation', false)
-        .or('expense_id.not.is.null,income_id.not.is.null,debt_payment_id.not.is.null')
-        .gte('received_at', cutoff)
-        .limit(50)
-      for (const row of pending ?? []) void ackSms(row.id)
-    })()
-
     const channel = supabase
-      .channel('sms-live')
-      .on(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        'postgres_changes' as any,
-        { event: 'INSERT', schema: 'public', table: 'sms_parse_log' },
-        onRow,
-      )
-      .on(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        'postgres_changes' as any,
-        { event: 'UPDATE', schema: 'public', table: 'sms_parse_log' },
-        onRow,
-      )
+      .channel(`user:${userId}`, { config: { private: true } })
+      .on('broadcast', { event: 'sms' }, () => { void syncFinanceNow().catch(() => undefined) })
       .subscribe()
     return () => { void supabase.removeChannel(channel) }
-  }, [dataReady, smsEnabled])
+  }, [dataReady, smsEnabled, userId])
 
   return null
 }
@@ -447,12 +307,15 @@ export function AppShell({ children }: AppShellProps) {
       <ModalProvider />
       <WidgetSync />
       <SmsStartupSync />
-      <SmsRealtimeSync />
+      <SmsNudgeSync />
       <SmsPushActionHandler />
       <AndroidBackHandler />
     </div>
   )
 }
+
+const withTimeout = (p: Promise<unknown>, ms: number): Promise<unknown> =>
+  Promise.race([p.catch(() => undefined), new Promise((resolve) => setTimeout(resolve, ms))])
 
 /**
  * Listens for native FCM push tap events (dispatched by pushNotifications.ts as
@@ -489,47 +352,19 @@ function SmsPushActionHandler() {
           kind === 'sms_cc_payoff') &&
         data.expenseId
       ) {
-        // Ensure the expense is in the store before navigating (WorkManager may
-        // have created it while the app was in the background — realtime subscription
-        // might have missed it if the channel wasn't open yet).
-        void (async () => {
-          const supabase = createClient()
-          // `.is('deleted_at', null)`: a tombstoned row must never re-enter the store —
-          // the next flushDiff would upsert it back and un-delete it server-side.
-          const { data: row } = await supabase
-            .from('expenses')
-            .select('*')
-            .eq('id', data.expenseId)
-            .is('deleted_at', null)
-            .maybeSingle()
-          if (row) {
-            addExpenseIfMissing(row as ExpenseRow)
-            // sms_currency_confirm: currency still needs user confirmation in-app — don't ack yet.
-            if (kind !== 'sms_currency_confirm') void ackSms(data.logId)
-          }
-          // CC payoff also affects the debt ledger — send the user there.
-          navigate(kind === 'sms_cc_payoff' ? '/debts' : '/flow')
-        })()
+        // The transaction may have been created while the app was in the background: pull what changed so it is in the
+        // store before the list opens (bounded, so a slow network never holds the tap).
+        void withTimeout(syncFinanceNow(), 2500).finally(() => navigate(kind === 'sms_cc_payoff' ? '/debts' : '/flow'))
       } else if (kind === 'sms_cc_payoff') {
         // Ambiguous CC payoff posted no expense id — just open debts.
-        void ackSms(data.logId)
         navigate('/debts')
       } else if (kind === 'sms_income_added' && data.incomeId) {
-        void (async () => {
-          const supabase = createClient()
-          const { data: row } = await supabase
-            .from('income_events')
-            .select('*')
-            .eq('id', data.incomeId)
-            .is('deleted_at', null)
-            .maybeSingle()
-          if (row) { addIncomeEventIfMissing(row as IncomeEventRow); void ackSms(data.logId) }
+        void withTimeout(syncFinanceNow(), 2500).finally(() => {
           useExpenseFilterStore.getState().setSegment('in')
           navigate('/flow')
-        })()
+        })
       } else if (kind === 'sms_salary_matched') {
-        // No row created (matched to declared salary) — acknowledge + open income.
-        void ackSms(data.logId)
+        // No row created (matched to declared salary) — open income.
         navigate('/paydays')
       }
     }
