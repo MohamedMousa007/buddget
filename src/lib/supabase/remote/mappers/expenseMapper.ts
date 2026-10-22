@@ -27,6 +27,9 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     sms_log_id: e.smsLogId ?? null,
     refunded_at: e.refundedAt ?? null,
     refund_kind: e.refundKind ?? null,
+    occurred_at: e.occurredAt ?? null,
+    to_payment_method_id:
+      e.toPaymentMethodId && e.toPaymentMethodId !== DEFAULT_CASH_ID ? e.toPaymentMethodId : null,
     created_at: e.createdAt,
   }
 }
@@ -54,6 +57,8 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     receiptId: row.receipt_id ?? undefined,
     refundedAt: row.refunded_at ?? undefined,
     refundKind: (row.refund_kind as 'refunded' | 'declined' | null) ?? undefined,
+    occurredAt: row.occurred_at ?? undefined,
+    toPaymentMethodId: row.to_payment_method_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

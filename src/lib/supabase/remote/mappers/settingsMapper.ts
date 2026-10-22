@@ -25,6 +25,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     sub_price_alerts: s.subPriceAlerts,
     goal_progress_alerts: s.goalProgressAlerts,
     goal_alerts: s.goalAlerts,
+    privacy: (s.privacy ?? {}) as UserSettingsInsert['privacy'],
   }
 }
 
@@ -61,6 +62,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     subPriceAlerts: row.sub_price_alerts ?? true,
     goalProgressAlerts: row.goal_progress_alerts ?? true,
     goalAlerts: row.goal_alerts ?? true,
+    privacy: row.privacy && Object.keys(row.privacy).length > 0 ? (row.privacy as AppSettings['privacy']) : undefined,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

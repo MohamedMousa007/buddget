@@ -13,6 +13,11 @@ export function paymentMethodToRow(pm: PaymentMethod, userId: string): PaymentMe
     is_default: pm.isDefault,
     last4: pm.last4 ?? null,
     notes: null,
+    parent_id: pm.parentId ?? null,
+    opening_balance: pm.openingBalance ?? null,
+    opening_at: pm.openingAt ?? null,
+    closed_at: pm.closedAt ?? null,
+    track_sms: pm.trackSms ?? true,
   }
 }
 
@@ -25,6 +30,11 @@ export function paymentMethodFromRow(row: PaymentMethodRow): PaymentMethod {
     color: row.color ?? undefined,
     last4: row.last4 ?? undefined,
     isDefault: row.is_default,
+    parentId: row.parent_id ?? undefined,
+    openingBalance: row.opening_balance ?? undefined,
+    openingAt: row.opening_at ?? undefined,
+    closedAt: row.closed_at ?? undefined,
+    trackSms: row.track_sms,
     createdAt: row.created_at ?? undefined,
     updatedAt: row.updated_at ?? undefined,
   }

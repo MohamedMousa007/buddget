@@ -111,4 +111,5 @@ export const APP_SETTING_COVERAGE: Record<keyof AppSettings, SettingId | 'intern
   subPriceAlerts: 'subPriceAlerts',
   goalProgressAlerts: 'goalProgressAlerts',
   goalAlerts: 'goalAlerts',
+  privacy: 'internal',
 }

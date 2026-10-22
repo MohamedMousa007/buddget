@@ -57,6 +57,15 @@ export type PaymentMethodType =
   | 'other'
 
 export interface PaymentMethod {
+  /** Cards hang under an account (cash / bank_account / wallet). Absent = standalone. */
+  parentId?: string
+  /** Account balance at `openingAt`; undefined = not set yet (excluded from totals). */
+  openingBalance?: number
+  openingAt?: string
+  /** Closed accounts keep their history but leave lists and totals. */
+  closedAt?: string
+  /** Compare SMS balance reports against the ledger. Default on. */
+  trackSms?: boolean
   id: string
   name: string
   type: PaymentMethodType
@@ -137,6 +146,7 @@ export type IncomeEventStatus = 'confirmed' | 'projected' | 'late' | 'missed' | 
  * {@link IncomeSource} project expected events; confirming/editing one persists a row here.
  */
 export interface IncomeEvent {
+  occurredAt?: string
   id: string
   /** The recurring {@link IncomeSource} this came from; null/undefined = one-time. */
   templateId?: string | null
@@ -161,6 +171,10 @@ export interface IncomeEvent {
 }
 
 export interface Expense {
+  /** Exact instant (ISO). `date` stays the day key; readers fall back to date@12:00 when absent. */
+  occurredAt?: string
+  /** Transfer target (Cash out, own transfer): credits this account, `paymentMethodId` is debited. */
+  toPaymentMethodId?: string
   id: string
   date: string
   description: string
@@ -566,6 +580,8 @@ export type SavingsAccountCategory = 'savings' | 'investment'
 
 /** Savings bucket with ledger balance (transfers, not expenses). */
 export interface SavingsAccount {
+  /** Earmark: this pocket sits inside that account; the account balance is unchanged, only "free" shrinks. */
+  heldInPaymentMethodId?: string
   id: string
   name: string
   /** Product grouping for net worth (defaults from `type` when omitted). */
@@ -646,6 +662,9 @@ export interface RecurringSavingsDeposit {
 export type SavingsWithdrawalPurpose = 'income' | 'transfer' | 'debt' | 'spend'
 
 export interface SavingsTransaction {
+  occurredAt?: string
+  /** Account the money came from / went to. */
+  paymentMethodId?: string
   id: string
   accountId: string
   type: 'deposit' | 'withdrawal'
@@ -746,6 +765,7 @@ export interface Debt {
 }
 
 export interface DebtPayment {
+  occurredAt?: string
   id: string
   debtId: string
   date: string
@@ -825,6 +845,8 @@ export interface UserProfile {
 }
 
 export interface AppSettings {
+  /** Per-surface balance hiding; undefined = everything visible. */
+  privacy?: PrivacySettings
   baseCurrency: Currency
   secondaryCurrency: Currency | null
   showSecondaryCurrency: boolean
@@ -1216,4 +1238,26 @@ export interface FinanceStore {
   resetAllData: () => void
   /** Same as `resetAllData` (logout / full client wipe). */
   reset: () => void
+}
+
+/** Where hidden balances are masked. `preset` is a shortcut; the per-surface flags win once edited. */
+export interface PrivacySettings {
+  preset?: 'off' | 'hero' | 'all' | 'custom'
+  hero?: boolean
+  lists?: boolean
+  notifications?: boolean
+  widgets?: boolean
+  buddgy?: boolean
+}
+
+/** A signed correction on one account (manual balance update or an explained gap). Append-only. */
+export interface AccountAdjustment {
+  id: string
+  paymentMethodId: string
+  delta: number
+  reason: 'manual_update' | 'gap' | 'opening_correction'
+  occurredAt: string
+  note?: string
+  createdAt: string
+  updatedAt: string
 }

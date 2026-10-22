@@ -268,6 +268,18 @@ export type Database = {
         }
         Relationships: []
       }
+      account_adjustments: {
+        Row: { id: string; user_id: string; payment_method_id: string; delta: number; reason: string; occurred_at: string; note: string | null; created_at: string; updated_at: string; deleted_at: string | null }
+        Insert: { id?: string; user_id: string; payment_method_id: string; delta: number; reason: string; occurred_at?: string; note?: string | null; created_at?: string; updated_at?: string; deleted_at?: string | null }
+        Update: { id?: string; user_id?: string; payment_method_id?: string; delta?: number; reason?: string; occurred_at?: string; note?: string | null; created_at?: string; updated_at?: string; deleted_at?: string | null }
+        Relationships: []
+      }
+      account_balance_reports: {
+        Row: { id: string; user_id: string; payment_method_id: string; balance: number; currency: string | null; reported_at: string; source: string; sms_parse_log_id: string | null; created_at: string }
+        Insert: { id?: string; user_id: string; payment_method_id: string; balance: number; currency?: string | null; reported_at: string; source?: string; sms_parse_log_id?: string | null; created_at?: string }
+        Update: { id?: string; user_id?: string; payment_method_id?: string; balance?: number; currency?: string | null; reported_at?: string; source?: string; sms_parse_log_id?: string | null; created_at?: string }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -1121,6 +1133,7 @@ export type Database = {
       }
       debt_payments: {
         Row: {
+          occurred_at: string | null
           amount: number
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -1135,6 +1148,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          occurred_at?: string | null
           amount: number
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -1149,6 +1163,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          occurred_at?: string | null
           amount?: number
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -1334,6 +1349,8 @@ export type Database = {
       }
       expenses: {
         Row: {
+          occurred_at: string | null
+          to_payment_method_id: string | null
           amount: number
           category: Database["public"]["Enums"]["expense_category"]
           created_at: string
@@ -1357,6 +1374,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          occurred_at?: string | null
+          to_payment_method_id?: string | null
           amount: number
           category?: Database["public"]["Enums"]["expense_category"]
           created_at?: string
@@ -1380,6 +1399,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          occurred_at?: string | null
+          to_payment_method_id?: string | null
           amount?: number
           category?: Database["public"]["Enums"]["expense_category"]
           created_at?: string
@@ -1615,6 +1636,7 @@ export type Database = {
       }
       income_events: {
         Row: {
+          occurred_at: string | null
           amount: number
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -1636,6 +1658,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          occurred_at?: string | null
           amount: number
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -1657,6 +1680,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          occurred_at?: string | null
           amount?: number
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -2002,6 +2026,11 @@ export type Database = {
       }
       payment_methods: {
         Row: {
+          parent_id: string | null
+          opening_balance: number | null
+          opening_at: string | null
+          closed_at: string | null
+          track_sms: boolean
           color: string
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -2016,6 +2045,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          parent_id?: string | null
+          opening_balance?: number | null
+          opening_at?: string | null
+          closed_at?: string | null
+          track_sms?: boolean
           color?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -2030,6 +2064,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          parent_id?: string | null
+          opening_balance?: number | null
+          opening_at?: string | null
+          closed_at?: string | null
+          track_sms?: boolean
           color?: string
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -2518,6 +2557,7 @@ export type Database = {
       }
       savings_accounts: {
         Row: {
+          held_in_payment_method_id: string | null
           category: Database["public"]["Enums"]["savings_category"]
           color: string | null
           created_at: string
@@ -2537,6 +2577,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          held_in_payment_method_id?: string | null
           category?: Database["public"]["Enums"]["savings_category"]
           color?: string | null
           created_at?: string
@@ -2556,6 +2597,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          held_in_payment_method_id?: string | null
           category?: Database["public"]["Enums"]["savings_category"]
           color?: string | null
           created_at?: string
@@ -2712,6 +2754,8 @@ export type Database = {
       }
       savings_transactions: {
         Row: {
+          occurred_at: string | null
+          payment_method_id: string | null
           account_id: string
           amount: number
           balance_after: number | null
@@ -2730,6 +2774,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          occurred_at?: string | null
+          payment_method_id?: string | null
           account_id: string
           amount: number
           balance_after?: number | null
@@ -2748,6 +2794,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          occurred_at?: string | null
+          payment_method_id?: string | null
           account_id?: string
           amount?: number
           balance_after?: number | null
@@ -2879,6 +2927,8 @@ export type Database = {
       }
       sms_parse_log: {
         Row: {
+          payment_method_id: string | null
+          balance_after: number | null
           harvested_at: string | null
           account_last4: string | null
           acked_at: string | null
@@ -2923,6 +2973,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          payment_method_id?: string | null
+          balance_after?: number | null
           harvested_at?: string | null
           account_last4?: string | null
           acked_at?: string | null
@@ -2967,6 +3019,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          payment_method_id?: string | null
+          balance_after?: number | null
           harvested_at?: string | null
           account_last4?: string | null
           acked_at?: string | null
@@ -3617,6 +3671,7 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          privacy: Json
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout: Database["public"]["Enums"]["dashboard_layout"]
@@ -3641,6 +3696,7 @@ export type Database = {
           wealth_gold_strip: string
         }
         Insert: {
+          privacy?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
@@ -3665,6 +3721,7 @@ export type Database = {
           wealth_gold_strip?: string
         }
         Update: {
+          privacy?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
@@ -3701,6 +3758,10 @@ export type Database = {
       }
     }
     Functions: {
+      latest_balance_reports: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Tables"]["account_balance_reports"]["Row"][]
+      }
       notification_candidate_users: { Args: never; Returns: string[] }
       publish_email_template: { Args: { p_key: string; p_locale: string; p_staff: string }; Returns: number }
       admin_entitlement_counts: { Args: never; Returns: { plan_key: string; status: string; n: number }[] }

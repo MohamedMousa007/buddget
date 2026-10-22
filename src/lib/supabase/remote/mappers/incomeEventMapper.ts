@@ -45,6 +45,7 @@ export function incomeEventToRow(e: IncomeEvent, userId: string): IncomeEventIns
     shared_plan_id: e.sharedPlanId ?? null,
     sms_log_id: e.smsLogId ?? null,
     notes: e.notes ?? null,
+    occurred_at: e.occurredAt ?? null,
     created_at: e.createdAt,
     updated_at: e.updatedAt,
   }
@@ -67,6 +68,7 @@ export function incomeEventFromRow(row: IncomeEventRow): IncomeEvent {
     sharedPlanId: row.shared_plan_id ?? undefined,
     smsLogId: row.sms_log_id ?? undefined,
     notes: row.notes ?? undefined,
+    occurredAt: row.occurred_at ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? row.created_at,
   }

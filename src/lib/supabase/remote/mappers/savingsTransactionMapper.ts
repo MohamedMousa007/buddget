@@ -19,6 +19,8 @@ export function savingsTransactionToRow(
     source: t.source ?? null,
     is_auto_save: t.isAutoSave ?? false,
     transfer_group_id: t.transferGroupId ?? null,
+    occurred_at: t.occurredAt ?? null,
+    payment_method_id: t.paymentMethodId ?? null,
   }
 }
 
@@ -39,6 +41,8 @@ export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTr
     source: row.source ?? undefined,
     isAutoSave: row.is_auto_save ?? undefined,
     transferGroupId: row.transfer_group_id ?? undefined,
+    occurredAt: row.occurred_at ?? undefined,
+    paymentMethodId: row.payment_method_id ?? undefined,
     createdAt: row.created_at ?? undefined,
     updatedAt: row.updated_at ?? undefined,
   }

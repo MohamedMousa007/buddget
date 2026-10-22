@@ -12,6 +12,7 @@ export function debtPaymentToRow(p: DebtPayment, userId: string): DebtPaymentIns
     payment_date: p.date,
     notes: p.notes ?? null,
     funded_from_savings: p.fundedFromSavings ?? false,
+    occurred_at: p.occurredAt ?? null,
     created_at: p.createdAt,
   }
 }
@@ -31,6 +32,7 @@ export function debtPaymentFromRow(row: DebtPaymentRow): DebtPayment {
     amountInPrimary: row.amount,
     notes: row.notes ?? undefined,
     fundedFromSavings: row.funded_from_savings ?? undefined,
+    occurredAt: row.occurred_at ?? undefined,
     createdAt: row.created_at,
   }
 }

@@ -42,6 +42,7 @@ export function savingsAccountToRow(a: SavingsAccount, userId: string): SavingsA
     color: a.color ?? null,
     is_emergency_cover: a.isEmergencyCover ?? false,
     linked_payment_method_id: a.linkedPaymentMethodId ?? null,
+    held_in_payment_method_id: a.heldInPaymentMethodId ?? null,
     metadata: metadata as SavingsAccountInsert['metadata'],
     created_at: a.createdAt,
   }
@@ -61,6 +62,7 @@ export function savingsAccountFromRow(row: SavingsAccountRow): SavingsAccount {
     color: row.color ?? undefined,
     isEmergencyCover: row.is_emergency_cover ?? undefined,
     linkedPaymentMethodId: row.linked_payment_method_id ?? undefined,
+    heldInPaymentMethodId: row.held_in_payment_method_id ?? undefined,
     institution: meta.institution,
     accountLast4: meta.accountLast4,
     maturityDate: meta.maturityDate,
