@@ -4,6 +4,7 @@ import type { AppSettings, BudgetPlan, BudgetPlanActivation, Currency } from '@/
 import { mergeList } from './merge'
 import type { Snapshot } from './snapshot'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
+import { accountAdjustmentFromRow } from './mappers/accountAdjustmentMapper'
 import { activationFromRow } from './mappers/budgetActivationMapper'
 import { assembleBudgetPlan } from './mappers/budgetPlanMapper'
 import { debtFromRow } from './mappers/debtMapper'
@@ -54,6 +55,7 @@ export interface MappedDelta {
   recurringSavingsDeposits: ListDelta<Snapshot['recurringSavingsDeposits'][number]>
   goals: ListDelta<Snapshot['goals'][number]>
   buddgyMemories: ListDelta<Snapshot['buddgyMemories'][number]>
+  accountAdjustments: ListDelta<Snapshot['accountAdjustments'][number]>
   budgetPlans: BudgetPlan[]
   deletedBudgetPlanIds: string[]
   budgetPlanActivations: BudgetPlanActivation[]
@@ -110,6 +112,7 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
     recurringSavingsDeposits: listDelta(l.recurring_savings_deposits, recurringSavingsDepositFromRow),
     goals: listDelta(l.goals, goalFromRow),
     buddgyMemories: listDelta(l.buddgy_memories, memoryFromRow),
+    accountAdjustments: listDelta(l.account_adjustments, accountAdjustmentFromRow),
     budgetPlans: p.budget_plans.map((plan) => assembleBudgetPlan({ plan, categories: p.budget_categories, subcategories: p.budget_subcategories })),
     deletedBudgetPlanIds: p.budget_plans_deleted,
     budgetPlanActivations: p.budget_plan_activations.map(activationFromRow),
@@ -157,6 +160,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
     recurringSavingsDeposits: applyList(local.recurringSavingsDeposits, d.recurringSavingsDeposits),
     goals: applyList(local.goals, d.goals),
     buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>) as Snapshot['buddgyMemories'],
+    accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>) as Snapshot['accountAdjustments'],
     budgetPlans: applyList(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }) as Snapshot['budgetPlans'],
     budgetPlanActivations: mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations'],
   }

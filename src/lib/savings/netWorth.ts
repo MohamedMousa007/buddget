@@ -16,6 +16,13 @@ export interface NetWorthInput {
   monthlyIncome: number
   cashOutflow: number
   debtRemaining: number
+  /**
+   * Sum of tracked account balances in base currency. When present it replaces the monthly-flow term
+   * (accounts carry cash across months, so a flow term would double count) and the pockets listed in
+   * `heldInPocketIds` are skipped (their money already sits inside an account balance).
+   */
+  accountsBasis?: number
+  heldInPocketIds?: ReadonlySet<string>
 }
 
 export interface NetWorthResult {
@@ -26,6 +33,8 @@ export interface NetWorthResult {
   totalDebt: number
   monthlyIncome: number
   monthlyFlow: number
+  /** Tracked accounts total (base currency), when the accounts basis is in use. */
+  accountsTotal: number | null
   baseCurrency: Currency
   netWorthGoldIncomplete: boolean
   netWorthIncomplete: boolean
@@ -48,6 +57,7 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   // never count it at its raw unit value.
   let valuationIncomplete = false
   for (const a of i.savingsAccounts) {
+    if (i.accountsBasis !== undefined && i.heldInPocketIds?.has(a.id)) continue
     const v = savingsAccountBalanceInBase(a, base, exchangeRates, i.goldPricePerGram, goldOk)
     if (v === null) {
       valuationIncomplete = true
@@ -63,7 +73,7 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   totalInvestments += convertCurrency(holdings.total, 'EGP', base, exchangeRates)
 
   const monthlyFlow = i.monthlyIncome - i.cashOutflow
-  const netWorth = totalSavings + totalInvestments + monthlyFlow - i.debtRemaining
+  const netWorth = totalSavings + totalInvestments + (i.accountsBasis ?? monthlyFlow) - i.debtRemaining
 
   const netWorthSecondary =
     settings.showSecondaryCurrency && settings.secondaryCurrency
@@ -82,6 +92,7 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
     totalDebt: i.debtRemaining,
     monthlyIncome: i.monthlyIncome,
     monthlyFlow,
+    accountsTotal: i.accountsBasis ?? null,
     baseCurrency: base,
     netWorthGoldIncomplete,
     netWorthIncomplete: netWorthGoldIncomplete || valuationIncomplete,

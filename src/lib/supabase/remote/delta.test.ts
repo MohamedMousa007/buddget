@@ -11,7 +11,7 @@ function noDelta(over: Partial<MappedDelta> = {}): MappedDelta {
     cursor: '2026-10-20T10:00:00Z', profile: null, settings: null,
     paymentMethods: none, incomeSources: none, incomeEvents: none, expenses: none, receipts: none, recurringExpenses: none,
     subscriptions: none, debts: none, debtPayments: none, recurringDebtPayments: none, savingsAccounts: none, investmentHoldings: none,
-    savingsTransactions: none, recurringSavingsDeposits: none, goals: none, buddgyMemories: none,
+    savingsTransactions: none, recurringSavingsDeposits: none, goals: none, buddgyMemories: none, accountAdjustments: none,
     budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [],
     ...over,
   }

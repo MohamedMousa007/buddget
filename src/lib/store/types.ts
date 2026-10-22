@@ -997,6 +997,7 @@ export interface FinanceStore {
   /** Which plan was active from which cycle (history log). */
   budgetPlanActivations: BudgetPlanActivation[]
   buddgyMemories: BuddgyMemory[]
+  accountAdjustments: AccountAdjustment[]
   savingsHoldings: SavingsHolding[]
   /** v3 investment positions (gold/crypto/stock/property), valued at quantity × live price. */
   investmentHoldings: InvestmentHolding[]
@@ -1163,6 +1164,7 @@ export interface FinanceStore {
   /** Saves a remembered fact; null when it is a duplicate or the 40-fact cap is reached. */
   addBuddgyMemory: (text: string, source: BuddgyMemory['source'], kind?: BuddgyMemory['kind']) => string | null
   removeBuddgyMemory: (id: string) => void
+  addAccountAdjustment: (a: Omit<AccountAdjustment, 'id' | 'createdAt' | 'updatedAt'>) => string
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
   updatePlanCategory: (planId: string, categoryId: string, updates: Partial<Omit<BudgetPlanCategory, 'id' | 'subcategories'>> & { subcategories?: BudgetPlanSubcategory[] }) => void
   deletePlanCategory: (planId: string, categoryId: string) => void

@@ -184,6 +184,7 @@ export const useFinanceStore = create<FinanceStore>()(
       budgetPlans: [],
       budgetPlanActivations: [],
       buddgyMemories: [],
+      accountAdjustments: [],
       activeBudgetPlanId: null,
       savingsHoldings: [],
       investmentHoldings: [],
@@ -1216,6 +1217,13 @@ export const useFinanceStore = create<FinanceStore>()(
         return id
       },
 
+      addAccountAdjustment: (a) => {
+        const id = generateId()
+        const now = new Date().toISOString()
+        set((state) => ({ accountAdjustments: [...state.accountAdjustments, { ...a, id, createdAt: now, updatedAt: now }] }))
+        return id
+      },
+
       removeBuddgyMemory: (id) => set((state) => ({ buddgyMemories: state.buddgyMemories.filter((m) => m.id !== id) })),
 
       addPlanCategory: (planId, category) => {
@@ -1819,6 +1827,7 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetPlans: state.budgetPlans,
           budgetPlanActivations: state.budgetPlanActivations,
           buddgyMemories: state.buddgyMemories,
+          accountAdjustments: state.accountAdjustments,
           activeBudgetPlanId: state.activeBudgetPlanId,
           financialGoalsNotes: state.financialGoalsNotes,
           savingsHoldings: state.savingsHoldings,
@@ -1847,6 +1856,7 @@ export const useFinanceStore = create<FinanceStore>()(
           budgetPlans: [],
           budgetPlanActivations: [],
           buddgyMemories: [],
+          accountAdjustments: [],
           activeBudgetPlanId: null,
           financialGoalsNotes: '',
           savingsHoldings: [],
@@ -1965,6 +1975,7 @@ export const useFinanceStore = create<FinanceStore>()(
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             budgetPlanActivations: Array.isArray(p.budgetPlanActivations) ? p.budgetPlanActivations : [],
             buddgyMemories: Array.isArray(p.buddgyMemories) ? p.buddgyMemories : [],
+            accountAdjustments: Array.isArray(p.accountAdjustments) ? p.accountAdjustments : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId
@@ -1999,6 +2010,7 @@ export const useFinanceStore = create<FinanceStore>()(
             budgetPlans: Array.isArray(p.budgetPlans) ? p.budgetPlans : [],
             budgetPlanActivations: Array.isArray(p.budgetPlanActivations) ? p.budgetPlanActivations : [],
             buddgyMemories: Array.isArray(p.buddgyMemories) ? p.buddgyMemories : [],
+            accountAdjustments: Array.isArray(p.accountAdjustments) ? p.accountAdjustments : [],
             activeBudgetPlanId:
               typeof p.activeBudgetPlanId === 'string' || p.activeBudgetPlanId === null
                 ? p.activeBudgetPlanId

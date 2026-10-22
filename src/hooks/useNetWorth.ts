@@ -7,6 +7,7 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRates } from '@/hooks/useRates'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { computeNetWorth } from '@/lib/savings/netWorth'
+import { useAccounts } from '@/lib/accounts/useAccounts'
 
 /**
  * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
@@ -21,6 +22,7 @@ import { computeNetWorth } from '@/lib/savings/netWorth'
 export function useNetWorth() {
   useRates()
   const stats = useMonthlyStats()
+  const accounts = useAccounts()
   const { lookup } = useAssetPrices()
   const {
     savingsAccounts,
@@ -42,9 +44,20 @@ export function useNetWorth() {
     }))
   )
 
+  const basis = useMemo(() => {
+    const tracked = accounts.accounts.filter((a) => a.balance)
+    if (tracked.length === 0) return {}
+    const ids = new Set(tracked.map((a) => a.method.id))
+    return {
+      accountsBasis: accounts.totalInBase,
+      heldInPocketIds: new Set(savingsAccounts.filter((p) => p.heldInPaymentMethodId && ids.has(p.heldInPaymentMethodId)).map((p) => p.id)),
+    }
+  }, [accounts, savingsAccounts])
+
   return useMemo(
     () =>
       computeNetWorth({
+        ...basis,
         savingsAccounts,
         investmentHoldings,
         debts,
@@ -69,6 +82,7 @@ export function useNetWorth() {
       stats.totalIncome,
       stats.cashOutflow,
       stats.debtRemainingTotal,
+      basis,
     ],
   )
 }

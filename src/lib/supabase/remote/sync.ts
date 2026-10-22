@@ -8,6 +8,7 @@ import { diffLists, diffSingleton } from './diff'
 import { profileToRow, profileFromRow } from './mappers/profileMapper'
 import { settingsToRow, settingsFromRow } from './mappers/settingsMapper'
 import { paymentMethodToRow, paymentMethodFromRow } from './mappers/paymentMethodMapper'
+import { accountAdjustmentToRow, accountAdjustmentFromRow } from './mappers/accountAdjustmentMapper'
 import { incomeSourceToRow, incomeSourceFromRow } from './mappers/incomeSourceMapper'
 import { incomeEventToRow, incomeEventFromRow } from './mappers/incomeEventMapper'
 import { expenseToRow, expenseFromRow } from './mappers/expenseMapper'
@@ -221,6 +222,7 @@ export async function flushDiff(
   emitList(runner, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)
   emitList(runner, 'goals', next.goals, prev.goals, goalToRow, userId)
   emitList(runner, 'buddgy_memories', next.buddgyMemories, prev.buddgyMemories, memoryToRow, userId)
+  emitList(runner, 'account_adjustments', next.accountAdjustments, prev.accountAdjustments, accountAdjustmentToRow, userId)
 
   flushBudgetPlans(runner, userId, prev, next, next.settings.baseCurrency)
 
@@ -324,6 +326,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
     budgetPlans: [],
     budgetPlanActivations: [],
     buddgyMemories: [],
+    accountAdjustments: [],
   }
 }
 
@@ -337,7 +340,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     pmR, incomeR, incomeEvtR, expenseR, receiptR, recExpR, subR,
     debtR, debtPayR, recDebtR,
     saR, shR, stR, rsdR,
-    goalR, planR, catR, subcatR, activationR, memoryR,
+    goalR, planR, catR, subcatR, activationR, memoryR, adjR,
   ] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
@@ -361,6 +364,7 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     client.from('budget_subcategories').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('budget_plan_activations').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('buddgy_memories').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('account_adjustments').select('*').eq('user_id', userId).is('deleted_at', null),
   ])
 
   if (!profileR.data) return null
@@ -402,5 +406,6 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     budgetPlans: plans,
     budgetPlanActivations: (activationR.data ?? []).map(activationFromRow),
     buddgyMemories: (memoryR.data ?? []).map(memoryFromRow),
+    accountAdjustments: (adjR.data ?? []).map(accountAdjustmentFromRow),
   }
 }

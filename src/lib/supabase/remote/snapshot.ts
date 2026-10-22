@@ -1,5 +1,5 @@
 import type {
-  BudgetPlanActivation, BuddgyMemory, FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, InvestmentHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
+  AccountAdjustment, BudgetPlanActivation, BuddgyMemory, FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, InvestmentHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
 
 /**
  * Mirror of the finance store slices we persist to Supabase. Used to compute diffs
@@ -28,6 +28,7 @@ export interface Snapshot {
   budgetPlans: BudgetPlan[]
   budgetPlanActivations: BudgetPlanActivation[]
   buddgyMemories: BuddgyMemory[]
+  accountAdjustments: AccountAdjustment[]
 }
 
 /** Copy the parts of the Zustand store that map to DB rows. Plain JSON; safe to `deepEqual` on. */
@@ -36,7 +37,7 @@ export function snapshot(state: Pick<FinanceStore,
   | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses' | 'receipts' | 'recurringExpenses'
   | 'subscriptions' | 'debts' | 'debtPayments' | 'recurringDebtPayments'
   | 'savingsAccounts' | 'investmentHoldings' | 'savingsTransactions' | 'recurringSavingsDeposits'
-  | 'goals' | 'budgetPlans' | 'budgetPlanActivations' | 'buddgyMemories'
+  | 'goals' | 'budgetPlans' | 'budgetPlanActivations' | 'buddgyMemories' | 'accountAdjustments'
 >): Snapshot {
   return {
     profile: state.profile,
@@ -61,6 +62,7 @@ export function snapshot(state: Pick<FinanceStore,
     budgetPlans: state.budgetPlans,
     budgetPlanActivations: state.budgetPlanActivations,
     buddgyMemories: state.buddgyMemories,
+    accountAdjustments: state.accountAdjustments,
   }
 }
 
@@ -111,5 +113,6 @@ export function emptySnapshot(): Snapshot {
     budgetPlans: [],
     budgetPlanActivations: [],
     buddgyMemories: [],
+    accountAdjustments: [],
   }
 }

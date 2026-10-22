@@ -78,14 +78,14 @@ type TrackedSliceKey =
   | 'activeBudgetPlanId' | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses'
   | 'recurringExpenses' | 'subscriptions' | 'debts' | 'debtPayments'
   | 'recurringDebtPayments' | 'savingsAccounts' | 'savingsHoldings'
-  | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans' | 'budgetPlanActivations' | 'buddgyMemories'
+  | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans' | 'budgetPlanActivations' | 'buddgyMemories' | 'accountAdjustments'
 
 const TRACKED_SLICES: readonly TrackedSliceKey[] = [
   'profile', 'settings', 'financialGoalsNotes',
   'activeBudgetPlanId', 'paymentMethods', 'incomeSources', 'incomeEvents', 'expenses',
   'recurringExpenses', 'subscriptions', 'debts', 'debtPayments',
   'recurringDebtPayments', 'savingsAccounts', 'savingsHoldings',
-  'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'budgetPlans', 'budgetPlanActivations', 'buddgyMemories',
+  'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'budgetPlans', 'budgetPlanActivations', 'buddgyMemories', 'accountAdjustments',
 ]
 
 /**
@@ -490,6 +490,7 @@ function applyMerged(merged: Snapshot, userId: string): void {
     budgetPlans: merged.budgetPlans,
     budgetPlanActivations: merged.budgetPlanActivations,
     buddgyMemories: merged.buddgyMemories,
+    accountAdjustments: merged.accountAdjustments,
   })
   // Apply the server theme synchronously so the <html> class is already
   // correct before the loading splash is removed.

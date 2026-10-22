@@ -57,6 +57,7 @@ export function mergeSnapshots(local: Snapshot, server: Snapshot): Snapshot {
     goals: mergeList(local.goals, server.goals),
     budgetPlans: mergeList(local.budgetPlans as WithId[], server.budgetPlans as WithId[]) as Snapshot['budgetPlans'],
     buddgyMemories: mergeList(local.buddgyMemories as WithId[], server.buddgyMemories as WithId[]) as Snapshot['buddgyMemories'],
+    accountAdjustments: mergeList(local.accountAdjustments as WithId[], server.accountAdjustments as WithId[]) as Snapshot['accountAdjustments'],
     budgetPlanActivations: mergeList(local.budgetPlanActivations as WithId[], server.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations'],
   }
 }
