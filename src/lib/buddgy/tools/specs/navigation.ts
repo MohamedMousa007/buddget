@@ -67,4 +67,11 @@ export const navigationSpecs: ToolSpec[] = [
       ['sheet'],
     ),
   },
+  {
+    name: 'start_budget_setup',
+    domain: 'navigation',
+    kind: 'nav',
+    description: 'Start the guided budget setup (Buddgy asks a few questions and builds the plan). Use when the user wants a new budget or to redo theirs, instead of editing lines one by one.',
+    params: obj({}, []),
+  },
 ]

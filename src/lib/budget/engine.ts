@@ -111,6 +111,11 @@ function fixedLines(f: BudgetFacts, bench: Benchmark, income: number): DraftLine
       })
     )
   }
+  for (const c of f.extraCommitments ?? []) {
+    lines.push(
+      line({ block: 'bills', name: c.name, icon: 'receipt', amount: Math.round(c.amount), essential: true, rationale: 'A monthly cost you told Buddgy about' })
+    )
+  }
   if (f.subscriptionsMonthly > 0 || f.subscriptionCount > 0) {
     lines.push(
       line({

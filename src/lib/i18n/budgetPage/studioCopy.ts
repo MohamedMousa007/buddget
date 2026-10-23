@@ -21,6 +21,8 @@ export interface BudgetStudioCopy {
   confirm: string
   estimate: string
   buildNow: string
+  /** Shown when income and spending history already exist. */
+  draft: { kicker: string; title: (months: number) => string; body: string; review: string; questions: string }
   /** Optional first step: describe your situation in your own words. */
   opener: {
     kicker: string
@@ -93,6 +95,13 @@ const en: BudgetStudioCopy = {
   confirm: 'Looks right',
   estimate: 'Estimate for me',
   buildNow: 'Build my plan now',
+  draft: {
+    kicker: 'Buddgy has a draft',
+    title: (months) => `I can draft your plan from your last ${months === 1 ? 'month' : `${months} months`}`,
+    body: 'It uses your income, bills and the way you actually spend. You can still change every line, or answer a few questions first to sharpen it.',
+    review: 'Review my draft',
+    questions: 'Ask me a few questions first',
+  },
   opener: {
     kicker: 'Buddgy listens',
     working: 'Reading what you wrote',
@@ -202,6 +211,13 @@ const ar: BudgetStudioCopy = {
   confirm: 'صحيح',
   estimate: 'قدّر لي',
   buildNow: 'ابنِ خطتي الآن',
+  draft: {
+    kicker: 'لدى Buddgy مسودة',
+    title: (months) => `يمكنني صياغة خطتك من ${months === 1 ? 'الشهر الماضي' : `آخر ${months} أشهر`}`,
+    body: 'تعتمد على دخلك وفواتيرك وطريقة إنفاقك الفعلية. يمكنك تعديل كل بند، أو الإجابة عن بضعة أسئلة أولًا لتصبح أدق.',
+    review: 'راجع مسودتي',
+    questions: 'اسألني بضعة أسئلة أولًا',
+  },
   opener: {
     kicker: 'Buddgy يستمع',
     working: 'أقرأ ما كتبته',

@@ -81,6 +81,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [building, setBuilding] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [studio, setStudio] = useState<{ intent: CreateIntent | null } | null>(null)
+  // Buddgy's chat can start the guided setup; the request is honoured once, here, and cleared.
+  const studioRequested = useSettingsStore((s) => s.budgetStudioRequested)
+  useEffect(() => {
+    if (!studioRequested) return
+    useSettingsStore.getState().clearBudgetStudioRequest()
+    setStudio({ intent: null })
+  }, [studioRequested])
   const [review, setReview] = useState<{ id: string; aiNote: boolean } | null>(null)
   const [adjusting, setAdjusting] = useState(false)
   const monthClose = useMonthClose()

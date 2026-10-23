@@ -29,6 +29,12 @@ const open_screen: Nav = (args) => {
   return opened(screen)
 }
 
+const start_budget_setup: Nav = () => {
+  ui().requestBudgetStudio()
+  navigate('/budget-setup')
+  return opened('the budget setup')
+}
+
 const open_setting: Nav = (args) => {
   const id = OPENABLE_SETTINGS.find((s) => s === args.setting)
   if (!id) return refused('That setting cannot be opened from chat.')
@@ -149,4 +155,4 @@ const open_sheet: Nav = (args) => {
   }
 }
 
-export const navigationTools = defineTools(navigationSpecs, { open_screen, open_setting, open_sheet })
+export const navigationTools = defineTools(navigationSpecs, { open_screen, open_setting, open_sheet, start_budget_setup })

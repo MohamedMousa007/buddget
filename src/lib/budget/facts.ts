@@ -49,6 +49,8 @@ export interface BudgetFacts {
   /** 0 = save hard, 100 = live comfortably. */
   securityLean: number
   investInterest: boolean
+  /** Other fixed monthly costs the user described in words (school fees, remittances); each becomes a bills line. */
+  extraCommitments?: Array<{ name: string; amount: number }>
 }
 
 export type EverydayKey = 'groceries' | 'dining' | 'transport' | 'health' | 'shopping' | 'fun' | 'family' | 'other'

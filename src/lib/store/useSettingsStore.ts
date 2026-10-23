@@ -87,6 +87,10 @@ interface SettingsState {
   setPaydayFocusId: (id: string | null) => void
   /** Setting to scroll to and highlight on arrival from settings search; consumed once. */
   settingsFocusId: string | null
+  /** Buddgy asked to start the guided budget setup; the Budget page opens it once and clears this. Not persisted. */
+  budgetStudioRequested: boolean
+  requestBudgetStudio: () => void
+  clearBudgetStudioRequest: () => void
   setSettingsFocusId: (id: string | null) => void
   /** Bring back every banner and prompt the user dismissed or snoozed. */
   restoreDismissedPrompts: () => void
@@ -208,6 +212,9 @@ export const useSettingsStore = create<SettingsState>()(
       paydayFocusId: null,
       setPaydayFocusId: (id) => set({ paydayFocusId: id }),
       settingsFocusId: null,
+      budgetStudioRequested: false,
+      requestBudgetStudio: () => set({ budgetStudioRequested: true }),
+      clearBudgetStudioRequest: () => set({ budgetStudioRequested: false }),
       setSettingsFocusId: (id) => set({ settingsFocusId: id }),
       restoreDismissedPrompts: () => set({ dismissedBanners: [], snoozedBanners: {}, hiddenStatusUntil: {} }),
       monthFilter: getCurrentMonth(),

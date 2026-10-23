@@ -37,10 +37,21 @@ beforeEach(() => {
 })
 
 describe('navigation tool wiring', () => {
-  it('registers three immediate nav tools with unique names across all domains', () => {
-    expect(['open_screen', 'open_setting', 'open_sheet'].map((n) => TOOLS.get(n)?.spec.kind)).toEqual(['nav', 'nav', 'nav'])
+  it('registers the immediate nav tools with unique names across all domains', () => {
+    expect(['open_screen', 'open_setting', 'open_sheet', 'start_budget_setup'].map((n) => TOOLS.get(n)?.spec.kind)).toEqual(['nav', 'nav', 'nav', 'nav'])
     const names = ALL_SPECS.map((s) => s.name)
     expect(new Set(names).size).toBe(names.length)
+  })
+})
+
+describe('start_budget_setup', () => {
+  it('asks the Budget page to open the guided setup, once', () => {
+    useSettingsStore.setState({ budgetStudioRequested: false })
+    expect(nav('start_budget_setup')).toMatchObject({ ok: true })
+    expect(useSettingsStore.getState().budgetStudioRequested).toBe(true)
+    expect(navigate).toHaveBeenCalledWith('/budget-setup')
+    useSettingsStore.getState().clearBudgetStudioRequest()
+    expect(useSettingsStore.getState().budgetStudioRequested).toBe(false)
   })
 })
 

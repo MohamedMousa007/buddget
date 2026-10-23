@@ -367,7 +367,8 @@ export function mergeFacts(base: BudgetFacts, s: StudioState): BudgetFacts {
     const patch = questionById(id)?.toFacts?.(value, merged)
     if (patch) merged = { ...merged, ...patch }
   }
-  return withAnsweredEntities(merged, s)
+  const said = Array.isArray(s.answers.commitments) ? (s.answers.commitments as Array<{ name: string; amount: number }>) : []
+  return withAnsweredEntities(said.length > 0 ? { ...merged, extraCommitments: said } : merged, s)
 }
 
 const isAnswered = (s: StudioState, id: string) => id in s.answers

@@ -33,7 +33,18 @@ describe('parseSituation', () => {
 
   it('only ever answers questions that exist in the graph', () => {
     const ids = new Set(QUESTIONS.map((q) => q.id))
-    for (const k of Object.keys(SITUATION_SCHEMA.properties)) expect(ids.has(k)).toBe(true)
+    for (const k of Object.keys(SITUATION_SCHEMA.properties).filter((x) => x !== 'commitments')) expect(ids.has(k)).toBe(true)
+  })
+})
+
+describe('commitments', () => {
+  it('keeps a few named monthly costs and drops junk', () => {
+    expect(parseSituation({ commitments: [{ name: ' School fees ', amount: 2500 }, { name: '', amount: 5 }, { name: 'Gym', amount: -3 }, { name: 'Remittance <x>', amount: 1000.456 }, 'bad'] }))
+      .toEqual({ commitments: [{ name: 'School fees', amount: 2500 }, { name: 'Remittance x', amount: 1000.46 }] })
+  })
+  it('keeps at most five', () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({ name: `Cost ${i}`, amount: 10 }))
+    expect((parseSituation({ commitments: many }).commitments as unknown[]).length).toBe(5)
   })
 })
 

@@ -40,6 +40,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useBudgetPageCopy } from '../usePageCopy'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import { KnownSheet, type KnownRow } from './KnownSheet'
+import { DraftStep } from './DraftStep'
 import { OpenerStep } from './OpenerStep'
 import { QuestionControl } from './QuestionControl'
 import { UnderstoodStep } from './UnderstoodStep'
@@ -82,6 +83,8 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   const [attempt, setAttempt] = useState(0)
   const [buildNow, setBuildNow] = useState(false)
   // Answer ids Buddgy picked out of the description, shown once before the remaining questions.
+  // Someone with history can build straight from it; this records that they chose the questions instead.
+  const [draftDeclined, setDraftDeclined] = useState(false)
   const [understood, setUnderstood] = useState<string[] | null>(null)
   const [buildError, setBuildError] = useState(false)
   const building = useRef(false)
@@ -205,9 +208,27 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     commit({ ...state, answers: Object.fromEntries(Object.entries(state.answers).filter(([k]) => k !== last)), skipped: state.skipped.filter((k) => k !== last) })
   }
 
+  const draftMonths = facts.averageCycles ?? 0
+  const showDraft =
+    !buildNow && !draftDeclined && !state.opener && !focusId && trail.length === 0 && Object.keys(state.answers).length === 0 && state.skipped.length === 0 &&
+    draftMonths > 0 && facts.monthlyIncome > 0
+
+  if (showDraft) {
+    return (
+      <PageBody className="space-y-4 lg:pb-6">
+        <div className="flex items-center gap-2">
+          <IconButton variant="outlined" aria-label={ui.close} onClick={onClose}>
+            <X />
+          </IconButton>
+        </div>
+        <DraftStep months={draftMonths} onReview={() => setBuildNow(true)} onQuestions={() => setDraftDeclined(true)} />
+      </PageBody>
+    )
+  }
+
   // The describe-yourself step is only worth showing to someone with plenty left to answer, and only when it can work.
   const showOpener =
-    !state.opener && !focusId && !understood && trail.length === 0 && Object.keys(state.answers).length === 0 && isOnline() &&
+    !buildNow && !state.opener && !focusId && !understood && trail.length === 0 && Object.keys(state.answers).length === 0 && isOnline() &&
     visibleQuestions(facts, state).filter((x) => x.control !== 'confirm').length >= 4
 
   if (showOpener) {
@@ -225,6 +246,9 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
 
   if (understood) {
     const rows: KnownRow[] = understood.flatMap((id) => {
+      if (id === 'commitments') {
+        return (state.answers.commitments as Array<{ name: string; amount: number }>).map((c) => ({ id: `commitment:${c.name}`, label: c.name, value: money(c.amount) }))
+      }
       const x = questionById(id)
       if (!x || !(id in state.answers)) return []
       const copy = ui.q[id]

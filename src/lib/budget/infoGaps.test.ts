@@ -417,5 +417,13 @@ describe('adaptive flow', () => {
     expect(answersToProfilePatch(applyAnswer(createState(), 'rentCheck', 'stated'), f).profile).toEqual({})
     expect(answersToProfilePatch(applyAnswer(createState(), 'rentCheck', 'records')).profile).toEqual({})
   })
+
+  it('costs described in words become facts the engine plans with, as bills', () => {
+    const merged = mergeFacts(blank, applyAnswer(createState(), 'commitments', [{ name: 'School fees', amount: 2500 }]))
+    expect(merged.extraCommitments).toEqual([{ name: 'School fees', amount: 2500 }])
+    const plan = buildPlan({ ...merged, country: 'Egypt', baseCurrency: 'EGP', monthlyIncome: 30000 })
+    expect(plan.lines.find((l) => l.name === 'School fees')).toMatchObject({ block: 'bills', amount: 2500, essential: true })
+    expect(mergeFacts(blank, createState()).extraCommitments).toBeUndefined()
+  })
 })
 
