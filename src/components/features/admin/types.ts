@@ -93,6 +93,8 @@ export interface SmsTrackedRow {
   failure_code: string | null
   confidence: number | null
   raw_body: string | null
+  /** The server holds the message text; staff with `users.financial` can read it with a reason. */
+  has_body?: boolean
   received_at: string
   is_duplicate: boolean
   parse_method: string | null

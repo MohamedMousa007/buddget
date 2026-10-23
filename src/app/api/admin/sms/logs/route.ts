@@ -1,3 +1,4 @@
+import { can } from '@/lib/admin/permissions'
 import { guardAdmin, json, bad, maskIf, readJson } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
 
@@ -50,20 +51,42 @@ export async function GET(req: Request) {
 
   return json({
     // The balance a message reported is financial PII like the raw body: staff see only that one was recorded unless they hold users.pii.
-    rows: rows.map((r) => ({ ...r, raw_body: ctx.canSeePii ? r.raw_body : null, balance_after: ctx.canSeePii ? r.balance_after : null, balance_reported: r.balance_after != null, account_linked: r.payment_method_id != null, email: maskIf(ctx, emails.get(r.user_id)) })),
+    rows: rows.map((r) => ({ ...r, raw_body: null, has_body: r.raw_body != null, balance_after: can(ctx.permissions, 'users.financial') ? r.balance_after : null, balance_reported: r.balance_after != null, account_linked: r.payment_method_id != null, email: maskIf(ctx, emails.get(r.user_id)) })),
+    canReveal: can(ctx.permissions, 'users.financial'),
     nextCursor: rows.length === limit ? rows[rows.length - 1]!.received_at : null,
   })
 }
 
-/** Turn a failing message into a support ticket so it is tracked to resolution. */
+const MIN_REASON = 8
+const REVEALS_PER_HOUR = 60
+
+/**
+ * `create_ticket` turns a failing message into a support ticket. `reveal` shows one message body to staff who hold
+ * `users.financial`: it needs a written reason, is rate limited, and always writes an audit row.
+ */
 export async function POST(req: Request) {
-  const g = await guardAdmin(req, { permission: 'support.reply' })
+  const g = await guardAdmin(req)
   if (!g.ok) return g.res
   const { ctx } = g
-  const body = await readJson<{ op?: string; id?: string }>(req)
-  if (body?.op !== 'create_ticket' || typeof body.id !== 'string' || !UUID_RE.test(body.id)) return bad('Unknown action.')
+  const body = await readJson<{ op?: string; id?: string; reason?: string }>(req)
+  if (typeof body?.id !== 'string' || !UUID_RE.test(body.id)) return bad('Unknown action.')
 
-  const { data: log } = await ctx.service.from('sms_parse_log').select('id, user_id, sender, status, failure_code, parse_method, raw_body, received_at').eq('id', body.id).maybeSingle()
+  if (body.op === 'reveal') {
+    if (!can(ctx.permissions, 'users.financial')) return bad('Your role does not allow this.', 403)
+    const reason = body.reason?.trim() ?? ''
+    if (reason.length < MIN_REASON) return bad('Write a short reason first.')
+    const { data: allowed } = await ctx.service.rpc('api_rate_hit', { p_key: `sms-reveal:${ctx.staff.id}`, p_window_seconds: 3600, p_max_hits: REVEALS_PER_HOUR })
+    if (allowed === false) return bad('Too many message reads this hour.', 429)
+    const { data: log } = await ctx.service.from('sms_parse_log').select('id, user_id, raw_body').eq('id', body.id).maybeSingle()
+    if (!log) return bad('SMS not found.', 404)
+    await ctx.audit('pii.sms.reveal', { targetType: 'sms_log', targetId: log.id, summary: 'Read the content of a bank message', metadata: { userId: log.user_id, reason: reason.slice(0, 300) } })
+    return json({ ok: true, raw_body: log.raw_body })
+  }
+
+  if (body.op !== 'create_ticket') return bad('Unknown action.')
+  if (!can(ctx.permissions, 'support.reply')) return bad('Your role does not allow this.', 403)
+
+  const { data: log } = await ctx.service.from('sms_parse_log').select('id, user_id, sender, status, failure_code, parse_method, received_at').eq('id', body.id).maybeSingle()
   if (!log) return bad('SMS not found.', 404)
   const { data: profile } = await ctx.service.from('profiles').select('email').eq('id', log.user_id).maybeSingle()
 
@@ -86,7 +109,8 @@ export async function POST(req: Request) {
     author_type: 'system',
     author_label: 'SMS queue',
     internal: true,
-    body: `Status: ${log.status}\nFailure: ${log.failure_code ?? '—'}\nMethod: ${log.parse_method ?? '—'}\nReceived: ${log.received_at}\n\n${ctx.canSeePii ? log.raw_body : '[message hidden: requires users.pii]'}`.slice(0, 10000),
+    // The message text is financial content: it stays in the log, behind the reveal, and is never copied into a ticket.
+    body: `Status: ${log.status}\nFailure: ${log.failure_code ?? '—'}\nMethod: ${log.parse_method ?? '—'}\nReceived: ${log.received_at}\nSMS log id: ${log.id}`.slice(0, 10000),
   })
   await ctx.audit('support.ticket_from_sms', { targetType: 'ticket', targetId: ticket.id, summary: `Opened ticket #${ticket.number} from SMS log` })
   return json({ ok: true, ticketId: ticket.id, number: ticket.number })

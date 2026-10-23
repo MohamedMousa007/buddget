@@ -17,6 +17,7 @@ export const PERMISSIONS = {
   'users.limits': 'Change a user’s limits and entitlements',
   'users.suspend': 'Suspend or restore user accounts',
   'users.logs': 'Read a user’s activity, SMS and device logs',
+  'users.financial': 'Read the content of a user’s bank messages (needs a reason; every read is logged)',
   'users.tools': 'Run repair tools on a user (tokens, push, sign-out)',
   'users.reset': 'Reset a user’s account: erase all their data and start fresh',
   'users.delete': 'Permanently delete a user',
