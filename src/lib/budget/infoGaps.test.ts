@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { buildPlan } from '@/lib/budget/engine'
 import type { BudgetFacts, FactDebt } from '@/lib/budget/facts'
 import {
   answersToProfilePatch,
+  answerSource,
   applyAnswer,
   createState,
   currentStage,
@@ -72,10 +74,10 @@ const rich: BudgetFacts = {
 const ids = (f: BudgetFacts, s = createState()) => visibleQuestions(f, s).map((x) => x.id)
 
 describe('question counts', () => {
-  it('blank user sees 12-18 questions', () => {
+  it('blank user starts with a short, capped queue', () => {
     const n = ids(blank).length
-    expect(n).toBeGreaterThanOrEqual(12)
-    expect(n).toBeLessThanOrEqual(18)
+    expect(n).toBeGreaterThanOrEqual(6)
+    expect(n).toBeLessThanOrEqual(10)
   })
 
   it('data-rich user sees only a handful', () => {
@@ -125,8 +127,7 @@ describe('readiness', () => {
     let s = createState()
     const r0 = readiness(blank, s)
     expect(r0.canBuild).toBe(false)
-    expect(r0.missingRequired).toEqual(['income', 'housing', 'household'])
-    s = applyAnswer(s, 'income', 3000)
+    expect(r0.missingRequired).toEqual(['housing', 'household'])
     s = applyAnswer(s, 'housing', 'family')
     expect(readiness(blank, s).canBuild).toBe(false)
     s = applyAnswer(s, 'household', 'solo')
@@ -158,7 +159,7 @@ describe('skipping', () => {
   it('refuses required questions', () => {
     const s = createState()
     expect(skipQuestion(s, 'housing')).toBe(s)
-    expect(skipQuestion(s, 'income')).toBe(s)
+    expect(skipQuestion(s, 'income')).not.toBe(s)
   })
 
   it('skips optional and reports important as estimated', () => {
@@ -272,7 +273,7 @@ describe('defaults and stage', () => {
     expect(currentStage(rich, createState())).toBe('found')
     expect(currentStage(blank, createState())).toBe('found')
     let s = createState()
-    for (const x of visibleQuestions(blank, s).filter((x) => x.stage === 'found')) s = applyAnswer(s, x.id, 1)
+    while (visibleQuestions(blank, s)[0]?.stage === 'found') s = applyAnswer(s, visibleQuestions(blank, s)[0].id, 1)
     expect(currentStage(blank, s)).toBe('home')
   })
 })
@@ -284,5 +285,129 @@ describe('known fields skip questions the profile already answers', () => {
     expect(ids(withKnown)).not.toContain('lifestyle')
     expect(ids(withKnown)).not.toContain('rentIncludesUtilities')
     expect(ids(withKnown)).not.toContain('household')
+  })
+})
+
+/** Answers a person would plausibly give, so a whole run can be walked in a test. */
+function walk(f: BudgetFacts, answerFor: (id: string, control: string) => unknown = () => undefined) {
+  let s = createState()
+  const asked: string[] = []
+  for (let i = 0; i < 40; i++) {
+    const q = visibleQuestions(f, s)[0]
+    if (!q) break
+    const given = answerFor(q.id, q.control)
+    const value =
+      given !== undefined ? given
+        : q.control === 'chips' || q.control === 'single' ? q.options![0].value
+          : q.control === 'toggle' || q.control === 'confirm' ? true
+            : q.control === 'amount' ? 1000
+              : q.control === 'stepper' ? (q.suggest?.(f) ?? q.min ?? 0)
+                : q.control === 'slider' ? 50
+                  : []
+    if (q.control !== 'confirm') asked.push(q.id)
+    s = applyAnswer(s, q.id, value)
+  }
+  return { s, asked }
+}
+
+describe('adaptive flow', () => {
+  it('a blank user who says yes to everything still finishes within a dozen questions and can build', () => {
+    const { s, asked } = walk(blank)
+    expect(asked.length).toBeLessThanOrEqual(13)
+    expect(asked).toEqual(expect.arrayContaining(['housing', 'household']))
+    expect(readiness(blank, s).canBuild).toBe(true)
+    expect(visibleQuestions(blank, s)).toHaveLength(0)
+  })
+
+  it('a user with data is only asked the gaps', () => {
+    const { asked } = walk(rich)
+    expect(asked.length).toBeLessThanOrEqual(8)
+    expect(asked).not.toContain('hasDebts')
+    expect(asked).not.toContain('hasGoal')
+  })
+
+  it('the answers of a blank run always produce a plan that sums to its income', () => {
+    for (const income of [0, 3000, 25000]) {
+      const f = { ...blank, monthlyIncome: income, country: 'Egypt', baseCurrency: 'EGP' as const }
+      const { s } = walk(f, (id) => (id === 'income' ? income : undefined))
+      const plan = buildPlan(mergeFacts(f, s))
+      const total = plan.lines.reduce((sum, l) => sum + l.amount, 0)
+      expect(Math.abs(plan.income - total)).toBeLessThanOrEqual(Math.max(1, plan.income * 0.002) + plan.lines.length)
+      for (const l of plan.lines) expect(l.amount).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('skipping income is allowed and leads to a spend-based plan', () => {
+    const s = skipQuestion(createState(), 'income')
+    expect(ids(blank, s)).not.toContain('income')
+    const plan = buildPlan({ ...mergeFacts({ ...blank, country: 'Egypt', baseCurrency: 'EGP' }, s), housing: 'family' })
+    expect(plan.basis).toBe('spend')
+  })
+
+  it('variable income asks for a slow month only when it is not already known', () => {
+    const variable = { ...rich, monthlyIncome: 5000, incomeStability: 'variable' as const, incomeFloor: null }
+    expect(ids(variable)).toContain('lowMonth')
+    expect(ids({ ...variable, incomeFloor: 3000 })).not.toContain('lowMonth')
+    expect(ids({ ...variable, incomeStability: 'fixed' })).not.toContain('lowMonth')
+    expect(mergeFacts(variable, applyAnswer(createState(), 'lowMonth', 2800)).incomeFloor).toBe(2800)
+  })
+
+  it('asks about a rent that disagrees with the records, and honours the choice', () => {
+    const f = { ...rich, rent: 8000, ledgerRent: 6000 }
+    expect(ids(f)).toContain('rentCheck')
+    expect(ids({ ...f, ledgerRent: 7500 })).not.toContain('rentCheck')
+    expect(ids({ ...f, ledgerRent: undefined })).not.toContain('rentCheck')
+    expect(mergeFacts(f, applyAnswer(createState(), 'rentCheck', 'records')).rent).toBe(6000)
+    expect(mergeFacts(f, applyAnswer(createState(), 'rentCheck', 'stated')).rent).toBe(8000)
+    expect(ids(f, applyAnswer(createState(), 'rentCheck', 'records'))).not.toContain('rentCheck')
+  })
+
+  it('debt answers become an amount-only debt and do not trigger the "found debts" card', () => {
+    const f = { ...blank, monthlyIncome: 5000 }
+    let s = applyAnswer(createState(), 'hasDebts', true)
+    expect(ids(f, s)).toEqual(expect.arrayContaining(['debtTotal', 'debtMonthly']))
+    s = applyAnswer(applyAnswer(s, 'debtTotal', 9000), 'debtMonthly', 450)
+    const merged = mergeFacts(f, s)
+    expect(merged.debts).toEqual([{ id: 'answered-debt', name: 'Debts', minimum: 450, balance: 9000, kind: 'personal' }])
+    expect(ids(f, s)).not.toContain('confirmDebts')
+    expect(mergeFacts(f, applyAnswer(createState(), 'hasDebts', false)).debts).toEqual([])
+  })
+
+  it('a goal answer becomes a monthly amount from cost and months', () => {
+    let s = applyAnswer(createState(), 'hasGoal', true)
+    s = applyAnswer(applyAnswer(s, 'goalTarget', 12000), 'goalMonths', 10)
+    const g = mergeFacts(blank, s).goals[0]
+    expect(g).toMatchObject({ id: 'answered-goal', monthly: 1200, targetAmount: 12000 })
+    s = applyAnswer(s, 'goalMonths', 24)
+    expect(mergeFacts(blank, s).goals[0].monthly).toBe(500)
+  })
+
+  it('unlocked follow-ups are never cut by the question cap', () => {
+    let s = createState()
+    for (const id of ['housing', 'household', 'income', 'incomeStability', 'lifestyle', 'foodFrequency', 'transportMode', 'savingsOnHand', 'emergencyMonths']) {
+      s = applyAnswer(s, id, id === 'housing' ? 'family' : id === 'household' ? 'solo' : 100)
+    }
+    s = applyAnswer(s, 'hasDebts', true)
+    expect(ids(blank, s)).toEqual(expect.arrayContaining(['debtTotal', 'debtMonthly']))
+  })
+
+  it('cash spending is only asked when there is history to distrust', () => {
+    expect(ids(blank)).not.toContain('cashHeavy')
+    expect(QUESTIONS.find((x) => x.id === 'cashHeavy')!.askIf({ ...blank, averages: { groceries: 800 } }, createState())).toBe(true)
+    expect(QUESTIONS.find((x) => x.id === 'cashHeavy')!.askIf(blank, createState())).toBe(false)
+  })
+
+  it('reports where each value came from and when the plan is good enough', () => {
+    let s = createState()
+    expect(answerSource(blank, s, 'housing')).toBe('unknown')
+    s = applyAnswer(s, 'housing', 'rent')
+    expect(answerSource(blank, s, 'housing')).toBe('user')
+    s = skipQuestion(s, 'lifestyle')
+    expect(answerSource(blank, s, 'lifestyle')).toBe('estimate')
+    expect(answerSource(rich, createState(), 'foodFrequency')).toBe('data')
+    expect(readiness(blank, createState()).enough).toBe(false)
+    expect(readiness(rich, createState()).percent).toBeGreaterThan(readiness(blank, createState()).percent)
+    const { s: done } = walk(blank)
+    expect(readiness(blank, done).enough).toBe(true)
   })
 })

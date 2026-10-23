@@ -458,8 +458,9 @@ export interface FinancialProfile {
   priorities?: string[]
   /** 0 = save hard, 100 = live comfortably. */
   securityLean?: number
-  payoffStrategy?: 'avalanche' | 'snowball' | 'minimums'
   investInterest?: boolean
+  /** Pays mostly in cash, so tracked spending understates real spending. */
+  cashHeavy?: boolean
 }
 
 /** Who the budget is for (planner / household). */

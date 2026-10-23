@@ -280,4 +280,14 @@ describe('savings and spending history', () => {
     expect(partial.averageCycles).toBe(1)
     expect(partial.averages.groceries).toBe(800)
   })
+
+  it('reports the average rent in the ledger and the cash habit', () => {
+    const rent = (m: string) => [
+      expense(`2026-${m}-01`, 'Rent', 6000), expense(`2026-${m}-02`, 'Groceries', 500), expense(`2026-${m}-03`, 'Food', 100),
+    ]
+    const e = everydayEvidence([...rent('09'), ...rent('08')], '2026-10', 1, 'AED', {})
+    expect(e.ledgerRent).toBe(6000)
+    expect(everydayEvidence([], '2026-10', 1, 'AED', {}).ledgerRent).toBeUndefined()
+    expect(buildFactsFromStore(withProfile({ financialProfile: { cashHeavy: true } }), NOW).cashHeavy).toBe(true)
+  })
 })

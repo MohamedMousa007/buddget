@@ -13,6 +13,7 @@ import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
 import { refineDraft } from '@/lib/budget/budgetAiClient'
 import { applyRefinement } from '@/lib/budget/budgetAi'
+import { commitStudioEntities } from '@/lib/budget/studioEntities'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { repairDraft } from '@/lib/budget/validate'
 import {
@@ -49,8 +50,11 @@ export interface StudioPageProps {
   onBuilt: (planId: string, aiNote: boolean) => void
 }
 
-const confirmCount = (id: string, f: BudgetFacts, money: (n: number) => string): string =>
-  id === 'confirmIncome' ? money(f.monthlyIncome)
+const MONEY_ANSWERS = new Set(['income', 'rent', 'lowMonth', 'debtTotal', 'debtMonthly', 'savingsOnHand', 'goalTarget'])
+
+const labelArg = (id: string, f: BudgetFacts, money: (n: number) => string): string =>
+  id === 'rentCheck' ? money(f.ledgerRent ?? 0)
+  : id === 'confirmIncome' ? money(f.monthlyIncome)
     : id === 'confirmBills' ? String(f.bills.length + f.subscriptionCount)
       : id === 'confirmDebts' ? String(f.debts.length)
         : String(f.goals.length)
@@ -73,8 +77,11 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   // Question ids answered or skipped this session, newest last, so Back can undo them one by one.
   const [trail, setTrail] = useState<string[]>([])
   const [attempt, setAttempt] = useState(0)
+  const [buildNow, setBuildNow] = useState(false)
   const [buildError, setBuildError] = useState(false)
   const building = useRef(false)
+  // Held outside state so a remounted or retried build cannot create the same records again.
+  const created = useRef<Record<string, string>>(state.entities ?? {})
 
   const next = visibleQuestions(facts, state)[0]
   // A row picked in "What I know" reopens its question even though it is already answered.
@@ -105,7 +112,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   }
 
   useEffect(() => {
-    if (next || focusId || building.current) return
+    if ((next && !buildNow) || focusId || building.current) return
     building.current = true
     setBuildError(false)
     let cancelled = false
@@ -114,6 +121,18 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     const timer = setTimeout(() => controller.abort(), 30_000)
     void (async () => {
       try {
+      // What the user told us becomes real income, debt, goal and savings records first, so the plan links to them.
+      const live = store.getState()
+      created.current = {
+        ...created.current,
+        ...commitStudioEntities({ ...state, entities: created.current }, live, live.settings.baseCurrency, {
+          income: ui.entities.income, debt: ui.entities.debt, savings: ui.entities.savings,
+          goal: (kind) => ui.entities.goals[kind] ?? ui.entities.goals.custom,
+        }),
+      }
+      const committed = { ...state, entities: created.current }
+      commit(committed)
+      const merged = mergeFacts(buildFactsFromStore(store.getState(), new Date()), committed)
       const engine = buildPlan(merged)
       const ctx = (d: PlanDraft) => ({
         income: d.income,
@@ -151,7 +170,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
       clearTimeout(timer)
     }
     // The build runs when the last question is answered, and again on retry.
-  }, [next, focusId, attempt]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [next, focusId, attempt, buildNow]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const knownRows: KnownRow[] = QUESTIONS.filter(
     (x) => x.writes.kind !== 'none' && x.control !== 'confirm' && x.askIf(merged, state) && (x.id in state.answers || x.prefill(merged) != null),
@@ -168,7 +187,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     commit({ ...state, answers: Object.fromEntries(Object.entries(state.answers).filter(([k]) => k !== last)), skipped: state.skipped.filter((k) => k !== last) })
   }
 
-  if (!q) {
+  if (!q || (buildNow && !focusId)) {
     return (
       <BuildingScreen
         error={buildError}
@@ -216,7 +235,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         key={q.id}
         question={q}
         initial={defaultValue(q, facts, state)}
-        confirmN={q.control === 'confirm' ? confirmCount(q.id, merged, money) : ''}
+        confirmN={labelArg(q.id, merged, money)}
         base={base}
         saved={saved}
         onAnswer={(v) => answer(q, v)}
@@ -226,6 +245,11 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
           commit(skipQuestion(state, q.id))
         }}
       />
+      {ready.enough && next && trail.length > 0 ? (
+        <Button size="touch" variant="ghost" className="w-full" onClick={() => setBuildNow(true)}>
+          {ui.buildNow}
+        </Button>
+      ) : null}
       <KnownSheet
         open={knownOpen}
         rows={knownRows}
@@ -249,7 +273,7 @@ function formatKnown(
   if (value == null) return '-'
   if (Array.isArray(value)) return value.map((v) => copy?.opts?.[String(v)] ?? String(v)).join(', ') || '-'
   if (typeof value === 'boolean') return value ? ui.known.yes : ui.known.no
-  if (typeof value === 'number') return x.id === 'income' || x.id === 'rent' ? money(value) : String(value)
+  if (typeof value === 'number') return MONEY_ANSWERS.has(x.id) ? money(value) : String(value)
   return copy?.opts?.[String(value)] ?? String(value)
 }
 
@@ -271,7 +295,8 @@ function QuestionStep({ question: q, initial, confirmN, base, saved, onAnswer, o
   const ok =
     q.control === 'amount' ? typeof value === 'number' && value >= (q.control === 'amount' && q.id === 'income' ? 1 : 0)
       : q.control === 'chips' || q.control === 'single' ? value != null
-        : true
+        : q.control === 'toggle' ? typeof value === 'boolean'
+          : true
 
   return (
     <div className="flex flex-col gap-5">

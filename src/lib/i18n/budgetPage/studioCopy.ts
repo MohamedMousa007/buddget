@@ -20,6 +20,9 @@ export interface BudgetStudioCopy {
   no: string
   confirm: string
   estimate: string
+  buildNow: string
+  /** Names given to the records the studio creates from the answers. */
+  entities: { income: string; debt: string; savings: string; goals: Record<string, string> }
   saved: string
   slider: { low: string; high: string }
   stepper: { less: string; more: string; unit: (n: number) => string }
@@ -75,6 +78,8 @@ const en: BudgetStudioCopy = {
   no: 'No',
   confirm: 'Looks right',
   estimate: 'Estimate for me',
+  buildNow: 'Build my plan now',
+  entities: { income: 'Salary', debt: 'My debts', savings: 'Savings', goals: { vacation: 'Trip', house: 'Home', car: 'Car', education: 'Education', wedding: 'Wedding', custom: 'My goal' } },
   saved: 'Saved to your profile',
   slider: { low: 'Save hard', high: 'Live comfortably' },
   stepper: { less: 'Less', more: 'More', unit: (n) => String(n) },
@@ -88,7 +93,7 @@ const en: BudgetStudioCopy = {
   back: 'Previous question',
   q: {
     confirmIncome: { label: 'Your income is about {n} a month. Right?', why: 'Every line is sized against this number.' },
-    income: { label: 'What do you take home each month?', why: 'A plan needs an income to divide.' },
+    income: { label: 'What do you take home each month?', why: 'Skip it if you have none and I will plan around your expected spending.' },
     confirmBills: { label: 'I found {n} bills and subscriptions. Anything missing comes next.', why: 'These become fixed lines you do not have to retype.' },
     confirmDebts: { label: 'I found {n} debts. I will pay at least the minimums.', why: 'Minimums are fixed costs; extra payoff comes after.' },
     confirmGoals: { label: 'I found {n} goals and will fund them as set.', why: 'Goals keep their own funding settings.' },
@@ -105,6 +110,18 @@ const en: BudgetStudioCopy = {
     emergencyMonths: { label: 'How many months of expenses should your safety net cover?', why: 'Three is common; six if income varies or you support others.' },
     investInterest: { label: 'Do you want to invest as well?', why: 'Adds a Grow line after the safety net.' },
     priorities: { label: 'Pick up to three priorities', why: 'These decide where spare money goes first.', opts: { safety: 'Safety net', debt: 'Clear debt', goals: 'Goals', invest: 'Invest', enjoy: 'Enjoy life', family: 'Family' } },
+    rentCheck: { label: 'Your records show about {n} a month for rent. Which is closer?', why: 'Your own records are usually right.', opts: { stated: 'What I entered', records: 'What my records show' } },
+    lowMonth: { label: 'In a slow month, about how much do you take home?', why: 'The plan is sized on a bad month, so a good one is a bonus.' },
+    cashHeavy: { label: 'Do you pay mostly in cash?', why: 'Cash spending is easy to miss, so I will lean on typical figures too.' },
+    hasDebts: { label: 'Do you owe anyone or pay installments?', why: 'Payments are fixed costs, so they come off the top.' },
+    debtTotal: { label: 'About how much do you owe in total?', why: 'Shows how long until you are debt-free at this pace.' },
+    debtMonthly: { label: 'How much do you pay toward it each month?', why: 'This is set aside before anything else.' },
+    savingsOnHand: { label: 'About how much do you have saved right now?', why: 'Decides how fast the safety net needs to grow.' },
+    payday: { label: 'Which day of the month does it arrive?', why: 'Puts your payday on the calendar.' },
+    goalKind: { label: 'What is it for?', why: 'Names the goal so you can find it later.', opts: { vacation: 'A trip', house: 'A home', car: 'A car', education: 'Education', wedding: 'A wedding', custom: 'Something else' } },
+    hasGoal: { label: 'Are you saving for something specific?', why: 'A goal gets its own monthly amount.' },
+    goalTarget: { label: 'How much does it cost?', why: 'Sets the monthly amount.' },
+    goalMonths: { label: 'In how many months do you want it?', why: 'More time means a smaller monthly amount.' },
     securityLean: { label: 'Save hard or live comfortably?', why: 'Moves money between saving and everyday spending.' },
   },
   review: {
@@ -157,6 +174,8 @@ const ar: BudgetStudioCopy = {
   no: 'لا',
   confirm: 'صحيح',
   estimate: 'قدّر لي',
+  buildNow: 'ابنِ خطتي الآن',
+  entities: { income: 'الراتب', debt: 'ديوني', savings: 'المدخرات', goals: { vacation: 'رحلة', house: 'منزل', car: 'سيارة', education: 'تعليم', wedding: 'زواج', custom: 'هدفي' } },
   saved: 'تم الحفظ في ملفك',
   slider: { low: 'ادخار قوي', high: 'عيش مريح' },
   stepper: { less: 'أقل', more: 'أكثر', unit: (n) => String(n) },
@@ -170,7 +189,7 @@ const ar: BudgetStudioCopy = {
   back: 'السؤال السابق',
   q: {
     confirmIncome: { label: 'دخلك حوالي {n} شهريًا. صحيح؟', why: 'كل بند يُحسب على هذا الرقم.' },
-    income: { label: 'كم تستلم شهريًا؟', why: 'الخطة تحتاج دخلًا لتقسيمه.' },
+    income: { label: 'كم تستلم شهريًا؟', why: 'تخطَّ إن لم يكن لديك دخل وسأبني الخطة على إنفاقك المتوقع.' },
     confirmBills: { label: 'وجدت {n} فواتير واشتراكات. أي شيء ناقص سأسألك عنه لاحقًا.', why: 'تصبح بنودًا ثابتة دون إعادة كتابتها.' },
     confirmDebts: { label: 'وجدت {n} ديون. سأسدد الحد الأدنى على الأقل.', why: 'الحد الأدنى تكلفة ثابتة، والسداد الإضافي يأتي بعدها.' },
     confirmGoals: { label: 'وجدت {n} أهداف وسأموّلها كما ضبطتها.', why: 'الأهداف تحتفظ بإعدادات تمويلها.' },
@@ -187,6 +206,18 @@ const ar: BudgetStudioCopy = {
     emergencyMonths: { label: 'كم شهرًا من المصاريف تغطي شبكة أمانك؟', why: 'ثلاثة أشهر شائعة، وستة إذا كان دخلك متغيرًا أو تعول غيرك.' },
     investInterest: { label: 'هل تريد الاستثمار أيضًا؟', why: 'يضيف بند نمو بعد شبكة الأمان.' },
     priorities: { label: 'اختر حتى ثلاث أولويات', why: 'تحدد أين يذهب الفائض أولًا.', opts: { safety: 'شبكة الأمان', debt: 'سداد الدين', goals: 'الأهداف', invest: 'الاستثمار', enjoy: 'الاستمتاع', family: 'العائلة' } },
+    rentCheck: { label: 'سجلاتك تُظهر نحو {n} شهريًا للإيجار. أيهما أقرب؟', why: 'سجلاتك غالبًا هي الأدق.', opts: { stated: 'ما أدخلته', records: 'ما تُظهره سجلاتي' } },
+    lowMonth: { label: 'في شهر ضعيف، كم تستلم تقريبًا؟', why: 'الخطة مبنية على شهر ضعيف، فالشهر الجيد مكسب إضافي.' },
+    cashHeavy: { label: 'هل تدفع غالبًا نقدًا؟', why: 'الإنفاق النقدي يسهل نسيانه، لذا سأعتمد أيضًا على أرقام معتادة.' },
+    hasDebts: { label: 'هل عليك ديون أو أقساط؟', why: 'الأقساط تكاليف ثابتة تُخصم أولًا.' },
+    debtTotal: { label: 'كم إجمالي ما عليك تقريبًا؟', why: 'يوضح المدة حتى تتخلص من الدين بهذا الوتيرة.' },
+    debtMonthly: { label: 'كم تدفع منه شهريًا؟', why: 'يُخصص هذا قبل أي شيء آخر.' },
+    savingsOnHand: { label: 'كم لديك مدخرًا الآن تقريبًا؟', why: 'يحدد سرعة نمو صندوق الطوارئ.' },
+    payday: { label: 'في أي يوم من الشهر يصل؟', why: 'يضع يوم الراتب في التقويم.' },
+    goalKind: { label: 'لأي غرض؟', why: 'يسمي الهدف لتجده لاحقًا.', opts: { vacation: 'رحلة', house: 'منزل', car: 'سيارة', education: 'تعليم', wedding: 'زواج', custom: 'شيء آخر' } },
+    hasGoal: { label: 'هل تدخر لشيء محدد؟', why: 'الهدف يحصل على مبلغ شهري خاص به.' },
+    goalTarget: { label: 'كم تبلغ تكلفته؟', why: 'يحدد المبلغ الشهري.' },
+    goalMonths: { label: 'خلال كم شهرًا تريده؟', why: 'وقت أطول يعني مبلغًا شهريًا أصغر.' },
     securityLean: { label: 'ادخار قوي أم عيش مريح؟', why: 'ينقل المال بين الادخار والإنفاق اليومي.' },
   },
   review: {

@@ -84,13 +84,16 @@ export function everydayEvidence(
   monthStartDay: number,
   base: Currency,
   rates: Record<string, number>
-): { averages: BudgetFacts['averages']; averageCycles: number } {
+): { averages: BudgetFacts['averages']; averageCycles: number; ledgerRent?: number } {
   const perCycle: Partial<Record<EverydayKey, number>>[] = []
+  const rents: number[] = []
   for (let n = 1; n <= AVERAGE_CYCLES; n++) {
     const rows = filterExpensesByMonth(expenses, shiftMonth(monthKey, -n), monthStartDay)
     if (rows.length < MIN_CYCLE_ROWS) continue
     const totals: Partial<Record<EverydayKey, number>> = {}
-    for (const [category, amount] of Object.entries(calculateCategorySpending(rows, base, rates))) {
+    const spending = calculateCategorySpending(rows, base, rates)
+    if ((spending.Rent ?? 0) > 0) rents.push(spending.Rent)
+    for (const [category, amount] of Object.entries(spending)) {
       const key = EVERYDAY_KEY_OF[category]
       if (key) totals[key] = (totals[key] ?? 0) + amount
     }
@@ -104,7 +107,11 @@ export function everydayEvidence(
       return [k, mid]
     })
   )
-  return { averages, averageCycles: perCycle.length }
+  return {
+    averages,
+    averageCycles: perCycle.length,
+    ledgerRent: rents.length > 0 ? rents.reduce((x, y) => x + y, 0) / rents.length : undefined,
+  }
 }
 
 function billsOf(s: FactsSlice, base: Currency): FactBill[] {
@@ -203,5 +210,6 @@ export function buildFactsFromStore(s: FactsSlice, now: Date): BudgetFacts {
     known: knownFacts(s),
     securityLean: fp.securityLean ?? 50,
     investInterest: fp.investInterest ?? false,
+    cashHeavy: fp.cashHeavy,
   }
 }

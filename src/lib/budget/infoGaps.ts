@@ -1,4 +1,4 @@
-import type { BudgetFacts, StudioPriority } from '@/lib/budget/facts'
+import type { BudgetFacts, FactDebt, FactGoal, StudioPriority } from '@/lib/budget/facts'
 import type { FinancialProfile, UserProfile } from '@/lib/store/types'
 
 export type Tier = 'required' | 'important' | 'optional'
@@ -20,6 +20,10 @@ export type AnswerWrite =
 
 export interface Question {
   id: string
+  /** Share of the plan this answer can move (0 to 1). Ranks the queue and weights readiness. */
+  stake: number
+  /** The question whose "yes" unlocks this one; unlocked follow-ups are never cut by the question cap. */
+  follows?: string
   stage: StudioStage
   tier: Tier
   control: Control
@@ -45,9 +49,31 @@ export interface StudioState {
   stage: StudioStage
   answers: Record<string, unknown>
   skipped: string[]
+  /** Records the studio already created from the answers, so a retried build never creates them twice. */
+  entities?: Record<string, string>
 }
 
-const WEIGHT: Record<Tier, number> = { required: 3, important: 2, optional: 1 }
+/** Most non-confirm questions one run asks; required questions and unlocked follow-ups are exempt from the cut. */
+const MAX_ASKED = 9
+/** Skipped questions are estimated, so they still leave half their stake uncertain. */
+const SKIPPED_UNCERTAINTY = 0.5
+/** Readiness at which the plan is good enough to build without the remaining questions. */
+const ENOUGH_PERCENT = 85
+/** A ledger rent this far from the stated rent is worth one question. */
+const RENT_CONFLICT = 0.2
+
+/** Ids of facts the studio builds from answers; they stand in for a debt or goal the user has not created yet. */
+export const ANSWERED_DEBT_ID = 'answered-debt'
+export const ANSWERED_GOAL_ID = 'answered-goal'
+const DEFAULT_GOAL_MONTHS = 12
+const DEFAULT_PAYDAY = 25
+
+const STAKE: Record<string, number> = {
+  income: 1, housing: 0.8, rent: 0.7, household: 0.5, rentIncludesUtilities: 0.2, dependents: 0.35, supportsOthers: 0.25,
+  incomeStability: 0.5, lowMonth: 0.35, rentCheck: 0.4, foodFrequency: 0.25, lifestyle: 0.35, transportMode: 0.3, cashHeavy: 0.3,
+  hasDebts: 0.5, debtTotal: 0.3, debtMonthly: 0.5, savingsOnHand: 0.4, emergencyMonths: 0.2, hasGoal: 0.3, goalTarget: 0.25,
+  goalMonths: 0.15, goalKind: 0.1, payday: 0.2, investInterest: 0.1, priorities: 0.3, securityLean: 0.25,
+}
 
 const always = () => true
 const unknown = () => null
@@ -66,6 +92,7 @@ function q(
 ): Question {
   return {
     id,
+    stake: STAKE[id] ?? 0.1,
     stage,
     tier,
     control,
@@ -80,7 +107,12 @@ function q(
 const known = <T>(v: T | null | undefined) => (v === null || v === undefined ? null : v)
 const positive = (n: number | null | undefined) => (n !== null && n !== undefined && n > 0 ? n : null)
 
-const hasDebts = (f: BudgetFacts) => f.debts.length > 0
+const realDebts = (f: BudgetFacts) => f.debts.filter((d) => d.id !== ANSWERED_DEBT_ID)
+const realGoals = (f: BudgetFacts) => f.goals.filter((g) => g.id !== ANSWERED_GOAL_ID)
+const hasDebts = (f: BudgetFacts) => realDebts(f).length > 0
+const yes = (s: StudioState, id: string) => s.answers[id] === true
+const rentConflicts = (f: BudgetFacts) =>
+  paysRent(f) && (f.rent ?? 0) > 0 && f.ledgerRent !== undefined && Math.abs(f.ledgerRent - (f.rent ?? 0)) / (f.rent ?? 1) > RENT_CONFLICT
 const paysRent = (f: BudgetFacts) => f.housing === 'rent' || f.housing === 'own'
 
 export const QUESTIONS: readonly Question[] = [
@@ -89,11 +121,20 @@ export const QUESTIONS: readonly Question[] = [
     prefill: (f) => positive(f.monthlyIncome),
     writes: { kind: 'none' },
   }),
-  q('income', 'found', 'required', 'amount', {
-    askIf: (f) => f.monthlyIncome <= 0,
+  q('income', 'found', 'important', 'amount', {
+    askIf: (f, s) => 'income' in s.answers || f.monthlyIncome <= 0,
     writes: { kind: 'facts', key: 'monthlyIncome' },
     toFacts: (v) => ({ monthlyIncome: v as number }),
     min: 0,
+  }),
+  q('payday', 'found', 'important', 'stepper', {
+    follows: 'income',
+    askIf: (_f, s) => Number(s.answers.income) > 0,
+    suggest: () => DEFAULT_PAYDAY,
+    min: 1,
+    max: 31,
+    step: 1,
+    writes: { kind: 'facts', key: 'payday' },
   }),
   q('confirmBills', 'found', 'required', 'confirm', {
     askIf: (f) => f.bills.length + f.subscriptionCount > 0,
@@ -123,6 +164,12 @@ export const QUESTIONS: readonly Question[] = [
     writes: { kind: 'profile', key: 'monthlyRent' },
     toFacts: (v) => ({ rent: v as number }),
     min: 0,
+  }),
+  q('rentCheck', 'home', 'important', 'chips', {
+    options: opts('rentCheck', ['stated', 'records']),
+    askIf: (f, s) => 'rentCheck' in s.answers || rentConflicts(f),
+    writes: { kind: 'facts', key: 'rentCheck' },
+    toFacts: (v, f) => (v === 'records' && f.ledgerRent !== undefined ? { rent: Math.round(f.ledgerRent) } : {}),
   }),
   q('rentIncludesUtilities', 'home', 'required', 'toggle', {
     askIf: (f) => paysRent(f) && (f.rent ?? 0) > 0,
@@ -158,6 +205,13 @@ export const QUESTIONS: readonly Question[] = [
     toFacts: (v) => ({ incomeStability: v as BudgetFacts['incomeStability'] }),
   }),
 
+  q('lowMonth', 'home', 'important', 'amount', {
+    askIf: (f, s) => 'lowMonth' in s.answers || (f.monthlyIncome > 0 && f.incomeStability !== 'fixed' && f.incomeFloor === null),
+    writes: { kind: 'facts', key: 'incomeFloor' },
+    toFacts: (v) => ({ incomeFloor: v as number }),
+    min: 0,
+  }),
+
   q('foodFrequency', 'life', 'important', 'chips', {
     options: opts('foodFrequency', ['everyday', 'mostdays', 'sometimes', 'rarely']),
     prefill: (f) => known(f.foodFrequency),
@@ -177,6 +231,36 @@ export const QUESTIONS: readonly Question[] = [
     toFacts: (v) => ({ transportMode: v as BudgetFacts['transportMode'], hasCar: v === 'car' }),
   }),
 
+  q('cashHeavy', 'life', 'optional', 'toggle', {
+    askIf: (f, s) => 'cashHeavy' in s.answers || Object.keys(f.averages).length > 0,
+    prefill: (f) => (f.cashHeavy === undefined ? null : f.cashHeavy),
+    writes: { kind: 'financial', key: 'cashHeavy' },
+    toFacts: (v) => ({ cashHeavy: v as boolean }),
+  }),
+
+  q('hasDebts', 'debts', 'important', 'toggle', {
+    askIf: (f, s) => 'hasDebts' in s.answers || !hasDebts(f),
+    writes: { kind: 'facts', key: 'hasDebts' },
+  }),
+  q('debtTotal', 'debts', 'important', 'amount', {
+    follows: 'hasDebts',
+    askIf: (_f, s) => yes(s, 'hasDebts'),
+    writes: { kind: 'facts', key: 'debtTotal' },
+    min: 0,
+  }),
+  q('debtMonthly', 'debts', 'important', 'amount', {
+    follows: 'hasDebts',
+    askIf: (_f, s) => yes(s, 'hasDebts'),
+    writes: { kind: 'facts', key: 'debtMonthly' },
+    min: 0,
+  }),
+
+  q('savingsOnHand', 'secure', 'important', 'amount', {
+    askIf: (f, s) => 'savingsOnHand' in s.answers || f.liquidSavings === 0,
+    writes: { kind: 'facts', key: 'liquidSavings' },
+    toFacts: (v) => ({ liquidSavings: v as number }),
+    min: 0,
+  }),
   q('emergencyMonths', 'secure', 'important', 'stepper', {
     suggest: (f) =>
       f.incomeStability === 'variable' || f.dependents >= 1 ? 6 : f.emergencyTargetMonths,
@@ -190,6 +274,32 @@ export const QUESTIONS: readonly Question[] = [
     prefill: (f) => (f.investInterest ? true : null),
     writes: { kind: 'financial', key: 'investInterest' },
     toFacts: (v) => ({ investInterest: v as boolean }),
+  }),
+
+  q('hasGoal', 'secure', 'optional', 'toggle', {
+    askIf: (f, s) => 'hasGoal' in s.answers || realGoals(f).length === 0,
+    writes: { kind: 'facts', key: 'hasGoal' },
+  }),
+  q('goalKind', 'secure', 'optional', 'chips', {
+    follows: 'hasGoal',
+    options: opts('goalKind', ['vacation', 'house', 'car', 'education', 'wedding', 'custom']),
+    askIf: (_f, s) => yes(s, 'hasGoal'),
+    writes: { kind: 'facts', key: 'goalKind' },
+  }),
+  q('goalTarget', 'secure', 'optional', 'amount', {
+    follows: 'hasGoal',
+    askIf: (_f, s) => yes(s, 'hasGoal'),
+    writes: { kind: 'facts', key: 'goalTarget' },
+    min: 0,
+  }),
+  q('goalMonths', 'secure', 'optional', 'stepper', {
+    follows: 'hasGoal',
+    askIf: (_f, s) => yes(s, 'hasGoal'),
+    suggest: () => DEFAULT_GOAL_MONTHS,
+    min: 1,
+    max: 60,
+    step: 1,
+    writes: { kind: 'facts', key: 'goalMonths' },
   }),
 
   q('priorities', 'priorities', 'important', 'multi', {
@@ -223,13 +333,38 @@ export function createState(): StudioState {
   return { v: 2, stage: 'found', answers: {}, skipped: [] }
 }
 
+/** The debt and goal the user described in the studio, as facts the engine can plan with. */
+function withAnsweredEntities(f: BudgetFacts, s: StudioState): BudgetFacts {
+  let out = f
+  if (yes(s, 'hasDebts') && !s.entities?.debt) {
+    const balance = Number(s.answers.debtTotal) || 0
+    const minimum = Number(s.answers.debtMonthly) || 0
+    if (balance > 0 || minimum > 0) {
+      const debt: FactDebt = { id: ANSWERED_DEBT_ID, name: 'Debts', minimum, balance, kind: 'personal' }
+      out = { ...out, debts: [...out.debts, debt] }
+    }
+  }
+  if (yes(s, 'hasGoal') && !s.entities?.goal) {
+    const target = Number(s.answers.goalTarget) || 0
+    if (target > 0) {
+      const months = Math.max(1, Number(s.answers.goalMonths) || DEFAULT_GOAL_MONTHS)
+      const goal: FactGoal = {
+        id: ANSWERED_GOAL_ID, name: 'Savings goal', monthly: Math.ceil(target / months), targetAmount: target,
+        saved: 0, targetDate: null, priority: 1, icon: 'target',
+      }
+      out = { ...out, goals: [...out.goals, goal] }
+    }
+  }
+  return out
+}
+
 export function mergeFacts(base: BudgetFacts, s: StudioState): BudgetFacts {
   let merged = base
   for (const [id, value] of Object.entries(s.answers)) {
     const patch = questionById(id)?.toFacts?.(value, merged)
     if (patch) merged = { ...merged, ...patch }
   }
-  return merged
+  return withAnsweredEntities(merged, s)
 }
 
 const isAnswered = (s: StudioState, id: string) => id in s.answers
@@ -254,11 +389,33 @@ function evaluate(f: BudgetFacts, s: StudioState): Evaluated[] {
     }))
 }
 
+const isForced = (x: Question) => x.tier === 'required' || x.follows !== undefined
+
+/**
+ * What is still worth asking, in stage order. Confirm cards always show. Of the rest, required questions and unlocked
+ * follow-ups always stay; other questions are taken by stake until the run has asked MAX_ASKED, so a blank profile gets
+ * a short run and a profile the app already knows gets only the gaps.
+ */
 export function visibleQuestions(f: BudgetFacts, s: StudioState): Question[] {
-  return evaluate(f, s)
-    .filter((e) => !e.answered && !e.skipped && (e.question.control === 'confirm' || !e.known))
+  const items = evaluate(f, s)
+  const pending = items.filter((e) => !e.answered && !e.skipped && (e.question.control === 'confirm' || !e.known))
+  const asked = items.filter((e) => (e.answered || e.skipped) && e.question.control !== 'confirm').length
+  const forced = pending.filter((e) => e.question.control !== 'confirm' && isForced(e.question)).length
+  const room = Math.max(0, MAX_ASKED - asked - forced)
+  const ranked = pending
+    .filter((e) => e.question.control !== 'confirm' && !isForced(e.question))
+    .sort((a, b) => b.question.stake - a.question.stake || QUESTIONS.indexOf(a.question) - QUESTIONS.indexOf(b.question))
+  const allowed = new Set(ranked.slice(0, room).map((e) => e.question.id))
+  return pending
+    .filter((e) => e.question.control === 'confirm' || isForced(e.question) || allowed.has(e.question.id))
     .map((e) => e.question)
-    .sort((a, b) => STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage))
+    .sort(
+      (a, b) =>
+        STAGES.indexOf(a.stage) - STAGES.indexOf(b.stage) ||
+        Number(b.control === 'confirm') - Number(a.control === 'confirm') ||
+        b.stake - a.stake ||
+        QUESTIONS.indexOf(a) - QUESTIONS.indexOf(b)
+    )
 }
 
 export function currentStage(f: BudgetFacts, s: StudioState): StudioStage {
@@ -289,22 +446,38 @@ export interface Readiness {
   missingRequired: string[]
   estimated: string[]
   canBuild: boolean
+  /** True once the plan is accurate enough to build now; the remaining questions only sharpen it. */
+  enough: boolean
+}
+
+const uncertainty = (e: Evaluated): number => (e.answered || e.known ? 0 : e.skipped ? SKIPPED_UNCERTAINTY : 1)
+
+/** Where a question's value comes from: the user, the app's own data, an estimate, or nothing yet. */
+export type AnswerSource = 'user' | 'data' | 'estimate' | 'unknown'
+
+export function answerSource(f: BudgetFacts, s: StudioState, id: string): AnswerSource {
+  const e = evaluate(f, s).find((x) => x.question.id === id)
+  if (!e) return 'unknown'
+  return e.answered ? 'user' : e.known ? 'data' : e.skipped ? 'estimate' : 'unknown'
 }
 
 export function readiness(f: BudgetFacts, s: StudioState): Readiness {
-  const items = evaluate(f, s)
-  const total = items.reduce((sum, e) => sum + WEIGHT[e.question.tier], 0)
-  const done = items
-    .filter((e) => e.answered || e.skipped || e.known)
-    .reduce((sum, e) => sum + WEIGHT[e.question.tier], 0)
+  const queued = new Set(visibleQuestions(f, s).map((x) => x.id))
+  // Questions the cap left out will not be asked, so they cannot hold readiness back.
+  const items = evaluate(f, s).filter((e) => e.answered || e.skipped || e.known || queued.has(e.question.id))
+  const total = items.reduce((sum, e) => sum + e.question.stake, 0)
+  const residual = items.reduce((sum, e) => sum + e.question.stake * uncertainty(e), 0)
   const missingRequired = items
     .filter((e) => e.question.tier === 'required' && !e.answered && !e.known)
     .map((e) => e.question.id)
+  const percent = total === 0 ? 100 : Math.round((1 - residual / total) * 100)
+  const canBuild = missingRequired.length === 0
   return {
-    percent: total === 0 ? 100 : Math.round((done / total) * 100),
+    percent,
     missingRequired,
     estimated: items.filter((e) => e.skipped && e.question.tier === 'important').map((e) => e.question.id),
-    canBuild: missingRequired.length === 0,
+    canBuild,
+    enough: canBuild && percent >= ENOUGH_PERCENT,
   }
 }
 

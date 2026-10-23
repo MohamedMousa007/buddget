@@ -28,10 +28,9 @@ const WORDS = {
     tier: { minimal: 'Minimal', balanced: 'Balanced', comfortable: 'Comfortable' },
     housing: { rent: 'Renting', own: 'Own home', family: 'With family', company: 'Company housing' },
     stability: { fixed: 'Fixed', variable: 'Variable', mixed: 'Mixed' },
-    payoff: { avalanche: 'Highest interest first', snowball: 'Smallest first', minimums: 'Minimums only' },
     rent: 'Rent',
     housing_: 'Housing', dependents: 'Dependents', supports: 'Supports others', income: 'Income', car: 'Has a car',
-    lean: 'Saving vs comfort', payoff_: 'Debt payoff', invest: 'Interested in investing', yes: 'Yes', no: 'No', notSet: 'Not set',
+    lean: 'Saving vs comfort', invest: 'Interested in investing', yes: 'Yes', no: 'No', notSet: 'Not set',
     kinds: { fact: 'Facts', preference: 'Preferences', constraint: 'Limits' },
   },
   ar: {
@@ -41,10 +40,9 @@ const WORDS = {
     tier: { minimal: 'بسيط', balanced: 'متوازن', comfortable: 'مريح' },
     housing: { rent: 'إيجار', own: 'ملك', family: 'مع العائلة', company: 'سكن الشركة' },
     stability: { fixed: 'ثابت', variable: 'متغير', mixed: 'مختلط' },
-    payoff: { avalanche: 'الأعلى فائدة أولًا', snowball: 'الأصغر أولًا', minimums: 'الحد الأدنى فقط' },
     rent: 'الإيجار',
     housing_: 'السكن', dependents: 'المعالون', supports: 'تعول آخرين', income: 'الدخل', car: 'لديك سيارة',
-    lean: 'الادخار مقابل الراحة', payoff_: 'سداد الديون', invest: 'مهتم بالاستثمار', yes: 'نعم', no: 'لا', notSet: 'غير محدد',
+    lean: 'الادخار مقابل الراحة', invest: 'مهتم بالاستثمار', yes: 'نعم', no: 'لا', notSet: 'غير محدد',
     kinds: { fact: 'حقائق', preference: 'تفضيلات', constraint: 'حدود' },
   },
 }
@@ -84,7 +82,6 @@ export default function SettingsMemoryPage() {
     [w.income, fp.incomeStability ? w.stability[fp.incomeStability] : w.notSet],
     [w.car, bool(fp.hasCar, w)],
     [w.lean, fp.securityLean === undefined ? w.notSet : `${fp.securityLean}%`],
-    [w.payoff_, fp.payoffStrategy ? w.payoff[fp.payoffStrategy] : w.notSet],
     [w.invest, bool(fp.investInterest, w)],
   ]
   const answered = answers.filter(([, v]) => v !== w.notSet)

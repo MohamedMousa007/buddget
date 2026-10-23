@@ -37,6 +37,10 @@ export interface BudgetFacts {
   zakatMonthly: number
   /** Three-month average spend per everyday category key (see EVERYDAY_KEYS in the engine). */
   averages: Partial<Record<EverydayKey, number>>
+  /** Average monthly rent in the ledger over the same cycles; undefined when none was recorded. */
+  ledgerRent?: number
+  /** The user pays mostly in cash, so tracked spending understates reality and counts for less. */
+  cashHeavy?: boolean
   /** Full cycles behind `averages`; fewer than three blends the averages with benchmarks. Undefined counts as three. */
   averageCycles?: number
   priorities: StudioPriority[]

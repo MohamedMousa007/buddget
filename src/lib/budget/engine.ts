@@ -19,6 +19,8 @@ const PAYOFF_PACE_PRIORITY_MONTHS = 24
 const PAYOFF_PACE_MONTHS = 36
 const SPEND_CUSHION = 1.1
 const FULL_EVIDENCE_CYCLES = 3
+/** Cash spending is mostly untracked, so recorded history is trusted at half weight. */
+const CASH_HEAVY_TRUST = 0.5
 const ESSENTIAL_KEYS: readonly EverydayKey[] = ['groceries', 'health', 'transport']
 /** Trim order when money runs short: wants go before needs. */
 const CUT_ORDER: readonly EverydayKey[] = ['fun', 'shopping', 'dining', 'other', 'family', 'transport', 'health', 'groceries']
@@ -155,7 +157,7 @@ function sizeEveryday(
   const trimPct = Math.round(trim * 100)
   const typical = benchmarkEveryday(bench, f, income)
   const cycles = f.averageCycles ?? FULL_EVIDENCE_CYCLES
-  const weight = Math.min(1, cycles / FULL_EVIDENCE_CYCLES)
+  const weight = Math.min(1, cycles / FULL_EVIDENCE_CYCLES) * (f.cashHeavy ? CASH_HEAVY_TRUST : 1)
   const needsBench = weight < 1 ? EVERYDAY_KEYS : EVERYDAY_KEYS.filter((k) => f.averages[k] === undefined)
   const benchSum = sum(needsBench.map((k) => typical[k]))
   // Low incomes must not be handed a benchmark larger than they can pay.
