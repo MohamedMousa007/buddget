@@ -680,8 +680,44 @@ export type Database = {
           },
         ]
       }
+      ai_price_book: {
+        Row: {
+          audio_usd_per_min: number | null
+          cached_usd_per_mtok: number
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          id: number
+          in_usd_per_mtok: number
+          model: string
+          out_usd_per_mtok: number
+          provider: string
+          source_note: string | null
+        }
+        Insert: {
+          audio_usd_per_min?: number | null
+          cached_usd_per_mtok?: number
+          effective_from?: string
+          effective_to?: string | null
+          in_usd_per_mtok?: number
+          model: string
+          out_usd_per_mtok?: number
+          provider: string
+          source_note?: string | null
+        }
+        Update: {
+          audio_usd_per_min?: number | null
+          cached_usd_per_mtok?: number
+          effective_to?: string | null
+          in_usd_per_mtok?: number
+          out_usd_per_mtok?: number
+          source_note?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_events: {
         Row: {
+          cost_usd_micro: number | null
           cached_tokens: number
           chat_id: string | null
           created_at: string
@@ -697,6 +733,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cost_usd_micro?: number | null
           cached_tokens?: number
           chat_id?: string | null
           created_at?: string
@@ -712,6 +749,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cost_usd_micro?: number | null
           cached_tokens?: number
           chat_id?: string | null
           created_at?: string
@@ -3968,6 +4006,10 @@ export type Database = {
       }
       admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }
       admin_user_financial_snapshot: { Args: { p_staff: string; p_user: string }; Returns: Json }
+      admin_ai_cost_daily: {
+        Args: { p_days?: number }
+        Returns: { day: string; model: string; feature: string; calls: number; in_tokens: number; out_tokens: number; cost_usd_micro: number; active_users: number }[]
+      }
       admin_onboarding_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_signup_series: {

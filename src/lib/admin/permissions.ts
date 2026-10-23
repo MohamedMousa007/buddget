@@ -30,6 +30,7 @@ export const PERMISSIONS = {
   'billing.manage': 'Create plans and grant or change memberships',
   'loyalty.view': 'See loyalty tiers and balances',
   'loyalty.manage': 'Edit tiers and adjust points',
+  'ai.cost.view': 'See AI spend by day, model and feature',
   'flags.view': 'See feature flags',
   'flags.manage': 'Change feature flags and rollouts',
   'platform.view': 'See platform health and configuration',

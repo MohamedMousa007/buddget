@@ -43,6 +43,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
     label: 'Monetization',
     items: [
       { section: 'plans', label: 'Plans & memberships', icon: 'CreditCard', anyOf: ['billing.view'], description: 'Freemium plans, trials and entitlements' },
+      { section: 'ai-cost', label: 'AI cost', icon: 'Coins', anyOf: ['ai.cost.view'], description: 'What AI usage costs, by day, model and feature' },
       { section: 'loyalty', label: 'Loyalty', icon: 'Award', anyOf: ['loyalty.view'], description: 'Tiers, points and perks' },
     ],
   },
