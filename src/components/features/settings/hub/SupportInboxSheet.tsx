@@ -1,7 +1,8 @@
 'use client'
 
+import { SheetTitleBar } from './SheetTitleBar'
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Inbox, Send, X } from 'lucide-react'
+import { ArrowLeft, Inbox, Send } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { Button } from '@/components/ui/button'
@@ -65,13 +66,7 @@ export function SupportInboxSheet({ open, onClose }: { open: boolean; onClose: (
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-2">
-          {current ? (
-            <IconButton onClick={() => setCurrent(null)} aria-label={close} variant="tinted" size="sm" shape="round"><ArrowLeft className="h-full w-full" /></IconButton>
-          ) : null}
-          <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{current ? `#${current.number} ${current.subject}` : h.inbox}</h2>
-          <IconButton onClick={onClose} aria-label={close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
-        </div>
+        <SheetTitleBar title={current ? `#${current.number} ${current.subject}` : h.inbox} onClose={onClose} leading={current ? <IconButton onClick={() => setCurrent(null)} aria-label={close} variant="tinted" size="sm" shape="round"><ArrowLeft className="h-full w-full" /></IconButton> : null} />
         {current ? (
           <>
             <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">

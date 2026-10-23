@@ -11,6 +11,8 @@ export interface SendNativePushArgs {
   collapseKey?: string
   /** A captured bank text: collectors that did not ask for it, and removed phones, are skipped. */
   forSms?: boolean
+  /** The phone that captured this text; it is skipped unless it asked to be told. */
+  collectorDeviceId?: string | null
 }
 
 export interface SendNativePushResult {
@@ -49,7 +51,7 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
   let targets = rows
   if (args.forSms) {
     const { data: devs } = await service.from('user_devices').select('device_id, collects_sms, notify_on_sms, revoked_at').eq('user_id', args.userId)
-    targets = smsPushTargets(rows, new Map<string, DevicePrefs>((devs ?? []).map((d) => [d.device_id, d])))
+    targets = smsPushTargets(rows, new Map<string, DevicePrefs>((devs ?? []).map((d) => [d.device_id, d])), args.collectorDeviceId ?? null)
   }
   if (targets.length === 0) return { ok: true, sent: 0, failed: 0 }
   const tokens = targets.map((r) => r.token)

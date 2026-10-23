@@ -4059,6 +4059,7 @@ export type Database = {
       admin_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention_days: { Args: { p_signup_days?: number }; Returns: Json }
       refresh_user_milestones: { Args: Record<PropertyKey, never>; Returns: undefined }
+      user_device_last_sms: { Args: { p_user: string }; Returns: { device_id: string; last_at: string }[] }
       ai_spend_today: { Args: Record<PropertyKey, never>; Returns: Json }
       admin_onboarding_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }

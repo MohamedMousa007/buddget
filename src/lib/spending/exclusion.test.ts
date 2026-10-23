@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Expense } from '@/lib/store/types'
-import { applyMethodExclusion, countedDebtPayments, countedDebts, isMethodExcluded } from './exclusion'
+import { applyMethodExclusion, countedDebtPayments, countedDebts, isMethodExcluded, reconcileExclusion } from './exclusion'
 
 const exp = (id: string, pm: string, extra: Partial<Expense> = {}) => ({ id, paymentMethodId: pm, category: 'Food', ...extra }) as Expense
 const NOW = '2026-10-23T00:00:00Z'
@@ -46,5 +46,15 @@ describe('excluded credit cards', () => {
     const plain = [{ id: 'x' }]
     expect(countedDebts(debts, plain)).toBe(debts)
     expect(countedDebts(debts, plain)).toBe(countedDebts(debts, plain))
+  })
+})
+
+describe('reconcileExclusion', () => {
+  const methods = [{ id: 'a', excluded: true }, { id: 'b' }]
+  it('follows the new method only for what a method caused', () => {
+    expect(reconcileExclusion('method', methods, 'b')).toBeUndefined()
+    expect(reconcileExclusion(undefined, methods, 'a')).toBe('method')
+    expect(reconcileExclusion('manual', methods, 'b')).toBe('manual')
+    expect(reconcileExclusion('for_someone', methods, 'a')).toBe('for_someone')
   })
 })

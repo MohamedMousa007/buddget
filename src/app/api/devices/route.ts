@@ -30,18 +30,13 @@ export async function GET(request: Request) {
   const service = createServiceRoleClient()
   const { data: rows } = await service.from('user_devices').select('*').eq('user_id', c.userId).is('revoked_at', null).order('last_seen_at', { ascending: false })
   const devices = rows ?? []
-  const lastText = await Promise.all(
-    devices.map(async (d) => {
-      if (!d.collects_sms) return null
-      const { data } = await service.from('sms_parse_log').select('received_at').eq('user_id', c.userId).eq('device_id', d.device_id).order('received_at', { ascending: false }).limit(1).maybeSingle()
-      return data?.received_at ?? null
-    }),
-  )
+  const { data: last } = await service.rpc('user_device_last_sms', { p_user: c.userId })
+  const lastText = new Map((last ?? []).map((r) => [r.device_id, r.last_at]))
   return NextResponse.json({
     thisDeviceId: c.deviceId,
-    devices: devices.map((d, i) => ({
+    devices: devices.map((d) => ({
       deviceId: d.device_id, name: d.name ?? d.model ?? d.platform, platform: d.platform, appVersion: d.app_version, lastSeenAt: d.last_seen_at,
-      collectsSms: d.collects_sms, notifyOnSms: d.notify_on_sms, lastSmsAt: lastText[i] ?? null,
+      collectsSms: d.collects_sms, notifyOnSms: d.notify_on_sms, lastSmsAt: d.collects_sms ? (lastText.get(d.device_id) ?? null) : null,
     })),
   }, { headers: { 'Cache-Control': 'private, no-store' } })
 }

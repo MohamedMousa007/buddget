@@ -1131,7 +1131,7 @@ export async function POST(request: Request) {
   let pushHandledInline = false
   try {
     const pushResult = await Promise.race([
-      sendNativePush({ ...pushArgs, forSms: true }),
+      sendNativePush({ ...pushArgs, forSms: true, collectorDeviceId: deviceId }),
       new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 3000)),
     ])
     if (pushResult !== 'timeout') {
@@ -1151,7 +1151,7 @@ export async function POST(request: Request) {
   if (!pushHandledInline) {
     after(async () => {
       try {
-        const result = await sendNativePush({ ...pushArgs, forSms: true })
+        const result = await sendNativePush({ ...pushArgs, forSms: true, collectorDeviceId: deviceId })
         const delivered = result.ok && (result.sent ?? 0) > 0
         await service.rpc('sms_mark_pushed', {
           p_log_id: logId,

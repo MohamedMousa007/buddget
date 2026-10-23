@@ -1,12 +1,12 @@
 'use client'
 
+import { SheetTitleBar } from './SheetTitleBar'
 import { useCallback, useEffect, useState } from 'react'
-import { MessageSquareText, Smartphone, X } from 'lucide-react'
+import { MessageSquareText, Smartphone } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ExcludeSwitchRow } from '@/components/features/spending/ExcludeSwitchRow'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { IconButton } from '@/components/ui/IconButton'
 import { apiFetchAuth } from '@/lib/apiBase'
 import { useLocale } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -66,10 +66,7 @@ export function DevicesSheet({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{d.title}</h2>
-          <IconButton onClick={onClose} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
-        </div>
+        <SheetTitleBar title={d.title} onClose={onClose} />
         {devices && devices.length === 0 ? <p className="py-6 text-center text-sm text-[var(--color-brand-text-muted)]">{d.empty}</p> : null}
         <ul className="flex max-h-[65vh] flex-col gap-3 overflow-y-auto">
           {(devices ?? []).map((device) => {
@@ -90,7 +87,7 @@ export function DevicesSheet({ open, onClose }: { open: boolean; onClose: () => 
                       <MessageSquareText className="size-4" aria-hidden />
                       {d.collecting} · {device.lastSmsAt ? d.lastText(relative(device.lastSmsAt)) : d.noTextYet}
                     </p>
-                    <ExcludeSwitchRow title={d.notifyHere} hint={d.notifyHint} checked={notifiesOnSms({ collects_sms: true, notify_on_sms: device.notifyOnSms })} onChange={(on) => { void setNotify(device, on) }} />
+                    <div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]"><SettingsSwitchRow label={d.notifyHere} hint={d.notifyHint} checked={notifiesOnSms({ collects_sms: true, notify_on_sms: device.notifyOnSms })} onChange={(on) => { void setNotify(device, on) }} /></div>
                   </div>
                 ) : null}
                 {!mine ? (

@@ -48,7 +48,7 @@ export function useReportsPage() {
   const [dateRange, setDateRange] = useState<DateRange>('thisMonth')
   const [expenseDebtFilter, setExpenseDebtFilter] = useState<ExpenseDebtFilterMode>('all')
 
-  const { filteredExpenses, startDate, endDate } = useMemo(() => {
+  const { inPeriod, startDate, endDate } = useMemo(() => {
     const now = new Date()
     let start: Date
     let end = endOfMonth(now)
@@ -75,7 +75,6 @@ export function useReportsPage() {
     }
 
     const inRange = expenses.filter((e) => {
-      if (e.spendExclusion) return false
       const date = parseISO(e.date)
       return isWithinInterval(date, { start, end })
     })
@@ -87,8 +86,10 @@ export function useReportsPage() {
           ? inRange.filter(isDebtLinkedExpense)
           : inRange.filter((e) => !isDebtLinkedExpense(e))
 
-    return { filteredExpenses: filtered, startDate: start, endDate: end }
+    return { inPeriod: filtered, startDate: start, endDate: end }
   }, [expenses, dateRange, expenseDebtFilter])
+  // Spending figures leave out what the user marked not counted; the CSV below keeps every logged row.
+  const filteredExpenses = useMemo(() => inPeriod.filter((e) => !e.spendExclusion), [inPeriod])
 
   // Actual income received across the period (events + projected fallback), summed
   // over each calendar month the range touches.
@@ -197,8 +198,8 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
   ])
 
   const handleExportCSV = useCallback(() => {
-    const headers = 'Date,Description,Category,Amount,Currency,Base Amount\n'
-    const rows = filteredExpenses
+    const headers = 'Date,Description,Category,Amount,Currency,Base Amount,Counted in spending\n'
+    const rows = inPeriod
       .map((e) =>
         [
           escapeCsvField(e.date),
@@ -207,6 +208,7 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
           escapeCsvField(e.amount),
           escapeCsvField(e.currency),
           escapeCsvField(expenseAmountInBase(e, settings.baseCurrency, exchangeRates)),
+          escapeCsvField(e.spendExclusion ? 'no' : 'yes'),
         ].join(',')
       )
       .join('\n')
@@ -235,7 +237,7 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
     a.download = `buddget-report-${dateRange}.csv`
     a.click()
     URL.revokeObjectURL(url)
-  }, [dateRange, filteredExpenses, savingsTransactions, startDate, endDate, settings.baseCurrency, exchangeRates])
+  }, [dateRange, inPeriod, savingsTransactions, startDate, endDate, settings.baseCurrency, exchangeRates])
 
   return {
     dateRange,

@@ -94,6 +94,8 @@ function SmsStartupSync() {
       await reconcileSmsOwner(userId)
 
       const status = await getSmsBridgeStatus()
+      // Every phone checks in (a phone that does not collect texts still belongs in the devices list).
+      void import('@/lib/devices/client').then((m) => m.sendDeviceHeartbeat(userId, status?.enabled ?? false))
       // No Shortcut/receiver physically on this device → nothing to arm or drain.
       if (!status?.wired) return
 
@@ -120,8 +122,6 @@ function SmsStartupSync() {
       //    still reach the server. Skip while offline — items stay queued.
       if (!isOnline()) return
       await drainAndSubmitPendingSms(token, userId)
-      const { sendDeviceHeartbeat } = await import('@/lib/devices/client')
-      void sendDeviceHeartbeat(status.enabled)
     }
 
     let unsub: (() => void) | null = null

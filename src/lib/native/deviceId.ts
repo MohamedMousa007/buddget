@@ -2,6 +2,15 @@ import { Preferences } from '@capacitor/preferences'
 
 const DEVICE_ID_KEY = 'buddget_device_id'
 
+/** Forget this install's identity so the next sign-in registers as a new device (after the owner removed it). */
+export async function resetDeviceId(): Promise<void> {
+  try {
+    await Preferences.remove({ key: DEVICE_ID_KEY })
+  } catch {
+    /* the next call creates a fresh id anyway on a clean install */
+  }
+}
+
 /** Stable per-install device id for trusted-device / 2FA on native. */
 export async function getOrCreateDeviceId(): Promise<string | null> {
   try {

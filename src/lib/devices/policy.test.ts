@@ -11,18 +11,22 @@ describe('sms push policy', () => {
     expect(notifiesOnSms(dev({ collects_sms: true, notify_on_sms: true }))).toBe(true)
     expect(notifiesOnSms(dev({ notify_on_sms: false }))).toBe(false)
   })
-  it('skips the collector and removed phones when another phone can be told', () => {
-    const devices = new Map([['iphone', dev({ collects_sms: true })], ['android', dev()], ['old', dev({ revoked_at: 'x' })]])
-    const out = smsPushTargets([tok('a', 'iphone'), tok('b', 'android'), tok('c', 'old'), tok('d', null)], devices)
+  it('skips the phone that collected this text and removed phones when another phone can be told', () => {
+    const devices = new Map([['iphone', dev({ collects_sms: true })], ['android', dev({ collects_sms: true })], ['old', dev({ revoked_at: 'x' })]])
+    const out = smsPushTargets([tok('a', 'iphone'), tok('b', 'android'), tok('c', 'old'), tok('d', null)], devices, 'iphone')
     expect(out.map((t) => t.token)).toEqual(['b', 'd'])
   })
-  it('keeps a single-phone account notified even when that phone collects', () => {
+  it('tells the collector when it asked to, and never a phone that turned notifications off', () => {
+    const devices = new Map([['iphone', dev({ collects_sms: true, notify_on_sms: true })], ['android', dev({ notify_on_sms: false })]])
+    expect(smsPushTargets([tok('a', 'iphone'), tok('b', 'android')], devices, 'iphone').map((t) => t.token)).toEqual(['a'])
+  })
+  it('keeps a single-phone account notified even when that phone collected the text', () => {
     const devices = new Map([['iphone', dev({ collects_sms: true })]])
-    expect(smsPushTargets([tok('a', 'iphone')], devices).map((t) => t.token)).toEqual(['a'])
+    expect(smsPushTargets([tok('a', 'iphone')], devices, 'iphone').map((t) => t.token)).toEqual(['a'])
   })
   it('never notifies a removed phone, even as the last resort', () => {
     const devices = new Map([['old', dev({ revoked_at: 'x' })]])
-    expect(smsPushTargets([tok('c', 'old')], devices)).toEqual([])
+    expect(smsPushTargets([tok('c', 'old')], devices, null)).toEqual([])
   })
 })
 

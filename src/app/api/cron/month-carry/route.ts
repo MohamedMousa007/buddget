@@ -77,7 +77,7 @@ export async function GET(request: Request) {
         service.from('profiles').select('default_carry_pocket_id, created_at, base_currency').eq('id', userId).maybeSingle(),
         service.from('savings_accounts').select('*').eq('user_id', userId).is('deleted_at', null),
         service.from('goals').select('*').eq('user_id', userId).is('deleted_at', null),
-        service.from('expenses').select('category, amount, currency, expense_date').eq('user_id', userId).gte('expense_date', startISO).lt('expense_date', endISO).is('deleted_at', null),
+        service.from('expenses').select('category, amount, currency, expense_date, spend_exclusion').eq('user_id', userId).gte('expense_date', startISO).lt('expense_date', endISO).is('deleted_at', null),
         service.from('income_events').select('amount, currency, status, received_date').eq('user_id', userId).gte('received_date', startISO).lt('received_date', endISO).is('deleted_at', null),
         service.from('savings_transactions').select('amount, currency, kind, is_cash_flow, transaction_date, source').eq('user_id', userId).gte('transaction_date', startISO).lt('transaction_date', endISO).is('deleted_at', null),
       ])
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
         .filter((e) => ['confirmed', 'late', 'partial'].includes((e.status as string) ?? ''))
         .reduce((sum, e) => sum + toBase(Number(e.amount) || 0, (e.currency as string) ?? base), 0)
       const spend = (expensesR.data ?? [])
-        .filter((e) => (e.category as string) !== 'Savings')
+        .filter((e) => (e.category as string) !== 'Savings' && !e.spend_exclusion)
         .reduce((sum, e) => sum + toBase(Number(e.amount) || 0, (e.currency as string) ?? base), 0)
       const savTagged = (expensesR.data ?? [])
         .filter((e) => (e.category as string) === 'Savings')

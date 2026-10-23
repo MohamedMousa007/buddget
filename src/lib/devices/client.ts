@@ -2,6 +2,7 @@ import { apiFetchAuth } from '@/lib/apiBase'
 import { isAndroid, isIOS, isNative } from '@/lib/native/isNative'
 
 const BEAT_KEY = 'buddget_device_beat'
+const beatKey = (userId: string) => `${BEAT_KEY}:${userId}`
 const BEAT_EVERY_MS = 4 * 3600_000
 
 function selfReport() {
@@ -12,14 +13,14 @@ function selfReport() {
 }
 
 /** Tells the server this phone exists and is alive; a phone the owner removed signs itself out. */
-export async function sendDeviceHeartbeat(collects: boolean | undefined): Promise<void> {
+export async function sendDeviceHeartbeat(userId: string, collects: boolean | undefined): Promise<void> {
   if (!isNative()) return
   try {
-    const last = Number(localStorage.getItem(BEAT_KEY) ?? 0)
+    const last = Number(localStorage.getItem(beatKey(userId)) ?? 0)
     if (Date.now() - last < BEAT_EVERY_MS) return
     const res = await apiFetchAuth('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collects }) })
     if (!res.ok) return
-    localStorage.setItem(BEAT_KEY, String(Date.now()))
+    localStorage.setItem(beatKey(userId), String(Date.now()))
     if (((await res.json()) as { revoked?: boolean }).revoked) await signOutRemovedDevice()
   } catch {
     /* best effort: the next open tries again */
@@ -48,7 +49,10 @@ export async function fetchDeviceCollectsSms(): Promise<boolean | null> {
   }
 }
 
+/** A removed phone signs out and forgets its identity, so signing in again registers it as a new device. */
 async function signOutRemovedDevice(): Promise<void> {
+  const { resetDeviceId } = await import('@/lib/native/deviceId')
+  await resetDeviceId()
   const { createClient } = await import('@/lib/supabase/client')
   await createClient().auth.signOut()
 }

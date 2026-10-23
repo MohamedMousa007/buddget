@@ -1,7 +1,8 @@
 'use client'
 
+import { SheetTitleBar } from './SheetTitleBar'
 import { useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, X } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -39,10 +40,7 @@ export function SupportBoardSheet({ open, onClose }: { open: boolean; onClose: (
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{h.board}</h2>
-          <IconButton onClick={onClose} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
-        </div>
+        <SheetTitleBar title={h.board} onClose={onClose} />
         {items && items.length === 0 ? (
           <p className="py-8 text-center text-sm text-[var(--color-brand-text-muted)]">{h.boardEmpty}</p>
         ) : (

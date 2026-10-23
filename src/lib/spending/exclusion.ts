@@ -1,5 +1,11 @@
 import type { Debt, Expense, PaymentMethod } from '@/lib/store/types'
 
+/** The flag an expense should carry after its payment method changes: only what the method caused follows the method. */
+export function reconcileExclusion(current: Expense['spendExclusion'], methods: Methods, nextMethodId: string | undefined): Expense['spendExclusion'] {
+  if (current === 'manual' || current === 'for_someone') return current
+  return isMethodExcluded(methods, nextMethodId) ? 'method' : undefined
+}
+
 type Methods = readonly Pick<PaymentMethod, 'id' | 'parentId' | 'excluded'>[]
 
 /** A method is left out when it, or the account it hangs under, is. */

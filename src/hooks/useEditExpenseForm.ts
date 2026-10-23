@@ -1,5 +1,6 @@
 'use client'
 
+import { reconcileExclusion } from '@/lib/spending/exclusion'
 import { useState, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -40,6 +41,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     }
     setSubmitError('')
 
+    const exclusion = paymentMethodId === expense.paymentMethodId ? spendExclusion : reconcileExclusion(spendExclusion, paymentMethods, paymentMethodId)
     updateExpense(expense.id, {
       date,
       description,
@@ -51,7 +53,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
       paymentMethodId,
       isRecurring,
       notes: notes || undefined,
-      spendExclusion,
+      spendExclusion: exclusion,
       owedBy: spendExclusion === 'for_someone' ? owedBy.trim() || undefined : undefined,
       owedSettledAt: spendExclusion === 'for_someone' ? expense.owedSettledAt : undefined,
     })
@@ -67,8 +69,10 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     exchangeRates,
     expense.id,
     expense.owedSettledAt,
+    expense.paymentMethodId,
     spendExclusion,
     owedBy,
+    paymentMethods,
     isRecurring,
     notes,
     onClose,

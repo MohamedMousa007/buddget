@@ -1,3 +1,4 @@
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { differenceInCalendarDays } from 'date-fns'
 import { getMonthRange } from '@/lib/utils/calculations'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
@@ -68,8 +69,8 @@ export function readContextInput(args: { now: Date; route: string; text: string 
     savingsHoldings: s.savingsHoldings,
     savingsAccounts: s.savingsAccounts,
     savingsTransactions: s.savingsTransactions,
-    debts: s.debts,
-    debtPayments: s.debtPayments,
+    debts: countedDebts(s.debts, s.paymentMethods),
+    debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
     settings: s.settings,
     exchangeRates: s.exchangeRates,
     goldPricePerGram: s.goldPricePerGram,

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Calendar, X, Plus, Info, ArrowLeftRight } from 'lucide-react'
 import type { Currency, PaymentMethod, SpendExclusion } from '@/lib/store/types'
-import { ExcludeSwitchRow } from '@/components/features/spending/ExcludeSwitchRow'
+import { isMethodExcluded } from '@/lib/spending/exclusion'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { useT, useLocale } from '@/lib/i18n'
@@ -139,6 +140,8 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
   }, [])
 
   const nonSpendSelected = isNonSpendCategory(category)
+  // A new expense on a not-counted account starts out left out; it can be changed after it is saved.
+  const addOnExcludedMethod = mode === 'add' && isMethodExcluded(paymentMethods, paymentMethodId)
   const amountNum = parseFloat(amount)
   const submitDisabled =
     !amount.trim() || Number.isNaN(amountNum) || amountNum <= 0 || !description.trim()
@@ -441,20 +444,26 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
           </div>
           {!nonSpendSelected ? (
             <div className="space-y-2">
-              <ExcludeSwitchRow
-                title={t.exclusion.expenseTitle}
-                hint={t.exclusion.expenseHint}
-                checked={exclusion.value !== undefined}
-                onChange={(v) => exclusion.setValue(v ? 'manual' : undefined)}
-              />
-              {exclusion.value !== undefined ? (
-                <ExcludeSwitchRow
-                  title={t.exclusion.forSomeone}
-                  hint={t.exclusion.forSomeoneHint}
-                  checked={exclusion.value === 'for_someone'}
-                  onChange={(v) => exclusion.setValue(v ? 'for_someone' : 'manual')}
-                />
-              ) : null}
+              <div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
+                {addOnExcludedMethod ? (
+                  <SettingsSwitchRow label={t.exclusion.expenseTitle} hint={t.exclusion.reasonMethod} checked disabled onChange={() => {}} />
+                ) : (
+                  <SettingsSwitchRow
+                    label={t.exclusion.expenseTitle}
+                    hint={t.exclusion.expenseHint}
+                    checked={exclusion.value !== undefined}
+                    onChange={(v) => exclusion.setValue(v ? 'manual' : undefined)}
+                  />
+                )}
+                {exclusion.value !== undefined ? (
+                  <SettingsSwitchRow
+                    label={t.exclusion.forSomeone}
+                    hint={t.exclusion.forSomeoneHint}
+                    checked={exclusion.value === 'for_someone'}
+                    onChange={(v) => exclusion.setValue(v ? 'for_someone' : 'manual')}
+                  />
+                ) : null}
+              </div>
               {exclusion.value === 'for_someone' && onMarkRepaid ? (
                 owedSettled ? (
                   <p className="text-xs font-medium text-[var(--color-brand-green)]">{t.exclusion.badgeRepaid}</p>
