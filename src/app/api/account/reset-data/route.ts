@@ -1,43 +1,12 @@
 import { NextResponse } from 'next/server'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { stampDataReset, wipeUserData } from '@/lib/server/userData'
 
 /**
  * Wipe all financial data for the authenticated user without deleting their
  * account. Supports cookie auth (web) and Bearer JWT (native Capacitor).
- *
- * Tables are deleted in dependency-safe order (children before parents).
  */
-const FINANCIAL_TABLES = [
-  'budget_subcategories',
-  'budget_categories',
-  'budget_feedback',
-  'budget_plan_activations',
-  'buddgy_memories',
-  'budget_plans',
-  'expenses',
-  'recurring_expenses',
-  'subscriptions',
-  'debt_payments',
-  'recurring_debt_payments',
-  'debts',
-  'savings_transactions',
-  'savings_holdings',
-  'recurring_savings_deposits',
-  'savings_accounts',
-  'goals',
-  'income_events',
-  'income_sources',
-  // Accounts: children of payment_methods, so they go first.
-  'account_adjustments',
-  'account_balance_reports',
-  'payment_methods',
-  'notifications',
-  'app_analytics_events',
-  'app_analytics_daily',
-  'user_settings',
-] as const
-
 export async function POST(request: Request) {
   try {
     const uid = await resolveApiUserId(request)
@@ -46,12 +15,7 @@ export async function POST(request: Request) {
     }
 
     const admin = createServiceRoleClient()
-    const errors: string[] = []
-
-    for (const table of FINANCIAL_TABLES) {
-      const { error } = await admin.from(table).delete().eq('user_id', uid)
-      if (error) errors.push(`${table}: ${error.message}`)
-    }
+    const errors = [...(await wipeUserData(admin, uid)), ...(await stampDataReset(admin, uid, { clearProfile: false }))]
 
     if (errors.length > 0) {
       console.error('[account/reset-data] partial failures:', errors)

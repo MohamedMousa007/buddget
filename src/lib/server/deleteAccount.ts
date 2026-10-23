@@ -1,4 +1,18 @@
 import type { ServiceClient } from '@/lib/supabase/service'
+import { stampDataReset, wipeUserData } from '@/lib/server/userData'
+
+export interface DeleteOptions {
+  /**
+   * Self-service deletion by someone who is also staff. The sign-in is shared with the admin portal, so the app
+   * account is emptied (data, profile answers, push and SMS pairing) but the sign-in and every admin record
+   * (staff row, credentials, sessions, biometrics) stay exactly as they were.
+   */
+  keepStaffAccess?: boolean
+}
+
+export type DeleteResult =
+  | { ok: true; partialErrors: string[]; keptStaffAccess: boolean }
+  | { ok: false; error: string; details: string[] }
 
 /**
  * Permanently deletes a user and every piece of data Buddget holds for them.
@@ -7,58 +21,22 @@ import type { ServiceClient } from '@/lib/supabase/service'
  * doesn't clean them up. Each user-scoped table is deleted explicitly, children first, and the auth user last.
  * Shared by the self-service route and the admin portal so both stay identical.
  */
-const USER_ID_TABLES = [
-  // Budget shape
-  'buddgy_memories',
-  'budget_subcategories',
-  'budget_categories',
-  'budget_feedback',
-  'budget_plan_activations',
-  'buddgy_memories',
-  'budget_plans',
-  // Transactions
-  'expenses',
-  'recurring_expenses',
-  'subscriptions',
-  // Debt
-  'debt_payments',
-  'recurring_debt_payments',
-  'debts',
-  // Savings
-  'savings_transactions',
-  'savings_holdings',
-  'recurring_savings_deposits',
-  'savings_accounts',
-  // Other domains
-  'goals',
-  'income_events',
-  'income_sources',
-  // Accounts: children of payment_methods, so they go first.
-  'account_adjustments',
-  'account_balance_reports',
-  'payment_methods',
-  'notifications',
-  'app_analytics_events',
-  'app_analytics_daily',
-  // Singletons
-  'user_settings',
-] as const
+export async function deleteUserCompletely(admin: ServiceClient, uid: string, opts: DeleteOptions = {}): Promise<DeleteResult> {
+  const { data: staff } = await admin.from('admin_staff').select('role_key').eq('user_id', uid).maybeSingle()
 
-export async function deleteUserCompletely(
-  admin: ServiceClient,
-  uid: string,
-): Promise<{ ok: true; partialErrors: string[] } | { ok: false; error: string; details: string[] }> {
+  if (staff && opts.keepStaffAccess) {
+    // Deleting the auth user would cascade into admin_staff, admin_credentials, admin_sessions and the biometric devices.
+    const errors = [...(await wipeUserData(admin, uid)), ...(await stampDataReset(admin, uid, { clearProfile: true }))]
+    await admin.from('sms_ingest_tokens').update({ is_active: false }).eq('user_id', uid)
+    await admin.from('push_tokens').delete().eq('user_id', uid)
+    return { ok: true, partialErrors: errors, keptStaffAccess: true }
+  }
+
   // The owner row is protected by a database trigger, so deleting that auth user would fail only after
   // the data below had already been wiped. Refuse up front.
-  const { data: staff } = await admin.from('admin_staff').select('role_key').eq('user_id', uid).maybeSingle()
   if (staff?.role_key === 'owner') return { ok: false, error: 'The owner account cannot be deleted', details: [] }
 
-  const errors: string[] = []
-
-  for (const table of USER_ID_TABLES) {
-    const { error } = await admin.from(table).delete().eq('user_id', uid)
-    if (error) errors.push(`${table}: ${error.message}`)
-  }
+  const errors = await wipeUserData(admin, uid)
 
   // profiles.id === user_id (no user_id column).
   {
@@ -72,5 +50,5 @@ export async function deleteUserCompletely(
     errors.push(`auth.users: ${delUserErr.message}`)
     return { ok: false, error: 'Failed to delete auth user', details: errors }
   }
-  return { ok: true, partialErrors: errors }
+  return { ok: true, partialErrors: errors, keptStaffAccess: false }
 }

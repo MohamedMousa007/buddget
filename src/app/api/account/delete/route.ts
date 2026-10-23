@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    const result = await deleteUserCompletely(createServiceRoleClient(), uid)
+    const result = await deleteUserCompletely(createServiceRoleClient(), uid, { keepStaffAccess: true })
     if (!result.ok) {
       return NextResponse.json({ error: result.error, details: result.details }, { status: 500 })
     }

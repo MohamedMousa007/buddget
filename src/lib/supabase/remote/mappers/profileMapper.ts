@@ -18,6 +18,8 @@ export interface ProfileExtras {
   /** Secondary display currency (from AppSettings). Written to profiles.secondary_currency. */
   secondaryCurrency?: Currency | null
   displayName?: string | null
+  /** When the account was last reset (admin portal or start fresh); devices compare it to what they honoured. */
+  dataResetAt?: string | null
 }
 
 /**
@@ -100,6 +102,7 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     baseCurrency: row.base_currency as Currency,
     secondaryCurrency: (row.secondary_currency ?? null) as Currency | null,
     displayName: row.display_name,
+    dataResetAt: row.data_reset_at,
   }
   return { profile, extras }
 }

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { deleteUserCompletely } from '@/lib/server/deleteAccount'
+import { stampDataReset, wipeUserData } from '@/lib/server/userData'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { sendNativePush } from '@/lib/server/sendNativePush'
 import { isFeatureOverrideKey, isLimitKey } from '@/lib/entitlements/limits'
@@ -65,6 +66,7 @@ type Op =
   | { op: 'remove_biometric' }
   | { op: 'send_password_reset' }
   | { op: 'verify_email' }
+  | { op: 'reset_data'; code?: string; stepUpPassword?: string }
   | { op: 'delete'; code?: string; stepUpPassword?: string }
 
 const REQUIRES: Record<Op['op'], Permission> = {
@@ -82,10 +84,11 @@ const REQUIRES: Record<Op['op'], Permission> = {
   remove_biometric: 'users.tools',
   send_password_reset: 'users.tools',
   verify_email: 'users.edit',
+  reset_data: 'users.reset',
   delete: 'users.delete',
 }
 
-const DESTRUCTIVE = new Set<Op['op']>(['suspend', 'delete', 'clear_entitlement'])
+const DESTRUCTIVE = new Set<Op['op']>(['suspend', 'reset_data', 'delete', 'clear_entitlement'])
 
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params
@@ -231,6 +234,13 @@ export async function POST(req: Request, { params }: Params) {
       const { error } = await ctx.service.auth.admin.updateUserById(id, { email_confirm: true })
       if (error) return bad('Could not verify the email.', 500)
       await log('user.verify_email', 'Marked email verified')
+      return json({ ok: true })
+    }
+    case 'reset_data': {
+      if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
+      const errors = [...(await wipeUserData(ctx.service, id)), ...(await stampDataReset(ctx.service, id, { clearProfile: true }))]
+      await log('user.reset_data', 'Reset account and erased all data', { partialErrors: errors })
+      if (errors.length > 0) return bad('Part of the reset failed. Run it again.', 500)
       return json({ ok: true })
     }
     case 'delete': {

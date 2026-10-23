@@ -54,7 +54,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
 
   const banned = !!data.auth.banned_until && new Date(data.auth.banned_until) > new Date()
   const who = personLabel({ name: data.profile?.name, email: data.auth.email, id })
-  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.delete') : true))
+  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
 
   return (
     <>
@@ -383,6 +383,16 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
           </Panel>
         ) : null}
 
+        {can('users.reset') ? (
+          <Panel title="Reset account" description="Erases all of their data and starts them fresh. They stay signed up with their plan and sign-in; every device clears its copy on its next sync.">
+            <Button variant="destructive" size="touch" loading={busy === 'reset'} onClick={async () => {
+              const proof = await stepUp('Resetting an account erases all of its data. Confirm it’s you.')
+              if (!proof) return
+              void run('reset', { op: 'reset_data', ...proof }, { success: 'Account reset', confirm: { title: 'Reset this account?', body: `All of ${data.auth.email ?? id}’s data is erased and cannot be recovered. They keep their sign-in.`, destructive: true, confirmLabel: 'Erase and reset' } })
+            }}><RotateCcw />Reset account</Button>
+          </Panel>
+        ) : null}
+
         {can('users.delete') ? (
           <Panel title="Danger zone" description="Permanent. Deletes the account and all of their data.">
             <Button variant="destructive-solid" size="touch" loading={busy === 'delete'} onClick={async () => {
@@ -392,7 +402,7 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
             }}><Trash2 />Delete user</Button>
           </Panel>
         ) : null}
-        {!tools && !can('users.suspend') && !can('users.delete') ? <Notice>Your role has no repair tools.</Notice> : null}
+        {!tools && !can('users.suspend') && !can('users.reset') && !can('users.delete') ? <Notice>Your role has no repair tools.</Notice> : null}
       </div>
 
       <AdminSheet open={notify} title="Send a notification" onClose={() => setNotify(false)}>

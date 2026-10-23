@@ -11,6 +11,9 @@ import {
   readSyncCursor,
   writeSyncCursor,
   clearSyncCursors,
+  decideReset,
+  readResetSeen,
+  writeResetSeen,
   flushDiff,
   snapshot,
   emptySnapshot,
@@ -441,6 +444,17 @@ async function runFullSync(
   try {
     const delta = await pullDelta(supabase, since)
     if (!delta) return
+    if (delta.profile) {
+      const at = delta.profile.extras.dataResetAt ?? null
+      const verdict = decideReset(readResetSeen(userId), at)
+      if (verdict !== 'none') writeResetSeen(userId, at)
+      if (verdict === 'wipe') {
+        // The account was reset elsewhere: our copy is stale, and merging it would bring the erased data back.
+        useFinanceStore.getState().reset()
+        clearSyncCursors()
+        return runFullSync(supabase, userId)
+      }
+    }
     // Re-snapshot right before the merge so edits made during the round-trip aren't clobbered.
     const merged = applyDelta(snapshot(useFinanceStore.getState()), delta)
     applyMerged(merged, userId)

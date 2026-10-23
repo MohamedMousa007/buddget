@@ -2170,6 +2170,7 @@ export type Database = {
       profiles: {
         Row: {
           welcome_email_sent_at: string | null
+          data_reset_at: string | null
           active_budget_plan_id: string | null
           active_shared_budget_id: string | null
           avatar_emoji: string | null
@@ -2203,6 +2204,7 @@ export type Database = {
         }
         Insert: {
           welcome_email_sent_at?: string | null
+          data_reset_at?: string | null
           active_budget_plan_id?: string | null
           active_shared_budget_id?: string | null
           avatar_emoji?: string | null
@@ -2236,6 +2238,7 @@ export type Database = {
         }
         Update: {
           welcome_email_sent_at?: string | null
+          data_reset_at?: string | null
           active_budget_plan_id?: string | null
           active_shared_budget_id?: string | null
           avatar_emoji?: string | null

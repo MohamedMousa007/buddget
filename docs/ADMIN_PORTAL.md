@@ -13,7 +13,7 @@ Four layers, all enforced on the server in `src/lib/server/admin/guard.ts`:
    - **Password + emailed code** (switch off): opaque 12h session (60 min idle), stored hashed in `admin_sessions`, bound to the account. Web: `HttpOnly; SameSite=Strict` cookie. Native: token in `sessionStorage` sent as `X-Admin-Session`.
    - **Biometrics** (native, enrolled device): 4h session.
    All mutations also need `X-Requested-With: buddget-admin`.
-4. **Permission** for the specific action. Dangerous actions (delete user, role/permission changes, resetting or removing staff) additionally ask for a **step-up**: a fresh emailed code or the admin password (`useStepUp` / `stepUp.ts`), in SSO mode too. Failed step-ups count towards the same lockout as unlocking.
+4. **Permission** for the specific action. Dangerous actions (delete user, reset a user's account, role/permission changes, resetting or removing staff) additionally ask for a **step-up**: a fresh emailed code or the admin password (`useStepUp` / `stepUp.ts`), in SSO mode too. Failed step-ups count towards the same lockout as unlocking.
 
 **The admin password is the portal's own**; the Buddget account password is never asked for or checked. **The second factor is a 6-digit code emailed to the account** with Supabase `signInWithOtp({ shouldCreateUser: false })` and checked with `verifyOtp({ type: 'email' })` through a non-persisting anon client (`emailCode.ts`), exactly like the app's email sign-in. Codes are single-use (Supabase consumes them) and bound to the account. The authenticator app and recovery codes are gone; the old `totp_*` and `recovery_hashes` columns on `admin_credentials` are **unused** (kept, not dropped) and `admin_sessions.method` still allows the retired `password_totp` / `recovery` values for old rows.
 
@@ -25,7 +25,11 @@ Details: scrypt password hashes; 5 failed unlocks or step-ups lock the account 1
 
 **Biometric unlock (iOS/Android apps).** Enrolled from an already-unlocked session (`/api/admin/auth/biometric/device`); the device keeps a secret behind the OS biometric prompt and the server stores only its hash. It unlocks only for the same signed-in account and falls back to password + emailed code. It is offered on the unlock screen (relevant when SSO is off) and enrolled from My security.
 
-**Owner.** `m.mousaofficial@gmail.com` is the owner with the wildcard permission. The `admin_guard_owner` trigger makes that row immutable (no role change, suspension, deletion or second owner) even for the service role; `admin_roles.owner` is likewise locked and system roles cannot be deleted. Only someone with direct database access can drop those triggers. `users.delete` is owner-only whatever a role says. Everything privileged is written to the append-only `admin_audit_log`.
+**Owner.** `m.mousaofficial@gmail.com` is the owner with the wildcard permission. The `admin_guard_owner` trigger makes that row immutable (no role change, suspension, deletion or second owner) even for the service role; `admin_roles.owner` is likewise locked and system roles cannot be deleted. Only someone with direct database access can drop those triggers. `users.delete` is owner-only whatever a role says.
+
+**Resetting a user's account** (`users.reset`, held by the `admin` role and the owner; step-up required; never on yourself or staff at or above your level) erases all of the user's data and blanks what their profile learned from it (household, rent, budget answers, active plan), then stamps `profiles.data_reset_at`. Their sign-in, plan and membership stay. Every device of that account compares the stamp with the last one it honoured (`src/lib/supabase/remote/resetEpoch.ts`) and drops its local copy on its next sync instead of pushing the erased data back; a device that never recorded a stamp adopts it without wiping. The app's own *Start fresh* stamps it too.
+
+**Staff and their app account.** The portal sign-in *is* the Buddgy sign-in, and `admin_staff`, `admin_credentials`, `admin_sessions` and the admin biometric devices cascade from `auth.users`. So when staff delete their own app account (Settings, self-service), the app account is emptied the same way (data, profile answers, SMS pairing, push tokens) but the sign-in and every admin record are left untouched (`deleteUserCompletely(..., { keepStaffAccess: true })`). Removing a staff member's whole account stays a portal action. Everything privileged is written to the append-only `admin_audit_log`.
 
 ## Roles and permissions
 
@@ -54,7 +58,7 @@ No new variable is required. Optional: `NEXT_PUBLIC_ADMIN_HOST` (default `admin.
 
 ## Database
 
-Migrations `0123_admin_portal_core`, `0124_admin_support_monetization`, `0125_admin_analytics_functions`, `0130_admin_sso_email_codes` (adds `sso_enabled` and `setup_completed_at`, backfilled from `totp_confirmed_at`; allows the `password_email` session method). All tables are service-role only (RLS on, no policies, grants revoked). Analytics come from `admin_*` SQL functions callable only by `service_role`.
+Migrations `0158_user_reset` (adds `profiles.data_reset_at` and grants `users.reset` to `admin`), `0123_admin_portal_core`, `0124_admin_support_monetization`, `0125_admin_analytics_functions`, `0130_admin_sso_email_codes` (adds `sso_enabled` and `setup_completed_at`, backfilled from `totp_confirmed_at`; allows the `password_email` session method). All tables are service-role only (RLS on, no policies, grants revoked). Analytics come from `admin_*` SQL functions callable only by `service_role`.
 
 ## QA and hardening notes
 - Biometric unlocks last 4h (password + code: 12h; SSO: as long as the app sign-in). In production the session cookie is `__Host-bdg_admin` (host-only, so each host has its own).

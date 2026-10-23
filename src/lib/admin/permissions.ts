@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   'users.suspend': 'Suspend or restore user accounts',
   'users.logs': 'Read a user’s activity, SMS and device logs',
   'users.tools': 'Run repair tools on a user (tokens, push, sign-out)',
+  'users.reset': 'Reset a user’s account: erase all their data and start fresh',
   'users.delete': 'Permanently delete a user',
   'sms.view': 'See the SMS pipeline, tracked SMS and the error queue',
   'sms.manage': 'Manage SMS templates and promotion rules',
