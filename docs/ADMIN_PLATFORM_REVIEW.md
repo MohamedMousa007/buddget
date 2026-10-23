@@ -41,6 +41,7 @@ The advisor also reports about 40 "anonymous access policies" (lint 0012). Check
 
 - `GET /api/health` (shallow: up, version, build) and `GET /api/health/deep` (one cheap DB read and one cache read, rate limited, no secrets).
 - `users.financial` permission (granted to `admin`; the owner holds everything). Without it a staff member never sees an SMS body. With it, bodies are still masked in lists; revealing one needs a reason (min 8 characters), is rate limited, and writes `pii.sms.reveal` to the audit log with the log id and reason. "Create ticket" no longer copies the body unless the actor holds the permission.
+- Break-glass grants (Phase 1): table `admin_access_grants`, SQL checks `admin_has_grant` and `admin_user_financial_snapshot` (migration 0164, applied), `POST/GET /api/admin/users/[id]/financial` (request, approve, extend, revoke, read), a *Financial* tab on User 360, audit rows `pii.financial.*`, and a notification line in the user's own feed on each read.
 - Migration `0162_staff_financial_permission.sql` (applied: grants the new permission to `admin`) and `0163_policies_authenticated_only.sql` (written, not applied).
 
 ## 5. Owner checklist (cannot be done from code)

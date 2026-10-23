@@ -9,6 +9,7 @@ import { SelectField } from '@/components/ui/SelectField'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FEATURE_CATALOG, LIMIT_CATALOG, LIMIT_KEYS, type LimitKey } from '@/lib/entitlements/limits'
 import { adminNavigate } from '../adminRouter'
+import FinancialTab from './FinancialTab'
 import { useAdminQuery } from '../adminClient'
 import { ago, dateTime, num, personLabel } from '../format'
 import { useAdminAction } from '../useAdminAction'
@@ -39,7 +40,7 @@ interface TimelineEvent { at: string; source: string; title: string; detail?: st
 
 const TABS = [
   { value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity & logs' }, { value: 'billing', label: 'Plan & limits' },
-  { value: 'tools', label: 'Tools' }, { value: 'notes', label: 'Notes' },
+  { value: 'financial', label: 'Financial' }, { value: 'tools', label: 'Tools' }, { value: 'notes', label: 'Notes' },
 ] as const
 type Tab = (typeof TABS)[number]['value']
 
@@ -54,7 +55,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
 
   const banned = !!data.auth.banned_until && new Date(data.auth.banned_until) > new Date()
   const who = personLabel({ name: data.profile?.name, email: data.auth.email, id })
-  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
+  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'financial' ? can('users.financial') || can('users.pii') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
 
   return (
     <>
@@ -78,6 +79,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
       {tab === 'overview' ? <OverviewTab data={data} /> : null}
       {tab === 'activity' ? <ActivityTab id={id} /> : null}
       {tab === 'billing' ? <BillingTab id={id} data={data} can={can} onChange={refresh} /> : null}
+      {tab === 'financial' ? <FinancialTab id={id} /> : null}
       {tab === 'tools' ? <ToolsTab id={id} data={data} banned={banned} can={can} onChange={refresh} /> : null}
       {tab === 'notes' ? <NotesTab id={id} data={data} can={can} onChange={refresh} /> : null}
     </>

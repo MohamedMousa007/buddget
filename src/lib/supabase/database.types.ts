@@ -280,6 +280,51 @@ export type Database = {
         Update: { id?: string; user_id?: string; payment_method_id?: string; balance?: number; currency?: string | null; reported_at?: string; source?: string; sms_parse_log_id?: string | null; created_at?: string }
         Relationships: []
       }
+      admin_access_grants: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          expires_at: string | null
+          extended: boolean
+          id: string
+          reason: string
+          requested_at: string
+          revoked_at: string | null
+          scope: string
+          staff_id: string
+          target_user_id: string
+          ticket_number: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          expires_at?: string | null
+          extended?: boolean
+          id?: string
+          reason: string
+          requested_at?: string
+          revoked_at?: string | null
+          scope: string
+          staff_id: string
+          target_user_id: string
+          ticket_number?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          expires_at?: string | null
+          extended?: boolean
+          id?: string
+          reason?: string
+          requested_at?: string
+          revoked_at?: string | null
+          scope?: string
+          staff_id?: string
+          target_user_id?: string
+          ticket_number?: number | null
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -3815,6 +3860,8 @@ export type Database = {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
       }
+      admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }
+      admin_user_financial_snapshot: { Args: { p_staff: string; p_user: string }; Returns: Json }
       admin_onboarding_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_signup_series: {
