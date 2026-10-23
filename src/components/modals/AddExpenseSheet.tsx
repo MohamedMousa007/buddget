@@ -32,6 +32,7 @@ export function AddExpenseSheet() {
         setPaymentMethodId={sheet.setPaymentMethodId}
         notes={sheet.notes}
         setNotes={sheet.setNotes}
+        exclusion={sheet.exclusion}
         submitError={sheet.submitError}
         paymentMethods={sheet.paymentMethods}
         creditCardOutstandingHint={sheet.creditCardOutstandingHint}

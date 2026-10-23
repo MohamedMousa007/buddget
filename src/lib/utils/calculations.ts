@@ -24,7 +24,7 @@ import type {
   SavingsTransaction,
 } from '@/lib/store/types'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency, tryConvertCurrency } from './currency'
 import { paydayDatesForWindow } from './paydaySchedule'
 
@@ -366,7 +366,7 @@ export function calculateTotalSpentExcludingSavings(
   rates: Record<string, number>
 ): number {
   return expenses
-    .filter((e) => !isNonSpendCategory(e.category))
+    .filter((e) => !isNonSpendExpense(e))
     .reduce((total, e) => total + expenseAmountInBase(e, baseCurrency, rates), 0)
 }
 
@@ -377,7 +377,7 @@ export function calculateCategorySpending(
 ): Record<string, number> {
   const spending: Record<string, number> = {}
   for (const expense of expenses) {
-    if (isNonSpendCategory(expense.category)) continue
+    if (isNonSpendExpense(expense)) continue
     spending[expense.category] =
       (spending[expense.category] || 0) + expenseAmountInBase(expense, baseCurrency, rates)
   }
@@ -635,7 +635,7 @@ export function calculateCashOutflow(params: {
   for (const e of monthExpenses) {
     // Non-spend rows are money movement; the settlement ones are counted from
     // debtPayments below, which is the only source that sees ALL payoffs.
-    if (isNonSpendCategory(e.category)) continue
+    if (isNonSpendExpense(e)) continue
     if (e.paymentMethodId && deferredPmIds.has(e.paymentMethodId)) continue
     if (e.linkedDebtId && installmentDebtIds.has(e.linkedDebtId)) continue
     outflow += expenseAmountInBase(e, baseCurrency, exchangeRates)
@@ -904,7 +904,7 @@ export function getPaymentMethodBreakdown(
   const breakdown: Record<string, { count: number; total: number }> = {}
 
   for (const expense of expenses) {
-    if (isNonSpendCategory(expense.category)) continue
+    if (isNonSpendExpense(expense)) continue
     const method = paymentMethods.find((m) => m.id === expense.paymentMethodId)
     const name = method?.name || 'Unknown'
     if (!breakdown[name]) breakdown[name] = { count: 0, total: 0 }

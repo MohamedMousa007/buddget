@@ -66,6 +66,8 @@ export interface PaymentMethod {
   closedAt?: string
   /** Compare SMS balance reports against the ledger. Default on. */
   trackSms?: boolean
+  /** Not the user's money (a card someone else uses): its spending and balance stay out of totals. The ledger stays true. */
+  excluded?: boolean
   id: string
   name: string
   type: PaymentMethodType
@@ -170,6 +172,9 @@ export interface IncomeEvent {
   updatedAt: string
 }
 
+/** `method` = its payment method is excluded; `manual` = the user left this one out; `for_someone` = paid on someone's behalf. */
+export type SpendExclusion = 'method' | 'manual' | 'for_someone'
+
 export interface Expense {
   /** Exact instant (ISO). `date` stays the day key; readers fall back to date@12:00 when absent. */
   occurredAt?: string
@@ -205,6 +210,11 @@ export interface Expense {
   refundedAt?: string
   /** `refunded` = money returned; `declined` = charge blocked/reversed. Drives the card badge. */
   refundKind?: 'refunded' | 'declined'
+  /** Why this expense is left out of spending (it is still logged and still moves the account balance). */
+  spendExclusion?: SpendExclusion
+  /** For `for_someone`: who owes this back, and when they paid it. */
+  owedBy?: string
+  owedSettledAt?: string
   createdAt: string
   updatedAt: string
 }

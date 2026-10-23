@@ -75,6 +75,7 @@ export function useReportsPage() {
     }
 
     const inRange = expenses.filter((e) => {
+      if (e.spendExclusion) return false
       const date = parseISO(e.date)
       return isWithinInterval(date, { start, end })
     })

@@ -18,6 +18,7 @@ export function paymentMethodToRow(pm: PaymentMethod, userId: string): PaymentMe
     opening_at: pm.openingAt ?? null,
     closed_at: pm.closedAt ?? null,
     track_sms: pm.trackSms ?? true,
+    excluded: pm.excluded ?? false,
   }
 }
 
@@ -35,6 +36,7 @@ export function paymentMethodFromRow(row: PaymentMethodRow): PaymentMethod {
     openingAt: row.opening_at ?? undefined,
     closedAt: row.closed_at ?? undefined,
     trackSms: row.track_sms,
+    excluded: row.excluded || undefined,
     createdAt: row.created_at ?? undefined,
     updatedAt: row.updated_at ?? undefined,
   }

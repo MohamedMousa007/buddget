@@ -1,3 +1,4 @@
+import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
 import { holdsBalance, hasAccountHistory } from '@/lib/accounts/kinds'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
@@ -223,6 +224,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state.expenses,
             {
               ...expense,
+              spendExclusion: expense.spendExclusion ?? (isMethodExcluded(get().paymentMethods, expense.paymentMethodId) ? ('method' as const) : undefined),
               // Today's entries carry the exact time; back-dated ones stay day-level (read at noon).
               occurredAt: expense.occurredAt ?? (expense.date === localTodayISO() ? new Date().toISOString() : undefined),
               amountInBaseCurrency,
@@ -519,15 +521,19 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       updatePaymentMethod: (id, updates) =>
-        set((state) => ({
-          paymentMethods: state.paymentMethods.map((m) =>
+        set((state) => {
+          const now = new Date().toISOString()
+          const paymentMethods = state.paymentMethods.map((m) =>
             m.id === id
-              ? { ...m, ...updates, updatedAt: new Date().toISOString() }
+              ? { ...m, ...updates, updatedAt: now }
               : updates.isDefault && m.isDefault
-                ? { ...m, isDefault: false, updatedAt: new Date().toISOString() } // demotion is an edit; stamp it or it tie-loses
+                ? { ...m, isDefault: false, updatedAt: now } // demotion is an edit; stamp it or it tie-loses
                 : m
-          ),
-        })),
+          )
+          return updates.excluded === undefined
+            ? { paymentMethods }
+            : { paymentMethods, expenses: applyMethodExclusion(state.expenses, paymentMethods, now) }
+        }),
 
       deletePaymentMethod: (id) =>
         set((state) => {

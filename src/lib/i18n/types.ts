@@ -163,6 +163,26 @@ export interface Dictionary {
     pressBackAgainToExit: string
   }
 
+  exclusion: {
+    accountTitle: string
+    accountHint: string
+    expenseTitle: string
+    expenseHint: string
+    forSomeone: string
+    forSomeoneHint: string
+    owedByLabel: string
+    owedByPlaceholder: string
+    badgeOwed: (name: string) => string
+    badgeRepaid: string
+    markRepaid: string
+    repaidTitle: string
+    repaidIntoLabel: string
+    linkPayment: string
+    noLink: string
+    repaidDone: string
+    reasonMethod: string
+    reasonManual: string
+  }
   accountsPage: {
     title: string
     availableNow: string

@@ -14,7 +14,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { resolveRange, type ResolvedRange } from '@/lib/expenses/dateRange'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
@@ -152,7 +152,7 @@ export function useFlowLedger() {
     function expenseItem(e: Expense, date: string): FlowItem {
       const colors = categoryChipColors(e.category)
       const gross = expenseAmountInBase(e, base, rates, true)
-      const nonSpend = isNonSpendCategory(e.category)
+      const nonSpend = isNonSpendExpense(e)
       const dim = Boolean(e.refundKind)
       const statusDate = shortDate(e.refundedAt ?? e.date)
       const pmLabel = methodLabel(pmById.get(e.paymentMethodId)) ?? t.common.unknown
@@ -183,6 +183,8 @@ export function useFlowLedger() {
                 <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgeRefunded}</Badge>
               ) : e.refundKind === 'declined' ? (
                 <Badge variant="muted" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
+              ) : e.spendExclusion === 'for_someone' ? (
+                <Badge variant="muted" size="xs" className="shrink-0">{e.owedSettledAt ? t.exclusion.badgeRepaid : t.exclusion.badgeOwed(e.owedBy ?? t.exclusion.forSomeone)}</Badge>
               ) : nonSpend ? (
                 <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
               ) : e.linkedSubscriptionId ? (

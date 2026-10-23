@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Calendar, X, Plus, Info, ArrowLeftRight } from 'lucide-react'
-import type { Currency, PaymentMethod } from '@/lib/store/types'
+import type { Currency, PaymentMethod, SpendExclusion } from '@/lib/store/types'
+import { ExcludeSwitchRow } from '@/components/features/spending/ExcludeSwitchRow'
 import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { useT, useLocale } from '@/lib/i18n'
@@ -50,6 +51,8 @@ export interface ExpenseSheetFormProps {
   setPaymentMethodId: (id: string) => void
   notes: string
   setNotes: (v: string) => void
+  /** Leave this out of spending, or mark it as paid for someone who owes it back. */
+  exclusion: { value: SpendExclusion | undefined; setValue: (v: SpendExclusion | undefined) => void; owedBy: string; setOwedBy: (v: string) => void }
   submitError?: string
   paymentMethods: PaymentMethod[]
   creditCardOutstandingHint: { cardName: string; amountLabel: string } | null
@@ -62,6 +65,9 @@ export interface ExpenseSheetFormProps {
   /** Edit-only: set when this expense was reversed — shows a charged/refunded line. */
   refundedAt?: string
   refundKind?: 'refunded' | 'declined'
+  /** Edit-only: someone repaid what was paid for them. */
+  onMarkRepaid?: () => void
+  owedSettled?: boolean
   /** Add-only: BNPL "split into installments" controls (shown when the PM is `bnpl`). */
   installment?: {
     isBnplPurchase: boolean
@@ -93,6 +99,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     setPaymentMethodId,
     notes,
     setNotes,
+    exclusion,
     submitError,
     paymentMethods,
     creditCardOutstandingHint,
@@ -103,6 +110,8 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     refundedAt,
     refundKind,
     installment,
+    onMarkRepaid,
+    owedSettled,
   } = props
   const t = useT()
   const { locale } = useLocale()
@@ -430,6 +439,41 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               </Button>
             )}
           </div>
+          {!nonSpendSelected ? (
+            <div className="space-y-2">
+              <ExcludeSwitchRow
+                title={t.exclusion.expenseTitle}
+                hint={t.exclusion.expenseHint}
+                checked={exclusion.value !== undefined}
+                onChange={(v) => exclusion.setValue(v ? 'manual' : undefined)}
+              />
+              {exclusion.value !== undefined ? (
+                <ExcludeSwitchRow
+                  title={t.exclusion.forSomeone}
+                  hint={t.exclusion.forSomeoneHint}
+                  checked={exclusion.value === 'for_someone'}
+                  onChange={(v) => exclusion.setValue(v ? 'for_someone' : 'manual')}
+                />
+              ) : null}
+              {exclusion.value === 'for_someone' && onMarkRepaid ? (
+                owedSettled ? (
+                  <p className="text-xs font-medium text-[var(--color-brand-green)]">{t.exclusion.badgeRepaid}</p>
+                ) : (
+                  <Button variant="outline" size="touch" onClick={onMarkRepaid}>{t.exclusion.markRepaid}</Button>
+                )
+              ) : null}
+              {exclusion.value === 'for_someone' ? (
+                <Input
+                  value={exclusion.owedBy}
+                  onChange={(e) => exclusion.setOwedBy(e.target.value)}
+                  placeholder={t.exclusion.owedByPlaceholder}
+                  aria-label={t.exclusion.owedByLabel}
+                  size="brand"
+                  maxLength={60}
+                />
+              ) : null}
+            </div>
+          ) : null}
           <div className="h-0.5" />
         </div>
 

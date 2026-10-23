@@ -19,12 +19,15 @@ interface AccountRowProps {
 
 /** One account: mark, name, balance and its cards. Only exceptions get colour. */
 export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: AccountRowProps) {
-  const t = useT().accountsPage
+  const dict = useT()
+  const t = dict.accountsPage
   const { method, balance, cards } = account
   const cur = String(method.currency)
   const money = balance ? splitMoney(balance.balance, cur) : null
   const hasGap = gap != null && gap !== 0
-  const sub = hasGap
+  const sub = method.excluded
+    ? dict.exclusion.reasonMethod
+    : hasGap
     ? t.missingFindIt(splitMoney(Math.abs(gap), cur).int)
     : balance
       ? method.last4 ? `•• ${method.last4}` : method.type === 'wallet' ? t.typeWallet : ''

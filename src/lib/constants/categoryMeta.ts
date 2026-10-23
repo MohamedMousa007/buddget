@@ -32,6 +32,15 @@ export function isNonSpendCategory(category: string | null | undefined): boolean
 }
 
 /**
+ * True when an expense must stay out of spending totals, budgets and charts: a money-movement category, or one the
+ * user (or its payment method) left out. Excluded expenses are still logged and still move the account balance.
+ * Use this for spend purposes wherever an expense row is at hand.
+ */
+export function isNonSpendExpense(e: { category: string | null | undefined; spendExclusion?: string | null }): boolean {
+  return isNonSpendCategory(e.category) || Boolean(e.spendExclusion)
+}
+
+/**
  * Maps a legacy budget bucket → the newer spend categories that should roll up
  * into it for budget plans that predate those categories. Used by
  * `categorySpendingForPlanRows` so e.g. spend categorised as `Groceries` still

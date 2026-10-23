@@ -9,7 +9,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import type { Currency, PaymentMethod } from '@/lib/store/types'
+import type { Currency, PaymentMethod, SpendExclusion } from '@/lib/store/types'
 import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodForExpense'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -61,6 +61,8 @@ export function useAddExpenseSheet() {
     paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
   )
   const [notes, setNotes] = useState('')
+  const [spendExclusion, setSpendExclusion] = useState<SpendExclusion | undefined>(undefined)
+  const [owedBy, setOwedBy] = useState('')
   const [submitError, setSubmitError] = useState('')
   const skipNextDefaultCurrencySync = useRef(false)
 
@@ -124,6 +126,8 @@ export function useAddExpenseSheet() {
     setSubcategory(undefined)
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
     setNotes('')
+    setSpendExclusion(undefined)
+    setOwedBy('')
     setSubmitError('')
     setSplitInstallments(false)
     setInstallmentCount(4)
@@ -199,6 +203,8 @@ export function useAddExpenseSheet() {
       isRecurring: false,
       notes: notes || undefined,
       linkedDebtId,
+      spendExclusion,
+      owedBy: spendExclusion === 'for_someone' ? owedBy.trim() || undefined : undefined,
     })
 
     showToast(t.common.toastExpenseLogged)
@@ -214,6 +220,8 @@ export function useAddExpenseSheet() {
     date,
     description,
     notes,
+    spendExclusion,
+    owedBy,
     paymentMethodId,
     resetForm,
     setActiveModal,
@@ -247,6 +255,7 @@ export function useAddExpenseSheet() {
     setPaymentMethodId,
     notes,
     setNotes,
+    exclusion: { value: spendExclusion, setValue: setSpendExclusion, owedBy, setOwedBy },
     submitError,
     setSubmitError,
     paymentMethods,

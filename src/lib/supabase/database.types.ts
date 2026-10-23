@@ -1432,6 +1432,9 @@ export type Database = {
       }
       expenses: {
         Row: {
+          spend_exclusion: string | null
+          owed_by: string | null
+          owed_settled_at: string | null
           occurred_at: string | null
           to_payment_method_id: string | null
           amount: number
@@ -1457,6 +1460,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          spend_exclusion?: string | null
+          owed_by?: string | null
+          owed_settled_at?: string | null
           occurred_at?: string | null
           to_payment_method_id?: string | null
           amount: number
@@ -1482,6 +1488,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          spend_exclusion?: string | null
+          owed_by?: string | null
+          owed_settled_at?: string | null
           occurred_at?: string | null
           to_payment_method_id?: string | null
           amount?: number
@@ -2154,6 +2163,7 @@ export type Database = {
       }
       payment_methods: {
         Row: {
+          excluded: boolean
           parent_id: string | null
           opening_balance: number | null
           opening_at: string | null
@@ -2173,6 +2183,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          excluded?: boolean
           parent_id?: string | null
           opening_balance?: number | null
           opening_at?: string | null
@@ -2192,6 +2203,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          excluded?: boolean
           parent_id?: string | null
           opening_balance?: number | null
           opening_at?: string | null

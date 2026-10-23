@@ -14,7 +14,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useExpenseFilterStore, amountIsFiltered } from '@/lib/store/useExpenseFilterStore'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { Expense } from '@/lib/store/types'
@@ -83,7 +83,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
       key,
       rel: key === todayKey ? t.common.today : key === yesterdayKey ? t.common.yesterday : null,
       abs: format(parseISO(key), 'MMM d'),
-      total: items.reduce((sum, e) => isNonSpendCategory(e.category) ? sum : sum + expenseAmountInBase(e, base, exchangeRates), 0),
+      total: items.reduce((sum, e) => isNonSpendExpense(e) ? sum : sum + expenseAmountInBase(e, base, exchangeRates), 0),
       items,
     }))
   }, [expenses, base, exchangeRates, t])
@@ -144,7 +144,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                 ? formatCurrency(convertCurrency(baseVal, base, secondary, exchangeRates), secondary)
                 : null
               const statusDate = format(parseISO(e.refundedAt ?? e.date), 'MMM d')
-              const nonSpend = isNonSpendCategory(e.category)
+              const nonSpend = isNonSpendExpense(e)
               return (
                 <div key={e.id}>
                   {idx > 0 ? <div className="ml-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
@@ -168,6 +168,8 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                           <Badge variant="negative" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
                         ) : e.refundKind === 'refunded' ? (
                           <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgeRefunded}</Badge>
+                        ) : e.spendExclusion === 'for_someone' ? (
+                          <Badge variant="muted" size="xs" className="shrink-0">{e.owedSettledAt ? t.exclusion.badgeRepaid : t.exclusion.badgeOwed(e.owedBy ?? t.exclusion.forSomeone)}</Badge>
                         ) : nonSpend ? (
                           <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
                         ) : null
