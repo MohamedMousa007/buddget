@@ -47,7 +47,12 @@ The advisor also reports about 40 "anonymous access policies" (lint 0012). Check
 - Roles: `product`, `data_ai`, `compliance` added (migration 0168, applied, nobody assigned). They use today's permissions only; AI, analytics-users and DSR permissions are added when those features ship. The permission-matrix editor already existed in Team & roles.
 - AI cost (Phase 4, first slice): `ai_price_book`, `fx_rates` and `ai_usage_events.cost_usd_micro` (migration 0169, applied). Cost is computed inside `ai_quota_settle` from the current price book (one lookup on a table of a few rows; no extra round trip) and 42 past events were backfilled. Prices are seeded from public list prices and need confirming against the provider invoice. Voice transcription cost stays 0 until audio seconds are metered. Portal: *AI cost* page behind the new `ai.cost.view` permission (admin, finance, engineer, data_ai), migration 0170. Not yet: credits ledger, EGP conversion (`fx_rates` is empty), spend guardrails, margin pages, price-book editing.
 - AI spend guardrail (migration 0171, applied): `ai_spend_today()` plus `src/lib/server/ai/spendGuard.ts`. OFF until the owner adds a platform setting `ai_spend_guard` = `{"dailyCapUsd": N}`. At 100% of the UTC day's cap, chat, voice, budget and goals are refused (layer `feature_disabled`); SMS and receipt capture keep working. Read once a minute per server instance, fail-open. The 80% model degrade and an outbound alert are not built (a warning is logged and shown on the AI cost page).
-- Not yet: Linear webhook (status sync back), macros, feedback board votes, integration settings page; `/api/feedback` is kept until the new path is verified on device.
+- Access review: a third tab in Team & roles lists each teammate with flags (no 2FA, no sign-in for 60 days, extra permissions, suspended with live sessions). Rules in `src/lib/admin/accessReview.ts`.
+- Data requests: `dsr.manage` (admin, support_lead, compliance; migration 0172) and `POST /api/admin/users/[id]/export`: reason + step-up, rate limited 5/hour, audited as `dsr.export`, returns every user-data table plus the profile as one JSON file; button on User 360. Erasure is the existing reset/delete.
+- Price book editing: `ai.cost.manage` (admin, finance; migration 0173) and `POST /api/admin/ai/cost`; closes the current row and opens a new one so old costs stay explainable.
+- Linear webhook: `POST /api/webhooks/linear` (HMAC-verified, 60 s freshness). Completed issue resolves the ticket and notifies the user; started/backlog reopens it. Needs `LINEAR_WEBHOOK_SECRET` (503 until set) and the webhook registered in Linear pointing at `/api/webhooks/linear`.
+- `/api/feedback` is deliberately kept: builds already installed on phones still post to it, and removing it would break their feedback button. Remove it once the minimum app version passes the build that uses `/api/support/submit`.
+- Not yet: macros, feedback board votes, integration settings page, `portal_reader`/`portal_actor` DB roles and `pgaudit` (both are database-level changes that need your sign-off).
 
 ## 5. Owner checklist (cannot be done from code)
 
@@ -58,3 +63,4 @@ The advisor also reports about 40 "anonymous access policies" (lint 0012). Check
 5. Turn on leaked-password protection (Supabase Auth settings).
 6. Review and approve `0163_policies_authenticated_only.sql` before it is applied, and confirm anonymous sign-ins are off.
 7. Add `LINEAR_API_KEY` (and optionally `LINEAR_TEAM_ID`, `LINEAR_LABEL_BUG`, `LINEAR_LABEL_FEATURE`) to the Vercel environment so queued bug reports reach Linear.
+8. Create the Linear webhook (URL `/api/webhooks/linear`, resource: Issues) and add its signing secret as `LINEAR_WEBHOOK_SECRET` in Vercel.

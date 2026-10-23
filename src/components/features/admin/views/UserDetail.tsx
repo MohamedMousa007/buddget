@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Bell, Fingerprint, Mail, MailCheck, RotateCcw, ShieldAlert, Smartphone, Trash2 } from 'lucide-react'
+import { ArrowLeft, Bell, Download, Fingerprint, Mail, MailCheck, RotateCcw, ShieldAlert, Smartphone, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +10,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FEATURE_CATALOG, LIMIT_CATALOG, LIMIT_KEYS, type LimitKey } from '@/lib/entitlements/limits'
 import { adminNavigate } from '../adminRouter'
 import FinancialTab from './FinancialTab'
-import { useAdminQuery } from '../adminClient'
+import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime, num, personLabel } from '../format'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
@@ -382,6 +382,28 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
             ) : (
               <Button variant="destructive" size="touch" loading={busy === 'suspend'} onClick={() => void run('suspend', { op: 'suspend' }, { success: 'Account suspended', confirm: { title: 'Suspend this account?', body: 'They will be signed out and blocked until you restore them.', destructive: true, confirmLabel: 'Suspend' } })}>Suspend account</Button>
             )}
+          </Panel>
+        ) : null}
+
+        {can('dsr.manage') ? (
+          <Panel title="Data request" description="Download everything we hold about this person as one file, for an access request. It includes financial content and is logged.">
+            <Button variant="outline" size="touch" onClick={async () => {
+              const reason = window.prompt('Why are you exporting this data? (ticket or request reference)')?.trim()
+              if (!reason) return
+              const proof = await stepUp('Exporting a person’s data is logged. Confirm it’s you.')
+              if (!proof) return
+              try {
+                const file = await adminPost<object>(`/api/admin/users/${id}/export`, { reason, ...proof })
+                const url = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }))
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `buddget-data-${id.slice(0, 8)}.json`
+                a.click()
+                URL.revokeObjectURL(url)
+              } catch (e) {
+                window.alert(errorMessage(e))
+              }
+            }}><Download />Export their data</Button>
           </Panel>
         ) : null}
 

@@ -10,6 +10,7 @@ import { SelectField } from '@/components/ui/SelectField'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { reviewFlags } from '@/lib/admin/accessReview'
 import { useAdminQuery } from '../adminClient'
 import { ago } from '../format'
 import { useAdminAction } from '../useAdminAction'
@@ -33,7 +34,7 @@ const groupOf = (perm: string) => perm.split('.')[0]!
 
 export default function StaffView({ status }: { status: AdminStatus }) {
   const { data, error, refresh } = useAdminQuery<StaffData>('/api/admin/staff')
-  const [tab, setTab] = useState<'team' | 'roles'>('team')
+  const [tab, setTab] = useState<'team' | 'roles' | 'review'>('team')
   const [inviting, setInviting] = useState(false)
   const [editing, setEditing] = useState<Member | null>(null)
   const [roleDraft, setRoleDraft] = useState<Role | null>(null)
@@ -61,12 +62,14 @@ export default function StaffView({ status }: { status: AdminStatus }) {
   return (
     <>
       <PageHeader title="Team & roles" description="Who can see and do what. Every change here is audited." actions={canManage ? <Button size="touch" onClick={() => setInviting(true)}><Plus />Add teammate</Button> : undefined} />
-      <div className="mb-5"><SegmentedControl ariaLabel="Team section" fill={false} value={tab} onChange={setTab} options={[{ value: 'team', label: 'Team', count: data.staff.length }, { value: 'roles', label: 'Roles & permissions', count: data.roles.length }]} /></div>
+      <div className="mb-5"><SegmentedControl ariaLabel="Team section" fill={false} value={tab} onChange={setTab} options={[{ value: 'team', label: 'Team', count: data.staff.length }, { value: 'roles', label: 'Roles & permissions', count: data.roles.length }, { value: 'review', label: 'Access review' }]} /></div>
 
       {tab === 'team' ? (
         <Panel flush>
           <DataTable rows={data.staff} columns={columns} rowKey={(m) => m.id} onRowClick={(m) => setEditing(m)} />
         </Panel>
+      ) : tab === 'review' ? (
+        <ReviewTab data={data} roleName={roleName} onOpen={setEditing} />
       ) : (
         <RolesTab data={data} canManage={canManage} onEdit={setRoleDraft} onCreate={() => setRoleDraft({ key: '', name: '', description: '', rank: data.actorRank + 40, permissions: [], is_system: false })} />
       )}
@@ -75,6 +78,27 @@ export default function StaffView({ status }: { status: AdminStatus }) {
       {editing ? <MemberSheet key={editing.id} member={editing} data={data} canManage={canManage} onClose={() => setEditing(null)} onDone={refresh} /> : null}
       {roleDraft ? <RoleSheet key={roleDraft.key || 'new'} role={roleDraft} data={data} onClose={() => setRoleDraft(null)} onDone={refresh} /> : null}
     </>
+  )
+}
+
+function ReviewTab({ data, roleName, onOpen }: { data: StaffData; roleName: Map<string, string>; onOpen: (m: Member) => void }) {
+  const [now] = useState(() => Date.now())
+  const rows = data.staff.map((m) => ({ m, flags: m.isOwner ? [] : reviewFlags(m, now) })).sort((a, b) => b.flags.length - a.flags.length)
+  const flagged = rows.filter((r) => r.flags.length).length
+  return (
+    <Panel title="Quarterly access review" description={flagged ? `${flagged} of ${rows.length} teammates need a look. Open one to change or remove access.` : 'Nothing needs attention. Confirm each role still matches the job.'} flush>
+      <ul className="divide-y divide-[var(--color-brand-border)]">
+        {rows.map(({ m, flags }) => (
+          <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+            <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]">{m.display_name?.trim() || m.email}</p><p className="text-xs text-[var(--color-brand-text-muted)]">{roleName.get(m.role_key) ?? m.role_key} · last sign-in {ago(m.last_login_at)}</p></div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {flags.length ? flags.map((f) => <Pill key={f} tone="warn">{f}</Pill>) : <Pill tone="good">OK</Pill>}
+              <Button variant="outline" size="touch" onClick={() => onOpen(m)}>Open</Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   )
 }
 

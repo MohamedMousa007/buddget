@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useAdminQuery } from '../adminClient'
+import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { DataTable, type Column } from '../ui/DataTable'
 import { KpiGrid, StatTile } from '../ui/Kpi'
 import { Loading, Notice, PageHeader, Panel } from '../ui/Panel'
@@ -13,8 +13,9 @@ interface Data { spend: { costMicro: number; capUsd: number | null } | null; day
 
 const usd = (micro: number) => `$${(micro / 1e6).toFixed(micro >= 1e6 ? 2 : 4)}`
 
-export default function AiCostView(_props: { status: AdminStatus }) {
-  const { data, error } = useAdminQuery<Data>('/api/admin/ai/cost?days=30')
+export default function AiCostView({ status }: { status: AdminStatus }) {
+  const canEdit = (status.permissions ?? []).some((p) => p === '*' || p === 'ai.cost.manage')
+  const { data, error, refresh } = useAdminQuery<Data>('/api/admin/ai/cost?days=30')
   const byModel = useMemo(() => {
     const m = new Map<string, { model: string; calls: number; cost: number }>()
     for (const r of data?.rows ?? []) {
@@ -25,6 +26,17 @@ export default function AiCostView(_props: { status: AdminStatus }) {
     }
     return [...m.values()].sort((a, b) => b.cost - a.cost)
   }, [data])
+  const edit = async (p: Price) => {
+    const raw = window.prompt(`${p.model}: new prices per million tokens as "in, cached, out"`, `${p.in_usd_per_mtok}, ${p.cached_usd_per_mtok}, ${p.out_usd_per_mtok}`)
+    if (!raw) return
+    const [i, c, o] = raw.split(',').map((x) => Number(x.trim()))
+    try {
+      await adminPost('/api/admin/ai/cost', { model: p.model, in: i, cached: c, out: o })
+      await refresh()
+    } catch (e) {
+      window.alert(errorMessage(e))
+    }
+  }
   if (error && !data) return <Notice tone="negative">{error}</Notice>
   if (!data) return <Loading rows={6} />
 
@@ -60,7 +72,8 @@ export default function AiCostView(_props: { status: AdminStatus }) {
         <Panel title="Price book" description="Per million tokens. Seeded from public list prices: confirm against your provider invoice.">
           <ul className="divide-y divide-[var(--color-brand-border)] text-sm">
             {data.prices.map((p) => (
-              <li key={p.model} className="py-2"><span className="font-medium">{p.model}</span> <span className="text-[var(--color-brand-text-muted)]">in ${p.in_usd_per_mtok} · cached ${p.cached_usd_per_mtok} · out ${p.out_usd_per_mtok}</span></li>
+              <li key={p.model} className="py-2"><span className="font-medium">{p.model}</span> <span className="text-[var(--color-brand-text-muted)]">in ${p.in_usd_per_mtok} · cached ${p.cached_usd_per_mtok} · out ${p.out_usd_per_mtok}</span>
+                {canEdit ? <button type="button" className="ms-2 text-xs text-[var(--color-brand-primary)] underline" onClick={() => { void edit(p) }}>Edit</button> : null}</li>
             ))}
           </ul>
         </Panel>
