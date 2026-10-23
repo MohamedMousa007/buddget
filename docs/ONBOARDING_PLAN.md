@@ -33,7 +33,7 @@ Entry: after sign-in and the existing welcome splash, only for a new account (se
 | 1 | About you | Name (prefilled from the sign-in provider), country, language, currency (derived from country, one-tap override) | `profile.name`, `profile.country`, `settings.language`, `settings.baseCurrency` | "Nice to meet you, Mona." The screen flips to Arabic and RTL the moment she picks it. |
 | 2 | What brings you | Pick up to two: know where my money goes, stop running out before payday, save for something, get out of debt, build a budget | `financial_profile.onboarding.goals`, seeds `priorities` for the budget | "Let's start with that." Later copy and the first card use it. |
 | 3 | Where your money lives | Chips: cash, bank account, wallet, credit card. For each chosen: name (bank catalogue) and balance now, with "check your banking app" help and "I'll add later" | real accounts via the existing account actions (`ensureCashAccount`, opening balance) | Reveal: "You have EGP 18,400 across 3 accounts." This is the first real number. |
-| 4 | Income and payday | Amount, day of month, steady or varies | one recurring income source (existing payday model) | Reveal: "Next payday in 12 days. About EGP 640 a day until then." This is the activation moment. |
+| 4 | Income and payday | Amount, day of month, steady or varies | one recurring income source (existing payday model) | Reveal: "Next payday in 12 days. About EGP 1,530 a day until then." This is the activation moment. |
 | 5 | Make it automatic | Two cards, each with a benefit preview and a "Not now": bank-text capture (Android: permission after the priming screen; iOS: a 15-second preview of the result, then "Set up now, 2 minutes" or "Later"), and reminders (push) | existing SMS and push flows | A sample "this is what a captured transaction looks like" card. Denial leaves a quiet card on Flow, never a nag. |
 | 6 | Your budget | "Want me to build it now? About two minutes." Opens the budget studio already filled from steps 1 to 4 (draft-first), or "Later" | existing studio | Because accounts, income and priorities are known, the studio asks only a few questions. |
 
@@ -56,7 +56,7 @@ Letting people try the app before an account sounds friendly, but here it is the
 Replace the five equal checklist rows with a state that follows what is done, using the existing `EmptyState` and `SetupChecklist` data:
 
 - Journey skipped or just started: one card for the next undone step with a time promise, the rest collapsed under "More to set up" (accounts are now a first-class step).
-- Accounts and income done, no transactions yet: "Your accounts are ready. EGP 640 a day until payday." with two actions: add your first expense, or turn on bank-text capture.
+- Accounts and income done, no transactions yet: "Your accounts are ready. EGP 1,530 a day until payday." with two actions: add your first expense, or turn on bank-text capture.
 - First transaction in: the normal ledger, the checklist shrinks to the header chip.
 
 This is the same content as the journey, so skipping onboarding never leaves a hole.
