@@ -22,13 +22,14 @@ import type { AdminStatus } from '../types'
 interface Ticket {
   id: string; number: number; user_id: string | null; requester_email: string | null; subject: string; category: string
   priority: string; status: string; assignee_id: string | null; source: string; tags: string[]
+  kind: string; severity: string; triage_state: string; linear_issue_url: string | null; sla_first_response_due: string | null
   created_at: string; updated_at: string; first_response_at: string | null; resolved_at: string | null
 }
 interface ListData { tickets: Ticket[]; staff: Array<{ id: string; name: string }>; counts: Record<string, number>; me: string }
 interface Message { id: string; author_type: string; author_label: string | null; body: string; internal: boolean; created_at: string }
 
 const VIEWS = [
-  { value: 'active', label: 'Active' }, { value: 'mine', label: 'Mine' }, { value: 'unassigned', label: 'Unassigned' },
+  { value: 'active', label: 'Active' }, { value: 'mine', label: 'Mine' }, { value: 'unassigned', label: 'Unassigned' }, { value: 'triage', label: 'Needs triage' },
   { value: 'resolved', label: 'Resolved' }, { value: 'closed', label: 'Closed' },
 ] as const
 const PRIORITIES = ['low', 'normal', 'high', 'urgent'].map((v) => ({ value: v, label: v }))
@@ -50,7 +51,7 @@ function TicketList({ status }: { status: AdminStatus }) {
   const names = new Map(data?.staff.map((s) => [s.id, s.name]))
 
   const columns: Column<Ticket>[] = [
-    { key: 'subject', header: 'Ticket', cell: (t) => <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]"><span className="font-mono-numbers text-[var(--color-brand-text-muted)]">#{t.number}</span> {t.subject}</p><p className="truncate text-xs text-[var(--color-brand-text-muted)]">{t.requester_email ?? 'No email'} · {t.category}</p></div> },
+    { key: 'subject', header: 'Ticket', cell: (t) => <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]"><span className="font-mono-numbers text-[var(--color-brand-text-muted)]">#{t.number}</span> {t.subject}</p><p className="truncate text-xs text-[var(--color-brand-text-muted)]">{t.requester_email ?? 'No email'} · {t.kind} · {t.category}{t.severity === 'high' || t.severity === 'critical' ? ` · ${t.severity}` : ''}</p></div> },
     { key: 'status', header: 'Status', cell: (t) => <StatusPill status={t.status} /> },
     { key: 'priority', header: 'Priority', cell: (t) => <StatusPill status={t.priority} /> },
     { key: 'assignee', header: 'Owner', cell: (t) => <span className="text-[var(--color-brand-text-secondary)]">{t.assignee_id ? (names.get(t.assignee_id) ?? 'Teammate') : <span className="text-[var(--color-brand-amber)]">Unassigned</span>}</span> },
@@ -135,7 +136,7 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
   return (
     <>
       <BackLink />
-      <PageHeader title={`#${ticket.number} · ${ticket.subject}`} description={`Opened ${dateTime(ticket.created_at)}`} actions={<div className="flex gap-2"><StatusPill status={ticket.status} /><StatusPill status={ticket.priority} /></div>} />
+      <PageHeader title={`#${ticket.number} · ${ticket.subject}`} description={`Opened ${dateTime(ticket.created_at)}`} actions={<div className="flex gap-2"><StatusPill status={ticket.status} /><StatusPill status={ticket.priority} />{ticket.linear_issue_url ? <a href={ticket.linear_issue_url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-sm text-[var(--color-brand-primary)]">Linear</a> : null}</div>} />
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <Panel title="Conversation" flush>
           <ol className="divide-y divide-[var(--color-brand-border)]">

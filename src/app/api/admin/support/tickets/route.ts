@@ -17,12 +17,13 @@ export async function GET(req: Request) {
 
   let q = ctx.service
     .from('support_tickets')
-    .select('id, number, user_id, requester_email, subject, category, priority, status, assignee_id, source, tags, created_at, updated_at, first_response_at, resolved_at')
+    .select('id, number, user_id, requester_email, subject, category, priority, status, assignee_id, source, tags, kind, severity, triage_state, linear_issue_url, sla_first_response_due, created_at, updated_at, first_response_at, resolved_at')
     .order('created_at', { ascending: false })
     .limit(200)
   if (view === 'active') q = q.in('status', ['open', 'pending'])
   else if (view === 'mine') q = q.in('status', ['open', 'pending']).eq('assignee_id', ctx.staff.id)
   else if (view === 'unassigned') q = q.in('status', ['open', 'pending']).is('assignee_id', null)
+  else if (view === 'triage') q = q.in('status', ['open', 'pending']).eq('triage_state', 'needs_human')
   else if (STATUSES.includes(view)) q = q.eq('status', view)
   if (assignee && UUID_RE.test(assignee)) q = q.eq('assignee_id', assignee)
   if (priority && PRIORITIES.includes(priority)) q = q.eq('priority', priority)

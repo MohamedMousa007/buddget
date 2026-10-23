@@ -1557,6 +1557,48 @@ export type Database = {
           },
         ]
       }
+      integration_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          kind: string
+          last_error: string | null
+          next_attempt_at: string
+          payload: Json
+          sent_at: string | null
+          status: string
+          ticket_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          kind: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload: Json
+          sent_at?: string | null
+          status?: string
+          ticket_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          kind?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          ticket_id?: string | null
+        }
+        Relationships: []
+      }
       goal_allocation_runs: {
         Row: {
           amount: number
@@ -3573,6 +3615,20 @@ export type Database = {
       }
       support_tickets: {
         Row: {
+          app_version: string | null
+          area: string | null
+          context: Json
+          duplicate_of: string | null
+          kind: string
+          linear_issue_id: string | null
+          linear_issue_url: string | null
+          platform: string | null
+          severity: string
+          sla_first_response_due: string | null
+          sla_resolution_due: string | null
+          triage_confidence: number | null
+          triage_state: string
+          votes: number
           assignee_id: string | null
           category: string
           created_at: string
@@ -3590,6 +3646,20 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          app_version?: string | null
+          area?: string | null
+          context?: Json
+          duplicate_of?: string | null
+          kind?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          platform?: string | null
+          severity?: string
+          sla_first_response_due?: string | null
+          sla_resolution_due?: string | null
+          triage_confidence?: number | null
+          triage_state?: string
+          votes?: number
           assignee_id?: string | null
           category?: string
           created_at?: string
@@ -3607,6 +3677,20 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          app_version?: string | null
+          area?: string | null
+          context?: Json
+          duplicate_of?: string | null
+          kind?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          platform?: string | null
+          severity?: string
+          sla_first_response_due?: string | null
+          sla_resolution_due?: string | null
+          triage_confidence?: number | null
+          triage_state?: string
+          votes?: number
           assignee_id?: string | null
           category?: string
           created_at?: string
@@ -3859,6 +3943,28 @@ export type Database = {
       admin_rate_hit: {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
+      }
+      integration_outbox_claim: {
+        Args: { p_limit: number }
+        Returns: Database["public"]["Tables"]["integration_outbox"]["Row"][]
+      }
+      support_submit: {
+        Args: {
+          p_area: string
+          p_body: string
+          p_confidence: number
+          p_context: Json
+          p_email: string
+          p_kind: string
+          p_platform: string
+          p_severity: string
+          p_state: string
+          p_subject: string
+          p_to_linear: boolean
+          p_user: string
+          p_version: string
+        }
+        Returns: { ticket_id: string; ticket_number: number }[]
       }
       admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }
       admin_user_financial_snapshot: { Args: { p_staff: string; p_user: string }; Returns: Json }

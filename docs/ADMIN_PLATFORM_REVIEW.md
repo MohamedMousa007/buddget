@@ -43,6 +43,8 @@ The advisor also reports about 40 "anonymous access policies" (lint 0012). Check
 - `users.financial` permission (granted to `admin`; the owner holds everything). Without it a staff member never sees an SMS body. With it, bodies are still masked in lists; revealing one needs a reason (min 8 characters), is rate limited, and writes `pii.sms.reveal` to the audit log with the log id and reason. "Create ticket" no longer copies the body unless the actor holds the permission.
 - Break-glass grants (Phase 1): table `admin_access_grants`, SQL checks `admin_has_grant` and `admin_user_financial_snapshot` (migration 0164, applied), `POST/GET /api/admin/users/[id]/financial` (request, approve, extend, revoke, read), a *Financial* tab on User 360, audit rows `pii.financial.*`, and a notification line in the user's own feed on each read.
 - Migration `0162_staff_financial_permission.sql` (applied: grants the new permission to `admin`) and `0163_policies_authenticated_only.sql` (written, not applied).
+- Support intake (Phase 2, first slice): migrations 0165 to 0167 (applied), `POST /api/support/submit` (one round trip: ticket, first message, Linear outbox row), rule-based triage (`src/lib/support/triage.ts`), own-ticket list/thread/reply APIs, in-app *Send feedback* (Bug / Idea / Question) and *My requests* inbox, portal columns (kind, severity, Linear link) and a *Needs triage* view. Linear is fed from `integration_outbox` after the response and by a daily cron; it receives ticket number, kind, area, severity, platform and version only, never the email, message text or amounts. Needs `LINEAR_API_KEY` in Vercel env; without it rows stay queued.
+- Not yet: Linear webhook (status sync back), macros, feedback board votes, integration settings page; `/api/feedback` is kept until the new path is verified on device.
 
 ## 5. Owner checklist (cannot be done from code)
 
@@ -52,3 +54,4 @@ The advisor also reports about 40 "anonymous access policies" (lint 0012). Check
 4. Choose the compute size, then I take the `pg_stat_statements` baseline and reset it.
 5. Turn on leaked-password protection (Supabase Auth settings).
 6. Review and approve `0163_policies_authenticated_only.sql` before it is applied, and confirm anonymous sign-ins are off.
+7. Add `LINEAR_API_KEY` (and optionally `LINEAR_TEAM_ID`, `LINEAR_LABEL_BUG`, `LINEAR_LABEL_FEATURE`) to the Vercel environment so queued bug reports reach Linear.

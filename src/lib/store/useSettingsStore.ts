@@ -189,7 +189,7 @@ function getCurrentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-export type SettingsSheetId = 'currencies' | 'converter' | 'feedback' | 'about' | 'export' | 'deleteAccount'
+export type SettingsSheetId = 'currencies' | 'converter' | 'feedback' | 'inbox' | 'about' | 'export' | 'deleteAccount'
 
 export const useSettingsStore = create<SettingsState>()(
   persist(

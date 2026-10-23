@@ -58,6 +58,14 @@ export interface SettingsHubCopy {
     feedbackHint: string
     bug: string
     idea: string
+    question: string
+    inbox: string
+    inboxHint: string
+    inboxEmpty: string
+    reply: string
+    replyHint: string
+    youLabel: string
+    status: Record<string, string>
     terms: string
     privacy: string
     about: string
@@ -180,9 +188,17 @@ const en: SettingsHubCopy = {
   help: {
     title: 'Help & about',
     feedback: 'Send feedback',
-    feedbackHint: 'Report a bug or suggest a feature',
+    feedbackHint: 'Report a bug, share an idea or ask a question',
     bug: 'Bug',
-    idea: 'Feature',
+    idea: 'Idea',
+    question: 'Question',
+    inbox: 'My requests',
+    inboxHint: 'Replies from the Buddget team',
+    inboxEmpty: 'You have not sent anything yet.',
+    reply: 'Send',
+    replyHint: 'Write a reply',
+    youLabel: 'You',
+    status: { open: 'Open', pending: 'We replied', resolved: 'Resolved', closed: 'Closed' },
     terms: 'Terms of use',
     privacy: 'Privacy policy',
     about: 'About Buddget',
@@ -345,6 +361,14 @@ const ar: SettingsHubCopy = {
     feedbackHint: 'بلّغ عن مشكلة أو اقترح فكرة',
     bug: 'خطأ',
     idea: 'ميزة',
+    question: 'سؤال',
+    inbox: 'طلباتي',
+    inboxHint: 'ردود فريق Buddget',
+    inboxEmpty: 'لسه ما بعتّش حاجة.',
+    reply: 'إرسال',
+    replyHint: 'اكتب ردك',
+    youLabel: 'إنت',
+    status: { open: 'مفتوح', pending: 'رددنا عليك', resolved: 'اتحل', closed: 'مقفول' },
     terms: 'شروط الاستخدام',
     privacy: 'سياسة الخصوصية',
     about: 'حول بادجت',
