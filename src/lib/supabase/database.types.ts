@@ -3758,6 +3758,10 @@ export type Database = {
       }
     }
     Functions: {
+      adjust_pocket_balance: {
+        Args: { p_user: string; p_pocket: string; p_delta: number; p_kind: Database["public"]["Enums"]["savings_transaction_kind"]; p_group?: string; p_payment_method?: string; p_date?: string; p_note?: string; p_source?: string }
+        Returns: number
+      }
       latest_balance_reports: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Tables"]["account_balance_reports"]["Row"][]

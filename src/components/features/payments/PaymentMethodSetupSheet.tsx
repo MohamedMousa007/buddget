@@ -53,6 +53,8 @@ interface Props {
   lockType?: PaymentMethodType
   /** Override the sheet title (e.g. "Add credit card" from the Debt tab). */
   titleOverride?: string
+  /** New methods hang under this account (a card added from an account's page). */
+  parentAccountId?: string
 }
 
 /**
@@ -61,7 +63,7 @@ interface Props {
  * Reused by the wallet sheet and the payment-method picker (self-contained add).
  */
 export function PaymentMethodSetupSheet({
-  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride,
+  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride, parentAccountId,
 }: Props) {
   const t = useT()
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
@@ -181,7 +183,7 @@ export function PaymentMethodSetupSheet({
       pmId = editing.id
     } else {
       // A credit_card PM auto-creates its linked credit-card debt in the store.
-      pmId = addPaymentMethod(payload)
+      pmId = addPaymentMethod(parentAccountId ? { ...payload, parentId: parentAccountId } : payload)
     }
     // Persist the credit-card terms onto the linked credit-card debt.
     if (type === 'credit_card') {

@@ -47,6 +47,7 @@ import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
+import { recordBalanceReport } from '@/lib/sms/balanceReport'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { getUserLocale } from '@/lib/server/userLocale'
 import { emitNotification } from '@/lib/server/emitNotification'
@@ -1158,6 +1159,11 @@ export async function POST(request: Request) {
         console.error('[sms/parse] push notification (after) failed', e)
       }
     })
+  }
+
+  // The balance the bank appended feeds gap detection. After the response, never throws, independent of how the SMS was parsed.
+  if (success && !addFailed) {
+    after(() => recordBalanceReport({ service, userId, logId, body: message, amount: parsed.amount, last4: cleanLast4, receivedAt: nowIso }))
   }
 
   // Soft health checks on what a TEMPLATE extracted. Free, deterministic, no user and no AI,

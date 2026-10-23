@@ -223,3 +223,31 @@ Decisions are chosen for the best user experience first, then for long-run scale
 4. On-device QA matrix: iOS and Android, 320/390/430 px, light/dark, English/Arabic, offline, second-device conflict.
 5. Observability: counters (no amounts) for gaps raised/resolved, resolver misses, report rejects and adjustment rate in the admin portal; alert on the resolver-miss rate.
 6. Native builds only when the user explicitly asks.
+
+## 14. Implementation status (2026-10-23)
+
+Shipped on branch `claude/bank-accounts-cards-architecture-9b3aab` (local commits, not pushed). Migrations 0150-0155 are **applied to the live project** (additive only).
+
+Done and tested:
+- DB: `parent_id / opening_balance / opening_at / closed_at / track_sms` on `payment_methods` with a guard trigger (bad parent dropped; soft-deleting an account with history becomes "closed"); `occurred_at` on expenses / income / debt payments / pocket transactions; `expenses.to_payment_method_id`; pocket and SMS links; `account_balance_reports` (+ `latest_balance_reports()`); `account_adjustments` (synced list); `user_settings.privacy`; atomic idempotent `adjust_pocket_balance`. `get_advisors` shows nothing new.
+- Client model: mappers/types/sync/merge/delta for every new column and for `accountAdjustments`; today's expenses and set-asides carry the exact time.
+- Engine (`src/lib/accounts/`): account kinds, resolver, `computeBalances` (integer minor units, `asOf`, opening-date anchor), `detectGap`, actions (set balance, cash out, set aside, update, close), `useAccounts`, `useAccountGaps`. Net worth uses the accounts basis when any account is tracked.
+- UI: Accounts tab and route, hero, `AccountRow`, `CardStrip`, `CardFaceChip`, `AccountPicker`, detail sheet, cash out / set aside, update balance, fix-a-gap (timeline + four answers), add account, found-in-messages sheet, add card (existing `PaymentMethodSetupSheet` + `parentAccountId`), Debts entry row. EN/AR copy. Nav: Flow, Budget, FAB, Accounts, Wealth (Debts lives under Accounts).
+- Privacy: per-surface settings (Settings > Security), masking in the Accounts UI and in Buddgy tool results.
+- SMS: balance extraction (`extractBalance`, credit-card limits excluded), account resolution (last4 → account, debit card → parent), `account_balance_reports` written after the response.
+- Server jobs: goal funding and month-end carry now use the atomic function, tag the account the money leaves, and new auto-created pockets are held in the user's primary tracked account (no minted money).
+
+Decisions that changed from the plan above:
+- **No sentinel remap.** `pm_default_cash` stays in the store; the resolver maps it (and null) to the real Cash account, which is created the first time cash is tracked. The sentinel is never shown as an account row.
+- Prepaid cards and wallets hold stored value, so account-like types are `cash | bank_account | wallet | prepaid_card`; only the first three can be a parent.
+- `StatusPill` in the component table was wrong (it is the offline pill); status chips use `Badge`.
+- The gap is computed on the client; the server only stores raw reports.
+
+Not done yet (needs a decision, a device, or a separate release):
+- Balance-only SMS (no transaction) do not create reports yet; only messages that also carry a transaction do.
+- Notification and widget masking: no notification or widget carries a balance today, so nothing is masked there; add it when one does.
+- "Which account?" prompt for messages that cannot be resolved by last 4.
+- Wealth cleanup: the 14 bank + 2 cash pockets still need the one-time "pocket or account?" prompt.
+- Remote per-user flag `accounts_v2` (the tab ships on by default; nothing is gated).
+- On-device QA (iOS/Android, 320/390/430 px, light/dark, Arabic, offline, two devices) and a visual pass: the browser preview stalled, so only render smoke tests and the production build verified the UI.
+- Pushing to `dev`/`main` and native builds: waiting on the user.

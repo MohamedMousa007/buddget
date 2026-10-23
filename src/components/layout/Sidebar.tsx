@@ -13,6 +13,7 @@ import {
   Bell,
   Settings,
   type LucideIcon,
+  Wallet,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { cn } from '@/lib/utils'
@@ -35,6 +36,7 @@ export function Sidebar() {
   const PRIMARY: NavItem[] = [
     { href: '/flow', label: t.nav.flow, icon: FlowTabIcon },
     { href: '/budget-setup', label: t.nav.budgetSetup, icon: SlidersHorizontal },
+    { href: '/accounts', label: t.nav.accounts, icon: Wallet },
     { href: '/wealth', label: t.nav.wealth, icon: HandCoins },
     { href: '/debts', label: t.nav.debts, icon: Landmark },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },

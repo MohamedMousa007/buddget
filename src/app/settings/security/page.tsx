@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { BalancePrivacyCard } from '@/components/features/settings/hub/BalancePrivacyCard'
 import { DeleteAccountCta } from '@/components/features/settings/hub/DeleteAccountCta'
 import { SecurityBody } from '@/components/features/settings/hub/SecurityCard'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
@@ -23,6 +24,7 @@ export default function SettingsSecurityPage() {
   return (
     <SettingsSubPageShell title={copy.security.title}>
       <SecurityBody p={{ ...p, user }} />
+      <BalancePrivacyCard />
       <DeleteAccountCta p={p} />
     </SettingsSubPageShell>
   )

@@ -6,8 +6,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useRates } from '@/hooks/useRates'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import type { PaymentMethod } from '@/lib/store/types'
-import { computeBalances, type AccountBalance } from './balance'
-import { isOpenAccount, isTracked } from './kinds'
+import { computeBalances, type AccountBalance, type LedgerInput } from './balance'
+import { DEFAULT_CASH_ID, isOpenAccount, isTracked } from './kinds'
 
 export interface AccountView {
   method: PaymentMethod
@@ -26,21 +26,36 @@ export interface AccountsModel {
   /** Sum of held-in pockets in base currency. */
   heldInBase: number
   approx: boolean
+  /** No real Cash account yet: the page offers to start tracking cash. */
+  needsCash: boolean
 }
 
-/** Single place the UI reads account balances from; derived from the ledger, never stored. */
-export function useAccounts(): AccountsModel {
-  useRates()
-  const s = useFinanceStore(useShallow((st) => ({
+function useLedgerStore() {
+  return useFinanceStore(useShallow((st) => ({
     paymentMethods: st.paymentMethods, expenses: st.expenses, incomeEvents: st.incomeEvents,
     debtPayments: st.debtPayments, savingsTransactions: st.savingsTransactions,
     savingsAccounts: st.savingsAccounts, adjustments: st.accountAdjustments,
     rates: st.exchangeRates, base: st.settings.baseCurrency,
   })))
+}
+
+/** The ledger the balance engine reads, with the app's FX converter plugged in. */
+export function useLedgerInput(): LedgerInput & { base: string } {
+  useRates()
+  const s = useLedgerStore()
+  return useMemo(() => ({
+    ...s,
+    convert: (a: number, from: string, to: string) => tryConvertCurrency(a, from, to, s.rates),
+  }), [s])
+}
+
+/** Single place the UI reads account balances from; derived from the ledger, never stored. */
+export function useAccounts(): AccountsModel {
+  const s = useLedgerInput()
+  const rates = useFinanceStore((st) => st.exchangeRates)
 
   return useMemo(() => {
-    const convert = (a: number, from: string, to: string) => tryConvertCurrency(a, from, to, s.rates)
-    const balances = computeBalances({ ...s, convert })
+    const balances = computeBalances(s)
     const open = s.paymentMethods.filter((m) => isOpenAccount(m) && !m.parentId)
     const accounts = open.map((m) => ({
       method: m,
@@ -53,15 +68,16 @@ export function useAccounts(): AccountsModel {
     for (const a of accounts) {
       if (!a.balance) continue
       approx ||= a.balance.approx || String(a.method.currency) !== String(s.base)
-      totalInBase += tryConvertCurrency(a.balance.balance, a.balance.currency, s.base, s.rates) ?? a.balance.balance
-      heldInBase += tryConvertCurrency(a.balance.held, a.balance.currency, s.base, s.rates) ?? a.balance.held
+      totalInBase += tryConvertCurrency(a.balance.balance, a.balance.currency, s.base, rates) ?? a.balance.balance
+      heldInBase += tryConvertCurrency(a.balance.held, a.balance.currency, s.base, rates) ?? a.balance.held
     }
     const accountIds = new Set(accounts.map((a) => a.method.id))
     const standaloneCards = s.paymentMethods.filter(
       (m) => !m.closedAt && m.type !== 'cash' && !accountIds.has(m.id) && !(m.parentId && accountIds.has(m.parentId)),
     )
-    return { accounts, standaloneCards, totalInBase, heldInBase, approx }
-  }, [s])
+    const needsCash = !s.paymentMethods.some((m) => m.type === 'cash' && m.id !== DEFAULT_CASH_ID && !m.closedAt)
+    return { accounts, standaloneCards, totalInBase, heldInBase, approx, needsCash }
+  }, [s, rates])
 }
 
 export { isTracked }

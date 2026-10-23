@@ -4,6 +4,7 @@ import { crossedCheckpoints } from '@/lib/notifications/evaluateGoalAlerts'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { Currency, Goal, SavingsAccount } from '@/lib/store/types'
+import { depositToPocket, primaryTrackedAccountId } from '@/lib/server/pocketLedger'
 
 type Service = ReturnType<typeof createServiceRoleClient>
 
@@ -62,6 +63,7 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
   for (const [goalId, amount] of done) if (due.some((g) => g.id === goalId)) left = cents(left - amount)
 
   const lines = allocateMonth({ goals: due, periodSavings: c.carry, current })
+  const primaryId = await primaryTrackedAccountId(service, userId)
   for (const line of lines) {
     if (done.has(line.goalId)) continue
     const goal = due.find((g) => g.id === line.goalId)!
@@ -81,7 +83,7 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
       if (!pocket) {
         const { data: created, error } = await service.from('savings_accounts').insert({
           user_id: userId, name: `${goal.name} pocket`, category: 'savings', type: 'vault', currency: base,
-          current_balance: 0, opening_balance: 0, is_emergency_cover: false,
+          current_balance: 0, opening_balance: 0, is_emergency_cover: false, held_in_payment_method_id: primaryId,
         }).select('id').single()
         if (error || !created) throw new Error('pocket create failed')
         const { error: linkErr } = await service.from('goals').update({ linked_savings_account_ids: [...goal.linkedSavingsAccountIds, created.id] }).eq('id', goal.id)
@@ -89,17 +91,10 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
         pocket = { id: created.id, currency: base, currentBalance: 0 } as SavingsAccount
       }
       const inPocket = convertCurrency(amount, base, pocket.currency, rates)
-      const { data: tx, error: txErr } = await service.from('savings_transactions').insert({
-        user_id: userId, account_id: pocket.id, kind: 'deposit', amount: inPocket, currency: pocket.currency,
-        transaction_date: c.postDate, is_cash_flow: true, source: 'carry', notes: `Goal funding · ${goal.name} · ${monthKey}`,
-      }).select('id').single()
-      if (txErr || !tx) throw new Error('deposit failed')
-      const { data: bal } = await service.from('savings_accounts').select('current_balance').eq('id', pocket.id).single()
-      const { error: balErr } = await service.from('savings_accounts').update({ current_balance: Number(bal?.current_balance ?? 0) + inPocket }).eq('id', pocket.id)
-      if (balErr) {
-        await service.from('savings_transactions').delete().eq('id', tx.id)
-        throw new Error('balance update failed')
-      }
+      await depositToPocket(service, {
+        userId, pocketId: pocket.id, amount: inPocket, date: c.postDate, source: 'carry',
+        note: `Goal funding · ${goal.name} · ${monthKey}`, key: `goal-funding|${goal.id}|${monthKey}`, accountId: primaryId,
+      })
     } catch (e) {
       console.error('[allocateGoalFunding]', goal.id, monthKey, e)
       await release()

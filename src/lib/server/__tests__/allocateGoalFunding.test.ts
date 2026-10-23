@@ -39,12 +39,25 @@ function fakeService(seed: Record<string, Row[]>, opts: { failInsert?: string } 
       update: (patch: Row) => ((st.action = 'update'), (st.patch = patch), q),
       delete: () => ((st.action = 'delete'), q),
       eq: (k: string, v: unknown) => (st.filters.push([k, v]), q),
+      is: () => q, in: () => q, not: () => q, order: () => q, limit: () => q,
       single: () => ((st.one = true), Promise.resolve(run())),
       then: (resolve: (v: unknown) => unknown) => Promise.resolve(run()).then(resolve),
     }
     return q
   }
-  return { service: { from } as never, db }
+  // adjust_pocket_balance: atomic and idempotent per group id, like the SQL function.
+  const rpc = (fn: string, a: Record<string, unknown>) => {
+    if (fn !== 'adjust_pocket_balance') return Promise.resolve({ data: null, error: { message: 'unknown rpc' } })
+    if (opts.failInsert === 'savings_transactions') return Promise.resolve({ data: null, error: { message: 'boom' } })
+    const txs = (db.savings_transactions ??= [])
+    if (txs.some((t) => t.account_id === a.p_pocket && t.transfer_group_id === a.p_group)) return Promise.resolve({ data: null, error: null })
+    const acc = (db.savings_accounts ??= []).find((r) => r.id === a.p_pocket)
+    if (!acc) return Promise.resolve({ data: null, error: { message: 'pocket not found' } })
+    acc.current_balance = Number(acc.current_balance ?? 0) + Number(a.p_delta)
+    txs.push({ id: `savings_transactions-${++id}`, account_id: a.p_pocket, transfer_group_id: a.p_group, amount: a.p_delta, source: a.p_source, payment_method_id: a.p_payment_method })
+    return Promise.resolve({ data: acc.current_balance, error: null })
+  }
+  return { service: { from, rpc } as never, db }
 }
 
 const goal = (id: string, priority: number, sharePct: number, over: Partial<Goal> = {}): Goal => ({

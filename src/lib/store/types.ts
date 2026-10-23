@@ -1198,7 +1198,7 @@ export interface FinanceStore {
     /** `mode` = where the money came from: 'allocate' (from this month's budget — reduces
      *  left-to-spend, net worth flat) or 'declare' (money from outside the budget — net worth
      *  rises, left-to-spend untouched). Defaults to 'allocate' (the historical behaviour). */
-    opts?: { isAutoSave?: boolean; source?: string; mode?: 'allocate' | 'declare' }
+    opts?: { isAutoSave?: boolean; source?: string; mode?: 'allocate' | 'declare'; /** Account the money leaves; stamps the ledger leg so the account balance follows. */ paymentMethodId?: string }
   ) => void
   /** Only 'income' returns the money to this month's spendable income; the rest do not,
    *  so a transfer/debt/spend withdrawal never inflates the income KPI. Defaults to 'income'. */

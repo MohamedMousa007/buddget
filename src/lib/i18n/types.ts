@@ -163,6 +163,119 @@ export interface Dictionary {
     pressBackAgainToExit: string
   }
 
+  accountsPage: {
+    title: string
+    availableNow: string
+    netWorth: string
+    inAccounts: string
+    setAside: string
+    creditOwed: string
+    accountsCount: (n: number) => string
+    bankAccounts: string
+    walletsCash: string
+    addAccountOrCard: string
+    creditAndDebts: string
+    creditAndDebtsSub: string
+    freeLabel: (amount: string) => string
+    setBalance: string
+    addBalanceToInclude: string
+    cardsCount: (n: number) => string
+    addACard: string
+    missingFindIt: (amount: string) => string
+    hideBalances: string
+    showBalances: string
+    standaloneCards: string
+    emptyTitle: string
+    emptySub: string
+    findMyAccounts: string
+    addOneMyself: string
+    cashOut: string
+    setAsideAction: string
+    update: string
+    from: string
+    toCash: string
+    enterAmount: string
+    moreThanFree: (amount: string) => string
+    becomes: (name: string, amount: string) => string
+    freeBecomes: (amount: string) => string
+    withdraw: (amount: string) => string
+    setAsideIn: (amount: string, pocket: string) => string
+    staysInAccount: string
+    movesOut: string
+    noPockets: string
+    balance: string
+    freeToSpend: string
+    setAsideLabel: string
+    matchesBank: string
+    spentWith: (card: string) => string
+    recent: string
+    noActivity: string
+    whatBankShows: string
+    matchesBuddget: string
+    vsBuddget: (diff: string) => string
+    buddgetHas: (amount: string) => string
+    looksRight: string
+    setBalanceTo: (amount: string) => string
+    missingTitle: (amount: string) => string
+    missingSub: string
+    bankConfirmed: string
+    entriesCount: (n: number) => string
+    missingWord: string
+    notInEntries: string
+    whereDidItGo: string
+    cashWithdrawal: string
+    cashWithdrawalSub: string
+    iSpentIt: string
+    iSpentItSub: string
+    pocketSub: string
+    notSure: string
+    notSureSub: string
+    likely: string
+    logCashWithdrawal: string
+    addTheExpense: string
+    moveIntoPocket: string
+    remindMeLater: string
+    addAccountTitle: string
+    chooseBank: string
+    accountName: string
+    balanceToday: string
+    last4: string
+    checkMessages: string
+    checkMessagesSub: string
+    addAccountCta: string
+    accountType: string
+    typeBank: string
+    typeWallet: string
+    typeCash: string
+    addCardTitle: string
+    spendsFrom: (account: string) => string
+    cardType: string
+    typeDebit: string
+    typeCredit: string
+    typePrepaid: string
+    hintDebit: string
+    hintCredit: string
+    hintPrepaid: string
+    addCardCta: string
+    cardName: string
+    closeAccount: string
+    closeAccountBody: (cards: number) => string
+    staleBalance: string
+    overdrawn: string
+    approx: string
+    privacyTitle: string
+    privacyHint: string
+    presetOff: string
+    presetHero: string
+    presetAll: string
+    presetCustom: string
+    surfaceHero: string
+    surfaceLists: string
+    surfaceNotifications: string
+    surfaceWidgets: string
+    surfaceBuddgy: string
+  }
+
   wealthPage: {
     holdLabel: string
     balances: string
@@ -264,6 +377,7 @@ export interface Dictionary {
     investment: string
     /** Merged Savings + Investment destination. */
     wealth: string
+    accounts: string
     debts: string
     reports: string
     subscriptions: string

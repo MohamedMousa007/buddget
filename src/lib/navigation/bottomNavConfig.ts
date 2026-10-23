@@ -14,8 +14,8 @@ export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   { kind: 'link', href: '/flow', label: 'flow', icon: FlowTabIcon },
   { kind: 'link', href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal },
   { kind: 'fab', icon: Plus },
+  { kind: 'link', href: '/accounts', label: 'accounts', icon: Landmark },
   { kind: 'link', href: '/wealth', label: 'wealth', icon: Coins },
-  { kind: 'link', href: '/debts', label: 'debts', icon: Landmark },
 ]
 
 /** Routes that light each tab: the tab's own page plus its aliases and the pages it owns. */
@@ -23,7 +23,7 @@ export const BOTTOM_NAV_TAB_PATHS: Record<string, ReadonlySet<string>> = {
   '/flow': new Set(['/', '/flow', '/expenses', '/income', '/paydays']),
   '/budget-setup': new Set(['/budget-setup', '/budget-history', '/subscriptions']),
   '/wealth': new Set(['/wealth', '/savings', '/investment']),
-  '/debts': new Set(['/debts']),
+  '/accounts': new Set(['/accounts', '/debts']),
 }
 
 /** Maps a route to its header section-title dictionary key (`t.nav[key]`). */
@@ -33,6 +33,7 @@ export function sectionTitleNavKey(pathname: string | null): keyof Dictionary['n
   if (pathname.startsWith('/flow')) return 'flow'
   if (pathname.startsWith('/paydays')) return 'paydays'
   if (pathname.startsWith('/expenses')) return 'flow'
+  if (pathname.startsWith('/accounts')) return 'accounts'
   if (pathname.startsWith('/debts')) return 'debts'
   if (pathname.startsWith('/income')) return 'flow'
   if (pathname.startsWith('/wealth')) return 'wealth'

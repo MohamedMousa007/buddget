@@ -1,3 +1,6 @@
+import { isMasked } from '@/lib/privacy/mask'
+import { redactBalances } from '@/lib/privacy/redact'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { apiFetchAuth } from '@/lib/apiBase'
 import {
   TURN_LIMITS,
@@ -88,7 +91,9 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext): CallsResu
     }
     try {
       if (entry.read) {
-        results.push({ name: call.name, response: clampResult(entry.read(call.args, ctx)) })
+        const raw = entry.read(call.args, ctx)
+        const hide = isMasked(useFinanceStore.getState().settings.privacy, 'buddgy')
+        results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw) : raw) })
         reads.push({ tool: call.name, label: readLabel(call.name, ctx.locale) })
         needsModel = true
       } else if (entry.write) {

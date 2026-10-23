@@ -7,6 +7,8 @@ export interface GapResult {
   /** reported - ledger, newest report. Negative = money left that the ledger does not explain. */
   amount: number
   reportedAt: string
+  newest: BalanceReport
+  previous: BalanceReport
 }
 
 /** Clock-skew window: a row logged a moment after the bank's timestamp still explains the report. */
@@ -33,5 +35,5 @@ export function detectGap(
   if (g1 == null || g0 == null) return null
   if (Math.abs(g1) <= tolerance || Math.abs(g0) <= tolerance) return null
   if (Math.sign(g1) !== Math.sign(g0) || Math.abs(g1 - g0) > tolerance) return null
-  return { amount: g1, reportedAt: newest.reportedAt }
+  return { amount: g1, reportedAt: newest.reportedAt, newest, previous }
 }

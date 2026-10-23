@@ -14,6 +14,7 @@ export const SHELL_PATHS = [
   '/expenses',
   '/income',
   '/debts',
+  '/accounts',
   '/wealth',
   // aliases of /wealth, kept for existing deep links
   '/savings',

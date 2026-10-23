@@ -113,7 +113,7 @@ describe('detectGap', () => {
     const ledger = () => 1000
     expect(detectGap([{ balance: 800, reportedAt: at('2026-10-10T10:00:00Z') }], ledger)).toBeNull()
     const two = [{ balance: 800, reportedAt: at('2026-10-10T10:00:00Z') }, { balance: 800, reportedAt: at('2026-10-11T10:00:00Z') }]
-    expect(detectGap(two, ledger)).toEqual({ amount: -200, reportedAt: '2026-10-11T10:00:00Z' })
+    expect(detectGap(two, ledger)).toMatchObject({ amount: -200, reportedAt: '2026-10-11T10:00:00Z' })
   })
   it('stays quiet when the ledger explains the reports, or the gaps disagree', () => {
     expect(detectGap([{ balance: 1000, reportedAt: 'b' }, { balance: 1000, reportedAt: 'a' }], () => 1000)).toBeNull()

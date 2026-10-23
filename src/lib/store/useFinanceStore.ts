@@ -222,6 +222,8 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state.expenses,
             {
               ...expense,
+              // Today's entries carry the exact time; back-dated ones stay day-level (read at noon).
+              occurredAt: expense.occurredAt ?? (expense.date === localTodayISO() ? new Date().toISOString() : undefined),
               amountInBaseCurrency,
               id: generateId(),
               createdAt: new Date().toISOString(),
@@ -1532,6 +1534,8 @@ export const useFinanceStore = create<FinanceStore>()(
             // this month's flow. 'allocate' (default) is real cash flow — left as undefined
             // so cashSavingsDepositsInBaseForMonth counts it against left-to-spend.
             ...(opts?.mode === 'declare' ? { isCashFlow: false } : {}),
+            occurredAt: new Date().toISOString(),
+            ...(opts?.paymentMethodId ? { paymentMethodId: opts.paymentMethodId } : {}),
           }
           const nextState: FinanceStore = {
             ...state,

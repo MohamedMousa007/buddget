@@ -9,6 +9,7 @@
  * ⚠️ WRITES LIVE MONEY. Deliberately absent from vercel.json — enable only after a preview-env dry
  * run and explicit sign-off. Auth: `Authorization: Bearer ${CRON_SECRET}`.
  */
+import { depositToPocket, primaryTrackedAccountId } from '@/lib/server/pocketLedger'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { justClosedCycleKey, cycleRange } from '@/lib/savings/carryDateLogic'
@@ -133,6 +134,7 @@ export async function GET(request: Request) {
       }
 
       // Resolve destination (default fiat pocket → active goal's pocket → the vault).
+      const primaryId = await primaryTrackedAccountId(service, userId)
       const dest = resolveCarryDestination(profileR.data?.default_carry_pocket_id as string | null, savingsPockets, goals.filter((g) => g.fundingMode === 'manual'))
       let pocketId: string
       if (dest.kind === 'pocket') {
@@ -140,7 +142,7 @@ export async function GET(request: Request) {
       } else {
         const name = dest.kind === 'create-goal-pocket' ? dest.name : 'Monthly Savings'
         const { data: created } = await service.from('savings_accounts').insert({
-          user_id: userId, name, category: 'savings', type: 'vault', currency: base, current_balance: 0, opening_balance: 0, is_emergency_cover: false,
+          user_id: userId, name, category: 'savings', type: 'vault', currency: base, current_balance: 0, opening_balance: 0, is_emergency_cover: false, held_in_payment_method_id: primaryId,
         }).select('id').single()
         pocketId = created!.id as string
         if (dest.kind === 'create-vault') await service.from('profiles').update({ default_carry_pocket_id: pocketId }).eq('id', userId)
@@ -153,16 +155,10 @@ export async function GET(request: Request) {
         .from('savings_transactions').select('id').eq('user_id', userId).eq('source', 'carry')
         .eq('notes', `Month-end carry · ${monthKey}`).is('deleted_at', null).limit(1).maybeSingle()
       if (!alreadySwept) {
-      await service.from('savings_transactions').insert({
-        user_id: userId, account_id: pocketId, kind: 'deposit', amount: carryInPocketCcy,
-        currency: accounts.find((a) => a.id === pocketId)?.currency ?? base, transaction_date: postDate,
-        is_cash_flow: true, source: 'carry', notes: `Month-end carry · ${monthKey}`,
+      await depositToPocket(service, {
+        userId, pocketId, amount: carryInPocketCcy, date: postDate, source: 'carry',
+        note: `Month-end carry · ${monthKey}`, key: `month-carry|${userId}|${monthKey}`, accountId: primaryId,
       })
-      // Raise the destination balance. Freshly-created pockets start at 0.
-      const destAcc = accounts.find((a) => a.id === pocketId)
-      const { data: liveBal } = await service.from('savings_accounts').select('current_balance').eq('id', pocketId).single()
-      const prevBal = Number(liveBal?.current_balance ?? destAcc?.currentBalance ?? 0)
-      await service.from('savings_accounts').update({ current_balance: prevBal + carryInPocketCcy }).eq('id', pocketId)
       }
 
       await service.from('savings_month_summary').insert({

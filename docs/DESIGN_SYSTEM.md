@@ -388,3 +388,21 @@ Before shipping any UI component, verify:
 - [ ] Numeric/currency values use `font-mono-numbers`
 - [ ] Dark mode visually verified (class toggled, or browser DevTools forced dark)
 - [ ] Arabic locale visually verified if text is user-facing
+
+
+---
+
+## Accounts components (`src/components/features/accounts/`)
+
+New for the Accounts tab; everything else on those screens reuses existing primitives (`HeroBand`, `ModalShell` + `V3SheetHeader`, `AmountField`, `SegmentedControl`, `SelectableCard`, `OptionChip`, `Switch`, `Badge`, `TransactionRow`, `PaymentCardCarousel`, `ProviderPickerSheet`, `Button size="cta-block"`).
+
+| Component | What it is | Rules |
+|---|---|---|
+| `BrandMark` | Squircle monogram for a bank, wallet or cash (radius = 32% of size), optional amber `!` alert badge | Fill is the method colour; text colour comes from `inkOn()`, never hardcoded |
+| `CardFaceChip` | 70x44 card face: network, type, last 4. Small sibling of the carousel face | Gradient from `cardGradient(color)`, same as the large face |
+| `CardStrip` | Up to two `CardFaceChip`, "+N" beyond that, dashed add slot with none | Always `dir="ltr"`; tap target 44px high |
+| `AccountRow` | 72px row: mark, title, subtitle, balance (decimals dimmed), "free" line, strip under it | Only exceptions get colour (amber for a gap); amounts mask via `useMask('lists')` |
+| `AccountPicker` | Collapsing "From" list: one row, tap to unfold the other accounts in place | Not `SelectField` (that does not expand inline) |
+| `GapTimeline` | Dot-and-line history; bank-confirmed points teal, the unexplained stretch dashed amber | Amber, never red: red is destructive only |
+
+Money display on these screens: integer part normal, decimals at 45% opacity; negative uses a real minus (`-`) and amber, never red.
