@@ -48,6 +48,7 @@ import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
 import { recordBalanceReport } from '@/lib/sms/balanceReport'
+import { providerFromBody } from '@/lib/sms/providerFromBody'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { getUserLocale } from '@/lib/server/userLocale'
 import { emitNotification } from '@/lib/server/emitNotification'
@@ -821,6 +822,8 @@ export async function POST(request: Request) {
     : quarantinedFallback ? 'template'
     : 'ai_new'
 
+  // iOS sends no sender, so name the provider from what the message itself prints (deterministic, free, before any AI).
+  if (!parsed.bank_name) parsed.bank_name = providerFromBody(message)?.name ?? null
   // Stable sender identity (hotline → sender → bank) for currency learning + pooling.
   const senderKey = effectiveSender(sender, message, parsed.bank_name)
 

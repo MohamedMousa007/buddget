@@ -1,513 +1,212 @@
-'use client';
+'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ChevronLeft, ChevronRight, Coffee, Copy, Plus, X } from 'lucide-react';
+import { useCallback, useRef, useState, type ReactNode } from 'react'
+import { Check, ChevronLeft, Coffee, Copy, MessageSquare, Plus, ShieldCheck, X } from 'lucide-react'
 
-import { Button } from '@/components/ui/button';
-import { IconButton } from '@/components/ui/IconButton';
-import { Badge } from '@/components/ui/badge';
-import { MoneyDisplay } from '@/components/ui/MoneyDisplay';
-import { useT } from '@/lib/i18n';
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
+import { Badge } from '@/components/ui/badge'
+import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
+import { useT } from '@/lib/i18n'
+import { cn } from '@/lib/utils'
+import { ShortcutsScene, type SceneId } from './sms/ShortcutsScenes'
 
-// ── config ────────────────────────────────────────────────────────────────
-const ASSET_BASE = '/guides/sms';
-const BRAND = 'var(--color-brand-primary)';
+const KW_EN = ['EGP', 'USD', 'charged', 'debited', 'purchase']
+const KW_AR = ['جنيه', 'دولار', 'خصم', 'شراء', 'عملية']
 
-const F = 'var(--font-sans)';
-const MONO = 'var(--font-mono)';
-const AR = 'var(--font-sans-ar)';
+type Step = { scene?: SceneId; keyword?: boolean; done?: boolean }
 
-const KW_EN = ['EGP', 'USD', 'charged', 'debited', 'purchase'];
-const KW_AR = ['جنيه', 'دولار', 'خصم', 'شراء', 'عملية'];
-
-// ── types ─────────────────────────────────────────────────────────────────
-type Rect = { x: number; y: number; w: number; h: number };
-type Arrow = { x: number; y: number; dir: 'up' | 'down' };
-type Step = {
-  img?: string;
-  r?: Rect | null;
-  r2?: Rect;
-  a?: Arrow | null;
-  concept?: boolean;
-  done?: boolean;
-};
-
-// ── step data (DO NOT reinterpret — these coordinates are hand-tuned) ───────
-// PARALLEL to the `steps` copy array in the dictionaries — index N here pairs with index N
-// there. Adding copy without adding an entry silently shifts every screenshot after it and
-// makes the last step unreachable (`total` comes from THIS array). smsGuideSteps.test.ts
-// pins the lengths together.
+/**
+ * PARALLEL to the `steps` copy arrays in the dictionaries: index N here pairs with index N there.
+ * smsGuideSteps.test.ts pins the lengths together, because `total` comes from THIS array.
+ */
 export const STEPS: Step[] = [
-  { img: '01.jpg', r: { x: 50, y: 96.3, w: 24, h: 4.2 }, a: { x: 50, y: 93.6, dir: 'down' } },
-  { img: '02.jpg', r: { x: 50, y: 60.7, w: 42, h: 5 }, a: { x: 50, y: 57.6, dir: 'down' } },
-  { img: '03.jpg', r: { x: 34, y: 88, w: 56, h: 5 }, a: { x: 34, y: 85, dir: 'down' } },
-  { img: '04.jpg', r: { x: 84, y: 27.5, w: 24, h: 4.4 }, a: { x: 84, y: 24.8, dir: 'down' } },
-  { concept: true },
-  { img: '05.jpg', r: { x: 50, y: 39, w: 58, h: 5 }, a: { x: 50, y: 35.5, dir: 'down' } },
-  { img: '06.jpg', r: { x: 91, y: 5.6, w: 17, h: 3.6 }, a: { x: 88, y: 8, dir: 'up' }, r2: { x: 50, y: 43.2, w: 80, h: 4.6 } },
-  { img: '07.jpg', r: { x: 24.5, y: 37, w: 44, h: 14 }, a: { x: 24.5, y: 29.5, dir: 'down' } },
-  { img: '08.jpg', r: { x: 50, y: 56.5, w: 84, h: 4.2 }, a: { x: 50, y: 53.9, dir: 'down' } },
-  { img: '09.jpg', r: { x: 48, y: 41.6, w: 84, h: 6 }, a: { x: 53, y: 47, dir: 'up' } },
-  { img: '10.jpg', r: { x: 44, y: 33, w: 40, h: 4.6 }, a: { x: 44, y: 30, dir: 'down' } },
-  { img: '11.jpg', r: { x: 17, y: 63, w: 30, h: 3.8 }, a: { x: 17, y: 60, dir: 'down' } },
-  { img: '12.jpg', r: { x: 49, y: 34.5, w: 36, h: 3.8 }, a: { x: 49, y: 31.5, dir: 'down' } },
-  // Reuses 11.jpg: it is the same action screen, and the Sender chip is already visible on
-  // it. Replace with a dedicated shot (Bank Message filled, Sender focused) when we have one.
-  { img: '11.jpg', r: { x: 16, y: 38.3, w: 22, h: 3.6 }, a: { x: 16, y: 35.3, dir: 'down' } },
-  { img: '13.jpg', r: { x: 91, y: 6.5, w: 16, h: 3.6 }, a: { x: 88, y: 9, dir: 'up' } },
-  { img: '14.jpg', r: null, a: null, done: true },
-];
+  { scene: 'automationTab' },
+  { scene: 'pickMessage' },
+  { keyword: true },
+  { scene: 'messageContains' },
+  { scene: 'runImmediately' },
+  { scene: 'searchAction' },
+  { scene: 'shortcutInput' },
+  { done: true },
+]
 
-// ── keyframes (inject once) ─────────────────────────────────────────────────
-const KEYFRAMES = `
-@keyframes bg-pulseDot  { 0%,100%{opacity:1} 50%{opacity:.35} }
-@keyframes bg-ulPulse   { 0%,100%{opacity:.55} 50%{opacity:1} }
-@keyframes bg-arrowBob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
-@keyframes bg-heroFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
-@keyframes bg-heroDot   { 0%{top:-4px;opacity:0} 20%{opacity:1} 70%{top:30px;opacity:1} 85%,100%{top:30px;opacity:0} }
-@keyframes bg-toastIn   { from{opacity:0;transform:translate(-50%,8px)} to{opacity:1;transform:translate(-50%,0)} }
-@keyframes bg-slideR    { from{opacity:0;transform:translate3d(24px,0,0)} to{opacity:1;transform:translate3d(0,0,0)} }
-@keyframes bg-slideL    { from{opacity:0;transform:translate3d(-24px,0,0)} to{opacity:1;transform:translate3d(0,0,0)} }
-@keyframes bg-fadeUp    { from{opacity:0;transform:translate3d(0,8px,0)} to{opacity:1;transform:translate3d(0,0,0)} }
-`;
-function useKeyframes() {
-  useEffect(() => {
-    if (document.getElementById('bg-sms-guide-kf')) return;
-    const el = document.createElement('style');
-    el.id = 'bg-sms-guide-kf';
-    el.textContent = KEYFRAMES;
-    document.head.appendChild(el);
-  }, []);
-}
-
-// ── platform helpers (Capacitor with web fallbacks) ─────────────────────────
 async function copyText(text: string) {
-  try { const { Clipboard } = await import('@capacitor/clipboard'); await Clipboard.write({ string: text }); return; } catch {}
-  try { await navigator.clipboard.writeText(text); return; } catch {}
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-  } catch {}
+  try { const { Clipboard } = await import('@capacitor/clipboard'); await Clipboard.write({ string: text }); return } catch { /* web fallback */ }
+  try { await navigator.clipboard.writeText(text) } catch { /* nothing else to try */ }
 }
 async function openShortcuts() {
-  try { const { AppLauncher } = await import('@capacitor/app-launcher'); await AppLauncher.openUrl({ url: 'shortcuts://' }); return; } catch {}
-  window.location.href = 'shortcuts://';
+  try { const { AppLauncher } = await import('@capacitor/app-launcher'); await AppLauncher.openUrl({ url: 'shortcuts://' }); return } catch { /* web fallback */ }
+  window.location.href = 'shortcuts://'
 }
 
-// ── Messages glyph ────────────────────────────────────────────────────────────
-const ChatGlyph = ({ s = 18 }: { s?: number }) => (
-  <svg width={s} height={s} viewBox="0 0 24 24" fill="#fff" aria-hidden>
-    <path d="M12 2C6.48 2 2 5.94 2 10.6c0 2.3 1.1 4.36 2.86 5.86L4 21l4.92-1.7c.97.26 2.01.4 3.08.4 5.52 0 10-3.94 10-8.5S17.52 2 12 2z" />
-  </svg>
-);
-
-// highlight *segments* in brand red
-function renderDesc(desc: string) {
-  return desc.split('*').map((part, i) =>
-    i % 2 === 1
-      ? <span key={i} style={{ color: BRAND, fontWeight: 700, fontFamily: AR }}>{part}</span>
-      : <React.Fragment key={i}>{part}</React.Fragment>
-  );
+/** *segments* in a description render as teal emphasis. */
+function Emphasis({ text }: { text: string }) {
+  return <>{text.split('*').map((part, i) => (i % 2 === 1 ? <b key={i} className="font-bold text-[var(--color-brand-primary-ink)]">{part}</b> : part))}</>
 }
 
-// ── annotations ─────────────────────────────────────────────────────────────
-function Underline({ r }: { r?: Rect | null }) {
-  if (!r) return null;
-  const w = r.w * 0.92;
-  return (
-    <div style={{
-      position: 'absolute', left: `${r.x - w / 2}%`, top: `${r.y + r.h / 2 + 0.4}%`,
-      width: `${w}%`, height: 3, background: BRAND, borderRadius: 3,
-      boxShadow: '0 0 7px rgba(18,176,160,0.55)', animation: 'bg-ulPulse 1.8s ease-in-out infinite',
-      pointerEvents: 'none', zIndex: 11,
-    }} />
-  );
-}
-function ArrowMark({ a }: { a?: Arrow | null }) {
-  if (!a) return null;
-  const up = a.dir === 'up';
-  return (
-    <div style={{
-      position: 'absolute', left: `${a.x}%`, top: `${a.y}%`,
-      transform: up ? 'translate(-50%,0) scaleY(-1)' : 'translate(-50%,-100%)',
-      zIndex: 12, pointerEvents: 'none',
-    }}>
-      <svg width={36} height={50} viewBox="0 0 46 62" fill="none"
-        style={{ display: 'block', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.45))', animation: 'bg-arrowBob 1.5s ease-in-out infinite' }}>
-        <path d="M25 6 C 15 24, 15 40, 23 51" stroke={BRAND} strokeWidth={5} strokeLinecap="round" />
-        <path d="M23 55 L14 44 M23 55 L33 45" stroke={BRAND} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
-
-// ── intro hero ───────────────────────────────────────────────────────────────
 function Hero() {
-  const t = useT();
-  const g = t.smsTracking.guide;
+  const g = useT().smsTracking.guide
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: '8px 0', animation: 'bg-heroFloat 5.5s ease-in-out infinite' }}>
-      <div style={{ width: 302, maxWidth: '100%', background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)', borderRadius: 18, padding: '12px 14px', display: 'flex', gap: 11, alignItems: 'flex-start', boxShadow: '0 10px 26px rgba(0,0,0,0.4)' }}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: '#34C759', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChatGlyph /></div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-brand-text-primary)', fontFamily: F }}>{g.heroBankName}</span>
-            <span style={{ fontSize: 10.5, color: 'var(--color-brand-text-muted)', fontFamily: F }}>{g.heroNow}</span>
-          </div>
-          <div style={{ fontSize: 12.5, color: 'var(--color-brand-text-secondary)', lineHeight: 1.45, fontFamily: F }}>
-            {g.heroSmsPre}<span style={{ fontFamily: MONO, color: 'var(--color-brand-text-primary)' }}>{g.heroSmsAmount}</span>{g.heroSmsPost}
-          </div>
+    <div className="mx-auto flex w-full max-w-[310px] flex-col items-center">
+      <div className="flex w-full items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 shadow-[var(--shadow-md)]">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-green)] text-[var(--color-brand-card)]" aria-hidden><MessageSquare className="size-[18px]" /></span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between"><span className="text-[13px] font-bold text-[var(--color-brand-text-primary)]">{g.heroBankName}</span><span className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroNow}</span></div>
+          <p className="mt-0.5 text-[13px] leading-snug text-[var(--color-brand-text-secondary)]">{g.heroSmsPre}<span className="font-mono-numbers text-[var(--color-brand-text-primary)]">{g.heroSmsAmount}</span>{g.heroSmsPost}</p>
         </div>
       </div>
-      <div style={{ position: 'relative', width: 2, height: 36, background: 'var(--color-brand-border)', borderRadius: 2, margin: '7px 0' }}>
-        <div style={{ position: 'absolute', left: -3, width: 8, height: 8, borderRadius: '50%', background: BRAND, boxShadow: '0 0 10px rgba(18,176,160,0.9)', animation: 'bg-heroDot 2.6s ease-in-out infinite' }} />
-      </div>
-      <div style={{ width: 302, maxWidth: '100%', background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)', borderRadius: 18, padding: '11px 11px 9px', boxShadow: '0 12px 30px rgba(0,0,0,0.18)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, padding: '0 5px' }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)', fontFamily: F, whiteSpace: 'nowrap' }}>{g.heroLoggedLabel}</span>
-          <Badge variant="secondary" className="gap-1 border-transparent bg-[var(--color-brand-green)]/15 text-[var(--color-brand-green)]">
-            <Check className="size-3" /> {g.heroAutoLogged}
-          </Badge>
+      <span className="my-2 h-7 w-0.5 rounded-full bg-[var(--color-brand-border-strong)]" aria-hidden />
+      <div className="w-full rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 shadow-[var(--shadow-md)]">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.heroLoggedLabel}</span>
+          <Badge variant="positive" className="gap-1"><Check className="size-3" aria-hidden />{g.heroAutoLogged}</Badge>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '2px 5px' }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(237,178,74,0.14)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Coffee size={18} color="#EDB24A" />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-brand-text-primary)', fontFamily: F, lineHeight: 1.3 }}>{g.heroMerchant}</div>
-            <div style={{ fontSize: 11, color: 'var(--color-brand-text-muted)', fontFamily: F, lineHeight: 1.3 }}>{g.heroCategory}</div>
-          </div>
-          <div style={{ textAlign: 'end', flexShrink: 0 }}>
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-brand-amber-soft)] text-[var(--color-brand-amber)]" aria-hidden><Coffee className="size-5" /></span>
+          <div className="min-w-0 flex-1"><p className="text-sm font-bold text-[var(--color-brand-text-primary)]">{g.heroMerchant}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroCategory}</p></div>
+          <div className="shrink-0 text-end">
             <MoneyDisplay amount={45} currency="EGP" variant="table" primaryClassName="text-sm font-bold text-[var(--color-brand-text-primary)]" />
-            <div style={{ fontSize: 11, color: 'var(--color-brand-text-muted)', fontFamily: F, lineHeight: 1.3 }}>{g.heroMethod}</div>
+            <p className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroMethod}</p>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-// ── keyword teaching screen ───────────────────────────────────────────────────
-const kwHl = (text: string, ar?: boolean) => (
-  <span style={{ background: 'rgba(18,176,160,0.16)', color: BRAND, fontWeight: 800, padding: '1px 5px', borderRadius: 5, fontFamily: ar ? AR : MONO }}>{text}</span>
-);
-const KwBubble = ({ rtl, children }: { rtl?: boolean; children: React.ReactNode }) => (
-  <div style={{ display: 'flex', flexDirection: rtl ? 'row-reverse' : 'row', alignItems: 'flex-end', gap: 8 }}>
-    <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#34C759', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChatGlyph s={13} /></div>
-    <div style={{ maxWidth: 258, background: 'var(--color-brand-elevated)', border: '1px solid var(--color-brand-border)', borderRadius: rtl ? '15px 15px 4px 15px' : '15px 15px 15px 4px', padding: '9px 12px', fontSize: 12.5, lineHeight: 1.5, color: 'var(--color-brand-text-primary)', fontFamily: rtl ? AR : F, direction: rtl ? 'rtl' : 'ltr', textAlign: rtl ? 'right' : 'left' }}>{children}</div>
-  </div>
-);
-const KwLabel = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--color-brand-text-muted)', fontFamily: F }}>{children}</div>
-);
-const KwChip = ({ k, ar, onCopy }: { k: string; ar?: boolean; onCopy: (k: string) => void }) => (
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => onCopy(k)}
-    className="font-bold"
-    style={{ fontFamily: ar ? AR : MONO }}
-  >
-    {k}<Copy size={14} color="var(--color-brand-text-muted)" />
-  </Button>
-);
+const Highlight = ({ children, ar }: { children: ReactNode; ar?: boolean }) => (
+  <span className={cn('rounded-[5px] bg-[var(--color-brand-primary-soft)] px-1.5 py-px font-extrabold text-[var(--color-brand-primary-ink)]', !ar && 'font-mono-numbers')}>{children}</span>
+)
+const Bubble = ({ rtl, children }: { rtl?: boolean; children: ReactNode }) => (
+  <div dir={rtl ? 'rtl' : 'ltr'} className={cn('max-w-[270px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--color-brand-text-primary)]', rtl ? 'self-end rounded-[16px_16px_4px_16px]' : 'self-start rounded-[16px_16px_16px_4px]')}>{children}</div>
+)
 
-// Concept step animation phases:
-// 0 = blank, 1 = header, 2 = SMS examples + arrow, 3 = chips, 4+ = step box visible
-function KeywordScreen({ onCopy, phase }: { onCopy: (k: string) => void; phase: number }) {
-  const t = useT();
-  const g = t.smsTracking.guide;
-
-  // Each block glides in once on its phase. A single CSS animation owns both the
-  // opacity and the transform — no concurrent `transition` (that double-drove
-  // opacity and caused the stutter). The translate3d keyframes are GPU-composited
-  // for the animation's duration; no permanent `will-change` (that pins every
-  // block to its own layer and renders muddy). `.7s` + the guide's standard
-  // easing keeps it unhurried and consistent with the panel/progress transitions.
-  const vis = (minPhase: number, dir: 'R' | 'L' | 'U' = 'R') => ({
-    opacity: phase >= minPhase ? 1 : 0,
-    animation: phase >= minPhase ? `bg-slide${dir} .7s cubic-bezier(.4,0,.2,1) both` : 'none',
-    pointerEvents: (phase >= minPhase ? 'auto' : 'none') as React.CSSProperties['pointerEvents'],
-  });
-
+function KeywordScreen({ onCopy }: { onCopy: (k: string) => void }) {
+  const g = useT().smsTracking.guide
+  const chip = (k: string, ar?: boolean) => (
+    <Button key={k} variant="outline" size="sm" onClick={() => onCopy(k)} className={cn('font-bold', !ar && 'font-mono-numbers')}>{k}<Copy className="size-3.5 text-[var(--color-brand-text-muted)]" aria-hidden /></Button>
+  )
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', minHeight: 0, paddingTop: 4 }}>
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, padding: '0 4px', overflow: 'hidden' }}>
-
-        {/* Header — phase 1, slides from right */}
-        <div style={{ ...vis(1, 'R') }}>
-          <h2 style={{ fontSize: 17, fontWeight: 800, color: 'var(--color-brand-text-primary)', fontFamily: F, lineHeight: 1.25, letterSpacing: '-.3px', marginBottom: 4 }}>
-            {g.kwHeaderTitle}
-          </h2>
-          <p style={{ fontSize: 12, color: 'var(--color-brand-text-secondary)', lineHeight: 1.55, fontFamily: F }}>
-            {g.kwHeaderBody}
-          </p>
-        </div>
-
-        {/* SMS examples — phase 2, slides from left */}
-        <div style={{ ...vis(2, 'L'), display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <KwLabel>{g.kwSentLabel}</KwLabel>
-          {/* Arrow pointing at the highlighted keyword in the first bubble */}
-          <div style={{ position: 'relative' }}>
-            <KwBubble>{g.kwEnPre}{kwHl(g.kwEnHl)}{g.kwEnPost}</KwBubble>
-            <div style={{ position: 'absolute', top: -28, left: 84, pointerEvents: 'none', zIndex: 5 }}>
-              <svg width={28} height={38} viewBox="0 0 46 62" fill="none"
-                style={{ display: 'block', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))', animation: 'bg-arrowBob 1.5s ease-in-out infinite' }}>
-                <path d="M25 6 C 15 24, 15 40, 23 51" stroke={BRAND} strokeWidth={5} strokeLinecap="round" />
-                <path d="M23 55 L14 44 M23 55 L33 45" stroke={BRAND} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          </div>
-          <KwBubble rtl>{g.kwArPre}{kwHl(g.kwArHl, true)}{g.kwArPost}</KwBubble>
-        </div>
-
-        {/* Keyword chips — phase 3, slides from right */}
-        <div style={{ ...vis(3, 'R'), display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <KwLabel>{g.kwCommonLabel}</KwLabel>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{KW_EN.map(k => <KwChip key={k} k={k} onCopy={onCopy} />)}</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, direction: 'rtl' }}>{KW_AR.map(k => <KwChip key={k} k={k} ar onCopy={onCopy} />)}</div>
-        </div>
-
+    <div className="mx-auto flex w-full max-w-[330px] flex-col gap-4">
+      <div>
+        <h2 className="text-[19px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{g.kwHeaderTitle}</h2>
+        <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-brand-text-secondary)]">{g.kwHeaderBody}</p>
+      </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwSentLabel}</p>
+        <Bubble>{g.kwEnPre}<Highlight>{g.kwEnHl}</Highlight>{g.kwEnPost}</Bubble>
+        <Bubble rtl>{g.kwArPre}<Highlight ar>{g.kwArHl}</Highlight>{g.kwArPost}</Bubble>
+      </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwCommonLabel}</p>
+        <div className="flex flex-wrap gap-2">{KW_EN.map((k) => chip(k))}</div>
+        <div className="flex flex-wrap gap-2" dir="rtl">{KW_AR.map((k) => chip(k, true))}</div>
       </div>
     </div>
-  );
+  )
 }
 
-// ── phone mock + overlay (and success state) ──────────────────────────────────
-function PhoneMock({ step, title }: { step: Step; title: string }) {
-  const t = useT();
-  const g = t.smsTracking.guide;
+function DoneScene() {
+  const g = useT().smsTracking.guide
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
-      {/* thinner frame: padding 3 vs old 5 */}
-      <div style={{ height: '100%', aspectRatio: '1290 / 2581', maxWidth: '100%', background: '#050507', borderRadius: 28, padding: 3, boxShadow: '0 20px 55px rgba(0,0,0,0.6), 0 0 0 1px #1A1A24', position: 'relative', flexShrink: 0 }}>
-        <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 25, overflow: 'hidden', background: '#fff' }}>
-          {/* Dynamic Island */}
-          <div style={{ position: 'absolute', top: 7, left: '50%', transform: 'translateX(-50%)', width: 82, height: 22, borderRadius: 11, background: '#050507', zIndex: 15, pointerEvents: 'none' }} />
-          {step.img && <img src={`${ASSET_BASE}/${step.img}`} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
-          <Underline r={step.r} />
-          <Underline r={step.r2} />
-          <ArrowMark a={step.a} />
-          {step.done && (
-            <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, zIndex: 13 }}>
-              <div style={{ width: 74, height: 74, borderRadius: '50%', background: '#37C368', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 34px rgba(55,195,104,0.5)' }}>
-                <Check size={38} strokeWidth={3} color="#fff" />
-              </div>
-              <div style={{ background: 'rgba(10,10,15,0.86)', color: '#fff', fontSize: 13, fontWeight: 700, padding: '7px 15px', borderRadius: 9999, fontFamily: F, border: '1px solid rgba(255,255,255,0.14)', whiteSpace: 'nowrap' }}>{g.automationActive}</div>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex flex-col items-center gap-3">
+      <span className="flex size-[72px] items-center justify-center rounded-full bg-[var(--color-brand-green)] text-[var(--color-brand-card)] shadow-[var(--shadow-md)]"><Check className="size-9" strokeWidth={3} aria-hidden /></span>
+      <Badge variant="positive" className="px-3 py-1 text-[13px]">{g.automationActive}</Badge>
     </div>
-  );
+  )
 }
 
-// ── main component ────────────────────────────────────────────────────────────
 export type SmsTrackingGuideProps = {
-  onClose?: () => void;
+  onClose?: () => void
   /** Fired when the user taps "Finish" (setup complete), before closing. Distinct from cancel/X. */
-  onComplete?: () => void;
-};
+  onComplete?: () => void
+}
 
 export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGuideProps) {
-  useKeyframes();
-  const t = useT();
-  const g = t.smsTracking.guide;
-  const [step, setStep] = useState<1 | 2>(1);
-  const [subStep, setSubStep] = useState(0);
-  const [copied, setCopied] = useState<string | null>(null);
-  // conceptState tracks which subStep the animation was started for + its phase.
-  // conceptPhase derives as 0 whenever safe changes, avoiding synchronous setState in effects.
-  const [conceptState, setConceptState] = useState<{ step: number; phase: number }>({ step: -1, phase: 0 });
-  const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const g = useT().smsTracking.guide
+  const [phase, setPhase] = useState<'intro' | 'steps'>('intro')
+  const [index, setIndex] = useState(0)
+  const [copied, setCopied] = useState<string | null>(null)
+  const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const total = STEPS.length;
-  const safe = Math.min(Math.max(subStep, 0), total - 1);
-  const cur = STEPS[safe];
-  const curCopy = g.steps[safe];
-  const pct = Math.round((safe / (total - 1)) * 100);
-  const isLast = safe === total - 1;
-
-  // Drive concept-screen animation phases. Gaps are reading-paced (~2s) so each
-  // block's .7s glide fully settles and the user can read it before the next
-  // appears: header → SMS examples → keyword chips → step box.
-  // conceptState.step !== safe means phase is 0 (derived), so no synchronous setState needed.
-  useEffect(() => {
-    if (!cur.concept) return;
-    const t1 = setTimeout(() => setConceptState({ step: safe, phase: 1 }), 350);
-    const t2 = setTimeout(() => setConceptState({ step: safe, phase: 2 }), 2350);
-    const t3 = setTimeout(() => setConceptState({ step: safe, phase: 3 }), 4250);
-    const t4 = setTimeout(() => setConceptState({ step: safe, phase: 4 }), 5950);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
-  }, [safe, cur.concept]);
+  const total = STEPS.length
+  const cur = STEPS[index]
+  const copy = g.steps[index]
+  const isLast = index === total - 1
 
   const onCopy = useCallback((k: string) => {
-    copyText(k);
-    setCopied(k);
-    clearTimeout(copyTimer.current);
-    copyTimer.current = setTimeout(() => setCopied(null), 1500);
-  }, []);
-  const close = useCallback(() => (onClose ? onClose() : window.history.back()), [onClose]);
-  // "Finish": mark setup complete (arms the bridge + reveals the switch), then close.
-  const finish = useCallback(() => { onComplete?.(); close(); }, [onComplete, close]);
-
-  const conceptPhase = conceptState.step === safe ? conceptState.phase : 0;
-  const stepBoxVisible = !cur.concept || conceptPhase >= 4;
+    void copyText(k)
+    setCopied(k)
+    clearTimeout(copyTimer.current)
+    copyTimer.current = setTimeout(() => setCopied(null), 1500)
+  }, [])
+  const close = useCallback(() => (onClose ? onClose() : window.history.back()), [onClose])
+  const finish = useCallback(() => { onComplete?.(); close() }, [onComplete, close])
+  const restart = () => setIndex(0)
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-brand-bg)', fontFamily: F }}>
-      <div style={{ width: 390, height: 844, maxWidth: '100%', maxHeight: '100%', background: 'var(--color-brand-bg)', position: 'relative', overflow: 'hidden', fontFamily: F }}>
-        <IconButton
-          onClick={close}
-          aria-label={g.ariaClose}
-          variant="outlined"
-          size="sm"
-          shape="round"
-          className="absolute end-4 top-4 z-[60]"
-        >
-          <X size={14} strokeWidth={2} />
-        </IconButton>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-brand-bg)]">
+      <div className="relative flex h-full max-h-[844px] w-full max-w-[390px] flex-col overflow-hidden bg-[var(--color-brand-bg)] safe-area-top safe-area-bottom">
+        <IconButton onClick={close} aria-label={g.ariaClose} variant="outlined" size="sm" shape="round" className="absolute end-4 top-4 z-10"><X /></IconButton>
 
-        {/* slider track */}
-        <div style={{ width: 780, height: 844, display: 'flex', willChange: 'transform', transform: `translateX(${-(step - 1) * 390}px)`, transition: 'transform .44s cubic-bezier(.4,0,.2,1)' }}>
-
-          {/* PANEL 1 — INTRO */}
-          <section data-screen-label="Intro" style={{ width: 390, height: 844, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '24px 26px 0', flexShrink: 0 }}>
-              <div style={{ width: 30, height: 30, borderRadius: 9, background: BRAND, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(18,176,160,0.35)' }}>
-                <span style={{ fontSize: 17, fontWeight: 900, color: '#fff', lineHeight: 1 }}>B</span>
-              </div>
-              <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-brand-text-primary)', letterSpacing: '-.2px' }}>{g.brand}</span>
+        {phase === 'intro' ? (
+          <section className="flex min-h-0 flex-1 flex-col px-6 pb-6 pt-5" aria-label={g.brand}>
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-8 items-center justify-center rounded-[10px] bg-[var(--color-brand-primary)] text-base font-extrabold text-[var(--color-brand-on-primary)]" aria-hidden>B</span>
+              <span className="text-base font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.brand}</span>
             </div>
-
-            <div style={{ height: 360, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}><Hero /></div>
-
-            <div style={{ padding: '0 26px 0' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(18,176,160,0.09)', border: '1px solid rgba(18,176,160,0.22)', borderRadius: 9999, padding: '4px 12px', marginBottom: 13, width: 'fit-content', whiteSpace: 'nowrap' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: BRAND, animation: 'bg-pulseDot 2s infinite', flexShrink: 0 }} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: BRAND, letterSpacing: '.09em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{g.introBadge}</span>
-              </div>
-              <h1 style={{ fontSize: 29, fontWeight: 800, color: 'var(--color-brand-text-primary)', lineHeight: 1.16, marginBottom: 11, letterSpacing: '-.6px' }}>{g.introTitle1}<br />{g.introTitle2}</h1>
-              <p style={{ fontSize: 14, color: 'var(--color-brand-text-secondary)', lineHeight: 1.65, maxWidth: 310 }}>{g.introBody}</p>
-            </div>
-
-            <div style={{ marginTop: 'auto', padding: '14px 26px 44px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#37C368" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>
-                <span style={{ fontSize: 12, color: 'var(--color-brand-text-muted)', lineHeight: 1.45 }}>{g.trust}</span>
-              </div>
-              <Button variant="default" style={{ width: '100%', height: 52, fontSize: 15, fontWeight: 700, borderRadius: 14, boxShadow: '0 10px 30px rgba(18,176,160,0.28)' }} onClick={() => { setStep(2); setSubStep(0); }}>{g.cta}</Button>
-              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-brand-text-muted)', marginTop: 11 }}>{g.ctaCaption}</p>
-            </div>
+            <div className="flex min-h-0 flex-1 items-center py-4"><Hero /></div>
+            <h1 className="text-[29px] font-bold leading-[1.15] tracking-[-0.03em] text-[var(--color-brand-text-primary)]">{g.introTitle1}<br />{g.introTitle2}</h1>
+            <p className="mt-2.5 text-sm leading-relaxed text-[var(--color-brand-text-secondary)]">{g.introBody}</p>
+            <p className="mt-4 flex items-start gap-2 text-xs leading-snug text-[var(--color-brand-text-muted)]"><ShieldCheck className="mt-px size-4 shrink-0 text-[var(--color-brand-green)]" aria-hidden />{g.trust}</p>
+            <Button size="cta-block" className="mt-4 font-bold" onClick={() => { setPhase('steps'); setIndex(0) }}>{g.cta}</Button>
+            <p className="mt-2.5 text-center text-xs text-[var(--color-brand-text-muted)]">{g.ctaCaption}</p>
           </section>
+        ) : (
+          <section className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4" aria-label={g.setupTitle}>
+            <div className="flex items-center gap-2 pe-12">
+              <IconButton onClick={() => (index === 0 ? setPhase('intro') : setIndex((i) => i - 1))} aria-label={g.ariaBack} variant="outlined" size="sm" shape="round"><ChevronLeft /></IconButton>
+              <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.setupTitle}</span>
+            </div>
+            <div className="mt-3 flex gap-1" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={index + 1} aria-label={g.stepOf(index + 1, total)}>
+              {STEPS.map((_, i) => <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors', i <= index ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-sunken)]')} />)}
+            </div>
+            <p className="mt-2 text-[11px] font-semibold tabular-nums text-[var(--color-brand-text-muted)]">{g.stepOf(index + 1, total)}</p>
 
-          {/* PANEL 2 — GUIDED SETUP */}
-          <section data-screen-label="Guided setup" style={{ width: 390, height: 844, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-            {/* Header */}
-            <div style={{ padding: '18px 20px 11px', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, paddingRight: 48, marginBottom: 9 }}>
-                <IconButton
-                  onClick={() => setStep(1)}
-                  aria-label={g.ariaBack}
-                  variant="outlined"
-                  size="sm"
-                  shape="round"
-                >
-                  <ChevronLeft size={14} />
-                </IconButton>
-                <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--color-brand-text-primary)', letterSpacing: '-.2px' }}>{g.setupTitle}</span>
-              </div>
-              <div style={{ marginBottom: 7 }}>
-                <span style={{ fontSize: 11, color: 'var(--color-brand-text-muted)', fontWeight: 600, fontVariantNumeric: 'tabular-nums', letterSpacing: '.02em', whiteSpace: 'nowrap' }}>{g.stepOf(safe + 1, total)}</span>
-              </div>
-              <div style={{ height: 3, background: 'var(--color-brand-card)', borderRadius: 9999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg,#12B0A0,#ff6a6a)', borderRadius: 9999, transition: 'width .4s cubic-bezier(.4,0,.2,1)' }} />
-              </div>
+            <div className="flex min-h-0 flex-1 items-center justify-center py-3" key={index}>
+              {cur.keyword ? <KeywordScreen onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} />}
             </div>
 
-            {/* Content area — sits below phone shadow */}
-            <div style={{ flex: 1, padding: '2px 16px 0', minHeight: 0, display: 'flex', position: 'relative', zIndex: 1 }}>
-              {cur.concept
-                ? <KeywordScreen onCopy={onCopy} phase={conceptPhase} />
-                : <PhoneMock step={cur} title={curCopy.title} />}
-            </div>
-
-            {/* Step text box — z-index 2 so it sits above the phone shadow */}
-            <div style={{ padding: '12px 18px 4px', flexShrink: 0, position: 'relative', zIndex: 2 }}>
-              <div
-                style={{
-                  background: 'var(--color-brand-card)', border: '1px solid var(--color-brand-border)', borderRadius: 15, padding: '13px 15px',
-                  opacity: stepBoxVisible ? 1 : 0,
-                  transform: stepBoxVisible ? 'none' : 'translateY(6px)',
-                  transition: 'opacity .4s ease, transform .4s ease',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(18,176,160,0.14)', color: BRAND, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{safe + 1}</span>
-                  <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--color-brand-text-primary)' }}>{curCopy.title}</span>
-                </div>
-                <p style={{ fontSize: 12.5, color: 'var(--color-brand-text-secondary)', lineHeight: 1.55, paddingLeft: 28 }}>{renderDesc(curCopy.desc)}</p>
+            {!cur.keyword ? (
+              <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
+                <p className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">{copy.title}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-brand-text-secondary)]"><Emphasis text={copy.desc} /></p>
               </div>
-            </div>
+            ) : null}
 
-            {/* Nav arrows + dot indicators */}
-            <div style={{ padding: '10px 18px 6px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-              <IconButton
-                onClick={() => setSubStep(s => Math.max(0, s - 1))}
-                aria-label={g.ariaPrev}
-                variant="outlined"
-                shape="round"
-                disabled={safe === 0}
-                className="shadow-[var(--shadow-sm)]"
-              >
-                <ChevronLeft size={16} />
-              </IconButton>
-              <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                {STEPS.map((_, i) => (
-                  <button key={i} onClick={() => setSubStep(i)} aria-label={g.ariaStep(i + 1)} style={{ height: 6, width: i === safe ? 20 : 6, borderRadius: 9999, cursor: 'pointer', border: 'none', padding: 0, transition: 'all .28s cubic-bezier(.4,0,.2,1)', background: i === safe ? BRAND : i < safe ? '#37C368' : 'var(--color-brand-border)' }} />
-                ))}
-              </div>
-              <IconButton
-                onClick={() => setSubStep(s => Math.min(total - 1, s + 1))}
-                aria-label={g.ariaNext}
-                variant={isLast ? 'solid' : 'outlined'}
-                shape="round"
-                className="shadow-[var(--shadow-md)]"
-              >
-                <ChevronRight size={16} />
-              </IconButton>
-            </div>
-
-            {/* CTA button — always shows "Open Shortcuts" except on the done step */}
-            <div style={{ padding: '6px 20px 26px', flexShrink: 0, position: 'relative', zIndex: 2 }}>
+            <div className="mt-3 flex gap-2.5">
               {cur.done ? (
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <Button
-                    size="cta"
-                    onClick={() => { setStep(2); setSubStep(0); }}
-                    className="flex-1 font-bold shadow-[var(--shadow-md)]"
-                    style={{ fontFamily: F }}
-                  >
-                    <Plus size={14} strokeWidth={2.4} />
-                    {g.addKeyword}
-                  </Button>
-                  <Button variant="outline" size="cta" onClick={finish} className="flex-1 font-bold" style={{ fontFamily: F }}>{g.finish}</Button>
-                </div>
+                <>
+                  <Button size="cta" onClick={restart} className="flex-1 font-bold"><Plus className="size-4" aria-hidden />{g.addKeyword}</Button>
+                  <Button variant="outline" size="cta" onClick={finish} className="flex-1 font-bold">{g.finish}</Button>
+                </>
               ) : (
-                <Button variant="default" style={{ width: '100%', height: 52, fontSize: 15, fontWeight: 700, borderRadius: 14, boxShadow: '0 10px 30px rgba(18,176,160,0.28)' }} onClick={openShortcuts}>{g.openShortcuts}</Button>
+                <>
+                  <Button variant="outline" size="cta" onClick={openShortcuts} className="font-semibold">{g.openShortcuts}</Button>
+                  <Button size="cta" onClick={() => setIndex((i) => Math.min(total - 1, i + 1))} disabled={isLast} className="flex-1 font-bold">{g.ariaNext}</Button>
+                </>
               )}
             </div>
           </section>
-        </div>
-
-        {/* toast */}
-        {copied && (
-          <div style={{ position: 'absolute', bottom: 92, left: '50%', transform: 'translateX(-50%)', zIndex: 80, background: 'rgba(10,10,15,0.92)', color: '#fff', fontSize: 12.5, fontWeight: 600, padding: '9px 16px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.16)', animation: 'bg-toastIn .2s ease', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 7, fontFamily: F }}>
-            <Check size={13} strokeWidth={3} color="#37C368" /> {g.copied(copied)}
-          </div>
         )}
+
+        {copied ? (
+          <div role="status" className="absolute bottom-24 start-1/2 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-[var(--color-brand-text-primary)] px-4 py-2.5 text-[12.5px] font-semibold text-[var(--color-brand-card)] shadow-[var(--shadow-md)]">
+            <Check className="size-3.5 text-[var(--color-brand-green)]" strokeWidth={3} aria-hidden />{g.copied(copied)}
+          </div>
+        ) : null}
       </div>
     </div>
-  );
+  )
 }

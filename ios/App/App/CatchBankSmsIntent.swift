@@ -15,11 +15,14 @@ struct CatchBankSmsIntent: AppIntent {
     @Parameter(title: "Bank Message")
     var message: String
 
+    /// Kept only so Shortcuts already built with the old two-field action keep running. iOS never hands an app the
+    /// sender of a message (production: 0 of 824 forwarded messages carried one), so it is no longer shown or asked for;
+    /// the server names the provider from the message text (see providerFromBody.ts).
     @Parameter(title: "Sender", default: "")
     var sender: String?
 
     static var parameterSummary: some ParameterSummary {
-        Summary("Catch \(\.$message) from \(\.$sender)")
+        Summary("Catch \(\.$message)")
     }
 
     func perform() async throws -> some IntentResult {

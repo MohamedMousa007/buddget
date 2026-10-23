@@ -99,7 +99,7 @@ export interface SmsRowData {
   /**
    * SMS sender ID ("barq app", "AlRajhiBank"). Identifies the PROVIDER when no registered
    * last4 does — the only way to attribute a wallet whose cards the user never registered.
-   * Empty on iOS until the Shortcut binds its Sender field.
+   * Always empty on iOS (Shortcuts never exposes the sender); the parse route names the provider from the body instead.
    */
   sender?: string | null
   // --- Optional enrichment (set by the parse route) -----------------------
