@@ -85,7 +85,7 @@ if (cmd === 'list') {
   try {
     const key = join(dir, 'key.pem'), csr = join(dir, 'req.csr'), crt = join(dir, 'cert.pem'), p12 = join(dir, 'dev.p12')
     run('openssl', ['req', '-new', '-newkey', 'rsa:2048', '-nodes', '-keyout', key, '-out', csr, '-subj', '/CN=Buddget CI/O=Buddget/C=EG'])
-    const res = await api('/v1/certificates', { method: 'POST', body: JSON.stringify({ data: { type: 'certificates', attributes: { certificateType: 'IOS_DEVELOPMENT', csrContent: readFileSync(csr, 'utf8') } } }) })
+    const res = await api('/v1/certificates', { method: 'POST', body: JSON.stringify({ data: { type: 'certificates', attributes: { certificateType: 'DEVELOPMENT', csrContent: readFileSync(csr, 'utf8') } } }) })
     writeFileSync(crt, `-----BEGIN CERTIFICATE-----\n${res.data.attributes.certificateContent.match(/.{1,64}/g).join('\n')}\n-----END CERTIFICATE-----\n`)
     const password = randomBytes(18).toString('base64url')
     run('openssl', ['pkcs12', '-export', '-inkey', key, '-in', crt, '-out', p12, '-passout', `pass:${password}`, '-legacy'])
