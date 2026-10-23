@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bug, CheckCircle, Globe, Inbox, Lightbulb, Mail, MessageCircleQuestion, Send, X } from 'lucide-react'
+import { Bug, CheckCircle, Globe, Inbox, ListChecks, Lightbulb, Mail, MessageCircleQuestion, Send, X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
@@ -15,6 +15,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Textarea } from '@/components/ui/textarea'
 import { useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
+import { SupportBoardSheet } from './SupportBoardSheet'
 import { SupportInboxSheet } from './SupportInboxSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
@@ -140,12 +141,14 @@ export function HelpCard() {
     <>
       <SettingsSection title={copy.help.title}>
         <SettingsRow icon={SETTING_ICONS.help} tone={tone} title={copy.help.feedback} subtitle={copy.help.feedbackHint} onClick={() => openSheet('feedback')} settingId="feedback" />
+        <SettingsRow icon={ListChecks} tone={tone} title={copy.help.board} subtitle={copy.help.boardHint} onClick={() => openSheet('board')} settingId="board" />
         <SettingsRow icon={Inbox} tone={tone} title={copy.help.inbox} subtitle={copy.help.inboxHint} onClick={() => openSheet('inbox')} settingId="inbox" />
         <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.terms} href="/legal/terms" settingId="terms" />
         <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.privacy} href="/legal/privacy" settingId="privacy" />
         <SettingsRow icon={SETTING_ICONS.info} tone={tone} title={copy.help.about} subtitle={copy.help.aboutHint} onClick={() => openSheet('about')} settingId="about" />
       </SettingsSection>
       <FeedbackSheet open={sheet === 'feedback'} onClose={() => openSheet(null)} />
+      <SupportBoardSheet open={sheet === 'board'} onClose={() => openSheet(null)} />
       <SupportInboxSheet open={sheet === 'inbox'} onClose={() => openSheet(null)} />
       <AboutSheet open={sheet === 'about'} onClose={() => openSheet(null)} />
     </>

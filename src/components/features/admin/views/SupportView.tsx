@@ -22,7 +22,7 @@ import type { AdminStatus } from '../types'
 interface Ticket {
   id: string; number: number; user_id: string | null; requester_email: string | null; subject: string; category: string
   priority: string; status: string; assignee_id: string | null; source: string; tags: string[]
-  kind: string; severity: string; triage_state: string; linear_issue_url: string | null; sla_first_response_due: string | null
+  kind: string; severity: string; votes: number; board_state: string; board_title: string | null; board_summary: string | null; triage_state: string; linear_issue_url: string | null; sla_first_response_due: string | null
   created_at: string; updated_at: string; first_response_at: string | null; resolved_at: string | null
 }
 interface ListData { tickets: Ticket[]; staff: Array<{ id: string; name: string }>; counts: Record<string, number>; me: string }
@@ -191,12 +191,29 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
             </dl>
             {ticket.user_id && can('users.view') ? <Button variant="outline" size="touch" className="mt-3 w-full" onClick={() => adminNavigate('users', { id: ticket.user_id! })}>Open user profile</Button> : null}
           </Panel>
+          {can('support.manage') && (ticket.kind === 'feature' || ticket.board_state !== 'hidden') ? <BoardPanel key={ticket.board_state + (ticket.board_title ?? '')} ticket={ticket} run={run} /> : null}
           {can('support.manage') ? (
             <Button variant="destructive" size="touch" className="w-full" onClick={async () => { if (await run('delete', { op: 'delete' }, { success: 'Ticket deleted', confirm: { title: 'Delete this ticket?', body: 'The whole conversation is erased.', destructive: true } })) adminNavigate('support') }}>Delete ticket</Button>
           ) : null}
         </div>
       </div>
     </>
+  )
+}
+
+function BoardPanel({ ticket, run }: { ticket: Ticket; run: ReturnType<typeof useAdminAction>['run'] }) {
+  const [state, setState] = useState(ticket.board_state)
+  const [title, setTitle] = useState(ticket.board_title ?? '')
+  const [summary, setSummary] = useState(ticket.board_summary ?? '')
+  return (
+    <Panel title="Feedback board" description={`Users vote on published ideas. They only see the title and summary you write here, never their own wording. ${ticket.votes} net votes; 10 sends it to Linear.`}>
+      <div className="space-y-3">
+        <Field label="State"><SelectField aria-label="Board state" value={state} onChange={setState} className="h-12 w-full" items={['hidden', 'published', 'planned', 'shipped'].map((v) => ({ value: v, label: v }))} /></Field>
+        <Field label="Public title"><Input aria-label="Public title" value={title} maxLength={100} onChange={(e) => setTitle(e.target.value)} /></Field>
+        <Field label="Public summary"><Textarea aria-label="Public summary" rows={3} maxLength={400} value={summary} onChange={(e) => setSummary(e.target.value)} /></Field>
+        <Button size="touch" className="w-full" onClick={() => void run('board', { op: 'board', boardState: state, boardTitle: title, boardSummary: summary }, { success: 'Board updated' })}>Save</Button>
+      </div>
+    </Panel>
   )
 }
 

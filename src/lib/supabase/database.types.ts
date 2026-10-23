@@ -3651,8 +3651,17 @@ export type Database = {
           },
         ]
       }
+      feedback_votes: {
+        Row: { created_at: string; ticket_id: string; user_id: string; value: number }
+        Insert: { created_at?: string; ticket_id: string; user_id: string; value: number }
+        Update: { value?: number }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
+          board_state: string
+          board_summary: string | null
+          board_title: string | null
           app_version: string | null
           area: string | null
           context: Json
@@ -3684,6 +3693,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          board_state?: string
+          board_summary?: string | null
+          board_title?: string | null
           app_version?: string | null
           area?: string | null
           context?: Json
@@ -3715,6 +3727,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          board_state?: string
+          board_summary?: string | null
+          board_title?: string | null
           app_version?: string | null
           area?: string | null
           context?: Json
@@ -4010,6 +4025,7 @@ export type Database = {
         Args: { p_days?: number }
         Returns: { day: string; model: string; feature: string; calls: number; in_tokens: number; out_tokens: number; cost_usd_micro: number; active_users: number }[]
       }
+      cast_feedback_vote: { Args: { p_user: string; p_ticket: string; p_value: number; p_threshold?: number }; Returns: Json }
       ai_spend_today: { Args: Record<PropertyKey, never>; Returns: Json }
       admin_onboarding_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }

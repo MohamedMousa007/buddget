@@ -60,6 +60,12 @@ export interface SettingsHubCopy {
     idea: string
     question: string
     inbox: string
+    board: string
+    boardHint: string
+    boardEmpty: string
+    boardState: Record<string, string>
+    upvote: string
+    downvote: string
     inboxHint: string
     inboxEmpty: string
     reply: string
@@ -193,6 +199,12 @@ const en: SettingsHubCopy = {
     idea: 'Idea',
     question: 'Question',
     inbox: 'My requests',
+    board: 'Ideas board',
+    boardHint: 'Vote on what we build next',
+    boardEmpty: 'No ideas are up for a vote yet. Share one with Send feedback.',
+    boardState: { published: 'Open for votes', planned: 'Planned', shipped: 'Shipped' },
+    upvote: 'Vote up',
+    downvote: 'Vote down',
     inboxHint: 'Replies from the Buddget team',
     inboxEmpty: 'You have not sent anything yet.',
     reply: 'Send',
@@ -363,6 +375,12 @@ const ar: SettingsHubCopy = {
     idea: 'ميزة',
     question: 'سؤال',
     inbox: 'طلباتي',
+    board: 'لوحة الأفكار',
+    boardHint: 'صوّت على اللي هنبنيه بعد كده',
+    boardEmpty: 'مفيش أفكار للتصويت لسه. ابعت فكرتك من «أرسل ملاحظاتك».',
+    boardState: { published: 'مفتوح للتصويت', planned: 'مخطط له', shipped: 'اتنفّذ' },
+    upvote: 'صوّت لفوق',
+    downvote: 'صوّت لتحت',
     inboxHint: 'ردود فريق Buddget',
     inboxEmpty: 'لسه ما بعتّش حاجة.',
     reply: 'إرسال',
