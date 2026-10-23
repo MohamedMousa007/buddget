@@ -1,7 +1,7 @@
 import type { ServiceClient } from '@/lib/supabase/service'
 
 /** The heavy admin aggregates are computed on a schedule (pg_cron, every 15 min) into `admin_metrics_cache`. */
-export const METRIC_KEYS = ['overview', 'feature_adoption', 'sms_health_7', 'retention_10', 'signup_series_30', 'activity_series_30'] as const
+export const METRIC_KEYS = ['overview', 'feature_adoption', 'sms_health_7', 'retention_10', 'signup_series_30', 'activity_series_30', 'funnel_30', 'retention_days'] as const
 export type MetricKey = (typeof METRIC_KEYS)[number]
 
 /** A cached value is trusted for this long; the schedule refreshes it three times as often. */
@@ -15,6 +15,8 @@ async function live(service: ServiceClient, key: MetricKey): Promise<{ data: unk
     case 'retention_10': return service.rpc('admin_retention', { p_weeks: 10 })
     case 'signup_series_30': return service.rpc('admin_signup_series', { p_days: 30 })
     case 'activity_series_30': return service.rpc('admin_activity_series', { p_days: 30 })
+    case 'funnel_30': return service.rpc('admin_funnel', { p_days: 30 })
+    case 'retention_days': return service.rpc('admin_retention_days', { p_signup_days: 90 })
   }
 }
 

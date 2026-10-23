@@ -16,7 +16,14 @@ interface AnalyticsData {
   activity: Array<{ day: string; active_users: number; sessions: number }>
   adoption: Record<string, number>
   retention: Array<{ cohort_week: string; size: number; active: Record<string, number> }>
+  funnel: Array<{ milestone: string; users: number }>
+  retentionDays: Record<'d1' | 'd7' | 'd30', { eligible: number; retained: number }>
   overview: { users_total: number; dau: number; wau: number; mau: number; users_new_30d: number }
+}
+
+const MILESTONES: Record<string, string> = {
+  signed_up: 'Signed up', onboarding_done: 'Finished setup', first_account: 'Added an account', first_income: 'Added income',
+  first_expense: 'Logged an expense', sms_enabled: 'Turned on bank texts', budget_created: 'Created a budget', goal_created: 'Created a goal',
 }
 
 const RANGES = [{ value: '14', label: '14d' }, { value: '30', label: '30d' }, { value: '90', label: '90d' }] as const
@@ -92,6 +99,19 @@ export default function AnalyticsView() {
             </div>
           </Panel>
         ) : null}
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Panel title="New-user funnel" description="People who signed up in the last 30 days, by first-time milestone (updated nightly)">
+            <BarList items={data.funnel.map((s) => ({ label: MILESTONES[s.milestone] ?? s.milestone, value: s.users, hint: pct(s.users, data.funnel[0]?.users ?? 0) }))} format={compact} />
+          </Panel>
+          <Panel title="Day 1, 7 and 30 retention" description="Of people who signed up in the last 90 days and are old enough, the share active exactly that many days later">
+            <BarList
+              color={CHART.four}
+              items={(['d1', 'd7', 'd30'] as const).map((k) => ({ label: `Day ${k.slice(1)}`, value: data.retentionDays[k]?.retained ?? 0, hint: `${pct(data.retentionDays[k]?.retained ?? 0, data.retentionDays[k]?.eligible ?? 0)} of ${num(data.retentionDays[k]?.eligible ?? 0)}` }))}
+              format={compact}
+            />
+          </Panel>
+        </div>
 
         <Panel title="Weekly retention" description="Share of each signup cohort that was active N weeks later">
           <RetentionGrid cohorts={data.retention} />

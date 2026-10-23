@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   const days = Math.min(Math.max(Number(new URL(req.url).searchParams.get('days')) || 30, 7), 180)
 
   try {
-    const m = await adminMetrics(service, ['overview', 'feature_adoption', 'retention_10', 'signup_series_30', 'activity_series_30'])
+    const m = await adminMetrics(service, ['overview', 'feature_adoption', 'retention_10', 'signup_series_30', 'activity_series_30', 'funnel_30', 'retention_days'])
     // The cached series cover 30 days; other windows are cheap to compute (they read the daily rollup).
     const [signups, activity] =
       days === 30
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
             if (s.error || a.error) throw new Error((s.error ?? a.error)!.message)
             return [s.data, a.data]
           })
-    return json({ days, signups, activity, adoption: m.feature_adoption, retention: m.retention_10, overview: m.overview })
+    return json({ days, signups, activity, adoption: m.feature_adoption, retention: m.retention_10, funnel: m.funnel_30, retentionDays: m.retention_days, overview: m.overview })
   } catch (e) {
     console.error('[admin/analytics] failed', e instanceof Error ? e.message : e)
     return json({ error: 'Could not load analytics.' }, 500)

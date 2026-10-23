@@ -38,6 +38,7 @@ export const USER_DATA_TABLES = [
   'notifications',
   'app_analytics_events',
   'app_analytics_daily',
+  'user_milestones',
   'user_settings',
 ] as const
 
