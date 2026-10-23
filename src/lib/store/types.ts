@@ -449,6 +449,9 @@ export interface BudgetActivationUndo {
 }
 
 /** What the budget studio learns about the user, beyond the typed profile columns. */
+/** Per budget line (`block:name`): the last close proposal and what the user did with it. */
+export type CloseMemory = Record<string, { kind: 'raise' | 'lower'; cycle: string; outcome: 'applied' | 'passed' }>
+
 export interface FinancialProfile {
   housing?: 'rent' | 'own' | 'family' | 'company'
   dependents?: number
@@ -461,6 +464,8 @@ export interface FinancialProfile {
   investInterest?: boolean
   /** Pays mostly in cash, so tracked spending understates real spending. */
   cashHeavy?: boolean
+  /** What month-close proposals were applied or passed on, per line, so a declined change is not repeated. */
+  closeMemory?: CloseMemory
 }
 
 /** Who the budget is for (planner / household). */

@@ -21,6 +21,11 @@ const SPEND_CUSHION = 1.1
 const FULL_EVIDENCE_CYCLES = 3
 /** Cash spending is mostly untracked, so recorded history is trusted at half weight. */
 const CASH_HEAVY_TRUST = 0.5
+/** How far a person's own spending may pull the benchmark for categories they have no history in. */
+const PERSONAL_SCALE_MIN = 0.5
+const PERSONAL_SCALE_MAX = 2
+const PERSONAL_SCALE_KEYS = 2
+const PERSONAL_SCALE_VISIBLE = 0.1
 const ESSENTIAL_KEYS: readonly EverydayKey[] = ['groceries', 'health', 'transport']
 /** Trim order when money runs short: wants go before needs. */
 const CUT_ORDER: readonly EverydayKey[] = ['fun', 'shopping', 'dining', 'other', 'family', 'transport', 'health', 'groceries']
@@ -145,6 +150,19 @@ interface EverydaySlot {
   confidence: DraftLine['confidence']
 }
 
+/**
+ * How this person spends compared with the benchmark, from the categories where we know. Someone who spends 30% above
+ * typical on groceries and dining likely does on a category we have not seen yet, so the benchmark for those is scaled.
+ */
+export function personalScale(averages: BudgetFacts['averages'], typical: Record<EverydayKey, number>): number {
+  const ratios = EVERYDAY_KEYS.filter((k) => (averages[k] ?? 0) > 0 && typical[k] > 0)
+    .map((k) => (averages[k] as number) / typical[k])
+    .sort((a, b) => a - b)
+  if (ratios.length < PERSONAL_SCALE_KEYS) return 1
+  const mid = ratios.length % 2 ? ratios[(ratios.length - 1) / 2] : (ratios[ratios.length / 2 - 1] + ratios[ratios.length / 2]) / 2
+  return Math.min(PERSONAL_SCALE_MAX, Math.max(PERSONAL_SCALE_MIN, mid))
+}
+
 function sizeEveryday(
   f: BudgetFacts,
   bench: Benchmark,
@@ -158,15 +176,18 @@ function sizeEveryday(
   const typical = benchmarkEveryday(bench, f, income)
   const cycles = f.averageCycles ?? FULL_EVIDENCE_CYCLES
   const weight = Math.min(1, cycles / FULL_EVIDENCE_CYCLES) * (f.cashHeavy ? CASH_HEAVY_TRUST : 1)
+  // Unseen categories follow how this person spends elsewhere; the pull fades as evidence thins.
+  const personal = 1 + (personalScale(f.averages, typical) - 1) * weight
+  const benchFor = (k: EverydayKey) => typical[k] * (f.averages[k] === undefined ? personal : 1)
   const needsBench = weight < 1 ? EVERYDAY_KEYS : EVERYDAY_KEYS.filter((k) => f.averages[k] === undefined)
-  const benchSum = sum(needsBench.map((k) => typical[k]))
+  const benchSum = sum(needsBench.map(benchFor))
   // Low incomes must not be handed a benchmark larger than they can pay.
   const scale = benchSum > 0 ? Math.min(1, (0.6 * Math.max(0, capacity - fixedTotal)) / benchSum) : 1
 
   const slots: EverydaySlot[] = []
   for (const key of EVERYDAY_KEYS) {
     const avg = f.averages[key]
-    const typicalHere = typical[key] * scale
+    const typicalHere = benchFor(key) * scale
     const blended = avg === undefined ? typicalHere : typicalHere > 0 ? weight * avg + (1 - weight) * typicalHere : avg
     const target = Math.round(blended * trim)
     const floor = ESSENTIAL_KEYS.includes(key) ? Math.round(blended * ESSENTIAL_FLOOR) : 0
@@ -179,7 +200,9 @@ function sizeEveryday(
       confidence: avg === undefined || weight < 1 ? 'estimated' : 'high',
       rationale:
         avg === undefined
-          ? `Typical ${bench.label} ${name} for your household, no spending history yet`
+          ? Math.abs(personal - 1) >= PERSONAL_SCALE_VISIBLE
+            ? `Typical ${bench.label} ${name}, adjusted to your usual spending (${Math.round(personal * 100)}% of typical)`
+            : `Typical ${bench.label} ${name} for your household, no spending history yet`
           : weight < 1
             ? `Your ${name} average of ${money(avg)} so far, blended with typical ${bench.label} spending until you have ${FULL_EVIDENCE_CYCLES} months of history`
             : `Your 3-month average of ${money(avg)}, at ${trimPct}%`,

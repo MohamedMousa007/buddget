@@ -11,6 +11,7 @@ import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
 import { debtPaidByDebt } from '@/lib/budget/liveLinks'
 import { lineHistory, shiftMonth, spendByLine } from '@/lib/budget/lineSpend'
 import { buildClose, type CloseLine, type MonthClose } from '@/lib/budget/monthClose'
+import { closeKey } from '@/lib/budget/closeMemory'
 import { calculateCategorySpending, filterExpensesByMonth, getMonthRange } from '@/lib/utils/calculations'
 
 /** The close prompt stays up for this many days into the new cycle, then stops nagging. */
@@ -35,6 +36,7 @@ export function useMonthClose(): MonthCloseState | null {
       settings: st.settings,
       goldPricePerGram: st.goldPricePerGram,
       goldPriceAvailable: st.goldPriceAvailable,
+      closeMemory: st.profile.financialProfile?.closeMemory,
     })),
   )
   const closed = useSettingsStore((st) => st.budgetClosedCycles)
@@ -66,6 +68,7 @@ export function useMonthClose(): MonthCloseState | null {
 
     const lines: CloseLine[] = plan.categories.map((c) => ({
       id: c.id,
+      key: closeKey(lineBlock(c), c.name),
       name: c.name,
       block: lineBlock(c),
       cap: effectivePlanCategoryAmountInBase(c, base, s.rates),
@@ -75,6 +78,6 @@ export function useMonthClose(): MonthCloseState | null {
       locked: !!c.locked,
       linked: (c.linkType ?? 'none') !== 'none',
     }))
-    return { cycleKey, ...buildClose(lines) }
+    return { cycleKey, ...buildClose(lines, { past: s.closeMemory, cycleKey }) }
   }, [s, closed])
 }

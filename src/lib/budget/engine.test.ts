@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildPlan, ENGINE_VERSION, EVERYDAY_KEYS } from '@/lib/budget/engine'
-import { getBenchmark } from '@/lib/budget/benchmarks'
+import { buildPlan, ENGINE_VERSION, EVERYDAY_KEYS, personalScale } from '@/lib/budget/engine'
+import { benchmarkEveryday, getBenchmark } from '@/lib/budget/benchmarks'
 import type { BudgetFacts, DraftLine, PlanDraft } from '@/lib/budget/facts'
 
 const base: BudgetFacts = {
@@ -331,3 +331,34 @@ describe('extra payoff pace', () => {
     expect(extra?.amount).toBeLessThanOrEqual(Math.ceil(14200 / 36))
   })
 })
+
+describe('personal spending scale', () => {
+  const egypt = { ...base, baseCurrency: 'EGP' as const, country: 'Egypt', monthlyIncome: 60000, averageCycles: 3 }
+  const typical = benchmarkEveryday(getBenchmark('Egypt', 'EGP'), egypt, 60000)
+
+  it('is neutral without enough evidence and capped when it is extreme', () => {
+    expect(personalScale({}, typical)).toBe(1)
+    expect(personalScale({ groceries: typical.groceries * 2 }, typical)).toBe(1)
+    expect(personalScale({ groceries: typical.groceries * 9, dining: typical.dining * 9 }, typical)).toBe(2)
+    expect(personalScale({ groceries: 1, dining: 1 }, typical)).toBe(0.5)
+  })
+
+  it('a heavy spender gets larger estimates for categories with no history, and says why', () => {
+    const heavy = { groceries: typical.groceries * 1.5, dining: typical.dining * 1.5 }
+    const plain = buildPlan({ ...egypt, averages: {} })
+    const scaled = buildPlan({ ...egypt, averages: heavy })
+    const fun = (p: PlanDraft) => find(p, (l) => l.name === 'Fun')!
+    expect(fun(scaled).amount).toBeGreaterThan(fun(plain).amount)
+    expect(fun(scaled).rationale).toContain('adjusted to your usual spending')
+  })
+
+  it('fades as the evidence thins', () => {
+    const heavy = { groceries: typical.groceries * 1.8, dining: typical.dining * 1.8 }
+    const full = find(buildPlan({ ...egypt, averages: heavy, averageCycles: 3 }), (l) => l.name === 'Fun')!.amount
+    const thin = find(buildPlan({ ...egypt, averages: heavy, averageCycles: 1 }), (l) => l.name === 'Fun')!.amount
+    const none = find(buildPlan({ ...egypt, averages: {} }), (l) => l.name === 'Fun')!.amount
+    expect(none).toBeLessThanOrEqual(thin)
+    expect(thin).toBeLessThanOrEqual(full)
+  })
+})
+

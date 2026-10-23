@@ -50,6 +50,7 @@ import { StressTestSheet } from './sheets/StressTestSheet'
 import { useBudgetStressCopy } from './useStressCopy'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
+import { nextCloseMemory } from '@/lib/budget/closeMemory'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetStudioCopy } from './useStudioCopy'
@@ -425,9 +426,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         month={closeMonth}
         onApply={(p) => act.patchLine(p.lineId, { amount: p.to })}
         onDismiss={() => setCloseOpen(false)}
-        onFinish={() => {
+        onFinish={(appliedIds) => {
           setCloseOpen(false)
-          if (monthClose) useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)
+          if (!monthClose) return
+          useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)
+          const { profile, updateProfile } = store.getState()
+          const closeMemory = nextCloseMemory(profile.financialProfile?.closeMemory, monthClose.proposals, appliedIds, monthClose.cycleKey)
+          updateProfile({ financialProfile: { ...profile.financialProfile, closeMemory } })
         }}
       />
       <CardActionMenu
