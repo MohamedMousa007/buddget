@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { spendBlocks } from '@/lib/server/ai/spendGuard'
 import { computeUnits, type TokenUsage } from '@/lib/server/ai/units'
 
 /** `chat_hop` is a tool-loop continuation inside one user turn: counted for cost, not as a new turn. */
@@ -66,6 +67,7 @@ export async function reserveAiQuota(args: {
   if (!quotaStoreAvailable() && process.env.NODE_ENV !== 'production') {
     return { allowed: true, userId: args.userId, reservationId: null, chatId: args.chatId ?? null, newChat: false, rolled: false, soft: false, disabled: [] }
   }
+  if (await spendBlocks(args.feature)) return { allowed: false, layer: 'feature_disabled', resetAt: null }
   try {
     const reserve = () =>
       createServiceRoleClient().rpc('ai_quota_reserve', {

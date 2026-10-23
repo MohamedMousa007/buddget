@@ -4010,6 +4010,7 @@ export type Database = {
         Args: { p_days?: number }
         Returns: { day: string; model: string; feature: string; calls: number; in_tokens: number; out_tokens: number; cost_usd_micro: number; active_users: number }[]
       }
+      ai_spend_today: { Args: Record<PropertyKey, never>; Returns: Json }
       admin_onboarding_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_signup_series: {

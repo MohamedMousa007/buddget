@@ -9,7 +9,7 @@ import type { AdminStatus } from '../types'
 
 interface Row { day: string; model: string; feature: string; calls: number; in_tokens: number; out_tokens: number; cost_usd_micro: number; active_users: number }
 interface Price { model: string; in_usd_per_mtok: number; cached_usd_per_mtok: number; out_usd_per_mtok: number; source_note: string | null }
-interface Data { days: number; rows: Row[]; prices: Price[] }
+interface Data { spend: { costMicro: number; capUsd: number | null } | null; days: number; rows: Row[]; prices: Price[] }
 
 const usd = (micro: number) => `$${(micro / 1e6).toFixed(micro >= 1e6 ? 2 : 4)}`
 
@@ -49,6 +49,7 @@ export default function AiCostView(_props: { status: AdminStatus }) {
   return (
     <>
       <PageHeader title="AI cost" description={`Last ${data.days} days, in USD. Cost uses the price book below at the time of each call.`} />
+      {data.spend?.capUsd ? <div className="mb-4"><Notice tone={Number(data.spend.costMicro) / 1e6 >= data.spend.capUsd ? 'negative' : Number(data.spend.costMicro) / 1e6 >= data.spend.capUsd * 0.8 ? 'warning' : 'info'}>Today: {usd(Number(data.spend.costMicro))} of the {`$${data.spend.capUsd}`} daily cap. At 100% chat, voice, budget and goals pause; bank-text and receipt capture keep working.</Notice></div> : <div className="mb-4"><Notice>No daily cap is set. Add a platform setting <code>ai_spend_guard</code> with <code>{'{"dailyCapUsd": 10}'}</code> to turn the guardrail on.</Notice></div>}
       <KpiGrid cols={3}>
         <StatTile label="Total spend" value={usd(total)} sub={`${calls.toLocaleString()} calls`} />
         <StatTile label="Latest day" value={usd(today)} sub={data.rows[0]?.day ?? 'No data'} />
