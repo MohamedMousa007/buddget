@@ -1,4 +1,4 @@
--- PREPARED, NOT APPLIED: awaiting owner approval (see docs/ADMIN_PLATFORM_REVIEW.md, 2.3).
+-- APPLIED 2026-10-23 together with 0176 (owner approved the recommendations). Reversible with ALTER POLICY ... TO public.
 -- Own-row policies that apply to every role, anon included. They already return nothing to anon (auth.uid() is null),
 -- so this only narrows who the policy applies to. Reversible with ALTER POLICY ... TO public.
 ALTER POLICY "own biometric device delete" ON public.biometric_devices TO authenticated;
