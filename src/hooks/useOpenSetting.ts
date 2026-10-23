@@ -25,6 +25,7 @@ export function useOpenSetting() {
         case 'feedback':
         case 'about':
         case 'export':
+        case 'notCounted':
           navigate('/settings')
           return openSheet(entry.action)
         case 'deleteAccount':

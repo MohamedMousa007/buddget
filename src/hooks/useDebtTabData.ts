@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
 import { useT } from '@/lib/i18n'
 import { useShallow } from 'zustand/react/shallow'
@@ -139,8 +140,8 @@ export function useDebtTabData() {
   const t = useT()
   const { debts, debtPayments, paymentMethods, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
     useShallow((s) => ({
-      debts: s.debts,
-      debtPayments: s.debtPayments,
+      debts: countedDebts(s.debts, s.paymentMethods),
+      debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
       paymentMethods: s.paymentMethods,
       settings: s.settings,
       exchangeRates: s.exchangeRates,

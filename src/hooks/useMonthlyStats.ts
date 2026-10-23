@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -47,8 +48,8 @@ export function useMonthlyStats() {
       savingsHoldings: s.savingsHoldings,
       savingsAccounts: s.savingsAccounts,
       savingsTransactions: s.savingsTransactions,
-      debts: s.debts,
-      debtPayments: s.debtPayments,
+      debts: countedDebts(s.debts, s.paymentMethods),
+      debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       goldPricePerGram: s.goldPricePerGram,

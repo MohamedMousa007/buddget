@@ -257,8 +257,6 @@ export const en: Dictionary = {
   },
 
   exclusion: {
-    accountTitle: "Don't count this account",
-    accountHint: 'For a card or account someone else uses. Its spending and balance stay out of your totals.',
     expenseTitle: "Don't count in my spending",
     expenseHint: 'Still logged, and the account balance still moves.',
     forSomeone: 'Paid for someone',

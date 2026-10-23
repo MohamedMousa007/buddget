@@ -8,7 +8,7 @@ export const SETTING_IDS = [
   'sms', 'tips', 'learning', 'memories', 'voiceReadAloud',
   'household', 'lifestyle', 'budgetEntryMode', 'goldStrip',
   'pushStatus', 'subDueReminders', 'subPriceAlerts', 'goalProgressAlerts', 'goalAlerts',
-  'exportData', 'restoreBackup', 'feedback', 'terms', 'privacy', 'about',
+  'notCounted', 'exportData', 'restoreBackup', 'feedback', 'terms', 'privacy', 'about',
 ] as const
 
 export type SettingId = (typeof SETTING_IDS)[number]
@@ -17,7 +17,7 @@ export type SettingId = (typeof SETTING_IDS)[number]
 export type SettingKind = 'toggle' | 'value' | 'nav' | 'danger'
 
 /** Opens a sheet instead of a page. */
-export type SettingAction = 'household' | 'lifestyle' | 'currencies' | 'converter' | 'feedback' | 'about' | 'export' | 'deleteAccount'
+export type SettingAction = 'household' | 'lifestyle' | 'currencies' | 'converter' | 'feedback' | 'about' | 'export' | 'deleteAccount' | 'notCounted'
 
 export type SettingIconKey =
   | 'user' | 'shield' | 'key' | 'lock' | 'trash' | 'coins' | 'swap' | 'home' | 'chart' | 'bell' | 'buddgy' | 'mic'
@@ -71,6 +71,7 @@ export const SETTINGS_REGISTRY: readonly SettingEntry[] = [
   e('subPriceAlerts', 'notifications', 'toggle', HUB, 'repeat'),
   e('goalProgressAlerts', 'notifications', 'toggle', HUB, 'target'),
   e('goalAlerts', 'notifications', 'toggle', HUB, 'target'),
+  e('notCounted', 'data', 'nav', HUB, 'coins', { action: 'notCounted' }),
   e('exportData', 'data', 'nav', HUB, 'download', { action: 'export' }),
   e('restoreBackup', 'data', 'nav', HUB, 'upload', { action: 'export' }),
   e('feedback', 'help', 'nav', HUB, 'help', { action: 'feedback' }),

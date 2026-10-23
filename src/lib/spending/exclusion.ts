@@ -1,4 +1,4 @@
-import type { Expense, PaymentMethod } from '@/lib/store/types'
+import type { Debt, Expense, PaymentMethod } from '@/lib/store/types'
 
 type Methods = readonly Pick<PaymentMethod, 'id' | 'parentId' | 'excluded'>[]
 
@@ -31,4 +31,34 @@ export function applyMethodExclusion(expenses: Expense[], methods: Methods, now:
     return e
   })
   return changed ? next : expenses
+}
+
+type DebtLike = Pick<Debt, 'id' | 'debtType' | 'linkedPaymentMethodId'>
+
+/** A credit card marked as not counted takes its debt with it. */
+const isDebtExcluded = (d: DebtLike, methods: Methods): boolean =>
+  d.debtType === 'credit_card' && Boolean(d.linkedPaymentMethodId) && isMethodExcluded(methods, d.linkedPaymentMethodId)
+
+/**
+ * One-entry memos keep the result referentially stable between store updates, so a `useShallow` selector that
+ * calls these does not re-render on every unrelated change.
+ */
+let debtsMemo: { debts: readonly unknown[]; methods: Methods; out: unknown[] } | null = null
+export function countedDebts<T extends DebtLike>(debts: T[], methods: Methods): T[] {
+  if (debtsMemo && debtsMemo.debts === debts && debtsMemo.methods === methods) return debtsMemo.out as T[]
+  const out = methods.some((m) => m.excluded) ? debts.filter((d) => !isDebtExcluded(d, methods)) : debts
+  debtsMemo = { debts, methods, out }
+  return out
+}
+
+let paymentsMemo: { payments: readonly unknown[]; debts: readonly unknown[]; methods: Methods; out: unknown[] } | null = null
+export function countedDebtPayments<P extends { debtId: string }>(payments: P[], debts: DebtLike[], methods: Methods): P[] {
+  if (paymentsMemo && paymentsMemo.payments === payments && paymentsMemo.debts === debts && paymentsMemo.methods === methods) return paymentsMemo.out as P[]
+  let out = payments
+  if (methods.some((m) => m.excluded)) {
+    const hidden = new Set(debts.filter((d) => isDebtExcluded(d, methods)).map((d) => d.id))
+    if (hidden.size > 0) out = payments.filter((p) => !hidden.has(p.debtId))
+  }
+  paymentsMemo = { payments, debts, methods, out }
+  return out
 }

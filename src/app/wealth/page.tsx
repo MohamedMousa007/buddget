@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -73,11 +74,11 @@ export default function WealthPage() {
       exchangeRates: s.exchangeRates,
       budgetPlans: s.budgetPlans,
       activeBudgetPlanId: s.activeBudgetPlanId,
-      debts: s.debts,
+      debts: countedDebts(s.debts, s.paymentMethods),
       goldPricePerGram: s.goldPricePerGram,
       goldPriceAvailable: s.goldPriceAvailable,
       expenses: s.expenses,
-      debtPayments: s.debtPayments,
+      debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
     })),
   )
   const base = settings.baseCurrency

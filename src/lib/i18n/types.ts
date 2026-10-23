@@ -164,8 +164,6 @@ export interface Dictionary {
   }
 
   exclusion: {
-    accountTitle: string
-    accountHint: string
     expenseTitle: string
     expenseHint: string
     forSomeone: string

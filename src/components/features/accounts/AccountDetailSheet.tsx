@@ -13,7 +13,6 @@ import { resolveAccountId } from '@/lib/accounts/resolve'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MASK } from '@/lib/privacy/mask'
-import { ExcludeSwitchRow } from '@/components/features/spending/ExcludeSwitchRow'
 import { useT } from '@/lib/i18n'
 import { accountTitle, splitMoney } from './accountDisplay'
 import type { MoveMode } from './MoveMoneySheet'
@@ -30,9 +29,7 @@ interface AccountDetailSheetProps {
 
 /** One account, card first: its own cards, the balance split into free and set aside, three actions, activity. */
 export function AccountDetailSheet({ open, onClose, account, masked, onMove, onUpdate, onAddCard }: AccountDetailSheetProps) {
-  const dict = useT()
-  const t = dict.accountsPage
-  const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
+  const t = useT().accountsPage
   const expenses = useFinanceStore((s) => s.expenses)
   const methods = useFinanceStore((s) => s.paymentMethods)
   const [active, setActive] = useState(0)
@@ -88,9 +85,6 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={() => onMove('cash')} disabled={!balance}><Banknote aria-hidden />{t.cashOut}</Button>
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={() => onMove('set')} disabled={!balance}><PiggyBank aria-hidden />{t.setAsideAction}</Button>
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={onUpdate}><RefreshCw aria-hidden />{t.update}</Button>
-          </div>
-          <div className="px-5">
-            <ExcludeSwitchRow title={dict.exclusion.accountTitle} hint={dict.exclusion.accountHint} checked={Boolean(method.excluded)} onChange={(v) => updatePaymentMethod(method.id, { excluded: v })} />
           </div>
           <div>
             <p className="mb-1 px-5 text-[13px] font-bold text-[var(--color-brand-text-secondary)]">{card ? t.spentWith(accountTitle(card)) : t.recent}</p>

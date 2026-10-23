@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { differenceInCalendarDays } from 'date-fns'
@@ -38,8 +39,8 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
       incomeEvents: st.incomeEvents,
       expenses: st.expenses,
       subscriptions: st.subscriptions,
-      debts: st.debts,
-      debtPayments: st.debtPayments,
+      debts: countedDebts(st.debts, st.paymentMethods),
+      debtPayments: countedDebtPayments(st.debtPayments, st.debts, st.paymentMethods),
       savingsAccounts: st.savingsAccounts,
       exchangeRates: st.exchangeRates,
       budgetCategories: st.budgetCategories,

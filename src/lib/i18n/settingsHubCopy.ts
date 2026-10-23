@@ -119,6 +119,7 @@ export interface SettingsHubCopy {
     source: Record<'chat' | 'manual' | 'budget' | 'onboarding', string>
   }
   items: Record<SettingId, SettingItemCopy>
+  notCounted: { subtitle: string; intro: string; accounts: string; cards: string; follows: (name: string) => string; empty: string; some: (n: number) => string }
   menu: { helpFeedback: string; openSettings: string; signIn: string; closeMenu: string; adminPortal: string; admin: string }
   currency: {
     pickTitle: string
@@ -189,6 +190,15 @@ const en: SettingsHubCopy = {
     confirmRemove: 'Tap again to remove',
     removeNote: 'It stops collecting and signs out the next time it opens.',
     empty: 'Open Buddget on your other phones to see them here.',
+  },
+  notCounted: {
+    subtitle: 'For a card or account someone else uses',
+    intro: 'Turn on anything that is not really yours. Its spending, balance and debt stay out of your budget, reports and net worth. Its transactions are still logged.',
+    accounts: 'Accounts',
+    cards: 'Cards',
+    follows: (name) => `Follows ${name}`,
+    empty: 'Add an account or card first.',
+    some: (n) => `${n} not counted`,
   },
   sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up' },
   ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned', voiceHint: 'Speak answers in voice chats', deviceOnly: 'This device only' },
@@ -303,6 +313,7 @@ const en: SettingsHubCopy = {
     subPriceAlerts: { label: 'Price-rise alerts', keywords: 'trial price increase notification سعر' },
     goalProgressAlerts: { label: 'Goal milestones', keywords: 'progress achievement notification هدف' },
     goalAlerts: { label: 'Behind-plan alerts', keywords: 'late goal notification متأخر' },
+    notCounted: { label: 'Accounts not counted', keywords: 'exclude hide ignore card someone else not mine spending balance net worth استبعاد حساب بطاقة مش بتاعتي' },
     exportData: { label: 'Export data', keywords: 'backup download csv json نسخة احتياطية تصدير', exact: ['export', 'backup', 'تصدير'] },
     restoreBackup: { label: 'Import a backup', keywords: 'restore upload json استعادة استيراد' },
     feedback: { label: 'Send feedback', keywords: 'bug idea feature support report ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },
@@ -380,6 +391,15 @@ const ar: SettingsHubCopy = {
     confirmRemove: 'اضغط تاني للإزالة',
     removeNote: 'هيبطّل يجمع الرسائل ويسجّل خروج أول ما يتفتح.',
     empty: 'افتح بادجت على موبايلاتك التانية عشان تظهر هنا.',
+  },
+  notCounted: {
+    subtitle: 'لبطاقة أو حساب يستخدمه شخص تاني',
+    intro: 'فعّل أي حاجة مش بتاعتك فعلاً. مصروفاتها ورصيدها ودينها بيفضلوا بره ميزانيتك وتقاريرك وصافي ثروتك. معاملاتها بتفضل مسجّلة.',
+    accounts: 'الحسابات',
+    cards: 'البطاقات',
+    follows: (name) => `تابعة لـ ${name}`,
+    empty: 'ضيف حساب أو بطاقة الأول.',
+    some: (n) => `${n} غير محسوب`,
   },
   sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائي', iosHint: 'بيتظبط بـ Shortcut', on: 'بيتابع رسائل البنك', off: 'مقفول', guide: 'إعداد' },
   ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'بيقترح نصايح في وقتها', learningHint: 'بيفتكر معلومات مفيدة من كلامك معاه', memoryHint: 'الأسرة وإجابات الميزانية واللي اتعلّمه بادجي', voiceHint: 'بينطق الإجابات في المحادثات الصوتية', deviceOnly: 'على الجهاز ده بس' },
@@ -494,6 +514,7 @@ const ar: SettingsHubCopy = {
     subPriceAlerts: { label: 'تنبيهات ارتفاع السعر', keywords: 'trial price increase notification سعر' },
     goalProgressAlerts: { label: 'محطات الأهداف', keywords: 'progress achievement notification هدف' },
     goalAlerts: { label: 'تنبيهات التأخر عن الخطة', keywords: 'late goal notification متأخر' },
+    notCounted: { label: 'حسابات غير محسوبة', keywords: 'exclude hide ignore card استبعاد تجاهل حساب بطاقة مش بتاعتي مصروفات رصيد' },
     exportData: { label: 'تصدير البيانات', keywords: 'backup download csv json export نسخة احتياطية تصدير', exact: ['export', 'backup', 'تصدير'] },
     restoreBackup: { label: 'استيراد نسخة احتياطية', keywords: 'restore upload json import استعادة استيراد' },
     feedback: { label: 'أرسل ملاحظاتك', keywords: 'bug idea feature support report feedback ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },

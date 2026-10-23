@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, isWithinInterval, parseISO } from 'date-fns'
@@ -74,8 +75,8 @@ export function DebtPaymentsFeed({
   const familyLabel: Record<DebtFamily, string> = { borrow: td.feedBorrow, credit_card: td.feedCard, installment: td.feedPlan }
   const { debts, debtPayments, monthStartDay, deleteDebtPayment } = useFinanceStore(
     useShallow((s) => ({
-      debts: s.debts,
-      debtPayments: s.debtPayments,
+      debts: countedDebts(s.debts, s.paymentMethods),
+      debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
       monthStartDay: s.settings.monthStartDay,
       deleteDebtPayment: s.deleteDebtPayment,
     })),

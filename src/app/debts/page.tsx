@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebts } from '@/lib/spending/exclusion'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { DebtGoalPrompt } from '@/components/features/goals/DebtGoalPrompt'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
@@ -51,7 +52,7 @@ export default function DebtsPage() {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time landing tab from store */
     if (pickedDefault.current || !dataReady) return
     pickedDefault.current = true
-    setTab(firstNonEmptyFamily(useFinanceStore.getState().debts))
+    { const st = useFinanceStore.getState(); setTab(firstNonEmptyFamily(countedDebts(st.debts, st.paymentMethods))) }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [dataReady])
 

@@ -258,8 +258,6 @@ export const ar: Dictionary = {
   },
 
   exclusion: {
-    accountTitle: 'لا تحسب هذا الحساب',
-    accountHint: 'لبطاقة أو حساب يستخدمه شخص آخر. إنفاقه ورصيده يبقيان خارج إجمالياتك.',
     expenseTitle: 'لا تحسبها ضمن إنفاقي',
     expenseHint: 'تبقى مسجّلة ورصيد الحساب يتغيّر كالمعتاد.',
     forSomeone: 'دفعتها عن شخص',

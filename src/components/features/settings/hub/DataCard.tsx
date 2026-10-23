@@ -9,6 +9,7 @@ import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { IconButton } from '@/components/ui/IconButton'
 import { useSettingsPage } from '@/hooks/useSettingsPage'
+import { NotCountedSheet, useNotCountedCount } from './NotCountedSheet'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
@@ -25,10 +26,12 @@ export function DataCard() {
   const fileRef = useRef<HTMLInputElement>(null)
   const synced = Boolean(s.user)
   const tone = GROUP_TONE.data
+  const notCounted = useNotCountedCount()
 
   return (
     <>
       <SettingsSection title={d.title}>
+        <SettingsRow icon={SETTING_ICONS.coins} tone={tone} title={copy.items.notCounted.label} subtitle={notCounted > 0 ? copy.notCounted.some(notCounted) : copy.notCounted.subtitle} onClick={() => openSheet('notCounted')} settingId="notCounted" />
         {synced ? (
           <SettingsRow icon={SETTING_ICONS.download} tone={tone} title={copy.items.exportData.label} subtitle={d.csv} onClick={() => void s.handleExportExpensesCsv()} settingId="exportData" />
         ) : (
@@ -38,6 +41,7 @@ export function DataCard() {
           </>
         )}
       </SettingsSection>
+      <NotCountedSheet open={sheet === 'notCounted'} onClose={() => openSheet(null)} />
       <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={s.handleImport} />
       {s.importBanner ? (
         <p role="status" className={`rounded-xl px-4 py-3 text-sm font-medium ${s.importBanner.variant === 'success' ? 'bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-red-soft)] text-[var(--color-brand-red)]'}`}>

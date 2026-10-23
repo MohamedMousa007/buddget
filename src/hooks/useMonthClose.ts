@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { differenceInCalendarDays } from 'date-fns'
@@ -30,8 +31,8 @@ export function useMonthClose(): MonthCloseState | null {
       activations: st.budgetPlanActivations,
       activeId: st.activeBudgetPlanId,
       expenses: st.expenses,
-      debts: st.debts,
-      debtPayments: st.debtPayments,
+      debts: countedDebts(st.debts, st.paymentMethods),
+      debtPayments: countedDebtPayments(st.debtPayments, st.debts, st.paymentMethods),
       rates: st.exchangeRates,
       settings: st.settings,
       goldPricePerGram: st.goldPricePerGram,
