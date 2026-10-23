@@ -23,10 +23,11 @@ interface MoveMoneySheetProps {
   initialAccountId: string
   initialMode: MoveMode
   initialAmount?: string
+  onDone?: () => void
 }
 
 /** The only two moves made by hand: take cash out, or put money aside in a pocket. */
-export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, initialMode, initialAmount = '' }: MoveMoneySheetProps) {
+export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, initialMode, initialAmount = '', onDone }: MoveMoneySheetProps) {
   const t = useT().accountsPage
   const pocketsAll = useFinanceStore((s) => s.savingsAccounts)
   const [mode, setMode] = useState<MoveMode>(initialMode)
@@ -54,6 +55,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
     if (!valid) return
     if (mode === 'cash') cashOut(account.method.id, v, account.method.currency)
     else setAside(account.method.id, pocket!.id, v, account.method.currency)
+    onDone?.()
     onClose()
   }
 

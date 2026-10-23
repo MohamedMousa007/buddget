@@ -251,3 +251,18 @@ Not done yet (needs a decision, a device, or a separate release):
 - Remote per-user flag `accounts_v2` (the tab ships on by default; nothing is gated).
 - On-device QA (iOS/Android, 320/390/430 px, light/dark, Arabic, offline, two devices) and a visual pass: the browser preview stalled, so only render smoke tests and the production build verified the UI.
 - Pushing to `dev`/`main` and native builds: waiting on the user.
+
+## 15. Final QA round (2026-10-23)
+
+Found and fixed:
+- **SMS rows never reached the right account.** Income from SMS had no account, SMS rows had no exact time, an ATM withdrawal never credited Cash and an own transfer never credited the receiving account. All now set (`payment_method_id` / `occurred_at` / `to_payment_method_id`); an SMS expense with no resolvable funding source (or a CC payoff with none) is skipped by the engine instead of draining Cash.
+- **Resolving a gap did not clear it** (the resolving entry was dated "now", after the bank reports). Entries made from the Fix screen are dated just before the newest report; manual Update / Set aside from a gap snoozes it.
+- **Opening anchor**: rows at or before `opening_at` are already in the opening balance (the balance read from a message already includes that message's own transaction); an account has no balance before it was opened (no false gap against an older report).
+- **Wallets without a last 4** now resolve balance reports by sending provider when it names exactly one account.
+- **Account deletion / data reset / backup restore** missed the new tables and fields (`account_adjustments`, `account_balance_reports`, the new columns would have been stripped by the import schema). Fixed.
+- **Net worth trend** compared snapshots across the basis change; snapshots now carry a `basis` (migration 0157) and the trend only compares like with like. Buddgy's net worth now uses the same accounts basis as the hero (`accountsBasisFor`).
+- **Closed accounts** hide from payment pickers and Buddgy; deleting an account with history closes it in the store (matching the DB guard); the cash sentinel hides once a real Cash exists.
+- **Admin portal**: SMS log shows account linked / balance reported (value only with `users.pii`); documented in `docs/ADMIN_PORTAL.md`.
+- **DB**: verified live in a rolled-back transaction: guard trigger (bad parent dropped, history-bearing soft delete becomes closed, card delete untouched), atomic pocket function (retry-safe), `sync_pull` / `sync_table_delta` carry the new list, `housekeeping` purges reports. Every new FK has a leading index (0156 added the two missing). Reads are per-user and indexed; the SMS write path adds one indexed row per balance SMS and no new cron.
+
+Known limits (unchanged): the "jump > 10x" report sanity gate from section 13 is not implemented; balance-only SMS create no reports; no per-user rollout flag; no on-device or visual QA.

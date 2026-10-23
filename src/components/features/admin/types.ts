@@ -78,6 +78,10 @@ export interface EligibleTemplate {
 
 export interface SmsTrackedRow {
   id: string
+  /** Set when the message's balance was recorded against an account (value only with users.pii). */
+  balance_reported?: boolean
+  balance_after?: number | null
+  account_linked?: boolean
   user_id: string
   sender: string | null
   bank_name: string | null

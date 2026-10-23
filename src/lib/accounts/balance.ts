@@ -1,7 +1,7 @@
 import type {
   AccountAdjustment, DebtPayment, Expense, IncomeEvent, PaymentMethod, SavingsAccount, SavingsTransaction,
 } from '@/lib/store/types'
-import { isTracked } from './kinds'
+import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { resolveAccountId } from './resolve'
 
 export interface LedgerInput {
@@ -60,7 +60,8 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   const apply = (accountId: string | null, amount: number, currency: string, at: number) => {
     if (!accountId) return
     const a = acc.get(accountId)
-    if (!a || at < a.from || at > asOf) return
+    // Rows at or before the anchor are already inside the opening balance (it was read after them).
+    if (!a || at <= a.from || at > asOf) return
     let v = amount
     if (currency && currency !== a.currency) {
       const c = input.convert(amount, currency, a.currency)
@@ -74,6 +75,9 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   for (const e of input.expenses) {
     if (e.linkedDebtPaymentId) settledByExpense.add(e.linkedDebtPaymentId)
     if (e.refundedAt) continue
+    // No funding source named: a CC payoff or an SMS the resolver could not place must not drain Cash.
+    const unfunded = !e.paymentMethodId || e.paymentMethodId === DEFAULT_CASH_ID
+    if (unfunded && (e.category === 'CC Payoff' || e.smsLogId)) continue
     const at = instantOf(e.occurredAt, e.date)
     apply(resolveAccountId(e.paymentMethodId, pms), -e.amount, e.currency, at)
     if (e.toPaymentMethodId) apply(resolveAccountId(e.toPaymentMethodId, pms), e.amount, e.currency, at)
@@ -106,6 +110,7 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
 
   const out = new Map<string, AccountBalance>()
   for (const [id, a] of acc) {
+    if (a.from > asOf) continue // the account did not have a known balance yet at that instant
     const u = unit(a.currency)
     let heldMinor = 0
     let approx = a.approx

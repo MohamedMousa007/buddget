@@ -24,7 +24,7 @@ describe('extractBalance', () => {
 })
 
 describe('resolveReportTarget', () => {
-  const m = (o: object) => ({ id: 'x', type: 'bank_account', last4: null, currency: 'EGP', parent_id: null, track_sms: true, closed_at: null, ...o })
+  const m = (o: object) => ({ id: 'x', name: 'x', type: 'bank_account', last4: null, currency: 'EGP', parent_id: null, track_sms: true, closed_at: null, ...o })
   const methods = [m({ id: 'bank', last4: '2016' }), m({ id: 'debit', type: 'debit_card', last4: '4417', parent_id: 'bank' }), m({ id: 'cc', type: 'credit_card', last4: '8821', parent_id: 'bank' })]
   it('maps an account last4 to itself and a debit card to its parent; credit cards report limits, so never', () => {
     expect(resolveReportTarget(methods, '2016')?.id).toBe('bank')
@@ -32,5 +32,11 @@ describe('resolveReportTarget', () => {
     expect(resolveReportTarget(methods, '8821')).toBeNull()
     expect(resolveReportTarget(methods, '9999')).toBeNull()
     expect(resolveReportTarget(methods, null)).toBeNull()
+  })
+  it('falls back to the sending provider only when it names exactly one account', () => {
+    const wallets = [m({ id: 'vf', type: 'wallet', name: 'Vodafone Cash' }), m({ id: 'cib', type: 'bank_account', name: 'CIB ••2016', last4: '2016' })]
+    expect(resolveReportTarget(wallets, null, { bankName: 'Vodafone Cash' })?.id).toBe('vf')
+    expect(resolveReportTarget([...wallets, m({ id: 'vf2', type: 'wallet', name: 'Vodafone Cash' })], null, { bankName: 'Vodafone Cash' })).toBeNull()
+    expect(resolveReportTarget(wallets, null, { bankName: 'Unknown Bank' })).toBeNull()
   })
 })

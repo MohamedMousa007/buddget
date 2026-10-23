@@ -11,8 +11,11 @@ import { allowsLast4, composePaymentMethodName, decomposePaymentMethodName, PAYM
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, FinanceStore, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 
+/** Closed accounts are gone as far as the assistant is concerned (their history stays in the ledger). */
+export const liveMethods = (s: FinanceStore): PaymentMethod[] => s.paymentMethods.filter((m) => !m.closedAt)
+
 const cascadeSlices = (s: FinanceStore) => ({
-  paymentMethods: s.paymentMethods,
+  paymentMethods: liveMethods(s),
   expenses: s.expenses,
   debts: s.debts,
   subscriptions: s.subscriptions,
@@ -27,12 +30,12 @@ const LIST_CAP = 15
 /** Resolves a method by ref or exact name; omitted means the usual one. Never falls back when a named one is missing. */
 export function resolvePaymentMethod(s: FinanceStore, input: unknown): { id: string } | { error: ReturnType<typeof fail> } {
   if (input === undefined || input === null || input === '') {
-    const usual = s.paymentMethods.find((m) => m.isDefault) ?? s.paymentMethods[0]
+    const usual = liveMethods(s).find((m) => m.isDefault) ?? liveMethods(s)[0]
     return { id: usual?.id ?? '' }
   }
-  const hit = resolveByRefOrName(s.paymentMethods, input, (m) => m.name)
+  const hit = resolveByRefOrName(liveMethods(s), input, (m) => m.name)
   if (hit.kind === 'one') return { id: hit.item.id }
-  const choices = (hit.kind === 'many' ? hit.items : s.paymentMethods).map((m) => ({ id: refOf(m.id), label: m.name }))
+  const choices = (hit.kind === 'many' ? hit.items : liveMethods(s)).map((m) => ({ id: refOf(m.id), label: m.name }))
   return {
     error: fail(
       hit.kind === 'many' ? 'Several payment methods match.' : 'No payment method matches.',
@@ -43,17 +46,17 @@ export function resolvePaymentMethod(s: FinanceStore, input: unknown): { id: str
 }
 
 function target(s: FinanceStore, ref: unknown): { method: PaymentMethod } | { error: ReturnType<typeof fail> } {
-  const hit = resolveByRefOrName(s.paymentMethods, ref, (m) => m.name)
+  const hit = resolveByRefOrName(liveMethods(s), ref, (m) => m.name)
   if (hit.kind === 'one') return { method: hit.item }
-  const choices = (hit.kind === 'many' ? hit.items : s.paymentMethods).map((m) => ({ id: refOf(m.id), label: m.name }))
+  const choices = (hit.kind === 'many' ? hit.items : liveMethods(s)).map((m) => ({ id: refOf(m.id), label: m.name }))
   return { error: fail(hit.kind === 'many' ? 'Several payment methods match.' : 'No payment method matches.', 'Ask which one.', choices) }
 }
 
 const nameTaken = (s: FinanceStore, name: string, exceptId?: string): boolean =>
-  s.paymentMethods.some((m) => m.id !== exceptId && m.name.trim().toLowerCase() === name.toLowerCase())
+  liveMethods(s).some((m) => m.id !== exceptId && m.name.trim().toLowerCase() === name.toLowerCase())
 
 const list_payment_methods: ReadImpl = () => {
-  const methods = fin().paymentMethods
+  const methods = liveMethods(fin())
   return {
     methods: methods.slice(0, LIST_CAP).map((m) => ({
       ref: refOf(m.id),
@@ -214,7 +217,7 @@ const update_payment_method: WriteImpl = {
     }
     if (a.color !== undefined) patch.color = a.color as string
     if (a.makeDefault === true) patch.isDefault = true
-    const previousDefault = s.paymentMethods.find((p) => p.isDefault && p.id !== m.id)
+    const previousDefault = liveMethods(s).find((p) => p.isDefault && p.id !== m.id)
     const previous = { name: m.name, last4: m.last4, color: m.color, isDefault: m.isDefault }
     s.updatePaymentMethod(m.id, patch)
     return {
@@ -245,7 +248,7 @@ const delete_payment_method: WriteImpl = {
     const income = s.incomeSources.filter((x) => x.paymentMethodId === m.id).length + s.incomeEvents.filter((x) => x.paymentMethodId === m.id).length
     if (income) effects.push(L.incomeUnlinked(income))
     for (const d of s.debts.filter((x) => x.linkedPaymentMethodId === m.id)) effects.push(L.debtUnlinked(d.name))
-    const remaining = s.paymentMethods.filter((x) => x.id !== m.id)
+    const remaining = liveMethods(s).filter((x) => x.id !== m.id)
     if (m.isDefault && remaining.length > 0) effects.push(L.newDefault(remaining[0].name))
 
     return ok(

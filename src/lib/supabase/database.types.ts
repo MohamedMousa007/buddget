@@ -1963,6 +1963,7 @@ export type Database = {
       }
       net_worth_snapshots: {
         Row: {
+          basis: string
           created_at: string
           currency: string
           day: string
@@ -1970,6 +1971,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          basis?: string
           created_at?: string
           currency: string
           day: string
@@ -1977,6 +1979,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          basis?: string
           created_at?: string
           currency?: string
           day?: string

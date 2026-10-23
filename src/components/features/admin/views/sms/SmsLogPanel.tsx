@@ -123,7 +123,7 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
                           <p className="text-[var(--color-brand-text-muted)]">
                             {row.confidence != null ? `${Math.round(row.confidence * 100)}% confidence` : ''}{row.kind ? ` · ${row.kind}` : ''}{row.source ? ` · via ${row.source}` : ''}
                             {row.account_last4 ? ` · ••${row.account_last4}` : ''}{row.payment_instrument ? ` · ${row.payment_instrument}` : ''}{row.pattern_id ? ` · pattern ${row.pattern_id}` : ''}
-                            {row.expense_id ? ' · expense linked' : ''}{row.income_id ? ' · income linked' : ''}
+                            {row.expense_id ? ' · expense linked' : ''}{row.income_id ? ' · income linked' : ''}{row.account_linked ? ' · account linked' : ''}{row.balance_reported ? (row.balance_after != null ? ` · balance ${row.balance_after}` : ' · balance reported') : ''}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             <Button variant="outline" size="sm" onClick={() => adminNavigate('users', { id: row.user_id })}>Open user</Button>

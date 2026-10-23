@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { pickablePaymentMethods } from '@/lib/accounts/kinds'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
@@ -25,8 +26,9 @@ interface Props {
  * but for selection: tap the focused card (or the CTA) to choose it. A trailing
  * “+” add tile opens the setup sheet inline (no old add-payment form).
  */
-export function SelectPaymentMethodSheet({ open, value, paymentMethods, onSelect, onClose }: Props) {
+export function SelectPaymentMethodSheet({ open, value, paymentMethods: allMethods, onSelect, onClose }: Props) {
   const t = useT()
+  const paymentMethods = useMemo(() => pickablePaymentMethods(allMethods, value), [allMethods, value])
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const [active, setActive] = useState(0)
   const [setupOpen, setSetupOpen] = useState(false)

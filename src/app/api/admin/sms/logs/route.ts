@@ -2,7 +2,7 @@ import { guardAdmin, json, bad, maskIf, readJson } from '@/lib/server/admin/guar
 import { UUID_RE } from '@/lib/server/admin/targets'
 
 const COLUMNS =
-  'id, user_id, sender, bank_name, merchant, clean_title, amount, currency, kind, failure_code, parse_method, confidence, raw_body, received_at, is_duplicate, source, account_last4, parsed_ok, expense_id, income_id, pattern_id, payment_instrument, status, pushed_at, push_result, confirmed_at, acked_at, learn_status, learn_template_id, matched_template_id'
+  'id, user_id, sender, bank_name, merchant, clean_title, amount, currency, kind, failure_code, parse_method, confidence, raw_body, received_at, is_duplicate, source, account_last4, parsed_ok, expense_id, income_id, pattern_id, payment_instrument, status, pushed_at, push_result, confirmed_at, acked_at, learn_status, learn_template_id, matched_template_id, payment_method_id, balance_after'
 
 const FAILURE_STATUSES = ['failed', 'add_failed']
 
@@ -49,7 +49,8 @@ export async function GET(req: Request) {
   }
 
   return json({
-    rows: rows.map((r) => ({ ...r, raw_body: ctx.canSeePii ? r.raw_body : null, email: maskIf(ctx, emails.get(r.user_id)) })),
+    // The balance a message reported is financial PII like the raw body: staff see only that one was recorded unless they hold users.pii.
+    rows: rows.map((r) => ({ ...r, raw_body: ctx.canSeePii ? r.raw_body : null, balance_after: ctx.canSeePii ? r.balance_after : null, balance_reported: r.balance_after != null, account_linked: r.payment_method_id != null, email: maskIf(ctx, emails.get(r.user_id)) })),
     nextCursor: rows.length === limit ? rows[rows.length - 1]!.received_at : null,
   })
 }

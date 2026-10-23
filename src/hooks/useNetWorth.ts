@@ -7,7 +7,8 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useRates } from '@/hooks/useRates'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { computeNetWorth } from '@/lib/savings/netWorth'
-import { useAccounts } from '@/lib/accounts/useAccounts'
+import { useLedgerInput } from '@/lib/accounts/useAccounts'
+import { accountsBasisFor } from '@/lib/accounts/netWorthBasis'
 
 /**
  * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
@@ -22,7 +23,6 @@ import { useAccounts } from '@/lib/accounts/useAccounts'
 export function useNetWorth() {
   useRates()
   const stats = useMonthlyStats()
-  const accounts = useAccounts()
   const { lookup } = useAssetPrices()
   const {
     savingsAccounts,
@@ -44,15 +44,8 @@ export function useNetWorth() {
     }))
   )
 
-  const basis = useMemo(() => {
-    const tracked = accounts.accounts.filter((a) => a.balance)
-    if (tracked.length === 0) return {}
-    const ids = new Set(tracked.map((a) => a.method.id))
-    return {
-      accountsBasis: accounts.totalInBase,
-      heldInPocketIds: new Set(savingsAccounts.filter((p) => p.heldInPaymentMethodId && ids.has(p.heldInPaymentMethodId)).map((p) => p.id)),
-    }
-  }, [accounts, savingsAccounts])
+  const ledger = useLedgerInput()
+  const basis = useMemo(() => accountsBasisFor(ledger, settings.baseCurrency), [ledger, settings.baseCurrency])
 
   return useMemo(
     () =>

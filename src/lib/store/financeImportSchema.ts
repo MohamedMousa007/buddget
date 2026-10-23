@@ -147,6 +147,7 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        occurredAt: z.string().optional(),
         templateId: z.string().nullable().optional(),
         name: z.string(),
         amount: z.number(),
@@ -182,6 +183,8 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        occurredAt: z.string().optional(),
+        toPaymentMethodId: z.string().optional(),
         date: z.string(),
         description: z.string(),
         category: z.string(),
@@ -230,6 +233,20 @@ export const importDataSchema = z.object({
     .optional(),
   budgetPlanActivations: z
     .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: z.string(), createdAt: z.string() }))
+    .optional(),
+  accountAdjustments: z
+    .array(
+      z.object({
+        id: z.string(),
+        paymentMethodId: z.string(),
+        delta: z.number(),
+        reason: z.enum(['manual_update', 'gap', 'opening_correction']),
+        occurredAt: z.string(),
+        note: z.string().optional(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
+      }),
+    )
     .optional(),
   buddgyMemories: z
     .array(
@@ -334,6 +351,7 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        heldInPaymentMethodId: z.string().optional(),
         name: z.string(),
         category: z.enum(['savings', 'investment']).optional(),
         type: savingsTypeSchema.optional(),
@@ -368,6 +386,8 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        occurredAt: z.string().optional(),
+        paymentMethodId: z.string().optional(),
         accountId: z.string(),
         type: z.enum(['deposit', 'withdrawal']),
         amount: z.number(),
@@ -383,6 +403,11 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        parentId: z.string().optional(),
+        openingBalance: z.number().optional(),
+        openingAt: z.string().optional(),
+        closedAt: z.string().optional(),
+        trackSms: z.boolean().optional(),
         name: z.string(),
         type: paymentMethodTypeSchema,
         currency: fiatCurrencySchema,
@@ -444,6 +469,7 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
+        occurredAt: z.string().optional(),
         debtId: z.string(),
         date: z.string(),
         amountPaid: z.number(),

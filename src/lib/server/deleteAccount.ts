@@ -33,6 +33,9 @@ const USER_ID_TABLES = [
   'goals',
   'income_events',
   'income_sources',
+  // Accounts: children of payment_methods, so they go first.
+  'account_adjustments',
+  'account_balance_reports',
   'payment_methods',
   'notifications',
   'app_analytics_events',

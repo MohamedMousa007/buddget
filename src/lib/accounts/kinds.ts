@@ -14,9 +14,30 @@ export const canBeParent = (type: PaymentMethodType): boolean => PARENTS.has(typ
 /** Debit cards spend straight out of their parent account. */
 export const drawsOnParent = (type: PaymentMethodType): boolean => type === 'debit_card'
 
+/**
+ * Methods a form may offer: closed accounts leave the lists, and the in-store cash sentinel hides once a real
+ * Cash account exists (two "Cash" entries would be ambiguous). The currently selected one always stays.
+ */
+export function pickablePaymentMethods(methods: readonly PaymentMethod[], keepId?: string): PaymentMethod[] {
+  const realCash = methods.some((m) => m.type === 'cash' && m.id !== DEFAULT_CASH_ID && !m.closedAt)
+  return methods.filter((m) => m.id === keepId || (!m.closedAt && !(realCash && m.id === DEFAULT_CASH_ID)))
+}
+
 export const isTracked = (pm: PaymentMethod): boolean =>
   holdsBalance(pm.type) && pm.openingBalance != null && pm.openingAt != null
 
 /** Live (not closed) balance holders, the rows of the Accounts list. */
 /** The in-store cash sentinel is a stand-in for the Cash account, never an account row of its own. */
 export const isOpenAccount = (pm: PaymentMethod): boolean => holdsBalance(pm.type) && !pm.closedAt && pm.id !== DEFAULT_CASH_ID
+
+/** Whether any ledger row points at this account. */
+export function hasAccountHistory(
+  s: { expenses: readonly { paymentMethodId?: string; toPaymentMethodId?: string }[]; incomeEvents: readonly { paymentMethodId?: string }[]; debtPayments: readonly { paymentMethodId?: string }[]; savingsTransactions: readonly { paymentMethodId?: string }[]; accountAdjustments: readonly { paymentMethodId: string }[] },
+  id: string,
+): boolean {
+  return s.expenses.some((e) => e.paymentMethodId === id || e.toPaymentMethodId === id)
+    || s.incomeEvents.some((e) => e.paymentMethodId === id)
+    || s.debtPayments.some((p) => p.paymentMethodId === id)
+    || s.savingsTransactions.some((t) => t.paymentMethodId === id)
+    || s.accountAdjustments.some((a) => a.paymentMethodId === id)
+}

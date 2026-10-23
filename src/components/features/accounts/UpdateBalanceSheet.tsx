@@ -14,10 +14,11 @@ interface UpdateBalanceSheetProps {
   open: boolean
   onClose: () => void
   account: AccountView
+  onDone?: () => void
 }
 
 /** "What does your bank show now?" The difference is recorded as an explicit adjustment, never an expense. */
-export function UpdateBalanceSheet({ open, onClose, account }: UpdateBalanceSheetProps) {
+export function UpdateBalanceSheet({ open, onClose, account, onDone }: UpdateBalanceSheetProps) {
   const t = useT().accountsPage
   const current = account.balance?.balance ?? 0
   const cur = String(account.method.currency)
@@ -30,6 +31,7 @@ export function UpdateBalanceSheet({ open, onClose, account }: UpdateBalanceShee
   const submit = () => {
     if (!has) return
     updateBalance(account.method.id, current, reported)
+    onDone?.()
     onClose()
   }
 

@@ -1,3 +1,4 @@
+import { holdsBalance, hasAccountHistory } from '@/lib/accounts/kinds'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
@@ -531,6 +532,15 @@ export const useFinanceStore = create<FinanceStore>()(
       deletePaymentMethod: (id) =>
         set((state) => {
           const deleted = state.paymentMethods.find((m) => m.id === id)
+          // An account with history is closed, never removed: removing it would hand its rows to Cash (null = Cash).
+          if (deleted && holdsBalance(deleted.type) && hasAccountHistory(state, id)) {
+            const now = new Date().toISOString()
+            return {
+              paymentMethods: state.paymentMethods.map((m) =>
+                m.id === id ? { ...m, closedAt: now, updatedAt: now } : m.parentId === id ? { ...m, parentId: undefined, updatedAt: now } : m,
+              ),
+            }
+          }
           let paymentMethods = state.paymentMethods.filter((m) => m.id !== id)
           // Promote a new default if we removed the only default one.
           if (deleted?.isDefault && paymentMethods.length > 0 && !paymentMethods.some((m) => m.isDefault)) {
@@ -1797,6 +1807,7 @@ export const useFinanceStore = create<FinanceStore>()(
             budgetPlans: data.budgetPlans ?? state.budgetPlans,
             budgetPlanActivations: data.budgetPlanActivations ?? state.budgetPlanActivations,
             buddgyMemories: data.buddgyMemories ?? state.buddgyMemories,
+            accountAdjustments: data.accountAdjustments ?? state.accountAdjustments,
             activeBudgetPlanId:
               data.activeBudgetPlanId !== undefined ? data.activeBudgetPlanId : state.activeBudgetPlanId,
             financialGoalsNotes:

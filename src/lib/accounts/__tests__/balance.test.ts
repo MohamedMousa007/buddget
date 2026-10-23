@@ -52,6 +52,10 @@ describe('computeBalances', () => {
     expect(bal(i, 'bank')?.balance).toBe(700)
     expect(bal(i, 'cash')?.balance).toBe(500)
   })
+  it('an SMS-created or CC-payoff expense with no funding source never drains Cash', () => {
+    const i = base({ expenses: [exp({ id: 's', amount: 50, paymentMethodId: 'pm_default_cash', smsLogId: 'log' }), exp({ id: 'c', amount: 70, paymentMethodId: 'pm_default_cash', category: 'CC Payoff' })] })
+    expect(bal(i, 'cash')?.balance).toBe(200)
+  })
   it('refunded expenses net to zero', () => {
     const i = base({ expenses: [exp({ id: 'r', amount: 80, paymentMethodId: 'bank', refundedAt: '2026-10-06T00:00:00Z' })] })
     expect(bal(i, 'bank')?.balance).toBe(1000)

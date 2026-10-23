@@ -65,9 +65,11 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
     { id: 'unsure', name: t.notSure, sub: t.notSureSub, cta: t.remindMeLater },
   ]
 
+  // The money left before the newest bank report, so the resolving entry is dated just before it: that is what lets the report match.
   const apply = () => {
-    if (choice === 'cash') cashOut(account.method.id, missing, account.method.currency)
-    else if (choice === 'spent') addExpense({ description: 'Unlogged spending', category: 'Other', amount: missing, currency: account.method.currency, date: localTodayISO(), paymentMethodId: account.method.id, isRecurring: false })
+    const at = new Date(new Date(gap.newest.reportedAt).getTime() - 60_000)
+    if (choice === 'cash') cashOut(account.method.id, missing, account.method.currency, at)
+    else if (choice === 'spent') addExpense({ description: 'Unlogged spending', category: 'Other', amount: missing, currency: account.method.currency, date: localTodayISO(at), occurredAt: at.toISOString(), paymentMethodId: account.method.id, isRecurring: false })
     else if (choice === 'set') { onSetAside(missing); return }
     else { snoozeGap(account.method.id, gap.reportedAt); onResolved(); onClose(); return }
     onResolved()

@@ -1163,7 +1163,7 @@ export async function POST(request: Request) {
 
   // The balance the bank appended feeds gap detection. After the response, never throws, independent of how the SMS was parsed.
   if (success && !addFailed) {
-    after(() => recordBalanceReport({ service, userId, logId, body: message, amount: parsed.amount, last4: cleanLast4, receivedAt: nowIso }))
+    after(() => recordBalanceReport({ service, userId, logId, body: message, amount: parsed.amount, last4: cleanLast4, receivedAt: nowIso, sender, bankName: parsed.bank_name }))
   }
 
   // Soft health checks on what a TEMPLATE extracted. Free, deterministic, no user and no AI,

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { pickablePaymentMethods } from '@/lib/accounts/kinds'
+import { useState, useMemo } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { PaymentMethod } from '@/lib/store/types'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
@@ -32,10 +33,11 @@ export interface PaymentMethodPickerProps {
 export function PaymentMethodPicker({
   value,
   onChange,
-  paymentMethods,
+  paymentMethods: allMethods,
   label,
 }: PaymentMethodPickerProps) {
   const t = useT()
+  const paymentMethods = useMemo(() => pickablePaymentMethods(allMethods, value), [allMethods, value])
   const [open, setOpen] = useState(false)
 
   const selPay = paymentMethods.find((m) => m.id === value) || paymentMethods[0]

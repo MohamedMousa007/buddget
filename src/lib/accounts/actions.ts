@@ -23,13 +23,14 @@ export function ensureCashAccount(): string {
 }
 
 /** Cash out: money leaves the account and becomes Cash. One non-spend row, two balance deltas. */
-export function cashOut(fromId: string, amount: number, currency: PaymentMethod['currency']): void {
+export function cashOut(fromId: string, amount: number, currency: PaymentMethod['currency'], at: Date = new Date()): void {
   store().addExpense({
+    occurredAt: at.toISOString(),
     description: 'Cash out',
     category: 'ATM Cash Withdrawal',
     amount,
     currency,
-    date: localTodayISO(),
+    date: localTodayISO(at),
     paymentMethodId: fromId,
     toPaymentMethodId: ensureCashAccount(),
     isRecurring: false,

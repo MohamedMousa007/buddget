@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 
 const NUM = String.raw`(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)`
 const CUR = String.raw`(EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)?`
@@ -40,6 +41,7 @@ export function extractBalance(body: string): ExtractedBalance | null {
 
 interface MethodRow {
   id: string
+  name: string
   type: string
   last4: string | null
   currency: string | null
@@ -51,10 +53,15 @@ interface MethodRow {
 const HOLDERS = new Set(['cash', 'bank_account', 'wallet', 'prepaid_card'])
 
 /** The account whose balance a message reports: the method with that last 4, or the account behind a debit card. */
-export function resolveReportTarget(methods: readonly MethodRow[], last4: string | null): MethodRow | null {
-  if (!last4) return null
-  const hit = methods.find((m) => m.last4 === last4 && !m.closed_at)
-  if (!hit) return null
+export function resolveReportTarget(methods: readonly MethodRow[], last4: string | null, provider?: { sender?: string | null; bankName?: string | null }): MethodRow | null {
+  const hit = last4 ? methods.find((m) => m.last4 === last4 && !m.closed_at) : undefined
+  if (!hit) {
+    // Wallets often have no last 4: fall back to the sending provider, only when it names exactly one account.
+    const brand = resolvePaymentBrandKey(provider?.bankName) ?? resolvePaymentBrandKey(provider?.sender)
+    if (!brand) return null
+    const same = methods.filter((m) => HOLDERS.has(m.type) && !m.closed_at && resolvePaymentBrandKey(m.name) === brand)
+    return same.length === 1 ? same[0] : null
+  }
   if (HOLDERS.has(hit.type)) return hit
   if (hit.type === 'debit_card' && hit.parent_id) return methods.find((m) => m.id === hit.parent_id && HOLDERS.has(m.type) && !m.closed_at) ?? null
   return null
@@ -68,6 +75,8 @@ export interface BalanceReportInput {
   amount: number | null
   last4: string | null
   receivedAt: string
+  sender?: string | null
+  bankName?: string | null
 }
 
 /** Records the balance a message reports. Never throws: this runs after the response and must not touch the SMS pipeline. */
@@ -76,8 +85,8 @@ export async function recordBalanceReport(i: BalanceReportInput): Promise<void> 
     const found = extractBalance(i.body)
     if (!found || (i.amount != null && found.balance === i.amount)) return
     const { data } = await i.service.from('payment_methods')
-      .select('id, type, last4, currency, parent_id, track_sms, closed_at').eq('user_id', i.userId).is('deleted_at', null)
-    const target = resolveReportTarget((data ?? []) as MethodRow[], i.last4)
+      .select('id, name, type, last4, currency, parent_id, track_sms, closed_at').eq('user_id', i.userId).is('deleted_at', null)
+    const target = resolveReportTarget((data ?? []) as MethodRow[], i.last4, { sender: i.sender, bankName: i.bankName })
     if (!target || target.track_sms === false) return
     if (found.currency && target.currency && found.currency !== 'LE' && found.currency !== target.currency) return
     await i.service.from('account_balance_reports').upsert({

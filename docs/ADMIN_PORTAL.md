@@ -96,3 +96,11 @@ Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engine
 - Admin reads: identity is verified locally from the JWT and staff, role and credentials are remembered for 20 s per instance; every write skips that and asks the Auth server and the database fresh.
 - Overview and analytics are served from `admin_metrics_cache` (refreshed every 15 minutes by pg_cron; anything missing or older than 45 minutes is computed live). Activity numbers read `app_activity_days` (daily rollup plus not-yet-rolled raw events); DAU is "active today (UTC)".
 - Minimum app version (Platform): releases below it are refused (426) by the database and by the API, and the app shows an update screen with the links entered there.
+
+
+## Accounts refactor (2026-10)
+
+- **SMS log** rows now show whether the message's balance was recorded (`balance reported`) and whether it was linked to an account. The balance value itself is returned only to staff holding `users.pii`, same gate as the raw message body.
+- **Account deletion and data reset** (`deleteUserCompletely`, `/api/account/reset-data`) also clear `account_adjustments` and `account_balance_reports` (children of `payment_methods`, so they go first). Both tables are also covered by the auth-user cascade.
+- `housekeeping` (pg_cron `housekeeping`) purges balance reports older than 14 days and the 90-day tombstones of `account_adjustments`; no new job.
+- Nothing else in the portal reads `payment_methods`, `savings_*` or the new tables.

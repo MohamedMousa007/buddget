@@ -18,7 +18,7 @@ import { MoveMoneySheet, type MoveMode } from '@/components/features/accounts/Mo
 import { UpdateBalanceSheet } from '@/components/features/accounts/UpdateBalanceSheet'
 import { splitMoney } from '@/components/features/accounts/accountDisplay'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
-import { useAccountGaps } from '@/lib/accounts/useAccountGaps'
+import { snoozeGap, useAccountGaps } from '@/lib/accounts/useAccountGaps'
 import { useAccounts } from '@/lib/accounts/useAccounts'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { MASK } from '@/lib/privacy/mask'
@@ -31,7 +31,7 @@ import { createElement } from 'react'
 
 type Sheet =
   | { kind: 'detail'; id: string }
-  | { kind: 'move'; id: string; mode: MoveMode; amount?: string }
+  | { kind: 'move'; id: string; mode: MoveMode; amount?: string; fromGap?: boolean }
   | { kind: 'update'; id: string }
   | { kind: 'fix'; id: string }
   | { kind: 'card'; id: string }
@@ -128,11 +128,13 @@ export default function AccountsPage() {
             onMove={(mode) => setSheet({ kind: 'move', id: open.method.id, mode })} onUpdate={() => setSheet({ kind: 'update', id: open.method.id })}
             onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} />
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
-            accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined} />
-          <UpdateBalanceSheet key={`u-${open.method.id}`} open={sheet?.kind === 'update'} onClose={close} account={open} />
+            accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
+            onDone={() => { const g = gaps[open.method.id]; if (g && sheet?.kind === 'move' && sheet.fromGap) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
+          <UpdateBalanceSheet key={`u-${open.method.id}`} open={sheet?.kind === 'update'} onClose={close} account={open}
+            onDone={() => { const g = gaps[open.method.id]; if (g) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
           {gaps[open.method.id] ? (
             <FixGapSheet key={`f-${open.method.id}`} open={sheet?.kind === 'fix'} onClose={close} account={open} gap={gaps[open.method.id]}
-              onSetAside={(amount) => setSheet({ kind: 'move', id: open.method.id, mode: 'set', amount: String(amount) })} onResolved={refresh} />
+              onSetAside={(amount) => setSheet({ kind: 'move', id: open.method.id, mode: 'set', amount: String(amount), fromGap: true })} onResolved={refresh} />
           ) : null}
           <PaymentMethodSetupSheet open={sheet?.kind === 'card'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id} nested onClose={close} />
         </>

@@ -1,3 +1,4 @@
+import { accountsBasisFor } from '@/lib/accounts/netWorthBasis'
 import { defineTools } from '@/lib/buddgy/tools/define'
 import { savingsLabels } from '@/lib/buddgy/tools/exec/savingsCopy'
 import { restoreRows, revertRows } from '@/lib/buddgy/tools/exec/restoreKit'
@@ -95,7 +96,13 @@ const list_savings: ReadImpl = () => {
 const get_net_worth: ReadImpl = () => {
   const s = fin()
   const stats = computeMonthlyStats({ ...s, monthFilter: ui().monthFilter, trustLocalFinance: true })
+  const basis = accountsBasisFor({
+    paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debtPayments: s.debtPayments,
+    savingsTransactions: s.savingsTransactions, savingsAccounts: s.savingsAccounts, adjustments: s.accountAdjustments,
+    convert: (a, from, to) => tryConvertCurrency(a, from, to, s.exchangeRates),
+  }, s.settings.baseCurrency)
   const nw = computeNetWorth({
+    ...basis,
     savingsAccounts: s.savingsAccounts,
     investmentHoldings: s.investmentHoldings,
     debts: s.debts,

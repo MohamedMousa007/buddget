@@ -243,6 +243,20 @@ export async function resolvePaymentMethodByLast4(
   return def?.id ?? null
 }
 
+/** Where a credit lands: the exact account/card the message names, else the sending provider. Never the default method. */
+async function resolveCreditAccount(service: ServiceClient, row: SmsRowData): Promise<string | null> {
+  return (await resolveExactPaymentMethod(service, row.userId, row.last4))
+    ?? (await resolvePaymentMethodByProvider(service, row.userId, row.sender, row.bankName))
+}
+
+/** The user's Cash account (oldest cash method): the target of an ATM withdrawal. */
+async function cashAccountFor(service: ServiceClient, userId: string): Promise<string | null> {
+  const { data } = await service.from('payment_methods').select('id')
+    .eq('user_id', userId).eq('type', 'cash').is('deleted_at', null).is('closed_at', null)
+    .order('created_at', { ascending: true }).limit(1).maybeSingle()
+  return data?.id ?? null
+}
+
 export async function createSmsExpense(
   service: ServiceClient,
   row: SmsRowData,
@@ -269,6 +283,8 @@ export async function createSmsExpense(
         occurrence_date: linked ? row.occurrenceDate ?? null : null,
         status: 'confirmed',
         sms_log_id: row.logId ?? null,
+        payment_method_id: await resolveCreditAccount(service, row),
+        occurred_at: row.receivedAtIso ?? null,
         notes: null,
       })
       .select('id')
@@ -300,11 +316,20 @@ export async function createSmsExpense(
     }
   }
 
+  // Money that stays inside the user's own accounts credits the other side: cash out lands in Cash,
+  // an own transfer lands in the account named as counterparty (the posted row is always the debit leg).
+  const toPaymentMethodId =
+    row.kind === 'atm_withdrawal' ? await cashAccountFor(service, row.userId)
+    : row.kind === 'own_transfer' ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
+    : null
+
   const { data, error } = await service
     .from('expenses')
     .insert({
       user_id: row.userId,
       expense_date: row.day,
+      occurred_at: row.receivedAtIso ?? null,
+      to_payment_method_id: toPaymentMethodId,
       description: title ?? 'Bank transaction',
       category: mappedCategory,
       amount: row.amount,

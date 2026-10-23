@@ -20,7 +20,7 @@ const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
  * (one row per day) once it has settled, and the last 30 days are read back. Null until there
  * are two snapshots in the base currency — never a made-up trend.
  */
-export function useNetWorthTrend(netWorth: number, currency: string, ready: boolean): NetWorthTrend | null {
+export function useNetWorthTrend(netWorth: number, currency: string, ready: boolean, basis: 'legacy' | 'accounts' = 'legacy'): NetWorthTrend | null {
   const { user } = useAuth()
   const [trend, setTrend] = useState<NetWorthTrend | null>(null)
   const userId = user?.id
@@ -33,14 +33,14 @@ export function useNetWorthTrend(netWorth: number, currency: string, ready: bool
       const now = new Date()
       const since = new Date(now.getTime() - DAYS * 86_400_000)
       // Written only when today's figure actually changed: the same value is not sent again on every visit or edit.
-      const stamp = `bdg-nw:${userId}:${isoDay(now)}:${currency}`
+      const stamp = `bdg-nw:${userId}:${isoDay(now)}:${currency}:${basis}`
       const rounded = netWorth.toFixed(2)
       let already = false
       try { already = window.localStorage.getItem(stamp) === rounded } catch { /* storage unavailable: write */ }
       if (!already) {
         const { error } = await supabase
           .from('net_worth_snapshots')
-          .upsert({ user_id: userId, day: isoDay(now), net_worth: netWorth, currency }, { onConflict: 'user_id,day' })
+          .upsert({ user_id: userId, day: isoDay(now), net_worth: netWorth, currency, basis }, { onConflict: 'user_id,day' })
         if (!error) {
           try { window.localStorage.setItem(stamp, rounded) } catch { /* ignore */ }
         }
@@ -49,6 +49,7 @@ export function useNetWorthTrend(netWorth: number, currency: string, ready: bool
         .from('net_worth_snapshots')
         .select('day, net_worth')
         .eq('currency', currency)
+        .eq('basis', basis)
         .gte('day', isoDay(since))
         .order('day', { ascending: true })
       if (cancelled || !data || data.length < 2) return
@@ -58,7 +59,7 @@ export function useNetWorthTrend(netWorth: number, currency: string, ready: bool
       setTrend({ points, pct: first === 0 ? 0 : ((last - first) / Math.abs(first)) * 100, dir: last >= first ? 'up' : 'down' })
     }, SETTLE_MS)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [userId, ready, netWorth, currency])
+  }, [userId, ready, netWorth, currency, basis])
 
   return trend
 }
