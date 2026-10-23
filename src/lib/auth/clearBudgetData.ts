@@ -4,6 +4,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clearPendingAiJobs } from '@/lib/store/usePendingAiJobs'
 import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 import { SPLASH_DONE_KEY } from '@/lib/auth/splashLatch'
+import { resetFeatureFlags } from '@/lib/flags/useFeatureFlag'
 
 /**
  * Persisted localStorage keys used by Zustand + misc client caches. Wiped on
@@ -51,6 +52,7 @@ export function clearBudgetData(): void {
   }
 
   clearSyncCursors()
+  resetFeatureFlags()
 
   try {
     useFinanceStore.getState().reset()

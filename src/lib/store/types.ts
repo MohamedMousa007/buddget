@@ -449,6 +449,25 @@ export interface BudgetActivationUndo {
 }
 
 /** What the budget studio learns about the user, beyond the typed profile columns. */
+/** What brings someone to the app; seeds the first budget priorities and the wording of the first card. */
+export type OnboardingGoal = 'see' | 'runout' | 'save' | 'debt' | 'budget'
+
+/** Where a new account is in the first-run journey. Lives on the profile so it resumes on any device. */
+export interface OnboardingRecord {
+  v: 1
+  /** Index into the journey's steps. */
+  step: number
+  startedAt: string
+  goals?: OnboardingGoal[]
+  /** The income source the journey created, so going back edits it instead of adding another. */
+  incomeSourceId?: string
+  /** 'later' = asked and declined; do not ask again before `pushLaterAt` + 30 days. */
+  push?: 'allowed' | 'later'
+  pushLaterAt?: string
+  doneAt?: string
+  skippedAt?: string
+}
+
 /** Per budget line (`block:name`): the last close proposal and what the user did with it. */
 export type CloseMemory = Record<string, { kind: 'raise' | 'lower'; cycle: string; outcome: 'applied' | 'passed' }>
 
@@ -466,6 +485,8 @@ export interface FinancialProfile {
   cashHeavy?: boolean
   /** What month-close proposals were applied or passed on, per line, so a declined change is not repeated. */
   closeMemory?: CloseMemory
+  /** First-run journey progress; absent for accounts that predate it. */
+  onboarding?: OnboardingRecord
 }
 
 /** Who the budget is for (planner / household). */

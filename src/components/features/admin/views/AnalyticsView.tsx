@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useAdminQuery } from '../adminClient'
+import type { OnboardingFunnel } from '@/app/api/admin/analytics/onboarding/route'
 import { compact, num, pct } from '../format'
 import { BarList, CHART, Legend, RetentionGrid, TrendChart } from '../ui/Charts'
 import { KpiGrid, StatTile } from '../ui/Kpi'
@@ -28,6 +29,7 @@ const FUNNEL: Array<[string, string]> = [
 export default function AnalyticsView() {
   const [range, setRange] = useState<'14' | '30' | '90'>('30')
   const { data, error } = useAdminQuery<AnalyticsData>(`/api/admin/analytics?days=${range}`)
+  const { data: onboarding } = useAdminQuery<OnboardingFunnel>(`/api/admin/analytics/onboarding?days=${range}`)
 
   if (error && !data) return <Notice tone="negative">{error}</Notice>
   if (!data) return <Loading rows={8} />
@@ -74,6 +76,22 @@ export default function AnalyticsView() {
             />
           </Panel>
         </div>
+
+        {onboarding && onboarding.started > 0 ? (
+          <Panel title="First-run journey" description={`${num(onboarding.started)} started · ${num(onboarding.completed)} finished · ${num(onboarding.left)} left`}>
+            <div className="grid gap-6 xl:grid-cols-2">
+              <BarList
+                items={onboarding.steps.map((s) => ({ label: s.step, value: s.completed, hint: `${num(s.viewed)} viewed` }))}
+                format={compact}
+              />
+              <BarList
+                color={CHART.four}
+                items={onboarding.permissions.map((p) => ({ label: `${p.kind} ${p.granted ? 'allowed' : 'declined'}`, value: p.users }))}
+                format={compact}
+              />
+            </div>
+          </Panel>
+        ) : null}
 
         <Panel title="Weekly retention" description="Share of each signup cohort that was active N weeks later">
           <RetentionGrid cohorts={data.retention} />

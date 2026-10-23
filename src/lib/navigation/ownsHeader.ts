@@ -3,7 +3,7 @@
  * button), so the shell's mobile wordmark bar steps aside. Flow keeps the bar: its month
  * row is a sub-header below it.
  */
-const OWN_HEADER = new Set(['/paydays', '/budget-history'])
+const OWN_HEADER = new Set(['/paydays', '/budget-history', '/start'])
 
 export function ownsHeader(path: string): boolean {
   return OWN_HEADER.has(path)

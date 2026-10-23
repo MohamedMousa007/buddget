@@ -19,6 +19,7 @@ import { SmsSubscriptionDetectionBanner } from '@/components/features/dashboard/
 import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
+import { OnboardingGate } from '@/components/features/onboarding/OnboardingGate'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
 import { useCycleAwareMonth } from '@/hooks/useCycleAwareMonth'
@@ -309,6 +310,7 @@ export function AppShell({ children }: AppShellProps) {
       <ModalProvider />
       <WidgetSync />
       <SmsStartupSync />
+      <OnboardingGate />
       <SmsNudgeSync />
       <SmsPushActionHandler />
       <AndroidBackHandler />

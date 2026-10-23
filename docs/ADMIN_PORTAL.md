@@ -58,7 +58,7 @@ No new variable is required. Optional: `NEXT_PUBLIC_ADMIN_HOST` (default `admin.
 
 ## Database
 
-Migrations `0158_user_reset` (adds `profiles.data_reset_at` and grants `users.reset` to `admin`), `0123_admin_portal_core`, `0124_admin_support_monetization`, `0125_admin_analytics_functions`, `0130_admin_sso_email_codes` (adds `sso_enabled` and `setup_completed_at`, backfilled from `totp_confirmed_at`; allows the `password_email` session method). All tables are service-role only (RLS on, no policies, grants revoked). Analytics come from `admin_*` SQL functions callable only by `service_role`.
+Migrations `0159_onboarding_flag` (the `onboarding_v1` rollout flag, 10% to start, staff always on), `0160_admin_onboarding_funnel` (the first-run journey funnel on Growth & engagement), `0158_user_reset` (adds `profiles.data_reset_at` and grants `users.reset` to `admin`), `0123_admin_portal_core`, `0124_admin_support_monetization`, `0125_admin_analytics_functions`, `0130_admin_sso_email_codes` (adds `sso_enabled` and `setup_completed_at`, backfilled from `totp_confirmed_at`; allows the `password_email` session method). All tables are service-role only (RLS on, no policies, grants revoked). Analytics come from `admin_*` SQL functions callable only by `service_role`.
 
 ## QA and hardening notes
 - Biometric unlocks last 4h (password + code: 12h; SSO: as long as the app sign-in). In production the session cookie is `__Host-bdg_admin` (host-only, so each host has its own).

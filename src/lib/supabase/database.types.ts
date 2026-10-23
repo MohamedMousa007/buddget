@@ -3815,6 +3815,7 @@ export type Database = {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
       }
+      admin_onboarding_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_signup_series: {
         Args: { p_days?: number }

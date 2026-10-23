@@ -24,6 +24,7 @@ export const SHELL_PATHS = [
   '/reports',
   '/budget-setup',
   '/budget-history',
+  '/start',
   '/notifications',
   '/settings',
   '/settings/profile',

@@ -1,6 +1,6 @@
 # Onboarding plan (for approval, no code yet)
 
-Status: PLAN. Nothing here is built. Next gate: you approve or change the decisions in section 9, then mockups, then build in the phases of section 8.
+Status: BUILT (phases 1 to 7), behind the `onboarding_v1` flag at 10% rollout (staff always on). Mockups: the Buddget Onboarding canvas. Decisions in section 9 went with the recommendations. Known differences from the mockups: the Arabic layout follows the app's convention (language and text alignment, layout not mirrored); the currency picker is a row of chips shown only for "Other"; the credit card row is left to the Accounts and Debts screens.
 
 ## 1. Where we start
 

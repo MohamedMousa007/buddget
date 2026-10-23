@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useSmsArmed } from '@/hooks/useSmsTracking'
-import { SetupChecklist } from '@/components/features/setup/SetupChecklist'
+import { FlowSetupState } from '@/components/features/onboarding/FlowSetupState'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { AMOUNT_MAX, AMOUNT_MIN, amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore, type FlowSegment } from '@/lib/store/useExpenseFilterStore'
@@ -268,7 +268,7 @@ export default function FlowPage() {
           <SkeletonList rows={7} />
         </div>
       ) : empty === 'setup' ? (
-        <SetupChecklist className="mx-4 mt-4" />
+        <FlowSetupState className="mx-4 mt-4" />
       ) : empty === 'emptyMonth' ? (
         <div className="mx-4 mt-7">
           <EmptyState

@@ -7,6 +7,10 @@ import { registerPushNotifications } from '@/lib/native/pushNotifications'
 import { cleanupOldReceiptImages } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { isOpenAccount } from '@/lib/accounts/kinds'
+import { useFeatureFlag } from '@/lib/flags/useFeatureFlag'
+import { onboardingState } from '@/lib/onboarding/eligibility'
+import { deferPushPrompt } from '@/lib/onboarding/pushPolicy'
 
 interface NativeBootstrapProps {
   session: Session | null
@@ -34,10 +38,17 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
   }, [session?.access_token])
 
   const userId = session?.user?.id ?? null
+  const flagOn = useFeatureFlag('onboarding_v1', !!userId)
+  // The first sync decides whether this is a new account that should be asked inside the setup journey instead.
+  const synced = useFinanceStore((s) => s.dataReady && !!userId && s.profile.id === userId)
+  const bootstrapped = useRef<string | null>(null)
 
   useEffect(() => {
     if (!userId) return
     if (!isNative()) return
+    if (!synced || flagOn === null) return
+    if (bootstrapped.current === userId) return
+    bootstrapped.current = userId
 
     void cleanupOldReceiptImages()
 
@@ -46,6 +57,14 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
       if (!accessToken) return
       try {
         if (useSettingsStore.getState().pushOptOut) return
+        const f = useFinanceStore.getState()
+        const record = f.profile.financialProfile?.onboarding
+        const journeyOpen = onboardingState({
+          flagOn, profileLoaded: true, record,
+          openAccounts: f.paymentMethods.filter(isOpenAccount).length, incomeSources: f.incomeSources.length,
+          incomeEvents: f.incomeEvents.length, expenses: f.expenses.length, plans: f.budgetPlans.length,
+        }) !== 'hidden'
+        if (deferPushPrompt(record, journeyOpen, Date.now())) return
         await registerPushNotifications({
           accessToken,
           userId,
@@ -58,7 +77,7 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
       // path that writes the native token (ingest token only, never the JWT).
     })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]) // once per signed-in user — token read from ref, language at first-run value
+  }, [userId, synced, flagOn]) // once per signed-in user, after the first sync — token read from ref, language at first-run value
 
   return null
 }
