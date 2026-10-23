@@ -1,4 +1,12 @@
-# Exclusions, multi-device SMS collection and the devices list (plan, no code yet)
+# Exclusions, multi-device SMS collection and the devices list
+
+**Status 2026-10-23: built** (migrations 0177 to 0179). Decisions taken: an excluded account also leaves net worth and totals (one switch, no second one); a collecting phone is quiet by default and notifies only when turned on; "paid for someone" is in; the iPhone Shortcut path is kept and the user sets it up if it is not working.
+
+What shipped: `payment_methods.excluded` and `expenses.spend_exclusion/owed_by/owed_settled_at`; `isNonSpendExpense` at the spend call sites; a trigger so every new expense on an excluded account starts excluded (app and SMS); toggling an account re-derives only what the account caused; "Don't count this account" in the account sheet; "Don't count in my spending" and "Paid for someone" in the expense form; repayment books an account adjustment (never income) and can replace a bank-text income already captured; `user_devices` registry with heartbeat, Settings > Sign-in & security > Your devices (collector status, last text, notify switch, remove); per-phone SMS role (turning SMS off on one phone no longer disarms another); `sms_parse_log.device_id`; push policy that skips collectors and removed phones unless they are the only phone.
+
+Known limits: a credit card marked as not counted still shows its debt in Debts and net worth; standalone cards (not under an account) have no sheet for the switch yet, so exclude their account or mark expenses; the Flow list shows a badge but has no "Not counted" filter chip; there is no dedicated collector-mode screen (the devices list is the status view); the device list does not sign a removed phone out of Supabase itself, the phone signs itself out on its next heartbeat and its SMS and push access stop at once.
+
+(Original plan below.)
 
 Written 2026-10-23 from the code, the live schema and a market pass. Items marked *(unverified)* could not be confirmed from a source and need a device or console check.
 

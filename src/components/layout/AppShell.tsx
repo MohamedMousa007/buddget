@@ -102,7 +102,10 @@ function SmsStartupSync() {
       //    starts off, A auto-resumes on return. Online-only (both reads need the
       //    network); offline leaves current device state as-is.
       if (refreshToken && isOnline()) {
-        const intent = await fetchAccountSmsIntent(userId)
+        // This phone's own role first (another phone turning tracking off must not disarm it); the account setting only
+        // decides for a phone the server has not met yet.
+        const { fetchDeviceCollectsSms } = await import('@/lib/devices/client')
+        const intent = (await fetchDeviceCollectsSms()) ?? (await fetchAccountSmsIntent(userId))
         if (intent === true) {
           // ensureIngestToken re-stamps the token to this account (self-heal).
           if (await ensureIngestToken(token, userId)) await setSmsEnabled(true)
@@ -117,6 +120,8 @@ function SmsStartupSync() {
       //    still reach the server. Skip while offline — items stay queued.
       if (!isOnline()) return
       await drainAndSubmitPendingSms(token, userId)
+      const { sendDeviceHeartbeat } = await import('@/lib/devices/client')
+      void sendDeviceHeartbeat(status.enabled)
     }
 
     let unsub: (() => void) | null = null

@@ -16,6 +16,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isNative, isAndroid, isIOS } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { setDeviceCollectsSms } from '@/lib/devices/client'
 import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, SMS_QUEUE_CHANGED_EVENT, type SmsBridgeStatus } from '@/lib/native/smsTracker'
 
 export interface TokenInfo {
@@ -172,6 +173,7 @@ export function useSmsTracking() {
           setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })
+        void setDeviceCollectsSms(value)
         return
       }
 
@@ -198,6 +200,7 @@ export function useSmsTracking() {
           setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })
+        void setDeviceCollectsSms(value)
         return
       }
 
@@ -228,6 +231,7 @@ export function useSmsTracking() {
       await setIosSetupCompleted(true)
       await setSmsEnabled(true)
       updateSettings({ smsTrackingEnabled: true })
+      void setDeviceCollectsSms(true)
       await refreshStatus()
     } finally {
       setLoading(false)

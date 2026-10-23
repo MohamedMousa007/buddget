@@ -1,5 +1,6 @@
 'use client'
 
+import { getOrCreateDeviceId } from '@/lib/native/deviceId'
 import { isNative, getPlatform, isIOS } from '@/lib/native/isNative'
 import { apiUrl } from '@/lib/apiBase'
 
@@ -146,6 +147,7 @@ async function postToken(token: string, args: RegisterArgs): Promise<void> {
         locale: args.locale ?? (typeof navigator !== 'undefined' ? navigator.language : null),
         deviceModel:
           typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 200) : null,
+        deviceId: await getOrCreateDeviceId(),
       }),
     })
   } catch (e) {

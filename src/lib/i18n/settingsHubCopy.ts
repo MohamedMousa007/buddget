@@ -35,6 +35,21 @@ export interface SettingsHubCopy {
   convertTitle: string
   showCents: string
   security: { title: string; subtitle: string; signIn: string; account: string; memberSince: string }
+  devices: {
+    title: string
+    hint: string
+    thisDevice: string
+    collecting: string
+    lastText: (when: string) => string
+    noTextYet: string
+    activeAgo: (when: string) => string
+    notifyHere: string
+    notifyHint: string
+    remove: string
+    confirmRemove: string
+    removeNote: string
+    empty: string
+  }
   sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string }
   ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string; voiceHint: string; deviceOnly: string }
   notif: { title: string; master: string; on: string; off: string; blocked: string; unsupported: string; pushHint: string; subs: string; goals: string; dueHint: string; priceHint: string; progressHint: string; behindHint: string }
@@ -160,6 +175,21 @@ const en: SettingsHubCopy = {
   convertTitle: 'Currency converter',
   showCents: 'Show cents',
   security: { title: 'Sign-in & security', subtitle: 'Password, two-step, biometrics, app lock', signIn: 'Sign in to manage your account and security.', account: 'Account', memberSince: 'Member since' },
+  devices: {
+    title: 'Your devices',
+    hint: 'Phones signed in to your account',
+    thisDevice: 'This device',
+    collecting: 'Collecting bank texts',
+    lastText: (when) => `Last text ${when}`,
+    noTextYet: 'No text received yet',
+    activeAgo: (when) => `Active ${when}`,
+    notifyHere: 'Notify me on this phone',
+    notifyHint: 'Off by default on a phone that collects texts',
+    remove: 'Remove',
+    confirmRemove: 'Tap again to remove',
+    removeNote: 'It stops collecting and signs out the next time it opens.',
+    empty: 'Open Buddget on your other phones to see them here.',
+  },
   sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up' },
   ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned', voiceHint: 'Speak answers in voice chats', deviceOnly: 'This device only' },
   notif: {
@@ -336,6 +366,21 @@ const ar: SettingsHubCopy = {
   convertTitle: 'محوّل العملات',
   showCents: 'إظهار القروش',
   security: { title: 'الدخول والأمان', subtitle: 'كلمة المرور والتحقق بخطوتين والبصمة وقفل التطبيق', signIn: 'سجّل دخولك عشان تدير حسابك وأمانه.', account: 'الحساب', memberSince: 'عضو منذ' },
+  devices: {
+    title: 'أجهزتك',
+    hint: 'الموبايلات المسجّل دخولها لحسابك',
+    thisDevice: 'الجهاز ده',
+    collecting: 'بيجمع رسائل البنك',
+    lastText: (when) => `آخر رسالة ${when}`,
+    noTextYet: 'لسه ما وصلتش رسالة',
+    activeAgo: (when) => `نشط ${when}`,
+    notifyHere: 'نبّهني على الموبايل ده',
+    notifyHint: 'مقفول افتراضي على الموبايل اللي بيجمع الرسائل',
+    remove: 'إزالة',
+    confirmRemove: 'اضغط تاني للإزالة',
+    removeNote: 'هيبطّل يجمع الرسائل ويسجّل خروج أول ما يتفتح.',
+    empty: 'افتح بادجت على موبايلاتك التانية عشان تظهر هنا.',
+  },
   sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائي', iosHint: 'بيتظبط بـ Shortcut', on: 'بيتابع رسائل البنك', off: 'مقفول', guide: 'إعداد' },
   ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'بيقترح نصايح في وقتها', learningHint: 'بيفتكر معلومات مفيدة من كلامك معاه', memoryHint: 'الأسرة وإجابات الميزانية واللي اتعلّمه بادجي', voiceHint: 'بينطق الإجابات في المحادثات الصوتية', deviceOnly: 'على الجهاز ده بس' },
   notif: {

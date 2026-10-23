@@ -2411,6 +2411,7 @@ export type Database = {
       }
       push_tokens: {
         Row: {
+          device_id: string | null
           app_version: string | null
           device_model: string | null
           id: string
@@ -2421,6 +2422,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          device_id?: string | null
           app_version?: string | null
           device_model?: string | null
           id?: string
@@ -2431,6 +2433,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          device_id?: string | null
           app_version?: string | null
           device_model?: string | null
           id?: string
@@ -3070,6 +3073,7 @@ export type Database = {
       }
       sms_parse_log: {
         Row: {
+          device_id: string | null
           payment_method_id: string | null
           balance_after: number | null
           harvested_at: string | null
@@ -3116,6 +3120,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          device_id?: string | null
           payment_method_id?: string | null
           balance_after?: number | null
           harvested_at?: string | null
@@ -3162,6 +3167,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          device_id?: string | null
           payment_method_id?: string | null
           balance_after?: number | null
           harvested_at?: string | null
@@ -3667,6 +3673,12 @@ export type Database = {
         Row: { first_at: string; milestone: string; user_id: string }
         Insert: { first_at: string; milestone: string; user_id: string }
         Update: { first_at?: string }
+        Relationships: []
+      }
+      user_devices: {
+        Row: { app_version: string | null; collects_sms: boolean; created_at: string; device_id: string; last_seen_at: string; model: string | null; name: string | null; notify_on_sms: boolean | null; platform: string; revoked_at: string | null; user_id: string }
+        Insert: { app_version?: string | null; collects_sms?: boolean; created_at?: string; device_id: string; last_seen_at?: string; model?: string | null; name?: string | null; notify_on_sms?: boolean | null; platform: string; revoked_at?: string | null; user_id: string }
+        Update: { app_version?: string | null; collects_sms?: boolean; last_seen_at?: string; model?: string | null; name?: string | null; notify_on_sms?: boolean | null; platform?: string; revoked_at?: string | null }
         Relationships: []
       }
       feedback_votes: {

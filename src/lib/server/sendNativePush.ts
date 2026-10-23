@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getFirebaseAdmin } from '@/lib/server/firebaseAdmin'
+import { smsPushTargets, type DevicePrefs } from '@/lib/devices/policy'
 
 export interface SendNativePushArgs {
   userId: string
@@ -8,6 +9,8 @@ export interface SendNativePushArgs {
   body: string
   data?: Record<string, string>
   collapseKey?: string
+  /** A captured bank text: collectors that did not ask for it, and removed phones, are skipped. */
+  forSms?: boolean
 }
 
 export interface SendNativePushResult {
@@ -31,7 +34,7 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
   const service = createServiceRoleClient()
   const { data: rows, error } = await service
     .from('push_tokens')
-    .select('token, platform')
+    .select('token, platform, device_id')
     .eq('user_id', args.userId)
 
   if (error) {
@@ -43,7 +46,13 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
     return { ok: true, sent: 0, failed: 0 }
   }
 
-  const tokens = rows.map((r) => r.token)
+  let targets = rows
+  if (args.forSms) {
+    const { data: devs } = await service.from('user_devices').select('device_id, collects_sms, notify_on_sms, revoked_at').eq('user_id', args.userId)
+    targets = smsPushTargets(rows, new Map<string, DevicePrefs>((devs ?? []).map((d) => [d.device_id, d])))
+  }
+  if (targets.length === 0) return { ok: true, sent: 0, failed: 0 }
+  const tokens = targets.map((r) => r.token)
 
   let sent = 0
   let failed = 0

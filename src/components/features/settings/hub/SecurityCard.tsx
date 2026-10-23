@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { KeyRound } from 'lucide-react'
+import { DevicesSheet } from './DevicesSheet'
 import { AppLockToggle } from '@/components/features/settings/AppLockToggle'
 import { BiometricLoginToggle } from '@/components/features/settings/BiometricLoginToggle'
 import { SettingsChip, SettingsRow } from '@/components/features/settings/SettingsRow'
@@ -31,6 +33,7 @@ export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['
   const t = p.t
   const tone = GROUP_TONE.security
   const user = p.user
+  const [devicesOpen, setDevicesOpen] = useState(false)
   const memberSince = p.store.profile.createdAt
     ? new Date(p.store.profile.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { month: 'long', year: 'numeric' })
     : ''
@@ -61,6 +64,8 @@ export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['
       />
       <div data-setting-id="biometric"><BiometricLoginToggle userEmail={user.email} bare /></div>
       <div data-setting-id="appLock"><AppLockToggle userEmail={user.email} bare /></div>
+      <SettingsRow icon={SETTING_ICONS.shield} tone={tone} title={copy.devices.title} subtitle={copy.devices.hint} onClick={() => setDevicesOpen(true)} settingId="devices" />
+      <DevicesSheet open={devicesOpen} onClose={() => setDevicesOpen(false)} />
     </SettingsSection>
   )
 }

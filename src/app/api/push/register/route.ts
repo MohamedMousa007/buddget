@@ -19,6 +19,7 @@ const bodySchema = z.object({
   appVersion: z.string().max(50).optional().nullable(),
   locale: z.string().max(20).optional().nullable(),
   deviceModel: z.string().max(200).optional().nullable(),
+  deviceId: z.string().max(100).optional().nullable(),
 })
 
 export async function POST(request: Request) {
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { token, platform, appVersion, locale, deviceModel } = parsed.data
+  const { token, platform, appVersion, locale, deviceModel, deviceId } = parsed.data
 
   try {
     const service = createServiceRoleClient()
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
           app_version: appVersion ?? null,
           locale: locale ?? null,
           device_model: deviceModel ?? null,
+          device_id: deviceId ?? null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id,token' },

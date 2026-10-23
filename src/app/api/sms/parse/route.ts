@@ -557,27 +557,27 @@ Omit "merchant", "last4", "datetime" and "counterparty_last4" from mapping_rules
 // Auth helpers
 // ---------------------------------------------------------------------------
 
-async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
+async function resolveUserId(req: Request): Promise<{ userId: string | null; deviceId: string | null }> {
   const auth = req.headers.get('authorization') ?? ''
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
-  if (!bearer) return { userId: null }
+  if (!bearer) return { userId: null, deviceId: null }
   const service = createServiceRoleClient()
 
   // First try Supabase JWT (mobile shell forwards `session.access_token`).
   if (looksLikeJwt(bearer)) {
     const identity = await resolveRouteIdentity(req)
-    if (identity) return { userId: identity.id }
+    if (identity) return { userId: identity.id, deviceId: req.headers.get('x-buddget-device-id') }
   }
 
   // Fallback: bearer token from sms_ingest_tokens (legacy / shortcut bridge).
   const { data: tokenRow } = await service
     .from('sms_ingest_tokens')
-    .select('user_id')
+    .select('user_id, device_id')
     .eq('token', bearer)
     .eq('is_active', true)
     .single()
 
-  return { userId: tokenRow?.user_id ?? null }
+  return { userId: tokenRow?.user_id ?? null, deviceId: tokenRow?.device_id ?? null }
 }
 
 // ---------------------------------------------------------------------------
@@ -587,7 +587,7 @@ async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const { userId } = await resolveUserId(request)
+  const { userId, deviceId } = await resolveUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -630,6 +630,7 @@ export async function POST(request: Request) {
       sms_hash: hash,
       parsed_at: new Date().toISOString(),
       received_at: nowIso,
+      device_id: deviceId,
     })
     .select('id')
     .single()
@@ -1130,7 +1131,7 @@ export async function POST(request: Request) {
   let pushHandledInline = false
   try {
     const pushResult = await Promise.race([
-      sendNativePush(pushArgs),
+      sendNativePush({ ...pushArgs, forSms: true }),
       new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 3000)),
     ])
     if (pushResult !== 'timeout') {
@@ -1150,7 +1151,7 @@ export async function POST(request: Request) {
   if (!pushHandledInline) {
     after(async () => {
       try {
-        const result = await sendNativePush(pushArgs)
+        const result = await sendNativePush({ ...pushArgs, forSms: true })
         const delivered = result.ok && (result.sent ?? 0) > 0
         await service.rpc('sms_mark_pushed', {
           p_log_id: logId,
