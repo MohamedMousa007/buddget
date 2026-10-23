@@ -49,4 +49,11 @@ describe('deleteUserCompletely', () => {
     expect(deleteUser).not.toHaveBeenCalled()
     expect(calls).toHaveLength(0)
   })
+
+  it('a reset or a staff self-delete also clears receipts, snapshots and chat history', () => {
+    for (const t of ['receipts', 'net_worth_snapshots', 'savings_month_summary', 'goal_allocation_runs', 'ai_chats', 'sms_parse_log']) {
+      expect(USER_DATA_TABLES).toContain(t)
+    }
+  })
 })
+

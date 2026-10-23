@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildPlan } from '@/lib/budget/engine'
 import type { BudgetFacts, FactDebt } from '@/lib/budget/facts'
 import {
+  acceptDescribed,
   answersToProfilePatch,
   answerSource,
   applyAnswer,
@@ -424,6 +425,18 @@ describe('adaptive flow', () => {
     const plan = buildPlan({ ...merged, country: 'Egypt', baseCurrency: 'EGP', monthlyIncome: 30000 })
     expect(plan.lines.find((l) => l.name === 'School fees')).toMatchObject({ block: 'bills', amount: 2500, essential: true })
     expect(mergeFacts(blank, createState()).extraCommitments).toBeUndefined()
+  })
+
+  it('a description never re-answers what the app already holds', () => {
+    const said = { income: 5000, payday: 25, hasDebts: true, debtTotal: 2000, debtMonthly: 100, housing: 'rent', rent: 4000, commitments: [{ name: 'Gym', amount: 50 }] }
+    const kept = acceptDescribed(rich, createState(), said)
+    expect(Object.keys(kept)).not.toContain('income')
+    expect(Object.keys(kept)).not.toContain('payday')
+    expect(Object.keys(kept)).not.toContain('hasDebts')
+    expect(Object.keys(kept)).not.toContain('debtTotal')
+    expect(kept.commitments).toEqual([{ name: 'Gym', amount: 50 }])
+    // a blank profile keeps all of it, and "yes" unlocks the amounts that follow
+    expect(Object.keys(acceptDescribed(blank, createState(), said))).toEqual(['income', 'payday', 'hasDebts', 'debtTotal', 'debtMonthly', 'housing', 'rent', 'commitments'])
   })
 })
 

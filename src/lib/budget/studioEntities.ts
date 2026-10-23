@@ -12,7 +12,7 @@ export interface StudioEntityNames {
   goal: (kind: GoalCategory) => string
 }
 
-type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals'>
+type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals' | 'incomeSources' | 'debts' | 'savingsAccounts'>
 
 const DEFAULT_PAYDAY = 25
 const DEFAULT_GOAL_MONTHS = 12
@@ -22,7 +22,8 @@ const amountOf = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) &&
 /**
  * Turns what the user told the studio into the real records the rest of the app reads, so the plan never
  * describes money Flow, Debts, Goals and Wealth cannot see. Returns the ids created now; a kind already
- * in `state.entities` is never created twice, so a retried or resumed build adds nothing.
+ * in `state.entities` is never created twice, so a retried or resumed build adds nothing. Nothing is created when the
+ * app already holds that kind of record: what the user typed in words must not double what they already track.
  */
 export function commitStudioEntities(
   state: StudioState,
@@ -35,7 +36,7 @@ export function commitStudioEntities(
   const created: Record<string, string> = {}
 
   const income = amountOf(state.answers.income)
-  if (income > 0 && !done.income) {
+  if (income > 0 && !done.income && store.incomeSources.length === 0) {
     const day = Math.min(31, Math.max(1, Math.round(Number(state.answers.payday) || DEFAULT_PAYDAY)))
     store.addIncomeSource({
       name: names.income, amount: income, currency: base, isRecurring: true, recurringFrequency: 'monthly',
@@ -45,7 +46,7 @@ export function commitStudioEntities(
   }
 
   const savings = amountOf(state.answers.savingsOnHand)
-  if (savings > 0 && !done.savings) {
+  if (savings > 0 && !done.savings && store.savingsAccounts.length === 0) {
     created.savings = store.addSavingsAccount({
       name: names.savings, category: 'savings', type: 'bank', currency: base, openingBalance: savings, isEmergencyCover: true,
     })
@@ -53,7 +54,7 @@ export function commitStudioEntities(
 
   const owed = amountOf(state.answers.debtTotal)
   const monthly = amountOf(state.answers.debtMonthly)
-  if (state.answers.hasDebts === true && (owed > 0 || monthly > 0) && !done.debt) {
+  if (state.answers.hasDebts === true && (owed > 0 || monthly > 0) && !done.debt && store.debts.length === 0) {
     const total = owed > 0 ? owed : monthly
     const payment = monthly > 0 ? monthly : total
     created.debt = store.addDebt({
@@ -64,7 +65,7 @@ export function commitStudioEntities(
   }
 
   const target = amountOf(state.answers.goalTarget)
-  if (state.answers.hasGoal === true && target > 0 && !done.goal) {
+  if (state.answers.hasGoal === true && target > 0 && !done.goal && store.goals.length === 0) {
     const months = Math.max(1, Math.round(Number(state.answers.goalMonths) || DEFAULT_GOAL_MONTHS))
     const kind = GOAL_KINDS.find((k) => k === state.answers.goalKind) ?? 'custom'
     const due = new Date(now.getFullYear(), now.getMonth() + months, now.getDate())

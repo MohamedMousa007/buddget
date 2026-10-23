@@ -19,6 +19,7 @@ import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { repairDraft } from '@/lib/budget/validate'
 import {
   STAGES,
+  acceptDescribed,
   answersToProfilePatch,
   applyAnswer,
   createState,
@@ -115,7 +116,8 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     if (Object.keys(patch).length > 0) s.updateProfile(patch)
   }
 
-  const finishOpener = (found: Record<string, unknown>) => {
+  const finishOpener = (described: Record<string, unknown>) => {
+    const found = acceptDescribed(facts, state, described)
     const start: StudioState = { ...state, opener: 'done' }
     const answered = Object.entries(found).reduce((acc, [id, v]) => applyAnswer(acc, id, v), start)
     saveToProfile(answered)

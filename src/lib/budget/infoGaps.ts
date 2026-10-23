@@ -209,10 +209,10 @@ export const QUESTIONS: readonly Question[] = [
   }),
 
   q('lowMonth', 'home', 'important', 'amount', {
+    min: 1,
     askIf: (f, s) => 'lowMonth' in s.answers || (f.monthlyIncome > 0 && f.incomeStability !== 'fixed' && f.incomeFloor === null),
     writes: { kind: 'facts', key: 'incomeFloor' },
     toFacts: (v) => ({ incomeFloor: v as number }),
-    min: 0,
   }),
 
   q('foodFrequency', 'life', 'important', 'chips', {
@@ -483,6 +483,23 @@ export function readiness(f: BudgetFacts, s: StudioState): Readiness {
     canBuild,
     enough: canBuild && percent >= ENOUGH_PERCENT,
   }
+}
+
+/**
+ * The part of a free-text description the run would have asked about anyway. Facts the app already holds (an income,
+ * a debt, a goal, savings) are not answered a second time, so the described version cannot double a real record.
+ * Answers are judged in order, so a "yes" unlocks the amounts that follow it.
+ */
+export function acceptDescribed(f: BudgetFacts, s: StudioState, found: Record<string, unknown>): Record<string, unknown> {
+  const kept: Record<string, unknown> = {}
+  let acc = s
+  for (const [id, value] of Object.entries(found)) {
+    const q = questionById(id)
+    if (id !== 'commitments' && !(q && q.askIf(mergeFacts(f, acc), acc))) continue
+    kept[id] = value
+    acc = applyAnswer(acc, id, value)
+  }
+  return kept
 }
 
 export function answersToProfilePatch(s: StudioState, f?: BudgetFacts): {

@@ -362,3 +362,18 @@ describe('personal spending scale', () => {
   })
 })
 
+describe('review fixes', () => {
+  it('a worst month of 0 does not turn a known income into a no-income plan', () => {
+    const p = buildPlan({ ...base, monthlyIncome: 6000, incomeStability: 'variable', incomeFloor: 0 })
+    expect(p.basis).toBe('income')
+    expect(p.income).toBe(Math.round(0.8 * 6000))
+    expect(p.risks.some((r) => r.includes('No income'))).toBe(false)
+  })
+  it('paying in cash lowers the weight of history but keeps its figures confident', () => {
+    const line = (cash: boolean) => find(buildPlan({ ...base, averages: { groceries: 1500 }, averageCycles: 3, cashHeavy: cash }), (l) => l.name === 'Groceries')!
+    expect(line(true).confidence).toBe('high')
+    expect(line(true).rationale).toContain('pay mostly in cash')
+    expect(line(false).confidence).toBe('high')
+  })
+})
+

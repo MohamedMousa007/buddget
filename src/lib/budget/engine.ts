@@ -62,7 +62,8 @@ const sum = (xs: readonly number[]) => xs.reduce((s, x) => s + x, 0)
 
 function incomeBasis(f: BudgetFacts): number {
   if (f.incomeStability === 'fixed') return Math.round(f.monthlyIncome)
-  const floor = f.incomeFloor ?? VARIABLE_INCOME_FALLBACK * f.monthlyIncome
+  // A worst month of 0 is a real answer but not a plan: it must not turn a known income into "no income".
+  const floor = f.incomeFloor != null && f.incomeFloor > 0 ? f.incomeFloor : VARIABLE_INCOME_FALLBACK * f.monthlyIncome
   return Math.round(Math.min(floor, f.monthlyIncome))
 }
 
@@ -180,7 +181,8 @@ function sizeEveryday(
   const trimPct = Math.round(trim * 100)
   const typical = benchmarkEveryday(bench, f, income)
   const cycles = f.averageCycles ?? FULL_EVIDENCE_CYCLES
-  const weight = Math.min(1, cycles / FULL_EVIDENCE_CYCLES) * (f.cashHeavy ? CASH_HEAVY_TRUST : 1)
+  const evidence = Math.min(1, cycles / FULL_EVIDENCE_CYCLES)
+  const weight = evidence * (f.cashHeavy ? CASH_HEAVY_TRUST : 1)
   // Unseen categories follow how this person spends elsewhere; the pull fades as evidence thins.
   const personal = 1 + (personalScale(f.averages, typical) - 1) * weight
   const benchFor = (k: EverydayKey) => typical[k] * (f.averages[k] === undefined ? personal : 1)
@@ -202,14 +204,17 @@ function sizeEveryday(
       key,
       target,
       floor,
-      confidence: avg === undefined || weight < 1 ? 'estimated' : 'high',
+      // Cash habits lower how much the history counts, not how sure we are of the figures we do have.
+      confidence: avg === undefined || evidence < 1 ? 'estimated' : 'high',
       rationale:
         avg === undefined
           ? Math.abs(personal - 1) >= PERSONAL_SCALE_VISIBLE
             ? `Typical ${bench.label} ${name}, adjusted to your usual spending (${Math.round(personal * 100)}% of typical)`
             : `Typical ${bench.label} ${name} for your household, no spending history yet`
           : weight < 1
-            ? `Your ${name} average of ${money(avg)} so far, blended with typical ${bench.label} spending until you have ${FULL_EVIDENCE_CYCLES} months of history`
+            ? evidence >= 1
+              ? `Your ${name} average of ${money(avg)}, blended with typical ${bench.label} spending because you pay mostly in cash`
+              : `Your ${name} average of ${money(avg)} so far, blended with typical ${bench.label} spending until you have ${FULL_EVIDENCE_CYCLES} months of history`
             : `Your 3-month average of ${money(avg)}, at ${trimPct}%`,
     })
   }

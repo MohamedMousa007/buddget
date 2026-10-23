@@ -6,9 +6,12 @@ import type { BudgetFacts } from '@/lib/budget/facts'
 const names: StudioEntityNames = { income: 'Salary', debt: 'My debts', savings: 'Savings', goal: (k) => `goal:${k}` }
 const NOW = new Date(2026, 9, 19)
 
-function fakeStore() {
+function fakeStore(held: { incomeSources?: unknown[]; debts?: unknown[]; savingsAccounts?: unknown[]; goals?: { priority: number }[] } = {}) {
   return {
-    goals: [] as { priority: number }[],
+    goals: held.goals ?? ([] as { priority: number }[]),
+    incomeSources: held.incomeSources ?? [],
+    debts: held.debts ?? [],
+    savingsAccounts: held.savingsAccounts ?? [],
     addIncomeSource: vi.fn(),
     addSavingsAccount: vi.fn(() => 'pocket-1'),
     addDebt: vi.fn(() => 'debt-1'),
@@ -71,4 +74,15 @@ describe('commitStudioEntities', () => {
     expect(mergeFacts(base, done).debts).toHaveLength(0)
     expect(mergeFacts(base, done).goals).toHaveLength(0)
   })
+
+  it('creates nothing the app already holds, so a described income or debt cannot double a real one', () => {
+    const store = fakeStore({ incomeSources: [{}], debts: [{}], savingsAccounts: [{}], goals: [{ priority: 0 }] })
+    const s = answered({ income: 20000, savingsOnHand: 5000, hasDebts: true, debtTotal: 900, debtMonthly: 100, hasGoal: true, goalTarget: 1200, goalMonths: 12 })
+    expect(commitStudioEntities(s, store as never, 'EGP', names, NOW)).toEqual({})
+    expect(store.addIncomeSource).not.toHaveBeenCalled()
+    expect(store.addDebt).not.toHaveBeenCalled()
+    expect(store.addGoal).not.toHaveBeenCalled()
+    expect(store.addSavingsAccount).not.toHaveBeenCalled()
+  })
 })
+
