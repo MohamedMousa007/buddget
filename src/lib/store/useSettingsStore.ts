@@ -89,6 +89,9 @@ interface SettingsState {
   settingsFocusId: string | null
   /** Buddgy asked to start the guided budget setup; the Budget page opens it once and clears this. Not persisted. */
   budgetStudioRequested: boolean
+  /** The account whose data this session has actually pulled from the server; null until the first pull lands. Not persisted. */
+  serverSyncedFor: string | null
+  markServerSynced: (userId: string | null) => void
   requestBudgetStudio: () => void
   clearBudgetStudioRequest: () => void
   setSettingsFocusId: (id: string | null) => void
@@ -213,6 +216,8 @@ export const useSettingsStore = create<SettingsState>()(
       setPaydayFocusId: (id) => set({ paydayFocusId: id }),
       settingsFocusId: null,
       budgetStudioRequested: false,
+      serverSyncedFor: null,
+      markServerSynced: (userId) => set({ serverSyncedFor: userId }),
       requestBudgetStudio: () => set({ budgetStudioRequested: true }),
       clearBudgetStudioRequest: () => set({ budgetStudioRequested: false }),
       setSettingsFocusId: (id) => set({ settingsFocusId: id }),
@@ -341,7 +346,7 @@ export const useSettingsStore = create<SettingsState>()(
       reset: () => {
         get().resetSettings()
         // Persisted per-account fields: left in memory they would carry into the next sign-in in the same tab.
-        set({ budgetClosedCycles: [], budgetStudioDraft: null, buddgyNotes: [] })
+        set({ budgetClosedCycles: [], budgetStudioDraft: null, buddgyNotes: [], serverSyncedFor: null })
       },
     }),
     {

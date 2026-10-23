@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useAccounts } from '@/lib/accounts/useAccounts'
+import { useLocale } from '@/lib/i18n'
 import { dailyAllowance } from '@/lib/onboarding/payday'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { BuddgyHead, stepLead, stepTitle } from './BuddgyHead'
@@ -20,11 +21,12 @@ import { useOnboardingCopy } from './useOnboardingCopy'
 const QUICK_DAYS = [1, 15, 25, 28]
 const DEFAULT_DAY = 25
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
-const clampDay = (n: number) => Math.min(31, Math.max(1, Math.round(n) || DEFAULT_DAY))
+const clampDay = (n: number) => Math.min(31, Math.max(1, Math.round(n)))
 
 /** Step 4: pay and payday. Creates one recurring income, then reveals the per-day number. */
 export function StepIncome({ chrome }: { chrome: StepChrome }) {
   const c = useOnboardingCopy()
+  const { locale } = useLocale()
   const { record, patch } = useOnboarding()
   const base = useFinanceStore((s) => s.settings.baseCurrency)
   const name = useFinanceStore((s) => s.profile.name)
@@ -32,6 +34,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
   const model = useAccounts()
   const [amount, setAmount] = useState(existing ? String(existing.amount) : '')
   const [day, setDay] = useState(existing?.dayOfMonth ?? DEFAULT_DAY)
+  const [custom, setCustom] = useState(existing?.dayOfMonth && !QUICK_DAYS.includes(existing.dayOfMonth) ? String(existing.dayOfMonth) : '')
   const [steady, setSteady] = useState<'steady' | 'varies'>(useFinanceStore.getState().profile.financialProfile?.incomeStability === 'variable' ? 'varies' : 'steady')
   const [reveal, setReveal] = useState(false)
   const value = parseFloat(amount)
@@ -48,7 +51,9 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
       s.addIncomeSource(data)
       patch({ incomeSourceId: useFinanceStore.getState().incomeSources.at(-1)?.id })
     }
-    s.updateProfile({ financialProfile: { ...s.profile.financialProfile, incomeStability: steady === 'varies' ? 'variable' : 'fixed' } })
+    // Read again: the record write above changed the profile this one builds on.
+    const fresh = useFinanceStore.getState()
+    fresh.updateProfile({ financialProfile: { ...fresh.profile.financialProfile, incomeStability: steady === 'varies' ? 'variable' : 'fixed' } })
     setReveal(true)
   }
 
@@ -59,7 +64,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
 
   if (reveal) {
     const allowance = dailyAllowance(model.totalInBase, new Date(), day)
-    const paydayLabel = allowance.payday.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+    const paydayLabel = allowance.payday.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
     const today = allowance.days === 0
     return (
       <RevealScreen
@@ -115,7 +120,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
           <span className="mb-1.5 block text-xs font-semibold text-[var(--color-brand-text-secondary)]">{c.income.dayLabel}</span>
           <div className="flex flex-wrap items-center gap-2">
             {QUICK_DAYS.map((d) => (
-              <OptionChip key={d} as="trigger" size="md" selected={day === d} onClick={() => setDay(d)}>
+              <OptionChip key={d} as="trigger" size="md" selected={day === d} onClick={() => { setDay(d); setCustom('') }}>
                 {d}
               </OptionChip>
             ))}
@@ -123,10 +128,14 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
               inputMode="numeric"
               maxLength={2}
               className="w-24"
-              value={QUICK_DAYS.includes(day) ? '' : String(day)}
+              value={custom}
               placeholder={c.income.otherDay}
               aria-label={c.income.otherDay}
-              onChange={(e) => setDay(clampDay(Number(e.target.value.replace(/\D/g, ''))))}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '')
+                setCustom(digits)
+                if (Number(digits) > 0) setDay(clampDay(Number(digits)))
+              }}
             />
           </div>
         </div>

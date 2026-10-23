@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
-import { ONBOARDING_EVENTS } from '@/lib/onboarding/events'
+import { ONBOARDING_EVENTS, sanitizeMeta, type OnboardingEvent } from '@/lib/onboarding/events'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const HOURLY_CAP = 120
@@ -22,8 +22,10 @@ export async function POST(request: Request) {
   }
   const type = typeof body.type === 'string' ? body.type : ''
   if (!(ONBOARDING_EVENTS as readonly string[]).includes(type)) return NextResponse.json({ error: 'Unknown event' }, { status: 400 })
-  const meta = body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta) ? body.meta : {}
-  if (JSON.stringify(meta).length > MAX_META_CHARS) return NextResponse.json({ error: 'Too large' }, { status: 413 })
+  const raw = body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta) ? (body.meta as Record<string, unknown>) : {}
+  if (JSON.stringify(raw).length > MAX_META_CHARS) return NextResponse.json({ error: 'Too large' }, { status: 413 })
+  const meta = sanitizeMeta(type as OnboardingEvent, raw)
+  if (!meta) return NextResponse.json({ error: 'Invalid event' }, { status: 400 })
 
   const service = createServiceRoleClient()
   const { data: allowed } = await service.rpc('api_rate_hit', { p_key: `onb-event:${uid}`, p_window_seconds: 3600, p_max_hits: HOURLY_CAP })

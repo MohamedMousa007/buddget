@@ -7,7 +7,7 @@ import { registerPushNotifications } from '@/lib/native/pushNotifications'
 import { cleanupOldReceiptImages } from '@/lib/native/receiptImages'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { isOpenAccount } from '@/lib/accounts/kinds'
+import { heldRecords } from '@/lib/onboarding/held'
 import { useFeatureFlag } from '@/lib/flags/useFeatureFlag'
 import { onboardingState } from '@/lib/onboarding/eligibility'
 import { deferPushPrompt } from '@/lib/onboarding/pushPolicy'
@@ -40,7 +40,7 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
   const userId = session?.user?.id ?? null
   const flagOn = useFeatureFlag('onboarding_v1', !!userId)
   // The first sync decides whether this is a new account that should be asked inside the setup journey instead.
-  const synced = useFinanceStore((s) => s.dataReady && !!userId && s.profile.id === userId)
+  const synced = useSettingsStore((s) => !!userId && s.serverSyncedFor === userId)
   const bootstrapped = useRef<string | null>(null)
 
   useEffect(() => {
@@ -61,8 +61,7 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
         const record = f.profile.financialProfile?.onboarding
         const journeyOpen = onboardingState({
           flagOn, profileLoaded: true, record,
-          openAccounts: f.paymentMethods.filter(isOpenAccount).length, incomeSources: f.incomeSources.length,
-          incomeEvents: f.incomeEvents.length, expenses: f.expenses.length, plans: f.budgetPlans.length,
+          ...heldRecords(f),
         }) !== 'hidden'
         if (deferPushPrompt(record, journeyOpen, Date.now())) return
         await registerPushNotifications({

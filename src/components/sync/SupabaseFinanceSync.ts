@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   pullAll,
   pullDelta,
@@ -459,6 +460,7 @@ async function runFullSync(
     const merged = applyDelta(snapshot(useFinanceStore.getState()), delta)
     applyMerged(merged, userId)
     writeSyncCursor(userId, storeVersion(), delta.cursor)
+    useSettingsStore.getState().markServerSynced(userId)
   } catch (e) {
     console.warn('[finance sync] delta pull failed, using the full pull', e)
     clearSyncCursors()
@@ -487,6 +489,7 @@ async function runLegacyFullSync(
   const server = await pullAll(supabase, userId)
   if (!server) return
   applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server), userId)
+  useSettingsStore.getState().markServerSynced(userId)
 }
 
 function applyMerged(merged: Snapshot, userId: string): void {

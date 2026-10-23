@@ -34,7 +34,8 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
   const allowSms = async () => {
     setSheet(null)
     await sms.toggle(true)
-    trackOnboarding('onboarding_permission', { kind: 'sms', granted: true })
+    // toggle() returns nothing and quietly stays off on a denial or a failed token fetch; the setting is the outcome.
+    trackOnboarding('onboarding_permission', { kind: 'sms', granted: useFinanceStore.getState().settings.smsTrackingEnabled })
   }
 
   const setupIos = () => {

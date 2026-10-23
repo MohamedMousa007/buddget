@@ -11,6 +11,8 @@ export interface EligibilityInput {
   incomeEvents: number
   expenses: number
   plans: number
+  /** Debts, goals, subscriptions, pockets, holdings and recurring items together. */
+  others: number
 }
 
 export type OnboardingState = 'hidden' | 'new' | 'resume'
@@ -18,12 +20,12 @@ export type OnboardingState = 'hidden' | 'new' | 'resume'
 /**
  * Whether to offer the first-run journey. Only an account that holds nothing yet, or one that started it and has not
  * finished, ever sees it: a returning user on a fresh install has server data by the time the profile loads, so they
- * land in the app. Nothing is offered until the profile is loaded, because an empty store means "not synced yet" too.
+ * land in the app. Nothing is offered until the profile is loaded from the server, because an empty store means "not synced yet" too.
  */
 export function onboardingState(i: EligibilityInput): OnboardingState {
   if (i.record?.doneAt || i.record?.skippedAt) return 'hidden'
   if (i.flagOn !== true || !i.profileLoaded) return 'hidden'
   if (i.record) return 'resume'
-  const holdsData = i.openAccounts + i.incomeSources + i.incomeEvents + i.expenses + i.plans > 0
+  const holdsData = i.openAccounts + i.incomeSources + i.incomeEvents + i.expenses + i.plans + i.others > 0
   return holdsData ? 'hidden' : 'new'
 }

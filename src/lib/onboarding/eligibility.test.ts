@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { onboardingState, type EligibilityInput } from './eligibility'
 
 const empty: EligibilityInput = {
-  flagOn: true, profileLoaded: true, record: undefined, openAccounts: 0, incomeSources: 0, incomeEvents: 0, expenses: 0, plans: 0,
+  flagOn: true, profileLoaded: true, record: undefined, openAccounts: 0, incomeSources: 0, incomeEvents: 0, expenses: 0, plans: 0, others: 0,
 }
 const record = { v: 1 as const, step: 2, startedAt: '2026-10-23T10:00:00Z' }
 
@@ -11,7 +11,7 @@ describe('onboardingState', () => {
     expect(onboardingState(empty)).toBe('new')
   })
   it('never offers it to an account that already has data, so a returning user lands in the app', () => {
-    for (const k of ['openAccounts', 'incomeSources', 'incomeEvents', 'expenses', 'plans'] as const) {
+    for (const k of ['openAccounts', 'incomeSources', 'incomeEvents', 'expenses', 'plans', 'others'] as const) {
       expect(onboardingState({ ...empty, [k]: 1 })).toBe('hidden')
     }
   })

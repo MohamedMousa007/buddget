@@ -86,7 +86,7 @@ export default function AnalyticsView() {
               />
               <BarList
                 color={CHART.four}
-                items={onboarding.permissions.map((p) => ({ label: `${p.kind} ${p.granted ? 'allowed' : 'declined'}`, value: p.users }))}
+                items={onboarding.permissions.filter((p) => p.granted !== null).map((p) => ({ label: `${p.kind} ${p.granted ? 'allowed' : 'declined'}`, value: p.users }))}
                 format={compact}
               />
             </div>

@@ -2,10 +2,11 @@
 
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { isOpenAccount } from '@/lib/accounts/kinds'
 import { useFeatureFlag } from '@/lib/flags/useFeatureFlag'
 import { onboardingState, type OnboardingState } from '@/lib/onboarding/eligibility'
+import { heldRecords } from '@/lib/onboarding/held'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
 export const ONBOARDING_FLAG = 'onboarding_v1'
 
@@ -13,15 +14,13 @@ export const ONBOARDING_FLAG = 'onboarding_v1'
 export function useOnboardingState(): { state: OnboardingState; ready: boolean } {
   const { user } = useAuth()
   const flagOn = useFeatureFlag(ONBOARDING_FLAG, !!user)
+  // The cached store counts as "loaded" before the server has answered; only a real pull proves the account is empty.
+  const synced = useSettingsStore((s) => !!user && s.serverSyncedFor === user.id)
   const snap = useFinanceStore(
     useShallow((s) => ({
-      profileLoaded: !!user && s.dataReady && s.profile.id === user.id,
+      profileLoaded: synced && s.dataReady && !!user && s.profile.id === user!.id,
       record: s.profile.financialProfile?.onboarding,
-      openAccounts: s.paymentMethods.filter(isOpenAccount).length,
-      incomeSources: s.incomeSources.length,
-      incomeEvents: s.incomeEvents.length,
-      expenses: s.expenses.length,
-      plans: s.budgetPlans.length,
+      ...heldRecords(s),
     })),
   )
   return { state: onboardingState({ flagOn, ...snap }), ready: !!user && flagOn !== null && snap.profileLoaded }

@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useAccounts } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { tryConvertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { BuddgyHead, stepLead, stepTitle } from './BuddgyHead'
 import type { StepChrome } from './chrome'
@@ -27,6 +28,7 @@ export function StepAccounts({ chrome }: { chrome: StepChrome }) {
   const model = useAccounts()
   const base = useFinanceStore((s) => s.settings.baseCurrency)
   const name = useFinanceStore((s) => s.profile.name)
+  const rates = useFinanceStore((s) => s.exchangeRates)
   const [adding, setAdding] = useState<Kind | null>(null)
   const [reveal, setReveal] = useState(false)
 
@@ -34,7 +36,10 @@ export function StepAccounts({ chrome }: { chrome: StepChrome }) {
   const withBalance = rows.filter((a) => a.balance)
 
   if (reveal) {
-    const total = Math.max(0, model.totalInBase)
+    // Each account's share in the base currency, so a dollar account is not weighed as dirhams.
+    const inBase = withBalance.map((a) => Math.max(0, tryConvertCurrency(a.balance!.balance, a.balance!.currency, base, rates) ?? a.balance!.balance))
+    const total = inBase.reduce((sum, n) => sum + n, 0)
+    const shares = total > 0 ? inBase.map((n) => n / total) : [1]
     return (
       <RevealScreen
         chrome={{ ...chrome, onBack: () => setReveal(false) }}
@@ -42,7 +47,7 @@ export function StepAccounts({ chrome }: { chrome: StepChrome }) {
         chip={c.accounts.revealChip}
         big={fmt(model.totalInBase)}
         unit={base}
-        bar={<BandBar parts={withBalance.map((a, i) => ({ share: total > 0 ? Math.max(0, a.balance!.balance) / total : 1 / withBalance.length, color: SHARE_COLORS[i % SHARE_COLORS.length] }))} />}
+        bar={<BandBar parts={shares.map((share, i) => ({ share, color: SHARE_COLORS[i % SHARE_COLORS.length] }))} />}
         cells={[
           { label: c.accounts.addBank, value: String(rows.filter((a) => a.method.type === 'bank_account').length) },
           { label: c.accounts.addWallet, value: String(rows.filter((a) => a.method.type === 'wallet').length) },
