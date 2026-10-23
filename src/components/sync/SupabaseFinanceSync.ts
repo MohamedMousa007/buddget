@@ -475,6 +475,15 @@ async function runLegacyFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
 ): Promise<void> {
+  // The fallback path must honour a reset too, or it would merge the stale local copy back in.
+  const { data: stamp } = await supabase.from('profiles').select('data_reset_at').eq('id', userId).maybeSingle()
+  const at = stamp?.data_reset_at ?? null
+  const verdict = decideReset(readResetSeen(userId), at)
+  if (verdict !== 'none') writeResetSeen(userId, at)
+  if (verdict === 'wipe') {
+    useFinanceStore.getState().reset()
+    clearSyncCursors()
+  }
   const server = await pullAll(supabase, userId)
   if (!server) return
   applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server), userId)

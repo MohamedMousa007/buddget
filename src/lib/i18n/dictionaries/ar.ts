@@ -3127,6 +3127,8 @@ export const ar: Dictionary = {
     title: 'ابدأ استخدام Buddget',
     progress: (done: number, total: number) => `${done} من ${total}`,
     smsTitle: 'فعّل التقاط الرسائل',
+    accountsTitle: 'أضف حساباتك',
+    accountsBody: 'البنك والمحفظة والنقد، لتكون الأرصدة حقيقية',
     smsBody: 'يسجّل Buddget رسائل البنك لك',
     paydayTitle: 'أضف يوم الراتب',
     paydayBody: 'ليتمكّن Buddget من توزيع شهرك',

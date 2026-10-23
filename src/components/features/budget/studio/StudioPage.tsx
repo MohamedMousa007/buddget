@@ -104,7 +104,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
 
   /** Writes the answers that belong on the profile (household, rent, budget answers) as they land. */
   const saveToProfile = (answered: StudioState) => {
-    const { profile, financial } = answersToProfilePatch(answered)
+    const { profile, financial } = answersToProfilePatch(answered, facts)
     const s = store.getState()
     const patch: Record<string, unknown> = { ...profile }
     if (profile.emergencyFundConfig) patch.emergencyFundConfig = { ...s.profile.emergencyFundConfig, ...profile.emergencyFundConfig }

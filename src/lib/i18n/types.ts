@@ -2968,6 +2968,8 @@ export interface Dictionary {
     title: string
     progress: (done: number, total: number) => string
     smsTitle: string
+    accountsTitle: string
+    accountsBody: string
     smsBody: string
     paydayTitle: string
     paydayBody: string

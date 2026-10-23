@@ -9,35 +9,29 @@ describe('debtFreeMonth', () => {
   })
 
   it('interest-free minimums clear in balance / minimum payments', () => {
-    expect(debtFreeMonth([{ balance: 1200, minimum: 100, apr: null }], 0, now)).toBe('2027-09')
+    expect(debtFreeMonth([{ balance: 1200, minimum: 100 }], 0, now)).toBe('2027-09')
   })
 
   it('an extra payment shortens it', () => {
-    expect(debtFreeMonth([{ balance: 1200, minimum: 100, apr: 0 }], 100, now)).toBe('2027-03')
-  })
-
-  it('never clears when the minimum does not cover interest', () => {
-    expect(debtFreeMonth([{ balance: 10000, minimum: 50, apr: 24 }], 0, now)).toBeNull()
+    expect(debtFreeMonth([{ balance: 1200, minimum: 100 }], 100, now)).toBe('2027-03')
   })
 
   it('never clears with no payment at all', () => {
-    expect(debtFreeMonth([{ balance: 500, minimum: 0, apr: null }], 0, now)).toBeNull()
+    expect(debtFreeMonth([{ balance: 500, minimum: 0 }], 0, now)).toBeNull()
   })
 
   it('rolls a cleared minimum onto the remaining debt', () => {
-    const rolled = debtFreeMonth([{ balance: 100, minimum: 100, apr: null }, { balance: 1000, minimum: 100, apr: null }], 0, now)
+    const rolled = debtFreeMonth([{ balance: 100, minimum: 100 }, { balance: 1000, minimum: 100 }], 0, now)
     expect(rolled).toBe('2027-02')
   })
 
-  it('sends the extra to the highest rate', () => {
-    const high = { balance: 1000, minimum: 50, apr: 30 }
-    const low = { balance: 1000, minimum: 50, apr: 2 }
-    const a = debtFreeMonth([high, low], 500, now)
-    const b = debtFreeMonth([{ ...low }, { ...high }], 500, now)
-    expect(a).toBe(b)
+  it('sends the extra to the smallest balance, whatever order the debts come in', () => {
+    const small = { balance: 400, minimum: 50 }
+    const big = { balance: 4000, minimum: 50 }
+    expect(debtFreeMonth([small, big], 500, now)).toBe(debtFreeMonth([{ ...big }, { ...small }], 500, now))
   })
 
   it('ignores a debt already at zero', () => {
-    expect(debtFreeMonth([{ balance: 0, minimum: 100, apr: null }], 0, now)).toBeNull()
+    expect(debtFreeMonth([{ balance: 0, minimum: 100 }], 0, now)).toBeNull()
   })
 })

@@ -410,4 +410,12 @@ describe('adaptive flow', () => {
     const { s: done } = walk(blank)
     expect(readiness(blank, done).enough).toBe(true)
   })
+
+  it('choosing the records for rent corrects the saved rent; keeping the entered one changes nothing', () => {
+    const f = { ...rich, rent: 8000, ledgerRent: 6000.4 }
+    expect(answersToProfilePatch(applyAnswer(createState(), 'rentCheck', 'records'), f).profile).toEqual({ monthlyRent: 6000 })
+    expect(answersToProfilePatch(applyAnswer(createState(), 'rentCheck', 'stated'), f).profile).toEqual({})
+    expect(answersToProfilePatch(applyAnswer(createState(), 'rentCheck', 'records')).profile).toEqual({})
+  })
 })
+

@@ -68,7 +68,6 @@ export interface DebtExtras {
   id: string
   name: string
   kind: 'credit_card' | 'installment' | 'loan' | 'personal'
-  apr: number | null
   balance: number
   /** 0-100 of the starting balance already paid. */
   paidPercent: number

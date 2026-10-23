@@ -16,6 +16,8 @@ export interface StatusTextParams {
 }
 
 export interface BudgetBlocksCopy {
+  /** Marks a line whose amount is a guess rather than the user's own figure. */
+  estimate: string
   blockName: Record<BudgetBlock, string>
   blockSub: {
     bills: (count: number) => string
@@ -52,7 +54,6 @@ export interface BudgetBlocksCopy {
     upcoming: (name: string) => string
   }
   debts: {
-    apr: (percent: string) => string
     minimum: string
     minimumDue: string
     paidThisCycle: string
@@ -102,6 +103,7 @@ export interface BudgetBlocksCopy {
 }
 
 export const budgetBlocksCopyEn: BudgetBlocksCopy = {
+  estimate: 'Estimate',
   blockName: {
     bills: 'Home & bills',
     subscriptions: 'Subscriptions',
@@ -173,7 +175,6 @@ export const budgetBlocksCopyEn: BudgetBlocksCopy = {
     upcoming: (n) => `${n}, charge to come`,
   },
   debts: {
-    apr: (p) => `${p}% APR`,
     minimum: 'Minimum payment',
     minimumDue: 'Minimum still due',
     paidThisCycle: 'Paid this cycle',
@@ -226,6 +227,7 @@ const arDaysCount = (n: number) =>
   n === 1 ? 'يوم واحد' : n === 2 ? 'يومين' : n >= 3 && n <= 10 ? `${n} أيام` : `${n} يومًا`
 
 export const budgetBlocksCopyAr: BudgetBlocksCopy = {
+  estimate: 'تقديري',
   blockName: {
     bills: 'المنزل والفواتير',
     subscriptions: 'الاشتراكات',
@@ -294,7 +296,6 @@ export const budgetBlocksCopyAr: BudgetBlocksCopy = {
     upcoming: (n) => `${n}، الخصم قادم`,
   },
   debts: {
-    apr: (p) => `${p}% فائدة سنوية`,
     minimum: 'الحد الأدنى للسداد',
     minimumDue: 'الحد الأدنى لم يُسدد بعد',
     paidThisCycle: 'سُدد في هذه الدورة',

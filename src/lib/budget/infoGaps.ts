@@ -13,7 +13,7 @@ export const STAGES: readonly StudioStage[] = ['found', 'home', 'life', 'debts',
  * via `mergeFacts` / the raw answers; `none` is a pure acknowledgement.
  */
 export type AnswerWrite =
-  | { kind: 'profile'; key: keyof UserProfile; map?: (value: unknown) => unknown }
+  | { kind: 'profile'; key: keyof UserProfile; map?: (value: unknown, f?: BudgetFacts) => unknown }
   | { kind: 'financial'; key: keyof FinancialProfile }
   | { kind: 'facts'; key: keyof BudgetFacts | string }
   | { kind: 'none' }
@@ -170,7 +170,8 @@ export const QUESTIONS: readonly Question[] = [
   q('rentCheck', 'home', 'important', 'chips', {
     options: opts('rentCheck', ['stated', 'records']),
     askIf: (f, s) => 'rentCheck' in s.answers || rentConflicts(f),
-    writes: { kind: 'facts', key: 'rentCheck' },
+    // Choosing the records corrects the rent saved on the profile; keeping what was entered changes nothing.
+    writes: { kind: 'profile', key: 'monthlyRent', map: (v, f) => (v === 'records' && f?.ledgerRent !== undefined ? Math.round(f.ledgerRent) : undefined) },
     toFacts: (v, f) => (v === 'records' && f.ledgerRent !== undefined ? { rent: Math.round(f.ledgerRent) } : {}),
   }),
   q('rentIncludesUtilities', 'home', 'required', 'toggle', {
@@ -483,7 +484,7 @@ export function readiness(f: BudgetFacts, s: StudioState): Readiness {
   }
 }
 
-export function answersToProfilePatch(s: StudioState): {
+export function answersToProfilePatch(s: StudioState, f?: BudgetFacts): {
   profile: Partial<UserProfile>
   financial: FinancialProfile
 } {
@@ -491,7 +492,10 @@ export function answersToProfilePatch(s: StudioState): {
   const financial: Record<string, unknown> = {}
   for (const [id, value] of Object.entries(s.answers)) {
     const w = questionById(id)?.writes
-    if (w?.kind === 'profile') profile[w.key] = w.map ? w.map(value) : value
+    if (w?.kind === 'profile') {
+      const v = w.map ? w.map(value, f) : value
+      if (v !== undefined) profile[w.key] = v
+    }
     else if (w?.kind === 'financial') financial[w.key] = value
   }
   return { profile: profile as Partial<UserProfile>, financial: financial as FinancialProfile }

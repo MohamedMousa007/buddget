@@ -13,7 +13,7 @@ const plan = (categories: BudgetPlanCategory[], extra: Partial<BudgetPlan> = {})
 
 const emptySubs = { items: [], next: null, charged: 0, total: 0, left: [], yearlySetAside: 0 }
 const debt = (id: string, extra: Partial<DebtExtras> = {}): DebtExtras => ({
-  id, name: id, kind: 'installment', apr: null, balance: 1200, paidPercent: 0, minimum: 100,
+  id, name: id, kind: 'installment', balance: 1200, paidPercent: 0, minimum: 100,
   installment: null, paidThisCycle: false, ...extra,
 })
 const goal = (id: string, monthly: number): GoalExtras => ({

@@ -3116,6 +3116,8 @@ export const en: Dictionary = {
   setup: {
     title: 'Get Buddget running',
     progress: (done: number, total: number) => `${done} of ${total}`,
+    accountsTitle: 'Add your accounts',
+    accountsBody: 'Bank, wallet and cash, so balances are real',
     smsTitle: 'Turn on SMS capture',
     smsBody: 'Buddget logs bank texts for you',
     paydayTitle: 'Add your payday',
