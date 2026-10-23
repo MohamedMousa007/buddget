@@ -52,7 +52,8 @@ The advisor also reports about 40 "anonymous access policies" (lint 0012). Check
 - Price book editing: `ai.cost.manage` (admin, finance; migration 0173) and `POST /api/admin/ai/cost`; closes the current row and opens a new one so old costs stay explainable.
 - Linear webhook: `POST /api/webhooks/linear` (HMAC-verified, 60 s freshness). Completed issue resolves the ticket and notifies the user; started/backlog reopens it. Needs `LINEAR_WEBHOOK_SECRET` (503 until set) and the webhook registered in Linear pointing at `/api/webhooks/linear`.
 - `/api/feedback` is deliberately kept: builds already installed on phones still post to it, and removing it would break their feedback button. Remove it once the minimum app version passes the build that uses `/api/support/submit`.
-- Not yet: macros, feedback board votes, integration settings page, `portal_reader`/`portal_actor` DB roles and `pgaudit` (both are database-level changes that need your sign-off).
+- Saved replies (macros): stored in one platform setting (`support_macros`, max 50); an insert dropdown in the ticket reply box, "Save as reply" for `support.manage`; audited. Integration status: the Platform page now shows whether the Linear webhook secret is set and how many Linear deliveries are stuck.
+- Not built, needs your call: the feedback board with votes (decision 11 says read-only for users, but votes imply users act, and a public list would show user-written text; tell me the intended behaviour). Also ``portal_reader`/`portal_actor` DB roles and `pgaudit` (database-level changes that need your sign-off), the credits ledger (waits for billing in Phase 5) and Phase 3 analytics (waits for the compute upsize).
 
 ## 5. Owner checklist (cannot be done from code)
 

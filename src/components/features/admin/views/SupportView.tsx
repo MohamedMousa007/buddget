@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectField } from '@/components/ui/SelectField'
 import { adminNavigate, useAdminRoute } from '../adminRouter'
-import { useAdminQuery } from '../adminClient'
+import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime } from '../format'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
@@ -122,6 +122,7 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
   const list = useAdminQuery<ListData>('/api/admin/support/tickets?view=active')
   const [text, setText] = useState('')
   const [internal, setInternal] = useState(false)
+  const macros = useAdminQuery<{ macros: Array<{ title: string; body: string }> }>('/api/admin/support/macros')
   const reload = async () => { await detail.refresh() }
   const { run, busy } = useAdminAction(`/api/admin/support/tickets/${id}`, reload)
   const perms = new Set(status.permissions ?? [])
@@ -153,12 +154,16 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
           </ol>
           {canReply ? (
             <div className="space-y-3 border-t border-[var(--color-brand-border)] p-5">
+              {!internal && macros.data?.macros.length ? (
+                <SelectField aria-label="Saved reply" value="" className="h-12 w-full" placeholder="Insert a saved reply" items={macros.data.macros.map((m) => ({ value: m.title, label: m.title }))} onChange={(v) => { const m = macros.data?.macros.find((x) => x.title === v); if (m) setText((t) => (t ? `${t}\n\n${m.body}` : m.body)) }} />
+              ) : null}
               <Textarea aria-label="Reply" rows={4} placeholder={internal ? 'Write an internal note — the user will not see this' : 'Reply to the user — they get an in-app notification'} value={text} onChange={(e) => setText(e.target.value)} />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <SegmentedControl ariaLabel="Reply type" fill={false} value={internal ? 'note' : 'reply'} onChange={(v) => setInternal(v === 'note')} options={[{ value: 'reply', label: 'Reply to user' }, { value: 'note', label: 'Internal note' }]} />
                 <Button size="touch" loading={busy === 'reply'} disabled={!text.trim() || (!internal && !ticket.user_id)} onClick={async () => { if (await run('reply', { op: 'reply', message: text, internal }, { success: internal ? 'Note added' : 'Reply sent' })) setText('') }}>
                   <Send />{internal ? 'Add note' : 'Send reply'}
                 </Button>
+                {can('support.manage') && text.trim() ? <Button variant="outline" size="touch" onClick={async () => { const title = window.prompt('Name this saved reply')?.trim(); if (!title) return; try { await adminPost('/api/admin/support/macros', { op: 'add', title, text }); await macros.refresh() } catch (e) { window.alert(errorMessage(e)) } }}>Save as reply</Button> : null}
               </div>
               {!internal && !ticket.user_id ? <p className="text-xs text-[var(--color-brand-text-muted)]">This ticket isn’t linked to an app user, so it can only take internal notes.</p> : null}
             </div>
