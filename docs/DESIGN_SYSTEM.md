@@ -209,7 +209,7 @@ Icons are **Lucide**, outline only, 1.75–2px stroke, never filled.
   The canonical savings glyph is **`Coins`** — what the bottom nav uses. It is deliberately
   absent from `OTHER_SAVINGS_ICON_KEYS`; a legacy alias in `SavingsAccountIcon` maps any
   imported `'PiggyBank'` value onto `Coins` so old backups still render.
-- 🚫 **No notification bell on native.** The mobile header is avatar + greeting only. A bell
+- 🚫 **No notification bell on native.** The mobile header is the Budget button + avatar only (Budget lives there, not in the bottom bar: Flow, Accounts, add, Wealth, Debts). A bell
   belongs only where a web surface genuinely needs it.
 
 ---
