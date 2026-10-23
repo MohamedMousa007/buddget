@@ -4,6 +4,7 @@
  * Budget-specific Gemini calls with prompts, schemas and response parsing kept server-side.
  *   { op: 'build',  facts, draft }            -> { data: PlanDraft }   engine draft refined with rationale
  *   { op: 'adjust', lines, text, currency, income } -> { data: AdjustResult }
+ *   { op: 'situation', text, currency }    -> { data: answers }  what the user said, as studio answers
  * The model never writes anything: the client previews and applies the result.
  * Auth: Supabase session required. Per-user hourly cap shared across instances (`api_rate_hit`).
  */
@@ -26,6 +27,7 @@ import {
   validateAdjustInput,
   validateBuildInput,
 } from '@/lib/budget/budgetAi'
+import { SITUATION_SCHEMA, parseSituation, situationMessages, validateSituationInput } from '@/lib/budget/situationAi'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -137,6 +139,17 @@ export async function POST(req: NextRequest) {
     if ('denied' in asked) return asked.denied
     const out = parseAdjust(asked.data)
     return out ? NextResponse.json({ data: out }) : NextResponse.json({ error: 'AI could not read that' }, { status: 502 })
+  }
+
+  if (body.op === 'situation') {
+    const input = validateSituationInput(body)
+    if (!input) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    if (await overQuota(user.id)) return NextResponse.json({ error: 'Budget AI limit reached, try again later' }, { status: 429 })
+    const m = situationMessages(input.text, input.currency)
+    const asked = await askGated(user.id, apiKey, m.system, m.user, SITUATION_SCHEMA, 0)
+    if ('denied' in asked) return asked.denied
+    // An empty object is a valid answer: the text said nothing the questions can use.
+    return asked.data === null ? NextResponse.json({ error: 'AI could not read that' }, { status: 502 }) : NextResponse.json({ data: parseSituation(asked.data) })
   }
 
   return NextResponse.json({ error: 'Unknown op' }, { status: 400 })

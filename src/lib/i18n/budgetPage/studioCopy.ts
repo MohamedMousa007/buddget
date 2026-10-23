@@ -21,6 +21,20 @@ export interface BudgetStudioCopy {
   confirm: string
   estimate: string
   buildNow: string
+  /** Optional first step: describe your situation in your own words. */
+  opener: {
+    kicker: string
+    working: string
+    title: string
+    hint: string
+    placeholder: string
+    examples: string[]
+    cta: string
+    skip: string
+    understood: (n: number) => string
+    change: string
+    cont: string
+  }
   /** Names given to the records the studio creates from the answers. */
   entities: { income: string; debt: string; savings: string; goals: Record<string, string> }
   saved: string
@@ -79,6 +93,19 @@ const en: BudgetStudioCopy = {
   confirm: 'Looks right',
   estimate: 'Estimate for me',
   buildNow: 'Build my plan now',
+  opener: {
+    kicker: 'Buddgy listens',
+    working: 'Reading what you wrote',
+    title: 'Tell me about your situation',
+    hint: 'A sentence or two is enough: pay, rent, family, debts, savings. I will skip whatever you already tell me.',
+    placeholder: 'e.g. I earn 18,000 a month, rent a flat for 6,000, have two kids and pay 800 a month on a loan',
+    examples: ['I work for a company, rent a flat, no debts', 'Freelancer, income changes a lot, I live with family'],
+    cta: 'Continue',
+    skip: 'Skip, ask me instead',
+    understood: (n) => (n === 1 ? 'I picked up 1 thing' : `I picked up ${n} things`),
+    change: 'I will ask about the rest. Tap the list icon any time to change an answer.',
+    cont: 'Looks right, continue',
+  },
   entities: { income: 'Salary', debt: 'My debts', savings: 'Savings', goals: { vacation: 'Trip', house: 'Home', car: 'Car', education: 'Education', wedding: 'Wedding', custom: 'My goal' } },
   saved: 'Saved to your profile',
   slider: { low: 'Save hard', high: 'Live comfortably' },
@@ -175,6 +202,19 @@ const ar: BudgetStudioCopy = {
   confirm: 'صحيح',
   estimate: 'قدّر لي',
   buildNow: 'ابنِ خطتي الآن',
+  opener: {
+    kicker: 'Buddgy يستمع',
+    working: 'أقرأ ما كتبته',
+    title: 'احكِ لي عن وضعك',
+    hint: 'جملة أو جملتان تكفيان: الراتب، الإيجار، العائلة، الديون، المدخرات. سأتخطى ما تخبرني به.',
+    placeholder: 'مثال: أتقاضى 18,000 شهريًا، أستأجر شقة بـ 6,000، لدي طفلان وأدفع 800 شهريًا قسط قرض',
+    examples: ['أعمل في شركة، أستأجر شقة، بلا ديون', 'عمل حر، دخلي يتغير كثيرًا، أعيش مع العائلة'],
+    cta: 'متابعة',
+    skip: 'تخطَّ واسألني',
+    understood: (n) => (n === 1 ? 'التقطتُ معلومة واحدة' : `التقطتُ ${n} معلومات`),
+    change: 'سأسألك عن الباقي. اضغط على أيقونة القائمة في أي وقت لتغيير إجابة.',
+    cont: 'صحيح، تابع',
+  },
   entities: { income: 'الراتب', debt: 'ديوني', savings: 'المدخرات', goals: { vacation: 'رحلة', house: 'منزل', car: 'سيارة', education: 'تعليم', wedding: 'زواج', custom: 'هدفي' } },
   saved: 'تم الحفظ في ملفك',
   slider: { low: 'ادخار قوي', high: 'عيش مريح' },

@@ -14,6 +14,7 @@ import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
 import { refineDraft } from '@/lib/budget/budgetAiClient'
 import { applyRefinement } from '@/lib/budget/budgetAi'
 import { commitStudioEntities } from '@/lib/budget/studioEntities'
+import { isOnline } from '@/hooks/useNetworkStatus'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { repairDraft } from '@/lib/budget/validate'
 import {
@@ -39,7 +40,9 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useBudgetPageCopy } from '../usePageCopy'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import { KnownSheet, type KnownRow } from './KnownSheet'
+import { OpenerStep } from './OpenerStep'
 import { QuestionControl } from './QuestionControl'
+import { UnderstoodStep } from './UnderstoodStep'
 
 const newId = () => crypto.randomUUID()
 
@@ -78,6 +81,8 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   const [trail, setTrail] = useState<string[]>([])
   const [attempt, setAttempt] = useState(0)
   const [buildNow, setBuildNow] = useState(false)
+  // Answer ids Buddgy picked out of the description, shown once before the remaining questions.
+  const [understood, setUnderstood] = useState<string[] | null>(null)
   const [buildError, setBuildError] = useState(false)
   const building = useRef(false)
   // Held outside state so a remounted or retried build cannot create the same records again.
@@ -97,14 +102,27 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     setState(next)
   }
 
-  const answer = (question: Question, value: unknown) => {
-    const answered = applyAnswer(state, question.id, value)
+  /** Writes the answers that belong on the profile (household, rent, budget answers) as they land. */
+  const saveToProfile = (answered: StudioState) => {
     const { profile, financial } = answersToProfilePatch(answered)
     const s = store.getState()
     const patch: Record<string, unknown> = { ...profile }
     if (profile.emergencyFundConfig) patch.emergencyFundConfig = { ...s.profile.emergencyFundConfig, ...profile.emergencyFundConfig }
     if (Object.keys(financial).length > 0) patch.financialProfile = { ...s.profile.financialProfile, ...financial }
     if (Object.keys(patch).length > 0) s.updateProfile(patch)
+  }
+
+  const finishOpener = (found: Record<string, unknown>) => {
+    const start: StudioState = { ...state, opener: 'done' }
+    const answered = Object.entries(found).reduce((acc, [id, v]) => applyAnswer(acc, id, v), start)
+    saveToProfile(answered)
+    setUnderstood(Object.keys(found).length > 0 ? Object.keys(found) : null)
+    commit(answered)
+  }
+
+  const answer = (question: Question, value: unknown) => {
+    const answered = applyAnswer(state, question.id, value)
+    saveToProfile(answered)
     setSaved(question.writes.kind === 'profile' || question.writes.kind === 'financial')
     setTrail((t) => [...t, question.id])
     setFocusId(null)
@@ -185,6 +203,38 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     setTrail((t) => t.slice(0, -1))
     setFocusId(last)
     commit({ ...state, answers: Object.fromEntries(Object.entries(state.answers).filter(([k]) => k !== last)), skipped: state.skipped.filter((k) => k !== last) })
+  }
+
+  // The describe-yourself step is only worth showing to someone with plenty left to answer, and only when it can work.
+  const showOpener =
+    !state.opener && !focusId && !understood && trail.length === 0 && Object.keys(state.answers).length === 0 && isOnline() &&
+    visibleQuestions(facts, state).filter((x) => x.control !== 'confirm').length >= 4
+
+  if (showOpener) {
+    return (
+      <PageBody className="space-y-4 lg:pb-6">
+        <div className="flex items-center gap-2">
+          <IconButton variant="outlined" aria-label={ui.close} onClick={onClose}>
+            <X />
+          </IconButton>
+        </div>
+        <OpenerStep base={base} onDone={finishOpener} onSkip={() => commit({ ...state, opener: 'done' })} />
+      </PageBody>
+    )
+  }
+
+  if (understood) {
+    const rows: KnownRow[] = understood.flatMap((id) => {
+      const x = questionById(id)
+      if (!x || !(id in state.answers)) return []
+      const copy = ui.q[id]
+      return [{ id, label: copy?.label ?? id, value: formatKnown(x, state.answers[id], copy, ui, money) }]
+    })
+    return (
+      <PageBody className="space-y-4 lg:pb-6">
+        <UnderstoodStep rows={rows} onContinue={() => setUnderstood(null)} />
+      </PageBody>
+    )
   }
 
   if (!q || (buildNow && !focusId)) {

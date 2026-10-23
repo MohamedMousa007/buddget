@@ -26,5 +26,9 @@ async function call<T>(body: unknown, signal?: AbortSignal): Promise<Outcome<T>>
 export const refineDraft = (facts: BudgetFacts, draft: PlanDraft, signal?: AbortSignal) =>
   call<unknown>({ op: 'build', facts, draft }, signal)
 
+/** What the user wrote about their situation, as studio answers (question id to value). */
+export const readSituation = (text: string, currency: string, signal?: AbortSignal) =>
+  call<Record<string, unknown>>({ op: 'situation', text, currency }, signal)
+
 export const requestAdjust = (lines: AdjustLine[], text: string, currency: string, income: number, signal?: AbortSignal) =>
   call<AdjustResult>({ op: 'adjust', lines, text, currency, income }, signal)

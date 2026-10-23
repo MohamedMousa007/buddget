@@ -51,6 +51,8 @@ export interface StudioState {
   skipped: string[]
   /** Records the studio already created from the answers, so a retried build never creates them twice. */
   entities?: Record<string, string>
+  /** The optional describe-yourself step has been answered or skipped. */
+  opener?: 'done'
 }
 
 /** Most non-confirm questions one run asks; required questions and unlocked follow-ups are exempt from the cut. */
