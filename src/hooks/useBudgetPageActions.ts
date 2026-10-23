@@ -2,13 +2,8 @@
 
 import { useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useAlert } from '@/components/ui/dialog/DialogProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useBudgetPageCopy } from '@/components/features/budget/usePageCopy'
-import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
-import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
-import { repairDraft } from '@/lib/budget/validate'
-import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { upgradeLegacyLines } from '@/lib/budget/legacyUpgrade'
 import { patchInBase } from '@/lib/budget/lineEdit'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -16,41 +11,13 @@ import { convertCurrency } from '@/lib/utils/currency'
 import type { BudgetPlanCategory } from '@/lib/store/types'
 import type { LineView, PlanView } from '@/lib/budget/planView.types'
 
-const newId = () => crypto.randomUUID()
-
 /** Every mutation the Budget page performs, in one place. The page stays presentational. */
 export function useBudgetPageActions(view: PlanView | null) {
   const t = useBudgetPageCopy()
   const toast = useActionToast()
-  const alert = useAlert()
   const store = useFinanceStore
 
   const planId = view?.plan.id ?? null
-
-  const createStarterPlan = useCallback(async () => {
-    const s = store.getState()
-    const facts = buildFactsFromStore(s, new Date())
-    if (!(facts.monthlyIncome > 0)) {
-      await alert({ title: t.needIncome.title, body: t.needIncome.body, okLabel: t.needIncome.ok })
-      return
-    }
-    const draft = buildPlan(facts)
-    const { draft: repaired } = repairDraft(draft, {
-      income: draft.income,
-      subscriptionsLive: facts.subscriptionsMonthly,
-      debtMinimums: Object.fromEntries(facts.debts.map((d) => [d.id, d.minimum])),
-      goalMonthly: Object.fromEntries(facts.goals.map((g) => [g.id, g.monthly])),
-    })
-    const id = s.addBudgetPlan(t.planNames.starter, {
-      status: 'ready',
-      origin: 'template',
-      intent: repaired.intent,
-      rationale: { reasons: repaired.reasons, risks: repaired.risks },
-      engineVersion: ENGINE_VERSION,
-    })
-    s.updateBudgetPlan(id, { categories: draftToCategories(repaired, newId, s.settings.baseCurrency) })
-    toast(t.starterBuilt)
-  }, [alert, store, t, toast])
 
   const patchLine = useCallback(
     (lineId: string, patch: Partial<BudgetPlanCategory>) => {
@@ -111,7 +78,6 @@ export function useBudgetPageActions(view: PlanView | null) {
   }, [planId, store, t, toast, view])
 
   return {
-    createStarterPlan,
     patchLine,
     deleteLine,
     addLine,

@@ -46,6 +46,8 @@ export interface PlanViewInput {
   averageByLine: Record<string, number | null>
   /** Cycles in a row each line ended over its cap. */
   monthsOverCapByLine: Record<string, number>
+  /** Still the first cycle of a mostly estimated plan; see `isLearning`. */
+  learning?: boolean
   unassignedSpend: number
   subscriptions: { extras: SubscriptionsExtras; monthly: number }
   debts: DebtExtras[]
@@ -151,6 +153,7 @@ function lineViewOf(c: BudgetPlanCategory, i: PlanViewInput, income: number, liv
       averageSpend: average,
       unbudgeted: amount <= 0 && spent > 0,
       hasHistoryOverCap: i.monthsOverCapByLine[c.id] ?? 0,
+      learning: i.learning,
     }),
   }
 }
@@ -259,5 +262,6 @@ export function buildPlanView(i: PlanViewInput): PlanView {
     daysInCycle: i.cycle.daysInCycle,
     unassignedSpend,
     needsUpgrade: plan.categories.length > 0 && plan.categories.every((c) => !c.block),
+    learning: i.learning === true,
   }
 }

@@ -12,6 +12,8 @@ import { planForMonth } from '@/lib/budget/activations'
 import { debtExtras, debtPaidByDebt, goalExtras, liquidSavings, liveDebts, paydayDayOf, subscriptionsExtras, subscriptionsLive } from '@/lib/budget/liveLinks'
 import { lineHistory, spendByLine } from '@/lib/budget/lineSpend'
 import { buildPlanView } from '@/lib/budget/planView'
+import { cycleKeyOf } from '@/lib/budget/activations'
+import { isLearning } from '@/lib/budget/learning'
 import type { PlanMode, PlanView } from '@/lib/budget/planView.types'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
@@ -93,6 +95,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
       spentByLine: spend.byLine,
       averageByLine: history.average,
       monthsOverCapByLine: history.monthsOverCap,
+      learning: isLearning(plan, s.budgetPlanActivations, cycleKeyOf(now, startDay)),
       unassignedSpend: spend.unassigned,
       subscriptions: {
         monthly: subs.monthly,

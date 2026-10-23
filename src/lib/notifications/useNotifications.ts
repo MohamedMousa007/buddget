@@ -5,6 +5,10 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useT } from '@/lib/i18n'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { selectActivePlan } from '@/lib/budget/activePlan'
+import { cycleKeyOf } from '@/lib/budget/activations'
+import { isLearning } from '@/lib/budget/learning'
 
 const READ_STORAGE_KEY = 'buddget-notifications-read'
 
@@ -69,6 +73,11 @@ export function useNotifications() {
   const stats = useMonthlyStats()
   const t = useT()
   const { monthFilter } = useSettingsStore()
+  // A mostly estimated plan in its first cycle may simply be wrong, so it does not raise budget alerts yet.
+  const planLearning = useFinanceStore((st) => {
+    const plan = selectActivePlan(st.budgetPlans, st.activeBudgetPlanId)
+    return plan ? isLearning(plan, st.budgetPlanActivations, cycleKeyOf(new Date(), st.settings.monthStartDay)) : false
+  })
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
   const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
@@ -110,7 +119,7 @@ export function useNotifications() {
     const now = new Date().toISOString()
 
     for (const [category, cap] of Object.entries(stats.categoryBudgetCaps)) {
-      if (category === 'Savings' || cap <= 0) continue
+      if (planLearning || category === 'Savings' || cap <= 0) continue
       const spent = stats.categorySpending[category] ?? 0
       const pct = (spent / cap) * 100
       if (pct > 80) {
@@ -149,7 +158,7 @@ export function useNotifications() {
     }
 
     return list
-  }, [monthFilter, stats, t])
+  }, [monthFilter, stats, t, planLearning])
 
   const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,

@@ -29,6 +29,7 @@ import { PlanChapters } from './PlanChapters'
 import { InsightsChip } from './InsightsChip'
 import { InsightsSheet } from './InsightsSheet'
 import { EmptyPlan } from './EmptyPlan'
+import { LearningNote } from './LearningNote'
 import { UpgradeBanner } from './UpgradeBanner'
 import { LineSheet } from './sheets/LineSheet'
 import { AddLineSheet } from './sheets/AddLineSheet'
@@ -251,7 +252,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   if (!view) {
     return (
       <PageBody className="space-y-4">
-        <EmptyPlan onStarter={act.createStarterPlan} onBlank={startBuild} onBuildWithBuddgy={() => setStudio({ intent: null })} />
+        <EmptyPlan onBuildWithBuddgy={() => setStudio({ intent: null })} onManual={startBuild} />
       </PageBody>
     )
   }
@@ -323,6 +324,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         />
       </aside>
       <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-2">
+      {view.learning ? <LearningNote /> : null}
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
         <UpgradeBanner
           lineCount={view.plan.categories.length}

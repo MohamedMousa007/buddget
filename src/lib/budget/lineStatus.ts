@@ -25,6 +25,8 @@ export interface LineStatusInput {
   unbudgeted: boolean
   /** Months in a row the line has ended over its cap. */
   hasHistoryOverCap: number
+  /** The plan is still mostly estimates, so crossing the cap reads as a heads-up, not an alarm. */
+  learning?: boolean
 }
 
 export interface LineStatusView {
@@ -60,6 +62,9 @@ export function getLineStatus(i: LineStatusInput): LineStatusView {
   if (tracking) {
     if (i.unbudgeted && i.spent > 0) {
       return view('unbudgetedSpend', 'circle-help', 'warn', 'addLine', 'default', { overBy: i.spent, ...average })
+    }
+    if (i.planned > 0 && i.spent > i.planned && i.learning) {
+      return view('near', 'gauge', 'warn', 'review', 'outline', { percent: Math.round((i.spent / i.planned) * 100), ...average })
     }
     if (i.planned > 0 && i.spent > i.planned) {
       const months = i.hasHistoryOverCap
