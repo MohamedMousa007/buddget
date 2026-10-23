@@ -71,27 +71,40 @@ export function incomeStabilityOf(history: number[]): BudgetFacts['incomeStabili
   return cv > VARIABLE_CV ? 'variable' : cv > MIXED_CV ? 'mixed' : 'fixed'
 }
 
-/** Mean spend per everyday slot over the last three cycles that have ledger activity. */
-export function everydayAverages(
+/** A cycle with fewer ledger rows than this is a partial month (tracking just started) and is not evidence. */
+const MIN_CYCLE_ROWS = 3
+
+/**
+ * Per-slot spend over the last three cycles with real activity, and how many there were. Two cycles or fewer
+ * average; three take the median so one big purchase does not set the budget.
+ */
+export function everydayEvidence(
   expenses: Expense[],
   monthKey: string,
   monthStartDay: number,
   base: Currency,
   rates: Record<string, number>
-): BudgetFacts['averages'] {
-  const totals: Partial<Record<EverydayKey, number>> = {}
-  let active = 0
+): { averages: BudgetFacts['averages']; averageCycles: number } {
+  const perCycle: Partial<Record<EverydayKey, number>>[] = []
   for (let n = 1; n <= AVERAGE_CYCLES; n++) {
-    const spending = calculateCategorySpending(filterExpensesByMonth(expenses, shiftMonth(monthKey, -n), monthStartDay), base, rates)
-    if (Object.keys(spending).length === 0) continue
-    active++
-    for (const [category, amount] of Object.entries(spending)) {
+    const rows = filterExpensesByMonth(expenses, shiftMonth(monthKey, -n), monthStartDay)
+    if (rows.length < MIN_CYCLE_ROWS) continue
+    const totals: Partial<Record<EverydayKey, number>> = {}
+    for (const [category, amount] of Object.entries(calculateCategorySpending(rows, base, rates))) {
       const key = EVERYDAY_KEY_OF[category]
       if (key) totals[key] = (totals[key] ?? 0) + amount
     }
+    perCycle.push(totals)
   }
-  if (active === 0) return {}
-  return Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, v / active]))
+  const keys = new Set(perCycle.flatMap((c) => Object.keys(c) as EverydayKey[]))
+  const averages = Object.fromEntries(
+    [...keys].map((k) => {
+      const values = perCycle.map((c) => c[k] ?? 0).sort((a, b) => a - b)
+      const mid = values.length === AVERAGE_CYCLES ? values[1] : values.reduce((x, y) => x + y, 0) / values.length
+      return [k, mid]
+    })
+  )
+  return { averages, averageCycles: perCycle.length }
 }
 
 function billsOf(s: FactsSlice, base: Currency): FactBill[] {
@@ -169,7 +182,7 @@ export function buildFactsFromStore(s: FactsSlice, now: Date): BudgetFacts {
     subscriptionsMonthly: subs.monthly,
     subscriptionCount: subs.count,
     debts: liveDebts(s.debts, debtCtx).map((d) => ({
-      id: d.debt.id, name: d.debt.name, minimum: d.minimum, balance: d.balance, apr: null, kind: d.kind,
+      id: d.debt.id, name: d.debt.name, minimum: d.minimum, balance: d.balance, kind: d.kind,
     })),
     goals: liveGoals(s.goals, buildGoalProgressContext(s, monthKey), usualKeep).map((g) => ({
       id: g.goal.id,
@@ -185,11 +198,10 @@ export function buildFactsFromStore(s: FactsSlice, now: Date): BudgetFacts {
     essentialsMonthly: profile.emergencyFundConfig?.monthlyEssentials ?? null,
     emergencyTargetMonths: profile.emergencyFundConfig?.targetMonths ?? DEFAULT_TARGET_MONTHS,
     zakatMonthly: zakatAnnual > 0 ? zakatAnnual / 12 : 0,
-    averages: everydayAverages(s.expenses, monthKey, settings.monthStartDay, base, rates),
+    ...everydayEvidence(s.expenses, monthKey, settings.monthStartDay, base, rates),
     priorities: (fp.priorities ?? []).filter((p): p is StudioPriority => (PRIORITIES as readonly string[]).includes(p)),
     known: knownFacts(s),
     securityLean: fp.securityLean ?? 50,
-    payoffStrategy: fp.payoffStrategy ?? 'avalanche',
     investInterest: fp.investInterest ?? false,
   }
 }

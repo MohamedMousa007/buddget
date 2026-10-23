@@ -249,7 +249,7 @@ function formatKnown(
   if (value == null) return '-'
   if (Array.isArray(value)) return value.map((v) => copy?.opts?.[String(v)] ?? String(v)).join(', ') || '-'
   if (typeof value === 'boolean') return value ? ui.known.yes : ui.known.no
-  if (typeof value === 'number') return x.id === 'income' || x.id === 'rent' || x.id === 'extraPayoff' ? money(value) : String(value)
+  if (typeof value === 'number') return x.id === 'income' || x.id === 'rent' ? money(value) : String(value)
   return copy?.opts?.[String(value)] ?? String(value)
 }
 
@@ -265,7 +265,7 @@ interface StepProps {
 
 function QuestionStep({ question: q, initial, confirmN, base, saved, onAnswer, onSkip }: StepProps) {
   const ui = useBudgetStudioCopy()
-  const copy = ui.q[q.id.startsWith('debtApr:') ? 'debtApr' : q.id] ?? { label: q.id, why: '' }
+  const copy = ui.q[q.id] ?? { label: q.id, why: '' }
   const [value, setValue] = useState<unknown>(initial)
   const skippable = q.tier !== 'required' && q.control !== 'confirm'
   const ok =

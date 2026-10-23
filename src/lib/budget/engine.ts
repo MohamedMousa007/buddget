@@ -17,7 +17,8 @@ export const EVERYDAY_KEYS: readonly EverydayKey[] = [
 
 const PAYOFF_PACE_PRIORITY_MONTHS = 24
 const PAYOFF_PACE_MONTHS = 36
-const HIGH_APR = 15
+const SPEND_CUSHION = 1.1
+const FULL_EVIDENCE_CYCLES = 3
 const ESSENTIAL_KEYS: readonly EverydayKey[] = ['groceries', 'health', 'transport']
 /** Trim order when money runs short: wants go before needs. */
 const CUT_ORDER: readonly EverydayKey[] = ['fun', 'shopping', 'dining', 'other', 'family', 'transport', 'health', 'groceries']
@@ -127,7 +128,7 @@ function fixedLines(f: BudgetFacts, bench: Benchmark, income: number): DraftLine
         linkIds: [d.id],
         essential: true,
         expenseCategories: ['Debt'],
-        rationale: d.apr === null ? 'Minimum payment, always paid first' : `Minimum payment at ${d.apr}% APR, always paid first`,
+        rationale: 'Monthly payment, always paid first',
       })
     )
   }
@@ -142,31 +143,44 @@ interface EverydaySlot {
   confidence: DraftLine['confidence']
 }
 
-function sizeEveryday(f: BudgetFacts, bench: Benchmark, income: number, fixedTotal: number, money: (n: number) => string): EverydaySlot[] {
+function sizeEveryday(
+  f: BudgetFacts,
+  bench: Benchmark,
+  income: number,
+  fixedTotal: number,
+  money: (n: number) => string,
+  capacity: number = income
+): EverydaySlot[] {
   const trim = 0.85 + (f.securityLean / 100) * 0.2
   const trimPct = Math.round(trim * 100)
   const typical = benchmarkEveryday(bench, f, income)
-  const missing = EVERYDAY_KEYS.filter((k) => f.averages[k] === undefined)
-  const benchSum = sum(missing.map((k) => typical[k]))
+  const cycles = f.averageCycles ?? FULL_EVIDENCE_CYCLES
+  const weight = Math.min(1, cycles / FULL_EVIDENCE_CYCLES)
+  const needsBench = weight < 1 ? EVERYDAY_KEYS : EVERYDAY_KEYS.filter((k) => f.averages[k] === undefined)
+  const benchSum = sum(needsBench.map((k) => typical[k]))
   // Low incomes must not be handed a benchmark larger than they can pay.
-  const scale = benchSum > 0 ? Math.min(1, (0.6 * Math.max(0, income - fixedTotal)) / benchSum) : 1
+  const scale = benchSum > 0 ? Math.min(1, (0.6 * Math.max(0, capacity - fixedTotal)) / benchSum) : 1
 
   const slots: EverydaySlot[] = []
   for (const key of EVERYDAY_KEYS) {
     const avg = f.averages[key]
-    const base = avg ?? typical[key] * scale
-    const target = Math.round(base * trim)
-    const floor = ESSENTIAL_KEYS.includes(key) ? Math.round(base * ESSENTIAL_FLOOR) : 0
+    const typicalHere = typical[key] * scale
+    const blended = avg === undefined ? typicalHere : typicalHere > 0 ? weight * avg + (1 - weight) * typicalHere : avg
+    const target = Math.round(blended * trim)
+    const floor = ESSENTIAL_KEYS.includes(key) ? Math.round(blended * ESSENTIAL_FLOOR) : 0
     if (target === 0) continue
+    const name = EVERYDAY_META[key].name.toLowerCase()
     slots.push({
       key,
       target,
       floor,
-      confidence: avg === undefined ? 'estimated' : 'high',
+      confidence: avg === undefined || weight < 1 ? 'estimated' : 'high',
       rationale:
         avg === undefined
-          ? `Typical ${bench.label} ${EVERYDAY_META[key].name.toLowerCase()} for your household, no spending history yet`
-          : `Your 3-month average of ${money(avg)}, at ${trimPct}%`,
+          ? `Typical ${bench.label} ${name} for your household, no spending history yet`
+          : weight < 1
+            ? `Your ${name} average of ${money(avg)} so far, blended with typical ${bench.label} spending until you have ${FULL_EVIDENCE_CYCLES} months of history`
+            : `Your 3-month average of ${money(avg)}, at ${trimPct}%`,
     })
   }
   return slots
@@ -183,22 +197,26 @@ function shave(amounts: number[], floors: number[], deficit: number): number {
   return deficit - left
 }
 
-function pickPayoffTarget(debts: FactDebt[], strategy: BudgetFacts['payoffStrategy']): FactDebt | null {
-  const open = debts.filter((d) => d.balance > 0)
-  if (strategy === 'minimums' || !open.some((d) => d.apr !== null && d.apr >= HIGH_APR)) return null
-  if (strategy === 'snowball') return open.reduce((a, b) => (b.balance < a.balance ? b : a))
-  return open.reduce((a, b) => ((b.apr ?? 0) > (a.apr ?? 0) ? b : a))
+/** Extra goes to the smallest open balance so a debt clears sooner; cards come first, installments follow a fixed schedule. */
+function pickPayoffTarget(debts: FactDebt[]): FactDebt | null {
+  const open = debts.filter((d) => d.balance > 0 && d.kind !== 'installment')
+  const cards = open.filter((d) => d.kind === 'credit_card')
+  const pool = cards.length > 0 ? cards : open
+  return pool.length === 0 ? null : pool.reduce((a, b) => (b.balance < a.balance ? b : a))
 }
 
 export function buildPlan(f: BudgetFacts): PlanDraft {
   const bench = getBenchmark(f.country, f.baseCurrency)
   const money = (n: number) => `${f.baseCurrency} ${Math.round(n).toLocaleString('en-US')}`
-  const income = incomeBasis(f)
+  const statedIncome = incomeBasis(f)
+  const spendBased = statedIncome <= 0
   const risks: string[] = []
 
-  const fixed = fixedLines(f, bench, income)
+  const fixed = fixedLines(f, bench, statedIncome)
   const fixedTotal = sum(fixed.map((l) => l.amount))
-  const slots = sizeEveryday(f, bench, income, fixedTotal, money)
+  const slots = sizeEveryday(f, bench, statedIncome, fixedTotal, money, spendBased ? Infinity : statedIncome)
+  // Without income the plan covers what you are expected to spend, plus a cushion, so it still balances to zero.
+  const income = spendBased ? Math.round(SPEND_CUSHION * (fixedTotal + sum(slots.map((s) => s.target)))) : statedIncome
 
   const essentials =
     f.essentialsMonthly ??
@@ -207,13 +225,13 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
   const monthsHeld = essentials > 0 ? f.liquidSavings / essentials : 0
 
   const starter =
-    essentials > 0 && f.liquidSavings < essentials
+    !spendBased && essentials > 0 && f.liquidSavings < essentials
       ? Math.min(Math.ceil((essentials - f.liquidSavings) / STARTER_MONTHS_TO_FUND), Math.round(income * 0.1))
       : 0
 
   const goalsByPriority = [...f.goals].sort((a, b) => a.priority - b.priority)
-  const goalAmounts = goalsByPriority.map((g) => Math.round(g.monthly))
-  const zakat = Math.round(f.zakatMonthly)
+  const goalAmounts = goalsByPriority.map((g) => (spendBased ? 0 : Math.round(g.monthly)))
+  const zakat = spendBased ? 0 : Math.round(f.zakatMonthly)
 
   // Waterfall wants: fixed, then everyday targets, goals, starter net, zakat. Short of money, trim in the stated order.
   const everydayAmounts = CUT_ORDER.map((k) => slots.find((s) => s.key === k)?.target ?? 0)
@@ -241,13 +259,13 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
     return amount
   }
 
-  const payoffTarget = pickPayoffTarget(f.debts, f.payoffStrategy)
   const wantsDebt = f.priorities.includes('debt')
+  const hasCardDebt = f.debts.some((d) => d.kind === 'credit_card' && d.balance > 0)
+  const payoffTarget = wantsDebt || hasCardDebt ? pickPayoffTarget(f.debts) : null
   // Extra payoff is paced, not maximal: enough to clear the target in about two to three years on top of
   // its minimum, so the rest of the slack still builds the safety net and goals.
   const paceCap = payoffTarget ? Math.ceil(payoffTarget.balance / (wantsDebt ? PAYOFF_PACE_PRIORITY_MONTHS : PAYOFF_PACE_MONTHS)) : 0
-  const askedExtra = Math.round(f.extraPayoff ?? 0)
-  const extraPayoff = !payoffTarget ? 0 : askedExtra > 0 ? takeSlack(1, Math.min(askedExtra, payoffTarget.balance)) : takeSlack(wantsDebt ? 0.6 : 0.4, paceCap)
+  const extraPayoff = payoffTarget ? takeSlack(wantsDebt ? 0.6 : 0.4, paceCap) : 0
 
   const targetMonths = Math.max(f.emergencyTargetMonths, f.incomeStability !== 'fixed' || f.dependents >= 1 ? 6 : 0)
   const gap = Math.max(0, targetMonths * essentials - f.liquidSavings)
@@ -255,8 +273,7 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
   const fullNet = takeSlack(f.priorities.includes('safety') ? 0.5 : 0.35, fullNetCap)
   safetyAmount += fullNet
 
-  const hasHighAprDebt = f.debts.some((d) => d.apr !== null && d.apr >= HIGH_APR)
-  const canInvest = f.investInterest && !hasHighAprDebt && monthsHeld >= 1
+  const canInvest = f.investInterest && !hasCardDebt && monthsHeld >= 1
   const invest = canInvest ? takeSlack(f.priorities.includes('invest') ? 0.6 : 0.35, Infinity) : 0
 
   const lines: DraftLine[] = [...fixed]
@@ -284,10 +301,7 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
         amount: extraPayoff,
         isSavings: false,
         expenseCategories: ['Debt'],
-        rationale:
-          f.payoffStrategy === 'snowball'
-            ? `Smallest balance first (${money(payoffTarget.balance)}) to clear a debt quickly`
-            : `Highest rate first: ${payoffTarget.apr}% APR costs more than savings earn`,
+        rationale: `Smallest ${hasCardDebt ? 'card ' : ''}balance first (${money(payoffTarget.balance)}) so a debt clears sooner`,
       })
     )
   }
@@ -364,7 +378,14 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
   const planLines = lines.filter((l) => l.amount > 0 || l.linkType !== 'none')
   const free = income - sum(planLines.map((l) => l.amount))
 
-  if (f.incomeStability !== 'fixed' && f.monthlyIncome > income) {
+  if (spendBased) {
+    risks.push(
+      income > 0
+        ? `No income is set, so the plan covers your expected spending of ${money(income)} with a small cushion. Add income to plan savings and goals.`
+        : 'No income is set and there is nothing to base a plan on yet. Add income or a few expenses first.'
+    )
+  }
+  if (!spendBased && f.incomeStability !== 'fixed' && f.monthlyIncome > income) {
     risks.push(
       `Income varies: the plan is sized on ${money(income)}, not the ${money(f.monthlyIncome)} you expect. Anything above it is unallocated surplus, so send it to your safety net.`
     )
@@ -383,7 +404,7 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
     risks.push(`Savings cover only ${monthsHeld.toFixed(1)} months of essentials, so an emergency would hit quickly.`)
   }
 
-  const intent: BudgetPlanIntent = hasHighAprDebt && wantsDebt ? 'debt_crusher' : f.securityLean < 35 ? 'saver' : 'balanced'
+  const intent: BudgetPlanIntent = payoffTarget && wantsDebt ? 'debt_crusher' : f.securityLean < 35 ? 'saver' : 'balanced'
 
   return {
     name: 'Plan',
@@ -393,6 +414,7 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
     reasons: buildReasons(f, { income, fixedTotal, monthsHeld, essentials, safetyAmount, extraPayoff, payoffTarget, trimPct: Math.round((0.85 + (f.securityLean / 100) * 0.2) * 100), money }),
     risks,
     free,
+    basis: spendBased ? 'spend' : 'income',
   }
 }
 
@@ -421,7 +443,7 @@ function buildReasons(f: BudgetFacts, r: ReasonInput): [string, string, string] 
       : `You already hold ${r.monthsHeld.toFixed(1)} months of essentials, so the safety net gets ${r.money(r.safetyAmount)} a month toward ${Math.max(f.emergencyTargetMonths, 1)}+ months.`
   const third =
     r.payoffTarget && r.extraPayoff > 0
-      ? `${r.payoffTarget.name} at ${r.payoffTarget.apr}% APR gets ${r.money(r.extraPayoff)} extra a month, because that interest outruns what savings earn.`
+      ? `${r.payoffTarget.name} gets ${r.money(r.extraPayoff)} extra a month, the smallest balance to clear first.`
       : `Everyday spending follows your own averages at ${r.trimPct}%, with essentials never below ${Math.round(ESSENTIAL_FLOOR * 100)}% of what you spend now.`
   return [first, second, third]
 }

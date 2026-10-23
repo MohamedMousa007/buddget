@@ -41,16 +41,14 @@ const blank: BudgetFacts = {
   averages: {},
   priorities: [],
   securityLean: 50,
-  payoffStrategy: 'avalanche',
   investInterest: false,
 }
 
-const debt = (id: string, apr: number | null, balance = 1000): FactDebt => ({
+const debt = (id: string, balance = 1000): FactDebt => ({
   id,
   name: id,
   minimum: 50,
   balance,
-  apr,
   kind: 'loan',
 })
 
@@ -99,13 +97,6 @@ describe('question counts', () => {
 })
 
 describe('askIf rules', () => {
-  it('car sub-question only when driving', () => {
-    expect(ids(rich)).not.toContain('carCosts')
-    expect(ids({ ...rich, hasCar: true })).toContain('carCosts')
-    const s = applyAnswer(createState(), 'transportMode', 'car')
-    expect(ids(blank, s)).toContain('carCosts')
-  })
-
   it('dependents only for family', () => {
     expect(ids(rich)).not.toContain('dependents')
     expect(ids(blank, applyAnswer(createState(), 'household', 'family'))).toContain('dependents')
@@ -115,21 +106,6 @@ describe('askIf rules', () => {
     expect(ids(blank)).not.toContain('rent')
     expect(ids(blank, applyAnswer(createState(), 'housing', 'own'))).toContain('rent')
     expect(ids(blank, applyAnswer(createState(), 'housing', 'family'))).not.toContain('rent')
-  })
-
-  it('APR asked once per debt with unknown rate', () => {
-    const f = { ...rich, debts: [debt('a', null), debt('b', 8), debt('c', null)] }
-    const got = ids(f).filter((i) => i.startsWith('debtApr:'))
-    expect(got).toEqual(['debtApr:a', 'debtApr:c'])
-    expect(ids(f, applyAnswer(createState(), 'debtApr:a', 20))).not.toContain('debtApr:a')
-  })
-
-  it('payoff only when high APR or several debts with balance', () => {
-    expect(ids(rich)).not.toContain('payoffStrategy')
-    expect(ids({ ...rich, debts: [debt('a', 24)] })).toContain('payoffStrategy')
-    expect(ids({ ...rich, debts: [debt('a', 5), debt('b', 6)] })).toContain('payoffStrategy')
-    expect(ids({ ...rich, debts: [debt('a', 5), debt('b', 6, 0)] })).toContain('payoffStrategy')
-    expect(ids({ ...rich, debts: [debt('a', 5, 0), debt('b', 6, 0)] })).not.toContain('payoffStrategy')
   })
 
   it('income amount only when income unknown, confirm only when known', () => {
@@ -193,11 +169,6 @@ describe('skipping', () => {
     expect(r.estimated).toEqual(['lifestyle'])
   })
 
-  it('dynamic APR questions are skippable and estimated', () => {
-    const f = { ...rich, debts: [debt('a', null)] }
-    const s = skipQuestion(createState(), 'debtApr:a')
-    expect(readiness(f, s).estimated).toContain('debtApr:a')
-  })
 
   it('answering un-skips', () => {
     const s = applyAnswer(skipQuestion(createState(), 'lifestyle'), 'lifestyle', 'minimal')
@@ -263,12 +234,10 @@ describe('mergeFacts', () => {
   it('answers override facts', () => {
     let s = applyAnswer(createState(), 'household', 'family')
     s = applyAnswer(s, 'dependents', 3)
-    s = applyAnswer(s, 'debtApr:d1', 22)
     s = applyAnswer(s, 'income', 4200)
-    const m = mergeFacts({ ...blank, debts: [debt('d1', null)] }, s)
+    const m = mergeFacts(blank, s)
     expect(m.household).toBe('family')
     expect(m.dependents).toBe(3)
-    expect(m.debts[0].apr).toBe(22)
     expect(m.monthlyIncome).toBe(4200)
   })
 
@@ -278,10 +247,10 @@ describe('mergeFacts', () => {
     expect(mergeFacts({ ...blank, hasCar: true }, createState()).hasCar).toBe(true)
   })
 
-  it('does not mutate the base facts', () => {
-    const base = { ...blank, debts: [debt('d1', null)] }
-    mergeFacts(base, applyAnswer(createState(), 'debtApr:d1', 9))
-    expect(base.debts[0].apr).toBeNull()
+  it('ignores answers to questions that no longer exist (drafts saved before the debt questions went)', () => {
+    const base = { ...blank, debts: [debt('d1')] }
+    const s = applyAnswer(applyAnswer(createState(), 'debtApr:d1', 9), 'payoffStrategy', 'snowball')
+    expect(mergeFacts(base, s)).toEqual(base)
   })
 })
 

@@ -89,7 +89,7 @@ export function buildMessages(f: BudgetFacts, draft: PlanDraft): Messages {
     lifestyle: f.lifestyle,
     priorities: f.priorities,
     securityLean: f.securityLean,
-    debts: f.debts.map((d) => ({ apr: d.apr, balance: Math.round(d.balance) })),
+    debts: f.debts.map((d) => ({ balance: Math.round(d.balance) })),
     goals: f.goals.length,
   }
   const lines = draft.lines.map((l) => ({
@@ -266,7 +266,7 @@ export function validateBuildInput(body: Record<string, unknown>): { facts: Budg
       rationale: str(x.rationale, MAX_TEXT) ?? '', confidence: x.confidence === 'estimated' ? 'estimated' : 'high',
     })
   }
-  const debts = Array.isArray(f.debts) ? f.debts.slice(0, 40).filter(isObj).map((x) => ({ apr: fin(x.apr), balance: fin(x.balance) ?? 0 })) : []
+  const debts = Array.isArray(f.debts) ? f.debts.slice(0, 40).filter(isObj).map((x) => ({ balance: fin(x.balance) ?? 0 })) : []
   const facts = {
     baseCurrency: strip(currency),
     country: typeof f.country === 'string' ? strip(f.country.slice(0, 40)) : null,

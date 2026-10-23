@@ -8,9 +8,9 @@ const facts: BudgetFacts = {
   lifestyle: 'balanced', foodFrequency: null, transportMode: 'public', hasCar: false,
   bills: [{ name: 'Phone', amount: 200, dueDay: 5, icon: 'smartphone', essential: true }],
   subscriptionsMonthly: 150, subscriptionCount: 4,
-  debts: [{ id: 'd1', name: 'Card', minimum: 300, balance: 9000, apr: 24, kind: 'credit_card' }],
+  debts: [{ id: 'd1', name: 'Card', minimum: 300, balance: 9000, kind: 'credit_card' }],
   goals: [], liquidSavings: 0, essentialsMonthly: null, emergencyTargetMonths: 3, zakatMonthly: 0,
-  averages: {}, priorities: [], securityLean: 50, payoffStrategy: 'minimums', investInterest: false,
+  averages: {}, priorities: [], securityLean: 50, investInterest: false,
 }
 
 const savings = (d: ReturnType<typeof templateDraft>) =>

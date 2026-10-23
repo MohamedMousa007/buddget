@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Expense, Goal, IncomeEvent } from '@/lib/store/types'
-import { buildFactsFromStore, everydayAverages, incomeStabilityOf, monthlyIncomeHistory, type FactsSlice } from '@/lib/budget/factsFromStore'
+import { buildFactsFromStore, everydayEvidence, incomeStabilityOf, monthlyIncomeHistory, type FactsSlice } from '@/lib/budget/factsFromStore'
 
 const NOW = new Date(2026, 9, 19)
 
@@ -29,7 +29,7 @@ describe('buildFactsFromStore defaults', () => {
       baseCurrency: 'AED', country: null, monthlyIncome: 0, incomeStability: 'fixed', incomeFloor: null,
       household: 'solo', dependents: 0, supportsOthers: false, housing: null, rent: null, lifestyle: 'balanced',
       foodFrequency: null, transportMode: null, hasCar: false, essentialsMonthly: null, emergencyTargetMonths: 3,
-      zakatMonthly: 0, securityLean: 50, payoffStrategy: 'avalanche', investInterest: false, priorities: [],
+      zakatMonthly: 0, securityLean: 50, investInterest: false, priorities: [],
       liquidSavings: 0, subscriptionsMonthly: 0, subscriptionCount: 0,
     })
     expect(f.bills).toEqual([])
@@ -45,14 +45,14 @@ describe('profile facts', () => {
     const f = buildFactsFromStore(withProfile({
       country: 'AE', household: 'family', lifestyleTier: 'comfortable', foodFrequency: 'mostdays', transportMode: 'car',
       monthlyRent: 6000, rentIncludesUtilities: true,
-      financialProfile: { dependents: 2, supportsOthers: true, housing: 'rent', priorities: ['safety', 'bogus', 'debt'], securityLean: 20, payoffStrategy: 'snowball', investInterest: true, incomeStability: 'mixed' },
+      financialProfile: { dependents: 2, supportsOthers: true, housing: 'rent', priorities: ['safety', 'bogus', 'debt'], securityLean: 20, investInterest: true, incomeStability: 'mixed' },
       emergencyFundConfig: { targetMonths: 6, monthlyEssentials: 9000 },
       zakatConfig: { nisabBasis: 'gold', holdsForTrading: false, manualAmount: 1200 },
     }), NOW)
     expect(f).toMatchObject({
       country: 'AE', household: 'family', lifestyle: 'comfortable', foodFrequency: 'mostdays', transportMode: 'car', hasCar: true,
       rent: 6000, rentIncludesUtilities: true, dependents: 2, supportsOthers: true, housing: 'rent', priorities: ['safety', 'debt'],
-      securityLean: 20, payoffStrategy: 'snowball', investInterest: true, incomeStability: 'mixed',
+      securityLean: 20, investInterest: true, incomeStability: 'mixed',
       essentialsMonthly: 9000, emergencyTargetMonths: 6, zakatMonthly: 100,
     })
     expect([...f.known!].sort()).toEqual(['household', 'incomeStability', 'lifestyle', 'rentIncludesUtilities', 'supportsOthers'])
@@ -187,11 +187,11 @@ describe('debts', () => {
       ],
       debtPayments: [{ id: 'p', debtId: 'tabby', date: '2026-09-01', amountPaid: 300, createdAt: '' }],
     }), NOW)
-    expect(f.debts.map((d) => [d.id, d.kind, Math.round(d.minimum), d.balance, d.apr])).toEqual([
-      ['tabby', 'installment', 300, 900, null],
-      ['cc', 'credit_card', 100, 2000, null],
-      ['weekly', 'installment', 52, 1200, null],
-      ['friend', 'personal', 0, 1200, null],
+    expect(f.debts.map((d) => [d.id, d.kind, Math.round(d.minimum), d.balance])).toEqual([
+      ['tabby', 'installment', 300, 900],
+      ['cc', 'credit_card', 100, 2000],
+      ['weekly', 'installment', 52, 1200],
+      ['friend', 'personal', 0, 1200],
     ])
   })
 
@@ -260,12 +260,24 @@ describe('savings and spending history', () => {
       expense('2026-10-02', 'Groceries', 9999), expense('2026-05-02', 'Groceries', 9999),
       expense('2026-09-06', 'Transfer', 5000), expense('2026-09-07', 'Remittance', 400),
     ]
-    expect(everydayAverages(expenses, '2026-10', 1, 'AED', {})).toEqual({
+    expect(everydayEvidence(expenses, '2026-10', 1, 'AED', {}).averages).toEqual({
       groceries: 750, dining: 150, transport: 150, family: 200,
     })
   })
 
   it('has no averages without history', () => {
-    expect(everydayAverages([expense('2026-10-02', 'Groceries', 100)], '2026-10', 1, 'AED', {})).toEqual({})
+    expect(everydayEvidence([expense('2026-10-02', 'Groceries', 100)], '2026-10', 1, 'AED', {})).toEqual({ averages: {}, averageCycles: 0 })
+  })
+
+  it('ignores partial months and takes the median of three so one big purchase does not set the budget', () => {
+    const month = (m: string, grocery: number) => [
+      expense(`2026-${m}-02`, 'Groceries', grocery), expense(`2026-${m}-03`, 'Food', 50), expense(`2026-${m}-04`, 'Food', 50),
+    ]
+    const three = everydayEvidence([...month('09', 800), ...month('08', 900), ...month('07', 9000)], '2026-10', 1, 'AED', {})
+    expect(three.averageCycles).toBe(3)
+    expect(three.averages.groceries).toBe(900)
+    const partial = everydayEvidence([...month('09', 800), expense('2026-08-20', 'Groceries', 100)], '2026-10', 1, 'AED', {})
+    expect(partial.averageCycles).toBe(1)
+    expect(partial.averages.groceries).toBe(800)
   })
 })

@@ -1,4 +1,4 @@
-import type { BudgetFacts, FactDebt, StudioPriority } from '@/lib/budget/facts'
+import type { BudgetFacts, StudioPriority } from '@/lib/budget/facts'
 import type { FinancialProfile, UserProfile } from '@/lib/store/types'
 
 export type Tier = 'required' | 'important' | 'optional'
@@ -48,7 +48,6 @@ export interface StudioState {
 }
 
 const WEIGHT: Record<Tier, number> = { required: 3, important: 2, optional: 1 }
-const HIGH_APR = 15
 
 const always = () => true
 const unknown = () => null
@@ -82,10 +81,6 @@ const known = <T>(v: T | null | undefined) => (v === null || v === undefined ? n
 const positive = (n: number | null | undefined) => (n !== null && n !== undefined && n > 0 ? n : null)
 
 const hasDebts = (f: BudgetFacts) => f.debts.length > 0
-const needsPayoffPlan = (f: BudgetFacts) =>
-  f.debts.some((d) => d.apr !== null && d.apr >= HIGH_APR) ||
-  (f.debts.length > 1 && f.debts.some((d) => d.balance > 0))
-const drives = (f: BudgetFacts) => f.transportMode === 'car' || f.hasCar
 const paysRent = (f: BudgetFacts) => f.housing === 'rent' || f.housing === 'own'
 
 export const QUESTIONS: readonly Question[] = [
@@ -162,10 +157,6 @@ export const QUESTIONS: readonly Question[] = [
     writes: { kind: 'financial', key: 'incomeStability' },
     toFacts: (v) => ({ incomeStability: v as BudgetFacts['incomeStability'] }),
   }),
-  q('missingBills', 'home', 'important', 'multi', {
-    options: opts('missingBills', ['phone', 'internet', 'insurance', 'school', 'help', 'gym']),
-    writes: { kind: 'facts', key: 'missingBills' },
-  }),
 
   q('foodFrequency', 'life', 'important', 'chips', {
     options: opts('foodFrequency', ['everyday', 'mostdays', 'sometimes', 'rarely']),
@@ -185,25 +176,6 @@ export const QUESTIONS: readonly Question[] = [
     writes: { kind: 'profile', key: 'transportMode' },
     toFacts: (v) => ({ transportMode: v as BudgetFacts['transportMode'], hasCar: v === 'car' }),
   }),
-  q('carCosts', 'life', 'important', 'multi', {
-    options: opts('carCosts', ['fuel', 'insurance']),
-    askIf: drives,
-    writes: { kind: 'facts', key: 'carCosts' },
-  }),
-
-  q('payoffStrategy', 'debts', 'important', 'chips', {
-    options: opts('payoffStrategy', ['avalanche', 'snowball', 'minimums']),
-    askIf: needsPayoffPlan,
-    writes: { kind: 'financial', key: 'payoffStrategy' },
-    toFacts: (v) => ({ payoffStrategy: v as BudgetFacts['payoffStrategy'] }),
-  }),
-  q('extraPayoff', 'debts', 'optional', 'stepper', {
-    askIf: needsPayoffPlan,
-    min: 0,
-    step: 50,
-    writes: { kind: 'facts', key: 'extraPayoff' },
-    toFacts: (v) => ({ extraPayoff: v as number }),
-  }),
 
   q('emergencyMonths', 'secure', 'important', 'stepper', {
     suggest: (f) =>
@@ -218,10 +190,6 @@ export const QUESTIONS: readonly Question[] = [
     prefill: (f) => (f.investInterest ? true : null),
     writes: { kind: 'financial', key: 'investInterest' },
     toFacts: (v) => ({ investInterest: v as boolean }),
-  }),
-  q('zakat', 'secure', 'optional', 'toggle', {
-    askIf: (f) => f.zakatMonthly === 0,
-    writes: { kind: 'facts', key: 'zakat' },
   }),
 
   q('priorities', 'priorities', 'important', 'multi', {
@@ -242,36 +210,13 @@ export const QUESTIONS: readonly Question[] = [
 ]
 
 const BY_ID = new Map(QUESTIONS.map((x) => [x.id, x]))
-const DEBT_APR_PREFIX = 'debtApr:'
-
-function debtAprQuestion(d: FactDebt): Question {
-  return {
-    id: `${DEBT_APR_PREFIX}${d.id}`,
-    stage: 'debts',
-    tier: 'important',
-    control: 'amount',
-    labelKey: key('debtApr'),
-    whyKey: `${key('debtApr')}.why`,
-    min: 0,
-    max: 100,
-    askIf: always,
-    prefill: () => null,
-    writes: { kind: 'facts', key: `${DEBT_APR_PREFIX}${d.id}` },
-  }
-}
 
 export function questionById(id: string): Question | undefined {
   return BY_ID.get(id)
 }
 
 function tierOf(id: string): Tier {
-  return id.startsWith(DEBT_APR_PREFIX) ? 'important' : (questionById(id)?.tier ?? 'optional')
-}
-
-/** The static graph plus one APR question per debt whose rate is unknown, right after "confirm debts". */
-function questionsFor(f: BudgetFacts): Question[] {
-  const aprs = f.debts.filter((d) => d.apr === null).map(debtAprQuestion)
-  return QUESTIONS.flatMap((x) => (x.id === 'confirmDebts' ? [x, ...aprs] : [x]))
+  return questionById(id)?.tier ?? 'optional'
 }
 
 export function createState(): StudioState {
@@ -281,14 +226,6 @@ export function createState(): StudioState {
 export function mergeFacts(base: BudgetFacts, s: StudioState): BudgetFacts {
   let merged = base
   for (const [id, value] of Object.entries(s.answers)) {
-    if (id.startsWith(DEBT_APR_PREFIX)) {
-      const debtId = id.slice(DEBT_APR_PREFIX.length)
-      merged = {
-        ...merged,
-        debts: merged.debts.map((d) => (d.id === debtId ? { ...d, apr: value as number } : d)),
-      }
-      continue
-    }
     const patch = questionById(id)?.toFacts?.(value, merged)
     if (patch) merged = { ...merged, ...patch }
   }
@@ -307,7 +244,7 @@ interface Evaluated {
 
 function evaluate(f: BudgetFacts, s: StudioState): Evaluated[] {
   const merged = mergeFacts(f, s)
-  return questionsFor(f)
+  return QUESTIONS
     .filter((x) => x.askIf(merged, s))
     .map((x) => ({
       question: x,

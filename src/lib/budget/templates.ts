@@ -11,8 +11,8 @@ export const BUILD_TEMPLATES: readonly BuildTemplate[] = ['mine', 'essentials', 
 
 const NUDGE: Record<BuildTemplate, Partial<BudgetFacts>> = {
   mine: {},
-  essentials: { securityLean: 50, priorities: ['safety'], payoffStrategy: 'minimums' },
-  debt: { securityLean: 60, priorities: ['debt', 'safety'], payoffStrategy: 'avalanche' },
+  essentials: { securityLean: 50, priorities: ['safety'] },
+  debt: { securityLean: 60, priorities: ['debt', 'safety'] },
   saver: { securityLean: 15, priorities: ['safety', 'goals', 'invest'], investInterest: true },
 }
 
