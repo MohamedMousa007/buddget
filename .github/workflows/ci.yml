@@ -1,10 +1,18 @@
 name: CI
 
+# Every push goes to dev and main together, so CI runs once, on main. Docs-only changes skip it, and a newer push
+# cancels a run that is still going (the free plan has 2,000 minutes a month).
 on:
   push:
-    branches: [main, master, dev]
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
-    branches: [main, master, dev]
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md']
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
