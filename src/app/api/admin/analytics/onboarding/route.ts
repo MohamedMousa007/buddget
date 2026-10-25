@@ -1,12 +1,5 @@
+import type { OnboardingFunnel } from '@/lib/analytics/onboardingFunnel'
 import { guardAdmin, json } from '@/lib/server/admin/guard'
-
-export interface OnboardingFunnel {
-  started: number
-  completed: number
-  left: number
-  steps: Array<{ step: string; viewed: number; completed: number }>
-  permissions: Array<{ kind: string; granted: boolean | null; users: number }>
-}
 
 export async function GET(req: Request) {
   const g = await guardAdmin(req, { permission: 'analytics.view' })

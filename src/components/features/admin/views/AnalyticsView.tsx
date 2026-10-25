@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useAdminQuery } from '../adminClient'
-import type { OnboardingFunnel } from '@/app/api/admin/analytics/onboarding/route'
+import type { OnboardingFunnel } from '@/lib/analytics/onboardingFunnel'
 import { compact, num, pct } from '../format'
 import { BarList, CHART, Legend, RetentionGrid, TrendChart } from '../ui/Charts'
 import { KpiGrid, StatTile } from '../ui/Kpi'
