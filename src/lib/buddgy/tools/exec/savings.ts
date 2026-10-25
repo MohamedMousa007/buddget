@@ -16,6 +16,7 @@ import { goldToGrams, valueInvestmentHolding, type GoldUnit } from '@/lib/saving
 import { POCKET_KINDS, type PocketKind } from '@/lib/savings/pocketKinds'
 import type { Currency, FinanceStore, GoldKarat, InvestmentAssetType, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { canDeletePocket } from '@/lib/savings/canDeletePocket'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
@@ -425,8 +426,11 @@ const delete_savings_account: WriteImpl = {
     const hit = pocketOf(s, args.pocket)
     if ('error' in hit) return hit.error
     const p = hit.item
-    if (s.profile.defaultCarryPocketId === p.id) {
-      return no(`${p.name} receives the month-end carry, so it cannot be deleted.`, 'Pick another default pocket in settings first.')
+    const verdict = canDeletePocket(s, p.id)
+    if (!verdict.ok) {
+      return verdict.reason === 'default'
+        ? no(`${p.name} receives the monthly savings, so it cannot be deleted yet.`, 'Make another pocket the default for monthly savings first.')
+        : no(`${p.name} is your only pocket, so it cannot be deleted.`, 'At least one pocket is needed for monthly savings. Add another first.')
     }
     const entries = s.savingsTransactions.filter((t) => t.accountId === p.id).length
     const scheduled = s.recurringSavingsDeposits.filter((r) => r.accountId === p.id).length
@@ -459,6 +463,7 @@ const delete_savings_account: WriteImpl = {
     if ('error' in hit) return { ok: false, error: 'That pocket no longer exists.' }
     const id = hit.item.id
     const { savingsAccounts, savingsTransactions, recurringSavingsDeposits, goals } = fin()
+    const wasDefault = fin().profile.defaultCarryPocketId === id
     fin().deleteSavingsAccount(id)
     const afterGoals = fin().goals
     return {
@@ -476,6 +481,7 @@ const delete_savings_account: WriteImpl = {
             savingsTransactions: restoreRows(st.savingsTransactions, savingsTransactions, new Set(savingsTransactions.filter((t) => t.accountId === id).map((t) => t.id))),
             recurringSavingsDeposits: restoreRows(st.recurringSavingsDeposits, recurringSavingsDeposits, new Set(recurringSavingsDeposits.filter((r) => r.accountId === id).map((r) => r.id))),
             goals: relinked,
+            ...(wasDefault ? { profile: { ...st.profile, defaultCarryPocketId: id } } : {}),
           }
         }),
     }

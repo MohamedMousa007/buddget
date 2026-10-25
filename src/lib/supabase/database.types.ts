@@ -924,6 +924,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           kind: string
+          plan_id: string | null
           source: string
           status: string
           text: string
@@ -935,6 +936,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           kind?: string
+          plan_id?: string | null
           source?: string
           status?: string
           text: string
@@ -946,6 +948,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           kind?: string
+          plan_id?: string | null
           source?: string
           status?: string
           text?: string

@@ -1,5 +1,6 @@
 import { defineTools } from '@/lib/buddgy/tools/define'
 import { type Plan, reason } from '@/lib/buddgy/tools/exec/planKit'
+import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { debtLabels } from '@/lib/buddgy/tools/exec/debtsCopy'
 import {
   debtChoice,
@@ -627,7 +628,7 @@ const record_debt_payment: WriteImpl = {
       rateAtEntry: computed.rateAtEntry,
       notes,
     }
-    if (debt.debtType === 'credit_card' || dirOf(debt) === 'they_owe') {
+    if (settlesWithoutExpense(debt)) {
       s.addDebtPayment(record)
     } else {
       const bnpl = isBnplPlan(debt, s.paymentMethods)

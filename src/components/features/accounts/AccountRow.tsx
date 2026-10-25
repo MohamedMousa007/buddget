@@ -58,7 +58,7 @@ export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: A
           )}
         </span>
       </button>
-      {!isCash && method.type !== 'wallet' ? <CardStrip cards={cards} onOpen={onOpen} onAddCard={onAddCard} /> : null}
+      {method.type === 'bank_account' ? <CardStrip cards={cards} onOpen={onOpen} onAddCard={onAddCard} /> : null}
     </div>
   )
 }

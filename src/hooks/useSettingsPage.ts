@@ -7,12 +7,10 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
-import { apiFetchAuth } from '@/lib/apiBase'
 import { downloadOrShareFile } from '@/lib/utils/exportFile'
 import { escapeCsvField } from '@/lib/utils/formatters'
 
 import { isSupabaseConfigured } from '@/lib/supabase/env'
-import { navigate } from '@/lib/navigation/navigate'
 
 export interface SettingsImportBannerState {
   variant: 'success' | 'error'
@@ -36,9 +34,7 @@ export function useSettingsPage() {
     []
   )
 
-  const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [importBanner, setImportBanner] = useState<SettingsImportBannerState | null>(null)
-  const [isResetting, setIsResetting] = useState(false)
 
   useEffect(() => {
     if (user?.email) {
@@ -116,36 +112,15 @@ export function useSettingsPage() {
     await signOut()
   }
 
-  const handleStartFresh = async () => {
-    // Show loading state immediately so the user sees feedback before the sign-out
-    // batch fires. The setTimeout(0) yields to React so it can paint isResetting=true
-    // before setUser(null) batches in — eliminating the "ambiguous" blank window.
-    setIsResetting(true)
-    await new Promise<void>(r => setTimeout(r, 0))
-    // ponytail: fire reset concurrently — signOut() drops UI immediately, server wipe finishes in background
-    const ac = new AbortController()
-    const abortTimer = setTimeout(() => ac.abort(), 8000)
-    void apiFetchAuth('/api/account/reset-data', { method: 'POST', signal: ac.signal })
-      .catch(e => console.error('[startFresh] server wipe failed', e))
-      .finally(() => clearTimeout(abortTimer))
-    // Reset nav path so the user lands on dashboard (not /settings/data) after re-login.
-    navigate('/')
-    await signOutAndHome()
-  }
-
   return {
     user,
     openAuthModal,
     signOutAndHome,
     supabaseConfigured,
     fileInputRef,
-    showResetConfirm,
-    setShowResetConfirm,
     importBanner,
     handleExport,
     handleExportExpensesCsv,
     handleImport,
-    handleStartFresh,
-    isResetting,
   }
 }

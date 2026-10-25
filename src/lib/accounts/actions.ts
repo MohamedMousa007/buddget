@@ -1,7 +1,8 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { PaymentMethod } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { DEFAULT_CASH_ID } from './kinds'
+import { DEFAULT_CASH_ID, isTracked } from './kinds'
+import { removePaymentMethod } from './removePaymentMethod'
 import { cashAccountId } from './resolve'
 
 const store = () => useFinanceStore.getState()
@@ -44,6 +45,11 @@ export function setAside(fromId: string, pocketId: string, amount: number, curre
 
 /** "What does your bank show now?": records the difference as an explicit adjustment, never as an expense. */
 export function updateBalance(accountId: string, current: number, reported: number, reason: 'manual_update' | 'gap' = 'manual_update'): number {
+  const account = store().paymentMethods.find((m) => m.id === accountId)
+  if (accountId === DEFAULT_CASH_ID || (account && !isTracked(account))) {
+    setOpeningBalance(accountId === DEFAULT_CASH_ID ? ensureCashAccount() : accountId, reported)
+    return Math.round((reported - current) * 100) / 100
+  }
   const delta = Math.round((reported - current) * 100) / 100
   if (delta === 0) return 0
   store().addAccountAdjustment({ paymentMethodId: accountId, delta, reason, occurredAt: new Date().toISOString() })
@@ -52,7 +58,8 @@ export function updateBalance(accountId: string, current: number, reported: numb
 
 /** Closed accounts keep their history; their cards become standalone cards. */
 export function closeAccount(accountId: string): void {
-  const s = store()
-  for (const c of s.paymentMethods.filter((m) => m.parentId === accountId)) s.updatePaymentMethod(c.id, { parentId: undefined })
-  s.updatePaymentMethod(accountId, { closedAt: new Date().toISOString() })
+  useFinanceStore.setState((s) => {
+    const removal = removePaymentMethod(s, accountId, 'close')
+    return removal ? { paymentMethods: removal.paymentMethods } : {}
+  })
 }

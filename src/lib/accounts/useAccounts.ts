@@ -33,7 +33,7 @@ export interface AccountsModel {
 function useLedgerStore() {
   return useFinanceStore(useShallow((st) => ({
     paymentMethods: st.paymentMethods, expenses: st.expenses, incomeEvents: st.incomeEvents,
-    debtPayments: st.debtPayments, savingsTransactions: st.savingsTransactions,
+    debtPayments: st.debtPayments, debts: st.debts, savingsTransactions: st.savingsTransactions,
     savingsAccounts: st.savingsAccounts, adjustments: st.accountAdjustments,
     rates: st.exchangeRates, base: st.settings.baseCurrency,
   })))

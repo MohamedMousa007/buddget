@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateMonthlyIncome,
+  expectedRecurringForMonth,
   calculateRecurringIncomeForCalendarMonth,
   sumRecurringIncomeOverDateRange,
   projectedIncomeForMonth,
   actualIncomeForMonth,
   isIncomeOccurrencePending,
   suggestIncomeTemplate,
-  incomeMonthlyMultiplier,
   goldPurityFactor,
   goldGramsToMoney,
   moneyToGoldGrams,
@@ -17,6 +17,7 @@ import {
   calculateTotalBudgetExcludingSavings,
   expenseAmountInBase,
 } from './calculations'
+import { deriveDefaultPaydays } from './paydaySchedule'
 import type { IncomeSource, IncomeEvent, Expense, BudgetCategory } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 
@@ -35,12 +36,12 @@ function src(partial: Partial<IncomeSource> & Pick<IncomeSource, 'id' | 'name' |
   }
 }
 
-describe('incomeMonthlyMultiplier', () => {
-  it('normalizes weekly and bi-weekly to monthly equivalent factors', () => {
-    expect(incomeMonthlyMultiplier('monthly')).toBe(1)
-    expect(incomeMonthlyMultiplier(undefined)).toBe(1)
-    expect(incomeMonthlyMultiplier('weekly')).toBeCloseTo(52 / 12, 10)
-    expect(incomeMonthlyMultiplier('biweekly')).toBeCloseTo(26 / 12, 10)
+describe('calculateMonthlyIncome vs the Income tab', () => {
+  it.each(['weekly', 'biweekly', 'monthly'] as const)('%s default schedule matches expectedRecurringForMonth', (freq) => {
+    const s = src({ id: '1', name: 'A', amount: 500, currency: 'AED', recurringFrequency: freq, paydayDays: deriveDefaultPaydays(5, freq) })
+    const expected = { weekly: 2000, biweekly: 1000, monthly: 500 }[freq]
+    expect(calculateMonthlyIncome([s], 'AED', {})).toBe(expected)
+    expect(expectedRecurringForMonth(s, '2024-07', 1)).toBe(expected)
   })
 })
 
@@ -82,7 +83,7 @@ describe('calculateMonthlyIncome', () => {
     expect(calculateMonthlyIncome(sources, 'AED', {}, '2025-01', 1)).toBe(0)
   })
 
-  it('treats weekly amount as per-week before monthly conversion', () => {
+  it('counts four paychecks for a weekly source', () => {
     const sources: IncomeSource[] = [
       src({
         id: '1',
@@ -93,7 +94,7 @@ describe('calculateMonthlyIncome', () => {
         recurringFrequency: 'weekly',
       }),
     ]
-    expect(calculateMonthlyIncome(sources, 'AED', {})).toBeCloseTo(300 * (52 / 12), 5)
+    expect(calculateMonthlyIncome(sources, 'AED', {})).toBe(1200)
   })
 })
 

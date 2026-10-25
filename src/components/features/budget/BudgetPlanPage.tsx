@@ -12,6 +12,7 @@ import { usePlanActions } from '@/hooks/usePlanActions'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { Gauge, History, Plus, Sparkles } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
+import { fallbackPlanId } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
 import type { CreateIntent } from '@/lib/budget/templates'
@@ -66,13 +67,16 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const studioCopy = useBudgetStudioCopy()
   const { locale } = useLocale()
   const [mode, setMode] = useState<PlanMode>('plan')
-  const view = usePlanView(mode)
+  // Drafts and archived plans are still the user's plans: with no live one, the first plan stands in so the chrome never vanishes.
+  const standInPlanId = useFinanceStore((s) => fallbackPlanId(s.budgetPlans, s.activeBudgetPlanId))
+  const view = usePlanView(mode, standInPlanId)
   const act = useBudgetPageActions(view)
   const [collapsed, setCollapsed] = useState<ReadonlySet<ChapterView['chapter']>>(new Set())
   const [lineId, setLineId] = useState<string | null>(null)
   const [addBlock, setAddBlock] = useState<BudgetBlock | null>(null)
   const [insightsOpen, setInsightsOpen] = useState(false)
-  const [deckOpen, setDeckOpen] = useState(false)
+  // With more than one plan the switcher starts open; the user's own toggle wins afterwards.
+  const [deckToggled, setDeckToggled] = useState<boolean | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const [activateId, setActivateId] = useState<string | null>(null)
@@ -139,6 +143,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
       rates: s.exchangeRates,
     })),
   )
+  const deckOpen = deckToggled ?? plans.length > 1
 
   const selectedLine = useMemo<LineView | null>(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
@@ -292,13 +297,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         expanded={deckOpen}
         onOpenPlans={() => {
           setSelectedPlanId(view.plan.id)
-          setDeckOpen((v) => !v)
+          setDeckToggled(!deckOpen)
         }}
         onOpenMenu={setMenuAnchor}
       />
       {deckOpen ? (
         <PlanDeck
-          plans={plans}
+          plans={[...plans].sort((x, y) => Number(y.id === activeId) - Number(x.id === activeId))}
           activeId={activeId}
           selectedId={selectedPlanId ?? view.plan.id}
           summaries={summaries}

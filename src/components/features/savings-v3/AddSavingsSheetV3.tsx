@@ -31,8 +31,15 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
 
   const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState<Currency>(baseCurrency)
   const [selectedId, setSelectedId] = useState<string | null>(defaultAccountId ?? pockets[0]?.account.id ?? null)
+  const [currency, setCurrency] = useState<Currency>(
+    () => pockets.find((p) => p.account.id === selectedId)?.account.currency ?? baseCurrency,
+  )
+  const pickPocket = (id: string | null) => {
+    setSelectedId(id)
+    const c = pockets.find((p) => p.account.id === id)?.account.currency
+    if (c) setCurrency(c)
+  }
   const [source, setSource] = useState<'budget' | 'had'>('budget')
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
@@ -62,7 +69,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-2">
           <div>
             <p style={micro} className="mb-2">{t.into}</p>
-            <PocketRadioList pockets={pockets} value={selectedId} onChange={setSelectedId} label={t.into} />
+            <PocketRadioList pockets={pockets} value={selectedId} onChange={pickPocket} label={t.into} />
           </div>
 
           <AmountCurrencyRow

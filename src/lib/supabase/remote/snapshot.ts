@@ -1,6 +1,8 @@
 import type {
   AccountAdjustment, BudgetPlanActivation, BuddgyMemory, FinanceStore, UserProfile, AppSettings, PaymentMethod, IncomeSource, IncomeEvent, Expense, Receipt, RecurringExpense, Subscription, Debt, DebtPayment, RecurringDebtPayment, SavingsAccount, InvestmentHolding, SavingsTransaction, RecurringSavingsDeposit, Goal, BudgetPlan } from '@/lib/store/types'
 
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
+
 /**
  * Mirror of the finance store slices we persist to Supabase. Used to compute diffs
  * between last-flushed snapshot and current state.
@@ -70,7 +72,7 @@ export function emptySnapshot(): Snapshot {
   return {
     profile: { id: 'local', name: '', createdAt: new Date().toISOString() },
     settings: {
-      baseCurrency: 'AED',
+      baseCurrency: DEFAULT_SETTINGS.baseCurrency,
       secondaryCurrency: null,
       showSecondaryCurrency: false,
       theme: 'dark',

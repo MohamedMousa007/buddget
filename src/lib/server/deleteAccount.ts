@@ -1,5 +1,5 @@
 import type { ServiceClient } from '@/lib/supabase/service'
-import { stampDataReset, wipeUserData } from '@/lib/server/userData'
+import { removeAvatarObject, stampDataReset, wipeUserData } from '@/lib/server/userData'
 
 export interface DeleteOptions {
   /**
@@ -26,7 +26,7 @@ export async function deleteUserCompletely(admin: ServiceClient, uid: string, op
 
   if (staff && opts.keepStaffAccess) {
     // Deleting the auth user would cascade into admin_staff, admin_credentials, admin_sessions and the biometric devices.
-    const errors = [...(await wipeUserData(admin, uid)), ...(await stampDataReset(admin, uid, { clearProfile: true }))]
+    const errors = [...(await wipeUserData(admin, uid)), ...(await removeAvatarObject(admin, uid)), ...(await stampDataReset(admin, uid))]
     await admin.from('sms_ingest_tokens').update({ is_active: false }).eq('user_id', uid)
     await admin.from('push_tokens').delete().eq('user_id', uid)
     return { ok: true, partialErrors: errors, keptStaffAccess: true }

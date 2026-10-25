@@ -4,6 +4,7 @@ import type { Currency } from '@/lib/store/types'
 import { calculateDebtRemainingRaw, computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { advanceRecurringDebtDueDate } from '@/lib/utils/recurringDebtPayments'
 import { isBnplPlan } from '@/lib/debt/bnpl'
+import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 
 /**
  * After a payment posts, keep the debt's active recurring reminder in sync:
@@ -95,8 +96,8 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     notes: due.notes ? `Recurring · ${due.notes}` : 'Recurring debt payment',
   }
 
-  if (debt.debtType === 'credit_card') {
-    // Charge already lives on the card — payment only, no expense.
+  if (settlesWithoutExpense(debt)) {
+    // Charge already lives on the card, or the money is coming in — payment only, no expense.
     state.addDebtPayment(paymentPayload)
   } else {
     // BNPL plan: the purchase was counted as spend at checkout, so the settlement

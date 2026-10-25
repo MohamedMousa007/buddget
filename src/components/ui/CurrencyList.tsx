@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Check, Search } from 'lucide-react'
-import { CurrencyMark } from '@/components/ui/CurrencyMark'
+import { CurrencyMark, hasCurrencySign } from '@/components/ui/CurrencyMark'
 import { Input } from '@/components/ui/input'
 import { CURRENCY_META, COMMON_CURRENCIES } from '@/lib/constants/currencyMeta'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
@@ -81,7 +81,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
         <CurrencyBadge code={code} selected={selected} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{nameOf(code)}</span>
-          <span className="font-mono-numbers block text-xs font-medium text-[var(--color-brand-text-muted)]">{code}</span>
+          {hasCurrencySign(code) ? <span className="font-mono-numbers block text-xs font-medium text-[var(--color-brand-text-muted)]">{code}</span> : null}
         </span>
         {selected ? <Check className="size-5 shrink-0 text-[var(--color-brand-primary-ink)]" aria-hidden /> : null}
       </button>

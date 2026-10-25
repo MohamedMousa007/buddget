@@ -1,6 +1,8 @@
 'use client'
 
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
@@ -11,6 +13,10 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
  * generic debt form).
  */
 export function AddCreditCardSheet() {
+  const t = useT().debts
+  const confirm = useConfirm()
+  const deleteDebt = useFinanceStore((s) => s.deleteDebt)
+  const deletePaymentMethod = useFinanceStore((s) => s.deletePaymentMethod)
   const activeModal = useSettingsStore((s) => s.activeModal)
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const editingDebtId = useSettingsStore((s) => s.editingDebtId)
@@ -30,6 +36,14 @@ export function AddCreditCardSheet() {
     setActiveModal(null)
   }
 
+  const removeCard = async () => {
+    if (!editingDebt || !editingPm) return
+    if (!(await confirm({ title: t.deleteCardLabel, body: t.deleteCardBody, destructive: true }))) return
+    deleteDebt(editingDebt.id)
+    deletePaymentMethod(editingPm.id)
+    close()
+  }
+
   return (
     <PaymentMethodSetupSheet
       open={open}
@@ -38,6 +52,8 @@ export function AddCreditCardSheet() {
       lockType="credit_card"
       titleOverride={isCardEdit ? 'Edit credit card' : 'Add credit card'}
       onClose={close}
+      onDelete={removeCard}
+      deleteLabel={t.deleteCardLabel}
     />
   )
 }

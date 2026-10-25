@@ -35,6 +35,7 @@ type Sheet =
   | { kind: 'update'; id: string }
   | { kind: 'fix'; id: string }
   | { kind: 'card'; id: string }
+  | { kind: 'edit'; id: string }
   | { kind: 'add'; cash?: boolean }
   | { kind: 'found' }
 
@@ -126,7 +127,7 @@ export default function AccountsPage() {
         <>
           <AccountDetailSheet key={`d-${open.method.id}`} open={sheet?.kind === 'detail'} onClose={close} account={open} masked={listMasked}
             onMove={(mode) => setSheet({ kind: 'move', id: open.method.id, mode })} onUpdate={() => setSheet({ kind: 'update', id: open.method.id })}
-            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} />
+            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: 'edit', id: open.method.id })} />
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
             accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
             onDone={() => { const g = gaps[open.method.id]; if (g && sheet?.kind === 'move' && sheet.fromGap) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
@@ -137,6 +138,7 @@ export default function AccountsPage() {
               onSetAside={(amount) => setSheet({ kind: 'move', id: open.method.id, mode: 'set', amount: String(amount), fromGap: true })} onResolved={refresh} />
           ) : null}
           <PaymentMethodSetupSheet open={sheet?.kind === 'card'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id} nested onClose={close} />
+          <PaymentMethodSetupSheet key={`e-${open.method.id}`} open={sheet?.kind === 'edit'} editing={open.method} baseCurrency={settings.baseCurrency} nested onClose={close} />
         </>
       ) : null}
       <AddAccountSheet key={sheet?.kind === 'add' ? (sheet.cash ? 'c' : 'a') : 'x'} open={sheet?.kind === 'add'} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} />

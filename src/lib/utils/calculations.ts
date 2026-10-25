@@ -12,7 +12,6 @@ import type {
   Expense,
   IncomeSource,
   IncomeEvent,
-  IncomeRecurringFrequency,
   BudgetCategory,
   Debt,
   DebtPayment,
@@ -26,7 +25,7 @@ import type {
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
 import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency, tryConvertCurrency } from './currency'
-import { paydayDatesForWindow } from './paydaySchedule'
+import { paydayDatesForWindow, paydaysPerMonth } from './paydaySchedule'
 
 /** When set, credit card outstanding is derived from expenses + payments. */
 export type DebtBalanceContext = {
@@ -52,19 +51,6 @@ export function expenseAmountInBase(
   const converted = tryConvertCurrency(expense.amount, expense.currency, baseCurrency, rates)
   if (converted !== null) return converted
   return expense.amountInBaseCurrency
-}
-
-/**
- * Converts per-paycheck recurring income to a *typical* monthly amount. Only for
- * contexts with no month window ({@link calculateMonthlyIncome}, form previews) —
- * month-scoped figures use the physical payday count via
- * {@link expectedRecurringForMonth} instead.
- */
-export function incomeMonthlyMultiplier(freq: IncomeRecurringFrequency | undefined): number {
-  const f = freq ?? 'monthly'
-  if (f === 'weekly') return 52 / 12
-  if (f === 'biweekly') return 26 / 12
-  return 1
 }
 
 /**
@@ -126,7 +112,7 @@ export function calculateMonthlyIncome(
   let total = 0
   for (const source of sources) {
     if (source.isRecurring) {
-      const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+      const monthlyEq = source.amount * paydaysPerMonth(source.recurringFrequency)
       total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
     } else if (monthStr !== undefined && monthStartDay !== undefined) {
       const { start, end } = getMonthRange(monthStr, monthStartDay)
@@ -323,7 +309,7 @@ export function calculateRecurringIncomeForCalendarMonth(
   return sources.reduce((total, source) => {
     if (!source.isRecurring) return total
     if (!recurringActiveForWindow(source, monthStart, monthEnd)) return total
-    const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+    const monthlyEq = source.amount * paydaysPerMonth(source.recurringFrequency)
     return total + convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
   }, 0)
 }

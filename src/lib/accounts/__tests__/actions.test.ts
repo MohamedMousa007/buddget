@@ -73,6 +73,36 @@ describe('account actions end to end on the real store', () => {
   })
 })
 
+describe('untracked accounts', () => {
+  beforeEach(() => s().reset())
+
+  it('Set balance on an untracked bank sets the opening balance, then later updates are deltas', () => {
+    const id = s().addPaymentMethod({ name: 'NBE', type: 'bank_account', currency: 'EGP', isDefault: false })
+    expect(bal(id)).toBeUndefined()
+    updateBalance(id, 0, 500)
+    expect(s().accountAdjustments).toHaveLength(0)
+    expect(bal(id)?.balance).toBe(500)
+    s().updatePaymentMethod(id, { openingAt: new Date(Date.now() - 86_400_000).toISOString() })
+    updateBalance(id, 500, 450)
+    expect(s().accountAdjustments).toHaveLength(1)
+    expect(bal(id)?.balance).toBe(450)
+  })
+
+  it('the cash sentinel is promoted to a real tracked Cash account', () => {
+    updateBalance('pm_default_cash', 0, 75)
+    const cash = ensureCashAccount()
+    expect(bal(cash)?.balance).toBe(75)
+  })
+
+  it('a closed default hands over to an open method and closed methods are not pickable', () => {
+    const a = s().addPaymentMethod({ name: 'A', type: 'bank_account', currency: 'EGP', isDefault: true })
+    const b = s().addPaymentMethod({ name: 'B', type: 'bank_account', currency: 'EGP', isDefault: false })
+    closeAccount(a)
+    expect(s().paymentMethods.find((m) => m.id === b)?.isDefault).toBe(true)
+    expect(pickablePaymentMethods(s().paymentMethods).some((m) => m.id === a)).toBe(false)
+  })
+})
+
 describe('pickablePaymentMethods', () => {
   it('hides closed accounts and the cash sentinel once a real Cash exists, but keeps the selected one', () => {
     useFinanceStore.getState().reset()

@@ -41,6 +41,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useBudgetPageCopy } from '../usePageCopy'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import { KnownSheet, type KnownRow } from './KnownSheet'
+import { incomeKnownRow } from './incomeKnownRow'
 import { DraftStep } from './DraftStep'
 import { OpenerStep } from './OpenerStep'
 import { QuestionControl } from './QuestionControl'
@@ -195,12 +196,12 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     // The build runs when the last question is answered, and again on retry.
   }, [next, focusId, attempt, buildNow]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const knownRows: KnownRow[] = QUESTIONS.filter(
+  const knownRows: KnownRow[] = [...incomeKnownRow(merged, state, ui.known.income, money), ...QUESTIONS.filter(
     (x) => x.writes.kind !== 'none' && x.control !== 'confirm' && x.askIf(merged, state) && (x.id in state.answers || x.prefill(merged) != null),
   ).map((x) => {
     const copy = ui.q[x.id]
     return { id: x.id, label: copy?.label ?? x.id, value: formatKnown(x, defaultValue(x, facts, state), copy, ui, money) }
-  })
+  })]
 
   const goBack = () => {
     const last = trail.at(-1)

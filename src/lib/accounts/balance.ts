@@ -1,14 +1,16 @@
 import type {
-  AccountAdjustment, DebtPayment, Expense, IncomeEvent, PaymentMethod, SavingsAccount, SavingsTransaction,
+  AccountAdjustment, Debt, DebtPayment, Expense, IncomeEvent, PaymentMethod, SavingsAccount, SavingsTransaction,
 } from '@/lib/store/types'
 import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { resolveAccountId } from './resolve'
+import { isOwedToUser } from '@/lib/debts/debtDirection'
 
 export interface LedgerInput {
   paymentMethods: readonly PaymentMethod[]
   expenses: readonly Expense[]
   incomeEvents: readonly IncomeEvent[]
   debtPayments: readonly DebtPayment[]
+  debts?: readonly Debt[]
   savingsTransactions: readonly SavingsTransaction[]
   savingsAccounts: readonly SavingsAccount[]
   adjustments: readonly AccountAdjustment[]
@@ -89,9 +91,11 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   }
 
   // A payoff normally also writes an expense (counted above); only count payments that left no expense behind.
+  const owedToUser = new Set((input.debts ?? []).filter(isOwedToUser).map((d) => d.id))
   for (const p of input.debtPayments) {
     if (p.fundedFromSavings || settledByExpense.has(p.id) || !p.paymentMethodId) continue
-    apply(resolveAccountId(p.paymentMethodId, pms), -p.amountPaid, p.paymentCurrency ?? '', instantOf(p.occurredAt, p.date))
+    const sign = owedToUser.has(p.debtId) ? 1 : -1
+    apply(resolveAccountId(p.paymentMethodId, pms), sign * p.amountPaid, p.paymentCurrency ?? '', instantOf(p.occurredAt, p.date))
   }
 
   const pockets = new Map(input.savingsAccounts.map((s) => [s.id, s]))

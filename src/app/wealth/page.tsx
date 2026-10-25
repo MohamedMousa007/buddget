@@ -4,12 +4,12 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Star, Trash2, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { StatusPill } from '@/components/ui/StatusPill'
-import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useAlert, useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
@@ -32,6 +32,7 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useNetWorthTrend } from '@/hooks/useNetWorthTrend'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { canDeletePocket } from '@/lib/savings/canDeletePocket'
 import { useT } from '@/lib/i18n'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
@@ -56,6 +57,7 @@ export default function WealthPage() {
   const dataReady = useFinanceStore((s) => s.dataReady)
   const requireAuth = useRequireAuthAction()
   const confirmDialog = useConfirm()
+  const alertDialog = useAlert()
   const nw = useNetWorth()
   const stats = useMonthlyStats()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
@@ -178,7 +180,7 @@ export default function WealthPage() {
         coverAmount: coverPocketIds.includes(account.id) ? account.currentBalance : 0,
         goalsAmount: Math.min(account.currentBalance, linked.reduce((s, g) => s + (g.targetAmount ?? 0), 0)),
         goalLabel: linked[0]?.name ?? '',
-        isAuto: profile.defaultCarryPocketId === account.id || account.type === 'vault',
+        isAuto: profile.defaultCarryPocketId === account.id,
       }
     }),
     [pockets, goals, coverPocketIds, profile.defaultCarryPocketId],
@@ -223,8 +225,18 @@ export default function WealthPage() {
   const rate = savingsRatePct(stats.savingsThisMonth, stats.totalIncome)
 
   const askDelete = async (r: WealthRowVM) => {
-    if (!(await confirmDialog({ title: t.deleteTitle(r.title), body: t.deleteBody, destructive: true }))) return
-    if (r.account) useFinanceStore.getState().deleteSavingsAccount(r.account.id)
+    const a = r.account
+    if (a) {
+      const verdict = canDeletePocket(useFinanceStore.getState(), a.id)
+      if (!verdict.ok) {
+        const isDefault = verdict.reason === 'default'
+        await alertDialog({ title: isDefault ? t.deleteDefaultTitle : t.deleteOnlyTitle, body: isDefault ? t.deleteDefaultBody : t.deleteOnlyBody })
+        return
+      }
+    }
+    const body = a && a.currentBalance > 0 ? t.deleteBodyBalance(`${formatWhole(a.currentBalance)} ${a.currency}`) : t.deleteBody
+    if (!(await confirmDialog({ title: t.deleteTitle(r.title), body, destructive: true }))) return
+    if (a) useFinanceStore.getState().deleteSavingsAccount(a.id)
     else useFinanceStore.getState().deleteInvestmentHolding(r.id)
   }
 
@@ -301,7 +313,6 @@ export default function WealthPage() {
       {menu && (() => {
         const { row } = menu
         const a = row.account
-        const isVault = a?.type === 'vault'
         return (
           <CardActionMenu
             anchor={menu.anchor}
@@ -315,9 +326,11 @@ export default function WealthPage() {
                   ]
                 : []),
               ...(a ? [{ label: t.menuEdit, icon: <Pencil size={17} />, onSelect: () => setEditAcc(a) }] : []),
+              ...(a && a.category === 'savings' && profile.defaultCarryPocketId !== a.id
+                ? [{ label: t.menuMakeDefault, icon: <Star size={17} />, onSelect: () => useFinanceStore.getState().updateProfile({ defaultCarryPocketId: a.id }) }]
+                : []),
               {
                 label: t.menuDelete, icon: <Trash2 size={17} />, destructive: true,
-                disabled: isVault, hint: isVault ? t.vaultDeleteHint : undefined,
                 onSelect: () => void askDelete(row),
               },
             ]}

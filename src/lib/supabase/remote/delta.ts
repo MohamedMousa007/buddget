@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AppSettings, BudgetPlan, BudgetPlanActivation, Currency } from '@/lib/store/types'
+import type { AppSettings, BudgetPlan, BudgetPlanActivation } from '@/lib/store/types'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import { mergeList } from './merge'
 import type { Snapshot } from './snapshot'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
@@ -95,7 +96,7 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
     cursor: p.cursor,
     profile: p.profile ? profileFromRow(p.profile) : null,
     // settingsFromRow needs the currencies from the profile; they are filled in by applyDelta when only settings changed.
-    settings: p.settings ? settingsFromRow(p.settings, { baseCurrency: 'AED' as Currency, secondaryCurrency: null }) : null,
+    settings: p.settings ? settingsFromRow(p.settings, { baseCurrency: DEFAULT_SETTINGS.baseCurrency, secondaryCurrency: null }) : null,
     paymentMethods: listDelta(l.payment_methods, paymentMethodFromRow),
     incomeSources: listDelta(l.income_sources, incomeSourceFromRow),
     incomeEvents: listDelta(l.income_events, incomeEventFromRow),

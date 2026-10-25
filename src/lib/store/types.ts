@@ -440,6 +440,8 @@ export interface BuddgyMemory {
   kind: 'fact' | 'preference' | 'constraint'
   source: 'budget' | 'chat' | 'settings'
   status: 'proposed' | 'active'
+  /** The budget plan this note came from; deleting the plan deletes the note. */
+  planId?: string
   createdAt: string
   updatedAt: string
 }
@@ -1199,7 +1201,7 @@ export interface FinanceStore {
   activateBudgetPlan: (planId: string, cycleKey: string) => BudgetActivationUndo
   restoreBudgetActivation: (undo: BudgetActivationUndo) => void
   /** Saves a remembered fact; null when it is a duplicate or the 40-fact cap is reached. */
-  addBuddgyMemory: (text: string, source: BuddgyMemory['source'], kind?: BuddgyMemory['kind']) => string | null
+  addBuddgyMemory: (text: string, source: BuddgyMemory['source'], kind?: BuddgyMemory['kind'], planId?: string) => string | null
   removeBuddgyMemory: (id: string) => void
   addAccountAdjustment: (a: Omit<AccountAdjustment, 'id' | 'createdAt' | 'updatedAt'>) => string
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string

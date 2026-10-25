@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { selectActivePlan } from '@/lib/budget/activePlan'
+import { fallbackPlanId, selectActivePlan } from '@/lib/budget/activePlan'
 import type { BudgetPlan } from '@/lib/store/types'
 
 const plan = (id: string, status?: BudgetPlan['status']): BudgetPlan => ({
@@ -24,5 +24,15 @@ describe('selectActivePlan', () => {
   it('is null when there is no live plan', () => {
     expect(selectActivePlan([], null)).toBeNull()
     expect(selectActivePlan([plan('d', 'draft')], null)).toBeNull()
+  })
+})
+
+describe('fallbackPlanId', () => {
+  it('keeps the plan chrome reachable after the only live plan is deleted', () => {
+    expect(fallbackPlanId([plan('d', 'draft'), plan('x', 'archived')], null)).toBe('d')
+  })
+  it('defers to the active plan and is empty with no plans', () => {
+    expect(fallbackPlanId([plan('d', 'draft'), plan('a')], null)).toBeUndefined()
+    expect(fallbackPlanId([], null)).toBeUndefined()
   })
 })

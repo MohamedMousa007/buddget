@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { deleteUserCompletely } from './deleteAccount'
-import { USER_DATA_TABLES } from './userData'
+import { USER_DATA_TABLES, removeAvatarObject } from './userData'
 import type { ServiceClient } from '@/lib/supabase/service'
 
 function fakeAdmin(staffRole: string | null) {
@@ -51,9 +51,28 @@ describe('deleteUserCompletely', () => {
   })
 
   it('a reset or a staff self-delete also clears receipts, snapshots and chat history', () => {
-    for (const t of ['receipts', 'net_worth_snapshots', 'savings_month_summary', 'goal_allocation_runs', 'ai_chats', 'sms_parse_log']) {
+    for (const t of ['receipts', 'net_worth_snapshots', 'savings_month_summary', 'goal_allocation_runs', 'ai_chats', 'sms_parse_log', 'sms_template_users', 'sms_template_signals', 'sms_stats_outbox']) {
       expect(USER_DATA_TABLES).toContain(t)
     }
   })
-})
 
+  it('removes a stored avatar object and reports a failure instead of swallowing it', async () => {
+    const remove = vi.fn(async () => ({ error: { message: 'denied' } }))
+    const admin = {
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { avatar_image_path: 'u1/me.png' } }) }) }) }),
+      storage: { from: () => ({ remove }) },
+    } as unknown as ServiceClient
+    expect(await removeAvatarObject(admin, 'u1')).toEqual(['avatar: denied'])
+    expect(remove).toHaveBeenCalledWith(['u1/me.png'])
+  })
+
+  it('leaves storage alone when the avatar is a URL', async () => {
+    const remove = vi.fn()
+    const admin = {
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { avatar_image_path: 'https://x/y.png' } }) }) }) }),
+      storage: { from: () => ({ remove }) },
+    } as unknown as ServiceClient
+    expect(await removeAvatarObject(admin, 'u1')).toEqual([])
+    expect(remove).not.toHaveBeenCalled()
+  })
+})

@@ -1,4 +1,5 @@
 import type { FinanceStore } from '@/lib/store/types'
+import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { planForMonth } from '@/lib/budget/activations'
 import {
   budgetCategoriesFromPlan,
@@ -252,7 +253,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
   ) as Record<string, number>
 
   const debtRemainingTotal = totalDebtRemainingInBase(
-    debts,
+    debts.filter((d) => !isOwedToUser(d)),
     debtPayments,
     settings.baseCurrency,
     exchangeRates,

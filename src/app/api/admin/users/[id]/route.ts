@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { deleteUserCompletely } from '@/lib/server/deleteAccount'
-import { stampDataReset, wipeUserData } from '@/lib/server/userData'
+import { removeAvatarObject, stampDataReset, wipeUserData } from '@/lib/server/userData'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { sendNativePush } from '@/lib/server/sendNativePush'
 import { isFeatureOverrideKey, isLimitKey } from '@/lib/entitlements/limits'
@@ -238,7 +238,7 @@ export async function POST(req: Request, { params }: Params) {
     }
     case 'reset_data': {
       if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
-      const errors = [...(await wipeUserData(ctx.service, id)), ...(await stampDataReset(ctx.service, id, { clearProfile: true }))]
+      const errors = [...(await wipeUserData(ctx.service, id)), ...(await removeAvatarObject(ctx.service, id)), ...(await stampDataReset(ctx.service, id))]
       await log('user.reset_data', 'Reset account and erased all data', { partialErrors: errors })
       if (errors.length > 0) return bad('Part of the reset failed. Run it again.', 500)
       return json({ ok: true })

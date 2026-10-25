@@ -151,3 +151,36 @@ describe('deleteSavingsTransaction', () => {
     expect(S().savingsTransactions.filter((t) => t.transferGroupId)).toHaveLength(0)
   })
 })
+
+describe('correctSavingsBalance', () => {
+  beforeEach(() => seed([pocket('p1', 'EGP', 100)]))
+
+  it('records one non-cash-flow adjustment and keeps history', () => {
+    S().correctSavingsBalance('p1', 160)
+    expect(S().savingsAccounts[0].currentBalance).toBe(160)
+    expect(S().savingsTransactions).toHaveLength(1)
+    expect(S().savingsTransactions[0]).toMatchObject({ type: 'deposit', amount: 60, isCashFlow: false })
+  })
+
+  it('writes nothing when the balance is unchanged', () => {
+    S().correctSavingsBalance('p1', 100)
+    expect(S().savingsTransactions).toHaveLength(0)
+  })
+})
+
+describe('deleteSavingsAccount — default carry pocket', () => {
+  beforeEach(() => {
+    seed([pocket('p1', 'EGP', 0), pocket('p2', 'EGP', 0)])
+    useFinanceStore.setState((s) => ({ profile: { ...s.profile, defaultCarryPocketId: 'p1' } }))
+  })
+
+  it('clears the default id when it points at the deleted pocket', () => {
+    S().deleteSavingsAccount('p1')
+    expect(S().profile.defaultCarryPocketId).toBeNull()
+  })
+
+  it('leaves the default id alone when another pocket is deleted', () => {
+    S().deleteSavingsAccount('p2')
+    expect(S().profile.defaultCarryPocketId).toBe('p1')
+  })
+})

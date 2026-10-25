@@ -190,20 +190,17 @@ describe('delete_payment_method', () => {
     expect(p.ok && p.proposal.risk).toBe('strong')
     if (!p.ok) return
     const effect = p.proposal.preview.effect ?? ''
-    expect(effect).toContain('2 expenses move to Cash')
-    expect(effect).toContain('1 subscription')
-    expect(effect).toContain('1 income entry')
-    expect(effect).toContain('CIB card')
-    expect(effect).toContain('Cash becomes the default')
+    expect(effect).toContain('closed')
+    expect(effect).toContain('NBE becomes the default')
 
     const applied = del.apply(p.proposal, ctx)
     expect(applied.ok).toBe(true)
-    expect(state().paymentMethods.map((m) => m.id)).toEqual([DEFAULT_CASH_ID, NBE])
-    expect(state().paymentMethods[0].isDefault).toBe(true)
-    expect(state().expenses.filter((e) => e.paymentMethodId === DEFAULT_CASH_ID)).toHaveLength(2)
-    expect(state().subscriptions[0].paymentMethodId).toBeNull()
-    expect(state().incomeSources[0].paymentMethodId).toBeUndefined()
-    expect(state().debts[0].linkedPaymentMethodId).toBeUndefined()
+    const closed = state().paymentMethods.find((m) => m.id === CIB)
+    expect(closed?.closedAt).toBeTruthy()
+    expect(closed?.isDefault).toBe(false)
+    expect(state().paymentMethods.find((m) => m.id === NBE)?.isDefault).toBe(true)
+    expect(state().expenses.filter((e) => e.paymentMethodId === CIB)).toHaveLength(2)
+    expect(state().expenses.filter((e) => e.paymentMethodId === DEFAULT_CASH_ID)).toHaveLength(0)
     if (!applied.ok) return
     expect(applied.undo).toBeTypeOf('function')
   })
@@ -265,6 +262,6 @@ describe('delete_payment_method', () => {
 
   it('localizes the cascade summary to Arabic', () => {
     const p = write('delete_payment_method').propose({ ref: refOf(CIB) }, { ...ctx, locale: 'ar' })
-    expect(p.ok && p.proposal.preview.effect).toContain('النقد')
+    expect(p.ok && p.proposal.preview.effect).toContain('تُغلق')
   })
 })

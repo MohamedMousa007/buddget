@@ -11,7 +11,7 @@ export interface BudgetStudioCopy {
   title: string
   buddgyAsks: string
   close: string
-  known: { open: string; title: string; sub: string; empty: string; change: string; yes: string; no: string }
+  known: { open: string; title: string; sub: string; empty: string; change: string; yes: string; no: string; income: string }
   stages: Record<StudioStage, string>
   progress: (pct: number) => string
   why: string
@@ -85,7 +85,7 @@ const en: BudgetStudioCopy = {
   title: 'Build with Buddgy',
   buddgyAsks: 'Buddgy asks',
   close: 'Close',
-  known: { open: 'What I know', title: 'What Buddgy knows', sub: 'Tap anything to change it. Your answers are already saved to your profile.', empty: 'Nothing yet.', change: 'Change', yes: 'Yes', no: 'No' },
+  known: { open: 'What I know', title: 'What Buddgy knows', sub: 'Tap anything to change it. Your answers are already saved to your profile.', empty: 'Nothing yet.', change: 'Change', yes: 'Yes', no: 'No', income: 'Monthly income' },
   stages: { found: 'What I found', home: 'Home', life: 'Daily life', debts: 'Debts', secure: 'Security', priorities: 'Priorities' },
   progress: (pct) => `${pct}% known`,
   why: 'Why I ask',
@@ -201,7 +201,7 @@ const ar: BudgetStudioCopy = {
   title: 'ابنِ مع بادي',
   buddgyAsks: 'بادي يسأل',
   close: 'إغلاق',
-  known: { open: 'ما أعرفه', title: 'ما يعرفه بادي', sub: 'اضغط على أي شيء لتغييره. إجاباتك محفوظة في ملفك.', empty: 'لا شيء بعد.', change: 'تغيير', yes: 'نعم', no: 'لا' },
+  known: { open: 'ما أعرفه', title: 'ما يعرفه بادي', sub: 'اضغط على أي شيء لتغييره. إجاباتك محفوظة في ملفك.', empty: 'لا شيء بعد.', change: 'تغيير', yes: 'نعم', no: 'لا', income: 'الدخل الشهري' },
   stages: { found: 'ما وجدته', home: 'السكن', life: 'الحياة اليومية', debts: 'الديون', secure: 'الأمان', priorities: 'الأولويات' },
   progress: (pct) => `${pct}% معروف`,
   why: 'لماذا أسأل',

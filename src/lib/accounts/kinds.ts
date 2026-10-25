@@ -6,8 +6,8 @@ export { DEFAULT_CASH_ID }
 
 /** Types that hold a balance of their own (stored value included). */
 const HOLDERS: ReadonlySet<PaymentMethodType> = new Set(['cash', 'bank_account', 'wallet', 'prepaid_card'])
-/** Types a card can hang under. Prepaid cards hold money but nothing hangs under them. */
-const PARENTS: ReadonlySet<PaymentMethodType> = new Set(['cash', 'bank_account', 'wallet'])
+/** Types a card can hang under. Cash and prepaid cards hold money but nothing hangs under them. */
+const PARENTS: ReadonlySet<PaymentMethodType> = new Set(['bank_account', 'wallet'])
 
 export const holdsBalance = (type: PaymentMethodType): boolean => HOLDERS.has(type)
 export const canBeParent = (type: PaymentMethodType): boolean => PARENTS.has(type)

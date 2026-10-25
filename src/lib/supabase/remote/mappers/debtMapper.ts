@@ -7,6 +7,7 @@ import type {
   GoldKarat,
   InstallmentProvider,
 } from '@/lib/store/types'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import type { DebtRow, DebtInsert } from '@/lib/supabase/remote/types'
 
 function toDbDebtKind(k: DebtKind | undefined): DebtInsert['debt_type'] {
@@ -52,7 +53,7 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     debt_type: toDbDebtKind(d.debtType),
     direction: d.direction ?? 'i_owe',
     amount: d.startingBalance,
-    currency: (d.currency as Currency) ?? 'AED',
+    currency: (d.currency as Currency) ?? DEFAULT_SETTINGS.baseCurrency,
     starting_balance: d.startingBalance,
     remaining_amount: null,
     interest_rate: 0,
@@ -101,7 +102,7 @@ export function debtFromRow(row: DebtRow): Debt {
     personName: row.person ?? undefined,
     description: row.description ?? undefined,
     startingBalance: row.starting_balance ?? row.amount,
-    currency: (row.currency as DebtCurrency) ?? 'AED',
+    currency: (row.currency as DebtCurrency) ?? DEFAULT_SETTINGS.baseCurrency,
     isGold: row.is_gold,
     receivedVia: (row.received_via as DebtReceivedVia | null) ?? undefined,
     goldKarat: fromDbKarat(row.gold_karat),

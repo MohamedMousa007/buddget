@@ -339,7 +339,12 @@ export interface Dictionary {
     menuWithdraw: string
     menuEdit: string
     menuDelete: string
-    vaultDeleteHint: string
+    menuMakeDefault: string
+    deleteBodyBalance: (amount: string) => string
+    deleteDefaultTitle: string
+    deleteDefaultBody: string
+    deleteOnlyTitle: string
+    deleteOnlyBody: string
     nothingHeld: string
     feeds: (goal: string, pct: number) => string
     deleteTitle: (name: string) => string
@@ -871,7 +876,7 @@ export interface Dictionary {
     /** Amount label when the source is biweekly/weekly (per paycheck, not per month). */
     amountPerPaycheckLabel: string
     /** Live preview under the amount: typical monthly equivalent. */
-    perMonthEquiv: (amount: string) => string
+    perMonthEquiv: (amount: string, paychecks: number) => string
     freqMonthly: string
     freqBiweekly: string
     freqWeekly: string
@@ -930,6 +935,7 @@ export interface Dictionary {
     tabDeposit: string
     tabAddAccount: string
     sheetEditTitle: string
+    currencyLockedHint: string
     sheetWithdrawTitle: string
     sheetUpdateTitle: string
     labelWhichSavings: string
@@ -1543,7 +1549,6 @@ export interface Dictionary {
     dataExportExpensesHint: string
     dataDownload: string
     dataRestore: string
-    dataStartFresh: string
     dataResetWarning: string
     dataConfirmReset: string
     dataCancelReset: string

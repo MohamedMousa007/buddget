@@ -1,5 +1,5 @@
 import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
-import { holdsBalance, hasAccountHistory } from '@/lib/accounts/kinds'
+import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
@@ -8,7 +8,6 @@ import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/consta
 import { localTodayISO } from '@/lib/utils/localDate'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
-import { DEFAULT_CASH_ID } from './migrations/v17_uuid_remap'
 import { importDataSchema } from './financeImportSchema'
 import {
   DEFAULT_BUDGET,
@@ -537,44 +536,24 @@ export const useFinanceStore = create<FinanceStore>()(
 
       deletePaymentMethod: (id) =>
         set((state) => {
-          const deleted = state.paymentMethods.find((m) => m.id === id)
-          // An account with history is closed, never removed: removing it would hand its rows to Cash (null = Cash).
-          if (deleted && holdsBalance(deleted.type) && hasAccountHistory(state, id)) {
-            const now = new Date().toISOString()
-            return {
-              paymentMethods: state.paymentMethods.map((m) =>
-                m.id === id ? { ...m, closedAt: now, updatedAt: now } : m.parentId === id ? { ...m, parentId: undefined, updatedAt: now } : m,
-              ),
-            }
-          }
-          let paymentMethods = state.paymentMethods.filter((m) => m.id !== id)
-          // Promote a new default if we removed the only default one.
-          if (deleted?.isDefault && paymentMethods.length > 0 && !paymentMethods.some((m) => m.isDefault)) {
-            // Auto-promotion is an edit; stamp it or the promotion tie-loses and you sync
-            // back with no default card.
-            paymentMethods = paymentMethods.map((m, i) =>
-              i === 0 ? { ...m, isDefault: true, updatedAt: new Date().toISOString() } : m
-            )
+          const removal = removePaymentMethod(state, id)
+          if (!removal) return {}
+          if (removal.closed) return { paymentMethods: removal.paymentMethods }
+          const dropped = new Set(state.debts.filter((d) => d.linkedPaymentMethodId === id).map((d) => d.id))
+          const nextState: FinanceStore = {
+            ...state,
+            paymentMethods: removal.paymentMethods,
+            debts: state.debts.filter((d) => !dropped.has(d.id)),
+            debtPayments: state.debtPayments.filter((p) => !dropped.has(p.debtId)),
+            recurringDebtPayments: state.recurringDebtPayments.filter((r) => !dropped.has(r.debtId)),
+            goals: state.goals.map((g) => ({ ...g, linkedDebtIds: g.linkedDebtIds.filter((x) => !dropped.has(x)) })),
           }
           return {
-            paymentMethods,
-            // Detach the auto-created credit-card debt so it stops pointing at a dead id.
-            debts: state.debts.map((d) =>
-              d.linkedPaymentMethodId === id ? { ...d, linkedPaymentMethodId: undefined } : d
-            ),
-            // Dependents fall back to cash / null, mirroring the server's ON DELETE SET NULL.
-            expenses: state.expenses.map((e) =>
-              e.paymentMethodId === id ? { ...e, paymentMethodId: DEFAULT_CASH_ID } : e
-            ),
-            subscriptions: state.subscriptions.map((s) =>
-              s.paymentMethodId === id ? { ...s, paymentMethodId: null } : s
-            ),
-            incomeSources: state.incomeSources.map((s) =>
-              s.paymentMethodId === id ? { ...s, paymentMethodId: undefined } : s
-            ),
-            incomeEvents: state.incomeEvents.map((ev) =>
-              ev.paymentMethodId === id ? { ...ev, paymentMethodId: undefined } : ev
-            ),
+            paymentMethods: nextState.paymentMethods,
+            debts: nextState.debts,
+            debtPayments: nextState.debtPayments,
+            recurringDebtPayments: nextState.recurringDebtPayments,
+            goals: reconcileGoalsForState(nextState),
           }
         }),
 
@@ -1193,7 +1172,8 @@ export const useFinanceStore = create<FinanceStore>()(
               log = recordActivation(log, active, cycleKeyOf(new Date(), state.settings.monthStartDay), generateId, new Date().toISOString())
             }
           }
-          return { budgetPlans: next, activeBudgetPlanId: active, budgetPlanActivations: log }
+          const memories = state.buddgyMemories.filter((m) => m.planId !== planId)
+          return { budgetPlans: next, activeBudgetPlanId: active, budgetPlanActivations: log, buddgyMemories: memories }
         }),
 
       setActiveBudgetPlanId: (id) => set({ activeBudgetPlanId: id }),
@@ -1225,13 +1205,13 @@ export const useFinanceStore = create<FinanceStore>()(
       restoreBudgetActivation: (undo) =>
         set({ activeBudgetPlanId: undo.activeBudgetPlanId, budgetPlanActivations: undo.activations }),
 
-      addBuddgyMemory: (text, source, kind = 'fact') => {
+      addBuddgyMemory: (text, source, kind = 'fact', planId) => {
         const clean = text.replace(/\s+/g, ' ').trim().slice(0, MEMORY_MAX_CHARS)
         const existing = get().buddgyMemories
         if (!clean || existing.length >= MEMORY_CAP || existing.some((m) => m.text.toLowerCase() === clean.toLowerCase())) return null
         const now = new Date().toISOString()
         const id = generateId()
-        set({ buddgyMemories: [...existing, { id, text: clean, kind, source, status: 'active', createdAt: now, updatedAt: now }] })
+        set({ buddgyMemories: [...existing, { id, text: clean, kind, source, status: 'active', ...(planId ? { planId } : {}), createdAt: now, updatedAt: now }] })
         return id
       },
 
@@ -1499,6 +1479,9 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsTransactions: nextState.savingsTransactions,
             recurringSavingsDeposits: nextState.recurringSavingsDeposits,
             goals: reconcileGoalsForState(nextState),
+            ...(state.profile.defaultCarryPocketId === id
+              ? { profile: { ...state.profile, defaultCarryPocketId: null } }
+              : {}),
           }
         }),
 

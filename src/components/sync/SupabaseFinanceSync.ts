@@ -452,6 +452,7 @@ async function runFullSync(
       if (verdict === 'wipe') {
         // The account was reset elsewhere: our copy is stale, and merging it would bring the erased data back.
         useFinanceStore.getState().reset()
+        useSettingsStore.getState().reset()
         clearSyncCursors()
         return runFullSync(supabase, userId)
       }
@@ -484,6 +485,7 @@ async function runLegacyFullSync(
   if (verdict !== 'none') writeResetSeen(userId, at)
   if (verdict === 'wipe') {
     useFinanceStore.getState().reset()
+    useSettingsStore.getState().reset()
     clearSyncCursors()
   }
   const server = await pullAll(supabase, userId)

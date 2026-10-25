@@ -16,10 +16,7 @@ const EN = {
   creditCardDebt: 'A linked credit card debt is created too.',
   cashFixed: 'Cash is built in. Only its default status can change.',
   exists: 'A payment method with that name already exists.',
-  expensesMoved: (n: number) => `${n} ${n === 1 ? 'expense moves' : 'expenses move'} to Cash`,
-  subscriptionsUnlinked: (n: number) => `${n} ${n === 1 ? 'subscription loses' : 'subscriptions lose'} its payment method`,
-  incomeUnlinked: (n: number) => `${n} income ${n === 1 ? 'entry loses' : 'entries lose'} its payment method`,
-  debtUnlinked: (name: string) => `Debt "${name}" stays but is unlinked`,
+  closedKeepsHistory: 'Has history, so it is closed: past entries stay with it',
   newDefault: (name: string) => `${name} becomes the default`,
   types: {
     cash: 'Cash',
@@ -50,10 +47,7 @@ const AR: Labels = {
   creditCardDebt: 'سيتم إنشاء دين بطاقة ائتمان مرتبط بها أيضًا.',
   cashFixed: 'النقد مدمج في التطبيق. يمكن تغيير كونه الافتراضي فقط.',
   exists: 'توجد طريقة دفع بهذا الاسم بالفعل.',
-  expensesMoved: (n) => `${n} ${n === 1 ? 'مصروف ينتقل' : 'مصروفات تنتقل'} إلى النقد`,
-  subscriptionsUnlinked: (n) => `${n} ${n === 1 ? 'اشتراك يفقد' : 'اشتراكات تفقد'} طريقة الدفع`,
-  incomeUnlinked: (n) => `${n} ${n === 1 ? 'دخل يفقد' : 'مدخلات دخل تفقد'} طريقة الدفع`,
-  debtUnlinked: (name) => `الدين "${name}" يبقى لكن بلا ربط`,
+  closedKeepsHistory: 'لديها سجل، لذا تُغلق وتبقى المدخلات السابقة معها',
   newDefault: (name) => `${name} تصبح الافتراضية`,
   types: {
     cash: 'نقد',

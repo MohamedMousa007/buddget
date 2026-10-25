@@ -1,4 +1,5 @@
 import type { DebtPayment, Currency } from '@/lib/store/types'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import type { DebtPaymentRow, DebtPaymentInsert } from '@/lib/supabase/remote/types'
 
 export function debtPaymentToRow(p: DebtPayment, userId: string): DebtPaymentInsert {
@@ -8,7 +9,7 @@ export function debtPaymentToRow(p: DebtPayment, userId: string): DebtPaymentIns
     debt_id: p.debtId,
     payment_method_id: p.paymentMethodId ?? null,
     amount: p.amountPaid,
-    currency: (p.paymentCurrency as Currency) ?? 'AED',
+    currency: (p.paymentCurrency as Currency) ?? DEFAULT_SETTINGS.baseCurrency,
     payment_date: p.date,
     notes: p.notes ?? null,
     funded_from_savings: p.fundedFromSavings ?? false,

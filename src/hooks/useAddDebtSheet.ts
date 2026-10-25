@@ -13,6 +13,7 @@ import {
 } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { isBnplPlan } from '@/lib/debt/bnpl'
+import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { findInstallmentProviderMeta, findProviderBrand } from '@/lib/constants/installmentProviders'
@@ -569,7 +570,7 @@ export function useAddDebtSheet() {
     }
     const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
     const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
-    if (selectedDebt.debtType === 'credit_card') {
+    if (settlesWithoutExpense(selectedDebt)) {
       addDebtPayment({
         debtId: selectedDebtId,
         date: paymentDate,

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, ArrowLeft, ChevronDown, CreditCard, Lock } from 'lucide-react'
+import { X, ArrowLeft, ChevronDown, CreditCard, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { AmountField } from '@/components/ui/AmountField'
@@ -55,6 +55,9 @@ interface Props {
   titleOverride?: string
   /** New methods hang under this account (a card added from an account's page). */
   parentAccountId?: string
+  /** Edit mode only: shows a destructive footer button; the caller owns confirmation and removal. */
+  onDelete?: () => void
+  deleteLabel?: string
 }
 
 /**
@@ -63,7 +66,7 @@ interface Props {
  * Reused by the wallet sheet and the payment-method picker (self-contained add).
  */
 export function PaymentMethodSetupSheet({
-  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride, parentAccountId,
+  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride, parentAccountId, onDelete, deleteLabel,
 }: Props) {
   const t = useT()
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
@@ -222,15 +225,16 @@ export function PaymentMethodSetupSheet({
     ? (last4 ? `••  ${last4}` : '••  ••••')
     : disc === 'tag' && tag.trim() ? tag.trim() : '——  ——'
 
+  const previewProps = {
+    hasProvider, color: effectiveColor, type,
+    name: hasProvider ? providerName : t.paymentMethods.addTitle,
+    typeLabel: PAYMENT_TYPE_META[type].label,
+    tail: previewTail, curCode,
+  }
+
   return (
     <>
-      <FloatingCardPreview
-        open={open} z={z.card}
-        hasProvider={hasProvider} color={effectiveColor} type={type}
-        name={hasProvider ? providerName : t.paymentMethods.addTitle}
-        typeLabel={PAYMENT_TYPE_META[type].label}
-        tail={previewTail} curCode={curCode}
-      />
+      <FloatingCardPreview open={open} z={z.card} {...previewProps} />
 
       <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
@@ -257,6 +261,7 @@ export function PaymentMethodSetupSheet({
 
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex flex-col gap-[18px]">
+              <FloatingCardPreview open={open} inline {...previewProps} />
               {/* Provider */}
               <div>
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
@@ -440,8 +445,14 @@ export function PaymentMethodSetupSheet({
             </div>
           </div>
 
-          <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
-            <Button size="cta-block" onClick={handleSave} disabled={!canSave} className="text-base font-semibold">
+          <div className="sheet-cta flex shrink-0 items-center gap-3 border-t border-[var(--color-brand-border)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
+            {editing && onDelete ? (
+              <Button variant="destructive" size="touch" onClick={onDelete}>
+                <Trash2 className="h-4 w-4" />
+                {deleteLabel ?? t.common.delete}
+              </Button>
+            ) : null}
+            <Button size="cta-block" onClick={handleSave} disabled={!canSave} className="flex-1 text-base font-semibold">
               {t.paymentMethods.saveMethod}
             </Button>
           </div>
@@ -473,10 +484,12 @@ export function PaymentMethodSetupSheet({
 
 // ── Floating card preview (pinned above the sheet, static/elevated) ───────────
 function FloatingCardPreview({
-  open, z, hasProvider, color, type, name, typeLabel, tail, curCode,
+  open, z = '', inline = false, hasProvider, color, type, name, typeLabel, tail, curCode,
 }: {
   open: boolean
-  z: string
+  z?: string
+  /** md+ renders the card in the dialog's flow instead of pinned above it. */
+  inline?: boolean
   hasProvider: boolean
   color: string
   type: PaymentMethodType
@@ -491,6 +504,66 @@ function FloatingCardPreview({
   // Static 3D treatment — no motion after the one-time entrance.
   const cardShadow = `0 36px 64px -16px rgba(0,0,0,.72), 0 16px 32px -12px ${rgba(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.2)`
 
+  const preview = (
+    <>
+    {/* halo — static coloured glow */}
+    <div
+      aria-hidden
+      className="pointer-events-none absolute"
+      style={{
+        inset: -34, borderRadius: 46,
+        background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
+        filter: 'blur(36px)', zIndex: 0,
+      }}
+    />
+    {/* contact shadow — static ellipse beneath the card */}
+    <div
+      aria-hidden
+      className="pointer-events-none absolute"
+      style={{
+        left: '50%', bottom: -20, transform: 'translateX(-50%)',
+        width: 224, height: 30, background: 'rgba(0,0,0,.55)',
+        borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
+      }}
+    />
+    {/* card — static, subtle lift */}
+    <div
+      className="relative flex h-[176px] w-[280px] flex-col overflow-hidden rounded-[20px]"
+      style={{
+        padding: '19px 21px',
+        background: cardGradient(color),
+        boxShadow: cardShadow,
+        transform: 'translateY(-2px)',
+      }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 rounded-[20px]"
+        style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
+      />
+      <div className="relative flex items-center justify-between">
+        <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
+          <TypeGlyph type={type} className="h-full w-full" />
+        </span>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">{typeLabel}</span>
+      </div>
+      <div className="relative mt-auto text-start">
+        <div
+          className="truncate text-[23px] font-bold tracking-[-0.01em]"
+          style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.55)' }}
+        >
+          {name}
+        </div>
+        <div className="mt-3 flex items-end justify-between">
+          <span className="font-mono-numbers text-[15px] font-semibold tracking-[0.16em] text-white/90">{tail}</span>
+          <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
+        </div>
+      </div>
+    </div>
+    </>
+  )
+
+  if (inline) return <div className="relative mx-auto my-4 hidden h-[176px] w-[280px] shrink-0 md:block">{preview}</div>
+
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -500,67 +573,14 @@ function FloatingCardPreview({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.97 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className={cn('pointer-events-none fixed left-1/2 w-[280px]', z)}
+          className={cn('pointer-events-none fixed left-1/2 w-[280px] md:hidden', z)}
           // Centred in the space above the 58vh sheet; floor keeps it clear of the status bar.
           style={{ top: 'max(46px, calc(21dvh - 88px))', marginLeft: -140 }}
         >
-          {/* halo — static coloured glow */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute"
-            style={{
-              inset: -34, borderRadius: 46,
-              background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
-              filter: 'blur(36px)', zIndex: 0,
-            }}
-          />
-          {/* contact shadow — static ellipse beneath the card */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute"
-            style={{
-              left: '50%', bottom: -20, transform: 'translateX(-50%)',
-              width: 224, height: 30, background: 'rgba(0,0,0,.55)',
-              borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
-            }}
-          />
-          {/* card — static, subtle lift */}
-          <div
-            className="relative flex h-[176px] w-[280px] flex-col overflow-hidden rounded-[20px]"
-            style={{
-              padding: '19px 21px',
-              background: cardGradient(color),
-              boxShadow: cardShadow,
-              transform: 'translateY(-2px)',
-            }}
-          >
-            <div
-              className="pointer-events-none absolute inset-0 rounded-[20px]"
-              style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
-            />
-            <div className="relative flex items-center justify-between">
-              <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
-                <TypeGlyph type={type} className="h-full w-full" />
-              </span>
-              <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">{typeLabel}</span>
-            </div>
-            <div className="relative mt-auto text-start">
-              <div
-                className="truncate text-[23px] font-bold tracking-[-0.01em]"
-                style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.55)' }}
-              >
-                {name}
-              </div>
-              <div className="mt-3 flex items-end justify-between">
-                <span className="font-mono-numbers text-[15px] font-semibold tracking-[0.16em] text-white/90">{tail}</span>
-                <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
-              </div>
-            </div>
-          </div>
+          {preview}
         </motion.div>
       )}
     </AnimatePresence>,
     document.body,
   )
 }
-
