@@ -5,6 +5,7 @@
   (Badge/Button/Card/BudgetRing/Progress/ExpenseRow/KPICard/MoneyDisplay/Input/Switch) whose
   `sourcePath`s never existed in this repo. Re-adoption ⇒ **atomic upload path** (upload once at the
   end of the run, after full verification). Overwrite/delete risk was disclosed and accepted.
+- (2026-10-25: the local design/design_handoff_* folders were removed from the repo; the remote project is unaffected and git history keeps them.)
 - **Why this project and not a fresh one:** the `_ds/buddget-design-system-3e84a07a-.../` folders bound
   into `design/design_handoff_*/prototype/` point at this project ID; a fresh project would orphan them.
 - **Shape:** `package` — no Storybook anywhere in the repo (no `.storybook/`, no `*.stories.*`).
