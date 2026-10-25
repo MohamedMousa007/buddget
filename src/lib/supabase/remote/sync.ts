@@ -221,10 +221,10 @@ export async function flushDiff(
   emitList(runner, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
   emitList(runner, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)
   emitList(runner, 'goals', next.goals, prev.goals, goalToRow, userId)
-  emitList(runner, 'buddgy_memories', next.buddgyMemories, prev.buddgyMemories, memoryToRow, userId)
   emitList(runner, 'account_adjustments', next.accountAdjustments, prev.accountAdjustments, accountAdjustmentToRow, userId)
 
   flushBudgetPlans(runner, userId, prev, next, next.settings.baseCurrency)
+  emitList(runner, 'buddgy_memories', next.buddgyMemories, prev.buddgyMemories, memoryToRow, userId)
 
   const result = await runner.drain()
   // Activations reference plans (FK), so they commit only after the plan rows above are in.

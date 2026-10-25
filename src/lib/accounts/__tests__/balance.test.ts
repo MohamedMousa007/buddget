@@ -14,7 +14,7 @@ const credit = pm({ id: 'credit', type: 'credit_card', parentId: 'bank' })
 const exp = (o: Partial<Expense> & Pick<Expense, 'id' | 'amount' | 'paymentMethodId'>): Expense =>
   ({ date: '2026-10-05', description: 'x', category: 'Food', currency: 'EGP', amountInBaseCurrency: o.amount, isRecurring: false, createdAt: '', updatedAt: '', ...o }) as Expense
 const base = (o: Partial<LedgerInput> = {}): LedgerInput => ({
-  paymentMethods: [bank, cash, debit, credit], expenses: [], incomeEvents: [], debtPayments: [],
+  paymentMethods: [bank, cash, debit, credit], expenses: [], incomeEvents: [], debts: [], debtPayments: [],
   savingsTransactions: [], savingsAccounts: [], adjustments: [], convert: (a) => a, ...o,
 })
 const bal = (i: LedgerInput, id: string, asOf?: number) => computeBalances(i, asOf).get(id)

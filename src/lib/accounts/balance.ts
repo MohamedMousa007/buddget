@@ -10,7 +10,7 @@ export interface LedgerInput {
   expenses: readonly Expense[]
   incomeEvents: readonly IncomeEvent[]
   debtPayments: readonly DebtPayment[]
-  debts?: readonly Debt[]
+  debts: readonly Debt[]
   savingsTransactions: readonly SavingsTransaction[]
   savingsAccounts: readonly SavingsAccount[]
   adjustments: readonly AccountAdjustment[]
@@ -91,7 +91,7 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   }
 
   // A payoff normally also writes an expense (counted above); only count payments that left no expense behind.
-  const owedToUser = new Set((input.debts ?? []).filter(isOwedToUser).map((d) => d.id))
+  const owedToUser = new Set(input.debts.filter(isOwedToUser).map((d) => d.id))
   for (const p of input.debtPayments) {
     if (p.fundedFromSavings || settledByExpense.has(p.id) || !p.paymentMethodId) continue
     const sign = owedToUser.has(p.debtId) ? 1 : -1

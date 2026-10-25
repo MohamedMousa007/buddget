@@ -101,7 +101,7 @@ const get_net_worth: ReadImpl = () => {
   const s = { ...raw, debts: countedDebts(raw.debts, raw.paymentMethods), debtPayments: countedDebtPayments(raw.debtPayments, raw.debts, raw.paymentMethods) }
   const stats = computeMonthlyStats({ ...s, monthFilter: ui().monthFilter, trustLocalFinance: true })
   const basis = accountsBasisFor({
-    paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debtPayments: raw.debtPayments,
+    paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debts: raw.debts, debtPayments: raw.debtPayments,
     savingsTransactions: s.savingsTransactions, savingsAccounts: s.savingsAccounts, adjustments: s.accountAdjustments,
     convert: (a, from, to) => tryConvertCurrency(a, from, to, s.exchangeRates),
   }, s.settings.baseCurrency)

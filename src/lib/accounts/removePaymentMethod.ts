@@ -3,7 +3,7 @@ import { DEFAULT_CASH_ID, hasAccountHistory } from './kinds'
 
 type Refs = Pick<
   FinanceStore,
-  'expenses' | 'incomeEvents' | 'debtPayments' | 'savingsTransactions' | 'accountAdjustments' | 'recurringDebtPayments' | 'subscriptions' | 'incomeSources' | 'savingsAccounts'
+  'expenses' | 'incomeEvents' | 'debts' | 'debtPayments' | 'savingsTransactions' | 'accountAdjustments' | 'recurringDebtPayments' | 'subscriptions' | 'incomeSources' | 'savingsAccounts'
 >
 
 /** Whether any row anywhere points at this method; removing such a method would hand its rows to Cash. */
@@ -13,6 +13,10 @@ export function isPaymentMethodReferenced(s: Refs, id: string): boolean {
     || s.subscriptions.some((x) => x.paymentMethodId === id)
     || s.incomeSources.some((x) => x.paymentMethodId === id)
     || s.savingsAccounts.some((a) => a.heldInPaymentMethodId === id)
+    || s.debts.some((d) => d.linkedPaymentMethodId === id
+      && (d.startingBalance > 0
+        || s.debtPayments.some((p) => p.debtId === d.id)
+        || s.recurringDebtPayments.some((r) => r.debtId === d.id)))
 }
 
 /** The method a closed or deleted default hands over to: open, never the Cash sentinel. */

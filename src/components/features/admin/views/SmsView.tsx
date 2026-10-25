@@ -11,14 +11,12 @@ import { Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import type { AdminStatus, DailyPoint } from '../types'
 import { FAILURE_LABELS, METHOD } from '../smsDisplay'
 import { KeywordPoolPanel } from './sms/KeywordPoolPanel'
+import { SMS_TABS } from '@/lib/admin/smsTabs'
 import { PromotionPanel } from './sms/PromotionPanel'
 import { SmsLogPanel } from './sms/SmsLogPanel'
 import { TemplatesPanel } from './sms/TemplatesPanel'
 
-const TABS = [
-  { value: 'health', label: 'Health' }, { value: 'errors', label: 'Error queue' }, { value: 'tracked', label: 'Tracked SMS' },
-  { value: 'templates', label: 'Templates' }, { value: 'promotion', label: 'Auto-promotion' }, { value: 'keywords', label: 'Keyword pool' },
-] as const
+const TABS = SMS_TABS
 type Tab = (typeof TABS)[number]['value']
 
 interface Health {

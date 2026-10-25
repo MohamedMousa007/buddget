@@ -1,4 +1,5 @@
 import type { AIAction } from '@/lib/ai/gemini'
+import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import {
@@ -560,7 +561,7 @@ export function executeActionItem(
       rateAtEntry,
       notes: getField(d, 'notes') as string | undefined,
     })
-    if (debt.debtType === 'credit_card') return
+    if (settlesWithoutExpense(debt)) return
     const pm = findPaymentMethod(ctx, getField(d, 'paymentMethod', 'payment_method'))
     ctx.addExpense({
       date: dateStr,

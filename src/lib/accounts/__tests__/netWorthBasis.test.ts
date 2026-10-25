@@ -5,7 +5,7 @@ import { accountsBasisFor } from '../netWorthBasis'
 const bank = { id: 'b', name: 'CIB', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 1000, openingAt: '2026-01-01T00:00:00Z' } as PaymentMethod
 const usd = { ...bank, id: 'u', currency: 'USD', openingBalance: 10 } as PaymentMethod
 const ledger = (pms: PaymentMethod[], savingsAccounts: SavingsAccount[] = []) => ({
-  paymentMethods: pms, expenses: [], incomeEvents: [], debtPayments: [], savingsTransactions: [], savingsAccounts, adjustments: [],
+  paymentMethods: pms, expenses: [], incomeEvents: [], debts: [], debtPayments: [], savingsTransactions: [], savingsAccounts, adjustments: [],
   convert: (a: number, f: string, t: string) => (f === t ? a : f === 'USD' && t === 'EGP' ? a * 50 : null),
 })
 

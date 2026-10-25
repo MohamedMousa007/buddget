@@ -30,12 +30,20 @@ describe('deletePaymentMethod cascade', () => {
   })
 
   it('hard-deletes an unreferenced card with its auto-created debt and promotes a default', () => {
-    seed({ expenses: [], subscriptions: [] })
+    seed({ expenses: [], subscriptions: [], debts: [{ id: 'd1', debtType: 'credit_card', linkedPaymentMethodId: 'pm1', startingBalance: 0 } as Debt] })
     useFinanceStore.getState().deletePaymentMethod('pm1')
     const s = useFinanceStore.getState()
     expect(s.paymentMethods.map((m) => m.id)).toEqual(['pm2'])
     expect(s.paymentMethods[0].isDefault).toBe(true)
     expect(s.debts).toHaveLength(0)
+  })
+
+  it('closes an unused card whose debt carries a balance, and keeps the debt', () => {
+    seed({ expenses: [], subscriptions: [], debts: [{ id: 'd1', debtType: 'credit_card', linkedPaymentMethodId: 'pm1', startingBalance: 500 } as Debt] })
+    useFinanceStore.getState().deletePaymentMethod('pm1')
+    const s = useFinanceStore.getState()
+    expect(s.paymentMethods.find((m) => m.id === 'pm1')?.closedAt).toEqual(expect.any(String))
+    expect(s.debts).toHaveLength(1)
   })
 
   it('never removes Cash and detaches child cards', () => {

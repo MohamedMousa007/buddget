@@ -42,5 +42,5 @@ export const AppLink = forwardRef<HTMLAnchorElement, AppLinkProps>(function AppL
   // The WebView's long-press on a real <a> pops a native name+URL preview; the tap still routes through onClick.
   const nativeProps = isNative() ? { draggable: false, onContextMenu: (e: MouseEvent<HTMLAnchorElement>) => e.preventDefault() } : null
 
-  return <a ref={ref} href={href} onClick={handleClick} {...rest} {...nativeProps} />
+  return <a ref={ref} href={href} onClick={handleClick} {...nativeProps} {...rest} />
 })

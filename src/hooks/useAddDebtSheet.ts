@@ -569,7 +569,7 @@ export function useAddDebtSheet() {
       return
     }
     const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
-    const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+    const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault && !m.closedAt)?.id || paymentMethods.find((m) => !m.closedAt)?.id || ''
     if (settlesWithoutExpense(selectedDebt)) {
       addDebtPayment({
         debtId: selectedDebtId,
