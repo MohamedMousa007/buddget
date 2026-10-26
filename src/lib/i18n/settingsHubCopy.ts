@@ -45,10 +45,25 @@ export interface SettingsHubCopy {
     activeAgo: (when: string) => string
     notifyHere: string
     notifyHint: string
+    mainBadge: string
+    makeMain: string
+    mainNote: string
+    blockedHere: string
+    pending: string
+    loadFailed: string
+    retry: string
+    stale: (when: string) => string
+    removeTitle: (name: string) => string
+    removeBody: string
     remove: string
-    confirmRemove: string
-    removeNote: string
+    removeFailed: string
+    saveFailed: string
     empty: string
+    alsoNotifyTitle: string
+    alsoNotifyBody: (names: string) => string
+    alsoNotifyYes: string
+    alsoNotifyNo: string
+    keptQuiet: string
   }
   sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string }
   ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string; voiceHint: string; deviceOnly: string }
@@ -185,11 +200,26 @@ const en: SettingsHubCopy = {
     noTextYet: 'No text received yet',
     activeAgo: (when) => `Active ${when}`,
     notifyHere: 'Notify me on this phone',
-    notifyHint: 'Off by default on a phone that collects texts',
+    notifyHint: 'Only your main phone is told by default',
+    mainBadge: 'Main phone',
+    makeMain: 'Make main',
+    mainNote: 'Gets your notifications unless you choose otherwise',
+    blockedHere: 'Notifications are blocked in this phone’s settings',
+    pending: 'Saving…',
+    loadFailed: 'Could not load your devices. Check your connection and try again.',
+    retry: 'Try again',
+    stale: (when) => `Not seen for ${when}`,
+    removeTitle: (name) => `Remove ${name}?`,
+    removeBody: 'It stops collecting bank texts and notifications now, and signs out the next time it opens.',
     remove: 'Remove',
-    confirmRemove: 'Tap again to remove',
-    removeNote: 'It stops collecting and signs out the next time it opens.',
+    removeFailed: 'Could not remove that phone. Try again.',
+    saveFailed: 'Could not save that change. Try again.',
     empty: 'Open Buddget on your other phones to see them here.',
+    alsoNotifyTitle: 'Notify on this phone too?',
+    alsoNotifyBody: (names) => `${names} already gets your notifications. Turn them on here as well and you will be told on both.`,
+    alsoNotifyYes: 'Yes, notify here too',
+    alsoNotifyNo: 'No, keep this one quiet',
+    keptQuiet: 'This phone stays quiet. You can change it in Settings, Your devices.',
   },
   notCounted: {
     subtitle: 'For a card or account someone else uses',
@@ -386,11 +416,26 @@ const ar: SettingsHubCopy = {
     noTextYet: 'لسه ما وصلتش رسالة',
     activeAgo: (when) => `نشط ${when}`,
     notifyHere: 'نبّهني على الموبايل ده',
-    notifyHint: 'مقفول افتراضي على الموبايل اللي بيجمع الرسائل',
+    notifyHint: 'الموبايل الأساسي بس هو اللي بيتنبّه افتراضي',
+    mainBadge: 'الموبايل الأساسي',
+    makeMain: 'خليه الأساسي',
+    mainNote: 'بيجيله إشعاراتك إلا لو اخترت غير كده',
+    blockedHere: 'الإشعارات محظورة من إعدادات الموبايل ده',
+    pending: 'بنحفظ…',
+    loadFailed: 'مقدرناش نحمّل أجهزتك. اتأكد من النت وجرّب تاني.',
+    retry: 'جرّب تاني',
+    stale: (when) => `ما اتشافش من ${when}`,
+    removeTitle: (name) => `تشيل ${name}؟`,
+    removeBody: 'هيبطّل يجمع رسائل البنك والإشعارات دلوقتي، وهيسجّل خروج أول ما يتفتح.',
     remove: 'إزالة',
-    confirmRemove: 'اضغط تاني للإزالة',
-    removeNote: 'هيبطّل يجمع الرسائل ويسجّل خروج أول ما يتفتح.',
+    removeFailed: 'مقدرناش نشيل الموبايل ده. جرّب تاني.',
+    saveFailed: 'مقدرناش نحفظ التغيير ده. جرّب تاني.',
     empty: 'افتح بادجت على موبايلاتك التانية عشان تظهر هنا.',
+    alsoNotifyTitle: 'تتنبّه على الموبايل ده كمان؟',
+    alsoNotifyBody: (names) => `${names} بيجيله إشعاراتك فعلاً. لو فعّلتها هنا كمان هتتنبّه على الاتنين.`,
+    alsoNotifyYes: 'أيوه، نبّهني هنا كمان',
+    alsoNotifyNo: 'لأ، سيب ده ساكت',
+    keptQuiet: 'الموبايل ده هيفضل ساكت. تقدر تغيّر ده من الإعدادات، أجهزتك.',
   },
   notCounted: {
     subtitle: 'لبطاقة أو حساب يستخدمه شخص تاني',

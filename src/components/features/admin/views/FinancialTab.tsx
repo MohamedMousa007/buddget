@@ -3,18 +3,26 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { Switch } from '@/components/ui/switch'
 import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { dateTime } from '../format'
 import { Field } from '../ui/Field'
 import { Notice, Panel } from '../ui/Panel'
+import { Pill } from '../ui/Pill'
+
+type Mode = 'one_time' | 'permanent'
 
 interface Access {
+  isOwner: boolean
+  excluded: boolean
   canRequest: boolean
-  selfApproves: boolean
   minutes: number
-  mine: { id: string; state: 'pending' | 'active'; expiresAt: string | null; extended: boolean; reason: string; ticket: number | null } | null
-  pending: Array<{ id: string; reason: string; ticket: number | null; requestedAt: string }>
+  mine: { id: string; state: 'pending' | 'active'; mode: Mode; expiresAt: string | null; reason: string; ticket: number | null } | null
+  pending: Array<{ id: string; by: string; mode: Mode; reason: string; ticket: number | null; requestedAt: string }>
 }
+
+const MODES = [{ value: 'one_time', label: 'One time' }, { value: 'permanent', label: 'Permanent' }] as const
 
 interface Snapshot {
   accounts: Array<{ name: string; type: string; currency: string; opening_balance: number | null; closed: boolean }>
@@ -27,11 +35,15 @@ interface Snapshot {
 
 const money = (n: number | null, c: string) => (n == null ? '-' : `${c} ${n.toLocaleString('en-US')}`)
 
-/** Financial content behind a grant: ask with a reason, work for 30 minutes, every read logged and shown to the user. */
+/**
+ * Financial content behind an owner-approved grant. Staff ask with a reason, one time or permanent; only the owner
+ * decides and can close a user to all staff. Built from Panel, Field, SegmentedControl, Switch and Pill.
+ */
 export default function FinancialTab({ id }: { id: string }) {
   const { data, error, refresh } = useAdminQuery<Access>(`/api/admin/users/${id}/financial`)
   const [reason, setReason] = useState('')
   const [ticket, setTicket] = useState('')
+  const [mode, setMode] = useState<Mode>('one_time')
   const [busy, setBusy] = useState<string | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
@@ -52,76 +64,90 @@ export default function FinancialTab({ id }: { id: string }) {
     }
   }, [id])
 
-  const active = data?.mine?.state === 'active'
+  const readable = Boolean(data && !data.excluded && (data.isOwner || data.mine?.state === 'active'))
   useEffect(() => {
-    if (!active) {
+    if (!readable) {
       setSnapshot(null)
       return
     }
     void act('read', { op: 'read' })
     const t = setInterval(() => setNow(Date.now()), 30_000)
     return () => clearInterval(t)
-  }, [active, act])
+  }, [readable, act])
 
   if (error && !data) return <Notice tone="negative">{error}</Notice>
   if (!data) return null
-  const minutesLeft = data.mine?.expiresAt ? Math.max(0, Math.round((Date.parse(data.mine.expiresAt) - now) / 60_000)) : 0
   const after = async (key: string, json: Record<string, unknown>) => {
     if (await act(key, json)) await refresh()
   }
+  const minutesLeft = data.mine?.expiresAt ? Math.max(0, Math.round((Date.parse(data.mine.expiresAt) - now) / 60_000)) : 0
 
   return (
     <div className="space-y-6">
       {problem ? <Notice tone="negative">{problem}</Notice> : null}
 
-      {data.pending.length > 0 ? (
-        <Panel title="Waiting for your approval" description="Colleagues asking to see this account’s financial details">
-          <ul className="divide-y divide-[var(--color-brand-border)]">
-            {data.pending.map((p) => (
-              <li key={p.id} className="flex items-start gap-3 py-3">
-                <div className="min-w-0 flex-1 text-sm">
-                  <p className="text-[var(--color-brand-text-primary)]">{p.reason}</p>
-                  <p className="text-xs text-[var(--color-brand-text-muted)]">{dateTime(p.requestedAt)}{p.ticket ? ` · ticket #${p.ticket}` : ''}</p>
-                </div>
-                <Button variant="outline" size="touch" loading={busy === p.id} onClick={() => void after(p.id, { op: 'approve', grantId: p.id })}>Approve for {data.minutes} min</Button>
-              </li>
-            ))}
-          </ul>
+      {data.isOwner ? (
+        <Panel title="Staff access" description="Only you decide who sees this person’s financial details.">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Close to all staff</p>
+              <p className="text-xs text-[var(--color-brand-text-muted)]">No one can ask for access, and open access ends now. You can still read.</p>
+            </div>
+            <Switch size="touch" checked={data.excluded} disabled={busy === 'exclude'} aria-label="Close this account to all staff" onCheckedChange={(v) => void after('exclude', { op: v ? 'exclude' : 'include' })} />
+          </div>
+          {data.pending.length > 0 ? (
+            <ul className="mt-4 divide-y divide-[var(--color-brand-border)] border-t border-[var(--color-brand-border)]">
+              {data.pending.map((p) => (
+                <li key={p.id} className="space-y-2 py-3">
+                  <div className="min-w-0 text-sm">
+                    <p className="text-[var(--color-brand-text-primary)]">{p.by} asks for {p.mode === 'permanent' ? 'permanent' : 'one-time'} access</p>
+                    <p className="text-[var(--color-brand-text-secondary)]">{p.reason}</p>
+                    <p className="text-xs text-[var(--color-brand-text-muted)]">{dateTime(p.requestedAt)}{p.ticket ? ` · ticket #${p.ticket}` : ''}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="touch" loading={busy === `${p.id}:one_time`} disabled={data.excluded} onClick={() => void after(`${p.id}:one_time`, { op: 'approve', grantId: p.id, mode: 'one_time' })}>Approve for {data.minutes} min</Button>
+                    <Button variant="outline" size="touch" loading={busy === `${p.id}:permanent`} disabled={data.excluded} onClick={() => void after(`${p.id}:permanent`, { op: 'approve', grantId: p.id, mode: 'permanent' })}>Approve permanently</Button>
+                    <Button variant="outline" size="touch" loading={busy === `${p.id}:deny`} onClick={() => void after(`${p.id}:deny`, { op: 'deny', grantId: p.id })}>Deny</Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </Panel>
       ) : null}
 
-      {!data.mine ? (
+      {data.excluded && !data.isOwner ? (
+        <Notice>The owner has closed staff access to this account.</Notice>
+      ) : data.isOwner ? null : !data.mine ? (
         data.canRequest ? (
-          <Panel title="Financial details are protected" description="Transactions, balances, debts and goals open only with a written reason. Every read is logged, and the user is told.">
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void after('request', { op: 'request', reason, ticket: ticket ? Number(ticket) : undefined }) }}>
+          <Panel title="Financial details are protected" description="Transactions, balances, debts and goals open only with the owner’s approval. Every read is logged, and the user is told.">
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void after('request', { op: 'request', mode, reason, ticket: ticket ? Number(ticket) : undefined }) }}>
+              <Field label="Access"><SegmentedControl ariaLabel="Access length" options={MODES} value={mode} onChange={setMode} /></Field>
               <Field label="Reason"><Input size="brand" value={reason} maxLength={500} onChange={(e) => setReason(e.target.value)} placeholder="What are you helping with?" /></Field>
               <Field label="Ticket number (optional)"><Input size="brand" inputMode="numeric" value={ticket} onChange={(e) => setTicket(e.target.value.replace(/\D/g, ''))} /></Field>
-              <Button type="submit" size="touch" loading={busy === 'request'} disabled={reason.trim().length < 8}>
-                {data.selfApproves ? `Open for ${data.minutes} minutes` : 'Request access'}
-              </Button>
+              <Button type="submit" size="touch" loading={busy === 'request'} disabled={reason.trim().length < 8}>Ask the owner</Button>
             </form>
           </Panel>
         ) : (
           <Notice>Your role cannot request access to financial details.</Notice>
         )
       ) : data.mine.state === 'pending' ? (
-        <Notice>Your request is waiting for approval. This page updates when you refresh.</Notice>
+        <Notice>Your request is waiting for the owner. Refresh this page to see the answer.</Notice>
       ) : (
-        <>
-          <Panel
-            title="Access open"
-            description={`${minutesLeft} minute${minutesLeft === 1 ? '' : 's'} left · ${data.mine.reason}`}
-            actions={
-              <div className="flex gap-2">
-                {data.mine.extended ? null : <Button variant="outline" size="touch" loading={busy === 'extend'} onClick={() => void after('extend', { op: 'extend', grantId: data.mine!.id })}>Extend</Button>}
-                <Button variant="outline" size="touch" loading={busy === 'revoke'} onClick={() => void after('revoke', { op: 'revoke', grantId: data.mine!.id })}>Close access</Button>
-              </div>
-            }
-          >
-            {snapshot ? <SnapshotView snapshot={snapshot} /> : <p className="text-sm text-[var(--color-brand-text-muted)]">Loading…</p>}
-          </Panel>
-        </>
+        <Panel
+          title="Access open"
+          description={`${data.mine.mode === 'permanent' ? 'Permanent access' : `${minutesLeft} minute${minutesLeft === 1 ? '' : 's'} left`} · ${data.mine.reason}`}
+          actions={<Button variant="outline" size="touch" loading={busy === 'revoke'} onClick={() => void after('revoke', { op: 'revoke', grantId: data.mine!.id })}>Close access</Button>}
+        >
+          {snapshot ? <SnapshotView snapshot={snapshot} /> : <p className="text-sm text-[var(--color-brand-text-muted)]">Loading…</p>}
+        </Panel>
       )}
+
+      {data.isOwner && !data.excluded ? (
+        <Panel title="Financial details" actions={<Pill tone="brand">Owner</Pill>}>
+          {snapshot ? <SnapshotView snapshot={snapshot} /> : <p className="text-sm text-[var(--color-brand-text-muted)]">Loading…</p>}
+        </Panel>
+      ) : null}
     </div>
   )
 }

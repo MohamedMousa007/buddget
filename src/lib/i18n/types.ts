@@ -192,8 +192,8 @@ export interface Dictionary {
     bankAccounts: string
     walletsCash: string
     addAccountOrCard: string
-    creditAndDebts: string
-    creditAndDebtsSub: string
+    addAccount: string
+    addAccountAndCard: string
     freeLabel: (amount: string) => string
     setBalance: string
     addBalanceToInclude: string
@@ -2162,6 +2162,11 @@ export interface Dictionary {
     none: string
     last4Help: string
     tagPlaceholder: string
+    labelKeepsDigits: string
+    ccLimit: string
+    ccOutstanding: string
+    ccStatementDay: string
+    ccGraceDays: string
     currency: string
     setDefaultSub: string
     saveMethod: string
@@ -2861,6 +2866,7 @@ export interface Dictionary {
     addAccount: string
     addWallet: string
     linkExisting: string
+    notMine: string
     lateTitle: (name: string, n: number) => string
     lateBody: (amount: string, date: string) => string
     matchBody: (amount: string, date: string, payday: string) => string

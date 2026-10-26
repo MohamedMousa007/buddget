@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { upsertSelf } from '@/lib/server/devices/registry'
 
 const bodySchema = z.object({
   token: z.string().min(10).max(2048),
@@ -20,6 +21,7 @@ const bodySchema = z.object({
   locale: z.string().max(20).optional().nullable(),
   deviceModel: z.string().max(200).optional().nullable(),
   deviceId: z.string().max(100).optional().nullable(),
+  notify: z.boolean().optional(),
 })
 
 export async function POST(request: Request) {
@@ -45,10 +47,16 @@ export async function POST(request: Request) {
     )
   }
 
-  const { token, platform, appVersion, locale, deviceModel, deviceId } = parsed.data
+  const { token, platform, appVersion, locale, deviceModel, deviceId, notify } = parsed.data
 
   try {
     const service = createServiceRoleClient()
+    // The phone is registered before its token is, so a push never meets a phone it cannot place. A removed phone gets none.
+    if (deviceId) {
+      const self = await upsertSelf(service, userId, deviceId, { platform, model: deviceModel ?? null, appVersion: appVersion ?? null, pushPermission: 'granted' })
+      if (self.revoked) return NextResponse.json({ error: 'This phone was removed from the account', revoked: true }, { status: 403 })
+      if (notify !== undefined) await service.from('user_devices').update({ notify }).eq('user_id', userId).eq('device_id', deviceId)
+    }
     // Claim this device token for the current user. A token belongs to exactly
     // one account at a time (push_tokens has a UNIQUE(token)); removing any prior
     // owner's row first prevents the unique-violation that blocked account
@@ -69,6 +77,9 @@ export async function POST(request: Request) {
         },
         { onConflict: 'user_id,token' },
       )
+
+    // A rotated token replaces the phone's old one, so one phone never hears a push twice.
+    if (!error && deviceId) await service.from('push_tokens').delete().eq('user_id', userId).eq('device_id', deviceId).neq('token', token)
 
     if (error) {
       console.error('[push/register] upsert failed', error)
@@ -98,9 +109,11 @@ export async function DELETE(request: Request) {
   }
 
   const tok = (json as { token?: string } | null)?.token?.trim()
-  if (!tok) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
+  const deviceId = request.headers.get('x-buddget-device-id')?.trim().slice(0, 100)
+  if (!tok && !deviceId) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
 
   const service = createServiceRoleClient()
-  await service.from('push_tokens').delete().match({ user_id: userId, token: tok })
+  if (tok) await service.from('push_tokens').delete().match({ user_id: userId, token: tok })
+  if (deviceId) await service.from('push_tokens').delete().match({ user_id: userId, device_id: deviceId })
   return NextResponse.json({ ok: true })
 }

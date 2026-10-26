@@ -10,6 +10,7 @@ import { incomeMatches, latePaydays, matchKey } from '@/lib/income/paydayResolut
 import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
 import { shortDate } from '@/lib/utils/shortDate'
 import { useT } from '@/lib/i18n'
+import { settlePrompt } from '@/lib/prompts/settle'
 
 /** The late-payday and income-match questions, with what answering them writes. */
 export function useIncomeResolution() {
@@ -46,9 +47,8 @@ export function IncomePrompts() {
   const { updateIncomeEvent, addIncomeEvent } = useFinanceStore(
     useShallow((s) => ({ updateIncomeEvent: s.updateIncomeEvent, addIncomeEvent: s.addIncomeEvent })),
   )
-  const { dismissBanner, openAmountReceived } = useSettingsStore(
-    useShallow((s) => ({ dismissBanner: s.dismissBanner, openAmountReceived: s.openAmountReceived })),
-  )
+  const openAmountReceived = useSettingsStore((s) => s.openAmountReceived)
+  const dismissBanner = settlePrompt
 
   const prompts: Prompt[] = []
   const match = matches[0]

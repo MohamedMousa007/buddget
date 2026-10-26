@@ -17,11 +17,14 @@ export const PERMISSIONS = {
   'users.limits': 'Change a user’s limits and entitlements',
   'users.suspend': 'Suspend or restore user accounts',
   'users.logs': 'Read a user’s activity, SMS and device logs',
-  'users.financial': 'Read the content of a user’s bank messages (needs a reason; every read is logged)',
+  'financial.request': 'Ask the owner for access to a user’s financial data (one time or permanent; every read is logged)',
+  'financial.approve': 'Approve, deny, revoke and exclude financial data access',
   'dsr.manage': 'Export everything held about a person for a data request (needs a reason; every export is logged)',
   'users.tools': 'Run repair tools on a user (tokens, push, sign-out)',
   'users.reset': 'Reset a user’s account: erase all their data and start fresh',
   'users.delete': 'Permanently delete a user',
+  'crashes.view': 'See app crashes and errors',
+  'crashes.manage': 'Acknowledge and resolve crash reports',
   'sms.view': 'See the SMS pipeline, tracked SMS and the error queue',
   'sms.manage': 'Manage SMS templates and promotion rules',
   'support.view': 'See the support queue',
@@ -48,7 +51,7 @@ export const PERMISSIONS = {
 export type Permission = keyof typeof PERMISSIONS
 
 /** Permissions only the owner holds, whatever a role says. */
-export const OWNER_ONLY: readonly Permission[] = ['users.delete']
+export const OWNER_ONLY: readonly Permission[] = ['users.delete', 'financial.approve']
 
 export const PERMISSION_KEYS = Object.keys(PERMISSIONS) as Permission[]
 

@@ -33,6 +33,7 @@ const PAGE_SYNONYMS: Record<string, readonly string[]> = {
   analytics: ['growth', 'engagement', 'retention', 'signups', 'funnel', 'dau', 'stats'],
   users: ['people', 'accounts', 'customers', 'directory', 'profiles', 'members'],
   support: ['tickets', 'helpdesk', 'help', 'inbox', 'requests', 'issues'],
+  crashes: ['crash', 'errors', 'sentry', 'bugs', 'exceptions', 'testflight', 'stability'],
   sms: ['messages', 'parsing', 'bank', 'pipeline', 'templates'],
   platform: ['server', 'config', 'maintenance', 'ai', 'limits', 'services', 'version'],
   emails: ['mail', 'templates', 'transactional', 'resend', 'notifications'],

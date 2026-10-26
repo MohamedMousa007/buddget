@@ -24,6 +24,7 @@ import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
+import { isRevokedDevice } from '@/lib/server/devices/registry'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
@@ -591,6 +592,9 @@ export async function POST(request: Request) {
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  if (await isRevokedDevice(createServiceRoleClient(), userId, deviceId)) {
+    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
+  }
 
   // Parse body first — sender is needed for the static template lookup.
   let json: unknown
@@ -634,6 +638,8 @@ export async function POST(request: Request) {
     })
     .select('id')
     .single()
+
+  if (logRow && deviceId) await service.from('user_devices').update({ last_sms_at: nowIso }).eq('user_id', userId).eq('device_id', deviceId)
 
   if (!logRow) {
     // Concurrent duplicate: two shortcuts with different keywords matched the same SMS
@@ -1131,7 +1137,7 @@ export async function POST(request: Request) {
   let pushHandledInline = false
   try {
     const pushResult = await Promise.race([
-      sendNativePush({ ...pushArgs, forSms: true, collectorDeviceId: deviceId }),
+      sendNativePush(pushArgs),
       new Promise<'timeout'>((r) => setTimeout(() => r('timeout'), 3000)),
     ])
     if (pushResult !== 'timeout') {
@@ -1151,7 +1157,7 @@ export async function POST(request: Request) {
   if (!pushHandledInline) {
     after(async () => {
       try {
-        const result = await sendNativePush({ ...pushArgs, forSms: true, collectorDeviceId: deviceId })
+        const result = await sendNativePush(pushArgs)
         const delivered = result.ok && (result.sent ?? 0) > 0
         await service.rpc('sms_mark_pushed', {
           p_log_id: logId,

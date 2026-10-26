@@ -55,7 +55,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
 
   const banned = !!data.auth.banned_until && new Date(data.auth.banned_until) > new Date()
   const who = personLabel({ name: data.profile?.name, email: data.auth.email, id })
-  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'financial' ? can('users.financial') || can('users.pii') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
+  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'financial' ? can('financial.request') || can('financial.approve') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
 
   return (
     <>
@@ -418,11 +418,11 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
         ) : null}
 
         {can('users.delete') ? (
-          <Panel title="Danger zone" description="Permanent. Deletes the account and all of their data.">
+          <Panel title="Danger zone" description="Permanent. Deletes the Buddget app account and all of their data. If they are on the team, their portal access stays; remove them under Team & roles.">
             <Button variant="destructive-solid" size="touch" loading={busy === 'delete'} onClick={async () => {
               const proof = await stepUp('Deleting a user is permanent. Confirm it’s you.')
               if (!proof) return
-              if (await run('delete', { op: 'delete', ...proof }, { success: 'User deleted', confirm: { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased.`, destructive: true, confirmLabel: 'Delete forever' } })) adminNavigate('users')
+              if (await run('delete', { op: 'delete', ...proof }, { success: 'User deleted', confirm: { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased. Portal access, if they have any, is not touched.`, destructive: true, confirmLabel: 'Delete forever' } })) adminNavigate('users')
             }}><Trash2 />Delete user</Button>
           </Panel>
         ) : null}

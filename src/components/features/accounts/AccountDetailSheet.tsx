@@ -19,7 +19,7 @@ import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
-import { accountTitle, splitMoney } from './accountDisplay'
+import { accountIdentifier, accountTitle, splitMoney } from './accountDisplay'
 import type { MoveMode } from './MoveMoneySheet'
 
 interface AccountDetailSheetProps {
@@ -73,7 +73,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
           <V3SheetHeader.Title>{accountTitle(method)}</V3SheetHeader.Title>
-          {method.last4 ? <V3SheetHeader.Subtitle>•• {method.last4}</V3SheetHeader.Subtitle> : null}
+          <V3SheetHeader.Subtitle>{[accountIdentifier(method), String(method.currency)].filter(Boolean).join(' · ')}</V3SheetHeader.Subtitle>
           {manageItems.length > 0 ? (
             <V3SheetHeader.Extra>
               <IconButton aria-label={tAll.common.moreActions} variant="tinted" onClick={(e) => setMenuAnchor(e.currentTarget.getBoundingClientRect())}>

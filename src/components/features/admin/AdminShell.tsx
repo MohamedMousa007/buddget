@@ -121,13 +121,14 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
       ) : null}
 
       <div className="min-w-0 lg:ps-64">
-        <header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/90 px-4 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl lg:px-8">
-          <IconButton aria-label="Open menu" className="lg:hidden" onClick={() => setOpen(true)}><Menu /></IconButton>
-          <div className="min-w-0 lg:hidden"><BuddgetWordmark height={20} /></div>
+        <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b border-[var(--color-brand-border)] bg-[var(--color-brand-card)]/90 px-4 py-2 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] backdrop-blur-xl lg:px-8">
+          <IconButton aria-label="Open menu" size="sm" className="lg:hidden" onClick={() => setOpen(true)}><Menu /></IconButton>
+          <div className="min-w-0 lg:hidden"><BuddgetWordmark height={18} /></div>
           <div className="ms-auto flex shrink-0 items-center gap-2">
             <AdminSearchButton perms={perms} />
-            <Button variant="outline" size="touch" aria-label="Back to Buddget app" title="Back to Buddget app" className="px-3" onClick={backToApp}>
-              <ArrowLeft className="rtl:rotate-180" aria-hidden /><span className="hidden min-[380px]:inline">Buddget</span>
+            <IconButton aria-label="Back to Buddget app" title="Back to Buddget app" variant="outlined" size="sm" className="lg:hidden" onClick={backToApp}><ArrowLeft className="rtl:rotate-180" /></IconButton>
+            <Button variant="outline" size="sm" aria-label="Back to Buddget app" title="Back to Buddget app" className="hidden lg:inline-flex" onClick={backToApp}>
+              <ArrowLeft className="rtl:rotate-180" aria-hidden />Buddget
             </Button>
           </div>
         </header>

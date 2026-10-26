@@ -12,15 +12,35 @@ function selfReport() {
   } as const
 }
 
-/** Tells the server this phone exists and is alive; a phone the owner removed signs itself out. */
+/** What the OS currently lets Buddget do about notifications; null while the phone has not been asked. */
+async function osPushPermission(): Promise<'granted' | 'denied' | null> {
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications')
+    const { receive } = await PushNotifications.checkPermissions()
+    return receive === 'granted' ? 'granted' : receive === 'denied' ? 'denied' : null
+  } catch {
+    return null
+  }
+}
+
+const permKey = (userId: string) => `buddget_push_perm:${userId}`
+
+/**
+ * Tells the server this phone exists and is alive; a phone the owner removed signs itself out. It also reports the OS
+ * notification permission, and a change in it goes out at once instead of waiting for the next scheduled heartbeat,
+ * so a phone that was switched off in iOS or Android settings stops being counted as a place to send pushes.
+ */
 export async function sendDeviceHeartbeat(userId: string, collects: boolean | undefined): Promise<void> {
   if (!isNative()) return
   try {
+    const pushPermission = await osPushPermission()
+    const changed = localStorage.getItem(permKey(userId)) !== String(pushPermission)
     const last = Number(localStorage.getItem(beatKey(userId)) ?? 0)
-    if (Date.now() - last < BEAT_EVERY_MS) return
-    const res = await apiFetchAuth('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collects }) })
+    if (!changed && Date.now() - last < BEAT_EVERY_MS) return
+    const res = await apiFetchAuth('/api/devices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collects, pushPermission }) })
     if (!res.ok) return
     localStorage.setItem(beatKey(userId), String(Date.now()))
+    localStorage.setItem(permKey(userId), String(pushPermission))
     if (((await res.json()) as { revoked?: boolean }).revoked) await signOutRemovedDevice()
   } catch {
     /* best effort: the next open tries again */

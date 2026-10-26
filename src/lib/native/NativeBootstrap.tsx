@@ -11,6 +11,8 @@ import { heldRecords } from '@/lib/onboarding/held'
 import { useFeatureFlag } from '@/lib/flags/useFeatureFlag'
 import { onboardingState } from '@/lib/onboarding/eligibility'
 import { deferPushPrompt } from '@/lib/onboarding/pushPolicy'
+import { useNotifyDecision } from '@/hooks/useNotifyDecision'
+import { reportThisDevice } from '@/lib/devices/notify'
 
 interface NativeBootstrapProps {
   session: Session | null
@@ -28,6 +30,7 @@ interface NativeBootstrapProps {
  */
 export function NativeBootstrap({ session }: NativeBootstrapProps) {
   const language = useFinanceStore((s) => s.settings.language)
+  const decide = useNotifyDecision()
 
   // Read the token via a ref at call time. Keying the effect on access_token
   // re-ran the ENTIRE bootstrap (permission request, FCM register, SMS resume)
@@ -64,10 +67,18 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
           ...heldRecords(f),
         }) !== 'hidden'
         if (deferPushPrompt(record, journeyOpen, Date.now())) return
+        // A phone that is not the main one asks first when another phone already gets notifications.
+        const decision = await decide()
+        if (!decision.proceed) {
+          useSettingsStore.getState().setPushOptOut(true)
+          await reportThisDevice(false)
+          return
+        }
         await registerPushNotifications({
           accessToken,
           userId,
           locale: language,
+          notify: decision.explicit ? true : undefined,
         })
       } catch (e) {
         console.error('[native-bootstrap] push register failed', e)

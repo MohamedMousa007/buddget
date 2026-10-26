@@ -7,6 +7,7 @@ import { AmountField } from '@/components/ui/AmountField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
 import { useT } from '@/lib/i18n'
 import { fmtWhole, soft } from './heroCardShared'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -80,7 +81,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
                   <Icon className="h-3.5 w-3.5" />
                 </span>
                 {decomposePaymentMethodName(m.name, m.last4).provider}
-                {m.last4 ? <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">••{m.last4}</span> : null}
+                {accountIdentifier(m) ? <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{accountIdentifier(m)}</span> : null}
               </OptionChip>
             )
           })}

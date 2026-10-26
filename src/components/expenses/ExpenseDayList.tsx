@@ -20,6 +20,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import type { Expense } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
 import { Button } from '@/components/ui/button'
 
 function fmtNum(n: number): string {
@@ -175,8 +176,8 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                         ) : null
                       }
                       subtitle={
-                        method?.last4 ? (
-                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ml-1 shrink-0">••{method.last4}</span></>
+                        method && accountIdentifier(method) ? (
+                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ml-1 shrink-0">{accountIdentifier(method)}</span></>
                         ) : (method?.name || t.common.unknown)
                       }
                       amount={<span className={netZero ? 'line-through' : ''}>−{fmtNum(baseVal)}</span>}

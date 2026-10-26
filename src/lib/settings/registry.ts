@@ -113,4 +113,5 @@ export const APP_SETTING_COVERAGE: Record<keyof AppSettings, SettingId | 'intern
   goalProgressAlerts: 'goalProgressAlerts',
   goalAlerts: 'goalAlerts',
   privacy: 'internal',
+  promptState: 'internal',
 }

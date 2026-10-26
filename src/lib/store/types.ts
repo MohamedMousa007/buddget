@@ -75,6 +75,8 @@ export interface PaymentMethod {
   color?: string
   icon?: string
   last4?: string
+  /** A name the user gave the account, shown where the last four digits would be. `last4` stays stored for SMS matching. */
+  label?: string
   isDefault: boolean
   /** Last local edit (ISO). Powers the offline-merge tiebreak — without it an
    *  offline edit to this row loses to the server on every sign-in. */
@@ -930,6 +932,8 @@ export interface AppSettings {
   dashboardLayout?: 'standard' | 'minimal'
   /** Wealth gold-price strip state; `user_settings.wealth_gold_strip` (synced). */
   wealthGoldStrip?: 'collapsed' | 'expanded' | 'hidden'
+  /** Prompts the user has answered for good, by key, with when. Synced in `user_settings.prompt_state`. */
+  promptState?: Record<string, string>
   /**
    * Tours the user has finished, stored as versioned ids
    * (e.g. `'postOnboardingTour:v1'`). Re-firing a tour for every existing

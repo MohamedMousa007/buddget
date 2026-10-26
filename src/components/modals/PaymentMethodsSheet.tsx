@@ -61,7 +61,7 @@ export function PaymentMethodsSheet() {
   }
   useEscapeClose(isWalletModal && !setupOpen, close)
 
-  const deck = useMemo(() => paymentMethods.filter((m) => m.type !== 'cash' && !m.closedAt), [paymentMethods])
+  const deck = useMemo(() => paymentMethods.filter((m) => m.type !== 'cash' && m.type !== 'bank_account' && !m.closedAt), [paymentMethods])
   const menuCard = deck.find((m) => m.id === cardMenuId) ?? null
 
   const openAdd = () => { setEditingMethod(null); setSetupOpen(true) }

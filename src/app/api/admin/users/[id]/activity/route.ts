@@ -1,5 +1,6 @@
 import { bad, guardAdmin, json } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
+import { hasFinancialGrant } from '@/lib/server/admin/financialAccess'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -25,6 +26,7 @@ export async function GET(req: Request, { params }: Params) {
   const g = await guardAdmin(req, { permission: 'users.logs' })
   if (!g.ok) return g.res
   const { service } = g.ctx
+  const granted = await hasFinancialGrant(g.ctx, id)
 
   const [app, sms, notifications, tickets, audit] = await Promise.all([
     service.from('app_analytics_events').select('event_type, created_at, metadata').eq('user_id', id).neq('event_type', 'heartbeat').order('created_at', { ascending: false }).limit(60),
@@ -44,12 +46,12 @@ export async function GET(req: Request, { params }: Params) {
       at: s.received_at,
       source: 'sms',
       title: failed ? `SMS failed to import${s.failure_code ? ` (${s.failure_code})` : ''}` : s.status === 'rejected' ? 'SMS ignored (not a transaction)' : s.parsed_ok ? 'SMS imported' : `SMS ${s.status ?? 'received'}`,
-      detail: [s.sender, s.merchant, s.amount != null ? `${s.amount} ${s.currency ?? ''}`.trim() : null, s.parse_method].filter(Boolean).join(' · '),
+      detail: [s.sender, granted ? s.merchant : null, granted && s.amount != null ? `${s.amount} ${s.currency ?? ''}`.trim() : null, s.parse_method].filter(Boolean).join(' · '),
       tone: failed ? 'bad' : s.parsed_ok ? 'good' : 'neutral',
     })
   }
   for (const n of notifications.data ?? []) {
-    events.push({ at: n.created_at, source: 'notification', title: `Notification: ${n.title}`, detail: n.message, tone: n.type === 'error' ? 'bad' : n.type === 'warning' ? 'warn' : 'neutral' })
+    events.push({ at: n.created_at, source: 'notification', title: `Notification: ${n.title}`, detail: granted ? n.message : undefined, tone: n.type === 'error' ? 'bad' : n.type === 'warning' ? 'warn' : 'neutral' })
   }
   for (const t of tickets.data ?? []) {
     events.push({ at: t.created_at, source: 'support', title: `Ticket #${t.number}: ${t.subject}`, detail: t.status, tone: 'neutral' })
@@ -58,5 +60,5 @@ export async function GET(req: Request, { params }: Params) {
     events.push({ at: a.created_at, source: 'staff', title: a.summary ?? a.action, detail: a.actor_email ?? undefined, tone: 'warn' })
   }
   events.sort((a, b) => b.at.localeCompare(a.at))
-  return json({ events: events.slice(0, 150) })
+  return json({ events: events.slice(0, 150), financialHidden: !granted })
 }

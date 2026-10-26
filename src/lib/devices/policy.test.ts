@@ -1,32 +1,53 @@
 import { describe, expect, it } from 'vitest'
-import { defaultDeviceName, notifiesOnSms, smsPushTargets, type DevicePrefs } from './policy'
+import { defaultDeviceName, nextMain, notifiesDevice, pushTargets, type DevicePrefs } from './policy'
 
-const dev = (o: Partial<DevicePrefs> = {}): DevicePrefs => ({ collects_sms: false, notify_on_sms: null, revoked_at: null, ...o })
+const dev = (o: Partial<DevicePrefs> = {}): DevicePrefs => ({ is_main: false, notify: null, push_permission: null, revoked_at: null, ...o })
 const tok = (token: string, device_id: string | null) => ({ token, device_id })
+const tokens = (out: { token: string }[]) => out.map((t) => t.token)
 
-describe('sms push policy', () => {
-  it('is automatic: collectors are quiet, everyone else is told, an explicit choice wins', () => {
-    expect(notifiesOnSms(dev())).toBe(true)
-    expect(notifiesOnSms(dev({ collects_sms: true }))).toBe(false)
-    expect(notifiesOnSms(dev({ collects_sms: true, notify_on_sms: true }))).toBe(true)
-    expect(notifiesOnSms(dev({ notify_on_sms: false }))).toBe(false)
+describe('notifiesDevice', () => {
+  it('follows the main phone unless the user chose otherwise', () => {
+    expect(notifiesDevice(dev({ is_main: true }))).toBe(true)
+    expect(notifiesDevice(dev())).toBe(false)
+    expect(notifiesDevice(dev({ notify: true }))).toBe(true)
+    expect(notifiesDevice(dev({ is_main: true, notify: false }))).toBe(false)
   })
-  it('skips the phone that collected this text and removed phones when another phone can be told', () => {
-    const devices = new Map([['iphone', dev({ collects_sms: true })], ['android', dev({ collects_sms: true })], ['old', dev({ revoked_at: 'x' })]])
-    const out = smsPushTargets([tok('a', 'iphone'), tok('b', 'android'), tok('c', 'old'), tok('d', null)], devices, 'iphone')
-    expect(out.map((t) => t.token)).toEqual(['b', 'd'])
+  it('never tells a removed phone or one whose OS permission is off', () => {
+    expect(notifiesDevice(dev({ is_main: true, revoked_at: 'x' }))).toBe(false)
+    expect(notifiesDevice(dev({ notify: true, push_permission: 'denied' }))).toBe(false)
+    expect(notifiesDevice(dev({ is_main: true, push_permission: 'granted' }))).toBe(true)
   })
-  it('tells the collector when it asked to, and never a phone that turned notifications off', () => {
-    const devices = new Map([['iphone', dev({ collects_sms: true, notify_on_sms: true })], ['android', dev({ notify_on_sms: false })]])
-    expect(smsPushTargets([tok('a', 'iphone'), tok('b', 'android')], devices, 'iphone').map((t) => t.token)).toEqual(['a'])
+})
+
+describe('pushTargets', () => {
+  it('only tells the main phone and the phones that asked', () => {
+    const devices = new Map([['main', dev({ is_main: true })], ['other', dev()], ['asked', dev({ notify: true })]])
+    expect(tokens(pushTargets([tok('a', 'main'), tok('b', 'other'), tok('c', 'asked')], devices))).toEqual(['a', 'c'])
   })
-  it('keeps a single-phone account notified even when that phone collected the text', () => {
-    const devices = new Map([['iphone', dev({ collects_sms: true })]])
-    expect(smsPushTargets([tok('a', 'iphone')], devices, 'iphone').map((t) => t.token)).toEqual(['a'])
+  it('does not override an explicit off, even for the last phone', () => {
+    const devices = new Map([['main', dev({ is_main: true, notify: false })]])
+    expect(pushTargets([tok('a', 'main')], devices)).toEqual([])
   })
-  it('never notifies a removed phone, even as the last resort', () => {
-    const devices = new Map([['old', dev({ revoked_at: 'x' })]])
-    expect(smsPushTargets([tok('c', 'old')], devices, null)).toEqual([])
+  it('never tells a removed phone', () => {
+    const devices = new Map([['main', dev({ is_main: true })], ['old', dev({ is_main: true, revoked_at: 'x' })]])
+    expect(tokens(pushTargets([tok('a', 'main'), tok('b', 'old')], devices))).toEqual(['a'])
+  })
+  it('keeps an account that predates the devices list notified', () => {
+    expect(tokens(pushTargets([tok('a', null), tok('b', null)], new Map()))).toEqual(['a', 'b'])
+    expect(tokens(pushTargets([tok('a', null)], new Map([['old', dev({ revoked_at: 'x' })]])))).toEqual(['a'])
+  })
+  it('leaves tokens from unregistered installs quiet once the account has registered phones', () => {
+    const devices = new Map([['main', dev({ is_main: true })]])
+    expect(tokens(pushTargets([tok('a', 'main'), tok('b', null), tok('c', 'ghost')], devices))).toEqual(['a'])
+  })
+})
+
+describe('nextMain', () => {
+  const d = (device_id: string, o: Partial<{ collects_sms: boolean; last_seen_at: string; revoked_at: string | null; push_permission: string | null }> = {}) => ({ device_id, collects_sms: false, last_seen_at: '2026-10-01T00:00:00Z', revoked_at: null, push_permission: null, ...o })
+  it('prefers a phone that collects texts, then the most recently seen, and skips the leaving and unusable ones', () => {
+    expect(nextMain([d('a'), d('b', { collects_sms: true }), d('c', { last_seen_at: '2026-10-20T00:00:00Z' })], 'x')?.device_id).toBe('b')
+    expect(nextMain([d('a'), d('c', { last_seen_at: '2026-10-20T00:00:00Z' })], 'x')?.device_id).toBe('c')
+    expect(nextMain([d('a'), d('b', { revoked_at: 'x' }), d('c', { push_permission: 'denied' })], 'a')).toBeUndefined()
   })
 })
 

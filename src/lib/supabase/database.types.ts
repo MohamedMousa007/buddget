@@ -284,9 +284,12 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          denied_at: string | null
           expires_at: string | null
           extended: boolean
           id: string
+          mode: string
+          note: string | null
           reason: string
           requested_at: string
           revoked_at: string | null
@@ -298,9 +301,12 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          denied_at?: string | null
           expires_at?: string | null
           extended?: boolean
           id?: string
+          mode?: string
+          note?: string | null
           reason: string
           requested_at?: string
           revoked_at?: string | null
@@ -312,6 +318,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          denied_at?: string | null
           expires_at?: string | null
           extended?: boolean
           id?: string
@@ -2178,6 +2185,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_default: boolean
+          label: string | null
           last4: string | null
           name: string
           notes: string | null
@@ -2198,6 +2206,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_default?: boolean
+          label?: string | null
           last4?: string | null
           name: string
           notes?: string | null
@@ -2218,6 +2227,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_default?: boolean
+          label?: string | null
           last4?: string | null
           name?: string
           notes?: string | null
@@ -3678,10 +3688,22 @@ export type Database = {
         Update: { first_at?: string }
         Relationships: []
       }
+      client_crashes: {
+        Row: { build: string | null; culprit: string | null; device_id: string | null; fingerprint: string; first_seen: string; id: string; last_seen: string; level: string; occurrences: number; platform: string | null; release: string; sentry_issue_id: string | null; sentry_url: string | null; stack: string | null; status: string; title: string; user_id: string | null }
+        Insert: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint: string; first_seen?: string; id?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title: string; user_id?: string | null }
+        Update: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint?: string; first_seen?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title?: string; user_id?: string | null }
+        Relationships: []
+      }
+      admin_financial_exclusions: {
+        Row: { created_at: string; excluded_by: string | null; reason: string | null; user_id: string }
+        Insert: { created_at?: string; excluded_by?: string | null; reason?: string | null; user_id: string }
+        Update: { excluded_by?: string | null; reason?: string | null }
+        Relationships: []
+      }
       user_devices: {
-        Row: { app_version: string | null; collects_sms: boolean; created_at: string; device_id: string; last_seen_at: string; model: string | null; name: string | null; notify_on_sms: boolean | null; platform: string; revoked_at: string | null; user_id: string }
-        Insert: { app_version?: string | null; collects_sms?: boolean; created_at?: string; device_id: string; last_seen_at?: string; model?: string | null; name?: string | null; notify_on_sms?: boolean | null; platform: string; revoked_at?: string | null; user_id: string }
-        Update: { app_version?: string | null; collects_sms?: boolean; last_seen_at?: string; model?: string | null; name?: string | null; notify_on_sms?: boolean | null; platform?: string; revoked_at?: string | null }
+        Row: { app_version: string | null; collects_sms: boolean; created_at: string; device_id: string; is_main: boolean; last_seen_at: string; last_sms_at: string | null; model: string | null; name: string | null; notify: boolean | null; notify_on_sms: boolean | null; platform: string; push_permission: string | null; revoked_at: string | null; user_id: string }
+        Insert: { app_version?: string | null; collects_sms?: boolean; created_at?: string; device_id: string; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform: string; push_permission?: string | null; revoked_at?: string | null; user_id: string }
+        Update: { app_version?: string | null; collects_sms?: boolean; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform?: string; push_permission?: string | null; revoked_at?: string | null }
         Relationships: []
       }
       feedback_votes: {
@@ -3893,6 +3915,7 @@ export type Database = {
       user_settings: {
         Row: {
           privacy: Json
+          prompt_state: Json
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout: Database["public"]["Enums"]["dashboard_layout"]
@@ -3918,6 +3941,7 @@ export type Database = {
         }
         Insert: {
           privacy?: Json
+          prompt_state?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
@@ -3943,6 +3967,7 @@ export type Database = {
         }
         Update: {
           privacy?: Json
+          prompt_state?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
@@ -4052,6 +4077,8 @@ export type Database = {
         }
         Returns: { ticket_id: string; ticket_number: number }[]
       }
+      admin_granted_users: { Args: { p_staff: string; p_users: string[] }; Returns: string[] }
+      record_client_crash: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string }; Returns: undefined }
       admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }
       admin_user_financial_snapshot: { Args: { p_staff: string; p_user: string }; Returns: Json }
       admin_ai_cost_daily: {

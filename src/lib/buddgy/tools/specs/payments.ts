@@ -1,4 +1,4 @@
-import { SETUP_TYPES } from '@/lib/payment/paymentMethodDefaults'
+import { CARD_SETUP_TYPES } from '@/lib/payment/paymentMethodDefaults'
 import { bool, obj, oneOf, str, type ToolSpec } from '@/lib/buddgy/tools/spec'
 
 export const paymentsSpecs: ToolSpec[] = [
@@ -14,11 +14,11 @@ export const paymentsSpecs: ToolSpec[] = [
     domain: 'payments',
     kind: 'write',
     risk: 'approve',
-    description: 'Propose a new payment method. A credit card also creates its debt.',
+    description: 'Propose a new payment method (a card, wallet or similar). A credit card also creates its debt. Bank accounts are added from the Accounts page, not here.',
     params: obj(
       {
         name: str('provider or bank, e.g. CIB'),
-        type: oneOf(SETUP_TYPES),
+        type: oneOf(CARD_SETUP_TYPES),
         last4: str('4 digits, cards and accounts only'),
         currency: str('ISO code; default is the base currency'),
         makeDefault: bool(),

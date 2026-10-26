@@ -34,6 +34,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
     label: 'Product health',
     items: [
       { section: 'sms', label: 'SMS pipeline', icon: 'MessageSquareText', anyOf: ['sms.view'], description: 'Tracked SMS, error queue, templates' },
+      { section: 'crashes', label: 'Crashes', icon: 'Bug', anyOf: ['crashes.view'], description: 'App crashes and errors by release' },
       { section: 'platform', label: 'Platform', icon: 'Server', anyOf: ['platform.view'], description: 'AI limits, maintenance and server state' },
       { section: 'emails', label: 'Emails', icon: 'Mail', anyOf: ['emails.view'], description: 'Transactional email templates and send log' },
       { section: 'flags', label: 'Feature flags', icon: 'ToggleRight', anyOf: ['flags.view'], description: 'Rollouts and kill-switches' },

@@ -1,6 +1,7 @@
-import { can } from '@/lib/admin/permissions'
 import { guardAdmin, json, bad, maskIf, readJson } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
+import { grantedUsers, hasFinancialGrant } from '@/lib/server/admin/financialAccess'
+import { can } from '@/lib/admin/permissions'
 
 const COLUMNS =
   'id, user_id, sender, bank_name, merchant, clean_title, amount, currency, kind, failure_code, parse_method, confidence, raw_body, received_at, is_duplicate, source, account_last4, parsed_ok, expense_id, income_id, pattern_id, payment_instrument, status, pushed_at, push_result, confirmed_at, acked_at, learn_status, learn_template_id, matched_template_id, payment_method_id, balance_after'
@@ -49,10 +50,28 @@ export async function GET(req: Request) {
     for (const p of profiles ?? []) emails.set(p.id, p.email)
   }
 
+  // Money, merchants, card digits and balances are financial content: staff see them only for users they hold a grant for.
+  const granted = await grantedUsers(ctx, ids)
   return json({
-    // The balance a message reported is financial PII like the raw body: staff see only that one was recorded unless they hold users.pii.
-    rows: rows.map((r) => ({ ...r, raw_body: null, has_body: r.raw_body != null, balance_after: can(ctx.permissions, 'users.financial') ? r.balance_after : null, balance_reported: r.balance_after != null, account_linked: r.payment_method_id != null, email: maskIf(ctx, emails.get(r.user_id)) })),
-    canReveal: can(ctx.permissions, 'users.financial'),
+    rows: rows.map((r) => {
+      const open = granted.has(r.user_id)
+      return {
+        ...r,
+        raw_body: null,
+        has_body: r.raw_body != null,
+        amount: open ? r.amount : null,
+        merchant: open ? r.merchant : null,
+        clean_title: open ? r.clean_title : null,
+        account_last4: open ? r.account_last4 : null,
+        balance_after: open ? r.balance_after : null,
+        balance_reported: r.balance_after != null,
+        account_linked: r.payment_method_id != null,
+        masked: !open,
+        can_reveal: open,
+        email: maskIf(ctx, emails.get(r.user_id)),
+      }
+    }),
+    canRequest: can(ctx.permissions, 'financial.request'),
     nextCursor: rows.length === limit ? rows[rows.length - 1]!.received_at : null,
   })
 }
@@ -61,8 +80,8 @@ const MIN_REASON = 8
 const REVEALS_PER_HOUR = 60
 
 /**
- * `create_ticket` turns a failing message into a support ticket. `reveal` shows one message body to staff who hold
- * `users.financial`: it needs a written reason, is rate limited, and always writes an audit row.
+ * `create_ticket` turns a failing message into a support ticket. `reveal` shows one message body to staff holding a live
+ * financial grant for that user (or the owner): it needs a written reason, is rate limited, and always writes an audit row.
  */
 export async function POST(req: Request) {
   const g = await guardAdmin(req)
@@ -72,13 +91,13 @@ export async function POST(req: Request) {
   if (typeof body?.id !== 'string' || !UUID_RE.test(body.id)) return bad('Unknown action.')
 
   if (body.op === 'reveal') {
-    if (!can(ctx.permissions, 'users.financial')) return bad('Your role does not allow this.', 403)
     const reason = body.reason?.trim() ?? ''
     if (reason.length < MIN_REASON) return bad('Write a short reason first.')
     const { data: allowed } = await ctx.service.rpc('api_rate_hit', { p_key: `sms-reveal:${ctx.staff.id}`, p_window_seconds: 3600, p_max_hits: REVEALS_PER_HOUR })
     if (allowed === false) return bad('Too many message reads this hour.', 429)
     const { data: log } = await ctx.service.from('sms_parse_log').select('id, user_id, raw_body').eq('id', body.id).maybeSingle()
     if (!log) return bad('SMS not found.', 404)
+    if (!(await hasFinancialGrant(ctx, log.user_id))) return bad('Open financial access for this user first.', 403)
     await ctx.audit('pii.sms.reveal', { targetType: 'sms_log', targetId: log.id, summary: 'Read the content of a bank message', metadata: { userId: log.user_id, reason: reason.slice(0, 300) } })
     return json({ ok: true, raw_body: log.raw_body })
   }

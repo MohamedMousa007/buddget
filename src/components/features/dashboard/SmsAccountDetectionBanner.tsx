@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { CreditCard, Landmark, Wallet, type LucideIcon } from 'lucide-react'
+import { CreditCard, Wallet, type LucideIcon } from 'lucide-react'
 import { usePaymentMethodDetector, type DetectedAccount } from '@/hooks/usePaymentMethodDetector'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { settlePrompt } from '@/lib/prompts/settle'
 import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
@@ -15,7 +16,6 @@ import type { Dictionary } from '@/lib/i18n'
 /** The primary CTA names what will be created, from the type the SMS implies. */
 function addFor(type: DetectedAccount['type'], t: Dictionary['prompts']): { label: string; icon: LucideIcon } {
   if (type === 'wallet') return { label: t.addWallet, icon: Wallet }
-  if (type === 'bank_account') return { label: t.addAccount, icon: Landmark }
   return { label: t.addCard, icon: CreditCard }
 }
 
@@ -49,6 +49,7 @@ export function SmsAccountDetectionBanner() {
             onPress: () => openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}) }),
           },
           { label: t.prompts.linkExisting, variant: 'secondary', onPress: () => setLinkFor(last4) },
+          { label: t.prompts.notMine, variant: 'secondary', onPress: () => settlePrompt(`pm:${last4}`) },
         ],
       }
     }),
@@ -62,7 +63,6 @@ function LinkExistingSheet({ last4, onClose }: { last4: string | null; onClose: 
   const t = useT()
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
-  const dismissBanner = useSettingsStore((s) => s.dismissBanner)
   const [choice, setChoice] = useState('')
   const close = () => {
     setChoice('')
@@ -88,7 +88,7 @@ function LinkExistingSheet({ last4, onClose }: { last4: string | null; onClose: 
           onClick={() => {
             if (!last4 || !choice) return
             updatePaymentMethod(choice, { last4 })
-            dismissBanner(`pm:${last4}`)
+            settlePrompt(`pm:${last4}`)
             close()
           }}
         >

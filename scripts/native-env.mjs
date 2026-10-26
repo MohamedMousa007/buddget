@@ -22,6 +22,7 @@ export const NATIVE_ENV_KEYS = [
   'NEXT_PUBLIC_APP_URL',
   'NEXT_PUBLIC_OAUTH_GOOGLE',
   'NEXT_PUBLIC_OAUTH_APPLE',
+  'NEXT_PUBLIC_SENTRY_DSN',
 ]
 
 export function parseEnvFile(text) {

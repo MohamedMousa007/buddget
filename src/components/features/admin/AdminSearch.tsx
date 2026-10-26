@@ -29,7 +29,7 @@ export function AdminSearchButton({ perms }: { perms: PermissionSet }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <IconButton aria-label="Search the admin portal" title="Search" variant="tinted" onClick={() => setOpen(true)}><Search /></IconButton>
+      <IconButton aria-label="Search the admin portal" title="Search" variant="tinted" size="sm" onClick={() => setOpen(true)}><Search /></IconButton>
       {open ? <SearchOverlay perms={perms} onClose={() => setOpen(false)} /> : null}
     </>
   )

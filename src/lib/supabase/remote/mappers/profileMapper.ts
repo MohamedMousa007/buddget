@@ -59,9 +59,11 @@ export function profileToRow(
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
     default_carry_pocket_id: p.defaultCarryPocketId ?? null,
-    emergency_fund_config: (p.emergencyFundConfig ?? {}) as ProfileInsert['emergency_fund_config'],
-    zakat_config: (p.zakatConfig ?? {}) as ProfileInsert['zakat_config'],
-    financial_profile: (p.financialProfile ?? null) as ProfileInsert['financial_profile'],
+    // Left out of the write when this copy holds nothing: a phone that has not received the account's answers yet
+    // must not overwrite them with an empty object (a chosen zakat basis came back as a question this way).
+    ...(p.emergencyFundConfig ? { emergency_fund_config: p.emergencyFundConfig as unknown as ProfileInsert['emergency_fund_config'] } : {}),
+    ...(p.zakatConfig ? { zakat_config: p.zakatConfig as unknown as ProfileInsert['zakat_config'] } : {}),
+    ...(p.financialProfile ? { financial_profile: p.financialProfile as unknown as ProfileInsert['financial_profile'] } : {}),
     // display_name is NOT written here — it's server-authoritative. Omitting
     // it keeps PostgREST's existing value on upsert-conflict.
   }

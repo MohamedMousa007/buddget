@@ -2,7 +2,7 @@
 
 import { SheetTitleBar } from './SheetTitleBar'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { accountTitle } from '@/components/features/accounts/accountDisplay'
+import { accountIdentifier, accountTitle } from '@/components/features/accounts/accountDisplay'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
 import { holdsBalance, pickablePaymentMethods } from '@/lib/accounts/kinds'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -28,7 +28,7 @@ export function NotCountedSheet({ open, onClose }: { open: boolean; onClose: () 
   const row = (m: PaymentMethod) => {
     const parent = parentOf(m)
     const inherited = Boolean(parent?.excluded)
-    const detail = inherited && parent ? c.follows(accountTitle(parent)) : m.last4 ? `•• ${m.last4}` : undefined
+    const detail = inherited && parent ? c.follows(accountTitle(parent)) : accountIdentifier(m) ?? undefined
     return (
       <SettingsSwitchRow key={m.id} label={accountTitle(m)} hint={detail} checked={Boolean(m.excluded) || inherited} disabled={inherited} onChange={(v) => update(m.id, { excluded: v })} />
     )

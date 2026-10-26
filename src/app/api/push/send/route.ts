@@ -21,6 +21,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { sendNativePush } from '@/lib/server/sendNativePush'
+import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 
 const bodySchema = z.object({
   userId: z.string().uuid(),
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const result = await sendNativePush(parsed.data)
+  const result = await sendNativePush({ ...parsed.data, onlyDeviceId: request.headers.get(DEVICE_ID_HEADER)?.trim() || null })
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 503 })
   }

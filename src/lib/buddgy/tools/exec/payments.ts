@@ -7,7 +7,7 @@ import { fin } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl, WriteImpl } from '@/lib/buddgy/tools/types'
 import { fail, makeProposal, ok, text } from '@/lib/buddgy/tools/writeKit'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import { allowsLast4, composePaymentMethodName, decomposePaymentMethodName, PAYMENT_TYPE_META, SETUP_TYPES } from '@/lib/payment/paymentMethodDefaults'
+import { allowsLast4, composePaymentMethodName, decomposePaymentMethodName, PAYMENT_TYPE_META, CARD_SETUP_TYPES } from '@/lib/payment/paymentMethodDefaults'
 import { getOpenDefaultCandidate, isPaymentMethodReferenced } from '@/lib/accounts/removePaymentMethod'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, FinanceStore, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
@@ -77,7 +77,7 @@ const add_payment_method: WriteImpl = {
     const provider = text(args.name, 40)
     if (!provider) return fail('A payment method needs a name.')
     const type = args.type as PaymentMethodType
-    if (!SETUP_TYPES.includes(type)) return fail('Unknown type.', `Use one of: ${SETUP_TYPES.join(', ')}. Cash is built in.`)
+    if (!CARD_SETUP_TYPES.includes(type)) return fail('Unknown type.', `Use one of: ${CARD_SETUP_TYPES.join(', ')}. Cash is built in, and bank accounts are added from the Accounts page.`)
     const currency = (text(args.currency, 8)?.toUpperCase() ?? s.settings.baseCurrency) as Currency
     if (!FIAT_CURRENCIES.includes(currency)) return fail(`${currency} is not a supported currency.`)
     const last4 = text(args.last4, 8)

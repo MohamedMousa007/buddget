@@ -4,7 +4,7 @@ import { removeAvatarObject, stampDataReset, wipeUserData } from '@/lib/server/u
 import { emitNotification } from '@/lib/server/emitNotification'
 import { sendNativePush } from '@/lib/server/sendNativePush'
 import { isFeatureOverrideKey, isLimitKey } from '@/lib/entitlements/limits'
-import { can, type Permission } from '@/lib/admin/permissions'
+import { can, OWNER_ROLE, type Permission } from '@/lib/admin/permissions'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { appOrigin } from '@/lib/apiBase'
 import { bad, guardAdmin, json, maskEmail, readJson } from '@/lib/server/admin/guard'
@@ -106,7 +106,9 @@ export async function POST(req: Request, { params }: Params) {
   const email = target.user.email ?? null
 
   if (DESTRUCTIVE.has(body.op) || body.op === 'remove_biometric') {
-    const blocked = await blockedTarget(ctx, id)
+    // The owner may empty any Buddget app account, their own and staff members' included; the portal account is a separate thing.
+    const ownerOnApp = ctx.role.key === OWNER_ROLE && (body.op === 'reset_data' || body.op === 'delete')
+    const blocked = await blockedTarget(ctx, id, { allowSelf: ownerOnApp })
     if (blocked) return bad(blocked, 403)
   }
 
@@ -245,9 +247,10 @@ export async function POST(req: Request, { params }: Params) {
     }
     case 'delete': {
       if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
-      const result = await deleteUserCompletely(ctx.service, id)
+      // A person who is also staff keeps their sign-in and portal access: deleting the sign-in would delete the portal account with it.
+      const result = await deleteUserCompletely(ctx.service, id, { keepStaffAccess: true })
       if (!result.ok) return bad(result.error, 500)
-      await log('user.delete', 'Permanently deleted user', { partialErrors: result.partialErrors })
+      await log('user.delete', result.keptStaffAccess ? 'Deleted the Buddget app account; portal access kept' : 'Permanently deleted user', { partialErrors: result.partialErrors, keptStaffAccess: result.keptStaffAccess })
       return json({ ok: true })
     }
   }

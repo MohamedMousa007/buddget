@@ -100,6 +100,7 @@ export const importDataSchema = z.object({
       legacyOnboardingMigratedAt: z.string().nullable().optional(),
       dashboardLayout: z.enum(['standard', 'minimal']).optional(),
       wealthGoldStrip: z.enum(['collapsed', 'expanded', 'hidden']).optional(),
+      promptState: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
   incomeSources: z
@@ -418,6 +419,7 @@ export const importDataSchema = z.object({
         color: z.string().optional(),
         icon: z.string().optional(),
         last4: z.string().optional(),
+        label: z.string().max(24).optional(),
         isDefault: z.boolean(),
       })
     )

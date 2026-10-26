@@ -63,7 +63,8 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null,
   }), [cash, gold, crypto, stocks, holdsForTrading, debts, nisabBasis, base, manualOn, manualAmount])
 
-  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { nisabBasis, nisabBasisChosen: basisChosen, holdsForTrading, manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
+  // A choice already saved (here or on another phone) is never undone by an edit made while the sheet still held the old answer.
+  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { nisabBasis, nisabBasisChosen: basisChosen || zakatBasisChosen(useFinanceStore.getState().profile.zakatConfig), holdsForTrading, manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
   const editLine = (id: LineId, raw: string) => {
     const next = { ...overrides }
     if (raw.trim() === '') delete next[id]

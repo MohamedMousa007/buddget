@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
+import { isRevokedDevice } from '@/lib/server/devices/registry'
 
 export async function GET(request: Request) {
   const outdated = await gateOutdatedClient(request)
@@ -27,6 +28,9 @@ export async function GET(request: Request) {
   // Native shell sends its device id; web sends none. Scope the token to the
   // device so per-device rotation/revocation never de-arms a user's other phone.
   const deviceId = request.headers.get(DEVICE_ID_HEADER)
+  if (await isRevokedDevice(serviceClient, userId, deviceId)) {
+    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
+  }
 
   // Check for an existing active token for this scope.
   let existingQuery = serviceClient

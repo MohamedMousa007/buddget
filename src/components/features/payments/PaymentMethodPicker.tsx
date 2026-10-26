@@ -6,6 +6,7 @@ import { ChevronDown } from 'lucide-react'
 import type { PaymentMethod } from '@/lib/store/types'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
 import { rgba } from '@/lib/utils/color'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
@@ -67,7 +68,7 @@ export function PaymentMethodPicker({
               </span>
               <span className="shrink-0 text-xs font-medium text-[var(--color-brand-text-muted)]">
                 {selPay.currency}
-                {selPay.last4 ? ` · ••${selPay.last4}` : ''}
+                {accountIdentifier(selPay) ? ` · ${accountIdentifier(selPay)}` : ''}
               </span>
             </>
           ) : (

@@ -16,7 +16,7 @@ type Nav = NonNullable<ToolEntry['nav']>
 type NavResult = ReturnType<Nav>
 
 const INCOME_TYPES: readonly IncomeSourceType[] = ['salary', 'bonus', 'side_hustle', 'rental', 'investment', 'savings', 'debt', 'gift', 'refund', 'other']
-const METHOD_TYPES: readonly PaymentMethodType[] = ['cash', 'bank_account', 'debit_card', 'credit_card', 'prepaid_card', 'wallet', 'bnpl', 'other']
+const METHOD_TYPES: readonly PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card', 'wallet', 'bnpl', 'other']
 const SETTING_MODAL: Partial<Record<SettingAction, string>> = { household: 'householdRent', lifestyle: 'lifestyle' }
 
 const refused = (message: string): NavResult => ({ ok: false, message })

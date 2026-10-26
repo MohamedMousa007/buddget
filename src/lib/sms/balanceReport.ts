@@ -87,7 +87,7 @@ export async function recordBalanceReport(i: BalanceReportInput): Promise<void> 
     const { data } = await i.service.from('payment_methods')
       .select('id, name, type, last4, currency, parent_id, track_sms, closed_at').eq('user_id', i.userId).is('deleted_at', null)
     const target = resolveReportTarget((data ?? []) as MethodRow[], i.last4, { sender: i.sender, bankName: i.bankName })
-    if (!target || target.track_sms === false) return
+    if (!target) return
     if (found.currency && target.currency && found.currency !== 'LE' && found.currency !== target.currency) return
     await i.service.from('account_balance_reports').upsert({
       user_id: i.userId, payment_method_id: target.id, balance: found.balance, currency: target.currency,

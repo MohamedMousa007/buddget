@@ -28,7 +28,6 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
   const [error, setError] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [now, setNow] = useState(0)
-  const [canReveal, setCanReveal] = useState(false)
   const [revealed, setRevealed] = useState<Record<string, string | null>>({})
   const [reasons, setReasons] = useState<Record<string, string>>({})
   const [revealing, setRevealing] = useState<string | null>(null)
@@ -42,8 +41,7 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
       if (userId) p.set('userId', userId)
       if (appliedSender) p.set('sender', appliedSender)
       if (append && from) p.set('cursor', from)
-      const res = await adminFetch<{ rows: SmsTrackedRow[]; nextCursor: string | null; canReveal?: boolean }>(`/api/admin/sms/logs?${p}`)
-      setCanReveal(res.canReveal === true)
+      const res = await adminFetch<{ rows: SmsTrackedRow[]; nextCursor: string | null }>(`/api/admin/sms/logs?${p}`)
       setRows((prev) => (append ? [...prev, ...res.rows] : res.rows))
       setCursor(res.nextCursor)
       setNow(Date.now())
@@ -132,13 +130,13 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
                             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Raw SMS</p>
                             {row.id in revealed ? (
                               <pre className="max-h-40 select-text overflow-y-auto whitespace-pre-wrap break-all rounded-lg bg-[var(--color-brand-card)] p-3 font-mono text-[11px] leading-relaxed text-[var(--color-brand-text-secondary)]">{revealed[row.id] ?? '(empty)'}</pre>
-                            ) : canReveal ? (
+                            ) : row.can_reveal ? (
                               <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); void reveal(row.id) }}>
                                 <Input aria-label="Reason for reading this message" placeholder="Why do you need the message text? (logged)" value={reasons[row.id] ?? ''} onChange={(e) => setReasons((prev) => ({ ...prev, [row.id]: e.target.value }))} className="h-10 min-w-[220px] flex-1" />
                                 <Button type="submit" variant="outline" size="sm" loading={revealing === row.id} disabled={(reasons[row.id] ?? '').trim().length < 8}>Reveal</Button>
                               </form>
                             ) : (
-                              <p className="text-[var(--color-brand-text-muted)]">Message text is hidden. It needs the financial-content permission.</p>
+                              <p className="text-[var(--color-brand-text-muted)]">Message text and amounts are hidden. Ask the owner for financial access to this user (Users, Financial tab).</p>
                             )}
                             {revealError && revealing === null ? <p className="mt-1.5 text-[var(--color-brand-red-text)]">{revealError}</p> : null}
                           </div>

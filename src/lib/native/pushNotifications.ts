@@ -23,6 +23,8 @@ interface RegisterArgs {
   locale?: string
   /** Optional app version (e.g. `1.0.0`). */
   appVersion?: string
+  /** `true` records an explicit "notify on this phone" with the registration (a phone that is not the main one). */
+  notify?: boolean
 }
 
 /**
@@ -148,6 +150,7 @@ async function postToken(token: string, args: RegisterArgs): Promise<void> {
         deviceModel:
           typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 200) : null,
         deviceId: await getOrCreateDeviceId(),
+        ...(args.notify !== undefined ? { notify: args.notify } : {}),
       }),
     })
   } catch (e) {
@@ -165,15 +168,18 @@ export async function unregisterPushToken(accessToken: string): Promise<void> {
   const token = lastToken
   registeredUserId = null
   lastToken = null
-  if (!isNative() || !token) return
+  if (!isNative()) return
   try {
+    // Without the in-memory token (a switch straight after launch) the server still clears this phone's tokens by its id.
+    const deviceId = await getOrCreateDeviceId()
     await fetch(apiUrl('/api/push/register'), {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
+        ...(deviceId ? { 'X-Buddget-Device-Id': deviceId } : {}),
       },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify(token ? { token } : {}),
     })
   } catch (e) {
     console.error('[push] unregister failed', e)

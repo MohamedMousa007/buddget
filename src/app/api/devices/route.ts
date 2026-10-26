@@ -12,6 +12,7 @@ const selfSchema = z.object({
   appVersion: z.string().max(50).nullish(),
   collects: z.boolean().optional(),
   collectsSms: z.boolean().optional(),
+  pushPermission: z.enum(['granted', 'denied']).nullish(),
 })
 
 async function caller(request: Request) {
@@ -23,20 +24,17 @@ async function caller(request: Request) {
   return { userId, deviceId }
 }
 
-/** The account's devices, with when each last captured a bank text. */
+/** The account's devices: who is main, who is told about things, and when each last captured a bank text. */
 export async function GET(request: Request) {
   const c = await caller(request)
   if ('res' in c) return c.res
   const service = createServiceRoleClient()
   const { data: rows } = await service.from('user_devices').select('*').eq('user_id', c.userId).is('revoked_at', null).order('last_seen_at', { ascending: false })
-  const devices = rows ?? []
-  const { data: last } = await service.rpc('user_device_last_sms', { p_user: c.userId })
-  const lastText = new Map((last ?? []).map((r) => [r.device_id, r.last_at]))
   return NextResponse.json({
     thisDeviceId: c.deviceId,
-    devices: devices.map((d) => ({
+    devices: (rows ?? []).map((d) => ({
       deviceId: d.device_id, name: d.name ?? d.model ?? d.platform, platform: d.platform, appVersion: d.app_version, lastSeenAt: d.last_seen_at,
-      collectsSms: d.collects_sms, notifyOnSms: d.notify_on_sms, lastSmsAt: d.collects_sms ? (lastText.get(d.device_id) ?? null) : null,
+      collectsSms: d.collects_sms, isMain: d.is_main, notify: d.notify, pushPermission: d.push_permission, lastSmsAt: d.collects_sms ? d.last_sms_at : null,
     })),
   }, { headers: { 'Cache-Control': 'private, no-store' } })
 }
@@ -47,7 +45,8 @@ async function report(request: Request) {
   if (!c.deviceId) return { res: NextResponse.json({ error: 'Missing device id' }, { status: 400 }) }
   const parsed = selfSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return { res: NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
-  const result = await upsertSelf(createServiceRoleClient(), c.userId, c.deviceId, parsed.data)
+  const { pushPermission, ...self } = parsed.data
+  const result = await upsertSelf(createServiceRoleClient(), c.userId, c.deviceId, { ...self, ...(pushPermission !== undefined ? { pushPermission } : {}) })
   return { result }
 }
 
