@@ -239,3 +239,23 @@ Add after the batches below: A1+A2 (auth/privacy) right after batch 2; M1-M6 wit
 6. B15 + B18 + B19 + B23 (native and boot hygiene)
 7. B20 + B22, B24 + B25 (hardening, lint, coverage)
 Each batch: failing test, fix, lint + tsc + vitest + build, then ship per CLAUDE.md.
+
+## Part 5 — Fix status (shipped 168c2ab9 to dev + main, 2026-10-27)
+
+Gate: lint 0 errors, tsc clean, 3141 tests pass, production build OK. Migrations 0188-0191 are files only, NOT applied to production.
+
+**Fixed:** B1-B2, B5, B3/S2, B4, B6, B7-B8, B12-B14, B15-B16, B17, B19, B21, B23 (partial), S1-S9, S11-S15, S17, S18, A1-A3, A5-A25 (A20 img-src untouched, A13 held), M1-M20 (M16 partial: net worth already flags unpriced gold; debt tab hero has no note), D1/D3/D4/D9 as migration files, D4 types, plus review follow-ups (OTP regression, iOS 16 lookbehind, double-post guard, FK tier order, retry on failed flush, networkReady, Sentry retry, carry FX scope, savings actions return failure).
+
+**Held / needs your decision**
+- A13 admin loyalty route change is NOT shipped: it needs migration 0188 applied first (working tree only).
+- D5 `app_client_gate` anon revoke skipped (it is the force-update hook for every request).
+- A4 JWT device-id requirement (clients must send the header first).
+- shiftToBusinessDay weekend is Sat/Sun; Egypt is Fri/Sat.
+- matchSalary guard for a friend's ±2% credit.
+- Per-user timezone (Cairo hard-coded for SMS days and carry cycles).
+- Biometric register 409 gives no message on a shared phone.
+- Shared API limiter writes to the DB on every /api/rates and /api/gold hit.
+- Email HTML allow-list rejects Outlook VML and a few tags.
+- M14 recurring-debt anchor needs a persisted day (migration).
+- Unaudited: sync delta path (`pullDelta`/`applyDelta`) for the same error/paging risks.
+- Apply migrations 0189-0191 and 0188 to production when ready; set Supabase leaked-password protection (D6) in the dashboard.
