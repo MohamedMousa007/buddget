@@ -11,7 +11,6 @@ set -euo pipefail
 LABEL="${1:-}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 TEAM=9PK34RL9DN
 PBX=ios/App/App.xcodeproj/project.pbxproj
 GRADLE=android/app/build.gradle
@@ -25,8 +24,8 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 
 # The build must be what is on GitHub: nothing uncommitted, nothing unpushed.
 if [ -n "$(git status --porcelain)" ]; then echo "Working tree is not clean. Commit or stash first." >&2; exit 1; fi
-git fetch -q origin "$BRANCH" 2>/dev/null || true
-git merge-base --is-ancestor HEAD "origin/$BRANCH" 2>/dev/null || { echo "origin/$BRANCH does not contain HEAD. Push first." >&2; exit 1; }
+git fetch -q origin main
+git merge-base --is-ancestor HEAD origin/main || { echo "origin/main does not contain HEAD ($(git rev-parse --short HEAD)). Push to dev and main first." >&2; exit 1; }
 
 IOS_CUR=$(grep -m1 -oE "CURRENT_PROJECT_VERSION = [0-9]+;" "$PBX" | grep -oE "[0-9]+")
 IOS_NEW=$((IOS_CUR + 1))
