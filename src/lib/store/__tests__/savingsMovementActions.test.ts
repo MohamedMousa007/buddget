@@ -84,6 +84,15 @@ describe('transferBetweenPockets', () => {
     expect(S().savingsTransactions).toHaveLength(0)
   })
 
+  it('reports success and failure so the sheet can react', () => {
+    seed([pocket('a', 'EGP', 500), pocket('g', 'XAU', 0, 'investment'), pocket('b', 'EGP', 0)])
+    expect(S().transferBetweenPockets('a', 'b', 100)).toBe(true)
+    expect(S().transferBetweenPockets('a', 'g', 100)).toBe(false)
+    expect(S().depositToSavings('g', 100, 'EGP')).toBe(false)
+    expect(S().withdrawFromSavings('g', 1, 'EGP')).toBe(false)
+    expect(S().depositToSavings('b', 10, 'EGP')).toBe(true)
+  })
+
   it('rejects an overdraw', () => {
     seed([pocket('a', 'EGP', 50), pocket('b', 'EGP', 0)])
     S().transferBetweenPockets('a', 'b', 100)

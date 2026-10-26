@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lengthForPayments, paymentsForLength, perFromTotal, totalFromPer } from '../installmentPlan'
+import { lengthForPayments, paymentsForLength, perFromTotal, settleInstallmentAmount, totalFromPer } from '../installmentPlan'
 
 describe('installmentPlan', () => {
   it('maps plan length to a payment count per frequency', () => {
@@ -17,5 +17,21 @@ describe('installmentPlan', () => {
   it('converts between total and per-payment', () => {
     expect(totalFromPer(250, 12)).toBe(3000)
     expect(perFromTotal(1000, 3)).toBe(333.33)
+  })
+})
+
+describe('settleInstallmentAmount', () => {
+  it('the last installment absorbs the rounding residual (100 / 3 leaves 0.01)', () => {
+    expect(settleInstallmentAmount(33.33, 33.34, 3)).toBe(33.34)
+  })
+  it('leaves normal installments and real balances alone', () => {
+    expect(settleInstallmentAmount(33.33, 66.67, 3)).toBe(33.33)
+  })
+  it('dust is capped for long plans (360 installments must not swallow a real 1.00 balance)', () => {
+    expect(settleInstallmentAmount(100, 101, 360)).toBe(100)
+    expect(settleInstallmentAmount(100, 100.04, 360)).toBe(100.04)
+  })
+  it('clamps an overshoot to what is left (200 / 3 = 66.67 x 3)', () => {
+    expect(settleInstallmentAmount(66.67, 66.66, 3)).toBe(66.66)
   })
 })

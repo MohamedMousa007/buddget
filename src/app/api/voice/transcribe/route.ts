@@ -32,6 +32,8 @@ const EGYPT_FIRST_PROMPT = [
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024
 /** Audio is billed by length, not tokens: one unit per ~20 bytes keeps it on the same wheel. */
 const BYTES_PER_UNIT = 20
+/** A hung upstream must fail inside the function budget so the quota reservation is settled. */
+const GROQ_TIMEOUT_MS = 12_000
 
 export async function POST(request: NextRequest) {
   const outdated = await gateOutdatedClient(request)
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
     settleAiQuota(quota, { model: 'whisper-large-v3', tier: 'transcribe', latencyMs: Date.now() - started, usage: { promptTokens: units, cachedTokens: 0, outputTokens: 0 }, status })
 
   try {
-    const groq = new Groq({ apiKey })
+    const groq = new Groq({ apiKey, timeout: GROQ_TIMEOUT_MS, maxRetries: 0 })
     const type = audio.type || 'audio/mp4'
     const file = new File([audio], `recording.${audioMimeToExt(type)}`, { type })
 

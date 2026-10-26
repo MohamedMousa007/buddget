@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountCurrencyRow, PocketRadioList } from '@/components/features/savings-v3/MoneySheetParts'
@@ -28,6 +29,7 @@ export interface AddSavingsSheetV3Props {
 export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: AddSavingsSheetV3Props) {
   const t = useT().wealthSheets.money
   const deposit = useFinanceStore((s) => s.depositToSavings)
+  const showToast = useActionToast()
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
 
   const [amount, setAmount] = useState('')
@@ -50,9 +52,10 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
 
   const submit = () => {
     if (!selected || amountNum <= 0) return
-    deposit(selected.account.id, amountNum, currency, note.trim() || undefined, {
+    const ok = deposit(selected.account.id, amountNum, currency, note.trim() || undefined, {
       mode: source === 'budget' ? 'allocate' : 'declare',
     })
+    if (!ok) return showToast(t.moveFailed)
     onClose()
   }
 

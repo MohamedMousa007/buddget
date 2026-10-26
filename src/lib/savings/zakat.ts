@@ -27,6 +27,8 @@ export interface ZakatInput {
 export interface ZakatResult {
   zakatable: number
   nisab: number
+  /** False when the price feed is missing, so no nisab line can be drawn and nothing is "due". */
+  nisabAvailable: boolean
   due: boolean
   zakat: number
   /** How far below nisab, when not due (0 otherwise). */
@@ -50,7 +52,8 @@ export function computeZakat(input: ZakatInput): ZakatResult {
       ? 85 * input.gold24kSellPerGram
       : 595 * input.silverPerGram
 
-  const due = zakatable >= nisab && zakatable > 0
+  const nisabAvailable = nisab > 0
+  const due = nisabAvailable && zakatable >= nisab
   const computed = due ? zakatable * 0.025 : 0
 
   const hasManual = input.manualAmount != null && Number.isFinite(input.manualAmount)
@@ -59,8 +62,9 @@ export function computeZakat(input: ZakatInput): ZakatResult {
   return {
     zakatable,
     nisab,
+    nisabAvailable,
     due: hasManual ? (input.manualAmount as number) > 0 : due,
     zakat,
-    gap: due ? 0 : Math.max(0, nisab - zakatable),
+    gap: due || !nisabAvailable ? 0 : Math.max(0, nisab - zakatable),
   }
 }

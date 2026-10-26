@@ -142,3 +142,11 @@ describe('Arabic corpus', () => {
     expect(runLearnGates(AR_DEBIT, rx, rules, expected(12.75, 'EGP', '6212'))).toEqual({ ok: true })
   })
 })
+
+describe('ReDoS guard', () => {
+  it('rejects a nested-quantifier regex before running it', () => {
+    const rules: MappingRules = { amount: { group: 1, removeCommas: true }, kind: 'purchase' }
+    const res = runLearnGates(HSBC_PURCHASE, '(\\s*\\w+)+EGP\\s+([\\d,]+)', rules, expected(715))
+    expect(res).toMatchObject({ ok: false, status: 'gate_regex_unsafe' })
+  })
+})

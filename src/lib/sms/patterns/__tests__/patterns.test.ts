@@ -307,6 +307,15 @@ describe('pre-filter (non-transaction rejector)', () => {
     expect(isNonTransaction('رمز التحقق الخاص بك هو 4821')).toBe('otp')
   })
 
+  it('rejects an OTP that authorizes a purchase, keeps a receipt with an anti-fraud footer', () => {
+    expect(isNonTransaction('Use OTP 123456 to authorize purchase of EGP 450.00 at AMAZON. Do not share')).toBe('otp')
+    expect(isNonTransaction('Your card ending 1234 was used for EGP 450.00 at CARREFOUR. Never share your PIN or OTP.')).toBeNull()
+  })
+
+  it('does not let a bundle "used for" phrase skip the marketing reject', () => {
+    expect(isNonTransaction('Your bundle can be used for 30 days. Renew for EGP 50')).toBe('marketing')
+  })
+
   it('rejects balance-only inquiries', () => {
     expect(isNonTransaction('Your available balance is EGP 12,450.00')).toBe('balance_only')
   })

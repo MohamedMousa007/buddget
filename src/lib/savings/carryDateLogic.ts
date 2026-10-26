@@ -1,29 +1,56 @@
 /**
- * When does the month-end carry fire, and for which cycle?
+ * Which budget cycles does the month-end carry owe a user, and over what dates?
  *
- * A budget cycle starts on `monthStartDay` each month. To dodge timezone edges (F2), the carry
- * runs ONE day after the cycle boundary — i.e. on `monthStartDay + 1`, by which point the boundary
- * has passed in every timezone the app serves. On that day it carries the cycle that just closed.
+ * A cycle starts on `monthStartDay` each month (clamped to 1-28 so it exists in every month, matching
+ * `getMonthRange`) and closes at the next start. It is carried from the day AFTER its boundary, judged
+ * in the user's local calendar date rather than UTC. The carry is catch-up based: every closed cycle
+ * without a summary row is owed, so a missed run or a day that never exists (start 28 + 1 in a
+ * non-leap February) only delays the carry instead of dropping it.
  *
- * Returns the closed cycle's month_key ('YYYY-MM', keyed by the month the cycle STARTED in), or
- * null when `now` is not a carry day for this user.
+ * Month keys are 'YYYY-MM', keyed by the month the cycle STARTED in.
  */
-export function justClosedCycleKey(now: Date, monthStartDay: number): string | null {
-  const start = Math.min(28, Math.max(1, Math.floor(monthStartDay) || 1))
-  // Fire the day after the boundary. monthStartDay ≤ 28, so +1 ≤ 29 — always a valid date.
-  if (now.getUTCDate() !== start + 1) return null
+export const CARRY_TIME_ZONE = 'Africa/Cairo'
+/** Most cycles a single run will catch up, so a long outage cannot sweep unbounded history. */
+const MAX_CATCH_UP = 3
 
-  // The cycle that just closed started on `start` of the PREVIOUS month relative to now.
-  // (On e.g. Aug 2 with start=1, the closed cycle ran Jul 1–Jul 31 → key 2026-07.)
-  const started = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, start))
-  return `${started.getUTCFullYear()}-${String(started.getUTCMonth() + 1).padStart(2, '0')}`
+const clampStartDay = (d: number) => Math.min(28, Math.max(1, Math.floor(d) || 1))
+const keyOf = (y: number, m0: number) => {
+  const d = new Date(Date.UTC(y, m0, 1))
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+/** Today's calendar date in `timeZone`, as a UTC-midnight timestamp so it compares with cycle dates. */
+function localDayMs(now: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now)
+  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value)
+  return Date.UTC(get('year'), get('month') - 1, get('day'))
+}
+
+/** Closed-cycle keys at `now`, newest first, length `count`. A cycle counts as closed once a full day has passed its end. */
+export function closedCycleKeys(now: Date, monthStartDay: number, count: number, timeZone = CARRY_TIME_ZONE): string[] {
+  const start = clampStartDay(monthStartDay)
+  const today = localDayMs(now, timeZone)
+  const t = new Date(today)
+  const y = t.getUTCFullYear()
+  let m0 = t.getUTCMonth() - 1
+  const closed = (cy: number, cm0: number) => today >= Date.UTC(cy, cm0 + 1, start) + 24 * 3600 * 1000
+  while (!closed(y, m0)) m0--
+  return Array.from({ length: count }, (_, i) => keyOf(y, m0 - i))
+}
+
+/**
+ * Cycles to carry now, oldest first: closed cycles newer than the user's latest summary row (at most
+ * MAX_CATCH_UP). A user with no summary yet gets only the newest closed cycle, never their history.
+ */
+export function pendingCarryKeys(now: Date, monthStartDay: number, latestDoneKey: string | null, timeZone = CARRY_TIME_ZONE): string[] {
+  const candidates = closedCycleKeys(now, monthStartDay, MAX_CATCH_UP, timeZone)
+  const owed = latestDoneKey === null ? candidates.slice(0, 1) : candidates.filter((k) => k > latestDoneKey)
+  return owed.reverse()
 }
 
 /** The [start, end) date range of the cycle identified by `monthKey` + `monthStartDay`. */
 export function cycleRange(monthKey: string, monthStartDay: number): { start: Date; end: Date } {
-  const start = Math.min(28, Math.max(1, Math.floor(monthStartDay) || 1))
+  const start = clampStartDay(monthStartDay)
   const [y, m] = monthKey.split('-').map(Number)
-  const s = new Date(Date.UTC(y, m - 1, start))
-  const e = new Date(Date.UTC(y, m, start)) // next month's start day
-  return { start: s, end: e }
+  return { start: new Date(Date.UTC(y, m - 1, start)), end: new Date(Date.UTC(y, m, start)) }
 }

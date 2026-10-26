@@ -1,5 +1,6 @@
 import { OWNER_EMAIL, OWNER_ROLE, PERMISSIONS, can, isPermission, outranks, OWNER_ONLY } from '@/lib/admin/permissions'
-import { bad, guardAdmin, json, readJson, type AdminContext } from '@/lib/server/admin/guard'
+import { bad, guardAdmin, json, type AdminContext } from '@/lib/server/admin/guard'
+import { readValidated, staffBody } from '@/lib/server/admin/bodySchemas'
 import { allowAttempt } from '@/lib/server/admin/credentials'
 import { sendStaffInviteEmail } from '@/lib/server/admin/inviteEmail'
 import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
@@ -57,21 +58,7 @@ export async function POST(req: Request) {
   const g = await guardAdmin(req, { permission: 'staff.manage' })
   if (!g.ok) return g.res
   const { ctx } = g
-  const body = await readJson<{
-    op?: string
-    id?: string
-    code?: string
-    stepUpPassword?: string
-    email?: string
-    displayName?: string
-    department?: string
-    roleKey?: string
-    extraPermissions?: string[]
-    sendEmail?: boolean
-    role?: { key: string; name: string; description?: string; permissions: string[]; rank?: number }
-    key?: string
-    changes?: { key: string; permissions: string[] }[]
-  }>(req)
+  const body = await readValidated(req, staffBody)
   if (!body?.op) return bad('Unknown action.')
 
   if (body.op === 'invite') {

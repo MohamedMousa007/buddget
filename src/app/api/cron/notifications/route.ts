@@ -8,7 +8,9 @@
  * Auth: `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/server/cronAuth'
 import { format } from 'date-fns'
+import { budgetMonthKeyFor } from '@/lib/utils/calculations'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { evaluateAlerts, renderAlertCopy } from '@/lib/notifications/evaluateAlerts'
@@ -28,15 +30,10 @@ const CONCURRENCY = 8
 const TIME_BUDGET_MS = 48_000
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
-  const auth = request.headers.get('authorization') ?? ''
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!isAuthorizedCron(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const service = createServiceRoleClient()
   const now = new Date()
-  const monthStr = format(now, 'yyyy-MM')
   let emitted = 0
   let scanned = 0
   const started = Date.now()
@@ -60,6 +57,7 @@ export async function GET(request: Request) {
     const { data: settingsRows, error } = await query
     if (error) {
       console.error('[cron/notifications] user_settings query failed', error)
+      stoppedEarly = true // keep the cursor: resetting it would restart from the first user next run
       break
     }
     if (!settingsRows || settingsRows.length === 0) break
@@ -99,7 +97,7 @@ export async function GET(request: Request) {
 
       const descriptors = evaluateAlerts({
         now,
-        monthStr,
+        monthStr: budgetMonthKeyFor(now, (s.month_start_day as number | null) ?? 1),
         monthStartDay: (s.month_start_day as number | null) ?? 1,
         recurring,
         debtNameById,

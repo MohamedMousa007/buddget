@@ -12,7 +12,7 @@ import { cycleKeyOf } from '@/lib/budget/activations'
 import { BLOCK_META, BUDGET_BLOCKS, lineBlock, planIncome } from '@/lib/budget/blocks'
 import { effectivePlanCategoryAmountInBase, planCategoryCurrency } from '@/lib/budget/budgetPlans'
 import { debtPaidByDebt } from '@/lib/budget/liveLinks'
-import { spendByLine } from '@/lib/budget/lineSpend'
+import { ledgerDebtPaidByDebt, spendByLine } from '@/lib/budget/lineSpend'
 import { applyOps, type OpsResult, type PlanOp } from '@/lib/budget/ops'
 import { summarizePlan } from '@/lib/budget/planSummary'
 import type { BudgetBlock, BudgetPlan, BudgetPlanCategory, FinanceStore } from '@/lib/store/types'
@@ -41,13 +41,10 @@ function spentByLine(s: FinanceStore, plan: BudgetPlan): Record<string, number> 
   const month = ui().monthFilter
   const startDay = s.settings.monthStartDay
   const spendingByEnum = calculateCategorySpending(filterExpensesByMonth(s.expenses, month, startDay), base, s.exchangeRates)
-  const debtPaid = debtPaidByDebt(
-    s.debts,
-    { debtPayments: s.debtPayments, expenses: s.expenses, base, rates: s.exchangeRates, goldPricePerGram: s.goldPricePerGram, goldPriceAvailable: s.goldPriceAvailable },
-    month,
-    startDay,
-  )
-  return spendByLine({ plan, spendingByEnum, debtPaid }).byLine
+  const debtCtx = { debtPayments: s.debtPayments, expenses: s.expenses, base, rates: s.exchangeRates, goldPricePerGram: s.goldPricePerGram, goldPriceAvailable: s.goldPriceAvailable }
+  const debtPaid = debtPaidByDebt(s.debts, debtCtx, month, startDay)
+  const debtLedgerPaid = ledgerDebtPaidByDebt(s.expenses, month, startDay, base, s.exchangeRates)
+  return spendByLine({ plan, spendingByEnum, debtPaid, debtLedgerPaid }).byLine
 }
 
 const activePlan = (s: FinanceStore) => selectActivePlan(s.budgetPlans, s.activeBudgetPlanId)

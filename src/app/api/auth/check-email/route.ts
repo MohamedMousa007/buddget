@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 /**
@@ -11,7 +12,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
  *  1. RPC is now service-role only — the anon/authenticated roles can no
  *     longer call it directly, so this route is the only entry point.
  *  2. Rate limit lives in Postgres (`api_rate_hit`), not in-process, so
- *     multiple Vercel lambda instances share a single counter. 10 hits per
+ *     multiple Vercel lambda instances share a single counter. 30 hits per
  *     60 s window per IP — enough for honest typos, not enough for bulk
  *     enumeration.
  *  3. Every response waits until a minimum latency has elapsed, so an attacker
@@ -54,14 +55,7 @@ export async function POST(req: Request) {
       'unknown'
 
     const admin = createServiceRoleClient()
-    const { data: allowed, error: rateErr } = await admin.rpc('api_rate_hit', {
-      p_key: `check-email:${ip}`,
-      p_window_seconds: RATE_WINDOW_SECONDS,
-      p_max_hits: RATE_MAX_HITS,
-    })
-    if (rateErr) {
-      console.error('[auth/check-email] rate-limit rpc failed', rateErr.message)
-    } else if (allowed === false) {
+    if (await isRateLimited(admin, `check-email:${ip}`, RATE_WINDOW_SECONDS, RATE_MAX_HITS, true)) {
       await sleepUntil(deadline)
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }

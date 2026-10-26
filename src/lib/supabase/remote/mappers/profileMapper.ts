@@ -33,9 +33,7 @@ export function profileToRow(
   extras: ProfileExtras,
   userId: string
 ): ProfileInsert {
-  // `ProfileInsert` marks `onboarding_completed` + `display_name` as optional,
-  // so omitting them here is a valid partial upsert. Cast documented for the
-  // reader; no behaviour change beyond dropping the two fields.
+  // `display_name` is optional on `ProfileInsert`, so omitting it is a valid partial upsert.
   return {
     id: userId,
     name: p.name ?? '',

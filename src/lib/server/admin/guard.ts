@@ -54,7 +54,7 @@ interface GuardOptions {
  * trips. Every write skips this: it asks the Auth server (so a revoked session stops at once) and reads staff,
  * role and credentials fresh, so a suspension or role change is never one request late for a destructive action.
  */
-const STAFF_CACHE_MS = 20_000
+const STAFF_CACHE_MS = 5_000
 interface CachedStaff {
   at: number
   user: User

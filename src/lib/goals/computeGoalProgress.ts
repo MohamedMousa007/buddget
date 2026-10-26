@@ -8,7 +8,9 @@ import type {
   SavingsAccount,
 } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
+import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase, filterExpensesByMonth } from '@/lib/utils/calculations'
+import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { debtPaidAmountInCurrency } from '@/lib/goals/debtPaidInCurrency'
 
 export type GoalProgressContext = {
@@ -37,6 +39,7 @@ export function computeGoalProgress(goal: Goal, ctx: GoalProgressContext): numbe
         d,
         ctx.debtPayments,
         goal.currency,
+        ctx.baseCurrency,
         ctx.exchangeRates,
         ctx.goldPricePerGram,
         ctx.goldPriceAvailable
@@ -50,7 +53,7 @@ export function computeGoalProgress(goal: Goal, ctx: GoalProgressContext): numbe
       ctx.expenses,
       ctx.monthFilter,
       ctx.monthStartDay
-    ).filter((e) => !e.spendExclusion && (!goal.spendingCategory || e.category === goal.spendingCategory))
+    ).filter((e) => !isNonSpendExpense(e) && (!goal.spendingCategory || e.category === goal.spendingCategory))
     const totalBase = monthExpenses.reduce(
       (s, e) => s + expenseAmountInBase(e, ctx.baseCurrency, ctx.exchangeRates),
       0
@@ -64,7 +67,9 @@ export function computeGoalProgress(goal: Goal, ctx: GoalProgressContext): numbe
 
   const linked = ctx.savingsAccounts.filter((a) => goal.linkedSavingsAccountIds.includes(a.id))
   return linked.reduce((sum, a) => {
-    return sum + convertCurrency(a.currentBalance, a.currency, goal.currency, ctx.exchangeRates)
+    const inBase = savingsAccountBalanceInBase(a, ctx.baseCurrency, ctx.exchangeRates, ctx.goldPricePerGram, ctx.goldPriceAvailable)
+    if (inBase === null) return sum
+    return sum + convertCurrency(inBase, ctx.baseCurrency, goal.currency, ctx.exchangeRates)
   }, 0)
 }
 

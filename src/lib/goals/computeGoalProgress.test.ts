@@ -25,3 +25,24 @@ describe('spending_control progress', () => {
     expect(computeGoalProgress(goal({ spendingCategory: 'Food' }), ctx(expenses))).toBe(300)
   })
 })
+
+describe('spending_control excludes money movements', () => {
+  it('ignores Savings and CC Payoff rows', () => {
+    const rows = [exp('Food', 100), exp('Savings', 500), exp('CC Payoff', 300)]
+    expect(computeGoalProgress(goal({}), ctx(rows))).toBe(100)
+  })
+})
+
+describe('savings-linked progress', () => {
+  it('values an XAU pocket at the gold price, not grams as money', () => {
+    const gold = { id: 's1', currency: 'XAU', currentBalance: 40 } as never
+    const c = { ...ctx([]), savingsAccounts: [gold], goldPricePerGram: 6000, goldPriceAvailable: true }
+    const g = goal({ category: 'emergency_fund', linkedSavingsAccountIds: ['s1'] })
+    expect(computeGoalProgress(g, c)).toBe(240_000)
+  })
+  it('leaves an unpriceable gold pocket out when the gold price is unavailable', () => {
+    const gold = { id: 's1', currency: 'XAU', currentBalance: 40 } as never
+    const g = goal({ category: 'emergency_fund', linkedSavingsAccountIds: ['s1'] })
+    expect(computeGoalProgress(g, { ...ctx([]), savingsAccounts: [gold] })).toBe(0)
+  })
+})

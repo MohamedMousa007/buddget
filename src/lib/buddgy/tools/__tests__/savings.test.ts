@@ -101,8 +101,8 @@ beforeEach(() => {
 describe('list_savings and get_net_worth', () => {
   it('lists pockets with refs, native balance and base value for foreign ones', () => {
     useFinanceStore.setState({ exchangeRates: { USD_EGP: 50 }, savingsAccounts: [account(A1), account(A3, { name: 'Dollars', currency: 'USD', currentBalance: 100 })] })
-    const r = read('list_savings') as { total: number; pockets: Record<string, unknown>[] }
-    expect(r.total).toBe(6000)
+    const r = read('list_savings') as { total_savings: number; pockets: Record<string, unknown>[] }
+    expect(r.total_savings).toBe(6000)
     expect(r.pockets[0]).toMatchObject({ name: 'Dollars', bal: 100, ccy: 'USD', value: 5000, ref: refOf(A3) })
     expect(r.pockets[1]).toMatchObject({ name: 'CIB', bal: 1000 })
     expect(r.pockets[1].value).toBeUndefined()
@@ -111,11 +111,11 @@ describe('list_savings and get_net_worth', () => {
   it('values priced assets, nulls unpriced ones and flags the total incomplete', () => {
     useAssetPricesStore.setState({ prices: Object.fromEntries([price('XAU_21K', 'EGP', 4000)]) })
     useFinanceStore.setState({ investmentHoldings: [holding(H1), holding(H2, { assetType: 'crypto', name: 'Bitcoin', symbol: 'BTC', quantity: 1 })] })
-    const r = read('list_savings') as { total: number; incomplete?: boolean; assets: Record<string, unknown>[] }
+    const r = read('list_savings') as { total_savings: number; incomplete?: boolean; assets: Record<string, unknown>[] }
     expect(r.assets[0]).toMatchObject({ name: '21k gold', kind: 'gold', qty: 10, karat: 21, value: 40000 })
     expect(r.assets[1]).toMatchObject({ name: 'Bitcoin', value: null })
     expect(r.incomplete).toBe(true)
-    expect(r.total).toBe(41200)
+    expect(r.total_savings).toBe(41200)
   })
 
   it('computes net worth with the app model: savings + investments + flow - debt', () => {

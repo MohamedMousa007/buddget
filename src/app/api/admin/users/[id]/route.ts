@@ -88,8 +88,6 @@ const REQUIRES: Record<Op['op'], Permission> = {
   delete: 'users.delete',
 }
 
-const DESTRUCTIVE = new Set<Op['op']>(['suspend', 'reset_data', 'delete', 'clear_entitlement'])
-
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params
   if (!UUID_RE.test(id)) return bad('Invalid user id.')
@@ -105,12 +103,10 @@ export async function POST(req: Request, { params }: Params) {
   if (!target.user) return bad('User not found.', 404)
   const email = target.user.email ?? null
 
-  if (DESTRUCTIVE.has(body.op) || body.op === 'remove_biometric') {
-    // The owner may empty any Buddget app account, their own and staff members' included; the portal account is a separate thing.
-    const ownerOnApp = ctx.role.key === OWNER_ROLE && (body.op === 'reset_data' || body.op === 'delete')
-    const blocked = await blockedTarget(ctx, id, { allowSelf: ownerOnApp })
-    if (blocked) return bad(blocked, 403)
-  }
+  // The owner may empty any Buddget app account, their own and staff members' included; the portal account is a separate thing.
+  const ownerOnApp = ctx.role.key === OWNER_ROLE && (body.op === 'reset_data' || body.op === 'delete')
+  const blocked = await blockedTarget(ctx, id, { allowSelf: ownerOnApp })
+  if (blocked) return bad(blocked, 403)
 
   const log = (action: string, summary: string, metadata?: Record<string, unknown>) =>
     ctx.audit(action, { targetType: 'user', targetId: id, summary: `${summary} (${maskEmail(email)})`, metadata })
@@ -119,7 +115,8 @@ export async function POST(req: Request, { params }: Params) {
     case 'note': {
       const text = body.body?.trim()
       if (!text) return bad('Write a note first.')
-      await ctx.service.from('admin_user_notes').insert({ user_id: id, staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: text.slice(0, 5000), pinned: !!body.pinned })
+      const { error } = await ctx.service.from('admin_user_notes').insert({ user_id: id, staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: text.slice(0, 5000), pinned: !!body.pinned })
+      if (error) return bad('Could not save the note.', 500)
       return json({ ok: true })
     }
     case 'suspend': {
@@ -158,7 +155,8 @@ export async function POST(req: Request, { params }: Params) {
       return json({ ok: true })
     }
     case 'clear_entitlement': {
-      await ctx.service.from('user_entitlements').delete().eq('user_id', id)
+      const { error } = await ctx.service.from('user_entitlements').delete().eq('user_id', id)
+      if (error) return bad('Could not clear the membership.', 500)
       await log('billing.entitlement_cleared', 'Returned user to the default plan')
       return json({ ok: true })
     }

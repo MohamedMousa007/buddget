@@ -77,7 +77,7 @@ function toScheduleSource(row: SalaryRow): IncomeSource {
  * would be a coin flip. Half the gap is the widest window that can never be ambiguous.
  */
 function minPaydayGapDays(source: IncomeSource, around: Date): number {
-  const dates = paydayDatesForWindow(source, addDays(around, -46), addDays(around, 46))
+  const dates = paydayDatesForWindow(source, addDays(around, -46), addDays(around, 46), false)
   if (dates.length < 2) return FALLBACK_GAP_DAYS
   let min = Infinity
   for (let i = 1; i < dates.length; i++) {
@@ -96,7 +96,7 @@ function candidatePaydays(row: SalaryRow, dayISO: string): { paydays: string[]; 
   const day = parseISO(dayISO)
   const requested = row.payday_drift_days ?? DEFAULT_DRIFT_DAYS
   const window = Math.max(1, Math.min(requested, Math.floor(minPaydayGapDays(source, day) / 2)))
-  const ranked = paydayDatesForWindow(source, addDays(day, -window), addDays(day, window))
+  const ranked = paydayDatesForWindow(source, addDays(day, -window), addDays(day, window), false)
     .map((d) => ({ iso: toISODate(d), dist: Math.abs(d.getTime() - day.getTime()) }))
     .sort((a, b) => a.dist - b.dist)
   return {

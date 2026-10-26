@@ -32,7 +32,13 @@ export function useBaseCurrencySwitch() {
     if (!pending) return
     const before = useFinanceStore.getState()
     const result = planBaseCurrencySwitch(
-      { settings: before.settings, profile: before.profile, budgetPlans: before.budgetPlans, exchangeRates: before.exchangeRates },
+      {
+        settings: before.settings,
+        profile: before.profile,
+        budgetPlans: before.budgetPlans,
+        exchangeRates: before.exchangeRates,
+        goldPricePerGram: before.goldPricePerGram,
+      },
       pending,
     )
     if (!result.ok) {
@@ -40,7 +46,12 @@ export function useBaseCurrencySwitch() {
       else setPending(null)
       return
     }
-    const snapshot = { settings: before.settings, profile: before.profile, budgetPlans: before.budgetPlans }
+    const snapshot = {
+      settings: before.settings,
+      profile: before.profile,
+      budgetPlans: before.budgetPlans,
+      goldPricePerGram: before.goldPricePerGram,
+    }
     useFinanceStore.setState(result.patch)
     toast(copy.currency.toast(pending), {
       undoLabel: copy.currency.undo,

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { drainOutbox } from '@/lib/server/integrations/outbox'
+import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const VOTES_PER_HOUR = 60
@@ -20,8 +21,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ num
   if (!Number.isInteger(number) || number <= 0 || !parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 
   const service = createServiceRoleClient()
-  const { data: allowed } = await service.rpc('api_rate_hit', { p_key: `board-vote:${uid}`, p_window_seconds: 3600, p_max_hits: VOTES_PER_HOUR })
-  if (allowed === false) return NextResponse.json({ error: 'Too many votes, try again later' }, { status: 429 })
+  if (await isRateLimited(service, `board-vote:${uid}`, 3600, VOTES_PER_HOUR)) return NextResponse.json({ error: 'Too many votes, try again later' }, { status: 429 })
 
   const { data: ticket } = await service.from('support_tickets').select('id').eq('number', number).neq('board_state', 'hidden').maybeSingle()
   if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 })

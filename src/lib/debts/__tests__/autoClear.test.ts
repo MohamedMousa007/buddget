@@ -15,6 +15,20 @@ beforeEach(() => {
   useFinanceStore.setState({ debts: [debt()], debtPayments: [], recurringDebtPayments: [], expenses: [], goals: [] })
 })
 
+describe('recurring reminder anchor', () => {
+  it('follows the schedule day, not the debt start date', () => {
+    useFinanceStore.setState({
+      debts: [debt({ startDate: '2026-01-31' })],
+      recurringDebtPayments: [{
+        id: 's1', debtId: 'd1', amount: 100, currency: base(), paymentMethodId: 'x',
+        frequency: 'monthly', nextDueDate: '2026-02-28', isActive: true, createdAt: '2026-01-31',
+      }],
+    })
+    reconcileDebtSchedule('d1')
+    expect(useFinanceStore.getState().recurringDebtPayments[0].nextDueDate).toBe('2026-03-28')
+  })
+})
+
 describe('paying a debt in full', () => {
   it('keeps the debt active until it is covered, then clears it', () => {
     useFinanceStore.getState().addDebtPayment(pay(400))

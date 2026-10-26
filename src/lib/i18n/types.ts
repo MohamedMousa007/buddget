@@ -1728,6 +1728,8 @@ export interface Dictionary {
     deleteAccountConfirmBody: string
     deleteAccountConfirmPrompt: string
     deleteAccountConfirmWord: string
+    deleteAccountReauthPrompt: string
+    deleteAccountReauthSignIn: string
     deleteAccountConfirmButton: string
     deleteAccountCancel: string
     deleteAccountInProgress: string
@@ -2958,6 +2960,7 @@ export interface Dictionary {
       outside: string
       tipThisMonth: string
       tipOutside: string
+      moveFailed: string
       addCta: (amount: string, pocket: string) => string
       choosePocket: string
       withdrawCta: (verb: string, amount: string, pocket: string) => string

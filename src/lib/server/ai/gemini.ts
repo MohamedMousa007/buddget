@@ -33,11 +33,27 @@ export function configFor(model: string, config: Record<string, unknown> | undef
   return { ...config, thinkingConfig: { thinkingBudget: THINKING_BUDGET[thinking.thinkingLevel] ?? 0 } }
 }
 
-const ALLOWED_CONFIG_KEYS = ['temperature', 'topP', 'topK', 'maxOutputTokens', 'responseMimeType', 'responseSchema', 'thinkingConfig', 'stopSequences', 'candidateCount']
+const ALLOWED_CONFIG_KEYS = ['temperature', 'topP', 'topK', 'maxOutputTokens', 'responseMimeType', 'responseSchema', 'thinkingConfig', 'stopSequences']
+
+/** Hard ceiling on the thinking tokens any caller can request. */
+export const MAX_THINKING_BUDGET = 2048
+const THINKING_LEVELS = new Set(Object.keys(THINKING_BUDGET).filter((l) => THINKING_BUDGET[l] <= MAX_THINKING_BUDGET))
+
+function clampThinking(raw: unknown): Record<string, unknown> | undefined {
+  const t = raw as { thinkingBudget?: unknown; thinkingLevel?: unknown } | null
+  if (typeof t?.thinkingBudget === 'number') return { thinkingBudget: Math.min(MAX_THINKING_BUDGET, Math.max(0, Math.floor(t.thinkingBudget))) }
+  if (typeof t?.thinkingLevel === 'string' && THINKING_LEVELS.has(t.thinkingLevel)) return { thinkingLevel: t.thinkingLevel }
+  return undefined
+}
 
 export function clampGenerationConfig(config: Record<string, unknown> | undefined): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const key of ALLOWED_CONFIG_KEYS) if (config && key in config) out[key] = config[key]
+  if ('thinkingConfig' in out) {
+    const thinking = clampThinking(out.thinkingConfig)
+    if (thinking) out.thinkingConfig = thinking
+    else delete out.thinkingConfig
+  }
   const requested = typeof out.maxOutputTokens === 'number' ? out.maxOutputTokens : 2048
   out.maxOutputTokens = Math.min(MAX_OUTPUT_TOKENS_CAP, Math.max(16, Math.floor(requested)))
   return out

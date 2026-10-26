@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { addMonths } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
@@ -17,8 +18,7 @@ import { useT } from '@/lib/i18n'
 
 /** Default BNPL first-installment due: same day next month. */
 function firstOfNextMonth(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth() + 1, d.getDate()).toISOString().slice(0, 10)
+  return localTodayISO(addMonths(new Date(), 1))
 }
 
 /** Default funding card for BNPL installments — a non-BNPL method (can't fund Tabby from Tabby). */

@@ -31,22 +31,25 @@ export function tryConvertCurrency(
     return tryConvertCurrency(amount, fromCurrency, 'USD', rates)
   }
 
-  const mergedRates = { ...DEFAULT_RATES, ...rates }
+  // Live rates get the first full attempt: a stale built-in pair must never outrank them on a bridge.
+  return convertVia(amount, from, to, rates) ?? convertVia(amount, from, to, { ...DEFAULT_RATES, ...rates })
+}
 
-  const direct = mergedRates[`${fromCurrency}_${toCurrency}`]
+function convertVia(amount: number, from: string, to: string, table: Record<string, number>): number | null {
+  const direct = table[`${from}_${to}`]
   if (direct) return amount * direct
 
-  const reverse = mergedRates[`${toCurrency}_${fromCurrency}`]
+  const reverse = table[`${to}_${from}`]
   if (reverse) return amount / reverse
 
-  const fromToAed = findRate(fromCurrency, 'AED', mergedRates)
-  const aedToTarget = findRate('AED', toCurrency, mergedRates)
+  const fromToAed = findRate(from, 'AED', table)
+  const aedToTarget = findRate('AED', to, table)
   if (fromToAed !== null && aedToTarget !== null) {
     return amount * fromToAed * aedToTarget
   }
 
-  const fromToUsd = findRate(fromCurrency, 'USD', mergedRates)
-  const usdToTarget = findRate('USD', toCurrency, mergedRates)
+  const fromToUsd = findRate(from, 'USD', table)
+  const usdToTarget = findRate('USD', to, table)
   if (fromToUsd !== null && usdToTarget !== null) {
     return amount * fromToUsd * usdToTarget
   }

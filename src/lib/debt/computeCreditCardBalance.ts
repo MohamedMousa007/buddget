@@ -1,4 +1,4 @@
-import { addDays, addMonths, differenceInCalendarDays, format, getDaysInMonth, parseISO, setDate, startOfDay } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, getDaysInMonth, parseISO, startOfDay } from 'date-fns'
 import type { Currency, Debt, DebtPayment, Expense } from '@/lib/store/types'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -73,6 +73,12 @@ function clampDayInMonth(year: number, monthIndex: number, day: number): number 
   return Math.min(Math.max(1, day), dim)
 }
 
+/** The due date in a given month, clamped to the month's last day (day 31 in February is the 28th). */
+function dueDateInMonth(year: number, monthIndex: number, day: number): Date {
+  const first = new Date(year, monthIndex, 1)
+  return new Date(first.getFullYear(), first.getMonth(), clampDayInMonth(first.getFullYear(), first.getMonth(), day))
+}
+
 export function getCurrentBillingCycleExpenses(
   debt: Debt,
   expenses: Expense[],
@@ -86,22 +92,10 @@ export function getCurrentBillingCycleExpenses(
   const rawDay = debt.paymentDueDay
   const today = startOfDay(ref)
 
-  const y = today.getFullYear()
-  const m = today.getMonth()
-  let cycleEnd = new Date(y, m, clampDayInMonth(y, m, rawDay))
-  let cycleStart = addDays(addMonths(cycleEnd, -1), 1)
-  cycleStart.setHours(0, 0, 0, 0)
-  cycleEnd.setHours(0, 0, 0, 0)
-
-  while (today > cycleEnd) {
-    cycleEnd = addMonths(cycleEnd, 1)
-    const ye = cycleEnd.getFullYear()
-    const me = cycleEnd.getMonth()
-    cycleEnd = new Date(ye, me, clampDayInMonth(ye, me, rawDay))
-    cycleStart = addDays(addMonths(cycleEnd, -1), 1)
-    cycleStart.setHours(0, 0, 0, 0)
-    cycleEnd.setHours(0, 0, 0, 0)
-  }
+  let cycleEnd = dueDateInMonth(today.getFullYear(), today.getMonth(), rawDay)
+  if (today > cycleEnd) cycleEnd = dueDateInMonth(today.getFullYear(), today.getMonth() + 1, rawDay)
+  const previousEnd = dueDateInMonth(cycleEnd.getFullYear(), cycleEnd.getMonth() - 1, rawDay)
+  const cycleStart = addDays(previousEnd, 1)
 
   const linked = debt.linkedPaymentMethodId
   const list = expenses.filter((e) => {
@@ -131,12 +125,10 @@ export function sumExpensesInDebtCurrency(
 /** Next calendar due date from paymentDueDay (this month or next). */
 export function getNextCreditCardDueDate(debt: Debt, ref: Date = new Date()): string | null {
   if (!debt.paymentDueDay) return null
-  const dueDay = Math.min(31, Math.max(1, debt.paymentDueDay))
-  const y = ref.getFullYear()
-  const m = ref.getMonth()
-  let candidate = setDate(new Date(y, m, 1), dueDay)
+  const dueDay = debt.paymentDueDay
+  let candidate = dueDateInMonth(ref.getFullYear(), ref.getMonth(), dueDay)
   if (candidate < startOfDay(ref)) {
-    candidate = setDate(new Date(y, m + 1, 1), dueDay)
+    candidate = dueDateInMonth(ref.getFullYear(), ref.getMonth() + 1, dueDay)
   }
   return format(candidate, 'yyyy-MM-dd')
 }

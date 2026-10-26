@@ -8,6 +8,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 import { apiFetchAuth } from '@/lib/apiBase'
+import { createClient } from '@/lib/supabase/client'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
 
 const INPUT_CLASS =
@@ -90,6 +91,7 @@ export function useProfilePage() {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleteSuccess, setDeleteSuccess] = useState(false)
+  const [reauthNeeded, setReauthNeeded] = useState(false)
 
   const openDeleteDialog = useCallback(() => {
     setDeleteError(null)
@@ -99,15 +101,25 @@ export function useProfilePage() {
     if (deleting) return
     setDeleteOpen(false)
     setDeleteError(null)
+    setReauthNeeded(false)
   }, [deleting])
 
-  const confirmDelete = useCallback(async () => {
+  const confirmDelete = useCallback(async (password?: string) => {
     setDeleting(true)
     setDeleteError(null)
     try {
+      if (password && user?.email) {
+        const { error } = await createClient().auth.signInWithPassword({ email: user.email, password })
+        if (error) throw new Error(error.message)
+      }
       const res = await apiFetchAuth('/api/account/delete', { method: 'POST' })
       if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        const body = (await res.json().catch(() => null)) as { error?: string; code?: string } | null
+        if (body?.code === 'reauth_required') {
+          const canUsePassword = Boolean(user?.app_metadata?.providers?.includes('email'))
+          setReauthNeeded(canUsePassword)
+          throw new Error(canUsePassword ? t.profile.deleteAccountReauthPrompt : t.profile.deleteAccountReauthSignIn)
+        }
         throw new Error(body?.error || t.profile.deleteAccountError)
       }
       // Show the success overlay FIRST (z-[200], covers the authenticated dashboard).
@@ -121,7 +133,7 @@ export function useProfilePage() {
       setDeleteError(e instanceof Error ? e.message : t.profile.deleteAccountError)
       setDeleting(false)
     }
-  }, [t.profile.deleteAccountError])
+  }, [t.profile.deleteAccountError, t.profile.deleteAccountReauthPrompt, t.profile.deleteAccountReauthSignIn, user])
 
   const supabaseConfigured = useMemo(
     () =>
@@ -152,6 +164,7 @@ export function useProfilePage() {
     deleteOpen,
     deleting,
     deleteError,
+    reauthNeeded,
     deleteSuccess,
     openDeleteDialog,
     closeDeleteDialog,

@@ -3,6 +3,11 @@ import type { PriceLookup } from '@/lib/savings/holdingValuation'
 import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { convertCurrency } from '@/lib/utils/currency'
+import { goldGramsToMoney } from '@/lib/utils/calculations'
+import { isOwedToUser } from '@/lib/debts/debtDirection'
+import { debtIsGold } from '@/lib/debt/debtGold'
+
+const PAYMENTS_PER_YEAR = { weekly: 52, monthly: 12, quarterly: 4, annually: 1 } as const
 
 /** The live "what counts" figures for zakat, in base currency, before any user override. */
 export interface ZakatBase {
@@ -28,14 +33,22 @@ export function deriveZakatBase(params: {
   const { savingsAccounts, investmentHoldings, debts, baseCurrency, exchangeRates, goldPricePerGram, goldPriceAvailable, lookup } = params
   const goldOk = goldPriceAvailable !== false
 
-  // Cash & savings — every liquid savings pocket (investments valued separately below).
-  const cashAndSavings = savingsAccounts
-    .filter((a) => a.category === 'savings')
-    .reduce((s, a) => s + (savingsAccountBalanceInBase(a, baseCurrency, exchangeRates, goldPricePerGram, goldOk) ?? 0), 0)
-
+  let cashAndSavings = 0
   let goldValue = 0
   let cryptoValue = 0
   let stocksValue = 0
+
+  // Pockets: liquid ones are cash; investment pockets go to their asset line (property is never zakatable).
+  for (const a of savingsAccounts) {
+    const v = savingsAccountBalanceInBase(a, baseCurrency, exchangeRates, goldPricePerGram, goldOk)
+    if (v === null) continue
+    if (a.category === 'savings') cashAndSavings += v
+    else if (a.type === 'gold') goldValue += v
+    else if (a.type === 'crypto' || a.type === 'stablecoin') cryptoValue += v
+    else if (a.type === 'stocks') stocksValue += v
+    else if (a.type !== 'real_estate') cashAndSavings += v
+  }
+
   for (const h of investmentHoldings) {
     const v = valueInvestmentHolding(h, lookup)
     if (!v.priced || v.value == null) continue // unpriceable → excluded, per §
@@ -48,9 +61,12 @@ export function deriveZakatBase(params: {
 
   // Short-term liabilities — this year's scheduled installments (a concrete, editable estimate).
   const debtsDueThisYear = debts.reduce((s, d) => {
-    const monthly = Number(d.installmentAmount ?? 0) || 0
-    if (monthly <= 0) return s
-    return s + convertCurrency(monthly * 12, (d.currency as Currency) ?? baseCurrency, baseCurrency, exchangeRates)
+    if (d.status === 'cleared' || isOwedToUser(d)) return s
+    const installment = Number(d.installmentAmount ?? 0) || 0
+    if (installment <= 0) return s
+    const yearly = installment * PAYMENTS_PER_YEAR[d.installmentFrequency ?? 'monthly']
+    if (debtIsGold(d)) return goldOk ? s + goldGramsToMoney(yearly, goldPricePerGram, d.goldKarat ?? 24) : s
+    return s + convertCurrency(yearly, (d.currency as Currency) ?? baseCurrency, baseCurrency, exchangeRates)
   }, 0)
 
   // Gold 24k sell price per gram in base; silver estimated from the gold:silver ratio (~85:1) when

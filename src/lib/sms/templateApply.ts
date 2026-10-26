@@ -6,13 +6,16 @@
  * two could drift, and a regex could pass the gate but extract something else in production —
  * which is precisely the failure class the gates exist to prevent.
  */
+import { isSafeRegexPattern, MAX_TEMPLATE_INPUT_CHARS } from '@/lib/sms/safeRegex'
 import { parseSmsDay } from '@/lib/sms/patterns'
+import { normalizeDigits } from '@/lib/sms/normalizeDigits'
 
 /**
  * JSONB schema stored in `sms_tracking_templates_ai.mapping_rules`. It is written by the AI,
  * so this is a contract to be validated, not a type to be trusted.
  */
 export interface MappingRules {
+  /** `removeCommas` is legacy: separators are always stripped. */
   amount: { group: number; removeCommas?: boolean }
   currency?: { group: number } | { literal: string }
   merchant?: { group: number }
@@ -62,10 +65,15 @@ export function cleanLast4(raw: string | null | undefined): string | null {
  * be the same number.
  */
 export function applyMappingRules(
-  message: string,
+  rawMessage: string,
   regexPattern: string,
   rules: MappingRules,
 ): TemplateExtraction | null {
+  if (!isSafeRegexPattern(regexPattern)) {
+    console.warn('[sms/templateApply] template skipped: unsafe regex', regexPattern.slice(0, 80))
+    return null
+  }
+  const message = normalizeDigits(rawMessage).slice(0, MAX_TEMPLATE_INPUT_CHARS)
   let re: RegExp
   try {
     re = new RegExp(regexPattern, 'd')
@@ -83,8 +91,7 @@ export function applyMappingRules(
 
   try {
     const rawAmt = m[rules.amount.group] ?? ''
-    const amtStr = rules.amount.removeCommas ? rawAmt.replace(/,/g, '') : rawAmt
-    const amount = parseFloat(amtStr)
+    const amount = parseFloat(rawAmt.replace(/[,٬]/g, ''))
     if (!amount || !Number.isFinite(amount)) return null
 
     const cRules = rules.currency

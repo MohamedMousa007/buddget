@@ -4,6 +4,7 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { drainOutbox } from '@/lib/server/integrations/outbox'
 import { triage } from '@/lib/support/triage'
+import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const PER_HOUR = 10
@@ -44,8 +45,7 @@ export async function POST(request: Request) {
   const { chosen, title, description, context } = parsed.data
 
   const service = createServiceRoleClient()
-  const { data: allowed } = await service.rpc('api_rate_hit', { p_key: `support-submit:${uid}`, p_window_seconds: 3600, p_max_hits: PER_HOUR })
-  if (allowed === false) return NextResponse.json({ error: 'Too many requests, try again later' }, { status: 429 })
+  if (await isRateLimited(service, `support-submit:${uid}`, 3600, PER_HOUR)) return NextResponse.json({ error: 'Too many requests, try again later' }, { status: 429 })
 
   const { data: profile } = await service.from('profiles').select('email').eq('id', uid).maybeSingle()
   const t = triage({ chosen, title, body: description })

@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
+import { isRateLimited } from '@/lib/server/rateLimit'
 
 /**
  * Biometric sign-in for a signed-out user. The device already proved the user's
@@ -10,9 +11,11 @@ import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
  * via `generateLink` — returning a one-time OTP the client redeems with
  * `verifyOtp`. Nothing is replayed, so refresh-token reuse can never fire.
  *
- * ponytail: no rate-limit here yet — the secret is 256-bit and device-bound, so
- * guessing is infeasible; add throttling if abuse ever shows up in logs.
+ * Throttled per device and per address: the secret is 256-bit, but each attempt costs a hash and a user lookup.
  */
+const ATTEMPT_WINDOW_SECONDS = 600
+const PER_DEVICE = 10
+const PER_IP = 40
 export async function POST(request: Request) {
   try {
     const body = (await request.json().catch(() => null)) as { secret?: string } | null
@@ -21,6 +24,14 @@ export async function POST(request: Request) {
 
     const deviceId = await resolveDeviceId(request)
     const admin = createServiceRoleClient()
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim().slice(0, 64) || 'unknown'
+    if (
+      (await isRateLimited(admin, `bio-signin-dev:${deviceId}`, ATTEMPT_WINDOW_SECONDS, PER_DEVICE)) ||
+      (await isRateLimited(admin, `bio-signin-ip:${ip}`, ATTEMPT_WINDOW_SECONDS, PER_IP))
+    ) {
+      return NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 })
+    }
 
     const { data: row, error: rErr } = await admin
       .from('biometric_devices')

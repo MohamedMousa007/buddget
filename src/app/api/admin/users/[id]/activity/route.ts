@@ -51,7 +51,7 @@ export async function GET(req: Request, { params }: Params) {
     })
   }
   for (const n of notifications.data ?? []) {
-    events.push({ at: n.created_at, source: 'notification', title: `Notification: ${n.title}`, detail: granted ? n.message : undefined, tone: n.type === 'error' ? 'bad' : n.type === 'warning' ? 'warn' : 'neutral' })
+    events.push({ at: n.created_at, source: 'notification', title: granted ? `Notification: ${n.title}` : 'Notification', detail: granted ? n.message : undefined, tone: n.type === 'error' ? 'bad' : n.type === 'warning' ? 'warn' : 'neutral' })
   }
   for (const t of tickets.data ?? []) {
     events.push({ at: t.created_at, source: 'support', title: `Ticket #${t.number}: ${t.subject}`, detail: t.status, tone: 'neutral' })

@@ -1,4 +1,4 @@
-const BALANCE_KEY = /^(bal|balance|balances|net_worth|networth|current_balance|currentBalance|free|held|total_savings|total_investments|accounts_total|opening_balance)$|_balance$/i
+const BALANCE_KEY = /^(bal|balance|balances|net_worth|networth|current_balance|currentBalance|free|held|total_savings|total_investments|accounts_total|opening_balance|savings_total|debt_remaining|value)$|_balance$/i
 export const HIDDEN = '[hidden by the user]'
 
 /** Replaces balance-bearing fields in a tool result before the model sees it. Spending and income are left alone. */

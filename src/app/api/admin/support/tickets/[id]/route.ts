@@ -1,6 +1,7 @@
 import { emitNotification } from '@/lib/server/emitNotification'
 import { can } from '@/lib/admin/permissions'
-import { bad, guardAdmin, json, maskIf, readJson } from '@/lib/server/admin/guard'
+import { readValidated, ticketUpdateBody } from '@/lib/server/admin/bodySchemas'
+import { bad, guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
 
 type Params = { params: Promise<{ id: string }> }
@@ -33,19 +34,7 @@ export async function POST(req: Request, { params }: Params) {
   const g = await guardAdmin(req, { permission: 'support.reply' })
   if (!g.ok) return g.res
   const { ctx } = g
-  const body = await readJson<{
-    op?: 'reply' | 'update' | 'board' | 'delete'
-    boardState?: string
-    boardTitle?: string
-    boardSummary?: string
-    message?: string
-    internal?: boolean
-    status?: string
-    priority?: string
-    category?: string
-    assigneeId?: string | null
-    tags?: string[]
-  }>(req)
+  const body = await readValidated(req, ticketUpdateBody)
 
   const { data: ticket } = await ctx.service.from('support_tickets').select('id, number, user_id, subject, status, first_response_at').eq('id', id).maybeSingle()
   if (!ticket) return bad('Ticket not found.', 404)

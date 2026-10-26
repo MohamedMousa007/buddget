@@ -15,8 +15,10 @@ import { moneyToGoldGrams } from '@/lib/utils/calculations'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountCurrencyRow, PocketRadioList, tint } from '@/components/features/savings-v3/MoneySheetParts'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { micro } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
+import { useActionToast } from '@/components/ui/ActionToast'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
 import { IconButton } from '@/components/ui/IconButton'
@@ -54,6 +56,7 @@ export interface WithdrawSheetV3Props {
 export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNeedAsset }: WithdrawSheetV3Props) {
   const t = useT().wealthSheets.money
   const withdraw = useFinanceStore((s) => s.withdrawFromSavings)
+  const showToast = useActionToast()
   const transfer = useFinanceStore((s) => s.transferBetweenPockets)
   const addDebtPayment = useFinanceStore((s) => s.addDebtPayment)
   const updateHolding = useFinanceStore((s) => s.updateInvestmentHolding)
@@ -116,12 +119,12 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
     if (!from || amountNum <= 0) return
     if (moveOn) {
       if (!moveToId) return
-      transfer(from.account.id, moveToId, amountNum, note.trim() || undefined)
+      if (!transfer(from.account.id, moveToId, amountNum, note.trim() || undefined)) return showToast(t.moveFailed)
     } else if (reason === 'debt') {
       const debt = debts.find((d) => d.id === debtId)
       if (!debt) return
       const noteTrim = note.trim() || undefined
-      withdraw(from.account.id, amountNum, currency, noteTrim, 'debt')
+      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt')) return showToast(t.moveFailed)
       const amountInBase = convertCurrency(amountNum, currency, baseCurrency, exchangeRates)
       const amountPaid = debt.isGold
         ? goldPriceAvailable !== false
@@ -129,7 +132,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           : 0
         : convertCurrency(amountNum, currency, debt.currency, exchangeRates)
       if (amountPaid > 0) {
-        addDebtPayment({ debtId: debt.id, date: new Date().toISOString().slice(0, 10), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true })
+        addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true })
         reconcileDebtSchedule(debt.id)
       }
     } else if (reason === 'transfer') {
@@ -141,10 +144,10 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       const qtyAdd = amountEgp / target.unitEgp
       const existing = holdings.find((h) => h.id === target.id)
       if (!existing || qtyAdd <= 0) return
-      withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')) return showToast(t.moveFailed)
       updateHolding(target.id, { quantity: existing.quantity + qtyAdd })
     } else if (reason) {
-      withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason)
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason)) return showToast(t.moveFailed)
     }
     onClose()
   }

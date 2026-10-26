@@ -13,36 +13,20 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { looksLikeJwt, resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
+import { isRevokedDevice } from '@/lib/server/devices/registry'
 
 const bodySchema = z.object({ logId: z.string().uuid() })
-
-async function resolveUserId(req: Request): Promise<string | null> {
-  const auth = req.headers.get('authorization') ?? ''
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
-  if (!bearer) return null
-  const service = createServiceRoleClient()
-
-  if (looksLikeJwt(bearer)) {
-    const identity = await resolveRouteIdentity(req)
-    if (identity) return identity.id
-  }
-
-  const { data: tokenRow } = await service
-    .from('sms_ingest_tokens')
-    .select('user_id')
-    .eq('token', bearer)
-    .eq('is_active', true)
-    .single()
-
-  return tokenRow?.user_id ?? null
-}
 
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const userId = await resolveUserId(request)
+  const { userId, deviceId } = await resolveSmsCaller(request)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const service = createServiceRoleClient()
+  if (await isRevokedDevice(service, userId, deviceId)) {
+    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
+  }
 
   let json: unknown
   try { json = await request.json() } catch {
@@ -54,7 +38,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
   }
 
-  const service = createServiceRoleClient()
   // Atomic render-ack: → 'confirmed' if a push already delivered, else 'rendered'.
   // Scoped to the owner; never touches rejected/failed/confirmed rows.
   const { error } = await service.rpc('sms_mark_acked', {

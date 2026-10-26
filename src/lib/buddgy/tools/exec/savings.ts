@@ -65,7 +65,7 @@ const list_savings: ReadImpl = () => {
   const assets = model.rows.filter((r) => r.source === 'holding').sort(byValue)
   return {
     currency: base,
-    total: r0(model.total),
+    total_savings: r0(model.total),
     ...(model.anyUnpriced ? { incomplete: true } : {}),
     pockets: pockets.slice(0, 15).map((r) => {
       const a = r.account as SavingsAccount

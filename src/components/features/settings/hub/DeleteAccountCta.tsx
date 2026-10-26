@@ -27,7 +27,7 @@ export function DeleteAccountCta({ p }: { p: ReturnType<typeof useProfilePage> }
         <Trash2 className="size-4" />{copy.data.deleteCta}
       </Button>
       <p className="px-1 text-center text-xs text-[var(--color-brand-text-muted)]">{copy.data.deleteHint}</p>
-      <DeleteAccountDialog open={p.deleteOpen} onClose={p.closeDeleteDialog} onConfirm={p.confirmDelete} inProgress={p.deleting} error={p.deleteError} />
+      <DeleteAccountDialog open={p.deleteOpen} onClose={p.closeDeleteDialog} onConfirm={p.confirmDelete} inProgress={p.deleting} error={p.deleteError} reauthNeeded={p.reauthNeeded} />
       {p.deleteSuccess ? <AccountDeletedScreen /> : null}
     </section>
   )

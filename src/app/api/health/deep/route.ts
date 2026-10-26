@@ -15,7 +15,8 @@ export async function GET(request: Request) {
   const service = createServiceRoleClient()
   const caller = (request.headers.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim().slice(0, 64)
 
-  const { data: allowed } = await service.rpc('api_rate_hit', { p_key: `health:${caller}`, p_window_seconds: 60, p_max_hits: PER_MINUTE })
+  const { data: allowed, error: rateErr } = await service.rpc('api_rate_hit', { p_key: `health:${caller}`, p_window_seconds: 60, p_max_hits: PER_MINUTE })
+  if (rateErr) return NextResponse.json({ ok: false, error: 'database_unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   if (allowed === false) return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429, headers: { 'Retry-After': '60' } })
 
   const [db, cache] = await Promise.all([

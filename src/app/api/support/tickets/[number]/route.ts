@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 type Params = { params: Promise<{ number: string }> }
@@ -40,7 +41,7 @@ export async function GET(request: Request, { params }: Params) {
   return NextResponse.json({ ticket: visible, messages: (messages ?? []).map((m) => ({ ...m, author_label: m.author_type === 'staff' ? 'Buddget support' : 'You' })) }, { headers: { 'Cache-Control': 'private, no-store' } })
 }
 
-/** The user adds to their own request; a resolved or waiting ticket reopens. */
+/** The user adds to their own request; a resolved or waiting ticket reopens, a closed one stays closed. */
 export async function POST(request: Request, { params }: Params) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
@@ -51,11 +52,13 @@ export async function POST(request: Request, { params }: Params) {
   const parsed = replySchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 
-  const service = createServiceRoleClient()
-  const { data: allowed } = await service.rpc('api_rate_hit', { p_key: `support-reply:${uid}`, p_window_seconds: 3600, p_max_hits: REPLIES_PER_HOUR })
-  if (allowed === false) return NextResponse.json({ error: 'Too many messages, try again later' }, { status: 429 })
+  if (ticket.status === 'closed') return NextResponse.json({ error: 'This request is closed' }, { status: 409 })
 
-  await service.from('support_ticket_messages').insert({ ticket_id: ticket.id, author_type: 'user', author_label: 'Customer', body: parsed.data.message })
+  const service = createServiceRoleClient()
+  if (await isRateLimited(service, `support-reply:${uid}`, 3600, REPLIES_PER_HOUR)) return NextResponse.json({ error: 'Too many messages, try again later' }, { status: 429 })
+
+  const { error } = await service.from('support_ticket_messages').insert({ ticket_id: ticket.id, author_type: 'user', author_label: 'Customer', body: parsed.data.message })
+  if (error) return NextResponse.json({ error: 'Could not send your message' }, { status: 500 })
   if (ticket.status !== 'open') await service.from('support_tickets').update({ status: 'open', resolved_at: null }).eq('id', ticket.id)
   return NextResponse.json({ ok: true })
 }

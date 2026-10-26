@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { apiFetchAuth } from '@/lib/apiBase'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -84,7 +85,7 @@ export function useNotifications() {
 
   const fetchServerNotifications = useCallback(async () => {
     try {
-      const res = await fetch('/api/notifications')
+      const res = await apiFetchAuth('/api/notifications')
       if (!res.ok) return
       const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
       setServerNotifications(data.notifications ?? [])
@@ -101,7 +102,7 @@ export function useNotifications() {
     let cancelled = false
     void (async () => {
       try {
-        const res = await fetch('/api/notifications')
+        const res = await apiFetchAuth('/api/notifications')
         if (!res.ok || cancelled) return
         const data = (await res.json()) as { notifications?: ServerNotificationRow[] }
         if (!cancelled) setServerNotifications(data.notifications ?? [])
@@ -204,7 +205,7 @@ export function useNotifications() {
     })
     if (user) {
       try {
-        await fetch('/api/notifications', {
+        await apiFetchAuth('/api/notifications', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ markAllRead: true }),
@@ -220,7 +221,7 @@ export function useNotifications() {
     async (ids: string[]) => {
       if (!ids.length) return
       try {
-        await fetch('/api/notifications', {
+        await apiFetchAuth('/api/notifications', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ids }),

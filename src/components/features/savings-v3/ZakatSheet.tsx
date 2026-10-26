@@ -11,6 +11,7 @@ import { computeZakat } from '@/lib/savings/zakat'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { cn } from '@/lib/utils'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { ZakatBase } from '@/lib/savings/zakatInputs'
 import type { ZakatConfig } from '@/lib/store/types'
@@ -72,7 +73,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     setOverrides(next); save({ lineOverrides: next })
   }
 
-  const todayIso = new Date().toISOString().slice(0, 10)
+  const todayIso = localTodayISO()
   const janIso = `${todayIso.slice(0, 4)}-01-01`
   const pickYear = (v: string) => { setYearStart(v); save({ yearStartDate: v || null }) }
 

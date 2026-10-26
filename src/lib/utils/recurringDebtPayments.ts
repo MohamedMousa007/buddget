@@ -1,15 +1,26 @@
-import { addMonths, addWeeks, addYears, format, parseISO } from 'date-fns'
+import { addMonths, addWeeks, addYears, format, getDaysInMonth, parseISO, setDate } from 'date-fns'
 import type { DebtRecurringFrequency } from '@/lib/store/types'
+
+/**
+ * Month-based steps clamp (Jan 31 + 1 month = Feb 28). With `anchorDay`, a due date that sits on its
+ * clamped anchor snaps back to the anchor in longer months, so the day never drifts to 28 for good.
+ */
+function addMonthsAnchored(d: Date, months: number, anchorDay?: number): Date {
+  const next = addMonths(d, months)
+  if (!anchorDay || d.getDate() !== Math.min(anchorDay, getDaysInMonth(d))) return next
+  return setDate(next, Math.min(anchorDay, getDaysInMonth(next)))
+}
 
 export function advanceRecurringDebtDueDate(
   isoYmd: string,
-  frequency: DebtRecurringFrequency
+  frequency: DebtRecurringFrequency,
+  anchorDay?: number
 ): string {
   const d = parseISO(isoYmd + 'T12:00:00')
-  if (frequency === 'monthly') return format(addMonths(d, 1), 'yyyy-MM-dd')
+  if (frequency === 'monthly') return format(addMonthsAnchored(d, 1, anchorDay), 'yyyy-MM-dd')
   if (frequency === 'biweekly') return format(addWeeks(d, 2), 'yyyy-MM-dd')
   if (frequency === 'weekly') return format(addWeeks(d, 1), 'yyyy-MM-dd')
-  if (frequency === 'quarterly') return format(addMonths(d, 3), 'yyyy-MM-dd')
+  if (frequency === 'quarterly') return format(addMonthsAnchored(d, 3, anchorDay), 'yyyy-MM-dd')
   if (frequency === 'annually') return format(addYears(d, 1), 'yyyy-MM-dd')
   return format(addWeeks(d, 1), 'yyyy-MM-dd')
 }

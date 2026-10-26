@@ -11,7 +11,7 @@ import { useGoalRows } from '@/hooks/useGoalRows'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { planForMonth } from '@/lib/budget/activations'
 import { debtExtras, debtPaidByDebt, goalExtras, liquidSavings, liveDebts, paydayDayOf, subscriptionsExtras, subscriptionsLive } from '@/lib/budget/liveLinks'
-import { lineHistory, spendByLine } from '@/lib/budget/lineSpend'
+import { ledgerDebtPaidByDebt, lineHistory, spendByLine } from '@/lib/budget/lineSpend'
 import { buildPlanView } from '@/lib/budget/planView'
 import { cycleKeyOf } from '@/lib/budget/activations'
 import { isLearning } from '@/lib/budget/learning'
@@ -75,7 +75,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
     }
     const debtPaid = debtPaidByDebt(s.debts, debtCtx, monthFilter, startDay)
     const spend = mode === 'month'
-      ? spendByLine({ plan, spendingByEnum: stats.spendingByEnum, debtPaid })
+      ? spendByLine({ plan, spendingByEnum: stats.spendingByEnum, debtPaid, debtLedgerPaid: ledgerDebtPaidByDebt(s.expenses, monthFilter, startDay, base, rates) })
       : { byLine: {}, unassigned: 0 }
     const history = lineHistory({
       plan, expenses: s.expenses, monthKey: monthFilter, monthStartDay: startDay, base, rates,

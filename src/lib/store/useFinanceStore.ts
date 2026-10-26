@@ -1509,7 +1509,8 @@ export const useFinanceStore = create<FinanceStore>()(
 
       depositToSavings: (accountId, amount, currency, notes, opts) => {
         const raw = Math.max(0, Number(amount) || 0)
-        if (raw <= 0) return
+        if (raw <= 0) return false
+        let ok = false
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
@@ -1517,8 +1518,8 @@ export const useFinanceStore = create<FinanceStore>()(
             currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
           const rates = state.exchangeRates
           const amt =
-            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
-          if (amt <= 0) return state
+            cIn === acc.currency ? raw : tryConvertCurrency(raw, cIn, acc.currency, rates)
+          if (amt === null || amt <= 0) return state
           const tx: SavingsTransaction = {
             id: generateId(),
             accountId,
@@ -1543,16 +1544,19 @@ export const useFinanceStore = create<FinanceStore>()(
               a.id === accountId ? { ...a, currentBalance: a.currentBalance + amt } : a
             ),
           }
+          ok = true
           return {
             ...nextState,
             goals: reconcileGoalsForState(nextState),
           }
         })
+        return ok
       },
 
       transferBetweenPockets: (fromId, toId, amount, notes) => {
         const raw = Math.max(0, Number(amount) || 0)
-        if (raw <= 0 || fromId === toId) return
+        if (raw <= 0 || fromId === toId) return false
+        let ok = false
         set((state) => {
           const from = state.savingsAccounts.find((a) => a.id === fromId)
           const to = state.savingsAccounts.find((a) => a.id === toId)
@@ -1590,13 +1594,16 @@ export const useFinanceStore = create<FinanceStore>()(
                   : a
             ),
           }
+          ok = true
           return { ...nextState, goals: reconcileGoalsForState(nextState) }
         })
+        return ok
       },
 
       withdrawFromSavings: (accountId, amount, currency, notes, purpose = 'income') => {
         const raw = Math.max(0, Number(amount) || 0)
-        if (raw <= 0) return
+        if (raw <= 0) return false
+        let ok = false
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
@@ -1604,8 +1611,8 @@ export const useFinanceStore = create<FinanceStore>()(
             currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
           const rates = state.exchangeRates
           const amt =
-            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
-          if (amt <= 0 || acc.currentBalance + 0.0001 < amt) return state
+            cIn === acc.currency ? raw : tryConvertCurrency(raw, cIn, acc.currency, rates)
+          if (amt === null || amt <= 0 || acc.currentBalance + 0.0001 < amt) return state
           const tx: SavingsTransaction = {
             id: generateId(),
             accountId,
@@ -1649,11 +1656,13 @@ export const useFinanceStore = create<FinanceStore>()(
               ? { ...state.settings, noIncomeDeclared: false }
               : state.settings,
           }
+          ok = true
           return {
             ...nextState,
             goals: reconcileGoalsForState(nextState),
           }
         })
+        return ok
       },
 
       deleteSavingsTransaction: (id) =>

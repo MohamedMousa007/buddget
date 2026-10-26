@@ -6,6 +6,7 @@ import {
   requireSupabasePublishableKey,
   requireSupabaseUrl,
 } from '@/lib/supabase/env'
+import { publicApiRateLimitOk } from '@/lib/server/publicApiRateLimit'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
 import { appHostFor, configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
 import {
@@ -17,32 +18,6 @@ import {
   planCookieDomain,
   supabaseCookieDomain,
 } from '@/lib/supabase/cookieDomain'
-
-/** Simple in-process limiter for unauthenticated public FX/gold routes (best-effort per isolate). */
-const PUBLIC_API_WINDOW_MS = 60_000
-const PUBLIC_API_MAX = 120
-const MAX_TRACKED_IPS = 10000
-const publicApiHits = new Map<string, number[]>()
-
-function publicApiRateLimitOk(ip: string): boolean {
-  const now = Date.now()
-  const windowStart = now - PUBLIC_API_WINDOW_MS
-  const prev = publicApiHits.get(ip) ?? []
-  const recent = prev.filter((t) => t > windowStart)
-  recent.push(now)
-  publicApiHits.set(ip, recent)
-
-  // Cleanup: if map grows unbounded, evict IPs with empty hit arrays
-  if (publicApiHits.size > MAX_TRACKED_IPS) {
-    for (const [trackedIp, hits] of publicApiHits.entries()) {
-      if (hits.length === 0) {
-        publicApiHits.delete(trackedIp)
-      }
-    }
-  }
-
-  return recent.length <= PUBLIC_API_MAX
-}
 
 const AUTH_CALLBACK = '/auth/callback'
 const AUTH_CHECK_TIMEOUT_MS = 1500
@@ -57,6 +32,7 @@ function buildCsp(nonce: string): string {
     "font-src 'self' https://fonts.gstatic.com",
     "worker-src 'self' blob:",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://open.er-api.com https://api.frankfurter.dev https://api.frankfurter.app https://metals.live https://api.metals.live https://gold-api.com https://fcm.googleapis.com https://*.push.services.mozilla.com https://updates.push.services.mozilla.com https://*.notify.windows.com https://web.push.apple.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.ingest.us.sentry.io",
+    "object-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -92,7 +68,7 @@ export async function middleware(request: NextRequest) {
       forwarded?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip')?.trim() ||
       'unknown'
-    if (!publicApiRateLimitOk(ip)) {
+    if (!(await publicApiRateLimitOk(ip))) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }
   }
@@ -199,11 +175,6 @@ export async function middleware(request: NextRequest) {
       url.pathname = '/'
       return NextResponse.redirect(url)
     }
-    return supabaseResponse
-  }
-
-  // /admin requires a signed-in account (PIN still required inside the app / APIs)
-  if (isAdmin) {
     return supabaseResponse
   }
 

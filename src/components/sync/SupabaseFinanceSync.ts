@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
+import { baselineAfterFlush, flushRetryDelay } from './flushBaseline'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   pullAll,
@@ -23,7 +24,7 @@ import {
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
 import { ensureMarketDataFresh } from '@/lib/market/marketData'
 import { applyTheme } from '@/lib/theme/applyTheme'
-import { isOnline, subscribeNetwork } from '@/hooks/useNetworkStatus'
+import { isOnline, networkReady, subscribeNetwork } from '@/hooks/useNetworkStatus'
 import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 500
@@ -32,9 +33,9 @@ const DEBOUNCE_MS = 500
  *  modules (e.g. AuthProvider.signOut) call `flushFinanceNow()` to drain any
  *  pending debounced write before they wipe localStorage. Returns a promise
  *  so callers can await the round-trip. */
-let pendingFlush: (() => Promise<void>) | null = null
+let pendingFlush: (() => Promise<boolean>) | null = null
 export function flushFinanceNow(): Promise<void> {
-  return pendingFlush ? pendingFlush() : Promise.resolve()
+  return pendingFlush ? pendingFlush().then(() => undefined) : Promise.resolve()
 }
 
 /** Imperative full-sync handle (set by the mounted `SupabaseFinanceSync`).
@@ -156,7 +157,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     if (!supabaseRef.current) supabaseRef.current = createClient()
     const supabase = supabaseRef.current
 
+    let cancelled = false
     async function pull() {
+      // On native the OS status lands after mount; deciding earlier reads a stale "online" and fails in airplane mode.
+      await networkReady
+      if (cancelled) return
       // Warm cache-first path: this user's data is already persisted in
       // localStorage, so render it instantly and reconcile in the background.
       // The reconcile goes through `syncFinanceNow()` (flush → pull → re-baseline)
@@ -201,17 +206,20 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         ensureMarketDataFresh(),
         new Promise<void>((r) => setTimeout(r, 3500)),
       ])
+      let pulled = false
       try {
         // Pull before flipping dataReady, even on a warm start: lifting the splash on cached numbers and then
         // merging server rows visibly changes the dashboard totals. The pull is one small delta request.
         await runFullSync(supabase, userId)
+        pulled = true
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {
         // Await the market fetch started above — by now it's been running in
         // parallel with pullAll so it's likely already done or nearly done.
         try { await marketPromise } catch { /* keep cached/default rates */ }
-        prevSnap.current = snapshot(useFinanceStore.getState())
+        // A failed pull leaves no trustworthy baseline: keep it empty so the first flush sends local state.
+        prevSnap.current = baselineAfterFlush(null, snapshot(useFinanceStore.getState()), pulled)
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
         useFinanceStore.getState().setDataReady(true)
@@ -221,6 +229,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     void pull()
 
     return () => {
+      cancelled = true
       if (timer.current) clearTimeout(timer.current)
     }
   }, [userId])
@@ -229,17 +238,30 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     if (!supabaseRef.current) supabaseRef.current = createClient()
     const supabase = supabaseRef.current
 
-    const flush = async () => {
-      if (!hydrated.current) return
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let retryAttempt = 0
+    const scheduleRetry = () => {
+      if (retryTimer) return
+      const delay = flushRetryDelay(retryAttempt)
+      if (delay === null || !isOnline()) return
+      retryAttempt++
+      retryTimer = setTimeout(() => {
+        retryTimer = null
+        void flush()
+      }, delay)
+    }
+
+    const flush = async (): Promise<boolean> => {
+      if (!hydrated.current) return true
       // Offline: don't attempt a doomed flush that would raise the sync-failure
       // banner. prevSnap doesn't advance, so the reconnect flush (or the next
       // online mutation) sends exactly this diff.
-      if (!isOnline()) return
+      if (!isOnline()) return true
       // A stale debounce timer can fire after suspendFinanceSync() is called
       // during sign-out. At that point the store has already been reset to
       // empty defaults, and flushing would soft-delete all server-side data.
-      if (syncSuspended) return
-      if (useFinanceStore.getState().profile.id === 'local') return
+      if (syncSuspended) return true
+      if (useFinanceStore.getState().profile.id === 'local') return true
       if (timer.current) {
         clearTimeout(timer.current)
         timer.current = null
@@ -256,15 +278,20 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         useSyncFailures.getState().recordFailures(result.anyError ? result.errors : [])
         if (!result.anyError) {
           prevSnap.current = next
+          retryAttempt = 0
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)
+          scheduleRetry()
         }
+        return !result.anyError
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
         useSyncFailures
           .getState()
           .recordFailures([`sync.flush: ${message.slice(0, 200)}`])
         console.error('[finance sync] flush threw', e)
+        scheduleRetry()
+        return false
       }
     }
 
@@ -291,9 +318,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       try {
         for (let pass = 0; pass < 3; pass++) {
           runAgain.current = false
-          await flush()
+          const flushed = await flush()
           await runFullSync(supabase, userId)
-          prevSnap.current = snapshot(useFinanceStore.getState())
+          prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
           if (!runAgain.current) break
         }
@@ -421,6 +448,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       document.removeEventListener('visibilitychange', onVisibility)
       removeAppStateListener?.()
       if (timer.current) clearTimeout(timer.current)
+      if (retryTimer) clearTimeout(retryTimer)
       if (pendingFlush === flush) pendingFlush = null
       pendingSync = null
     }

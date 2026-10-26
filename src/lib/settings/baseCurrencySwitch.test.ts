@@ -24,6 +24,7 @@ const slice = (over: Partial<BaseCurrencySlice> = {}): BaseCurrencySlice => ({
   profile: { ...DEFAULT_PROFILE, monthlyRent: 10000 },
   budgetPlans: [plan([undefined, 'EGP', 'USD'])],
   exchangeRates: rates,
+  goldPricePerGram: 5000,
   ...over,
 })
 
@@ -86,5 +87,13 @@ describe('planBaseCurrencySwitch', () => {
     const before = JSON.stringify(s)
     planBaseCurrencySwitch(s, 'USD')
     expect(JSON.stringify(s)).toBe(before)
+  })
+})
+
+describe('gold price on a base switch (M19)', () => {
+  it('converts the base-denominated gold price per gram', () => {
+    const r = planBaseCurrencySwitch(slice(), 'USD')
+    if (!r.ok) throw new Error('expected ok')
+    expect(r.patch.goldPricePerGram).toBe(100)
   })
 })

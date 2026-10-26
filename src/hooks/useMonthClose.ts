@@ -10,7 +10,7 @@ import { cycleKeyOf, planForMonth } from '@/lib/budget/activations'
 import { lineBlock } from '@/lib/budget/blocks'
 import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
 import { debtPaidByDebt } from '@/lib/budget/liveLinks'
-import { lineHistory, shiftMonth, spendByLine } from '@/lib/budget/lineSpend'
+import { ledgerDebtPaidByDebt, lineHistory, shiftMonth, spendByLine } from '@/lib/budget/lineSpend'
 import { buildClose, type CloseLine, type MonthClose } from '@/lib/budget/monthClose'
 import { closeKey } from '@/lib/budget/closeMemory'
 import { calculateCategorySpending, filterExpensesByMonth, getMonthRange } from '@/lib/utils/calculations'
@@ -61,7 +61,7 @@ export function useMonthClose(): MonthCloseState | null {
       debtPayments: s.debtPayments, expenses: s.expenses, base, rates: s.rates,
       goldPricePerGram: s.goldPricePerGram, goldPriceAvailable: s.goldPriceAvailable,
     }
-    const spent = spendByLine({ plan, spendingByEnum: spending, debtPaid: debtPaidByDebt(s.debts, debtCtx, cycleKey, startDay) }).byLine
+    const spent = spendByLine({ plan, spendingByEnum: spending, debtPaid: debtPaidByDebt(s.debts, debtCtx, cycleKey, startDay), debtLedgerPaid: ledgerDebtPaidByDebt(s.expenses, cycleKey, startDay, base, s.rates) }).byLine
     const history = lineHistory({
       plan, expenses: s.expenses, monthKey: currentKey, monthStartDay: startDay, base, rates: s.rates,
       debtPaidForMonth: (key) => debtPaidByDebt(s.debts, debtCtx, key, startDay),

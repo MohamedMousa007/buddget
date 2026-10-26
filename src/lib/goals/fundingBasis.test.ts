@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import type { BudgetPlan, IncomeEvent, IncomeSource } from '@/lib/store/types'
 
-const source = { id: 's', name: 'Salary', amount: 10000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly' } as IncomeSource
+const source = { id: 's', name: 'Salary', amount: 10000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', createdAt: '2026-01-01T00:00:00Z' } as IncomeSource
 const event = { receivedDate: '2026-08-25', status: 'confirmed' } as IncomeEvent
 const plan = (rent: number): BudgetPlan => ({
   id: 'p',

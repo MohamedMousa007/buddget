@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { isRateLimited } from '@/lib/server/rateLimit'
+import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const LINEAR_GRAPHQL = 'https://api.linear.app/graphql'
 const TEAM_ID = '6897293b-50cf-4cce-b332-de50b5635bb2'
 const LABEL_USER_FEEDBACK = '39958100-0d5a-4e1e-8700-58781127953f'
 const LABEL_BUG = '108160ab-70c9-4348-9877-b79a856d840e'
 const LABEL_FEATURE = '4b4595d2-75a9-45f3-b042-e95b96f3258f'
+
+const MAX_BODY_CHARS = 16_000
+const PER_HOUR = 5
+const LINEAR_TIMEOUT_MS = 10_000
 
 const bodySchema = z.object({
   type: z.enum(['bug', 'feature']),
@@ -15,15 +21,20 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await resolveRouteIdentity(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.LINEAR_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'Feedback unavailable' }, { status: 503 })
 
+  if (await isRateLimited(createServiceRoleClient(), `feedback:${user.id}`, 3600, PER_HOUR)) {
+    return NextResponse.json({ error: 'Too many reports, try again later' }, { status: 429 })
+  }
+
+  const text = await request.text()
+  if (text.length > MAX_BODY_CHARS) return NextResponse.json({ error: 'Request too large' }, { status: 413 })
   let json: unknown
-  try { json = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  try { json = JSON.parse(text) } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const parsed = bodySchema.safeParse(json)
   if (!parsed.success) return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
@@ -43,6 +54,7 @@ export async function POST(request: Request) {
       }`,
       variables: { input: { teamId: TEAM_ID, title, description: fullDescription, labelIds } },
     }),
+    signal: AbortSignal.timeout(LINEAR_TIMEOUT_MS),
   })
 
   if (!res.ok) {

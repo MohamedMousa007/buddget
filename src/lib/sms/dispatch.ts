@@ -43,6 +43,7 @@ import {
   type PairSibling,
 } from './pairing'
 import { guardDirection } from './directionGuard'
+import { normalizeDigits } from './normalizeDigits'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
 
@@ -141,9 +142,10 @@ function base(outcome: SmsTxOutcome, kind: SmsExpenseKind): SmsTxResult {
  * b3abc23b", "Ref# b3abc23b"). Anchored on the keyword so amounts and phone numbers
  * ("call 16607") never match; 6+ chars keeps it collision-safe (real refs are 8-hex).
  */
-const IPN_REFERENCE = /\bref(?:erence)?\s*#?\s*:?\s*([a-z0-9]{6,})/i
-function extractIpnReference(body: string): string | null {
-  return body.match(IPN_REFERENCE)?.[1] ?? null
+const IPN_REFERENCE =
+  /(?:\bref(?:erence)?\b(?:\s+(?:number|no\.?))?|رقم\s*مرجع[يى]?)\s*#?\s*:?\s*(?=[a-z0-9]*\d)([a-z0-9]{6,})(?![a-z0-9])/i
+export function extractIpnReference(body: string): string | null {
+  return normalizeDigits(body).match(IPN_REFERENCE)?.[1] ?? null
 }
 
 /**
@@ -185,7 +187,7 @@ export async function createSmsTransaction(
   //     103-104***-110" for an inbound wire), so the title goes with it. A named counterparty
   //     is still true either way and keeps precedence; only when there is none does the bank
   //     name get a direction-correct wrapper, so the row doesn't land in the ledger as "HSBC".
-  const guardedKind = guardDirection(parsedRow.kind, parsedRow.rawBody)
+  const guardedKind = guardDirection(parsedRow.kind, normalizeDigits(parsedRow.rawBody))
 
   // N1 — a free, deterministic health oracle. The guard runs on every tier, so when it has to
   // override a TEMPLATE-parsed row the template's `kind` is provably wrong: the bank's own

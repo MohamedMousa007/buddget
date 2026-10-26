@@ -9,6 +9,7 @@
  * Auth: `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/server/cronAuth'
 import { runPriceRefresh } from '@/lib/prices/runPriceRefresh'
 import { harvestLegacySms } from '@/lib/sms/harvest'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -16,11 +17,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 export const maxDuration = 60
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
-  const auth = request.headers.get('authorization') ?? ''
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!isAuthorizedCron(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const result = await runPriceRefresh()
   // Retention and rollups run inside the database (pg_cron). This only sweeps up SMS text that predates the

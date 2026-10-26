@@ -28,7 +28,8 @@ export async function POST(req: Request) {
   const fullName = claimed.display_name ?? (user.user_metadata?.full_name as string | undefined) ?? (user.user_metadata?.name as string | undefined)
   const result = await sendTemplatedEmail('welcome', { email: user.email, id: user.id, fullName, firstName: fullName?.split(' ')[0] }, {}, { service, source: 'system', idempotencyKey: `welcome:${user.id}` })
   if (!result.ok) {
-    await service.from('profiles').update({ welcome_email_sent_at: null }).eq('id', user.id)
+    const { error } = await service.from('profiles').update({ welcome_email_sent_at: null }).eq('id', user.id)
+    if (error) console.error('[auth/welcome] could not give the claim back; this user will not be welcomed again', error.message)
     return NextResponse.json({ sent: false }, { status: 502 })
   }
   return NextResponse.json({ sent: true })

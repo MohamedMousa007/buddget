@@ -6,7 +6,26 @@ import {
   otherRowName,
   unassignedSpend,
 } from '@/lib/budget/budgetPlans'
-import { calculateCategorySpending, filterExpensesByMonth } from '@/lib/utils/calculations'
+import { calculateCategorySpending, expenseAmountInBase, filterExpensesByMonth } from '@/lib/utils/calculations'
+
+/** Category the ledger files a debt repayment under (lowercased, as `remaining` is keyed). */
+const LEDGER_DEBT_CATEGORY = 'debt'
+
+/** Base amount of Debt-category ledger expenses per debt in the cycle: the payments that actually hit the ledger. */
+export function ledgerDebtPaidByDebt(
+  expenses: Expense[],
+  monthKey: string,
+  monthStartDay: number,
+  base: Currency,
+  rates: Record<string, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const e of filterExpensesByMonth(expenses, monthKey, monthStartDay)) {
+    if (e.category !== 'Debt' || !e.linkedDebtId) continue
+    out[e.linkedDebtId] = (out[e.linkedDebtId] ?? 0) + expenseAmountInBase(e, base, rates)
+  }
+  return out
+}
 
 export interface LineSpendInput {
   plan: BudgetPlan
@@ -14,6 +33,8 @@ export interface LineSpendInput {
   spendingByEnum: Record<string, number>
   /** Payments made this cycle per debt id (base); debt lines linked to a debt read these. */
   debtPaid: Record<string, number>
+  /** Of those, what reached the ledger as Debt-category spend per debt id (base): savings-funded and non-spend payments did not. */
+  debtLedgerPaid: Record<string, number>
 }
 
 export interface LineSpend {
@@ -27,7 +48,7 @@ export interface LineSpend {
  * plan order wins a shared one); a line without them is matched by name like the dashboard does;
  * a debt line linked to a debt reads that debt's payments.
  */
-export function spendByLine({ plan, spendingByEnum, debtPaid }: LineSpendInput): LineSpend {
+export function spendByLine({ plan, spendingByEnum, debtPaid, debtLedgerPaid }: LineSpendInput): LineSpend {
   const lines = plan.categories.filter((c) => !isSavingsPlanCategory(c) && c.name.trim())
   const remaining = new Map(Object.entries(spendingByEnum).map(([k, v]) => [k.toLowerCase(), { key: k, amount: v }]))
   const byLine: Record<string, number> = {}
@@ -44,6 +65,18 @@ export function spendByLine({ plan, spendingByEnum, debtPaid }: LineSpendInput):
         remaining.delete(c.toLowerCase())
       }
     }
+  }
+
+  // A debt payment is also a ledger expense: the debt line already reads it from the payments, so it
+  // must not resurface as uncovered spend (and from there in Other).
+  const debtLinePaid = lines.reduce(
+    (s, l) => (l.linkType === 'debts' && l.linkIds?.length ? s + l.linkIds.reduce((t, id) => t + (debtLedgerPaid[id] ?? 0), 0) : s),
+    0,
+  )
+  const ledgerDebt = remaining.get(LEDGER_DEBT_CATEGORY)
+  if (ledgerDebt && debtLinePaid > 0) {
+    ledgerDebt.amount = Math.max(0, ledgerDebt.amount - debtLinePaid)
+    if (ledgerDebt.amount === 0) remaining.delete(LEDGER_DEBT_CATEGORY)
   }
 
   const byName = lines.filter((l) => !(l.id in byLine))
@@ -94,7 +127,7 @@ export function lineHistory(i: LineHistoryInput): LineHistory {
     const spending = calculateCategorySpending(filterExpensesByMonth(i.expenses, key, i.monthStartDay), i.base, i.rates)
     return {
       active: Object.keys(spending).length > 0,
-      byLine: spendByLine({ plan: i.plan, spendingByEnum: spending, debtPaid: i.debtPaidForMonth(key) }).byLine,
+      byLine: spendByLine({ plan: i.plan, spendingByEnum: spending, debtPaid: i.debtPaidForMonth(key), debtLedgerPaid: ledgerDebtPaidByDebt(i.expenses, key, i.monthStartDay, i.base, i.rates) }).byLine,
     }
   })
   const recent = cycles.slice(0, AVERAGE_CYCLES)

@@ -14,9 +14,11 @@ import { IconButton } from '@/components/ui/IconButton'
 export interface DeleteAccountDialogProps {
   open: boolean
   onClose: () => void
-  onConfirm: () => Promise<void> | void
+  onConfirm: (password?: string) => Promise<void> | void
   inProgress: boolean
   error: string | null
+  /** The server asked for a fresh sign-in: collect the password and re-authenticate before deleting. */
+  reauthNeeded?: boolean
 }
 
 /**
@@ -24,17 +26,19 @@ export interface DeleteAccountDialogProps {
  * - Warning card with full consequences copy
  * - User must type the exact confirm word (DELETE) to unlock the destructive button
  */
-export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, error }: DeleteAccountDialogProps) {
+export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, error, reauthNeeded = false }: DeleteAccountDialogProps) {
   useDismissable(open, onClose)
   const t = useT()
   useScrollLock(open)
   const [typed, setTyped] = useState('')
+  const [password, setPassword] = useState('')
   const expected = t.profile.deleteAccountConfirmWord
-  const canConfirm = typed.trim().toUpperCase() === expected.toUpperCase() && !inProgress
+  const canConfirm = typed.trim().toUpperCase() === expected.toUpperCase() && !inProgress && (!reauthNeeded || password.length > 0)
 
   const handleClose = () => {
     if (inProgress) return
     setTyped('')
+    setPassword('')
     onClose()
   }
 
@@ -91,6 +95,18 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
               size="brand" className="text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-red)] focus-visible:ring-[var(--color-brand-red)]/40 text-sm font-mono"
             />
 
+            {reauthNeeded ? (
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={inProgress}
+                autoComplete="current-password"
+                aria-label={t.profile.deleteAccountReauthPrompt}
+                size="brand" className="mt-3 text-[var(--color-brand-text-primary)] text-sm"
+              />
+            ) : null}
+
             {error ? (
               <p className="mt-3 text-xs text-[var(--color-brand-red)]">{error}</p>
             ) : null}
@@ -108,7 +124,7 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
               <Button
                 variant="destructive-solid"
                 size="touch"
-                onClick={() => void onConfirm()}
+                onClick={() => void onConfirm(reauthNeeded ? password : undefined)}
                 disabled={!canConfirm}
                 className="text-sm font-semibold disabled:cursor-not-allowed"
               >

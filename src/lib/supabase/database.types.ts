@@ -722,6 +722,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_daily: {
+        Row: {
+          day: string
+          user_id: string
+          feature: string
+          model: string
+          calls: number
+          failed_calls: number
+          in_tokens: number
+          cached_tokens: number
+          out_tokens: number
+          units: number
+          latency_ms_total: number
+        }
+        Insert: {
+          day: string
+          user_id: string
+          feature: string
+          model: string
+          calls?: number
+          failed_calls?: number
+          in_tokens?: number
+          cached_tokens?: number
+          out_tokens?: number
+          units?: number
+          latency_ms_total?: number
+        }
+        Update: {
+          day?: string
+          user_id?: string
+          feature?: string
+          model?: string
+          calls?: number
+          failed_calls?: number
+          in_tokens?: number
+          cached_tokens?: number
+          out_tokens?: number
+          units?: number
+          latency_ms_total?: number
+        }
+        Relationships: []
+      }
       ai_usage_events: {
         Row: {
           cost_usd_micro: number | null
@@ -1653,6 +1695,24 @@ export type Database = {
           sent_at?: string | null
           status?: string
           ticket_id?: string | null
+        }
+        Relationships: []
+      }
+      fx_rates: {
+        Row: {
+          day: string
+          currency: string
+          per_usd: number
+        }
+        Insert: {
+          day: string
+          currency: string
+          per_usd: number
+        }
+        Update: {
+          day?: string
+          currency?: string
+          per_usd?: number
         }
         Relationships: []
       }
@@ -4016,6 +4076,7 @@ export type Database = {
       publish_email_template: { Args: { p_key: string; p_locale: string; p_staff: string }; Returns: number }
       admin_entitlement_counts: { Args: never; Returns: { plan_key: string; status: string; n: number }[] }
       admin_loyalty_summary: { Args: never; Returns: Json }
+      admin_adjust_loyalty_points: { Args: { p_user: string; p_delta: number; p_reason: string; p_actor: string }; Returns: { balance: number; tier: string | null }[] }
       admin_ticket_counts: { Args: never; Returns: { status: string; priority: string; assignee_id: string | null; n: number }[] }
       admin_push_platform_counts: { Args: never; Returns: { platform: string; n: number }[] }
       admin_email_status_counts: {

@@ -87,7 +87,7 @@ async function fetchGoldPriceUSD(): Promise<{ price: number; provider: string } 
   for (const provider of providers) {
     try {
       const price = await provider.fetch()
-      if (price > 500 && price < 50000) {
+      if (typeof price === 'number' && price > 500 && price < 50000) {
         return { price, provider: provider.name }
       }
       errors.push(`${provider.name}: price ${price} out of range`)

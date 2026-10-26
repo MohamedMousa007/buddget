@@ -2,6 +2,8 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { differenceInCalendarDays } from 'date-fns'
 import { getMonthRange } from '@/lib/utils/calculations'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
+import { isMasked } from '@/lib/privacy/mask'
+import { HIDDEN } from '@/lib/privacy/redact'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
 import type { BuddgyMemory } from '@/lib/store/types'
 import { format } from 'date-fns'
@@ -16,6 +18,8 @@ export interface ContextInput {
   cycleEnd: string
   cycleDay: number
   cycleLength: number
+  /** Balance privacy for Buddgy is on: no money amounts leave the device. */
+  hideAmounts: boolean
   income: number
   spent: number
   leftToSpend: number
@@ -33,7 +37,9 @@ export function renderContext(i: ContextInput): string {
   const lines = [
     `${format(i.now, 'yyyy-MM-dd EEE HH:mm')} · cycle ${i.cycleStart}→${i.cycleEnd} (day ${i.cycleDay}/${i.cycleLength})`,
     `user ${i.firstName || '—'} · lang ${i.language} · base ${i.baseCurrency}${i.secondaryCurrency ? ` · also ${i.secondaryCurrency}` : ''}`,
-    `month: income ${r0(i.income)} · spent ${r0(i.spent)} · left ${r0(i.leftToSpend)}${i.safeDaily > 0 ? ` · safe/day ${r0(i.safeDaily)}` : ''} · pace ${i.pace}`,
+    i.hideAmounts
+      ? `month: amounts ${HIDDEN} · pace ${i.pace}`
+      : `month: income ${r0(i.income)} · spent ${r0(i.spent)} · left ${r0(i.leftToSpend)}${i.safeDaily > 0 ? ` · safe/day ${r0(i.safeDaily)}` : ''} · pace ${i.pace}`,
     `on ${i.route}${i.sheet ? ` · sheet ${i.sheet}` : ''}`,
     `has ${i.counts.debts} debts · ${i.counts.subscriptions} subs · ${i.counts.goals} goals · ${i.counts.paymentMethods} methods`,
   ]
@@ -90,6 +96,7 @@ export function readContextInput(args: { now: Date; route: string; text: string 
     cycleEnd: format(range.end, 'yyyy-MM-dd'),
     cycleDay: Math.min(total, st.daysElapsed),
     cycleLength: total,
+    hideAmounts: isMasked(s.settings.privacy, 'buddgy'),
     income: st.totalIncome,
     spent: st.totalSpentExcludingSavings,
     leftToSpend: st.leftToSpend,

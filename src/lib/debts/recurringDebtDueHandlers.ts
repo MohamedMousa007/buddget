@@ -3,6 +3,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency } from '@/lib/store/types'
 import { calculateDebtRemainingRaw, computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { advanceRecurringDebtDueDate } from '@/lib/utils/recurringDebtPayments'
+import { settleInstallmentAmount } from '@/lib/debts/installmentPlan'
 import { isBnplPlan } from '@/lib/debt/bnpl'
 import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 
@@ -32,8 +33,9 @@ export function reconcileDebtSchedule(debtId: string): void {
     if (debt.status !== 'cleared') state.clearDebt(debtId)
     return
   }
+  const anchorDay = parseISO(sched.nextDueDate).getDate()
   state.updateRecurringDebtPayment(sched.id, {
-    nextDueDate: advanceRecurringDebtDueDate(sched.nextDueDate, sched.frequency),
+    nextDueDate: advanceRecurringDebtDueDate(sched.nextDueDate, sched.frequency, anchorDay),
   })
 }
 
@@ -61,7 +63,9 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
   // computeDebtPaymentRecord would reject. (Only same-currency, the common case.)
   const remaining = calculateDebtRemainingRaw(debt, state.debtPayments, balanceCtx)
   const payAmount =
-    due.currency === debt.currency && due.amount > remaining ? remaining : due.amount
+    due.currency === debt.currency
+      ? settleInstallmentAmount(due.amount, remaining, debt.installmentCount ?? 1)
+      : due.amount
 
   const result = computeDebtPaymentRecord(
     debt,

@@ -17,6 +17,7 @@ import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal, GoalFrequency, GoalFundingMode } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 
 export type PlanEditorKind = 'finish' | 'funding' | 'pocket'
@@ -35,7 +36,7 @@ export function PlanEditorSheet({ goal, kind, current, onClose }: { goal: Goal; 
     })),
   )
   const now = useMemo(() => new Date(), [])
-  const today = now.toISOString().slice(0, 10)
+  const today = localTodayISO(now)
   const basis = useMemo(() => fundingBasis(s, now), [s, now])
   const usualKeep = basis.usualKeep === null ? null : convertCurrency(basis.usualKeep, s.settings.baseCurrency, goal.currency, s.exchangeRates)
 

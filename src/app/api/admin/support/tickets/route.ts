@@ -1,4 +1,5 @@
-import { bad, guardAdmin, json, maskIf, readJson } from '@/lib/server/admin/guard'
+import { readValidated, ticketCreateBody } from '@/lib/server/admin/bodySchemas'
+import { bad, guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
 
 const STATUSES = ['open', 'pending', 'resolved', 'closed']
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
   const g = await guardAdmin(req, { permission: 'support.reply' })
   if (!g.ok) return g.res
   const { ctx } = g
-  const body = await readJson<{ subject?: string; message?: string; userId?: string; email?: string; category?: string; priority?: string }>(req)
+  const body = await readValidated(req, ticketCreateBody)
   const subject = body?.subject?.trim()
   const message = body?.message?.trim()
   if (!subject || subject.length < 3) return bad('Give the ticket a subject.')

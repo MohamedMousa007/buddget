@@ -36,9 +36,16 @@ export async function resolveRouteUser(
   }
 }
 
+export interface AuthMethodRef {
+  method: string
+  timestamp: number
+}
+
 export interface RouteIdentity {
   id: string
   email: string | null
+  /** How the session was established (JWT `amr`): lets a route ask for a recent one-time-code login. */
+  amr: AuthMethodRef[]
 }
 
 /** Three base64url parts: a JWT. Opaque tokens (SMS ingest tokens) are not, and must never cost an Auth round trip. */
@@ -53,8 +60,8 @@ function jwtVerifier(): SupabaseClient {
   return verifier
 }
 
-function identityOf(claims: { sub?: string; role?: string; email?: string } | null | undefined): RouteIdentity | null {
-  return claims?.sub && claims.role === 'authenticated' ? { id: claims.sub, email: claims.email ?? null } : null
+function identityOf(claims: { sub?: string; role?: string; email?: string; amr?: unknown[] } | null | undefined): RouteIdentity | null {
+  return claims?.sub && claims.role === 'authenticated' ? { id: claims.sub, email: claims.email ?? null, amr: (claims.amr ?? []).filter((a): a is AuthMethodRef => typeof a === 'object' && a !== null) } : null
 }
 
 /**

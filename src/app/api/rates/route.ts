@@ -77,6 +77,15 @@ const sources: RateSource[] = [
   },
 ]
 
+const ERROR_CACHE = { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' }
+
+/** Keeps only finite, positive rates so one bad upstream value cannot poison every cross-rate. */
+function validRates(rates: Record<string, number> | null): Record<string, number> | null {
+  if (!rates) return null
+  const clean = Object.fromEntries(Object.entries(rates).filter(([, v]) => typeof v === 'number' && Number.isFinite(v) && v > 0))
+  return Object.keys(clean).length > 0 ? clean : null
+}
+
 export async function GET() {
   try {
     let rawRates: Record<string, number> | null = null
@@ -84,7 +93,7 @@ export async function GET() {
 
     for (const source of sources) {
       try {
-        rawRates = await source.fetch()
+        rawRates = validRates(await source.fetch())
         if (rawRates && Object.keys(rawRates).length > 0) {
           providerUsed = source.name
           break
@@ -97,7 +106,7 @@ export async function GET() {
     if (!rawRates) {
       return NextResponse.json(
         { error: 'All rate providers failed' },
-        { status: 502 }
+        { status: 502, headers: ERROR_CACHE }
       )
     }
 
@@ -173,7 +182,7 @@ export async function GET() {
   } catch {
     return NextResponse.json(
       { error: 'Failed to fetch exchange rates' },
-      { status: 500 }
+      { status: 500, headers: ERROR_CACHE }
     )
   }
 }

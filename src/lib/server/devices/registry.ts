@@ -15,10 +15,14 @@ export interface SelfReport {
 
 const UNIQUE_VIOLATION = '23505'
 
-/** Makes this phone the main one (notifications on) and clears the flag everywhere else first, so the one-main index holds. */
-async function setMain(service: ServiceClient, userId: string, deviceId: string): Promise<boolean> {
-  await service.from('user_devices').update({ is_main: false }).eq('user_id', userId).eq('is_main', true).neq('device_id', deviceId)
-  const { error } = await service.from('user_devices').update({ is_main: true }).eq('user_id', userId).eq('device_id', deviceId).is('revoked_at', null)
+/**
+ * Makes this phone the main one (notifications on) and clears the flag everywhere else first, so the one-main index holds.
+ * The only path that promotes a phone; `extra` rides on the same write. Returns false when any write fails.
+ */
+export async function setMain(service: ServiceClient, userId: string, deviceId: string, extra: Record<string, unknown> = {}): Promise<boolean> {
+  const demote = await service.from('user_devices').update({ is_main: false }).eq('user_id', userId).eq('is_main', true).neq('device_id', deviceId)
+  if (demote.error) return false
+  const { error } = await service.from('user_devices').update({ is_main: true, ...extra }).eq('user_id', userId).eq('device_id', deviceId).is('revoked_at', null)
   return !error
 }
 

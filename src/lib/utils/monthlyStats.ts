@@ -21,13 +21,14 @@ import {
   calculateTotalBudget,
   calculateTotalBudgetExcludingSavings,
   calculateBudgetUsedPercent,
+  budgetMonthKeyFor,
   calculateDaysLeftInMonth,
   totalSavingsHoldingsInBase,
   totalSavingsAccountsBalanceInBase,
   netSavingsLedgerInBaseForMonth,
   calculateLeftToSpendCashFlow,
   effectiveCategoryBudget,
-  totalDebtRemainingInBase,
+  totalDebtRemainingDetail,
   expenseAmountInBase,
   calculateCashOutflow,
   cashSavingsDepositsInBaseForMonth,
@@ -44,12 +45,6 @@ import {
   type PaceStatus,
   type OverspentCategory,
 } from '@/lib/utils/spendingPace'
-
-/** YYYY-MM string for the current calendar month (UTC-local-aligned). */
-function currentMonthString(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
 
 export interface MonthlyStatsInput {
   expenses: FinanceStore['expenses']
@@ -105,6 +100,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
       leftToSpend: 0,
       categoryBudgetCaps: {} as Record<string, number>,
       debtRemainingTotal: 0,
+      debtRemainingIncomplete: false,
       baseCurrency: settings.baseCurrency,
       incomeBlocked: false,
       daysElapsed: 1,
@@ -222,7 +218,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
   // the cycle has closed (a past `monthFilter`), we surface what they
   // *actually* saved (income − actual spend). Both clamp at zero so a
   // shortfall reads as zero saved rather than a negative figure.
-  const monthClosed = monthFilter < currentMonthString()
+  const monthClosed = monthFilter < budgetMonthKeyFor(new Date(), settings.monthStartDay)
   // Projected savings plans on expected income; realized reconciles against actual.
   const projectedMonthSavings = Math.max(0, projectedIncome - totalExpenseBudget)
   const realizedMonthSavings = Math.max(0, totalIncome - totalSpentForExpenseBudget)
@@ -252,7 +248,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     ])
   ) as Record<string, number>
 
-  const debtRemainingTotal = totalDebtRemainingInBase(
+  const { total: debtRemainingTotal, incomplete: debtRemainingIncomplete } = totalDebtRemainingDetail(
     debts.filter((d) => !isOwedToUser(d)),
     debtPayments,
     settings.baseCurrency,
@@ -326,6 +322,8 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     leftToSpend,
     categoryBudgetCaps,
     debtRemainingTotal,
+    /** True when an owed gold debt is left out of the total because gold has no live price. */
+    debtRemainingIncomplete,
     cashOutflow,
     baseCurrency: settings.baseCurrency,
     incomeBlocked,
