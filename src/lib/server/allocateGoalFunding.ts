@@ -52,7 +52,8 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
         .map((a) => conv(a.currentBalance, a.currency))
       if ((g.targetAmount !== null && target === null) || (g.monthlyContribution !== null && fixed === null)) return []
       if (manual === null || linked.includes(null)) return []
-      current[g.id] = manual + (linked as number[]).reduce((sum, n) => sum + n, 0)
+      // Same rule as computeGoalProgress: linked pockets are the progress, the manual amount only counts when none are linked.
+      current[g.id] = linked.length === 0 ? manual : (linked as number[]).reduce((sum, n) => sum + n, 0)
       return [{
         ...g,
         targetAmount: target,
@@ -72,18 +73,21 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
   const lines = allocateMonth({ goals: due, periodSavings: c.carry, current })
   const primaryId = await primaryTrackedAccountId(service, userId)
   for (const line of lines) {
-    if (done.has(line.goalId)) continue
     const goal = due.find((g) => g.id === line.goalId)!
-    const amount = Math.max(0, cents(Math.min(line.amount, left)))
+    // A claimed run whose deposit never landed (timeout between claim and pay) is re-paid here: the deposit key is idempotent.
+    const prior = done.get(goal.id)
+    const amount = prior ?? Math.max(0, cents(Math.min(line.amount, left)))
 
-    const { error: claimed } = await service.from('goal_allocation_runs').insert({
-      user_id: userId, goal_id: goal.id, period: monthKey, planned: line.planned, amount,
-    })
-    if (claimed) continue
+    if (prior === undefined) {
+      const { error: claimed } = await service.from('goal_allocation_runs').insert({
+        user_id: userId, goal_id: goal.id, period: monthKey, planned: line.planned, amount,
+      })
+      if (claimed) continue
+    }
     if (amount <= 0) continue
 
     const release = async () => {
-      await service.from('goal_allocation_runs').delete().eq('goal_id', goal.id).eq('period', monthKey)
+      if (prior === undefined) await service.from('goal_allocation_runs').delete().eq('goal_id', goal.id).eq('period', monthKey)
     }
     try {
       let pocket = c.accounts.filter(isEligibleCarryPocket).find((a) => goal.linkedSavingsAccountIds.includes(a.id))
@@ -108,6 +112,7 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
       await release()
       continue
     }
+    if (prior !== undefined) continue
 
     left = cents(left - amount)
     const original = c.goals.find((g) => g.id === goal.id)

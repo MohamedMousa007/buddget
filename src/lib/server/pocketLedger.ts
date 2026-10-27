@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { pickPrimaryAccountId } from '@/lib/accounts/primary'
 import type { createServiceRoleClient } from '@/lib/supabase/service'
 
 type Service = ReturnType<typeof createServiceRoleClient>
@@ -14,11 +15,10 @@ export function groupIdFor(key: string): string {
  * in which case server deposits behave exactly as before accounts existed.
  */
 export async function primaryTrackedAccountId(service: Service, userId: string): Promise<string | null> {
-  const { data } = await service.from('payment_methods').select('id, type')
+  const { data } = await service.from('payment_methods').select('id, type, created_at')
     .eq('user_id', userId).is('deleted_at', null).is('closed_at', null)
-    .in('type', ['bank_account', 'wallet']).not('opening_balance', 'is', null).order('created_at', { ascending: true }).limit(5)
-  const rows = data ?? []
-  return (rows.find((r) => r.type === 'bank_account') ?? rows[0])?.id ?? null
+    .in('type', ['bank_account', 'wallet']).not('opening_balance', 'is', null).order('created_at', { ascending: true })
+  return pickPrimaryAccountId((data ?? []).map((r) => ({ id: r.id, type: r.type, createdAt: r.created_at })))
 }
 
 /** Atomic, idempotent pocket deposit. The ledger leg names the account the money leaves, so net worth cannot be minted. */

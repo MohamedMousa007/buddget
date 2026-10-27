@@ -13,7 +13,7 @@ import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useExpenseFilterStore, amountIsFiltered } from '@/lib/store/useExpenseFilterStore'
-import { expenseAmountInBase } from '@/lib/utils/calculations'
+import { expenseAmountInBase, isExpenseUnconverted } from '@/lib/utils/calculations'
 import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -34,6 +34,8 @@ interface DayGroup {
   /** Absolute short date, e.g. "Jul 9". */
   abs: string
   total: number
+  /** True when a day's total leaves out an expense that has no rate to base currency. */
+  incomplete: boolean
   items: Expense[]
 }
 
@@ -85,6 +87,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
       rel: key === todayKey ? t.common.today : key === yesterdayKey ? t.common.yesterday : null,
       abs: format(parseISO(key), 'MMM d'),
       total: items.reduce((sum, e) => isNonSpendExpense(e) ? sum : sum + expenseAmountInBase(e, base, exchangeRates), 0),
+      incomplete: items.some((e) => !isNonSpendExpense(e) && isExpenseUnconverted(e, base, exchangeRates)),
       items,
     }))
   }, [expenses, base, exchangeRates, t])
@@ -131,7 +134,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
               ) : null}
             </span>
             <span className="font-mono-numbers whitespace-nowrap text-[11px] font-medium tabular-nums text-[var(--color-brand-text-muted)]">
-              −{fmtNum(g.total)} {base}
+              {g.incomplete ? '≥ ' : ''}−{fmtNum(g.total)} {base}
             </span>
           </div>
           <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">

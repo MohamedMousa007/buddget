@@ -16,7 +16,11 @@
     "cap:ios": "npm run cap:build && npx cap open ios",
     "cap:sync": "npx cap sync",
     "postinstall": "node scripts/patch-android-plugins.mjs",
-    "eval:ai": "vitest run src/lib/ai/buddgy.eval.test.ts"
+    "eval:ai": "RUN_AI_EVAL=1 vitest run src/lib/ai/buddgy.eval.test.ts",
+    "test:pg": "bash scripts/qa/setup.sh && QA_PG_URL=${QA_PG_URL:-postgres://postgres@localhost:54329/qa} vitest run --reporter=verbose .pg.test.ts"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

@@ -52,8 +52,13 @@ describe('field advice', () => {
     expect(fieldAdvice({ category: 'car', target: 1000, saved: 1000, monthlySpendInCcy: null })).toEqual({ kind: 'covered' })
   })
   it('averages the last three full months of non-savings spend', () => {
-    const e = (date: string, a: number, category = 'Food') => ({ date, category, amountInBaseCurrency: a })
-    expect(averageMonthlySpend([e('2026-09-03', 3000), e('2026-08-03', 6000), e('2026-07-03', 9000), e('2026-09-04', 999, 'Savings'), e('2026-10-02', 5)], now)).toBe(6000)
-    expect(averageMonthlySpend([], now)).toBeNull()
+    const e = (date: string, a: number, category = 'Food', currency: 'EGP' | 'USD' = 'EGP') => ({ date, category, amount: a, currency, amountInBaseCurrency: a })
+    const rates = { USD_EGP: 50, EGP_USD: 0.02 }
+    expect(averageMonthlySpend([e('2026-09-03', 3000), e('2026-08-03', 6000), e('2026-07-03', 9000), e('2026-09-04', 999, 'Savings'), e('2026-10-02', 5)], now, 'EGP', rates)).toBe(6000)
+    expect(averageMonthlySpend([], now, 'EGP', rates)).toBeNull()
+    // Live rates, not the stale cached base amount; spend-excluded rows stay out.
+    const usd = { ...e('2026-09-03', 10, 'Food', 'USD'), amountInBaseCurrency: 10 }
+    const excluded = { ...e('2026-09-05', 777), spendExclusion: 'method' as const }
+    expect(averageMonthlySpend([usd, excluded], now, 'EGP', rates)).toBe(500)
   })
 })

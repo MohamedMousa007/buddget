@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { withDebtDerived } from '@/lib/goals/debtGoal'
 import type { Goal } from '@/lib/store/types'
@@ -12,7 +13,7 @@ import type { Goal } from '@/lib/store/types'
  * Live progress for a single goal: computed amount, percent toward target, and ETA months.
  */
 export function useGoalProgress(stored: Goal) {
-  const { monthFilter } = useSettingsStore()
+  const monthFilter = useSettingsStore((s) => s.monthFilter)
   const slice = useFinanceStore(
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
@@ -23,11 +24,15 @@ export function useGoalProgress(stored: Goal) {
       goldPricePerGram: s.goldPricePerGram,
       goldPriceAvailable: s.goldPriceAvailable,
       settings: s.settings,
+      paymentMethods: s.paymentMethods,
     }))
   )
 
   return useMemo(() => {
-    const ctx = buildGoalProgressContext(slice, monthFilter)
+    const ctx = buildGoalProgressContext(
+      { ...slice, debts: countedDebts(slice.debts, slice.paymentMethods), debtPayments: countedDebtPayments(slice.debtPayments, slice.debts, slice.paymentMethods) },
+      monthFilter,
+    )
     const currentAmount = computeGoalProgress(stored, ctx)
     const goal = withDebtDerived(stored, ctx)
 

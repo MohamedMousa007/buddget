@@ -263,7 +263,7 @@ describe('cancel_subscription', () => {
     expect(p.ok && p.proposal.preview.rows.some((r) => r.label === 'How to cancel')).toBe(true)
     const { applied } = proposeApply('cancel_subscription', { sub: 'Netflix' })
     expect(st().subscriptions[0]).toMatchObject({ status: 'cancelled', endsOn: '2026-11-04' })
-    expect(st().recurringExpenses[0].isActive).toBe(false)
+    expect(st().recurringExpenses[0].isActive).toBe(true)
     if (applied.ok) applied.undo?.()
     expect(st().subscriptions[0]).toMatchObject({ status: 'active' })
     expect(st().recurringExpenses[0].isActive).toBe(true)

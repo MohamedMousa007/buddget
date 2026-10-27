@@ -128,3 +128,14 @@ describe('detectGap', () => {
     expect(detectGap(rs, () => 800)).toBeNull()
   })
 })
+
+describe('legacy gold debt payment (F7)', () => {
+  const goldDebt = { id: 'g', isGold: true, currency: 'EGP', direction: 'borrowed' } as never
+  const legacy = { id: 'p', debtId: 'g', date: '2026-10-05', amountPaid: 5, paymentCurrency: 'EGP', paymentMethodId: 'bank', createdAt: '' }
+  it('grams with no recorded money amount do not debit the account 1:1', () => {
+    expect(bal(base({ debts: [goldDebt], debtPayments: [legacy] }), 'bank')?.balance).toBe(1000)
+  })
+  it('a gold payment with a recorded money amount still debits it', () => {
+    expect(bal(base({ debts: [goldDebt], debtPayments: [{ ...legacy, originalAmount: 300 }] }), 'bank')?.balance).toBe(700)
+  })
+})

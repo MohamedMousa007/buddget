@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import type { Expense, Subscription } from '@/lib/store/types'
 import { cycleWindow, isCyclePaid } from './subscriptionOccurrence'
 
@@ -13,7 +13,7 @@ const charge = (date: string, over: Partial<Expense> = {}): Expense =>
   ({ id: `e_${date}`, date, linkedSubscriptionId: 'sub_1', ...over }) as Expense
 
 const win = (s: Sub, ref: string) => {
-  const { start, end } = cycleWindow(s, new Date(ref))
+  const { start, end } = cycleWindow(s, parseISO(ref))
   return [format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd')]
 }
 
@@ -58,7 +58,7 @@ describe('cycleWindow', () => {
 })
 
 describe('isCyclePaid', () => {
-  const ref = new Date('2026-07-15')
+  const ref = new Date(2026, 6, 15)
 
   it('is paid when this cycle has a linked charge', () => {
     expect(isCyclePaid(sub(), [charge('2026-07-10')], ref)).toBe(true)
@@ -89,14 +89,14 @@ describe('isCyclePaid', () => {
   })
 
   it('is unpaid before the first charge ever lands', () => {
-    expect(isCyclePaid(sub({ startDate: '2026-07-01', billingDay: 25 }), [], new Date('2026-07-05'))).toBe(false)
+    expect(isCyclePaid(sub({ startDate: '2026-07-01', billingDay: 25 }), [], new Date(2026, 6, 5))).toBe(false)
   })
 
   it('does not throw on a future-dated start — returns unpaid instead of an inverted interval', () => {
     // A future start makes cycleWindow return end === start; subMilliseconds would invert
     // the interval and crash date-fns isWithinInterval, taking down the card render.
     const future = sub({ startDate: '2027-01-01', billingCycle: 'weekly' })
-    expect(() => isCyclePaid(future, [], new Date('2026-07-15'))).not.toThrow()
-    expect(isCyclePaid(future, [], new Date('2026-07-15'))).toBe(false)
+    expect(() => isCyclePaid(future, [], new Date(2026, 6, 15))).not.toThrow()
+    expect(isCyclePaid(future, [], new Date(2026, 6, 15))).toBe(false)
   })
 })

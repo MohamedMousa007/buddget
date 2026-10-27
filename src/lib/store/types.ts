@@ -702,6 +702,11 @@ export interface RecurringSavingsDeposit {
 /** Where a savings withdrawal goes. Only 'income' creates an IncomeEvent. */
 export type SavingsWithdrawalPurpose = 'income' | 'transfer' | 'debt' | 'spend'
 
+export type DeleteSavingsTxResult =
+  | { ok: true }
+  | { ok: false; reason: 'not_found' }
+  | { ok: false; reason: 'would_go_negative'; accountId: string; shortBy: number }
+
 export interface SavingsTransaction {
   occurredAt?: string
   /** Account the money came from / went to. */
@@ -1245,7 +1250,11 @@ export interface FinanceStore {
     /** `mode` = where the money came from: 'allocate' (from this month's budget — reduces
      *  left-to-spend, net worth flat) or 'declare' (money from outside the budget — net worth
      *  rises, left-to-spend untouched). Defaults to 'allocate' (the historical behaviour). */
-    opts?: { isAutoSave?: boolean; source?: string; mode?: 'allocate' | 'declare'; /** Account the money leaves; stamps the ledger leg so the account balance follows. */ paymentMethodId?: string }
+    opts?: { isAutoSave?: boolean; source?: string; mode?: 'allocate' | 'declare'; /** Account the money leaves; stamps the ledger leg so the account balance follows. */ paymentMethodId?: string
+      /** Account the cash leaves. undefined = primary tracked account (cash deposits only), null = none. Same-currency only. */
+      fromAccountId?: string | null
+      /** Deterministic id: a second post with the same id is a no-op (cross-device idempotency). */
+      txId?: string }
   ) => boolean
   /** Only 'income' returns the money to this month's spendable income; the rest do not,
    *  so a transfer/debt/spend withdrawal never inflates the income KPI. Defaults to 'income'. */
@@ -1254,7 +1263,9 @@ export interface FinanceStore {
     amount: number,
     currency: Currency,
     notes?: string,
-    purpose?: SavingsWithdrawalPurpose
+    purpose?: SavingsWithdrawalPurpose,
+    /** Income withdrawals credit this account (undefined = primary tracked, null = none). Same-currency only. */
+    opts?: { toAccountId?: string | null }
   ) => boolean
   /** Move money between two pockets: two ledger legs sharing a transferGroupId, both
    *  non-cash-flow (net worth and left-to-spend unaffected). FX-converts fiat↔fiat; rejects
@@ -1262,7 +1273,7 @@ export interface FinanceStore {
   transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string) => boolean
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => void
   /** Delete a savings ledger row and reverse its balance effect (both legs for a transfer). */
-  deleteSavingsTransaction: (id: string) => void
+  deleteSavingsTransaction: (id: string) => DeleteSavingsTxResult
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void

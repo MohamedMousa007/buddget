@@ -39,6 +39,8 @@ export interface FlushResult {
   anyError: boolean
   errors: string[]
   writes: number
+  /** Local payday events dropped because another device's live row won; the store must drop them too. */
+  adoptedPaydays?: string[]
 }
 
 
@@ -70,30 +72,78 @@ export function defaultServerSettings(baseCurrency: Currency, secondaryCurrency:
   }
 }
 
+type PgError = { message: string; code?: string } | null
+type Writes = Array<() => Promise<unknown>>
+
 class OpRunner {
   errors: string[] = []
+  adopted: string[] = []
   writes = 0
-  private ops: Array<() => Promise<unknown>> = []
+  private ops: Writes = []
+  private removals: Writes = []
 
   constructor(private client: Client) {}
 
-  /** Upsert a batch of rows to a table. Supabase PostgrestFilterBuilder is thenable, so `await` works. */
+  private from(table: TableName) {
+    return this.client.from(table) as never as {
+      upsert: (r: unknown) => Promise<{ error: PgError }>
+      update: (patch: unknown) => { eq: (col: string, v: string) => Promise<{ error: PgError }> }
+      select: (cols: string) => {
+        eq: (col: string, v: string) => {
+          eq: (col: string, v: string) => {
+            is: (col: string, v: null) => { maybeSingle: () => Promise<{ data: { id: string; updated_at: string } | null; error: PgError }> }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Upsert a batch of rows to a table. A 23505 (unique violation) must not poison the whole
+   * batch: the rows are retried one by one, and a duplicate payday event adopts the live row.
+   */
   upsert<T extends TableName>(table: T, rows: readonly Database['public']['Tables'][T]['Insert'][], label: string) {
     if (rows.length === 0) return
-    // Cast to `never` to sidestep the huge union PostgREST exposes.
-    this.ops.push(() =>
-      (this.client.from(table) as never as {
-        upsert: (r: unknown) => Promise<{ error: { message: string } | null }>
-      }).upsert(rows).then((res) => {
-        this.writes++
-        if (res.error) this.errors.push(`${label}: ${res.error.message}`)
-      })
-    )
+    this.ops.push(async () => {
+      const res = await this.from(table).upsert(rows)
+      this.writes++
+      if (!res.error) return
+      if (res.error.code !== '23505') {
+        this.errors.push(`${label}: ${res.error.message}`)
+        return
+      }
+      for (const row of rows) {
+        const one = await this.from(table).upsert([row])
+        if (!one.error) continue
+        if (one.error.code === '23505' && table === 'income_events' && (await this.adoptLivePayday(row as Record<string, unknown>))) continue
+        this.errors.push(`${label}: ${one.error.message}`)
+      }
+    })
+  }
+
+  /** Another device already wrote this (template, payday): keep its row id, carry our newer edit onto it. */
+  private async adoptLivePayday(row: Record<string, unknown>): Promise<boolean> {
+    if (typeof row.template_id !== 'string' || typeof row.occurrence_date !== 'string') return false
+    const live = await this.from('income_events')
+      .select('id, updated_at')
+      .eq('template_id', row.template_id)
+      .eq('occurrence_date', row.occurrence_date)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (live.error || !live.data) return false
+    if (live.data.id === row.id) return false
+    this.adopted.push(String(row.id))
+    if (String(row.updated_at ?? '') > live.data.updated_at) {
+      const { id: _id, user_id: _user, created_at: _created, ...patch } = row
+      const upd = await this.from('income_events').update(patch).eq('id', live.data.id)
+      if (upd.error) return false
+    }
+    return true
   }
 
   delete(table: TableName, ids: readonly string[], label: string) {
     if (ids.length === 0) return
-    this.ops.push(() =>
+    this.removals.push(() =>
       (this.client.from(table) as never as {
         delete: () => { in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }> }
       })
@@ -115,7 +165,7 @@ class OpRunner {
    */
   tombstone(table: TableName, ids: readonly string[], label: string) {
     if (ids.length === 0) return
-    this.ops.push(() =>
+    this.removals.push(() =>
       (this.client.from(table) as never as {
         update: (patch: { deleted_at: string }) => {
           in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
@@ -130,9 +180,11 @@ class OpRunner {
     )
   }
 
+  /** Tombstones and deletes land first so a removed row frees its unique key for a same-flush replacement. */
   async drain(): Promise<FlushResult> {
+    await Promise.all(this.removals.map((run) => run()))
     await Promise.all(this.ops.map((run) => run()))
-    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes }
+    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes, adoptedPaydays: this.adopted }
   }
 }
 
@@ -242,6 +294,7 @@ function mergeResults(results: FlushResult[]): FlushResult {
     anyError: results.some((r) => r.anyError),
     errors: results.flatMap((r) => r.errors),
     writes: results.reduce((n, r) => n + r.writes, 0),
+    adoptedPaydays: results.flatMap((r) => r.adoptedPaydays ?? []),
   }
 }
 

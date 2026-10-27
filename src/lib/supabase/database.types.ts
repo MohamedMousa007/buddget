@@ -1268,6 +1268,11 @@ export type Database = {
       }
       debt_payments: {
         Row: {
+          amount_in_debt_unit: number | null
+          original_amount: number | null
+          original_currency: Database["public"]["Enums"]["currency_code"] | null
+          amount_in_base: number | null
+          rate_at_entry: number | null
           occurred_at: string | null
           amount: number
           created_at: string
@@ -1283,6 +1288,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amount_in_debt_unit?: number | null
+          original_amount?: number | null
+          original_currency?: Database["public"]["Enums"]["currency_code"] | null
+          amount_in_base?: number | null
+          rate_at_entry?: number | null
           occurred_at?: string | null
           amount: number
           created_at?: string
@@ -1298,6 +1308,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amount_in_debt_unit?: number | null
+          original_amount?: number | null
+          original_currency?: Database["public"]["Enums"]["currency_code"] | null
+          amount_in_base?: number | null
+          rate_at_entry?: number | null
           occurred_at?: string | null
           amount?: number
           created_at?: string
@@ -1484,6 +1499,10 @@ export type Database = {
       }
       expenses: {
         Row: {
+          category_label: string | null
+          subcategory: string | null
+          shared_plan_id: string | null
+          is_recurring: boolean
           spend_exclusion: string | null
           owed_by: string | null
           owed_settled_at: string | null
@@ -1512,6 +1531,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_label?: string | null
+          subcategory?: string | null
+          shared_plan_id?: string | null
+          is_recurring?: boolean
           spend_exclusion?: string | null
           owed_by?: string | null
           owed_settled_at?: string | null
@@ -1540,6 +1563,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_label?: string | null
+          subcategory?: string | null
+          shared_plan_id?: string | null
+          is_recurring?: boolean
           spend_exclusion?: string | null
           owed_by?: string | null
           owed_settled_at?: string | null
@@ -2779,6 +2806,8 @@ export type Database = {
       }
       savings_accounts: {
         Row: {
+          target_amount: number | null
+          emoji: string | null
           held_in_payment_method_id: string | null
           category: Database["public"]["Enums"]["savings_category"]
           color: string | null
@@ -2799,6 +2828,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          target_amount?: number | null
+          emoji?: string | null
           held_in_payment_method_id?: string | null
           category?: Database["public"]["Enums"]["savings_category"]
           color?: string | null
@@ -2819,6 +2850,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          target_amount?: number | null
+          emoji?: string | null
           held_in_payment_method_id?: string | null
           category?: Database["public"]["Enums"]["savings_category"]
           color?: string | null
@@ -4449,7 +4482,7 @@ export type Database = {
         | "debt_freedom"
         | "quality_of_life"
         | "business"
-      goal_status: "active" | "paused" | "achieved"
+      goal_status: "active" | "paused" | "achieved" | "cancelled"
       gold_karat: "18" | "21" | "22" | "24"
       income_event_status:
         | "confirmed"
@@ -4720,7 +4753,7 @@ export const Constants = {
         "quality_of_life",
         "business",
       ],
-      goal_status: ["active", "paused", "achieved"],
+      goal_status: ["active", "paused", "achieved", "cancelled"],
       gold_karat: ["18", "21", "22", "24"],
       income_event_status: [
         "confirmed",

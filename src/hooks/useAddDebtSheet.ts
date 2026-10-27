@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { paymentExpenseMoney } from '@/lib/debts/paymentAmounts'
 import {
   convertPaymentToDebtUnit,
   computeDebtPaymentRecord,
@@ -583,7 +584,7 @@ export function useAddDebtSheet() {
         rateAtEntry,
         notes: paymentNotes || undefined,
       })
-      reconcileDebtSchedule(selectedDebtId)
+      reconcileDebtSchedule(selectedDebtId, { amount, currency: payCur })
       showToast(tI18n.common.toastDebtPaymentRecorded)
       resetForm()
       closeSheet()
@@ -592,6 +593,7 @@ export function useAddDebtSheet() {
     // BNPL plan: purchase counted as spend at checkout → settlement is non-spend
     // (`Installment`). Bank/other installment + person debts keep `Debt` spend.
     const bnpl = isBnplPlan(selectedDebt, paymentMethods)
+    const expenseMoney = paymentExpenseMoney(amount, payCur, amountInBase, settings.baseCurrency)
     addDebtPaymentWithExpense(
       {
         debtId: selectedDebtId,
@@ -608,8 +610,8 @@ export function useAddDebtSheet() {
         date: paymentDate,
         description: `${selectedDebt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
         category: bnpl ? 'Installment' : 'Debt',
-        amount,
-        currency: payCur as Currency,
+        amount: expenseMoney.amount,
+        currency: expenseMoney.currency as Currency,
         paymentMethodId: pmId,
         isRecurring: false,
         notes: paymentNotes || undefined,
@@ -617,7 +619,7 @@ export function useAddDebtSheet() {
         isDebtPayment: true,
       }
     )
-    reconcileDebtSchedule(selectedDebtId)
+    reconcileDebtSchedule(selectedDebtId, { amount, currency: payCur })
     showToast(tI18n.common.toastDebtPaymentRecorded)
     resetForm()
     closeSheet()

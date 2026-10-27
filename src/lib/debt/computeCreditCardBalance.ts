@@ -1,7 +1,7 @@
 import { addDays, differenceInCalendarDays, format, getDaysInMonth, parseISO, startOfDay } from 'date-fns'
 import type { Currency, Debt, DebtPayment, Expense } from '@/lib/store/types'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
-import { tryConvertCurrency } from '@/lib/utils/currency'
+import { sumConverted, tryConvertCurrency, type PartialSum } from '@/lib/utils/currency'
 
 function paidToward(debtId: string, payments: DebtPayment[]): number {
   return payments.filter((p) => p.debtId === debtId).reduce((sum, p) => sum + p.amountPaid, 0)
@@ -38,6 +38,21 @@ function chargesToCard(e: Expense, linkedPaymentMethodId: string): boolean {
   )
 }
 
+/** Card charges in the debt currency; a charge with no FX path is left out and flags `incomplete` (never counted 1:1). */
+export function cardChargesDetail(
+  debt: Debt,
+  expenses: Expense[],
+  exchangeRates: Record<string, number>
+): PartialSum {
+  const linked = debt.linkedPaymentMethodId
+  if (!linked) return { total: 0, incomplete: false }
+  return sumExpensesInDebtCurrencyDetail(
+    expenses.filter((e) => chargesToCard(e, linked)),
+    debt.currency as Currency,
+    exchangeRates
+  )
+}
+
 /**
  * Outstanding revolving balance: starting balance + card charges (converted to debt currency) − payments.
  */
@@ -50,15 +65,9 @@ export function computeCreditCardOutstanding(
   if (debt.debtType !== 'credit_card') return debt.startingBalance
 
   let balance = debt.startingBalance
-  const debtCur = debt.currency as Currency
-
   const linked = debt.linkedPaymentMethodId
   if (linked) {
-    for (const e of expenses) {
-      if (!chargesToCard(e, linked)) continue
-      const conv = tryConvertCurrency(e.amount, e.currency, debtCur, exchangeRates)
-      balance += conv ?? e.amount
-    }
+    balance += cardChargesDetail(debt, expenses, exchangeRates).total
   }
 
   balance -= paidToward(debt.id, payments)
@@ -109,17 +118,20 @@ export function getCurrentBillingCycleExpenses(
   return { expenses: list, cycleStart, cycleEnd }
 }
 
+export function sumExpensesInDebtCurrencyDetail(
+  expenses: Expense[],
+  debtCurrency: Currency,
+  exchangeRates: Record<string, number>
+): PartialSum {
+  return sumConverted(expenses, (e) => tryConvertCurrency(e.amount, e.currency, debtCurrency, exchangeRates))
+}
+
 export function sumExpensesInDebtCurrency(
   expenses: Expense[],
   debtCurrency: Currency,
   exchangeRates: Record<string, number>
 ): number {
-  let sum = 0
-  for (const e of expenses) {
-    const conv = tryConvertCurrency(e.amount, e.currency, debtCurrency, exchangeRates)
-    sum += conv ?? e.amount
-  }
-  return sum
+  return sumExpensesInDebtCurrencyDetail(expenses, debtCurrency, exchangeRates).total
 }
 
 /** Next calendar due date from paymentDueDay (this month or next). */

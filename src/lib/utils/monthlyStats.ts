@@ -209,7 +209,8 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     monthFilter,
     settings.monthStartDay,
     settings.baseCurrency,
-    exchangeRates
+    exchangeRates,
+    { pricePerGram: goldPricePerGram, available: goldOk }
   )
 
   // Month-scoped savings semantics. While the user is inside the
@@ -234,6 +235,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     baseCurrency: settings.baseCurrency,
     exchangeRates,
     incomeBlocked,
+    gold: { pricePerGram: goldPricePerGram, available: goldOk },
     // Reserve the still-unfunded part of the monthly savings target from spendable cash.
     monthlyTarget: plannedSavingsBudget,
   })
@@ -270,7 +272,8 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
       monthFilter,
       settings.monthStartDay,
       settings.baseCurrency,
-      exchangeRates
+      exchangeRates,
+      { pricePerGram: goldPricePerGram, available: goldOk }
     ),
     baseCurrency: settings.baseCurrency,
     exchangeRates,

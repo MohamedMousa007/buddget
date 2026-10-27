@@ -1,5 +1,6 @@
 import type { Currency, RecurringExpense, Subscription, SubscriptionBillingCycle } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
+import { localTodayISO } from '@/lib/utils/localDate'
 
 /** Monthly-equivalent amount for planner / recurring row (RecurringExpense is monthly). */
 export function subscriptionToMonthlyPlannerAmount(
@@ -31,13 +32,19 @@ function recurringNotes(sub: Subscription): string {
   return `${base}${cycleNote}`
 }
 
+/** The planner row stays on while the sub bills, and through a cancelled sub's paid-up access (until `endsOn`). */
+export function plannerRowActive(sub: Pick<Subscription, 'status' | 'endsOn'>, todayIso: string): boolean {
+  if (sub.status === 'active' || sub.status === 'trial') return true
+  return sub.status === 'cancelled' && !!sub.endsOn && sub.endsOn.slice(0, 10) > todayIso
+}
+
 export function buildRecurringExpenseFromSubscription(
   sub: Subscription,
   recurringId: string,
   fallbackPaymentMethodId: string
 ): RecurringExpense {
   const pm = sub.paymentMethodId || fallbackPaymentMethodId
-  const active = sub.status === 'active' || sub.status === 'trial'
+  const active = plannerRowActive(sub, localTodayISO())
   return {
     id: recurringId,
     description: `${sub.name}${sub.planName ? ` (${sub.planName})` : ''}`,

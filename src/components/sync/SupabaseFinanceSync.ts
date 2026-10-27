@@ -276,8 +276,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         // error) into the failures store — a successful flush
         // clears any previously-displayed banner.
         useSyncFailures.getState().recordFailures(result.anyError ? result.errors : [])
+        const adopted = new Set(result.adoptedPaydays ?? [])
+        if (adopted.size > 0) {
+          // Another device's row won the payday: drop our duplicate; the next pull brings the live one.
+          useFinanceStore.setState((s) => ({ incomeEvents: s.incomeEvents.filter((e) => !adopted.has(e.id)) }))
+        }
         if (!result.anyError) {
-          prevSnap.current = next
+          prevSnap.current = adopted.size > 0 ? { ...next, incomeEvents: next.incomeEvents.filter((e) => !adopted.has(e.id)) } : next
           retryAttempt = 0
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)

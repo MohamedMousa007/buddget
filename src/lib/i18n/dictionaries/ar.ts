@@ -390,6 +390,7 @@ export const ar: Dictionary = {
 
   wealthPage: {
     // TODO(ar-review): all Arabic strings in this block are drafts
+    deleteBlocked: (pocket, shortBy) => `تعذّر الحذف: سيصبح رصيد ${pocket} أقل من الصفر بمقدار ${shortBy} لأن المبلغ استُخدم بالفعل. لم يتغيّر شيء.`,
     holdLabel: 'ما تملكه',
     balances: 'الأرصدة',
     marketPriced: 'بسعر السوق',
@@ -2498,6 +2499,7 @@ export const ar: Dictionary = {
       deleteConfirm: 'حذف الهدف',
       noOtherPocket: 'لا توجد محفظة أخرى لنقل المال إليها.',
       deleteNoPocket: 'سيُحذف الهدف فقط. حساباتك ومعاملاتك لا تتأثر.',
+      deleteMoveFailed: 'تعذّر نقل المبلغ، لذلك لم يُحذف الهدف. حاول مرة أخرى.',
     },
     flow: {
       close: 'إغلاق',

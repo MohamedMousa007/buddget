@@ -42,6 +42,8 @@ import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { buildWealth, emergencyState, savingsRatePct, type CatKey, type WealthRowVM } from '@/lib/savings/wealthModel'
 import { computeZakat } from '@/lib/savings/zakat'
 import { deriveZakatBase } from '@/lib/savings/zakatInputs'
+import { zakatAccountsFromLedger } from '@/lib/savings/zakatAccounts'
+import { useLedgerInput } from '@/lib/accounts/useAccounts'
 import { effectiveNisabBasis } from '@/lib/savings/zakatBasis'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -126,9 +128,13 @@ export default function WealthPage() {
   const efState = emergencyState(simpleMonth.total, emergency.atOrAboveTarget)
 
   // Zakat: gold until the user picks a basis (see zakatBasis.ts).
+  const ledger = useLedgerInput()
   const zakatBase = useMemo(
-    () => deriveZakatBase({ savingsAccounts, investmentHoldings, debts, baseCurrency: base, exchangeRates, goldPricePerGram, goldPriceAvailable: goldOk, lookup }),
-    [savingsAccounts, investmentHoldings, debts, base, exchangeRates, goldPricePerGram, goldOk, lookup],
+    () => deriveZakatBase({
+      savingsAccounts, investmentHoldings, debts, debtPayments, baseCurrency: base, exchangeRates, goldPricePerGram, goldPriceAvailable: goldOk, lookup,
+      ...zakatAccountsFromLedger(ledger),
+    }),
+    [savingsAccounts, investmentHoldings, debts, debtPayments, base, exchangeRates, goldPricePerGram, goldOk, lookup, ledger],
   )
   const zakatResult = useMemo(() => {
     const zc = profile.zakatConfig

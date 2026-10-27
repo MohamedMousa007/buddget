@@ -25,10 +25,9 @@ export function savingsTransactionToRow(
 }
 
 export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTransaction {
+  // Server RPCs write 'withdraw' and 'correct'. A correction moves the balance without cash.
   const normalisedKind: 'deposit' | 'withdrawal' =
-    row.kind === 'deposit' || row.kind === 'withdrawal'
-      ? row.kind
-      : 'deposit'
+    row.kind === 'withdrawal' || row.kind === 'withdraw' ? 'withdrawal' : 'deposit'
   return {
     id: row.id,
     accountId: row.account_id,
@@ -37,7 +36,7 @@ export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTr
     currency: row.currency as Currency,
     date: row.transaction_date,
     notes: row.notes ?? undefined,
-    isCashFlow: row.is_cash_flow ?? true,
+    isCashFlow: row.kind === 'correct' ? false : (row.is_cash_flow ?? true),
     source: row.source ?? undefined,
     isAutoSave: row.is_auto_save ?? undefined,
     transferGroupId: row.transfer_group_id ?? undefined,

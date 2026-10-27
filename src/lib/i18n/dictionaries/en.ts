@@ -388,6 +388,7 @@ export const en: Dictionary = {
   },
 
   wealthPage: {
+    deleteBlocked: (pocket, shortBy) => `Can\u2019t delete this: ${pocket} would go ${shortBy} below zero because the money was already used. Nothing was changed.`,
     holdLabel: 'What you hold',
     balances: 'Balances',
     marketPriced: 'Market-priced',
@@ -2493,6 +2494,7 @@ export const en: Dictionary = {
       deleteConfirm: 'Delete goal',
       noOtherPocket: 'You have no other pocket to move the money to.',
       deleteNoPocket: 'This removes the goal. Your accounts and transactions are not touched.',
+      deleteMoveFailed: 'Could not move the money, so the goal was kept. Try again.',
     },
     flow: {
       close: 'Close',

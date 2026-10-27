@@ -109,7 +109,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   }, [activeDebts, linkedDebtIds, s])
 
   const monthlySpend = useMemo(() => {
-    const base = averageMonthlySpend(s.expenses, now)
+    const base = averageMonthlySpend(s.expenses, now, s.settings.baseCurrency, s.exchangeRates)
     return base === null ? null : convertCurrency(base, s.settings.baseCurrency, currency, s.exchangeRates)
   }, [s.expenses, s.settings.baseCurrency, s.exchangeRates, currency, now])
   const advice = fieldAdvice({ category, target, saved: num(alreadySaved), monthlySpendInCcy: monthlySpend })

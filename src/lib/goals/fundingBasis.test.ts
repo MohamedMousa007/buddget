@@ -24,12 +24,12 @@ const slice = (plans: BudgetPlan[], legacy: number) => ({
 
 describe('fundingBasis', () => {
   it('derives the usual keep from the active plan, not the legacy rows', () => {
-    const basis = fundingBasis(slice([plan(3000)], 9999) as never, new Date('2026-10-18'))
+    const basis = fundingBasis(slice([plan(3000)], 9999) as never, new Date(2026, 9, 18))
     expect(basis.scenario).toBe('A')
     expect(basis.usualKeep).toBe(7000)
   })
   it('falls back to the legacy rows when there is no plan', () => {
-    const basis = fundingBasis(slice([], 4000) as never, new Date('2026-10-18'))
+    const basis = fundingBasis(slice([], 4000) as never, new Date(2026, 9, 18))
     expect(basis.usualKeep).toBe(6000)
   })
 })

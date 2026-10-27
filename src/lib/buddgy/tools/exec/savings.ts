@@ -15,9 +15,9 @@ import { computeNetWorth } from '@/lib/savings/netWorth'
 import { goldToGrams, valueInvestmentHolding, type GoldUnit } from '@/lib/savings/holdingValuation'
 import { POCKET_KINDS, type PocketKind } from '@/lib/savings/pocketKinds'
 import type { Currency, FinanceStore, GoldKarat, InvestmentAssetType, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
 import { canDeletePocket } from '@/lib/savings/canDeletePocket'
-import { tryConvertCurrency } from '@/lib/utils/currency'
+import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
 
@@ -29,6 +29,10 @@ const KARATS: GoldKarat[] = [24, 22, 21, 18]
 
 const pocketOf = (s: FinanceStore, input: unknown) => pick(s.savingsAccounts, input, (a) => a.name, 'pocket', POCKET_HINT)
 const assetOf = (s: FinanceStore, input: unknown) => pick(s.investmentHoldings, input, (h) => h.name, 'asset', ASSET_HINT)
+
+/** Gold-aware conversion: XAU legs are priced through the gram quote, same as the store actions these tools propose. */
+const convertGold = (s: FinanceStore, amount: number, from: string, to: string): number | null =>
+  tryConvertWithGold(amount, from, to, s.exchangeRates, s.settings.baseCurrency, goldQuoteOf(s))
 
 const goalNames = (s: FinanceStore, ...pocketIds: string[]) =>
   [...new Set(pocketIds.flatMap((id) => goalsOnPocket(s, id).map((g) => g.name)))].join(', ')
@@ -103,7 +107,7 @@ const get_net_worth: ReadImpl = () => {
   const basis = accountsBasisFor({
     paymentMethods: s.paymentMethods, expenses: s.expenses, incomeEvents: s.incomeEvents, debts: raw.debts, debtPayments: raw.debtPayments,
     savingsTransactions: s.savingsTransactions, savingsAccounts: s.savingsAccounts, adjustments: s.accountAdjustments,
-    convert: (a, from, to) => tryConvertCurrency(a, from, to, s.exchangeRates),
+    convert: (a, from, to) => convertGold(s, a, from, to),
   }, s.settings.baseCurrency)
   const nw = computeNetWorth({
     ...basis,
@@ -226,7 +230,7 @@ const deposit_to_savings: WriteImpl = {
     if (args.mode !== undefined && args.mode !== 'allocate' && args.mode !== 'declare') return no('mode must be allocate or declare.')
     const mode: Mode = args.mode === 'declare' ? 'declare' : 'allocate'
     const { pocket, amount, currency, landed } = m
-    const inBase = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates)
+    const inBase = convertGold(s, amount, currency, s.settings.baseCurrency)
     const goals = goalNames(s, pocket.id)
     const rows: PreviewRow[] = [
       { label: L.pocket, value: pocket.name },
@@ -284,7 +288,7 @@ const withdraw_from_savings: WriteImpl = {
       return no(`${pocket.name} only holds ${money(pocket.currentBalance, pocket.currency)}.`, 'Ask for a smaller amount.')
     }
     const goals = goalNames(s, pocket.id)
-    const inBase = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates)
+    const inBase = convertGold(s, amount, currency, s.settings.baseCurrency)
     const note = text(args.note, 80)
     return ok(
       makeProposal({
@@ -335,7 +339,7 @@ const transfer_between_pockets: WriteImpl = {
     const a = from.item
     const b = to.item
     if (a.currentBalance + 0.0001 < amount) return no(`${a.name} only holds ${money(a.currentBalance, a.currency)}.`, 'Ask for a smaller amount.')
-    const arrives = a.currency === b.currency ? amount : tryConvertCurrency(amount, a.currency, b.currency, s.exchangeRates)
+    const arrives = a.currency === b.currency ? amount : convertGold(s, amount, a.currency, b.currency)
     if (arrives === null || arrives <= 0) {
       return no(`There is no exchange path from ${a.currency} to ${b.currency}. Buying into that pocket is not a transfer.`)
     }
@@ -435,7 +439,7 @@ const delete_savings_account: WriteImpl = {
     const entries = s.savingsTransactions.filter((t) => t.accountId === p.id).length
     const scheduled = s.recurringSavingsDeposits.filter((r) => r.accountId === p.id).length
     const goals = goalNames(s, p.id)
-    const base = tryConvertCurrency(p.currentBalance, p.currency, s.settings.baseCurrency, s.exchangeRates)
+    const base = convertGold(s, p.currentBalance, p.currency, s.settings.baseCurrency)
     return ok(
       makeProposal({
         tool: 'delete_savings_account',

@@ -5,7 +5,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useBudgetPageCopy } from '@/components/features/budget/usePageCopy'
 import { upgradeLegacyLines } from '@/lib/budget/legacyUpgrade'
-import { patchInBase } from '@/lib/budget/lineEdit'
+import { patchAmountInBase } from '@/lib/budget/lineEdit'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { BudgetPlanCategory } from '@/lib/store/types'
@@ -21,7 +21,10 @@ export function useBudgetPageActions(view: PlanView | null) {
 
   const patchLine = useCallback(
     (lineId: string, patch: Partial<BudgetPlanCategory>) => {
-      if (planId && view) store.getState().updatePlanCategory(planId, lineId, patchInBase(patch, view.base))
+      if (!planId || !view) return
+      const { budgetPlans, exchangeRates } = store.getState()
+      const line = budgetPlans.find((p) => p.id === planId)?.categories.find((c) => c.id === lineId)
+      store.getState().updatePlanCategory(planId, lineId, line ? patchAmountInBase(line, patch, view.base, exchangeRates) : patch)
     },
     [planId, store, view],
   )
@@ -60,7 +63,7 @@ export function useBudgetPageActions(view: PlanView | null) {
     // Only a plain line in its own currency can be topped up in place; otherwise a fresh Buffer line is exact.
     if (buffer && buffer.line.subcategories.length === 0) {
       const add = Math.round(convertCurrency(view.free, view.base, cur, rates) * 100) / 100
-      patchLine(buffer.line.id, { amount: buffer.line.amount + add })
+      store.getState().updatePlanCategory(planId, buffer.line.id, { amount: buffer.line.amount + add })
     } else {
       store.getState().addPlanCategory(planId, {
         name: 'Buffer', icon: 'layers', amount: view.free, block: 'grow', isSavings: true,
@@ -69,7 +72,7 @@ export function useBudgetPageActions(view: PlanView | null) {
       })
     }
     toast(t.bufferMoved(formatCurrency(view.free, view.base, false)))
-  }, [patchLine, planId, store, t, toast, view])
+  }, [planId, store, t, toast, view])
 
   const groupLegacyLines = useCallback(() => {
     if (!view || !planId) return

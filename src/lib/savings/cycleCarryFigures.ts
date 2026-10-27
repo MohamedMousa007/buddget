@@ -34,12 +34,13 @@ export function cycleCarryFigures(i: CycleCarryInput): CycleCarryFigures | null 
     ...i.deposits.filter(isCountedDeposit).map((d) => d.currency),
     ...(i.extraCurrencies ?? []),
   ])
+  // Gold deposits (XAU grams) have no server-side gram quote: the cycle is skipped (null, logged) rather than priced wrong.
   for (const c of currencies) if (tryConvertCurrency(1, c, i.base, i.rates) === null) return null
 
   const inBase = (e: Expense) => expenseAmountInBase(e, i.base, i.rates)
   const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 
-  const income = actualIncomeForMonth(i.incomeSources, i.incomeEvents, i.base, i.rates, i.monthKey, i.monthStartDay)
+  const income = actualIncomeForMonth(i.incomeSources, i.incomeEvents, i.base, i.rates, i.monthKey, i.monthStartDay, true)
   const spend = sum(i.expenses.filter((e) => !isNonSpendExpense(e)).map(inBase))
   const savingsTagged = sum(i.expenses.filter((e) => e.category === 'Savings').map(inBase))
   // The carry's own sweep and goal-funding deposits are the carry itself: counting them would shrink a rerun.

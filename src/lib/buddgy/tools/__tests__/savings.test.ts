@@ -293,6 +293,14 @@ describe('transfer_between_pockets', () => {
     expect(st().savingsTransactions).toHaveLength(0)
   })
 
+  it('F9: accepts a fiat to gold move at the gram quote', () => {
+    useFinanceStore.setState({ goldPricePerGram: 4000, goldPriceAvailable: true, savingsAccounts: [account(A1), account(A3, { name: 'Gold', type: 'vault', currency: 'XAU', currentBalance: 0 })] })
+    const p = write('transfer_between_pockets').propose({ from: 'CIB', to: 'Gold', amount: 400 }, ctx)
+    expect(p.ok).toBe(true)
+    useFinanceStore.setState({ goldPriceAvailable: false })
+    expect(write('transfer_between_pockets').propose({ from: 'CIB', to: 'Gold', amount: 400 }, ctx).ok).toBe(false)
+  })
+
   it('converts into a foreign pocket and names the affected goals', () => {
     useFinanceStore.setState({ exchangeRates: { USD_EGP: 50 }, savingsAccounts: [account(A1), account(A3, { name: 'Dollars', currency: 'USD', currentBalance: 0 })], goals: [goal()] })
     const tr = write('transfer_between_pockets')

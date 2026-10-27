@@ -171,6 +171,8 @@ describe('forecastCharges / paidThisMonth', () => {
   })
   it('counts only linked, non-refunded charges of this month', () => {
     const e = [paid('s1', '2026-10-02', 50), { ...paid('s1', '2026-10-03', 70), refundKind: 'refunded' as const }, paid('s1', '2026-09-30', 90)]
-    expect(paidThisMonth(e, at('2026-10-17'))).toBe(50)
+    expect(paidThisMonth(e, at('2026-10-17'), 'EGP', {})).toBe(50)
+    const usd = { ...paid('s1', '2026-10-04', 10), currency: 'USD' as const, amountInBaseCurrency: 10 }
+    expect(paidThisMonth([usd], at('2026-10-17'), 'EGP', { USD_EGP: 50 })).toBe(500)
   })
 })

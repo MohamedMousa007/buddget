@@ -13,6 +13,10 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     user_id: userId,
     description: e.description ?? null,
     category: toDbCategory(e.category),
+    category_label: e.category,
+    subcategory: e.subcategory ?? null,
+    shared_plan_id: e.sharedPlanId ?? null,
+    is_recurring: !!e.isRecurring,
     amount: e.amount,
     currency: e.currency,
     expense_date: e.date,
@@ -42,15 +46,15 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     id: row.id,
     date: row.expense_date,
     description: row.description ?? '',
-    category: row.category as string,
+    category: row.category_label ?? (row.category as string),
+    subcategory: row.subcategory ?? undefined,
+    sharedPlanId: row.shared_plan_id ?? undefined,
     amount: row.amount,
     currency: row.currency as Currency,
-    // Mirrors the store's own fallback (`converted ?? expense.amount`) for a row we can't
-    // convert without rates. Only ever read by `expenseAmountInBase` when live conversion
-    // fails — never sum this field directly, it is the raw foreign amount for hydrated rows.
-    amountInBaseCurrency: row.amount,
+    // Not stored server-side. 0 = unconverted (same as the store's fail-closed paths); `expenseAmountInBase` converts live when a rate path exists.
+    amountInBaseCurrency: 0,
     paymentMethodId: row.payment_method_id ?? DEFAULT_CASH_ID, // null == cash sentinel, stable round-trip
-    isRecurring: false,
+    isRecurring: row.is_recurring,
     notes: row.notes ?? undefined,
     isDebtPayment: row.is_debt_payment,
     linkedSubscriptionId: row.linked_subscription_id ?? undefined,

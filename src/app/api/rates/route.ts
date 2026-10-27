@@ -131,7 +131,8 @@ export async function GET() {
 
     // Build comprehensive cross-rate map
     const rates: Record<string, number> = {}
-    const allCurrencies = CURRENCIES.split(',')
+    // XAU stays out of the cross-rate table (it is per troy ounce); gold is priced via `gold` below.
+    const allCurrencies = CURRENCIES.split(',').filter((c) => c !== 'XAU')
 
     // Store all USD-based rates
     for (const currency of allCurrencies) {

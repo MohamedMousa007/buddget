@@ -40,12 +40,12 @@ describe('cycleCarryFigures', () => {
     const f = cycleCarryFigures(base({ incomeEvents: [ev({ amount: 1000 }), ev({ id: 'j', status: 'missed' })] }))!
     expect(f.income).toBe(1000)
   })
-  it('income falls back to the projection for a recurring template without events', () => {
+  it('income ignores a recurring template whose payday never arrived (W13)', () => {
     const t = {
       id: 't', name: 'Salary', amount: 5000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly',
       dayOfMonth: 25, createdAt: '2026-01-01T00:00:00Z', effectiveStart: '2026-01-01',
     } as IncomeSource
-    expect(cycleCarryFigures(base({ incomeSources: [t] }))!.income).toBe(5000)
+    expect(cycleCarryFigures(base({ incomeSources: [t] }))!.income).toBe(0)
   })
   it('converts foreign currency with the live rates', () => {
     expect(cycleCarryFigures(base({ expenses: [exp({ currency: 'USD', amount: 2 })] }))!.spend).toBe(100)

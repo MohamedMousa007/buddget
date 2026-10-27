@@ -295,6 +295,7 @@ export interface Dictionary {
   }
 
   wealthPage: {
+    deleteBlocked: (pocket: string, shortBy: string) => string
     holdLabel: string
     balances: string
     marketPriced: string
@@ -2363,6 +2364,7 @@ export interface Dictionary {
       deleteConfirm: string
       noOtherPocket: string
       deleteNoPocket: string
+      deleteMoveFailed: string
     }
     flow: {
       close: string

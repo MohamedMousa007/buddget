@@ -10,7 +10,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
-import { convertCurrency } from '@/lib/utils/currency'
+import { convertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { moneyToGoldGrams } from '@/lib/utils/calculations'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountCurrencyRow, PocketRadioList, tint } from '@/components/features/savings-v3/MoneySheetParts'
@@ -86,7 +86,9 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const amountNum = parseFloat(amount) || 0
   const free = from ? Math.max(0, from.account.currentBalance) : 0
   // Guard against the sheet currency differing from the pocket's — compare like for like.
-  const amountInPocket = from ? convertCurrency(amountNum, currency, from.account.currency, exchangeRates) : amountNum
+  const amountInPocket = from
+    ? (tryConvertWithGold(amountNum, currency, from.account.currency, exchangeRates, baseCurrency, { pricePerGram: goldPricePerGram, available: goldPriceAvailable !== false }) ?? Infinity)
+    : amountNum
 
   // Active debts, flattened across the three families (screen 07).
   const debtChips = useMemo(

@@ -25,8 +25,9 @@ import type {
 } from '@/lib/store/types'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
 import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
-import { convertCurrency, tryConvertCurrency } from './currency'
+import { convertCurrency, tryConvertCurrency, tryConvertWithGold, type GoldQuote } from './currency'
 import { monthlyPaydayCount, paydayDatesForWindow } from './paydaySchedule'
+import { localDayKey } from './localDate'
 
 /** When set, credit card outstanding is derived from expenses + payments. */
 export type DebtBalanceContext = {
@@ -52,6 +53,15 @@ export function expenseAmountInBase(
   const converted = tryConvertCurrency(expense.amount, expense.currency, baseCurrency, rates)
   if (converted !== null) return converted
   return expense.amountInBaseCurrency
+}
+
+/** True when a foreign-currency expense has no rate path to base, so its base amount is unknown (counted as 0). */
+export function isExpenseUnconverted(
+  expense: Pick<Expense, 'amount' | 'currency'>,
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): boolean {
+  return expense.currency !== baseCurrency && tryConvertCurrency(expense.amount, expense.currency, baseCurrency, rates) === null
 }
 
 /**
@@ -144,7 +154,7 @@ export function recurringActiveForWindow(
   windowStart: Date,
   windowEnd: Date
 ): boolean {
-  const effStart = parseISO((source.effectiveStart ?? source.createdAt).slice(0, 10))
+  const effStart = parseISO(localDayKey(source.effectiveStart ?? source.createdAt))
   if (effStart > windowEnd) return false
   if (source.effectiveEnd && parseISO(source.effectiveEnd) < windowStart) return false
   return true
@@ -196,7 +206,9 @@ export function actualIncomeForMonth(
   baseCurrency: Currency,
   rates: Record<string, number>,
   monthStr: string,
-  monthStartDay = 1
+  monthStartDay = 1,
+  /** Count only money that really arrived: no projected fallback for paydays without a realized event. */
+  realizedOnly = false
 ): number {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
   const inWindow = (isoOrDate: string) => isWithinInterval(parseISO(isoOrDate), { start, end })
@@ -205,14 +217,29 @@ export function actualIncomeForMonth(
   // One-time events. Track every covered source id (any status) so a backfilled or
   // missed one-time source isn't also counted from income_sources below.
   const coveredSourceIds = new Set<string>()
+  const templateById = new Map(templates.map((t) => [t.id, t]))
+  // Events whose template was deleted, or has ended before this window, still happened:
+  // they stand alone as one-time income (latest edit per payday wins).
+  const orphanByOcc = new Map<string, IncomeEvent>()
   for (const e of events) {
-    if (e.templateId) continue
+    if (e.templateId) {
+      const t = templateById.get(e.templateId)
+      const orphan = !t || !t.isRecurring || !recurringActiveForWindow(t, start, end)
+      if (orphan && REALIZED_EVENT_STATUSES.has(e.status) && inWindow(e.occurrenceDate ?? e.receivedDate)) {
+        const key = e.occurrenceDate ? `${e.templateId}|${e.occurrenceDate}` : e.id
+        if (t) coveredSourceIds.add(t.id) // a one-time template's realized event replaces the template's own line
+        const prev = orphanByOcc.get(key)
+        if (!prev || e.updatedAt.localeCompare(prev.updatedAt) > 0) orphanByOcc.set(key, e)
+      }
+      continue
+    }
     coveredSourceIds.add(e.id) // backfilled one-time events reuse their source id
     if (!inWindow(e.receivedDate)) continue
     if (REALIZED_EVENT_STATUSES.has(e.status)) {
       total += convertCurrency(e.amount, e.currency, baseCurrency, rates)
     }
   }
+  for (const e of orphanByOcc.values()) total += convertCurrency(e.amount, e.currency, baseCurrency, rates)
 
   for (const t of templates) {
     if (t.isRecurring) {
@@ -222,7 +249,7 @@ export function actualIncomeForMonth(
       // Window-test by the fulfilled payday when stamped, else by received date.
       const evForT = events.filter((e) => e.templateId === t.id && inWindow(e.occurrenceDate ?? e.receivedDate))
       if (evForT.length === 0) {
-        total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
+        if (!realizedOnly) total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
       } else {
         // Dedupe by fulfilled payday (latest edit wins) so re-marking an occurrence
         // can never double-count; legacy events without occurrence_date count as-is.
@@ -241,9 +268,9 @@ export function actualIncomeForMonth(
         let sub = 0
         for (const e of counted) {
           if (REALIZED_EVENT_STATUSES.has(e.status)) sub += convertCurrency(e.amount, e.currency, baseCurrency, rates)
-          else if (e.status === 'projected') sub += perOccurrence
+          else if (e.status === 'projected' && !realizedOnly) sub += perOccurrence
         }
-        total += sub + Math.max(0, paydayCount - counted.length) * perOccurrence
+        total += sub + (realizedOnly ? 0 : Math.max(0, paydayCount - counted.length) * perOccurrence)
       }
     } else if (!coveredSourceIds.has(t.id) && inWindow(t.createdAt)) {
       // One-time source with no event yet (added before Phase 6 wired event creation).
@@ -449,14 +476,16 @@ export function netSavingsLedgerInBaseForMonth(
   monthStr: string,
   monthStartDay: number,
   baseCurrency: Currency,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  gold: GoldQuote
 ): number {
   const rows = filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
   return rows.reduce((sum, t) => {
     // Opening balances and corrections move a balance without moving cash. Declaring a
     // pre-existing 50k account used to wipe out `leftToSpend` for the month.
     if (t.isCashFlow === false) return sum
-    const inBase = convertCurrency(t.amount, t.currency, baseCurrency, rates)
+    const inBase = tryConvertWithGold(t.amount, t.currency, baseCurrency, rates, baseCurrency, gold)
+    if (inBase === null) return sum
     return sum + (t.type === 'deposit' ? inBase : -inBase)
   }, 0)
 }
@@ -475,11 +504,15 @@ export function cashSavingsDepositsInBaseForMonth(
   monthStr: string,
   monthStartDay: number,
   baseCurrency: Currency,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  gold: GoldQuote
 ): number {
   return filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
     .filter((t) => t.type === 'deposit' && t.isCashFlow !== false)
-    .reduce((sum, t) => sum + convertCurrency(t.amount, t.currency, baseCurrency, rates), 0)
+    .reduce(
+      (sum, t) => sum + (tryConvertWithGold(t.amount, t.currency, baseCurrency, rates, baseCurrency, gold) ?? 0),
+      0
+    )
 }
 
 export function totalSavingsAccountsBalanceInBase(
@@ -523,6 +556,7 @@ export function calculateLeftToSpendCashFlow(params: {
   baseCurrency: Currency
   exchangeRates: Record<string, number>
   incomeBlocked: boolean
+  gold: GoldQuote
   /** Planned monthly savings target in base currency (e.g. sum of the active plan's savings rows). */
   monthlyTarget?: number
 }): number {
@@ -536,6 +570,7 @@ export function calculateLeftToSpendCashFlow(params: {
     baseCurrency,
     exchangeRates,
     incomeBlocked,
+    gold,
     monthlyTarget = 0,
   } = params
   const monthlyExpenses = filterExpensesByMonth(expenses, monthStr, monthStartDay)
@@ -561,7 +596,8 @@ export function calculateLeftToSpendCashFlow(params: {
     monthStr,
     monthStartDay,
     baseCurrency,
-    exchangeRates
+    exchangeRates,
+    gold
   )
   // `allocated` folds legacy Savings-tagged expenses in with real deposits so the reserve can't
   // double-withhold money the user already earmarked (F12) — before OR after the A6 migration.
@@ -577,7 +613,7 @@ export function filterDebtPaymentsByMonth(
   monthStartDay = 1
 ): DebtPayment[] {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
-  return payments.filter((p) => isWithinInterval(parseISO(p.date.slice(0, 10)), { start, end }))
+  return payments.filter((p) => isWithinInterval(parseISO(localDayKey(p.date)), { start, end }))
 }
 
 /**
@@ -628,9 +664,10 @@ export function calculateCashOutflow(params: {
 
   let outflow = 0
   for (const e of monthExpenses) {
-    // Non-spend rows are money movement; the settlement ones are counted from
-    // debtPayments below, which is the only source that sees ALL payoffs.
-    if (isNonSpendExpense(e)) continue
+    // Money-movement categories are not cash leaving; the settlement ones are counted from
+    // debtPayments below, which is the only source that sees ALL payoffs. A spend-excluded
+    // expense (for someone else, excluded method) still moved real cash, so it stays in.
+    if (isNonSpendCategory(e.category)) continue
     if (e.paymentMethodId && deferredPmIds.has(e.paymentMethodId)) continue
     if (e.linkedDebtId && installmentDebtIds.has(e.linkedDebtId)) continue
     outflow += expenseAmountInBase(e, baseCurrency, exchangeRates)
@@ -781,11 +818,14 @@ export function calculateDebtRemainingRaw(
   return debt.startingBalance - totalPaidTowardDebt(debt.id, payments)
 }
 
-const DEBT_PAID_EPS = 1e-6
+/** Remainders below one minor unit (a cent; 0.1 mg of gold) are rounding dust from rate conversion, not debt. */
+function debtPaidEps(debt: Debt): number {
+  return debt.isGold ? 1e-4 : 0.005
+}
 
 export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[], ctx?: DebtBalanceContext): boolean {
   if (debt.status === 'cleared') return true
-  return calculateDebtRemainingRaw(debt, payments, ctx) <= DEBT_PAID_EPS
+  return calculateDebtRemainingRaw(debt, payments, ctx) <= debtPaidEps(debt)
 }
 
 /**
@@ -831,16 +871,25 @@ export function computeDebtPaymentRecord(
     return { ok: false, error: 'This debt is already fully paid.' }
   }
 
-  if (debt.isGold && !(goldPricePerGram > 0)) {
+  if ((debt.isGold || paymentCurrency === 'XAU') && !(goldPricePerGram > 0)) {
     return { ok: false, error: 'Gold price is unavailable. Try again once it loads.' }
   }
 
   let amountInBase: number
   let amountInDebtUnit: number
 
-  if (paymentCurrency === 'XAU' && debt.isGold) {
-    amountInDebtUnit = amount
+  if (paymentCurrency === 'XAU') {
+    // Grams are priced through the gram price; the rates table never carries a usable XAU pair.
     amountInBase = goldGramsToMoney(amount, goldPricePerGram, debt.goldKarat)
+    if (debt.isGold) {
+      amountInDebtUnit = amount
+    } else {
+      const inDebtUnit = tryConvertCurrency(amountInBase, baseCurrency, debt.currency, exchangeRates)
+      if (inDebtUnit === null) {
+        return { ok: false, error: `No exchange rate from ${baseCurrency} to debt currency ${debt.currency}.` }
+      }
+      amountInDebtUnit = inDebtUnit
+    }
   } else {
     const inBase = tryConvertCurrency(amount, paymentCurrency, baseCurrency, exchangeRates)
     if (inBase === null) {
@@ -867,7 +916,7 @@ export function computeDebtPaymentRecord(
 
   const rateAtEntry = amount > 0 ? amountInBase / amount : 1
   const remainingRaw = calculateDebtRemainingRaw(debt, debtPayments, balanceCtx)
-  if (amountInDebtUnit > remainingRaw + 1e-6) {
+  if (amountInDebtUnit > remainingRaw + debtPaidEps(debt)) {
     const unit = debt.isGold ? 'g' : debt.currency
     return {
       ok: false,

@@ -23,6 +23,7 @@ import {
   creditUtilizationRatio,
 } from '@/lib/debt/computeCreditCardBalance'
 import { debtFreeBy, lastPaymentDate, paymentsToClear } from '@/lib/debts/heroStats'
+import { paidAsEntered } from '@/lib/debts/paymentAmounts'
 import { installmentPaymentsCompleted, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
 import { decomposePaymentMethodName, providerInitials } from '@/lib/payment/paymentMethodDefaults'
@@ -263,7 +264,7 @@ export function useDebtTabData() {
       .filter((d) => debtFamily(d) === 'installment')
       .map((d) => {
         const pays = paymentsFor(d.id)
-        const paid = installmentPaymentsCompleted(d, pays.length)
+        const paid = installmentPaymentsCompleted(d, pays)
         const count = d.installmentCount ?? 0
         const per = d.installmentAmount ?? 0
         const brand = findProviderBrand(
@@ -286,7 +287,7 @@ export function useDebtTabData() {
           count,
           paid,
           per,
-          remaining: Math.max(0, (count - paid) * per),
+          remaining: calculateDebtRemaining(d, pays, balanceCtx),
           currency: d.currency,
           next: nextInstallmentDueFormatted(d, paid) ?? undefined,
           method,
@@ -304,8 +305,7 @@ export function useDebtTabData() {
           family: d ? debtFamily(d) : 'borrow',
           name: d?.name || d?.person || '—',
           method: p.paymentMethodId ? paymentMethods.find((m) => m.id === p.paymentMethodId)?.name : undefined,
-          amount: p.amountPaid,
-          currency: p.paymentCurrency ?? d?.currency ?? base,
+          ...paidAsEntered(p, d?.currency ?? base),
           date: p.date,
         }
       })
@@ -326,8 +326,7 @@ export function useDebtTabData() {
           .map((p) => ({
             date: p.date,
             method: p.paymentMethodId ? paymentMethods.find((m) => m.id === p.paymentMethodId)?.name : undefined,
-            amount: p.amountPaid,
-            currency: p.paymentCurrency ?? d.currency,
+            ...paidAsEntered(p, d.currency),
           })),
       }))
 
@@ -372,11 +371,11 @@ export function useDebtTabData() {
         continue
       }
       if (d.debtType === 'installment') {
-        const nextStr = nextInstallmentDueFormatted(d, installmentPaymentsCompleted(d, paymentsFor(d.id).length))
+        const nextStr = nextInstallmentDueFormatted(d, installmentPaymentsCompleted(d, paymentsFor(d.id)))
         if (nextStr && d.installmentAmount) {
           const next = parse(nextStr, 'MMM d, yyyy', now)
           scheduled.push({ debtId: d.id, name: nameOf(d), date: next, amount: toBase(d.installmentAmount, d.currency) })
-          const left = (d.installmentCount ?? 0) - installmentPaymentsCompleted(d, paymentsFor(d.id).length)
+          const left = (d.installmentCount ?? 0) - installmentPaymentsCompleted(d, paymentsFor(d.id))
           projectedEnds.push(lastPaymentDate(next, d.installmentFrequency ?? 'monthly', left))
         } else projectedEnds.push(null)
         continue
@@ -408,8 +407,9 @@ export function useDebtTabData() {
       .filter((p) => isSameMonth(parseISO(p.date), now))
       .reduce((sum, p) => {
         const d = debts.find((x) => x.id === p.debtId)
-        if (d?.isGold) return sum + goldGramsToMoney(p.amountPaid, goldPricePerGram, d.goldKarat)
-        return sum + toBase(p.amountPaid, p.paymentCurrency ?? d?.currency ?? base)
+        if (d?.isGold && (p.originalAmount == null || p.paymentCurrency === 'XAU')) return sum + goldGramsToMoney(p.amountPaid, goldPricePerGram, d.goldKarat)
+        const paid = paidAsEntered(p, d?.currency ?? base)
+        return sum + toBase(paid.amount, paid.currency)
       }, 0)
 
     return {

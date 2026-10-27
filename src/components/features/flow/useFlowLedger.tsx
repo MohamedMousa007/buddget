@@ -1,5 +1,6 @@
 'use client'
 
+import { localDayKey } from '@/lib/utils/localDate'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, parseISO, subDays } from 'date-fns'
@@ -251,7 +252,7 @@ export function useFlowLedger() {
         amount: s.amount,
         currency: s.currency,
         sourceType: s.sourceType,
-        date: s.createdAt.slice(0, 10),
+        date: localDayKey(s.createdAt),
         paymentMethodId: s.paymentMethodId,
         legacySourceId: s.id,
       })

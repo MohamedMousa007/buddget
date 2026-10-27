@@ -282,7 +282,7 @@ const update_expense: WriteImpl = {
       const currency = (text(a.currency, 8)?.toUpperCase() ?? target.currency) as Currency
       patch.amount = amount
       patch.currency = currency
-      patch.amountInBaseCurrency = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates) ?? amount
+      patch.amountInBaseCurrency = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates) ?? 0
     }
     if (a.category !== undefined) patch.category = resolveCategory(s, a.category) ?? target.category
     if (a.date !== undefined) patch.date = parseIsoDate(a.date) ?? target.date

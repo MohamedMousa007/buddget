@@ -232,17 +232,17 @@ describe('isIncomeOccurrencePending', () => {
   }
 
   it('is pending when the due day passed and no event landed', () => {
-    expect(isIncomeOccurrencePending(tmpl, [], '2025-01', new Date('2025-01-10'), 1)).toBe(true)
+    expect(isIncomeOccurrencePending(tmpl, [], '2025-01', new Date(2025, 0, 10), 1)).toBe(true)
   })
   it('is not pending once a linked event exists in the month', () => {
-    expect(isIncomeOccurrencePending(tmpl, [evt], '2025-01', new Date('2025-01-10'), 1)).toBe(false)
+    expect(isIncomeOccurrencePending(tmpl, [evt], '2025-01', new Date(2025, 0, 10), 1)).toBe(false)
   })
   it('is not pending for a future/not-yet-due occurrence', () => {
-    expect(isIncomeOccurrencePending(tmpl, [], '2025-02', new Date('2025-01-10'), 1)).toBe(false)
+    expect(isIncomeOccurrencePending(tmpl, [], '2025-02', new Date(2025, 0, 10), 1)).toBe(false)
   })
   it('is not pending for a non-recurring source', () => {
     const oneTime = src({ id: 'o1', name: 'Bonus', amount: 100, currency: 'AED', isRecurring: false })
-    expect(isIncomeOccurrencePending(oneTime, [], '2025-01', new Date('2025-01-10'), 1)).toBe(false)
+    expect(isIncomeOccurrencePending(oneTime, [], '2025-01', new Date(2025, 0, 10), 1)).toBe(false)
   })
 })
 
@@ -299,8 +299,8 @@ describe('sumRecurringIncomeOverDateRange', () => {
     const sources: IncomeSource[] = [
       src({ id: '1', name: 'Job', amount: 1000, currency: 'AED', createdAt: '2020-01-01T00:00:00.000Z' }),
     ]
-    const start = new Date('2025-01-10')
-    const end = new Date('2025-03-20')
+    const start = new Date(2025, 0, 10)
+    const end = new Date(2025, 2, 20)
     expect(sumRecurringIncomeOverDateRange(sources, 'AED', {}, start, end)).toBe(3000)
   })
 })

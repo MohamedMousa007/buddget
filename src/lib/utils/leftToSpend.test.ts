@@ -22,6 +22,7 @@ const base = {
   baseCurrency: 'EGP' as const,
   exchangeRates: RATES,
   incomeBlocked: false,
+  gold: { pricePerGram: 6000, available: true },
 }
 
 const event = (over: Partial<IncomeEvent>): IncomeEvent =>

@@ -35,6 +35,7 @@ export function planCategoryCurrency(cat: BudgetPlanCategory, base: Currency): C
 
 /**
  * Effective category total converted to base currency for summaries and AI context.
+ * A row with no rate path counts as 0 (see {@link isPlanCategoryUnconverted}), never its raw foreign amount.
  */
 export function effectivePlanCategoryAmountInBase(
   cat: BudgetPlanCategory,
@@ -44,8 +45,17 @@ export function effectivePlanCategoryAmountInBase(
   const rowCur = planCategoryCurrency(cat, baseCurrency)
   const raw = effectivePlanCategoryAmount(cat)
   if (rowCur === baseCurrency) return raw
-  const converted = tryConvertCurrency(raw, rowCur, baseCurrency, exchangeRates)
-  return converted ?? raw
+  return tryConvertCurrency(raw, rowCur, baseCurrency, exchangeRates) ?? 0
+}
+
+/** True when a plan row is in a currency with no rate path to base, so it counts as 0 in every total. */
+export function isPlanCategoryUnconverted(
+  cat: BudgetPlanCategory,
+  baseCurrency: Currency,
+  exchangeRates: Record<string, number>
+): boolean {
+  const rowCur = planCategoryCurrency(cat, baseCurrency)
+  return rowCur !== baseCurrency && tryConvertCurrency(1, rowCur, baseCurrency, exchangeRates) === null
 }
 
 /** Sum of planned expense categories only (excludes savings allocation rows), in base currency. */

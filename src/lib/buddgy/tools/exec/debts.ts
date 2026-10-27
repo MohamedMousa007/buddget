@@ -92,7 +92,7 @@ const list_debts: ReadImpl = (args, ctx) => {
     count: rows.length,
     rows: rows.slice(0, LIST_CAP).map(({ d, left }) => {
       const who = d.personName || d.person
-      const paymentsDone = d.debtType === 'installment' ? installmentPaymentsCompleted(d, s.debtPayments.filter((p) => p.debtId === d.id).length) : 0
+      const paymentsDone = d.debtType === 'installment' ? installmentPaymentsCompleted(d, s.debtPayments.filter((p) => p.debtId === d.id)) : 0
       return {
         ref: refOf(d.id),
         name: debtTitle(d),
@@ -645,7 +645,7 @@ const record_debt_payment: WriteImpl = {
         isDebtPayment: true,
       })
     }
-    reconcileDebtSchedule(debt.id)
+    reconcileDebtSchedule(debt.id, { amount, currency: payCur })
 
     const now = fin()
     const addedPayments = new Set(now.debtPayments.filter((x) => !paymentsBefore.has(x.id)).map((x) => x.id))

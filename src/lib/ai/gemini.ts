@@ -286,7 +286,7 @@ RULES:
 15. For "delete_expense", include data.description (matches against existing expenses by description text).
 16. For "update_expense", include data.description (to find the expense) and data.newAmount, data.newCategory, and/or data.newDescription for changes.
 17. For "update_income", include data.name (to find the income source) and data.amount for the new amount (optional: data.currency).
-18. For "delete_income", include data.name (to find and remove the income source).
+18. For "delete_income", include data.name (to find and remove the income source). Income already received from it stays in past months; when a source merely stopped, prefer update_income with data.effectiveEnd.
 19. For "clear_debt", include data.name or data.person to identify the debt to mark as fully paid.
 20. For "deposit_savings", include data.account (savings account name), data.amount, data.currency (optional).
 21. For "withdraw_savings", include data.account, data.amount, data.currency (optional).
