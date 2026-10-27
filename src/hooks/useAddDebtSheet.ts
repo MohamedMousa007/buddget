@@ -544,6 +544,7 @@ export function useAddDebtSheet() {
         currency: payCur as Currency,
         frequency: recurringFrequency,
         nextDueDate: paymentDate,
+        dueDay: Number(paymentDate.slice(8, 10)),
         paymentMethodId: pmId,
         isActive: true,
         notes: paymentNotes || undefined,

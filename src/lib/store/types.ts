@@ -86,6 +86,8 @@ export interface PaymentMethod {
 
 /** How often recurring income is received; amount is per that period (e.g. weekly = per week). */
 export type IncomeRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
+/** Employer weekend: Sat+Sun (default) or Fri+Sat (Egypt). */
+export type PaydayWeekend = 'sat_sun' | 'fri_sat'
 
 export type IncomeSourceType =
   | 'salary'
@@ -122,6 +124,8 @@ export interface IncomeSource {
    * Undefined/null = app default (7 matching, {@link MISSED_AFTER_DAYS} before missed).
    */
   paydayDriftDays?: number | null
+  /** Employer weekend for payday shifting: Sat+Sun (default; US/remote) or Fri+Sat (Egypt). */
+  paydayWeekend?: PaydayWeekend
   /** `YYYY-MM-DD` the source starts counting for a month (defaults to creation date). */
   effectiveStart: string
   /** `YYYY-MM-DD` the source stops counting (inclusive); null/undefined = ongoing. */
@@ -841,6 +845,8 @@ export interface RecurringDebtPayment {
   frequency: DebtRecurringFrequency
   /** Next calendar due date (YYYY-MM-DD, local). */
   nextDueDate: string
+  /** Day of month the schedule is anchored to (1-31); lets a 31st schedule return to 31 after short months. */
+  dueDay?: number
   isActive: boolean
   notes?: string
   createdAt: string
@@ -895,6 +901,8 @@ export interface AppSettings {
   language: 'en' | 'ar'
   showCentsInDashboard: boolean
   monthStartDay: number
+  /** IANA zone of the user's device, synced so server crons judge dates in their local calendar. */
+  timezone?: string | null
   /** Budget rows as fixed amounts in base currency vs % of monthly recurring income */
   budgetEntryMode: 'amount' | 'percent_of_income'
   /** AI chat / extraction (optional client preference; server may still gate by env) */

@@ -97,3 +97,9 @@ export async function isRevokedDevice(service: ServiceClient, userId: string, de
   const { data } = await service.from('user_devices').select('revoked_at').eq('user_id', userId).eq('device_id', deviceId).maybeSingle()
   return Boolean(data?.revoked_at)
 }
+
+/** True when the account has ever registered a phone (removed ones count: a removed phone must not escape by going anonymous). */
+export async function hasAnyDevice(service: ServiceClient, userId: string): Promise<boolean> {
+  const { count } = await service.from('user_devices').select('device_id', { count: 'exact', head: true }).eq('user_id', userId)
+  return (count ?? 0) > 0
+}

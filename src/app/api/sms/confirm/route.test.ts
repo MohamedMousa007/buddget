@@ -12,6 +12,7 @@ const h = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: h.user }))
+vi.mock('@/lib/server/userTimeZone', () => ({ getUserTimeZone: async () => 'Africa/Cairo' }))
 vi.mock('@/lib/sms/dispatch', () => ({ createSmsTransaction: h.create }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({

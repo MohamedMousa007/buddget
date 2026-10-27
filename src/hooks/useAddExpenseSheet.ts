@@ -187,6 +187,7 @@ export function useAddExpenseSheet() {
         paymentMethodId: fundingMethodId,
         frequency: 'monthly',
         nextDueDate: installmentFirstDue,
+        dueDay: Number(installmentFirstDue.slice(8, 10)),
         isActive: true,
       })
       linkedDebtId = debtId

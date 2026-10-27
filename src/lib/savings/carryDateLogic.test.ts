@@ -32,6 +32,20 @@ describe('closedCycleKeys', () => {
   })
 })
 
+describe('per-user zones', () => {
+  it('the same instant closes the cycle in Dubai but not in New York', () => {
+    const t = at('2026-08-02T01:00:00Z') // Aug 2 05:00 Dubai, Aug 1 21:00 New York
+    expect(closedCycleKeys(t, 1, 1, 'Asia/Dubai')).toEqual(['2026-07'])
+    expect(closedCycleKeys(t, 1, 1, 'America/New_York')).toEqual(['2026-06'])
+  })
+  it('start=28 non-leap Feb still carries Jan on 1 March in a US zone', () => {
+    expect(closedCycleKeys(at('2026-03-01T12:00:00Z'), 28, 1, 'America/Chicago')).toEqual(['2026-01'])
+  })
+  it('defaults to Cairo', () => {
+    expect(closedCycleKeys(at('2026-08-01T22:30:00Z'), 1, 1)).toEqual(['2026-07'])
+  })
+})
+
 describe('pendingCarryKeys', () => {
   const now = at('2026-08-10T06:00:00Z')
   it('a user with no summary gets only the newest closed cycle', () => {

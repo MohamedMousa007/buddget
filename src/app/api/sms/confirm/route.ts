@@ -10,6 +10,7 @@
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { smsLocalDay } from '@/lib/sms/ingestGuards'
+import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { Constants } from '@/lib/supabase/database.types'
@@ -119,7 +120,7 @@ export async function POST(request: Request) {
     if (row.amount == null || !row.currency) return fail('invalid_row', 422)
 
     const receivedAtIso = new Date(row.received_at ?? Date.now()).toISOString()
-    const day = smsLocalDay(receivedAtIso)
+    const day = smsLocalDay(receivedAtIso, await getUserTimeZone(service, userId))
 
     // Re-run the full classifier so a user-confirmed row gets the same
     // transfer/CC/subscription/salary handling as the auto path.

@@ -12,6 +12,7 @@ import {
   suspendFinanceSync,
 } from '@/components/sync/SupabaseFinanceSync'
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
+import { DeviceTimeZoneSync } from '@/components/sync/DeviceTimeZoneSync'
 import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
 import { unregisterPushToken } from '@/lib/native/pushNotifications'
 import { AuthModal } from '@/components/features/auth-modal/AuthModal'
@@ -653,6 +654,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <>
             <SupabaseFinanceSync userId={user.id} />
             <AnalyticsHeartbeat userId={user.id} />
+            <DeviceTimeZoneSync />
             <NativeBootstrap session={session} />
           </>
         ) : null}

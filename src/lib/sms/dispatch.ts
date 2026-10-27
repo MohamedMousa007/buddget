@@ -492,6 +492,8 @@ export async function createSmsTransaction(
       currency: row.currency,
       day: row.day,
       exchangeRates: opts.exchangeRates,
+      body: row.rawBody,
+      counterparty: row.merchant ?? null,
     })
     if (decision.outcome === 'matched' || (decision.outcome === 'confirm' && opts.userConfirmed)) {
       // Stamping the payday is what makes the event pair deterministically. Without it

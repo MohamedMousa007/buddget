@@ -14,7 +14,7 @@ import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
-import { isRevokedDevice } from '@/lib/server/devices/registry'
+import { smsDeviceGate } from '@/lib/sms/deviceGate'
 
 const bodySchema = z.object({
   parseLogId: z.string().uuid(),
@@ -25,16 +25,16 @@ export async function POST(request: Request) {
   if (outdated) return outdated
   const serviceClient = createServiceRoleClient()
   const hasBearer = (request.headers.get('authorization') ?? '').startsWith('Bearer ')
-  const { userId, deviceId } = hasBearer
+  const caller = hasBearer
     ? await resolveSmsCaller(request)
-    : { userId: await resolveApiUserId(request), deviceId: null }
+    : { userId: await resolveApiUserId(request), deviceId: null, viaJwt: false }
+  const { userId } = caller
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (await isRevokedDevice(serviceClient, userId, deviceId)) {
-    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
-  }
+  const blocked = await smsDeviceGate(serviceClient, caller)
+  if (blocked) return blocked
 
   // ── Parse body ───────────────────────────────────────────────────────────
   let json: unknown

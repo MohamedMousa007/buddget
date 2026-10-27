@@ -140,6 +140,7 @@ export function useRecurringDebtPaymentSheet() {
       paymentMethodId: paymentMethodId || paymentMethods[0]?.id || '',
       frequency,
       nextDueDate,
+      dueDay: Number(nextDueDate.slice(8, 10)),
       isActive,
       notes: notes || undefined,
     })

@@ -20,6 +20,8 @@ import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionM
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
 import { evaluateGoalAlerts, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
+import { DEFAULT_USER_TIME_ZONE, isValidTimeZone } from '@/lib/server/userTimeZone'
+import { wallClockNow } from '@/lib/time/deviceTimeZone'
 import { median } from '@/lib/goals/fundingScenario'
 import { normalizeRuns } from '@/lib/goals/goalDetail'
 
@@ -33,7 +35,7 @@ export async function GET(request: Request) {
   if (!isAuthorizedCron(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const service = createServiceRoleClient()
-  const now = new Date()
+  const utcNow = new Date()
   let emitted = 0
   let scanned = 0
   const started = Date.now()
@@ -50,7 +52,7 @@ export async function GET(request: Request) {
   for (;;) {
     let query = service
       .from('user_settings')
-      .select('user_id, language, month_start_day, sub_due_reminders, sub_price_alerts, goal_alerts')
+      .select('user_id, language, timezone, month_start_day, sub_due_reminders, sub_price_alerts, goal_alerts')
       .order('user_id', { ascending: true })
       .limit(PAGE)
     if (cursor) query = query.gt('user_id', cursor)
@@ -64,6 +66,7 @@ export async function GET(request: Request) {
 
     const handleUser = async (s: (typeof settingsRows)[number]) => {
       scanned++
+      const now = wallClockNow(utcNow, s.timezone && isValidTimeZone(s.timezone) ? s.timezone : DEFAULT_USER_TIME_ZONE)
       const full = candidates.has(s.user_id as string)
       const userId = s.user_id as string
 

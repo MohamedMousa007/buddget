@@ -11,7 +11,7 @@ import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
-import type { Currency, IncomeRecurringFrequency, IncomeSource, IncomeSourceType } from '@/lib/store/types'
+import type { Currency, IncomeRecurringFrequency, IncomeSource, IncomeSourceType, PaydayWeekend } from '@/lib/store/types'
 import type { PaydayPrefill } from '@/lib/store/useSettingsStore'
 import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
@@ -99,6 +99,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const [frequency, setFrequency] = useState<IncomeRecurringFrequency>(source?.recurringFrequency ?? 'monthly')
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
   const driftDays = source?.paydayDriftDays ?? null
+  const [weekend, setWeekend] = useState<PaydayWeekend>(source?.paydayWeekend ?? 'sat_sun')
   const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
   const [paymentMethodId, setPaymentMethodId] = useState(source?.paymentMethodId ?? defaultPmId)
@@ -118,6 +119,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
       setReceivedDate(localTodayISO())
       setPaydays([prefill?.dayOfMonth ?? new Date().getDate()])
       setAssigned(null)
+      setWeekend('sat_sun')
       if (prefill?.name) setName(prefill.name)
       if (prefill?.amount) setAmount(String(prefill.amount))
       if (prefill?.sourceType) setSourceType(prefill.sourceType)
@@ -133,6 +135,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
     setSourceType('salary')
     setFrequency('monthly')
     setPaydays([new Date().getDate()])
+    setWeekend('sat_sun')
     setReceivedDate(localTodayISO())
     setAssigned(null)
     setPaymentMethodId(defaultPmId)
@@ -157,6 +160,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
         dayOfMonth: paydays[0] ?? 1,
         paydayDays: frequency !== 'monthly' && paydays.length ? paydays : undefined,
         paydayDriftDays: driftDays ?? DEFAULT_DRIFT_PRESET,
+        paydayWeekend: weekend,
         notes: notes.trim() || undefined,
         paymentMethodId: paymentMethodId || undefined,
         ...(typeLocked ? {} : { sourceType }),
@@ -174,6 +178,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
         dayOfMonth: paydays[0] ?? 1,
         ...(frequency !== 'monthly' && paydays.length ? { paydayDays: paydays } : {}),
         paydayDriftDays: driftDays ?? DEFAULT_DRIFT_PRESET,
+        paydayWeekend: weekend,
         sourceType,
         notes: notes.trim() || undefined,
         ...(paymentMethodId ? { paymentMethodId } : {}),
@@ -322,6 +327,21 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
                 </div>
                 <div className="mt-1.5">
                   <IncomePaydayGrid frequency={frequency} days={paydays} onChange={setPaydays} />
+                </div>
+              </div>
+              {/* Employer weekend */}
+              <div>
+                <span className={MODAL_LABEL_CLASS}>{t.addIncome.employerWeekendLabel}</span>
+                <div className="mt-1.5">
+                  <SegmentedControl
+                    ariaLabel={t.addIncome.employerWeekendLabel}
+                    value={weekend}
+                    onChange={setWeekend}
+                    options={[
+                      { value: 'sat_sun', label: t.addIncome.weekendSatSun },
+                      { value: 'fri_sat', label: t.addIncome.weekendFriSat },
+                    ]}
+                  />
                 </div>
               </div>
             </>

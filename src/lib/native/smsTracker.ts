@@ -267,12 +267,14 @@ export async function drainAndSubmitPendingSms(accessToken: string, userId: stri
   if (items.length === 0) return
 
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+  const { deviceIdHeader } = await import('@/lib/native/deviceId')
+  const deviceHeaders = await deviceIdHeader()
   const done: PendingSmsItem[] = []
   for (const item of items) {
     try {
       const res = await fetch(buildUrl('/api/sms/parse'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...deviceHeaders },
         body: JSON.stringify(item),
       })
       if (res.ok || (await isPermanentRejection(res, item))) {

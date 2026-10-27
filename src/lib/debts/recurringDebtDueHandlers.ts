@@ -33,7 +33,7 @@ export function reconcileDebtSchedule(debtId: string): void {
     if (debt.status !== 'cleared') state.clearDebt(debtId)
     return
   }
-  const anchorDay = parseISO(sched.nextDueDate).getDate()
+  const anchorDay = sched.dueDay ?? parseISO(sched.nextDueDate).getDate()
   state.updateRecurringDebtPayment(sched.id, {
     nextDueDate: advanceRecurringDebtDueDate(sched.nextDueDate, sched.frequency, anchorDay),
   })

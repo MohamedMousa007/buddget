@@ -114,4 +114,5 @@ export const APP_SETTING_COVERAGE: Record<keyof AppSettings, SettingId | 'intern
   goalAlerts: 'goalAlerts',
   privacy: 'internal',
   promptState: 'internal',
+  timezone: 'internal',
 }

@@ -162,3 +162,33 @@ describe('matchSalary — amount and currency', () => {
     })
   })
 })
+
+describe('matchSalary — evidence, not amount alone', () => {
+  const withBody = (body: string, counterparty: string | null = null) =>
+    matchSalary(fakeService([BIWEEKLY]), {
+      userId: 'u1', amount: 70000, currency: 'EGP', day: '2026-07-20', exchangeRates: DEFAULT_MARKET_RATES, body, counterparty,
+    })
+
+  it('does not auto-link a friend sending the exact salary by IPN; asks instead', async () => {
+    await expect(withBody('IPN: You received EGP 70,000.00 from AHMED MOHAMED ALI via InstaPay on 20/07')).resolves.toEqual({
+      outcome: 'confirm', sourceId: 'src-bi', occurrenceDate: '2026-07-20',
+    })
+  })
+
+  it('auto-links a real salary arriving as an instant transfer from the employer', async () => {
+    await expect(withBody('IPN: You received EGP 70,000.00 from ACME TECHNOLOGIES LLC via InstaPay - Salary')).resolves.toMatchObject({ outcome: 'matched' })
+  })
+
+  it('auto-links Arabic salary wording', async () => {
+    await expect(withBody('تم إضافة مبلغ 70,000.00 جم إلى حسابك - راتب شهر يوليو')).resolves.toMatchObject({ outcome: 'matched' })
+  })
+})
+
+describe('matchSalary — employer weekend', () => {
+  const MONTHLY_24 = { ...BIWEEKLY, id: 'src-mo24', recurring_frequency: 'monthly', payday_days: null, day_of_month: 24 }
+  it('shifts a Friday payday back to Thursday for a fri_sat employer', async () => {
+    // 24 Jul 2026 is a Friday.
+    await expect(call([{ ...MONTHLY_24, payday_weekend: 'fri_sat' }], '2026-07-23')).resolves.toMatchObject({ outcome: 'matched', occurrenceDate: '2026-07-23' })
+    await expect(call([{ ...MONTHLY_24, payday_weekend: 'sat_sun' }], '2026-07-23')).resolves.toMatchObject({ occurrenceDate: '2026-07-24' })
+  })
+})

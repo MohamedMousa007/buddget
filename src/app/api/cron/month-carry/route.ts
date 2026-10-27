@@ -15,6 +15,7 @@ import { depositToPocket, primaryTrackedAccountId } from '@/lib/server/pocketLed
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { isAuthorizedCron } from '@/lib/server/cronAuth'
+import { DEFAULT_USER_TIME_ZONE, isValidTimeZone } from '@/lib/server/userTimeZone'
 import { pendingCarryKeys, cycleRange } from '@/lib/savings/carryDateLogic'
 import { computeMonthCarry, resolveCarryDestination } from '@/lib/savings/monthCarry'
 import { cycleCarryFigures } from '@/lib/savings/cycleCarryFigures'
@@ -32,7 +33,7 @@ import type { Currency, SavingsAccount } from '@/lib/store/types'
 
 type Service = ReturnType<typeof createServiceRoleClient>
 type Rates = Record<string, number>
-interface UserSettingsRow { user_id: unknown; month_start_day: unknown; language: unknown; goal_progress_alerts: unknown }
+interface UserSettingsRow { user_id: unknown; month_start_day: unknown; language: unknown; goal_progress_alerts: unknown; timezone: unknown }
 
 export const maxDuration = 60
 const PAGE = 500
@@ -48,6 +49,8 @@ async function fetchRates(): Promise<Record<string, number>> {
     return {}
   }
 }
+
+const userZone = (tz: unknown) => (typeof tz === 'string' && isValidTimeZone(tz) ? tz : DEFAULT_USER_TIME_ZONE)
 
 const ROWS_PER_REQUEST = 1000
 
@@ -184,7 +187,7 @@ async function carryUser(service: Service, s: UserSettingsRow, rates: Rates, now
   const userId = s.user_id as string
   const latest = must(await service
     .from('savings_month_summary').select('month_key').eq('user_id', userId).order('month_key', { ascending: false }).limit(1).maybeSingle(), 'latest summary').data
-  const keys = pendingCarryKeys(now, (s.month_start_day as number | null) ?? 1, (latest?.month_key as string | undefined) ?? null)
+  const keys = pendingCarryKeys(now, (s.month_start_day as number | null) ?? 1, (latest?.month_key as string | undefined) ?? null, userZone(s.timezone))
   let carried = 0
   for (const key of keys) {
     if (await carryCycle(service, s, key, rates, now)) carried++
@@ -212,7 +215,7 @@ export async function GET(request: Request) {
   for (;;) {
     let query = service
       .from('user_settings')
-      .select('user_id, month_start_day, language, goal_progress_alerts')
+      .select('user_id, month_start_day, language, goal_progress_alerts, timezone')
       .order('user_id', { ascending: true })
       .limit(PAGE)
     if (cursor) query = query.gt('user_id', cursor)

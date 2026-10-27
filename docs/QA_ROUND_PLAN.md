@@ -259,3 +259,14 @@ Gate: lint 0 errors, tsc clean, 3141 tests pass, production build OK. Migrations
 - M14 recurring-debt anchor needs a persisted day (migration).
 - Unaudited: sync delta path (`pullDelta`/`applyDelta`) for the same error/paging risks.
 - Apply migrations 0189-0191 and 0188 to production when ready; set Supabase leaked-password protection (D6) in the dashboard.
+
+## Part 6 — Owner decisions applied (2026-10-27, second round)
+
+Migrations 0188-0195 are APPLIED to production (audited with SELECTs first; verified after). Code shipped in the same push.
+- Per-employer weekend: `income_sources.payday_weekend` (sat_sun default | fri_sat), "Employer weekend" control in the income form, shift logic in paydaySchedule.ts (0193).
+- Per-user timezone: `user_settings.timezone` (0192), device zone written on boot/foreground, used by SMS day, month-carry and notification crons; Cairo only as fallback for users who have not reported one.
+- Salary matching: evidence score (salary wording, known counterparty, payday, amount, employer-style sender; penalties for individuals, repay/gift wording). A weak match goes to the confirm push, never auto-links on amount alone.
+- Device id (A4): clients send `x-buddget-device-id`; the server refuses a JWT call with no header for users with registered devices ONLY when env `SMS_REQUIRE_DEVICE_HEADER=1`. It is off until the new app builds are out, because installed builds send no header. Revoked ids are rejected always.
+- `app_client_gate` moved to the unexposed `private` schema, hook repointed, public function dropped (0195): anon RPC now returns 404, anon table reads still 200.
+- Biometric 409 now shows a message; shared limiter samples the DB (in-memory first, cap 240/min); recurring debt `due_day` persisted (0194).
+- Follow-ups: other server routes that compute "today" in UTC without a user zone; `/api/sms/confirm` has no device gate; biometric on a shared phone needs unbinding on logout; sync delta path (`pullDelta`) unaudited; set SMS_REQUIRE_DEVICE_HEADER=1 on Vercel once builds ship.

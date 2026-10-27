@@ -18,12 +18,13 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { looksLikeJwt, resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
-import { isRevokedDevice } from '@/lib/server/devices/registry'
+import { smsDeviceGate } from '@/lib/sms/deviceGate'
+import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
+import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
@@ -553,29 +554,6 @@ Omit "merchant", "last4", "datetime" and "counterparty_last4" from mapping_rules
 // Auth helpers
 // ---------------------------------------------------------------------------
 
-async function resolveUserId(req: Request): Promise<{ userId: string | null; deviceId: string | null }> {
-  const auth = req.headers.get('authorization') ?? ''
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
-  if (!bearer) return { userId: null, deviceId: null }
-  const service = createServiceRoleClient()
-
-  // First try Supabase JWT (mobile shell forwards `session.access_token`).
-  if (looksLikeJwt(bearer)) {
-    const identity = await resolveRouteIdentity(req)
-    if (identity) return { userId: identity.id, deviceId: req.headers.get('x-buddget-device-id') }
-  }
-
-  // Fallback: bearer token from sms_ingest_tokens (legacy / shortcut bridge).
-  const { data: tokenRow } = await service
-    .from('sms_ingest_tokens')
-    .select('user_id, device_id')
-    .eq('token', bearer)
-    .eq('is_active', true)
-    .single()
-
-  return { userId: tokenRow?.user_id ?? null, deviceId: tokenRow?.device_id ?? null }
-}
-
 // ---------------------------------------------------------------------------
 // Route handler
 // ---------------------------------------------------------------------------
@@ -583,13 +561,13 @@ async function resolveUserId(req: Request): Promise<{ userId: string | null; dev
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const { userId, deviceId } = await resolveUserId(request)
+  const caller = await resolveSmsCaller(request)
+  const { userId, deviceId } = caller
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (await isRevokedDevice(createServiceRoleClient(), userId, deviceId)) {
-    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
-  }
+  const blocked = await smsDeviceGate(createServiceRoleClient(), caller)
+  if (blocked) return blocked
 
   // Parse body first — sender is needed for the static template lookup.
   let json: unknown
@@ -913,7 +891,7 @@ export async function POST(request: Request) {
 
   // Prefer the transaction date embedded in the SMS body (curated patterns)
   // over the receive timestamp — they differ for delayed/offline deliveries.
-  const day = txDay ?? smsLocalDay(nowIso)
+  const day = txDay ?? smsLocalDay(nowIso, await getUserTimeZone(service, userId))
 
   const implausible = smsPlausibilityIssue(parsed.amount, day)
   if (implausible) {

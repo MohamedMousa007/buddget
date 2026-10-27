@@ -1924,6 +1924,7 @@ export type Database = {
           notes: string | null
           payday_days: number[] | null
           payday_drift_days: number | null
+          payday_weekend: string | null
           payment_method_id: string | null
           recurring_frequency:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -1950,6 +1951,7 @@ export type Database = {
           notes?: string | null
           payday_days?: number[] | null
           payday_drift_days?: number | null
+          payday_weekend?: string | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -1976,6 +1978,7 @@ export type Database = {
           notes?: string | null
           payday_days?: number[] | null
           payday_drift_days?: number | null
+          payday_weekend?: string | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -2588,6 +2591,7 @@ export type Database = {
           day_of_month: number | null
           debt_id: string
           deleted_at: string | null
+          due_day: number | null
           frequency: Database["public"]["Enums"]["recurring_frequency"]
           id: string
           is_active: boolean
@@ -2604,6 +2608,7 @@ export type Database = {
           day_of_month?: number | null
           debt_id: string
           deleted_at?: string | null
+          due_day?: number | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -2620,6 +2625,7 @@ export type Database = {
           day_of_month?: number | null
           debt_id?: string
           deleted_at?: string | null
+          due_day?: number | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -3975,6 +3981,7 @@ export type Database = {
       user_settings: {
         Row: {
           privacy: Json
+          timezone: string | null
           prompt_state: Json
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
@@ -4001,6 +4008,7 @@ export type Database = {
         }
         Insert: {
           privacy?: Json
+          timezone?: string | null
           prompt_state?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
@@ -4027,6 +4035,7 @@ export type Database = {
         }
         Update: {
           privacy?: Json
+          timezone?: string | null
           prompt_state?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]

@@ -1,7 +1,8 @@
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const WINDOW_SECONDS = 60
-const MAX_HITS = 120
+const MAX_HITS = 240
+const SHARED_CHECK_AFTER = MAX_HITS / 2
 const MAX_TRACKED_IPS = 10000
 const hits = new Map<string, number[]>()
 
@@ -19,8 +20,21 @@ export function memoryRateLimitOk(ip: string, now = Date.now()): boolean {
   return recent.length <= MAX_HITS
 }
 
-/** Shared limiter backed by the `api_rate_hit` RPC; falls back to the in-memory map when the RPC errors. */
+export function resetMemoryRateLimit(): void {
+  hits.clear()
+}
+
+function recentHits(ip: string): number {
+  return hits.get(ip)?.length ?? 0
+}
+
+/**
+ * In-memory limiter first; the shared `api_rate_hit` RPC is only consulted once an IP passes half
+ * the per-isolate allowance, so normal traffic never writes to the DB. RPC errors fall back to memory.
+ */
 export async function publicApiRateLimitOk(ip: string): Promise<boolean> {
+  if (!memoryRateLimitOk(ip)) return false
+  if (recentHits(ip) <= SHARED_CHECK_AFTER) return true
   try {
     const { data, error } = await createServiceRoleClient().rpc('api_rate_hit', {
       p_key: `public-api:${ip}`,
@@ -29,7 +43,7 @@ export async function publicApiRateLimitOk(ip: string): Promise<boolean> {
     })
     if (!error && typeof data === 'boolean') return data
   } catch {
-    // Missing env or network failure: degrade to the per-isolate limiter.
+    // Missing env or network failure: the in-memory verdict above stands.
   }
-  return memoryRateLimitOk(ip)
+  return true
 }

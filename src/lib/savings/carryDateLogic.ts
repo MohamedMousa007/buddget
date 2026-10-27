@@ -1,15 +1,16 @@
+import { DEFAULT_USER_TIME_ZONE } from '@/lib/server/userTimeZone'
+
 /**
  * Which budget cycles does the month-end carry owe a user, and over what dates?
  *
  * A cycle starts on `monthStartDay` each month (clamped to 1-28 so it exists in every month, matching
  * `getMonthRange`) and closes at the next start. It is carried from the day AFTER its boundary, judged
- * in the user's local calendar date rather than UTC. The carry is catch-up based: every closed cycle
+ * in the user's own time zone (Cairo until their device reports one) rather than UTC. The carry is catch-up based: every closed cycle
  * without a summary row is owed, so a missed run or a day that never exists (start 28 + 1 in a
  * non-leap February) only delays the carry instead of dropping it.
  *
  * Month keys are 'YYYY-MM', keyed by the month the cycle STARTED in.
  */
-export const CARRY_TIME_ZONE = 'Africa/Cairo'
 /** Most cycles a single run will catch up, so a long outage cannot sweep unbounded history. */
 const MAX_CATCH_UP = 3
 
@@ -27,7 +28,7 @@ function localDayMs(now: Date, timeZone: string): number {
 }
 
 /** Closed-cycle keys at `now`, newest first, length `count`. A cycle counts as closed once a full day has passed its end. */
-export function closedCycleKeys(now: Date, monthStartDay: number, count: number, timeZone = CARRY_TIME_ZONE): string[] {
+export function closedCycleKeys(now: Date, monthStartDay: number, count: number, timeZone = DEFAULT_USER_TIME_ZONE): string[] {
   const start = clampStartDay(monthStartDay)
   const today = localDayMs(now, timeZone)
   const t = new Date(today)
@@ -42,7 +43,7 @@ export function closedCycleKeys(now: Date, monthStartDay: number, count: number,
  * Cycles to carry now, oldest first: closed cycles newer than the user's latest summary row (at most
  * MAX_CATCH_UP). A user with no summary yet gets only the newest closed cycle, never their history.
  */
-export function pendingCarryKeys(now: Date, monthStartDay: number, latestDoneKey: string | null, timeZone = CARRY_TIME_ZONE): string[] {
+export function pendingCarryKeys(now: Date, monthStartDay: number, latestDoneKey: string | null, timeZone = DEFAULT_USER_TIME_ZONE): string[] {
   const candidates = closedCycleKeys(now, monthStartDay, MAX_CATCH_UP, timeZone)
   const owed = latestDoneKey === null ? candidates.slice(0, 1) : candidates.filter((k) => k > latestDoneKey)
   return owed.reverse()

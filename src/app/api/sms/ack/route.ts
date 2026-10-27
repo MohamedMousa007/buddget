@@ -14,19 +14,19 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
-import { isRevokedDevice } from '@/lib/server/devices/registry'
+import { smsDeviceGate } from '@/lib/sms/deviceGate'
 
 const bodySchema = z.object({ logId: z.string().uuid() })
 
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const { userId, deviceId } = await resolveSmsCaller(request)
+  const caller = await resolveSmsCaller(request)
+  const { userId } = caller
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const service = createServiceRoleClient()
-  if (await isRevokedDevice(service, userId, deviceId)) {
-    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
-  }
+  const blocked = await smsDeviceGate(service, caller)
+  if (blocked) return blocked
 
   let json: unknown
   try { json = await request.json() } catch {
