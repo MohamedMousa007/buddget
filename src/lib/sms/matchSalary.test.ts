@@ -183,12 +183,3 @@ describe('matchSalary — evidence, not amount alone', () => {
     await expect(withBody('تم إضافة مبلغ 70,000.00 جم إلى حسابك - راتب شهر يوليو')).resolves.toMatchObject({ outcome: 'matched' })
   })
 })
-
-describe('matchSalary — employer weekend', () => {
-  const MONTHLY_24 = { ...BIWEEKLY, id: 'src-mo24', recurring_frequency: 'monthly', payday_days: null, day_of_month: 24 }
-  it('shifts a Friday payday back to Thursday for a fri_sat employer', async () => {
-    // 24 Jul 2026 is a Friday.
-    await expect(call([{ ...MONTHLY_24, payday_weekend: 'fri_sat' }], '2026-07-23')).resolves.toMatchObject({ outcome: 'matched', occurrenceDate: '2026-07-23' })
-    await expect(call([{ ...MONTHLY_24, payday_weekend: 'sat_sun' }], '2026-07-23')).resolves.toMatchObject({ occurrenceDate: '2026-07-24' })
-  })
-})

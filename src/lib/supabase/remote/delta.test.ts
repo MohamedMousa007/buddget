@@ -47,6 +47,13 @@ describe('applyDelta', () => {
     expect(out.expenses.map((e) => e.id)).toEqual(['b'])
   })
 
+  it('drops activations of budget plans that were deleted on the server', () => {
+    const act = (id: string, planId: string) => ({ id, planId, effectiveFrom: '2026-10-01', createdAt: '2026-10-01T00:00:00Z' }) as never
+    const local = { ...emptySnapshot(), budgetPlanActivations: [act('a1', 'p1'), act('a2', 'p2')] as Snapshot['budgetPlanActivations'] }
+    const out = applyDelta(local, noDelta({ deletedBudgetPlanIds: ['p1'] }))
+    expect(out.budgetPlanActivations.map((a) => a.id)).toEqual(['a2'])
+  })
+
   it('removes deleted budget plans and merges the live ones', () => {
     const plan = (id: string) => ({ id, updatedAt: '2026-10-01T00:00:00Z', categories: [] }) as never
     const local = { ...emptySnapshot(), budgetPlans: [plan('p1'), plan('p2')] as Snapshot['budgetPlans'] }

@@ -2,7 +2,8 @@
 
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { apiUrl } from '@/lib/apiBase'
+import { apiFetchAuth } from '@/lib/apiBase'
+import { deviceIdHeader } from '@/lib/native/deviceId'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { AppViewRouter } from './AppViewRouter'
@@ -341,12 +342,13 @@ function SmsPushActionHandler() {
       )
       const kind = data.kind
       if (kind === 'sms_confirm' && data.hash) {
-        void fetch(apiUrl('/api/sms/confirm'), {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hash: data.hash }),
-        })
+        void deviceIdHeader()
+          .then((deviceHeaders) => apiFetchAuth('/api/sms/confirm', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...deviceHeaders },
+            body: JSON.stringify({ hash: data.hash }),
+          }))
           .then((r) => r.json())
           .then((res: { expenseId?: string }) => {
             navigate(res.expenseId ? '/flow' : '/')

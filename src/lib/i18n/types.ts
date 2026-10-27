@@ -863,9 +863,6 @@ export interface Dictionary {
     tabOneTime: string
     incomeTypeLabel: string
     howOftenLabel: string
-    employerWeekendLabel: string
-    weekendSatSun: string
-    weekendFriSat: string
     paydayLabel: string
     /** Beside the Payday title for biweekly/weekly: guides picking the 2 or 4 days. */
     paydayHelper: (count: number) => string

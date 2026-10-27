@@ -1,5 +1,5 @@
 import { addDays, subDays, isWithinInterval } from 'date-fns'
-import type { IncomeRecurringFrequency, IncomeSource, PaydayWeekend } from '@/lib/store/types'
+import type { IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
 
 /**
  * Payday scheduling for recurring income sources. Fixed days-of-month semantics:
@@ -63,43 +63,24 @@ export function sourcePaydayDays(source: IncomeSource): number[] | null {
   return deriveDefaultPaydays(source.dayOfMonth ?? 1, freq)
 }
 
-const WEEKEND_DAYS: Record<PaydayWeekend, readonly number[]> = {
-  sat_sun: [6, 0],
-  fri_sat: [5, 6],
-}
-
-/** The source's employer weekend; unset = Sat/Sun. */
-function weekendOf(source: IncomeSource): PaydayWeekend {
-  return source.paydayWeekend ?? 'sat_sun'
-}
-
 /**
- * Weekend rule: a payday on the employer's weekend (Sat/Sun, or Fri/Sat for Egyptian
- * employers) is paid the last working day before it. If that day falls in the previous
- * month (payday on the 1st/2nd), pay the first working day after instead so the
- * occurrence stays inside its own month.
+ * Weekend rule: Sat/Sun paydays are paid the previous Friday. If that Friday
+ * falls in the previous month (payday on the 1st/2nd), pay the following
+ * Monday instead so the occurrence stays inside its own month.
  */
-export function shiftToBusinessDay(d: Date, weekend: PaydayWeekend = 'sat_sun'): Date {
-  const off = WEEKEND_DAYS[weekend]
-  if (!off.includes(d.getDay())) return d
-  let back = d
-  while (off.includes(back.getDay())) back = subDays(back, 1)
+export function shiftToBusinessDay(d: Date): Date {
+  const dow = d.getDay() // 0 Sun … 6 Sat
+  if (dow !== 0 && dow !== 6) return d
+  const back = subDays(d, dow === 6 ? 1 : 2)
   if (back.getMonth() === d.getMonth()) return back
-  return nextWorkingDay(d, weekend)
-}
-
-function nextWorkingDay(d: Date, weekend: PaydayWeekend): Date {
-  const off = WEEKEND_DAYS[weekend]
-  let fwd = d
-  while (off.includes(fwd.getDay())) fwd = addDays(fwd, 1)
-  return fwd
+  return addDays(d, dow === 6 ? 2 : 1)
 }
 
 /** The weekend shift, except a payday on the window's first day moves forward instead of out of its cycle. */
-function shiftIntoWindow(d: Date, start: Date, weekend: PaydayWeekend): Date {
-  const shifted = shiftToBusinessDay(d, weekend)
+function shiftIntoWindow(d: Date, start: Date): Date {
+  const shifted = shiftToBusinessDay(d)
   if (shifted >= start) return shifted
-  return nextWorkingDay(d, weekend)
+  return addDays(d, d.getDay() === 6 ? 2 : 1)
 }
 
 /** Historical weekly behavior: anchor on dayOfMonth, walk ±7 days across the window. */
@@ -125,7 +106,6 @@ function legacyWeeklyWalk(source: IncomeSource, start: Date, end: Date): Date[] 
  * payday, the later payday keeps its unshifted date so the count is preserved.
  */
 export function paydayDatesForWindow(source: IncomeSource, start: Date, end: Date, cycle = true): Date[] {
-  const weekend = weekendOf(source)
   const days = sourcePaydayDays(source)
   const walked = days ? datesFromDays(days, start, end) : legacyWeeklyWalk(source, start, end)
   // In a budget cycle a payday belongs to the window holding its calendar date, so a shifted one is never in two cycles.
@@ -134,7 +114,7 @@ export function paydayDatesForWindow(source: IncomeSource, start: Date, end: Dat
   const taken = new Set<number>()
   const out: Date[] = []
   for (const d of raw) {
-    const shifted = cycle ? shiftIntoWindow(d, start, weekend) : shiftToBusinessDay(d, weekend)
+    const shifted = cycle ? shiftIntoWindow(d, start) : shiftToBusinessDay(d)
     const pick = taken.has(shifted.getTime()) ? d : shifted
     if (taken.has(pick.getTime())) continue
     taken.add(pick.getTime())

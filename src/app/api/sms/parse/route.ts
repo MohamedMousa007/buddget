@@ -24,6 +24,7 @@ import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiPars
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
+import { monthNameInZone } from '@/lib/time/zonedMonth'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
@@ -1101,7 +1102,7 @@ export async function POST(request: Request) {
     pushArgs = {
       userId,
       title: np.smsSubscriptionTitle(amountStr, parsed.merchantNormalized ?? parsed.merchant ?? bank),
-      body: np.smsSubscriptionBody(new Intl.DateTimeFormat(dict.locale, { month: 'long' }).format(new Date())),
+      body: np.smsSubscriptionBody(monthNameInZone(new Date(), await getUserTimeZone(service, userId), dict.locale)),
       data: { kind: 'sms_subscription', expenseId: expenseId ?? '', logId },
       collapseKey: `sms-sub-${hash.slice(0, 12)}`,
     }

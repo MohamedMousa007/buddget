@@ -1924,7 +1924,6 @@ export type Database = {
           notes: string | null
           payday_days: number[] | null
           payday_drift_days: number | null
-          payday_weekend: string | null
           payment_method_id: string | null
           recurring_frequency:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -1951,7 +1950,6 @@ export type Database = {
           notes?: string | null
           payday_days?: number[] | null
           payday_drift_days?: number | null
-          payday_weekend?: string | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]
@@ -1978,7 +1976,6 @@ export type Database = {
           notes?: string | null
           payday_days?: number[] | null
           payday_drift_days?: number | null
-          payday_weekend?: string | null
           payment_method_id?: string | null
           recurring_frequency?:
             | Database["public"]["Enums"]["recurring_frequency"]

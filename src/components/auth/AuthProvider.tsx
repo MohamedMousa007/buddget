@@ -14,6 +14,7 @@ import {
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { DeviceTimeZoneSync } from '@/components/sync/DeviceTimeZoneSync'
 import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
+import { unbindBiometricOnSignOut } from '@/lib/native/biometricAuth'
 import { unregisterPushToken } from '@/lib/native/pushNotifications'
 import { AuthModal } from '@/components/features/auth-modal/AuthModal'
 import { LockScreen } from '@/components/auth/LockScreen'
@@ -427,6 +428,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Flush pending writes first (token still valid). Local scope clears storage
     // with NO network round-trip, so it can't hang on a slow link.
     try { await flushFinanceNow() } catch (e) { console.error('[auth] flush before signOut failed', e) }
+    // Explicit sign-out only (session expiry never reaches here): free this device's biometric binding while the token is still valid.
+    try { await unbindBiometricOnSignOut() } catch (e) { console.error('[auth] biometric unbind failed', e) }
     try { await supabase.auth.signOut({ scope: 'local' }) } catch (e) { console.error('[auth] signOut failed', e) }
     // Wipe localStorage + reset Zustand stores (also strips any sb-* auth keys).
     try { clearBudgetData() } catch (e) { console.error('[auth] clearBudgetData failed', e) }

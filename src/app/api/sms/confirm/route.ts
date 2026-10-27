@@ -12,6 +12,8 @@ import { NextResponse } from 'next/server'
 import { smsLocalDay } from '@/lib/sms/ingestGuards'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { z } from 'zod'
+import { smsDeviceGate } from '@/lib/sms/deviceGate'
+import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { Constants } from '@/lib/supabase/database.types'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
@@ -41,6 +43,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const service = createServiceRoleClient()
+  const blocked = await smsDeviceGate(service, {
+    userId,
+    deviceId: request.headers.get(DEVICE_ID_HEADER)?.trim() || null,
+    viaJwt: (request.headers.get('authorization') ?? '').startsWith('Bearer '),
+  })
+  if (blocked) return blocked
+
   let json: unknown
   try { json = await request.json() } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
@@ -50,8 +60,6 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'Provide logId or hash' }, { status: 400 })
   }
-
-  const service = createServiceRoleClient()
 
   // Claim the row atomically: only one concurrent confirm (push tap + sheet, double tap) gets it.
   let claim = service

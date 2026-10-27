@@ -43,13 +43,12 @@ interface SalaryRow {
   day_of_month: number | null
   payday_days: number[] | null
   payday_drift_days: number | null
-  payday_weekend: string | null
   effective_start: string | null
   effective_end: string | null
 }
 
 const SALARY_COLUMNS =
-  'id, amount, currency, recurring_frequency, day_of_month, payday_days, payday_drift_days, payday_weekend, effective_start, effective_end'
+  'id, amount, currency, recurring_frequency, day_of_month, payday_days, payday_drift_days, effective_start, effective_end'
 
 /**
  * DB row → the shape `paydaySchedule` reads. Only the scheduling fields are real; the rest
@@ -65,7 +64,6 @@ function toScheduleSource(row: SalaryRow): IncomeSource {
     recurringFrequency: (row.recurring_frequency ?? 'monthly') as IncomeRecurringFrequency,
     dayOfMonth: row.day_of_month ?? undefined,
     paydayDays: row.payday_days ?? undefined,
-    paydayWeekend: row.payday_weekend === 'fri_sat' ? 'fri_sat' : 'sat_sun',
     effectiveStart: row.effective_start ?? '1970-01-01',
     createdAt: '',
     updatedAt: '',

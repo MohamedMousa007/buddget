@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { deviceIdHeader } from '@/lib/native/deviceId'
 
 /**
  * Confirms a pending sms_parse_log row via /api/sms/confirm (creates the
@@ -11,7 +12,7 @@ export async function confirmSmsLog(logId: string, currency?: string): Promise<b
     const res = await apiFetchAuth('/api/sms/confirm', {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await deviceIdHeader()) },
       body: JSON.stringify(currency ? { logId, currency } : { logId }),
     })
     return res.ok

@@ -8,11 +8,13 @@ const h = vi.hoisted(() => ({
   updates: [] as { table: string; values: Record<string, unknown> }[],
   failTable: null as string | null,
   rpc: vi.fn(),
+  gate: vi.fn(),
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: h.user }))
 vi.mock('@/lib/server/userTimeZone', () => ({ getUserTimeZone: async () => 'Africa/Cairo' }))
+vi.mock('@/lib/sms/deviceGate', () => ({ smsDeviceGate: h.gate }))
 vi.mock('@/lib/sms/dispatch', () => ({ createSmsTransaction: h.create }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
@@ -47,6 +49,7 @@ describe('POST /api/sms/confirm', () => {
   beforeEach(() => {
     h.user.mockReset().mockResolvedValue('u1')
     h.create.mockReset().mockResolvedValue({ expenseId: 'e1', incomeId: null, debtPaymentId: null, outcome: 'posted' })
+    h.gate.mockReset().mockResolvedValue(null)
     h.rpc.mockReset().mockResolvedValue({ error: null })
     h.updates.length = 0
     h.failTable = null
@@ -58,6 +61,14 @@ describe('POST /api/sms/confirm', () => {
     const res = await post({ logId: LOG_ID })
     expect(res.status).toBe(500)
     expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'confirm_exception' })
+  })
+
+  it('refuses a removed phone before claiming anything', async () => {
+    h.gate.mockResolvedValueOnce(new Response('{}', { status: 403 }))
+    const res = await POST(new Request('http://x/api/sms/confirm', { method: 'POST', headers: { authorization: 'Bearer a.b.c', 'x-buddget-device-id': 'dev1' }, body: JSON.stringify({ logId: LOG_ID }) }))
+    expect(res.status).toBe(403)
+    expect(h.gate).toHaveBeenCalledWith(expect.anything(), { userId: 'u1', deviceId: 'dev1', viaJwt: true })
+    expect(h.updates).toHaveLength(0)
   })
 
   it('claims the row first and posts once', async () => {

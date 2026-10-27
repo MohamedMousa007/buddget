@@ -28,11 +28,11 @@ export interface SalaryEvidence {
 
 const word = (alternation: string) => new RegExp(`(?<![\\p{L}])(?:${alternation})(?![\\p{L}])`, 'iu')
 
-const SALARY_WORDING = word('salary|payroll|wages?|راتب|مرتب|مرتبات|مرتبى|أجر')
+const SALARY_WORDING = word('salary|payroll|wages?|راتب|رواتب|الراتب|الرواتب|مرتب|مرتبات|مرتبى|أجر|أجور|جهة العمل|صاحب العمل')
 const REPAY_WORDING = word('repay|loan|gift|lend|borrow|owe|refund|سلف|قرض|هدي[ةه]|عيدي[ةه]|سداد|فلوس|دين')
 const IPN_WORDING = /instapay|\bipn\b|instant transfer|transfer(?:red)? from|تحويل لحظي|إنستا|انستا|تحويل من/i
 const EMPLOYER_STYLE = /\b(ltd|llc|inc|corp|co|company|technolog\w*|solutions|group|holding|systems|services|software|industries|payroll|hr)\b|شركة|مؤسسة|مجموعة|للتكنولوجيا|للخدمات/i
-const FROM_PHRASE = /(?<![\p{L}])(?:transfer(?:red)? from|received from|credited by|from|من)\s+([A-Za-z؀-ۿ][A-Za-z؀-ۿ .'&-]{2,45}?)(?=\s+(?:via|on|at|ref|with|through|عبر|في|بتاريخ)(?![\p{L}])|[.,;:\d]|$)/iu
+const FROM_PHRASE = /(?<![\p{L}])(?:transfer(?:red)? from|received from|credited by|from|من)(?:\s*:\s*|\s+)([A-Za-z؀-ۿ][A-Za-z؀-ۿ .'&-]{2,45}?)(?=\s+(?:via|on|at|ref|with|through|عبر|في|بتاريخ)(?![\p{L}])|[.,;:\d\n]|$)/iu
 /** Below this the credit is, to within rounding, the expected salary, so a person-shaped sender is the employer or the owner. */
 const NEAR_EXACT = 0.005
 

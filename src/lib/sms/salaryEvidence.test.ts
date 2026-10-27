@@ -26,6 +26,11 @@ describe('scoreSalaryEvidence', () => {
     ['الدينار is not دين', { ...base, body: 'تم إضافة راتب 70,000 بالدينار المصري' }, true],
     ['power is not owe', { ...base, body: 'Salary credit from Power Grid Company EGP 70,000' }, true],
     ['أجرة is not أجر', { ...base, body: 'تم استلام تحويل لحظي بمبلغ 70,000 جم أجرة من محمد احمد علي' }, false],
+    ['AR employer-side wording (جهة العمل), no counterparty', { ...base, body: 'عميلنا العزيز لقد تم تحويل مبلغ EGP99,999.99 على حسابكم لدينا من جهة العمل' }, true],
+    ['internal transfer, first time, initial-only sender', { ...base, body: 'Internal incoming transfer\nAmount:999SR\nFrom:M NAME\nAcc:999\nAt:99/99/99 99:99' }, false],
+    ['internal transfer from a sender already linked', { ...base, body: 'Internal incoming transfer\nAmount:999SR\nFrom:M NAME\nAcc:999\nAt:99/99/99 99:99', knownCounterparties: ['M NAME'] }, true],
+    ['friend IPN whose name contains WAGEX', { ...base, body: 'تم إضافة تحويل لحظي لحسابكم رقم 9999 بمبلغ 70000 جم من NAME WAGEX NAME رقم مرجعي 999' }, false],
+    ['wallet top-up is not salary', { ...base, body: 'Adding money to account\nAmount: 999 SAR\nVia: *tion' }, false],
     ['amount alone, off payday', { ...base, paydayInWindow: false }, false],
   ]
   it.each(cases)('%s', (_name, input, pass) => {
@@ -44,6 +49,10 @@ describe('scoreSalaryEvidence', () => {
     expect(run('Ahmed Hassan', ['Ahmed'])).toBe(false)
     expect(run('Ahmed Hassan Ali', ['Ahmed Hassan Samir'])).toBe(true)
     expect(run('Ahmed', ['Ahmed'])).toBe(true)
+  })
+
+  it('extracts a colon-delimited sender up to the line break', () => {
+    expect(extractCounterparty('Internal incoming transfer\nFrom:M NAME\nAcc:999')).toBe('M NAME')
   })
 
   it('extracts the sender from a body', () => {

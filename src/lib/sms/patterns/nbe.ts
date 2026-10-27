@@ -21,5 +21,35 @@ export const NBE_PATTERNS: BankPatternSet = {
       paymentInstrument: 'card',
       verified: true,
     },
+    {
+      // "تم إضافة تحويل لحظي لحسابكم رقم 1234 بمبلغ 100.00 جم من NAME رقم مرجعي 999999999999 يوم 20-07 …"
+      id: 'nbe-ipn-in-account-ar',
+      regex: /تم\s+إضافة\s+تحويل\s+لحظي\s+لحسابكم\s+رقم\s+(\d{4})\s+بمبلغ\s+([\d,]+(?:\.\d+)?)\s*جم\s+من\s+(.+?)\s+رقم\s+مرجعي/,
+      kind: 'instant_transfer_in',
+      groups: { last4: 1, amount: 2, counterparty: 3 },
+      currencyLiteral: 'EGP',
+      paymentInstrument: 'account',
+      verified: true,
+    },
+    {
+      // "تم تنفيذ تحويل لحظي من حسابكم رقم 1234 بمبلغ 100.00 جم إلى NAME رقم مرجعي 999999999999 …"
+      id: 'nbe-ipn-out-account-ar',
+      regex: /تم\s+تنفيذ\s+تحويل\s+لحظي\s+من\s+حسابكم\s+رقم\s+(\d{4})\s+بمبلغ\s+([\d,]+(?:\.\d+)?)\s*جم\s+إلى\s+(.+?)\s+رقم\s+مرجعي/,
+      kind: 'instant_transfer_out',
+      groups: { last4: 1, amount: 2, counterparty: 3 },
+      currencyLiteral: 'EGP',
+      paymentInstrument: 'account',
+      verified: true,
+    },
+    {
+      // "تم رد تحويل لحظي لحسابكم رقم 1234 بمبلغ 100.00 جم رقم مرجعي 999999999999 …" (returned transfer)
+      id: 'nbe-ipn-return-account-ar',
+      regex: /تم\s+رد\s+تحويل\s+لحظي\s+لحسابكم\s+رقم\s+(\d{4})\s+بمبلغ\s+([\d,]+(?:\.\d+)?)\s*جم\s+رقم\s+مرجعي/,
+      kind: 'refund',
+      groups: { last4: 1, amount: 2 },
+      currencyLiteral: 'EGP',
+      paymentInstrument: 'account',
+      verified: true,
+    },
   ],
 }

@@ -261,6 +261,31 @@ export async function unregisterBiometric(): Promise<void> {
   await setEnabled(false)
 }
 
+const SIGNOUT_UNBIND_TIMEOUT_MS = 3000
+
+/**
+ * Explicit sign-out only: release this device's server binding so the next
+ * account on the phone can enable biometric (otherwise register returns 409
+ * forever). Must run while the session is still valid. Best-effort and bounded:
+ * offline/failed/stalled requests never block sign-out, and local enrolment is
+ * always cleared so the toggle reflects reality.
+ */
+export async function unbindBiometricOnSignOut(): Promise<void> {
+  if (!(await isEnabled())) return
+  try {
+    const { apiFetchAuth } = await import('@/lib/apiBase')
+    await Promise.race([
+      apiFetchAuth('/api/biometric/register', { method: 'DELETE' }),
+      new Promise((resolve) => setTimeout(resolve, SIGNOUT_UNBIND_TIMEOUT_MS)),
+    ])
+  } catch (e) {
+    console.warn('[biometric] unbind on sign-out failed', e)
+  }
+  try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
+  await setAppLockEnabled(false)
+  await setEnabled(false)
+}
+
 /**
  * Signed-out biometric sign-in. Prompts, then exchanges the stored device secret
  * for a fresh session via the backend + verifyOtp. Throws only on prompt

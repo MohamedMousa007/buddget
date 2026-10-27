@@ -304,7 +304,6 @@ export const useFinanceStore = create<FinanceStore>()(
             {
               ...source,
               sourceType: source.sourceType ?? 'other',
-              paydayWeekend: source.paydayWeekend ?? 'sat_sun',
               effectiveStart: source.effectiveStart ?? localTodayISO(),
               id: generateId(),
               createdAt: new Date().toISOString(),

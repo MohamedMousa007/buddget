@@ -68,26 +68,6 @@ describe('paydayDatesForWindow', () => {
     expect(toISODate(shiftToBusinessDay(new Date(2026, 7, 1)))).toBe('2026-08-03')
   })
 
-  it('fri_sat weekend shifts a Friday or Saturday payday back to Thursday', () => {
-    // Jul 3 2026 is a Friday, Jul 4 a Saturday, Jul 5 a Sunday (a working day under fri_sat).
-    expect(toISODate(shiftToBusinessDay(new Date(2026, 6, 3), 'fri_sat'))).toBe('2026-07-02')
-    expect(toISODate(shiftToBusinessDay(new Date(2026, 6, 4), 'fri_sat'))).toBe('2026-07-02')
-    expect(toISODate(shiftToBusinessDay(new Date(2026, 6, 5), 'fri_sat'))).toBe('2026-07-05')
-  })
-
-  it('fri_sat start-of-month weekend shifts forward to Sunday instead of leaving the month', () => {
-    // Aug 1 2026 is a Saturday; Thursday is Jul 30 (previous month) → pay Sun Aug 2.
-    expect(toISODate(shiftToBusinessDay(new Date(2026, 7, 1), 'fri_sat'))).toBe('2026-08-02')
-  })
-
-  it('a source with paydayWeekend fri_sat shifts its window paydays accordingly', () => {
-    const s = source({ paydayWeekend: 'fri_sat', dayOfMonth: 3, paydayDays: undefined })
-    // Jul 3 2026 is a Friday → Thu Jul 2.
-    expect(paydayDatesForWindow(s, window.start, window.end).map(toISODate)).toEqual(['2026-07-02'])
-    // Default (sat_sun) keeps Fri Jul 3.
-    expect(paydayDatesForWindow({ ...s, paydayWeekend: undefined }, window.start, window.end).map(toISODate)).toEqual(['2026-07-03'])
-  })
-
   it('biweekly paydayDays land on their business-day-adjusted dates', () => {
     const s = source({ recurringFrequency: 'biweekly', paydayDays: [5, 20] })
     // Jul 5 Sunday → Jul 3; Jul 20 Monday stays.

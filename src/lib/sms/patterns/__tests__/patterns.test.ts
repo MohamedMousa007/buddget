@@ -403,3 +403,23 @@ describe('movement pattern matcher', () => {
     expect(m!.kind).toBe('purchase')
   })
 })
+
+describe('account-level instant transfer (Arabic) and promo ads, masked fixtures', () => {
+  const IN = 'تم إضافة تحويل لحظي لحسابكم رقم 9999 بمبلغ 999.99 جم من NAME NAME NAME رقم مرجعي 999999999999 يوم 99-99 الساعة 99:99 للمزيد اتصل بـ 99999'
+  const OUT = 'تم تنفيذ تحويل لحظي من حسابكم رقم 9999 بمبلغ 1,999.50 جم إلى NAME NAME رقم مرجعي 999999999999 يوم 99-99 الساعة 99:99 للمزيد اتصل بـ 99999'
+  const RET = 'تم رد تحويل لحظي لحسابكم رقم 9999 بمبلغ 999.99 جم رقم مرجعي 999999999999 يوم 99-99 الساعة 99:99 للمزيد اتصل بـ 99999'
+
+  it('parses in, out and returned transfers', () => {
+    const i = matchCuratedPattern(IN, null)
+    expect([i?.patternId, i?.kind, i?.amount, i?.last4, i?.counterparty]).toEqual(['nbe-ipn-in-account-ar', 'instant_transfer_in', 999.99, '9999', 'NAME NAME NAME'])
+    const o = matchCuratedPattern(OUT, null)
+    expect([o?.patternId, o?.kind, o?.amount]).toEqual(['nbe-ipn-out-account-ar', 'instant_transfer_out', 1999.5])
+    expect(matchCuratedPattern(RET, null)?.kind).toBe('refund')
+  })
+
+  it('rejects cashback ads that mention transferring, keeps real receipts', () => {
+    expect(isNonTransaction('كاش باك مضمون و تحويلاتك بجنيه! حول فلوس بفودافون كاش قبل 9999-99-99')).toBe('marketing')
+    expect(isNonTransaction('Your current Vodafone Cash balance is 9.99 LE. Transfer money to any wallet and get a chance to win a gold coin!')).toBe('marketing')
+    expect(isNonTransaction(IN)).toBeNull()
+  })
+})

@@ -140,6 +140,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
       ? { ...local.settings, baseCurrency, secondaryCurrency }
       : local.settings
 
+  const deadPlans = new Set(d.deletedBudgetPlanIds)
   return {
     profile: profileResult?.profile ?? local.profile,
     settings,
@@ -163,6 +164,6 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
     buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>) as Snapshot['buddgyMemories'],
     accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>) as Snapshot['accountAdjustments'],
     budgetPlans: applyList(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }) as Snapshot['budgetPlans'],
-    budgetPlanActivations: mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations'],
+    budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId)),
   }
 }

@@ -86,9 +86,6 @@ export interface PaymentMethod {
 
 /** How often recurring income is received; amount is per that period (e.g. weekly = per week). */
 export type IncomeRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
-/** Employer weekend: Sat+Sun (default) or Fri+Sat (Egypt). */
-export type PaydayWeekend = 'sat_sun' | 'fri_sat'
-
 export type IncomeSourceType =
   | 'salary'
   | 'bonus'
@@ -125,7 +122,6 @@ export interface IncomeSource {
    */
   paydayDriftDays?: number | null
   /** Employer weekend for payday shifting: Sat+Sun (default; US/remote) or Fri+Sat (Egypt). */
-  paydayWeekend?: PaydayWeekend
   /** `YYYY-MM-DD` the source starts counting for a month (defaults to creation date). */
   effectiveStart: string
   /** `YYYY-MM-DD` the source stops counting (inclusive); null/undefined = ongoing. */
