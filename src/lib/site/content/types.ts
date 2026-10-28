@@ -80,7 +80,7 @@ export type SiteContent = {
   locale: 'en' | 'ar'
   name: string
   meta: { homeTitle: string; homeDescription: string }
-  nav: { login: string; features: string; how: string; afford: string; pricing: string; security: string; help: string; menuTitle: string; megaTools: string; megaAfford: string; day: string; getAppShort: string; tryShort: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
+  nav: { login: string; features: string; how: string; afford: string; pricing: string; security: string; help: string; menuTitle: string; megaTools: string; themeToLight: string; themeToDark: string; megaAfford: string; day: string; getAppShort: string; tryShort: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
   footer: {
     tag: string; follow: string
     product: string; learn: string; company: string; legal: string

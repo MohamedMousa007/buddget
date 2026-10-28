@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { siteFontClasses } from '@/lib/site/fonts'
 import { SITE_URL } from '@/lib/site/config'
+import { SITE_THEME_SCRIPT } from '@/lib/site/theme'
 import '../globals.css'
 import '@/components/site/site.css'
 import '@/components/site/home.css'
@@ -22,6 +23,7 @@ export const viewport: Viewport = { themeColor: '#12B0A0', width: 'device-width'
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" dir="ltr" data-locale="en" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: SITE_THEME_SCRIPT }} /></head>
       <body className={`${siteFontClasses} bg-brand-bg font-sans text-brand-text-primary antialiased`}>{children}</body>
     </html>
   )

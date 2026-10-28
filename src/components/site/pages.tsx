@@ -34,7 +34,7 @@ export function HomePage({ locale }: P) {
       <HomeTrust locale={locale} />
       <HomeCompare locale={locale} />
       <HomePricing locale={locale} />
-      <div className="dark"><Reviews locale={locale} /></div>
+      <Reviews locale={locale} />
       <HomeFaq locale={locale} />
       <HomeClose locale={locale} />
     </>
