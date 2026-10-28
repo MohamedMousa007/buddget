@@ -6,6 +6,7 @@ import { sendStaffInviteEmail } from '@/lib/server/admin/inviteEmail'
 import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { revokeAllAdminSessions } from '@/lib/server/admin/session'
 import { UUID_RE } from '@/lib/server/admin/targets'
+import { holdsAllPermissions } from '@/lib/server/admin/staffActionGuards'
 
 const KEY_RE = /^[a-z][a-z0-9_]{1,31}$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -68,6 +69,7 @@ export async function POST(req: Request) {
     const target = body.roleKey ? await roleRank(ctx, body.roleKey) : null
     if (!target || body.roleKey === OWNER_ROLE) return bad('Pick a role.')
     if (!outranks(ctx.role.rank, target.rank)) return bad('You can only assign roles below your own.', 403)
+    if (!holdsAllPermissions(ctx, target.permissions)) return bad('You can only assign a role whose permissions you hold yourself.', 403)
     const extra = (body.extraPermissions ?? []).filter(isPermission)
     if (!heldBy(ctx, extra)) return bad('You can only grant permissions you hold.', 403)
     const { error } = await ctx.service.from('admin_staff').insert({
@@ -96,9 +98,14 @@ export async function POST(req: Request) {
     if (existing?.is_system) return bad('System roles cannot be edited.', 403)
     if (existing && !outranks(ctx.role.rank, existing.rank)) return bad('You cannot edit a role at or above your level.', 403)
     if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
+    const { data: beforeRole } = await ctx.service.from('admin_roles').select('permissions, rank').eq('key', r.key).maybeSingle()
     const { error } = await ctx.service.from('admin_roles').upsert({ key: r.key, name: r.name.trim().slice(0, 40), description: (r.description ?? '').slice(0, 200), rank, permissions: perms, is_system: false })
     if (error) return bad('Could not save the role.', 500)
-    await ctx.audit('staff.role_upsert', { targetType: 'role', targetId: r.key, summary: `Saved role ${r.key}`, metadata: { permissions: perms, rank } })
+    if (existing) {
+      const { data: holders } = await ctx.service.from('admin_staff').select('user_id').eq('role_key', r.key)
+      for (const h of holders ?? []) if (h.user_id) await revokeAllAdminSessions(ctx.service, h.user_id)
+    }
+    await ctx.audit('staff.role_upsert', { targetType: 'role', targetId: r.key, summary: `Saved role ${r.key}`, metadata: { permissions: perms, rank, before: beforeRole } })
     return json({ ok: true })
   }
 
@@ -127,7 +134,9 @@ export async function POST(req: Request) {
     if (!outranks(ctx.role.rank, role.rank)) return bad('You cannot delete a role at or above your level.', 403)
     const { count } = await ctx.service.from('admin_staff').select('id', { count: 'exact', head: true }).eq('role_key', body.key)
     if (count) return bad(`${count} staff member(s) hold this role.`)
-    await ctx.service.from('admin_roles').delete().eq('key', body.key)
+    if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
+    const { error: deleteError } = await ctx.service.from('admin_roles').delete().eq('key', body.key)
+    if (deleteError) return bad('Could not delete the role.', 500)
     await ctx.audit('staff.role_delete', { targetType: 'role', targetId: body.key, summary: `Deleted role ${body.key}` })
     return json({ ok: true })
   }
@@ -151,6 +160,7 @@ export async function POST(req: Request) {
       const next = await roleRank(ctx, body.roleKey)
       if (!next || body.roleKey === OWNER_ROLE) return bad('Pick a role.')
       if (!outranks(ctx.role.rank, next.rank)) return bad('You can only assign roles below your own.', 403)
+      if (!holdsAllPermissions(ctx, next.permissions)) return bad('You can only assign a role whose permissions you hold yourself.', 403)
       patch.role_key = body.roleKey
     }
     if (body.extraPermissions !== undefined) {
@@ -173,7 +183,8 @@ export async function POST(req: Request) {
 
   if (body.op === 'suspend' || body.op === 'restore') {
     const status = body.op === 'suspend' ? 'suspended' : 'active'
-    await ctx.service.from('admin_staff').update({ status }).eq('id', member.id)
+    const { error: statusError } = await ctx.service.from('admin_staff').update({ status }).eq('id', member.id)
+    if (statusError) return bad(`Could not ${body.op} them.`, 500)
     if (status === 'suspended' && member.user_id) await revokeAllAdminSessions(ctx.service, member.user_id)
     await ctx.audit(`staff.${body.op}`, { ...target, summary: `${body.op === 'suspend' ? 'Suspended' : 'Restored'} ${member.email}` })
     return json({ ok: true })

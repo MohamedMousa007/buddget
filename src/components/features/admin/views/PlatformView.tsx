@@ -12,6 +12,9 @@ import { Field } from '../ui/Field'
 import { KeyValue, Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import { Pill } from '../ui/Pill'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { APP_CLIENT_VERSION } from '@/lib/appVersion'
+import { exceedsLatestRelease, LOCK_OUT_CONFIRMATION } from '@/lib/admin/minVersion'
+import { useStepUp } from '../ui/StepUp'
 import type { AdminStatus } from '../types'
 
 interface AiSlice { rateLimitingEnabled: boolean; rateLimitMaxRequests: number; rateLimitWindowMs: number }
@@ -114,7 +117,7 @@ function AiThrottle({ data, canManage, onSaved }: { data: PlatformData; canManag
 
 function useSetting(data: PlatformData, key: string, onSaved: () => Promise<void>) {
   const { run, busy } = useAdminAction('/api/admin/platform', onSaved)
-  return { value: data.settings[key]?.value ?? {}, busy: busy === key, save: (value: Record<string, unknown>) => run(key, { op: 'set_setting', key, value }, { success: 'Saved' }) }
+  return { value: data.settings[key]?.value ?? {}, busy: busy === key, save: (value: Record<string, unknown>, extra: Record<string, unknown> = {}) => run(key, { op: 'set_setting', key, value, ...extra }, { success: 'Saved' }) }
 }
 
 function Maintenance({ data, canManage, onSaved }: { data: PlatformData; canManage: boolean; onSaved: () => Promise<void> }) {
@@ -156,6 +159,21 @@ function MinVersion({ data, canManage, onSaved }: { data: PlatformData; canManag
   const [android, setAndroid] = useState(String(s.value.android ?? ''))
   const [iosUrl, setIosUrl] = useState(String(s.value.ios_url ?? ''))
   const [androidUrl, setAndroidUrl] = useState(String(s.value.android_url ?? ''))
+  const stepUp = useStepUp()
+  const save = async () => {
+    const extra: Record<string, unknown> = {}
+    if (ios || android) {
+      if (exceedsLatestRelease(ios.trim(), android.trim())) {
+        const typed = window.prompt(`The newest release is ${APP_CLIENT_VERSION}. A higher minimum locks out every user. Type ${LOCK_OUT_CONFIRMATION} to continue.`)
+        if (typed !== LOCK_OUT_CONFIRMATION) return
+        extra.confirmText = typed
+      }
+      const proof = await stepUp('A minimum app version blocks every release below it. Confirm it’s you.')
+      if (!proof) return
+      Object.assign(extra, proof)
+    }
+    await s.save({ ios, android, ios_url: iosUrl, android_url: androidUrl }, extra)
+  }
   return (
     <Panel title="Minimum app version" description="Releases below this stop working and show an update screen (the apps from this release on); older releases simply stop connecting. Leave empty to allow everything.">
       <div className="space-y-4">
@@ -165,7 +183,7 @@ function MinVersion({ data, canManage, onSaved }: { data: PlatformData; canManag
         </div>
         <Field label="iOS update link" hint="Opened by the Update now button (TestFlight or App Store)."><Input size="brand" placeholder="https://testflight.apple.com/join/…" value={iosUrl} onChange={(e) => setIosUrl(e.target.value)} disabled={!canManage} /></Field>
         <Field label="Android update link" hint="Play Store or the APK download."><Input size="brand" placeholder="https://…" value={androidUrl} onChange={(e) => setAndroidUrl(e.target.value)} disabled={!canManage} /></Field>
-        {canManage ? <Button size="touch" loading={s.busy} onClick={() => void s.save({ ios, android, ios_url: iosUrl, android_url: androidUrl })}>Save</Button> : null}
+        {canManage ? <Button size="touch" loading={s.busy} onClick={() => void save()}>Save</Button> : null}
         <dl><KeyValue label="Current iOS minimum">{String(s.value.ios || 'none')}</KeyValue><KeyValue label="Current Android minimum">{String(s.value.android || 'none')}</KeyValue></dl>
       </div>
     </Panel>

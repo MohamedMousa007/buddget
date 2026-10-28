@@ -1,11 +1,13 @@
-import { unsafeEmailHtml } from '@/lib/email/safeHtml'
+import { externalHosts, unsafeEmailHtml } from '@/lib/email/safeHtml'
 import { parseBlocks, type EmailBlock } from '@/lib/email/blocks'
 import { blankTemplate } from '@/lib/email/defaults'
 import { withPreheader } from '@/lib/email/render'
-import { BUILTIN_SCENARIOS, CUSTOM_KEY_RE, EMAIL_LOCALES, builtinScenario, customScenario, type EmailLocale } from '@/lib/email/scenarios'
+import { BUILTIN_SCENARIOS, CUSTOM_KEY_RE, EMAIL_LOCALES, builtinScenario, customScenario, isSecurityScenario, type EmailLocale } from '@/lib/email/scenarios'
 import { hasErrors, validateTemplate, MAX_HTML_BYTES } from '@/lib/email/validate'
 import { EMAIL_VARIABLES } from '@/lib/email/variables'
+import { OWNER_ROLE } from '@/lib/admin/permissions'
 import { allowAttempt } from '@/lib/server/admin/credentials'
+import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import { TEMPLATE_COLUMNS, asRow, findScenario, htmlFor, translateInto, writeDraft } from '@/lib/server/email/catalog'
 import { sendTemplatedEmail } from '@/lib/server/email/send'
@@ -72,6 +74,8 @@ interface Body {
   html?: string
   blocks?: unknown
   vars?: Record<string, string>
+  code?: string
+  stepUpPassword?: string
 }
 
 type Content = { subject: string; preheader: string; mode: 'visual' | 'html'; html: string; blocks: EmailBlock[] }
@@ -146,10 +150,15 @@ export async function POST(req: Request) {
     if (!draft) return bad('Save a draft first.')
     const issues = validateTemplate(scenario, draft)
     if (hasErrors(issues)) return json({ error: issues.find((i) => i.level === 'error')!.message, issues }, 422)
+    if (isSecurityScenario(key)) {
+      if (ctx.role.key !== OWNER_ROLE) return bad('Emails that carry a sign-in link or code can only be published by the owner.', 403)
+      if (!(await stepUp(ctx, b))) return bad(STEP_UP_ERROR, 401)
+    }
+    const previous = asRow((await service.from('email_templates').select(TEMPLATE_COLUMNS).eq('key', key).eq('locale', locale).eq('status', 'published').maybeSingle()).data)
     const published = await service.rpc('publish_email_template', { p_key: key, p_locale: locale, p_staff: ctx.staff.id })
     if (published.error || published.data == null) return bad('Could not publish.', 500)
     invalidateTemplate(key)
-    await ctx.audit('emails.publish', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Published ${key} (${locale}) v${draft.version}`, metadata: { version: draft.version } })
+    await ctx.audit('emails.publish', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Published ${key} (${locale}) v${draft.version}`, metadata: { version: draft.version, htmlBytes: draft.html.length, previousHtmlBytes: previous?.html.length ?? null, subjectChanged: previous ? previous.subject !== draft.subject : true, hosts: externalHosts(draft.html), security: isSecurityScenario(key) } })
     // The other language follows automatically, as a draft to review, unless someone has already worked on it.
     let translated: EmailLocale | null = null
     let translateNote: string | null = null
@@ -192,6 +201,8 @@ export async function POST(req: Request) {
   if (b.op === 'test') {
     const c = readContent(b, locale)
     if (typeof c === 'string') return bad(c)
+    const unsafe = unsafeEmailHtml(c.html)
+    if (unsafe) return bad(unsafe)
     const to = ctx.user.email
     if (!to) return bad('Your account has no email address.')
     if (!(await allowAttempt(service, `email-test:${ctx.staff.id}`, 3600, 10))) return bad('Too many test emails. Try again in an hour.', 429)

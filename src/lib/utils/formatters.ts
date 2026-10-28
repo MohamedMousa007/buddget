@@ -197,8 +197,19 @@ export function groupByDate(dateStr: string): string {
   return format(date, 'EEEE, d MMMM')
 }
 
+const CSV_FORMULA_TRIGGER = /^[=+\-@\t\r]/
+const PLAIN_NUMBER = /^[-+]?\d+(\.\d+)?([eE][-+]?\d+)?$/
+
+export const CSV_BOM = '\uFEFF'
+
+/** Excel reads UTF-8 (Arabic) correctly only with a BOM. */
+export function withCsvBom(csv: string): string {
+  return csv.startsWith(CSV_BOM) ? csv : CSV_BOM + csv
+}
+
+/** Quotes a CSV cell. Text that a spreadsheet would run as a formula gets a leading apostrophe; real numbers stay numbers. */
 export function escapeCsvField(value: unknown): string {
   const stringValue = String(value ?? '')
-  const escaped = stringValue.replace(/"/g, '""')
-  return `"${escaped}"`
+  const safe = typeof value !== 'number' && CSV_FORMULA_TRIGGER.test(stringValue) && !PLAIN_NUMBER.test(stringValue) ? `'${stringValue}` : stringValue
+  return `"${safe.replace(/"/g, '""')}"`
 }

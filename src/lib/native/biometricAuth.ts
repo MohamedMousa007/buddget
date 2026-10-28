@@ -261,6 +261,13 @@ export async function unregisterBiometric(): Promise<void> {
   await setEnabled(false)
 }
 
+/** Forget this phone's biometric enrolment without asking the server: its binding is already gone (password changed, phone removed). */
+export async function clearLocalBiometric(): Promise<void> {
+  try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
+  await setAppLockEnabled(false)
+  await setEnabled(false)
+}
+
 const SIGNOUT_UNBIND_TIMEOUT_MS = 3000
 
 /**
@@ -301,6 +308,8 @@ export async function biometricSignIn(reason?: string): Promise<boolean> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ secret }),
   })
+  // 404 = the server no longer has this phone's binding (password changed, phone removed): stop offering biometric.
+  if (res.status === 404) await clearLocalBiometric()
   if (!res.ok) return false
   const data = (await res.json().catch(() => null)) as { email?: string; token?: string } | null
   if (!data?.email || !data.token) return false
@@ -310,7 +319,8 @@ export async function biometricSignIn(reason?: string): Promise<boolean> {
   // either 'email' or 'magiclink' depending on version — try the common one, then
   // fall back so a version mismatch can't silently break sign-in.
   const first = await supabase.auth.verifyOtp({ email: data.email, token: data.token, type: 'email' })
-  if (!first.error) return true
-  const second = await supabase.auth.verifyOtp({ email: data.email, token: data.token, type: 'magiclink' })
-  return !second.error
+  const verified = !first.error || !(await supabase.auth.verifyOtp({ email: data.email, token: data.token, type: 'magiclink' })).error
+  // The device secret plus the biometric prompt is the second factor: tell the server so the 2-step gate lets this session through.
+  if (verified) void apiFetchAuth('/api/auth/second-factor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'biometric' }) }).catch(() => undefined)
+  return verified
 }

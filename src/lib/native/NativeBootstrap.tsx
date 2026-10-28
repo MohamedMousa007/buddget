@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { isNative } from '@/lib/native/isNative'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
@@ -10,7 +10,9 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { heldRecords } from '@/lib/onboarding/held'
 import { useFeatureFlag } from '@/lib/flags/useFeatureFlag'
 import { onboardingState } from '@/lib/onboarding/eligibility'
-import { deferPushPrompt } from '@/lib/onboarding/pushPolicy'
+import { pushBootAction } from '@/lib/onboarding/pushPolicy'
+import { checkPushPermission } from '@/lib/native/pushPermission'
+import { PushPrePromptSheet } from '@/components/features/notifications/PushPrePromptSheet'
 import { useNotifyDecision } from '@/hooks/useNotifyDecision'
 import { reportThisDevice } from '@/lib/devices/notify'
 
@@ -45,6 +47,7 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
   // The first sync decides whether this is a new account that should be asked inside the setup journey instead.
   const synced = useSettingsStore((s) => !!userId && s.serverSyncedFor === userId)
   const bootstrapped = useRef<string | null>(null)
+  const [askPush, setAskPush] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -59,14 +62,19 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
       const accessToken = tokenRef.current
       if (!accessToken) return
       try {
-        if (useSettingsStore.getState().pushOptOut) return
         const f = useFinanceStore.getState()
         const record = f.profile.financialProfile?.onboarding
         const journeyOpen = onboardingState({
           flagOn, profileLoaded: true, record,
           ...heldRecords(f),
         }) !== 'hidden'
-        if (deferPushPrompt(record, journeyOpen, Date.now())) return
+        // The OS dialog never appears at boot: a phone that was never asked sees the app's own pre-prompt first.
+        const action = pushBootAction(await checkPushPermission(), record, journeyOpen, useSettingsStore.getState().pushOptOut, Date.now())
+        if (action === 'skip') return
+        if (action === 'ask') {
+          setAskPush(true)
+          return
+        }
         // A phone that is not the main one asks first when another phone already gets notifications.
         const decision = await decide()
         if (!decision.proceed) {
@@ -89,5 +97,5 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, synced, flagOn]) // once per signed-in user, after the first sync — token read from ref, language at first-run value
 
-  return null
+  return <PushPrePromptSheet open={askPush} onClose={() => setAskPush(false)} />
 }

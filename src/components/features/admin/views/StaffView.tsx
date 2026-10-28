@@ -394,10 +394,13 @@ function RoleSheet({ role, data, onClose, onDone }: { role: Role; data: StaffDat
         <Field label="Rank" hint={`Must be above ${data.actorRank}. Higher numbers have less authority.`}><Input size="brand" type="number" value={r.rank} onChange={(e) => setR({ ...r, rank: Number(e.target.value) })} /></Field>
         <PermissionPicker data={data} value={r.permissions} onChange={(permissions) => setR({ ...r, permissions })} />
         <Button size="cta-block" loading={busy === 'role'} disabled={!r.key || !r.name.trim()} onClick={async () => {
-          const code = await stepUp('Creating or changing a role changes what staff can do. Confirm it’s you.')
-          if (code) await run('role', { op: 'upsert_role', code, role: { key: r.key, name: r.name, description: r.description, permissions: r.permissions, rank: r.rank } }, { success: 'Role saved' })
+          const proof = await stepUp('Creating or changing a role changes what staff can do. Confirm it’s you.')
+          if (proof) await run('role', { op: 'upsert_role', ...proof, role: { key: r.key, name: r.name, description: r.description, permissions: r.permissions, rank: r.rank } }, { success: 'Role saved' })
         }}>Save role</Button>
-        {!isNew ? <Button variant="destructive" size="touch" onClick={() => void run('delrole', { op: 'delete_role', key: r.key }, { success: 'Role deleted', confirm: { title: `Delete ${r.name}?`, destructive: true } })}>Delete role</Button> : null}
+        {!isNew ? <Button variant="destructive" size="touch" onClick={async () => {
+          const proof = await stepUp('Deleting a role changes what staff can do. Confirm it’s you.')
+          if (proof) await run('delrole', { op: 'delete_role', key: r.key, ...proof }, { success: 'Role deleted', confirm: { title: `Delete ${r.name}?`, destructive: true } })
+        }}>Delete role</Button> : null}
       </div>
     </AdminSheet>
   )

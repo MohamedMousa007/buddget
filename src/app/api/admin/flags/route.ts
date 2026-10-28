@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   if (body?.op === 'upsert' && body.flag) {
     const f = body.flag
     if (!KEY_RE.test(f.key ?? '')) return bad('Flag keys use lowercase letters, numbers, dots, dashes and underscores.')
-    const { data: before } = await ctx.service.from('feature_flags').select('enabled, rollout_pct').eq('key', f.key).maybeSingle()
+    const { data: before } = await ctx.service.from('feature_flags').select('*').eq('key', f.key).maybeSingle()
     const { error } = await ctx.service.from('feature_flags').upsert({
       key: f.key,
       description: (f.description ?? '').slice(0, 300),
@@ -45,8 +45,10 @@ export async function POST(req: Request) {
   }
 
   if (body?.op === 'delete' && body.key) {
-    await ctx.service.from('feature_flags').delete().eq('key', body.key)
-    await ctx.audit('flags.delete', { targetType: 'flag', targetId: body.key, summary: `Deleted flag ${body.key}` })
+    const { data: before } = await ctx.service.from('feature_flags').select('*').eq('key', body.key).maybeSingle()
+    const { error } = await ctx.service.from('feature_flags').delete().eq('key', body.key)
+    if (error) return bad('Could not delete the flag.', 500)
+    await ctx.audit('flags.delete', { targetType: 'flag', targetId: body.key, summary: `Deleted flag ${body.key}`, metadata: { before } })
     return json({ ok: true })
   }
   return bad('Unknown action.')

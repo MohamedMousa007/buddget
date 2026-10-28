@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
-import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { resolveRouteIdentity, resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { recordSecondFactor } from '@/lib/server/secondFactor'
 
 /**
  * Decides whether the current browser needs to complete the email-OTP second
@@ -48,6 +49,8 @@ export async function POST(request: Request) {
     }
 
     if (match) {
+      const identity = await resolveRouteIdentity(request)
+      if (identity) await recordSecondFactor(admin, identity, 'trusted_device')
       void admin
         .from('trusted_devices')
         .update({ last_used_at: new Date().toISOString() })

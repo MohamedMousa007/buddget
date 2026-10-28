@@ -54,6 +54,12 @@ async function loadSentry(): Promise<void> {
   void tagDevice(Sentry)
 }
 
+/** The raw id is half of the biometric sign-in credential and the 2-step trusted-device key, so reports carry only a short one-way hash of it. */
+export async function fingerprintDeviceId(id: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`buddget-device:${id}`))
+  return Array.from(new Uint8Array(digest).slice(0, 6), (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 /** Build number and device id arrive asynchronously; they are tags, so a crash before they land still reports. */
 async function tagDevice(Sentry: SentryModules['Sentry']): Promise<void> {
   if (isNative()) {
@@ -65,7 +71,7 @@ async function tagDevice(Sentry: SentryModules['Sentry']): Promise<void> {
     }
   }
   const id = await getOrCreateDeviceId()
-  if (id) Sentry.setTag('device_id', id)
+  if (id) Sentry.setTag('device_id', await fingerprintDeviceId(id))
 }
 
 /** Ties reports to the signed-in account by its opaque id (never the email), and clears it on sign-out. */

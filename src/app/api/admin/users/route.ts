@@ -1,4 +1,5 @@
 import { guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
+import { auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 
 interface DirectoryRow {
   id: string
@@ -31,5 +32,6 @@ export async function GET(req: Request) {
     return json({ error: 'Could not load users.' }, 500)
   }
   const result = data as { total: number; rows: DirectoryRow[] }
+  await auditPiiRead(ctx, 'user_list', 'user', null)
   return json({ total: result.total, rows: result.rows.map((r) => ({ ...r, email: maskIf(ctx, r.email) })) })
 }

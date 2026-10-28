@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { planAuthEmails, type HookPayload } from '@/lib/server/email/authHook'
 import { sendTemplatedEmail } from '@/lib/server/email/send'
+import { authHookIdempotencyKey } from '@/lib/server/email/suppression'
 import { verifySignedWebhook } from '@/lib/server/email/webhook'
 import { requireSupabaseUrl } from '@/lib/supabase/env'
 
@@ -14,8 +15,9 @@ export async function POST(req: Request) {
   const secret = process.env.SEND_EMAIL_HOOK_SECRET?.trim()
   if (!secret) return fail('Not configured', 503)
   const body = await req.text()
+  const webhookId = req.headers.get('webhook-id')
   const ok = verifySignedWebhook(
-    { id: req.headers.get('webhook-id'), timestamp: req.headers.get('webhook-timestamp'), signature: req.headers.get('webhook-signature') },
+    { id: webhookId, timestamp: req.headers.get('webhook-timestamp'), signature: req.headers.get('webhook-signature') },
     body,
     secret,
   )
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
   const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name
   const results = await Promise.all(
     plan.emails.map((e) =>
-      sendTemplatedEmail(e.key, { email: e.to, id: user.id ?? null, fullName, firstName: fullName?.split(' ')[0] }, e.vars, { source: 'auth_hook' }),
+      sendTemplatedEmail(e.key, { email: e.to, id: user.id ?? null, fullName, firstName: fullName?.split(' ')[0] }, e.vars, { source: 'auth_hook', idempotencyKey: authHookIdempotencyKey(webhookId, e.key, e.to) }),
     ),
   )
   return results.every((r) => r.ok) ? NextResponse.json({}) : fail('Could not send the email', 502)

@@ -1,4 +1,5 @@
 import { bad, guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
+import { auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 
 const STATUSES = ['queued', 'sent', 'delivered', 'bounced', 'complained', 'failed'] as const
 const FAILED = ['failed', 'bounced', 'complained']
@@ -44,6 +45,7 @@ export async function GET(req: Request) {
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0)
   const failed = FAILED.reduce((a, s) => a + byStatus[s as (typeof STATUSES)[number]], 0)
   const page = (list.data ?? []).slice(0, PAGE)
+  await auditPiiRead(ctx, 'email_log', 'email', null)
 
   return json({
     rows: page.map((r) => ({ ...r, to_email: maskIf(ctx, r.to_email) })),

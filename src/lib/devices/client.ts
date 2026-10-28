@@ -74,5 +74,5 @@ async function signOutRemovedDevice(): Promise<void> {
   const { resetDeviceId } = await import('@/lib/native/deviceId')
   await resetDeviceId()
   const { createClient } = await import('@/lib/supabase/client')
-  await createClient().auth.signOut()
+  await createClient().auth.signOut({ scope: 'local' })
 }

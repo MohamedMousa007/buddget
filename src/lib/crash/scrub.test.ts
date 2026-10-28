@@ -43,3 +43,38 @@ describe('scrubBreadcrumb', () => {
     expect(scrubBreadcrumb({ category: 'ui.input', message: 'typed' })).toBeNull()
   })
 })
+
+describe('scrub gaps (C17)', () => {
+  it('stays linear on a long digit and space string', () => {
+    const t0 = Date.now()
+    scrubText('1 '.repeat(32000))
+    expect(Date.now() - t0).toBeLessThan(500)
+  })
+
+  it('knows more currencies and the Arabic pound', () => {
+    expect(scrubText('paid 500 TRY today')).toBe('paid [amount] today')
+    expect(scrubText('دفع 500 جنيه اليوم')).toBe('دفع [amount] اليوم')
+  })
+
+  it('scrubs tags, transaction, server name, logentry, threads, frame vars and device name', () => {
+    const event = {
+      transaction: '/u/a@b.co',
+      server_name: 'Sara-iPhone',
+      tags: { device: 'abc', who: 'a@b.co' },
+      logentry: { message: 'x a@b.co', params: ['a@b.co'] },
+      exception: { values: [{ value: 'v', stacktrace: { frames: [{ vars: { email: 'a@b.co', n: 'a@b.co' } }] } }] },
+      threads: { values: [{ name: 'a@b.co', stacktrace: { frames: [{ vars: { n: 'a@b.co' } }] } }] },
+      contexts: { device: { name: "Sara's iPhone", model: 'iPhone' } },
+    } as unknown as ErrorEvent
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const out = scrubEvent(event) as unknown as Record<string, any>
+    expect(out.transaction).toBe('/u/[email]')
+    expect(out.server_name).toBeUndefined()
+    expect(out.tags).toEqual({ device: 'abc', who: '[email]' })
+    expect(out.logentry).toEqual({ message: 'x [email]', params: ['[email]'] })
+    expect(out.exception.values[0].stacktrace.frames[0].vars).toEqual({ email: '[redacted]', n: '[email]' })
+    expect(out.threads.values[0].name).toBe('[email]')
+    expect(out.threads.values[0].stacktrace.frames[0].vars).toEqual({ n: '[email]' })
+    expect(out.contexts.device).toEqual({ name: '[redacted]', model: 'iPhone' })
+  })
+})

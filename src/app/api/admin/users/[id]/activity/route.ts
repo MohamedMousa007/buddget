@@ -1,4 +1,5 @@
 import { bad, guardAdmin, json } from '@/lib/server/admin/guard'
+import { auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 import { UUID_RE } from '@/lib/server/admin/targets'
 import { hasFinancialGrant } from '@/lib/server/admin/financialAccess'
 
@@ -27,6 +28,7 @@ export async function GET(req: Request, { params }: Params) {
   if (!g.ok) return g.res
   const { service } = g.ctx
   const granted = await hasFinancialGrant(g.ctx, id)
+  await auditPiiRead(g.ctx, 'user_activity', 'user', id, { onlyWithPii: false })
 
   const [app, sms, notifications, tickets, audit] = await Promise.all([
     service.from('app_analytics_events').select('event_type, created_at, metadata').eq('user_id', id).neq('event_type', 'heartbeat').order('created_at', { ascending: false }).limit(60),

@@ -10,6 +10,7 @@ import { isOAuthProviderEnabled, type OAuthProvider } from '@/lib/auth/oauthProv
 import { navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
 import { useT } from '@/lib/i18n'
 import { isNative, isNativeShellBuild } from '@/lib/native/isNative'
+import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 
 /**
  * Supabase OAuth sign-in for Google / Apple. Returns per-provider availability
@@ -52,6 +53,8 @@ export function useOAuthSignIn(nextPath: string) {
   const signIn = useCallback(
     async (provider: OAuthProvider) => {
       if (!isOAuthProviderEnabled(provider)) return
+      // An earlier "Remember me" off login must not sign this one out when the page reloads.
+      markSessionEphemeral(false)
       // Supersede any in-flight attempt so its exchange can't complete.
       abortRef.current?.abort()
       const gen = ++genRef.current

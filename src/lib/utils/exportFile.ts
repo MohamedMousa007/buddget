@@ -10,19 +10,21 @@
  * or 'downloaded' (anchor download triggered).
  */
 import { isNative } from '@/lib/native/isNative'
+import { withCsvBom } from './formatters'
 
 export async function downloadOrShareFile(
   filename: string,
   content: string,
   mime: string,
 ): Promise<'shared' | 'saved' | 'downloaded'> {
+  const data = mime.startsWith('text/csv') ? withCsvBom(content) : content
   if (isNative()) {
     // Try Web Share API on all native platforms first.
     // Android WebView (Chrome 75+) and iOS WKWebView both support file sharing.
     const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> }
     if (nav.share) {
       try {
-        const blob = new Blob([content], { type: mime })
+        const blob = new Blob([data], { type: mime })
         await nav.share({ files: [new File([blob], filename, { type: mime })], title: filename })
         return 'shared'
       } catch (err) {
@@ -34,17 +36,18 @@ export async function downloadOrShareFile(
 
     // Filesystem fallback: iOS Documents is visible in the Files app;
     // Android Documents is app-private but at least preserves the file.
-    const { Filesystem, Directory } = await import('@capacitor/filesystem')
+    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem')
     await Filesystem.writeFile({
       path: filename,
-      data: content,
+      data,
+      encoding: Encoding.UTF8,
       directory: Directory.Documents,
       recursive: true,
     })
     return 'saved'
   }
 
-  const blob = new Blob([content], { type: mime })
+  const blob = new Blob([data], { type: mime })
   const nav = navigator as Navigator & {
     canShare?: (data: ShareData) => boolean
     share?: (data: ShareData) => Promise<void>

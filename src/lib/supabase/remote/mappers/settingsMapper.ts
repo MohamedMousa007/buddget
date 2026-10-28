@@ -16,7 +16,6 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     show_cents_in_dashboard: s.showCentsInDashboard,
     show_all_currencies_in_forms: s.showAllCurrenciesInForms,
     no_income_declared: s.noIncomeDeclared,
-    two_factor_email_enabled: s.twoFactorEmailEnabled,
     dashboard_layout: s.dashboardLayout ?? 'standard',
     wealth_gold_strip: s.wealthGoldStrip ?? 'collapsed',
     tutorials_completed: s.tutorialsCompleted,

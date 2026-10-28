@@ -1,4 +1,5 @@
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
+import { auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 import { UUID_RE } from '@/lib/server/admin/targets'
 
 const STATUSES = ['new', 'acknowledged', 'resolved'] as const
@@ -21,6 +22,7 @@ export async function GET(req: Request) {
   const { data, error } = await q
   if (error) return bad('Could not load crashes.', 500)
   const rows = data ?? []
+  await auditPiiRead(g.ctx, 'crash_list', 'crash', null, { onlyWithPii: false })
 
   const { data: recent } = await service.from('client_crashes').select('release, platform, user_id, occurrences, first_seen, last_seen').gte('last_seen', new Date(Date.now() - 30 * DAY_MS).toISOString()).limit(5000)
   const all = recent ?? []

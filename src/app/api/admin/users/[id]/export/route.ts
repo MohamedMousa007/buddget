@@ -3,7 +3,7 @@ import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import { STEP_UP_ERROR, stepUp, type StepUpProof } from '@/lib/server/admin/stepUp'
 import { UUID_RE } from '@/lib/server/admin/targets'
 import { hasFinancialGrant } from '@/lib/server/admin/financialAccess'
-import { USER_DATA_TABLES } from '@/lib/server/userData'
+import { exportUserData } from '@/lib/server/userData'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -32,14 +32,8 @@ export async function POST(req: Request, { params }: Params) {
   const { data: auth } = await ctx.service.auth.admin.getUserById(id)
   if (!auth.user) return bad('User not found.', 404)
 
-  const tables: Record<string, unknown[]> = {}
-  const failed: string[] = []
   const profile = await ctx.service.from('profiles').select('*').eq('id', id).maybeSingle()
-  for (const table of USER_DATA_TABLES) {
-    const { data, error } = await ctx.service.from(table).select('*').eq('user_id', id).limit(ROWS_PER_TABLE)
-    if (error) failed.push(table)
-    else if (data.length) tables[table] = data
-  }
+  const { tables, failed } = await exportUserData(ctx.service, id, ROWS_PER_TABLE)
   await ctx.audit('dsr.export', {
     targetType: 'user',
     targetId: id,

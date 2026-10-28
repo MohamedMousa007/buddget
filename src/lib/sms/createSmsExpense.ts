@@ -310,7 +310,7 @@ export async function createSmsExpense(
   // string the stored description (and the user-edit trigger) uses.
   if (row.kind === 'purchase' || row.kind === 'online_purchase') {
     if (mappedCategory === 'Other') {
-      const learned = await resolveMerchantCategory(service, title)
+      const learned = await resolveMerchantCategory(service, title, row.userId)
       if (learned) mappedCategory = learned
     } else if (row.categoryHint) {
       await rememberMerchantCategory(service, title, mappedCategory, 'ai')

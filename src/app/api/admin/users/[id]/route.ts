@@ -10,6 +10,7 @@ import { appOrigin } from '@/lib/apiBase'
 import { bad, guardAdmin, json, maskEmail, readJson } from '@/lib/server/admin/guard'
 import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { blockedTarget, UUID_RE } from '@/lib/server/admin/targets'
+import { allowUserAction, auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 import type { Json } from '@/lib/supabase/database.types'
 
 type Params = { params: Promise<{ id: string }> }
@@ -36,6 +37,7 @@ export async function GET(req: Request, { params }: Params) {
 
   const data = overview.data as { auth: { email?: string; phone?: string } | null; profile: { phone?: string; city?: string } | null } & Record<string, unknown>
   if (!data.auth) return bad('User not found.', 404)
+  await auditPiiRead(ctx, 'user_view', 'user', id)
   if (!ctx.canSeePii) {
     data.auth.email = maskEmail(data.auth.email) ?? undefined
     data.auth.phone = undefined
@@ -76,13 +78,13 @@ const REQUIRES: Record<Op['op'], Permission> = {
   set_entitlement: 'billing.manage',
   clear_entitlement: 'billing.manage',
   set_limits: 'users.limits',
-  notify: 'users.tools',
-  test_push: 'users.tools',
+  notify: 'users.notify',
+  test_push: 'users.notify',
   reset_sms_tokens: 'users.tools',
   clear_push_tokens: 'users.tools',
-  clear_trusted_devices: 'users.tools',
-  remove_biometric: 'users.tools',
-  send_password_reset: 'users.tools',
+  clear_trusted_devices: 'users.security',
+  remove_biometric: 'users.security',
+  send_password_reset: 'users.security',
   verify_email: 'users.edit',
   reset_data: 'users.reset',
   delete: 'users.delete',
@@ -98,6 +100,7 @@ export async function POST(req: Request, { params }: Params) {
   const body = await readJson<Op>(req)
   if (!body || typeof body.op !== 'string' || !(body.op in REQUIRES)) return bad('Unknown action.')
   if (!can(ctx.permissions, REQUIRES[body.op])) return bad('Your role does not allow this.', 403)
+  if (!(await allowUserAction(ctx, body.op, id))) return bad('Too many of these for now. Try again in an hour.', 429)
 
   const { data: target } = await ctx.service.auth.admin.getUserById(id)
   if (!target.user) return bad('User not found.', 404)
@@ -117,6 +120,7 @@ export async function POST(req: Request, { params }: Params) {
       if (!text) return bad('Write a note first.')
       const { error } = await ctx.service.from('admin_user_notes').insert({ user_id: id, staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: text.slice(0, 5000), pinned: !!body.pinned })
       if (error) return bad('Could not save the note.', 500)
+      await log('user.note', 'Added a staff note', { length: text.length, pinned: !!body.pinned })
       return json({ ok: true })
     }
     case 'suspend': {
@@ -194,7 +198,7 @@ export async function POST(req: Request, { params }: Params) {
         title,
         body: text,
       })
-      await log('user.notify', 'Sent notification', { title })
+      await log('user.notify', 'Sent notification', { title, body: text })
       return json({ ok: true })
     }
     case 'test_push': {

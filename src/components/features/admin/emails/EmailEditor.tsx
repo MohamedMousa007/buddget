@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { renderBlocks } from '@/lib/email/blocks'
 import { withPreheader } from '@/lib/email/render'
-import { EMAIL_LOCALES, LOCALE_LABEL, type EmailLocale } from '@/lib/email/scenarios'
+import { EMAIL_LOCALES, LOCALE_LABEL, isSecurityScenario, type EmailLocale } from '@/lib/email/scenarios'
 import { hasErrors, validateTemplate } from '@/lib/email/validate'
 import { ARABIC_SAMPLES } from '@/lib/email/variables'
 import { adminFetch, adminPost, errorMessage } from '../adminClient'
@@ -18,6 +18,7 @@ import { AdminSheet } from '../ui/AdminSheet'
 import { Field } from '../ui/Field'
 import { Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import { Pill } from '../ui/Pill'
+import { useStepUp } from '../ui/StepUp'
 import { BlockEditor } from './BlockEditor'
 import { CodeEditor } from './CodeEditor'
 import { EmailPreview } from './EmailPreview'
@@ -45,6 +46,7 @@ const htmlOf = (w: Working, locale: EmailLocale) =>
 export function EmailEditor({ scenarioKey, canManage, onBack }: { scenarioKey: string; canManage: boolean; onBack: () => void }) {
   const toast = useActionToast()
   const confirm = useConfirm()
+  const stepUp = useStepUp()
   const [detail, setDetail] = useState<TemplateDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [work, setWork] = useState<Record<EmailLocale, Working> | null>(null)
@@ -128,15 +130,18 @@ export function EmailEditor({ scenarioKey, canManage, onBack }: { scenarioKey: s
     }
   }
 
-  const publish = () =>
-    act('publish', async () => {
+  const publish = async () => {
+    const proof = isSecurityScenario(scenarioKey) ? await stepUp('This email carries sign-in links or codes. Publishing it changes what every user receives. Confirm it’s you.') : {}
+    if (!proof) return
+    await act('publish', async () => {
       if (dirtyOf(locale) || w.origin === 'new') await saveDraft()
-      const res = await adminPost<{ translated: EmailLocale | null; translateNote: string | null }>('/api/admin/emails', { op: 'publish', key: scenarioKey, locale })
+      const res = await adminPost<{ translated: EmailLocale | null; translateNote: string | null }>('/api/admin/emails', { op: 'publish', key: scenarioKey, locale, ...proof })
       await load(locale)
       if (res.translated && !dirtyOf(res.translated)) await load(res.translated)
       if (res.translated) toast(`${LOCALE_LABEL[locale]} published. Buddgy drafted ${LOCALE_LABEL[res.translated]}: review it, edit if needed, then publish.`)
       else if (res.translateNote && !res.translateNote.includes('already') && !res.translateNote.includes('by hand')) toast(res.translateNote)
     }, `${LOCALE_LABEL[locale]} published`, false)
+  }
 
   const translate = async () => {
     if (w.origin !== 'new' && !(await confirm({ title: `Rewrite ${LOCALE_LABEL[locale]} with Buddgy?`, body: `This replaces the ${LOCALE_LABEL[locale]} draft with a fresh translation of the ${LOCALE_LABEL[other]} version. You can edit it afterwards.`, confirmLabel: 'Translate' }))) return

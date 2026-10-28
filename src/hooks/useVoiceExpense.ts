@@ -289,7 +289,7 @@ export function useVoiceExpense(): UseVoiceCommandResult {
           if (!diag.hasToken) {
             try {
               const { createClient } = await import('@/lib/supabase/client')
-              await createClient().auth.signOut()
+              await createClient().auth.signOut({ scope: 'local' })
             } catch { /* noop */ }
           }
           throw new VoiceStageError('transcribe', diag.message)
