@@ -34,6 +34,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
     label: 'Product health',
     items: [
       { section: 'sms', label: 'SMS pipeline', icon: 'MessageSquareText', anyOf: ['sms.view'], description: 'Tracked SMS, error queue, templates' },
+      { section: 'crashes', label: 'Crashes', icon: 'Bug', anyOf: ['crashes.view'], description: 'App crashes and errors by release' },
       { section: 'platform', label: 'Platform', icon: 'Server', anyOf: ['platform.view'], description: 'AI limits, maintenance and server state' },
       { section: 'emails', label: 'Emails', icon: 'Mail', anyOf: ['emails.view'], description: 'Transactional email templates and send log' },
       { section: 'flags', label: 'Feature flags', icon: 'ToggleRight', anyOf: ['flags.view'], description: 'Rollouts and kill-switches' },
@@ -43,6 +44,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
     label: 'Monetization',
     items: [
       { section: 'plans', label: 'Plans & memberships', icon: 'CreditCard', anyOf: ['billing.view'], description: 'Freemium plans, trials and entitlements' },
+      { section: 'ai-cost', label: 'AI cost', icon: 'Coins', anyOf: ['ai.cost.view'], description: 'What AI usage costs, by day, model and feature' },
       { section: 'loyalty', label: 'Loyalty', icon: 'Award', anyOf: ['loyalty.view'], description: 'Tiers, points and perks' },
     ],
   },

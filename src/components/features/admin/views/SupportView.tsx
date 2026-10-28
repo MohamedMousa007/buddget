@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectField } from '@/components/ui/SelectField'
 import { adminNavigate, useAdminRoute } from '../adminRouter'
-import { useAdminQuery } from '../adminClient'
+import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime } from '../format'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
@@ -22,13 +22,14 @@ import type { AdminStatus } from '../types'
 interface Ticket {
   id: string; number: number; user_id: string | null; requester_email: string | null; subject: string; category: string
   priority: string; status: string; assignee_id: string | null; source: string; tags: string[]
+  kind: string; severity: string; votes: number; board_state: string; board_title: string | null; board_summary: string | null; triage_state: string; linear_issue_url: string | null; sla_first_response_due: string | null
   created_at: string; updated_at: string; first_response_at: string | null; resolved_at: string | null
 }
 interface ListData { tickets: Ticket[]; staff: Array<{ id: string; name: string }>; counts: Record<string, number>; me: string }
 interface Message { id: string; author_type: string; author_label: string | null; body: string; internal: boolean; created_at: string }
 
 const VIEWS = [
-  { value: 'active', label: 'Active' }, { value: 'mine', label: 'Mine' }, { value: 'unassigned', label: 'Unassigned' },
+  { value: 'active', label: 'Active' }, { value: 'mine', label: 'Mine' }, { value: 'unassigned', label: 'Unassigned' }, { value: 'triage', label: 'Needs triage' },
   { value: 'resolved', label: 'Resolved' }, { value: 'closed', label: 'Closed' },
 ] as const
 const PRIORITIES = ['low', 'normal', 'high', 'urgent'].map((v) => ({ value: v, label: v }))
@@ -50,7 +51,7 @@ function TicketList({ status }: { status: AdminStatus }) {
   const names = new Map(data?.staff.map((s) => [s.id, s.name]))
 
   const columns: Column<Ticket>[] = [
-    { key: 'subject', header: 'Ticket', cell: (t) => <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]"><span className="font-mono-numbers text-[var(--color-brand-text-muted)]">#{t.number}</span> {t.subject}</p><p className="truncate text-xs text-[var(--color-brand-text-muted)]">{t.requester_email ?? 'No email'} · {t.category}</p></div> },
+    { key: 'subject', header: 'Ticket', cell: (t) => <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]"><span className="font-mono-numbers text-[var(--color-brand-text-muted)]">#{t.number}</span> {t.subject}</p><p className="truncate text-xs text-[var(--color-brand-text-muted)]">{t.requester_email ?? 'No email'} · {t.kind} · {t.category}{t.severity === 'high' || t.severity === 'critical' ? ` · ${t.severity}` : ''}</p></div> },
     { key: 'status', header: 'Status', cell: (t) => <StatusPill status={t.status} /> },
     { key: 'priority', header: 'Priority', cell: (t) => <StatusPill status={t.priority} /> },
     { key: 'assignee', header: 'Owner', cell: (t) => <span className="text-[var(--color-brand-text-secondary)]">{t.assignee_id ? (names.get(t.assignee_id) ?? 'Teammate') : <span className="text-[var(--color-brand-amber)]">Unassigned</span>}</span> },
@@ -121,6 +122,7 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
   const list = useAdminQuery<ListData>('/api/admin/support/tickets?view=active')
   const [text, setText] = useState('')
   const [internal, setInternal] = useState(false)
+  const macros = useAdminQuery<{ macros: Array<{ title: string; body: string }> }>('/api/admin/support/macros')
   const reload = async () => { await detail.refresh() }
   const { run, busy } = useAdminAction(`/api/admin/support/tickets/${id}`, reload)
   const perms = new Set(status.permissions ?? [])
@@ -135,7 +137,7 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
   return (
     <>
       <BackLink />
-      <PageHeader title={`#${ticket.number} · ${ticket.subject}`} description={`Opened ${dateTime(ticket.created_at)}`} actions={<div className="flex gap-2"><StatusPill status={ticket.status} /><StatusPill status={ticket.priority} /></div>} />
+      <PageHeader title={`#${ticket.number} · ${ticket.subject}`} description={`Opened ${dateTime(ticket.created_at)}`} actions={<div className="flex gap-2"><StatusPill status={ticket.status} /><StatusPill status={ticket.priority} />{ticket.linear_issue_url ? <a href={ticket.linear_issue_url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center text-sm text-[var(--color-brand-primary)]">Linear</a> : null}</div>} />
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
         <Panel title="Conversation" flush>
           <ol className="divide-y divide-[var(--color-brand-border)]">
@@ -152,12 +154,16 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
           </ol>
           {canReply ? (
             <div className="space-y-3 border-t border-[var(--color-brand-border)] p-5">
+              {!internal && macros.data?.macros.length ? (
+                <SelectField aria-label="Saved reply" value="" className="h-12 w-full" placeholder="Insert a saved reply" items={macros.data.macros.map((m) => ({ value: m.title, label: m.title }))} onChange={(v) => { const m = macros.data?.macros.find((x) => x.title === v); if (m) setText((t) => (t ? `${t}\n\n${m.body}` : m.body)) }} />
+              ) : null}
               <Textarea aria-label="Reply" rows={4} placeholder={internal ? 'Write an internal note — the user will not see this' : 'Reply to the user — they get an in-app notification'} value={text} onChange={(e) => setText(e.target.value)} />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <SegmentedControl ariaLabel="Reply type" fill={false} value={internal ? 'note' : 'reply'} onChange={(v) => setInternal(v === 'note')} options={[{ value: 'reply', label: 'Reply to user' }, { value: 'note', label: 'Internal note' }]} />
                 <Button size="touch" loading={busy === 'reply'} disabled={!text.trim() || (!internal && !ticket.user_id)} onClick={async () => { if (await run('reply', { op: 'reply', message: text, internal }, { success: internal ? 'Note added' : 'Reply sent' })) setText('') }}>
                   <Send />{internal ? 'Add note' : 'Send reply'}
                 </Button>
+                {can('support.manage') && text.trim() ? <Button variant="outline" size="touch" onClick={async () => { const title = window.prompt('Name this saved reply')?.trim(); if (!title) return; try { await adminPost('/api/admin/support/macros', { op: 'add', title, text }); await macros.refresh() } catch (e) { window.alert(errorMessage(e)) } }}>Save as reply</Button> : null}
               </div>
               {!internal && !ticket.user_id ? <p className="text-xs text-[var(--color-brand-text-muted)]">This ticket isn’t linked to an app user, so it can only take internal notes.</p> : null}
             </div>
@@ -185,12 +191,29 @@ function TicketDetail({ id, status }: { id: string; status: AdminStatus }) {
             </dl>
             {ticket.user_id && can('users.view') ? <Button variant="outline" size="touch" className="mt-3 w-full" onClick={() => adminNavigate('users', { id: ticket.user_id! })}>Open user profile</Button> : null}
           </Panel>
+          {can('support.manage') && (ticket.kind === 'feature' || ticket.board_state !== 'hidden') ? <BoardPanel key={ticket.board_state + (ticket.board_title ?? '')} ticket={ticket} run={run} /> : null}
           {can('support.manage') ? (
             <Button variant="destructive" size="touch" className="w-full" onClick={async () => { if (await run('delete', { op: 'delete' }, { success: 'Ticket deleted', confirm: { title: 'Delete this ticket?', body: 'The whole conversation is erased.', destructive: true } })) adminNavigate('support') }}>Delete ticket</Button>
           ) : null}
         </div>
       </div>
     </>
+  )
+}
+
+function BoardPanel({ ticket, run }: { ticket: Ticket; run: ReturnType<typeof useAdminAction>['run'] }) {
+  const [state, setState] = useState(ticket.board_state)
+  const [title, setTitle] = useState(ticket.board_title ?? '')
+  const [summary, setSummary] = useState(ticket.board_summary ?? '')
+  return (
+    <Panel title="Feedback board" description={`Users vote on published ideas. They only see the title and summary you write here, never their own wording. ${ticket.votes} net votes; 10 sends it to Linear.`}>
+      <div className="space-y-3">
+        <Field label="State"><SelectField aria-label="Board state" value={state} onChange={setState} className="h-12 w-full" items={['hidden', 'published', 'planned', 'shipped'].map((v) => ({ value: v, label: v }))} /></Field>
+        <Field label="Public title"><Input aria-label="Public title" value={title} maxLength={100} onChange={(e) => setTitle(e.target.value)} /></Field>
+        <Field label="Public summary"><Textarea aria-label="Public summary" rows={3} maxLength={400} value={summary} onChange={(e) => setSummary(e.target.value)} /></Field>
+        <Button size="touch" className="w-full" onClick={() => void run('board', { op: 'board', boardState: state, boardTitle: title, boardSummary: summary }, { success: 'Board updated' })}>Save</Button>
+      </div>
+    </Panel>
   )
 }
 

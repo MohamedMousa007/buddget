@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
-import type { AppSettings, BudgetPlan, BudgetPlanActivation, Currency } from '@/lib/store/types'
+import type { AppSettings, BudgetPlan, BudgetPlanActivation } from '@/lib/store/types'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import { mergeList } from './merge'
 import type { Snapshot } from './snapshot'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
@@ -95,7 +96,7 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
     cursor: p.cursor,
     profile: p.profile ? profileFromRow(p.profile) : null,
     // settingsFromRow needs the currencies from the profile; they are filled in by applyDelta when only settings changed.
-    settings: p.settings ? settingsFromRow(p.settings, { baseCurrency: 'AED' as Currency, secondaryCurrency: null }) : null,
+    settings: p.settings ? settingsFromRow(p.settings, { baseCurrency: DEFAULT_SETTINGS.baseCurrency, secondaryCurrency: null }) : null,
     paymentMethods: listDelta(l.payment_methods, paymentMethodFromRow),
     incomeSources: listDelta(l.income_sources, incomeSourceFromRow),
     incomeEvents: listDelta(l.income_events, incomeEventFromRow),
@@ -139,6 +140,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
       ? { ...local.settings, baseCurrency, secondaryCurrency }
       : local.settings
 
+  const deadPlans = new Set(d.deletedBudgetPlanIds)
   return {
     profile: profileResult?.profile ?? local.profile,
     settings,
@@ -162,6 +164,6 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
     buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>) as Snapshot['buddgyMemories'],
     accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>) as Snapshot['accountAdjustments'],
     budgetPlans: applyList(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }) as Snapshot['budgetPlans'],
-    budgetPlanActivations: mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations'],
+    budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId)),
   }
 }

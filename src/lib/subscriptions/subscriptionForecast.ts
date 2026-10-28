@@ -1,6 +1,7 @@
 import { addDays, differenceInCalendarDays, endOfMonth, format, parseISO, startOfDay, startOfMonth } from 'date-fns'
 import type { Currency, Expense, Subscription } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
+import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { advanceCycle, firstBillingOnOrAfter } from './subscriptionDates'
 import { cycleWindow, isCyclePaid } from './subscriptionOccurrence'
 import { subscriptionToMonthlyPlannerAmount } from './subscriptionRecurring'
@@ -114,7 +115,10 @@ export function markPaidTarget(sub: Billable, expenses: PaidProbe[], today: Date
   const now = startOfDay(today)
   const state = cycleState(sub, expenses, now)
   if (state.kind !== 'upcoming') return now
-  const next = cycleWindow(sub, now).end
+  const win = cycleWindow(sub, now)
+  const next = win.end
+  // A cycle no longer than the pay-ahead window (weekly) has no "ahead": paying it would be a second charge in a row.
+  if (differenceInCalendarDays(next, win.start) <= PAY_AHEAD_DAYS) return null
   if (differenceInCalendarDays(next, now) > PAY_AHEAD_DAYS) return null
   return isCyclePaid(sub, expenses, next) ? null : next
 }
@@ -223,13 +227,15 @@ export function yearlySetAside(
 
 /** Sum of everything recorded against a subscription this calendar month (base currency). */
 export function paidThisMonth(
-  expenses: Pick<Expense, 'linkedSubscriptionId' | 'date' | 'refundKind' | 'amountInBaseCurrency'>[],
-  today: Date
+  expenses: Pick<Expense, 'linkedSubscriptionId' | 'date' | 'refundKind' | 'amount' | 'currency' | 'amountInBaseCurrency'>[],
+  today: Date,
+  baseCurrency: Currency,
+  rates: Record<string, number>
 ): number {
   const key = format(today, 'yyyy-MM')
   return expenses.reduce(
     (sum, e) =>
-      e.linkedSubscriptionId && !e.refundKind && e.date.slice(0, 7) === key ? sum + e.amountInBaseCurrency : sum,
+      e.linkedSubscriptionId && e.date.slice(0, 7) === key ? sum + expenseAmountInBase(e, baseCurrency, rates) : sum,
     0
   )
 }
@@ -246,7 +252,7 @@ export interface HeroNumbers {
 /** Everything the Subscriptions hero band shows. */
 export function heroNumbers(
   subs: Billable[],
-  expenses: (PaidProbe & Pick<Expense, 'amountInBaseCurrency'>)[],
+  expenses: (PaidProbe & Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency'>)[],
   today: Date,
   baseCurrency: Currency,
   rates: Record<string, number>
@@ -265,7 +271,7 @@ export function heroNumbers(
   const upcoming = forecast.find((f) => f.kind === 'today' || f.kind === 'upcoming')
   return {
     due30: forecast.reduce((a, f) => a + f.amountBase, 0),
-    paid: paidThisMonth(expenses, today),
+    paid: paidThisMonth(expenses, today, baseCurrency, rates),
     left: leftToPayThisMonth(subs, expenses, today, baseCurrency, rates, true),
     monthlyEquivalent,
     perYear: monthlyEquivalent * 12,

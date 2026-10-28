@@ -12,6 +12,7 @@ import { usePlanActions } from '@/hooks/usePlanActions'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { Gauge, History, Plus, Sparkles } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
+import { fallbackPlanId } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
 import type { CreateIntent } from '@/lib/budget/templates'
@@ -29,6 +30,7 @@ import { PlanChapters } from './PlanChapters'
 import { InsightsChip } from './InsightsChip'
 import { InsightsSheet } from './InsightsSheet'
 import { EmptyPlan } from './EmptyPlan'
+import { LearningNote } from './LearningNote'
 import { UpgradeBanner } from './UpgradeBanner'
 import { LineSheet } from './sheets/LineSheet'
 import { AddLineSheet } from './sheets/AddLineSheet'
@@ -49,6 +51,7 @@ import { StressTestSheet } from './sheets/StressTestSheet'
 import { useBudgetStressCopy } from './useStressCopy'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
+import { nextCloseMemory } from '@/lib/budget/closeMemory'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetStudioCopy } from './useStudioCopy'
@@ -64,13 +67,16 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const studioCopy = useBudgetStudioCopy()
   const { locale } = useLocale()
   const [mode, setMode] = useState<PlanMode>('plan')
-  const view = usePlanView(mode)
+  // Drafts and archived plans are still the user's plans: with no live one, the first plan stands in so the chrome never vanishes.
+  const standInPlanId = useFinanceStore((s) => fallbackPlanId(s.budgetPlans, s.activeBudgetPlanId))
+  const view = usePlanView(mode, standInPlanId)
   const act = useBudgetPageActions(view)
   const [collapsed, setCollapsed] = useState<ReadonlySet<ChapterView['chapter']>>(new Set())
   const [lineId, setLineId] = useState<string | null>(null)
   const [addBlock, setAddBlock] = useState<BudgetBlock | null>(null)
   const [insightsOpen, setInsightsOpen] = useState(false)
-  const [deckOpen, setDeckOpen] = useState(false)
+  // With more than one plan the switcher starts open; the user's own toggle wins afterwards.
+  const [deckToggled, setDeckToggled] = useState<boolean | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const [activateId, setActivateId] = useState<string | null>(null)
@@ -79,6 +85,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [building, setBuilding] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [studio, setStudio] = useState<{ intent: CreateIntent | null } | null>(null)
+  // Buddgy's chat can start the guided setup; the request is honoured once, here, and cleared.
+  const studioRequested = useSettingsStore((s) => s.budgetStudioRequested)
+  useEffect(() => {
+    if (!studioRequested) return
+    useSettingsStore.getState().clearBudgetStudioRequest()
+    setStudio({ intent: null })
+  }, [studioRequested])
   const [review, setReview] = useState<{ id: string; aiNote: boolean } | null>(null)
   const [adjusting, setAdjusting] = useState(false)
   const monthClose = useMonthClose()
@@ -130,6 +143,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
       rates: s.exchangeRates,
     })),
   )
+  const deckOpen = deckToggled ?? plans.length > 1
 
   const selectedLine = useMemo<LineView | null>(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
@@ -251,7 +265,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   if (!view) {
     return (
       <PageBody className="space-y-4">
-        <EmptyPlan onStarter={act.createStarterPlan} onBlank={startBuild} onBuildWithBuddgy={() => setStudio({ intent: null })} />
+        <EmptyPlan onBuildWithBuddgy={() => setStudio({ intent: null })} onManual={startBuild} />
       </PageBody>
     )
   }
@@ -283,13 +297,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         expanded={deckOpen}
         onOpenPlans={() => {
           setSelectedPlanId(view.plan.id)
-          setDeckOpen((v) => !v)
+          setDeckToggled(!deckOpen)
         }}
         onOpenMenu={setMenuAnchor}
       />
       {deckOpen ? (
         <PlanDeck
-          plans={plans}
+          plans={[...plans].sort((x, y) => Number(y.id === activeId) - Number(x.id === activeId))}
           activeId={activeId}
           selectedId={selectedPlanId ?? view.plan.id}
           summaries={summaries}
@@ -323,6 +337,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         />
       </aside>
       <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-2">
+      {view.learning ? <LearningNote /> : null}
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
         <UpgradeBanner
           lineCount={view.plan.categories.length}
@@ -423,9 +438,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         month={closeMonth}
         onApply={(p) => act.patchLine(p.lineId, { amount: p.to })}
         onDismiss={() => setCloseOpen(false)}
-        onFinish={() => {
+        onFinish={(appliedIds) => {
           setCloseOpen(false)
-          if (monthClose) useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)
+          if (!monthClose) return
+          useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)
+          const { profile, updateProfile } = store.getState()
+          const closeMemory = nextCloseMemory(profile.financialProfile?.closeMemory, monthClose.proposals, appliedIds, monthClose.cycleKey)
+          updateProfile({ financialProfile: { ...profile.financialProfile, closeMemory } })
         }}
       />
       <CardActionMenu

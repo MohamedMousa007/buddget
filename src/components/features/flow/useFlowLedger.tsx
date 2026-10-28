@@ -1,5 +1,6 @@
 'use client'
 
+import { localDayKey } from '@/lib/utils/localDate'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, parseISO, subDays } from 'date-fns'
@@ -7,6 +8,7 @@ import { CircleSlash, Link as LinkIcon, Link2, MessageSquare } from 'lucide-reac
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { Badge } from '@/components/ui/badge'
+import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { FlowLedgerGroup, FlowLedgerRow } from '@/components/features/flow/FlowLedger'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -14,7 +16,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { resolveRange, type ResolvedRange } from '@/lib/expenses/dateRange'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
@@ -67,6 +69,7 @@ export function useFlowLedger() {
   const t = useT()
   const { locale } = useLocale()
   const toast = useActionToast()
+  const { removeExpense } = useLinkedDelete()
   const {
     expenses,
     incomeSources,
@@ -74,10 +77,10 @@ export function useFlowLedger() {
     paymentMethods,
     settings,
     rates,
-    deleteExpense,
-    restoreExpense,
     deleteIncomeEvent,
     deleteIncomeSource,
+    restoreIncomeEvent,
+    restoreIncomeSource,
   } = useFinanceStore(
     useShallow((s) => ({
       expenses: s.expenses,
@@ -86,10 +89,10 @@ export function useFlowLedger() {
       paymentMethods: s.paymentMethods,
       settings: s.settings,
       rates: s.exchangeRates,
-      deleteExpense: s.deleteExpense,
-      restoreExpense: s.restoreExpense,
       deleteIncomeEvent: s.deleteIncomeEvent,
       deleteIncomeSource: s.deleteIncomeSource,
+      restoreIncomeEvent: s.restoreIncomeEvent,
+      restoreIncomeSource: s.restoreIncomeSource,
     })),
   )
   const { monthFilter, setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome } =
@@ -152,7 +155,7 @@ export function useFlowLedger() {
     function expenseItem(e: Expense, date: string): FlowItem {
       const colors = categoryChipColors(e.category)
       const gross = expenseAmountInBase(e, base, rates, true)
-      const nonSpend = isNonSpendCategory(e.category)
+      const nonSpend = isNonSpendExpense(e)
       const dim = Boolean(e.refundKind)
       const statusDate = shortDate(e.refundedAt ?? e.date)
       const pmLabel = methodLabel(pmById.get(e.paymentMethodId)) ?? t.common.unknown
@@ -183,6 +186,8 @@ export function useFlowLedger() {
                 <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgeRefunded}</Badge>
               ) : e.refundKind === 'declined' ? (
                 <Badge variant="muted" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
+              ) : e.spendExclusion === 'for_someone' ? (
+                <Badge variant="muted" size="xs" className="shrink-0">{e.owedSettledAt ? t.exclusion.badgeRepaid : t.exclusion.badgeOwed(e.owedBy ?? t.exclusion.forSomeone)}</Badge>
               ) : nonSpend ? (
                 <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
               ) : e.linkedSubscriptionId ? (
@@ -202,10 +207,7 @@ export function useFlowLedger() {
           },
           swipe: {
             deleteLabel: t.expenses.swipeDelete,
-            onDelete: () => {
-              deleteExpense(e.id)
-              toast(t.expenses.expenseDeleted, { undo: () => restoreExpense(e), undoLabel: t.common.undo })
-            },
+            onDelete: () => void removeExpense(e),
           },
         },
       }
@@ -249,7 +251,7 @@ export function useFlowLedger() {
         amount: s.amount,
         currency: s.currency,
         sourceType: s.sourceType,
-        date: s.createdAt.slice(0, 10),
+        date: localDayKey(s.createdAt),
         paymentMethodId: s.paymentMethodId,
         legacySourceId: s.id,
       })
@@ -326,7 +328,16 @@ export function useFlowLedger() {
           },
           swipe: {
             deleteLabel: t.income.swipeDelete,
-            onDelete: () => (inc.event ? deleteIncomeEvent(inc.event.id) : deleteIncomeSource(inc.legacySourceId!)),
+            onDelete: () => {
+              const { event, legacySourceId } = inc
+              const legacy = legacySourceId ? incomeSources.find((s) => s.id === legacySourceId) : undefined
+              if (event) deleteIncomeEvent(event.id)
+              else deleteIncomeSource(legacySourceId!)
+              toast(t.moneyFlows.incomeDeleted, {
+                undo: () => (event ? restoreIncomeEvent(event) : legacy && restoreIncomeSource(legacy)),
+                undoLabel: t.common.undo,
+              })
+            },
             rightAction: link ? { label: t.addIncome.assignBtn, icon: <Link2 className="h-5 w-5" />, onAction: link } : undefined,
           },
         },
@@ -378,7 +389,7 @@ export function useFlowLedger() {
   }, [
     expenses, incomeEvents, incomeSources, paymentMethods, previews, matches, resolved, base, secondary, rates, t,
     setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome,
-    deleteExpense, restoreExpense, deleteIncomeEvent, deleteIncomeSource, toast,
+    removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast,
   ])
 
   const amountOn = amountIsFiltered(filters.amtMin, filters.amtMax)

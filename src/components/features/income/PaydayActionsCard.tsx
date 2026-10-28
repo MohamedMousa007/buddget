@@ -37,8 +37,8 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
   const t = useT()
   const toast = useActionToast()
   const confirm = useConfirm()
-  const { incomeEvents, addIncomeEvent, deleteIncomeEvent } = useFinanceStore(
-    useShallow((s) => ({ incomeEvents: s.incomeEvents, addIncomeEvent: s.addIncomeEvent, deleteIncomeEvent: s.deleteIncomeEvent })),
+  const { incomeEvents, addIncomeEvent, deleteIncomeEvent, restoreIncomeEvent } = useFinanceStore(
+    useShallow((s) => ({ incomeEvents: s.incomeEvents, addIncomeEvent: s.addIncomeEvent, deleteIncomeEvent: s.deleteIncomeEvent, restoreIncomeEvent: s.restoreIncomeEvent })),
   )
   const openAmountReceived = useSettingsStore((s) => s.openAmountReceived)
   const [linking, setLinking] = useState(false)
@@ -98,20 +98,7 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
     if (!event || !(await confirm({ title: t.paydays.confirmDeleteEntry, destructive: true }))) return
     deleteIncomeEvent(event.id)
     toast(t.paydays.deleted, {
-      undo: () =>
-        addIncomeEvent({
-          templateId: event.templateId,
-          name: event.name,
-          amount: event.amount,
-          currency: event.currency,
-          sourceType: event.sourceType,
-          receivedDate: event.receivedDate,
-          occurrenceDate: event.occurrenceDate,
-          status: event.status,
-          paymentMethodId: event.paymentMethodId,
-          smsLogId: event.smsLogId,
-          notes: event.notes,
-        }),
+      undo: () => restoreIncomeEvent(event),
       undoLabel: t.common.undo,
     })
   }

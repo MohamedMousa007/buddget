@@ -37,15 +37,20 @@ export interface BudgetFacts {
   zakatMonthly: number
   /** Three-month average spend per everyday category key (see EVERYDAY_KEYS in the engine). */
   averages: Partial<Record<EverydayKey, number>>
+  /** Average monthly rent in the ledger over the same cycles; undefined when none was recorded. */
+  ledgerRent?: number
+  /** The user pays mostly in cash, so tracked spending understates reality and counts for less. */
+  cashHeavy?: boolean
+  /** Full cycles behind `averages`; fewer than three blends the averages with benchmarks. Undefined counts as three. */
+  averageCycles?: number
   priorities: StudioPriority[]
   /** Typed fields that hold a real stored value (not a default); lets the studio skip questions it can already answer. */
   known?: ReadonlySet<KnownFact>
   /** 0 = save hard, 100 = live comfortably. */
   securityLean: number
-  payoffStrategy: 'avalanche' | 'snowball' | 'minimums'
-  /** Extra a month the user wants to send at the target debt; the plan gives it what slack allows. */
-  extraPayoff?: number
   investInterest: boolean
+  /** Other fixed monthly costs the user described in words (school fees, remittances); each becomes a bills line. */
+  extraCommitments?: Array<{ name: string; amount: number }>
 }
 
 export type EverydayKey = 'groceries' | 'dining' | 'transport' | 'health' | 'shopping' | 'fun' | 'family' | 'other'
@@ -70,8 +75,6 @@ export interface FactDebt {
   /** Monthly minimum (base). */
   minimum: number
   balance: number
-  /** Annual rate in percent; null when unknown. */
-  apr: number | null
   kind: 'credit_card' | 'installment' | 'loan' | 'personal'
 }
 
@@ -115,4 +118,6 @@ export interface PlanDraft {
   risks: string[]
   /** Income minus lines; the engine aims for 0 and routes any remainder to the buffer line. */
   free: number
+  /** `spend` when no income is known and `income` is the expected spending plus a cushion. */
+  basis?: 'income' | 'spend'
 }

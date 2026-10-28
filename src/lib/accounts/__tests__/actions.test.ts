@@ -7,7 +7,7 @@ import { pickablePaymentMethods } from '../kinds'
 
 const s = () => useFinanceStore.getState()
 const ledger = () => ({
-  paymentMethods: s().paymentMethods, expenses: s().expenses, incomeEvents: s().incomeEvents, debtPayments: s().debtPayments,
+  paymentMethods: s().paymentMethods, expenses: s().expenses, incomeEvents: s().incomeEvents, debts: s().debts, debtPayments: s().debtPayments,
   savingsTransactions: s().savingsTransactions, savingsAccounts: s().savingsAccounts, adjustments: s().accountAdjustments,
   convert: (a: number) => a,
 })
@@ -73,6 +73,36 @@ describe('account actions end to end on the real store', () => {
   })
 })
 
+describe('untracked accounts', () => {
+  beforeEach(() => s().reset())
+
+  it('Set balance on an untracked bank sets the opening balance, then later updates are deltas', () => {
+    const id = s().addPaymentMethod({ name: 'NBE', type: 'bank_account', currency: 'EGP', isDefault: false })
+    expect(bal(id)).toBeUndefined()
+    updateBalance(id, 0, 500)
+    expect(s().accountAdjustments).toHaveLength(0)
+    expect(bal(id)?.balance).toBe(500)
+    s().updatePaymentMethod(id, { openingAt: new Date(Date.now() - 86_400_000).toISOString() })
+    updateBalance(id, 500, 450)
+    expect(s().accountAdjustments).toHaveLength(1)
+    expect(bal(id)?.balance).toBe(450)
+  })
+
+  it('the cash sentinel is promoted to a real tracked Cash account', () => {
+    updateBalance('pm_default_cash', 0, 75)
+    const cash = ensureCashAccount()
+    expect(bal(cash)?.balance).toBe(75)
+  })
+
+  it('a closed default hands over to an open method and closed methods are not pickable', () => {
+    const a = s().addPaymentMethod({ name: 'A', type: 'bank_account', currency: 'EGP', isDefault: true })
+    const b = s().addPaymentMethod({ name: 'B', type: 'bank_account', currency: 'EGP', isDefault: false })
+    closeAccount(a)
+    expect(s().paymentMethods.find((m) => m.id === b)?.isDefault).toBe(true)
+    expect(pickablePaymentMethods(s().paymentMethods).some((m) => m.id === a)).toBe(false)
+  })
+})
+
 describe('pickablePaymentMethods', () => {
   it('hides closed accounts and the cash sentinel once a real Cash exists, but keeps the selected one', () => {
     useFinanceStore.getState().reset()
@@ -96,7 +126,7 @@ describe('gap lifecycle on the real store', () => {
     setOpeningBalance(bank, 1000, new Date(t0))
     const reports = [{ balance: 700, reportedAt: '2026-10-05T10:00:00Z' }, { balance: 700, reportedAt: '2026-10-06T10:00:00Z' }]
     const ledger = () => ({
-      paymentMethods: st().paymentMethods, expenses: st().expenses, incomeEvents: st().incomeEvents, debtPayments: st().debtPayments,
+      paymentMethods: st().paymentMethods, expenses: st().expenses, incomeEvents: st().incomeEvents, debts: st().debts, debtPayments: st().debtPayments,
       savingsTransactions: st().savingsTransactions, savingsAccounts: st().savingsAccounts, adjustments: st().accountAdjustments, convert: (a: number) => a,
     })
     const gap = () => detectGap(reports, (i) => computeBalances(ledger(), i).get(bank)?.balance)
@@ -111,7 +141,7 @@ describe('gap lifecycle on the real store', () => {
     const at = new Date('2026-10-05T10:00:00Z')
     setOpeningBalance(bank, 1000, at)
     st().addExpense({ description: 'x', category: 'Food', amount: 50, currency: 'EGP', date: '2026-10-05', occurredAt: at.toISOString(), paymentMethodId: bank, isRecurring: false })
-    const input = { paymentMethods: st().paymentMethods, expenses: st().expenses, incomeEvents: [], debtPayments: [], savingsTransactions: [], savingsAccounts: [], adjustments: [], convert: (a: number) => a }
+    const input = { paymentMethods: st().paymentMethods, expenses: st().expenses, incomeEvents: [], debts: [], debtPayments: [], savingsTransactions: [], savingsAccounts: [], adjustments: [], convert: (a: number) => a }
     expect(computeBalances(input).get(bank)?.balance).toBe(1000)
     expect(computeBalances(input, at.getTime() - 1).get(bank)).toBeUndefined()
   })

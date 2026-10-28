@@ -57,7 +57,7 @@ export const incomeSpecs: ToolSpec[] = [
     domain: 'income',
     kind: 'write',
     risk: 'strong',
-    description: 'Propose deleting a recurring income source from list_income.',
+    description: 'Propose deleting a recurring income source from list_income. Income already received from it stays in past months.',
     params: obj({ ref: str('ref or exact name') }, ['ref']),
   },
   {

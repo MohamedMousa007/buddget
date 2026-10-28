@@ -1,19 +1,20 @@
 /**
  * POST /api/sms/undo
  *
- * Deletes the auto-created expense/income linked to an SMS parse-log row. Accepts
- * both session-cookie auth (from the notification action opened in-app) and
- * bearer-token auth (from the service worker fetch).
+ * Retires the auto-created expense/income/debt payment linked to an SMS parse-log row, as
+ * soft-deletes so sync tombstones reach every device. Auth: Bearer (Supabase JWT or SMS ingest
+ * token, same resolver as sms/ack) or the session cookie (web).
  *
- * Only the funnel's `sms_parse_log` rows exist — the legacy `sms_events` ingest
- * path was removed, so `parseLogId` is the sole input.
+ * Only the funnel's `sms_parse_log` rows exist, so `parseLogId` is the sole input.
  */
 
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { createClient } from '@/lib/supabase/server'
+import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
+import { smsDeviceGate } from '@/lib/sms/deviceGate'
 
 const bodySchema = z.object({
   parseLogId: z.string().uuid(),
@@ -22,32 +23,18 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  // ── Resolve user_id from session OR bearer token ─────────────────────────
-  let userId: string | null = null
-
-  const authHeader = request.headers.get('Authorization') ?? ''
-  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
   const serviceClient = createServiceRoleClient()
-
-  if (bearerToken) {
-    // Bearer token path (service worker fetch from notificationclick).
-    const { data: tokenRow } = await serviceClient
-      .from('sms_ingest_tokens')
-      .select('user_id')
-      .eq('token', bearerToken)
-      .eq('is_active', true)
-      .single()
-    userId = tokenRow?.user_id ?? null
-  } else {
-    // Session cookie path (in-app undo button).
-    const sessionClient = await createClient()
-    const { data: { user } } = await sessionClient.auth.getUser()
-    userId = user?.id ?? null
-  }
+  const hasBearer = (request.headers.get('authorization') ?? '').startsWith('Bearer ')
+  const caller = hasBearer
+    ? await resolveSmsCaller(request)
+    : { userId: await resolveApiUserId(request), deviceId: null, viaJwt: false }
+  const { userId } = caller
 
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const blocked = await smsDeviceGate(serviceClient, caller)
+  if (blocked) return blocked
 
   // ── Parse body ───────────────────────────────────────────────────────────
   let json: unknown
@@ -64,11 +51,9 @@ export async function POST(request: Request) {
 
   const { parseLogId } = parsed.data
 
-  // Direct "delete the linked entry" shortcut — no time window (the user can
-  // delete from the ledger anyway). Handles both expense and income links.
   const { data: logRow, error: logErr } = await serviceClient
     .from('sms_parse_log')
-    .select('user_id, expense_id, income_id')
+    .select('user_id, expense_id, income_id, debt_payment_id')
     .eq('id', parseLogId)
     .single()
 
@@ -78,37 +63,48 @@ export async function POST(request: Request) {
   if (logRow.user_id !== userId) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  if (!logRow.expense_id && !logRow.income_id) {
+  if (!logRow.expense_id && !logRow.income_id && !logRow.debt_payment_id) {
     return NextResponse.json({ ok: true, alreadyUndone: true })
   }
 
-  if (logRow.expense_id) {
-    const { error: delErr } = await serviceClient
-      .from('expenses')
-      .delete()
-      .eq('id', logRow.expense_id)
+  const deletedAt = new Date().toISOString()
+  const targets = [
+    { table: 'expenses', id: logRow.expense_id, label: 'expense' },
+    { table: 'income_events', id: logRow.income_id, label: 'income' },
+    { table: 'debt_payments', id: logRow.debt_payment_id, label: 'debt payment' },
+  ] as const
+  for (const { table, id, label } of targets) {
+    if (!id) continue
+    const { error } = await serviceClient
+      .from(table)
+      .update({ deleted_at: deletedAt })
+      .eq('id', id)
       .eq('user_id', userId)
-    if (delErr) {
-      console.error('[sms/undo] expense delete error', delErr.message)
-      return NextResponse.json({ error: 'Failed to undo expense' }, { status: 500 })
-    }
-  }
-  if (logRow.income_id) {
-    const { error: incErr } = await serviceClient
-      .from('income_events')
-      .delete()
-      .eq('id', logRow.income_id)
-      .eq('user_id', userId)
-    if (incErr) {
-      console.error('[sms/undo] income delete error', incErr.message)
-      return NextResponse.json({ error: 'Failed to undo income' }, { status: 500 })
+    if (error) {
+      console.error(`[sms/undo] ${label} delete error`, error.message)
+      return NextResponse.json({ error: `Failed to undo ${label}` }, { status: 500 })
     }
   }
 
-  await serviceClient
+  // A paired sibling still points at this log; leave neither side half-linked.
+  const { error: siblingErr } = await serviceClient
     .from('sms_parse_log')
-    .update({ expense_id: null, income_id: null })
+    .update({ paired_log_id: null })
+    .eq('paired_log_id', parseLogId)
+    .eq('user_id', userId)
+  if (siblingErr) {
+    console.error('[sms/undo] sibling unpair error', siblingErr.message)
+    return NextResponse.json({ error: 'Failed to undo pairing' }, { status: 500 })
+  }
+
+  const { error: updErr } = await serviceClient
+    .from('sms_parse_log')
+    .update({ expense_id: null, income_id: null, debt_payment_id: null, paired_log_id: null })
     .eq('id', parseLogId)
+  if (updErr) {
+    console.error('[sms/undo] log update error', updErr.message)
+    return NextResponse.json({ error: 'Failed to update log' }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true, expired: false })
 }

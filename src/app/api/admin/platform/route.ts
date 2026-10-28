@@ -38,7 +38,10 @@ function sanitizeSetting(key: SettingKey, value: Record<string, unknown>): Json 
 export async function GET(req: Request) {
   const g = await guardAdmin(req, { permission: 'platform.view' })
   if (!g.ok) return g.res
-  const settings = await g.ctx.service.from('platform_settings').select('key, value, updated_at')
+  const [settings, stuck] = await Promise.all([
+    g.ctx.service.from('platform_settings').select('key, value, updated_at'),
+    g.ctx.service.from('integration_outbox').select('id', { count: 'exact', head: true }).in('status', ['failed', 'dead']),
+  ])
   const present = (name: string) => !!process.env[name]?.trim()
   return json({
     ai: {
@@ -59,6 +62,7 @@ export async function GET(req: Request) {
       { name: 'Groq (voice transcription)', ok: present('GROQ_API_KEY') },
       { name: 'Firebase (native push)', ok: getFirebaseAdmin() !== null },
       { name: 'Linear (feedback intake)', ok: present('LINEAR_API_KEY') },
+      { name: `Linear status sync (webhook secret)${stuck.count ? ` · ${stuck.count} undelivered` : ''}`, ok: present('LINEAR_WEBHOOK_SECRET') && !stuck.count, optional: true },
       { name: 'Admin encryption key (pinned)', ok: present('ADMIN_AUTH_SECRET'), optional: true },
     ],
     environment: process.env.NODE_ENV,

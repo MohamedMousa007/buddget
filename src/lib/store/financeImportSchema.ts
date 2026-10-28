@@ -100,6 +100,7 @@ export const importDataSchema = z.object({
       legacyOnboardingMigratedAt: z.string().nullable().optional(),
       dashboardLayout: z.enum(['standard', 'minimal']).optional(),
       wealthGoldStrip: z.enum(['collapsed', 'expanded', 'hidden']).optional(),
+      promptState: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
   incomeSources: z
@@ -185,6 +186,9 @@ export const importDataSchema = z.object({
         id: z.string(),
         occurredAt: z.string().optional(),
         toPaymentMethodId: z.string().optional(),
+        spendExclusion: z.enum(['method', 'manual', 'for_someone']).optional(),
+        owedBy: z.string().optional(),
+        owedSettledAt: z.string().optional(),
         date: z.string(),
         description: z.string(),
         category: z.string(),
@@ -408,12 +412,14 @@ export const importDataSchema = z.object({
         openingAt: z.string().optional(),
         closedAt: z.string().optional(),
         trackSms: z.boolean().optional(),
+        excluded: z.boolean().optional(),
         name: z.string(),
         type: paymentMethodTypeSchema,
         currency: fiatCurrencySchema,
         color: z.string().optional(),
         icon: z.string().optional(),
         last4: z.string().optional(),
+        label: z.string().max(24).optional(),
         isDefault: z.boolean(),
       })
     )

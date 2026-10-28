@@ -1,5 +1,5 @@
 import { getMonthRange } from '@/lib/utils/calculations'
-import { differenceInDays } from 'date-fns'
+import { differenceInCalendarDays } from 'date-fns'
 
 export type PaceStatus = 'on_track' | 'warning' | 'over'
 
@@ -12,20 +12,19 @@ export interface OverspentCategory {
 }
 
 /**
- * Days elapsed from the budget-month start to today (inclusive of today).
- * Returns at least 1 so division is always safe.
+ * Days elapsed from the budget-month start to today (inclusive of today), capped at the cycle length:
+ * a closed month has had all its days. At least 1 so division is always safe.
  */
 export function daysElapsedInMonth(monthStr: string, monthStartDay = 1): number {
   const { start } = getMonthRange(monthStr, monthStartDay)
-  const today = new Date()
-  const diff = differenceInDays(today, start) + 1
-  return Math.max(diff, 1)
+  const elapsed = differenceInCalendarDays(new Date(), start) + 1
+  return Math.min(Math.max(elapsed, 1), totalDaysInMonth(monthStr, monthStartDay))
 }
 
 /** Total calendar days in the budget month. */
 export function totalDaysInMonth(monthStr: string, monthStartDay = 1): number {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
-  return differenceInDays(end, start) + 1
+  return differenceInCalendarDays(end, start) + 1
 }
 
 /** Average daily spending so far. */

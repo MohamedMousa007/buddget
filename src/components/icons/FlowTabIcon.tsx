@@ -3,7 +3,7 @@
 import * as React from 'react'
 import type { LucideProps } from 'lucide-react'
 
-/** Flow tab glyph: a banknote with an in-arrow and an out-arrow (design/…/assets/flow-tab-icon.svg). */
+/** Flow tab glyph: a banknote with an in-arrow and an out-arrow. */
 export const FlowTabIcon = React.forwardRef<SVGSVGElement, LucideProps>(
   ({ size = 24, strokeWidth = 1.75, className, absoluteStrokeWidth, ...props }, ref) => {
     const sw = absoluteStrokeWidth && size ? (Number(strokeWidth) * 24) / Number(size) : strokeWidth

@@ -24,6 +24,7 @@ import { goalVisual } from '@/lib/goals/goalVisual'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { navigate } from '@/lib/navigation/navigate'
 
 const CHIP: Record<string, { dot: string }> = {
@@ -54,7 +55,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
   const [del, setDel] = useState(false)
 
   const now = useMemo(() => new Date(), [])
-  const today = now.toISOString().slice(0, 10)
+  const today = localTodayISO(now)
   const isLimit = goal.category === 'spending_control'
   const isDebt = goal.category === 'debt_freedom'
   const quarterly = goal.frequency === 'quarterly'

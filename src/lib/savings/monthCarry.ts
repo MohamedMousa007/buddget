@@ -58,7 +58,7 @@ export type CarryDestination =
   | { kind: 'create-vault' }
 
 /**
- * Resolve where the carry lands: the user's default pocket → the highest-priority active savings
+ * Resolve where the carry lands: the user's default pocket → the top-priority (lowest number) active savings
  * goal's linked pocket (or a new pocket named after that goal) → the auto-created "Monthly Savings"
  * vault. The vault is the floor; the goal branch is re-evaluated every cycle and never becomes the
  * stored default, so a completed goal releases the carry automatically.
@@ -75,11 +75,11 @@ export function resolveCarryDestination(
     if (d) return { kind: 'pocket', pocketId: d.id }
   }
 
-  // Highest priority, then soonest target date, then oldest.
+  // Priority 1 is the top goal (lowest number first), then soonest target date, then oldest.
   const savingsGoals = activeGoals
     .filter((g) => g.status === 'active' && g.category !== 'debt_freedom' && g.category !== 'spending_control')
     .sort((a, b) => {
-      if (b.priority !== a.priority) return b.priority - a.priority
+      if (a.priority !== b.priority) return a.priority - b.priority
       if (a.targetDate && b.targetDate && a.targetDate !== b.targetDate) return a.targetDate < b.targetDate ? -1 : 1
       return a.createdAt < b.createdAt ? -1 : 1
     })
@@ -93,7 +93,9 @@ export function resolveCarryDestination(
     return { kind: 'create-goal-pocket', goalId: g.id, name: g.name }
   }
 
-  const existingVault = eligible.find((p) => p.type === 'vault')
+  // Per-goal pockets are also type 'vault': the shared vault is one no goal owns.
+  const goalPocketIds = new Set(activeGoals.flatMap((g) => g.linkedSavingsAccountIds))
+  const existingVault = eligible.find((p) => p.type === 'vault' && !goalPocketIds.has(p.id))
   if (existingVault) return { kind: 'pocket', pocketId: existingVault.id }
   return { kind: 'create-vault' }
 }

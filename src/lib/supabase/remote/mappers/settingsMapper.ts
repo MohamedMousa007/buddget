@@ -10,6 +10,7 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     enable_ai: s.enableAI,
     ai_provider: s.aiProvider,
     month_start_day: s.monthStartDay,
+    ...(s.timezone ? { timezone: s.timezone } : {}),
     budget_entry_mode: s.budgetEntryMode,
     show_secondary_currency: s.showSecondaryCurrency,
     show_cents_in_dashboard: s.showCentsInDashboard,
@@ -26,6 +27,8 @@ export function settingsToRow(s: AppSettings, userId: string): UserSettingsInser
     goal_progress_alerts: s.goalProgressAlerts,
     goal_alerts: s.goalAlerts,
     privacy: (s.privacy ?? {}) as UserSettingsInsert['privacy'],
+    // Left out when this copy holds none: a phone that has not received the account's answered prompts must not erase them.
+    ...(s.promptState && Object.keys(s.promptState).length > 0 ? { prompt_state: s.promptState as UserSettingsInsert['prompt_state'] } : {}),
   }
 }
 
@@ -45,6 +48,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     enableAI: row.enable_ai,
     aiProvider: row.ai_provider === 'gemini' ? 'gemini' : 'gemini',
     monthStartDay: row.month_start_day,
+    timezone: row.timezone,
     budgetEntryMode: row.budget_entry_mode,
     showSecondaryCurrency: row.show_secondary_currency,
     showCentsInDashboard: row.show_cents_in_dashboard,
@@ -63,6 +67,7 @@ export function settingsFromRow(row: UserSettingsRow, opts: SettingsFromRowOptio
     goalProgressAlerts: row.goal_progress_alerts ?? true,
     goalAlerts: row.goal_alerts ?? true,
     privacy: row.privacy && Object.keys(row.privacy).length > 0 ? (row.privacy as AppSettings['privacy']) : undefined,
+    promptState: row.prompt_state && typeof row.prompt_state === 'object' && !Array.isArray(row.prompt_state) && Object.keys(row.prompt_state).length > 0 ? (row.prompt_state as Record<string, string>) : undefined,
     baseCurrency: opts.baseCurrency,
     secondaryCurrency: opts.secondaryCurrency,
   }

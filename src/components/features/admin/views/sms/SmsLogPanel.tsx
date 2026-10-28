@@ -28,6 +28,10 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
   const [error, setError] = useState<string | null>(null)
   const [open, setOpen] = useState<string | null>(null)
   const [now, setNow] = useState(0)
+  const [revealed, setRevealed] = useState<Record<string, string | null>>({})
+  const [reasons, setReasons] = useState<Record<string, string>>({})
+  const [revealing, setRevealing] = useState<string | null>(null)
+  const [revealError, setRevealError] = useState<string | null>(null)
 
   const load = useCallback(async (append: boolean, from: string | null) => {
     setLoading(true)
@@ -54,6 +58,19 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
 
   const { run, busy } = useAdminAction('/api/admin/sms/logs')
   const failed = rows.filter((r) => isFailedRow(r.status)).length
+
+  const reveal = async (id: string) => {
+    setRevealing(id)
+    setRevealError(null)
+    try {
+      const res = await adminFetch<{ raw_body: string | null }>('/api/admin/sms/logs', { method: 'POST', json: { op: 'reveal', id, reason: reasons[id] ?? '' } })
+      setRevealed((prev) => ({ ...prev, [id]: res.raw_body }))
+    } catch (e) {
+      setRevealError(errorMessage(e))
+    } finally {
+      setRevealing(null)
+    }
+  }
 
   return (
     <Panel
@@ -111,7 +128,17 @@ export function SmsLogPanel({ queue: initial, userId, canTicket }: { queue: Queu
                         <td colSpan={9} className="space-y-3 px-4 py-4">
                           <div>
                             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">Raw SMS</p>
-                            <pre className="max-h-40 select-text overflow-y-auto whitespace-pre-wrap break-all rounded-lg bg-[var(--color-brand-card)] p-3 font-mono text-[11px] leading-relaxed text-[var(--color-brand-text-secondary)]">{row.raw_body ?? 'Hidden — requires the users.pii permission'}</pre>
+                            {row.id in revealed ? (
+                              <pre className="max-h-40 select-text overflow-y-auto whitespace-pre-wrap break-all rounded-lg bg-[var(--color-brand-card)] p-3 font-mono text-[11px] leading-relaxed text-[var(--color-brand-text-secondary)]">{revealed[row.id] ?? '(empty)'}</pre>
+                            ) : row.can_reveal ? (
+                              <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); void reveal(row.id) }}>
+                                <Input aria-label="Reason for reading this message" placeholder="Why do you need the message text? (logged)" value={reasons[row.id] ?? ''} onChange={(e) => setReasons((prev) => ({ ...prev, [row.id]: e.target.value }))} className="h-10 min-w-[220px] flex-1" />
+                                <Button type="submit" variant="outline" size="sm" loading={revealing === row.id} disabled={(reasons[row.id] ?? '').trim().length < 8}>Reveal</Button>
+                              </form>
+                            ) : (
+                              <p className="text-[var(--color-brand-text-muted)]">Message text and amounts are hidden. Ask the owner for financial access to this user (Users, Financial tab).</p>
+                            )}
+                            {revealError && revealing === null ? <p className="mt-1.5 text-[var(--color-brand-red-text)]">{revealError}</p> : null}
                           </div>
                           {row.failure_code ? <p className="text-[var(--color-brand-amber)]">{row.status === 'failed' ? 'Failure' : 'Rejected'}: {FAILURE_LABELS[row.failure_code] ?? row.failure_code} <span className="font-mono">({row.failure_code})</span></p> : null}
                           <p className="text-[var(--color-brand-text-muted)]">

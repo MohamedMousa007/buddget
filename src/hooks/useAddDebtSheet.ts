@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { paymentExpenseMoney } from '@/lib/debts/paymentAmounts'
 import {
   convertPaymentToDebtUnit,
   computeDebtPaymentRecord,
@@ -13,6 +14,8 @@ import {
 } from '@/lib/utils/calculations'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { isBnplPlan } from '@/lib/debt/bnpl'
+import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
+import { parseCardDay, parseCardPercent } from '@/lib/debts/cardTerms'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { findInstallmentProviderMeta, findProviderBrand } from '@/lib/constants/installmentProviders'
@@ -75,6 +78,7 @@ export function useAddDebtSheet() {
   const isEditFlow = activeModal === 'editDebt'
   const isOpen = activeModal === 'addDebt' || activeModal === 'payDebt' || activeModal === 'editDebt'
   const editingDebt = isEditFlow ? debts.find((d) => d.id === editingDebtId) : undefined
+  const currencyLocked = !!editingDebt && debtPayments.some((p) => p.debtId === editingDebt.id)
 
   const [payDebtStep, setPayDebtStep] = useState<'select' | 'form'>('select')
   const [mode, setMode] = useState<'new' | 'payment'>('new')
@@ -315,15 +319,19 @@ export function useAddDebtSheet() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, isPayDebtFlow, payDebtStep, debtSheetPaymentOnly, selectedDebt, selectedRemaining])
 
+  // Every pay flow starts in the debt's own unit (grams for gold); a manual pick sticks for that debt.
+  const currencyDefaultedFor = useRef(new Set<string>())
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- default payment currency to selected debt */
-    if (!isOpen || mode !== 'payment') return
+    if (!isOpen) { currencyDefaultedFor.current.clear(); return }
+    const inPayFlow = mode === 'payment' || debtSheetPaymentOnly || (isPayDebtFlow && payDebtStep === 'form')
+    if (!inPayFlow || currencyDefaultedFor.current.has(selectedDebtId)) return
     const d = debts.find((x) => x.id === selectedDebtId)
-    if (d && !d.isGold) {
-      setPaymentCurrency(String(d.currency))
-    }
+    if (!d) return
+    currencyDefaultedFor.current.add(selectedDebtId)
+    setPaymentCurrency(d.isGold ? 'XAU' : String(d.currency))
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, mode, selectedDebtId, debts])
+  }, [isOpen, mode, debtSheetPaymentOnly, isPayDebtFlow, payDebtStep, selectedDebtId, debts])
 
   const resetForm = useCallback(() => {
     setDebtType('personal')
@@ -406,9 +414,9 @@ export function useAddDebtSheet() {
           notes: undefined,
           emoji: '💳',
           creditLimit: ccCreditLimit.trim() ? parseFloat(ccCreditLimit) : undefined,
-          paymentDueDay: ccPaymentDueDay.trim() ? parseInt(ccPaymentDueDay, 10) : undefined,
+          paymentDueDay: parseCardDay(ccPaymentDueDay) ?? undefined,
           gracePeriodDays: parseInt(ccGraceDays, 10) || 55,
-          minimumPaymentPercent: parseFloat(ccMinPercent) || 5,
+          minimumPaymentPercent: parseCardPercent(ccMinPercent) ?? 5,
         },
         { name: name.trim(), last4: ccLast4.trim() || undefined }
       )
@@ -475,7 +483,10 @@ export function useAddDebtSheet() {
     if (isEditFlow && editingDebt) {
       const { status: _status, emoji: _emoji, ...rest } = payload
       void _status; void _emoji
-      updateDebt(editingDebt.id, rest)
+      // Payments are stored in the debt's unit: its currency, gold flag, karat and kind never change under them.
+      const { currency: _cur, isGold: _gold, goldKarat: _karat, receivedVia: _via, ...unlocked } = rest
+      void _cur; void _gold; void _karat; void _via
+      updateDebt(editingDebt.id, currencyLocked ? unlocked : rest)
     } else {
       addDebt(payload)
     }
@@ -486,6 +497,7 @@ export function useAddDebtSheet() {
   }, [
     isEditFlow,
     editingDebt,
+    currencyLocked,
     updateDebt,
     addCreditCardDebt,
     addDebt,
@@ -543,6 +555,7 @@ export function useAddDebtSheet() {
         currency: payCur as Currency,
         frequency: recurringFrequency,
         nextDueDate: paymentDate,
+        dueDay: Number(paymentDate.slice(8, 10)),
         paymentMethodId: pmId,
         isActive: true,
         notes: paymentNotes || undefined,
@@ -568,8 +581,8 @@ export function useAddDebtSheet() {
       return
     }
     const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
-    const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
-    if (selectedDebt.debtType === 'credit_card') {
+    const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault && !m.closedAt)?.id || paymentMethods.find((m) => !m.closedAt)?.id || ''
+    if (settlesWithoutExpense(selectedDebt)) {
       addDebtPayment({
         debtId: selectedDebtId,
         date: paymentDate,
@@ -581,7 +594,7 @@ export function useAddDebtSheet() {
         rateAtEntry,
         notes: paymentNotes || undefined,
       })
-      reconcileDebtSchedule(selectedDebtId)
+      reconcileDebtSchedule(selectedDebtId, { amount, currency: payCur })
       showToast(tI18n.common.toastDebtPaymentRecorded)
       resetForm()
       closeSheet()
@@ -590,6 +603,7 @@ export function useAddDebtSheet() {
     // BNPL plan: purchase counted as spend at checkout → settlement is non-spend
     // (`Installment`). Bank/other installment + person debts keep `Debt` spend.
     const bnpl = isBnplPlan(selectedDebt, paymentMethods)
+    const expenseMoney = paymentExpenseMoney(amount, payCur, amountInBase, settings.baseCurrency)
     addDebtPaymentWithExpense(
       {
         debtId: selectedDebtId,
@@ -606,8 +620,8 @@ export function useAddDebtSheet() {
         date: paymentDate,
         description: `${selectedDebt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
         category: bnpl ? 'Installment' : 'Debt',
-        amount,
-        currency: payCur as Currency,
+        amount: expenseMoney.amount,
+        currency: expenseMoney.currency as Currency,
         paymentMethodId: pmId,
         isRecurring: false,
         notes: paymentNotes || undefined,
@@ -615,7 +629,7 @@ export function useAddDebtSheet() {
         isDebtPayment: true,
       }
     )
-    reconcileDebtSchedule(selectedDebtId)
+    reconcileDebtSchedule(selectedDebtId, { amount, currency: payCur })
     showToast(tI18n.common.toastDebtPaymentRecorded)
     resetForm()
     closeSheet()
@@ -723,6 +737,7 @@ export function useAddDebtSheet() {
     isPayDebtFlow,
     isEditFlow,
     editingDebt,
+    currencyLocked,
     handleDeleteDebt,
     payDebtStep,
     payableRows,

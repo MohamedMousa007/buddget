@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { addMonths } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
@@ -9,16 +10,16 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import type { Currency, PaymentMethod } from '@/lib/store/types'
+import type { Currency, PaymentMethod, SpendExclusion } from '@/lib/store/types'
 import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodForExpense'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
+import { bnplSplitIssue } from '@/lib/debts/bnplSplit'
 
 /** Default BNPL first-installment due: same day next month. */
 function firstOfNextMonth(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth() + 1, d.getDate()).toISOString().slice(0, 10)
+  return localTodayISO(addMonths(new Date(), 1))
 }
 
 /** Default funding card for BNPL installments — a non-BNPL method (can't fund Tabby from Tabby). */
@@ -61,6 +62,8 @@ export function useAddExpenseSheet() {
     paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
   )
   const [notes, setNotes] = useState('')
+  const [spendExclusion, setSpendExclusion] = useState<SpendExclusion | undefined>(undefined)
+  const [owedBy, setOwedBy] = useState('')
   const [submitError, setSubmitError] = useState('')
   const skipNextDefaultCurrencySync = useRef(false)
 
@@ -71,6 +74,8 @@ export function useAddExpenseSheet() {
   const [fundingMethodId, setFundingMethodId] = useState(nonBnplDefaultId(paymentMethods))
   const selectedPm = paymentMethods.find((m) => m.id === paymentMethodId)
   const isBnplPurchase = selectedPm?.type === 'bnpl'
+  const splitIssue = isBnplPurchase && splitInstallments ? bnplSplitIssue({ fundingMethodId, firstDue: installmentFirstDue, purchaseDate: date }) : null
+  const splitError = splitIssue === 'funding' ? t.moneyFlows.splitNeedsFunding : splitIssue === 'firstDue' ? t.moneyFlows.splitFirstDueInvalid : undefined
 
   const creditCardOutstandingHint = useMemo(() => {
     const pm = paymentMethods.find((m) => m.id === paymentMethodId)
@@ -124,6 +129,8 @@ export function useAddExpenseSheet() {
     setSubcategory(undefined)
     setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
     setNotes('')
+    setSpendExclusion(undefined)
+    setOwedBy('')
     setSubmitError('')
     setSplitInstallments(false)
     setInstallmentCount(4)
@@ -140,6 +147,7 @@ export function useAddExpenseSheet() {
 
   const handleSubmit = useCallback(() => {
     if (!description || !amount || parseFloat(amount) <= 0) return
+    if (splitError) return
     const parsedAmount = parseFloat(amount)
     setSubmitError('')
     const cur = clampFiatToAllowed(settings, currency)
@@ -183,6 +191,7 @@ export function useAddExpenseSheet() {
         paymentMethodId: fundingMethodId,
         frequency: 'monthly',
         nextDueDate: installmentFirstDue,
+        dueDay: Number(installmentFirstDue.slice(8, 10)),
         isActive: true,
       })
       linkedDebtId = debtId
@@ -199,12 +208,15 @@ export function useAddExpenseSheet() {
       isRecurring: false,
       notes: notes || undefined,
       linkedDebtId,
+      spendExclusion,
+      owedBy: spendExclusion === 'for_someone' ? owedBy.trim() || undefined : undefined,
     })
 
     showToast(t.common.toastExpenseLogged)
     resetForm()
     setActiveModal(null)
   }, [
+    splitError,
     addExpense,
     addDebt,
     addRecurringDebtPayment,
@@ -214,6 +226,8 @@ export function useAddExpenseSheet() {
     date,
     description,
     notes,
+    spendExclusion,
+    owedBy,
     paymentMethodId,
     resetForm,
     setActiveModal,
@@ -247,6 +261,7 @@ export function useAddExpenseSheet() {
     setPaymentMethodId,
     notes,
     setNotes,
+    exclusion: { value: spendExclusion, setValue: setSpendExclusion, owedBy, setOwedBy },
     submitError,
     setSubmitError,
     paymentMethods,
@@ -263,6 +278,7 @@ export function useAddExpenseSheet() {
       setFirstDue: setInstallmentFirstDue,
       fundingMethodId,
       setFundingMethodId,
+      error: splitError,
     },
   }
 }

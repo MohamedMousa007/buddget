@@ -7,32 +7,14 @@ import { useBudgetBlocksCopy } from '@/components/features/budget/useBlocksCopy'
 import type { BlockBodyProps } from '@/components/features/budget/types'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import type { DebtExtras } from '@/lib/budget/planView.types'
-import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { ActionButton, AddRow, BodyFrame, FlatCard, LineRow, StatusLine, ThinBar, lineStatusIcon } from './parts'
-
-const HIGH_APR = 15
 
 const DEBT_ICON: Record<DebtExtras['kind'], string> = {
   credit_card: 'credit-card',
   installment: 'credit-card',
   loan: 'landmark',
   personal: 'hand-coins',
-}
-
-function AprPill({ apr }: { apr: number }) {
-  const t = useBudgetBlocksCopy()
-  const tone =
-    apr === 0
-      ? 'bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]'
-      : apr >= HIGH_APR
-        ? 'bg-[var(--color-brand-red-soft)] text-[var(--color-brand-red-text)]'
-        : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]'
-  return (
-    <span className={cn('inline-flex h-[22px] items-center rounded-full px-2 font-mono-numbers text-[11px] font-semibold whitespace-nowrap', tone)}>
-      {apr === 0 ? '0%' : t.debts.apr(String(Math.round(apr * 10) / 10))}
-    </span>
-  )
 }
 
 /** One row per linked debt with its payoff bar, then the manual extra payoff line and the debt-free month. */
@@ -71,7 +53,6 @@ export function DebtsBlockBody({ view, block, mode, onOpenLine, onLineAction, on
                     </span>
                   )}
                 </span>
-                {d.apr != null ? <AprPill apr={d.apr} /> : null}
                 <span className="min-w-14 text-end font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
                   {money(d.minimum)}
                 </span>

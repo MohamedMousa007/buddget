@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { callGeminiResilient, clampGenerationConfig, MAX_OUTPUT_TOKENS_CAP, tapStreamUsage } from '@/lib/server/ai/gemini'
+import { callGeminiResilient, clampGenerationConfig, MAX_OUTPUT_TOKENS_CAP, MAX_THINKING_BUDGET, tapStreamUsage } from '@/lib/server/ai/gemini'
 
 describe('clampGenerationConfig', () => {
   it('caps requested output tokens', () => {
@@ -8,6 +8,20 @@ describe('clampGenerationConfig', () => {
 
   it('defaults when none is requested', () => {
     expect(clampGenerationConfig(undefined).maxOutputTokens).toBe(2048)
+  })
+
+  it('drops keys outside the pinned list, including candidateCount', () => {
+    const out = clampGenerationConfig({ candidateCount: 8, presencePenalty: 2, temperature: 0.2 })
+    expect(out).not.toHaveProperty('candidateCount')
+    expect(out).not.toHaveProperty('presencePenalty')
+    expect(out.temperature).toBe(0.2)
+  })
+
+  it('caps the thinking budget and pins thinkingConfig to its known keys', () => {
+    expect(clampGenerationConfig({ thinkingConfig: { thinkingBudget: 99_999, includeThoughts: true } }).thinkingConfig).toEqual({ thinkingBudget: MAX_THINKING_BUDGET })
+    expect(clampGenerationConfig({ thinkingConfig: { thinkingLevel: 'medium' } }).thinkingConfig).toEqual({ thinkingLevel: 'medium' })
+    expect(clampGenerationConfig({ thinkingConfig: { thinkingLevel: 'high' } })).not.toHaveProperty('thinkingConfig')
+    expect(clampGenerationConfig({ thinkingConfig: { thinkingLevel: 'nonsense' } })).not.toHaveProperty('thinkingConfig')
   })
 })
 

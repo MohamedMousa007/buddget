@@ -20,8 +20,8 @@ export interface MonthCloseSheetProps {
   base: Currency
   month: string
   onApply: (p: CloseProposal) => void
-  /** Marks the cycle closed, applied or not. */
-  onFinish: () => void
+  /** Marks the cycle closed, applied or not; says which proposals were applied so the app remembers the rest were passed. */
+  onFinish: (appliedLineIds: ReadonlySet<string>) => void
   /** Dismiss without marking the cycle closed, so the card stays until Done is pressed. */
   onDismiss: () => void
 }
@@ -104,7 +104,7 @@ function CloseBody({ close, base, month, onApply, onFinish, onDismiss }: Omit<Mo
         </div>
       )}
 
-      <Button size="cta" className="w-full" onClick={onFinish}>
+      <Button size="cta" className="w-full" onClick={() => onFinish(applied)}>
         {c.done}
       </Button>
     </div>

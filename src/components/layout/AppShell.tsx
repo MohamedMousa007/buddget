@@ -2,7 +2,8 @@
 
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { apiUrl } from '@/lib/apiBase'
+import { apiFetchAuth } from '@/lib/apiBase'
+import { deviceIdHeader } from '@/lib/native/deviceId'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { AppViewRouter } from './AppViewRouter'
@@ -19,6 +20,7 @@ import { SmsSubscriptionDetectionBanner } from '@/components/features/dashboard/
 import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
 import { DesktopHeaderBar } from '@/components/layout/DesktopHeaderBar'
+import { OnboardingGate } from '@/components/features/onboarding/OnboardingGate'
 import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
 import { useCycleAwareMonth } from '@/hooks/useCycleAwareMonth'
@@ -93,6 +95,8 @@ function SmsStartupSync() {
       await reconcileSmsOwner(userId)
 
       const status = await getSmsBridgeStatus()
+      // Every phone checks in (a phone that does not collect texts still belongs in the devices list).
+      void import('@/lib/devices/client').then((m) => m.sendDeviceHeartbeat(userId, status?.enabled ?? false))
       // No Shortcut/receiver physically on this device → nothing to arm or drain.
       if (!status?.wired) return
 
@@ -101,7 +105,10 @@ function SmsStartupSync() {
       //    starts off, A auto-resumes on return. Online-only (both reads need the
       //    network); offline leaves current device state as-is.
       if (refreshToken && isOnline()) {
-        const intent = await fetchAccountSmsIntent(userId)
+        // This phone's own role first (another phone turning tracking off must not disarm it); the account setting only
+        // decides for a phone the server has not met yet.
+        const { fetchDeviceCollectsSms } = await import('@/lib/devices/client')
+        const intent = (await fetchDeviceCollectsSms()) ?? (await fetchAccountSmsIntent(userId))
         if (intent === true) {
           // ensureIngestToken re-stamps the token to this account (self-heal).
           if (await ensureIngestToken(token, userId)) await setSmsEnabled(true)
@@ -309,6 +316,7 @@ export function AppShell({ children }: AppShellProps) {
       <ModalProvider />
       <WidgetSync />
       <SmsStartupSync />
+      <OnboardingGate />
       <SmsNudgeSync />
       <SmsPushActionHandler />
       <AndroidBackHandler />
@@ -334,12 +342,13 @@ function SmsPushActionHandler() {
       )
       const kind = data.kind
       if (kind === 'sms_confirm' && data.hash) {
-        void fetch(apiUrl('/api/sms/confirm'), {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hash: data.hash }),
-        })
+        void deviceIdHeader()
+          .then((deviceHeaders) => apiFetchAuth('/api/sms/confirm', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', ...deviceHeaders },
+            body: JSON.stringify({ hash: data.hash }),
+          }))
           .then((r) => r.json())
           .then((res: { expenseId?: string }) => {
             navigate(res.expenseId ? '/flow' : '/')

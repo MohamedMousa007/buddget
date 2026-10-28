@@ -18,6 +18,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { ProgressRing } from '@/components/ui/ProgressRing'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
+import { BudgetHeaderButton } from '@/components/layout/BudgetHeaderButton'
 
 /** The avatar that opens ProfileDropdown — the mobile header's, and Flow's own header's. */
 export function ProfileAvatarWithMenu({ className }: { className?: string }) {
@@ -105,6 +106,7 @@ export function AuthNavButtons({
     if (layout === 'mobile') {
       return (
         <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
+          <BudgetHeaderButton />
           <ProfileAvatarWithMenu />
         </div>
       )
@@ -126,9 +128,10 @@ export function AuthNavButtons({
   }
 
   if (layout === 'mobile') {
-    // Redesign: no notification bell on the mobile header — avatar only.
+    // No notification bell on the mobile header: Budget and the avatar only.
     return (
       <div className={cn('flex flex-nowrap items-center justify-end gap-1', className)}>
+        <BudgetHeaderButton />
         <ProfileAvatarWithMenu />
       </div>
     )

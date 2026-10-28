@@ -1,7 +1,8 @@
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const patchSchema = z.object({
   ids: z.array(z.string().uuid()).optional(),
@@ -15,27 +16,22 @@ const patchSchema = z.object({
 export async function GET(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const supabase = await createClient()
-  const { data: claimsData } = await supabase.auth.getClaims()
-  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
-  if (!user) {
+  const uid = await resolveApiUserId(request)
+  if (!uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const supabase = createServiceRoleClient()
 
   const { data, error } = await supabase
     .from('notifications')
     .select('id, type, title, message, metadata, is_read, created_at')
-    .eq('user_id', user.id)
+    .eq('user_id', uid)
     .order('created_at', { ascending: false })
     .limit(80)
 
   if (error) {
-    // Table may not exist yet (migration pending); avoid 500 spam in the client.
-    const msg = error.message ?? ''
-    if (!msg.includes('does not exist') && !msg.includes('schema cache')) {
-      console.warn('[notifications GET]', msg)
-    }
-    return NextResponse.json({ notifications: [], unreadCount: 0 })
+    console.error('[notifications GET]', error.message)
+    return NextResponse.json({ error: 'Could not load notifications' }, { status: 500 })
   }
 
   const unread = (data ?? []).filter((n) => !n.is_read).length
@@ -58,23 +54,22 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
   }
 
-  const supabase = await createClient()
-  const { data: claimsData } = await supabase.auth.getClaims()
-  const user = claimsData?.claims?.sub ? { id: claimsData.claims.sub } : null
-  if (!user) {
+  const uid = await resolveApiUserId(request)
+  if (!uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const supabase = createServiceRoleClient()
 
   if (parsed.data.markAllRead) {
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
-      .eq('user_id', user.id)
+      .eq('user_id', uid)
       .eq('is_read', false)
 
     if (error) {
-      console.warn('[notifications PATCH all]', error.message)
-      return NextResponse.json({ ok: true })
+      console.error('[notifications PATCH all]', error.message)
+      return NextResponse.json({ error: 'Could not update notifications' }, { status: 500 })
     }
     return NextResponse.json({ ok: true })
   }
@@ -87,12 +82,12 @@ export async function PATCH(request: Request) {
   const { error } = await supabase
     .from('notifications')
     .update({ is_read: true })
-    .eq('user_id', user.id)
+    .eq('user_id', uid)
     .in('id', ids)
 
   if (error) {
-    console.warn('[notifications PATCH]', error.message)
-    return NextResponse.json({ ok: true })
+    console.error('[notifications PATCH]', error.message)
+    return NextResponse.json({ error: 'Could not update notifications' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

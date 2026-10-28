@@ -9,6 +9,7 @@ export function debtPaidAmountInCurrency(
   debt: Debt,
   debtPayments: DebtPayment[],
   goalCurrency: Currency,
+  baseCurrency: Currency,
   exchangeRates: Record<string, number>,
   goldPricePerGram: number,
   goldPriceAvailable: boolean
@@ -16,8 +17,8 @@ export function debtPaidAmountInCurrency(
   const paid = totalPaidTowardDebt(debt.id, debtPayments)
   if (debt.isGold) {
     if (!goldPriceAvailable) return 0
-    const aedValue = goldGramsToMoney(paid, goldPricePerGram, debt.goldKarat ?? 24)
-    return convertCurrency(aedValue, 'AED', goalCurrency, exchangeRates)
+    const baseValue = goldGramsToMoney(paid, goldPricePerGram, debt.goldKarat ?? 24)
+    return convertCurrency(baseValue, baseCurrency, goalCurrency, exchangeRates)
   }
   return convertCurrency(paid, debt.currency, goalCurrency, exchangeRates)
 }

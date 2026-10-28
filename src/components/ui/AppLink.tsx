@@ -3,6 +3,7 @@
 import { forwardRef } from 'react'
 import type { AnchorHTMLAttributes, MouseEvent } from 'react'
 import { navigate } from '@/lib/navigation/navigate'
+import { isNative } from '@/lib/native/isNative'
 
 type AppLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
   href: string
@@ -38,5 +39,8 @@ export const AppLink = forwardRef<HTMLAnchorElement, AppLinkProps>(function AppL
     navigate(href, { replace })
   }
 
-  return <a ref={ref} href={href} onClick={handleClick} {...rest} />
+  // The WebView's long-press on a real <a> pops a native name+URL preview; the tap still routes through onClick.
+  const nativeProps = isNative() ? { draggable: false, onContextMenu: (e: MouseEvent<HTMLAnchorElement>) => e.preventDefault() } : null
+
+  return <a ref={ref} href={href} onClick={handleClick} {...nativeProps} {...rest} />
 })

@@ -10,6 +10,7 @@
  * so a regex whose amount group grabs the trailing "available balance" passed validation and
  * was stored as a global, fully-trusted template.
  */
+import { isSafeRegexPattern } from '@/lib/sms/safeRegex'
 import { balanceClauseSpans } from '@/lib/sms/patterns/preFilter'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 
@@ -21,6 +22,7 @@ export type GateFailure =
   | 'gate_wrong_token_balance'
   | 'gate_capture_unsound'
   | 'gate_regex_too_greedy'
+  | 'gate_regex_unsafe'
 
 export type GateResult = { ok: true } | { ok: false; status: GateFailure; detail?: string }
 
@@ -66,6 +68,10 @@ export function runLearnGates(
   rules: MappingRules,
   expected: ExpectedFields,
 ): GateResult {
+  if (!isSafeRegexPattern(regexPattern)) {
+    return { ok: false, status: 'gate_regex_unsafe', detail: 'nested quantifier or overlong pattern' }
+  }
+
   // ---- L4: greediness -----------------------------------------------------
   // Checked first because it is a property of the regex alone and needs no match.
   if (UNBOUNDED_WILDCARD.test(regexPattern)) {

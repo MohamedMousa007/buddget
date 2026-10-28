@@ -15,3 +15,8 @@ import { format } from 'date-fns'
 export function localTodayISO(ref: Date = new Date()): string {
   return format(ref, 'yyyy-MM-dd')
 }
+
+/** Calendar day (`yyyy-MM-dd`) of a date-only string or ISO instant, in the runtime-local timezone. */
+export function localDayKey(isoOrDate: string): string {
+  return isoOrDate.length === 10 ? isoOrDate : format(new Date(isoOrDate), 'yyyy-MM-dd')
+}

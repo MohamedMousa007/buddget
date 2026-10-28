@@ -126,7 +126,7 @@ describe('lifecycle actions', () => {
     const id = st().addSubscription(input({ billingDay: 19, startDate: '2026-01-19' }))
     st().cancelSubscription(id, '2026-10-18')
     expect(sub(id)).toMatchObject({ status: 'cancelled', endsOn: '2026-10-18' })
-    expect(re(id).isActive).toBe(false)
+    expect(re(id).isActive).toBe(true)
     st().reactivateSubscription(id)
     expect(sub(id)).toMatchObject({ status: 'active', endsOn: null })
   })

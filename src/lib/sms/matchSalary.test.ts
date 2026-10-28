@@ -162,3 +162,24 @@ describe('matchSalary — amount and currency', () => {
     })
   })
 })
+
+describe('matchSalary — evidence, not amount alone', () => {
+  const withBody = (body: string, counterparty: string | null = null) =>
+    matchSalary(fakeService([BIWEEKLY]), {
+      userId: 'u1', amount: 70000, currency: 'EGP', day: '2026-07-20', exchangeRates: DEFAULT_MARKET_RATES, body, counterparty,
+    })
+
+  it('does not auto-link a friend sending the exact salary by IPN; asks instead', async () => {
+    await expect(withBody('IPN: You received EGP 70,000.00 from AHMED MOHAMED ALI via InstaPay on 20/07')).resolves.toEqual({
+      outcome: 'confirm', sourceId: 'src-bi', occurrenceDate: '2026-07-20',
+    })
+  })
+
+  it('auto-links a real salary arriving as an instant transfer from the employer', async () => {
+    await expect(withBody('IPN: You received EGP 70,000.00 from ACME TECHNOLOGIES LLC via InstaPay - Salary')).resolves.toMatchObject({ outcome: 'matched' })
+  })
+
+  it('auto-links Arabic salary wording', async () => {
+    await expect(withBody('تم إضافة مبلغ 70,000.00 جم إلى حسابك - راتب شهر يوليو')).resolves.toMatchObject({ outcome: 'matched' })
+  })
+})

@@ -1,4 +1,5 @@
-import { holdsBalance, hasAccountHistory } from '@/lib/accounts/kinds'
+import { applyMethodExclusion, isMethodExcluded } from '@/lib/spending/exclusion'
+import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
@@ -6,8 +7,7 @@ import { format } from 'date-fns'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
-import { DEFAULT_CASH_ID } from './migrations/v17_uuid_remap'
+import { tryConvertCurrency, tryConvertWithGold, withoutGoldRates, type GoldQuote } from '@/lib/utils/currency'
 import { importDataSchema } from './financeImportSchema'
 import {
   DEFAULT_BUDGET,
@@ -25,6 +25,7 @@ import type {
   BudgetPlanCategory,
   Currency,
   DebtCurrency,
+  DebtPaymentSnapshot,
   DebtReceivedVia,
   FinanceStore,
   Goal,
@@ -36,17 +37,19 @@ import type {
   SavingsAccount,
   SavingsHolding,
   SavingsTransaction,
+  DeleteSavingsTxResult,
   SavingsType,
   Subscription,
 } from './types'
 import { computeNextBillingDate } from '@/lib/subscriptions/subscriptionDates'
-import { chargeAmount, cycleState, markPaidTarget } from '@/lib/subscriptions/subscriptionForecast'
+import { chargeAmount, cycleState, isCharging, markPaidTarget } from '@/lib/subscriptions/subscriptionForecast'
 import { trackingAction } from '@/lib/subscriptions/subscriptionTracking'
 import { loggedChargesAdopted } from '@/lib/subscriptions/adoptLogged'
 import { priceHistoryWith } from '@/lib/subscriptions/subscriptionPricing'
 import {
   buildRecurringExpenseFromSubscription,
   patchRecurringFromSubscription,
+  plannerRowActive,
 } from '@/lib/subscriptions/subscriptionRecurring'
 import { normalizeDebtIncoming } from '@/lib/debt/normalizeDebt'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -57,13 +60,23 @@ import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
-import { clearIfFullyPaid } from '@/lib/utils/calculations'
+import { clearIfFullyPaid, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
+import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
+import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
-import { normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
-const PERSIST_VERSION = 21
+import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
+const PERSIST_VERSION = 22
 
-function reconcileGoalsForState(state: FinanceStore): Goal[] {
+export const goldQuoteOf = (s: Pick<FinanceStore, 'goldPricePerGram' | 'goldPriceAvailable'>): GoldQuote => ({
+  pricePerGram: s.goldPricePerGram,
+  available: s.goldPriceAvailable !== false,
+})
+
+/** Event id -> the reversal deposit its delete created, so Undo removes exactly that row. */
+const reversalDepositByEvent = new Map<string, string>()
+
+export function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
   return reconcileAchievedGoals(state.goals, ctx).goals
 }
@@ -216,13 +229,15 @@ export const useFinanceStore = create<FinanceStore>()(
           settings.baseCurrency,
           exchangeRates
         )
-        const amountInBaseCurrency = converted ?? expense.amount
+        // No rate path: 0, never the foreign amount as base. Totals recompute live once a rate loads.
+        const amountInBaseCurrency = converted ?? 0
 
         set((state) => ({
           expenses: [
             ...state.expenses,
             {
               ...expense,
+              spendExclusion: expense.spendExclusion ?? (isMethodExcluded(get().paymentMethods, expense.paymentMethodId) ? ('method' as const) : undefined),
               // Today's entries carry the exact time; back-dated ones stay day-level (read at noon).
               occurredAt: expense.occurredAt ?? (expense.date === localTodayISO() ? new Date().toISOString() : undefined),
               amountInBaseCurrency,
@@ -279,22 +294,39 @@ export const useFinanceStore = create<FinanceStore>()(
 
       updateExpense: (id, updates) =>
         set((state) => ({
-          expenses: state.expenses.map((e) =>
-            e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
-          ),
+          expenses: state.expenses.map((e) => {
+            if (e.id !== id) return e
+            // A moved date moves the instant too, or balances/ordering keep reading the old day.
+            const movedDay = updates.date && updates.date !== e.date && !('occurredAt' in updates)
+            return {
+              ...e,
+              ...updates,
+              ...(movedDay ? { occurredAt: new Date(`${updates.date}T12:00:00`).toISOString() } : {}),
+              updatedAt: new Date().toISOString(),
+            }
+          }),
         })),
 
-      deleteExpense: (id) =>
+      deleteExpense: (id) => {
+        const removed = get().expenses.find((e) => e.id === id)
         set((state) => ({
           expenses: state.expenses.filter((e) => e.id !== id),
-        })),
+        }))
+        if (removed?.receiptId) dropExpenseReceipt(removed.receiptId, get().receipts, get().deleteReceipt)
+      },
 
-      restoreExpense: (expense) =>
+      restoreExpense: (expense) => {
+        const restored = expense.receiptId
+          ? restoreExpenseReceipt(expense.receiptId, (r) => set((state) => (state.receipts.some((x) => x.id === r.id) ? state : { receipts: [...state.receipts, r] })))
+          : false
+        const dangling = !!expense.receiptId && !restored && !get().receipts.some((r) => r.id === expense.receiptId)
+        const back = dangling ? { ...expense, receiptId: undefined } : expense
         set((state) =>
-          state.expenses.some((e) => e.id === expense.id)
+          state.expenses.some((e) => e.id === back.id)
             ? state
-            : { expenses: [...state.expenses, expense] },
-        ),
+            : { expenses: [...state.expenses, back] },
+        )
+      },
 
       addIncomeSource: (source) =>
         set((state) => ({
@@ -376,9 +408,46 @@ export const useFinanceStore = create<FinanceStore>()(
           return {
             incomeSources,
             settings:
-              incomeSources.length === 0
+              incomeSources.length === 0 && !state.incomeEvents.some((e) => e.status === 'confirmed' || e.status === 'late' || e.status === 'partial')
                 ? { ...state.settings, noIncomeDeclared: true }
                 : state.settings,
+          }
+        }),
+
+      restoreIncomeSource: (source) =>
+        set((state) =>
+          state.incomeSources.some((s) => s.id === source.id)
+            ? state
+            : {
+                incomeSources: [...state.incomeSources, source],
+                settings: { ...state.settings, noIncomeDeclared: false },
+              },
+        ),
+
+      restoreIncomeEvent: (event) =>
+        set((state) => {
+          if (state.incomeEvents.some((e) => e.id === event.id)) return state
+          const incomeEvents = [...state.incomeEvents, event]
+          const settings = { ...state.settings, noIncomeDeclared: false }
+          // Deleting a withdrawal-linked event put the money back as a reversal deposit: take that back.
+          const reversalId = reversalDepositByEvent.get(event.id)
+          reversalDepositByEvent.delete(event.id)
+          const reversal = reversalId ? state.savingsTransactions.find((tx) => tx.id === reversalId) : undefined
+          if (!reversal) return { incomeEvents, settings }
+          const nextState: FinanceStore = {
+            ...state,
+            incomeEvents,
+            savingsTransactions: state.savingsTransactions.filter((tx) => tx.id !== reversal.id),
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === reversal.accountId ? { ...a, currentBalance: a.currentBalance - reversal.amount } : a
+            ),
+          }
+          return {
+            incomeEvents,
+            settings,
+            savingsTransactions: nextState.savingsTransactions,
+            savingsAccounts: nextState.savingsAccounts,
+            goals: reconcileGoalsForState(nextState),
           }
         }),
 
@@ -434,7 +503,7 @@ export const useFinanceStore = create<FinanceStore>()(
               const back =
                 event.currency === acc.currency
                   ? event.amount
-                  : convertCurrency(event.amount, event.currency, acc.currency, state.exchangeRates)
+                  : tryConvertWithGold(event.amount, event.currency, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state)) ?? event.amount
               const tx: SavingsTransaction = {
                 id: generateId(),
                 accountId: acc.id,
@@ -449,6 +518,7 @@ export const useFinanceStore = create<FinanceStore>()(
                 // isCashFlow !== false). Without this the undo double-subtracts the amount.
                 isCashFlow: false,
               }
+              reversalDepositByEvent.set(event.id, tx.id)
               const nextState: FinanceStore = {
                 ...state,
                 incomeEvents,
@@ -519,56 +589,40 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       updatePaymentMethod: (id, updates) =>
-        set((state) => ({
-          paymentMethods: state.paymentMethods.map((m) =>
+        set((state) => {
+          const now = new Date().toISOString()
+          const paymentMethods = state.paymentMethods.map((m) =>
             m.id === id
-              ? { ...m, ...updates, updatedAt: new Date().toISOString() }
+              ? { ...m, ...updates, updatedAt: now }
               : updates.isDefault && m.isDefault
-                ? { ...m, isDefault: false, updatedAt: new Date().toISOString() } // demotion is an edit; stamp it or it tie-loses
+                ? { ...m, isDefault: false, updatedAt: now } // demotion is an edit; stamp it or it tie-loses
                 : m
-          ),
-        })),
+          )
+          return updates.excluded === undefined
+            ? { paymentMethods }
+            : { paymentMethods, expenses: applyMethodExclusion(state.expenses, paymentMethods, now) }
+        }),
 
       deletePaymentMethod: (id) =>
         set((state) => {
-          const deleted = state.paymentMethods.find((m) => m.id === id)
-          // An account with history is closed, never removed: removing it would hand its rows to Cash (null = Cash).
-          if (deleted && holdsBalance(deleted.type) && hasAccountHistory(state, id)) {
-            const now = new Date().toISOString()
-            return {
-              paymentMethods: state.paymentMethods.map((m) =>
-                m.id === id ? { ...m, closedAt: now, updatedAt: now } : m.parentId === id ? { ...m, parentId: undefined, updatedAt: now } : m,
-              ),
-            }
-          }
-          let paymentMethods = state.paymentMethods.filter((m) => m.id !== id)
-          // Promote a new default if we removed the only default one.
-          if (deleted?.isDefault && paymentMethods.length > 0 && !paymentMethods.some((m) => m.isDefault)) {
-            // Auto-promotion is an edit; stamp it or the promotion tie-loses and you sync
-            // back with no default card.
-            paymentMethods = paymentMethods.map((m, i) =>
-              i === 0 ? { ...m, isDefault: true, updatedAt: new Date().toISOString() } : m
-            )
+          const removal = removePaymentMethod(state, id)
+          if (!removal) return {}
+          if (removal.closed) return { paymentMethods: removal.paymentMethods }
+          const dropped = new Set(state.debts.filter((d) => d.linkedPaymentMethodId === id).map((d) => d.id))
+          const nextState: FinanceStore = {
+            ...state,
+            paymentMethods: removal.paymentMethods,
+            debts: state.debts.filter((d) => !dropped.has(d.id)),
+            debtPayments: state.debtPayments.filter((p) => !dropped.has(p.debtId)),
+            recurringDebtPayments: state.recurringDebtPayments.filter((r) => !dropped.has(r.debtId)),
+            goals: state.goals.map((g) => ({ ...g, linkedDebtIds: g.linkedDebtIds.filter((x) => !dropped.has(x)) })),
           }
           return {
-            paymentMethods,
-            // Detach the auto-created credit-card debt so it stops pointing at a dead id.
-            debts: state.debts.map((d) =>
-              d.linkedPaymentMethodId === id ? { ...d, linkedPaymentMethodId: undefined } : d
-            ),
-            // Dependents fall back to cash / null, mirroring the server's ON DELETE SET NULL.
-            expenses: state.expenses.map((e) =>
-              e.paymentMethodId === id ? { ...e, paymentMethodId: DEFAULT_CASH_ID } : e
-            ),
-            subscriptions: state.subscriptions.map((s) =>
-              s.paymentMethodId === id ? { ...s, paymentMethodId: null } : s
-            ),
-            incomeSources: state.incomeSources.map((s) =>
-              s.paymentMethodId === id ? { ...s, paymentMethodId: undefined } : s
-            ),
-            incomeEvents: state.incomeEvents.map((ev) =>
-              ev.paymentMethodId === id ? { ...ev, paymentMethodId: undefined } : ev
-            ),
+            paymentMethods: nextState.paymentMethods,
+            debts: nextState.debts,
+            debtPayments: nextState.debtPayments,
+            recurringDebtPayments: nextState.recurringDebtPayments,
+            goals: reconcileGoalsForState(nextState),
           }
         }),
 
@@ -590,10 +644,13 @@ export const useFinanceStore = create<FinanceStore>()(
 
       addCreditCardDebt: (debtInput, paymentMethodInfo) => {
         const st = get()
+        // Same card = same provider, and the last four agree whenever both sides know them.
+        const providerOf = (name: string, last4?: string) =>
+          decomposePaymentMethodName(name.trim(), last4).provider.toLowerCase()
         const matchPm = (pm: PaymentMethod) =>
           pm.type === 'credit_card' &&
-          (pm.name.toLowerCase() === paymentMethodInfo.name.trim().toLowerCase() ||
-            (!!paymentMethodInfo.last4 && pm.last4 === paymentMethodInfo.last4))
+          providerOf(pm.name, pm.last4) === providerOf(paymentMethodInfo.name, paymentMethodInfo.last4) &&
+          (!pm.last4 || !paymentMethodInfo.last4 || pm.last4 === paymentMethodInfo.last4)
 
         const existingPm = st.paymentMethods.find(matchPm)
         const pmId = existingPm?.id ?? generateId()
@@ -603,14 +660,16 @@ export const useFinanceStore = create<FinanceStore>()(
         )
 
         const merged = normalizeDebtIncoming({
-          ...debtInput,
+          ...(existingDebt ?? {}),
+          ...definedOnly(debtInput),
+          name: debtInput.name ?? existingDebt?.name ?? '',
           debtType: 'credit_card',
           direction: 'i_owe',
           status: 'active',
           linkedPaymentMethodId: pmId,
           receivedVia: 'card',
           person: debtInput.person?.trim() || '',
-        })
+        } as Parameters<typeof normalizeDebtIncoming>[0])
 
         if (existingDebt) {
           set((state) => ({
@@ -673,11 +732,20 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       updateDebt: (id, updates) =>
-        set((state) => ({
-          debts: state.debts.map((d) =>
+        set((state) => {
+          const edited = state.debts.map((d) =>
             d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d
-          ),
-        })),
+          )
+          if (updates.startingBalance === undefined) return { debts: edited }
+          // A new total can settle the debt or owe it again: keep status in step with the payments.
+          const ctx = { expenses: state.expenses, exchangeRates: state.exchangeRates, allDebts: edited }
+          const debts = clearIfFullyPaid(edited, id, state.debtPayments, ctx, localTodayISO()).map((d) =>
+            d.id === id && d.status === 'cleared' && d.debtType !== 'credit_card' && !isDebtFullyPaid(d, state.debtPayments, ctx)
+              ? { ...d, status: 'active' as const, clearedAt: undefined }
+              : d
+          )
+          return { debts }
+        }),
 
       clearDebt: (id, clearedAtIsoDate) =>
         set((state) => ({
@@ -701,20 +769,23 @@ export const useFinanceStore = create<FinanceStore>()(
           settings.baseCurrency,
           exchangeRates
         )
-        const amountInBaseCurrency = converted ?? expense.amount
+        // No rate path: 0, never the foreign amount as base. Totals recompute live once a rate loads.
+        const amountInBaseCurrency = converted ?? 0
 
+        const paymentId = generateId()
         set((state) => {
           const nextState: FinanceStore = {
             ...state,
             debtPayments: [
               ...state.debtPayments,
-              { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+              { ...payment, id: paymentId, createdAt: new Date().toISOString() },
             ],
             expenses: [
               ...state.expenses,
               {
                 ...expense,
                 amountInBaseCurrency,
+                linkedDebtPaymentId: paymentId,
                 id: generateId(),
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -769,24 +840,67 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }),
 
-      deleteDebtPayment: (id) =>
+      deleteDebtPayment: (id) => {
+        let snapshot: DebtPaymentSnapshot | null = null
         set((state) => {
           const payment = state.debtPayments.find((p) => p.id === id)
+          if (!payment) return state
+          const pairedExpenses = state.expenses.filter((e) => e.linkedDebtPaymentId === id)
           const remainingPayments = state.debtPayments.filter((p) => p.id !== id)
-          if (!payment) return { debtPayments: remainingPayments }
-          // Removing a payment never deletes the parent debt — a debt with zero
-          // payments is just unpaid. If the removed payment had cleared the debt,
-          // reopen it (the balance is owed again). Deleting the debt itself is a
-          // separate, explicit action (deleteDebt).
+          const expenses = pairedExpenses.length
+            ? state.expenses.filter((e) => e.linkedDebtPaymentId !== id)
+            : state.expenses
+          const debt = state.debts.find((d) => d.id === payment.debtId)
+          // Removing a payment never deletes the parent debt. If it had cleared the debt, reopen it
+          // (the balance is owed again) and wake the reminder that settling switched off.
+          const reopens = debt?.status === 'cleared'
           const debts = state.debts.map((d) =>
             d.id === payment.debtId && d.status === 'cleared'
               ? { ...d, status: 'active' as const, clearedAt: undefined, updatedAt: new Date().toISOString() }
               : d
           )
-          const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments }
+          // Only an unambiguous case wakes anything: a debt with several schedules, or an active one
+          // already running, never has a reminder resurrected (it may have been paused by hand).
+          const ownSchedules = reopens ? state.recurringDebtPayments.filter((r) => r.debtId === payment.debtId) : []
+          const dormant = ownSchedules.length === 1 && !ownSchedules[0].isActive ? ownSchedules[0] : undefined
+          snapshot = {
+            payment,
+            expenses: pairedExpenses,
+            debtWasCleared: reopens,
+            schedule: dormant,
+          }
+          const recurringDebtPayments = dormant
+            ? state.recurringDebtPayments.map((r) => (r.id === dormant.id ? { ...r, isActive: true } : r))
+            : state.recurringDebtPayments
+          const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments, expenses }
           return {
             debts,
             debtPayments: remainingPayments,
+            expenses,
+            recurringDebtPayments,
+            goals: reconcileGoalsForState(nextState),
+          }
+        })
+        return snapshot
+      },
+
+      restoreDebtPayment: (snapshot) =>
+        set((state) => {
+          if (state.debtPayments.some((p) => p.id === snapshot.payment.id)) return state
+          const debtPayments = [...state.debtPayments, snapshot.payment]
+          const expenses = [
+            ...state.expenses,
+            ...snapshot.expenses.filter((x) => !state.expenses.some((e) => e.id === x.id)),
+          ]
+          const recurringDebtPayments = snapshot.schedule
+            ? state.recurringDebtPayments.map((r) => (r.id === snapshot.schedule!.id ? snapshot.schedule! : r))
+            : state.recurringDebtPayments
+          const nextState: FinanceStore = { ...state, debtPayments, expenses, recurringDebtPayments }
+          return {
+            debtPayments,
+            expenses,
+            recurringDebtPayments,
+            debts: settleDebt(nextState, snapshot.payment.debtId),
             goals: reconcileGoalsForState(nextState),
           }
         }),
@@ -924,6 +1038,7 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => {
           const sub = state.subscriptions.find((s) => s.id === id)
           const cancelledAt = new Date().toISOString()
+          const endDate = endsOn ?? localTodayISO()
           // A cancelled sub must not keep a plan-change prompt alive for its reactivation.
           const subs = state.subscriptions.map((s) =>
             s.id === id
@@ -931,7 +1046,7 @@ export const useFinanceStore = create<FinanceStore>()(
                   ...s,
                   status: 'cancelled' as const,
                   cancelledAt,
-                  endsOn: endsOn ?? localTodayISO(),
+                  endsOn: endDate,
                   pendingPlanId: null,
                   pendingAmount: null,
                   pendingPlanFrom: null,
@@ -943,7 +1058,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (sub?.linkedRecurringExpenseId) {
             recurring = state.recurringExpenses.map((re) =>
               re.id === sub.linkedRecurringExpenseId
-                ? { ...re, isActive: false, updatedAt: new Date().toISOString() }
+                ? { ...re, isActive: plannerRowActive({ status: 'cancelled', endsOn: endDate }, localTodayISO()), updatedAt: new Date().toISOString() }
                 : re
             )
           }
@@ -954,7 +1069,7 @@ export const useFinanceStore = create<FinanceStore>()(
         get().updateSubscription(id, { status: 'paused', pausedAt: new Date().toISOString() }),
 
       resumeSubscription: (id) =>
-        get().updateSubscription(id, { status: 'active', pausedAt: null }),
+        get().updateSubscription(id, { status: 'active', pausedAt: null, createdAt: new Date().toISOString() }),
 
       convertTrial: (id) => get().updateSubscription(id, { status: 'active', trialEnd: null }),
 
@@ -1005,10 +1120,25 @@ export const useFinanceStore = create<FinanceStore>()(
       logDueSubscriptions: () => {
         const { subscriptions, expenses } = get()
         const today = new Date()
+        const todayIso = localTodayISO()
+        const lapsed = new Set(
+          subscriptions
+            .filter((s) => s.status === 'cancelled' && s.linkedRecurringExpenseId && !plannerRowActive(s, todayIso))
+            .map((s) => s.linkedRecurringExpenseId)
+        )
+        if (get().recurringExpenses.some((r) => r.isActive && lapsed.has(r.id))) {
+          set((state) => ({
+            recurringExpenses: state.recurringExpenses.map((r) =>
+              r.isActive && lapsed.has(r.id) ? { ...r, isActive: false, updatedAt: new Date().toISOString() } : r
+            ),
+          }))
+        }
         for (const sub of subscriptions) {
-          if (sub.status !== 'active') continue
+          if (!isCharging(sub, today)) continue
           const state = cycleState(sub, expenses, today)
           if (trackingAction(sub.tracking, state) !== 'log') continue
+          // A converted trial starts billing at trialEnd; cycles inside the trial were free.
+          if (sub.trialEnd && format(state.due, 'yyyy-MM-dd') < sub.trialEnd.slice(0, 10)) continue
           get().markSubscriptionPaid(sub.id, { date: format(state.due, 'yyyy-MM-dd') })
         }
       },
@@ -1034,6 +1164,8 @@ export const useFinanceStore = create<FinanceStore>()(
             cancelledAt: null,
             endsOn: null,
             pausedAt: null,
+            // Cycles that opened while it was off were not tracked: charging resumes from today.
+            createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }
           const nextBilling =
@@ -1145,7 +1277,7 @@ export const useFinanceStore = create<FinanceStore>()(
             sharePct: input.sharePct ?? null,
             frequency: input.frequency ?? 'monthly',
             planStart: input.planStart ?? null,
-            priority: input.priority ?? state.goals.length,
+            priority: input.priority ?? Math.max(0, ...state.goals.map((g) => g.priority)) + 1,
           }
           const nextGoals = [...state.goals, row]
           const nextState: FinanceStore = { ...state, goals: nextGoals }
@@ -1187,7 +1319,8 @@ export const useFinanceStore = create<FinanceStore>()(
               log = recordActivation(log, active, cycleKeyOf(new Date(), state.settings.monthStartDay), generateId, new Date().toISOString())
             }
           }
-          return { budgetPlans: next, activeBudgetPlanId: active, budgetPlanActivations: log }
+          const memories = state.buddgyMemories.filter((m) => m.planId !== planId)
+          return { budgetPlans: next, activeBudgetPlanId: active, budgetPlanActivations: log, buddgyMemories: memories }
         }),
 
       setActiveBudgetPlanId: (id) => set({ activeBudgetPlanId: id }),
@@ -1219,13 +1352,13 @@ export const useFinanceStore = create<FinanceStore>()(
       restoreBudgetActivation: (undo) =>
         set({ activeBudgetPlanId: undo.activeBudgetPlanId, budgetPlanActivations: undo.activations }),
 
-      addBuddgyMemory: (text, source, kind = 'fact') => {
+      addBuddgyMemory: (text, source, kind = 'fact', planId) => {
         const clean = text.replace(/\s+/g, ' ').trim().slice(0, MEMORY_MAX_CHARS)
         const existing = get().buddgyMemories
         if (!clean || existing.length >= MEMORY_CAP || existing.some((m) => m.text.toLowerCase() === clean.toLowerCase())) return null
         const now = new Date().toISOString()
         const id = generateId()
-        set({ buddgyMemories: [...existing, { id, text: clean, kind, source, status: 'active', createdAt: now, updatedAt: now }] })
+        set({ buddgyMemories: [...existing, { id, text: clean, kind, source, status: 'active', ...(planId ? { planId } : {}), createdAt: now, updatedAt: now }] })
         return id
       },
 
@@ -1493,6 +1626,9 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsTransactions: nextState.savingsTransactions,
             recurringSavingsDeposits: nextState.recurringSavingsDeposits,
             goals: reconcileGoalsForState(nextState),
+            ...(state.profile.defaultCarryPocketId === id
+              ? { profile: { ...state.profile, defaultCarryPocketId: null } }
+              : {}),
           }
         }),
 
@@ -1520,18 +1656,28 @@ export const useFinanceStore = create<FinanceStore>()(
 
       depositToSavings: (accountId, amount, currency, notes, opts) => {
         const raw = Math.max(0, Number(amount) || 0)
-        if (raw <= 0) return
+        if (raw <= 0) return false
+        let ok = false
         set((state) => {
+          if (opts?.txId && state.savingsTransactions.some((t) => t.id === opts.txId)) {
+            ok = true
+            return state
+          }
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
           const cIn =
             currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
-          const rates = state.exchangeRates
           const amt =
-            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
-          if (amt <= 0) return state
+            cIn === acc.currency
+              ? raw
+              : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
+          if (amt === null || amt <= 0) return state
+          // Only cash deposits get an account leg; an explicit paymentMethodId (set-aside) is kept as given.
+          const legId =
+            opts?.paymentMethodId ??
+            (opts?.mode === 'declare' ? undefined : resolveAccountLeg(state.paymentMethods, acc, opts?.fromAccountId, acc.currency))
           const tx: SavingsTransaction = {
-            id: generateId(),
+            id: opts?.txId ?? generateId(),
             accountId,
             type: 'deposit',
             amount: amt,
@@ -1545,7 +1691,7 @@ export const useFinanceStore = create<FinanceStore>()(
             // so cashSavingsDepositsInBaseForMonth counts it against left-to-spend.
             ...(opts?.mode === 'declare' ? { isCashFlow: false } : {}),
             occurredAt: new Date().toISOString(),
-            ...(opts?.paymentMethodId ? { paymentMethodId: opts.paymentMethodId } : {}),
+            ...(legId ? { paymentMethodId: legId } : {}),
           }
           const nextState: FinanceStore = {
             ...state,
@@ -1554,27 +1700,29 @@ export const useFinanceStore = create<FinanceStore>()(
               a.id === accountId ? { ...a, currentBalance: a.currentBalance + amt } : a
             ),
           }
+          ok = true
           return {
             ...nextState,
             goals: reconcileGoalsForState(nextState),
           }
         })
+        return ok
       },
 
       transferBetweenPockets: (fromId, toId, amount, notes) => {
         const raw = Math.max(0, Number(amount) || 0)
-        if (raw <= 0 || fromId === toId) return
+        if (raw <= 0 || fromId === toId) return false
+        let ok = false
         set((state) => {
           const from = state.savingsAccounts.find((a) => a.id === fromId)
           const to = state.savingsAccounts.find((a) => a.id === toId)
           if (!from || !to) return state
           if (from.currentBalance + 0.0001 < raw) return state // insufficient
-          // Convert into the destination's unit. tryConvertCurrency FAILS CLOSED: a move with
-          // no path (e.g. EGP -> XAU grams) is a purchase, not a transfer, and is rejected here.
+          // Convert into the destination's unit; fails closed when there is no path or gold is unpriced.
           const toAmt =
             to.currency === from.currency
               ? raw
-              : tryConvertCurrency(raw, from.currency, to.currency, state.exchangeRates)
+              : tryConvertWithGold(raw, from.currency, to.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (toAmt === null || toAmt <= 0) return state
           const gid = generateId()
           const today = localTodayISO()
@@ -1601,22 +1749,26 @@ export const useFinanceStore = create<FinanceStore>()(
                   : a
             ),
           }
+          ok = true
           return { ...nextState, goals: reconcileGoalsForState(nextState) }
         })
+        return ok
       },
 
-      withdrawFromSavings: (accountId, amount, currency, notes, purpose = 'income') => {
+      withdrawFromSavings: (accountId, amount, currency, notes, purpose = 'income', opts) => {
         const raw = Math.max(0, Number(amount) || 0)
-        if (raw <= 0) return
+        if (raw <= 0) return false
+        let ok = false
         set((state) => {
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
           const cIn =
             currency === acc.currency ? acc.currency : clampFiatToAllowed(state.settings, currency)
-          const rates = state.exchangeRates
           const amt =
-            cIn === acc.currency ? raw : convertCurrency(raw, cIn, acc.currency, rates)
-          if (amt <= 0 || acc.currentBalance + 0.0001 < amt) return state
+            cIn === acc.currency
+              ? raw
+              : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
+          if (amt === null || amt <= 0 || acc.currentBalance + 0.0001 < amt) return state
           const tx: SavingsTransaction = {
             id: generateId(),
             accountId,
@@ -1631,19 +1783,29 @@ export const useFinanceStore = create<FinanceStore>()(
           // income KPI and (for a transfer) loop the money back into savings. F4.
           const isInvestment = acc.category === 'investment'
           const nowIso = new Date().toISOString()
-          const incomeEvent: IncomeEvent | null =
+          // Income events are money: a gold withdrawal is booked at today's gram price in base, never as grams.
+          const eventCurrency = acc.currency === 'XAU' ? state.settings.baseCurrency : acc.currency
+          const eventAmt =
             purpose === 'income'
+              ? tryConvertWithGold(amt, acc.currency, eventCurrency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
+              : null
+          if (purpose === 'income' && (eventAmt === null || eventAmt <= 0)) return state
+          // The account leg lives on the income event only (money currency), never also on the tx: one side, no double credit.
+          const legId = purpose === 'income' ? resolveAccountLeg(state.paymentMethods, acc, opts?.toAccountId, eventCurrency) : undefined
+          const incomeEvent: IncomeEvent | null =
+            purpose === 'income' && eventAmt !== null
               ? {
-                  id: generateId(),
+                  id: incomeEventIdForTx(tx.id),
                   name: isInvestment ? `Return from ${acc.name}` : `Withdrawal from ${acc.name}`,
-                  amount: amt,
-                  currency: acc.currency,
+                  amount: eventAmt,
+                  currency: eventCurrency,
                   sourceType: isInvestment ? 'investment' : 'savings',
                   // Local, to match the paired ledger row's `date` — the same movement must
                   // not straddle two calendar days in the Cairo-before-dawn window.
                   receivedDate: localTodayISO(),
                   status: 'confirmed',
                   linkedSavingsAccountId: accountId,
+                  ...(legId ? { paymentMethodId: legId, occurredAt: nowIso } : {}),
                   notes: notes?.trim() || undefined,
                   createdAt: nowIso,
                   updatedAt: nowIso,
@@ -1660,14 +1822,17 @@ export const useFinanceStore = create<FinanceStore>()(
               ? { ...state.settings, noIncomeDeclared: false }
               : state.settings,
           }
+          ok = true
           return {
             ...nextState,
             goals: reconcileGoalsForState(nextState),
           }
         })
+        return ok
       },
 
-      deleteSavingsTransaction: (id) =>
+      deleteSavingsTransaction: (id) => {
+        let result: DeleteSavingsTxResult = { ok: false, reason: 'not_found' }
         set((state) => {
           const tx = state.savingsTransactions.find((t) => t.id === id)
           if (!tx) return state
@@ -1681,15 +1846,28 @@ export const useFinanceStore = create<FinanceStore>()(
             // Reverse: undo a deposit by subtracting, undo a withdrawal by adding back.
             balanceDelta[r.accountId] = (balanceDelta[r.accountId] ?? 0) + (r.type === 'deposit' ? -r.amount : r.amount)
           }
+          // Never clamp: a delete that would drive a pocket negative is refused so ledger and balance stay equal.
+          for (const a of state.savingsAccounts) {
+            const next = a.currentBalance + (balanceDelta[a.id] ?? 0)
+            if (balanceDelta[a.id] != null && next < -0.0001) {
+              result = { ok: false, reason: 'would_go_negative', accountId: a.id, shortBy: -next }
+              return state
+            }
+          }
+          const pairedEventIds = new Set(removed.filter((r) => r.type === 'withdrawal').map((r) => incomeEventIdForTx(r.id)))
           const nextState: FinanceStore = {
             ...state,
             savingsTransactions: state.savingsTransactions.filter((t) => !ids.includes(t.id)),
             savingsAccounts: state.savingsAccounts.map((a) =>
-              balanceDelta[a.id] != null ? { ...a, currentBalance: Math.max(0, a.currentBalance + balanceDelta[a.id]) } : a
+              balanceDelta[a.id] != null ? { ...a, currentBalance: a.currentBalance + balanceDelta[a.id] } : a
             ),
+            incomeEvents: state.incomeEvents.filter((e) => !pairedEventIds.has(e.id)),
           }
+          result = { ok: true }
           return { ...nextState, goals: reconcileGoalsForState(nextState) }
-        }),
+        })
+        return result
+      },
 
       correctSavingsBalance: (accountId, newBalance, notes) => {
         const nb = Math.max(0, Number(newBalance) || 0)
@@ -1737,7 +1915,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
       updateRates: (rates) =>
         set((state) => ({
-          exchangeRates: { ...state.exchangeRates, ...rates },
+          exchangeRates: { ...state.exchangeRates, ...withoutGoldRates(rates) },
           lastRatesFetch: new Date().toISOString(),
         })),
 
@@ -1906,6 +2084,10 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        // v22: cached rates may carry per-troy-ounce XAU keys; gold grams are priced from the gram price only.
+        if (fromVersion < 22 && base.exchangeRates && typeof base.exchangeRates === 'object') {
+          base.exchangeRates = withoutGoldRates(base.exchangeRates as Record<string, number>)
+        }
         // v20-21: goals gain funding_mode / share_pct / frequency / plan_start.
         if (fromVersion < 21 && Array.isArray(base.goals)) {
           base.goals = (base.goals as Goal[]).map(withGoalDefaults)

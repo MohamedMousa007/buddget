@@ -3,6 +3,7 @@
 import { Clock, MessageSquare, Repeat, TrendingUp } from 'lucide-react'
 import { differenceInCalendarDays, parseISO, startOfDay } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { PromptBanner } from '@/components/ui/PromptBanner'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -20,6 +21,7 @@ export function HomeNudge({ nudge, onOpen }: { nudge: Nudge; onOpen: (subId: str
   const t = useT()
   const ui = t.subscriptions.ui.nudge
   const dismiss = useSettingsStore((s) => s.dismissBanner)
+  const toast = useActionToast()
   const { markPaid, adopt, applyPlan } = useFinanceStore(
     useShallow((s) => ({
       markPaid: s.markSubscriptionPaid,
@@ -47,7 +49,7 @@ export function HomeNudge({ nudge, onOpen }: { nudge: Nudge; onOpen: (subId: str
     kind === 'price'
       ? { label: ui.adopt, run: () => adopt(sub.id, row.priceChange?.to ?? sub.amount) }
       : kind === 'ask'
-        ? { label: ui.paid, run: () => markPaid(sub.id) }
+        ? { label: ui.paid, run: () => { markPaid(sub.id); toast(t.moneyFlows.markedPaid) } }
         : kind === 'plan'
           ? { label: t.subscriptions.ui.detail.applyPlan, run: () => applyPlan(sub.id) }
           : { label: ui.review, run: () => onOpen(sub.id) }

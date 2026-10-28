@@ -37,4 +37,15 @@ describe('buddgy memories', () => {
     learnFromChat(['drives a Tesla'])
     expect(useFinanceStore.getState().buddgyMemories).toHaveLength(1)
   })
+
+  it('round-trips the plan link and deleting the plan removes only its notes', () => {
+    const f = useFinanceStore.getState()
+    const planId = f.addBudgetPlan('Plan A', { status: 'ready' })
+    const tied = f.addBuddgyMemory('keep rent under 900', 'budget', 'fact', planId)!
+    f.addBuddgyMemory('has no car', 'chat')
+    const m = useFinanceStore.getState().buddgyMemories.find((x) => x.id === tied)!
+    expect(memoryFromRow({ ...memoryToRow(m, 'u1'), deleted_at: null } as Parameters<typeof memoryFromRow>[0])).toEqual(m)
+    useFinanceStore.getState().deleteBudgetPlan(planId)
+    expect(useFinanceStore.getState().buddgyMemories.map((x) => x.text)).toEqual(['has no car'])
+  })
 })

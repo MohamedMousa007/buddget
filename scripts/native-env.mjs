@@ -22,6 +22,7 @@ export const NATIVE_ENV_KEYS = [
   'NEXT_PUBLIC_APP_URL',
   'NEXT_PUBLIC_OAUTH_GOOGLE',
   'NEXT_PUBLIC_OAUTH_APPLE',
+  'NEXT_PUBLIC_SENTRY_DSN',
 ]
 
 export function parseEnvFile(text) {
@@ -77,6 +78,7 @@ export function assertNativeEnv({ exitOnError = false } = {}) {
     missing.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY')
   }
   if (!apiBase) missing.push('NEXT_PUBLIC_API_BASE_URL')
+  if (!process.env.NEXT_PUBLIC_SENTRY_DSN?.trim()) missing.push('NEXT_PUBLIC_SENTRY_DSN')
 
   if (missing.length > 0) {
     const msg = `[native-env] Missing in .env.local (see .env.example):\n${missing.map((k) => `  • ${k}`).join('\n')}\n`

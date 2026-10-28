@@ -13,6 +13,8 @@ import {
   throwIfAiProxyNotOk,
 } from '@/lib/ai/generateWithFallback'
 import { apiFetch } from '@/lib/apiBase'
+import { describeActionTarget } from '@/lib/ai/aiActionHandlers'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { readGeminiText } from '@/lib/ai/geminiStream'
 
 export type AIAction =
@@ -286,7 +288,7 @@ RULES:
 15. For "delete_expense", include data.description (matches against existing expenses by description text).
 16. For "update_expense", include data.description (to find the expense) and data.newAmount, data.newCategory, and/or data.newDescription for changes.
 17. For "update_income", include data.name (to find the income source) and data.amount for the new amount (optional: data.currency).
-18. For "delete_income", include data.name (to find and remove the income source).
+18. For "delete_income", include data.name (to find and remove the income source). Income already received from it stays in past months; when a source merely stopped, prefer update_income with data.effectiveEnd.
 19. For "clear_debt", include data.name or data.person to identify the debt to mark as fully paid.
 20. For "deposit_savings", include data.account (savings account name), data.amount, data.currency (optional).
 21. For "withdraw_savings", include data.account, data.amount, data.currency (optional).
@@ -490,7 +492,21 @@ export async function sendToGemini(
   return parseModelJsonToAIResponse(text, text)
 }
 
-export function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>): string {
+/** `target` is the record the action resolved to (see describeActionTarget); it replaces the spoken hint so the user sees what will change. */
+export function friendlyLineForActionItem(action: AIAction, d: Record<string, unknown>, target?: string | null): string {
+  if (target) {
+    switch (action) {
+      case 'update_expense': return `Update expense: ${target}`
+      case 'delete_expense': return `Delete expense: ${target}`
+      case 'delete_debt': return `Remove debt: ${target}`
+      case 'clear_debt': return `Mark debt as paid off: ${target}`
+      case 'delete_income': return `Remove income: ${target}`
+      case 'update_income': return `Update income: ${target}`
+      case 'delete_payment_method': return `Remove payment method: ${target}`
+      case 'add_debt_payment': return `Debt payment ${d.currency || ''} ${d.amount || 0} to ${target}`
+      default: break
+    }
+  }
   switch (action) {
     case 'add_expense': {
       const desc = d.description || 'expense'
@@ -588,6 +604,10 @@ export function friendlyLineForActionItem(action: AIAction, d: Record<string, un
   }
 }
 
+function targetOf(action: AIAction, data: Record<string, unknown>): string | null {
+  return describeActionTarget(useFinanceStore.getState(), action, data)
+}
+
 function generateFriendlyMessage(response: AIResponse): string {
   const actionable = response.actions.filter((a) => a.action !== 'query' && a.action !== 'lookup' && a.action !== 'remember')
   if (actionable.length === 0) {
@@ -599,12 +619,12 @@ function generateFriendlyMessage(response: AIResponse): string {
   }
   if (actionable.length === 1) {
     const { action, data } = actionable[0]
-    const line = friendlyLineForActionItem(action, data)
+    const line = friendlyLineForActionItem(action, data, targetOf(action, data))
     if (action === 'unclear') return line
     return `${line}. Please confirm to save.`
   }
   const lines = actionable
-    .map(({ action, data }) => friendlyLineForActionItem(action, data))
+    .map(({ action, data }) => friendlyLineForActionItem(action, data, targetOf(action, data)))
     .filter(Boolean)
   return `${lines.join(' · ')}. Please confirm to save all.`
 }

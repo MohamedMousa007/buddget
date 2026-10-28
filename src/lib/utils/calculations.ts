@@ -1,10 +1,11 @@
 import {
   startOfMonth,
   endOfMonth,
+  endOfDay,
   parseISO,
   isWithinInterval,
   getDaysInMonth,
-  differenceInDays,
+  differenceInCalendarDays,
   subDays,
   eachMonthOfInterval,
 } from 'date-fns'
@@ -12,7 +13,6 @@ import type {
   Expense,
   IncomeSource,
   IncomeEvent,
-  IncomeRecurringFrequency,
   BudgetCategory,
   Debt,
   DebtPayment,
@@ -24,9 +24,10 @@ import type {
   SavingsTransaction,
 } from '@/lib/store/types'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
-import { convertCurrency, tryConvertCurrency } from './currency'
-import { paydayDatesForWindow } from './paydaySchedule'
+import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
+import { convertCurrency, tryConvertCurrency, tryConvertWithGold, type GoldQuote } from './currency'
+import { monthlyPaydayCount, paydayDatesForWindow } from './paydaySchedule'
+import { localDayKey } from './localDate'
 
 /** When set, credit card outstanding is derived from expenses + payments. */
 export type DebtBalanceContext = {
@@ -54,17 +55,13 @@ export function expenseAmountInBase(
   return expense.amountInBaseCurrency
 }
 
-/**
- * Converts per-paycheck recurring income to a *typical* monthly amount. Only for
- * contexts with no month window ({@link calculateMonthlyIncome}, form previews) —
- * month-scoped figures use the physical payday count via
- * {@link expectedRecurringForMonth} instead.
- */
-export function incomeMonthlyMultiplier(freq: IncomeRecurringFrequency | undefined): number {
-  const f = freq ?? 'monthly'
-  if (f === 'weekly') return 52 / 12
-  if (f === 'biweekly') return 26 / 12
-  return 1
+/** True when a foreign-currency expense has no rate path to base, so its base amount is unknown (counted as 0). */
+export function isExpenseUnconverted(
+  expense: Pick<Expense, 'amount' | 'currency'>,
+  baseCurrency: Currency,
+  rates: Record<string, number>
+): boolean {
+  return expense.currency !== baseCurrency && tryConvertCurrency(expense.amount, expense.currency, baseCurrency, rates) === null
 }
 
 /**
@@ -96,8 +93,15 @@ export function getMonthRange(monthStr: string, monthStartDay = 1): { start: Dat
 
   return {
     start,
-    end: subDays(nextCycleStart, 1),
+    end: endOfDay(subDays(nextCycleStart, 1)),
   }
+}
+
+/** The `YYYY-MM` budget-cycle key that `date` falls in (a cycle is keyed by the month it starts in). */
+export function budgetMonthKeyFor(date: Date, monthStartDay = 1): string {
+  const cycleStartsBefore = monthStartDay > 1 && date.getDate() < Math.min(28, monthStartDay)
+  const d = cycleStartsBefore ? new Date(date.getFullYear(), date.getMonth() - 1, 1) : date
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 export function filterExpensesByMonth(expenses: Expense[], monthStr: string, monthStartDay = 1): Expense[] {
@@ -123,13 +127,15 @@ export function calculateMonthlyIncome(
   monthStr?: string,
   monthStartDay?: number
 ): number {
+  const window = monthStr !== undefined && monthStartDay !== undefined ? getMonthRange(monthStr, monthStartDay) : null
   let total = 0
   for (const source of sources) {
     if (source.isRecurring) {
-      const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+      if (window && !recurringActiveForWindow(source, window.start, window.end)) continue
+      const monthlyEq = source.amount * monthlyPaydayCount(source)
       total += convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
-    } else if (monthStr !== undefined && monthStartDay !== undefined) {
-      const { start, end } = getMonthRange(monthStr, monthStartDay)
+    } else if (window) {
+      const { start, end } = window
       const created = parseISO(source.createdAt)
       if (isWithinInterval(created, { start, end })) {
         total += convertCurrency(source.amount, source.currency, baseCurrency, rates)
@@ -148,7 +154,7 @@ export function recurringActiveForWindow(
   windowStart: Date,
   windowEnd: Date
 ): boolean {
-  const effStart = parseISO((source.effectiveStart ?? source.createdAt).slice(0, 10))
+  const effStart = parseISO(localDayKey(source.effectiveStart ?? source.createdAt))
   if (effStart > windowEnd) return false
   if (source.effectiveEnd && parseISO(source.effectiveEnd) < windowStart) return false
   return true
@@ -200,7 +206,9 @@ export function actualIncomeForMonth(
   baseCurrency: Currency,
   rates: Record<string, number>,
   monthStr: string,
-  monthStartDay = 1
+  monthStartDay = 1,
+  /** Count only money that really arrived: no projected fallback for paydays without a realized event. */
+  realizedOnly = false
 ): number {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
   const inWindow = (isoOrDate: string) => isWithinInterval(parseISO(isoOrDate), { start, end })
@@ -209,14 +217,29 @@ export function actualIncomeForMonth(
   // One-time events. Track every covered source id (any status) so a backfilled or
   // missed one-time source isn't also counted from income_sources below.
   const coveredSourceIds = new Set<string>()
+  const templateById = new Map(templates.map((t) => [t.id, t]))
+  // Events whose template was deleted, or has ended before this window, still happened:
+  // they stand alone as one-time income (latest edit per payday wins).
+  const orphanByOcc = new Map<string, IncomeEvent>()
   for (const e of events) {
-    if (e.templateId) continue
+    if (e.templateId) {
+      const t = templateById.get(e.templateId)
+      const orphan = !t || !t.isRecurring || !recurringActiveForWindow(t, start, end)
+      if (orphan && REALIZED_EVENT_STATUSES.has(e.status) && inWindow(e.occurrenceDate ?? e.receivedDate)) {
+        const key = e.occurrenceDate ? `${e.templateId}|${e.occurrenceDate}` : e.id
+        if (t) coveredSourceIds.add(t.id) // a one-time template's realized event replaces the template's own line
+        const prev = orphanByOcc.get(key)
+        if (!prev || e.updatedAt.localeCompare(prev.updatedAt) > 0) orphanByOcc.set(key, e)
+      }
+      continue
+    }
     coveredSourceIds.add(e.id) // backfilled one-time events reuse their source id
     if (!inWindow(e.receivedDate)) continue
     if (REALIZED_EVENT_STATUSES.has(e.status)) {
       total += convertCurrency(e.amount, e.currency, baseCurrency, rates)
     }
   }
+  for (const e of orphanByOcc.values()) total += convertCurrency(e.amount, e.currency, baseCurrency, rates)
 
   for (const t of templates) {
     if (t.isRecurring) {
@@ -226,7 +249,7 @@ export function actualIncomeForMonth(
       // Window-test by the fulfilled payday when stamped, else by received date.
       const evForT = events.filter((e) => e.templateId === t.id && inWindow(e.occurrenceDate ?? e.receivedDate))
       if (evForT.length === 0) {
-        total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
+        if (!realizedOnly) total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
       } else {
         // Dedupe by fulfilled payday (latest edit wins) so re-marking an occurrence
         // can never double-count; legacy events without occurrence_date count as-is.
@@ -245,9 +268,9 @@ export function actualIncomeForMonth(
         let sub = 0
         for (const e of counted) {
           if (REALIZED_EVENT_STATUSES.has(e.status)) sub += convertCurrency(e.amount, e.currency, baseCurrency, rates)
-          else if (e.status === 'projected') sub += perOccurrence
+          else if (e.status === 'projected' && !realizedOnly) sub += perOccurrence
         }
-        total += sub + Math.max(0, paydayCount - counted.length) * perOccurrence
+        total += sub + (realizedOnly ? 0 : Math.max(0, paydayCount - counted.length) * perOccurrence)
       }
     } else if (!coveredSourceIds.has(t.id) && inWindow(t.createdAt)) {
       // One-time source with no event yet (added before Phase 6 wired event creation).
@@ -277,10 +300,9 @@ export function isIncomeOccurrencePending(
     (e) => e.templateId === template.id && isWithinInterval(parseISO(e.receivedDate), { start, end })
   )
   if (hasEvent) return false
-  // Monthly: due on dayOfMonth. Non-monthly (weekly/biweekly): treat the month start as due.
-  const dueDay = template.recurringFrequency === 'monthly' ? template.dayOfMonth ?? 1 : 1
-  const due = parseISO(`${monthStr}-${String(dueDay).padStart(2, '0')}`)
-  return today >= due
+  // Monthly: due on its payday inside the cycle window. Non-monthly (weekly/biweekly): the cycle start.
+  const due = template.recurringFrequency === 'monthly' ? paydayDatesForWindow(template, start, end)[0] : start
+  return due !== undefined && today >= due
 }
 
 /**
@@ -323,7 +345,7 @@ export function calculateRecurringIncomeForCalendarMonth(
   return sources.reduce((total, source) => {
     if (!source.isRecurring) return total
     if (!recurringActiveForWindow(source, monthStart, monthEnd)) return total
-    const monthlyEq = source.amount * incomeMonthlyMultiplier(source.recurringFrequency)
+    const monthlyEq = source.amount * monthlyPaydayCount(source)
     return total + convertCurrency(monthlyEq, source.currency, baseCurrency, rates)
   }, 0)
 }
@@ -366,7 +388,7 @@ export function calculateTotalSpentExcludingSavings(
   rates: Record<string, number>
 ): number {
   return expenses
-    .filter((e) => !isNonSpendCategory(e.category))
+    .filter((e) => !isNonSpendExpense(e))
     .reduce((total, e) => total + expenseAmountInBase(e, baseCurrency, rates), 0)
 }
 
@@ -377,7 +399,7 @@ export function calculateCategorySpending(
 ): Record<string, number> {
   const spending: Record<string, number> = {}
   for (const expense of expenses) {
-    if (isNonSpendCategory(expense.category)) continue
+    if (isNonSpendExpense(expense)) continue
     spending[expense.category] =
       (spending[expense.category] || 0) + expenseAmountInBase(expense, baseCurrency, rates)
   }
@@ -454,14 +476,16 @@ export function netSavingsLedgerInBaseForMonth(
   monthStr: string,
   monthStartDay: number,
   baseCurrency: Currency,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  gold: GoldQuote
 ): number {
   const rows = filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
   return rows.reduce((sum, t) => {
     // Opening balances and corrections move a balance without moving cash. Declaring a
     // pre-existing 50k account used to wipe out `leftToSpend` for the month.
     if (t.isCashFlow === false) return sum
-    const inBase = convertCurrency(t.amount, t.currency, baseCurrency, rates)
+    const inBase = tryConvertWithGold(t.amount, t.currency, baseCurrency, rates, baseCurrency, gold)
+    if (inBase === null) return sum
     return sum + (t.type === 'deposit' ? inBase : -inBase)
   }, 0)
 }
@@ -480,11 +504,15 @@ export function cashSavingsDepositsInBaseForMonth(
   monthStr: string,
   monthStartDay: number,
   baseCurrency: Currency,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  gold: GoldQuote
 ): number {
   return filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
     .filter((t) => t.type === 'deposit' && t.isCashFlow !== false)
-    .reduce((sum, t) => sum + convertCurrency(t.amount, t.currency, baseCurrency, rates), 0)
+    .reduce(
+      (sum, t) => sum + (tryConvertWithGold(t.amount, t.currency, baseCurrency, rates, baseCurrency, gold) ?? 0),
+      0
+    )
 }
 
 export function totalSavingsAccountsBalanceInBase(
@@ -528,6 +556,7 @@ export function calculateLeftToSpendCashFlow(params: {
   baseCurrency: Currency
   exchangeRates: Record<string, number>
   incomeBlocked: boolean
+  gold: GoldQuote
   /** Planned monthly savings target in base currency (e.g. sum of the active plan's savings rows). */
   monthlyTarget?: number
 }): number {
@@ -541,6 +570,7 @@ export function calculateLeftToSpendCashFlow(params: {
     baseCurrency,
     exchangeRates,
     incomeBlocked,
+    gold,
     monthlyTarget = 0,
   } = params
   const monthlyExpenses = filterExpensesByMonth(expenses, monthStr, monthStartDay)
@@ -566,7 +596,8 @@ export function calculateLeftToSpendCashFlow(params: {
     monthStr,
     monthStartDay,
     baseCurrency,
-    exchangeRates
+    exchangeRates,
+    gold
   )
   // `allocated` folds legacy Savings-tagged expenses in with real deposits so the reserve can't
   // double-withhold money the user already earmarked (F12) — before OR after the A6 migration.
@@ -582,7 +613,7 @@ export function filterDebtPaymentsByMonth(
   monthStartDay = 1
 ): DebtPayment[] {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
-  return payments.filter((p) => isWithinInterval(parseISO(p.date.slice(0, 10)), { start, end }))
+  return payments.filter((p) => isWithinInterval(parseISO(localDayKey(p.date)), { start, end }))
 }
 
 /**
@@ -633,8 +664,9 @@ export function calculateCashOutflow(params: {
 
   let outflow = 0
   for (const e of monthExpenses) {
-    // Non-spend rows are money movement; the settlement ones are counted from
-    // debtPayments below, which is the only source that sees ALL payoffs.
+    // Money-movement categories are not cash leaving; the settlement ones are counted from
+    // debtPayments below, which is the only source that sees ALL payoffs. A spend-excluded
+    // expense (for someone else, excluded method) still moved real cash, so it stays in.
     if (isNonSpendCategory(e.category)) continue
     if (e.paymentMethodId && deferredPmIds.has(e.paymentMethodId)) continue
     if (e.linkedDebtId && installmentDebtIds.has(e.linkedDebtId)) continue
@@ -656,11 +688,16 @@ export function calculateCashOutflow(params: {
     // Savings-funded payoffs are a balance-sheet move (pocket → debt), already accounted
     // for by the pocket withdrawal; counting them as cash outflow would drop net worth twice.
     if (p.fundedFromSavings) continue
-    const inBase = tryConvertCurrency(p.amountPaid, debt.currency as Currency, baseCurrency, exchangeRates)
-    outflow += inBase ?? p.amountPaid
+    // No FX path: the payment cannot be valued, so it is left out rather than counted 1:1.
+    outflow += tryConvertCurrency(p.amountPaid, debt.currency as Currency, baseCurrency, exchangeRates) ?? 0
   }
 
   return outflow + monthSavingsDeposits
+}
+
+/** A gold debt cannot be valued without a live price; valuing it at 0 would overstate net worth. */
+function goldDebtUnpriced(debt: Debt, goldPricePerGram: number, goldPriceAvailable: boolean): boolean {
+  return Boolean(debt.isGold) && (!goldPriceAvailable || !(goldPricePerGram > 0))
 }
 
 export function totalDebtRemainingInBase(
@@ -672,11 +709,26 @@ export function totalDebtRemainingInBase(
   goldPriceAvailable: boolean,
   expenses?: Expense[]
 ): number {
+  return totalDebtRemainingDetail(debts, debtPayments, baseCurrency, rates, goldPricePerGram, goldPriceAvailable, expenses).total
+}
+
+/** Same total, plus `incomplete` when an owed gold debt was left out because gold has no price. */
+export function totalDebtRemainingDetail(
+  debts: Debt[],
+  debtPayments: DebtPayment[],
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  goldPricePerGram: number,
+  goldPriceAvailable: boolean,
+  expenses?: Expense[]
+): { total: number; incomplete: boolean } {
   const balanceCtx: DebtBalanceContext | undefined =
     expenses !== undefined ? { expenses, exchangeRates: rates, allDebts: debts } : undefined
   let total = 0
+  let incomplete = false
   for (const debt of debts) {
     const remaining = calculateDebtRemaining(debt, debtPayments, balanceCtx)
+    if (remaining > 0 && goldDebtUnpriced(debt, goldPricePerGram, goldPriceAvailable)) incomplete = true
     total += calculateDebtRemainingInBaseCurrency(
       remaining,
       debt,
@@ -686,7 +738,7 @@ export function totalDebtRemainingInBase(
       goldPriceAvailable
     )
   }
-  return total
+  return { total, incomplete }
 }
 
 /**
@@ -702,9 +754,7 @@ export function calculateBudgetUsedPercent(totalSpent: number, totalBudget: numb
 
 export function calculateDaysLeftInMonth(monthStr: string, monthStartDay = 1): number {
   const { end } = getMonthRange(monthStr, monthStartDay)
-  const today = new Date()
-  const diff = differenceInDays(end, today)
-  return Math.max(0, diff + 1)
+  return Math.max(0, differenceInCalendarDays(end, new Date()) + 1)
 }
 
 export function getDaysInSelectedMonth(monthStr: string): number {
@@ -768,11 +818,14 @@ export function calculateDebtRemainingRaw(
   return debt.startingBalance - totalPaidTowardDebt(debt.id, payments)
 }
 
-const DEBT_PAID_EPS = 1e-6
+/** Remainders below one minor unit (a cent; 0.1 mg of gold) are rounding dust from rate conversion, not debt. */
+function debtPaidEps(debt: Debt): number {
+  return debt.isGold ? 1e-4 : 0.005
+}
 
 export function isDebtFullyPaid(debt: Debt, payments: DebtPayment[], ctx?: DebtBalanceContext): boolean {
   if (debt.status === 'cleared') return true
-  return calculateDebtRemainingRaw(debt, payments, ctx) <= DEBT_PAID_EPS
+  return calculateDebtRemainingRaw(debt, payments, ctx) <= debtPaidEps(debt)
 }
 
 /**
@@ -818,12 +871,25 @@ export function computeDebtPaymentRecord(
     return { ok: false, error: 'This debt is already fully paid.' }
   }
 
+  if ((debt.isGold || paymentCurrency === 'XAU') && !(goldPricePerGram > 0)) {
+    return { ok: false, error: 'Gold price is unavailable. Try again once it loads.' }
+  }
+
   let amountInBase: number
   let amountInDebtUnit: number
 
-  if (paymentCurrency === 'XAU' && debt.isGold) {
-    amountInDebtUnit = amount
+  if (paymentCurrency === 'XAU') {
+    // Grams are priced through the gram price; the rates table never carries a usable XAU pair.
     amountInBase = goldGramsToMoney(amount, goldPricePerGram, debt.goldKarat)
+    if (debt.isGold) {
+      amountInDebtUnit = amount
+    } else {
+      const inDebtUnit = tryConvertCurrency(amountInBase, baseCurrency, debt.currency, exchangeRates)
+      if (inDebtUnit === null) {
+        return { ok: false, error: `No exchange rate from ${baseCurrency} to debt currency ${debt.currency}.` }
+      }
+      amountInDebtUnit = inDebtUnit
+    }
   } else {
     const inBase = tryConvertCurrency(amount, paymentCurrency, baseCurrency, exchangeRates)
     if (inBase === null) {
@@ -850,7 +916,7 @@ export function computeDebtPaymentRecord(
 
   const rateAtEntry = amount > 0 ? amountInBase / amount : 1
   const remainingRaw = calculateDebtRemainingRaw(debt, debtPayments, balanceCtx)
-  if (amountInDebtUnit > remainingRaw + 1e-6) {
+  if (amountInDebtUnit > remainingRaw + debtPaidEps(debt)) {
     const unit = debt.isGold ? 'g' : debt.currency
     return {
       ok: false,
@@ -879,7 +945,7 @@ export function calculateDebtRemainingInBaseCurrency(
   goldPriceAvailable: boolean
 ): number {
   if (debt.isGold) {
-    if (!goldPriceAvailable) return 0
+    if (!goldPriceAvailable || !(goldPricePerGram > 0)) return 0
     return goldGramsToMoney(remaining, goldPricePerGram, debt.goldKarat)
   }
   return convertCurrency(remaining, debt.currency, baseCurrency, rates)
@@ -904,7 +970,7 @@ export function getPaymentMethodBreakdown(
   const breakdown: Record<string, { count: number; total: number }> = {}
 
   for (const expense of expenses) {
-    if (isNonSpendCategory(expense.category)) continue
+    if (isNonSpendExpense(expense)) continue
     const method = paymentMethods.find((m) => m.id === expense.paymentMethodId)
     const name = method?.name || 'Unknown'
     if (!breakdown[name]) breakdown[name] = { count: 0, total: 0 }

@@ -1,10 +1,17 @@
 name: CI
 
+# Runs on every PR and on every push to dev and main (the workflow pushes both together, so main is not the only gate).
+# Docs-only changes skip it; a newer push cancels a run that is still going.
 on:
   push:
-    branches: [main, master, dev]
+    branches: [dev, main]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
-    branches: [main, master, dev]
+    paths-ignore: ['docs/**', '**/*.md']
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -27,13 +34,60 @@ jobs:
 
       - run: npx tsc --noEmit
 
+      # Pinned zone: tests must not depend on the runner's local timezone.
       - run: npm run test
+        env:
+          TZ: America/New_York
 
+      # Dummy values: the build only needs the vars to exist. No real secrets are exposed to PR runs.
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: https://dummy.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy-publishable-key
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
+          SUPABASE_SECRET_KEY: dummy-secret-key
           NEXT_PUBLIC_APP_URL: https://buddget.app
+
+  # The six *.pg.test.ts admin suites skip silently without QA_PG_URL. scripts/qa/setup.sh builds a stub auth schema,
+  # the public tables and the admin migrations on a plain Postgres (no Supabase roles/extensions needed beyond what
+  # base.sql creates), so an ephemeral service container is enough. continue-on-error until this job has proven
+  # stable on a real runner (it could only be validated locally, not on GitHub Actions).
+  pg-admin-tests:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      QA_PG_URL: postgres://postgres@localhost:5432/qa
+      TZ: America/New_York
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
+      - name: Build QA database
+        run: bash scripts/qa/setup.sh
+
+      - name: Run pg suites (fail if any is skipped)
+        run: |
+          npx vitest run .pg.test.ts --reporter=json --outputFile=pg-report.json
+          node -e "const r=require('./pg-report.json'); if(r.numPendingTests>0||r.numTotalTests===0){console.error('pg suites skipped:',r.numPendingTests,'of',r.numTotalTests);process.exit(1)}"

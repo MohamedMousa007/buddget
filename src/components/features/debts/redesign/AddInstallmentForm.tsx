@@ -27,7 +27,8 @@ import { useT } from '@/lib/i18n'
 type PlanMode = 'total' | 'installment'
 
 export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
-  const t = useT().debts
+  const dict = useT()
+  const t = dict.debts
   const freqOptions = [
     { value: 'weekly' as const, label: t.fWeekly },
     { value: 'monthly' as const, label: t.fMonthly },
@@ -162,9 +163,11 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
             compact
             value={d.currency}
             onChange={(c) => d.setCurrency(c as unknown as Currency)}
+            disabled={d.currencyLocked}
             className="h-[52px] w-24 shrink-0 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
           />
         </div>
+        {d.currencyLocked ? <p className="mt-2 px-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
       </div>
 
       <div>

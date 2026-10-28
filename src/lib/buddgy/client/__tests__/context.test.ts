@@ -11,6 +11,7 @@ const base: ContextInput = {
   cycleEnd: '2026-10-31',
   cycleDay: 19,
   cycleLength: 31,
+  hideAmounts: false,
   income: 12000,
   spent: 7400.4,
   leftToSpend: 4599.6,
@@ -30,6 +31,12 @@ describe('renderContext', () => {
     expect(out).toContain('income 12000 · spent 7400 · left 4600 · safe/day 380 · pace on_track')
     expect(out).toContain('on /expenses')
     expect(out.length).toBeLessThan(500)
+  })
+
+  it('sends no amounts when the user hides balances from Buddgy', () => {
+    const out = renderContext({ ...base, hideAmounts: true })
+    expect(out).not.toMatch(/12000|7400|4600|380/)
+    expect(out).toContain('pace on_track')
   })
 
   it('leaves out a safe daily amount that is zero, so the model does not read it as "nothing safe to spend"', () => {

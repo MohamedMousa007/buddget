@@ -3,6 +3,8 @@
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { AccountPicker } from '@/components/features/accounts/AccountPicker'
+import type { LegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor, pocketIdentity } from '@/lib/savings/pocketIdentity'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
@@ -42,29 +44,42 @@ export function PocketRadioList({ pockets, value, onChange, label }: {
 }
 
 /** The app's amount + currency row: glass AmountField beside a compact CurrencyField. */
-export function AmountCurrencyRow({ amount, onAmount, currency, onCurrency, amountLabel, currencyLabel }: {
+export function AmountCurrencyRow({ amount, onAmount, currency, onCurrency, amountLabel, currencyLabel, includeGold }: {
   amount: string
   onAmount: (v: string) => void
   currency: Currency
   onCurrency: (c: Currency) => void
   amountLabel: string
   currencyLabel: string
+  /** Offer gold (XAU) in the picker, for debt currency choices. */
+  includeGold?: boolean
 }) {
   return (
     <div className="grid gap-2.5" style={{ gridTemplateColumns: 'minmax(0,1fr) 108px' }}>
       <div>
         <p style={micro}>{amountLabel}</p>
-        <div className="mt-2"><AmountField value={amount} onChange={onAmount} placeholder="0" /></div>
+        <div className="mt-2"><AmountField value={amount} onChange={onAmount} decimalsFor={currency} placeholder="0" /></div>
       </div>
       <div>
         <p style={micro}>{currencyLabel}</p>
         <CurrencyField
           compact
           value={currency}
+          includeGold={includeGold}
           onChange={(c) => onCurrency(c as unknown as Currency)}
           className="mt-2 h-[52px] w-full rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
         />
       </div>
+    </div>
+  )
+}
+
+/** The one "From account" (deposit) / "To account" (withdraw) row; hidden when no tracked account can carry the leg. */
+export function AccountLegRow({ leg, label }: { leg: LegAccount; label: string }) {
+  if (leg.views.length === 0 || !leg.accountId) return null
+  return (
+    <div>
+      <AccountPicker accounts={leg.views} value={leg.accountId} onChange={leg.setAccountId} label={label} />
     </div>
   )
 }

@@ -4,7 +4,7 @@ import type { IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
 /**
  * Payday scheduling for recurring income sources. Fixed days-of-month semantics:
  * monthly = 1 payday, biweekly = 2 (semi-monthly style, e.g. 5th + 20th),
- * weekly = 4. Weekend paydays shift to the previous business day.
+ * weekly = 4. Paydays on the employer weekend shift to the previous working day.
  *
  * Standalone module (no import from calculations.ts) so both calculations.ts and
  * incomeOccurrences.ts can build on it without a cycle.
@@ -15,6 +15,11 @@ export function paydaysPerMonth(freq: IncomeRecurringFrequency | undefined): num
   if (freq === 'weekly') return 4
   if (freq === 'biweekly') return 2
   return 1
+}
+
+/** Paydays a source actually pays per month: its configured payday days, else the frequency default. */
+export function monthlyPaydayCount(source: IncomeSource): number {
+  return sourcePaydayDays(source)?.length ?? paydaysPerMonth(source.recurringFrequency)
 }
 
 /** Local-date `YYYY-MM-DD` (avoids the UTC shift of toISOString). */
@@ -71,6 +76,13 @@ export function shiftToBusinessDay(d: Date): Date {
   return addDays(d, dow === 6 ? 2 : 1)
 }
 
+/** The weekend shift, except a payday on the window's first day moves forward instead of out of its cycle. */
+function shiftIntoWindow(d: Date, start: Date): Date {
+  const shifted = shiftToBusinessDay(d)
+  if (shifted >= start) return shifted
+  return addDays(d, d.getDay() === 6 ? 2 : 1)
+}
+
 /** Historical weekly behavior: anchor on dayOfMonth, walk ±7 days across the window. */
 function legacyWeeklyWalk(source: IncomeSource, start: Date, end: Date): Date[] {
   const daysInMonth = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
@@ -93,14 +105,16 @@ function legacyWeeklyWalk(source: IncomeSource, start: Date, end: Date): Date[] 
  * collapse to one payday. If a weekend shift would collide with an existing
  * payday, the later payday keeps its unshifted date so the count is preserved.
  */
-export function paydayDatesForWindow(source: IncomeSource, start: Date, end: Date): Date[] {
+export function paydayDatesForWindow(source: IncomeSource, start: Date, end: Date, cycle = true): Date[] {
   const days = sourcePaydayDays(source)
-  const raw = days ? datesFromDays(days, start, end) : legacyWeeklyWalk(source, start, end)
+  const walked = days ? datesFromDays(days, start, end) : legacyWeeklyWalk(source, start, end)
+  // In a budget cycle a payday belongs to the window holding its calendar date, so a shifted one is never in two cycles.
+  const raw = cycle ? walked.filter((d) => isWithinInterval(d, { start, end })) : walked
 
   const taken = new Set<number>()
   const out: Date[] = []
   for (const d of raw) {
-    const shifted = shiftToBusinessDay(d)
+    const shifted = cycle ? shiftIntoWindow(d, start) : shiftToBusinessDay(d)
     const pick = taken.has(shifted.getTime()) ? d : shifted
     if (taken.has(pick.getTime())) continue
     taken.add(pick.getTime())

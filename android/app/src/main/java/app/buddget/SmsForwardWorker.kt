@@ -90,12 +90,17 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
     }
 
     private fun buildBody(message: String, sender: String, receivedAt: String): String {
-        fun esc(s: String) = s
-            .replace("\\", "\\\\")
-            .replace("\"", "\\\"")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t")
+        fun esc(s: String) = buildString {
+            for (c in s) when {
+                c == '\\' -> append("\\\\")
+                c == '"' -> append("\\\"")
+                c == '\n' -> append("\\n")
+                c == '\r' -> append("\\r")
+                c == '\t' -> append("\\t")
+                c < ' ' -> append("\\u%04x".format(c.code))
+                else -> append(c)
+            }
+        }
 
         return """{"message":"${esc(message)}","sender":"${esc(sender)}","source":"sms","receivedAt":"${esc(receivedAt)}"}"""
     }

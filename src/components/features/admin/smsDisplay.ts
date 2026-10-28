@@ -31,7 +31,7 @@ export const LEARN: Record<string, { label: string; tone: Tone }> = {
   regex_invalid: { label: 'bad-regex', tone: 'bad' }, regex_no_match: { label: 'no-match', tone: 'bad' },
   gate_amount_mismatch: { label: 'gate:amount', tone: 'bad' }, gate_currency_mismatch: { label: 'gate:ccy', tone: 'bad' },
   gate_last4_mismatch: { label: 'gate:last4', tone: 'bad' }, gate_wrong_token_balance: { label: 'gate:balance', tone: 'bad' },
-  gate_capture_unsound: { label: 'gate:capture', tone: 'bad' }, gate_regex_too_greedy: { label: 'gate:greedy', tone: 'bad' },
+  gate_capture_unsound: { label: 'gate:capture', tone: 'bad' }, gate_regex_too_greedy: { label: 'gate:greedy', tone: 'bad' }, gate_regex_unsafe: { label: 'gate:unsafe', tone: 'bad' },
   gate_no_match: { label: 'gate:no-match', tone: 'bad' }, insert_failed: { label: 'ins-fail', tone: 'bad' }, exception: { label: 'exc', tone: 'bad' },
 }
 

@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import { parseISO } from 'date-fns'
 import { ShoppingCart, TrendingUp } from 'lucide-react'
 import type { SavingsAccount, SavingsTransaction, Currency } from '@/lib/store/types'
-import { convertCurrency } from '@/lib/utils/currency'
+import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
+import { useGoldQuote } from '@/hooks/useGoldQuote'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { pocketColor } from '@/lib/savings/pocketIdentity'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
@@ -14,6 +15,8 @@ import { rgba } from '@/lib/utils/color'
 import { Button } from '@/components/ui/button'
 import { catForAccount, type CatKey } from '@/lib/savings/wealthModel'
 import { useT } from '@/lib/i18n'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { formatCurrency } from '@/lib/utils/formatters'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
@@ -40,6 +43,16 @@ export interface ActivityLedgerProps {
 export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll }: ActivityLedgerProps) {
   const t = useT().wealthPage
   const deleteTx = useFinanceStore((s) => s.deleteSavingsTransaction)
+  const showToast = useActionToast()
+  const onDelete = (id: string) => {
+    const res = deleteTx(id)
+    if (res.ok || res.reason !== 'would_go_negative') return
+    const pocket = accounts.find((a) => a.id === res.accountId)
+    showToast(t.deleteBlocked(pocket?.name ?? '', formatCurrency(res.shortBy, pocket?.currency ?? baseCurrency)))
+  }
+  const gold = useGoldQuote()
+  const inBase = (tx: SavingsTransaction) =>
+    tryConvertWithGold(tx.amount, tx.currency, baseCurrency, exchangeRates, baseCurrency, gold)
   const [openId, setOpenId] = useState<string | null>(null)
   const acc = (id: string) => accounts.find((a) => a.id === id)
 
@@ -71,7 +84,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
   const dayTotal = (rows: SavingsTransaction[]) =>
     rows.reduce((s, r) => {
       const tag = tagFor(r)
-      return s + tag.sign * convertCurrency(r.amount, r.currency, baseCurrency, exchangeRates)
+      return s + tag.sign * (inBase(r) ?? 0)
     }, 0)
 
   return (
@@ -92,11 +105,11 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
           {rows.map((tx) => {
             const a = acc(tx.accountId)
             const tag = tagFor(tx)
-            const amtBase = convertCurrency(tx.amount, tx.currency, baseCurrency, exchangeRates)
-            const usd = convertCurrency(amtBase, baseCurrency, 'USD', exchangeRates)
+            const amtBase = inBase(tx) ?? 0
+            const usd = tryConvertCurrency(amtBase, baseCurrency, 'USD', exchangeRates) ?? 0
             const time = new Date(tx.date.length > 10 ? tx.date : tx.date + 'T12:00:00').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
             return (
-              <SwipeToDelete key={tx.id} onDelete={() => deleteTx(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
+              <SwipeToDelete key={tx.id} onDelete={() => onDelete(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
                 <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] lg:bg-transparent">
                   <TransactionRow
                     icon={a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.label === 'Withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}

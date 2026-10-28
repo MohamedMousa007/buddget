@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { LucideIcon, LucideProps } from 'lucide-react'
-import { Landmark, Plus, SlidersHorizontal, Coins } from 'lucide-react'
+import { Coins, Landmark, Plus, Wallet } from 'lucide-react'
 import type { Dictionary } from '@/lib/i18n'
 import { FlowTabIcon } from '@/components/icons/FlowTabIcon'
 
@@ -12,18 +12,20 @@ export type BottomNavItem =
 
 export const BOTTOM_NAV_ITEMS: BottomNavItem[] = [
   { kind: 'link', href: '/flow', label: 'flow', icon: FlowTabIcon },
-  { kind: 'link', href: '/budget-setup', label: 'budgetSetup', icon: SlidersHorizontal },
+  { kind: 'link', href: '/accounts', label: 'accounts', icon: Wallet },
   { kind: 'fab', icon: Plus },
-  { kind: 'link', href: '/accounts', label: 'accounts', icon: Landmark },
   { kind: 'link', href: '/wealth', label: 'wealth', icon: Coins },
+  { kind: 'link', href: '/debts', label: 'debts', icon: Landmark },
 ]
+
+/** Budget lives in the header, not the bar; these routes light its button. */
+export const BUDGET_PATHS: ReadonlySet<string> = new Set(['/budget-setup', '/budget-history', '/subscriptions'])
 
 /** Routes that light each tab: the tab's own page plus its aliases and the pages it owns. */
 export const BOTTOM_NAV_TAB_PATHS: Record<string, ReadonlySet<string>> = {
   '/flow': new Set(['/', '/flow', '/expenses', '/income', '/paydays']),
-  '/budget-setup': new Set(['/budget-setup', '/budget-history', '/subscriptions']),
+  '/budget-setup': BUDGET_PATHS,
   '/wealth': new Set(['/wealth', '/savings', '/investment']),
-  '/accounts': new Set(['/accounts', '/debts']),
 }
 
 /** Maps a route to its header section-title dictionary key (`t.nav[key]`). */

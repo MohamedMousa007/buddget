@@ -62,3 +62,13 @@ describe('network status', () => {
     expect(seen).toEqual([false])
   })
 })
+
+describe('native bootstrap', () => {
+  it('asks the OS for connectivity as soon as the module loads, not on first read', async () => {
+    const getStatus = vi.fn().mockResolvedValue({ connected: false })
+    vi.doMock('@/lib/native/isNative', () => ({ isNative: () => true }))
+    vi.doMock('@capacitor/network', () => ({ Network: { getStatus, addListener: vi.fn() } }))
+    await import('@/hooks/useNetworkStatus')
+    await vi.waitFor(() => expect(getStatus).toHaveBeenCalled())
+  })
+})

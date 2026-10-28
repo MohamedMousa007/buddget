@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateMonthlyIncome,
+  expectedRecurringForMonth,
   calculateRecurringIncomeForCalendarMonth,
   sumRecurringIncomeOverDateRange,
   projectedIncomeForMonth,
   actualIncomeForMonth,
   isIncomeOccurrencePending,
   suggestIncomeTemplate,
-  incomeMonthlyMultiplier,
   goldPurityFactor,
   goldGramsToMoney,
   moneyToGoldGrams,
@@ -17,6 +17,7 @@ import {
   calculateTotalBudgetExcludingSavings,
   expenseAmountInBase,
 } from './calculations'
+import { deriveDefaultPaydays } from './paydaySchedule'
 import type { IncomeSource, IncomeEvent, Expense, BudgetCategory } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 
@@ -35,12 +36,12 @@ function src(partial: Partial<IncomeSource> & Pick<IncomeSource, 'id' | 'name' |
   }
 }
 
-describe('incomeMonthlyMultiplier', () => {
-  it('normalizes weekly and bi-weekly to monthly equivalent factors', () => {
-    expect(incomeMonthlyMultiplier('monthly')).toBe(1)
-    expect(incomeMonthlyMultiplier(undefined)).toBe(1)
-    expect(incomeMonthlyMultiplier('weekly')).toBeCloseTo(52 / 12, 10)
-    expect(incomeMonthlyMultiplier('biweekly')).toBeCloseTo(26 / 12, 10)
+describe('calculateMonthlyIncome vs the Income tab', () => {
+  it.each(['weekly', 'biweekly', 'monthly'] as const)('%s default schedule matches expectedRecurringForMonth', (freq) => {
+    const s = src({ id: '1', name: 'A', amount: 500, currency: 'AED', recurringFrequency: freq, paydayDays: deriveDefaultPaydays(5, freq) })
+    const expected = { weekly: 2000, biweekly: 1000, monthly: 500 }[freq]
+    expect(calculateMonthlyIncome([s], 'AED', {})).toBe(expected)
+    expect(expectedRecurringForMonth(s, '2024-07', 1)).toBe(expected)
   })
 })
 
@@ -82,7 +83,7 @@ describe('calculateMonthlyIncome', () => {
     expect(calculateMonthlyIncome(sources, 'AED', {}, '2025-01', 1)).toBe(0)
   })
 
-  it('treats weekly amount as per-week before monthly conversion', () => {
+  it('counts four paychecks for a weekly source', () => {
     const sources: IncomeSource[] = [
       src({
         id: '1',
@@ -93,7 +94,7 @@ describe('calculateMonthlyIncome', () => {
         recurringFrequency: 'weekly',
       }),
     ]
-    expect(calculateMonthlyIncome(sources, 'AED', {})).toBeCloseTo(300 * (52 / 12), 5)
+    expect(calculateMonthlyIncome(sources, 'AED', {})).toBe(1200)
   })
 })
 
@@ -231,17 +232,17 @@ describe('isIncomeOccurrencePending', () => {
   }
 
   it('is pending when the due day passed and no event landed', () => {
-    expect(isIncomeOccurrencePending(tmpl, [], '2025-01', new Date('2025-01-10'), 1)).toBe(true)
+    expect(isIncomeOccurrencePending(tmpl, [], '2025-01', new Date(2025, 0, 10), 1)).toBe(true)
   })
   it('is not pending once a linked event exists in the month', () => {
-    expect(isIncomeOccurrencePending(tmpl, [evt], '2025-01', new Date('2025-01-10'), 1)).toBe(false)
+    expect(isIncomeOccurrencePending(tmpl, [evt], '2025-01', new Date(2025, 0, 10), 1)).toBe(false)
   })
   it('is not pending for a future/not-yet-due occurrence', () => {
-    expect(isIncomeOccurrencePending(tmpl, [], '2025-02', new Date('2025-01-10'), 1)).toBe(false)
+    expect(isIncomeOccurrencePending(tmpl, [], '2025-02', new Date(2025, 0, 10), 1)).toBe(false)
   })
   it('is not pending for a non-recurring source', () => {
     const oneTime = src({ id: 'o1', name: 'Bonus', amount: 100, currency: 'AED', isRecurring: false })
-    expect(isIncomeOccurrencePending(oneTime, [], '2025-01', new Date('2025-01-10'), 1)).toBe(false)
+    expect(isIncomeOccurrencePending(oneTime, [], '2025-01', new Date(2025, 0, 10), 1)).toBe(false)
   })
 })
 
@@ -298,8 +299,8 @@ describe('sumRecurringIncomeOverDateRange', () => {
     const sources: IncomeSource[] = [
       src({ id: '1', name: 'Job', amount: 1000, currency: 'AED', createdAt: '2020-01-01T00:00:00.000Z' }),
     ]
-    const start = new Date('2025-01-10')
-    const end = new Date('2025-03-20')
+    const start = new Date(2025, 0, 10)
+    const end = new Date(2025, 2, 20)
     expect(sumRecurringIncomeOverDateRange(sources, 'AED', {}, start, end)).toBe(3000)
   })
 })

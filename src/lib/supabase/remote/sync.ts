@@ -39,6 +39,8 @@ export interface FlushResult {
   anyError: boolean
   errors: string[]
   writes: number
+  /** Local payday events dropped because another device's live row won; the store must drop them too. */
+  adoptedPaydays?: string[]
 }
 
 
@@ -70,37 +72,84 @@ export function defaultServerSettings(baseCurrency: Currency, secondaryCurrency:
   }
 }
 
+type PgError = { message: string; code?: string } | null
+type Writes = Array<() => Promise<unknown>>
+
 class OpRunner {
   errors: string[] = []
+  adopted: string[] = []
   writes = 0
-  private ops: Promise<unknown>[] = []
+  private ops: Writes = []
+  private removals: Writes = []
 
   constructor(private client: Client) {}
 
-  /** Upsert a batch of rows to a table. Supabase PostgrestFilterBuilder is thenable, so `await` works. */
+  private from(table: TableName) {
+    return this.client.from(table) as never as {
+      upsert: (r: unknown) => Promise<{ error: PgError }>
+      update: (patch: unknown) => { eq: (col: string, v: string) => Promise<{ error: PgError }> }
+      select: (cols: string) => {
+        eq: (col: string, v: string) => {
+          eq: (col: string, v: string) => {
+            is: (col: string, v: null) => { maybeSingle: () => Promise<{ data: { id: string; updated_at: string } | null; error: PgError }> }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Upsert a batch of rows to a table. A 23505 (unique violation) must not poison the whole
+   * batch: the rows are retried one by one, and a duplicate payday event adopts the live row.
+   */
   upsert<T extends TableName>(table: T, rows: readonly Database['public']['Tables'][T]['Insert'][], label: string) {
     if (rows.length === 0) return
-    // Cast to `never` to sidestep the huge union PostgREST exposes.
-    const promise = (this.client.from(table) as never as {
-      upsert: (r: unknown) => Promise<{ error: { message: string } | null }>
-    }).upsert(rows)
-    this.ops.push(
-      promise.then((res) => {
-        this.writes++
-        if (res.error) this.errors.push(`${label}: ${res.error.message}`)
-      })
-    )
+    this.ops.push(async () => {
+      const res = await this.from(table).upsert(rows)
+      this.writes++
+      if (!res.error) return
+      if (res.error.code !== '23505') {
+        this.errors.push(`${label}: ${res.error.message}`)
+        return
+      }
+      for (const row of rows) {
+        const one = await this.from(table).upsert([row])
+        if (!one.error) continue
+        if (one.error.code === '23505' && table === 'income_events' && (await this.adoptLivePayday(row as Record<string, unknown>))) continue
+        this.errors.push(`${label}: ${one.error.message}`)
+      }
+    })
+  }
+
+  /** Another device already wrote this (template, payday): keep its row id, carry our newer edit onto it. */
+  private async adoptLivePayday(row: Record<string, unknown>): Promise<boolean> {
+    if (typeof row.template_id !== 'string' || typeof row.occurrence_date !== 'string') return false
+    const live = await this.from('income_events')
+      .select('id, updated_at')
+      .eq('template_id', row.template_id)
+      .eq('occurrence_date', row.occurrence_date)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (live.error || !live.data) return false
+    if (live.data.id === row.id) return false
+    this.adopted.push(String(row.id))
+    if (String(row.updated_at ?? '') > live.data.updated_at) {
+      const { id: _id, user_id: _user, created_at: _created, ...patch } = row
+      const upd = await this.from('income_events').update(patch).eq('id', live.data.id)
+      if (upd.error) return false
+    }
+    return true
   }
 
   delete(table: TableName, ids: readonly string[], label: string) {
     if (ids.length === 0) return
-    const promise = (this.client.from(table) as never as {
-      delete: () => { in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }> }
-    })
-      .delete()
-      .in('id', ids)
-    this.ops.push(
-      promise.then((res) => {
+    this.removals.push(() =>
+      (this.client.from(table) as never as {
+        delete: () => { in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }> }
+      })
+        .delete()
+        .in('id', ids)
+        .then((res) => {
         this.writes++
         if (res.error) this.errors.push(`${label}: ${res.error.message}`)
       })
@@ -116,24 +165,26 @@ class OpRunner {
    */
   tombstone(table: TableName, ids: readonly string[], label: string) {
     if (ids.length === 0) return
-    const promise = (this.client.from(table) as never as {
-      update: (patch: { deleted_at: string }) => {
-        in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
-      }
-    })
-      .update({ deleted_at: new Date().toISOString() })
-      .in('id', ids)
-    this.ops.push(
-      promise.then((res) => {
+    this.removals.push(() =>
+      (this.client.from(table) as never as {
+        update: (patch: { deleted_at: string }) => {
+          in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
+        }
+      })
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', ids)
+        .then((res) => {
         this.writes++
         if (res.error) this.errors.push(`${label}: ${res.error.message}`)
       })
     )
   }
 
+  /** Tombstones and deletes land first so a removed row frees its unique key for a same-flush replacement. */
   async drain(): Promise<FlushResult> {
-    await Promise.all(this.ops)
-    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes }
+    await Promise.all(this.removals.map((run) => run()))
+    await Promise.all(this.ops.map((run) => run()))
+    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes, adoptedPaydays: this.adopted }
   }
 }
 
@@ -167,7 +218,8 @@ export async function flushDiff(
   prev: Snapshot,
   next: Snapshot
 ): Promise<FlushResult> {
-  const runner = new OpRunner(client)
+  // Writes drain tier by tier so a parent row commits before any child that references it (FK order).
+  const [roots, level1, level2, level3] = [new OpRunner(client), new OpRunner(client), new OpRunner(client), new OpRunner(client)]
 
   // Singletons
   const profileExtras = {
@@ -187,10 +239,10 @@ export async function flushDiff(
   }
   const nextProfileSig = { profile: next.profile, extras: profileExtras }
   if (diffSingleton(nextProfileSig, prevProfileSig) != null) {
-    runner.upsert('profiles', [profileToRow(next.profile, profileExtras, userId)], 'profiles.upsert')
+    roots.upsert('profiles', [profileToRow(next.profile, profileExtras, userId)], 'profiles.upsert')
   }
   if (diffSingleton(next.settings, prev.settings) != null) {
-    runner.upsert('user_settings', [settingsToRow(next.settings, userId)], 'user_settings.upsert')
+    roots.upsert('user_settings', [settingsToRow(next.settings, userId)], 'user_settings.upsert')
   }
 
   // Array slices — the built-in `pm_default_cash` sentinel is kept in-store
@@ -199,34 +251,27 @@ export async function flushDiff(
   // pointed at it are null-emitted by the expense / debt-payment mappers.
   const nextPayments = next.paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
   const prevPayments = prev.paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
-  emitList(runner, 'payment_methods', nextPayments, prevPayments, paymentMethodToRow, userId)
-  emitList(runner, 'income_sources', next.incomeSources, prev.incomeSources, incomeSourceToRow, userId)
-  emitList(runner, 'income_events', next.incomeEvents, prev.incomeEvents, incomeEventToRow, userId)
-  // Receipts MUST commit before expenses: `expenses.receipt_id` FK will reject
-  // the expense insert if the receipt row isn't visible yet. Drain receipts in a
-  // dedicated pass so Postgres sees the committed row before the expense upsert runs.
-  const receiptRunner = new OpRunner(client)
-  emitList(receiptRunner, 'receipts', next.receipts, prev.receipts, receiptToRow, userId)
-  const receiptResult = await receiptRunner.drain()
-  runner.errors.push(...receiptResult.errors)
-  runner.writes += receiptResult.writes
-  emitList(runner, 'expenses', next.expenses, prev.expenses, expenseToRow, userId)
-  emitList(runner, 'recurring_expenses', next.recurringExpenses, prev.recurringExpenses, recurringExpenseToRow, userId)
-  emitList(runner, 'subscriptions', next.subscriptions, prev.subscriptions, subscriptionToRow, userId)
-  emitList(runner, 'debts', next.debts, prev.debts, debtToRow, userId)
-  emitList(runner, 'debt_payments', next.debtPayments, prev.debtPayments, debtPaymentToRow, userId)
-  emitList(runner, 'recurring_debt_payments', next.recurringDebtPayments, prev.recurringDebtPayments, recurringDebtPaymentToRow, userId)
-  emitList(runner, 'savings_accounts', next.savingsAccounts, prev.savingsAccounts, savingsAccountToRow, userId)
-  emitList(runner, 'savings_holdings', next.investmentHoldings, prev.investmentHoldings, investmentHoldingToRow, userId)
-  emitList(runner, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
-  emitList(runner, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)
-  emitList(runner, 'goals', next.goals, prev.goals, goalToRow, userId)
-  emitList(runner, 'buddgy_memories', next.buddgyMemories, prev.buddgyMemories, memoryToRow, userId)
-  emitList(runner, 'account_adjustments', next.accountAdjustments, prev.accountAdjustments, accountAdjustmentToRow, userId)
+  emitList(roots, 'payment_methods', nextPayments, prevPayments, paymentMethodToRow, userId)
+  emitList(level1, 'income_sources', next.incomeSources, prev.incomeSources, incomeSourceToRow, userId)
+  emitList(level1, 'income_events', next.incomeEvents, prev.incomeEvents, incomeEventToRow, userId)
+  emitList(level1, 'receipts', next.receipts, prev.receipts, receiptToRow, userId)
+  emitList(level3, 'expenses', next.expenses, prev.expenses, expenseToRow, userId)
+  emitList(level2, 'recurring_expenses', next.recurringExpenses, prev.recurringExpenses, recurringExpenseToRow, userId)
+  emitList(level1, 'subscriptions', next.subscriptions, prev.subscriptions, subscriptionToRow, userId)
+  emitList(level1, 'debts', next.debts, prev.debts, debtToRow, userId)
+  emitList(level2, 'debt_payments', next.debtPayments, prev.debtPayments, debtPaymentToRow, userId)
+  emitList(level2, 'recurring_debt_payments', next.recurringDebtPayments, prev.recurringDebtPayments, recurringDebtPaymentToRow, userId)
+  emitList(level1, 'savings_accounts', next.savingsAccounts, prev.savingsAccounts, savingsAccountToRow, userId)
+  emitList(level1, 'savings_holdings', next.investmentHoldings, prev.investmentHoldings, investmentHoldingToRow, userId)
+  emitList(level2, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
+  emitList(level2, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)
+  emitList(roots, 'goals', next.goals, prev.goals, goalToRow, userId)
+  emitList(level1, 'account_adjustments', next.accountAdjustments, prev.accountAdjustments, accountAdjustmentToRow, userId)
 
-  flushBudgetPlans(runner, userId, prev, next, next.settings.baseCurrency)
+  flushBudgetPlans([roots, level1, level2], userId, prev, next, next.settings.baseCurrency)
+  emitList(level1, 'buddgy_memories', next.buddgyMemories, prev.buddgyMemories, memoryToRow, userId)
 
-  const result = await runner.drain()
+  const result = mergeResults([await roots.drain(), await level1.drain(), await level2.drain(), await level3.drain()])
   // Activations reference plans (FK), so they commit only after the plan rows above are in.
   // A re-switch in the same cycle replaces the row, and the one-live-row-per-cycle index would reject
   // the new row while the old one is still live, so the tombstone lands first.
@@ -241,18 +286,23 @@ export async function flushDiff(
     'budget_plan_activations.upsert'
   )
   const freshResult = await freshRunner.drain()
+  return mergeResults([result, staleResult, freshResult])
+}
+
+function mergeResults(results: FlushResult[]): FlushResult {
   return {
-    anyError: result.anyError || staleResult.anyError || freshResult.anyError,
-    errors: [...result.errors, ...staleResult.errors, ...freshResult.errors],
-    writes: result.writes + staleResult.writes + freshResult.writes,
+    anyError: results.some((r) => r.anyError),
+    errors: results.flatMap((r) => r.errors),
+    writes: results.reduce((n, r) => n + r.writes, 0),
+    adoptedPaydays: results.flatMap((r) => r.adoptedPaydays ?? []),
   }
 }
 
-function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next: Snapshot, baseCurrency: Currency) {
+function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunner, OpRunner], userId: string, prev: Snapshot, next: Snapshot, baseCurrency: Currency) {
   const planDiff = diffLists(next.budgetPlans, prev.budgetPlans)
   const planRows = [...planDiff.inserts, ...planDiff.updates].map((p) => budgetPlanToRow(p, userId))
-  runner.upsert('budget_plans', planRows, 'budget_plans.upsert')
-  runner.tombstone('budget_plans', planDiff.deletes, 'budget_plans.tombstone')
+  plans.upsert('budget_plans', planRows, 'budget_plans.upsert')
+  plans.tombstone('budget_plans', planDiff.deletes, 'budget_plans.tombstone')
 
   const nextCats = next.budgetPlans.flatMap((p) =>
     p.categories.map((c, idx) => ({ ...c, _planId: p.id, _sortOrder: idx }))
@@ -264,8 +314,8 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
   const catRows = [...catDiff.inserts, ...catDiff.updates].map((c) =>
     budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency)
   )
-  runner.upsert('budget_categories', catRows, 'budget_categories.upsert')
-  runner.tombstone('budget_categories', catDiff.deletes, 'budget_categories.tombstone')
+  categories.upsert('budget_categories', catRows, 'budget_categories.upsert')
+  categories.tombstone('budget_categories', catDiff.deletes, 'budget_categories.tombstone')
 
   const nextSubs = next.budgetPlans.flatMap((p) =>
     p.categories.flatMap((c) => c.subcategories.map((s, idx) => ({ ...s, _catId: c.id, _sortOrder: idx })))
@@ -277,8 +327,39 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
   const subRows = [...subDiff.inserts, ...subDiff.updates].map((s) =>
     budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder)
   )
-  runner.upsert('budget_subcategories', subRows, 'budget_subcategories.upsert')
-  runner.tombstone('budget_subcategories', subDiff.deletes, 'budget_subcategories.tombstone')
+  subcategories.upsert('budget_subcategories', subRows, 'budget_subcategories.upsert')
+  subcategories.tombstone('budget_subcategories', subDiff.deletes, 'budget_subcategories.tombstone')
+}
+
+const PAGE_SIZE = 1000
+
+type PageResult = { data: unknown[] | null; error: { message: string } | null }
+
+function throwOnError<T extends { error: { message: string } | null }>(res: T, label: string): T {
+  if (res.error) throw new Error(`pull ${label}: ${res.error.message}`)
+  return res
+}
+
+/** Every live row of a user-owned table, paged past PostgREST's row cap. A failed query throws instead of reading as "no rows". */
+async function fetchLive<TN extends TableName>(client: Client, table: TN, userId: string): Promise<Database['public']['Tables'][TN]['Row'][]> {
+  const rows: unknown[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const res = (await (client.from(table) as never as {
+      select: (c: string) => {
+        eq: (c: string, v: string) => {
+          is: (c: string, v: null) => { order: (c: string) => { range: (a: number, b: number) => PromiseLike<PageResult> } }
+        }
+      }
+    })
+      .select('*')
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .order('id')
+      .range(from, from + PAGE_SIZE - 1)) as PageResult
+    throwOnError(res, String(table))
+    rows.push(...(res.data ?? []))
+    if ((res.data?.length ?? 0) < PAGE_SIZE) return rows as Database['public']['Tables'][TN]['Row'][]
+  }
 }
 
 /**
@@ -289,11 +370,13 @@ function flushBudgetPlans(runner: OpRunner, userId: string, prev: Snapshot, next
  * the sync-layer diff; per-page hooks can update Zustand independently.
  */
 export async function pullCore(client: Client, userId: string): Promise<Snapshot | null> {
-  const [profileR, settingsR, pmR] = await Promise.all([
+  const [profileR, settingsR, pmRows] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
-    client.from('payment_methods').select('*').eq('user_id', userId).is('deleted_at', null),
+    fetchLive(client, 'payment_methods', userId),
   ])
+  throwOnError(profileR, 'profiles')
+  throwOnError(settingsR, 'user_settings')
 
   if (!profileR.data) return null
 
@@ -308,7 +391,7 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
     settings,
     financialGoalsNotes: extras.financialGoalsNotes,
     activeBudgetPlanId: extras.activeBudgetPlanId,
-    paymentMethods: (pmR.data ?? []).map(paymentMethodFromRow),
+    paymentMethods: pmRows.map(paymentMethodFromRow),
     incomeSources: [],
     incomeEvents: [],
     expenses: [],
@@ -337,35 +420,34 @@ export async function pullCore(client: Client, userId: string): Promise<Snapshot
 export async function pullAll(client: Client, userId: string): Promise<Snapshot | null> {
   const [
     profileR, settingsR,
-    pmR, incomeR, incomeEvtR, expenseR, receiptR, recExpR, subR,
-    debtR, debtPayR, recDebtR,
-    saR, shR, stR, rsdR,
-    goalR, planR, catR, subcatR, activationR, memoryR, adjR,
+    pmRows, incomeRows, incomeEvtRows, expenseRows, receiptRows, recExpRows, subRows, debtRows, debtPayRows, recDebtRows, saRows, shRows, stRows, rsdRows, goalRows, planRows, catRows, subcatRows, activationRows, memoryRows, adjRows,
   ] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
-    client.from('payment_methods').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('income_sources').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('income_events').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('expenses').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('receipts').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('recurring_expenses').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('subscriptions').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('debts').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('debt_payments').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('recurring_debt_payments').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('savings_accounts').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('savings_holdings').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('savings_transactions').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('recurring_savings_deposits').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('goals').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('budget_plans').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('budget_categories').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('budget_subcategories').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('budget_plan_activations').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('buddgy_memories').select('*').eq('user_id', userId).is('deleted_at', null),
-    client.from('account_adjustments').select('*').eq('user_id', userId).is('deleted_at', null),
+    fetchLive(client, 'payment_methods', userId),
+    fetchLive(client, 'income_sources', userId),
+    fetchLive(client, 'income_events', userId),
+    fetchLive(client, 'expenses', userId),
+    fetchLive(client, 'receipts', userId),
+    fetchLive(client, 'recurring_expenses', userId),
+    fetchLive(client, 'subscriptions', userId),
+    fetchLive(client, 'debts', userId),
+    fetchLive(client, 'debt_payments', userId),
+    fetchLive(client, 'recurring_debt_payments', userId),
+    fetchLive(client, 'savings_accounts', userId),
+    fetchLive(client, 'savings_holdings', userId),
+    fetchLive(client, 'savings_transactions', userId),
+    fetchLive(client, 'recurring_savings_deposits', userId),
+    fetchLive(client, 'goals', userId),
+    fetchLive(client, 'budget_plans', userId),
+    fetchLive(client, 'budget_categories', userId),
+    fetchLive(client, 'budget_subcategories', userId),
+    fetchLive(client, 'budget_plan_activations', userId),
+    fetchLive(client, 'buddgy_memories', userId),
+    fetchLive(client, 'account_adjustments', userId),
   ])
+  throwOnError(profileR, 'profiles')
+  throwOnError(settingsR, 'user_settings')
 
   if (!profileR.data) return null
 
@@ -375,11 +457,11 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     ? settingsFromRow(settingsR.data, { baseCurrency: extras.baseCurrency, secondaryCurrency: secondary })
     : defaultServerSettings(extras.baseCurrency, secondary)
 
-  const plans = (planR.data ?? []).map((plan) =>
+  const plans = planRows.map((plan) =>
     assembleBudgetPlan({
       plan,
-      categories: catR.data ?? [],
-      subcategories: subcatR.data ?? [],
+      categories: catRows,
+      subcategories: subcatRows,
     })
   )
 
@@ -388,24 +470,24 @@ export async function pullAll(client: Client, userId: string): Promise<Snapshot 
     settings,
     financialGoalsNotes: extras.financialGoalsNotes,
     activeBudgetPlanId: extras.activeBudgetPlanId,
-    paymentMethods: (pmR.data ?? []).map(paymentMethodFromRow),
-    incomeSources: (incomeR.data ?? []).map(incomeSourceFromRow),
-    incomeEvents: (incomeEvtR.data ?? []).map(incomeEventFromRow),
-    expenses: (expenseR.data ?? []).map(expenseFromRow),
-    receipts: (receiptR.data ?? []).map(receiptFromRow),
-    recurringExpenses: (recExpR.data ?? []).map(recurringExpenseFromRow),
-    subscriptions: (subR.data ?? []).map(subscriptionFromRow),
-    debts: (debtR.data ?? []).map(debtFromRow),
-    debtPayments: (debtPayR.data ?? []).map(debtPaymentFromRow),
-    recurringDebtPayments: (recDebtR.data ?? []).map(recurringDebtPaymentFromRow),
-    savingsAccounts: (saR.data ?? []).map(savingsAccountFromRow),
-    investmentHoldings: (shR.data ?? []).map(investmentHoldingFromRow),
-    savingsTransactions: (stR.data ?? []).map(savingsTransactionFromRow),
-    recurringSavingsDeposits: (rsdR.data ?? []).map(recurringSavingsDepositFromRow),
-    goals: (goalR.data ?? []).map(goalFromRow),
+    paymentMethods: pmRows.map(paymentMethodFromRow),
+    incomeSources: incomeRows.map(incomeSourceFromRow),
+    incomeEvents: incomeEvtRows.map(incomeEventFromRow),
+    expenses: expenseRows.map(expenseFromRow),
+    receipts: receiptRows.map(receiptFromRow),
+    recurringExpenses: recExpRows.map(recurringExpenseFromRow),
+    subscriptions: subRows.map(subscriptionFromRow),
+    debts: debtRows.map(debtFromRow),
+    debtPayments: debtPayRows.map(debtPaymentFromRow),
+    recurringDebtPayments: recDebtRows.map(recurringDebtPaymentFromRow),
+    savingsAccounts: saRows.map(savingsAccountFromRow),
+    investmentHoldings: shRows.map(investmentHoldingFromRow),
+    savingsTransactions: stRows.map(savingsTransactionFromRow),
+    recurringSavingsDeposits: rsdRows.map(recurringSavingsDepositFromRow),
+    goals: goalRows.map(goalFromRow),
     budgetPlans: plans,
-    budgetPlanActivations: (activationR.data ?? []).map(activationFromRow),
-    buddgyMemories: (memoryR.data ?? []).map(memoryFromRow),
-    accountAdjustments: (adjR.data ?? []).map(accountAdjustmentFromRow),
+    budgetPlanActivations: activationRows.map(activationFromRow),
+    buddgyMemories: memoryRows.map(memoryFromRow),
+    accountAdjustments: adjRows.map(accountAdjustmentFromRow),
   }
 }

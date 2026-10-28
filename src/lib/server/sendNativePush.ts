@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getFirebaseAdmin } from '@/lib/server/firebaseAdmin'
+import { pushTargets, type DevicePrefs } from '@/lib/devices/policy'
 
 export interface SendNativePushArgs {
   userId: string
@@ -8,6 +9,8 @@ export interface SendNativePushArgs {
   body: string
   data?: Record<string, string>
   collapseKey?: string
+  /** A test from one phone: goes to that phone alone, whatever its notification setting, so the button always answers. */
+  onlyDeviceId?: string | null
 }
 
 export interface SendNativePushResult {
@@ -18,8 +21,8 @@ export interface SendNativePushResult {
 }
 
 /**
- * Fans out a push notification to every registered FCM/APNS token for `userId`.
- * Stale tokens (UNREGISTERED / INVALID_ARGUMENT) are deleted in the same pass
+ * Fans out a push notification to the phones that should hear it (see `pushTargets`: the main phone and any phone the
+ * user switched on; never a removed phone or one that is switched off). Stale tokens (UNREGISTERED / INVALID_ARGUMENT) are deleted in the same pass
  * so the table stays clean. Returns counts; never throws.
  */
 export async function sendNativePush(args: SendNativePushArgs): Promise<SendNativePushResult> {
@@ -31,7 +34,7 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
   const service = createServiceRoleClient()
   const { data: rows, error } = await service
     .from('push_tokens')
-    .select('token, platform')
+    .select('token, platform, device_id')
     .eq('user_id', args.userId)
 
   if (error) {
@@ -43,7 +46,15 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
     return { ok: true, sent: 0, failed: 0 }
   }
 
-  const tokens = rows.map((r) => r.token)
+  let targets = rows
+  if (args.onlyDeviceId) {
+    targets = rows.filter((r) => r.device_id === args.onlyDeviceId)
+  } else {
+    const { data: devs } = await service.from('user_devices').select('device_id, is_main, notify, push_permission, revoked_at').eq('user_id', args.userId)
+    targets = pushTargets(rows, new Map<string, DevicePrefs>((devs ?? []).map((d) => [d.device_id, d])))
+  }
+  if (targets.length === 0) return { ok: true, sent: 0, failed: 0 }
+  const tokens = targets.map((r) => r.token)
 
   let sent = 0
   let failed = 0

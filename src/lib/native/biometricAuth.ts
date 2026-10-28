@@ -222,11 +222,12 @@ async function sha256Hex(input: string): Promise<string> {
 
 /**
  * Enable biometric sign-in for the signed-in account on this device. Mints a
- * device secret, registers its hash with the backend (which takes over any prior
- * binding on this device), then persists the secret + enabled state locally.
- * Must be called while authenticated. Returns false on any failure.
+ * device secret, registers its hash with the backend, then persists the secret +
+ * enabled state locally. The backend refuses (409) when another account still owns
+ * this device's binding, which is reported as 'conflict'. Must be called while
+ * authenticated.
  */
-export async function registerBiometric(email?: string): Promise<boolean> {
+export async function registerBiometric(email?: string): Promise<'ok' | 'conflict' | 'error'> {
   try {
     const secret = randomSecret()
     const secretHash = await sha256Hex(secret)
@@ -236,13 +237,14 @@ export async function registerBiometric(email?: string): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ secret_hash: secretHash }),
     })
-    if (!res.ok) return false
+    if (res.status === 409) return 'conflict'
+    if (!res.ok) return 'error'
     await Preferences.set({ key: SECRET_KEY, value: secret })
     await setEnabled(true, email)
-    return true
+    return 'ok'
   } catch (e) {
     console.warn('[biometric] registerBiometric failed', e)
-    return false
+    return 'error'
   }
 }
 
@@ -253,6 +255,31 @@ export async function unregisterBiometric(): Promise<void> {
     await apiFetchAuth('/api/biometric/register', { method: 'DELETE' })
   } catch (e) {
     console.warn('[biometric] unregisterBiometric request failed', e)
+  }
+  try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
+  await setAppLockEnabled(false)
+  await setEnabled(false)
+}
+
+const SIGNOUT_UNBIND_TIMEOUT_MS = 3000
+
+/**
+ * Explicit sign-out only: release this device's server binding so the next
+ * account on the phone can enable biometric (otherwise register returns 409
+ * forever). Must run while the session is still valid. Best-effort and bounded:
+ * offline/failed/stalled requests never block sign-out, and local enrolment is
+ * always cleared so the toggle reflects reality.
+ */
+export async function unbindBiometricOnSignOut(): Promise<void> {
+  if (!(await isEnabled())) return
+  try {
+    const { apiFetchAuth } = await import('@/lib/apiBase')
+    await Promise.race([
+      apiFetchAuth('/api/biometric/register', { method: 'DELETE' }),
+      new Promise((resolve) => setTimeout(resolve, SIGNOUT_UNBIND_TIMEOUT_MS)),
+    ])
+  } catch (e) {
+    console.warn('[biometric] unbind on sign-out failed', e)
   }
   try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
   await setAppLockEnabled(false)

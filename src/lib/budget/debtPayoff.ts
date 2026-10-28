@@ -3,29 +3,25 @@ import { shiftMonth } from '@/lib/budget/lineSpend'
 export interface PayoffDebt {
   balance: number
   minimum: number
-  /** Annual rate in percent; null counts as interest-free. */
-  apr: number | null
 }
 
 const MAX_MONTHS = 600
 
 /**
- * `YYYY-MM` the last debt is cleared when every minimum is paid each month and `extra` goes to the
- * highest-rate debt (smallest balance on ties); a cleared debt's minimum rolls onto the next.
- * Null when there is no debt or it never clears (minimums that do not cover interest).
+ * `YYYY-MM` the last debt is cleared when every monthly payment is made and `extra` goes to the smallest balance
+ * first; a cleared debt's payment rolls onto the next. Debts are amounts, so nothing grows. Null when there is no
+ * debt or no payment ever reaches it.
  */
 export function debtFreeMonth(debts: PayoffDebt[], extra: number, now: Date): string | null {
   const open = debts.filter((d) => d.balance > 0.005).map((d) => ({ ...d }))
   if (open.length === 0) return null
-  const order = [...open].sort((a, b) => (b.apr ?? 0) - (a.apr ?? 0) || a.balance - b.balance)
+  const order = [...open].sort((a, b) => a.balance - b.balance)
   let rolled = 0
 
   for (let month = 0; month < MAX_MONTHS; month++) {
     for (const d of open) {
       if (d.balance <= 0) continue
-      d.balance += (d.balance * (d.apr ?? 0)) / 1200
-      const pay = Math.min(d.minimum, d.balance)
-      d.balance -= pay
+      d.balance -= Math.min(d.minimum, d.balance)
       if (d.balance <= 0.005) {
         d.balance = 0
         rolled += d.minimum

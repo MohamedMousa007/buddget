@@ -1,6 +1,7 @@
+import { format } from 'date-fns'
 import { describe, expect, it } from 'vitest'
 import type { Debt, DebtPayment, Expense } from '@/lib/store/types'
-import { computeCreditCardOutstanding, getCurrentBillingCycleExpenses } from './computeCreditCardBalance'
+import { computeCreditCardOutstanding, getCurrentBillingCycleExpenses, getNextCreditCardDueDate } from './computeCreditCardBalance'
 
 const RATES = { USD_EGP: 50 }
 const PM = 'pm_card'
@@ -97,5 +98,20 @@ describe('getCurrentBillingCycleExpenses', () => {
 
   it('returns nothing without a due day — the cycle is unknown', () => {
     expect(getCurrentBillingCycleExpenses(card(), [charge({ amount: 240 })], RATES, ref).expenses).toHaveLength(0)
+  })
+})
+
+describe('due day 31 in short months', () => {
+  it('next due date clamps to month end instead of overflowing', () => {
+    expect(getNextCreditCardDueDate(card({ paymentDueDay: 31 }), new Date(2026, 1, 10))).toBe('2026-02-28')
+    expect(getNextCreditCardDueDate(card({ paymentDueDay: 31 }), new Date(2026, 1, 28, 15))).toBe('2026-02-28')
+    expect(getNextCreditCardDueDate(card({ paymentDueDay: 31 }), new Date(2026, 2, 1))).toBe('2026-03-31')
+  })
+  it('billing cycles do not overlap: the cycle starts the day after the previous due date', () => {
+    const feb = getCurrentBillingCycleExpenses(card({ paymentDueDay: 31 }), [], RATES, new Date(2026, 1, 10))
+    expect(format(feb.cycleStart, 'yyyy-MM-dd')).toBe('2026-02-01')
+    expect(format(feb.cycleEnd, 'yyyy-MM-dd')).toBe('2026-02-28')
+    const mar = getCurrentBillingCycleExpenses(card({ paymentDueDay: 31 }), [], RATES, new Date(2026, 2, 5))
+    expect(format(mar.cycleStart, 'yyyy-MM-dd')).toBe('2026-03-01')
   })
 })

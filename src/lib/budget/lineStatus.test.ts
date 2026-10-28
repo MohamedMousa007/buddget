@@ -88,3 +88,14 @@ describe('paid bills', () => {
     expect(v.kind).toBe('paid')
   })
 })
+
+describe('getLineStatus while the plan is still learning', () => {
+  it('reads going over as a heads-up, not an alarm', () => {
+    expect(get({ spent: 1300 }).kind).toBe('over')
+    expect(get({ spent: 1300, learning: true })).toMatchObject({ kind: 'near', tone: 'warn', params: { percent: 130 } })
+  })
+  it('still flags spending that no line claims', () => {
+    expect(get({ planned: 0, spent: 200, unbudgeted: true, learning: true }).kind).toBe('unbudgetedSpend')
+  })
+})
+

@@ -163,6 +163,24 @@ export interface Dictionary {
     pressBackAgainToExit: string
   }
 
+  exclusion: {
+    expenseTitle: string
+    expenseHint: string
+    forSomeone: string
+    forSomeoneHint: string
+    owedByLabel: string
+    owedByPlaceholder: string
+    badgeOwed: (name: string) => string
+    badgeRepaid: string
+    markRepaid: string
+    repaidTitle: string
+    repaidIntoLabel: string
+    linkPayment: string
+    noLink: string
+    repaidDone: string
+    reasonMethod: string
+    reasonManual: string
+  }
   accountsPage: {
     title: string
     availableNow: string
@@ -174,8 +192,8 @@ export interface Dictionary {
     bankAccounts: string
     walletsCash: string
     addAccountOrCard: string
-    creditAndDebts: string
-    creditAndDebtsSub: string
+    addAccount: string
+    addAccountAndCard: string
     freeLabel: (amount: string) => string
     setBalance: string
     addBalanceToInclude: string
@@ -277,6 +295,7 @@ export interface Dictionary {
   }
 
   wealthPage: {
+    deleteBlocked: (pocket: string, shortBy: string) => string
     holdLabel: string
     balances: string
     marketPriced: string
@@ -321,11 +340,18 @@ export interface Dictionary {
     menuWithdraw: string
     menuEdit: string
     menuDelete: string
-    vaultDeleteHint: string
+    menuMakeDefault: string
+    deleteBodyBalance: (amount: string) => string
+    deleteDefaultTitle: string
+    deleteDefaultBody: string
+    deleteOnlyTitle: string
+    deleteOnlyBody: string
     nothingHeld: string
     feeds: (goal: string, pct: number) => string
     deleteTitle: (name: string) => string
     deleteBody: string
+    deletedToast: (name: string) => string
+    deleteUndo: string
     priceFeedDown: (grams: string) => string
   }
 
@@ -595,6 +621,13 @@ export interface Dictionary {
   }
 
   /** Add/Edit Expense sheet redesign + shared date picker. */
+  receiptDetail: {
+    viewReceipt: string
+    title: string
+    photoAlt: string
+    defaultMerchant: string
+    breakdown: string
+  }
   expenseForm: {
     titleAdd: string
     titleEdit: string
@@ -853,7 +886,7 @@ export interface Dictionary {
     /** Amount label when the source is biweekly/weekly (per paycheck, not per month). */
     amountPerPaycheckLabel: string
     /** Live preview under the amount: typical monthly equivalent. */
-    perMonthEquiv: (amount: string) => string
+    perMonthEquiv: (amount: string, paychecks: number) => string
     freqMonthly: string
     freqBiweekly: string
     freqWeekly: string
@@ -912,6 +945,7 @@ export interface Dictionary {
     tabDeposit: string
     tabAddAccount: string
     sheetEditTitle: string
+    currencyLockedHint: string
     sheetWithdrawTitle: string
     sheetUpdateTitle: string
     labelWhichSavings: string
@@ -1471,6 +1505,7 @@ export interface Dictionary {
     biometricUseFingerprint: string
     biometricHint: string
     biometricConflict: string
+    biometricOwnedByOther: string
     biometricEnabledFor: (email: string) => string
     biometricConfirmReason: string
     appLockTitle: string
@@ -1530,7 +1565,6 @@ export interface Dictionary {
     dataExportExpensesHint: string
     dataDownload: string
     dataRestore: string
-    dataStartFresh: string
     dataResetWarning: string
     dataConfirmReset: string
     dataCancelReset: string
@@ -1710,6 +1744,8 @@ export interface Dictionary {
     deleteAccountConfirmBody: string
     deleteAccountConfirmPrompt: string
     deleteAccountConfirmWord: string
+    deleteAccountReauthPrompt: string
+    deleteAccountReauthSignIn: string
     deleteAccountConfirmButton: string
     deleteAccountCancel: string
     deleteAccountInProgress: string
@@ -2144,6 +2180,11 @@ export interface Dictionary {
     none: string
     last4Help: string
     tagPlaceholder: string
+    labelKeepsDigits: string
+    ccLimit: string
+    ccOutstanding: string
+    ccStatementDay: string
+    ccGraceDays: string
     currency: string
     setDefaultSub: string
     saveMethod: string
@@ -2337,6 +2378,7 @@ export interface Dictionary {
       deleteConfirm: string
       noOtherPocket: string
       deleteNoPocket: string
+      deleteMoveFailed: string
     }
     flow: {
       close: string
@@ -2843,6 +2885,7 @@ export interface Dictionary {
     addAccount: string
     addWallet: string
     linkExisting: string
+    notMine: string
     lateTitle: (name: string, n: number) => string
     lateBody: (amount: string, date: string) => string
     matchBody: (amount: string, date: string, payday: string) => string
@@ -2878,6 +2921,12 @@ export interface Dictionary {
       startOfYear: string
       override: string
       overrideHint: string
+      done: string
+      markPaid: string
+      markPaidTitle: string
+      markPaidBody: (amount: string, unit: string) => string
+      markPaidToast: string
+      undo: string
     }
     ef: {
       title: string
@@ -2929,11 +2978,14 @@ export interface Dictionary {
       from: string
       amount: string
       currency: string
+      fromAccount: string
+      toAccount: string
       whereFrom: string
       thisMonth: string
       outside: string
       tipThisMonth: string
       tipOutside: string
+      moveFailed: string
       addCta: (amount: string, pocket: string) => string
       choosePocket: string
       withdrawCta: (verb: string, amount: string, pocket: string) => string
@@ -2973,6 +3025,8 @@ export interface Dictionary {
     title: string
     progress: (done: number, total: number) => string
     smsTitle: string
+    accountsTitle: string
+    accountsBody: string
     smsBody: string
     paydayTitle: string
     paydayBody: string
@@ -3022,6 +3076,25 @@ export interface Dictionary {
     alert: {
       ok: string
     }
+  }
+  moneyFlows: {
+    deletePaymentTitle: string
+    deletePaymentBody: string
+    deletePaidExpenseTitle: string
+    deletePaidExpenseBody: string
+    paymentDeleted: string
+    incomeDeleted: string
+    markedPaid: string
+    paidFailed: string
+    currency: string
+    ccOpeningBalance: string
+    ccOpeningHint: string
+    ccDueDay: string
+    dayRange: string
+    debtLocked: string
+    incomeLocked: string
+    splitNeedsFunding: string
+    splitFirstDueInvalid: string
   }
 }
 

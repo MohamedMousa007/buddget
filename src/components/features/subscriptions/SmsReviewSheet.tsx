@@ -22,6 +22,7 @@ import { BrandTile } from './BrandTile'
 import { ConfidenceMeter } from './ConfidenceMeter'
 import { SheetFrame } from './SheetFrame'
 import { currencyLabel } from './subscriptionLabels'
+import { settlePrompt } from '@/lib/prompts/settle'
 
 /** Resolve one find: link it to its existing subscription, or add it, then link its past charges. */
 function useResolveFind() {
@@ -148,7 +149,7 @@ export function SmsReviewSheet({ open, onClose }: { open: boolean; onClose: () =
   const t = useT()
   const sms = t.subscriptions.ui.sms
   const { finds, scanned } = useSubscriptionDetector()
-  const dismiss = useSettingsStore((s) => s.dismissBanner)
+  const dismiss = settlePrompt
   const resolve = useResolveFind()
   if (!open) return null
 

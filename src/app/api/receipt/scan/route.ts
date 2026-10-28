@@ -5,17 +5,18 @@
  * structured expense fields parsed via Gemini 2.5 Flash vision.
  *
  * Egypt-first: default currency `EGP` unless the receipt clearly says
- * otherwise; recognises EGP, AED, SAR, QAR, KWD, OMR, BHD, USD. Categories
- * match the existing `ExpenseCategory` union (Food | Transport | Enjoyment |
- * Rent | Other).
+ * otherwise; recognises every fiat currency the app supports. Categories
+ * are the spend categories in `SUPPORTED_CATEGORIES`.
  *
  * Auth: Supabase session required.
  */
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
+import { z } from 'zod'
 import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { SUPPORTED_CATEGORIES, SUPPORTED_CURRENCIES } from '@/lib/receipt/normaliseReceipt'
 import { addUsage, estimateUnits, EMPTY_USAGE, type TokenUsage } from '@/lib/server/ai/units'
 
 // Gemini thinking + a long itemized output + one retry can exceed Vercel's
@@ -44,7 +45,7 @@ Self-check before answering: items plus charges must reconcile with the printed 
 
 Never fail the whole read because a field is missing. If merchant or date is unclear, return "" — items and total matter most. Never invent lines that are not printed.
 
-Category (one for the whole receipt): Food (restaurants, cafes, groceries, delivery — Talabat, Carrefour, Spinneys, Gourmet, Seoudi), Transport (Uber, Careem, fuel, metro), Enjoyment (cinema, gaming, leisure), Rent (housing, utilities), Other.
+Category (one for the whole receipt): Food (restaurants, cafes, delivery — Talabat), Groceries (supermarkets — Carrefour, Spinneys, Gourmet, Seoudi), Fuel (petrol stations), Transport (Uber, Careem, metro), Shopping (clothes, electronics, retail), Health (pharmacy, clinics), Education, Utilities (electricity, water, phone, internet), Enjoyment (cinema, gaming, leisure), Rent (housing), Other.
 Currency: Egypt-first (EGP) unless clearly otherwise. All numbers plain (no symbols or thousands separators). "date" is YYYY-MM-DD or "".`
 
 /** OpenAPI-subset schema enforced by the API — the model cannot omit fields or drift from enums. */
@@ -54,9 +55,9 @@ const RESPONSE_SCHEMA = {
     isReceipt: { type: 'BOOLEAN' },
     merchant: { type: 'STRING' },
     amount: { type: 'NUMBER' },
-    currency: { type: 'STRING', enum: ['EGP', 'AED', 'SAR', 'QAR', 'KWD', 'OMR', 'BHD', 'USD'] },
+    currency: { type: 'STRING', enum: [...SUPPORTED_CURRENCIES] },
     date: { type: 'STRING' },
-    category: { type: 'STRING', enum: ['Food', 'Transport', 'Enjoyment', 'Rent', 'Other'] },
+    category: { type: 'STRING', enum: [...SUPPORTED_CATEGORIES] },
     taxIncluded: { type: 'BOOLEAN' },
     confidence: { type: 'NUMBER' },
     items: {
@@ -92,6 +93,23 @@ const RESPONSE_SCHEMA = {
 } as const
 
 const MAX_ATTEMPTS = 3
+const GEMINI_TIMEOUT_MS = 40_000
+const MAX_TOTAL_BYTES = 10 * 1024 * 1024
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
+
+const receiptSchema = z.object({
+  isReceipt: z.boolean(),
+  merchant: z.string(),
+  amount: z.number().finite(),
+  currency: z.enum(SUPPORTED_CURRENCIES as [string, ...string[]]),
+  date: z.string().default(''),
+  category: z.enum(SUPPORTED_CATEGORIES as [string, ...string[]]),
+  taxIncluded: z.boolean(),
+  confidence: z.number().finite(),
+  items: z.array(z.object({ name: z.string(), price: z.number().finite(), qty: z.number().finite().optional() })),
+  charges: z.array(z.object({ type: z.enum(['tax', 'service', 'tip', 'discount', 'other']), label: z.string(), amount: z.number().finite() })),
+  notes: z.string().default(''),
+})
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -116,6 +134,7 @@ async function callGeminiText(apiKey: string, requestBody: unknown, spent: { usa
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
       })
     } catch {
       lastErr = new GeminiError('Failed to reach AI service', 502, true)
@@ -131,9 +150,9 @@ async function callGeminiText(apiKey: string, requestBody: unknown, spent: { usa
     if (payload) spent.usage = addUsage(spent.usage, usageFromPayload(payload))
 
     if (!res.ok || !payload) {
-      const msg = payload?.error?.message || `Gemini returned ${res.status}`
       const retryable = res.status === 429 || res.status >= 500
-      lastErr = new GeminiError(msg, res.status, retryable)
+      // Upstream auth/quota/request errors are ours, not the caller's: a forwarded 401/403 would look like a sign-out.
+      lastErr = new GeminiError(`Gemini returned ${res.status}`, 502, retryable)
       if (retryable) continue
       throw lastErr
     }
@@ -216,16 +235,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many images (max 5)' }, { status: 400 })
   }
 
-  let totalSize = 0
-  const imageParts: { inlineData: { mimeType: string; data: string } }[] = []
-  for (const img of images) {
-    totalSize += img.size
-    const buf = await img.arrayBuffer()
-    imageParts.push({ inlineData: { mimeType: img.type || 'image/jpeg', data: Buffer.from(buf).toString('base64') } })
+  const mimeOf = (img: File) => (!img.type || img.type === 'image/jpg' ? 'image/jpeg' : img.type)
+  if (images.some((img) => !ALLOWED_MIME.has(mimeOf(img)))) {
+    return NextResponse.json({ error: 'Unsupported image type' }, { status: 415 })
   }
-  if (totalSize > 10 * 1024 * 1024) {
+  if (images.reduce((sum, img) => sum + img.size, 0) > MAX_TOTAL_BYTES) {
     return NextResponse.json({ error: 'Images exceed 10 MB total' }, { status: 413 })
   }
+  const imageParts = await Promise.all(
+    images.map(async (img) => ({ inlineData: { mimeType: mimeOf(img), data: Buffer.from(await img.arrayBuffer()).toString('base64') } })),
+  )
 
   const requestBody = {
     contents: [
@@ -265,17 +284,20 @@ export async function POST(request: NextRequest) {
     const err = e instanceof GeminiError ? e : new GeminiError('AI service error', 502, false)
     console.error('[receipt/scan] gemini error', err.message)
     await settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - startedAt, usage: spent.usage, status: 'error' })
-    return NextResponse.json({ error: err.message }, { status: err.status })
+    return NextResponse.json({ error: err.status === 502 ? 'The AI service is unavailable, try again' : err.message }, { status: err.status })
   }
   await settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - startedAt, usage: spent.usage, status: 'ok' })
 
-  let parsed: Record<string, unknown>
+  const jsonStr = extractJson(raw)
+  let candidate: unknown = null
   try {
-    const jsonStr = extractJson(raw)
-    if (!jsonStr) throw new SyntaxError('no JSON object found')
-    parsed = JSON.parse(jsonStr) as Record<string, unknown>
+    candidate = jsonStr ? JSON.parse(jsonStr) : null
   } catch {
-    console.error('[receipt/scan] failed to parse Gemini response', raw)
+    /* falls through to the validation failure */
+  }
+  const parsed = receiptSchema.safeParse(candidate)
+  if (!parsed.success) {
+    console.error('[receipt/scan] unreadable model output, length', raw.length)
     return NextResponse.json(
       { error: 'AI returned unreadable response', details: 'Failed to parse receipt structure' },
       { status: 422 },
@@ -283,7 +305,7 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    receipt: parsed,
+    receipt: parsed.data,
     model: GEMINI_MODEL,
   })
 }

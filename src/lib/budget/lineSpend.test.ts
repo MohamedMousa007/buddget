@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { BudgetPlan, BudgetPlanCategory, Expense } from '@/lib/store/types'
-import { lineHistory, shiftMonth, spendByLine } from '@/lib/budget/lineSpend'
+import { ledgerDebtPaidByDebt, lineHistory, shiftMonth, spendByLine } from '@/lib/budget/lineSpend'
 
 const line = (id: string, name: string, amount: number, extra: Partial<BudgetPlanCategory> = {}): BudgetPlanCategory => ({
   id, name, icon: 'wallet', amount, subcategories: [], block: 'everyday', ...extra,
 })
 const plan = (categories: BudgetPlanCategory[]): BudgetPlan => ({ id: 'p', name: 'P', createdAt: '', categories })
-const run = (p: BudgetPlan, spendingByEnum: Record<string, number>, debtPaid: Record<string, number> = {}) =>
-  spendByLine({ plan: p, spendingByEnum, debtPaid })
+const run = (p: BudgetPlan, spendingByEnum: Record<string, number>, debtPaid: Record<string, number> = {}, debtLedgerPaid: Record<string, number> = debtPaid) =>
+  spendByLine({ plan: p, spendingByEnum, debtPaid, debtLedgerPaid })
 
 describe('spendByLine', () => {
   it('matches unflagged lines by name and folds legacy aliases like the dashboard', () => {
@@ -95,5 +95,32 @@ describe('lineHistory', () => {
     const d = line('t', 'Tabby', 100, { block: 'debts', linkType: 'debts', linkIds: ['x'] })
     const h = lineHistory({ ...base, plan: plan([d]), expenses: [exp('2026-09-02', 'Food', 1)], debtPaidForMonth: (k): Record<string, number> => (k === '2026-09' ? { x: 150 } : {}) })
     expect(h.monthsOverCap.t).toBe(1)
+  })
+})
+
+describe('ledgerDebtPaidByDebt', () => {
+  it('counts only Debt-category expenses linked to a debt inside the cycle', () => {
+    const e = (date: string, category: string, linkedDebtId?: string) => ({ id: 'e', date, category, amount: 40, currency: 'AED', amountInBaseCurrency: 40, linkedDebtId }) as Expense
+    const out = ledgerDebtPaidByDebt([e('2026-10-03', 'Debt', 'a'), e('2026-10-03', 'Installment', 'a'), e('2026-09-03', 'Debt', 'a'), e('2026-10-04', 'Debt')], '2026-10', 1, 'AED', {})
+    expect(out).toEqual({ a: 40 })
+  })
+})
+
+describe('debt-linked line vs ledger debt expense (M15)', () => {
+  it('the debt payment is not counted again as uncovered spend in Other', () => {
+    const d = line('d', 'Loans', 500, { block: 'debts', linkType: 'debts', linkIds: ['x'] })
+    const r = run(plan([d, line('o', 'Other', 100)]), { Debt: 500 }, { x: 500 })
+    expect(r.byLine).toEqual({ d: 500, o: 0 })
+    expect(r.unassigned).toBe(0)
+  })
+  it('a payment with no Debt ledger expense (savings-funded, card payoff) does not erase unrelated Debt spend', () => {
+    const d = line('d', 'Loans', 500, { block: 'debts', linkType: 'debts', linkIds: ['x'] })
+    const r = run(plan([d, line('o', 'Other', 100)]), { Debt: 300 }, { x: 500 }, { x: 0 })
+    expect(r.byLine).toEqual({ d: 500, o: 300 })
+  })
+  it('only the ledger spend beyond the payments stays uncovered', () => {
+    const d = line('d', 'Loans', 500, { block: 'debts', linkType: 'debts', linkIds: ['x'] })
+    const r = run(plan([d, line('o', 'Other', 100)]), { Debt: 700 }, { x: 500 })
+    expect(r.byLine).toEqual({ d: 500, o: 200 })
   })
 })

@@ -8,18 +8,19 @@ import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
 import { Badge } from '@/components/ui/badge'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
-import { useActionToast } from '@/components/ui/ActionToast'
+import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useExpenseFilterStore, amountIsFiltered } from '@/lib/store/useExpenseFilterStore'
-import { expenseAmountInBase } from '@/lib/utils/calculations'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { expenseAmountInBase, isExpenseUnconverted } from '@/lib/utils/calculations'
+import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { Expense } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
 import { Button } from '@/components/ui/button'
 
 function fmtNum(n: number): string {
@@ -33,18 +34,18 @@ interface DayGroup {
   /** Absolute short date, e.g. "Jul 9". */
   abs: string
   total: number
+  /** True when a day's total leaves out an expense that has no rate to base currency. */
+  incomplete: boolean
   items: Expense[]
 }
 
 export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   const t = useT()
-  const { settings, exchangeRates, paymentMethods, deleteExpense, restoreExpense } = useFinanceStore(
+  const { settings, exchangeRates, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       paymentMethods: s.paymentMethods,
-      deleteExpense: s.deleteExpense,
-      restoreExpense: s.restoreExpense,
     })),
   )
   const { setEditingExpenseId, setActiveModal } = useSettingsStore()
@@ -59,7 +60,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
       resetFilters: s.reset,
     })),
   )
-  const toast = useActionToast()
+  const { removeExpense } = useLinkedDelete()
   const [openId, setOpenId] = useState<string | null>(null)
   const base = settings.baseCurrency
   const secondary = settings.secondaryCurrency
@@ -83,7 +84,8 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
       key,
       rel: key === todayKey ? t.common.today : key === yesterdayKey ? t.common.yesterday : null,
       abs: format(parseISO(key), 'MMM d'),
-      total: items.reduce((sum, e) => isNonSpendCategory(e.category) ? sum : sum + expenseAmountInBase(e, base, exchangeRates), 0),
+      total: items.reduce((sum, e) => isNonSpendExpense(e) ? sum : sum + expenseAmountInBase(e, base, exchangeRates), 0),
+      incomplete: items.some((e) => !isNonSpendExpense(e) && isExpenseUnconverted(e, base, exchangeRates)),
       items,
     }))
   }, [expenses, base, exchangeRates, t])
@@ -95,8 +97,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
 
   const handleDelete = (e: Expense) => {
     setOpenId(null)
-    deleteExpense(e.id)
-    toast(t.expenses.expenseDeleted, { undo: () => restoreExpense(e), undoLabel: t.common.undo })
+    void removeExpense(e)
   }
 
   if (expenses.length === 0) {
@@ -130,7 +131,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
               ) : null}
             </span>
             <span className="font-mono-numbers whitespace-nowrap text-[11px] font-medium tabular-nums text-[var(--color-brand-text-muted)]">
-              −{fmtNum(g.total)} {base}
+              {g.incomplete ? '≥ ' : ''}−{fmtNum(g.total)} {base}
             </span>
           </div>
           <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
@@ -144,7 +145,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                 ? formatCurrency(convertCurrency(baseVal, base, secondary, exchangeRates), secondary)
                 : null
               const statusDate = format(parseISO(e.refundedAt ?? e.date), 'MMM d')
-              const nonSpend = isNonSpendCategory(e.category)
+              const nonSpend = isNonSpendExpense(e)
               return (
                 <div key={e.id}>
                   {idx > 0 ? <div className="ml-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
@@ -168,13 +169,15 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                           <Badge variant="negative" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
                         ) : e.refundKind === 'refunded' ? (
                           <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgeRefunded}</Badge>
+                        ) : e.spendExclusion === 'for_someone' ? (
+                          <Badge variant="muted" size="xs" className="shrink-0">{e.owedSettledAt ? t.exclusion.badgeRepaid : t.exclusion.badgeOwed(e.owedBy ?? t.exclusion.forSomeone)}</Badge>
                         ) : nonSpend ? (
                           <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
                         ) : null
                       }
                       subtitle={
-                        method?.last4 ? (
-                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ml-1 shrink-0">••{method.last4}</span></>
+                        method && accountIdentifier(method) ? (
+                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ml-1 shrink-0">{accountIdentifier(method)}</span></>
                         ) : (method?.name || t.common.unknown)
                       }
                       amount={<span className={netZero ? 'line-through' : ''}>−{fmtNum(baseVal)}</span>}

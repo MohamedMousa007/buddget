@@ -20,13 +20,17 @@ type Props = {
   codes?: readonly string[]
   /** 44px / ~96px trigger: symbol + code only (name hidden). */
   compact?: boolean
+  /** Stacking for the picker when the field sits inside a sheet that is itself stacked. Default `z-[110]`. */
+  zIndexClassName?: string
+  /** Shows the value but does not open the picker. */
+  disabled?: boolean
 }
 
 /**
  * Drop-in currency selector (replaces FiatCurrencySelect / DebtFiatCurrencySelect).
  * A field-style trigger that opens the unified {@link CurrencySheet}.
  */
-export function CurrencyField({ value, onChange, className, id, includeGold = false, codes, compact = false }: Props) {
+export function CurrencyField({ value, onChange, className, id, includeGold = false, codes, compact = false, zIndexClassName, disabled = false }: Props) {
   const base = useFinanceStore((s) => s.settings.baseCurrency)
   const [open, setOpen] = useState(false)
   const meta = CURRENCY_META[value]
@@ -37,8 +41,10 @@ export function CurrencyField({ value, onChange, className, id, includeGold = fa
         id={id}
         type="button"
         onClick={() => setOpen(true)}
+        disabled={disabled}
         className={cn(
           'flex items-center justify-between gap-2 text-start',
+          disabled && 'opacity-60',
           compact && 'h-11 min-h-11 w-auto min-w-[88px] px-3',
           className,
         )}
@@ -64,6 +70,7 @@ export function CurrencyField({ value, onChange, className, id, includeGold = fa
         base={base}
         includeGold={includeGold}
         codes={codes}
+        zIndexClassName={zIndexClassName}
         onSelect={(code) => {
           onChange(code as never)
           setOpen(false)
@@ -82,6 +89,7 @@ export function FiatCurrencyField(props: {
   id?: string
   /** Hide the full name in the trigger (narrow contexts like the income sheets). */
   compact?: boolean
+  disabled?: boolean
 }) {
   return <CurrencyField {...props} />
 }

@@ -35,6 +35,8 @@ export function savingsAccountToRow(a: SavingsAccount, userId: string): SavingsA
     category: a.category,
     type: toDbSavingsType(a.type),
     icon: a.icon ?? null,
+    emoji: a.emoji ?? null,
+    target_amount: a.targetAmount ?? null,
     currency: a.currency,
     opening_balance: 0, // we don't track this in the Zustand shape — only currentBalance.
     current_balance: a.currentBalance,
@@ -56,6 +58,8 @@ export function savingsAccountFromRow(row: SavingsAccountRow): SavingsAccount {
     category: row.category as SavingsAccountCategory,
     type: fromDbSavingsType(row.type),
     icon: row.icon ?? undefined,
+    emoji: row.emoji ?? undefined,
+    targetAmount: row.target_amount ?? undefined,
     currency: row.currency as Currency,
     currentBalance: row.current_balance,
     notes: row.notes ?? undefined,

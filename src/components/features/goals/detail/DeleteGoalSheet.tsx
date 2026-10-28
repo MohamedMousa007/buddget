@@ -5,6 +5,7 @@ import { SheetFrame } from '@/components/features/subscriptions/SheetFrame'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { useT } from '@/lib/i18n'
+import { exclusivePockets } from '@/lib/goals/exclusivePockets'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
@@ -16,14 +17,21 @@ export function DeleteGoalSheet({ goal, onClose, onDeleted }: { goal: Goal; onCl
   const accounts = useFinanceStore((s) => s.savingsAccounts)
   const [choice, setChoice] = useState<'keep' | 'move'>('keep')
   const [dest, setDest] = useState<string | null>(null)
+  const [moveFailed, setMoveFailed] = useState(false)
 
-  const owned = accounts.filter((a) => goal.linkedSavingsAccountIds.includes(a.id))
+  const goals = useFinanceStore((s) => s.goals)
+  const owned = exclusivePockets(goal, goals, accounts)
   const others = accounts.filter((a) => isEligibleCarryPocket(a) && !goal.linkedSavingsAccountIds.includes(a.id))
 
   const confirm = () => {
     const s = useFinanceStore.getState()
     if (choice === 'move' && dest) {
-      for (const p of owned) if (p.currentBalance > 0) s.transferBetweenPockets(p.id, dest, p.currentBalance, goal.name)
+      for (const p of owned) {
+        if (p.currentBalance > 0 && !s.transferBetweenPockets(p.id, dest, p.currentBalance, goal.name)) {
+          setMoveFailed(true)
+          return
+        }
+      }
     }
     s.deleteGoal(goal.id)
     onDeleted()
@@ -66,6 +74,7 @@ export function DeleteGoalSheet({ goal, onClose, onDeleted }: { goal: Goal; onCl
               ))}
             </div>
           ) : null}
+          {moveFailed ? <p role="alert" className="text-sm text-[var(--color-brand-red-text)]">{t.deleteMoveFailed}</p> : null}
         </>
       )}
     </SheetFrame>

@@ -19,8 +19,14 @@
  */
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { isRateLimited } from '@/lib/server/rateLimit'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { sendNativePush } from '@/lib/server/sendNativePush'
+import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
+
+const MAX_BODY_CHARS = 8_000
+const PER_HOUR = 20
 
 const bodySchema = z.object({
   userId: z.string().uuid(),
@@ -31,17 +37,20 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
+  const uid = await resolveApiUserId(request)
+  if (!uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  if (await isRateLimited(createServiceRoleClient(), `push-send:${uid}`, 3600, PER_HOUR)) {
+    return NextResponse.json({ error: 'Too many requests, try again later' }, { status: 429 })
+  }
+
+  const text = await request.text()
+  if (text.length > MAX_BODY_CHARS) return NextResponse.json({ error: 'Request too large' }, { status: 413 })
   let json: unknown
   try {
-    json = await request.json()
+    json = JSON.parse(text)
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
@@ -56,11 +65,11 @@ export async function POST(request: Request) {
 
   // Self-targeted only via this public endpoint. Cross-user push goes through
   // the server helper directly (e.g. SMS auto-detect → /api/sms/parse).
-  if (parsed.data.userId !== user.id) {
+  if (parsed.data.userId !== uid) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const result = await sendNativePush(parsed.data)
+  const result = await sendNativePush({ ...parsed.data, onlyDeviceId: request.headers.get(DEVICE_ID_HEADER)?.trim() || null })
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 503 })
   }

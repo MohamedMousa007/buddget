@@ -3,6 +3,7 @@ import { newBlock, parseBlocks, renderBlocks } from './blocks'
 import { BUILTIN_SCENARIOS, EMAIL_LOCALES, chooseLocale } from './scenarios'
 import { builtinTemplate } from './defaults'
 import { missingVariables, renderTemplate, withDefaults, withPreheader } from './render'
+import { unsafeEmailHtml } from './safeHtml'
 import { hasErrors, validateTemplate } from './validate'
 import { extractVariables, substitute } from './variables'
 
@@ -102,5 +103,21 @@ describe('translation helpers', () => {
     expect(validateTranslation(src2, ['الرمز', 'مرحبا'])).toBe(false)
     expect(validateTranslation(src2, ['الرمز {{code}}', 'مرحبا {{link}}'])).toBe(false)
     expect(validateTranslation(src2, ['الرمز {{code}}'])).toBe(false)
+  })
+})
+
+describe('unsafeEmailHtml', () => {
+  it.each([
+    '<img src=x onerror=alert(1)>',
+    '<a href="javascript:alert(1)">x</a>',
+    '<iframe src="https://evil"></iframe>',
+    '<meta http-equiv="refresh" content="0;url=https://evil">',
+    '<svg onload=1></svg>',
+  ])('rejects %s', (html) => {
+    expect(unsafeEmailHtml(html)).not.toBeNull()
+  })
+
+  it('accepts ordinary table email markup', () => {
+    expect(unsafeEmailHtml('<table style="width:100%"><tr><td><a href="https://buddget.app" style="color:#000">Open</a><img src="https://x/y.png" alt=""></td></tr></table>')).toBeNull()
   })
 })

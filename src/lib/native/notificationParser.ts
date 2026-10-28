@@ -17,6 +17,7 @@
 
 import { isAndroid, isNative } from '@/lib/native/isNative'
 import { apiUrl } from '@/lib/apiBase'
+import { deviceIdHeader } from '@/lib/native/deviceId'
 
 interface NotificationListenerPlugin {
   start(opts: { packages: string[] }): Promise<void>
@@ -130,6 +131,7 @@ async function forward(message: string, sender: string, accessToken: string): Pr
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
+        ...(await deviceIdHeader()),
       },
       body: JSON.stringify({
         message,

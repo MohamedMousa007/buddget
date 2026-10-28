@@ -30,6 +30,7 @@ import {
  *  falls through to DEFAULT_RATES. */
 const RATES = { USD_EGP: 50, EGP_USD: 1 / 50 }
 const BASE = 'EGP' as const
+const NO_GOLD = { pricePerGram: 0, available: false }
 const INCOME = 10_000
 
 const CARD_PM: PaymentMethod = {
@@ -206,7 +207,7 @@ describe('cashSavingsDepositsInBaseForMonth', () => {
     currency: 'EGP', date: '2026-07-10', ...over,
   })
   const sum = (rows: SavingsTransaction[]) =>
-    cashSavingsDepositsInBaseForMonth(rows, '2026-07', 1, BASE, RATES)
+    cashSavingsDepositsInBaseForMonth(rows, '2026-07', 1, BASE, RATES, NO_GOLD)
 
   it('counts a real deposit', () => {
     expect(sum([tx({ amount: 300 })])).toBe(300)
@@ -235,7 +236,7 @@ describe('netSavingsLedgerInBaseForMonth', () => {
       id: 'tx_o', accountId: 'sav_1', type: 'deposit', amount: 50_000, currency: 'EGP',
       date: '2026-07-10', notes: 'Opening balance', isCashFlow: false,
     }
-    expect(netSavingsLedgerInBaseForMonth([opening], '2026-07', 1, BASE, RATES)).toBe(0)
+    expect(netSavingsLedgerInBaseForMonth([opening], '2026-07', 1, BASE, RATES, NO_GOLD)).toBe(0)
   })
 })
 

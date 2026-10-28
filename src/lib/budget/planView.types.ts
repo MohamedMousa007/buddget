@@ -68,7 +68,6 @@ export interface DebtExtras {
   id: string
   name: string
   kind: 'credit_card' | 'installment' | 'loan' | 'personal'
-  apr: number | null
   balance: number
   /** 0-100 of the starting balance already paid. */
   paidPercent: number
@@ -131,4 +130,6 @@ export interface PlanView {
   unassignedSpend: number
   /** True while every line is a pre-v2 row without a block: offer the "group my lines" upgrade. */
   needsUpgrade: boolean
+  /** The plan is in its first cycle and mostly estimated: over-cap reads as a heads-up. */
+  learning: boolean
 }

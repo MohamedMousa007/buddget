@@ -13,6 +13,7 @@ import { ActionToastProvider } from '@/components/ui/ActionToast'
 import { MotionConfigRoot } from '@/components/layout/MotionConfigRoot'
 import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 import { PlatformBodyClass } from '@/lib/native/PlatformBodyClass'
+import { CrashReporter } from '@/lib/crash/CrashReporter'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -153,6 +154,7 @@ export default async function RootLayout({
         <TooltipProvider>
           <LocaleProvider>
             <AuthProvider>
+              <CrashReporter />
               <ActionToastProvider>
                 <MotionConfigRoot>
                   <AppShell>{children}</AppShell>

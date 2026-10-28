@@ -93,7 +93,7 @@ describe('debts', () => {
     const c = ctx([{ id: '1', debtId: 'a', date: '2026-10-03', amountPaid: 300, createdAt: '' }, { id: '2', debtId: 'a', date: '2026-09-03', amountPaid: 300, createdAt: '' }])
     const [live] = liveDebts([debt({ id: 'a', debtType: 'installment', installmentAmount: 300, installmentCount: 4 })], c)
     expect(debtExtras(live, 300, c)).toMatchObject({
-      id: 'a', kind: 'installment', balance: 600, paidPercent: 50, minimum: 300, installment: { done: 2, total: 4 }, paidThisCycle: true, apr: null,
+      id: 'a', kind: 'installment', balance: 600, paidPercent: 50, minimum: 300, installment: { done: 2, total: 4 }, paidThisCycle: true,
     })
     expect(debtExtras(live, 0, c).paidThisCycle).toBe(false)
   })

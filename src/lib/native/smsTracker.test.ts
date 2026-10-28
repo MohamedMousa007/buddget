@@ -141,12 +141,32 @@ describe('drainAndSubmitPendingSms', () => {
     mocks.fetch
       .mockResolvedValueOnce(new Response('{}', { status: 200 })) // txn 1 delivered
       .mockResolvedValueOnce(new Response('{}', { status: 503 })) // txn 2 transient — stays
-      .mockResolvedValueOnce(new Response('{}', { status: 400 })) // txn 3 permanent reject — removed
+      .mockResolvedValueOnce(new Response('{"error":"Invalid body"}', { status: 400 })) // txn 3 permanent reject — removed
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt', 'user-1')
     expect(mocks.fetch).toHaveBeenCalledTimes(3)
     expect(mocks.removePending).toHaveBeenCalledTimes(1)
     expect(mocks.removePending.mock.calls[0][0]).toEqual({ items: [items[0], items[2]] })
+  })
+
+  it('keeps an item after a 400 that is not an invalid-body rejection, dropping it after the bounded retries', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items: [items[0]] })
+    mocks.fetch.mockImplementation(async () => new Response('{"error":"Invalid JSON"}', { status: 400 }))
+    const sms = await freshModule()
+    for (let i = 0; i < sms.MAX_DRAIN_ATTEMPTS - 1; i++) {
+      await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    }
+    expect(mocks.removePending).not.toHaveBeenCalled()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[0]] })
+  })
+
+  it('treats 422 as a permanent rejection', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items: [items[0]] })
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 422 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[0]] })
   })
 
   it('stops on auth failure without touching the queue (every item would 401)', async () => {
@@ -230,5 +250,17 @@ describe('token-write surface', () => {
     expect('startSMSTracking' in sms).toBe(false)
     expect('resumeSmsTrackingIfEnabled' in sms).toBe(false)
     expect('refreshSmsToken' in sms).toBe(false)
+  })
+})
+
+describe('native error state', () => {
+  it('surfaces a failing plugin call and clears on the next success', async () => {
+    mocks.setEnabled.mockRejectedValueOnce(new Error('keystore locked'))
+    const sms = await freshModule()
+    await sms.setSmsEnabled(true)
+    expect(sms.getSmsNativeError()).toBe('setEnabled: keystore locked')
+    mocks.setEnabled.mockResolvedValueOnce(undefined)
+    await sms.setSmsEnabled(true)
+    expect(sms.getSmsNativeError()).toBeNull()
   })
 })

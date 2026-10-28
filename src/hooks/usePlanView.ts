@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { differenceInCalendarDays } from 'date-fns'
@@ -10,8 +11,10 @@ import { useGoalRows } from '@/hooks/useGoalRows'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { planForMonth } from '@/lib/budget/activations'
 import { debtExtras, debtPaidByDebt, goalExtras, liquidSavings, liveDebts, paydayDayOf, subscriptionsExtras, subscriptionsLive } from '@/lib/budget/liveLinks'
-import { lineHistory, spendByLine } from '@/lib/budget/lineSpend'
+import { ledgerDebtPaidByDebt, lineHistory, spendByLine } from '@/lib/budget/lineSpend'
 import { buildPlanView } from '@/lib/budget/planView'
+import { cycleKeyOf } from '@/lib/budget/activations'
+import { isLearning } from '@/lib/budget/learning'
 import type { PlanMode, PlanView } from '@/lib/budget/planView.types'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
@@ -36,8 +39,8 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
       incomeEvents: st.incomeEvents,
       expenses: st.expenses,
       subscriptions: st.subscriptions,
-      debts: st.debts,
-      debtPayments: st.debtPayments,
+      debts: countedDebts(st.debts, st.paymentMethods),
+      debtPayments: countedDebtPayments(st.debtPayments, st.debts, st.paymentMethods),
       savingsAccounts: st.savingsAccounts,
       exchangeRates: st.exchangeRates,
       budgetCategories: st.budgetCategories,
@@ -72,7 +75,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
     }
     const debtPaid = debtPaidByDebt(s.debts, debtCtx, monthFilter, startDay)
     const spend = mode === 'month'
-      ? spendByLine({ plan, spendingByEnum: stats.spendingByEnum, debtPaid })
+      ? spendByLine({ plan, spendingByEnum: stats.spendingByEnum, debtPaid, debtLedgerPaid: ledgerDebtPaidByDebt(s.expenses, monthFilter, startDay, base, rates) })
       : { byLine: {}, unassigned: 0 }
     const history = lineHistory({
       plan, expenses: s.expenses, monthKey: monthFilter, monthStartDay: startDay, base, rates,
@@ -93,6 +96,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
       spentByLine: spend.byLine,
       averageByLine: history.average,
       monthsOverCapByLine: history.monthsOverCap,
+      learning: isLearning(plan, s.budgetPlanActivations, cycleKeyOf(now, startDay)),
       unassignedSpend: spend.unassigned,
       subscriptions: {
         monthly: subs.monthly,

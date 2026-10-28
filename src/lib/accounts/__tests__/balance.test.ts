@@ -14,7 +14,7 @@ const credit = pm({ id: 'credit', type: 'credit_card', parentId: 'bank' })
 const exp = (o: Partial<Expense> & Pick<Expense, 'id' | 'amount' | 'paymentMethodId'>): Expense =>
   ({ date: '2026-10-05', description: 'x', category: 'Food', currency: 'EGP', amountInBaseCurrency: o.amount, isRecurring: false, createdAt: '', updatedAt: '', ...o }) as Expense
 const base = (o: Partial<LedgerInput> = {}): LedgerInput => ({
-  paymentMethods: [bank, cash, debit, credit], expenses: [], incomeEvents: [], debtPayments: [],
+  paymentMethods: [bank, cash, debit, credit], expenses: [], incomeEvents: [], debts: [], debtPayments: [],
   savingsTransactions: [], savingsAccounts: [], adjustments: [], convert: (a) => a, ...o,
 })
 const bal = (i: LedgerInput, id: string, asOf?: number) => computeBalances(i, asOf).get(id)
@@ -126,5 +126,16 @@ describe('detectGap', () => {
   it('clears itself once the ledger explains the missing money', () => {
     const rs = [{ balance: 800, reportedAt: '2026-10-11T10:00:00Z' }, { balance: 800, reportedAt: '2026-10-10T10:00:00Z' }]
     expect(detectGap(rs, () => 800)).toBeNull()
+  })
+})
+
+describe('legacy gold debt payment (F7)', () => {
+  const goldDebt = { id: 'g', isGold: true, currency: 'EGP', direction: 'borrowed' } as never
+  const legacy = { id: 'p', debtId: 'g', date: '2026-10-05', amountPaid: 5, paymentCurrency: 'EGP', paymentMethodId: 'bank', createdAt: '' }
+  it('grams with no recorded money amount do not debit the account 1:1', () => {
+    expect(bal(base({ debts: [goldDebt], debtPayments: [legacy] }), 'bank')?.balance).toBe(1000)
+  })
+  it('a gold payment with a recorded money amount still debits it', () => {
+    expect(bal(base({ debts: [goldDebt], debtPayments: [{ ...legacy, originalAmount: 300 }] }), 'bank')?.balance).toBe(700)
   })
 })

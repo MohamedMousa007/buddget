@@ -17,6 +17,8 @@ import { Calendar } from 'lucide-react'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { sanitizeAmount } from '@/lib/ui/amountSanitize'
+import { parseLocalizedAmount } from '@/lib/ui/amountParse'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
@@ -94,7 +96,7 @@ export function AmountReceivedSheet() {
   const close = () => setActiveModal(null)
   useEscapeClose(isOpen, close)
 
-  const amt = parseFloat(amount)
+  const amt = parseLocalizedAmount(amount, currency)
   const valid = !Number.isNaN(amt) && amt > 0
   const meetsExpected = valid && amt >= expected
   const short = Math.max(0, Math.round(expected - (valid ? amt : 0)))
@@ -185,7 +187,7 @@ export function AmountReceivedSheet() {
             autoFocus
             inputMode="decimal"
             value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+            onChange={(e) => setAmount(sanitizeAmount(e.target.value, 'decimal', currency))}
             placeholder="0"
             className="w-full bg-transparent py-3.5 font-mono-numbers text-2xl font-bold outline-none"
             style={{ color: inputColorDisplay }}

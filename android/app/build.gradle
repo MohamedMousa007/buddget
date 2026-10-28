@@ -8,8 +8,9 @@ android {
         applicationId "app.buddget"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 160
+        versionCode 163
         versionName "1.1.0"
+        manifestPlaceholders = [sentryDsn: System.getenv("SENTRY_DSN") ?: ""]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

@@ -87,6 +87,13 @@ interface SettingsState {
   setPaydayFocusId: (id: string | null) => void
   /** Setting to scroll to and highlight on arrival from settings search; consumed once. */
   settingsFocusId: string | null
+  /** Buddgy asked to start the guided budget setup; the Budget page opens it once and clears this. Not persisted. */
+  budgetStudioRequested: boolean
+  /** The account whose data this session has actually pulled from the server; null until the first pull lands. Not persisted. */
+  serverSyncedFor: string | null
+  markServerSynced: (userId: string | null) => void
+  requestBudgetStudio: () => void
+  clearBudgetStudioRequest: () => void
   setSettingsFocusId: (id: string | null) => void
   /** Bring back every banner and prompt the user dismissed or snoozed. */
   restoreDismissedPrompts: () => void
@@ -182,7 +189,7 @@ function getCurrentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-export type SettingsSheetId = 'currencies' | 'converter' | 'feedback' | 'about' | 'export' | 'deleteAccount'
+export type SettingsSheetId = 'currencies' | 'converter' | 'feedback' | 'inbox' | 'board' | 'notCounted' | 'about' | 'export' | 'deleteAccount'
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -208,6 +215,11 @@ export const useSettingsStore = create<SettingsState>()(
       paydayFocusId: null,
       setPaydayFocusId: (id) => set({ paydayFocusId: id }),
       settingsFocusId: null,
+      budgetStudioRequested: false,
+      serverSyncedFor: null,
+      markServerSynced: (userId) => set({ serverSyncedFor: userId }),
+      requestBudgetStudio: () => set({ budgetStudioRequested: true }),
+      clearBudgetStudioRequest: () => set({ budgetStudioRequested: false }),
       setSettingsFocusId: (id) => set({ settingsFocusId: id }),
       restoreDismissedPrompts: () => set({ dismissedBanners: [], snoozedBanners: {}, hiddenStatusUntil: {} }),
       monthFilter: getCurrentMonth(),
@@ -334,7 +346,7 @@ export const useSettingsStore = create<SettingsState>()(
       reset: () => {
         get().resetSettings()
         // Persisted per-account fields: left in memory they would carry into the next sign-in in the same tab.
-        set({ budgetClosedCycles: [], budgetStudioDraft: null, buddgyNotes: [] })
+        set({ budgetClosedCycles: [], budgetStudioDraft: null, buddgyNotes: [], serverSyncedFor: null, dismissedBanners: [], snoozedBanners: {}, pushOptOut: false })
       },
     }),
     {

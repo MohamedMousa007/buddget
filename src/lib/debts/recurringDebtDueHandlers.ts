@@ -3,7 +3,11 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency } from '@/lib/store/types'
 import { calculateDebtRemainingRaw, computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { advanceRecurringDebtDueDate } from '@/lib/utils/recurringDebtPayments'
+import { settleInstallmentAmount } from '@/lib/debts/installmentPlan'
+import { tryConvertCurrency } from '@/lib/utils/currency'
+import { paymentExpenseMoney } from '@/lib/debts/paymentAmounts'
 import { isBnplPlan } from '@/lib/debt/bnpl'
+import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 
 /**
  * After a payment posts, keep the debt's active recurring reminder in sync:
@@ -11,8 +15,10 @@ import { isBnplPlan } from '@/lib/debt/bnpl'
  * its template + clear the debt; otherwise roll the next due date forward one period.
  * Shared by the scheduled-confirm path and manual payments, so paying by hand also
  * advances the reminder. Credit cards revolve — never clear/deactivate, just advance.
+ * A `manual` payment advances it only when it covers the scheduled instalment, so a small extra
+ * payment does not skip the next reminder.
  */
-export function reconcileDebtSchedule(debtId: string): void {
+export function reconcileDebtSchedule(debtId: string, manual?: { amount: number; currency: string }): void {
   const state = useFinanceStore.getState()
   // Only debts with an active reminder are reconciled here; clearing a fully paid
   // debt is done by the payment actions themselves (clearIfFullyPaid), so a debt
@@ -31,8 +37,13 @@ export function reconcileDebtSchedule(debtId: string): void {
     if (debt.status !== 'cleared') state.clearDebt(debtId)
     return
   }
+  if (manual) {
+    const covered = tryConvertCurrency(manual.amount, manual.currency, sched.currency, state.exchangeRates)
+    if (covered == null || covered + 1e-6 < sched.amount) return
+  }
+  const anchorDay = sched.dueDay ?? parseISO(sched.nextDueDate).getDate()
   state.updateRecurringDebtPayment(sched.id, {
-    nextDueDate: advanceRecurringDebtDueDate(sched.nextDueDate, sched.frequency),
+    nextDueDate: advanceRecurringDebtDueDate(sched.nextDueDate, sched.frequency, anchorDay),
   })
 }
 
@@ -60,7 +71,9 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
   // computeDebtPaymentRecord would reject. (Only same-currency, the common case.)
   const remaining = calculateDebtRemainingRaw(debt, state.debtPayments, balanceCtx)
   const payAmount =
-    due.currency === debt.currency && due.amount > remaining ? remaining : due.amount
+    due.currency === debt.currency
+      ? settleInstallmentAmount(due.amount, remaining, debt.installmentCount ?? 1)
+      : due.amount
 
   const result = computeDebtPaymentRecord(
     debt,
@@ -95,18 +108,19 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
     notes: due.notes ? `Recurring · ${due.notes}` : 'Recurring debt payment',
   }
 
-  if (debt.debtType === 'credit_card') {
-    // Charge already lives on the card — payment only, no expense.
+  if (settlesWithoutExpense(debt)) {
+    // Charge already lives on the card, or the money is coming in — payment only, no expense.
     state.addDebtPayment(paymentPayload)
   } else {
+    const expenseMoney = paymentExpenseMoney(payAmount, due.currency, result.amountInBase, state.settings.baseCurrency)
     // BNPL plan: the purchase was counted as spend at checkout, so the settlement
     // is non-spend (`Installment`). Bank/other installment plans keep `Debt` spend.
     state.addDebtPaymentWithExpense(paymentPayload, {
       date: paymentDate,
       description: `${debt.name} — ${bnpl ? 'installment' : 'debt payment'}`,
       category: bnpl ? 'Installment' : 'Debt',
-      amount: payAmount,
-      currency: due.currency as Currency,
+      amount: expenseMoney.amount,
+      currency: expenseMoney.currency as Currency,
       paymentMethodId: pmId,
       isRecurring: false,
       notes: due.notes,

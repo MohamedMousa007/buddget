@@ -40,6 +40,9 @@ export function BottomNav() {
     onHoldCancel: () => { void voice.cancel() },
   })
 
+  // The first-run journey is a takeover with its own footer.
+  if (pathname === '/start') return null
+
   return (
     <nav className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] safe-area-bottom">
       <VoiceRecordOverlay

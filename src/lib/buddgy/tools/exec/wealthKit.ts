@@ -7,7 +7,7 @@ import type { PriceLookup } from '@/lib/savings/holdingValuation'
 import { useAssetPricesStore } from '@/lib/store/useAssetPricesStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, FinanceStore, Goal, SavingsAccount } from '@/lib/store/types'
-import { tryConvertCurrency } from '@/lib/utils/currency'
+import { tryConvertWithGold } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 
 const CHOICE_CAP = 15
@@ -53,9 +53,13 @@ export function inPocketCurrency(
   if (currency !== pocket.currency && clampFiatToAllowed(s.settings, currency) !== currency) {
     return { error: `${currency} is not an enabled currency in this app.` }
   }
-  const converted = tryConvertCurrency(amount, currency, pocket.currency, s.exchangeRates)
+  const converted = tryConvertWithGold(amount, currency, pocket.currency, s.exchangeRates, s.settings.baseCurrency, {
+    pricePerGram: s.goldPricePerGram,
+    available: s.goldPriceAvailable !== false,
+  })
   if (converted === null || converted <= 0) {
-    return { error: `No exchange rate from ${currency} to ${pocket.currency} (${pocket.name}).` }
+    const goldHint = pocket.currency === 'XAU' ? ' Give the amount in grams (XAU) or wait for the gold price to load.' : ''
+    return { error: `No exchange rate from ${currency} to ${pocket.currency} (${pocket.name}).${goldHint}` }
   }
   return { amount: converted }
 }

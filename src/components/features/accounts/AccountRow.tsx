@@ -3,7 +3,8 @@ import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
 import { BrandMark } from './BrandMark'
 import { CardStrip } from './CardStrip'
-import { accountColor, accountTitle, splitMoney } from './accountDisplay'
+import { Badge } from '@/components/ui/badge'
+import { accountColor, accountIdentifier, accountTitle, splitMoney } from './accountDisplay'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { createElement } from 'react'
 
@@ -19,15 +20,18 @@ interface AccountRowProps {
 
 /** One account: mark, name, balance and its cards. Only exceptions get colour. */
 export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: AccountRowProps) {
-  const t = useT().accountsPage
+  const dict = useT()
+  const t = dict.accountsPage
   const { method, balance, cards } = account
   const cur = String(method.currency)
   const money = balance ? splitMoney(balance.balance, cur) : null
   const hasGap = gap != null && gap !== 0
-  const sub = hasGap
+  const sub = method.excluded
+    ? dict.exclusion.reasonMethod
+    : hasGap
     ? t.missingFindIt(splitMoney(Math.abs(gap), cur).int)
     : balance
-      ? method.last4 ? `•• ${method.last4}` : method.type === 'wallet' ? t.typeWallet : ''
+      ? accountIdentifier(method) ?? (method.type === 'wallet' ? t.typeWallet : '')
       : t.addBalanceToInclude
   const isCash = method.type === 'cash'
   return (
@@ -37,7 +41,10 @@ export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: A
         <BrandMark name={accountTitle(method)} color={accountColor(method)} alert={hasGap}
           icon={isCash ? createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true }) : undefined} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
+            <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>
+          </span>
           <span className={`mt-0.5 block truncate text-[13px] ${hasGap ? 'font-semibold text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>{sub}</span>
         </span>
         <span className="shrink-0 text-end">
@@ -55,7 +62,7 @@ export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: A
           )}
         </span>
       </button>
-      {!isCash && method.type !== 'wallet' ? <CardStrip cards={cards} onOpen={onOpen} onAddCard={onAddCard} /> : null}
+      {method.type === 'bank_account' ? <CardStrip cards={cards} onOpen={onOpen} onAddCard={onAddCard} /> : null}
     </div>
   )
 }

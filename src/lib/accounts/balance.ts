@@ -1,18 +1,21 @@
 import type {
-  AccountAdjustment, DebtPayment, Expense, IncomeEvent, PaymentMethod, SavingsAccount, SavingsTransaction,
+  AccountAdjustment, Debt, DebtPayment, Expense, IncomeEvent, PaymentMethod, SavingsAccount, SavingsTransaction,
 } from '@/lib/store/types'
 import { DEFAULT_CASH_ID, isTracked } from './kinds'
 import { resolveAccountId } from './resolve'
+import { isOwedToUser } from '@/lib/debts/debtDirection'
+import { paidAsEntered } from '@/lib/debts/paymentAmounts'
 
 export interface LedgerInput {
   paymentMethods: readonly PaymentMethod[]
   expenses: readonly Expense[]
   incomeEvents: readonly IncomeEvent[]
   debtPayments: readonly DebtPayment[]
+  debts: readonly Debt[]
   savingsTransactions: readonly SavingsTransaction[]
   savingsAccounts: readonly SavingsAccount[]
   adjustments: readonly AccountAdjustment[]
-  /** null = no rate known: the row is counted 1:1 and the account is flagged approximate. */
+  /** null = no rate known: the row is counted 1:1 (gold legs are skipped) and the account is flagged approximate. */
   convert: (amount: number, from: string, to: string) => number | null
 }
 
@@ -65,8 +68,11 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     let v = amount
     if (currency && currency !== a.currency) {
       const c = input.convert(amount, currency, a.currency)
-      if (c == null) a.approx = true
-      else v = c
+      if (c == null) {
+        a.approx = true
+        // Grams of gold are not money: with no gold price the leg is left out, never booked 1:1.
+        if (currency === 'XAU' || a.currency === 'XAU') return
+      } else v = c
     }
     a.minor += Math.round(v * unit(a.currency))
   }
@@ -89,9 +95,15 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   }
 
   // A payoff normally also writes an expense (counted above); only count payments that left no expense behind.
+  const owedToUser = new Set(input.debts.filter(isOwedToUser).map((d) => d.id))
+  const goldDebts = new Set(input.debts.filter((d) => d.isGold).map((d) => d.id))
   for (const p of input.debtPayments) {
     if (p.fundedFromSavings || settledByExpense.has(p.id) || !p.paymentMethodId) continue
-    apply(resolveAccountId(p.paymentMethodId, pms), -p.amountPaid, p.paymentCurrency ?? '', instantOf(p.occurredAt, p.date))
+    // Legacy gold payment: `amountPaid` is grams and no money amount was recorded, so there is nothing to book 1:1.
+    if (p.originalAmount == null && goldDebts.has(p.debtId)) continue
+    const sign = owedToUser.has(p.debtId) ? 1 : -1
+    const paid = paidAsEntered(p, '')
+    apply(resolveAccountId(p.paymentMethodId, pms), sign * paid.amount, paid.currency, instantOf(p.occurredAt, p.date))
   }
 
   const pockets = new Map(input.savingsAccounts.map((s) => [s.id, s]))

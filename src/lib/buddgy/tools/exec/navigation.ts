@@ -1,9 +1,11 @@
 import { defineTools } from '@/lib/buddgy/tools/define'
+import { labels } from '@/lib/buddgy/tools/copy'
+import { grantNavConsent } from '@/lib/buddgy/tools/navConsent'
 import { refOf, resolveByRefOrName } from '@/lib/buddgy/tools/refs'
 import { navigationSpecs, SCREEN_ROUTES, SHEETS, OPENABLE_SETTINGS } from '@/lib/buddgy/tools/specs/navigation'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
-import type { ToolEntry } from '@/lib/buddgy/tools/types'
-import { num, parseIsoDate, text } from '@/lib/buddgy/tools/writeKit'
+import type { ToolEntry, WriteImpl } from '@/lib/buddgy/tools/types'
+import { fail, makeProposal, num, ok, parseIsoDate, text } from '@/lib/buddgy/tools/writeKit'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { planRowNames } from '@/lib/budget/budgetPlans'
 import { EXPENSE_ENTRY_CATEGORIES, FIAT_CURRENCIES } from '@/lib/constants/finance'
@@ -16,7 +18,7 @@ type Nav = NonNullable<ToolEntry['nav']>
 type NavResult = ReturnType<Nav>
 
 const INCOME_TYPES: readonly IncomeSourceType[] = ['salary', 'bonus', 'side_hustle', 'rental', 'investment', 'savings', 'debt', 'gift', 'refund', 'other']
-const METHOD_TYPES: readonly PaymentMethodType[] = ['cash', 'bank_account', 'debit_card', 'credit_card', 'prepaid_card', 'wallet', 'bnpl', 'other']
+const METHOD_TYPES: readonly PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card', 'wallet', 'bnpl', 'other']
 const SETTING_MODAL: Partial<Record<SettingAction, string>> = { household: 'householdRent', lifestyle: 'lifestyle' }
 
 const refused = (message: string): NavResult => ({ ok: false, message })
@@ -27,6 +29,12 @@ const open_screen: Nav = (args) => {
   if (!screen) return refused(`Unknown screen. Use one of: ${Object.keys(SCREEN_ROUTES).join(', ')}.`)
   navigate(SCREEN_ROUTES[screen])
   return opened(screen)
+}
+
+const start_budget_setup: Nav = () => {
+  ui().requestBudgetStudio()
+  navigate('/budget-setup')
+  return opened('the budget setup')
 }
 
 const open_setting: Nav = (args) => {
@@ -149,4 +157,35 @@ const open_sheet: Nav = (args) => {
   }
 }
 
-export const navigationTools = defineTools(navigationSpecs, { open_screen, open_setting, open_sheet })
+const TARGET_ARG: Record<string, string> = { open_screen: 'screen', open_setting: 'setting', open_sheet: 'sheet' }
+
+/** The one-time yes that lets Buddgy move the user around: the same card as any change, applying runs the navigation. */
+function askFirst(tool: string, run: Nav): WriteImpl {
+  return {
+    propose(args, ctx) {
+      const L = labels(ctx.locale)
+      const target = text(args[TARGET_ARG[tool]], 40) ?? L.openScreen
+      return ok(
+        makeProposal({
+          tool,
+          args,
+          risk: 'approve',
+          summary: `Pending approval: open ${target}.`,
+          preview: { domain: 'navigation', tone: 'change', title: L.openScreen, rows: [{ label: L.openTarget, value: target }], effect: L.navConsentEffect },
+        }),
+      )
+    },
+    apply(proposal, ctx) {
+      const r = run(proposal.args, ctx)
+      if (!r.ok) return { ok: false, error: r.message }
+      grantNavConsent()
+      return { ok: true, message: r.message }
+    },
+  }
+}
+
+const impls = { open_screen, open_setting, open_sheet, start_budget_setup }
+
+export const navigationTools = defineTools(navigationSpecs, impls).map((entry) =>
+  entry.nav ? { ...entry, write: askFirst(entry.spec.name, entry.nav) } : entry,
+)

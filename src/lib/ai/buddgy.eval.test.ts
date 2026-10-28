@@ -7,7 +7,7 @@ import { thinkingFor } from '@/lib/ai/runAiCommand'
  * Live golden set: real phrasings (EN + Egyptian/MSA Arabic) → the action Buddgy
  * must produce. Hits the real Gemini API, so it only runs with a key:
  *
- *   GEMINI_API_KEY=… npm run eval:ai
+ *   GEMINI_API_KEY=… npm run eval:ai   (sets RUN_AI_EVAL=1; plain `npm test` never hits the network)
  *
  * Run it before changing a prompt or a model; a drop here is a regression users
  * would feel. Assertions are on the parts that matter (action, amount, category),
@@ -121,7 +121,7 @@ function check([text, action, fields]: Case, r: ReturnType<typeof parseModelJson
   }
 }
 
-describe.skipIf(!KEY)('Buddgy golden set (live)', () => {
+describe.skipIf(!KEY || !process.env.RUN_AI_EVAL)('Buddgy golden set (live)', () => {
   const capturePrompt = buildVoiceExtractPrompt('AED', pms, debts, income, savings)
   const chatPrompt = buildSystemPrompt('AED', pms, debts, live, undefined, income, savings, [], 'chat')
 

@@ -1,6 +1,7 @@
 import { emitNotification } from '@/lib/server/emitNotification'
 import { can } from '@/lib/admin/permissions'
-import { bad, guardAdmin, json, maskIf, readJson } from '@/lib/server/admin/guard'
+import { readValidated, ticketUpdateBody } from '@/lib/server/admin/bodySchemas'
+import { bad, guardAdmin, json, maskIf } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
 
 type Params = { params: Promise<{ id: string }> }
@@ -33,16 +34,7 @@ export async function POST(req: Request, { params }: Params) {
   const g = await guardAdmin(req, { permission: 'support.reply' })
   if (!g.ok) return g.res
   const { ctx } = g
-  const body = await readJson<{
-    op?: 'reply' | 'update' | 'delete'
-    message?: string
-    internal?: boolean
-    status?: string
-    priority?: string
-    category?: string
-    assigneeId?: string | null
-    tags?: string[]
-  }>(req)
+  const body = await readValidated(req, ticketUpdateBody)
 
   const { data: ticket } = await ctx.service.from('support_tickets').select('id, number, user_id, subject, status, first_response_at').eq('id', id).maybeSingle()
   if (!ticket) return bad('Ticket not found.', 404)
@@ -99,6 +91,19 @@ export async function POST(req: Request, { params }: Params) {
     const { error } = await ctx.service.from('support_tickets').update(patch).eq('id', id)
     if (error) return bad('Update failed.', 500)
     await ctx.audit('support.ticket_update', { ...target, summary: `Updated ticket #${ticket.number}`, metadata: patch })
+    return json({ ok: true })
+  }
+
+  if (body?.op === 'board') {
+    if (!can(ctx.permissions, 'support.manage')) return bad('Your role does not allow this.', 403)
+    const state = String(body.boardState ?? '')
+    if (!['hidden', 'published', 'planned', 'shipped'].includes(state)) return bad('Invalid board state.')
+    const title = String(body.boardTitle ?? '').trim().slice(0, 100)
+    if (state !== 'hidden' && title.length < 5) return bad('Write a short public title first. Users never see their own wording.')
+    const summary = String(body.boardSummary ?? '').trim().slice(0, 400)
+    const { error } = await ctx.service.from('support_tickets').update({ board_state: state, board_title: title || null, board_summary: summary || null }).eq('id', id)
+    if (error) return bad('Update failed.', 500)
+    await ctx.audit('support.board', { ...target, summary: `Set ticket #${ticket.number} on the feedback board to ${state}` })
     return json({ ok: true })
   }
 

@@ -54,6 +54,15 @@ describe('POST /api/auth/welcome', () => {
     expect(h.release).toHaveBeenCalled()
   })
 
+  it('still answers 502 and reports the failure when giving the claim back also fails', async () => {
+    h.send.mockResolvedValue({ ok: false, error: 'boom' })
+    h.release.mockResolvedValue({ error: { message: 'db down' } })
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect((await POST(req())).status).toBe(502)
+    expect(err).toHaveBeenCalledWith(expect.stringContaining('welcome'), expect.anything())
+    err.mockRestore()
+  })
+
   it('needs a signed-in user', async () => {
     h.user.mockResolvedValue({ user: null })
     expect((await POST(req())).status).toBe(401)

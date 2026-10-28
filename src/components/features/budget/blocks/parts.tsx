@@ -178,10 +178,12 @@ export function LineRow({
   forceStatus?: boolean
 }) {
   const statusText = useLineStatusText(view)
+  const copy = useBudgetBlocksCopy()
   const { status } = lv
   const showStatus = forceStatus === true || status.kind !== 'ok'
   const Icon = lineStatusIcon(status.icon)
   const hasAction = showStatus && status.button.action !== 'none' && onAction
+  const subText = [sub, lv.line.confidence === 'estimated' && mode === 'plan' ? copy.estimate : null].filter(Boolean).join(' · ')
   return (
     <div>
       <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-3.5 py-2 text-start">
@@ -192,8 +194,8 @@ export function LineRow({
           <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{lv.line.name}</span>
           {showStatus ? (
             <StatusLine tone={status.tone} icon={Icon}>{statusText(status)}</StatusLine>
-          ) : sub ? (
-            <span className="truncate text-xs text-[var(--color-brand-text-secondary)]">{sub}</span>
+          ) : subText ? (
+            <span className="truncate text-xs text-[var(--color-brand-text-secondary)]">{subText}</span>
           ) : null}
         </span>
         <span className="flex flex-col items-end">

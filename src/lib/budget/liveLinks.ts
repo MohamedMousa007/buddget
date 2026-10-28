@@ -176,7 +176,6 @@ export function debtExtras(live: LiveDebt, paidThisCycle: number, c: DebtLiveCtx
     id: debt.id,
     name: debt.name,
     kind,
-    apr: null,
     balance,
     paidPercent,
     minimum,

@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { deleteUserCompletely } from '@/lib/server/deleteAccount'
+import { removeAvatarObject, stampDataReset, wipeUserData } from '@/lib/server/userData'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { sendNativePush } from '@/lib/server/sendNativePush'
 import { isFeatureOverrideKey, isLimitKey } from '@/lib/entitlements/limits'
-import { can, type Permission } from '@/lib/admin/permissions'
+import { can, OWNER_ROLE, type Permission } from '@/lib/admin/permissions'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { appOrigin } from '@/lib/apiBase'
 import { bad, guardAdmin, json, maskEmail, readJson } from '@/lib/server/admin/guard'
@@ -65,6 +66,7 @@ type Op =
   | { op: 'remove_biometric' }
   | { op: 'send_password_reset' }
   | { op: 'verify_email' }
+  | { op: 'reset_data'; code?: string; stepUpPassword?: string }
   | { op: 'delete'; code?: string; stepUpPassword?: string }
 
 const REQUIRES: Record<Op['op'], Permission> = {
@@ -82,10 +84,9 @@ const REQUIRES: Record<Op['op'], Permission> = {
   remove_biometric: 'users.tools',
   send_password_reset: 'users.tools',
   verify_email: 'users.edit',
+  reset_data: 'users.reset',
   delete: 'users.delete',
 }
-
-const DESTRUCTIVE = new Set<Op['op']>(['suspend', 'delete', 'clear_entitlement'])
 
 export async function POST(req: Request, { params }: Params) {
   const { id } = await params
@@ -102,10 +103,10 @@ export async function POST(req: Request, { params }: Params) {
   if (!target.user) return bad('User not found.', 404)
   const email = target.user.email ?? null
 
-  if (DESTRUCTIVE.has(body.op) || body.op === 'remove_biometric') {
-    const blocked = await blockedTarget(ctx, id)
-    if (blocked) return bad(blocked, 403)
-  }
+  // The owner may empty any Buddget app account, their own and staff members' included; the portal account is a separate thing.
+  const ownerOnApp = ctx.role.key === OWNER_ROLE && (body.op === 'reset_data' || body.op === 'delete')
+  const blocked = await blockedTarget(ctx, id, { allowSelf: ownerOnApp })
+  if (blocked) return bad(blocked, 403)
 
   const log = (action: string, summary: string, metadata?: Record<string, unknown>) =>
     ctx.audit(action, { targetType: 'user', targetId: id, summary: `${summary} (${maskEmail(email)})`, metadata })
@@ -114,7 +115,8 @@ export async function POST(req: Request, { params }: Params) {
     case 'note': {
       const text = body.body?.trim()
       if (!text) return bad('Write a note first.')
-      await ctx.service.from('admin_user_notes').insert({ user_id: id, staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: text.slice(0, 5000), pinned: !!body.pinned })
+      const { error } = await ctx.service.from('admin_user_notes').insert({ user_id: id, staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: text.slice(0, 5000), pinned: !!body.pinned })
+      if (error) return bad('Could not save the note.', 500)
       return json({ ok: true })
     }
     case 'suspend': {
@@ -153,7 +155,8 @@ export async function POST(req: Request, { params }: Params) {
       return json({ ok: true })
     }
     case 'clear_entitlement': {
-      await ctx.service.from('user_entitlements').delete().eq('user_id', id)
+      const { error } = await ctx.service.from('user_entitlements').delete().eq('user_id', id)
+      if (error) return bad('Could not clear the membership.', 500)
       await log('billing.entitlement_cleared', 'Returned user to the default plan')
       return json({ ok: true })
     }
@@ -233,11 +236,19 @@ export async function POST(req: Request, { params }: Params) {
       await log('user.verify_email', 'Marked email verified')
       return json({ ok: true })
     }
+    case 'reset_data': {
+      if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
+      const errors = [...(await wipeUserData(ctx.service, id)), ...(await removeAvatarObject(ctx.service, id)), ...(await stampDataReset(ctx.service, id))]
+      await log('user.reset_data', 'Reset account and erased all data', { partialErrors: errors })
+      if (errors.length > 0) return bad('Part of the reset failed. Run it again.', 500)
+      return json({ ok: true })
+    }
     case 'delete': {
       if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
-      const result = await deleteUserCompletely(ctx.service, id)
+      // A person who is also staff keeps their sign-in and portal access: deleting the sign-in would delete the portal account with it.
+      const result = await deleteUserCompletely(ctx.service, id, { keepStaffAccess: true })
       if (!result.ok) return bad(result.error, 500)
-      await log('user.delete', 'Permanently deleted user', { partialErrors: result.partialErrors })
+      await log('user.delete', result.keptStaffAccess ? 'Deleted the Buddget app account; portal access kept' : 'Permanently deleted user', { partialErrors: result.partialErrors, keptStaffAccess: result.keptStaffAccess })
       return json({ ok: true })
     }
   }

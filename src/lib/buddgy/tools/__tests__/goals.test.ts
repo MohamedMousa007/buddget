@@ -353,7 +353,7 @@ describe('audit fixes', () => {
   it('add_to_goal fails and leaves no empty pocket when the deposit is refused', () => {
     useFinanceStore.setState({ goals: [goal(G1, { linkedSavingsAccountIds: [] })] })
     const real = st().depositToSavings
-    useFinanceStore.setState({ depositToSavings: () => {} })
+    useFinanceStore.setState({ depositToSavings: () => true })
     const p = write('add_to_goal').propose({ goal: 'Car', amount: 100 }, ctx)
     if (!p.ok) throw new Error('propose failed')
     const applied = write('add_to_goal').apply(p.proposal, ctx)

@@ -1,6 +1,5 @@
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import { UUID_RE } from '@/lib/server/admin/targets'
-import { tierFor } from '@/lib/loyalty/tiers'
 
 const KEY_RE = /^[a-z][a-z0-9_]{1,31}$/
 
@@ -64,17 +63,12 @@ export async function POST(req: Request) {
     if (!body.userId || !UUID_RE.test(body.userId)) return bad('Pick a user.')
     if (!delta || Math.abs(delta) > 1_000_000) return bad('Enter a non-zero point amount.')
     if (!body.reason?.trim()) return bad('A reason is required.')
-    const { data: existing } = await ctx.service.from('loyalty_accounts').select('points_balance, lifetime_points, tier_locked, tier_key').eq('user_id', body.userId).maybeSingle()
-    const balance = (existing?.points_balance ?? 0) + delta
-    if (balance < 0) return bad('That would take the balance below zero.')
-    const lifetime = (existing?.lifetime_points ?? 0) + Math.max(delta, 0)
-    const { data: tiers } = await ctx.service.from('loyalty_tiers').select('key, min_points, status').eq('status', 'active')
-    const tier = existing?.tier_locked ? existing.tier_key : tierFor(lifetime, tiers ?? [])
-    const { error } = await ctx.service.from('loyalty_accounts').upsert({ user_id: body.userId, points_balance: balance, lifetime_points: lifetime, tier_key: tier, tier_locked: existing?.tier_locked ?? false })
-    if (error) return bad('Could not adjust points.', 500)
-    await ctx.service.from('loyalty_ledger').insert({ user_id: body.userId, delta, reason: body.reason.trim().slice(0, 200), actor_id: ctx.staff.id })
+    const { data, error } = await ctx.service.rpc('admin_adjust_loyalty_points', { p_user: body.userId, p_delta: delta, p_reason: body.reason.trim(), p_actor: ctx.staff.id })
+    if (error?.message.includes('insufficient_points')) return bad('That would take the balance below zero.')
+    const result = data?.[0]
+    if (error || !result) return bad('Could not adjust points.', 500)
     await ctx.audit('loyalty.adjust', { targetType: 'user', targetId: body.userId, summary: `Adjusted loyalty points by ${delta}`, metadata: { delta, reason: body.reason.slice(0, 200) } })
-    return json({ ok: true, balance, tier })
+    return json({ ok: true, balance: result.balance, tier: result.tier })
   }
 
   return bad('Unknown action.')

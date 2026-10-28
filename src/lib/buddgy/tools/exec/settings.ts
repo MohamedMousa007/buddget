@@ -254,7 +254,7 @@ function buildBase(args: Record<string, unknown>, ctx: ToolContext): Built {
   const next = currencyOf(args.value)
   if (!next) return { error: fail(`"${String(args.value)}" is not a supported currency.`, 'Use an ISO code such as USD.') }
   const result = planBaseCurrencySwitch(
-    { settings: s.settings, profile: s.profile, budgetPlans: s.budgetPlans, exchangeRates: s.exchangeRates },
+    { settings: s.settings, profile: s.profile, budgetPlans: s.budgetPlans, exchangeRates: s.exchangeRates, goldPricePerGram: s.goldPricePerGram },
     next,
   )
   const old = s.settings.baseCurrency
@@ -295,11 +295,11 @@ const build = (args: Record<string, unknown>, ctx: ToolContext): Built =>
 function applyBase(patch: BasePatch): () => void {
   const before = fin()
   const previous = { baseCurrency: before.settings.baseCurrency, secondaryCurrency: before.settings.secondaryCurrency }
-  const { profile, budgetPlans } = before
+  const { profile, budgetPlans, goldPricePerGram } = before
   useFinanceStore.setState(patch)
   return () => {
     fin().updateSettings(previous)
-    useFinanceStore.setState({ profile, budgetPlans })
+    useFinanceStore.setState({ profile, budgetPlans, goldPricePerGram })
   }
 }
 

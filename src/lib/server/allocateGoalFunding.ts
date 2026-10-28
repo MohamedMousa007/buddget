@@ -2,7 +2,7 @@ import type { createServiceRoleClient } from '@/lib/supabase/service'
 import { allocateMonth } from '@/lib/goals/allocateMonth'
 import { crossedCheckpoints } from '@/lib/notifications/evaluateGoalAlerts'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
-import { convertCurrency } from '@/lib/utils/currency'
+import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import type { Currency, Goal, SavingsAccount } from '@/lib/store/types'
 import { depositToPocket, primaryTrackedAccountId } from '@/lib/server/pocketLedger'
 
@@ -37,23 +37,31 @@ interface Ctx {
  */
 export async function allocateGoalFunding(c: Ctx): Promise<number> {
   const { service, userId, monthKey, base, rates } = c
-  const conv = (n: number, from: string) => convertCurrency(n, from, base, rates)
+  const conv = (n: number, from: string) => tryConvertCurrency(n, from, base, rates)
 
+  // Goals this cron funds from real money are skipped, not guessed at 1:1, when an amount has no FX path.
+  const current: Record<string, number> = {}
   const due = c.goals
     .filter((g) => g.status === 'active' && g.fundingMode !== 'manual')
-    .map((g) => ({
-      ...g,
-      targetAmount: g.targetAmount === null ? null : conv(g.targetAmount, g.currency),
-      // A quarterly goal's fixed amount is per quarter; it is funded monthly.
-      monthlyContribution: g.monthlyContribution === null ? null : conv(g.monthlyContribution, g.currency) / (g.frequency === 'quarterly' ? 3 : 1),
-    }))
+    .flatMap((g) => {
+      const target = g.targetAmount === null ? null : conv(g.targetAmount, g.currency)
+      const fixed = g.monthlyContribution === null ? null : conv(g.monthlyContribution, g.currency)
+      const manual = conv(g.manualCurrentAmount, g.currency)
+      const linked = c.accounts
+        .filter((a) => g.linkedSavingsAccountIds.includes(a.id))
+        .map((a) => conv(a.currentBalance, a.currency))
+      if ((g.targetAmount !== null && target === null) || (g.monthlyContribution !== null && fixed === null)) return []
+      if (manual === null || linked.includes(null)) return []
+      // Same rule as computeGoalProgress: linked pockets are the progress, the manual amount only counts when none are linked.
+      current[g.id] = linked.length === 0 ? manual : (linked as number[]).reduce((sum, n) => sum + n, 0)
+      return [{
+        ...g,
+        targetAmount: target,
+        // A quarterly goal's fixed amount is per quarter; it is funded monthly.
+        monthlyContribution: fixed === null ? null : fixed / (g.frequency === 'quarterly' ? 3 : 1),
+      }]
+    })
   if (due.length === 0) return c.carry
-
-  const current: Record<string, number> = {}
-  for (const g of due) {
-    const linked = c.accounts.filter((a) => g.linkedSavingsAccountIds.includes(a.id))
-    current[g.id] = conv(g.manualCurrentAmount, g.currency) + linked.reduce((s, a) => s + conv(a.currentBalance, a.currency), 0)
-  }
 
   const { data: existing } = await service
     .from('goal_allocation_runs').select('goal_id, amount').eq('user_id', userId).eq('period', monthKey)
@@ -65,18 +73,21 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
   const lines = allocateMonth({ goals: due, periodSavings: c.carry, current })
   const primaryId = await primaryTrackedAccountId(service, userId)
   for (const line of lines) {
-    if (done.has(line.goalId)) continue
     const goal = due.find((g) => g.id === line.goalId)!
-    const amount = Math.max(0, cents(Math.min(line.amount, left)))
+    // A claimed run whose deposit never landed (timeout between claim and pay) is re-paid here: the deposit key is idempotent.
+    const prior = done.get(goal.id)
+    const amount = prior ?? Math.max(0, cents(Math.min(line.amount, left)))
 
-    const { error: claimed } = await service.from('goal_allocation_runs').insert({
-      user_id: userId, goal_id: goal.id, period: monthKey, planned: line.planned, amount,
-    })
-    if (claimed) continue
+    if (prior === undefined) {
+      const { error: claimed } = await service.from('goal_allocation_runs').insert({
+        user_id: userId, goal_id: goal.id, period: monthKey, planned: line.planned, amount,
+      })
+      if (claimed) continue
+    }
     if (amount <= 0) continue
 
     const release = async () => {
-      await service.from('goal_allocation_runs').delete().eq('goal_id', goal.id).eq('period', monthKey)
+      if (prior === undefined) await service.from('goal_allocation_runs').delete().eq('goal_id', goal.id).eq('period', monthKey)
     }
     try {
       let pocket = c.accounts.filter(isEligibleCarryPocket).find((a) => goal.linkedSavingsAccountIds.includes(a.id))
@@ -90,7 +101,8 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
         if (linkErr) throw new Error('pocket link failed')
         pocket = { id: created.id, currency: base, currentBalance: 0 } as SavingsAccount
       }
-      const inPocket = convertCurrency(amount, base, pocket.currency, rates)
+      const inPocket = tryConvertCurrency(amount, base, pocket.currency, rates)
+      if (inPocket === null) throw new Error('no FX path to pocket currency')
       await depositToPocket(service, {
         userId, pocketId: pocket.id, amount: inPocket, date: c.postDate, source: 'carry',
         note: `Goal funding · ${goal.name} · ${monthKey}`, key: `goal-funding|${goal.id}|${monthKey}`, accountId: primaryId,
@@ -100,6 +112,7 @@ export async function allocateGoalFunding(c: Ctx): Promise<number> {
       await release()
       continue
     }
+    if (prior !== undefined) continue
 
     left = cents(left - amount)
     const original = c.goals.find((g) => g.id === goal.id)

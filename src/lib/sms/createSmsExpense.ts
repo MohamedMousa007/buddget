@@ -12,6 +12,7 @@ import {
   decomposePaymentMethodName,
   resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
+import { toSupportedCurrency } from './ingestGuards'
 import { normalizeMerchant } from './merchantNormalizer'
 import { resolveMerchantCategory, rememberMerchantCategory } from './merchantCategoryCache'
 
@@ -25,12 +26,12 @@ export type SmsExpenseKind =
 /**
  * Narrows a validated currency string to the DB enum at the persistence boundary.
  *
- * `SmsRowData.currency` is a plain string because it arrives from the parser tiers, but every
- * value reaching here has already been through `resolveCurrency`. Casting once, here, keeps the
- * enum honest at the column without threading the enum type through the whole pipeline.
+ * `SmsRowData.currency` is a plain string because it arrives from the parser tiers. Anything outside
+ * the enum would fail the insert (and loop `/confirm` on 500), so it falls back to EGP, the same
+ * default `resolveCurrency` ends in.
  */
 function dbCurrency(c: string): Database['public']['Enums']['currency_code'] {
-  return c as Database['public']['Enums']['currency_code']
+  return toSupportedCurrency(c) ?? 'EGP'
 }
 
 /**

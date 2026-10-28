@@ -5,6 +5,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { SavingsProductTypePicker } from '@/components/modals/SavingsProductTypePicker'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
+import { AmountField } from '@/components/ui/AmountField'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
@@ -13,6 +14,7 @@ import { INVESTMENT_PRODUCT_TYPES, SAVINGS_PRODUCT_TYPES } from '@/lib/constants
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, SavingsAccount, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
 import { buildSavingsCurrencyOptions, pickDefaultSavingsCurrency } from '@/lib/savings/savingsCurrencyOptions'
+import { isSavingsCurrencyLocked } from '@/lib/savings/savingsCurrencyLock'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -37,6 +39,8 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
   const t = useT()
   const settings = useFinanceStore((s) => s.settings)
   const updateSavingsAccount = useFinanceStore((s) => s.updateSavingsAccount)
+  const correctSavingsBalance = useFinanceStore((s) => s.correctSavingsBalance)
+  const currencyLocked = useFinanceStore((s) => isSavingsCurrencyLocked(account, s.savingsTransactions))
 
   const [productCategory, setProductCategory] = useState<SavingsAccountCategory>(account.category)
   const [savingsType, setSavingsType] = useState<SavingsType>(account.type)
@@ -45,6 +49,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
   )
   const [name, setName] = useState(account.name)
   const [currency, setCurrency] = useState<Currency>(account.currency)
+  const [balance, setBalance] = useState(String(account.currentBalance))
   const [notes, setNotes] = useState(account.notes ?? '')
 
   const typeList = productCategory === 'savings' ? SAVINGS_PRODUCT_TYPES : INVESTMENT_PRODUCT_TYPES
@@ -58,12 +63,12 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
     setProductCategory(cat)
     const first = cat === 'savings' ? SAVINGS_PRODUCT_TYPES[0] : INVESTMENT_PRODUCT_TYPES[0]
     setSavingsType(first)
-    setCurrency(pickDefaultSavingsCurrency(settings, first))
+    if (!currencyLocked) setCurrency(pickDefaultSavingsCurrency(settings, first))
   }
 
   const onPickType = (st: SavingsType) => {
     setSavingsType(st)
-    setCurrency(pickDefaultSavingsCurrency(settings, st))
+    if (!currencyLocked) setCurrency(pickDefaultSavingsCurrency(settings, st))
   }
 
   const submit = () => {
@@ -74,9 +79,11 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
       category: productCategory,
       type: savingsType,
       icon: resolvedIcon,
-      currency,
+      currency: currencyLocked ? account.currency : currency,
       notes: notes.trim() || undefined,
     })
+    const nextBalance = parseFloat(balance)
+    if (Number.isFinite(nextBalance) && nextBalance !== account.currentBalance) correctSavingsBalance(account.id, nextBalance)
     onClose()
   }
 
@@ -143,14 +150,28 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
           </div>
 
           <div>
+            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.sheetUpdateTitle}</Label>
+            <AmountField
+              value={balance}
+              onChange={setBalance}
+              currency={currency}
+              label={t.savings.sheetUpdateTitle}
+              aria-label={t.savings.sheetUpdateTitle}
+              className={cn('mt-1 h-10', inputClass)}
+            />
+          </div>
+
+          <div>
             <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelCurrency}</Label>
             <SelectField
               value={currency}
               onChange={(v) => setCurrency(v as Currency)}
               items={currencyOptions as ReadonlyArray<SelectFieldOption>}
+              disabled={currencyLocked}
               className="mt-1"
               aria-label={t.savings.labelCurrency}
             />
+            {currencyLocked && <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">{t.savings.currencyLockedHint}</p>}
           </div>
 
           <div>

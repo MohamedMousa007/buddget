@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { KeyRound } from 'lucide-react'
+import { DevicesSheet } from './DevicesSheet'
 import { AppLockToggle } from '@/components/features/settings/AppLockToggle'
 import { BiometricLoginToggle } from '@/components/features/settings/BiometricLoginToggle'
 import { SettingsChip, SettingsRow } from '@/components/features/settings/SettingsRow'
@@ -9,6 +11,8 @@ import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitch
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { useProfilePage } from '@/hooks/useProfilePage'
+import { fetchDevices, writeCachedDevices } from '@/lib/devices/notify'
+import { isNative } from '@/lib/native/isNative'
 import { useLocale } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 
@@ -31,6 +35,12 @@ export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['
   const t = p.t
   const tone = GROUP_TONE.security
   const user = p.user
+  const [devicesOpen, setDevicesOpen] = useState(false)
+  const userId = user.id
+  // Warm the devices list while the screen is open, so the sheet opens with the answer instead of a wait.
+  useEffect(() => {
+    if (isNative()) void fetchDevices().then((next) => { if (next) writeCachedDevices(userId, next) })
+  }, [userId])
   const memberSince = p.store.profile.createdAt
     ? new Date(p.store.profile.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { month: 'long', year: 'numeric' })
     : ''
@@ -61,6 +71,8 @@ export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['
       />
       <div data-setting-id="biometric"><BiometricLoginToggle userEmail={user.email} bare /></div>
       <div data-setting-id="appLock"><AppLockToggle userEmail={user.email} bare /></div>
+      <SettingsRow icon={SETTING_ICONS.shield} tone={tone} title={copy.devices.title} subtitle={copy.devices.hint} onClick={() => setDevicesOpen(true)} settingId="devices" />
+      <DevicesSheet open={devicesOpen} onClose={() => setDevicesOpen(false)} />
     </SettingsSection>
   )
 }

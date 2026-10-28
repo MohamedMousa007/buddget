@@ -68,6 +68,37 @@ export interface SmsCapacitorPlugin {
 /** Fired whenever the native pending queue may have changed (post-drain). */
 export const SMS_QUEUE_CHANGED_EVENT = 'buddget:sms-queue-changed'
 
+/** Fired when a native plugin call fails or recovers; read the message with getSmsNativeError(). */
+export const SMS_NATIVE_ERROR_EVENT = 'buddget:sms-native-error'
+
+/** Drain attempts after which a 400 that is not an explicit invalid-payload rejection is dropped. */
+export const MAX_DRAIN_ATTEMPTS = 5
+
+let _nativeError: string | null = null
+
+/** Last native plugin failure ("op: message"), cleared by the next successful call. Null = native is in sync. */
+export function getSmsNativeError(): string | null {
+  return _nativeError
+}
+
+function setNativeError(next: string | null): void {
+  if (next === _nativeError) return
+  _nativeError = next
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(SMS_NATIVE_ERROR_EVENT))
+}
+
+async function callNative<T>(op: string, call: (plugin: SmsCapacitorPlugin) => Promise<T>, fallback: T): Promise<T> {
+  if (!(await ensurePlugin()) || !_plugin) return fallback
+  try {
+    const result = await call(_plugin)
+    setNativeError(null)
+    return result
+  } catch (e) {
+    setNativeError(`${op}: ${e instanceof Error ? e.message : String(e)}`)
+    return fallback
+  }
+}
+
 // Module-level cache — registerPlugin() is called exactly once.
 // IMPORTANT: Never return the Capacitor plugin proxy from an async function.
 // JS Promise resolution calls .then() on any returned object to check if it
@@ -92,23 +123,11 @@ async function ensurePlugin(): Promise<boolean> {
 }
 
 export async function checkSmsPermission(): Promise<boolean> {
-  if (!(await ensurePlugin())) return false
-  try {
-    const { granted } = await _plugin!.checkPermission()
-    return granted
-  } catch {
-    return false
-  }
+  return callNative('checkPermission', async (p) => (await p.checkPermission()).granted, false)
 }
 
 export async function requestSmsPermission(): Promise<boolean> {
-  if (!(await ensurePlugin())) return false
-  try {
-    const { granted } = await _plugin!.requestPermission()
-    return granted
-  } catch {
-    return false
-  }
+  return callNative('requestPermission', async (p) => (await p.requestPermission()).granted, false)
 }
 
 /**
@@ -146,9 +165,7 @@ export async function ensureIngestToken(accessToken: string, userId: string): Pr
 
 export async function stopSMSTracking(): Promise<void> {
   // Fully pause the native receiver — no notifications, no WorkManager.
-  if (await ensurePlugin()) {
-    try { await _plugin!.setEnabled({ enabled: false }) } catch { /* noop */ }
-  }
+  await callNative('setEnabled', (p) => p.setEnabled({ enabled: false }), undefined)
 }
 
 /**
@@ -159,12 +176,9 @@ export async function stopSMSTracking(): Promise<void> {
  * resolveUserId in /api/sms/parse accepts this token as Bearer.
  */
 export async function saveSmsToken(ingestToken: string, userId: string): Promise<void> {
-  if (!(await ensurePlugin()) || !_plugin) return
-  try {
-    const { apiUrl: buildUrl } = await import('@/lib/apiBase')
-    const base = buildUrl('').replace(/\/$/, '')
-    await _plugin.saveToken({ token: ingestToken, apiUrl: base, userId })
-  } catch { /* non-fatal */ }
+  const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+  const base = buildUrl('').replace(/\/$/, '')
+  await callNative('saveToken', (p) => p.saveToken({ token: ingestToken, apiUrl: base, userId }), undefined)
 }
 
 /**
@@ -188,52 +202,62 @@ export async function reconcileSmsOwner(userId: string): Promise<void> {
 
 /** Account switch: drop the stored token/owner + disarm, keep the device capability. */
 export async function clearSmsCredentials(): Promise<void> {
-  if (!(await ensurePlugin()) || !_plugin) return
-  try { await _plugin.clearCredentials() } catch { /* noop */ }
+  await callNative('clearCredentials', (p) => p.clearCredentials(), undefined)
 }
 
 /** Gates native forwarding without touching the stored token. */
 export async function setSmsEnabled(enabled: boolean): Promise<void> {
-  if (!(await ensurePlugin()) || !_plugin) return
-  try { await _plugin.setEnabled({ enabled }) } catch { /* noop */ }
+  await callNative('setEnabled', (p) => p.setEnabled({ enabled }), undefined)
 }
 
 /** iOS: mark the Shortcut setup guide finished so the on/off switch becomes visible. */
 export async function setIosSetupCompleted(completed: boolean): Promise<void> {
-  if (!(await ensurePlugin()) || !_plugin) return
-  try { await _plugin.setSetupCompleted({ completed }) } catch { /* noop */ }
+  await callNative('setSetupCompleted', (p) => p.setSetupCompleted({ completed }), undefined)
 }
 
 /** Switch the Android forwarding mode ("sender" Phase 1 / "keyword" Phase 2). */
 export async function setSmsForwardMode(mode: 'sender' | 'keyword'): Promise<void> {
-  if (!(await ensurePlugin()) || !_plugin) return
-  try { await _plugin.setForwardMode({ mode }) } catch { /* noop */ }
+  await callNative('setForwardMode', (p) => p.setForwardMode({ mode }), undefined)
 }
 
 /** Full device wipe (forget this device): clears token, queue, setupCompleted, enabled. */
 export async function clearSmsNative(): Promise<void> {
-  if (!(await ensurePlugin()) || !_plugin) return
-  try { await _plugin.clearState() } catch { /* noop */ }
+  await callNative('clearState', (p) => p.clearState(), undefined)
+}
+
+const attempts = new Map<string, number>()
+const itemKey = (i: PendingSmsItem) => `${i.receivedAt}|${i.sender}|${i.message}`
+
+/**
+ * 422 and a zod "Invalid body" 400 mean the payload itself can never succeed. Any other 400
+ * (e.g. "Invalid JSON" from a mangled body) may be transient or fixable, so it is retried up to
+ * MAX_DRAIN_ATTEMPTS drains before the item is dropped.
+ */
+async function isPermanentRejection(res: Response, item: PendingSmsItem): Promise<boolean> {
+  if (res.status === 422) return true
+  if (res.status !== 400) return false
+  const body = (await res.json().catch(() => null)) as { error?: string } | null
+  if (body?.error === 'Invalid body') return true
+  const key = itemKey(item)
+  const n = (attempts.get(key) ?? 0) + 1
+  attempts.set(key, n)
+  return n >= MAX_DRAIN_ATTEMPTS
 }
 
 /**
  * Replays the native pending queue (SMS captured offline / undeliverable) to
  * /api/sms/parse SEQUENTIALLY. The queue stays authoritative the whole time:
  * items are only removed AFTER the server confirmed (2xx) or permanently
- * rejected (400/422) them, so an app kill mid-replay never loses an SMS.
+ * rejected (422 / invalid-body 400, or a persistent 400 after MAX_DRAIN_ATTEMPTS) them, so an app kill mid-replay never loses an SMS.
  * Auth (401/403), rate-limit (429), 5xx and network errors leave the item
  * queued for the next drain. The server dedups by sms_hash, so re-delivering
  * an item whose removal didn't land is harmless.
  */
 export async function drainAndSubmitPendingSms(accessToken: string, userId: string): Promise<void> {
   if (!isNative() || !accessToken || !userId) return
-  if (!(await ensurePlugin()) || !_plugin) return
-  let items: PendingSmsItem[]
-  try {
-    items = (await _plugin.peekPendingQueue()).items ?? []
-  } catch {
-    return
-  }
+  const peeked = await callNative<PendingSmsItem[] | null>('peekPendingQueue', async (p) => (await p.peekPendingQueue()).items ?? [], null)
+  if (!peeked) return
+  let items = peeked
   // Only replay SMS captured under the CURRENT account. Items owned by a previous
   // account (item.userId set and different) stay queued for when that user returns
   // — draining them now would file them under the wrong account (the server
@@ -243,16 +267,19 @@ export async function drainAndSubmitPendingSms(accessToken: string, userId: stri
   if (items.length === 0) return
 
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+  const { deviceIdHeader } = await import('@/lib/native/deviceId')
+  const deviceHeaders = await deviceIdHeader()
   const done: PendingSmsItem[] = []
   for (const item of items) {
     try {
       const res = await fetch(buildUrl('/api/sms/parse'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...deviceHeaders },
         body: JSON.stringify(item),
       })
-      if (res.ok || res.status === 400 || res.status === 422) {
+      if (res.ok || (await isPermanentRejection(res, item))) {
         done.push(item)
+        attempts.delete(itemKey(item))
       } else if (res.status === 401 || res.status === 403) {
         break // token problem — every remaining item would fail identically
       }
@@ -262,7 +289,7 @@ export async function drainAndSubmitPendingSms(accessToken: string, userId: stri
     }
   }
   if (done.length > 0) {
-    try { await _plugin.removePending({ items: done }) } catch { /* re-delivery is deduped */ }
+    await callNative('removePending', (p) => p.removePending({ items: done }), undefined)
   }
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(SMS_QUEUE_CHANGED_EVENT))
 }
@@ -270,31 +297,16 @@ export async function drainAndSubmitPendingSms(accessToken: string, userId: stri
 /** Non-destructive read of the pending queue for the waiting-to-sync cards. */
 export async function peekPendingSms(): Promise<PendingSmsItem[]> {
   if (!isNative()) return []
-  if (!(await ensurePlugin()) || !_plugin) return []
-  try {
-    return (await _plugin.peekPendingQueue()).items ?? []
-  } catch {
-    return []
-  }
+  return callNative('peekPendingQueue', async (p) => (await p.peekPendingQueue()).items ?? [], [])
 }
 
 /** Per-device bridge status — token saved, enabled, setup completed, permission. */
 export async function getSmsBridgeStatus(): Promise<SmsBridgeStatus | null> {
-  if (!(await ensurePlugin()) || !_plugin) return null
-  try {
-    return await _plugin.getStatus()
-  } catch {
-    return null
-  }
+  return callNative<SmsBridgeStatus | null>('getStatus', (p) => p.getStatus(), null)
 }
 
 /** One-tap setup check: validates the stored ingest token against /api/sms/health
  *  through the same native URLSession path CatchBankSmsIntent uses. */
 export async function runSmsHealthCheck(): Promise<SmsHealthResult | null> {
-  if (!(await ensurePlugin()) || !_plugin) return null
-  try {
-    return await _plugin.healthCheck()
-  } catch {
-    return null
-  }
+  return callNative<SmsHealthResult | null>('healthCheck', (p) => p.healthCheck(), null)
 }

@@ -3,11 +3,13 @@
 import { Input } from '@/components/ui/input'
 import { Repeat, Users } from 'lucide-react'
 import type { AddDebtHook } from '@/hooks/useAddDebtSheet'
-import { AmountField } from '@/components/ui/AmountField'
+import { AmountCurrencyRow } from '@/components/features/savings-v3/MoneySheetParts'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { defaultColorForPaymentMethodType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
 import { useT } from '@/lib/i18n'
+import type { Currency } from '@/lib/store/types'
 import { fmtWhole, soft } from './heroCardShared'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { Switch } from '@/components/ui/switch'
@@ -16,7 +18,8 @@ const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(-
 
 /** "Make a payment" — handoff pay modal. */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
-  const t = useT().debts
+  const dict = useT()
+  const t = dict.debts
   const debt = d.selectedDebt
   const owedLabel = debt?.direction === 'they_owe' ? t.fOwedToYou : t.fYouOwe
   const accent = debt?.direction === 'they_owe' ? 'var(--color-brand-green)' : debt?.isGold ? 'var(--color-brand-gold)' : 'var(--color-brand-red)'
@@ -41,12 +44,14 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
 
       {/* Amount */}
       <div>
-        <div className={`${MICRO} mb-2`}>{t.fAmount}</div>
-        <AmountField
-          value={d.paymentAmount}
-          onChange={(v) => { d.setPaymentAmount(v); d.setPaymentRateError('') }}
-          mode="decimal"
-          currency={String(d.paymentCurrency)}
+        <AmountCurrencyRow
+          amount={d.paymentAmount}
+          onAmount={(v) => { d.setPaymentAmount(v); d.setPaymentRateError('') }}
+          currency={d.paymentCurrency as Currency}
+          onCurrency={(c) => { d.setPaymentCurrency(c); d.setPaymentRateError('') }}
+          amountLabel={t.fAmount}
+          currencyLabel={dict.moneyFlows.currency}
+          includeGold={debt?.isGold}
         />
         {d.paymentPreview() ? <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">{d.paymentPreview()}</p> : null}
         {d.paymentRateError ? <p className="mt-2 px-0.5 text-[12px] text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
@@ -80,7 +85,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
                   <Icon className="h-3.5 w-3.5" />
                 </span>
                 {decomposePaymentMethodName(m.name, m.last4).provider}
-                {m.last4 ? <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">••{m.last4}</span> : null}
+                {accountIdentifier(m) ? <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{accountIdentifier(m)}</span> : null}
               </OptionChip>
             )
           })}

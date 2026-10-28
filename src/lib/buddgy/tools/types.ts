@@ -5,6 +5,8 @@ import type { ToolSpec } from '@/lib/buddgy/tools/spec'
 export interface ToolContext {
   now: Date
   locale: 'en' | 'ar'
+  /** True when the model is answering after a read tool ran, so its next call may be shaped by tool output. */
+  afterRead?: boolean
 }
 
 export type ReadImpl = (args: Record<string, unknown>, ctx: ToolContext) => unknown

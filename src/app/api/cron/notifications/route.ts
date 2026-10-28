@@ -8,7 +8,9 @@
  * Auth: `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse } from 'next/server'
+import { isAuthorizedCron } from '@/lib/server/cronAuth'
 import { format } from 'date-fns'
+import { budgetMonthKeyFor } from '@/lib/utils/calculations'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { evaluateAlerts, renderAlertCopy } from '@/lib/notifications/evaluateAlerts'
@@ -18,6 +20,8 @@ import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionM
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
 import { evaluateGoalAlerts, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
+import { DEFAULT_USER_TIME_ZONE, isValidTimeZone } from '@/lib/server/userTimeZone'
+import { wallClockNow } from '@/lib/time/deviceTimeZone'
 import { median } from '@/lib/goals/fundingScenario'
 import { normalizeRuns } from '@/lib/goals/goalDetail'
 
@@ -28,15 +32,10 @@ const CONCURRENCY = 8
 const TIME_BUDGET_MS = 48_000
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
-  const auth = request.headers.get('authorization') ?? ''
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!isAuthorizedCron(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const service = createServiceRoleClient()
-  const now = new Date()
-  const monthStr = format(now, 'yyyy-MM')
+  const utcNow = new Date()
   let emitted = 0
   let scanned = 0
   const started = Date.now()
@@ -53,19 +52,21 @@ export async function GET(request: Request) {
   for (;;) {
     let query = service
       .from('user_settings')
-      .select('user_id, language, month_start_day, sub_due_reminders, sub_price_alerts, goal_alerts')
+      .select('user_id, language, timezone, month_start_day, sub_due_reminders, sub_price_alerts, goal_alerts')
       .order('user_id', { ascending: true })
       .limit(PAGE)
     if (cursor) query = query.gt('user_id', cursor)
     const { data: settingsRows, error } = await query
     if (error) {
       console.error('[cron/notifications] user_settings query failed', error)
+      stoppedEarly = true // keep the cursor: resetting it would restart from the first user next run
       break
     }
     if (!settingsRows || settingsRows.length === 0) break
 
     const handleUser = async (s: (typeof settingsRows)[number]) => {
       scanned++
+      const now = wallClockNow(utcNow, s.timezone && isValidTimeZone(s.timezone) ? s.timezone : DEFAULT_USER_TIME_ZONE)
       const full = candidates.has(s.user_id as string)
       const userId = s.user_id as string
 
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
 
       const descriptors = evaluateAlerts({
         now,
-        monthStr,
+        monthStr: budgetMonthKeyFor(now, (s.month_start_day as number | null) ?? 1),
         monthStartDay: (s.month_start_day as number | null) ?? 1,
         recurring,
         debtNameById,

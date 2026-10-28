@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Bell, Fingerprint, Mail, MailCheck, RotateCcw, ShieldAlert, Smartphone, Trash2 } from 'lucide-react'
+import { ArrowLeft, Bell, Download, Fingerprint, Mail, MailCheck, RotateCcw, ShieldAlert, Smartphone, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,7 +9,8 @@ import { SelectField } from '@/components/ui/SelectField'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FEATURE_CATALOG, LIMIT_CATALOG, LIMIT_KEYS, type LimitKey } from '@/lib/entitlements/limits'
 import { adminNavigate } from '../adminRouter'
-import { useAdminQuery } from '../adminClient'
+import FinancialTab from './FinancialTab'
+import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime, num, personLabel } from '../format'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
@@ -39,7 +40,7 @@ interface TimelineEvent { at: string; source: string; title: string; detail?: st
 
 const TABS = [
   { value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity & logs' }, { value: 'billing', label: 'Plan & limits' },
-  { value: 'tools', label: 'Tools' }, { value: 'notes', label: 'Notes' },
+  { value: 'financial', label: 'Financial' }, { value: 'tools', label: 'Tools' }, { value: 'notes', label: 'Notes' },
 ] as const
 type Tab = (typeof TABS)[number]['value']
 
@@ -54,7 +55,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
 
   const banned = !!data.auth.banned_until && new Date(data.auth.banned_until) > new Date()
   const who = personLabel({ name: data.profile?.name, email: data.auth.email, id })
-  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.delete') : true))
+  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'financial' ? can('financial.request') || can('financial.approve') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
 
   return (
     <>
@@ -78,6 +79,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
       {tab === 'overview' ? <OverviewTab data={data} /> : null}
       {tab === 'activity' ? <ActivityTab id={id} /> : null}
       {tab === 'billing' ? <BillingTab id={id} data={data} can={can} onChange={refresh} /> : null}
+      {tab === 'financial' ? <FinancialTab id={id} /> : null}
       {tab === 'tools' ? <ToolsTab id={id} data={data} banned={banned} can={can} onChange={refresh} /> : null}
       {tab === 'notes' ? <NotesTab id={id} data={data} can={can} onChange={refresh} /> : null}
     </>
@@ -383,16 +385,48 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
           </Panel>
         ) : null}
 
+        {can('dsr.manage') ? (
+          <Panel title="Data request" description="Download everything we hold about this person as one file, for an access request. It includes financial content and is logged.">
+            <Button variant="outline" size="touch" onClick={async () => {
+              const reason = window.prompt('Why are you exporting this data? (ticket or request reference)')?.trim()
+              if (!reason) return
+              const proof = await stepUp('Exporting a person’s data is logged. Confirm it’s you.')
+              if (!proof) return
+              try {
+                const file = await adminPost<object>(`/api/admin/users/${id}/export`, { reason, ...proof })
+                const url = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }))
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `buddget-data-${id.slice(0, 8)}.json`
+                a.click()
+                URL.revokeObjectURL(url)
+              } catch (e) {
+                window.alert(errorMessage(e))
+              }
+            }}><Download />Export their data</Button>
+          </Panel>
+        ) : null}
+
+        {can('users.reset') ? (
+          <Panel title="Reset account" description="Erases all of their data and starts them fresh. They stay signed up with their plan and sign-in; every device clears its copy on its next sync.">
+            <Button variant="destructive" size="touch" loading={busy === 'reset'} onClick={async () => {
+              const proof = await stepUp('Resetting an account erases all of its data. Confirm it’s you.')
+              if (!proof) return
+              void run('reset', { op: 'reset_data', ...proof }, { success: 'Account reset', confirm: { title: 'Reset this account?', body: `All of ${data.auth.email ?? id}’s data is erased and cannot be recovered. They keep their sign-in.`, destructive: true, confirmLabel: 'Erase and reset' } })
+            }}><RotateCcw />Reset account</Button>
+          </Panel>
+        ) : null}
+
         {can('users.delete') ? (
-          <Panel title="Danger zone" description="Permanent. Deletes the account and all of their data.">
+          <Panel title="Danger zone" description="Permanent. Deletes the Buddget app account and all of their data. If they are on the team, their portal access stays; remove them under Team & roles.">
             <Button variant="destructive-solid" size="touch" loading={busy === 'delete'} onClick={async () => {
               const proof = await stepUp('Deleting a user is permanent. Confirm it’s you.')
               if (!proof) return
-              if (await run('delete', { op: 'delete', ...proof }, { success: 'User deleted', confirm: { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased.`, destructive: true, confirmLabel: 'Delete forever' } })) adminNavigate('users')
+              if (await run('delete', { op: 'delete', ...proof }, { success: 'User deleted', confirm: { title: 'Delete this user forever?', body: `${data.auth.email ?? id} and all their data will be erased. Portal access, if they have any, is not touched.`, destructive: true, confirmLabel: 'Delete forever' } })) adminNavigate('users')
             }}><Trash2 />Delete user</Button>
           </Panel>
         ) : null}
-        {!tools && !can('users.suspend') && !can('users.delete') ? <Notice>Your role has no repair tools.</Notice> : null}
+        {!tools && !can('users.suspend') && !can('users.reset') && !can('users.delete') ? <Notice>Your role has no repair tools.</Notice> : null}
       </div>
 
       <AdminSheet open={notify} title="Send a notification" onClose={() => setNotify(false)}>

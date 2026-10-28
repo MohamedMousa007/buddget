@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Fingerprint, ScanFace } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { Switch } from '@/components/ui/switch'
+import { useActionToast } from '@/components/ui/ActionToast'
 import {
   authenticate,
   getLinkedAccount,
@@ -22,6 +23,7 @@ interface BiometricLoginToggleProps {
 
 export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLoginToggleProps) {
   const t = useT()
+  const toast = useActionToast()
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState<BiometryType>(null)
   const [enabled, setEnabledState] = useState(false)
@@ -37,7 +39,7 @@ export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLogin
       setAvailable(info.available)
       setType(info.type)
       // Enabled for THIS account only — a device bound to another account reads
-      // as off here; toggling on takes over the binding.
+      // as off here; it must be turned off on that account first.
       setEnabledState(on && account === userEmail)
     })()
     return () => {
@@ -61,10 +63,9 @@ export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLogin
         } catch {
           return
         }
-        // Registers a device secret with the backend, taking over any previous
-        // account bound to this device.
-        const ok = await registerBiometric(userEmail)
-        setEnabledState(ok)
+        const result = await registerBiometric(userEmail)
+        setEnabledState(result === 'ok')
+        if (result === 'conflict') toast(t.settings.biometricOwnedByOther)
       } else {
         await unregisterBiometric()
         setEnabledState(false)

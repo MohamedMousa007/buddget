@@ -1,5 +1,7 @@
 import type { Currency, ExpenseCategory, ReceiptItem, ReceiptCharge } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { parseLocalizedAmount } from '@/lib/ui/amountParse'
 
 export interface ScannedReceipt {
   isReceipt: boolean
@@ -21,20 +23,17 @@ function todayISO(): string {
   return localTodayISO()
 }
 
-export const SUPPORTED_CURRENCIES: Currency[] = [
-  'EGP',
-  'AED',
-  'SAR',
-  'QAR',
-  'KWD',
-  'OMR',
-  'BHD',
-  'USD',
-]
+export const SUPPORTED_CURRENCIES: Currency[] = FIAT_CURRENCIES
 
 export const SUPPORTED_CATEGORIES: ExpenseCategory[] = [
   'Food',
+  'Groceries',
+  'Fuel',
   'Transport',
+  'Shopping',
+  'Health',
+  'Education',
+  'Utilities',
   'Enjoyment',
   'Rent',
   'Other',
@@ -86,11 +85,6 @@ export function reconcileMissingItems(
 /** Coerces raw Gemini output into a safe, typed receipt for the review UI. */
 export function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency: Currency): ScannedReceipt {
   const merchant = (raw.merchant as string | undefined)?.trim().slice(0, 60) ?? ''
-  const amountRaw = raw.amount
-  const amount = typeof amountRaw === 'number'
-    ? amountRaw
-    : Number(typeof amountRaw === 'string' ? amountRaw.replace(/[^0-9.]/g, '') : 0)
-
   const currencyRaw = (raw.currency as string | undefined)?.trim().toUpperCase()
   const currency = (SUPPORTED_CURRENCIES as string[]).includes(currencyRaw ?? '')
     ? (currencyRaw as Currency)
@@ -98,27 +92,24 @@ export function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency:
       ? fallbackCurrency
       : 'EGP')
 
+  const amount = toNumber(raw.amount, currency)
+
   const categoryRaw = raw.category as string | undefined
   const category = (SUPPORTED_CATEGORIES as string[]).includes(categoryRaw ?? '')
     ? (categoryRaw as ExpenseCategory)
     : 'Other'
 
   const dateRaw = (raw.date as string | undefined)?.trim() ?? ''
-  let date = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : ''
-  // Discard AI dates that are in the future or more than 30 days old (misread
-  // photos / hallucinated years), then fall back to today's scan date — a
-  // missing receipt date is fine, today is the sensible default.
-  if (date) {
-    const diffDays = (Date.now() - new Date(date + 'T00:00:00').getTime()) / 86400000
-    if (diffDays < 0 || diffDays > 30) date = ''
-  }
-  if (!date) date = todayISO()
+  // A printed date is kept as-is, old or future: the review screen shows it and the user
+  // can edit it. Only a missing/unparseable date falls back to the scan day.
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) && !Number.isNaN(new Date(dateRaw + 'T00:00:00').getTime())
+  const date = validDate ? dateRaw : todayISO()
 
   const confidenceRaw = typeof raw.confidence === 'number' ? raw.confidence : 0.5
   const confidence = Math.max(0, Math.min(1, confidenceRaw))
 
-  const items = normaliseItems(raw.items)
-  const charges = normaliseCharges(raw.charges)
+  const items = normaliseItems(raw.items, currency)
+  const charges = normaliseCharges(raw.charges, currency)
 
   // Trust the AI's grand total; if it couldn't read one, sum the breakdown
   // ourselves (items + charges, discounts already negative) so a missing total
@@ -145,22 +136,24 @@ export function normaliseReceipt(raw: Record<string, unknown>, fallbackCurrency:
   }
 }
 
-function toNumber(value: unknown): number {
+function toNumber(value: unknown, currency: Currency): number {
   if (typeof value === 'number') return value
-  if (typeof value === 'string') return Number(value.replace(/[^0-9.-]/g, ''))
-  return NaN
+  if (typeof value !== 'string') return NaN
+  const negative = /^\s*[-\u2212(]/.test(value)
+  const n = parseLocalizedAmount(value, currency)
+  return negative ? -n : n
 }
 
-function normaliseItems(raw: unknown): ReceiptItem[] {
+function normaliseItems(raw: unknown, currency: Currency): ReceiptItem[] {
   if (!Array.isArray(raw)) return []
   return raw
     .flatMap((entry) => {
       if (!entry || typeof entry !== 'object') return []
       const e = entry as Record<string, unknown>
       let name = (typeof e.name === 'string' ? e.name : '').trim().slice(0, 60)
-      const price = toNumber(e.price)
+      const price = toNumber(e.price, currency)
       if (!name || !Number.isFinite(price)) return []
-      let qty = toNumber(e.qty)
+      let qty = toNumber(e.qty, currency)
       // Safety net when the model leaves a quantity marker in the name ("2x Water", "x2 Water").
       const m = name.match(/^(?:x\s*(\d{1,3})|(\d{1,3})\s*[x×])\s+(.+)/i)
       if (m && !(Number.isFinite(qty) && qty > 0)) {
@@ -172,13 +165,13 @@ function normaliseItems(raw: unknown): ReceiptItem[] {
     .slice(0, 100)
 }
 
-function normaliseCharges(raw: unknown): ReceiptCharge[] {
+function normaliseCharges(raw: unknown, currency: Currency): ReceiptCharge[] {
   if (!Array.isArray(raw)) return []
   return raw
     .flatMap((entry) => {
       if (!entry || typeof entry !== 'object') return []
       const e = entry as Record<string, unknown>
-      const amount = toNumber(e.amount)
+      const amount = toNumber(e.amount, currency)
       if (!Number.isFinite(amount) || amount === 0) return []
       const type = CHARGE_TYPES.includes(e.type as ReceiptCharge['type'])
         ? (e.type as ReceiptCharge['type'])

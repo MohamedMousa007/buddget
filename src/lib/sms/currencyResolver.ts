@@ -13,6 +13,7 @@
  */
 import type { ServiceClient } from '@/lib/supabase/service'
 import { hasCurrencyToken } from './patterns/currency'
+import { toSupportedCurrency } from './ingestGuards'
 
 export interface ResolvedCurrency {
   currency: string
@@ -31,9 +32,12 @@ export async function resolveCurrency(
 ): Promise<ResolvedCurrency> {
   // 1. Trust a currency the model extracted only when the body actually contains
   //    a currency token — otherwise the model inferred it and we still confirm.
-  if (params.parsedCurrency && hasCurrencyToken(params.rawBody)) {
-    return { currency: params.parsedCurrency, provisional: false }
+  const literal = toSupportedCurrency(params.parsedCurrency)
+  if (literal && hasCurrencyToken(params.rawBody)) {
+    return { currency: literal, provisional: false }
   }
+  // A code outside the DB enum (e.g. TRY) can never be inserted: guess instead and let the user confirm.
+  const unsupportedLiteral = !!params.parsedCurrency && !literal
 
   // 2 & 3. Learned per-(user, sender) mapping.
   if (params.sender) {
@@ -44,7 +48,7 @@ export async function resolveCurrency(
       .eq('sender', params.sender)
       .maybeSingle()
     if (learned?.currency) {
-      return { currency: learned.currency, provisional: !learned.confirmed }
+      return { currency: learned.currency, provisional: unsupportedLiteral || !learned.confirmed }
     }
   }
 
@@ -54,5 +58,5 @@ export async function resolveCurrency(
     .select('base_currency')
     .eq('id', params.userId)
     .maybeSingle()
-  return { currency: (profile?.base_currency as string) ?? 'EGP', provisional: true }
+  return { currency: toSupportedCurrency(profile?.base_currency) ?? 'EGP', provisional: true }
 }

@@ -20,3 +20,12 @@ export function lengthForPayments(count: number, unit: PlanLengthUnit, frequency
 export const totalFromPer = (per: number, count: number): number => round2(per * count)
 
 export const perFromTotal = (total: number, count: number): number => round2(total / count)
+
+/**
+ * Amount to post for a scheduled installment. Equal slices are rounded to cents, so the sum of `count`
+ * slices strands or overshoots a few cents (100 / 3 = 33.33 x 3); the final installment pays exactly what is left.
+ */
+export function settleInstallmentAmount(amount: number, remaining: number, count: number): number {
+  const dust = Math.min(0.05, count * 0.005) + 1e-9
+  return amount >= remaining || remaining - amount <= dust ? remaining : amount
+}

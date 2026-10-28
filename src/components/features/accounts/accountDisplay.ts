@@ -47,3 +47,10 @@ export function splitMoney(n: number, currency: string): { int: string; dec: str
 export function accountTitle(m: PaymentMethod): string {
   return decomposePaymentMethodName(m.name, m.last4).provider
 }
+
+/** What identifies the account beside its name: the user's label, else the last four digits, else nothing. */
+export function accountIdentifier(m: Pick<PaymentMethod, 'label' | 'last4'>): string | null {
+  const label = m.label?.trim()
+  if (label) return label
+  return m.last4 ? `\u2022\u2022 ${m.last4}` : null
+}

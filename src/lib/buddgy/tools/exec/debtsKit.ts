@@ -75,7 +75,7 @@ export function parseDebtCurrency(
 
 export function nextDue(s: FinanceStore, d: Debt, now: Date): string | undefined {
   if (d.debtType === 'installment' && d.startDate && d.installmentFrequency && d.installmentCount) {
-    const done = installmentPaymentsCompleted(d, s.debtPayments.filter((p) => p.debtId === d.id).length)
+    const done = installmentPaymentsCompleted(d, s.debtPayments.filter((p) => p.debtId === d.id))
     if (done < d.installmentCount) return format(addByFrequency(parseISO(d.startDate), d.installmentFrequency, done), 'yyyy-MM-dd')
     return undefined
   }

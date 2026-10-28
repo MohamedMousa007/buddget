@@ -21,7 +21,8 @@ const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(-
 // Demo gold prices (EGP/g) — wire to the live gold-price source in the store.
 const GOLD_PRICE: Record<GoldKarat, number> = { 24: 4600, 22: 4210, 21: 4025, 18: 3450 }
 export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: boolean }) {
-  const t = useT().debts
+  const dict = useT()
+  const t = dict.debts
   const stats = useMonthlyStats()
   const isGold = d.receivedVia === 'gold'
   const grams = parseFloat(d.startingBalance)
@@ -75,6 +76,8 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
         <Input size="brand" value={d.name} onChange={(e) => d.setName(e.target.value)} placeholder={t.fWhatForPh} />
       </div>
 
+      {d.currencyLocked ? <p className="px-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
+
       {/* Gold-backed toggle */}
       <div className="flex items-center justify-between rounded-[16px] border border-[var(--color-brand-gold)]/20 bg-[var(--color-brand-gold)]/5 px-4 py-3.5">
         <div>
@@ -85,6 +88,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           size="touch"
           aria-label={t.fGoldBacked}
           checked={isGold}
+          disabled={d.currencyLocked}
           onCheckedChange={(on) => d.applyDebtReceivedVia(on ? 'gold' : 'cash')}
           className="data-checked:bg-[var(--color-brand-gold)]"
         />
@@ -130,6 +134,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
                 compact
                 value={d.currency}
                 onChange={(c) => d.setCurrency(c as unknown as Currency)}
+                disabled={d.currencyLocked}
                 className="h-[52px] w-24 shrink-0 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
               />
             </div>

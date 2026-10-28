@@ -7,7 +7,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isNative } from '@/lib/native/isNative'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase, filterExpensesByMonth } from '@/lib/utils/calculations'
 import { updateWidgetData, type WidgetSnapshot } from '@/lib/native/widgetBridge'
 
@@ -44,7 +44,7 @@ export function WidgetSync() {
     // Honour a custom pay-cycle start, as every other surface does — a raw
     // `date.startsWith(monthFilter)` disagreed with the app for monthStartDay != 1.
     const monthExpenses = filterExpensesByMonth(expenses, monthFilter, monthStartDay)
-    const spendExpenses = monthExpenses.filter((e) => !isNonSpendCategory(e.category))
+    const spendExpenses = monthExpenses.filter((e) => !isNonSpendExpense(e))
     // Convert with live rates rather than the cached `amountInBaseCurrency`, which is
     // captured at entry time and is the raw foreign amount for rows hydrated from the DB.
     const amountOf = (e: (typeof expenses)[number]) =>

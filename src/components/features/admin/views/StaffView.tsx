@@ -10,7 +10,8 @@ import { SelectField } from '@/components/ui/SelectField'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useActionToast } from '@/components/ui/ActionToast'
-import { useAdminQuery } from '../adminClient'
+import { reviewFlags } from '@/lib/admin/accessReview'
+import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago } from '../format'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
@@ -27,13 +28,13 @@ interface Member {
   secured: boolean; liveSessions: number; isOwner: boolean
 }
 interface Role { key: string; name: string; description: string; rank: number; permissions: string[]; is_system: boolean }
-interface StaffData { staff: Member[]; roles: Role[]; permissions: Record<string, string>; ownerOnly: string[]; actorRank: number; ownerEmail: string }
+interface StaffData { staff: Member[]; roles: Role[]; permissions: Record<string, string>; ownerOnly: string[]; actorRank: number; ownerEmail: string; actorIsOwner: boolean }
 
 const groupOf = (perm: string) => perm.split('.')[0]!
 
 export default function StaffView({ status }: { status: AdminStatus }) {
   const { data, error, refresh } = useAdminQuery<StaffData>('/api/admin/staff')
-  const [tab, setTab] = useState<'team' | 'roles'>('team')
+  const [tab, setTab] = useState<'team' | 'roles' | 'review' | 'access'>('team')
   const [inviting, setInviting] = useState(false)
   const [editing, setEditing] = useState<Member | null>(null)
   const [roleDraft, setRoleDraft] = useState<Role | null>(null)
@@ -61,14 +62,18 @@ export default function StaffView({ status }: { status: AdminStatus }) {
   return (
     <>
       <PageHeader title="Team & roles" description="Who can see and do what. Every change here is audited." actions={canManage ? <Button size="touch" onClick={() => setInviting(true)}><Plus />Add teammate</Button> : undefined} />
-      <div className="mb-5"><SegmentedControl ariaLabel="Team section" fill={false} value={tab} onChange={setTab} options={[{ value: 'team', label: 'Team', count: data.staff.length }, { value: 'roles', label: 'Roles & permissions', count: data.roles.length }]} /></div>
+      <div className="mb-5"><SegmentedControl ariaLabel="Team section" fill={false} value={tab} onChange={setTab} options={[{ value: 'team', label: 'Team', count: data.staff.length }, { value: 'roles', label: 'Roles & permissions', count: data.roles.length }, { value: 'review', label: 'Access review' }, ...(data.actorIsOwner ? [{ value: 'access' as const, label: 'Financial access' }] : [])]} /></div>
 
       {tab === 'team' ? (
         <Panel flush>
           <DataTable rows={data.staff} columns={columns} rowKey={(m) => m.id} onRowClick={(m) => setEditing(m)} />
         </Panel>
+      ) : tab === 'access' && data.actorIsOwner ? (
+        <AccessTab />
+      ) : tab === 'review' ? (
+        <ReviewTab data={data} roleName={roleName} onOpen={setEditing} />
       ) : (
-        <RolesTab data={data} canManage={canManage} onEdit={setRoleDraft} onCreate={() => setRoleDraft({ key: '', name: '', description: '', rank: data.actorRank + 40, permissions: [], is_system: false })} />
+        <RolesTab data={data} canManage={canManage} onSaved={refresh} onEdit={setRoleDraft} onCreate={() => setRoleDraft({ key: '', name: '', description: '', rank: data.actorRank + 40, permissions: [], is_system: false })} />
       )}
 
       {inviting ? <InviteSheet data={data} onClose={() => setInviting(false)} onDone={refresh} /> : null}
@@ -78,11 +83,144 @@ export default function StaffView({ status }: { status: AdminStatus }) {
   )
 }
 
-function RolesTab({ data, canManage, onEdit, onCreate }: { data: StaffData; canManage: boolean; onEdit: (r: Role) => void; onCreate: () => void }) {
-  const groups = [...new Set(Object.keys(data.permissions).map(groupOf))]
+interface AccessData {
+  requests: Array<{ id: string; userId: string; user: string; by: string; mode: 'one_time' | 'permanent'; reason: string; ticket: number | null; requestedAt: string }>
+  active: Array<{ id: string; userId: string; user: string; by: string; mode: 'one_time' | 'permanent'; reason: string; expiresAt: string | null }>
+  excluded: Array<{ userId: string; user: string; reason: string | null; at: string }>
+}
+
+/** The owner's inbox for financial-data access: decide requests, close open access, and see who is closed to staff. */
+function AccessTab() {
+  const { data, error, refresh } = useAdminQuery<AccessData>('/api/admin/access')
+  const toast = useActionToast()
+  const [busy, setBusy] = useState<string | null>(null)
+  if (error && !data) return <Notice tone="negative">{error}</Notice>
+  if (!data) return <Loading rows={4} />
+
+  const act = async (key: string, userId: string, body: Record<string, unknown>, done: string) => {
+    setBusy(key)
+    try {
+      await adminPost(`/api/admin/users/${userId}/financial`, body)
+      toast(done)
+      await refresh()
+    } catch (e) {
+      toast(errorMessage(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <Panel title="Permission matrix" description="Lower rank = more power. You can only manage roles ranked below your own." actions={canManage ? <Button variant="outline" size="touch" onClick={onCreate}><Plus />Custom role</Button> : undefined} flush>
+      <Panel title="Waiting for you" description="Staff asking to see a user’s financial details. Nothing opens until you approve." flush>
+        {data.requests.length === 0 ? <p className="px-5 py-8 text-center text-sm text-[var(--color-brand-text-muted)]">No requests right now.</p> : (
+          <ul className="divide-y divide-[var(--color-brand-border)]">
+            {data.requests.map((r) => (
+              <li key={r.id} className="space-y-2 px-5 py-4">
+                <p className="text-sm text-[var(--color-brand-text-primary)]">{r.by} asks for {r.mode === 'permanent' ? 'permanent' : 'one-time'} access to {r.user}</p>
+                <p className="text-sm text-[var(--color-brand-text-secondary)]">{r.reason}</p>
+                <p className="text-xs text-[var(--color-brand-text-muted)]">{ago(r.requestedAt)}{r.ticket ? ` · ticket #${r.ticket}` : ''}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="touch" loading={busy === `${r.id}:one_time`} onClick={() => void act(`${r.id}:one_time`, r.userId, { op: 'approve', grantId: r.id, mode: 'one_time' }, 'Approved for 30 minutes')}>Approve for 30 min</Button>
+                  <Button variant="outline" size="touch" loading={busy === `${r.id}:permanent`} onClick={() => void act(`${r.id}:permanent`, r.userId, { op: 'approve', grantId: r.id, mode: 'permanent' }, 'Approved permanently')}>Approve permanently</Button>
+                  <Button variant="outline" size="touch" loading={busy === `${r.id}:deny`} onClick={() => void act(`${r.id}:deny`, r.userId, { op: 'deny', grantId: r.id }, 'Denied')}>Deny</Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <Panel title="Open access" description="Who can read which account right now." flush>
+        {data.active.length === 0 ? <p className="px-5 py-8 text-center text-sm text-[var(--color-brand-text-muted)]">No one has access open.</p> : (
+          <ul className="divide-y divide-[var(--color-brand-border)]">
+            {data.active.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
+                <div className="min-w-0"><p className="truncate text-[var(--color-brand-text-primary)]">{a.by} → {a.user}</p><p className="truncate text-xs text-[var(--color-brand-text-muted)]">{a.reason}</p></div>
+                <div className="flex items-center gap-2">
+                  <Pill tone={a.mode === 'permanent' ? 'warn' : 'brand'}>{a.mode === 'permanent' ? 'Permanent' : `Until ${a.expiresAt ? new Date(a.expiresAt).toLocaleTimeString() : ''}`}</Pill>
+                  <Button variant="outline" size="touch" loading={busy === `${a.id}:revoke`} onClick={() => void act(`${a.id}:revoke`, a.userId, { op: 'revoke', grantId: a.id }, 'Access closed')}>Close</Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <Panel title="Closed to staff" description="Users no staff member can ask about. Reopen one from its Financial tab or here." flush>
+        {data.excluded.length === 0 ? <p className="px-5 py-8 text-center text-sm text-[var(--color-brand-text-muted)]">No exclusions.</p> : (
+          <ul className="divide-y divide-[var(--color-brand-border)]">
+            {data.excluded.map((e) => (
+              <li key={e.userId} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-sm">
+                <div className="min-w-0"><p className="truncate text-[var(--color-brand-text-primary)]">{e.user}</p>{e.reason ? <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{e.reason}</p> : null}</div>
+                <Button variant="outline" size="touch" loading={busy === `${e.userId}:include`} onClick={() => void act(`${e.userId}:include`, e.userId, { op: 'include' }, 'Staff can ask again')}>Reopen</Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </div>
+  )
+}
+
+function ReviewTab({ data, roleName, onOpen }: { data: StaffData; roleName: Map<string, string>; onOpen: (m: Member) => void }) {
+  const [now] = useState(() => Date.now())
+  const rows = data.staff.map((m) => ({ m, flags: m.isOwner ? [] : reviewFlags(m, now) })).sort((a, b) => b.flags.length - a.flags.length)
+  const flagged = rows.filter((r) => r.flags.length).length
+  return (
+    <Panel title="Quarterly access review" description={flagged ? `${flagged} of ${rows.length} teammates need a look. Open one to change or remove access.` : 'Nothing needs attention. Confirm each role still matches the job.'} flush>
+      <ul className="divide-y divide-[var(--color-brand-border)]">
+        {rows.map(({ m, flags }) => (
+          <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+            <div className="min-w-0"><p className="truncate font-medium text-[var(--color-brand-text-primary)]">{m.display_name?.trim() || m.email}</p><p className="text-xs text-[var(--color-brand-text-muted)]">{roleName.get(m.role_key) ?? m.role_key} · last sign-in {ago(m.last_login_at)}</p></div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {flags.length ? flags.map((f) => <Pill key={f} tone="warn">{f}</Pill>) : <Pill tone="good">OK</Pill>}
+              <Button variant="outline" size="touch" onClick={() => onOpen(m)}>Open</Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Panel>
+  )
+}
+
+function RolesTab({ data, canManage, onEdit, onCreate, onSaved }: { data: StaffData; canManage: boolean; onEdit: (r: Role) => void; onCreate: () => void; onSaved: () => Promise<void> }) {
+  const groups = [...new Set(Object.keys(data.permissions).map(groupOf))]
+  const [draft, setDraft] = useState<Record<string, string[]>>({})
+  const stepUp = useStepUp()
+  const { run, busy } = useAdminAction('/api/admin/staff', async () => { setDraft({}); await onSaved() })
+  const editable = canManage && data.actorIsOwner
+  const changed = Object.keys(draft).length
+  const held = (r: Role) => draft[r.key] ?? r.permissions
+
+  const toggle = (r: Role, perm: string) => {
+    const next = held(r).includes(perm) ? held(r).filter((p) => p !== perm) : [...held(r), perm]
+    const same = next.length === r.permissions.length && next.every((p) => r.permissions.includes(p))
+    setDraft((d) => {
+      const rest = Object.fromEntries(Object.entries(d).filter(([k]) => k !== r.key))
+      return same ? rest : { ...rest, [r.key]: next }
+    })
+  }
+  const save = async () => {
+    const proof = await stepUp('Changing what roles can do signs everyone in those roles out of the portal. Confirm it’s you.')
+    if (!proof) return
+    await run('perms', { op: 'set_role_permissions', changes: Object.entries(draft).map(([key, permissions]) => ({ key, permissions })), ...proof }, { success: 'Permissions saved' })
+  }
+
+  return (
+    <div className="space-y-6">
+      <Panel
+        title="Permission matrix"
+        description={editable ? 'Switch a permission on or off for any role, then save. Lower rank = more power.' : 'Lower rank = more power. Only the owner can change what a role can do.'}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {changed > 0 ? <Button variant="outline" size="touch" onClick={() => setDraft({})}>Discard</Button> : null}
+            {changed > 0 ? <Button size="touch" loading={busy === 'perms'} onClick={() => void save()}>Save {changed} role{changed === 1 ? '' : 's'}</Button> : null}
+            {canManage ? <Button variant="outline" size="touch" onClick={onCreate}><Plus />Custom role</Button> : null}
+          </div>
+        }
+        flush
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px] text-xs">
             <thead>
@@ -91,14 +229,14 @@ function RolesTab({ data, canManage, onEdit, onCreate }: { data: StaffData; canM
                 {data.roles.map((r) => (
                   <th key={r.key} className="px-2 py-2.5 text-center">
                     {canManage && !r.is_system && r.rank > data.actorRank ? <button type="button" data-raw-button-ok="role header opens the editor" onClick={() => onEdit(r)} className="font-semibold text-[var(--color-brand-primary-ink)] hover:underline">{r.name}</button> : <span className="font-semibold text-[var(--color-brand-text-primary)]">{r.name}</span>}
-                    <span className="block font-normal text-[var(--color-brand-text-muted)]">rank {r.rank}</span>
+                    <span className="block font-normal text-[var(--color-brand-text-muted)]">rank {r.rank}{draft[r.key] ? ' · edited' : ''}</span>
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {groups.map((g) => (
-                <GroupRows key={g} group={g} data={data} />
+                <GroupRows key={g} group={g} data={data} editable={editable} held={held} onToggle={toggle} />
               ))}
             </tbody>
           </table>
@@ -108,20 +246,31 @@ function RolesTab({ data, canManage, onEdit, onCreate }: { data: StaffData; canM
   )
 }
 
-function GroupRows({ group, data }: { group: string; data: StaffData }) {
+function GroupRows({ group, data, editable, held, onToggle }: { group: string; data: StaffData; editable: boolean; held: (r: Role) => string[]; onToggle: (r: Role, perm: string) => void }) {
   const perms = Object.keys(data.permissions).filter((p) => groupOf(p) === group)
   return (
     <>
       <tr><td colSpan={data.roles.length + 1} className="bg-[var(--color-brand-elevated)]/60 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-brand-text-muted)]">{group}</td></tr>
-      {perms.map((p) => (
-        <tr key={p} className="border-b border-[var(--color-brand-border)]">
-          <td className="px-4 py-2"><span className="font-mono text-[var(--color-brand-text-primary)]">{p}</span><span className="block text-[var(--color-brand-text-muted)]">{data.permissions[p]}</span></td>
-          {data.roles.map((r) => {
-            const has = r.permissions.includes('*') ? !data.ownerOnly.includes(p) || r.key === 'owner' : r.permissions.includes(p)
-            return <td key={r.key} className="px-2 py-2 text-center">{has ? <span className="text-[var(--color-brand-green)]" aria-label="Allowed">●</span> : <span className="text-[var(--color-brand-border-strong)]" aria-label="Not allowed">○</span>}</td>
-          })}
-        </tr>
-      ))}
+      {perms.map((p) => {
+        const ownerOnly = data.ownerOnly.includes(p)
+        return (
+          <tr key={p} className="border-b border-[var(--color-brand-border)]">
+            <td className="px-4 py-2"><span className="font-mono text-[var(--color-brand-text-primary)]">{p}</span><span className="block text-[var(--color-brand-text-muted)]">{data.permissions[p]}</span></td>
+            {data.roles.map((r) => {
+              const isOwnerRole = r.permissions.includes('*')
+              const has = isOwnerRole ? !ownerOnly || r.key === 'owner' : held(r).includes(p)
+              const canToggle = editable && !isOwnerRole && !ownerOnly
+              return (
+                <td key={r.key} className="px-2 py-2 text-center">
+                  {canToggle ? (
+                    <Switch size="sm" checked={has} onCheckedChange={() => onToggle(r, p)} aria-label={`${r.name}: ${p}`} />
+                  ) : has ? <span className="text-[var(--color-brand-green)]" aria-label="Allowed">●</span> : <span className="text-[var(--color-brand-border-strong)]" aria-label="Not allowed">○</span>}
+                </td>
+              )
+            })}
+          </tr>
+        )
+      })}
     </>
   )
 }

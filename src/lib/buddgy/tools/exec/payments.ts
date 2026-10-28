@@ -7,7 +7,8 @@ import { fin } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl, WriteImpl } from '@/lib/buddgy/tools/types'
 import { fail, makeProposal, ok, text } from '@/lib/buddgy/tools/writeKit'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import { allowsLast4, composePaymentMethodName, decomposePaymentMethodName, PAYMENT_TYPE_META, SETUP_TYPES } from '@/lib/payment/paymentMethodDefaults'
+import { allowsLast4, composePaymentMethodName, decomposePaymentMethodName, PAYMENT_TYPE_META, CARD_SETUP_TYPES } from '@/lib/payment/paymentMethodDefaults'
+import { getOpenDefaultCandidate, isPaymentMethodReferenced } from '@/lib/accounts/removePaymentMethod'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, FinanceStore, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 
@@ -15,7 +16,7 @@ import type { Currency, FinanceStore, PaymentMethod, PaymentMethodType } from '@
 export const liveMethods = (s: FinanceStore): PaymentMethod[] => s.paymentMethods.filter((m) => !m.closedAt)
 
 const cascadeSlices = (s: FinanceStore) => ({
-  paymentMethods: liveMethods(s),
+  paymentMethods: s.paymentMethods,
   expenses: s.expenses,
   debts: s.debts,
   subscriptions: s.subscriptions,
@@ -76,7 +77,7 @@ const add_payment_method: WriteImpl = {
     const provider = text(args.name, 40)
     if (!provider) return fail('A payment method needs a name.')
     const type = args.type as PaymentMethodType
-    if (!SETUP_TYPES.includes(type)) return fail('Unknown type.', `Use one of: ${SETUP_TYPES.join(', ')}. Cash is built in.`)
+    if (!CARD_SETUP_TYPES.includes(type)) return fail('Unknown type.', `Use one of: ${CARD_SETUP_TYPES.join(', ')}. Cash is built in, and bank accounts are added from the Accounts page.`)
     const currency = (text(args.currency, 8)?.toUpperCase() ?? s.settings.baseCurrency) as Currency
     if (!FIAT_CURRENCIES.includes(currency)) return fail(`${currency} is not a supported currency.`)
     const last4 = text(args.last4, 8)
@@ -241,15 +242,9 @@ const delete_payment_method: WriteImpl = {
     if (m.type === 'cash') return fail(L.cashFixed)
 
     const effects: string[] = []
-    const expenses = s.expenses.filter((e) => e.paymentMethodId === m.id).length
-    if (expenses) effects.push(L.expensesMoved(expenses))
-    const subs = s.subscriptions.filter((x) => x.paymentMethodId === m.id).length
-    if (subs) effects.push(L.subscriptionsUnlinked(subs))
-    const income = s.incomeSources.filter((x) => x.paymentMethodId === m.id).length + s.incomeEvents.filter((x) => x.paymentMethodId === m.id).length
-    if (income) effects.push(L.incomeUnlinked(income))
-    for (const d of s.debts.filter((x) => x.linkedPaymentMethodId === m.id)) effects.push(L.debtUnlinked(d.name))
-    const remaining = liveMethods(s).filter((x) => x.id !== m.id)
-    if (m.isDefault && remaining.length > 0) effects.push(L.newDefault(remaining[0].name))
+    if (isPaymentMethodReferenced(s, m.id)) effects.push(L.closedKeepsHistory)
+    const heir = m.isDefault ? getOpenDefaultCandidate(s.paymentMethods, m.id) : undefined
+    if (heir) effects.push(L.newDefault(heir.name))
 
     return ok(
       makeProposal({
@@ -279,14 +274,16 @@ const delete_payment_method: WriteImpl = {
     const was = cascadeSlices(fin())
     fin().deletePaymentMethod(id)
     const now = cascadeSlices(fin())
+    const keptDebtIds = new Set(now.debts.map((d) => d.id))
+    const removedDebtIds = new Set(was.debts.filter((d) => !keptDebtIds.has(d.id)).map((d) => d.id))
     return {
       ok: true,
       message: hit.method.name,
       undo: () =>
         useFinanceStore.setState((st) => ({
-          paymentMethods: revertRows(restoreRows(st.paymentMethods, was.paymentMethods, new Set([id])), was.paymentMethods, now.paymentMethods, ['isDefault'], true),
+          paymentMethods: revertRows(restoreRows(st.paymentMethods, was.paymentMethods, new Set([id])), was.paymentMethods, now.paymentMethods, ['isDefault', 'closedAt', 'parentId'], true),
           expenses: revertRows(st.expenses, was.expenses, now.expenses, ['paymentMethodId']),
-          debts: revertRows(st.debts, was.debts, now.debts, ['linkedPaymentMethodId']),
+          debts: revertRows(restoreRows(st.debts, was.debts, removedDebtIds), was.debts, now.debts, ['linkedPaymentMethodId']),
           subscriptions: revertRows(st.subscriptions, was.subscriptions, now.subscriptions, ['paymentMethodId']),
           incomeSources: revertRows(st.incomeSources, was.incomeSources, now.incomeSources, ['paymentMethodId']),
           incomeEvents: revertRows(st.incomeEvents, was.incomeEvents, now.incomeEvents, ['paymentMethodId']),

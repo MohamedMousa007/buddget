@@ -15,9 +15,11 @@ import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import type { PaymentMethod } from '@/lib/store/types'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 
 export function PaymentMethodsSheet() {
   const t = useT()
+  const confirm = useConfirm()
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
   const deletePaymentMethod = useFinanceStore((s) => s.deletePaymentMethod)
@@ -59,7 +61,7 @@ export function PaymentMethodsSheet() {
   }
   useEscapeClose(isWalletModal && !setupOpen, close)
 
-  const deck = useMemo(() => paymentMethods.filter((m) => m.type !== 'cash'), [paymentMethods])
+  const deck = useMemo(() => paymentMethods.filter((m) => m.type !== 'cash' && m.type !== 'bank_account' && !m.closedAt), [paymentMethods])
   const menuCard = deck.find((m) => m.id === cardMenuId) ?? null
 
   const openAdd = () => { setEditingMethod(null); setSetupOpen(true) }
@@ -126,9 +128,15 @@ export function PaymentMethodsSheet() {
                   label: t.paymentMethods.delete,
                   icon: <Trash2 size={17} />,
                   destructive: true,
-                  onSelect: () => { deletePaymentMethod(menuCard.id); setActive(0) },
+                  onSelect: async () => {
+                    const children = paymentMethods.filter((m) => m.parentId === menuCard.id).length
+                    if (!(await confirm({ title: t.paymentMethods.delete, body: t.accountsPage.closeAccountBody(children), destructive: true }))) return
+                    deletePaymentMethod(menuCard.id)
+                    setActive(0)
+                  },
                 },
               ]}
+              zClassName="z-[110]"
             />
           ) : null}
         </div>

@@ -30,6 +30,15 @@ export const SETUP_TYPES: PaymentMethodType[] = [
   'other',
 ]
 
+/**
+ * What the add-card flow offers: every setup type except the bank account, which has its own Add account sheet.
+ * SETUP_TYPES stays whole because it also describes what a provider can issue.
+ */
+export const CARD_SETUP_TYPES: PaymentMethodType[] = SETUP_TYPES.filter((t) => t !== 'bank_account')
+
+/** A provider's primary product is often an account; added as a payment method it is the debit card it issues. */
+export const asCardType = (t: PaymentMethodType): PaymentMethodType => (t === 'bank_account' ? 'debit_card' : t)
+
 export function allowsLast4(type: PaymentMethodType): boolean {
   return PAYMENT_TYPE_META[type].allowsLast4
 }

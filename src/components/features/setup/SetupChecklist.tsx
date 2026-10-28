@@ -17,6 +17,7 @@ export function SetupChecklist({ onNavigate, className }: { onNavigate?: () => v
   const { steps, doneCount, pct } = useSetupProgress()
 
   const copy: Record<SetupStepId, { title: string; body: string }> = {
+    accounts: { title: t.setup.accountsTitle, body: t.setup.accountsBody },
     sms: { title: t.setup.smsTitle, body: t.setup.smsBody },
     payday: { title: t.setup.paydayTitle, body: t.setup.paydayBody },
     budget: { title: t.setup.budgetTitle, body: t.setup.budgetBody },
@@ -24,7 +25,8 @@ export function SetupChecklist({ onNavigate, className }: { onNavigate?: () => v
   }
   const run = (id: SetupStepId) => {
     onNavigate?.()
-    if (id === 'sms') navigate('/settings/sms')
+    if (id === 'accounts') navigate('/accounts')
+    else if (id === 'sms') navigate('/settings/sms')
     else if (id === 'payday') navigate('/paydays')
     else if (id === 'budget') navigate('/budget-setup')
     else setActiveModal('quickAdd')

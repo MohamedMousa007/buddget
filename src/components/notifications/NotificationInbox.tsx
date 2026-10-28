@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
@@ -35,12 +36,22 @@ export function NotificationInbox({
 }) {
   const t = useT()
   const wrapRef = useRef<HTMLDivElement>(null)
+  const toast = useActionToast()
   const [open, setOpen] = useState(false)
+  const [paidIds, setPaidIds] = useState<ReadonlySet<string>>(new Set())
   const {
     notifications,
     unreadCount,
     markAllRead,
   } = useNotifications()
+
+  const confirmPaid = (notificationId: string, recurringId: string) => {
+    const ok = confirmRecurringDebtPayment(recurringId)
+    if (ok) setPaidIds((prev) => new Set(prev).add(notificationId))
+    toast(ok ? t.moneyFlows.markedPaid : t.moneyFlows.paidFailed)
+  }
+
+  const visible = notifications.filter((n) => !paidIds.has(n.id))
 
   useEffect(() => {
     if (!open) return
@@ -91,9 +102,9 @@ export function NotificationInbox({
             </Button>
           </div>
           <div className="px-3 py-3 space-y-3">
-            {notifications.length > 0 ? (
+            {visible.length > 0 ? (
               <ul className="divide-y divide-[var(--color-brand-border)]">
-                {notifications.map((n) => (
+                {visible.map((n) => (
                   <li key={n.id} className="py-3">
                     <div className="flex gap-2.5">
                       <span
@@ -108,17 +119,15 @@ export function NotificationInbox({
                           <div className="mt-2 flex flex-wrap gap-2">
                             <Button
                               variant="ghost"
-                              size="xs"
-                              onClick={() => {
-                                void confirmRecurringDebtPayment(n.recurringId!)
-                              }}
+                              size="touch"
+                              onClick={() => confirmPaid(n.id, n.recurringId!)}
                               className="bg-[var(--color-brand-green)]/20 text-[var(--color-brand-green)] hover:bg-[var(--color-brand-green)]/30"
                             >
                               {t.notifications.recurringConfirmPaid}
                             </Button>
                             <Button
                               variant="outline"
-                              size="xs"
+                              size="touch"
                               onClick={() => snoozeRecurringDebtPayment(n.recurringId!)}
                             >
                               {t.notifications.recurringSnooze}
@@ -131,7 +140,7 @@ export function NotificationInbox({
                 ))}
               </ul>
             ) : null}
-            {notifications.length === 0 ? (
+            {visible.length === 0 ? (
               <p className="text-sm text-[var(--color-brand-text-secondary)] text-center py-8">{t.notifications.emptyState}</p>
             ) : null}
           </div>

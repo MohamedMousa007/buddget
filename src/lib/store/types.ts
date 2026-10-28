@@ -66,6 +66,8 @@ export interface PaymentMethod {
   closedAt?: string
   /** Compare SMS balance reports against the ledger. Default on. */
   trackSms?: boolean
+  /** Not the user's money (a card someone else uses): its spending and balance stay out of totals. The ledger stays true. */
+  excluded?: boolean
   id: string
   name: string
   type: PaymentMethodType
@@ -73,6 +75,8 @@ export interface PaymentMethod {
   color?: string
   icon?: string
   last4?: string
+  /** A name the user gave the account, shown where the last four digits would be. `last4` stays stored for SMS matching. */
+  label?: string
   isDefault: boolean
   /** Last local edit (ISO). Powers the offline-merge tiebreak — without it an
    *  offline edit to this row loses to the server on every sign-in. */
@@ -82,7 +86,6 @@ export interface PaymentMethod {
 
 /** How often recurring income is received; amount is per that period (e.g. weekly = per week). */
 export type IncomeRecurringFrequency = 'monthly' | 'biweekly' | 'weekly'
-
 export type IncomeSourceType =
   | 'salary'
   | 'bonus'
@@ -118,6 +121,7 @@ export interface IncomeSource {
    * Undefined/null = app default (7 matching, {@link MISSED_AFTER_DAYS} before missed).
    */
   paydayDriftDays?: number | null
+  /** Employer weekend for payday shifting: Sat+Sun (default; US/remote) or Fri+Sat (Egypt). */
   /** `YYYY-MM-DD` the source starts counting for a month (defaults to creation date). */
   effectiveStart: string
   /** `YYYY-MM-DD` the source stops counting (inclusive); null/undefined = ongoing. */
@@ -170,6 +174,9 @@ export interface IncomeEvent {
   updatedAt: string
 }
 
+/** `method` = its payment method is excluded; `manual` = the user left this one out; `for_someone` = paid on someone's behalf. */
+export type SpendExclusion = 'method' | 'manual' | 'for_someone'
+
 export interface Expense {
   /** Exact instant (ISO). `date` stays the day key; readers fall back to date@12:00 when absent. */
   occurredAt?: string
@@ -205,6 +212,11 @@ export interface Expense {
   refundedAt?: string
   /** `refunded` = money returned; `declined` = charge blocked/reversed. Drives the card badge. */
   refundKind?: 'refunded' | 'declined'
+  /** Why this expense is left out of spending (it is still logged and still moves the account balance). */
+  spendExclusion?: SpendExclusion
+  /** For `for_someone`: who owes this back, and when they paid it. */
+  owedBy?: string
+  owedSettledAt?: string
   createdAt: string
   updatedAt: string
 }
@@ -430,6 +442,8 @@ export interface BuddgyMemory {
   kind: 'fact' | 'preference' | 'constraint'
   source: 'budget' | 'chat' | 'settings'
   status: 'proposed' | 'active'
+  /** The budget plan this note came from; deleting the plan deletes the note. */
+  planId?: string
   createdAt: string
   updatedAt: string
 }
@@ -449,6 +463,28 @@ export interface BudgetActivationUndo {
 }
 
 /** What the budget studio learns about the user, beyond the typed profile columns. */
+/** What brings someone to the app; seeds the first budget priorities and the wording of the first card. */
+export type OnboardingGoal = 'see' | 'runout' | 'save' | 'debt' | 'budget'
+
+/** Where a new account is in the first-run journey. Lives on the profile so it resumes on any device. */
+export interface OnboardingRecord {
+  v: 1
+  /** Index into the journey's steps. */
+  step: number
+  startedAt: string
+  goals?: OnboardingGoal[]
+  /** The income source the journey created, so going back edits it instead of adding another. */
+  incomeSourceId?: string
+  /** 'later' = asked and declined; do not ask again before `pushLaterAt` + 30 days. */
+  push?: 'allowed' | 'later'
+  pushLaterAt?: string
+  doneAt?: string
+  skippedAt?: string
+}
+
+/** Per budget line (`block:name`): the last close proposal and what the user did with it. */
+export type CloseMemory = Record<string, { kind: 'raise' | 'lower'; cycle: string; outcome: 'applied' | 'passed' }>
+
 export interface FinancialProfile {
   housing?: 'rent' | 'own' | 'family' | 'company'
   dependents?: number
@@ -458,8 +494,13 @@ export interface FinancialProfile {
   priorities?: string[]
   /** 0 = save hard, 100 = live comfortably. */
   securityLean?: number
-  payoffStrategy?: 'avalanche' | 'snowball' | 'minimums'
   investInterest?: boolean
+  /** Pays mostly in cash, so tracked spending understates real spending. */
+  cashHeavy?: boolean
+  /** What month-close proposals were applied or passed on, per line, so a declined change is not repeated. */
+  closeMemory?: CloseMemory
+  /** First-run journey progress; absent for accounts that predate it. */
+  onboarding?: OnboardingRecord
 }
 
 /** Who the budget is for (planner / household). */
@@ -661,6 +702,11 @@ export interface RecurringSavingsDeposit {
 /** Where a savings withdrawal goes. Only 'income' creates an IncomeEvent. */
 export type SavingsWithdrawalPurpose = 'income' | 'transfer' | 'debt' | 'spend'
 
+export type DeleteSavingsTxResult =
+  | { ok: true }
+  | { ok: false; reason: 'not_found' }
+  | { ok: false; reason: 'would_go_negative'; accountId: string; shortBy: number }
+
 export interface SavingsTransaction {
   occurredAt?: string
   /** Account the money came from / went to. */
@@ -791,6 +837,15 @@ export type DebtRecurringFrequency =
   | 'annually'
 
 /** Template: due dates are surfaced in-app; user confirms before a payment + expense are posted. */
+/** Everything `deleteDebtPayment` removed or changed, so Undo restores the original rows. */
+export interface DebtPaymentSnapshot {
+  payment: DebtPayment
+  expenses: Expense[]
+  debtWasCleared: boolean
+  /** The reminder that was switched back on, as it was before. */
+  schedule?: RecurringDebtPayment
+}
+
 export interface RecurringDebtPayment {
   id: string
   debtId: string
@@ -800,6 +855,8 @@ export interface RecurringDebtPayment {
   frequency: DebtRecurringFrequency
   /** Next calendar due date (YYYY-MM-DD, local). */
   nextDueDate: string
+  /** Day of month the schedule is anchored to (1-31); lets a 31st schedule return to 31 after short months. */
+  dueDay?: number
   isActive: boolean
   notes?: string
   createdAt: string
@@ -854,6 +911,8 @@ export interface AppSettings {
   language: 'en' | 'ar'
   showCentsInDashboard: boolean
   monthStartDay: number
+  /** IANA zone of the user's device, synced so server crons judge dates in their local calendar. */
+  timezone?: string | null
   /** Budget rows as fixed amounts in base currency vs % of monthly recurring income */
   budgetEntryMode: 'amount' | 'percent_of_income'
   /** AI chat / extraction (optional client preference; server may still gate by env) */
@@ -891,6 +950,8 @@ export interface AppSettings {
   dashboardLayout?: 'standard' | 'minimal'
   /** Wealth gold-price strip state; `user_settings.wealth_gold_strip` (synced). */
   wealthGoldStrip?: 'collapsed' | 'expanded' | 'hidden'
+  /** Prompts the user has answered for good, by key, with when. Synced in `user_settings.prompt_state`. */
+  promptState?: Record<string, string>
   /**
    * Tours the user has finished, stored as versioned ids
    * (e.g. `'postOnboardingTour:v1'`). Re-firing a tour for every existing
@@ -1069,6 +1130,9 @@ export interface FinanceStore {
   ) => void
   updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void
   deleteIncomeSource: (id: string) => void
+  /** Undo of a delete: puts back the original row (same id and fields). */
+  restoreIncomeSource: (source: IncomeSource) => void
+  restoreIncomeEvent: (event: IncomeEvent) => void
   addIncomeEvent: (event: Omit<IncomeEvent, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateIncomeEvent: (id: string, updates: Partial<IncomeEvent>) => void
   deleteIncomeEvent: (id: string, deleteLinkedDebt?: boolean) => void
@@ -1098,7 +1162,9 @@ export interface FinanceStore {
     expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>
   ) => void
   deleteDebt: (id: string) => void
-  deleteDebtPayment: (id: string) => void
+  /** Removes the payment together with its paired expense; returns what is needed to undo it. */
+  deleteDebtPayment: (id: string) => DebtPaymentSnapshot | null
+  restoreDebtPayment: (snapshot: DebtPaymentSnapshot) => void
   addRecurringDebtPayment: (r: Omit<RecurringDebtPayment, 'id' | 'createdAt'>) => void
   updateRecurringDebtPayment: (id: string, updates: Partial<RecurringDebtPayment>) => void
   deleteRecurringDebtPayment: (id: string) => void
@@ -1162,7 +1228,7 @@ export interface FinanceStore {
   activateBudgetPlan: (planId: string, cycleKey: string) => BudgetActivationUndo
   restoreBudgetActivation: (undo: BudgetActivationUndo) => void
   /** Saves a remembered fact; null when it is a duplicate or the 40-fact cap is reached. */
-  addBuddgyMemory: (text: string, source: BuddgyMemory['source'], kind?: BuddgyMemory['kind']) => string | null
+  addBuddgyMemory: (text: string, source: BuddgyMemory['source'], kind?: BuddgyMemory['kind'], planId?: string) => string | null
   removeBuddgyMemory: (id: string) => void
   addAccountAdjustment: (a: Omit<AccountAdjustment, 'id' | 'createdAt' | 'updatedAt'>) => string
   addPlanCategory: (planId: string, category: Omit<BudgetPlanCategory, 'id' | 'subcategories'> & { subcategories?: BudgetPlanSubcategory[] }) => string
@@ -1198,8 +1264,12 @@ export interface FinanceStore {
     /** `mode` = where the money came from: 'allocate' (from this month's budget — reduces
      *  left-to-spend, net worth flat) or 'declare' (money from outside the budget — net worth
      *  rises, left-to-spend untouched). Defaults to 'allocate' (the historical behaviour). */
-    opts?: { isAutoSave?: boolean; source?: string; mode?: 'allocate' | 'declare'; /** Account the money leaves; stamps the ledger leg so the account balance follows. */ paymentMethodId?: string }
-  ) => void
+    opts?: { isAutoSave?: boolean; source?: string; mode?: 'allocate' | 'declare'; /** Account the money leaves; stamps the ledger leg so the account balance follows. */ paymentMethodId?: string
+      /** Account the cash leaves. undefined = primary tracked account (cash deposits only), null = none. Same-currency only. */
+      fromAccountId?: string | null
+      /** Deterministic id: a second post with the same id is a no-op (cross-device idempotency). */
+      txId?: string }
+  ) => boolean
   /** Only 'income' returns the money to this month's spendable income; the rest do not,
    *  so a transfer/debt/spend withdrawal never inflates the income KPI. Defaults to 'income'. */
   withdrawFromSavings: (
@@ -1207,15 +1277,17 @@ export interface FinanceStore {
     amount: number,
     currency: Currency,
     notes?: string,
-    purpose?: SavingsWithdrawalPurpose
-  ) => void
+    purpose?: SavingsWithdrawalPurpose,
+    /** Income withdrawals credit this account (undefined = primary tracked, null = none). Same-currency only. */
+    opts?: { toAccountId?: string | null }
+  ) => boolean
   /** Move money between two pockets: two ledger legs sharing a transferGroupId, both
    *  non-cash-flow (net worth and left-to-spend unaffected). FX-converts fiat↔fiat; rejects
    *  a move with no conversion path (e.g. into a gold/crypto pocket — that's a buy, not a transfer). */
-  transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string) => void
+  transferBetweenPockets: (fromId: string, toId: string, amount: number, notes?: string) => boolean
   correctSavingsBalance: (accountId: string, newBalance: number, notes?: string) => void
   /** Delete a savings ledger row and reverse its balance effect (both legs for a transfer). */
-  deleteSavingsTransaction: (id: string) => void
+  deleteSavingsTransaction: (id: string) => DeleteSavingsTxResult
   updateSettings: (updates: Partial<AppSettings>) => void
   updateProfile: (updates: Partial<UserProfile>) => void
   setFinancialGoalsNotes: (notes: string) => void

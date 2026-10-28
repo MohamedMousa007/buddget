@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { buildPlan, ENGINE_VERSION, EVERYDAY_KEYS } from '@/lib/budget/engine'
-import { getBenchmark } from '@/lib/budget/benchmarks'
+import { buildPlan, ENGINE_VERSION, EVERYDAY_KEYS, personalScale } from '@/lib/budget/engine'
+import { benchmarkEveryday, getBenchmark } from '@/lib/budget/benchmarks'
 import type { BudgetFacts, DraftLine, PlanDraft } from '@/lib/budget/facts'
 
 const base: BudgetFacts = {
@@ -31,7 +31,6 @@ const base: BudgetFacts = {
   averages: {},
   priorities: [],
   securityLean: 50,
-  payoffStrategy: 'avalanche',
   investInterest: false,
 }
 
@@ -76,7 +75,7 @@ describe('buildPlan', () => {
   it('solo UAE renter with a 24% card: pays extra before investing, fills income exactly', () => {
     const p = buildPlan({
       ...base,
-      debts: [{ id: 'd1', name: 'Visa', minimum: 300, balance: 8000, apr: 24, kind: 'credit_card' }],
+      debts: [{ id: 'd1', name: 'Visa', minimum: 300, balance: 8000, kind: 'credit_card' }],
       liquidSavings: 20000,
       investInterest: true,
       priorities: ['debt', 'invest'],
@@ -102,7 +101,7 @@ describe('buildPlan', () => {
       ...base,
       liquidSavings: 30000,
       investInterest: true,
-      debts: [{ id: 'd1', name: 'Loan', minimum: 200, balance: 5000, apr: 8, kind: 'loan' }],
+      debts: [{ id: 'd1', name: 'Loan', minimum: 200, balance: 5000, kind: 'loan' }],
     })
     expect(find(p, (l) => l.name === 'Investing')).toBeDefined()
     expect(find(p, (l) => l.block === 'debts' && l.linkType === 'none')).toBeUndefined()
@@ -111,34 +110,50 @@ describe('buildPlan', () => {
       ...base,
       liquidSavings: 30000,
       investInterest: true,
-      debts: [{ id: 'd1', name: 'Card', minimum: 200, balance: 5000, apr: 20, kind: 'credit_card' }],
+      debts: [{ id: 'd1', name: 'Card', minimum: 200, balance: 5000, kind: 'credit_card' }],
     })
     expect(find(q, (l) => l.name === 'Investing')).toBeUndefined()
     expect(idx(q, (l) => l.name.startsWith('Extra payoff'))).toBeGreaterThan(-1)
   })
 
-  it('snowball targets the smallest balance, minimums-only adds no extra', () => {
+  it('extra payoff goes to the smallest card, then the smallest other debt when debt is a priority', () => {
     const debts = [
-      { id: 'a', name: 'Big', minimum: 100, balance: 9000, apr: 30, kind: 'loan' as const },
-      { id: 'b', name: 'Small', minimum: 50, balance: 800, apr: 18, kind: 'personal' as const },
+      { id: 'a', name: 'Big', minimum: 100, balance: 9000, kind: 'loan' as const },
+      { id: 'b', name: 'Small', minimum: 50, balance: 800, kind: 'personal' as const },
+      { id: 'c', name: 'Card', minimum: 80, balance: 3000, kind: 'credit_card' as const },
+      { id: 'd', name: 'Plan', minimum: 70, balance: 500, kind: 'installment' as const },
     ]
-    const snow = buildPlan({ ...base, debts, payoffStrategy: 'snowball' })
-    expect(find(snow, (l) => l.name.startsWith('Extra payoff'))!.name).toContain('Small')
-    const aval = buildPlan({ ...base, debts })
-    expect(find(aval, (l) => l.name.startsWith('Extra payoff'))!.name).toContain('Big')
-    const mins = buildPlan({ ...base, debts, payoffStrategy: 'minimums' })
-    expect(find(mins, (l) => l.name.startsWith('Extra payoff'))).toBeUndefined()
+    const extra = (f: Partial<BudgetFacts>) => find(buildPlan({ ...base, ...f }), (l) => l.name.startsWith('Extra payoff'))
+    expect(extra({ debts })!.name).toContain('Card')
+    expect(extra({ debts: debts.filter((d) => d.kind !== 'credit_card'), priorities: ['debt'] })!.name).toContain('Small')
+    expect(extra({ debts: debts.filter((d) => d.kind !== 'credit_card') })).toBeUndefined()
+    expect(extra({ debts: [debts[3]], priorities: ['debt'] })).toBeUndefined()
   })
 
-  it('gives the extra payoff the user asked for, within what the plan has to spare', () => {
-    const debts = [{ id: 'a', name: 'Card', minimum: 100, balance: 9000, apr: 30, kind: 'credit_card' as const }]
-    const paced = find(buildPlan({ ...base, debts }), (l) => l.name.startsWith('Extra payoff'))!.amount
-    const asked = find(buildPlan({ ...base, debts, extraPayoff: paced + 200 }), (l) => l.name.startsWith('Extra payoff'))!.amount
-    expect(asked).toBeGreaterThan(paced)
-    const tiny = find(buildPlan({ ...base, debts, extraPayoff: 10 }), (l) => l.name.startsWith('Extra payoff'))!.amount
-    expect(tiny).toBe(10)
-    const plan = buildPlan({ ...base, debts, extraPayoff: 1_000_000 })
-    expect(plan.free).toBeGreaterThanOrEqual(0)
+  it('no income: plans the expected spending with a cushion instead of failing', () => {
+    const p = buildPlan({ ...base, monthlyIncome: 0, country: 'Egypt', baseCurrency: 'EGP', rent: 3000, averages: {} })
+    expectInvariants(p)
+    expect(p.basis).toBe('spend')
+    expect(p.income).toBeGreaterThan(0)
+    expect(total(p)).toBe(p.income)
+    expect(p.risks.some((r) => r.includes('No income'))).toBe(true)
+    expect(buildPlan(base).basis).toBe('income')
+  })
+
+  it('no income and nothing to go on yields an empty plan with a risk, not a crash', () => {
+    const p = buildPlan({ ...base, country: null, monthlyIncome: 0, rent: null, housing: null, bills: [], subscriptionsMonthly: 0, subscriptionCount: 0, averages: {} })
+    expect(p.income).toBe(0)
+    expect(p.lines).toHaveLength(0)
+    expect(p.risks.some((r) => r.includes('nothing to base'))).toBe(true)
+  })
+
+  it('blends a short spending history with the benchmark instead of trusting it alone', () => {
+    const rich = { ...base, baseCurrency: 'EGP' as const, country: 'Egypt', monthlyIncome: 30000, averages: { groceries: 1000 } }
+    const full = find(buildPlan({ ...rich, averageCycles: 3 }), (l) => l.name === 'Groceries')!
+    const short = find(buildPlan({ ...rich, averageCycles: 1 }), (l) => l.name === 'Groceries')!
+    expect(full.confidence).toBe('high')
+    expect(short.confidence).toBe('estimated')
+    expect(short.amount).toBeGreaterThan(full.amount)
   })
 
   it('couple with kids in Egypt, variable income: sized on the floor with a surplus risk', () => {
@@ -219,8 +234,8 @@ describe('buildPlan', () => {
       subscriptionsMonthly: 200,
       subscriptionCount: 2,
       debts: [
-        { id: 'a', name: 'Card', minimum: 2500, balance: 30000, apr: 36, kind: 'credit_card' },
-        { id: 'b', name: 'Loan', minimum: 1800, balance: 20000, apr: 20, kind: 'loan' },
+        { id: 'a', name: 'Card', minimum: 2500, balance: 30000, kind: 'credit_card' },
+        { id: 'b', name: 'Loan', minimum: 1800, balance: 20000, kind: 'loan' },
       ],
       goals: [{ id: 'g', name: 'Trip', monthly: 500, targetAmount: null, saved: 0, targetDate: null, priority: 1, icon: 'plane' }],
       averages: { groceries: 2000, health: 300, transport: 500, fun: 400 },
@@ -291,7 +306,7 @@ describe('buildPlan', () => {
   it('is deterministic', () => {
     const facts: BudgetFacts = {
       ...base,
-      debts: [{ id: 'd1', name: 'Visa', minimum: 300, balance: 8000, apr: 24, kind: 'credit_card' }],
+      debts: [{ id: 'd1', name: 'Visa', minimum: 300, balance: 8000, kind: 'credit_card' }],
       priorities: ['debt', 'safety'],
     }
     expect(buildPlan(facts)).toEqual(buildPlan(facts))
@@ -304,8 +319,8 @@ describe('buildPlan', () => {
 })
 
 describe('extra payoff pace', () => {
-  const card = { id: 'c', name: 'Card', minimum: 500, balance: 14200, apr: 24, kind: 'credit_card' as const }
-  const rich: BudgetFacts = { ...base, monthlyIncome: 18500, debts: [card], payoffStrategy: 'avalanche' }
+  const card = { id: 'c', name: 'Card', minimum: 500, balance: 14200, kind: 'credit_card' as const }
+  const rich: BudgetFacts = { ...base, monthlyIncome: 18500, debts: [card] }
 
   it('is paced to clear the target in about two years when debt is a priority, not the whole slack', () => {
     const extra = find(buildPlan({ ...rich, priorities: ['debt'] }), (l) => l.name.startsWith('Extra payoff'))
@@ -316,3 +331,49 @@ describe('extra payoff pace', () => {
     expect(extra?.amount).toBeLessThanOrEqual(Math.ceil(14200 / 36))
   })
 })
+
+describe('personal spending scale', () => {
+  const egypt = { ...base, baseCurrency: 'EGP' as const, country: 'Egypt', monthlyIncome: 60000, averageCycles: 3 }
+  const typical = benchmarkEveryday(getBenchmark('Egypt', 'EGP'), egypt, 60000)
+
+  it('is neutral without enough evidence and capped when it is extreme', () => {
+    expect(personalScale({}, typical)).toBe(1)
+    expect(personalScale({ groceries: typical.groceries * 2 }, typical)).toBe(1)
+    expect(personalScale({ groceries: typical.groceries * 9, dining: typical.dining * 9 }, typical)).toBe(2)
+    expect(personalScale({ groceries: 1, dining: 1 }, typical)).toBe(0.5)
+  })
+
+  it('a heavy spender gets larger estimates for categories with no history, and says why', () => {
+    const heavy = { groceries: typical.groceries * 1.5, dining: typical.dining * 1.5 }
+    const plain = buildPlan({ ...egypt, averages: {} })
+    const scaled = buildPlan({ ...egypt, averages: heavy })
+    const fun = (p: PlanDraft) => find(p, (l) => l.name === 'Fun')!
+    expect(fun(scaled).amount).toBeGreaterThan(fun(plain).amount)
+    expect(fun(scaled).rationale).toContain('adjusted to your usual spending')
+  })
+
+  it('fades as the evidence thins', () => {
+    const heavy = { groceries: typical.groceries * 1.8, dining: typical.dining * 1.8 }
+    const full = find(buildPlan({ ...egypt, averages: heavy, averageCycles: 3 }), (l) => l.name === 'Fun')!.amount
+    const thin = find(buildPlan({ ...egypt, averages: heavy, averageCycles: 1 }), (l) => l.name === 'Fun')!.amount
+    const none = find(buildPlan({ ...egypt, averages: {} }), (l) => l.name === 'Fun')!.amount
+    expect(none).toBeLessThanOrEqual(thin)
+    expect(thin).toBeLessThanOrEqual(full)
+  })
+})
+
+describe('review fixes', () => {
+  it('a worst month of 0 does not turn a known income into a no-income plan', () => {
+    const p = buildPlan({ ...base, monthlyIncome: 6000, incomeStability: 'variable', incomeFloor: 0 })
+    expect(p.basis).toBe('income')
+    expect(p.income).toBe(Math.round(0.8 * 6000))
+    expect(p.risks.some((r) => r.includes('No income'))).toBe(false)
+  })
+  it('paying in cash lowers the weight of history but keeps its figures confident', () => {
+    const line = (cash: boolean) => find(buildPlan({ ...base, averages: { groceries: 1500 }, averageCycles: 3, cashHeavy: cash }), (l) => l.name === 'Groceries')!
+    expect(line(true).confidence).toBe('high')
+    expect(line(true).rationale).toContain('pay mostly in cash')
+    expect(line(false).confidence).toBe('high')
+  })
+})
+

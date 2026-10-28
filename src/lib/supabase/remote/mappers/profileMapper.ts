@@ -18,6 +18,8 @@ export interface ProfileExtras {
   /** Secondary display currency (from AppSettings). Written to profiles.secondary_currency. */
   secondaryCurrency?: Currency | null
   displayName?: string | null
+  /** When the account was last reset (admin portal or start fresh); devices compare it to what they honoured. */
+  dataResetAt?: string | null
 }
 
 /**
@@ -31,9 +33,7 @@ export function profileToRow(
   extras: ProfileExtras,
   userId: string
 ): ProfileInsert {
-  // `ProfileInsert` marks `onboarding_completed` + `display_name` as optional,
-  // so omitting them here is a valid partial upsert. Cast documented for the
-  // reader; no behaviour change beyond dropping the two fields.
+  // `display_name` is optional on `ProfileInsert`, so omitting it is a valid partial upsert.
   return {
     id: userId,
     name: p.name ?? '',
@@ -57,9 +57,11 @@ export function profileToRow(
     monthly_rent: p.monthlyRent ?? null,
     rent_includes_utilities: p.rentIncludesUtilities ?? false,
     default_carry_pocket_id: p.defaultCarryPocketId ?? null,
-    emergency_fund_config: (p.emergencyFundConfig ?? {}) as ProfileInsert['emergency_fund_config'],
-    zakat_config: (p.zakatConfig ?? {}) as ProfileInsert['zakat_config'],
-    financial_profile: (p.financialProfile ?? null) as ProfileInsert['financial_profile'],
+    // Left out of the write when this copy holds nothing: a phone that has not received the account's answers yet
+    // must not overwrite them with an empty object (a chosen zakat basis came back as a question this way).
+    ...(p.emergencyFundConfig ? { emergency_fund_config: p.emergencyFundConfig as unknown as ProfileInsert['emergency_fund_config'] } : {}),
+    ...(p.zakatConfig ? { zakat_config: p.zakatConfig as unknown as ProfileInsert['zakat_config'] } : {}),
+    ...(p.financialProfile ? { financial_profile: p.financialProfile as unknown as ProfileInsert['financial_profile'] } : {}),
     // display_name is NOT written here — it's server-authoritative. Omitting
     // it keeps PostgREST's existing value on upsert-conflict.
   }
@@ -100,6 +102,7 @@ export function profileFromRow(row: ProfileRow): ProfileFromRowResult {
     baseCurrency: row.base_currency as Currency,
     secondaryCurrency: (row.secondary_currency ?? null) as Currency | null,
     displayName: row.display_name,
+    dataResetAt: row.data_reset_at,
   }
   return { profile, extras }
 }

@@ -1,12 +1,17 @@
 import { addMonths, addQuarters, addWeeks, addYears, format, parseISO } from 'date-fns'
-import type { Debt } from '@/lib/store/types'
+import type { Debt, DebtPayment } from '@/lib/store/types'
 
 /**
- * Number of installment periods already covered by logged payments (capped by plan length).
+ * Installments already covered, from the amount paid (debt units) over the per-installment amount,
+ * capped by plan length. Rows are not installments: a half payment is not one, a double payment is two.
  */
-export function installmentPaymentsCompleted(debt: Debt, paymentCount: number): number {
+export function installmentPaymentsCompleted(debt: Debt, payments: readonly DebtPayment[]): number {
   if (debt.debtType !== 'installment' || !debt.installmentCount) return 0
-  return Math.min(debt.installmentCount, Math.max(0, paymentCount))
+  const per = debt.installmentAmount ?? 0
+  const done = per > 0
+    ? Math.floor((payments.reduce((sum, p) => sum + p.amountPaid, 0) + 0.005) / per)
+    : payments.length
+  return Math.min(debt.installmentCount, Math.max(0, done))
 }
 
 export function addByFrequency(start: Date, freq: NonNullable<Debt['installmentFrequency']>, periods: number): Date {
@@ -25,18 +30,12 @@ export function addByFrequency(start: Date, freq: NonNullable<Debt['installmentF
 }
 
 /**
- * Next scheduled installment date after `paymentsLogged` payments (same calendar rules as the plan).
+ * Next scheduled installment date after `completed` installments (same calendar rules as the plan).
  */
-export function nextInstallmentDueFormatted(
-  debt: Debt,
-  paymentsLogged: number
-): string | null {
+export function nextInstallmentDueFormatted(debt: Debt, completed: number): string | null {
   if (debt.debtType !== 'installment' || !debt.startDate || !debt.installmentFrequency || !debt.installmentCount) {
     return null
   }
-  const completed = installmentPaymentsCompleted(debt, paymentsLogged)
   if (completed >= debt.installmentCount) return null
-  const start = parseISO(debt.startDate)
-  const next = addByFrequency(start, debt.installmentFrequency, completed)
-  return format(next, 'MMM d, yyyy')
+  return format(addByFrequency(parseISO(debt.startDate), debt.installmentFrequency, completed), 'MMM d, yyyy')
 }

@@ -48,7 +48,7 @@ export function useAccountGaps(): { gaps: Record<string, GapResult>; refresh: ()
     const now = computeBalances(ledger)
     for (const pm of ledger.paymentMethods) {
       const rs = reports[pm.id]
-      if (!rs || rs.length < 2 || pm.trackSms === false) continue
+      if (!rs || rs.length < 2) continue
       const probe = now.get(pm.id)
       if (!probe) continue
       const tolerance = probe.approx ? Math.max(5, Math.abs(probe.balance) * 0.005) : 1

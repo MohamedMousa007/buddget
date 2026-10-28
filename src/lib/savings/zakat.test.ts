@@ -52,4 +52,12 @@ describe('computeZakat', () => {
     const r = computeZakat({ ...base, cashAndSavings: 50_000 })
     expect(r.zakatable).toBe(50_000)
   })
+
+  it('missing price feed (nisab 0) is not "due" and reports nisab unavailable', () => {
+    const r = computeZakat({ ...base, cashAndSavings: 5, silverPerGram: 0, gold24kSellPerGram: 0 })
+    expect(r.nisabAvailable).toBe(false)
+    expect(r.due).toBe(false)
+    expect(r.zakat).toBe(0)
+    expect(r.gap).toBe(0)
+  })
 })

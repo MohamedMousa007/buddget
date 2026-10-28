@@ -54,13 +54,13 @@ describe('resolveCarryDestination', () => {
     expect(d).toEqual({ kind: 'create-vault' })
   })
 
-  it('routes to the highest-priority active goal’s linked pocket', () => {
+  it('routes to the top-priority (lowest number) active goal’s linked pocket', () => {
     const pockets = [pocket({ id: 'lo' }), pocket({ id: 'hi' })]
     const goals = [
       goal({ id: 'g1', priority: 1, linkedSavingsAccountIds: ['lo'] }),
       goal({ id: 'g2', priority: 5, linkedSavingsAccountIds: ['hi'] }),
     ]
-    expect(resolveCarryDestination(null, pockets, goals)).toEqual({ kind: 'pocket', pocketId: 'hi' })
+    expect(resolveCarryDestination(null, pockets, goals)).toEqual({ kind: 'pocket', pocketId: 'lo' })
   })
 
   it('creates a goal-named pocket when the winning goal has none', () => {

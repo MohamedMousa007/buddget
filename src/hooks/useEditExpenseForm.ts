@@ -1,12 +1,13 @@
 'use client'
 
+import { reconcileExclusion } from '@/lib/spending/exclusion'
 import { useState, useCallback } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
-import type { Expense, Currency } from '@/lib/store/types'
+import type { Expense, Currency, SpendExclusion } from '@/lib/store/types'
 
 export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const { updateExpense, paymentMethods, settings, exchangeRates } = useFinanceStore()
@@ -22,6 +23,8 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const [paymentMethodId, setPaymentMethodId] = useState(expense.paymentMethodId)
   const [isRecurring, setIsRecurring] = useState(expense.isRecurring)
   const [notes, setNotes] = useState(expense.notes || '')
+  const [spendExclusion, setSpendExclusion] = useState<SpendExclusion | undefined>(expense.spendExclusion)
+  const [owedBy, setOwedBy] = useState(expense.owedBy ?? '')
   const [submitError, setSubmitError] = useState('')
 
   const handleSubmit = useCallback(() => {
@@ -38,6 +41,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     }
     setSubmitError('')
 
+    const exclusion = paymentMethodId === expense.paymentMethodId ? spendExclusion : reconcileExclusion(spendExclusion, paymentMethods, paymentMethodId)
     updateExpense(expense.id, {
       date,
       description,
@@ -49,6 +53,9 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
       paymentMethodId,
       isRecurring,
       notes: notes || undefined,
+      spendExclusion: exclusion,
+      owedBy: spendExclusion === 'for_someone' ? owedBy.trim() || undefined : undefined,
+      owedSettledAt: spendExclusion === 'for_someone' ? expense.owedSettledAt : undefined,
     })
 
     onClose()
@@ -61,6 +68,11 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     description,
     exchangeRates,
     expense.id,
+    expense.owedSettledAt,
+    expense.paymentMethodId,
+    spendExclusion,
+    owedBy,
+    paymentMethods,
     isRecurring,
     notes,
     onClose,
@@ -90,6 +102,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     setIsRecurring,
     notes,
     setNotes,
+    exclusion: { value: spendExclusion, setValue: setSpendExclusion, owedBy, setOwedBy },
     submitError,
     setSubmitError,
     paymentMethods,

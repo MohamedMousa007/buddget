@@ -1,5 +1,5 @@
-import { differenceInCalendarDays, format, startOfMonth, subMonths } from 'date-fns'
-import { getMonthRange } from '@/lib/utils/calculations'
+import { differenceInCalendarDays } from 'date-fns'
+import { budgetMonthKeyFor, getMonthRange } from '@/lib/utils/calculations'
 
 export const PAY_CYCLE_MIN_DAY = 1
 export const PAY_CYCLE_MAX_DAY = 28
@@ -17,8 +17,7 @@ export interface CycleView {
 /** The month key of the cycle `today` falls in. Day 1 is the calendar month. */
 export function cycleKeyFor(today: Date, startDay: number): string {
   const day = Math.min(PAY_CYCLE_MAX_DAY, Math.max(PAY_CYCLE_MIN_DAY, Math.round(startDay)))
-  if (day <= 1 || today.getDate() >= day) return format(today, 'yyyy-MM')
-  return format(subMonths(startOfMonth(today), 1), 'yyyy-MM')
+  return budgetMonthKeyFor(today, day)
 }
 
 export function currentCycle(today: Date, startDay: number): CycleView {

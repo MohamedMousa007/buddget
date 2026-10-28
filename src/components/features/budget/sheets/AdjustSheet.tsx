@@ -77,7 +77,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
     const after = p.result.lines
     store.getState().replaceBudgetPlanCategories(plan.id, after)
     const remembered = p.proposals.filter((x) => !declined.has(x))
-    for (const x of remembered) store.getState().addBuddgyMemory(x, 'budget')
+    for (const x of remembered) store.getState().addBuddgyMemory(x, 'budget', 'fact', plan.id)
     void logAdjustFeedback({ planId: plan.id, text: p.text, ops: p.result.applied, before, after, outcome: 'applied' })
     toast(remembered.length > 0 ? c.remembered : c.applied, {
       undoLabel: c.undo,

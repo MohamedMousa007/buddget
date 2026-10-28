@@ -17,13 +17,15 @@
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
-import crypto from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { looksLikeJwt, resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
+import { smsDeviceGate } from '@/lib/sms/deviceGate'
+import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
+import { monthNameInZone } from '@/lib/time/zonedMonth'
+import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { runLearnGates } from '@/lib/sms/learnGates'
@@ -39,9 +41,12 @@ import {
   extractionToObjective,
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
-import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
+import { computeNeighbourSmsHashes, computeSmsHash, hasPostedTransaction, isStaleClaim, nonTransactionReason, smsLocalDay, smsPlausibilityIssue } from '@/lib/sms/ingestGuards'
+import { withSmsAiQuota } from '@/lib/sms/meteredAi'
+import { normalizeDigits } from '@/lib/sms/normalizeDigits'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
-import { lookupKeys, effectiveSender, bodyShapeKey } from '@/lib/sms/routingKey'
+import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
+import { fetchCorrectionExemplar } from '@/lib/sms/correctionExemplar'
 import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
 import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
 import type { ExpenseCategory } from '@/lib/store/types'
@@ -92,15 +97,6 @@ interface ParsedTx {
   detectedAccountLast4: string | null
   detectedCounterpartyLast4: string | null
   merchantNormalized: string | null
-}
-
-/**
- * Dedup hash over the normalized raw SMS body. Computed BEFORE any parsing so
- * the claim row can gate concurrent/retried requests with zero Gemini cost.
- */
-function computeSmsHash(message: string): string {
-  const normalized = message.trim().replace(/\s+/g, ' ').toLowerCase()
-  return crypto.createHash('sha256').update(normalized).digest('hex')
 }
 
 // ---------------------------------------------------------------------------
@@ -420,7 +416,9 @@ async function learnPattern(
     // first attempt that compiles AND matches; record the last failure otherwise.
     let attempt: RegexAttempt = { ok: false, status: 'no_json' }
     for (let i = 0; i < 3; i++) {
-      attempt = await generateMatchingRegex(message, sender, parsed, apiKey)
+      const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, () => generateMatchingRegex(message, sender, parsed, apiKey))
+      if (metered.denied) return recordLearnOutcome(service, logId, 'quota_denied')
+      attempt = metered.value
       if (attempt.ok) break
     }
     if (!attempt.ok) {
@@ -557,29 +555,6 @@ Omit "merchant", "last4", "datetime" and "counterparty_last4" from mapping_rules
 // Auth helpers
 // ---------------------------------------------------------------------------
 
-async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
-  const auth = req.headers.get('authorization') ?? ''
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
-  if (!bearer) return { userId: null }
-  const service = createServiceRoleClient()
-
-  // First try Supabase JWT (mobile shell forwards `session.access_token`).
-  if (looksLikeJwt(bearer)) {
-    const identity = await resolveRouteIdentity(req)
-    if (identity) return { userId: identity.id }
-  }
-
-  // Fallback: bearer token from sms_ingest_tokens (legacy / shortcut bridge).
-  const { data: tokenRow } = await service
-    .from('sms_ingest_tokens')
-    .select('user_id')
-    .eq('token', bearer)
-    .eq('is_active', true)
-    .single()
-
-  return { userId: tokenRow?.user_id ?? null }
-}
-
 // ---------------------------------------------------------------------------
 // Route handler
 // ---------------------------------------------------------------------------
@@ -587,10 +562,13 @@ async function resolveUserId(req: Request): Promise<{ userId: string | null }> {
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const { userId } = await resolveUserId(request)
+  const caller = await resolveSmsCaller(request)
+  const { userId, deviceId } = caller
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const blocked = await smsDeviceGate(createServiceRoleClient(), caller)
+  if (blocked) return blocked
 
   // Parse body first — sender is needed for the static template lookup.
   let json: unknown
@@ -608,16 +586,17 @@ export async function POST(request: Request) {
     )
   }
 
-  const { message, sender, source, receivedAt } = parsedBody.data
+  const { sender, source, receivedAt } = parsedBody.data
+  const message = normalizeDigits(parsedBody.data.message)
   const service = createServiceRoleClient()
 
   // sms_hash identifies the row for /api/sms/confirm + the FCM sms_confirm push.
-  const hash = computeSmsHash(message)
+  const hash = computeSmsHash(message, receivedAt)
   const nowIso = receivedAt ?? new Date().toISOString()
 
   // Idempotency: a WorkManager/Shortcut retry of an SMS we already hold hits the unique (user_id, sms_hash)
   // index in the insert below, which answers with the prior row. No separate lookup.
-  const { data: logRow, error: logErr } = await service
+  const claimLog = () => service
     .from('sms_parse_log')
     .insert({
       user_id: userId,
@@ -630,9 +609,45 @@ export async function POST(request: Request) {
       sms_hash: hash,
       parsed_at: new Date().toISOString(),
       received_at: nowIso,
+      device_id: deviceId,
     })
     .select('id')
     .single()
+  // The same SMS forwarded twice either side of a bucket edge hashes differently; a live claim in a neighbouring bucket is the same SMS.
+  const neighbours = computeNeighbourSmsHashes(message, receivedAt)
+  if (neighbours.length > 0) {
+    const { data: near } = await service
+      .from('sms_parse_log')
+      .select('expense_id, income_id, status, parsed_at')
+      .eq('user_id', userId)
+      .in('sms_hash', neighbours)
+      .eq('is_duplicate', false)
+    const live = (near ?? []).find((r) => !isStaleClaim(r.status, r.parsed_at))
+    if (live) return NextResponse.json({ ok: true, duplicate: true, expenseId: live.expense_id ?? null, incomeId: live.income_id ?? null })
+  }
+  let { data: logRow, error: logErr } = await claimLog()
+
+  // A retry must not be blocked by a claim that can never finish (failed attempt, or a function killed
+  // mid-flight). Retire that row from the unique index and claim afresh.
+  if (!logRow && logErr?.code === '23505') {
+    const { data: prior } = await service
+      .from('sms_parse_log')
+      .select('id, status, parsed_at')
+      .eq('user_id', userId)
+      .eq('sms_hash', hash)
+      .eq('is_duplicate', false)
+      .maybeSingle()
+    if (prior && isStaleClaim(prior.status, prior.parsed_at)) {
+      // A claim that already posted (the link write is what died) must not be retired: the retry would post it again.
+      if (await hasPostedTransaction(service, userId, prior.id)) {
+        return NextResponse.json({ ok: true, duplicate: true, expenseId: null, incomeId: null })
+      }
+      await service.from('sms_parse_log').update({ is_duplicate: true }).eq('id', prior.id)
+      ;({ data: logRow, error: logErr } = await claimLog())
+    }
+  }
+
+  if (logRow && deviceId) await service.from('user_devices').update({ last_sms_at: nowIso }).eq('user_id', userId).eq('device_id', deviceId)
 
   if (!logRow) {
     // Concurrent duplicate: two shortcuts with different keywords matched the same SMS
@@ -661,7 +676,8 @@ export async function POST(request: Request) {
   try {
   // ---- Pre-filter: deterministic non-transaction rejector -----------------
   // Kills OTPs / telecom marketing / balance-only SMS at ~0ms, zero AI cost.
-  const rejectReason = isNonTransaction(message)
+  const curated = matchCuratedPattern(message, sender ?? null)
+  const rejectReason = nonTransactionReason(message, !!curated)
   if (rejectReason) {
     await service.from('sms_parse_log')
       .update({ status: 'rejected', failure_code: 'not_transaction', parse_method: 'fully_curated', harvested_at: new Date().toISOString() })
@@ -679,8 +695,6 @@ export async function POST(request: Request) {
   let learnStatus: string | null = null
   /** Set when a quarantined template had to stand in because AI was unavailable (C4). */
   let quarantinedFallback = false
-
-  const curated = matchCuratedPattern(message, sender ?? null)
 
   // ---- Tier 2: learned DB templates -------------------------------------------
   // Key by transport sender AND/OR body hotline so a sender-less iOS SMS still
@@ -741,7 +755,7 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY?.trim()
     if (!apiKey) {
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'not_configured', parse_method: 'ai_new' })
+        .update({ status: 'failed', failure_code: 'not_configured', parse_method: 'ai_new', is_duplicate: true })
         .eq('id', logId)
       return NextResponse.json(
         { error: 'AI is not configured. Admin needs to set GEMINI_API_KEY.' },
@@ -758,7 +772,7 @@ export async function POST(request: Request) {
 
     if ((usage?.parsed_count_today ?? 0) >= RATE_LIMIT_PER_DAY) {
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new' })
+        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new', is_duplicate: true })
         .eq('id', logId)
       return NextResponse.json(
         { error: 'Daily SMS parse quota reached', limit: RATE_LIMIT_PER_DAY },
@@ -776,7 +790,7 @@ export async function POST(request: Request) {
     const quota = await reserveAiQuota({ userId, feature: 'sms', estUnits: SMS_PARSE_UNITS })
     if (!quota.allowed) {
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new' })
+        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new', is_duplicate: true })
         .eq('id', logId)
       return quotaDeniedResponse(quota)
     }
@@ -792,7 +806,7 @@ export async function POST(request: Request) {
       await settleSms('error')
       console.error('[sms/parse] gemini failed', e)
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'gemini_error', parse_method: 'ai_new' })
+        .update({ status: 'failed', failure_code: 'gemini_error', parse_method: 'ai_new', is_duplicate: true })
         .eq('id', logId)
       // 502 → WorkManager retries with a fresh request (new log row).
       return NextResponse.json({ ok: false, reason: 'ai_failed' }, { status: 502 })
@@ -878,7 +892,15 @@ export async function POST(request: Request) {
 
   // Prefer the transaction date embedded in the SMS body (curated patterns)
   // over the receive timestamp — they differ for delayed/offline deliveries.
-  const day = txDay ?? nowIso.slice(0, 10)
+  const day = txDay ?? smsLocalDay(nowIso, await getUserTimeZone(service, userId))
+
+  const implausible = smsPlausibilityIssue(parsed.amount, day)
+  if (implausible) {
+    await service.from('sms_parse_log')
+      .update({ status: 'rejected', confidence: parsed.confidence, amount: parsed.amount, failure_code: implausible, parse_method: parseMethod, harvested_at: new Date().toISOString() })
+      .eq('id', logId)
+    return NextResponse.json({ ok: false, reason: implausible })
+  }
 
   // Classify + persist via the shared dispatcher: own-account/transfer/FX
   // pairing → CC payoff → salary dedup → ATM → subscription → purchase. Posts
@@ -924,8 +946,9 @@ export async function POST(request: Request) {
         if (!exp || exp.category !== 'Other') return
         const merchant = (exp.description as string | null) ?? parsed.merchant
         if (!merchant) return
-        const cat = await aiCategorizeMerchant(geminiKey, merchant, message)
-        if (!cat) return
+        const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, () => aiCategorizeMerchant(geminiKey, merchant, message))
+        if (metered.denied || !metered.value) return
+        const cat = metered.value
         await service.from('expenses').update({ category: cat }).eq('id', expenseId)
         await rememberMerchantCategory(service, merchant, cat, 'ai')
       } catch (e) {
@@ -1015,6 +1038,11 @@ export async function POST(request: Request) {
 
   if (promoteErr) {
     console.error('[sms/parse] log promote failed', promoteErr)
+    // A posted transaction must not be retired as a duplicate (the retry would post it again): leave the row
+    // recoverable via /confirm. With nothing posted the row stays retryable.
+    await service.from('sms_parse_log').update(postedSomething
+      ? { status: 'add_failed', failure_code: 'promote_failed', parsed_ok: true, awaiting_confirmation: true, expense_id: expenseId, income_id: incomeId, debt_payment_id: debtPaymentId }
+      : { status: 'failed', failure_code: 'promote_failed', is_duplicate: true }).eq('id', logId)
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
 
@@ -1074,7 +1102,7 @@ export async function POST(request: Request) {
     pushArgs = {
       userId,
       title: np.smsSubscriptionTitle(amountStr, parsed.merchantNormalized ?? parsed.merchant ?? bank),
-      body: np.smsSubscriptionBody(new Intl.DateTimeFormat(dict.locale, { month: 'long' }).format(new Date())),
+      body: np.smsSubscriptionBody(monthNameInZone(new Date(), await getUserTimeZone(service, userId), dict.locale)),
       data: { kind: 'sms_subscription', expenseId: expenseId ?? '', logId },
       collapseKey: `sms-sub-${hash.slice(0, 12)}`,
     }
@@ -1358,8 +1386,11 @@ export async function POST(request: Request) {
     // Unexpected failure (DB error, etc.) — flag the claimed row so support can see it.
     console.error('[sms/parse] unhandled exception', e)
     try {
+      const posted = await hasPostedTransaction(service, userId, logId)
       await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'parse_exception' })
+        .update(posted
+          ? { status: 'logged', failure_code: 'parse_exception', parsed_ok: true }
+          : { status: 'failed', failure_code: 'parse_exception', is_duplicate: true })
         .eq('id', logId)
     } catch { /* best-effort */ }
     return NextResponse.json({ ok: false, reason: 'parse_exception' }, { status: 500 })
@@ -1408,36 +1439,6 @@ async function askModelJson(apiKey: string, system: string, user: string): Promi
     if (!text) return null
     const json = extractJson(text)
     return json ? JSON.parse(json) : null
-  } catch {
-    return null
-  }
-}
-
-/**
- * A previously-confirmed correction for this message shape, formatted for the prompt.
- *
- * Keyed by `bodyShapeKey` — the same grouping key the template tier routes on — so a correction
- * learned from one user's message applies to everyone who receives that bank's template.
- * Revoked corrections are excluded, so a wrong "correction" can be withdrawn rather than
- * biasing the shape forever.
- */
-async function fetchCorrectionExemplar(
-  service: ReturnType<typeof createServiceRoleClient>,
-  message: string,
-): Promise<string | null> {
-  const shape = bodyShapeKey(message)
-  if (!shape) return null
-  try {
-    const { data } = await service
-      .from('sms_corrections')
-      .select('corrected_fields, redacted_body')
-      .eq('body_shape_key', shape)
-      .is('revoked_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    if (!data?.corrected_fields) return null
-    return `A user previously corrected an automated parse of this same message format. For a message shaped like:\n${data.redacted_body}\nthe correct extraction was:\n${JSON.stringify(data.corrected_fields)}\nApply the same reading here unless this message plainly differs.`
   } catch {
     return null
   }

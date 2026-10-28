@@ -1,5 +1,6 @@
 import { OWNER_EMAIL, OWNER_ROLE, PERMISSIONS, can, isPermission, outranks, OWNER_ONLY } from '@/lib/admin/permissions'
-import { bad, guardAdmin, json, readJson, type AdminContext } from '@/lib/server/admin/guard'
+import { bad, guardAdmin, json, type AdminContext } from '@/lib/server/admin/guard'
+import { readValidated, staffBody } from '@/lib/server/admin/bodySchemas'
 import { allowAttempt } from '@/lib/server/admin/credentials'
 import { sendStaffInviteEmail } from '@/lib/server/admin/inviteEmail'
 import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
@@ -29,6 +30,7 @@ export async function GET(req: Request) {
     ownerOnly: OWNER_ONLY,
     actorRank: role.rank,
     ownerEmail: OWNER_EMAIL,
+    actorIsOwner: g.ctx.role.key === OWNER_ROLE,
   })
 }
 
@@ -56,20 +58,7 @@ export async function POST(req: Request) {
   const g = await guardAdmin(req, { permission: 'staff.manage' })
   if (!g.ok) return g.res
   const { ctx } = g
-  const body = await readJson<{
-    op?: string
-    id?: string
-    code?: string
-    stepUpPassword?: string
-    email?: string
-    displayName?: string
-    department?: string
-    roleKey?: string
-    extraPermissions?: string[]
-    sendEmail?: boolean
-    role?: { key: string; name: string; description?: string; permissions: string[]; rank?: number }
-    key?: string
-  }>(req)
+  const body = await readValidated(req, staffBody)
   if (!body?.op) return bad('Unknown action.')
 
   if (body.op === 'invite') {
@@ -110,6 +99,25 @@ export async function POST(req: Request) {
     const { error } = await ctx.service.from('admin_roles').upsert({ key: r.key, name: r.name.trim().slice(0, 40), description: (r.description ?? '').slice(0, 200), rank, permissions: perms, is_system: false })
     if (error) return bad('Could not save the role.', 500)
     await ctx.audit('staff.role_upsert', { targetType: 'role', targetId: r.key, summary: `Saved role ${r.key}`, metadata: { permissions: perms, rank } })
+    return json({ ok: true })
+  }
+
+  if (body.op === 'set_role_permissions') {
+    if (ctx.role.key !== OWNER_ROLE) return bad('Only the owner can change what a role can do.', 403)
+    const changes = (body.changes ?? []).filter((c) => c && typeof c.key === 'string' && Array.isArray(c.permissions))
+    if (changes.length === 0 || changes.length > 40) return bad('Nothing to change.')
+    if (changes.some((c) => c.key === OWNER_ROLE)) return bad('The owner role cannot be changed.', 403)
+    const { data: roles } = await ctx.service.from('admin_roles').select('key').in('key', changes.map((c) => c.key))
+    if ((roles ?? []).length !== changes.length) return bad('Unknown role.', 404)
+    if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
+    for (const c of changes) {
+      const perms = [...new Set(c.permissions.filter(isPermission).filter((p) => !(OWNER_ONLY as readonly string[]).includes(p)))]
+      const { error } = await ctx.service.from('admin_roles').update({ permissions: perms }).eq('key', c.key)
+      if (error) return bad('Could not save a role. Nothing after it was changed.', 500)
+      const { data: holders } = await ctx.service.from('admin_staff').select('user_id').eq('role_key', c.key)
+      for (const h of holders ?? []) if (h.user_id) await revokeAllAdminSessions(ctx.service, h.user_id)
+      await ctx.audit('staff.role_permissions', { targetType: 'role', targetId: c.key, summary: `Changed what ${c.key} can do`, metadata: { permissions: perms } })
+    }
     return json({ ok: true })
   }
 

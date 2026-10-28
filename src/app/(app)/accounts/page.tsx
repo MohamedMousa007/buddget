@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronRight, Plus } from 'lucide-react'
-import { AppLink } from '@/components/ui/AppLink'
+import { Plus } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -16,12 +16,10 @@ import { FixGapSheet } from '@/components/features/accounts/FixGapSheet'
 import { FoundAccountsSheet } from '@/components/features/accounts/FoundAccountsSheet'
 import { MoveMoneySheet, type MoveMode } from '@/components/features/accounts/MoveMoneySheet'
 import { UpdateBalanceSheet } from '@/components/features/accounts/UpdateBalanceSheet'
-import { splitMoney } from '@/components/features/accounts/accountDisplay'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { snoozeGap, useAccountGaps } from '@/lib/accounts/useAccountGaps'
 import { useAccounts } from '@/lib/accounts/useAccounts'
 import { useNetWorth } from '@/hooks/useNetWorth'
-import { MASK } from '@/lib/privacy/mask'
 import { useMask, useToggleHideAll } from '@/lib/privacy/useMask'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { totalDebtRemainingInBase } from '@/lib/utils/calculations'
@@ -35,8 +33,20 @@ type Sheet =
   | { kind: 'update'; id: string }
   | { kind: 'fix'; id: string }
   | { kind: 'card'; id: string }
+  | { kind: 'edit'; id: string }
   | { kind: 'add'; cash?: boolean }
   | { kind: 'found' }
+
+/** The Wealth and Debts header row: title, count, and the page's add action at the end. */
+function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count: number; onAdd?: () => void; addLabel?: string }) {
+  return (
+    <div className="mb-2 flex items-center gap-2 px-1">
+      <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
+      <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[11px] font-semibold">{count}</Badge>
+      {onAdd ? <Button variant="secondary" size="touch" className="ms-auto" onClick={onAdd}><Plus aria-hidden />{addLabel}</Button> : null}
+    </div>
+  )
+}
 
 export default function AccountsPage() {
   const t = useT().accountsPage
@@ -76,7 +86,7 @@ export default function AccountsPage() {
             <Button variant="outline" size="cta-block" onClick={() => setSheet({ kind: 'add' })}>{t.addOneMyself}</Button>
           </div>} />
         <FoundAccountsSheet open={sheet?.kind === 'found'} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
-        <AddAccountSheet key={sheet?.kind === 'add' ? 'a' : 'x'} open={sheet?.kind === 'add'} onClose={close} />
+        <AddAccountSheet key={sheet?.kind === 'add' ? 'a' : 'x'} open={sheet?.kind === 'add'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
       </PageContainer>
     )
   }
@@ -85,27 +95,16 @@ export default function AccountsPage() {
     <div>
       <AccountsHero model={model} currency={base} netWorth={nw.netWorth} creditOwed={owed} hidden={heroMasked} onToggleHidden={toggle} />
       <PageContainer className="space-y-5 py-4">
-        {banks.length > 0 ? (
-          <section>
-            <p className="mb-2 px-1 text-[13px] font-bold text-[var(--color-brand-text-secondary)]">{t.bankAccounts}</p>
-            <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">{banks.map(renderRow)}</Card>
-          </section>
-        ) : null}
+        <section>
+          <SectionHeader title={t.bankAccounts} count={banks.length} onAdd={() => setSheet({ kind: 'add' })} addLabel={t.addAccount} />
+          {banks.length > 0 ? <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">{banks.map(renderRow)}</Card> : null}
+        </section>
         {wallets.length > 0 ? (
           <section>
-            <p className="mb-2 px-1 text-[13px] font-bold text-[var(--color-brand-text-secondary)]">{t.walletsCash}</p>
+            <SectionHeader title={t.walletsCash} count={wallets.length} />
             <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">{wallets.map(renderRow)}</Card>
           </section>
         ) : null}
-        <AppLink href="/debts" className="flex min-h-16 items-center gap-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4">
-          <BrandMark name="Debts" color="var(--color-cat-6)" icon={createElement(paymentTypeIcon('credit_card'), { className: 'size-5', 'aria-hidden': true })} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-base font-semibold text-[var(--color-brand-text-primary)]">{t.creditAndDebts}</span>
-            <span className="block text-[13px] text-[var(--color-brand-text-muted)]">{t.creditAndDebtsSub}</span>
-          </span>
-          <span className="font-mono-numbers text-base font-medium">{listMasked ? MASK : splitMoney(owed, base).int}</span>
-          <ChevronRight className="size-4 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
-        </AppLink>
         {model.needsCash ? (
           <button type="button" onClick={() => setSheet({ kind: 'add', cash: true })} data-raw-button-ok="a whole-row tap target, sized by its content"
             className="flex min-h-[72px] w-full items-center gap-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 text-start">
@@ -117,16 +116,13 @@ export default function AccountsPage() {
             <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
           </button>
         ) : null}
-        <Button variant="outline" size="cta-block" onClick={() => setSheet({ kind: 'add' })} className="border-dashed text-[var(--color-brand-primary-ink)]">
-          <Plus aria-hidden />{t.addAccountOrCard}
-        </Button>
       </PageContainer>
 
       {open ? (
         <>
           <AccountDetailSheet key={`d-${open.method.id}`} open={sheet?.kind === 'detail'} onClose={close} account={open} masked={listMasked}
             onMove={(mode) => setSheet({ kind: 'move', id: open.method.id, mode })} onUpdate={() => setSheet({ kind: 'update', id: open.method.id })}
-            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} />
+            onAddCard={() => setSheet({ kind: 'card', id: open.method.id })} onEdit={() => setSheet({ kind: 'edit', id: open.method.id })} />
           <MoveMoneySheet key={`m-${open.method.id}-${sheet?.kind === 'move' ? sheet.mode : ''}`} open={sheet?.kind === 'move'} onClose={close}
             accounts={model.accounts} initialAccountId={open.method.id} initialMode={sheet?.kind === 'move' ? sheet.mode : 'cash'} initialAmount={sheet?.kind === 'move' ? sheet.amount : undefined}
             onDone={() => { const g = gaps[open.method.id]; if (g && sheet?.kind === 'move' && sheet.fromGap) { snoozeGap(open.method.id, g.reportedAt); refresh() } }} />
@@ -137,9 +133,10 @@ export default function AccountsPage() {
               onSetAside={(amount) => setSheet({ kind: 'move', id: open.method.id, mode: 'set', amount: String(amount), fromGap: true })} onResolved={refresh} />
           ) : null}
           <PaymentMethodSetupSheet open={sheet?.kind === 'card'} editing={null} baseCurrency={settings.baseCurrency} parentAccountId={open.method.id} nested onClose={close} />
+          <PaymentMethodSetupSheet key={`e-${open.method.id}`} open={sheet?.kind === 'edit'} editing={open.method} baseCurrency={settings.baseCurrency} nested onClose={close} />
         </>
       ) : null}
-      <AddAccountSheet key={sheet?.kind === 'add' ? (sheet.cash ? 'c' : 'a') : 'x'} open={sheet?.kind === 'add'} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} />
+      <AddAccountSheet key={sheet?.kind === 'add' ? (sheet.cash ? 'c' : 'a') : 'x'} open={sheet?.kind === 'add'} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
       <FoundAccountsSheet open={sheet?.kind === 'found'} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
     </div>
   )

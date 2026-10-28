@@ -1,3 +1,4 @@
+import { unsafeEmailHtml } from '@/lib/email/safeHtml'
 import { parseBlocks, type EmailBlock } from '@/lib/email/blocks'
 import { blankTemplate } from '@/lib/email/defaults'
 import { withPreheader } from '@/lib/email/render'
@@ -126,7 +127,8 @@ export async function POST(req: Request) {
   if (b.op === 'saveDraft') {
     const c = readContent(b, locale)
     if (typeof c === 'string') return bad(c)
-    if (/<script[\s>]/i.test(c.html)) return bad('Scripts are not allowed in email.')
+    const unsafe = unsafeEmailHtml(c.html)
+    if (unsafe) return bad(unsafe)
     const saved = await writeDraft(service, key, locale, c, ctx.staff.id)
     if ('error' in saved) return bad('Could not save the draft.', 500)
     await ctx.audit('emails.draft_save', { targetType: 'email', targetId: `${key}:${locale}`, summary: `Saved draft of ${key} (${locale})` })

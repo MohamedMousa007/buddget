@@ -1,4 +1,5 @@
 import { EMAIL_VARIABLE_KEYS, extractVariables } from './variables'
+import { unsafeEmailHtml } from './safeHtml'
 import type { EmailScenario } from './scenarios'
 
 export const MAX_HTML_BYTES = 100 * 1024
@@ -15,7 +16,8 @@ export function validateTemplate(scenario: EmailScenario, t: { subject: string; 
   if (!t.subject.trim()) err('Add a subject.')
   if (!t.html.trim()) err('The email body is empty.')
   if (new TextEncoder().encode(t.html).length > MAX_HTML_BYTES) err('The email is over 100 KB. Gmail clips anything larger.')
-  if (/<script[\s>]/i.test(t.html)) err('Scripts are not allowed in email.')
+  const unsafe = unsafeEmailHtml(t.html)
+  if (unsafe) err(unsafe)
 
   const used = new Set(extractVariables(`${t.subject}\n${t.preheader}\n${t.html}`))
   const unknown = [...used].filter((v) => !(EMAIL_VARIABLE_KEYS as string[]).includes(v))

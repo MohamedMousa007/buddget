@@ -1,3 +1,4 @@
+import { clampCardDay, clampCardPercent } from '@/lib/debts/cardTerms'
 import type {
   Debt,
   Currency,
@@ -7,6 +8,7 @@ import type {
   GoldKarat,
   InstallmentProvider,
 } from '@/lib/store/types'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import type { DebtRow, DebtInsert } from '@/lib/supabase/remote/types'
 
 function toDbDebtKind(k: DebtKind | undefined): DebtInsert['debt_type'] {
@@ -52,7 +54,7 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     debt_type: toDbDebtKind(d.debtType),
     direction: d.direction ?? 'i_owe',
     amount: d.startingBalance,
-    currency: (d.currency as Currency) ?? 'AED',
+    currency: (d.currency as Currency) ?? DEFAULT_SETTINGS.baseCurrency,
     starting_balance: d.startingBalance,
     remaining_amount: null,
     interest_rate: 0,
@@ -79,9 +81,9 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     // Drive the billing cycle / next due date / minimum payment. Without these the card
     // is unusable on a second device — getCurrentBillingCycleExpenses bails and the card
     // shows its setup banner forever.
-    payment_due_day: d.paymentDueDay ?? null,
+    payment_due_day: clampCardDay(d.paymentDueDay),
     grace_period_days: d.gracePeriodDays ?? null,
-    minimum_payment_percent: d.minimumPaymentPercent ?? null,
+    minimum_payment_percent: clampCardPercent(d.minimumPaymentPercent),
     status: d.status ?? 'active',
     cleared_at: d.clearedAt ?? null,
     received_via: toDbReceivedVia(d.receivedVia),
@@ -101,7 +103,7 @@ export function debtFromRow(row: DebtRow): Debt {
     personName: row.person ?? undefined,
     description: row.description ?? undefined,
     startingBalance: row.starting_balance ?? row.amount,
-    currency: (row.currency as DebtCurrency) ?? 'AED',
+    currency: (row.currency as DebtCurrency) ?? DEFAULT_SETTINGS.baseCurrency,
     isGold: row.is_gold,
     receivedVia: (row.received_via as DebtReceivedVia | null) ?? undefined,
     goldKarat: fromDbKarat(row.gold_karat),

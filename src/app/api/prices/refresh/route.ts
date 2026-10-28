@@ -10,6 +10,7 @@
  */
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { claimPriceRefresh } from '@/lib/prices/claimPriceRefresh'
 import { runPriceRefresh } from '@/lib/prices/runPriceRefresh'
 
 export const maxDuration = 60
@@ -25,19 +26,21 @@ export async function POST() {
     const service = createServiceRoleClient()
     // Debounce on the last ATTEMPT (kept in platform_settings), not on the oldest row: a symbol nobody can update any
     // more would keep the oldest row stale for ever and let every caller re-run the whole provider crawl.
-    const { data: attempt } = await service.from('platform_settings').select('value').eq('key', 'prices_refresh_attempt').maybeSingle()
-    const lastAttempt = Date.parse(String((attempt?.value as { at?: string } | null)?.at ?? '')) || 0
-    if (Date.now() - lastAttempt < DEBOUNCE_MS) {
+    if (!(await claimPriceRefresh(service, Date.now(), DEBOUNCE_MS))) {
       return NextResponse.json({ ok: true, skipped: 'recent_attempt', written: 0 })
     }
-    await service.from('platform_settings').upsert({ key: 'prices_refresh_attempt', value: { at: new Date().toISOString() } })
 
     if (!inflight) {
       inflight = runPriceRefresh().finally(() => { inflight = null })
     }
     const result = await inflight
-    return NextResponse.json(result, { status: result.error ? 500 : 200 })
+    if (result.error) {
+      console.error('[prices/refresh] failed', result.error)
+      return NextResponse.json({ ok: false, error: 'refresh failed' }, { status: 500 })
+    }
+    return NextResponse.json({ ok: result.ok, written: result.written, reason: result.reason })
   } catch (e) {
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'refresh failed' }, { status: 500 })
+    console.error('[prices/refresh] unexpected', e)
+    return NextResponse.json({ ok: false, error: 'refresh failed' }, { status: 500 })
   }
 }

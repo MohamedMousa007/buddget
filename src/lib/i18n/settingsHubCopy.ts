@@ -35,6 +35,36 @@ export interface SettingsHubCopy {
   convertTitle: string
   showCents: string
   security: { title: string; subtitle: string; signIn: string; account: string; memberSince: string }
+  devices: {
+    title: string
+    hint: string
+    thisDevice: string
+    collecting: string
+    lastText: (when: string) => string
+    noTextYet: string
+    activeAgo: (when: string) => string
+    notifyHere: string
+    notifyHint: string
+    mainBadge: string
+    makeMain: string
+    mainNote: string
+    blockedHere: string
+    pending: string
+    loadFailed: string
+    retry: string
+    stale: (when: string) => string
+    removeTitle: (name: string) => string
+    removeBody: string
+    remove: string
+    removeFailed: string
+    saveFailed: string
+    empty: string
+    alsoNotifyTitle: string
+    alsoNotifyBody: (names: string) => string
+    alsoNotifyYes: string
+    alsoNotifyNo: string
+    keptQuiet: string
+  }
   sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string }
   ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string; voiceHint: string; deviceOnly: string }
   notif: { title: string; master: string; on: string; off: string; blocked: string; unsupported: string; pushHint: string; subs: string; goals: string; dueHint: string; priceHint: string; progressHint: string; behindHint: string }
@@ -58,6 +88,20 @@ export interface SettingsHubCopy {
     feedbackHint: string
     bug: string
     idea: string
+    question: string
+    inbox: string
+    board: string
+    boardHint: string
+    boardEmpty: string
+    boardState: Record<string, string>
+    upvote: string
+    downvote: string
+    inboxHint: string
+    inboxEmpty: string
+    reply: string
+    replyHint: string
+    youLabel: string
+    status: Record<string, string>
     terms: string
     privacy: string
     about: string
@@ -90,6 +134,7 @@ export interface SettingsHubCopy {
     source: Record<'chat' | 'manual' | 'budget' | 'onboarding', string>
   }
   items: Record<SettingId, SettingItemCopy>
+  notCounted: { subtitle: string; intro: string; accounts: string; cards: string; follows: (name: string) => string; empty: string; some: (n: number) => string }
   menu: { helpFeedback: string; openSettings: string; signIn: string; closeMenu: string; adminPortal: string; admin: string }
   currency: {
     pickTitle: string
@@ -146,6 +191,45 @@ const en: SettingsHubCopy = {
   convertTitle: 'Currency converter',
   showCents: 'Show cents',
   security: { title: 'Sign-in & security', subtitle: 'Password, two-step, biometrics, app lock', signIn: 'Sign in to manage your account and security.', account: 'Account', memberSince: 'Member since' },
+  devices: {
+    title: 'Your devices',
+    hint: 'Phones signed in to your account',
+    thisDevice: 'This device',
+    collecting: 'Collecting bank texts',
+    lastText: (when) => `Last text ${when}`,
+    noTextYet: 'No text received yet',
+    activeAgo: (when) => `Active ${when}`,
+    notifyHere: 'Notify me on this phone',
+    notifyHint: 'Only your main phone is told by default',
+    mainBadge: 'Main phone',
+    makeMain: 'Make main',
+    mainNote: 'Gets your notifications unless you choose otherwise',
+    blockedHere: 'Notifications are blocked in this phone’s settings',
+    pending: 'Saving…',
+    loadFailed: 'Could not load your devices. Check your connection and try again.',
+    retry: 'Try again',
+    stale: (when) => `Not seen for ${when}`,
+    removeTitle: (name) => `Remove ${name}?`,
+    removeBody: 'It stops collecting bank texts and notifications now, and signs out the next time it opens.',
+    remove: 'Remove',
+    removeFailed: 'Could not remove that phone. Try again.',
+    saveFailed: 'Could not save that change. Try again.',
+    empty: 'Open Buddget on your other phones to see them here.',
+    alsoNotifyTitle: 'Notify on this phone too?',
+    alsoNotifyBody: (names) => `${names} already gets your notifications. Turn them on here as well and you will be told on both.`,
+    alsoNotifyYes: 'Yes, notify here too',
+    alsoNotifyNo: 'No, keep this one quiet',
+    keptQuiet: 'This phone stays quiet. You can change it in Settings, Your devices.',
+  },
+  notCounted: {
+    subtitle: 'For a card or account someone else uses',
+    intro: 'Turn on anything that is not really yours. Its spending, balance and debt stay out of your budget, reports and net worth. Its transactions are still logged.',
+    accounts: 'Accounts',
+    cards: 'Cards',
+    follows: (name) => `Follows ${name}`,
+    empty: 'Add an account or card first.',
+    some: (n) => `${n} not counted`,
+  },
   sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up' },
   ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned', voiceHint: 'Speak answers in voice chats', deviceOnly: 'This device only' },
   notif: {
@@ -180,9 +264,23 @@ const en: SettingsHubCopy = {
   help: {
     title: 'Help & about',
     feedback: 'Send feedback',
-    feedbackHint: 'Report a bug or suggest a feature',
+    feedbackHint: 'Report a bug, share an idea or ask a question',
     bug: 'Bug',
-    idea: 'Feature',
+    idea: 'Idea',
+    question: 'Question',
+    inbox: 'My requests',
+    board: 'Ideas board',
+    boardHint: 'Vote on what we build next',
+    boardEmpty: 'No ideas are up for a vote yet. Share one with Send feedback.',
+    boardState: { published: 'Open for votes', planned: 'Planned', shipped: 'Shipped' },
+    upvote: 'Vote up',
+    downvote: 'Vote down',
+    inboxHint: 'Replies from the Buddget team',
+    inboxEmpty: 'You have not sent anything yet.',
+    reply: 'Send',
+    replyHint: 'Write a reply',
+    youLabel: 'You',
+    status: { open: 'Open', pending: 'We replied', resolved: 'Resolved', closed: 'Closed' },
     terms: 'Terms of use',
     privacy: 'Privacy policy',
     about: 'About Buddget',
@@ -245,6 +343,7 @@ const en: SettingsHubCopy = {
     subPriceAlerts: { label: 'Price-rise alerts', keywords: 'trial price increase notification سعر' },
     goalProgressAlerts: { label: 'Goal milestones', keywords: 'progress achievement notification هدف' },
     goalAlerts: { label: 'Behind-plan alerts', keywords: 'late goal notification متأخر' },
+    notCounted: { label: 'Accounts not counted', keywords: 'exclude hide ignore card someone else not mine spending balance net worth استبعاد حساب بطاقة مش بتاعتي' },
     exportData: { label: 'Export data', keywords: 'backup download csv json نسخة احتياطية تصدير', exact: ['export', 'backup', 'تصدير'] },
     restoreBackup: { label: 'Import a backup', keywords: 'restore upload json استعادة استيراد' },
     feedback: { label: 'Send feedback', keywords: 'bug idea feature support report ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },
@@ -308,6 +407,45 @@ const ar: SettingsHubCopy = {
   convertTitle: 'محوّل العملات',
   showCents: 'إظهار القروش',
   security: { title: 'الدخول والأمان', subtitle: 'كلمة المرور والتحقق بخطوتين والبصمة وقفل التطبيق', signIn: 'سجّل دخولك عشان تدير حسابك وأمانه.', account: 'الحساب', memberSince: 'عضو منذ' },
+  devices: {
+    title: 'أجهزتك',
+    hint: 'الموبايلات المسجّل دخولها لحسابك',
+    thisDevice: 'الجهاز ده',
+    collecting: 'بيجمع رسائل البنك',
+    lastText: (when) => `آخر رسالة ${when}`,
+    noTextYet: 'لسه ما وصلتش رسالة',
+    activeAgo: (when) => `نشط ${when}`,
+    notifyHere: 'نبّهني على الموبايل ده',
+    notifyHint: 'الموبايل الأساسي بس هو اللي بيتنبّه افتراضي',
+    mainBadge: 'الموبايل الأساسي',
+    makeMain: 'خليه الأساسي',
+    mainNote: 'بيجيله إشعاراتك إلا لو اخترت غير كده',
+    blockedHere: 'الإشعارات محظورة من إعدادات الموبايل ده',
+    pending: 'بنحفظ…',
+    loadFailed: 'مقدرناش نحمّل أجهزتك. اتأكد من النت وجرّب تاني.',
+    retry: 'جرّب تاني',
+    stale: (when) => `ما اتشافش من ${when}`,
+    removeTitle: (name) => `تشيل ${name}؟`,
+    removeBody: 'هيبطّل يجمع رسائل البنك والإشعارات دلوقتي، وهيسجّل خروج أول ما يتفتح.',
+    remove: 'إزالة',
+    removeFailed: 'مقدرناش نشيل الموبايل ده. جرّب تاني.',
+    saveFailed: 'مقدرناش نحفظ التغيير ده. جرّب تاني.',
+    empty: 'افتح بادجت على موبايلاتك التانية عشان تظهر هنا.',
+    alsoNotifyTitle: 'تتنبّه على الموبايل ده كمان؟',
+    alsoNotifyBody: (names) => `${names} بيجيله إشعاراتك فعلاً. لو فعّلتها هنا كمان هتتنبّه على الاتنين.`,
+    alsoNotifyYes: 'أيوه، نبّهني هنا كمان',
+    alsoNotifyNo: 'لأ، سيب ده ساكت',
+    keptQuiet: 'الموبايل ده هيفضل ساكت. تقدر تغيّر ده من الإعدادات، أجهزتك.',
+  },
+  notCounted: {
+    subtitle: 'لبطاقة أو حساب يستخدمه شخص تاني',
+    intro: 'فعّل أي حاجة مش بتاعتك فعلاً. مصروفاتها ورصيدها ودينها بيفضلوا بره ميزانيتك وتقاريرك وصافي ثروتك. معاملاتها بتفضل مسجّلة.',
+    accounts: 'الحسابات',
+    cards: 'البطاقات',
+    follows: (name) => `تابعة لـ ${name}`,
+    empty: 'ضيف حساب أو بطاقة الأول.',
+    some: (n) => `${n} غير محسوب`,
+  },
   sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائي', iosHint: 'بيتظبط بـ Shortcut', on: 'بيتابع رسائل البنك', off: 'مقفول', guide: 'إعداد' },
   ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'بيقترح نصايح في وقتها', learningHint: 'بيفتكر معلومات مفيدة من كلامك معاه', memoryHint: 'الأسرة وإجابات الميزانية واللي اتعلّمه بادجي', voiceHint: 'بينطق الإجابات في المحادثات الصوتية', deviceOnly: 'على الجهاز ده بس' },
   notif: {
@@ -345,6 +483,20 @@ const ar: SettingsHubCopy = {
     feedbackHint: 'بلّغ عن مشكلة أو اقترح فكرة',
     bug: 'خطأ',
     idea: 'ميزة',
+    question: 'سؤال',
+    inbox: 'طلباتي',
+    board: 'لوحة الأفكار',
+    boardHint: 'صوّت على اللي هنبنيه بعد كده',
+    boardEmpty: 'مفيش أفكار للتصويت لسه. ابعت فكرتك من «أرسل ملاحظاتك».',
+    boardState: { published: 'مفتوح للتصويت', planned: 'مخطط له', shipped: 'اتنفّذ' },
+    upvote: 'صوّت لفوق',
+    downvote: 'صوّت لتحت',
+    inboxHint: 'ردود فريق Buddget',
+    inboxEmpty: 'لسه ما بعتّش حاجة.',
+    reply: 'إرسال',
+    replyHint: 'اكتب ردك',
+    youLabel: 'إنت',
+    status: { open: 'مفتوح', pending: 'رددنا عليك', resolved: 'اتحل', closed: 'مقفول' },
     terms: 'شروط الاستخدام',
     privacy: 'سياسة الخصوصية',
     about: 'حول بادجت',
@@ -407,6 +559,7 @@ const ar: SettingsHubCopy = {
     subPriceAlerts: { label: 'تنبيهات ارتفاع السعر', keywords: 'trial price increase notification سعر' },
     goalProgressAlerts: { label: 'محطات الأهداف', keywords: 'progress achievement notification هدف' },
     goalAlerts: { label: 'تنبيهات التأخر عن الخطة', keywords: 'late goal notification متأخر' },
+    notCounted: { label: 'حسابات غير محسوبة', keywords: 'exclude hide ignore card استبعاد تجاهل حساب بطاقة مش بتاعتي مصروفات رصيد' },
     exportData: { label: 'تصدير البيانات', keywords: 'backup download csv json export نسخة احتياطية تصدير', exact: ['export', 'backup', 'تصدير'] },
     restoreBackup: { label: 'استيراد نسخة احتياطية', keywords: 'restore upload json import استعادة استيراد' },
     feedback: { label: 'أرسل ملاحظاتك', keywords: 'bug idea feature support report feedback ملاحظات مشكلة', exact: ['feedback', 'bug', 'support'] },

@@ -10,6 +10,7 @@ import { AmountField } from '@/components/ui/AmountField'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useT } from '@/lib/i18n'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { egyptKaratPrice } from '@/lib/prices/egyptGold'
@@ -67,7 +68,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
   }, [type, qty, goldUnit, karat, symbol, propValue, lookup, sagha])
 
   const submit = () => {
-    const date = purchaseDate || (source === 'budget' ? new Date().toISOString().slice(0, 10) : undefined)
+    const date = purchaseDate || (source === 'budget' ? localTodayISO() : undefined)
     const base = { purchaseDate: date, unitCost: paid ? (parseFloat(paid) || 0) / (qty || 1) : undefined, costBasisCurrency: baseCurrency }
     if (type === 'gold') addHolding({ assetType: 'gold', name: `${karat}k gold`, karat, quantity: goldToGrams(qty, goldUnit), goldUnit, currency: 'EGP', ...base })
     else if (type === 'crypto') addHolding({ assetType: 'crypto', name: symbol, symbol, quantity: qty, currency: baseCurrency, ...base })

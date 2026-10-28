@@ -32,15 +32,30 @@ describe('normaliseReceipt', () => {
     expect(r.amount).toBe(0)
   })
 
-  it('replaces out-of-window dates (future / older than 30 days) with today', () => {
-    // Local, to match the implementation (normaliseReceipt now returns the local day) — a
-    // UTC `today` here is flaky for anyone running tests outside UTC.
+  it('keeps a printed old or future date and only defaults a missing one to today', () => {
     const today = localTodayISO()
     const future = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10)
     const old = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10)
-    expect(normaliseReceipt({ amount: 1, date: future }, 'EGP').date).toBe(today)
-    expect(normaliseReceipt({ amount: 1, date: old }, 'EGP').date).toBe(today)
+    expect(normaliseReceipt({ amount: 1, date: future }, 'EGP').date).toBe(future)
+    expect(normaliseReceipt({ amount: 1, date: old }, 'EGP').date).toBe(old)
+    expect(normaliseReceipt({ amount: 1, date: '2026-13-45' }, 'EGP').date).toBe(today)
     expect(normaliseReceipt({ amount: 1 }, 'EGP').date).toBe(today)
+  })
+
+  it('parses localised string amounts via the shared parser', () => {
+    expect(normaliseReceipt({ amount: '1.250,50', currency: 'EGP' }, 'EGP').amount).toBe(1250.5)
+    expect(normaliseReceipt({ amount: '1,250', currency: 'EGP' }, 'EGP').amount).toBe(1250)
+    expect(normaliseReceipt({ amount: '12.345', currency: 'KWD' }, 'EGP').amount).toBe(12.345)
+    const r = normaliseReceipt({ amount: 5, items: [{ name: 'A', price: '1.250,50' }, { name: 'B', price: '-3,50' }] }, 'EGP')
+    expect(r.items.map((i) => i.price)).toEqual([1250.5, -3.5])
+  })
+
+  it('supports every app currency and spend category without falling back', () => {
+    for (const c of ['EUR', 'GBP', 'MAD', 'TND', 'JOD'] as const) {
+      expect(normaliseReceipt({ amount: 1, currency: c }, 'EGP').currency).toBe(c)
+    }
+    expect(normaliseReceipt({ amount: 1, category: 'Groceries' }, 'EGP').category).toBe('Groceries')
+    expect(normaliseReceipt({ amount: 1, category: 'Fuel' }, 'EGP').category).toBe('Fuel')
   })
 
   it('sums items + charges when the total is missing', () => {

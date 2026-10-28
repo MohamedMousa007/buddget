@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { allocateGoalFunding } from '../allocateGoalFunding'
+import { groupIdFor } from '../pocketLedger'
 import type { Goal, SavingsAccount } from '@/lib/store/types'
 
 type Row = Record<string, unknown>
 
 /** In-memory stand-in for the slice of the Supabase client the allocator uses. */
-function fakeService(seed: Record<string, Row[]>, opts: { failInsert?: string } = {}) {
+function fakeService(seed: Record<string, Row[]>, opts: { failInsert?: string; foreignPaymentMethod?: boolean } = {}) {
   const db: Record<string, Row[]> = JSON.parse(JSON.stringify(seed))
   let id = 0
   const from = (table: string) => {
@@ -49,6 +50,7 @@ function fakeService(seed: Record<string, Row[]>, opts: { failInsert?: string } 
   const rpc = (fn: string, a: Record<string, unknown>) => {
     if (fn !== 'adjust_pocket_balance') return Promise.resolve({ data: null, error: { message: 'unknown rpc' } })
     if (opts.failInsert === 'savings_transactions') return Promise.resolve({ data: null, error: { message: 'boom' } })
+    if (opts.foreignPaymentMethod && a.p_payment_method) return Promise.resolve({ data: null, error: { message: 'payment method not owned' } })
     const txs = (db.savings_transactions ??= [])
     if (txs.some((t) => t.account_id === a.p_pocket && t.transfer_group_id === a.p_group)) return Promise.resolve({ data: null, error: null })
     const acc = (db.savings_accounts ??= []).find((r) => r.id === a.p_pocket)
@@ -97,13 +99,15 @@ describe('allocateGoalFunding', () => {
     expect(db.savings_accounts[0].current_balance).toBe(300)
   })
 
-  it('a rerun after a half-finished cycle does not sweep the paid goal\'s money again', async () => {
+  it('a claimed goal whose deposit never landed is paid on the rerun, and not swept again (W15)', async () => {
     const { service, db } = fakeService(seed())
     db.goal_allocation_runs = [{ goal_id: 'a', period: '2026-09', planned: 600, amount: 600, user_id: 'u' }]
     const left = await allocateGoalFunding({ ...base, service, carry: 1000, goals, accounts })
     expect(left).toBe(0)
     expect(db.goal_allocation_runs.filter((r) => r.goal_id === 'b')[0].amount).toBe(400)
-    expect(db.savings_transactions).toHaveLength(1)
+    expect(db.savings_transactions).toHaveLength(2)
+    await allocateGoalFunding({ ...base, service, carry: 1000, goals, accounts })
+    expect(db.savings_transactions).toHaveLength(2)
   })
 
   it('a failed deposit releases its claim and keeps the money for the sweep', async () => {
@@ -119,6 +123,27 @@ describe('allocateGoalFunding', () => {
     const left = await allocateGoalFunding({ ...base, service, carry: 0, goals: [goal('a', 0, 50)], accounts })
     expect(left).toBe(0)
     expect(db.goal_allocation_runs).toMatchObject([{ goal_id: 'a', planned: 0, amount: 0 }])
+    expect(db.savings_transactions ?? []).toHaveLength(0)
+  })
+
+  it('0198 guard: a tombstoned carry row counts as posted and is not re-posted', async () => {
+    const { service, db } = fakeService({
+      ...seed(),
+      savings_transactions: [{ id: 't', account_id: 'p-a', transfer_group_id: groupIdFor('goal-funding|a|2026-09'), deleted_at: 'x' }],
+    })
+    await allocateGoalFunding({ ...base, service, carry: 1000, goals: [goal('a', 0, 30)], accounts })
+    expect(db.savings_transactions).toHaveLength(1)
+    expect(db.savings_accounts[0].current_balance).toBe(0)
+  })
+
+  it('0198 guard: a payment method the server rejects releases the claim and keeps the money', async () => {
+    const { service, db } = fakeService(
+      { ...seed(), payment_methods: [{ id: 'pm1', user_id: 'u', type: 'bank_account', created_at: 'x' }] },
+      { foreignPaymentMethod: true },
+    )
+    const left = await allocateGoalFunding({ ...base, service, carry: 1000, goals: [goal('a', 0, 50)], accounts })
+    expect(left).toBe(1000)
+    expect(db.goal_allocation_runs ?? []).toHaveLength(0)
   })
 
   it('quarterly goals are funded monthly, fixed amounts split across the quarter', async () => {

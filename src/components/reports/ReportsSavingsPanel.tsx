@@ -3,7 +3,8 @@
 import { useMemo } from 'react'
 import { isWithinInterval, parseISO } from 'date-fns'
 import type { SavingsTransaction } from '@/lib/store/types'
-import { convertCurrency } from '@/lib/utils/currency'
+import { tryConvertWithGold } from '@/lib/utils/currency'
+import { useGoldQuote } from '@/hooks/useGoldQuote'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
@@ -27,18 +28,20 @@ export function ReportsSavingsPanel({
   exchangeRates,
 }: ReportsSavingsPanelProps) {
   const t = useT()
+  const gold = useGoldQuote()
   const { deposits, withdrawals } = useMemo(() => {
     let d = 0
     let w = 0
     for (const tx of transactions) {
       const day = parseISO(tx.date.length > 10 ? tx.date : `${tx.date}T12:00:00`)
       if (!isWithinInterval(day, { start: startDate, end: endDate })) continue
-      const v = convertCurrency(tx.amount, tx.currency, baseCurrency, exchangeRates)
+      const v = tryConvertWithGold(tx.amount, tx.currency, baseCurrency, exchangeRates, baseCurrency, gold)
+      if (v === null) continue
       if (tx.type === 'deposit') d += v
       else w += v
     }
     return { deposits: d, withdrawals: w }
-  }, [transactions, startDate, endDate, baseCurrency, exchangeRates])
+  }, [transactions, startDate, endDate, baseCurrency, exchangeRates, gold])
 
   return (
     <section className="glass-card rounded-2xl p-5 space-y-3">

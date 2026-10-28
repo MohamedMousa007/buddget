@@ -24,6 +24,8 @@ interface AmountFieldProps {
   onChange: (next: string) => void
   mode?: NumberPadMode
   currency?: string
+  /** Currency whose decimal places the field enforces, without the currency prefix `currency` adds. */
+  decimalsFor?: string
   placeholder?: string
   label?: string
   dir?: 'ltr' | 'rtl'
@@ -48,6 +50,7 @@ export function AmountField({
   onChange,
   mode = 'decimal',
   currency,
+  decimalsFor,
   placeholder,
   label,
   dir = 'ltr',
@@ -60,7 +63,7 @@ export function AmountField({
 }: AmountFieldProps) {
   const native = useIsNativeClient()
   const [focused, setFocused] = useState(false)
-  const { isOpen, openPad, pad } = useNumberPad({ value, onChange, mode, currency, label, dir })
+  const { isOpen, openPad, pad } = useNumberPad({ value, onChange, mode, currency: currency ?? decimalsFor, label, dir })
   const ph = placeholder ?? (mode === 'pin' ? '0000' : '0.00')
   const showPrefix = mode === 'decimal' && !!currency
   const glass = !className
@@ -126,6 +129,7 @@ export function AmountField({
           value={value}
           onChange={onChange}
           mode={mode}
+          currency={currency ?? decimalsFor}
           placeholder={ph}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

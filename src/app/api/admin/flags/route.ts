@@ -1,4 +1,5 @@
-import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
+import { flagsBody, readValidated } from '@/lib/server/admin/bodySchemas'
+import { bad, guardAdmin, json } from '@/lib/server/admin/guard'
 
 const KEY_RE = /^[a-z][a-z0-9_.-]{1,63}$/
 const PLATFORMS = ['ios', 'android', 'web']
@@ -18,11 +19,7 @@ export async function POST(req: Request) {
   const g = await guardAdmin(req, { permission: 'flags.manage' })
   if (!g.ok) return g.res
   const { ctx } = g
-  const body = await readJson<{
-    op?: string
-    key?: string
-    flag?: { key: string; description?: string; enabled?: boolean; rolloutPct?: number; planKeys?: string[]; platforms?: string[] }
-  }>(req)
+  const body = await readValidated(req, flagsBody)
 
   if (body?.op === 'upsert' && body.flag) {
     const f = body.flag

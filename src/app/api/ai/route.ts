@@ -14,36 +14,15 @@ import {
 } from '@/lib/server/ai/gemini'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota, type QuotaGrant } from '@/lib/server/ai/quota'
 import { estimateUnits } from '@/lib/server/ai/units'
+import { isRateLimited } from '@/lib/server/rateLimit'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export const maxDuration = 30
 export const dynamic = 'force-dynamic'
 
-/** Per-client request timestamps (sliding window; limits from admin/runtime config). */
-const hitTimestamps = new Map<string, number[]>()
-
-function clientKey(req: Request): string {
-  const forwarded = req.headers.get('x-forwarded-for')
-  const first = forwarded?.split(',')[0]?.trim()
-  if (first) return first
-  const realIp = req.headers.get('x-real-ip')
-  if (realIp) return realIp
-  const ua = req.headers.get('user-agent') || ''
-  return `anon-${ua.slice(0, 50)}`
-}
-
-function isRateLimited(key: string, max: number, windowMs: number): boolean {
-  const now = Date.now()
-  const windowStart = now - windowMs
-  const prev = hitTimestamps.get(key) ?? []
-  const recent = prev.filter((t) => t > windowStart)
-  if (recent.length >= max) {
-    hitTimestamps.set(key, recent)
-    return true
-  }
-  recent.push(now)
-  hitTimestamps.set(key, recent)
-  return false
-}
+/** The largest request body the proxy will read. A chat turn with its context is far below this. */
+const MAX_BODY_BYTES = 256 * 1024
+const MAX_CONTENTS = 60
 
 export async function POST(req: Request) {
   const outdated = await gateOutdatedClient(req)
@@ -70,19 +49,20 @@ export async function POST(req: Request) {
     }
 
     if (runtime.rateLimitingEnabled) {
-      const key = clientKey(req)
-      if (isRateLimited(key, runtime.rateLimitMaxRequests, runtime.rateLimitWindowMs)) {
-        const waitSec = Math.ceil(runtime.rateLimitWindowMs / 1000)
+      const waitSec = Math.min(3600, Math.max(1, Math.ceil(runtime.rateLimitWindowMs / 1000)))
+      if (await isRateLimited(createServiceRoleClient(), `ai:${userId}`, waitSec, runtime.rateLimitMaxRequests, true)) {
         return NextResponse.json(
           {
-            error: `Too many AI requests. This server allows ${runtime.rateLimitMaxRequests} requests per ${waitSec}s per device. Turn off throttling in Admin if you are the only user, or wait.`,
+            error: `Too many AI requests. This server allows ${runtime.rateLimitMaxRequests} requests per ${waitSec}s per account. Turn off throttling in Admin if you are the only user, or wait.`,
           },
           { status: 429 }
         )
       }
     }
 
-    const body = await req.json()
+    const rawBody = await req.text()
+    if (rawBody.length > MAX_BODY_BYTES) return NextResponse.json({ error: 'Request too large' }, { status: 413 })
+    const body = JSON.parse(rawBody)
     const { contents, generationConfig, grounded, systemInstruction, tier, stream } = body as {
       contents?: unknown[]
       generationConfig?: Record<string, unknown>
@@ -95,13 +75,13 @@ export async function POST(req: Request) {
       grounded?: boolean
     }
 
-    if (!Array.isArray(contents) || contents.length === 0) {
+    if (!Array.isArray(contents) || contents.length === 0 || contents.length > MAX_CONTENTS) {
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
     }
 
     const config = clampGenerationConfig(generationConfig)
     const geminiBody: Record<string, unknown> = { contents, generationConfig: config }
-    if (grounded === true) geminiBody.tools = [{ google_search: {} }]
+    if (grounded === true && tier !== 'fast') geminiBody.tools = [{ google_search: {} }]
     if (systemInstruction) geminiBody.systemInstruction = systemInstruction
 
     tierName = tier && tier in TIER_MODELS ? tier : 'legacy'
@@ -148,9 +128,11 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       await settle({ promptTokens: 0, cachedTokens: 0, outputTokens: 0 }, 'error')
-      const errorMsg = payload?.error?.message || `Gemini API returned ${response.status}`
-      console.error(`[AI] fail status=${response.status} user=${userId} latency=${Date.now() - started}ms err=${errorMsg}`)
-      return NextResponse.json({ error: errorMsg, stage: 'extract' }, { status: response.status })
+      console.error(`[AI] fail status=${response.status} user=${userId} latency=${Date.now() - started}ms err=${payload?.error?.message ?? ''}`)
+      // 429 stays so callers back off; anything else is the upstream's problem, never "not configured" (503) or a sign-out (401/403).
+      return response.status === 429
+        ? NextResponse.json({ error: 'The AI service is busy, try again shortly', stage: 'extract' }, { status: 429 })
+        : NextResponse.json({ error: 'The AI service is unavailable, try again', stage: 'extract' }, { status: 502 })
     }
 
     await settle(usageFromPayload(payload), 'ok')

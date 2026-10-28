@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, ArrowLeft, ChevronDown, CreditCard, Lock } from 'lucide-react'
+import { X, ArrowLeft, CreditCard, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { CurrencySheet } from '@/components/ui/CurrencySheet'
+import { CurrencyField } from '@/components/ui/CurrencyField'
+import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
+import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { IconButton } from '@/components/ui/IconButton'
 import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
 import { Switch } from '@/components/ui/switch'
@@ -18,9 +19,9 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
-import { currencyFlag, currencyName } from '@/lib/constants/currencyMeta'
+import { cardDayError, parseCardDay } from '@/lib/debts/cardTerms'
 import {
-  PAYMENT_TYPE_META, SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND,
+  PAYMENT_TYPE_META, CARD_SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, asCardType,
   allowsLast4, providerInitials, composePaymentMethodName, decomposePaymentMethodName,
   resolvePaymentBrandKey, prefillPaymentType, typesForBrand,
 } from '@/lib/payment/paymentMethodDefaults'
@@ -32,7 +33,8 @@ import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/typ
 import { FieldButton } from '@/components/ui/FieldButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 
-type Disc = 'last4' | 'tag' | 'none'
+/** Banks, wallets and cash have their own sheet; this one only adds cards, and edits an account's look, never its kind. */
+const CARD_TYPES: PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card']
 function countryFromCurrency(cur: Currency): 'EG' | 'SA' | 'AE' | null {
   if (cur === 'EGP') return 'EG'
   if (cur === 'SAR') return 'SA'
@@ -55,6 +57,9 @@ interface Props {
   titleOverride?: string
   /** New methods hang under this account (a card added from an account's page). */
   parentAccountId?: string
+  /** Edit mode only: shows a destructive footer button; the caller owns confirmation and removal. */
+  onDelete?: () => void
+  deleteLabel?: string
 }
 
 /**
@@ -63,7 +68,7 @@ interface Props {
  * Reused by the wallet sheet and the payment-method picker (self-contained add).
  */
 export function PaymentMethodSetupSheet({
-  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride, parentAccountId,
+  open, editing, prefill, baseCurrency, onClose, onSaved, nested = false, lockType, titleOverride, parentAccountId, onDelete, deleteLabel,
 }: Props) {
   const t = useT()
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
@@ -72,15 +77,14 @@ export function PaymentMethodSetupSheet({
 
   const [brandId, setBrandId] = useState<string | null>(null)
   const [providerName, setProviderName] = useState('')
-  const [type, setType] = useState<PaymentMethodType>('bank_account')
-  const [disc, setDisc] = useState<Disc>('none')
+  const [type, setType] = useState<PaymentMethodType>('debit_card')
+  const [idMode, setIdMode] = useState<Identifier>('none')
   const [last4, setLast4] = useState('')
-  const [tag, setTag] = useState('')
+  const [label, setLabel] = useState('')
   const [curCode, setCurCode] = useState<Currency>(baseCurrency)
   const [cardColor, setCardColor] = useState<string | null>(null)
   const [isDefault, setIsDefault] = useState(false)
   const [providerSheetOpen, setProviderSheetOpen] = useState(false)
-  const [currencyOpen, setCurrencyOpen] = useState(false)
   // Credit-card debt terms (only when type === 'credit_card').
   const [ccLimit, setCcLimit] = useState('')
   const [ccOutstanding, setCcOutstanding] = useState('')
@@ -88,17 +92,19 @@ export function PaymentMethodSetupSheet({
   const [ccGrace, setCcGrace] = useState('55')
 
   const prevOpen = useRef(false)
-  useEscapeClose(open && !providerSheetOpen && !currencyOpen, onClose)
+  useEscapeClose(open && !providerSheetOpen, onClose)
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- initialise form when the sheet opens */
     if (open && !prevOpen.current) {
-      setProviderSheetOpen(false); setCurrencyOpen(false)
+      setProviderSheetOpen(false)
       if (editing) {
         const { provider, tag: decTag } = decomposePaymentMethodName(editing.name, editing.last4)
+        // A label an older version folded into the name ("CIB · Salary") is shown as the label it always was.
+        const savedLabel = editing.label ?? decTag
         setBrandId(null); setProviderName(provider); setType(editing.type)
-        setLast4(editing.last4 ?? ''); setTag(decTag)
-        setDisc(editing.last4 ? 'last4' : decTag ? 'tag' : 'none')
+        setLast4(editing.last4 ?? ''); setLabel(savedLabel)
+        setIdMode(savedLabel ? 'label' : editing.last4 ? 'last4' : 'none')
         setCurCode(editing.currency); setCardColor(editing.color ?? null); setIsDefault(editing.isDefault)
         // Load the linked credit-card debt's terms so they're editable here.
         const linked = useFinanceStore.getState().debts.find((d) => d.debtType === 'credit_card' && d.linkedPaymentMethodId === editing.id)
@@ -108,28 +114,37 @@ export function PaymentMethodSetupSheet({
         setCcGrace(linked?.gracePeriodDays != null ? String(linked.gracePeriodDays) : '55')
       } else {
         setCcLimit(''); setCcOutstanding(''); setCcStatementDay(''); setCcGrace('55')
-        // Resolve a detected bank/provider name to a catalogue brand so the SMS
-        // prefill lands on the right type/colours, not a generic bank_account.
-        // An explicit prefill type (the SMS said "Debit Card") beats the brand's
-        // default (QNB's brand type is bank_account).
-        const pfBrandId = prefill?.name ? resolvePaymentBrandKey(prefill.name) : null
-        const pfBrand = pfBrandId ? PAYMENT_BRANDS[pfBrandId] : null
-        // ...except for a wallet brand — see prefillPaymentType.
-        const pfType = prefillPaymentType(prefill?.type, pfBrand)
-        setBrandId(pfBrandId); setProviderName(pfBrand?.name ?? prefill?.name ?? '')
-        setType(pfType)
-        setLast4(prefill?.last4 ?? ''); setTag('')
-        // Same guard as pickBrand/pickType: a type that takes no last4 (wallet,
-        // bnpl) must not land on the last4 identifier — the tab row wouldn't
-        // even offer it, and handleSave would persist a last4 anyway.
-        setDisc(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
-        setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)
+        const parent = parentAccountId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === parentAccountId) : undefined
+        if (parent) {
+          // A card added under an account starts as that account's debit card: same bank, currency and colour.
+          const parentBrandId = resolvePaymentBrandKey(accountTitle(parent))
+          setBrandId(parentBrandId); setProviderName(accountTitle(parent))
+          setType('debit_card'); setLast4(''); setLabel(''); setIdMode('none')
+          setCurCode(parent.currency); setCardColor(parent.color ?? null); setIsDefault(false)
+        } else {
+          // Resolve a detected bank/provider name to a catalogue brand so the SMS
+          // prefill lands on the right type/colours. An explicit prefill type (the SMS said
+          // "Debit Card") beats the brand's default (QNB's brand type is bank_account), and a
+          // bank account is added as the debit card it issues, since accounts have their own sheet.
+          const pfBrandId = prefill?.name ? resolvePaymentBrandKey(prefill.name) : null
+          const pfBrand = pfBrandId ? PAYMENT_BRANDS[pfBrandId] : null
+          // ...except for a wallet brand — see prefillPaymentType.
+          const pfType = asCardType(prefillPaymentType(prefill?.type, pfBrand))
+          setBrandId(pfBrandId); setProviderName(pfBrand?.name ?? prefill?.name ?? '')
+          setType(pfType)
+          setLast4(prefill?.last4 ?? ''); setLabel('')
+          // Same guard as pickBrand/pickType: a type that takes no last4 (wallet,
+          // bnpl) must not land on the last4 identifier — the tab row wouldn't
+          // even offer it, and handleSave would persist a last4 anyway.
+          setIdMode(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
+          setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)
+        }
       }
       if (lockType) setType(lockType)
     }
     prevOpen.current = open
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open, editing, prefill, baseCurrency, lockType])
+  }, [open, editing, prefill, baseCurrency, lockType, parentAccountId])
 
   const pickBrand = (id: string) => {
     const b = PAYMENT_BRANDS[id]
@@ -137,12 +152,12 @@ export function PaymentMethodSetupSheet({
       : b.country === 'SA' ? 'SAR' : b.country === 'AE' ? 'AED' : b.country === 'EG' ? 'EGP' : curCode
     // A locked context (Add credit card) wins over the brand's primary type: picking
     // a bank there means "the credit card this bank issues", not a bank account.
-    const t = lockType ?? b.type
+    const t = typeLock ?? asCardType(b.type)
     setBrandId(id); setProviderName(b.name); setType(t)
     // Stored-value types keep the last4 field available but do not default to it: a
     // prepaid card may be unnumbered, and only some wallets issue a card at all.
     const storedValue = t === 'prepaid_card' || t === 'wallet'
-    setDisc(allowsLast4(t) && !storedValue ? 'last4' : 'none')
+    setIdMode(allowsLast4(t) && !storedValue ? 'last4' : 'none')
     setCardColor(null); setCurCode(cur); setProviderSheetOpen(false)
   }
   // Types the chosen provider can plausibly issue (a bank offers account + cards,
@@ -151,12 +166,12 @@ export function PaymentMethodSetupSheet({
   const offeredTypes = useMemo(() => {
     const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
     const allowed = typesForBrand(brand)
-    return SETUP_TYPES.filter((t) => allowed.includes(t) || t === type)
+    return CARD_SETUP_TYPES.filter((t) => allowed.includes(t) || t === type)
   }, [brandId, type])
 
   const pickType = (v: PaymentMethodType) => {
     setType(v)
-    if (disc === 'last4' && !allowsLast4(v)) setDisc('none')
+    if (idMode === 'last4' && !allowsLast4(v)) setIdMode('none')
   }
   const setCustomProvider = (term: string) => {
     setBrandId('__custom'); setProviderName(term.trim()); setProviderSheetOpen(false)
@@ -165,21 +180,22 @@ export function PaymentMethodSetupSheet({
   const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
   const effectiveColor = cardColor || (brand ? brand.colors[0] : null) || PAYMENT_TYPE_META[type].color
   const hasProvider = providerName.trim().length > 0
-  const canSave = hasProvider && !(disc === 'last4' && last4.length !== 0 && last4.length !== 4)
+  // The Debt tab locks the type; an existing bank account or wallet keeps its kind here (cards are the only thing this sheet can switch between).
+  const typeLock: PaymentMethodType | undefined = lockType ?? (editing && !CARD_TYPES.includes(editing.type) ? editing.type : undefined)
+  const dayInvalid = type === 'credit_card' && cardDayError(ccStatementDay)
+  const canSave = hasProvider && !dayInvalid && !(idMode === 'last4' && last4.length !== 0 && last4.length !== 4)
 
   const handleSave = () => {
     if (!canSave) return
     const provider = providerName.trim()
-    const use4 = disc === 'last4' && last4.length === 4
-    const useTag = disc === 'tag' && tag.trim().length > 0
-    const name = composePaymentMethodName(provider, {
-      last4: use4 ? last4 : undefined,
-      tag: useTag ? tag : undefined,
-    })
-    const payload = { name, type, currency: curCode, color: effectiveColor, isDefault, ...(use4 ? { last4 } : {}) }
+    // The digits survive a switch to Label: SMS matching reads them even when a label is what the user sees.
+    const use4 = idMode !== 'none' && last4.length === 4
+    const words = idMode === 'label' ? label.trim() : ''
+    const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
+    const payload = { name, type, currency: curCode, color: effectiveColor, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
-      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined })
+      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, label: words || undefined })
       pmId = editing.id
     } else {
       // A credit_card PM auto-creates its linked credit-card debt in the store.
@@ -193,7 +209,7 @@ export function PaymentMethodSetupSheet({
         updateDebt(linked.id, {
           creditLimit: num(ccLimit),
           startingBalance: num(ccOutstanding) ?? linked.startingBalance,
-          paymentDueDay: ccStatementDay.trim() ? parseInt(ccStatementDay, 10) : undefined,
+          paymentDueDay: parseCardDay(ccStatementDay) ?? undefined,
           gracePeriodDays: ccGrace.trim() ? parseInt(ccGrace, 10) : undefined,
         })
       }
@@ -218,19 +234,20 @@ export function PaymentMethodSetupSheet({
   const fieldChipColor = brand ? brand.colors[0] : '#9898B0'
   const fieldInitials = brand ? brand.short : providerInitials(providerName)
 
-  const previewTail = disc === 'last4'
-    ? (last4 ? `••  ${last4}` : '••  ••••')
-    : disc === 'tag' && tag.trim() ? tag.trim() : '——  ——'
+  const previewTail = idMode === 'label' && label.trim()
+    ? label.trim()
+    : idMode !== 'none' && last4 ? `••  ${last4}` : idMode === 'last4' ? '••  ••••' : '——  ——'
+
+  const previewProps = {
+    hasProvider, color: effectiveColor, type,
+    name: hasProvider ? providerName : t.paymentMethods.addTitle,
+    typeLabel: PAYMENT_TYPE_META[type].label,
+    tail: previewTail, curCode,
+  }
 
   return (
     <>
-      <FloatingCardPreview
-        open={open} z={z.card}
-        hasProvider={hasProvider} color={effectiveColor} type={type}
-        name={hasProvider ? providerName : t.paymentMethods.addTitle}
-        typeLabel={PAYMENT_TYPE_META[type].label}
-        tail={previewTail} curCode={curCode}
-      />
+      <FloatingCardPreview open={open} z={z.card} {...previewProps} />
 
       <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
@@ -257,6 +274,7 @@ export function PaymentMethodSetupSheet({
 
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex flex-col gap-[18px]">
+              <FloatingCardPreview open={open} inline {...previewProps} />
               {/* Provider */}
               <div>
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
@@ -282,30 +300,22 @@ export function PaymentMethodSetupSheet({
                 />
               </div>
 
-              {/* Card colour */}
-              <div>
-                <div className={`mx-0.5 mb-2.5 ${microClassName}`}>
-                  {t.paymentMethods.cardColour}
-                </div>
-                <ColorSwatchRow value={effectiveColor} onChange={setCardColor} />
-              </div>
-
               {/* Type — locked to a single chip when lockType is set (e.g. Debt → credit card) */}
               <div>
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.type}
                 </div>
-                {lockType ? (
+                {typeLock ? (
                   <div
                     className="flex h-[38px] w-fit items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold"
                     style={{
-                      background: rgba(PAYMENT_TYPE_META[lockType].color, 0.15),
-                      border: `1px solid ${rgba(PAYMENT_TYPE_META[lockType].color, 0.5)}`,
-                      color: PAYMENT_TYPE_META[lockType].color,
+                      background: rgba(PAYMENT_TYPE_META[typeLock].color, 0.15),
+                      border: `1px solid ${rgba(PAYMENT_TYPE_META[typeLock].color, 0.5)}`,
+                      color: PAYMENT_TYPE_META[typeLock].color,
                     }}
                   >
-                    <TypeGlyph type={lockType} className="h-[15px] w-[15px]" />
-                    {PAYMENT_TYPE_META[lockType].label}
+                    <TypeGlyph type={typeLock} className="h-[15px] w-[15px]" />
+                    {PAYMENT_TYPE_META[typeLock].label}
                     <Lock className="h-3.5 w-3.5 opacity-70" />
                   </div>
                 ) : (
@@ -332,92 +342,50 @@ export function PaymentMethodSetupSheet({
                 )}
               </div>
 
-              {/* Credit-card terms (debt fields) — only for the credit_card type */}
-              {type === 'credit_card' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Limit</span>
-                    <AmountField value={ccLimit} onChange={setCcLimit} mode="decimal" currency={curCode} placeholder="30,000" />
-                  </div>
-                  <div>
-                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Current outstanding</span>
-                    <AmountField value={ccOutstanding} onChange={setCcOutstanding} mode="decimal" currency={curCode} placeholder="8,420" />
-                  </div>
-                  <div>
-                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Statement day</span>
-                    <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" placeholder="15" />
-                  </div>
-                  <div>
-                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>Grace days</span>
-                    <AmountField value={ccGrace} onChange={(v) => setCcGrace(v.slice(0, 3))} mode="integer" placeholder="55" />
-                  </div>
-                </div>
-              )}
-
               {/* Identifier */}
-              <div>
-                <div className="mx-0.5 mb-2 flex items-center gap-2">
-                  <span className={microClassName}>
-                    {t.paymentMethods.identifier}
-                  </span>
-                  <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">
-                    {t.paymentMethods.optional}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  {(allowsLast4(type) ? (['last4', 'tag', 'none'] as Disc[]) : (['tag', 'none'] as Disc[])).map((k) => {
-                    const selTab = disc === k
-                    const label = k === 'last4' ? t.paymentMethods.fourDigits : k === 'tag' ? t.paymentMethods.label : t.paymentMethods.none
-                    return (
-                      <OptionChip
-                        key={k} size="segment" selected={selTab} onClick={() => setDisc(k)}
-                      >
-                        {label}
-                      </OptionChip>
-                    )
-                  })}
-                </div>
-                {disc === 'last4' && (
-                  <>
-                    <Input
-                      value={last4}
-                      onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      dir="ltr" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="e.g. 1234"
-                      size="brand" className="mt-2.5 font-mono-numbers text-[15px] tracking-[0.1em] text-[var(--color-brand-text-primary)] text-start"
-                    />
-                    <div className="mt-2 px-0.5 text-[11.5px] text-[var(--color-brand-text-muted)]">
-                      {t.paymentMethods.last4Help}
-                    </div>
-                  </>
-                )}
-                {disc === 'tag' && (
-                  <Input
-                    value={tag}
-                    onChange={(e) => setTag(e.target.value)}
-                    maxLength={18} placeholder={t.paymentMethods.tagPlaceholder}
-                    size="brand" className="mt-2.5 text-[15px] text-[var(--color-brand-text-primary)] text-start"
-                  />
-                )}
-              </div>
+              <AccountIdentifierField
+                mode={idMode} onModeChange={setIdMode} allowsLast4={allowsLast4(type)}
+                last4={last4} onLast4Change={setLast4} label={label} onLabelChange={setLabel}
+              />
 
               {/* Currency */}
               <div>
                 <div className={`mx-0.5 mb-2 ${microClassName}`}>
                   {t.paymentMethods.currency}
                 </div>
-                <FieldButton
-                  size="lg"
-                  onClick={() => setCurrencyOpen(true)}
-                  className="bg-[var(--color-brand-elevated)]"
-                  affordance={<ChevronDown className="h-[15px] w-[15px] shrink-0 text-[var(--color-brand-text-muted)]" />}
-                  value={
-                    <span className="flex items-center gap-[11px]">
-                      <span className="text-[22px] leading-none">{currencyFlag(curCode)}</span>
-                      <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{curCode}</span>
-                      <span className="text-[13px] font-medium text-[var(--color-brand-text-muted)]">{currencyName(curCode)}</span>
-                    </span>
-                  }
-                />
+                <CurrencyField value={curCode} onChange={(c) => setCurCode(c as unknown as Currency)} zIndexClassName={z.currency} className={ACCOUNT_CURRENCY_FIELD_CLASS} />
+              </div>
+
+              {/* Credit-card terms (debt fields) — only for the credit_card type */}
+              {type === 'credit_card' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccLimit}</span>
+                    <AmountField value={ccLimit} onChange={setCcLimit} mode="decimal" currency={curCode} placeholder="30,000" />
+                  </div>
+                  <div>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.moneyFlows.ccOpeningBalance}</span>
+                    <AmountField value={ccOutstanding} onChange={setCcOutstanding} mode="decimal" currency={curCode} placeholder="8,420" />
+                    <p className="mx-0.5 mt-1.5 text-[11.5px] text-[var(--color-brand-text-muted)]">{t.moneyFlows.ccOpeningHint}</p>
+                  </div>
+                  <div>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.moneyFlows.ccDueDay}</span>
+                    <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" placeholder="15" />
+                    {dayInvalid ? <p role="alert" className="mx-0.5 mt-1.5 text-[12px] text-[var(--color-brand-red)]">{t.moneyFlows.dayRange}</p> : null}
+                  </div>
+                  <div>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccGraceDays}</span>
+                    <AmountField value={ccGrace} onChange={(v) => setCcGrace(v.slice(0, 3))} mode="integer" placeholder="55" />
+                  </div>
+                </div>
+              )}
+
+              {/* Card colour */}
+              <div>
+                <div className={`mx-0.5 mb-2.5 ${microClassName}`}>
+                  {t.paymentMethods.cardColour}
+                </div>
+                <ColorSwatchRow value={effectiveColor} onChange={setCardColor} />
               </div>
 
               {/* Set as default */}
@@ -440,8 +408,14 @@ export function PaymentMethodSetupSheet({
             </div>
           </div>
 
-          <div className="sheet-cta shrink-0 border-t border-[var(--color-brand-border)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
-            <Button size="cta-block" onClick={handleSave} disabled={!canSave} className="text-base font-semibold">
+          <div className="sheet-cta flex shrink-0 items-center gap-3 border-t border-[var(--color-brand-border)] px-4 pb-[calc(16px+env(safe-area-inset-bottom))] pt-3">
+            {editing && onDelete ? (
+              <Button variant="destructive" size="touch" onClick={onDelete}>
+                <Trash2 className="h-4 w-4" />
+                {deleteLabel ?? t.common.delete}
+              </Button>
+            ) : null}
+            <Button size="cta-block" onClick={handleSave} disabled={!canSave} className="flex-1 text-base font-semibold">
               {t.paymentMethods.saveMethod}
             </Button>
           </div>
@@ -459,24 +433,18 @@ export function PaymentMethodSetupSheet({
         issuesType={lockType}
       />
 
-      <CurrencySheet
-        open={open && currencyOpen}
-        value={curCode}
-        base={baseCurrency}
-        zIndexClassName={z.currency}
-        onSelect={(code) => { setCurCode(code as Currency); setCurrencyOpen(false) }}
-        onClose={() => setCurrencyOpen(false)}
-      />
     </>
   )
 }
 
 // ── Floating card preview (pinned above the sheet, static/elevated) ───────────
 function FloatingCardPreview({
-  open, z, hasProvider, color, type, name, typeLabel, tail, curCode,
+  open, z = '', inline = false, hasProvider, color, type, name, typeLabel, tail, curCode,
 }: {
   open: boolean
-  z: string
+  z?: string
+  /** md+ renders the card in the dialog's flow instead of pinned above it. */
+  inline?: boolean
   hasProvider: boolean
   color: string
   type: PaymentMethodType
@@ -491,6 +459,66 @@ function FloatingCardPreview({
   // Static 3D treatment — no motion after the one-time entrance.
   const cardShadow = `0 36px 64px -16px rgba(0,0,0,.72), 0 16px 32px -12px ${rgba(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.2)`
 
+  const preview = (
+    <>
+    {/* halo — static coloured glow */}
+    <div
+      aria-hidden
+      className="pointer-events-none absolute"
+      style={{
+        inset: -34, borderRadius: 46,
+        background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
+        filter: 'blur(36px)', zIndex: 0,
+      }}
+    />
+    {/* contact shadow — static ellipse beneath the card */}
+    <div
+      aria-hidden
+      className="pointer-events-none absolute"
+      style={{
+        left: '50%', bottom: -20, transform: 'translateX(-50%)',
+        width: 224, height: 30, background: 'rgba(0,0,0,.55)',
+        borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
+      }}
+    />
+    {/* card — static, subtle lift */}
+    <div
+      className="relative flex h-[176px] w-[280px] flex-col overflow-hidden rounded-[20px]"
+      style={{
+        padding: '19px 21px',
+        background: cardGradient(color),
+        boxShadow: cardShadow,
+        transform: 'translateY(-2px)',
+      }}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 rounded-[20px]"
+        style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
+      />
+      <div className="relative flex items-center justify-between">
+        <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
+          <TypeGlyph type={type} className="h-full w-full" />
+        </span>
+        <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">{typeLabel}</span>
+      </div>
+      <div className="relative mt-auto text-start">
+        <div
+          className="truncate text-[23px] font-bold tracking-[-0.01em]"
+          style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.55)' }}
+        >
+          {name}
+        </div>
+        <div className="mt-3 flex items-end justify-between">
+          <span className="font-mono-numbers text-[15px] font-semibold tracking-[0.16em] text-white/90">{tail}</span>
+          <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
+        </div>
+      </div>
+    </div>
+    </>
+  )
+
+  if (inline) return <div className="relative mx-auto my-4 hidden h-[176px] w-[280px] shrink-0 md:block">{preview}</div>
+
   return createPortal(
     <AnimatePresence>
       {open && (
@@ -500,67 +528,14 @@ function FloatingCardPreview({
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.97 }}
           transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className={cn('pointer-events-none fixed left-1/2 w-[280px]', z)}
+          className={cn('pointer-events-none fixed left-1/2 w-[280px] md:hidden', z)}
           // Centred in the space above the 58vh sheet; floor keeps it clear of the status bar.
           style={{ top: 'max(46px, calc(21dvh - 88px))', marginLeft: -140 }}
         >
-          {/* halo — static coloured glow */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute"
-            style={{
-              inset: -34, borderRadius: 46,
-              background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
-              filter: 'blur(36px)', zIndex: 0,
-            }}
-          />
-          {/* contact shadow — static ellipse beneath the card */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute"
-            style={{
-              left: '50%', bottom: -20, transform: 'translateX(-50%)',
-              width: 224, height: 30, background: 'rgba(0,0,0,.55)',
-              borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
-            }}
-          />
-          {/* card — static, subtle lift */}
-          <div
-            className="relative flex h-[176px] w-[280px] flex-col overflow-hidden rounded-[20px]"
-            style={{
-              padding: '19px 21px',
-              background: cardGradient(color),
-              boxShadow: cardShadow,
-              transform: 'translateY(-2px)',
-            }}
-          >
-            <div
-              className="pointer-events-none absolute inset-0 rounded-[20px]"
-              style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
-            />
-            <div className="relative flex items-center justify-between">
-              <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
-                <TypeGlyph type={type} className="h-full w-full" />
-              </span>
-              <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">{typeLabel}</span>
-            </div>
-            <div className="relative mt-auto text-start">
-              <div
-                className="truncate text-[23px] font-bold tracking-[-0.01em]"
-                style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.55)' }}
-              >
-                {name}
-              </div>
-              <div className="mt-3 flex items-end justify-between">
-                <span className="font-mono-numbers text-[15px] font-semibold tracking-[0.16em] text-white/90">{tail}</span>
-                <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
-              </div>
-            </div>
-          </div>
+          {preview}
         </motion.div>
       )}
     </AnimatePresence>,
     document.body,
   )
 }
-

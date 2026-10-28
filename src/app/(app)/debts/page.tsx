@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebts } from '@/lib/spending/exclusion'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { DebtGoalPrompt } from '@/components/features/goals/DebtGoalPrompt'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
@@ -15,6 +16,7 @@ import { BorrowHeroCard } from '@/components/features/debts/redesign/BorrowHeroC
 import { CreditCardHeroCard } from '@/components/features/debts/redesign/CreditCardHeroCard'
 import { InstallmentHeroCard } from '@/components/features/debts/redesign/InstallmentHeroCard'
 import { DebtsEmptyDesktop } from '@/components/features/debts/redesign/DebtsEmptyDesktop'
+import { DebtsEmptyFamilies } from '@/components/features/debts/redesign/DebtsEmptyFamilies'
 import { DebtPaymentsFeed } from '@/components/features/debts/redesign/DebtPaymentsFeed'
 import { ClearedVaultSheet } from '@/components/features/debts/redesign/ClearedVaultSheet'
 import { ChargesSheet, type ChargesSheetTarget } from '@/components/features/debts/redesign/ChargesSheet'
@@ -50,7 +52,7 @@ export default function DebtsPage() {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time landing tab from store */
     if (pickedDefault.current || !dataReady) return
     pickedDefault.current = true
-    setTab(firstNonEmptyFamily(useFinanceStore.getState().debts))
+    { const st = useFinanceStore.getState(); setTab(firstNonEmptyFamily(countedDebts(st.debts, st.paymentMethods))) }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [dataReady])
 
@@ -159,6 +161,7 @@ export default function DebtsPage() {
                       </Button>
                     }
                   />
+                  <DebtsEmptyFamilies onAdd={addDebt} />
                   <DebtsEmptyDesktop
                     title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
                     description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}

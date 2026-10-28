@@ -1,45 +1,54 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
+import { useMemo } from 'react'
+import { Check, Sparkles } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useBudgetChromeCopy } from './useBudgetCopy'
 
 export interface EmptyPlanProps {
-  onStarter: () => void
-  onBlank: () => void
-  /** The AI studio entry; the third primary CTA renders only when this is provided. */
-  onBuildWithBuddgy?: () => void
+  onBuildWithBuddgy: () => void
+  onManual: () => void
 }
 
-/** First run: no live plan yet. */
-export function EmptyPlan({ onStarter, onBlank, onBuildWithBuddgy }: EmptyPlanProps) {
+/** First run: no live plan yet. Buddgy leads; building by hand sits one tap below. */
+export function EmptyPlan({ onBuildWithBuddgy, onManual }: EmptyPlanProps) {
   const c = useBudgetChromeCopy().empty
+  // Months of spending the app already holds; with some, the run shrinks to the gaps.
+  const months = useMemo(() => buildFactsFromStore(useFinanceStore.getState(), new Date()).averageCycles ?? 0, [])
+  const drafted = months > 0
   return (
-    <section className="flex flex-col gap-3.5 rounded-3xl bg-[var(--color-brand-primary-soft)] px-4 py-4">
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-card)] shadow-sm">
-          <BuddgyIcon mood="happy" size={32} />
-        </span>
-        <div className="min-w-0">
-          <h2 className="text-lg font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.headline}</h2>
-          <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{c.body}</p>
+    <EmptyState
+      className="min-h-[60vh]"
+      icon={<BuddgyIcon mood="happy" size={72} />}
+      title={drafted ? c.drafted.headline(months) : c.headline}
+      description={drafted ? c.drafted.body : c.body}
+      action={
+        <div className="flex w-full max-w-sm flex-col gap-4">
+          {drafted ? null : (
+            <ul className="flex flex-col gap-2 text-start">
+              {c.points.map((point) => (
+                <li key={point} className="flex items-center gap-2 text-sm text-[var(--color-brand-text-secondary)]">
+                  <Check className="size-4 shrink-0 text-[var(--color-brand-green)]" aria-hidden />
+                  {point}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-col gap-2">
+            <Button size="cta" className="w-full" onClick={onBuildWithBuddgy}>
+              <Sparkles aria-hidden />
+              {drafted ? c.drafted.cta : c.buddgy}
+            </Button>
+            <Button size="touch" variant="ghost" className="w-full" onClick={onManual}>
+              {c.manual}
+            </Button>
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col gap-2">
-        {onBuildWithBuddgy ? (
-          <Button size="touch" className="w-full" onClick={onBuildWithBuddgy}>
-            <Sparkles aria-hidden />
-            {c.buddgy}
-          </Button>
-        ) : null}
-        <Button size="touch" variant={onBuildWithBuddgy ? 'outline' : 'default'} className="w-full" onClick={onStarter}>
-          {c.starter}
-        </Button>
-        <Button size="touch" variant="outline" className="w-full" onClick={onBlank}>
-          {c.blank}
-        </Button>
-      </div>
-    </section>
+      }
+    />
   )
 }

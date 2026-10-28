@@ -84,6 +84,15 @@ describe('transferBetweenPockets', () => {
     expect(S().savingsTransactions).toHaveLength(0)
   })
 
+  it('reports success and failure so the sheet can react', () => {
+    seed([pocket('a', 'EGP', 500), pocket('g', 'XAU', 0, 'investment'), pocket('b', 'EGP', 0)])
+    expect(S().transferBetweenPockets('a', 'b', 100)).toBe(true)
+    expect(S().transferBetweenPockets('a', 'g', 100)).toBe(false)
+    expect(S().depositToSavings('g', 100, 'EGP')).toBe(false)
+    expect(S().withdrawFromSavings('g', 1, 'EGP')).toBe(false)
+    expect(S().depositToSavings('b', 10, 'EGP')).toBe(true)
+  })
+
   it('rejects an overdraw', () => {
     seed([pocket('a', 'EGP', 50), pocket('b', 'EGP', 0)])
     S().transferBetweenPockets('a', 'b', 100)
@@ -149,5 +158,38 @@ describe('deleteSavingsTransaction', () => {
     expect(S().savingsAccounts.find((x) => x.id === 'a')!.currentBalance).toBe(500)
     expect(S().savingsAccounts.find((x) => x.id === 'b')!.currentBalance).toBe(0)
     expect(S().savingsTransactions.filter((t) => t.transferGroupId)).toHaveLength(0)
+  })
+})
+
+describe('correctSavingsBalance', () => {
+  beforeEach(() => seed([pocket('p1', 'EGP', 100)]))
+
+  it('records one non-cash-flow adjustment and keeps history', () => {
+    S().correctSavingsBalance('p1', 160)
+    expect(S().savingsAccounts[0].currentBalance).toBe(160)
+    expect(S().savingsTransactions).toHaveLength(1)
+    expect(S().savingsTransactions[0]).toMatchObject({ type: 'deposit', amount: 60, isCashFlow: false })
+  })
+
+  it('writes nothing when the balance is unchanged', () => {
+    S().correctSavingsBalance('p1', 100)
+    expect(S().savingsTransactions).toHaveLength(0)
+  })
+})
+
+describe('deleteSavingsAccount — default carry pocket', () => {
+  beforeEach(() => {
+    seed([pocket('p1', 'EGP', 0), pocket('p2', 'EGP', 0)])
+    useFinanceStore.setState((s) => ({ profile: { ...s.profile, defaultCarryPocketId: 'p1' } }))
+  })
+
+  it('clears the default id when it points at the deleted pocket', () => {
+    S().deleteSavingsAccount('p1')
+    expect(S().profile.defaultCarryPocketId).toBeNull()
+  })
+
+  it('leaves the default id alone when another pocket is deleted', () => {
+    S().deleteSavingsAccount('p2')
+    expect(S().profile.defaultCarryPocketId).toBe('p1')
   })
 })

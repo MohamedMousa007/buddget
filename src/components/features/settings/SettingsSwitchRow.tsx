@@ -8,7 +8,8 @@ import { useLocale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 interface SettingsSwitchRowProps {
-  id: SettingId
+  /** A registered setting: gives the row its icon chip and search anchor. Omit for a plain switch row in a sheet or form. */
+  id?: SettingId
   label: string
   tone?: RowTone
   hint?: string
@@ -20,7 +21,7 @@ interface SettingsSwitchRowProps {
 /** A whole-row switch for settings whose state does not live in a plain store field (SMS, notifications, 2-step). */
 export function SettingsSwitchRow({ id, label, tone = 'neutral', hint, checked, onChange, disabled }: SettingsSwitchRowProps) {
   const { locale } = useLocale()
-  const Icon = SETTING_ICONS[SETTING_BY_ID[id].icon]
+  const Icon = id ? SETTING_ICONS[SETTING_BY_ID[id].icon] : null
   return (
     <label
       data-setting-id={id}
@@ -29,7 +30,7 @@ export function SettingsSwitchRow({ id, label, tone = 'neutral', hint, checked, 
         disabled && 'pointer-events-none opacity-50',
       )}
     >
-      <SettingsChip icon={Icon} tone={tone} />
+      {Icon ? <SettingsChip icon={Icon} tone={tone} /> : null}
       <span className={cn('min-w-0 flex-1', locale === 'ar' && 'text-end')}>
         <span className="block text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{label}</span>
         {hint ? <span className="mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]">{hint}</span> : null}

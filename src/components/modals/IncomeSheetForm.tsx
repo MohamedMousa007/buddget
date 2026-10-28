@@ -24,8 +24,7 @@ import { PaymentMethodPicker } from '@/components/features/payments/PaymentMetho
 import { AssignIncomeSheet } from '@/components/modals/AssignIncomeSheet'
 import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChipSlider'
 import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
-import { deriveDefaultPaydays } from '@/lib/utils/paydaySchedule'
-import { incomeMonthlyMultiplier } from '@/lib/utils/calculations'
+import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
@@ -264,7 +263,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
           </div>
           {isRecurring && frequency !== 'monthly' && amtValid ? (
             <p className="-mt-2 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
-              {t.addIncome.perMonthEquiv(`${Math.round(amt * incomeMonthlyMultiplier(frequency)).toLocaleString('en-US')} ${currency}`)}
+              {t.addIncome.perMonthEquiv(`${Math.round(amt * paydaysPerMonth(frequency)).toLocaleString('en-US')} ${currency}`, paydaysPerMonth(frequency))}
             </p>
           ) : null}
 

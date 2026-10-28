@@ -9,6 +9,7 @@ import { monoDigits } from '@/lib/ui/monoDigits'
 import { usePromptStore, freshPrompt, type Prompt } from '@/lib/store/usePromptStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isSnoozed, snoozeUntil } from '@/lib/prompts/snooze'
+import { usePromptStateSync } from '@/lib/prompts/usePromptStateSync'
 import { useT } from '@/lib/i18n'
 
 const EASE = [0.2, 0.8, 0.2, 1] as const
@@ -33,6 +34,9 @@ function fmtTime(d: Date): string {
 export function BannerStack() {
   const t = useT()
   const bySource = usePromptStore((s) => s.bySource)
+  // Nothing is asked before this account's own data has arrived: a prompt built from an empty store would ask what was already answered.
+  const synced = useSettingsStore((s) => s.serverSyncedFor !== null)
+  usePromptStateSync()
   const { dismissed, snoozed, snoozeBanner } = useSettingsStore(
     useShallow((s) => ({ dismissed: s.dismissedBanners, snoozed: s.snoozedBanners, snoozeBanner: s.snoozeBanner })),
   )
@@ -42,11 +46,10 @@ export function BannerStack() {
 
   const prompts = useMemo<Prompt[]>(
     () =>
-      Object.values(bySource)
-        .flat()
+      (synced ? Object.values(bySource).flat() : [])
         .filter((p) => !dismissed.includes(p.key) && !isSnoozed(snoozed, p.key, now))
         .sort((a, b) => a.priority - b.priority),
-    [bySource, dismissed, snoozed, now],
+    [bySource, dismissed, snoozed, now, synced],
   )
 
   // A snooze ends on its own: wake at the earliest return time among hidden prompts.

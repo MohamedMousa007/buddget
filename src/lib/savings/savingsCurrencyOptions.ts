@@ -50,5 +50,7 @@ export function buildSavingsCurrencyOptions(
 
 export function pickDefaultSavingsCurrency(settings: AppSettings, savingsType: SavingsType): Currency {
   const opts = buildSavingsCurrencyOptions(settings, savingsType)
-  return opts[0]?.value ?? settings.baseCurrency
+  const assetUnitFirst = savingsType === 'gold' || savingsType === 'stablecoin' || savingsType === 'crypto'
+  if (assetUnitFirst) return opts[0]?.value ?? settings.baseCurrency
+  return opts.find((o) => o.value === settings.baseCurrency)?.value ?? opts[0]?.value ?? settings.baseCurrency
 }

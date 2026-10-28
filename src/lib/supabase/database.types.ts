@@ -280,6 +280,58 @@ export type Database = {
         Update: { id?: string; user_id?: string; payment_method_id?: string; balance?: number; currency?: string | null; reported_at?: string; source?: string; sms_parse_log_id?: string | null; created_at?: string }
         Relationships: []
       }
+      admin_access_grants: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          denied_at: string | null
+          expires_at: string | null
+          extended: boolean
+          id: string
+          mode: string
+          note: string | null
+          reason: string
+          requested_at: string
+          revoked_at: string | null
+          scope: string
+          staff_id: string
+          target_user_id: string
+          ticket_number: number | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          denied_at?: string | null
+          expires_at?: string | null
+          extended?: boolean
+          id?: string
+          mode?: string
+          note?: string | null
+          reason: string
+          requested_at?: string
+          revoked_at?: string | null
+          scope: string
+          staff_id: string
+          target_user_id: string
+          ticket_number?: number | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          denied_at?: string | null
+          expires_at?: string | null
+          extended?: boolean
+          id?: string
+          reason?: string
+          requested_at?: string
+          revoked_at?: string | null
+          scope?: string
+          staff_id?: string
+          target_user_id?: string
+          ticket_number?: number | null
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -635,8 +687,86 @@ export type Database = {
           },
         ]
       }
+      ai_price_book: {
+        Row: {
+          audio_usd_per_min: number | null
+          cached_usd_per_mtok: number
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          id: number
+          in_usd_per_mtok: number
+          model: string
+          out_usd_per_mtok: number
+          provider: string
+          source_note: string | null
+        }
+        Insert: {
+          audio_usd_per_min?: number | null
+          cached_usd_per_mtok?: number
+          effective_from?: string
+          effective_to?: string | null
+          in_usd_per_mtok?: number
+          model: string
+          out_usd_per_mtok?: number
+          provider: string
+          source_note?: string | null
+        }
+        Update: {
+          audio_usd_per_min?: number | null
+          cached_usd_per_mtok?: number
+          effective_to?: string | null
+          in_usd_per_mtok?: number
+          out_usd_per_mtok?: number
+          source_note?: string | null
+        }
+        Relationships: []
+      }
+      ai_usage_daily: {
+        Row: {
+          day: string
+          user_id: string
+          feature: string
+          model: string
+          calls: number
+          failed_calls: number
+          in_tokens: number
+          cached_tokens: number
+          out_tokens: number
+          units: number
+          latency_ms_total: number
+        }
+        Insert: {
+          day: string
+          user_id: string
+          feature: string
+          model: string
+          calls?: number
+          failed_calls?: number
+          in_tokens?: number
+          cached_tokens?: number
+          out_tokens?: number
+          units?: number
+          latency_ms_total?: number
+        }
+        Update: {
+          day?: string
+          user_id?: string
+          feature?: string
+          model?: string
+          calls?: number
+          failed_calls?: number
+          in_tokens?: number
+          cached_tokens?: number
+          out_tokens?: number
+          units?: number
+          latency_ms_total?: number
+        }
+        Relationships: []
+      }
       ai_usage_events: {
         Row: {
+          cost_usd_micro: number | null
           cached_tokens: number
           chat_id: string | null
           created_at: string
@@ -652,6 +782,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cost_usd_micro?: number | null
           cached_tokens?: number
           chat_id?: string | null
           created_at?: string
@@ -667,6 +798,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cost_usd_micro?: number | null
           cached_tokens?: number
           chat_id?: string | null
           created_at?: string
@@ -841,6 +973,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           kind: string
+          plan_id: string | null
           source: string
           status: string
           text: string
@@ -852,6 +985,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           kind?: string
+          plan_id?: string | null
           source?: string
           status?: string
           text: string
@@ -863,6 +997,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           kind?: string
+          plan_id?: string | null
           source?: string
           status?: string
           text?: string
@@ -1133,6 +1268,11 @@ export type Database = {
       }
       debt_payments: {
         Row: {
+          amount_in_debt_unit: number | null
+          original_amount: number | null
+          original_currency: Database["public"]["Enums"]["currency_code"] | null
+          amount_in_base: number | null
+          rate_at_entry: number | null
           occurred_at: string | null
           amount: number
           created_at: string
@@ -1148,6 +1288,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          amount_in_debt_unit?: number | null
+          original_amount?: number | null
+          original_currency?: Database["public"]["Enums"]["currency_code"] | null
+          amount_in_base?: number | null
+          rate_at_entry?: number | null
           occurred_at?: string | null
           amount: number
           created_at?: string
@@ -1163,6 +1308,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          amount_in_debt_unit?: number | null
+          original_amount?: number | null
+          original_currency?: Database["public"]["Enums"]["currency_code"] | null
+          amount_in_base?: number | null
+          rate_at_entry?: number | null
           occurred_at?: string | null
           amount?: number
           created_at?: string
@@ -1349,6 +1499,13 @@ export type Database = {
       }
       expenses: {
         Row: {
+          category_label: string | null
+          subcategory: string | null
+          shared_plan_id: string | null
+          is_recurring: boolean
+          spend_exclusion: string | null
+          owed_by: string | null
+          owed_settled_at: string | null
           occurred_at: string | null
           to_payment_method_id: string | null
           amount: number
@@ -1374,6 +1531,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_label?: string | null
+          subcategory?: string | null
+          shared_plan_id?: string | null
+          is_recurring?: boolean
+          spend_exclusion?: string | null
+          owed_by?: string | null
+          owed_settled_at?: string | null
           occurred_at?: string | null
           to_payment_method_id?: string | null
           amount: number
@@ -1399,6 +1563,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_label?: string | null
+          subcategory?: string | null
+          shared_plan_id?: string | null
+          is_recurring?: boolean
+          spend_exclusion?: string | null
+          owed_by?: string | null
+          owed_settled_at?: string | null
           occurred_at?: string | null
           to_payment_method_id?: string | null
           amount?: number
@@ -1511,6 +1682,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      integration_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          kind: string
+          last_error: string | null
+          next_attempt_at: string
+          payload: Json
+          sent_at: string | null
+          status: string
+          ticket_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          kind: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload: Json
+          sent_at?: string | null
+          status?: string
+          ticket_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          kind?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          ticket_id?: string | null
+        }
+        Relationships: []
+      }
+      fx_rates: {
+        Row: {
+          day: string
+          currency: string
+          per_usd: number
+        }
+        Insert: {
+          day: string
+          currency: string
+          per_usd: number
+        }
+        Update: {
+          day?: string
+          currency?: string
+          per_usd?: number
+        }
+        Relationships: []
       }
       goal_allocation_runs: {
         Row: {
@@ -2029,6 +2260,7 @@ export type Database = {
       }
       payment_methods: {
         Row: {
+          excluded: boolean
           parent_id: string | null
           opening_balance: number | null
           opening_at: string | null
@@ -2040,6 +2272,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_default: boolean
+          label: string | null
           last4: string | null
           name: string
           notes: string | null
@@ -2048,6 +2281,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          excluded?: boolean
           parent_id?: string | null
           opening_balance?: number | null
           opening_at?: string | null
@@ -2059,6 +2293,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_default?: boolean
+          label?: string | null
           last4?: string | null
           name: string
           notes?: string | null
@@ -2067,6 +2302,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          excluded?: boolean
           parent_id?: string | null
           opening_balance?: number | null
           opening_at?: string | null
@@ -2078,6 +2314,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_default?: boolean
+          label?: string | null
           last4?: string | null
           name?: string
           notes?: string | null
@@ -2170,6 +2407,7 @@ export type Database = {
       profiles: {
         Row: {
           welcome_email_sent_at: string | null
+          data_reset_at: string | null
           active_budget_plan_id: string | null
           active_shared_budget_id: string | null
           avatar_emoji: string | null
@@ -2203,6 +2441,7 @@ export type Database = {
         }
         Insert: {
           welcome_email_sent_at?: string | null
+          data_reset_at?: string | null
           active_budget_plan_id?: string | null
           active_shared_budget_id?: string | null
           avatar_emoji?: string | null
@@ -2236,6 +2475,7 @@ export type Database = {
         }
         Update: {
           welcome_email_sent_at?: string | null
+          data_reset_at?: string | null
           active_budget_plan_id?: string | null
           active_shared_budget_id?: string | null
           avatar_emoji?: string | null
@@ -2271,6 +2511,7 @@ export type Database = {
       }
       push_tokens: {
         Row: {
+          device_id: string | null
           app_version: string | null
           device_model: string | null
           id: string
@@ -2281,6 +2522,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          device_id?: string | null
           app_version?: string | null
           device_model?: string | null
           id?: string
@@ -2291,6 +2533,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          device_id?: string | null
           app_version?: string | null
           device_model?: string | null
           id?: string
@@ -2372,6 +2615,7 @@ export type Database = {
           day_of_month: number | null
           debt_id: string
           deleted_at: string | null
+          due_day: number | null
           frequency: Database["public"]["Enums"]["recurring_frequency"]
           id: string
           is_active: boolean
@@ -2388,6 +2632,7 @@ export type Database = {
           day_of_month?: number | null
           debt_id: string
           deleted_at?: string | null
+          due_day?: number | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -2404,6 +2649,7 @@ export type Database = {
           day_of_month?: number | null
           debt_id?: string
           deleted_at?: string | null
+          due_day?: number | null
           frequency?: Database["public"]["Enums"]["recurring_frequency"]
           id?: string
           is_active?: boolean
@@ -2560,6 +2806,8 @@ export type Database = {
       }
       savings_accounts: {
         Row: {
+          target_amount: number | null
+          emoji: string | null
           held_in_payment_method_id: string | null
           category: Database["public"]["Enums"]["savings_category"]
           color: string | null
@@ -2580,6 +2828,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          target_amount?: number | null
+          emoji?: string | null
           held_in_payment_method_id?: string | null
           category?: Database["public"]["Enums"]["savings_category"]
           color?: string | null
@@ -2600,6 +2850,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          target_amount?: number | null
+          emoji?: string | null
           held_in_payment_method_id?: string | null
           category?: Database["public"]["Enums"]["savings_category"]
           color?: string | null
@@ -2930,6 +3182,7 @@ export type Database = {
       }
       sms_parse_log: {
         Row: {
+          device_id: string | null
           payment_method_id: string | null
           balance_after: number | null
           harvested_at: string | null
@@ -2976,6 +3229,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          device_id?: string | null
           payment_method_id?: string | null
           balance_after?: number | null
           harvested_at?: string | null
@@ -3022,6 +3276,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          device_id?: string | null
           payment_method_id?: string | null
           balance_after?: number | null
           harvested_at?: string | null
@@ -3523,8 +3778,55 @@ export type Database = {
           },
         ]
       }
+      user_milestones: {
+        Row: { first_at: string; milestone: string; user_id: string }
+        Insert: { first_at: string; milestone: string; user_id: string }
+        Update: { first_at?: string }
+        Relationships: []
+      }
+      client_crashes: {
+        Row: { build: string | null; culprit: string | null; device_id: string | null; fingerprint: string; first_seen: string; id: string; last_seen: string; level: string; occurrences: number; platform: string | null; release: string; sentry_issue_id: string | null; sentry_url: string | null; stack: string | null; status: string; title: string; user_id: string | null }
+        Insert: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint: string; first_seen?: string; id?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title: string; user_id?: string | null }
+        Update: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint?: string; first_seen?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title?: string; user_id?: string | null }
+        Relationships: []
+      }
+      admin_financial_exclusions: {
+        Row: { created_at: string; excluded_by: string | null; reason: string | null; user_id: string }
+        Insert: { created_at?: string; excluded_by?: string | null; reason?: string | null; user_id: string }
+        Update: { excluded_by?: string | null; reason?: string | null }
+        Relationships: []
+      }
+      user_devices: {
+        Row: { app_version: string | null; collects_sms: boolean; created_at: string; device_id: string; is_main: boolean; last_seen_at: string; last_sms_at: string | null; model: string | null; name: string | null; notify: boolean | null; notify_on_sms: boolean | null; platform: string; push_permission: string | null; revoked_at: string | null; user_id: string }
+        Insert: { app_version?: string | null; collects_sms?: boolean; created_at?: string; device_id: string; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform: string; push_permission?: string | null; revoked_at?: string | null; user_id: string }
+        Update: { app_version?: string | null; collects_sms?: boolean; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform?: string; push_permission?: string | null; revoked_at?: string | null }
+        Relationships: []
+      }
+      feedback_votes: {
+        Row: { created_at: string; ticket_id: string; user_id: string; value: number }
+        Insert: { created_at?: string; ticket_id: string; user_id: string; value: number }
+        Update: { value?: number }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
+          board_state: string
+          board_summary: string | null
+          board_title: string | null
+          app_version: string | null
+          area: string | null
+          context: Json
+          duplicate_of: string | null
+          kind: string
+          linear_issue_id: string | null
+          linear_issue_url: string | null
+          platform: string | null
+          severity: string
+          sla_first_response_due: string | null
+          sla_resolution_due: string | null
+          triage_confidence: number | null
+          triage_state: string
+          votes: number
           assignee_id: string | null
           category: string
           created_at: string
@@ -3542,6 +3844,23 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          board_state?: string
+          board_summary?: string | null
+          board_title?: string | null
+          app_version?: string | null
+          area?: string | null
+          context?: Json
+          duplicate_of?: string | null
+          kind?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          platform?: string | null
+          severity?: string
+          sla_first_response_due?: string | null
+          sla_resolution_due?: string | null
+          triage_confidence?: number | null
+          triage_state?: string
+          votes?: number
           assignee_id?: string | null
           category?: string
           created_at?: string
@@ -3559,6 +3878,23 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          board_state?: string
+          board_summary?: string | null
+          board_title?: string | null
+          app_version?: string | null
+          area?: string | null
+          context?: Json
+          duplicate_of?: string | null
+          kind?: string
+          linear_issue_id?: string | null
+          linear_issue_url?: string | null
+          platform?: string | null
+          severity?: string
+          sla_first_response_due?: string | null
+          sla_resolution_due?: string | null
+          triage_confidence?: number | null
+          triage_state?: string
+          votes?: number
           assignee_id?: string | null
           category?: string
           created_at?: string
@@ -3675,6 +4011,8 @@ export type Database = {
       user_settings: {
         Row: {
           privacy: Json
+          timezone: string | null
+          prompt_state: Json
           ai_provider: string
           budget_entry_mode: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout: Database["public"]["Enums"]["dashboard_layout"]
@@ -3700,6 +4038,8 @@ export type Database = {
         }
         Insert: {
           privacy?: Json
+          timezone?: string | null
+          prompt_state?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
@@ -3725,6 +4065,8 @@ export type Database = {
         }
         Update: {
           privacy?: Json
+          timezone?: string | null
+          prompt_state?: Json
           ai_provider?: string
           budget_entry_mode?: Database["public"]["Enums"]["budget_entry_mode"]
           dashboard_layout?: Database["public"]["Enums"]["dashboard_layout"]
@@ -3773,6 +4115,7 @@ export type Database = {
       publish_email_template: { Args: { p_key: string; p_locale: string; p_staff: string }; Returns: number }
       admin_entitlement_counts: { Args: never; Returns: { plan_key: string; status: string; n: number }[] }
       admin_loyalty_summary: { Args: never; Returns: Json }
+      admin_adjust_loyalty_points: { Args: { p_user: string; p_delta: number; p_reason: string; p_actor: string }; Returns: { balance: number; tier: string | null }[] }
       admin_ticket_counts: { Args: never; Returns: { status: string; priority: string; assignee_id: string | null; n: number }[] }
       admin_push_platform_counts: { Args: never; Returns: { platform: string; n: number }[] }
       admin_email_status_counts: {
@@ -3812,6 +4155,43 @@ export type Database = {
         Args: { p_key: string; p_max_hits: number; p_window_seconds: number }
         Returns: boolean
       }
+      integration_outbox_claim: {
+        Args: { p_limit: number }
+        Returns: Database["public"]["Tables"]["integration_outbox"]["Row"][]
+      }
+      support_submit: {
+        Args: {
+          p_area: string
+          p_body: string
+          p_confidence: number
+          p_context: Json
+          p_email: string
+          p_kind: string
+          p_platform: string
+          p_severity: string
+          p_state: string
+          p_subject: string
+          p_to_linear: boolean
+          p_user: string
+          p_version: string
+        }
+        Returns: { ticket_id: string; ticket_number: number }[]
+      }
+      admin_granted_users: { Args: { p_staff: string; p_users: string[] }; Returns: string[] }
+      record_client_crash: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string }; Returns: undefined }
+      admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }
+      admin_user_financial_snapshot: { Args: { p_staff: string; p_user: string }; Returns: Json }
+      admin_ai_cost_daily: {
+        Args: { p_days?: number }
+        Returns: { day: string; model: string; feature: string; calls: number; in_tokens: number; out_tokens: number; cost_usd_micro: number; active_users: number }[]
+      }
+      cast_feedback_vote: { Args: { p_user: string; p_ticket: string; p_value: number; p_threshold?: number }; Returns: Json }
+      admin_funnel: { Args: { p_days?: number }; Returns: Json }
+      admin_retention_days: { Args: { p_signup_days?: number }; Returns: Json }
+      refresh_user_milestones: { Args: Record<PropertyKey, never>; Returns: undefined }
+      user_device_last_sms: { Args: { p_user: string }; Returns: { device_id: string; last_at: string }[] }
+      ai_spend_today: { Args: Record<PropertyKey, never>; Returns: Json }
+      admin_onboarding_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_signup_series: {
         Args: { p_days?: number }
@@ -4102,7 +4482,7 @@ export type Database = {
         | "debt_freedom"
         | "quality_of_life"
         | "business"
-      goal_status: "active" | "paused" | "achieved"
+      goal_status: "active" | "paused" | "achieved" | "cancelled"
       gold_karat: "18" | "21" | "22" | "24"
       income_event_status:
         | "confirmed"
@@ -4373,7 +4753,7 @@ export const Constants = {
         "quality_of_life",
         "business",
       ],
-      goal_status: ["active", "paused", "achieved"],
+      goal_status: ["active", "paused", "achieved", "cancelled"],
       gold_karat: ["18", "21", "22", "24"],
       income_event_status: [
         "confirmed",

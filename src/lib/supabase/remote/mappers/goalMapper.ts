@@ -27,8 +27,6 @@ function fromDbCategory(c: GoalRow['category']): GoalCategory {
 }
 
 function toDbStatus(s: GoalStatus): GoalInsert['status'] {
-  // DB enum: active | paused | achieved
-  if (s === 'cancelled') return 'paused'
   return s
 }
 

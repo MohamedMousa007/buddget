@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bug, CheckCircle, Globe, Lightbulb, Mail, Send, X } from 'lucide-react'
+import { Bug, CheckCircle, Globe, Inbox, ListChecks, Lightbulb, Mail, MessageCircleQuestion, Send, X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
@@ -15,11 +15,13 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Textarea } from '@/components/ui/textarea'
 import { useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
+import { SupportBoardSheet } from './SupportBoardSheet'
+import { SupportInboxSheet } from './SupportInboxSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
 const APP_VERSION = '1.0'
 
-type FeedbackType = 'bug' | 'feature'
+type FeedbackType = 'bug' | 'idea' | 'question'
 
 function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT()
@@ -44,10 +46,10 @@ function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, title, description }) })
-      const data = (await res.json()) as { error?: string; identifier?: string }
+      const res = await fetch('/api/support/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chosen: type, title, description }) })
+      const data = (await res.json()) as { error?: string; number?: number }
       if (!res.ok) throw new Error(data.error ?? 'Failed')
-      setDone(data.identifier ?? '✓')
+      setDone(data.number ? `#${data.number}` : '✓')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -77,7 +79,8 @@ function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }
               onChange={setType}
               options={[
                 { value: 'bug', label: copy.help.bug, icon: <Bug /> },
-                { value: 'feature', label: copy.help.idea, icon: <Lightbulb /> },
+                { value: 'idea', label: copy.help.idea, icon: <Lightbulb /> },
+                { value: 'question', label: copy.help.question, icon: <MessageCircleQuestion /> },
               ]}
             />
             <Input size="brand" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.settings.feedback.placeholderTitle} aria-label={t.settings.feedback.labelTitle} required minLength={3} maxLength={200} />
@@ -138,11 +141,15 @@ export function HelpCard() {
     <>
       <SettingsSection title={copy.help.title}>
         <SettingsRow icon={SETTING_ICONS.help} tone={tone} title={copy.help.feedback} subtitle={copy.help.feedbackHint} onClick={() => openSheet('feedback')} settingId="feedback" />
+        <SettingsRow icon={ListChecks} tone={tone} title={copy.help.board} subtitle={copy.help.boardHint} onClick={() => openSheet('board')} settingId="board" />
+        <SettingsRow icon={Inbox} tone={tone} title={copy.help.inbox} subtitle={copy.help.inboxHint} onClick={() => openSheet('inbox')} settingId="inbox" />
         <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.terms} href="/legal/terms" settingId="terms" />
         <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.privacy} href="/legal/privacy" settingId="privacy" />
         <SettingsRow icon={SETTING_ICONS.info} tone={tone} title={copy.help.about} subtitle={copy.help.aboutHint} onClick={() => openSheet('about')} settingId="about" />
       </SettingsSection>
       <FeedbackSheet open={sheet === 'feedback'} onClose={() => openSheet(null)} />
+      <SupportBoardSheet open={sheet === 'board'} onClose={() => openSheet(null)} />
+      <SupportInboxSheet open={sheet === 'inbox'} onClose={() => openSheet(null)} />
       <AboutSheet open={sheet === 'about'} onClose={() => openSheet(null)} />
     </>
   )

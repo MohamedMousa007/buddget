@@ -2,8 +2,9 @@ import { defineTools } from '@/lib/buddgy/tools/define'
 import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { planRowNames } from '@/lib/budget/budgetPlans'
+import { AUTO_DATE_WINDOW_DAYS, AUTO_MAX_AMOUNT_BASE, claimAutoSlot, withinDays } from '@/lib/buddgy/tools/autoApplyGuard'
 import { labels } from '@/lib/buddgy/tools/copy'
-import type { EditableField, Proposal } from '@/lib/buddgy/tools/proposal'
+import type { EditableField, Proposal, ProposeResult } from '@/lib/buddgy/tools/proposal'
 import { refOf, resolveByRefOrName, resolveRef } from '@/lib/buddgy/tools/refs'
 import { expensesSpecs } from '@/lib/buddgy/tools/specs/expenses'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
@@ -88,61 +89,71 @@ function previewFields(s: FinanceStore, ctx: ToolContext, e: { description: stri
   ]
 }
 
+function buildAddExpense(args: Record<string, unknown>, ctx: ToolContext, claimSlot: boolean): ProposeResult {
+  const s = fin()
+  const L = labels(ctx.locale)
+  const description = text(args.description, 80)
+  const amount = num(args.amount)
+  if (!description) return fail('An expense needs a description.')
+  if (amount === undefined || amount <= 0) return fail('The amount must be above zero.')
+  const currency = (text(args.currency, 8)?.toUpperCase() ?? s.settings.baseCurrency) as Currency
+  const inBase = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates)
+  if (inBase === null) return fail(`No exchange rate from ${currency} to ${s.settings.baseCurrency}.`, 'Ask for the amount in the base currency.')
+  const date = args.date === undefined ? localTodayISO(ctx.now) : parseIsoDate(args.date)
+  if (!date) return fail('The date must be a real date like 2026-10-19.')
+  const requestedCategory = args.category === undefined ? null : resolveCategory(s, args.category)
+  if (args.category !== undefined && requestedCategory === null) return fail('Unknown category.', `Use one of: ${EXPENSE_ENTRY_CATEGORIES.join(', ')}.`)
+  const category = requestedCategory ?? 'Other'
+  const method = resolveMethod(s, args.method)
+  if ('error' in method) return method.error
+
+  const recent = s.expenses.find(
+    (e) => e.amount === amount && e.date === date && e.description.toLowerCase() === description.toLowerCase() && Date.now() - Date.parse(e.createdAt) < DUPLICATE_WINDOW_MS,
+  )
+  const income = monthIncome(s)
+  const small = income > 0 && inBase <= income * AUTO_APPLY_INCOME_SHARE
+  const twin = seenJustNow(`${description.toLowerCase()}|${amount}|${currency}|${date}`)
+  const duplicate = Boolean(recent) || twin
+  const eligible =
+    small &&
+    !duplicate &&
+    requestedCategory !== null &&
+    args.recurring !== true &&
+    !ctx.afterRead &&
+    inBase <= AUTO_MAX_AMOUNT_BASE &&
+    withinDays(date, localTodayISO(ctx.now), AUTO_DATE_WINDOW_DAYS)
+  const risk = eligible && (!claimSlot || claimAutoSlot()) ? 'auto' : 'approve'
+  const methodName = s.paymentMethods.find((m) => m.id === method.id)?.name
+
+  const clean = { description, amount, currency, category, date, method: method.id ? refOf(method.id) : undefined, notes: text(args.notes, 200), recurring: args.recurring === true }
+  return ok(
+    makeProposal({
+      tool: 'add_expense',
+      args: clean,
+      risk,
+      summary: `Pending approval: add ${description} ${money(amount, currency)} on ${date}.`,
+      preview: {
+        domain: 'expenses',
+        tone: 'add',
+        title: L.addExpense,
+        rows: [
+          { label: L.description, value: description },
+          { label: L.amount, value: money(amount, currency) },
+          { label: L.category, value: category },
+          ...(methodName ? [{ label: L.method, value: methodName }] : []),
+          { label: L.date, value: date },
+        ],
+        fields: previewFields(s, ctx, { description, amount, currency, category, date, paymentMethodId: method.id }),
+        ...(duplicate ? { effect: L.duplicateWarning } : {}),
+      },
+    }),
+  )
+}
+
 const add_expense: WriteImpl = {
-  propose(args, ctx) {
-    const s = fin()
-    const L = labels(ctx.locale)
-    const description = text(args.description, 80)
-    const amount = num(args.amount)
-    if (!description) return fail('An expense needs a description.')
-    if (amount === undefined || amount <= 0) return fail('The amount must be above zero.')
-    const currency = (text(args.currency, 8)?.toUpperCase() ?? s.settings.baseCurrency) as Currency
-    const inBase = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates)
-    if (inBase === null) return fail(`No exchange rate from ${currency} to ${s.settings.baseCurrency}.`, 'Ask for the amount in the base currency.')
-    const date = args.date === undefined ? localTodayISO(ctx.now) : parseIsoDate(args.date)
-    if (!date) return fail('The date must be a real date like 2026-10-19.')
-    const requestedCategory = args.category === undefined ? null : resolveCategory(s, args.category)
-    if (args.category !== undefined && requestedCategory === null) return fail('Unknown category.', `Use one of: ${EXPENSE_ENTRY_CATEGORIES.join(', ')}.`)
-    const category = requestedCategory ?? 'Other'
-    const method = resolveMethod(s, args.method)
-    if ('error' in method) return method.error
-
-    const recent = s.expenses.find(
-      (e) => e.amount === amount && e.date === date && e.description.toLowerCase() === description.toLowerCase() && Date.now() - Date.parse(e.createdAt) < DUPLICATE_WINDOW_MS,
-    )
-    const income = monthIncome(s)
-    const small = income > 0 && inBase <= income * AUTO_APPLY_INCOME_SHARE
-    const twin = seenJustNow(`${description.toLowerCase()}|${amount}|${currency}|${date}`)
-    const duplicate = Boolean(recent) || twin
-    const risk = small && !duplicate && requestedCategory !== null && args.recurring !== true ? 'auto' : 'approve'
-    const methodName = s.paymentMethods.find((m) => m.id === method.id)?.name
-
-    const clean = { description, amount, currency, category, date, method: method.id ? refOf(method.id) : undefined, notes: text(args.notes, 200), recurring: args.recurring === true }
-    return ok(
-      makeProposal({
-        tool: 'add_expense',
-        args: clean,
-        risk,
-        summary: `Pending approval: add ${description} ${money(amount, currency)} on ${date}.`,
-        preview: {
-          domain: 'expenses',
-          tone: 'add',
-          title: L.addExpense,
-          rows: [
-            { label: L.description, value: description },
-            { label: L.amount, value: money(amount, currency) },
-            { label: L.category, value: category },
-            ...(methodName ? [{ label: L.method, value: methodName }] : []),
-            { label: L.date, value: date },
-          ],
-          fields: previewFields(s, ctx, { description, amount, currency, category, date, paymentMethodId: method.id }),
-          ...(duplicate ? { effect: L.duplicateWarning } : {}),
-        },
-      }),
-    )
-  },
+  propose: (args, ctx) => buildAddExpense(args, ctx, true),
   apply(proposal: Proposal, ctx) {
-    const again = add_expense.propose(proposal.args, ctx)
+    const again = buildAddExpense(proposal.args, ctx, false)
     if (!again.ok) return { ok: false, error: again.error }
     const a = again.proposal.args
     const s = fin()
@@ -282,7 +293,7 @@ const update_expense: WriteImpl = {
       const currency = (text(a.currency, 8)?.toUpperCase() ?? target.currency) as Currency
       patch.amount = amount
       patch.currency = currency
-      patch.amountInBaseCurrency = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates) ?? amount
+      patch.amountInBaseCurrency = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates) ?? 0
     }
     if (a.category !== undefined) patch.category = resolveCategory(s, a.category) ?? target.category
     if (a.date !== undefined) patch.date = parseIsoDate(a.date) ?? target.date

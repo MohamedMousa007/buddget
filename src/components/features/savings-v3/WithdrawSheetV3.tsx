@@ -10,13 +10,17 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
-import { convertCurrency } from '@/lib/utils/currency'
-import { moneyToGoldGrams } from '@/lib/utils/calculations'
+import { convertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
+import { debtPaymentForWithdrawal } from '@/lib/debts/withdrawalPayment'
+import { investTopUpPatch } from '@/lib/savings/investTopUp'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { AmountCurrencyRow, PocketRadioList, tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { AccountLegRow, AmountCurrencyRow, PocketRadioList, tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { micro } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
+import { useActionToast } from '@/components/ui/ActionToast'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
 import { IconButton } from '@/components/ui/IconButton'
@@ -54,6 +58,7 @@ export interface WithdrawSheetV3Props {
 export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNeedAsset }: WithdrawSheetV3Props) {
   const t = useT().wealthSheets.money
   const withdraw = useFinanceStore((s) => s.withdrawFromSavings)
+  const showToast = useActionToast()
   const transfer = useFinanceStore((s) => s.transferBetweenPockets)
   const addDebtPayment = useFinanceStore((s) => s.addDebtPayment)
   const updateHolding = useFinanceStore((s) => s.updateInvestmentHolding)
@@ -67,8 +72,16 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const debtData = useDebtTabData()
 
   const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState<Currency>(baseCurrency)
   const [fromId, setFromId] = useState<string | null>(defaultAccountId ?? pockets[0]?.account.id ?? null)
+  const [currency, setCurrency] = useState<Currency>(
+    () => pockets.find((p) => p.account.id === fromId)?.account.currency ?? baseCurrency,
+  )
+  const pickFrom = (id: string) => {
+    setFromId(id)
+    if (moveToId === id) setMoveToId(null)
+    const c = pockets.find((p) => p.account.id === id)?.account.currency
+    if (c) setCurrency(c)
+  }
   const [purpose, setPurpose] = useState<Purpose>('spend')
   const [debtOpen, setDebtOpen] = useState(false)
   const [moveToId, setMoveToId] = useState<string | null>(null)
@@ -83,7 +96,12 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const amountNum = parseFloat(amount) || 0
   const free = from ? Math.max(0, from.account.currentBalance) : 0
   // Guard against the sheet currency differing from the pocket's — compare like for like.
-  const amountInPocket = from ? convertCurrency(amountNum, currency, from.account.currency, exchangeRates) : amountNum
+  const amountInPocket = from
+    ? (tryConvertWithGold(amountNum, currency, from.account.currency, exchangeRates, baseCurrency, { pricePerGram: goldPricePerGram, available: goldPriceAvailable !== false }) ?? Infinity)
+    : amountNum
+
+  const legCurrency = from?.account.currency === 'XAU' ? baseCurrency : (from?.account.currency ?? currency)
+  const leg = useLegAccount(from?.account, legCurrency)
 
   // Active debts, flattened across the three families (screen 07).
   const debtChips = useMemo(
@@ -116,22 +134,16 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
     if (!from || amountNum <= 0) return
     if (moveOn) {
       if (!moveToId) return
-      transfer(from.account.id, moveToId, amountNum, note.trim() || undefined)
+      if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined)) return showToast(t.moveFailed)
     } else if (reason === 'debt') {
       const debt = debts.find((d) => d.id === debtId)
       if (!debt) return
       const noteTrim = note.trim() || undefined
-      withdraw(from.account.id, amountNum, currency, noteTrim, 'debt')
-      const amountInBase = convertCurrency(amountNum, currency, baseCurrency, exchangeRates)
-      const amountPaid = debt.isGold
-        ? goldPriceAvailable !== false
-          ? moneyToGoldGrams(amountInBase, goldPricePerGram, debt.goldKarat)
-          : 0
-        : convertCurrency(amountNum, currency, debt.currency, exchangeRates)
-      if (amountPaid > 0) {
-        addDebtPayment({ debtId: debt.id, date: new Date().toISOString().slice(0, 10), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true })
-        reconcileDebtSchedule(debt.id)
-      }
+      const { amountPaid, amountInBase } = debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false })
+      if (!(amountPaid > 0)) return showToast(t.moveFailed)
+      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt')) return showToast(t.moveFailed)
+      addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true })
+      reconcileDebtSchedule(debt.id, { amount: amountPaid, currency: debt.currency })
     } else if (reason === 'transfer') {
       if (!assetClass) return
       const target = topupByClass.get(assetClass)
@@ -139,12 +151,12 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       // Holdings are EGP-denominated regardless of base currency — pivot on EGP.
       const amountEgp = convertCurrency(amountNum, currency, 'EGP', exchangeRates)
       const qtyAdd = amountEgp / target.unitEgp
-      const existing = holdings.find((h) => h.id === target.id)
+      const existing = useFinanceStore.getState().investmentHoldings.find((h) => h.id === target.id)
       if (!existing || qtyAdd <= 0) return
-      withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')
-      updateHolding(target.id, { quantity: existing.quantity + qtyAdd })
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')) return showToast(t.moveFailed)
+      updateHolding(target.id, investTopUpPatch(existing, qtyAdd, amountEgp, 'EGP', exchangeRates))
     } else if (reason) {
-      withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason)
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, reason === 'income' ? { toAccountId: leg.accountId } : undefined)) return showToast(t.moveFailed)
     }
     onClose()
   }
@@ -180,7 +192,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-2">
           <div>
             <p style={micro} className="mb-2">{t.from}</p>
-            <PocketRadioList pockets={pockets} value={fromId} onChange={(id) => { setFromId(id); if (moveToId === id) setMoveToId(null) }} label={t.from} />
+            <PocketRadioList pockets={pockets} value={fromId} onChange={pickFrom} label={t.from} />
           </div>
 
           <AmountCurrencyRow
@@ -268,6 +280,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
               </div>
             </div>
           )}
+
+          {!moveOn && reason === 'income' ? <AccountLegRow leg={leg} label={t.toAccount} /> : null}
 
           {noteOpen ? (
             <div className="relative">

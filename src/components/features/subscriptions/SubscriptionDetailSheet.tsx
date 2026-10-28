@@ -5,6 +5,7 @@ import { Ban, Check, Clock, Link as LinkIcon, Pause, Repeat, TrendingUp, Triangl
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { IconButton } from '@/components/ui/IconButton'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -81,6 +82,7 @@ export function SubscriptionDetailSheet({
   const { locale } = useLocale()
   const ui = t.subscriptions.ui
   const confirm = useConfirm()
+  const toast = useActionToast()
   const { shortDate: formatDateShort, monthYear } = useSubscriptionDates()
   const [pickTracking, setPickTracking] = useState(false)
   const s = useFinanceStore(
@@ -183,7 +185,7 @@ export function SubscriptionDetailSheet({
       return { label: ui.detail.adopt(`${currencyLabel(sub.currency, locale)} ${fmt(to)}`), run: () => s.adopt(sub.id, to) }
     }
     if (sub.pendingPlanId) return { label: ui.detail.applyPlan, run: () => s.applyPlan(sub.id) }
-    return canMarkPaid ? { label: ui.detail.markPaid, run: () => s.markPaid(sub.id) } : null
+    return canMarkPaid ? { label: ui.detail.markPaid, run: () => { s.markPaid(sub.id); toast(t.moneyFlows.markedPaid) } } : null
   })()
 
   const history = [...(sub.priceHistory ?? [])].sort((a, b) => b.from.localeCompare(a.from))

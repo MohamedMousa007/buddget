@@ -17,6 +17,7 @@ import SubscriptionsPage from '@/app/(app)/subscriptions/page'
 import GoalsPage from '@/app/(app)/goals/page'
 import ReportsPage from '@/app/(app)/reports/page'
 import BudgetSetupPage from '@/app/(app)/budget-setup/page'
+import StartPage from '@/app/(app)/start/page'
 import NotificationsPage from '@/app/(app)/notifications/page'
 import SettingsPage from '@/app/(app)/settings/page'
 import SettingsProfilePage from '@/app/(app)/settings/profile/page'
@@ -42,6 +43,7 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/goals': GoalsPage,
   '/reports': ReportsPage,
   '/budget-setup': BudgetSetupPage,
+  '/start': StartPage,
   '/notifications': NotificationsPage,
   '/settings': SettingsPage,
   '/settings/profile': SettingsProfilePage,

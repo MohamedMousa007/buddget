@@ -17,6 +17,7 @@ import type { ServiceClient } from '@/lib/supabase/service'
 import { addDays, parseISO } from 'date-fns'
 import { paydayDatesForWindow, toISODate } from '@/lib/utils/paydaySchedule'
 import { tryConvertCurrency } from '@/lib/utils/currency'
+import { extractCounterparty, scoreSalaryEvidence } from './salaryEvidence'
 import type { Currency, IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
 
 export type SalaryDecision =
@@ -77,7 +78,7 @@ function toScheduleSource(row: SalaryRow): IncomeSource {
  * would be a coin flip. Half the gap is the widest window that can never be ambiguous.
  */
 function minPaydayGapDays(source: IncomeSource, around: Date): number {
-  const dates = paydayDatesForWindow(source, addDays(around, -46), addDays(around, 46))
+  const dates = paydayDatesForWindow(source, addDays(around, -46), addDays(around, 46), false)
   if (dates.length < 2) return FALLBACK_GAP_DAYS
   let min = Infinity
   for (let i = 1; i < dates.length; i++) {
@@ -96,7 +97,7 @@ function candidatePaydays(row: SalaryRow, dayISO: string): { paydays: string[]; 
   const day = parseISO(dayISO)
   const requested = row.payday_drift_days ?? DEFAULT_DRIFT_DAYS
   const window = Math.max(1, Math.min(requested, Math.floor(minPaydayGapDays(source, day) / 2)))
-  const ranked = paydayDatesForWindow(source, addDays(day, -window), addDays(day, window))
+  const ranked = paydayDatesForWindow(source, addDays(day, -window), addDays(day, window), false)
     .map((d) => ({ iso: toISODate(d), dist: Math.abs(d.getTime() - day.getTime()) }))
     .sort((a, b) => a.dist - b.dist)
   return {
@@ -120,6 +121,9 @@ export async function matchSalary(
     currency: string
     day: string
     exchangeRates?: Record<string, number>
+    /** Raw SMS text and parsed sender: the wording and who paid are what separate a paycheck from a friend. */
+    body?: string | null
+    counterparty?: string | null
   },
 ): Promise<SalaryDecision> {
   const { data: sources } = await service
@@ -175,13 +179,39 @@ export async function matchSalary(
   const free = best.paydays.length ? await firstUnfilledPayday(service, params.userId, best.row.id, best.paydays) : null
   if (best.paydays.length > 0 && free === null) return { outcome: 'create' }
 
-  // Auto-link only when nothing was inferred: the amount is right to the cent-ish, the
-  // currency needed no conversion (an FX move and a raise are indistinguishable once
-  // converted), and the credit actually lands on a scheduled payday.
+  // Auto-link on evidence, not on amount: the amount must be right to the cent-ish and the
+  // currency needed no conversion (an FX move and a raise are indistinguishable once converted),
+  // and the SMS must look like a paycheck (wording, known or employer-style sender, payday) rather
+  // than a friend sending the same sum. Anything weaker still links, but asks first.
   if (best.diff <= EXACT_TOLERANCE && best.sameCurrency && free) {
-    return { outcome: 'matched', sourceId: best.row.id, occurrenceDate: free }
+    const evidence = scoreSalaryEvidence({
+      body: params.body,
+      counterparty: params.counterparty,
+      knownCounterparties: await linkedCounterparties(service, params.userId, best.row.id),
+      amountDiff: best.diff,
+      amount: params.amount,
+      paydayInWindow: true,
+    })
+    if (evidence.pass) return { outcome: 'matched', sourceId: best.row.id, occurrenceDate: free }
   }
   return { outcome: 'confirm', sourceId: best.row.id, occurrenceDate: free }
+}
+
+/** Senders of the credits already linked to this salary, read back from their SMS log rows. */
+async function linkedCounterparties(service: ServiceClient, userId: string, templateId: string): Promise<string[]> {
+  const { data: events } = await service
+    .from('income_events')
+    .select('sms_log_id')
+    .eq('user_id', userId)
+    .eq('template_id', templateId)
+    .is('deleted_at', null)
+  const logIds = (events ?? []).map((e) => e.sms_log_id as string | null).filter((id): id is string => Boolean(id))
+  if (logIds.length === 0) return []
+  const { data: logs } = await service.from('sms_parse_log').select('merchant, raw_body').eq('user_id', userId).in('id', logIds)
+  return (logs ?? []).flatMap((l) => {
+    const name = (l.merchant as string | null) ?? extractCounterparty((l.raw_body as string | null) ?? '')
+    return name ? [name] : []
+  })
 }
 
 /**

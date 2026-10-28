@@ -1,5 +1,6 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -36,7 +37,7 @@ export function useNetWorth() {
     useShallow((s) => ({
       savingsAccounts: s.savingsAccounts,
       investmentHoldings: s.investmentHoldings,
-      debts: s.debts,
+      debts: countedDebts(s.debts, s.paymentMethods),
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       goldPricePerGram: s.goldPricePerGram,

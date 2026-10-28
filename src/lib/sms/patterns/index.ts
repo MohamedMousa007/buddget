@@ -45,6 +45,10 @@ const MON_TO_NUM: Record<string, string> = {
   JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12',
 }
 
+function isRealDay(year: number, month: number, day: number): boolean {
+  return day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate()
+}
+
 /**
  * Parses SMS date strings into YYYY-MM-DD. Exported so the learned-template tier can
  * extract the transaction date too — without it a template-parsed SMS is dated by arrival.
@@ -60,9 +64,9 @@ export function parseSmsDay(raw: string | null): string | null {
   if (m) {
     const [, dd, mm, yy] = m
     const day = Number(dd), month = Number(mm)
-    if (day < 1 || day > 31 || month < 1 || month > 12) return null
+    if (month < 1 || month > 12) return null
     const yyyy = yy.length === 2 ? `20${yy}` : yy
-    return `${yyyy}-${mm}-${dd}`
+    return isRealDay(Number(yyyy), month, day) ? `${yyyy}-${mm}-${dd}` : null
   }
 
   // DDMMMYY / DDMMMYYYY — e.g. "13JUN26" → "2026-06-13"
@@ -72,9 +76,8 @@ export function parseSmsDay(raw: string | null): string | null {
     const mm = MON_TO_NUM[mon.toUpperCase()]
     if (!mm) return null
     const day = Number(dd)
-    if (day < 1 || day > 31) return null
     const yyyy = yy.length === 2 ? `20${yy}` : yy
-    return `${yyyy}-${mm}-${dd.padStart(2, '0')}`
+    return isRealDay(Number(yyyy), Number(mm), day) ? `${yyyy}-${mm}-${dd.padStart(2, '0')}` : null
   }
 
   return null

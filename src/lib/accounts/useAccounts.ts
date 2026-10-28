@@ -33,7 +33,7 @@ export interface AccountsModel {
 function useLedgerStore() {
   return useFinanceStore(useShallow((st) => ({
     paymentMethods: st.paymentMethods, expenses: st.expenses, incomeEvents: st.incomeEvents,
-    debtPayments: st.debtPayments, savingsTransactions: st.savingsTransactions,
+    debtPayments: st.debtPayments, debts: st.debts, savingsTransactions: st.savingsTransactions,
     savingsAccounts: st.savingsAccounts, adjustments: st.accountAdjustments,
     rates: st.exchangeRates, base: st.settings.baseCurrency,
   })))
@@ -66,7 +66,7 @@ export function useAccounts(): AccountsModel {
     let heldInBase = 0
     let approx = false
     for (const a of accounts) {
-      if (!a.balance) continue
+      if (!a.balance || a.method.excluded) continue
       approx ||= a.balance.approx || String(a.method.currency) !== String(s.base)
       totalInBase += tryConvertCurrency(a.balance.balance, a.balance.currency, s.base, rates) ?? a.balance.balance
       heldInBase += tryConvertCurrency(a.balance.held, a.balance.currency, s.base, rates) ?? a.balance.held

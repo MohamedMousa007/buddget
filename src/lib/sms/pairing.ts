@@ -20,6 +20,9 @@ import {
 
 const PAIR_WINDOW_SECONDS = 300
 
+/** Legs arriving together both look for a sibling before either has persisted its `kind`. */
+const PAIR_RETRY_DELAY_MS = 400
+
 /**
  * True when a transfer is between the user's OWN accounts: the counterparty
  * account last4 must match a registered payment method. (The source last4 is
@@ -240,7 +243,7 @@ export async function tryPairLeg(
         ? ['own_transfer', 'instant_transfer_out']
         : ['own_transfer', 'instant_transfer_in', 'instant_transfer_out', 'cc_payoff'])
 
-  const { data, error } = await service.rpc('sms_try_pair', {
+  const claim = () => service.rpc('sms_try_pair', {
     p_user_id: params.userId,
     p_log_id: params.logId,
     p_received_at: params.receivedAtIso,
@@ -255,6 +258,18 @@ export async function tryPairLeg(
     p_reference: params.reference ?? undefined,
     p_require_registered_sibling: params.requireRegisteredSibling ?? false,
   })
+  // sms_try_pair only sees siblings that are parsed_ok with a kind, and the parse route persists both only at
+  // the end. Publish them now so two legs arriving together can find each other.
+  const { error: publishErr } = await service
+    .from('sms_parse_log')
+    .update({ kind: params.kind, parsed_ok: true })
+    .eq('id', params.logId)
+  if (publishErr) console.warn('[sms/pairing] publishing leg kind failed', publishErr)
+  let { data, error } = await claim()
+  if (!error && !(Array.isArray(data) && data[0])) {
+    await new Promise((resolve) => setTimeout(resolve, PAIR_RETRY_DELAY_MS))
+    ;({ data, error } = await claim())
+  }
   if (error) {
     console.warn('[sms/pairing] sms_try_pair failed', error)
     return null

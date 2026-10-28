@@ -15,8 +15,8 @@ import { periodsUntil } from '@/lib/goals/goalPlan'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { isEligibleCarryPocket } from '@/lib/savings/monthCarry'
 import type { Currency, FinanceStore, Goal, GoalCategory, GoalFundingMode } from '@/lib/store/types'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { tryConvertCurrency } from '@/lib/utils/currency'
+import { useFinanceStore, goldQuoteOf } from '@/lib/store/useFinanceStore'
+import { tryConvertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { localTodayISO } from '@/lib/utils/localDate'
 
@@ -350,9 +350,9 @@ function planFund(args: Record<string, unknown>, ctx: ToolContext): FundPlan | R
   const landed = inPocketCurrency(s, amount, ccy.currency, target)
   if ('error' in landed) return no(landed.error)
   const { current } = progress(s, goal)
-  const inGoal = tryConvertCurrency(landed.amount, target.currency, goal.currency, s.exchangeRates)
+  const inGoal = tryConvertWithGold(landed.amount, target.currency, goal.currency, s.exchangeRates, s.settings.baseCurrency, goldQuoteOf(s))
   if (inGoal === null) return no(`No exchange rate from ${target.currency} to ${goal.currency}.`, 'Ask for the amount in the goal currency.')
-  const inBase = tryConvertCurrency(amount, ccy.currency, s.settings.baseCurrency, s.exchangeRates) ?? amount
+  const inBase = tryConvertWithGold(amount, ccy.currency, s.settings.baseCurrency, s.exchangeRates, s.settings.baseCurrency, goldQuoteOf(s)) ?? amount
   const after = current + inGoal
 
   const rows: PreviewRow[] = [

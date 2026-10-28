@@ -91,7 +91,7 @@ describe('useSettingsPage.signOutAndHome — caller invariants', () => {
 describe('useProfilePage.confirmDelete — caller invariants', () => {
   const code = src('hooks/useProfilePage.ts')
   const confirmStart = code.indexOf('const confirmDelete = useCallback')
-  const confirmEnd = code.indexOf('}, [t.profile.deleteAccountError])', confirmStart)
+  const confirmEnd = code.indexOf('}, [t.profile.deleteAccountError', confirmStart)
 
   it('confirmDelete callback is present with correct deps', () => {
     expect(confirmStart).toBeGreaterThan(-1)

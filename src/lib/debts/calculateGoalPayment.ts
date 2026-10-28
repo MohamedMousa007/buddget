@@ -16,6 +16,6 @@ export function calculateGoalPayment(
   }
   const totalMs = target.getTime() - now.getTime()
   const totalPeriods = Math.max(1, Math.ceil(totalMs / msPerPeriod[frequency]))
-  const amountPerPeriod = Math.ceil((remainingAmount / totalPeriods) * 100) / 100
+  const amountPerPeriod = Math.ceil(+((remainingAmount / totalPeriods) * 100).toFixed(6)) / 100
   return { amountPerPeriod, totalPeriods, startDate: now.toISOString() }
 }

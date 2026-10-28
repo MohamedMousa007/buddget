@@ -6,7 +6,7 @@ import { cycleKeyOf } from '@/lib/budget/activations'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl } from '@/lib/buddgy/tools/types'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
-import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
+import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import type { Expense, FinanceStore } from '@/lib/store/types'
 
@@ -24,7 +24,7 @@ export function spendRows(s: FinanceStore): { e: Expense; amount: number }[] {
   const base = s.settings.baseCurrency
   return s.expenses
     .map((e) => ({ e, amount: expenseAmountInBase(e, base, s.exchangeRates) }))
-    .filter((x) => x.amount > 0 && !isNonSpendCategory(x.e.category) && x.e.category !== 'Savings')
+    .filter((x) => x.amount > 0 && !isNonSpendExpense(x.e) && x.e.category !== 'Savings')
 }
 
 const get_summary: ReadImpl = (args) => {

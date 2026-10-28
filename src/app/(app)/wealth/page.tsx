@@ -1,14 +1,17 @@
 'use client'
 
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, Pencil, Plus, Star, Trash2, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { StatusPill } from '@/components/ui/StatusPill'
-import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useAlert, useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { deleteHoldingWithUndo, deletePocketWithUndo } from '@/lib/savings/pocketUndo'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
@@ -31,6 +34,7 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useNetWorthTrend } from '@/hooks/useNetWorthTrend'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
+import { canDeletePocket } from '@/lib/savings/canDeletePocket'
 import { useT } from '@/lib/i18n'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
@@ -40,6 +44,8 @@ import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
 import { buildWealth, emergencyState, savingsRatePct, type CatKey, type WealthRowVM } from '@/lib/savings/wealthModel'
 import { computeZakat } from '@/lib/savings/zakat'
 import { deriveZakatBase } from '@/lib/savings/zakatInputs'
+import { zakatAccountsFromLedger } from '@/lib/savings/zakatAccounts'
+import { useLedgerInput } from '@/lib/accounts/useAccounts'
 import { effectiveNisabBasis } from '@/lib/savings/zakatBasis'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -55,6 +61,8 @@ export default function WealthPage() {
   const dataReady = useFinanceStore((s) => s.dataReady)
   const requireAuth = useRequireAuthAction()
   const confirmDialog = useConfirm()
+  const showToast = useActionToast()
+  const alertDialog = useAlert()
   const nw = useNetWorth()
   const stats = useMonthlyStats()
   const monthFilter = useSettingsStore((s) => s.monthFilter)
@@ -73,11 +81,11 @@ export default function WealthPage() {
       exchangeRates: s.exchangeRates,
       budgetPlans: s.budgetPlans,
       activeBudgetPlanId: s.activeBudgetPlanId,
-      debts: s.debts,
+      debts: countedDebts(s.debts, s.paymentMethods),
       goldPricePerGram: s.goldPricePerGram,
       goldPriceAvailable: s.goldPriceAvailable,
       expenses: s.expenses,
-      debtPayments: s.debtPayments,
+      debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
     })),
   )
   const base = settings.baseCurrency
@@ -123,9 +131,13 @@ export default function WealthPage() {
   const efState = emergencyState(simpleMonth.total, emergency.atOrAboveTarget)
 
   // Zakat: gold until the user picks a basis (see zakatBasis.ts).
+  const ledger = useLedgerInput()
   const zakatBase = useMemo(
-    () => deriveZakatBase({ savingsAccounts, investmentHoldings, debts, baseCurrency: base, exchangeRates, goldPricePerGram, goldPriceAvailable: goldOk, lookup }),
-    [savingsAccounts, investmentHoldings, debts, base, exchangeRates, goldPricePerGram, goldOk, lookup],
+    () => deriveZakatBase({
+      savingsAccounts, investmentHoldings, debts, debtPayments, baseCurrency: base, exchangeRates, goldPricePerGram, goldPriceAvailable: goldOk, lookup,
+      ...zakatAccountsFromLedger(ledger),
+    }),
+    [savingsAccounts, investmentHoldings, debts, debtPayments, base, exchangeRates, goldPricePerGram, goldOk, lookup, ledger],
   )
   const zakatResult = useMemo(() => {
     const zc = profile.zakatConfig
@@ -177,7 +189,7 @@ export default function WealthPage() {
         coverAmount: coverPocketIds.includes(account.id) ? account.currentBalance : 0,
         goalsAmount: Math.min(account.currentBalance, linked.reduce((s, g) => s + (g.targetAmount ?? 0), 0)),
         goalLabel: linked[0]?.name ?? '',
-        isAuto: profile.defaultCarryPocketId === account.id || account.type === 'vault',
+        isAuto: profile.defaultCarryPocketId === account.id,
       }
     }),
     [pockets, goals, coverPocketIds, profile.defaultCarryPocketId],
@@ -222,9 +234,19 @@ export default function WealthPage() {
   const rate = savingsRatePct(stats.savingsThisMonth, stats.totalIncome)
 
   const askDelete = async (r: WealthRowVM) => {
-    if (!(await confirmDialog({ title: t.deleteTitle(r.title), body: t.deleteBody, destructive: true }))) return
-    if (r.account) useFinanceStore.getState().deleteSavingsAccount(r.account.id)
-    else useFinanceStore.getState().deleteInvestmentHolding(r.id)
+    const a = r.account
+    if (a) {
+      const verdict = canDeletePocket(useFinanceStore.getState(), a.id)
+      if (!verdict.ok) {
+        const isDefault = verdict.reason === 'default'
+        await alertDialog({ title: isDefault ? t.deleteDefaultTitle : t.deleteOnlyTitle, body: isDefault ? t.deleteDefaultBody : t.deleteOnlyBody })
+        return
+      }
+    }
+    const body = a && a.currentBalance > 0 ? t.deleteBodyBalance(`${formatWhole(a.currentBalance)} ${a.currency}`) : t.deleteBody
+    if (!(await confirmDialog({ title: t.deleteTitle(r.title), body, destructive: true }))) return
+    const undo = a ? deletePocketWithUndo(a.id) : deleteHoldingWithUndo(r.id)
+    showToast(t.deletedToast(r.title), { undo, undoLabel: t.deleteUndo })
   }
 
   return (
@@ -300,7 +322,6 @@ export default function WealthPage() {
       {menu && (() => {
         const { row } = menu
         const a = row.account
-        const isVault = a?.type === 'vault'
         return (
           <CardActionMenu
             anchor={menu.anchor}
@@ -314,9 +335,11 @@ export default function WealthPage() {
                   ]
                 : []),
               ...(a ? [{ label: t.menuEdit, icon: <Pencil size={17} />, onSelect: () => setEditAcc(a) }] : []),
+              ...(a && a.category === 'savings' && profile.defaultCarryPocketId !== a.id
+                ? [{ label: t.menuMakeDefault, icon: <Star size={17} />, onSelect: () => useFinanceStore.getState().updateProfile({ defaultCarryPocketId: a.id }) }]
+                : []),
               {
                 label: t.menuDelete, icon: <Trash2 size={17} />, destructive: true,
-                disabled: isVault, hint: isVault ? t.vaultDeleteHint : undefined,
                 onSelect: () => void askDelete(row),
               },
             ]}

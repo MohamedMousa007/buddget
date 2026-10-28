@@ -39,7 +39,7 @@ export function debtGoalTotals(goal: Goal, ctx: GoalProgressContext): { paid: nu
   let paid = 0
   let owed = 0
   for (const d of debts) {
-    paid += debtPaidAmountInCurrency(d, ctx.debtPayments, goal.currency, ctx.exchangeRates, ctx.goldPricePerGram, ctx.goldPriceAvailable)
+    paid += debtPaidAmountInCurrency(d, ctx.debtPayments, goal.currency, ctx.baseCurrency, ctx.exchangeRates, ctx.goldPricePerGram, ctx.goldPriceAvailable)
     const remaining = d.status === 'cleared' ? 0 : calculateDebtRemaining(d, ctx.debtPayments, balanceCtx)
     const inBase = calculateDebtRemainingInBaseCurrency(remaining, d, ctx.baseCurrency, ctx.exchangeRates, ctx.goldPricePerGram, ctx.goldPriceAvailable)
     owed += convertCurrency(inBase, ctx.baseCurrency, goal.currency, ctx.exchangeRates)
