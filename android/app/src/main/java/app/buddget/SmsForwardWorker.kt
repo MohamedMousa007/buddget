@@ -26,6 +26,7 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val message    = inputData.getString(KEY_MESSAGE) ?: return@withContext Result.failure()
         val sender     = inputData.getString(KEY_SENDER) ?: ""
         val receivedAt = inputData.getString(KEY_RECEIVED_AT) ?: ""
+        val eventId    = inputData.getString(KEY_EVENT_ID) ?: ""
 
         val prefs  = applicationContext.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
         val token  = prefs.getString("access_token", null)
@@ -43,14 +44,14 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             return@withContext Result.failure()
         }
 
-        val json = buildBody(message, sender, receivedAt)
-        val url  = URL("$apiUrl/api/sms/parse")
-
         return@withContext try {
+            val json = buildBody(message, sender, receivedAt, eventId)
+            val url  = URL("$apiUrl/api/sms/parse")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Authorization", "Bearer $token")
+                if (eventId.isNotEmpty()) setRequestProperty("x-sms-event-id", eventId)
                 doOutput = true
                 connectTimeout = 15_000
                 readTimeout    = 30_000
@@ -59,19 +60,26 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             val code = conn.responseCode
             conn.disconnect()
             when {
+                code == 202 || code == 409 -> {
+                    // Server is mid-claim on this SMS: keep it queued and retry later.
+                    recordRun(prefs, "http_$code")
+                    Result.retry()
+                }
                 code in 200..299 -> {
-                    PendingSmsQueue.remove(applicationContext, message, receivedAt)
+                    PendingSmsQueue.remove(applicationContext, message, receivedAt, eventId)
                     recordRun(prefs, "ok")
                     Result.success()
                 }
-                code >= 500 -> {
+                SmsGate.isRetryableStatus(code) -> {
+                    // 5xx / 408 / 429 / 401: transient, or a token the app-open
+                    // ensureIngestToken will refresh. Backoff retry; if attempts run
+                    // out the SMS is still in the queue for the app-open drain.
                     recordRun(prefs, "http_$code")
-                    Result.retry()   // transient server error
+                    Result.retry()
                 }
                 else -> {
-                    // 4xx — bad/stale token or bad request. Stays in the queue;
-                    // the app-open drain replays it after ensureIngestToken
-                    // saves a fresh token.
+                    // 400/422/other 4xx: the payload will not succeed here. Stays in
+                    // the queue; the app-open drain decides.
                     recordRun(prefs, "http_$code")
                     Result.failure()
                 }
@@ -89,7 +97,7 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             .apply()
     }
 
-    private fun buildBody(message: String, sender: String, receivedAt: String): String {
+    private fun buildBody(message: String, sender: String, receivedAt: String, eventId: String): String {
         fun esc(s: String) = buildString {
             for (c in s) when {
                 c == '\\' -> append("\\\\")
@@ -102,13 +110,19 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             }
         }
 
-        return """{"message":"${esc(message)}","sender":"${esc(sender)}","source":"sms","receivedAt":"${esc(receivedAt)}"}"""
+        val truncated = message.length > MAX_CHARS
+        val body = if (truncated) message.substring(0, MAX_CHARS) else message
+        val idPart = if (eventId.isNotEmpty()) ",\"eventId\":\"${esc(eventId)}\"" else ""
+        val truncPart = if (truncated) ",\"truncated\":true" else ""
+        return """{"message":"${esc(body)}","sender":"${esc(sender)}","source":"sms","receivedAt":"${esc(receivedAt)}"$idPart$truncPart}"""
     }
 
     companion object {
         const val KEY_MESSAGE     = "message"
         const val KEY_SENDER      = "sender"
         const val KEY_RECEIVED_AT = "received_at"
-        const val MAX_ATTEMPTS = 5
+        const val KEY_EVENT_ID    = "event_id"
+        const val MAX_CHARS = 2000
+        const val MAX_ATTEMPTS = 8
     }
 }

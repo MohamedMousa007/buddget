@@ -63,6 +63,19 @@ describe('POST /api/sms/confirm', () => {
     expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'confirm_exception' })
   })
 
+  it('fails loudly instead of degrading when a kind that needs the text has none left', async () => {
+    h.claimRow = pending({ kind: 'income', raw_body: null })
+    const res = await post({ logId: LOG_ID })
+    expect(res.status).toBe(410)
+    expect((await res.json()).reason).toBe('raw_purged')
+    expect(h.create).not.toHaveBeenCalled()
+  })
+
+  it('still confirms a purchase whose text is gone (it needs nothing from it)', async () => {
+    h.claimRow = pending({ raw_body: null })
+    expect((await post({ logId: LOG_ID })).status).toBe(200)
+  })
+
   it('refuses a removed phone before claiming anything', async () => {
     h.gate.mockResolvedValueOnce(new Response('{}', { status: 403 }))
     const res = await POST(new Request('http://x/api/sms/confirm', { method: 'POST', headers: { authorization: 'Bearer a.b.c', 'x-buddget-device-id': 'dev1' }, body: JSON.stringify({ logId: LOG_ID }) }))

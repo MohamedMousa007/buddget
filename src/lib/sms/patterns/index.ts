@@ -7,6 +7,7 @@
  * learned-template / AI tiers.
  */
 
+import { parseLocalizedAmount } from '@/lib/ui/amountParse'
 import type { BankPatternSet, CuratedMatch, CuratedPattern, SmsKind } from './types'
 import { HSBC_PATTERNS } from './hsbc'
 import { CIB_PATTERNS } from './cib'
@@ -40,48 +41,8 @@ export const ALL_PATTERN_SETS: BankPatternSet[] = [
   SNB_PATTERNS,
 ]
 
-const MON_TO_NUM: Record<string, string> = {
-  JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
-  JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12',
-}
-
-function isRealDay(year: number, month: number, day: number): boolean {
-  return day >= 1 && day <= new Date(Date.UTC(year, month, 0)).getUTCDate()
-}
-
-/**
- * Parses SMS date strings into YYYY-MM-DD. Exported so the learned-template tier can
- * extract the transaction date too — without it a template-parsed SMS is dated by arrival.
- * Formats: DD-MM-YYYY, DD/MM/YYYY, DD/MM/YY (Egyptian banks)
- *          DDMMMYY / DDMMMYYYY (e.g. "13JUN26", "13JUN2026" — HSBC Phone Banking)
- */
-export function parseSmsDay(raw: string | null): string | null {
-  if (!raw) return null
-  const s = raw.trim()
-
-  // DD-MM-YYYY / DD/MM/YYYY / DD/MM/YY
-  let m = /^(\d{2})[-/](\d{2})[-/](\d{2,4})/.exec(s)
-  if (m) {
-    const [, dd, mm, yy] = m
-    const day = Number(dd), month = Number(mm)
-    if (month < 1 || month > 12) return null
-    const yyyy = yy.length === 2 ? `20${yy}` : yy
-    return isRealDay(Number(yyyy), month, day) ? `${yyyy}-${mm}-${dd}` : null
-  }
-
-  // DDMMMYY / DDMMMYYYY — e.g. "13JUN26" → "2026-06-13"
-  m = /^(\d{1,2})([A-Z]{3})(\d{2,4})$/i.exec(s)
-  if (m) {
-    const [, dd, mon, yy] = m
-    const mm = MON_TO_NUM[mon.toUpperCase()]
-    if (!mm) return null
-    const day = Number(dd)
-    const yyyy = yy.length === 2 ? `20${yy}` : yy
-    return isRealDay(Number(yyyy), Number(mm), day) ? `${yyyy}-${mm}-${dd.padStart(2, '0')}` : null
-  }
-
-  return null
-}
+import { parseSmsDay } from '@/lib/sms/parseSmsDay'
+export { parseSmsDay }
 
 function buildCleanTitle(kind: SmsKind, bank: string, counterparty: string | null): string | null {
   switch (kind) {
@@ -102,12 +63,10 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
   const m = p.regex.exec(message)
   if (!m) return null
 
-  const rawAmount = (m[p.groups.amount] ?? '').replace(/,/g, '')
-  const amount = parseFloat(rawAmount)
-  if (!amount || !Number.isFinite(amount)) return null
-
   const currency = (p.groups.currency ? m[p.groups.currency] : null)?.toUpperCase()
     ?? p.currencyLiteral ?? 'EGP'
+  const amount = parseLocalizedAmount(m[p.groups.amount] ?? '', currency)
+  if (!amount || !Number.isFinite(amount)) return null
   const counterparty = p.groups.counterparty ? (m[p.groups.counterparty]?.trim() ?? null) : null
   const last4Raw = p.groups.last4 ? (m[p.groups.last4] ?? null) : null
   const last4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null

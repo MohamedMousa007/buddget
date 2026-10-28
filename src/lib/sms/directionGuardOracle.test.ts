@@ -64,17 +64,17 @@ describe('directionGuard as a template-health oracle', () => {
     const { service, rpc } = makeService()
     await createSmsTransaction(service, row({ matchedTemplateId: 'tpl-1' }), opts)
 
-    const call = rpc.mock.calls.find((c) => c[0] === 'bump_sms_template_failure')
+    const call = rpc.mock.calls.find((c) => c[0] === 'bump_sms_template_failure_v2')
     expect(call, 'oracle did not fire').toBeDefined()
     const params = call![1] as Record<string, unknown>
-    expect(params).toMatchObject({ p_template_id: 'tpl-1', p_hard: true })
+    expect(params).toMatchObject({ p_template_id: 'tpl-1', p_hard: true, p_user_id: 'u1' })
     expect(String(params.p_reason)).toContain('direction_guard_override')
   })
 
   it('stays silent for a curated or AI parse — there is no template to blame', async () => {
     const { service, rpc } = makeService()
     await createSmsTransaction(service, row({ matchedTemplateId: null }), opts)
-    expect(rpc.mock.calls.find((c) => c[0] === 'bump_sms_template_failure')).toBeUndefined()
+    expect(rpc.mock.calls.find((c) => String(c[0]).startsWith('bump_sms_template_failure'))).toBeUndefined()
   })
 
   it('stays silent when the template got the direction right', async () => {
@@ -85,7 +85,7 @@ describe('directionGuard as a template-health oracle', () => {
       row({ matchedTemplateId: 'tpl-1', kind: 'instant_transfer_in' }),
       opts,
     )
-    expect(rpc.mock.calls.find((c) => c[0] === 'bump_sms_template_failure')).toBeUndefined()
+    expect(rpc.mock.calls.find((c) => String(c[0]).startsWith('bump_sms_template_failure'))).toBeUndefined()
   })
 
   it('never lets health accounting break the transaction it observes', async () => {
@@ -94,7 +94,7 @@ describe('directionGuard as a template-health oracle', () => {
     const throwing = {
       ...service,
       rpc: vi.fn(async (name: string, _params?: Record<string, unknown>) => {
-        if (name === 'bump_sms_template_failure') throw new Error('db down')
+        if (name.startsWith('bump_sms_template_failure')) throw new Error('db down')
         return { data: [], error: null }
       }),
     } as unknown as SupabaseClient

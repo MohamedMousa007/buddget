@@ -1,5 +1,7 @@
 import type { createServiceRoleClient } from '@/lib/supabase/service'
 import { invalidateCuratedDbCache } from '@/lib/sms/curatedDbCache'
+import { replayCandidate, type ReplayCase } from '@/lib/sms/replayHarness'
+import type { MappingRules } from '@/lib/sms/templateApply'
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
@@ -40,6 +42,7 @@ export function invalidateConfigCache(): void {
 export async function checkAndAutoPromote(
   sender: string,
   service: ServiceClient,
+  opts: { loadReplayCases?: (sender: string) => Promise<readonly ReplayCase[]> } = {},
 ): Promise<void> {
   try {
     const config = await getPromotionConfig(service)
@@ -55,7 +58,24 @@ export async function checkAndAutoPromote(
 
     if (!senderEligible.length) return
 
+    // LF5: replay known shapes (masked corpus + golden fixtures) before a template becomes global.
+    // Infrastructure trouble loading cases means no cases (check skipped), never a blocked promotion.
+    const replayCases = await Promise.resolve(opts.loadReplayCases?.(sender)).then((c) => c ?? [], () => [] as readonly ReplayCase[])
+
     for (const row of senderEligible) {
+      if (replayCases.length) {
+        const { data: tpl } = await service
+          .from('sms_tracking_templates_ai')
+          .select('regex_pattern, mapping_rules')
+          .eq('id', row.template_id)
+          .single()
+        if (!tpl) continue
+        const report = replayCandidate({ regex: tpl.regex_pattern, rules: tpl.mapping_rules as unknown as MappingRules }, replayCases)
+        if (!report.ok) {
+          console.warn('[promotionChecker] promotion blocked by replay regression', { template_id: row.template_id, regressions: report.regressions.length })
+          continue
+        }
+      }
       const { error } = await service
         .from('sms_tracking_templates_ai')
         .update({

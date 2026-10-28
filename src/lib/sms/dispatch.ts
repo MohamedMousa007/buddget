@@ -17,6 +17,7 @@
 import type { ServiceClient } from '@/lib/supabase/service'
 import type { Database } from '@/lib/supabase/database.types'
 import type {PostgrestError} from '@supabase/supabase-js'
+import { bumpTemplateFailure } from '@/lib/sms/bumpTemplateFailure'
 import {
   createSmsExpense,
   createSmsDebtPayment,
@@ -144,8 +145,12 @@ function base(outcome: SmsTxOutcome, kind: SmsExpenseKind): SmsTxResult {
  */
 const IPN_REFERENCE =
   /(?:\bref(?:erence)?\b(?:\s+(?:number|no\.?))?|رقم\s*مرجع[يى]?)\s*#?\s*:?\s*(?=[a-z0-9]*\d)([a-z0-9]{6,})(?![a-z0-9])/i
+/** An 8-digit token that reads as a calendar date (YYYYMMDD or DDMMYYYY) is a date, not a reference. */
+const DATE_DIGITS =
+  /^(?:(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])|(?:0[1-9]|[12]\d|3[01])(?:0[1-9]|1[0-2])(?:19|20)\d{2})$/
 export function extractIpnReference(body: string): string | null {
-  return normalizeDigits(body).match(IPN_REFERENCE)?.[1] ?? null
+  const ref = normalizeDigits(body).match(IPN_REFERENCE)?.[1] ?? null
+  return ref && DATE_DIGITS.test(ref) ? null : ref
 }
 
 /**
@@ -196,10 +201,11 @@ export async function createSmsTransaction(
   // is enough to quarantine, where a shadow comparison decides its fate without user friction.
   if (guardedKind !== parsedRow.kind && parsedRow.matchedTemplateId) {
     try {
-      await service.rpc('bump_sms_template_failure', {
-        p_template_id: parsedRow.matchedTemplateId,
-        p_hard: true,
-        p_reason: `direction_guard_override: ${parsedRow.kind} -> ${guardedKind}`,
+      await bumpTemplateFailure(service, {
+        templateId: parsedRow.matchedTemplateId,
+        hard: true,
+        reason: `direction_guard_override: ${parsedRow.kind} -> ${guardedKind}`,
+        userId: parsedRow.userId,
       })
     } catch (e) {
       // Health accounting must never break the transaction it is observing.
@@ -258,6 +264,7 @@ export async function createSmsTransaction(
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
+        accountLast4: row.last4 ?? null,
         // 'own_transfer' for the exact-amount rule; a wallet movement has no fee to absorb.
         kind: 'own_transfer',
         // No cc_payoff: a payoff is settled by step 3, which needs its own funding leg. The
@@ -306,6 +313,7 @@ export async function createSmsTransaction(
           logId: row.logId,
           receivedAtIso: row.receivedAtIso,
           amount: row.amount,
+          accountLast4: row.last4 ?? null,
           kind,
           matchKinds,
           reference,
@@ -322,6 +330,7 @@ export async function createSmsTransaction(
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
+        accountLast4: row.last4 ?? null,
         kind,
         matchKinds,
         requireRegisteredSibling: true,
@@ -340,6 +349,7 @@ export async function createSmsTransaction(
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
+        accountLast4: row.last4 ?? null,
         kind,
       })
       if (sibling) {
@@ -394,6 +404,7 @@ export async function createSmsTransaction(
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
+        accountLast4: row.last4 ?? null,
         kind,
       })
       if (sibling) funding = await reconcileCcPayoffFundingLeg(service, sibling)
@@ -401,10 +412,12 @@ export async function createSmsTransaction(
 
     const res = await createSmsDebtPayment(service, row, { fundingLast4: funding?.fundingLast4 })
     if (res.needsConfirm) {
-      // Ambiguous (multiple cards, no last4 match): degrade gracefully — post a
-      // non-spend CC Payoff expense with NO card linkage (last4 null) so spend
+      // Ambiguous (several cards, foreign currency, gold, overpay): never guess a debt. The row waits for the user
+      // (pending confirmation); /confirm re-runs this with userConfirmed and then takes the plain fallback below.
+      if (!opts.userConfirmed) return { ...base('awaiting_confirmation', kind), confirmReason: 'cc_ambiguous' }
+      // Confirmed: post a non-spend CC Payoff expense with NO card linkage (last4 null) so spend
       // totals stay correct and the card balance isn't wrongly inflated. The
-      // debt is not auto-reduced in this rare case; the user can attach it.
+      // debt is not auto-reduced; the user can attach it.
       const fb = await createSmsExpense(service, { ...row, kind, last4: null })
       return { ...base('expense', kind), expenseId: fb.expenseId, category: 'CC Payoff', error: fb.error }
     }
@@ -430,9 +443,10 @@ export async function createSmsTransaction(
   if (kind === 'installment_payment') {
     const res = await createSmsInstallmentPayment(service, row)
     if (res.needsConfirm) {
-      // Couldn't confidently pick a plan: book a plain non-spend Installment expense
-      // (no debt reduced) so totals stay correct; the user assigns it to a plan via
+      // Couldn't confidently pick a plan: wait for the user (pending confirmation). Once confirmed, book a plain
+      // non-spend Installment expense (no debt reduced); the user assigns it to a plan via
       // the in-view banner / review UI. Never guess which plan a payment belongs to.
+      if (!opts.userConfirmed) return { ...base('awaiting_confirmation', kind), confirmReason: 'cc_ambiguous' }
       const fb = await createSmsExpense(service, { ...row, kind, last4: null })
       return { ...base('expense', kind), expenseId: fb.expenseId, category: 'Installment', error: fb.error }
     }

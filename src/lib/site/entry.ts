@@ -60,7 +60,7 @@ export function splitHosts(env: { my?: string; marketing?: string } = { my: proc
 }
 
 /** Paths the root domain keeps serving besides the website: shared APIs, auth callbacks, legal pages and static files. */
-const MARKETING_PASSTHROUGH = ['/api/', '/_next/', '/site/', '/icons/', '/legal/', '/auth/callback', '/reset-password', '/privacy', '/terms']
+const MARKETING_PASSTHROUGH = ['/api/', '/_next/', '/site/', '/icons/', '/legal/', '/.well-known/', '/auth/callback', '/reset-password', '/privacy', '/terms']
 const MARKETING_FILES = new Set(['/robots.txt', '/sitemap.xml', '/llms.txt', '/favicon.ico', '/og-en.png', '/og-ar.png', '/opengraph-image.png'])
 
 export type SiteRoute = { kind: 'next' } | { kind: 'rewrite'; pathname: string } | { kind: 'redirect'; url: string } | { kind: 'robots-closed' }

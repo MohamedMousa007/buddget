@@ -2,6 +2,8 @@ import type { Database } from '@/lib/supabase/database.types'
 import type { ServiceClient } from '@/lib/supabase/service'
 import { extractKeywords } from '@/lib/sms/keywordExtractor'
 import { smsSkeleton } from '@/lib/sms/skeleton'
+import { TXN_KEYWORD_RE } from '@/lib/sms/patterns/currency'
+import type { NonTransactionReason } from '@/lib/sms/patterns/preFilter'
 
 type Outbox = Database['public']['Tables']['sms_stats_outbox']['Insert']
 
@@ -22,12 +24,29 @@ export interface SmsStatsInput {
   kind: string | null
   parseMethod: string | null
   currencyCode: string | null
+  /** Why the pre-filter rejected this message, when it did. Feeds filter tuning (LF7); an OTP never reaches the corpus. */
+  rejectReason?: NonTransactionReason | null
+}
+
+/** Corpus kind that tags a shape the filter rejected although it reads like a transaction: an example for filter tuning. */
+export const REJECTED_TX_LIKE_KIND = 'rejected_tx_like'
+
+const AMOUNT_WITH_DECIMALS = /\d[\d,]*[.,]\d{2}(?!\d)/
+
+/**
+ * LF7: marketing/balance-only rejections whose text carries a transaction verb AND an amount are
+ * candidates for filter tuning. OTP bodies are never tagged (and never kept: see buildStatsRow).
+ */
+export function rejectedExampleTag(message: string, reason: NonTransactionReason | null | undefined): typeof REJECTED_TX_LIKE_KIND | null {
+  if (!reason || reason === 'otp') return null
+  return TXN_KEYWORD_RE.test(message) && AMOUNT_WITH_DECIMALS.test(message) ? REJECTED_TX_LIKE_KIND : null
 }
 
 /** One cheap insert per SMS. A scheduled drain turns these into batched updates of the pools, counters and corpus. */
 export function buildStatsRow(i: SmsStatsInput): Outbox {
   const tokens = i.isTransaction ? extractKeywords(i.message) : []
-  const skeleton = smsSkeleton(i.message, i.senderKey)
+  const skeleton = i.rejectReason === 'otp' ? null : smsSkeleton(i.message, i.senderKey)
+  const tag = rejectedExampleTag(i.message, i.rejectReason)
   return {
     sender: i.isTransaction ? i.senderKey : null,
     is_txn: i.isTransaction,
@@ -42,7 +61,7 @@ export function buildStatsRow(i: SmsStatsInput): Outbox {
     skeleton_key: skeleton?.key ?? null,
     sender_key: i.senderKey,
     redacted_body: skeleton?.redacted ?? null,
-    kind: i.kind,
+    kind: tag ?? i.kind,
     parse_method: i.parseMethod,
     currency: i.currencyCode,
     parsed_ok: i.parsedOk,

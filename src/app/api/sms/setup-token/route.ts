@@ -13,7 +13,12 @@ import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
-import { isRevokedDevice } from '@/lib/server/devices/registry'
+import { hasAnyDevice, isRevokedDevice } from '@/lib/server/devices/registry'
+
+async function isUnregisteredDevice(service: ReturnType<typeof createServiceRoleClient>, userId: string, deviceId: string): Promise<boolean> {
+  const { data } = await service.from('user_devices').select('device_id').eq('user_id', userId).eq('device_id', deviceId).maybeSingle()
+  return !data && (await hasAnyDevice(service, userId))
+}
 
 export async function GET(request: Request) {
   const outdated = await gateOutdatedClient(request)
@@ -31,6 +36,10 @@ export async function GET(request: Request) {
   if (await isRevokedDevice(serviceClient, userId, deviceId)) {
     return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
   }
+  // A client-chosen id the account never registered cannot mint a token once the account has phones on record.
+  if (deviceId && (await isUnregisteredDevice(serviceClient, userId, deviceId))) {
+    return NextResponse.json({ error: 'device_not_registered' }, { status: 403 })
+  }
 
   // Check for an existing active token for this scope.
   let existingQuery = serviceClient
@@ -40,7 +49,7 @@ export async function GET(request: Request) {
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(1)
-  if (deviceId) existingQuery = existingQuery.eq('device_id', deviceId)
+  existingQuery = deviceId ? existingQuery.eq('device_id', deviceId) : existingQuery.is('device_id', null)
   const { data: existing } = await existingQuery.maybeSingle()
 
   if (existing?.token) {

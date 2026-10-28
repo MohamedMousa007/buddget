@@ -1304,6 +1304,7 @@ export type Database = {
       }
       debt_payments: {
         Row: {
+          sms_log_id: string | null
           amount_in_debt_unit: number | null
           original_amount: number | null
           original_currency: Database["public"]["Enums"]["currency_code"] | null
@@ -1324,6 +1325,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          sms_log_id?: string | null
           amount_in_debt_unit?: number | null
           original_amount?: number | null
           original_currency?: Database["public"]["Enums"]["currency_code"] | null
@@ -1344,6 +1346,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          sms_log_id?: string | null
           amount_in_debt_unit?: number | null
           original_amount?: number | null
           original_currency?: Database["public"]["Enums"]["currency_code"] | null
@@ -3287,7 +3290,11 @@ export type Database = {
           payment_instrument: string | null
           push_result: Json | null
           pushed_at: string | null
-          raw_body: string
+          raw_body: string | null
+          masked_version: number | null
+          learned_at: string | null
+          raw_expires_at: string | null
+          masked_body: string | null
           raw_sms_summary: string | null
           received_at: string
           savings_transaction_id: string | null
@@ -3334,7 +3341,11 @@ export type Database = {
           payment_instrument?: string | null
           push_result?: Json | null
           pushed_at?: string | null
-          raw_body: string
+          raw_body?: string | null
+          masked_version?: number | null
+          learned_at?: string | null
+          raw_expires_at?: string | null
+          masked_body?: string | null
           raw_sms_summary?: string | null
           received_at?: string
           savings_transaction_id?: string | null
@@ -3381,7 +3392,11 @@ export type Database = {
           payment_instrument?: string | null
           push_result?: Json | null
           pushed_at?: string | null
-          raw_body?: string
+          raw_body?: string | null
+          masked_version?: number | null
+          learned_at?: string | null
+          raw_expires_at?: string | null
+          masked_body?: string | null
           raw_sms_summary?: string | null
           received_at?: string
           savings_transaction_id?: string | null

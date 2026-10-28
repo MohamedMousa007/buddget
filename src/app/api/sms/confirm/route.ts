@@ -19,6 +19,7 @@ import { Constants } from '@/lib/supabase/database.types'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { createSmsTransaction } from '@/lib/sms/dispatch'
+import { isIncomeKind } from '@/lib/sms/createSmsExpense'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { effectiveSender } from '@/lib/sms/routingKey'
 import type { Currency } from '@/lib/store/types'
@@ -127,6 +128,13 @@ export async function POST(request: Request) {
 
     if (row.amount == null || !row.currency) return fail('invalid_row', 422)
 
+    // Salary matching, transfer pairing and debt picking read the SMS text. Once retention has removed it, booking
+    // would silently degrade (wrong category, no counterparty), so say so instead.
+    const kind = (row.kind ?? null) as SmsExpenseKind
+    if (row.raw_body == null && (isIncomeKind(kind) || kind === 'own_transfer' || kind === 'cc_payoff' || kind === 'installment_payment')) {
+      return fail('raw_purged', 410)
+    }
+
     const receivedAtIso = new Date(row.received_at ?? Date.now()).toISOString()
     const day = smsLocalDay(receivedAtIso, await getUserTimeZone(service, userId))
 
@@ -137,7 +145,7 @@ export async function POST(request: Request) {
       amount: row.amount,
       currency: row.currency,
       day,
-      kind: (row.kind ?? null) as SmsExpenseKind,
+      kind,
       cleanTitle: row.clean_title ?? null,
       merchantNormalized: row.merchant_normalized ?? null,
       merchant: row.merchant ?? null,
@@ -158,7 +166,7 @@ export async function POST(request: Request) {
     const { expenseId, incomeId, debtPaymentId } = tx
     const postedSomething = !!(expenseId || incomeId || debtPaymentId)
     posted = postedSomething
-    const intentionalNoPost = tx.outcome === 'income_matched' || tx.outcome === 'transfer_paired'
+    const intentionalNoPost = tx.outcome === 'transfer_paired'
 
     // Insert failed — leave the row recoverable (add_failed, still awaiting) and
     // surface the failure rather than swallowing it.
