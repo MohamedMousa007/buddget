@@ -46,11 +46,14 @@ const STASH_TARGETS = [
   { from: 'src/app/auth/callback', to: '.cap-stash/auth-callback' },
   { from: 'src/app/setup', to: '.cap-stash/setup' },
   { from: 'src/app/sitemap.ts', to: '.cap-stash/sitemap.ts' },
+  // The marketing website is web-only: static pages with their own root layouts.
+  { from: 'src/app/(site-en)', to: '.cap-stash/site-en' },
+  { from: 'src/app/(site-ar)', to: '.cap-stash/site-ar' },
   { from: 'src/app/robots.ts', to: '.cap-stash/robots.ts' },
   // `force-dynamic` layouts that need SSR — the static export can't keep them.
-  { from: 'src/app/onboarding/layout.tsx', to: '.cap-stash/onboarding-layout.tsx' },
-  { from: 'src/app/install/layout.tsx', to: '.cap-stash/install-layout.tsx' },
-  { from: 'src/app/reset-password/confirm/layout.tsx', to: '.cap-stash/reset-password-confirm-layout.tsx' },
+  { from: 'src/app/(app)/onboarding/layout.tsx', to: '.cap-stash/onboarding-layout.tsx' },
+  { from: 'src/app/(app)/install/layout.tsx', to: '.cap-stash/install-layout.tsx' },
+  { from: 'src/app/(app)/reset-password/confirm/layout.tsx', to: '.cap-stash/reset-password-confirm-layout.tsx' },
 ]
 
 function ensureStashDir() {

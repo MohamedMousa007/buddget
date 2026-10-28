@@ -5,8 +5,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        // '/$' is an exact-match anchor: the marketing homepage only, not every path under it.
-        allow: ['/$', '/terms', '/privacy', '/legal/terms', '/legal/privacy'],
+        // '/$' is an exact-match anchor: the homepage only, not every path under it.
+        allow: ['/$', '/en', '/ar', '/terms', '/privacy', '/legal/terms', '/legal/privacy', '/llms.txt'],
         disallow: '/',
       },
     ],

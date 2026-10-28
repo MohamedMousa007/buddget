@@ -47,7 +47,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy-publishable-key
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
           SUPABASE_SECRET_KEY: dummy-secret-key
-          NEXT_PUBLIC_APP_URL: https://buddget.app
+          NEXT_PUBLIC_APP_URL: https://my.buddget.app
 
   # The six *.pg.test.ts admin suites skip silently without QA_PG_URL. scripts/qa/setup.sh builds a stub auth schema,
   # the public tables and the admin migrations on a plain Postgres (no Supabase roles/extensions needed beyond what

@@ -1,0 +1,39 @@
+/* Marketing-only visuals: the device frame is imagery, so it carries its own colours. */
+.site-phone {
+  width: 304px;
+  padding: 10px;
+  border-radius: 48px;
+  background: linear-gradient(160deg, #2b3d39, #141f1d);
+  box-shadow: 0 60px 100px -40px rgba(0, 0, 0, 0.55), inset 0 0 0 1px #3b524d, 0 0 0 2px #0a100f;
+  flex: none;
+}
+.site-phone[data-size='sm'] { width: 232px; padding: 8px; border-radius: 38px; }
+.site-phone img { display: block; width: 100%; height: auto; border-radius: 38px; background: var(--color-brand-bg); }
+.site-phone[data-size='sm'] img { border-radius: 30px; }
+
+@keyframes site-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.site-float { animation: site-float 6s ease-in-out infinite; }
+
+@keyframes site-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand-primary-ink) 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 10px transparent; }
+}
+.site-spark { animation: site-pulse 2s infinite; }
+
+.site-glow {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-brand-primary-bright) 28%, transparent), transparent);
+}
+
+.site-pair { position: relative; display: flex; justify-content: center; width: 100%; }
+.site-pair > .site-pair-b { position: absolute; inset-inline-end: -8px; top: 56px; transform: rotate(6deg) scale(0.9); z-index: 0; }
+.site-pair > .site-pair-a { position: relative; z-index: 1; }
+@media (max-width: 1023px) { .site-pair > .site-pair-b { display: none; } }
+
+.site-gallery { scroll-snap-type: x mandatory; }
+.site-gallery > * { scroll-snap-align: center; }
+
+.site-range { width: 100%; min-height: 44px; accent-color: var(--color-brand-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-float, .site-spark { animation: none; }
+}
