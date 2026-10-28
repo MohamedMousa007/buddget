@@ -6,6 +6,8 @@ import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { promoteMain, setMain } from '@/lib/server/devices/registry'
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 type Params = { params: Promise<{ id: string }> }
 
 const patchSchema = z.object({ notify: z.boolean().nullable().optional(), makeMain: z.literal(true).optional(), name: z.string().trim().min(1).max(40).optional() })
@@ -60,6 +62,9 @@ export async function DELETE(request: Request, { params }: Params) {
   const cleanup = await Promise.all([
     service.from('sms_ingest_tokens').update({ is_active: false }).eq('user_id', o.userId).eq('device_id', id),
     service.from('push_tokens').delete().eq('user_id', o.userId).eq('device_id', id),
+    // The removed phone must not sign in again with its biometric secret or skip 2-step as a trusted device.
+    service.from('biometric_devices').delete().eq('user_id', o.userId).eq('device_id', id),
+    ...(UUID.test(id) ? [service.from('trusted_devices').delete().eq('user_id', o.userId).eq('device_id', id)] : []),
   ])
   if (cleanup.some((r) => r.error)) return NextResponse.json({ error: 'Could not remove the phone' }, { status: 500 })
   // The main phone is the one that hears everything; losing it must not leave the account silent without telling anyone.

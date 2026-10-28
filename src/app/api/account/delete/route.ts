@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { signedInWithin } from '@/lib/auth/recentSignIn'
 import { isRateLimited } from '@/lib/server/rateLimit'
-import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { resolveVerifiedIdentity } from '@/lib/supabase/resolveRouteUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { deleteUserCompletely } from '@/lib/server/deleteAccount'
 
@@ -9,7 +9,7 @@ import { deleteUserCompletely } from '@/lib/server/deleteAccount'
  * Permanently delete the authenticated user's account and every piece of data Buddget holds for them.
  *
  * Supports both cookie-based auth (web) and Bearer JWT (native Capacitor) via
- * resolveRouteIdentity — never pass a user id in the body. The session must have been established in the last
+ * resolveVerifiedIdentity — never pass a user id in the body. The session must have been established in the last
  * five minutes (the client re-authenticates and retries on `reauth_required`).
  */
 const REAUTH_WINDOW_SECONDS = 300
@@ -17,7 +17,7 @@ const DELETES_PER_HOUR = 3
 
 export async function POST(request: Request) {
   try {
-    const identity = await resolveRouteIdentity(request)
+    const identity = await resolveVerifiedIdentity(request)
     if (!identity) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
@@ -36,8 +36,10 @@ export async function POST(request: Request) {
     }
     if (result.partialErrors.length > 0) {
       console.error('[account/delete] partial failures:', result.partialErrors)
+      // 207: the account is gone and the app may move on, but this is not a clean success and must not read as one.
+      return NextResponse.json({ ok: false, deleted: true, partial: true, partialErrors: result.partialErrors }, { status: 207 })
     }
-    return NextResponse.json({ ok: true, partialErrors: result.partialErrors.length ? result.partialErrors : undefined })
+    return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('[account/delete] unexpected failure', e)
     return NextResponse.json({ error: 'Unexpected failure' }, { status: 500 })

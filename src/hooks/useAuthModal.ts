@@ -14,6 +14,8 @@ import { isNative } from '@/lib/native/isNative'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
+import { changePassword } from '@/lib/auth/changePassword'
+import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
 
 export type AuthStep = 'form' | 'verify' | 'forgot' | 'reset-new-password'
 /**
@@ -58,6 +60,7 @@ export function useAuthModal() {
     authModalInitialStep,
   } = useAuth()
   const t = useT()
+  const sec = useAuthSecurityCopy()
   const supabase = useMemo(
     () => (isSupabaseConfigured() ? createClient() : null),
     [],
@@ -318,31 +321,37 @@ export function useAuthModal() {
     }
     markSessionEphemeral(!rememberMe)
 
-    // 2FA device-trust check.
+    // 2FA device-trust check. Fails closed: a failed check must not skip the second step. Only this device's
+    // session is ended (local scope), so the account's other devices stay signed in.
+    let required: boolean | null = null
     try {
       const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST' })
-      if (deviceRes.ok) {
-        const body = (await deviceRes.json()) as { required?: boolean }
-        if (body.required === true) {
-          await supabase.auth.signOut()
-          const { error: otpErr } = await supabase.auth.signInWithOtp({
-            email: email.trim(),
-            options: { shouldCreateUser: false },
-          })
-          setLoading(false)
-          if (otpErr) {
-            setError(mapAuthError(otpErr, 'resend', t))
-            return
-          }
-          setVerifyPurpose('2fa')
-          setStep('verify')
-          setOtp('')
-          startResendCooldown()
-          return
-        }
-      }
+      if (deviceRes.ok) required = ((await deviceRes.json()) as { required?: boolean }).required === true
     } catch {
-      // Device-check failure shouldn't lock users out — proceed.
+      /* required stays null */
+    }
+    if (required === null) {
+      await supabase.auth.signOut({ scope: 'local' })
+      setLoading(false)
+      setError(sec.secondStepUnavailable)
+      return
+    }
+    if (required) {
+      await supabase.auth.signOut({ scope: 'local' })
+      const { error: otpErr } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: false },
+      })
+      setLoading(false)
+      if (otpErr) {
+        setError(mapAuthError(otpErr, 'resend', t))
+        return
+      }
+      setVerifyPurpose('2fa')
+      setStep('verify')
+      setOtp('')
+      startResendCooldown()
+      return
     }
 
     setLoading(false)
@@ -356,6 +365,7 @@ export function useAuthModal() {
     rememberMe,
     router,
     safeNext,
+    sec.secondStepUnavailable,
     startResendCooldown,
     supabase,
     t,
@@ -490,6 +500,8 @@ export function useAuthModal() {
       setStep('reset-new-password')
       return
     }
+    // A 2FA sign-in keeps the remember-me choice made on the password step; signup starts a normal session.
+    if (verifyPurpose === 'signup') markSessionEphemeral(false)
     // Device-trust is a signup/2FA concept only.
     try {
       await apiFetchAuth('/api/auth/device/trust', { method: 'POST' })
@@ -516,22 +528,24 @@ export function useAuthModal() {
       }
       setError('')
       setLoading(true)
-      const { error: e } = await supabase.auth.updateUser({ password: newPassword })
-      if (e) {
+      // The server signs out the account's other devices and clears biometric and trusted-device bindings.
+      const result = await changePassword({ newPassword })
+      if (result !== 'ok') {
         setLoading(false)
-        const m = (e.message || '').toLowerCase()
-        if (m.includes('same') && m.includes('password')) {
-          setError(t.resetPassword.errorSamePassword)
-          return
-        }
-        setError(mapAuthError(e, 'forgot', t))
+        setError(
+          result === 'same_password' ? t.resetPassword.errorSamePassword
+            : result === 'rate_limited' ? sec.errorTooManyAttempts
+              : result === 'reauth_required' ? sec.errorReauthRequired
+                : sec.errorChangeFailed,
+        )
         return
       }
+      markSessionEphemeral(false)
       setLoading(false)
       if (!isNative()) router.refresh()
       navigateAfterAuth(router, safeNext)
     },
-    [router, safeNext, supabase, t],
+    [router, safeNext, sec, supabase, t],
   )
 
   const resendCode = useCallback(async () => {

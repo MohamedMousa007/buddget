@@ -18,6 +18,9 @@ import {
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
 import { PasswordVisibilityToggle } from '@/components/features/auth-modal/PasswordVisibilityToggle'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
+import { AuthPasswordField } from '@/components/features/auth-modal/AuthPasswordField'
+import { changePassword } from '@/lib/auth/changePassword'
+import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
 
 type ValidationTone = 'neutral' | 'valid' | 'error'
 
@@ -27,27 +30,17 @@ function toneClass(tone: ValidationTone): string {
   return inputFocus
 }
 
-/**
- * Read Supabase error's `code` when available (preferred), falling back to
- * keyword matching against the localised message string. Different Supabase
- * versions surface the code in different places.
- */
-function errorCode(e: { code?: string; message?: string } | null | undefined): string | null {
-  if (!e) return null
-  if (e.code) return e.code
-  const msg = (e.message || '').toLowerCase()
-  if (msg.includes('same') && msg.includes('password')) return 'same_password'
-  if (msg.includes('expired') || msg.includes('invalid token') || msg.includes('jwt')) return 'token_expired'
-  if (msg.includes('not found')) return 'token_expired'
-  return null
-}
-
 export default function ResetPasswordConfirmPage() {
   const t = useT()
+  const sec = useAuthSecurityCopy()
   const supabase = useMemo(
     () => (isSupabaseConfigured() ? createClient() : null),
     [],
   )
+  // Opened from Settings with a live session: the current password is required. A recovery link has no such step.
+  // Not rendered before the session check finishes, so reading the URL on first client render cannot mismatch the markup.
+  const [fromSettings] = useState(() => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('from') === 'settings')
+  const [current, setCurrent] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [showNew, setShowNew] = useState(false)
@@ -140,20 +133,29 @@ export default function ResetPasswordConfirmPage() {
       setError(t.resetPassword.errorMismatch)
       return
     }
+    if (fromSettings && !current) {
+      setError(sec.errorCurrentPasswordMissing)
+      return
+    }
     setLoading(true)
-    const { error: e } = await supabase.auth.updateUser({ password })
-    if (e) {
+    const result = await changePassword({
+      newPassword: password,
+      ...(fromSettings ? { currentPassword: current } : {}),
+      announce: !fromSettings,
+    })
+    if (result !== 'ok') {
       setLoading(false)
-      const code = errorCode(e)
-      if (code === 'same_password') {
-        setError(t.resetPassword.errorSamePassword)
-        return
-      }
-      if (code === 'token_expired') {
-        setLinkExpired(true)
-        return
-      }
-      setError(t.resetPassword.errorUpdateFailed)
+      if (result === 'same_password') setError(t.resetPassword.errorSamePassword)
+      else if (result === 'wrong_password') setError(sec.errorWrongPassword)
+      else if (result === 'reauth_required') setError(sec.errorReauthRequired)
+      else if (result === 'rate_limited') setError(sec.errorTooManyAttempts)
+      else if (result === 'unauthenticated') setLinkExpired(true)
+      else setError(t.resetPassword.errorUpdateFailed)
+      return
+    }
+    if (fromSettings) {
+      // The session survives (other devices were signed out on the server): back to the security screen.
+      window.location.replace('/settings/security')
       return
     }
     try {
@@ -161,16 +163,9 @@ export default function ResetPasswordConfirmPage() {
     } catch (e) {
       console.error('[reset-password] clearBudgetData failed', e)
     }
-    // Local scope clears the session synchronously with no network round-trip;
-    // 'global' hangs on slow native links (same failure mode as logout). The
-    // recovery session is single-use, so a local clear is sufficient here.
+    // Local scope clears this recovery session; the server has already signed out the account's other devices.
     await supabase.auth.signOut({ scope: 'local' })
     setLoading(false)
-    try {
-      await fetch('/api/auth/password-updated', { method: 'POST' })
-    } catch (e) {
-      console.error('[reset-password] password-updated cookie failed', e)
-    }
     // Leaves the bare reset-password context → full load into the app shell.
     window.location.replace('/')
   }
@@ -221,6 +216,19 @@ export default function ResetPasswordConfirmPage() {
         <p className="text-sm text-[var(--color-brand-text-muted)] text-center">
           {t.resetPassword.subtitle}
         </p>
+
+        {fromSettings ? (
+          <AuthPasswordField
+            value={current}
+            onChange={setCurrent}
+            onSubmit={() => void submit()}
+            label={sec.currentPasswordLabel}
+            placeholder={sec.currentPasswordPlaceholder}
+            autoComplete="current-password"
+            name="current-password"
+            disabled={loading}
+          />
+        ) : null}
 
         <div>
           <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">
@@ -274,6 +282,7 @@ export default function ResetPasswordConfirmPage() {
           </div>
         </div>
 
+        {fromSettings ? <p className="text-xs text-[var(--color-brand-text-muted)]">{sec.otherDevicesNote}</p> : null}
         {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
 
         <AuthPrimaryButton type="submit" disabled={loading}>

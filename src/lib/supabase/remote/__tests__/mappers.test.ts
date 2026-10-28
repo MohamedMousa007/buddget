@@ -160,7 +160,7 @@ describe('settings mapper', () => {
       goalAlerts: true,
     }
     const row = settingsToRow(s, UID)
-    const back = settingsFromRow({ ...row, updated_at: '' } as never, {
+    const back = settingsFromRow({ ...row, two_factor_email_enabled: false, updated_at: '' } as never, {
       baseCurrency: 'EGP',
       secondaryCurrency: 'USD',
     })

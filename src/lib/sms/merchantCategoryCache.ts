@@ -15,6 +15,7 @@
 import type { ServiceClient } from '@/lib/supabase/service'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { resolveBrandKeyFromMerchant, findBrandByKey } from '@/lib/constants/subscriptionCatalog'
+import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 
 const VALID_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory>([
   'Rent', 'Transport', 'Food', 'Enjoyment', 'Savings', 'Debt', 'Remittance', 'Instapay',
@@ -22,7 +23,7 @@ const VALID_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory>([
 ])
 
 function asCategory(v: string | null | undefined): ExpenseCategory | null {
-  return v && VALID_CATEGORIES.has(v) && v !== 'Other' ? (v as ExpenseCategory) : null
+  return v && VALID_CATEGORIES.has(v) && v !== 'Other' && !isNonSpendCategory(v) ? (v as ExpenseCategory) : null
 }
 
 /**
@@ -44,19 +45,31 @@ export function catalogCategory(merchant: string | null | undefined): ExpenseCat
 }
 
 /**
- * Resolve a merchant to a category: catalog brand first (authoritative for the big names), then
- * the learned cache. Returns null when nothing knows it yet — the caller keeps 'Other' and the
+ * Resolve a merchant to a category: catalog brand first (authoritative for the big names), then this
+ * user's own override (their edits never reach other users until corroborated), then the shared learned
+ * cache. Returns null when nothing knows it yet — the caller keeps 'Other' and the
  * route may AI-categorise in the background.
  */
 export async function resolveMerchantCategory(
   service: ServiceClient,
   merchant: string | null | undefined,
+  userId?: string,
 ): Promise<ExpenseCategory | null> {
   const fromCatalog = catalogCategory(merchant)
   if (fromCatalog) return fromCatalog
 
   const key = merchantCategoryKey(merchant)
   if (!key) return null
+  if (userId) {
+    const { data: own } = await service
+      .from('merchant_category_overrides')
+      .select('category')
+      .eq('user_id', userId)
+      .eq('merchant_key', key)
+      .maybeSingle()
+    const mine = asCategory(own?.category as string | undefined)
+    if (mine) return mine
+  }
   const { data } = await service
     .from('merchant_categories')
     .select('category')
@@ -77,7 +90,7 @@ export async function rememberMerchantCategory(
   source: 'ai' | 'user' | 'seed',
 ): Promise<void> {
   const key = merchantCategoryKey(merchant)
-  if (!key || category === 'Other') return
+  if (!key || category === 'Other' || isNonSpendCategory(category)) return
   try {
     await service.rpc('upsert_merchant_category', {
       p_key: key, p_category: category, p_source: source, p_sample: (merchant ?? '').slice(0, 120),

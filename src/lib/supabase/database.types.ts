@@ -2192,6 +2192,27 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_category_overrides: {
+        Row: {
+          category: Database["public"]["Enums"]["expense_category"]
+          merchant_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["expense_category"]
+          merchant_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["expense_category"]
+          merchant_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       net_worth_snapshots: {
         Row: {
           basis: string

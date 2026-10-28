@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ServiceClient } from '@/lib/supabase/service'
 
 /**
@@ -47,6 +48,107 @@ export const USER_DATA_TABLES = [
   'client_crashes',
   'user_settings',
 ] as const
+
+export interface OwnedTable {
+  table: string
+  /** The column that holds the user id; `user_id` unless stated. */
+  column?: string
+}
+
+/**
+ * What the app and the platform keep about an account beyond the financial data above. It leaves with the
+ * account (self-service delete, admin delete) but is NOT touched by a data reset, which keeps the sign-in, the
+ * devices and the usage history. Rows here normally cascade from `auth.users`; the explicit pass catches any
+ * table whose foreign key was never added, and `userData.test.ts` fails when a new user-keyed table is missing.
+ */
+export const ACCOUNT_TABLES: readonly OwnedTable[] = [
+  { table: 'user_devices' },
+  { table: 'push_tokens' },
+  { table: 'sms_ingest_tokens' },
+  { table: 'user_entitlements' },
+  { table: 'loyalty_ledger' },
+  { table: 'loyalty_accounts' },
+  { table: 'ai_usage_events' },
+  { table: 'ai_usage_daily' },
+  { table: 'ai_reservations' },
+  { table: 'feedback_votes' },
+  { table: 'admin_user_notes' },
+  { table: 'admin_financial_exclusions' },
+  { table: 'admin_access_grants', column: 'target_user_id' },
+  { table: 'merchant_category_overrides' },
+  { table: 'merchant_category_votes' },
+]
+
+/** Sign-in credentials of the app account. A staff member who empties their app account keeps these (the sign-in stays). */
+export const SIGN_IN_TABLES: readonly OwnedTable[] = [{ table: 'trusted_devices' }, { table: 'biometric_devices' }]
+
+/** Columns that are credentials, never exported. */
+const REDACTED_COLUMNS: Record<string, readonly string[]> = {
+  sms_ingest_tokens: ['token'],
+  biometric_devices: ['secret_hash'],
+}
+
+const loose = (admin: ServiceClient) => admin as unknown as SupabaseClient
+
+async function deleteOwned(admin: ServiceClient, tables: readonly OwnedTable[], uid: string): Promise<string[]> {
+  const errors: string[] = []
+  for (const { table, column = 'user_id' } of tables) {
+    const { error } = await loose(admin).from(table).delete().eq(column, uid)
+    if (error) errors.push(`${table}: ${error.message}`)
+  }
+  return errors
+}
+
+/** Removes the account-level rows (devices, tokens, usage, entitlements, staff notes about the person). */
+export function wipeAccountData(admin: ServiceClient, uid: string, opts: { keepSignIn: boolean }): Promise<string[]> {
+  return deleteOwned(admin, opts.keepSignIn ? ACCOUNT_TABLES : [...ACCOUNT_TABLES, ...SIGN_IN_TABLES], uid)
+}
+
+/**
+ * Blanks the personal text that has to outlive the account row: the delivery log keeps its audit trail but loses the
+ * address, and support tickets keep their thread (staff history) without the requester's email or device context.
+ */
+/** email_log.to_email is NOT NULL (0136), so an erased address becomes a placeholder, not null; works before and after 0203. */
+const ERASED_ADDRESS = '[erased]'
+
+export async function scrubPersonalText(admin: ServiceClient, uid: string, email: string | null): Promise<string[]> {
+  const errors: string[] = []
+  const run = async (label: string, p: PromiseLike<{ error: { message: string } | null }>) => {
+    const { error } = await p
+    if (error) errors.push(`${label}: ${error.message}`)
+  }
+  const db = loose(admin)
+  await run('email_log', db.from('email_log').update({ to_email: ERASED_ADDRESS }).eq('user_id', uid))
+  await run('support_tickets', db.from('support_tickets').update({ requester_email: null, context: {} }).eq('user_id', uid))
+  if (email) {
+    await run('email_log(email)', db.from('email_log').update({ to_email: ERASED_ADDRESS }).eq('to_email', email))
+    await run('support_tickets(email)', db.from('support_tickets').update({ requester_email: null, context: {} }).eq('requester_email', email))
+  }
+  return errors
+}
+
+/** Every row held about one person, for a data-subject access request. Credentials are left out. */
+export async function exportUserData(admin: ServiceClient, uid: string, rowsPerTable: number): Promise<{ tables: Record<string, unknown[]>; failed: string[] }> {
+  const tables: Record<string, unknown[]> = {}
+  const failed: string[] = []
+  const db = loose(admin)
+  const owned: OwnedTable[] = [...USER_DATA_TABLES.map((table) => ({ table })), ...ACCOUNT_TABLES, ...SIGN_IN_TABLES, { table: 'email_log' }, { table: 'support_tickets' }]
+  for (const { table, column = 'user_id' } of owned) {
+    const { data, error } = await db.from(table).select('*').eq(column, uid).limit(rowsPerTable)
+    if (error) failed.push(table)
+    else if (data.length) {
+      const hidden = REDACTED_COLUMNS[table] ?? []
+      tables[table] = hidden.length ? data.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !hidden.includes(k)))) : data
+    }
+  }
+  const ticketIds = ((tables.support_tickets ?? []) as { id: string }[]).map((t) => t.id)
+  if (ticketIds.length) {
+    const { data, error } = await db.from('support_ticket_messages').select('*').in('ticket_id', ticketIds).limit(rowsPerTable)
+    if (error) failed.push('support_ticket_messages')
+    else if (data.length) tables.support_ticket_messages = data
+  }
+  return { tables, failed }
+}
 
 /** Deletes the user's data rows; returns what failed (empty when everything went). */
 export async function wipeUserData(admin: ServiceClient, uid: string): Promise<string[]> {

@@ -77,7 +77,7 @@ export function useProfilePage() {
     // The user is already authenticated, so the reset-password page renders the
     // new-password form directly off the live session and updates via
     // updateUser — fully in-app, no email/OTP round-trip, works on native.
-    navigate('/reset-password/confirm')
+    navigate('/reset-password/confirm?from=settings')
   }, [])
 
   const handleSignOut = useCallback(async () => {

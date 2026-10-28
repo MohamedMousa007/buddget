@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { recordSuppressions, suppressionFor } from '@/lib/server/email/suppression'
 import { verifySignedWebhook } from '@/lib/server/email/webhook'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   )
   if (!ok) return NextResponse.json({ error: 'Bad signature' }, { status: 401 })
 
-  let event: { type?: string; data?: { email_id?: string; bounce?: { message?: string }; reason?: string } }
+  let event: { type?: string; data?: { email_id?: string; to?: string[]; bounce?: { message?: string; type?: string }; reason?: string } }
   try {
     event = JSON.parse(body)
   } catch {
@@ -41,5 +42,6 @@ export async function POST(req: Request) {
     console.error('[webhooks/resend] update failed', error.message)
     return NextResponse.json({ error: 'Update failed' }, { status: 500 })
   }
+  if (!(await recordSuppressions(service, suppressionFor(event.type, event.data)))) return NextResponse.json({ error: 'Suppression failed' }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

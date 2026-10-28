@@ -72,6 +72,8 @@ export function defaultServerSettings(baseCurrency: Currency, secondaryCurrency:
   }
 }
 
+const PER_ROW_RETRY_CODES = new Set(['23505', '23514', '23503'])
+
 type PgError = { message: string; code?: string } | null
 type Writes = Array<() => Promise<unknown>>
 
@@ -99,8 +101,9 @@ class OpRunner {
   }
 
   /**
-   * Upsert a batch of rows to a table. A 23505 (unique violation) must not poison the whole
-   * batch: the rows are retried one by one, and a duplicate payday event adopts the live row.
+   * Upsert a batch of rows to a table. A 23505 (unique), 23514 (check) or 23503 (foreign key) violation must
+   * not poison the whole batch: the rows are retried one by one, a duplicate payday event adopts the live row,
+   * and only the rows that still fail are reported.
    */
   upsert<T extends TableName>(table: T, rows: readonly Database['public']['Tables'][T]['Insert'][], label: string) {
     if (rows.length === 0) return
@@ -108,7 +111,7 @@ class OpRunner {
       const res = await this.from(table).upsert(rows)
       this.writes++
       if (!res.error) return
-      if (res.error.code !== '23505') {
+      if (!PER_ROW_RETRY_CODES.has(res.error.code ?? '')) {
         this.errors.push(`${label}: ${res.error.message}`)
         return
       }
@@ -219,6 +222,8 @@ export async function flushDiff(
   next: Snapshot
 ): Promise<FlushResult> {
   // Writes drain tier by tier so a parent row commits before any child that references it (FK order).
+  // Link-column FKs (Q9): income_sources need debts + pockets (level1), income_events need income_sources (level2),
+  // and the profile points at the active plan (roots) and the carry pocket (level1), so it goes last.
   const [roots, level1, level2, level3] = [new OpRunner(client), new OpRunner(client), new OpRunner(client), new OpRunner(client)]
 
   // Singletons
@@ -239,7 +244,7 @@ export async function flushDiff(
   }
   const nextProfileSig = { profile: next.profile, extras: profileExtras }
   if (diffSingleton(nextProfileSig, prevProfileSig) != null) {
-    roots.upsert('profiles', [profileToRow(next.profile, profileExtras, userId)], 'profiles.upsert')
+    level3.upsert('profiles', [profileToRow(next.profile, profileExtras, userId)], 'profiles.upsert')
   }
   if (diffSingleton(next.settings, prev.settings) != null) {
     roots.upsert('user_settings', [settingsToRow(next.settings, userId)], 'user_settings.upsert')
@@ -252,8 +257,8 @@ export async function flushDiff(
   const nextPayments = next.paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
   const prevPayments = prev.paymentMethods.filter((pm) => pm.id !== DEFAULT_CASH_ID)
   emitList(roots, 'payment_methods', nextPayments, prevPayments, paymentMethodToRow, userId)
-  emitList(level1, 'income_sources', next.incomeSources, prev.incomeSources, incomeSourceToRow, userId)
-  emitList(level1, 'income_events', next.incomeEvents, prev.incomeEvents, incomeEventToRow, userId)
+  emitList(level2, 'income_sources', next.incomeSources, prev.incomeSources, incomeSourceToRow, userId)
+  emitList(level3, 'income_events', next.incomeEvents, prev.incomeEvents, incomeEventToRow, userId)
   emitList(level1, 'receipts', next.receipts, prev.receipts, receiptToRow, userId)
   emitList(level3, 'expenses', next.expenses, prev.expenses, expenseToRow, userId)
   emitList(level2, 'recurring_expenses', next.recurringExpenses, prev.recurringExpenses, recurringExpenseToRow, userId)
@@ -262,7 +267,7 @@ export async function flushDiff(
   emitList(level2, 'debt_payments', next.debtPayments, prev.debtPayments, debtPaymentToRow, userId)
   emitList(level2, 'recurring_debt_payments', next.recurringDebtPayments, prev.recurringDebtPayments, recurringDebtPaymentToRow, userId)
   emitList(level1, 'savings_accounts', next.savingsAccounts, prev.savingsAccounts, savingsAccountToRow, userId)
-  emitList(level1, 'savings_holdings', next.investmentHoldings, prev.investmentHoldings, investmentHoldingToRow, userId)
+  emitList(level2, 'savings_holdings', next.investmentHoldings, prev.investmentHoldings, investmentHoldingToRow, userId)
   emitList(level2, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
   emitList(level2, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)
   emitList(roots, 'goals', next.goals, prev.goals, goalToRow, userId)

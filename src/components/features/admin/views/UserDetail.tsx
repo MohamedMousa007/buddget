@@ -335,6 +335,8 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const tools = can('users.tools')
+  const notifyTools = can('users.notify')
+  const securityTools = can('users.security')
 
   const tool = (key: string, icon: React.ReactNode, label: string, description: string, body: Record<string, unknown>, opts: Parameters<typeof run>[2]) => (
     <li key={key} className="flex items-start gap-3 py-3.5">
@@ -349,20 +351,20 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">
-      {tools ? (
+      {tools || notifyTools || securityTools ? (
         <Panel title="Fix a tech issue" description="Safe repair tools. Every use is written to the audit log.">
           <ul className="divide-y divide-[var(--color-brand-border)]">
-            <li className="flex items-start gap-3 py-3.5">
+            {notifyTools ? <li className="flex items-start gap-3 py-3.5">
               <Bell className="mt-0.5 size-[18px] text-[var(--color-brand-text-muted)]" aria-hidden />
               <div className="min-w-0 flex-1"><p className="text-sm font-medium">Send a notification</p><p className="text-xs text-[var(--color-brand-text-muted)]">In-app message plus a push to their devices.</p></div>
               <Button variant="outline" size="touch" onClick={() => setNotify(true)}>Write</Button>
-            </li>
-            {tool('test_push', <Smartphone className="size-[18px]" />, 'Send a test push', `${data.devices.push.length} device(s) registered. Confirms push delivery end to end.`, { op: 'test_push' }, { success: 'Test push sent' })}
-            {tool('reset_sms_tokens', <RotateCcw className="size-[18px]" />, 'Reset SMS pairing', 'Revokes the SMS ingest tokens. The app creates a fresh one on next open — fixes “SMS stopped importing”.', { op: 'reset_sms_tokens' }, { success: 'SMS tokens reset', confirm: { title: 'Reset SMS pairing?', body: 'Their phone will re-pair the next time they open the app.' } })}
-            {tool('clear_push_tokens', <Smartphone className="size-[18px]" />, 'Clear push registrations', 'Removes stale device tokens so the app registers cleanly.', { op: 'clear_push_tokens' }, { success: 'Push tokens cleared', confirm: { title: 'Clear push registrations?' } })}
-            {tool('clear_trusted_devices', <ShieldAlert className="size-[18px]" />, 'Forget trusted devices', 'They will be asked for an email code on next sign-in.', { op: 'clear_trusted_devices' }, { success: 'Trusted devices cleared', confirm: { title: 'Forget trusted devices?' } })}
-            {tool('remove_biometric', <Fingerprint className="size-[18px]" />, 'Remove biometric sign-in', 'Unbinds biometric devices — fixes a stuck Face ID / fingerprint prompt.', { op: 'remove_biometric' }, { success: 'Biometric devices removed', confirm: { title: 'Remove biometric sign-in?' } })}
-            {tool('send_password_reset', <Mail className="size-[18px]" />, 'Send password reset email', 'Emails them a secure reset link.', { op: 'send_password_reset' }, { success: 'Reset email sent' })}
+            </li> : null}
+            {notifyTools && tool('test_push', <Smartphone className="size-[18px]" />, 'Send a test push', `${data.devices.push.length} device(s) registered. Confirms push delivery end to end.`, { op: 'test_push' }, { success: 'Test push sent' })}
+            {tools && tool('reset_sms_tokens', <RotateCcw className="size-[18px]" />, 'Reset SMS pairing', 'Revokes the SMS ingest tokens. The app creates a fresh one on next open — fixes “SMS stopped importing”.', { op: 'reset_sms_tokens' }, { success: 'SMS tokens reset', confirm: { title: 'Reset SMS pairing?', body: 'Their phone will re-pair the next time they open the app.' } })}
+            {tools && tool('clear_push_tokens', <Smartphone className="size-[18px]" />, 'Clear push registrations', 'Removes stale device tokens so the app registers cleanly.', { op: 'clear_push_tokens' }, { success: 'Push tokens cleared', confirm: { title: 'Clear push registrations?' } })}
+            {securityTools && tool('clear_trusted_devices', <ShieldAlert className="size-[18px]" />, 'Forget trusted devices', 'They will be asked for an email code on next sign-in.', { op: 'clear_trusted_devices' }, { success: 'Trusted devices cleared', confirm: { title: 'Forget trusted devices?' } })}
+            {securityTools && tool('remove_biometric', <Fingerprint className="size-[18px]" />, 'Remove biometric sign-in', 'Unbinds biometric devices — fixes a stuck Face ID / fingerprint prompt.', { op: 'remove_biometric' }, { success: 'Biometric devices removed', confirm: { title: 'Remove biometric sign-in?' } })}
+            {securityTools && tool('send_password_reset', <Mail className="size-[18px]" />, 'Send password reset email', 'Emails them a secure reset link.', { op: 'send_password_reset' }, { success: 'Reset email sent' })}
           </ul>
         </Panel>
       ) : null}

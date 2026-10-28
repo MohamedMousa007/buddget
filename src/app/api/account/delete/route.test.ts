@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({ identity: vi.fn(), limited: vi.fn(), del: vi.fn() }))
 vi.mock('server-only', () => ({}))
-vi.mock('@/lib/supabase/resolveRouteUser', () => ({ resolveRouteIdentity: h.identity }))
+vi.mock('@/lib/supabase/resolveRouteUser', () => ({ resolveVerifiedIdentity: h.identity }))
 vi.mock('@/lib/server/rateLimit', () => ({ isRateLimited: h.limited }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({}) }))
 vi.mock('@/lib/server/deleteAccount', () => ({ deleteUserCompletely: h.del }))
@@ -23,6 +23,18 @@ describe('POST /api/account/delete', () => {
   it('deletes after a recent sign-in', async () => {
     expect((await call()).status).toBe(200)
     expect(h.del).toHaveBeenCalled()
+  })
+
+  it('does not report ok when the sweep left rows behind', async () => {
+    h.del.mockResolvedValue({ ok: true, partialErrors: ['email_log: boom'] })
+    const res = await call()
+    expect(res.status).toBe(207)
+    expect(await res.json()).toMatchObject({ ok: false, deleted: true, partial: true, partialErrors: ['email_log: boom'] })
+  })
+
+  it('fails (500) when the account could not be deleted', async () => {
+    h.del.mockResolvedValue({ ok: false, error: 'Failed to delete auth user', details: ['x'] })
+    expect((await call()).status).toBe(500)
   })
 
   it('asks for re-authentication when the session is older than 5 minutes', async () => {

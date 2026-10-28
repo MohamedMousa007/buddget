@@ -70,13 +70,13 @@ export async function POST(req: Request) {
     }
     const features = (p.features ?? []).filter((f) => typeof f === 'string' && isFeatureKey(f))
     const money = (n: number | null | undefined) => (n == null ? null : Math.max(0, Math.floor(n)))
-    const { data: existing } = await ctx.service.from('plans').select('key, is_default').eq('key', p.key).maybeSingle()
+    const { data: existing } = await ctx.service.from('plans').select('*').eq('key', p.key).maybeSingle()
     if (existing?.is_default && p.status && p.status !== 'active') return bad('The default plan must stay active.')
     const { error } = await ctx.service.from('plans').upsert({
       key: p.key,
       name: p.name.trim().slice(0, 60),
       description: (p.description ?? '').slice(0, 400),
-      status: p.status ?? 'draft',
+      status: p.status ?? existing?.status ?? 'draft',
       price_monthly_cents: money(p.priceMonthlyCents),
       price_yearly_cents: money(p.priceYearlyCents),
       currency: (p.currency ?? 'USD').toUpperCase().slice(0, 3),
@@ -86,7 +86,8 @@ export async function POST(req: Request) {
       sort_order: Math.floor(p.sortOrder ?? 0),
     })
     if (error) return bad('Could not save the plan.', 500)
-    await ctx.audit('billing.plan_upsert', { targetType: 'plan', targetId: p.key, summary: `${existing ? 'Edited' : 'Created'} plan ${p.key}` })
+    const { data: after } = await ctx.service.from('plans').select('*').eq('key', p.key).maybeSingle()
+    await ctx.audit('billing.plan_upsert', { targetType: 'plan', targetId: p.key, summary: `${existing ? 'Edited' : 'Created'} plan ${p.key}`, metadata: { before: (existing ?? null) as Json, after: (after ?? null) as Json } })
     return json({ ok: true })
   }
 

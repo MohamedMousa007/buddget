@@ -2,19 +2,20 @@ import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
 import { signedInWithin } from '@/lib/auth/recentSignIn'
-import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { recordSecondFactor } from '@/lib/server/secondFactor'
+import { resolveVerifiedIdentity } from '@/lib/supabase/resolveRouteUser'
 
 /**
  * Mark the current device as trusted for the authenticated user.
  * Called after successful email-OTP verification (signup or 2FA). The session itself must prove it: its JWT
  * has to record a one-time-code sign-in from the last ten minutes, so a password-only session cannot self-trust.
  */
-const OTP_METHODS = ['otp', 'email/signup', 'magiclink']
+const OTP_METHODS = ['otp', 'email/signup', 'magiclink', 'recovery']
 const OTP_PROOF_WINDOW_SECONDS = 600
 
 export async function POST(req: Request) {
   try {
-    const identity = await resolveRouteIdentity(req)
+    const identity = await resolveVerifiedIdentity(req)
     if (!identity) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
@@ -40,6 +41,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Trust failed' }, { status: 500 })
     }
 
+    await recordSecondFactor(admin, identity, 'otp')
     return NextResponse.json({ ok: true, deviceId })
   } catch (e) {
     console.error('[auth/device/trust] unexpected', e)

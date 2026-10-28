@@ -11,3 +11,21 @@ export function deferPushPrompt(record: OnboardingRecord | undefined, openOnboar
   if (record?.push === 'later' && record.pushLaterAt) return now - Date.parse(record.pushLaterAt) < ASK_AGAIN_AFTER_MS
   return false
 }
+
+export type OsPushPermission = 'granted' | 'prompt' | 'denied'
+
+/**
+ * What the app does about push at boot. A phone that already allowed notifications registers silently (tokens rotate);
+ * a denied one is left alone; one that was never asked shows the app's own pre-prompt first, never the OS dialog cold.
+ */
+export function pushBootAction(
+  permission: OsPushPermission,
+  record: OnboardingRecord | undefined,
+  openOnboarding: boolean,
+  optedOut: boolean,
+  now: number,
+): 'register' | 'ask' | 'skip' {
+  if (optedOut || permission === 'denied') return 'skip'
+  if (permission === 'granted') return 'register'
+  return deferPushPrompt(record, openOnboarding, now) ? 'skip' : 'ask'
+}

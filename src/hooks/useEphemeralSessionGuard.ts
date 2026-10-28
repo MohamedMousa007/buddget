@@ -5,59 +5,64 @@ import { createClient } from '@/lib/supabase/client'
 import { isNative } from '@/lib/native/isNative'
 
 const EPHEMERAL_KEY = 'buddget_ephemeral_session'
+/** While a tab is open it renews the marker this often; the marker is "stale" once nothing has renewed it for the grace period. */
+const HEARTBEAT_MS = 20_000
+const GRACE_MS = 2 * 60_000
 
+/** Sign-in without "Remember me": leaves a marker that open tabs keep fresh. Any other sign-in clears it. */
 export function markSessionEphemeral(ephemeral: boolean): void {
   if (typeof window === 'undefined') return
   try {
-    if (ephemeral) window.sessionStorage.setItem(EPHEMERAL_KEY, '1')
-    else window.sessionStorage.removeItem(EPHEMERAL_KEY)
+    if (ephemeral) window.localStorage.setItem(EPHEMERAL_KEY, String(Date.now()))
+    else window.localStorage.removeItem(EPHEMERAL_KEY)
   } catch {
     /* restricted storage */
   }
 }
 
-function readEphemeral(): boolean {
-  if (typeof window === 'undefined') return false
+/** True when a "Remember me" off marker exists and no tab has renewed it for longer than the grace period, i.e. the browser was closed. */
+export function ephemeralSessionExpired(marker: string | null, now: number): boolean {
+  if (!marker) return false
+  const at = Number(marker)
+  return !Number.isFinite(at) || now - at > GRACE_MS
+}
+
+function readMarker(): string | null {
   try {
-    return window.sessionStorage.getItem(EPHEMERAL_KEY) === '1'
+    return window.localStorage.getItem(EPHEMERAL_KEY)
   } catch {
-    return false
+    return null
   }
 }
 
 /**
- * When the user signs in WITHOUT ticking "Remember me", we write the
- * `buddget_ephemeral_session` flag into sessionStorage. This hook watches for
- * the tab closing (`pagehide`) and calls `signOut({ scope: 'local' })` so the
- * Supabase refresh token is revoked on this device — next time they open the
- * app they'll see the landing gate again.
+ * "Remember me" off: the session should end when the browser is closed, but a reload, a hard navigation or a second tab
+ * must not sign the user out. Open tabs renew a marker in localStorage; on load, a marker that nothing has renewed for
+ * two minutes means the browser was closed since, and only then is this device signed out (local scope).
  *
- * Why pagehide + not beforeunload? `pagehide` is the more reliable
- * tab-close signal across mobile browsers (iOS Safari in particular) and
- * fires on background discard too. `beforeunload` is aggressive and some
- * mobile browsers don't fire it consistently.
- *
- * No-op when ephemeral flag is absent — regular sessions persist normally.
+ * Native keeps its session: backgrounding the app is not closing it.
  */
 export function useEphemeralSessionGuard(userSignedIn: boolean): void {
   useEffect(() => {
-    if (!userSignedIn) return
-    // On native, `pagehide` fires on every app BACKGROUND (not just close), so
-    // signing out here would log the user out each time they leave the app.
-    // Native sessions persist; ephemeral-on-close is a web-only behaviour.
-    if (isNative()) return
-    const handler = () => {
-      if (!readEphemeral()) return
+    if (!userSignedIn || isNative()) return
+    if (ephemeralSessionExpired(readMarker(), Date.now())) {
+      markSessionEphemeral(false)
       try {
-        const supabase = createClient()
-        // Best-effort; browser may kill the JS before the network request
-        // completes. For anything stronger we'd need a service-worker sync.
-        void supabase.auth.signOut({ scope: 'local' })
+        void createClient().auth.signOut({ scope: 'local' })
       } catch {
         /* supabase unconfigured */
       }
+      return
     }
-    window.addEventListener('pagehide', handler)
-    return () => window.removeEventListener('pagehide', handler)
+    const renew = () => {
+      if (readMarker() !== null) markSessionEphemeral(true)
+    }
+    renew()
+    const id = window.setInterval(renew, HEARTBEAT_MS)
+    window.addEventListener('pagehide', renew)
+    return () => {
+      window.clearInterval(id)
+      window.removeEventListener('pagehide', renew)
+    }
   }, [userSignedIn])
 }

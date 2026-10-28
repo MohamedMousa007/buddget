@@ -44,6 +44,18 @@ export async function POST(request: Request) {
     }
     if (!row) return NextResponse.json({ error: 'No biometric account on this device' }, { status: 404 })
 
+    // A phone the owner removed is cut off here, not only when it next opens the app.
+    const { data: removed } = await admin
+      .from('user_devices')
+      .select('revoked_at')
+      .eq('user_id', row.user_id)
+      .eq('device_id', deviceId)
+      .maybeSingle()
+    if (removed?.revoked_at) {
+      await admin.from('biometric_devices').delete().eq('device_id', deviceId).eq('user_id', row.user_id)
+      return NextResponse.json({ error: 'No biometric account on this device' }, { status: 404 })
+    }
+
     // Constant-time compare of the SHA-256 hashes.
     const provided = createHash('sha256').update(secret).digest()
     const stored = Buffer.from(row.secret_hash, 'hex')

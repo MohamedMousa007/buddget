@@ -7,6 +7,8 @@ import {
   saveAiRuntimeConfig,
 } from '@/lib/server/aiRuntimeConfig'
 import { can } from '@/lib/admin/permissions'
+import { confirmsLockOut, exceedsLatestRelease, LOCK_OUT_CONFIRMATION } from '@/lib/admin/minVersion'
+import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import type { Json } from '@/lib/supabase/database.types'
 
@@ -105,12 +107,22 @@ export async function POST(req: Request) {
   if (!g.ok) return g.res
   const { ctx } = g
   if (!can(ctx.permissions, 'platform.manage')) return bad('Your role does not allow this.', 403)
-  const body = await readJson<{ op?: string; key?: string; value?: Record<string, unknown> }>(req)
+  const body = await readJson<{ op?: string; key?: string; value?: Record<string, unknown>; confirmText?: string; code?: string; stepUpPassword?: string }>(req)
   if (body?.op !== 'set_setting' || !body.key || !(SETTING_KEYS as readonly string[]).includes(body.key) || !body.value) return bad('Unknown action.')
   const clean = sanitizeSetting(body.key as SettingKey, body.value)
   if (clean === null) return bad('Versions look like 1.2.3.')
+  if (body.key === 'min_app_version') {
+    const { ios = '', android = '' } = clean as { ios?: string; android?: string }
+    if (ios || android) {
+      if (exceedsLatestRelease(ios, android) && !confirmsLockOut(body.confirmText)) {
+        return bad(`That minimum is above the newest release, so every user would be locked out. Type ${LOCK_OUT_CONFIRMATION} to confirm.`, 422)
+      }
+      if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
+    }
+  }
+  const { data: before } = await ctx.service.from('platform_settings').select('value').eq('key', body.key).maybeSingle()
   const { error } = await ctx.service.from('platform_settings').upsert({ key: body.key, value: clean, updated_by: ctx.staff.id })
   if (error) return bad('Could not save the setting.', 500)
-  await ctx.audit('platform.setting', { targetType: 'setting', targetId: body.key, summary: `Changed ${body.key}`, metadata: { value: clean } })
+  await ctx.audit('platform.setting', { targetType: 'setting', targetId: body.key, summary: `Changed ${body.key}`, metadata: { value: clean, before: before?.value ?? null } })
   return json({ ok: true })
 }

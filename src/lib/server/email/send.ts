@@ -4,6 +4,7 @@ import type { EmailVars } from '@/lib/email/variables'
 import { createServiceRoleClient, type ServiceClient } from '@/lib/supabase/service'
 import { renderEmail } from './render'
 import { resolveUserLocale } from './store'
+import { isSuppressed } from './suppression'
 
 const DEFAULT_FROM = 'Buddget <no-reply@buddget.app>'
 const SEND_TIMEOUT_MS = 4000
@@ -51,6 +52,8 @@ export async function sendTemplatedEmail(key: string, to: Recipient, vars: Email
   try {
     const apiKey = process.env.RESEND_API_KEY?.trim()
     if (!apiKey) throw new Error('RESEND_API_KEY is not set')
+    // Sign-in mail is exempt: someone asking for a code must receive it, and Resend keeps its own bounce protection.
+    if (source !== 'auth_hook' && (await isSuppressed(service, to.email))) throw new Error('Recipient is on the suppression list')
     locale = to.locale ?? chooseLocale(await resolveUserLocale(service, to.id))
     const rendered = await renderEmail(service, key, locale, { email: to.email, first_name: to.firstName ?? undefined, full_name: to.fullName ?? undefined, ...vars }, opts.override)
     locale = rendered.locale

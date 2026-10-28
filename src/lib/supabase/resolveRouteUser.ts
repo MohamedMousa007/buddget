@@ -46,6 +46,8 @@ export interface RouteIdentity {
   email: string | null
   /** How the session was established (JWT `amr`): lets a route ask for a recent one-time-code login. */
   amr: AuthMethodRef[]
+  /** The Auth session this token belongs to (JWT `session_id`). */
+  sessionId: string | null
 }
 
 /** Three base64url parts: a JWT. Opaque tokens (SMS ingest tokens) are not, and must never cost an Auth round trip. */
@@ -60,8 +62,10 @@ function jwtVerifier(): SupabaseClient {
   return verifier
 }
 
-function identityOf(claims: { sub?: string; role?: string; email?: string; amr?: unknown[] } | null | undefined): RouteIdentity | null {
-  return claims?.sub && claims.role === 'authenticated' ? { id: claims.sub, email: claims.email ?? null, amr: (claims.amr ?? []).filter((a): a is AuthMethodRef => typeof a === 'object' && a !== null) } : null
+function identityOf(claims: { sub?: string; role?: string; email?: string; amr?: unknown[]; session_id?: string } | null | undefined): RouteIdentity | null {
+  return claims?.sub && claims.role === 'authenticated'
+    ? { id: claims.sub, email: claims.email ?? null, amr: (claims.amr ?? []).filter((a): a is AuthMethodRef => typeof a === 'object' && a !== null), sessionId: claims.session_id ?? null }
+    : null
 }
 
 /**
@@ -89,4 +93,15 @@ export async function resolveRouteIdentity(request: Request): Promise<RouteIdent
   } catch {
     return null
   }
+}
+
+/**
+ * `resolveRouteIdentity` plus a round trip to the Auth server, so a revoked, banned or signed-out-elsewhere session is
+ * refused at once instead of passing until its JWT expires. For routes that delete, re-authenticate or change credentials.
+ */
+export async function resolveVerifiedIdentity(request: Request): Promise<RouteIdentity | null> {
+  const identity = await resolveRouteIdentity(request)
+  if (!identity) return null
+  const { user } = await resolveRouteUser(request)
+  return user?.id === identity.id ? identity : null
 }

@@ -33,6 +33,11 @@ export const BUILTIN_SCENARIOS: readonly EmailScenario[] = [
   { key: 'welcome', name: 'Welcome', usedIn: 'After the first sign-in', vars: BASE, requiresAny: [], required: [] },
 ]
 
+/** Emails that carry a one-time link or code. Only the owner publishes them, with a fresh step-up. */
+export const SECURITY_SCENARIO_KEYS: readonly string[] = ['confirm_signup', 'sign_in_code', 'password_reset', 'email_change', 'reauthentication', 'invite_admin', 'admin_unlock_code', 'invite_user']
+
+export const isSecurityScenario = (key: string): boolean => SECURITY_SCENARIO_KEYS.includes(key)
+
 export const CUSTOM_KEY_RE = /^[a-z][a-z0-9_]{1,47}$/
 
 export function customScenario(key: string, name: string, description: string): EmailScenario {
