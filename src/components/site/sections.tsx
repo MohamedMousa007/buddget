@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { STORE_LINKS, type SiteLocale } from '@/lib/site/config'
+import { STORE_LINKS, WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
 import { reviewsFor } from '@/lib/site/content/reviews'
 import type { Faq } from '@/lib/site/content/types'
 import { pathFor, siteContent } from '@/lib/site/routes'
@@ -153,7 +153,7 @@ export function BottomCta({ locale, title, text }: { locale: SiteLocale; title: 
       <Container>
         <div className="flex flex-wrap items-center justify-between gap-6 rounded-3xl bg-brand-primary-soft p-8 sm:p-10">
           <div><H3 className="text-2xl">{title}</H3>{text ? <p className="mt-1 text-brand-text-secondary">{text}</p> : null}</div>
-          <ButtonLink href={pathFor(locale, 'download')} size="lg">{c.getApp}</ButtonLink>
+          <div className="flex flex-wrap gap-3"><ButtonLink href={pathFor(locale, 'download')} size="lg">{c.getApp}</ButtonLink><ButtonLink href={WEB_APP_URL} variant="outline" size="lg" external>{c.tryBrowser}</ButtonLink></div>
         </div>
       </Container>
     </Section>

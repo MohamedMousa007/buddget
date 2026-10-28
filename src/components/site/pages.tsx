@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { STORE_LINKS, SUPPORT_EMAIL, WEB_APP_PATH, type SiteLocale } from '@/lib/site/config'
+import { STORE_LINKS, SUPPORT_EMAIL, WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
 import type { ScreenKey } from '@/lib/site/screens'
 import { BuddgyQA } from './BuddgyQA'
@@ -31,10 +31,15 @@ export function HomePage({ locale }: P) {
               <Lede className="max-w-[34ch] text-xl sm:text-2xl">{h.hero.lede}</Lede>
               <div className="flex flex-wrap items-center gap-3.5">
                 <ButtonLink href={pathFor(locale, 'download')} size="lg">{c.common.getApp}</ButtonLink>
-                <ButtonLink href="#how" variant="outline" size="lg">{c.common.seeHow}</ButtonLink>
+                <ButtonLink href={WEB_APP_URL} variant="outline" size="lg" external>{c.common.tryBrowser}</ButtonLink>
               </div>
+              <p className="text-sm text-brand-text-secondary">
+                {c.common.noInstall} {c.common.haveAccount}{' '}
+                <a href={WEB_APP_URL} data-track="cta" className="inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{c.common.logIn}</a>
+              </p>
               <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-text-secondary">
                 {h.hero.assurances.map((a) => <li key={a}>{a}</li>)}
+                <li><a href="#how" className="inline-flex min-h-11 items-center hover:text-brand-primary-ink">{c.common.seeHow} <span aria-hidden className="ms-1 rtl:rotate-180">↓</span></a></li>
               </ul>
             </div>
             <div className="flex justify-center lg:flex-1 lg:basis-[420px]">
@@ -143,7 +148,10 @@ export function HomePage({ locale }: P) {
           <H2 className="max-w-[18ch] sm:text-5xl">{h.final.h2}</H2>
           <Lede className="mx-auto">{h.final.lede}</Lede>
           <StoreBadges locale={locale} dark />
-          <TextLink locale={locale} slug="download">{c.common.joinBeta}</TextLink>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <ButtonLink href={WEB_APP_URL} variant="outline" external>{c.common.tryBrowser}</ButtonLink>
+            <TextLink locale={locale} slug="download">{c.common.joinBeta}</TextLink>
+          </div>
         </Container>
       </Section>
     </>
@@ -250,7 +258,7 @@ export function PricingPage({ locale }: P) {
               <div><H3 as="h2" className="text-2xl">{p.free.name}</H3><p className="mt-1 text-brand-text-secondary">{p.free.tag}</p></div>
               <div dir="auto" className="font-mono text-5xl font-medium">{p.free.price}</div>
               <Ticks items={p.free.items} />
-              <ButtonLink href={pathFor(locale, 'download')} className="mt-auto">{p.free.cta}</ButtonLink>
+              <div className="mt-auto grid gap-2"><ButtonLink href={pathFor(locale, 'download')}>{p.free.cta}</ButtonLink><ButtonLink href={WEB_APP_URL} variant="ghost" external>{c.common.tryBrowser}</ButtonLink></div>
             </Card>
             <Card className="flex flex-col gap-5">
               <div><H3 as="h2" className="text-2xl">{p.plus.name}</H3><p className="mt-1 text-brand-text-secondary">{p.plus.tag}</p></div>
@@ -276,7 +284,7 @@ export function DownloadPage({ locale }: P) {
     <>
       <PageHero locale={locale} trail={[{ label: c.footer.links.download }]} eyebrow={d.intro.eyebrow} h1={d.intro.h1} lede={d.intro.lede}>
         <StoreBadges locale={locale} />
-        <div><ButtonLink href={WEB_APP_PATH} variant="outline" external>{d.webApp}</ButtonLink></div>
+        <div className="flex flex-wrap items-center gap-3"><ButtonLink href={WEB_APP_URL} variant="outline" external>{c.common.tryBrowser}</ButtonLink><span className="text-sm text-brand-text-secondary">{c.common.noInstall} {c.common.haveAccount} <a href={WEB_APP_URL} className="inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{c.common.logIn}</a></span></div>
       </PageHero>
       {!storesLive ? (
         <Section pad="md" id="beta">

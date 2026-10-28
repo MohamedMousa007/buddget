@@ -38,14 +38,14 @@ export type SiteContent = {
   name: string
   meta: { homeTitle: string; homeDescription: string }
   announce: { text: string; slug: string }
-  nav: { features: string; how: string; pricing: string; security: string; help: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
+  nav: { login: string; features: string; how: string; pricing: string; security: string; help: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
   footer: {
     tag: string; follow: string
     product: string; learn: string; company: string; legal: string
     links: Record<string, string>
     copy: string; legalNote: string
   }
-  common: { getApp: string; seeHow: string; joinBeta: string; readMore: string; home: string; breadcrumb: string; contactUs: string; example: string; free: string; share: string }
+  common: { tryBrowser: string; logIn: string; noInstall: string; haveAccount: string; getApp: string; seeHow: string; joinBeta: string; readMore: string; home: string; breadcrumb: string; contactUs: string; example: string; free: string; share: string }
   home: {
     hero: { h1: string; lede: string; assurances: string[]; tabs: { key: ScreenKey; label: string }[] }
     answers: { h2: string; lede: string; items: { eyebrow: string; h: string; p: string; bullets: string[]; link: Link; screens: [ScreenKey, ScreenKey] }[] }

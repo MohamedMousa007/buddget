@@ -45,3 +45,48 @@ export const SITE_CSP = [
   "base-uri 'self'",
   "form-action 'self'",
 ].join('; ')
+
+export type HostSplit = { marketing: string; app: string }
+
+/**
+ * Two-host mode: the website on the root domain, the product on its own subdomain. Off until
+ * NEXT_PUBLIC_MY_HOST is set, so nothing changes before DNS and Supabase are ready.
+ */
+export function splitHosts(env: { my?: string; marketing?: string } = { my: process.env.NEXT_PUBLIC_MY_HOST, marketing: process.env.NEXT_PUBLIC_MARKETING_HOST }): HostSplit | null {
+  const app = env.my?.trim().toLowerCase()
+  if (!app) return null
+  const marketing = env.marketing?.trim().toLowerCase() || app.split('.').slice(1).join('.')
+  return marketing ? { marketing, app } : null
+}
+
+/** Paths the root domain keeps serving besides the website: shared APIs, auth callbacks, legal pages and static files. */
+const MARKETING_PASSTHROUGH = ['/api/', '/_next/', '/site/', '/icons/', '/legal/', '/auth/callback', '/reset-password', '/privacy', '/terms']
+const MARKETING_FILES = new Set(['/robots.txt', '/sitemap.xml', '/llms.txt', '/favicon.ico', '/og-en.png', '/og-ar.png', '/opengraph-image.png'])
+
+export type SiteRoute = { kind: 'next' } | { kind: 'rewrite'; pathname: string } | { kind: 'redirect'; url: string } | { kind: 'robots-closed' }
+
+export function decideSiteRoute(input: {
+  host: string
+  pathname: string
+  search: string
+  hasSession: boolean
+  acceptLanguage: string | null
+  split: HostSplit | null
+}): SiteRoute {
+  const { host, pathname, search, split } = input
+  if (!split) {
+    const home = siteHomeRewrite({ pathname, hasSession: input.hasSession, acceptLanguage: input.acceptLanguage })
+    return home ? { kind: 'rewrite', pathname: home } : { kind: 'next' }
+  }
+  if (host === `www.${split.marketing}`) return { kind: 'redirect', url: `https://${split.marketing}${pathname}${search}` }
+  if (host === split.marketing) {
+    if (pathname === '/') return { kind: 'rewrite', pathname: `/${pickSiteLocale(input.acceptLanguage)}` }
+    if (isSitePath(pathname) || MARKETING_FILES.has(pathname) || MARKETING_PASSTHROUGH.some((p) => pathname === p || pathname.startsWith(p))) return { kind: 'next' }
+    return { kind: 'redirect', url: `https://${split.app}${pathname}${search}` }
+  }
+  if (host === split.app) {
+    if (pathname === '/robots.txt') return { kind: 'robots-closed' }
+    if (isSitePath(pathname)) return { kind: 'redirect', url: `https://${split.marketing}${pathname}${search}` }
+  }
+  return { kind: 'next' }
+}

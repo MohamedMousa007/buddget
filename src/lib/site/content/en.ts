@@ -10,6 +10,7 @@ export const en: SiteContent = {
   },
   announce: { text: 'Beta is open. Join the list and tell us what to build next.', slug: 'download' },
   nav: {
+    login: 'Log in',
     features: 'Features', how: 'How it works', pricing: 'Pricing', security: 'Security', help: 'Help',
     menu: 'Menu', close: 'Close menu', cta: 'Get the app', skip: 'Skip to content', switchLabel: 'العربية', switchTo: 'Switch to Arabic',
   },
@@ -27,6 +28,7 @@ export const en: SiteContent = {
     legalNote: 'The privacy policy and terms are published in English.',
   },
   common: {
+    tryBrowser: 'Try it in your browser', logIn: 'Log in', noInstall: 'No download needed. Works on any phone or computer.', haveAccount: 'Already have an account?',
     getApp: 'Get the app', seeHow: 'See how it works', joinBeta: 'Join the beta list', readMore: 'Learn more',
     home: 'Home', breadcrumb: 'Breadcrumb', contactUs: 'Contact us', example: 'Example from a demo account', free: 'Free', share: 'Share',
   },

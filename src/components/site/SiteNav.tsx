@@ -7,7 +7,7 @@ import { BuddgetWordmark } from '@/components/brand'
 import { IconButton } from '@/components/ui/IconButton'
 import { buttonVariants } from '@/components/ui/buttonVariants'
 import { cn } from '@/lib/utils'
-import type { SiteLocale } from '@/lib/site/config'
+import { WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
 import { pathFor } from '@/lib/site/routes'
 import { siteContent } from '@/lib/site/routes'
 
@@ -46,6 +46,7 @@ export function SiteNav({ locale, slug, dark }: Props) {
         <Link href={pathFor(other, slug)} hrefLang={other} lang={other} aria-label={c.switchTo} className="hidden min-h-11 items-center px-2 text-sm font-medium text-brand-text-secondary hover:text-brand-text-primary sm:inline-flex">
           {c.switchLabel}
         </Link>
+        <a href={WEB_APP_URL} data-track="cta" className="hidden min-h-11 items-center px-3 text-[15px] font-semibold hover:text-brand-primary-ink sm:inline-flex">{c.login}</a>
         <Link href={pathFor(locale, 'download')} data-track="cta" className={cn(buttonVariants({ variant: 'default', size: 'touch' }), 'hidden rounded-full px-6 font-semibold sm:inline-flex')}>
           {c.cta}
         </Link>
@@ -61,6 +62,7 @@ export function SiteNav({ locale, slug, dark }: Props) {
                 {l.label}
               </Link>
             ))}
+            <a href={WEB_APP_URL} className="flex min-h-12 items-center border-b border-brand-border text-lg font-semibold">{c.login}</a>
             <Link href={pathFor(other, slug)} hrefLang={other} lang={other} className="flex min-h-12 items-center text-lg font-medium text-brand-text-secondary">{c.switchLabel}</Link>
           </nav>
           <Link href={pathFor(locale, 'download')} onClick={() => setOpen(false)} className={cn(buttonVariants({ variant: 'default', size: 'cta-block' }), 'mt-3 rounded-full text-base font-semibold')}>

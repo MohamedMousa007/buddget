@@ -15,6 +15,11 @@ export function appHostFor(adminHost: string): string {
   return adminHost.split('.').slice(1).join('.')
 }
 
+/** Where the product lives: its own subdomain in two-host mode, the root domain otherwise. */
+export function appHostForRedirects(adminHost: string = configuredAdminHost()): string {
+  return process.env.NEXT_PUBLIC_MY_HOST?.trim().toLowerCase() || appHostFor(adminHost)
+}
+
 export function normalizeHost(host: string | null | undefined): string {
   return (host ?? '').trim().toLowerCase().replace(/:\d+$/, '')
 }
@@ -38,7 +43,8 @@ export function decideHostRoute(
   adminHost: string = configuredAdminHost(),
 ): HostDecision {
   const host = normalizeHost(input.host)
-  const appHost = appHostFor(adminHost)
+  const apex = appHostFor(adminHost)
+  const appHost = appHostForRedirects(adminHost)
   const search = input.search ?? ''
 
   if (host === adminHost) {
@@ -47,7 +53,7 @@ export function decideHostRoute(
     return { kind: 'redirect', url: `https://${appHost}${input.pathname}${search}` }
   }
 
-  if (host === appHost && (input.pathname === '/admin' || input.pathname.startsWith('/admin/'))) {
+  if ((host === appHost || host === apex) && (input.pathname === '/admin' || input.pathname.startsWith('/admin/'))) {
     const path = input.pathname === '/admin' ? '/' : input.pathname
     return { kind: 'redirect', url: `https://${adminHost}${path}${search}` }
   }

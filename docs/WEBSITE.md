@@ -14,3 +14,6 @@ Static marketing site in English and Arabic, served from the same Next app as th
 - **Share images:** `public/og-en.png` and `public/og-ar.png`, 1200x630, set per language in `seo.ts`.
 - **CSP:** site pages use `SITE_CSP` (inline scripts allowed because static pages carry no nonce); the app keeps its nonce CSP.
 - **Claims:** the automation figure on the home page is beta data and needs a refresh and date before launch.
+
+## Two-host mode (root domain = website, my.buddget.app = product)
+Set `NEXT_PUBLIC_MY_HOST=my.buddget.app` (optionally `NEXT_PUBLIC_MARKETING_HOST`, default is the parent domain). Logic in `decideSiteRoute` (`src/lib/site/entry.ts`), covered by tests. On the root domain: `/` is the website, `/api`, `/auth/callback`, `/legal`, static files stay, app routes redirect to the app host; `www` redirects to the root; the app host redirects website paths back and serves a closed `robots.txt`. Unset, nothing changes.

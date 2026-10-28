@@ -24,4 +24,5 @@ export const STORE_LINKS: { appStore: string | null; googlePlay: string | null }
 /** Sample reviews are a design placeholder. They never render in production unless this is set. */
 export const SHOW_SAMPLE_REVIEWS = process.env.NEXT_PUBLIC_SITE_SAMPLE_REVIEWS === '1'
 
-export const WEB_APP_PATH = '/flow'
+/** Where "Try it in your browser" and "Log in" go: the product host once two-host mode is on, the same site before that. */
+export const WEB_APP_URL = process.env.NEXT_PUBLIC_MY_HOST ? `https://${process.env.NEXT_PUBLIC_MY_HOST.trim()}` : '/flow'

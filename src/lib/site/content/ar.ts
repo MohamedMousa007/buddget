@@ -14,6 +14,7 @@ export const ar: SiteContent = {
   },
   announce: { text: 'النسخة التجريبية مفتوحة. سجّل بريدك وقل لنا ماذا نبني بعد ذلك.', slug: 'download' },
   nav: {
+    login: 'تسجيل الدخول',
     features: 'المميزات', how: 'كيف يعمل', pricing: 'الأسعار', security: 'الأمان', help: 'المساعدة',
     menu: 'القائمة', close: 'إغلاق القائمة', cta: 'حمّل التطبيق', skip: 'انتقل إلى المحتوى', switchLabel: 'English', switchTo: 'التبديل إلى الإنجليزية',
   },
@@ -31,6 +32,7 @@ export const ar: SiteContent = {
     legalNote: 'سياسة الخصوصية والشروط متاحة بالإنجليزية حاليًا.',
   },
   common: {
+    tryBrowser: 'جرّب من المتصفح', logIn: 'تسجيل الدخول', noInstall: 'بدون تحميل. يعمل على أي هاتف أو كمبيوتر.', haveAccount: 'لديك حساب؟',
     getApp: 'حمّل التطبيق', seeHow: 'شاهد كيف يعمل', joinBeta: 'سجّل في القائمة التجريبية', readMore: 'التفاصيل',
     home: 'الرئيسية', breadcrumb: 'مسار التنقل', contactUs: 'تواصل معنا', example: 'مثال من حساب تجريبي', free: 'مجاني', share: 'مشاركة',
   },
