@@ -48,7 +48,7 @@ export function SiteFooter({ locale }: { locale: SiteLocale }) {
     },
   ]
   return (
-    <footer className="foot dark">
+    <footer className="foot">
       <div className="wrap">
         <div className="foot-g g5">
           <div className="flex flex-col gap-4">

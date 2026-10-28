@@ -32,9 +32,9 @@ function Ring2({ t, plan }: { t: number; plan: string }) {
         {Array.from({ length: 60 }, (_, i) => {
           const a = (i / 60) * Math.PI * 2
           const lg = i % 5 === 0
-          return <line key={i} x1={(260 + Math.sin(a) * 236).toFixed(1)} y1={(260 - Math.cos(a) * 236).toFixed(1)} x2={(260 + Math.sin(a) * (lg ? 252 : 245)).toFixed(1)} y2={(260 - Math.cos(a) * (lg ? 252 : 245)).toFixed(1)} stroke={lg ? '#3C5651' : '#233633'} strokeWidth={lg ? 3 : 2} strokeLinecap="round" />
+          return <line key={i} x1={(260 + Math.sin(a) * 236).toFixed(1)} y1={(260 - Math.cos(a) * 236).toFixed(1)} x2={(260 + Math.sin(a) * (lg ? 252 : 245)).toFixed(1)} y2={(260 - Math.cos(a) * (lg ? 252 : 245)).toFixed(1)} className={lg ? 'tk lg' : 'tk'} strokeWidth={lg ? 3 : 2} strokeLinecap="round" />
         })}
-        <circle cx="260" cy="260" r={R} fill="none" stroke="#121C1A" strokeWidth="30" />
+        <circle cx="260" cy="260" r={R} className="track" strokeWidth="30" />
         <g transform="rotate(-90 260 260)">
           {arcs}
           {k2 > 0 ? <circle className="arc rem" cx="260" cy="260" r={R} stroke="#1FC3B2" strokeDasharray={`${Math.max(0, rem - GAP).toFixed(1)} ${C.toFixed(1)}`} strokeDashoffset={(-(16253 / TOTAL) * C).toFixed(1)} /> : null}

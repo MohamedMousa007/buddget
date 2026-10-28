@@ -6,6 +6,7 @@ import { BuddgetWordmark } from '@/components/brand'
 import { WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
 import { fill } from './home/format'
+import { ThemeToggle } from './ThemeToggle'
 
 type Props = { locale: SiteLocale; slug: string }
 
@@ -77,12 +78,12 @@ export function SiteNav({ locale, slug }: Props) {
 
   return (
     <>
-      <header className="nav dark">
+      <header className="nav">
         <div className="nav-in">
           <div className="nav-bar">
             <Link className="wm" href={home} aria-label="Buddget"><BuddgetWordmark height={24} /></Link>
             <span className="day" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#233633" strokeWidth="3" /><circle cx="12" cy="12" r="9" fill="none" stroke="#1FC3B2" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(prog * 56.5).toFixed(1)} 57`} /></svg>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" className="day-track" strokeWidth="3" /><circle cx="12" cy="12" r="9" fill="none" stroke="#1FC3B2" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(prog * 56.5).toFixed(1)} 57`} /></svg>
               <span>{fill(n.day, { n: day })}</span>
             </span>
             <nav className="tabs" aria-label="Main" ref={megaRef}>
@@ -96,6 +97,7 @@ export function SiteNav({ locale, slug }: Props) {
             </nav>
             <div className="nav-end">
               <a className="pill login" href={WEB_APP_URL} data-track="cta">{n.login}</a>
+              <ThemeToggle toLight={n.themeToLight} toDark={n.themeToDark} />
               <Link className="lang" href={pathFor(other, slug)} hrefLang={other} lang={other} aria-label={n.switchTo}>{n.switchLabel}</Link>
               <Link className="pill pill-p nav-cta" href={pathFor(locale, 'download')} data-track="cta">{n.cta}</Link>
               <button className="burger" type="button" aria-label={n.menu} aria-expanded={sheet} aria-controls="hm-sheet" onClick={() => setSheet(true)}>
@@ -118,7 +120,7 @@ export function SiteNav({ locale, slug }: Props) {
           </div>
         </div>
       </header>
-      <div className={`sheet dark${sheet ? ' open' : ''}`} id="hm-sheet" role="dialog" aria-modal="true" aria-label={n.menu} aria-hidden={!sheet} onClick={(e) => { if ((e.target as Element).closest('a')) setSheet(false) }}>
+      <div className={`sheet${sheet ? ' open' : ''}`} id="hm-sheet" role="dialog" aria-modal="true" aria-label={n.menu} aria-hidden={!sheet} onClick={(e) => { if ((e.target as Element).closest('a')) setSheet(false) }}>
         <button className="sheet-x" type="button" aria-label={n.close} onClick={() => setSheet(false)} tabIndex={sheet ? 0 : -1}>×</button>
         {mobile.map((l) => <Link key={l.href} className="sl" href={l.href} tabIndex={sheet ? 0 : -1}>{l.label}</Link>)}
         <div className="sh-cta">
@@ -126,6 +128,7 @@ export function SiteNav({ locale, slug }: Props) {
           <a className="pill pill-g pill-lg" href={WEB_APP_URL} data-track="cta" tabIndex={sheet ? 0 : -1}>{c.common.tryBrowser}</a>
           <a className="pill pill-g pill-lg" href={WEB_APP_URL} data-track="cta" tabIndex={sheet ? 0 : -1}>{n.login}</a>
           <Link className="pill pill-g pill-lg" href={pathFor(other, slug)} hrefLang={other} lang={other} tabIndex={sheet ? 0 : -1}>{n.switchLabel}</Link>
+          <ThemeToggle withLabel className="pill pill-g pill-lg theme-row" toLight={n.themeToLight} toDark={n.themeToDark} />
         </div>
       </div>
     </>

@@ -11,7 +11,7 @@ export const en: SiteContent = {
   nav: {
     login: 'Log in',
     features: 'Features', how: 'How it works', afford: 'Can I afford it?', pricing: 'Pricing', security: 'Security', help: 'Help',
-    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', megaAfford: 'Can I afford it?', day: 'Day {n} of 30', getAppShort: 'Get the app', tryShort: 'Try in browser',
+    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode', megaAfford: 'Can I afford it?', day: 'Day {n} of 30', getAppShort: 'Get the app', tryShort: 'Try in browser',
     menu: 'Menu', close: 'Close menu', cta: 'Get the app', skip: 'Skip to content', switchLabel: 'العربية', switchTo: 'Switch to Arabic',
   },
   footer: {

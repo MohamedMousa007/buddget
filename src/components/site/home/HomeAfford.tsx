@@ -22,17 +22,17 @@ export function HomeAfford({ locale }: { locale: SiteLocale }) {
 
   let mood: FaceMood = 'awake'
   let verdict = a.v0
-  let color = '#0D8578'
+  let color = 'var(--ok)'
   if (price > 0) {
     if (share <= 0.08) { mood = 'happy'; verdict = a.v1 }
     else if (share <= 0.25) { mood = 'curious'; verdict = a.v2 }
-    else if (share <= 0.6) { mood = 'worried'; verdict = a.v3; color = '#B7791F' }
-    else { mood = 'alert'; verdict = a.v4; color = '#C2442B' }
+    else if (share <= 0.6) { mood = 'worried'; verdict = a.v3; color = 'var(--warn)' }
+    else { mood = 'alert'; verdict = a.v4; color = 'var(--bad)' }
   }
   const body = fill(verdict.p, { s: Math.round(share * 100), w: nf(perWeek) })
 
   return (
-    <section className="you sec tone-light band" id="afford">
+    <section className="you sec alt band" id="afford">
       <div className="wrap">
         <h2 className="h2">{a.h2}</h2>
         <p className="sub">{a.p}</p>
@@ -41,7 +41,7 @@ export function HomeAfford({ locale }: { locale: SiteLocale }) {
             <div className="who" role="group" aria-label={a.hint}>
               {a.items.map((it) => (
                 <button key={it.label} type="button" aria-pressed={price === it.price} onClick={() => setPrice(it.price)}>
-                  {it.label} <span className="num" style={{ opacity: 0.7, fontSize: 13 }}>{nf(it.price)}</span>
+                  {it.label} <span className="num" style={{ fontSize: 13 }}>{nf(it.price)}</span>
                 </button>
               ))}
             </div>
@@ -53,7 +53,7 @@ export function HomeAfford({ locale }: { locale: SiteLocale }) {
           </div>
           <div className="calc" aria-live="polite">
             <div className="aff-top">
-              <span className="aff-bud"><BuddgyFace mood={mood} size={46} shell="#0D1A18" track={false} /></span>
+              <span className="aff-bud"><BuddgyFace mood={mood} size={46} shell="currentColor" track={false} /></span>
               <div><h3 style={{ color }}>{verdict.h}</h3><p>{body}</p></div>
             </div>
             <div className="aff-nums">

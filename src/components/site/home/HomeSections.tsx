@@ -31,7 +31,7 @@ export function HomeProof({ locale }: { locale: SiteLocale }) {
 export function HomeTrust({ locale }: { locale: SiteLocale }) {
   const t = siteContent[locale].landing.trust
   return (
-    <section className="trust sec tone-light band" id="trust">
+    <section className="trust sec alt band" id="trust">
       <div className="wrap">
         <h2 className="h2">{t.h2}</h2>
         <div className="trust-grid">
@@ -57,7 +57,7 @@ export function HomeCompare({ locale }: { locale: SiteLocale }) {
         <h2 className="h2">{c.h2}</h2>
         <div className="cmp-t" tabIndex={0} role="region" aria-label={c.h2}>
           <table>
-            <thead><tr>{c.cols.map((x, i) => <th key={i} scope="col" className={i === 1 ? 'me' : undefined}>{x}</th>)}</tr></thead>
+            <thead><tr>{c.cols.map((x, i) => <th key={i} scope="col" className={i === 1 ? 'me' : undefined}>{x || <span className="sr">{c.rows[0][0]}</span>}</th>)}</tr></thead>
             <tbody>{c.rows.map((r) => <tr key={r[0]}><th scope="row">{r[0]}</th><td className="me">{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td></tr>)}</tbody>
           </table>
         </div>
@@ -69,7 +69,7 @@ export function HomeCompare({ locale }: { locale: SiteLocale }) {
 export function HomePricing({ locale }: { locale: SiteLocale }) {
   const p = siteContent[locale].landing.pricing
   return (
-    <section className="price sec tone-light band" id="price">
+    <section className="price sec alt band" id="price">
       <div className="wrap">
         <h2 className="h2">{p.h2}</h2>
         <p className="sub">{p.p}</p>
@@ -92,7 +92,7 @@ export function HomePricing({ locale }: { locale: SiteLocale }) {
 export function HomeFaq({ locale }: { locale: SiteLocale }) {
   const f = siteContent[locale].home.faq
   return (
-    <section className="faq-s sec tone-light band" id="faq">
+    <section className="faq-s sec alt band" id="faq">
       <div className="wrap">
         <h2 className="h2">{f.h2}</h2>
         <div className="faq-w" style={{ marginTop: 'clamp(28px,4vw,48px)' }}>
@@ -113,14 +113,14 @@ export function HomeClose({ locale }: { locale: SiteLocale }) {
         <div>
           <h2>{k.h2}</h2>
           <p className="sub" style={{ marginBottom: 26 }}>{k.lede}</p>
-          <div className="dark max-w-[520px]">
+          <div className="max-w-[520px]">
             <LeadForm kind="waitlist" locale={locale} inline labels={{ email: d.emailLabel, placeholder: d.emailPlaceholder, submit: d.submit, sent: d.sent, error: d.error }} />
           </div>
           <div className="row">
             <a className="pill pill-g pill-lg" href={WEB_APP_URL} data-track="cta">{c.common.tryBrowser}</a>
             <a className="pill" href={WEB_APP_URL} data-track="cta">{c.common.logIn}</a>
           </div>
-          <div className="dark" style={{ marginTop: 20 }}><StoreBadges locale={locale} dark /></div>
+          <div style={{ marginTop: 20 }}><StoreBadges locale={locale} dark /></div>
         </div>
       </div>
     </section>

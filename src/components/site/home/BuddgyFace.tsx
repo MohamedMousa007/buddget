@@ -13,15 +13,15 @@ const SHELL = [
 ]
 
 const FACES: Record<FaceMood, { color: string; paths: string[] }> = {
-  awake: { color: '#1FC3B2', paths: ['M9.75 12.5v1.75', 'M14.25 12.5v1.75'] },
-  happy: { color: '#F0BE5B', paths: ['M8.5 14a1.75 1.75 0 0 1 3 0', 'M12.5 14a1.75 1.75 0 0 1 3 0'] },
-  curious: { color: '#1FC3B2', paths: ['M9.75 13v1.25', 'M14.25 12v2.25', 'M13.25 10.5l2-.5'] },
-  worried: { color: '#F0BE5B', paths: ['M9.75 13v1', 'M14.25 13v1', 'M8.75 11.75 10.5 11', 'M15.25 11.75 13.5 11', 'M10.75 16.5a2 2 0 0 1 2.5 0'] },
+  awake: { color: 'var(--face-teal)', paths: ['M9.75 12.5v1.75', 'M14.25 12.5v1.75'] },
+  happy: { color: 'var(--face-gold)', paths: ['M8.5 14a1.75 1.75 0 0 1 3 0', 'M12.5 14a1.75 1.75 0 0 1 3 0'] },
+  curious: { color: 'var(--face-teal)', paths: ['M9.75 13v1.25', 'M14.25 12v2.25', 'M13.25 10.5l2-.5'] },
+  worried: { color: 'var(--face-gold)', paths: ['M9.75 13v1', 'M14.25 13v1', 'M8.75 11.75 10.5 11', 'M15.25 11.75 13.5 11', 'M10.75 16.5a2 2 0 0 1 2.5 0'] },
   alert: { color: '#E5684D', paths: ['M12 10.75v2.5', 'M12 15.75h.01'] },
 }
 
 /** Buddgy's visor with a mood. The eyes follow the pointer on pointer devices. Marketing replica of the app icon. */
-export function BuddgyFace({ mood, size, shell = '#F4F7F6', track = true, label = 'Buddgy' }: { mood: FaceMood; size: number; shell?: string; track?: boolean; label?: string }) {
+export function BuddgyFace({ mood, size, shell = 'currentColor', track = true, label = 'Buddgy' }: { mood: FaceMood; size: number; shell?: string; track?: boolean; label?: string }) {
   const face = FACES[mood]
   const root = useRef<SVGSVGElement>(null)
   const eyes = useRef<SVGGElement>(null)

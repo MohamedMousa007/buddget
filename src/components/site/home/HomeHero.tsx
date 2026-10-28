@@ -23,7 +23,7 @@ function Ticks() {
         const a = (i / 60) * Math.PI * 2
         const lg = i % 5 === 0
         const r2 = lg ? 252 : 245
-        return <line key={i} x1={(260 + Math.sin(a) * 236).toFixed(1)} y1={(260 - Math.cos(a) * 236).toFixed(1)} x2={(260 + Math.sin(a) * r2).toFixed(1)} y2={(260 - Math.cos(a) * r2).toFixed(1)} stroke={lg ? '#3C5651' : '#233633'} strokeWidth={lg ? 3 : 2} strokeLinecap="round" />
+        return <line key={i} x1={(260 + Math.sin(a) * 236).toFixed(1)} y1={(260 - Math.cos(a) * 236).toFixed(1)} x2={(260 + Math.sin(a) * r2).toFixed(1)} y2={(260 - Math.cos(a) * r2).toFixed(1)} className={lg ? 'tk lg' : 'tk'} strokeWidth={lg ? 3 : 2} strokeLinecap="round" />
       })}
     </>
   )
@@ -120,7 +120,7 @@ export function HomeHero({ locale }: { locale: SiteLocale }) {
           <div className="ring-wrap">
             <svg viewBox="0 0 520 520" aria-hidden="true">
               <Ticks />
-              <circle cx="260" cy="260" r={R} fill="none" stroke="#121C1A" strokeWidth="30" />
+              <circle cx="260" cy="260" r={R} className="track" strokeWidth="30" />
               <g transform="rotate(-90 260 260)">
                 {arcs.map((a, i) => a.len > 0 ? <circle key={i} className="arc" cx="260" cy="260" r={R} stroke={a.color} {...arcProps(a.len, a.start)} /> : null)}
                 {rem > GAP ? <circle className={`arc rem ${tone}`} cx="260" cy="260" r={R} stroke={remColor} {...arcProps(rem, used)} /> : null}

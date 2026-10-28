@@ -15,7 +15,7 @@ export const ar: SiteContent = {
   nav: {
     login: 'تسجيل الدخول',
     features: 'المميزات', how: 'كيف يعمل', afford: 'هل أستطيع شراءه؟', pricing: 'الأسعار', security: 'الأمان', help: 'المساعدة',
-    menuTitle: 'كل ما يفعله Buddget', megaTools: 'أدوات مجانية', megaAfford: 'هل أستطيع شراءه؟', day: 'اليوم {n} من 30', getAppShort: 'حمّل التطبيق', tryShort: 'جرّب من المتصفح',
+    menuTitle: 'كل ما يفعله Buddget', megaTools: 'أدوات مجانية', themeToLight: 'التبديل إلى الوضع الفاتح', themeToDark: 'التبديل إلى الوضع الداكن', megaAfford: 'هل أستطيع شراءه؟', day: 'اليوم {n} من 30', getAppShort: 'حمّل التطبيق', tryShort: 'جرّب من المتصفح',
     menu: 'القائمة', close: 'إغلاق القائمة', cta: 'حمّل التطبيق', skip: 'انتقل إلى المحتوى', switchLabel: 'English', switchTo: 'التبديل إلى الإنجليزية',
   },
   footer: {
