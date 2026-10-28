@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Trash2, Unlink } from 'lucide-react'
+import { Lock, Trash2, Unlink } from 'lucide-react'
 import { ModalShell, useModalTitleId } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
@@ -33,6 +33,7 @@ import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
 import { cadenceLine } from '@/lib/income/cadence'
 import { formatFixed2 } from '@/lib/utils/formatters'
 import { shortDate } from '@/lib/utils/shortDate'
+import { occurrenceChange } from '@/lib/income/occurrenceChange'
 import { navigate } from '@/lib/navigation/navigate'
 import {
   MODAL_BODY_SCROLL_CLASS,
@@ -257,12 +258,19 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
     if (!valid) return
     updateIncomeEvent(event.id, {
       name: name.trim(),
-      amount: amt,
-      currency: clampFiatToAllowed(settings, currency),
       receivedDate,
       notes: notes.trim() || undefined,
       paymentMethodId: paymentMethodId || undefined,
-      ...(typeLocked ? {} : { sourceType, templateId: templateId || null, status }),
+      ...(typeLocked
+        ? {}
+        : {
+            amount: amt,
+            currency: clampFiatToAllowed(settings, currency),
+            sourceType,
+            templateId: templateId || null,
+            status,
+            ...occurrenceChange(event, templateId, receivedDate),
+          }),
     })
     onClose()
   }
@@ -295,6 +303,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
               id="ie-amt"
               value={amount}
               onChange={setAmount}
+              disabled={typeLocked}
               className={`mt-1.5 ${MODAL_CONTROL_CLASS} text-xl font-semibold font-mono-numbers`}
             />
           </div>
@@ -304,10 +313,18 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
               value={currency}
               onChange={setCurrency}
               compact
+              disabled={typeLocked}
               className="mt-1.5 w-full h-12 px-3 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] text-sm focus:border-[var(--color-brand-focus)]"
             />
           </div>
         </div>
+
+        {typeLocked ? (
+          <p className="flex items-center gap-1.5 text-[12.5px] leading-[1.45] text-[var(--color-brand-text-secondary)]">
+            <Lock className="size-3.5 shrink-0" aria-hidden />
+            {t.moneyFlows.incomeLocked}
+          </p>
+        ) : null}
 
         <div>
           <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.income.receivedDate}</Label>

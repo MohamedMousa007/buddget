@@ -10,6 +10,8 @@ import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { useAlert, useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { deleteHoldingWithUndo, deletePocketWithUndo } from '@/lib/savings/pocketUndo'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
@@ -59,6 +61,7 @@ export default function WealthPage() {
   const dataReady = useFinanceStore((s) => s.dataReady)
   const requireAuth = useRequireAuthAction()
   const confirmDialog = useConfirm()
+  const showToast = useActionToast()
   const alertDialog = useAlert()
   const nw = useNetWorth()
   const stats = useMonthlyStats()
@@ -242,8 +245,8 @@ export default function WealthPage() {
     }
     const body = a && a.currentBalance > 0 ? t.deleteBodyBalance(`${formatWhole(a.currentBalance)} ${a.currency}`) : t.deleteBody
     if (!(await confirmDialog({ title: t.deleteTitle(r.title), body, destructive: true }))) return
-    if (a) useFinanceStore.getState().deleteSavingsAccount(a.id)
-    else useFinanceStore.getState().deleteInvestmentHolding(r.id)
+    const undo = a ? deletePocketWithUndo(a.id) : deleteHoldingWithUndo(r.id)
+    showToast(t.deletedToast(r.title), { undo, undoLabel: t.deleteUndo })
   }
 
   return (

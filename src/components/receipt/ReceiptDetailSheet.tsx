@@ -8,8 +8,12 @@ import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
 import { Card } from '@/components/ui/card'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { readReceiptImage } from '@/lib/native/receiptImages'
+import { useT } from '@/lib/i18n'
 
 /** Read-only view of a scanned receipt's itemized breakdown (items + charges). */
+/** Receipt rows come from the AI scan; a missing number must not crash the sheet. */
+const money = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? n.toFixed(2) : '—')
+
 export function ReceiptDetailSheet({
   receiptId,
   open,
@@ -19,6 +23,7 @@ export function ReceiptDetailSheet({
   open: boolean
   onClose: () => void
 }) {
+  const t = useT().receiptDetail
   const { receipt, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       receipt: receiptId ? s.receipts.find((r) => r.id === receiptId) ?? null : null,
@@ -43,14 +48,14 @@ export function ReceiptDetailSheet({
     <ModalShell open={shellOpen} onBackdropClick={onClose}>
       {receipt ? (
         <div className="p-5">
-          <ModalSheetHeader title="Receipt" onClose={onClose} />
+          <ModalSheetHeader title={t.title} onClose={onClose} />
 
           {/* Hero: merchant + total, mirroring the scan result card. */}
           <Card padding="md" className="flex items-center gap-3">
             {imgSrc ? (
               <Image
                 src={imgSrc}
-                alt="Receipt photo"
+                alt={t.photoAlt}
                 width={64}
                 height={88}
                 unoptimized
@@ -58,7 +63,7 @@ export function ReceiptDetailSheet({
               />
             ) : null}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{receipt.merchant || 'Receipt'}</p>
+              <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{receipt.merchant || t.defaultMerchant}</p>
               <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">
                 {receipt.receiptDate} · {receipt.category}
                 {(() => {
@@ -67,14 +72,14 @@ export function ReceiptDetailSheet({
                 })()}
               </p>
               <p className="mt-1.5 text-2xl font-semibold tabular-nums text-[var(--color-brand-text-primary)]">
-                {receipt.amount.toFixed(2)} <span className="text-base text-[var(--color-brand-text-secondary)]">{receipt.currency}</span>
+                {money(receipt.amount)} <span className="text-base text-[var(--color-brand-text-secondary)]">{receipt.currency}</span>
               </p>
             </div>
           </Card>
 
           {receipt.items.length > 0 || receipt.charges.length > 0 ? (
             <Card radius="sm" padding="sm" className="mt-3">
-              <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">Breakdown</p>
+              <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">{t.breakdown}</p>
 
               {receipt.items.length > 0 ? (
                 <ul className="space-y-1.5">
@@ -84,7 +89,7 @@ export function ReceiptDetailSheet({
                         {it.qty && it.qty > 1 ? `${it.qty}× ` : ''}{it.name}
                       </span>
                       <span className="tabular-nums text-[var(--color-brand-text-secondary)]">
-                        {it.price.toFixed(2)} {receipt.currency}
+                        {money(it.price)} {receipt.currency}
                       </span>
                     </li>
                   ))}
@@ -97,7 +102,7 @@ export function ReceiptDetailSheet({
                     <li key={`charge-${i}`} className="flex items-baseline gap-2 text-sm">
                       <span className="flex-1 truncate text-[var(--color-brand-text-muted)]">{c.label}</span>
                       <span className="tabular-nums text-[var(--color-brand-text-secondary)]">
-                        {c.amount.toFixed(2)} {receipt.currency}
+                        {money(c.amount)} {receipt.currency}
                       </span>
                     </li>
                   ))}

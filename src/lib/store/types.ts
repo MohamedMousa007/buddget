@@ -837,6 +837,15 @@ export type DebtRecurringFrequency =
   | 'annually'
 
 /** Template: due dates are surfaced in-app; user confirms before a payment + expense are posted. */
+/** Everything `deleteDebtPayment` removed or changed, so Undo restores the original rows. */
+export interface DebtPaymentSnapshot {
+  payment: DebtPayment
+  expenses: Expense[]
+  debtWasCleared: boolean
+  /** The reminder that was switched back on, as it was before. */
+  schedule?: RecurringDebtPayment
+}
+
 export interface RecurringDebtPayment {
   id: string
   debtId: string
@@ -1121,6 +1130,9 @@ export interface FinanceStore {
   ) => void
   updateIncomeSource: (id: string, updates: Partial<IncomeSource>) => void
   deleteIncomeSource: (id: string) => void
+  /** Undo of a delete: puts back the original row (same id and fields). */
+  restoreIncomeSource: (source: IncomeSource) => void
+  restoreIncomeEvent: (event: IncomeEvent) => void
   addIncomeEvent: (event: Omit<IncomeEvent, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateIncomeEvent: (id: string, updates: Partial<IncomeEvent>) => void
   deleteIncomeEvent: (id: string, deleteLinkedDebt?: boolean) => void
@@ -1150,7 +1162,9 @@ export interface FinanceStore {
     expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>
   ) => void
   deleteDebt: (id: string) => void
-  deleteDebtPayment: (id: string) => void
+  /** Removes the payment together with its paired expense; returns what is needed to undo it. */
+  deleteDebtPayment: (id: string) => DebtPaymentSnapshot | null
+  restoreDebtPayment: (snapshot: DebtPaymentSnapshot) => void
   addRecurringDebtPayment: (r: Omit<RecurringDebtPayment, 'id' | 'createdAt'>) => void
   updateRecurringDebtPayment: (id: string, updates: Partial<RecurringDebtPayment>) => void
   deleteRecurringDebtPayment: (id: string) => void

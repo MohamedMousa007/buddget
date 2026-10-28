@@ -30,6 +30,8 @@ import {
   SUPPORTED_CATEGORIES,
   type ScannedReceipt,
 } from '@/lib/receipt/normaliseReceipt'
+import { parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { reconcileTyped } from '@/lib/ui/typedAmount'
 
 type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'notReceipt' | 'error' | 'queued'
 
@@ -84,6 +86,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
   const [result, setResult] = useState<ScannedReceipt | null>(null)
   const [error, setError] = useState<string | null>(null)
   const scanAbortRef = useRef<AbortController | null>(null)
+  const savedRef = useRef(false)
 
   const { addExpense, addReceipt, paymentMethods, baseCurrency } = useFinanceStore(
     useShallow((s) => ({
@@ -102,6 +105,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
     setPreview(null)
     setResult(null)
     setError(null)
+    savedRef.current = false
   }, [])
 
   useEffect(() => {
@@ -226,7 +230,8 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
   }, [open, state, seed, startSeedScan, runScan])
 
   const confirm = () => {
-    if (!result) return
+    if (!result || !(result.amount > 0) || savedRef.current) return
+    savedRef.current = true
     const defaultPm = paymentMethods.find((pm) => pm.isDefault) ?? paymentMethods[0]
     const paymentMethodId = defaultPm?.id ?? ''
     const date = result.date || localTodayISO()
@@ -441,6 +446,7 @@ function ResultView({
   onCancel: () => void
   onChange: (next: Partial<ScannedReceipt>) => void
 }) {
+  const [amountDraft, setAmountDraft] = useState(String(result.amount))
   return (
     <div className="w-full">
       <div className="flex items-center justify-between">
@@ -479,8 +485,11 @@ function ResultView({
         <Field label="Amount">
           <AmountField
             bare
-            value={String(result.amount)}
-            onChange={(v) => onChange({ amount: Number(v) || 0 })}
+            value={reconcileTyped(amountDraft, result.amount)}
+            onChange={(v) => {
+              setAmountDraft(v)
+              onChange({ amount: parseLocalizedAmount(v, result.currency) || 0 })
+            }}
             className="flex h-12 w-full items-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]"
           />
         </Field>
@@ -528,6 +537,7 @@ function ResultView({
         <Button
           type="button"
           onClick={onConfirm}
+          disabled={!(result.amount > 0)}
           size="cta-block" className="text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
           <Check className="h-4 w-4" /> Save expense

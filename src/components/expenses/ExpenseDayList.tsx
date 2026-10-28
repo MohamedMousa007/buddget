@@ -8,7 +8,7 @@ import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { SwipeToDelete } from '@/components/expenses/SwipeToDelete'
 import { Badge } from '@/components/ui/badge'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
-import { useActionToast } from '@/components/ui/ActionToast'
+import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -41,13 +41,11 @@ interface DayGroup {
 
 export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   const t = useT()
-  const { settings, exchangeRates, paymentMethods, deleteExpense, restoreExpense } = useFinanceStore(
+  const { settings, exchangeRates, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       paymentMethods: s.paymentMethods,
-      deleteExpense: s.deleteExpense,
-      restoreExpense: s.restoreExpense,
     })),
   )
   const { setEditingExpenseId, setActiveModal } = useSettingsStore()
@@ -62,7 +60,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
       resetFilters: s.reset,
     })),
   )
-  const toast = useActionToast()
+  const { removeExpense } = useLinkedDelete()
   const [openId, setOpenId] = useState<string | null>(null)
   const base = settings.baseCurrency
   const secondary = settings.secondaryCurrency
@@ -99,8 +97,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
 
   const handleDelete = (e: Expense) => {
     setOpenId(null)
-    deleteExpense(e.id)
-    toast(t.expenses.expenseDeleted, { undo: () => restoreExpense(e), undoLabel: t.common.undo })
+    void removeExpense(e)
   }
 
   if (expenses.length === 0) {

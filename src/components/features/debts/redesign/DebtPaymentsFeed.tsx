@@ -9,7 +9,7 @@ import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDele
 import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
 import { DateRangeField, Divider, FilterSheet, SectionHead } from '@/components/expenses/ExpenseFilters'
-import { useActionToast } from '@/components/ui/ActionToast'
+import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -73,16 +73,15 @@ export function DebtPaymentsFeed({
   const td = t.debts
   const tm = t.debtMoves
   const familyLabel: Record<DebtFamily, string> = { borrow: td.feedBorrow, credit_card: td.feedCard, installment: td.feedPlan }
-  const { debts, debtPayments, monthStartDay, deleteDebtPayment } = useFinanceStore(
+  const { debts, debtPayments, monthStartDay } = useFinanceStore(
     useShallow((s) => ({
       debts: countedDebts(s.debts, s.paymentMethods),
       debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
       monthStartDay: s.settings.monthStartDay,
-      deleteDebtPayment: s.deleteDebtPayment,
     })),
   )
   const monthFilter = useSettingsStore((s) => s.monthFilter)
-  const toast = useActionToast()
+  const { removeDebtPayment } = useLinkedDelete()
   const [filters, setFilters] = useState<MoveFilters>(NO_FILTERS)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [openRow, setOpenRow] = useState<{ id: string; side: SwipeSide } | null>(null)
@@ -210,8 +209,7 @@ export function DebtPaymentsFeed({
                         onOpenChange={(side) => setOpenRow(side ? { id: m.id, side } : null)}
                         onDelete={() => {
                           setOpenRow(null)
-                          deleteDebtPayment(m.id)
-                          toast(td.feedDeleted)
+                          void removeDebtPayment(m.id)
                         }}
                         deleteLabel={t.common.delete}
                       >

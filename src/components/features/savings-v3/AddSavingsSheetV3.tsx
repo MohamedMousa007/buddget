@@ -10,7 +10,8 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { AmountCurrencyRow, PocketRadioList } from '@/components/features/savings-v3/MoneySheetParts'
+import { AccountLegRow, AmountCurrencyRow, PocketRadioList } from '@/components/features/savings-v3/MoneySheetParts'
+import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
@@ -49,11 +50,13 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   const amountNum = parseFloat(amount) || 0
   const selected = pockets.find((p) => p.account.id === selectedId)
   const canSubmit = amountNum > 0 && !!selected
+  const leg = useLegAccount(selected?.account, selected?.account.currency ?? currency)
 
   const submit = () => {
     if (!selected || amountNum <= 0) return
     const ok = deposit(selected.account.id, amountNum, currency, note.trim() || undefined, {
       mode: source === 'budget' ? 'allocate' : 'declare',
+      fromAccountId: leg.accountId,
     })
     if (!ok) return showToast(t.moveFailed)
     onClose()
@@ -93,6 +96,8 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
             />
             <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{source === 'budget' ? t.tipThisMonth : t.tipOutside}</p>
           </div>
+
+          {source === 'budget' ? <AccountLegRow leg={leg} label={t.fromAccount} /> : null}
 
           {noteOpen ? (
             <div className="relative">

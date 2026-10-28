@@ -1,3 +1,4 @@
+import { clampCardDay, clampCardPercent } from '@/lib/debts/cardTerms'
 import type {
   Debt,
   Currency,
@@ -80,9 +81,9 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     // Drive the billing cycle / next due date / minimum payment. Without these the card
     // is unusable on a second device — getCurrentBillingCycleExpenses bails and the card
     // shows its setup banner forever.
-    payment_due_day: d.paymentDueDay ?? null,
+    payment_due_day: clampCardDay(d.paymentDueDay),
     grace_period_days: d.gracePeriodDays ?? null,
-    minimum_payment_percent: d.minimumPaymentPercent ?? null,
+    minimum_payment_percent: clampCardPercent(d.minimumPaymentPercent),
     status: d.status ?? 'active',
     cleared_at: d.clearedAt ?? null,
     received_via: toDbReceivedVia(d.receivedVia),

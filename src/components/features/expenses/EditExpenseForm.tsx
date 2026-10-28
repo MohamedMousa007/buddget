@@ -1,16 +1,20 @@
 'use client'
 
 import { useState } from 'react'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense } from '@/lib/store/types'
 import { RepaidSheet } from '@/components/features/spending/RepaidSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
+import { ReceiptDetailSheet } from '@/components/receipt/ReceiptDetailSheet'
 import { ExpenseSheetForm } from '@/components/features/expenses/ExpenseSheetForm'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const f = useEditExpenseForm(expense, onClose)
   const [repaidOpen, setRepaidOpen] = useState(false)
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const hasReceipt = useFinanceStore((s) => !!expense.receiptId && s.receipts.some((r) => r.id === expense.receiptId))
 
   const isDirty =
     f.date !== expense.date ||
@@ -65,7 +69,9 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
       refundKind={expense.refundKind}
       onMarkRepaid={expense.spendExclusion === 'for_someone' ? () => setRepaidOpen(true) : undefined}
       owedSettled={Boolean(expense.owedSettledAt)}
+      onViewReceipt={hasReceipt ? () => setReceiptOpen(true) : undefined}
     />
+    {hasReceipt ? <ReceiptDetailSheet receiptId={expense.receiptId ?? null} open={receiptOpen} onClose={() => setReceiptOpen(false)} /> : null}
     {repaidOpen ? <RepaidSheet open expense={expense} onClose={() => setRepaidOpen(false)} onDone={onClose} /> : null}
     </>
   )

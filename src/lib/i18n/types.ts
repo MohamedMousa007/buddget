@@ -350,6 +350,8 @@ export interface Dictionary {
     feeds: (goal: string, pct: number) => string
     deleteTitle: (name: string) => string
     deleteBody: string
+    deletedToast: (name: string) => string
+    deleteUndo: string
     priceFeedDown: (grams: string) => string
   }
 
@@ -619,6 +621,13 @@ export interface Dictionary {
   }
 
   /** Add/Edit Expense sheet redesign + shared date picker. */
+  receiptDetail: {
+    viewReceipt: string
+    title: string
+    photoAlt: string
+    defaultMerchant: string
+    breakdown: string
+  }
   expenseForm: {
     titleAdd: string
     titleEdit: string
@@ -2907,6 +2916,12 @@ export interface Dictionary {
       startOfYear: string
       override: string
       overrideHint: string
+      done: string
+      markPaid: string
+      markPaidTitle: string
+      markPaidBody: (amount: string, unit: string) => string
+      markPaidToast: string
+      undo: string
     }
     ef: {
       title: string
@@ -2958,6 +2973,8 @@ export interface Dictionary {
       from: string
       amount: string
       currency: string
+      fromAccount: string
+      toAccount: string
       whereFrom: string
       thisMonth: string
       outside: string
@@ -3054,6 +3071,25 @@ export interface Dictionary {
     alert: {
       ok: string
     }
+  }
+  moneyFlows: {
+    deletePaymentTitle: string
+    deletePaymentBody: string
+    deletePaidExpenseTitle: string
+    deletePaidExpenseBody: string
+    paymentDeleted: string
+    incomeDeleted: string
+    markedPaid: string
+    paidFailed: string
+    currency: string
+    ccOpeningBalance: string
+    ccOpeningHint: string
+    ccDueDay: string
+    dayRange: string
+    debtLocked: string
+    incomeLocked: string
+    splitNeedsFunding: string
+    splitFirstDueInvalid: string
   }
 }
 

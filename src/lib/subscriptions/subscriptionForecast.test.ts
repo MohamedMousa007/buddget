@@ -100,6 +100,10 @@ describe('markPaidTarget', () => {
   it('does not offer to pay a charge more than a week away', () => {
     expect(markPaidTarget(sub({ billingDay: 28, startDate: '2026-01-28' }), [paid('s1', '2026-09-28')], today)).toBeNull()
   })
+  it('never pays a weekly plan ahead: a short cycle would be paid twice in a row', () => {
+    const weekly = sub({ billingCycle: 'weekly', startDate: '2026-10-10' })
+    expect(markPaidTarget(weekly, [paid('s1', '2026-10-17')], today)).toBeNull()
+  })
   it('targets today for an open unpaid cycle', () => {
     const open = sub({ billingDay: 15, startDate: '2026-01-15' })
     expect(markPaidTarget(open, [], today)?.toLocaleDateString('sv')).toBe('2026-10-17')

@@ -390,7 +390,7 @@ export const ar: Dictionary = {
 
   wealthPage: {
     // TODO(ar-review): all Arabic strings in this block are drafts
-    deleteBlocked: (pocket, shortBy) => `تعذّر الحذف: سيصبح رصيد ${pocket} أقل من الصفر بمقدار ${shortBy} لأن المبلغ استُخدم بالفعل. لم يتغيّر شيء.`,
+    deleteBlocked: (pocket, shortBy) => `تعذّر الحذف: سيصبح رصيد ${pocket} أقل من الصفر بمقدار ${shortBy} لأن المبلغ استُخدم بالفعل. لم يتغيّر شيء. احذف السحب اللاحق أولاً أو أعد إضافة المبلغ.`,
     holdLabel: 'ما تملكه',
     balances: 'الأرصدة',
     marketPriced: 'بسعر السوق',
@@ -439,7 +439,7 @@ export const ar: Dictionary = {
     menuEdit: 'تعديل',
     menuDelete: 'حذف',
     menuMakeDefault: 'اجعله الافتراضي للمدخرات الشهرية',
-    deleteBodyBalance: (amount) => `سيُحذف مع سجله. سيخرج ${amount} من صافي ثروتك. لا يمكن التراجع.`,
+    deleteBodyBalance: (amount) => `سيُحذف مع سجله. سيخرج ${amount} من صافي ثروتك. يمكنك التراجع لبضع ثوانٍ.`,
     deleteDefaultTitle: 'هذه خزنة مدخراتك الشهرية',
     deleteDefaultBody: 'مدخرات نهاية الشهر تصل إلى هنا. اجعل خزنة أخرى هي الافتراضية للمدخرات الشهرية أولاً، ثم احذف هذه.',
     deleteOnlyTitle: 'احتفظ بخزنة واحدة على الأقل',
@@ -447,7 +447,9 @@ export const ar: Dictionary = {
     nothingHeld: 'لا شيء هنا بعد',
     feeds: (goal, pct) => `يغذّي ${goal} · ${pct}%`,
     deleteTitle: (name) => `حذف ${name}؟`,
-    deleteBody: 'سيُحذف مع سجله. لا يمكن التراجع.',
+    deleteBody: 'سيُحذف مع سجله. يمكنك التراجع لبضع ثوانٍ.',
+    deletedToast: (name) => `تم حذف ${name}`,
+    deleteUndo: 'تراجع',
     priceFeedDown: (grams) => `أسعار الذهب غير متاحة · ${grams} غير محتسب`,
   },
 
@@ -713,6 +715,13 @@ export const ar: Dictionary = {
       `سيُضاف هذا إلى رصيد ${cardName} المستحق (حالياً ${amountLabel}).`,
   },
 
+  receiptDetail: {
+    viewReceipt: 'عرض الإيصال',
+    title: 'الإيصال',
+    photoAlt: 'صورة الإيصال',
+    defaultMerchant: 'إيصال',
+    breakdown: 'التفاصيل',
+  },
   expenseForm: {
     titleAdd: 'إضافة مصروف',
     titleEdit: 'تعديل المصروف',
@@ -3065,6 +3074,12 @@ export const ar: Dictionary = {
       startOfYear: '1 يناير',
       override: 'أحدد المبلغ بنفسي',
       overrideHint: 'يتجاوز كل ما سبق',
+      done: 'تم',
+      markPaid: 'تسجيل الزكاة كمدفوعة',
+      markPaidTitle: 'تسجيل الزكاة كمدفوعة؟',
+      markPaidBody: (amount, unit) => `سيتم تسجيل ${amount} ${unit} كمدفوعة اليوم، وتبدأ سنة الزكاة التالية من اليوم.`,
+      markPaidToast: 'تم تسجيل الزكاة كمدفوعة',
+      undo: 'تراجع',
     },
     ef: {
       title: 'صندوق الطوارئ',
@@ -3116,6 +3131,8 @@ export const ar: Dictionary = {
       from: 'من',
       amount: 'المبلغ',
       currency: 'العملة',
+      fromAccount: 'من حساب',
+      toAccount: 'إلى حساب',
       whereFrom: 'مصدر المال',
       thisMonth: 'ميزانية هذا الشهر',
       outside: 'خارج الميزانية',
@@ -3214,5 +3231,24 @@ export const ar: Dictionary = {
     alert: {
       ok: 'حسناً',
     },
+  },
+  moneyFlows: {
+    deletePaymentTitle: 'حذف هذه الدفعة؟',
+    deletePaymentBody: 'يُحذف المصروف المرتبط بها أيضاً ويرتفع الدين من جديد. يمكنك التراجع لثوانٍ.',
+    deletePaidExpenseTitle: 'حذف دفعة الدين هذه؟',
+    deletePaidExpenseBody: 'هذا المصروف دفعة دين. تُحذف الدفعة أيضاً ويرتفع الدين من جديد. يمكنك التراجع لثوانٍ.',
+    paymentDeleted: 'تم حذف الدفعة والمصروف',
+    incomeDeleted: 'تم حذف الدخل',
+    markedPaid: 'تم تسجيل الدفع',
+    paidFailed: 'تعذّر تسجيل هذه الدفعة',
+    currency: 'العملة',
+    ccOpeningBalance: 'الرصيد الافتتاحي',
+    ccOpeningHint: 'ما كنت مديناً به عند إضافة البطاقة. تُضاف المشتريات المسجلة فوقه.',
+    ccDueDay: 'يوم استحقاق الدفع',
+    dayRange: 'أدخل يوماً من 1 إلى 31',
+    debtLocked: 'العملة والذهب مقفلان لأن هذا الدين عليه دفعات.',
+    incomeLocked: 'مرتبط بالمدخرات أو بدين، لذلك المبلغ والعملة مقفلان.',
+    splitNeedsFunding: 'اختر الحساب الذي يدفع الأقساط، أو أوقف التقسيم.',
+    splitFirstDueInvalid: 'اختر تاريخ أول قسط في يوم الشراء أو بعده.',
   },
 }

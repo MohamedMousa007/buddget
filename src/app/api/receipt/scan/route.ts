@@ -5,9 +5,8 @@
  * structured expense fields parsed via Gemini 2.5 Flash vision.
  *
  * Egypt-first: default currency `EGP` unless the receipt clearly says
- * otherwise; recognises EGP, AED, SAR, QAR, KWD, OMR, BHD, USD. Categories
- * match the existing `ExpenseCategory` union (Food | Transport | Enjoyment |
- * Rent | Other).
+ * otherwise; recognises every fiat currency the app supports. Categories
+ * are the spend categories in `SUPPORTED_CATEGORIES`.
  *
  * Auth: Supabase session required.
  */
@@ -17,6 +16,7 @@ import { z } from 'zod'
 import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { SUPPORTED_CATEGORIES, SUPPORTED_CURRENCIES } from '@/lib/receipt/normaliseReceipt'
 import { addUsage, estimateUnits, EMPTY_USAGE, type TokenUsage } from '@/lib/server/ai/units'
 
 // Gemini thinking + a long itemized output + one retry can exceed Vercel's
@@ -45,7 +45,7 @@ Self-check before answering: items plus charges must reconcile with the printed 
 
 Never fail the whole read because a field is missing. If merchant or date is unclear, return "" — items and total matter most. Never invent lines that are not printed.
 
-Category (one for the whole receipt): Food (restaurants, cafes, groceries, delivery — Talabat, Carrefour, Spinneys, Gourmet, Seoudi), Transport (Uber, Careem, fuel, metro), Enjoyment (cinema, gaming, leisure), Rent (housing, utilities), Other.
+Category (one for the whole receipt): Food (restaurants, cafes, delivery — Talabat), Groceries (supermarkets — Carrefour, Spinneys, Gourmet, Seoudi), Fuel (petrol stations), Transport (Uber, Careem, metro), Shopping (clothes, electronics, retail), Health (pharmacy, clinics), Education, Utilities (electricity, water, phone, internet), Enjoyment (cinema, gaming, leisure), Rent (housing), Other.
 Currency: Egypt-first (EGP) unless clearly otherwise. All numbers plain (no symbols or thousands separators). "date" is YYYY-MM-DD or "".`
 
 /** OpenAPI-subset schema enforced by the API — the model cannot omit fields or drift from enums. */
@@ -55,9 +55,9 @@ const RESPONSE_SCHEMA = {
     isReceipt: { type: 'BOOLEAN' },
     merchant: { type: 'STRING' },
     amount: { type: 'NUMBER' },
-    currency: { type: 'STRING', enum: ['EGP', 'AED', 'SAR', 'QAR', 'KWD', 'OMR', 'BHD', 'USD'] },
+    currency: { type: 'STRING', enum: [...SUPPORTED_CURRENCIES] },
     date: { type: 'STRING' },
-    category: { type: 'STRING', enum: ['Food', 'Transport', 'Enjoyment', 'Rent', 'Other'] },
+    category: { type: 'STRING', enum: [...SUPPORTED_CATEGORIES] },
     taxIncluded: { type: 'BOOLEAN' },
     confidence: { type: 'NUMBER' },
     items: {
@@ -101,9 +101,9 @@ const receiptSchema = z.object({
   isReceipt: z.boolean(),
   merchant: z.string(),
   amount: z.number().finite(),
-  currency: z.enum(['EGP', 'AED', 'SAR', 'QAR', 'KWD', 'OMR', 'BHD', 'USD']),
+  currency: z.enum(SUPPORTED_CURRENCIES as [string, ...string[]]),
   date: z.string().default(''),
-  category: z.enum(['Food', 'Transport', 'Enjoyment', 'Rent', 'Other']),
+  category: z.enum(SUPPORTED_CATEGORIES as [string, ...string[]]),
   taxIncluded: z.boolean(),
   confidence: z.number().finite(),
   items: z.array(z.object({ name: z.string(), price: z.number().finite(), qty: z.number().finite().optional() })),

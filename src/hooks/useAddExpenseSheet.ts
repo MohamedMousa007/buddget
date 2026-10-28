@@ -15,6 +15,7 @@ import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodFor
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
+import { bnplSplitIssue } from '@/lib/debts/bnplSplit'
 
 /** Default BNPL first-installment due: same day next month. */
 function firstOfNextMonth(): string {
@@ -73,6 +74,8 @@ export function useAddExpenseSheet() {
   const [fundingMethodId, setFundingMethodId] = useState(nonBnplDefaultId(paymentMethods))
   const selectedPm = paymentMethods.find((m) => m.id === paymentMethodId)
   const isBnplPurchase = selectedPm?.type === 'bnpl'
+  const splitIssue = isBnplPurchase && splitInstallments ? bnplSplitIssue({ fundingMethodId, firstDue: installmentFirstDue, purchaseDate: date }) : null
+  const splitError = splitIssue === 'funding' ? t.moneyFlows.splitNeedsFunding : splitIssue === 'firstDue' ? t.moneyFlows.splitFirstDueInvalid : undefined
 
   const creditCardOutstandingHint = useMemo(() => {
     const pm = paymentMethods.find((m) => m.id === paymentMethodId)
@@ -144,6 +147,7 @@ export function useAddExpenseSheet() {
 
   const handleSubmit = useCallback(() => {
     if (!description || !amount || parseFloat(amount) <= 0) return
+    if (splitError) return
     const parsedAmount = parseFloat(amount)
     setSubmitError('')
     const cur = clampFiatToAllowed(settings, currency)
@@ -212,6 +216,7 @@ export function useAddExpenseSheet() {
     resetForm()
     setActiveModal(null)
   }, [
+    splitError,
     addExpense,
     addDebt,
     addRecurringDebtPayment,
@@ -273,6 +278,7 @@ export function useAddExpenseSheet() {
       setFirstDue: setInstallmentFirstDue,
       fundingMethodId,
       setFundingMethodId,
+      error: splitError,
     },
   }
 }

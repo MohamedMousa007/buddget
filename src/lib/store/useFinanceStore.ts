@@ -25,6 +25,7 @@ import type {
   BudgetPlanCategory,
   Currency,
   DebtCurrency,
+  DebtPaymentSnapshot,
   DebtReceivedVia,
   FinanceStore,
   Goal,
@@ -59,9 +60,10 @@ import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
-import { clearIfFullyPaid } from '@/lib/utils/calculations'
+import { clearIfFullyPaid, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
+import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 22
@@ -71,7 +73,10 @@ export const goldQuoteOf = (s: Pick<FinanceStore, 'goldPricePerGram' | 'goldPric
   available: s.goldPriceAvailable !== false,
 })
 
-function reconcileGoalsForState(state: FinanceStore): Goal[] {
+/** Event id -> the reversal deposit its delete created, so Undo removes exactly that row. */
+const reversalDepositByEvent = new Map<string, string>()
+
+export function reconcileGoalsForState(state: FinanceStore): Goal[] {
   const ctx = buildGoalProgressContext(state, useSettingsStore.getState().monthFilter)
   return reconcileAchievedGoals(state.goals, ctx).goals
 }
@@ -289,22 +294,39 @@ export const useFinanceStore = create<FinanceStore>()(
 
       updateExpense: (id, updates) =>
         set((state) => ({
-          expenses: state.expenses.map((e) =>
-            e.id === id ? { ...e, ...updates, updatedAt: new Date().toISOString() } : e
-          ),
+          expenses: state.expenses.map((e) => {
+            if (e.id !== id) return e
+            // A moved date moves the instant too, or balances/ordering keep reading the old day.
+            const movedDay = updates.date && updates.date !== e.date && !('occurredAt' in updates)
+            return {
+              ...e,
+              ...updates,
+              ...(movedDay ? { occurredAt: new Date(`${updates.date}T12:00:00`).toISOString() } : {}),
+              updatedAt: new Date().toISOString(),
+            }
+          }),
         })),
 
-      deleteExpense: (id) =>
+      deleteExpense: (id) => {
+        const removed = get().expenses.find((e) => e.id === id)
         set((state) => ({
           expenses: state.expenses.filter((e) => e.id !== id),
-        })),
+        }))
+        if (removed?.receiptId) dropExpenseReceipt(removed.receiptId, get().receipts, get().deleteReceipt)
+      },
 
-      restoreExpense: (expense) =>
+      restoreExpense: (expense) => {
+        const restored = expense.receiptId
+          ? restoreExpenseReceipt(expense.receiptId, (r) => set((state) => (state.receipts.some((x) => x.id === r.id) ? state : { receipts: [...state.receipts, r] })))
+          : false
+        const dangling = !!expense.receiptId && !restored && !get().receipts.some((r) => r.id === expense.receiptId)
+        const back = dangling ? { ...expense, receiptId: undefined } : expense
         set((state) =>
-          state.expenses.some((e) => e.id === expense.id)
+          state.expenses.some((e) => e.id === back.id)
             ? state
-            : { expenses: [...state.expenses, expense] },
-        ),
+            : { expenses: [...state.expenses, back] },
+        )
+      },
 
       addIncomeSource: (source) =>
         set((state) => ({
@@ -386,9 +408,46 @@ export const useFinanceStore = create<FinanceStore>()(
           return {
             incomeSources,
             settings:
-              incomeSources.length === 0
+              incomeSources.length === 0 && !state.incomeEvents.some((e) => e.status === 'confirmed' || e.status === 'late' || e.status === 'partial')
                 ? { ...state.settings, noIncomeDeclared: true }
                 : state.settings,
+          }
+        }),
+
+      restoreIncomeSource: (source) =>
+        set((state) =>
+          state.incomeSources.some((s) => s.id === source.id)
+            ? state
+            : {
+                incomeSources: [...state.incomeSources, source],
+                settings: { ...state.settings, noIncomeDeclared: false },
+              },
+        ),
+
+      restoreIncomeEvent: (event) =>
+        set((state) => {
+          if (state.incomeEvents.some((e) => e.id === event.id)) return state
+          const incomeEvents = [...state.incomeEvents, event]
+          const settings = { ...state.settings, noIncomeDeclared: false }
+          // Deleting a withdrawal-linked event put the money back as a reversal deposit: take that back.
+          const reversalId = reversalDepositByEvent.get(event.id)
+          reversalDepositByEvent.delete(event.id)
+          const reversal = reversalId ? state.savingsTransactions.find((tx) => tx.id === reversalId) : undefined
+          if (!reversal) return { incomeEvents, settings }
+          const nextState: FinanceStore = {
+            ...state,
+            incomeEvents,
+            savingsTransactions: state.savingsTransactions.filter((tx) => tx.id !== reversal.id),
+            savingsAccounts: state.savingsAccounts.map((a) =>
+              a.id === reversal.accountId ? { ...a, currentBalance: a.currentBalance - reversal.amount } : a
+            ),
+          }
+          return {
+            incomeEvents,
+            settings,
+            savingsTransactions: nextState.savingsTransactions,
+            savingsAccounts: nextState.savingsAccounts,
+            goals: reconcileGoalsForState(nextState),
           }
         }),
 
@@ -459,6 +518,7 @@ export const useFinanceStore = create<FinanceStore>()(
                 // isCashFlow !== false). Without this the undo double-subtracts the amount.
                 isCashFlow: false,
               }
+              reversalDepositByEvent.set(event.id, tx.id)
               const nextState: FinanceStore = {
                 ...state,
                 incomeEvents,
@@ -672,11 +732,20 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       updateDebt: (id, updates) =>
-        set((state) => ({
-          debts: state.debts.map((d) =>
+        set((state) => {
+          const edited = state.debts.map((d) =>
             d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d
-          ),
-        })),
+          )
+          if (updates.startingBalance === undefined) return { debts: edited }
+          // A new total can settle the debt or owe it again: keep status in step with the payments.
+          const ctx = { expenses: state.expenses, exchangeRates: state.exchangeRates, allDebts: edited }
+          const debts = clearIfFullyPaid(edited, id, state.debtPayments, ctx, localTodayISO()).map((d) =>
+            d.id === id && d.status === 'cleared' && d.debtType !== 'credit_card' && !isDebtFullyPaid(d, state.debtPayments, ctx)
+              ? { ...d, status: 'active' as const, clearedAt: undefined }
+              : d
+          )
+          return { debts }
+        }),
 
       clearDebt: (id, clearedAtIsoDate) =>
         set((state) => ({
@@ -771,24 +840,67 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }),
 
-      deleteDebtPayment: (id) =>
+      deleteDebtPayment: (id) => {
+        let snapshot: DebtPaymentSnapshot | null = null
         set((state) => {
           const payment = state.debtPayments.find((p) => p.id === id)
+          if (!payment) return state
+          const pairedExpenses = state.expenses.filter((e) => e.linkedDebtPaymentId === id)
           const remainingPayments = state.debtPayments.filter((p) => p.id !== id)
-          if (!payment) return { debtPayments: remainingPayments }
-          // Removing a payment never deletes the parent debt — a debt with zero
-          // payments is just unpaid. If the removed payment had cleared the debt,
-          // reopen it (the balance is owed again). Deleting the debt itself is a
-          // separate, explicit action (deleteDebt).
+          const expenses = pairedExpenses.length
+            ? state.expenses.filter((e) => e.linkedDebtPaymentId !== id)
+            : state.expenses
+          const debt = state.debts.find((d) => d.id === payment.debtId)
+          // Removing a payment never deletes the parent debt. If it had cleared the debt, reopen it
+          // (the balance is owed again) and wake the reminder that settling switched off.
+          const reopens = debt?.status === 'cleared'
           const debts = state.debts.map((d) =>
             d.id === payment.debtId && d.status === 'cleared'
               ? { ...d, status: 'active' as const, clearedAt: undefined, updatedAt: new Date().toISOString() }
               : d
           )
-          const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments }
+          // Only an unambiguous case wakes anything: a debt with several schedules, or an active one
+          // already running, never has a reminder resurrected (it may have been paused by hand).
+          const ownSchedules = reopens ? state.recurringDebtPayments.filter((r) => r.debtId === payment.debtId) : []
+          const dormant = ownSchedules.length === 1 && !ownSchedules[0].isActive ? ownSchedules[0] : undefined
+          snapshot = {
+            payment,
+            expenses: pairedExpenses,
+            debtWasCleared: reopens,
+            schedule: dormant,
+          }
+          const recurringDebtPayments = dormant
+            ? state.recurringDebtPayments.map((r) => (r.id === dormant.id ? { ...r, isActive: true } : r))
+            : state.recurringDebtPayments
+          const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments, expenses }
           return {
             debts,
             debtPayments: remainingPayments,
+            expenses,
+            recurringDebtPayments,
+            goals: reconcileGoalsForState(nextState),
+          }
+        })
+        return snapshot
+      },
+
+      restoreDebtPayment: (snapshot) =>
+        set((state) => {
+          if (state.debtPayments.some((p) => p.id === snapshot.payment.id)) return state
+          const debtPayments = [...state.debtPayments, snapshot.payment]
+          const expenses = [
+            ...state.expenses,
+            ...snapshot.expenses.filter((x) => !state.expenses.some((e) => e.id === x.id)),
+          ]
+          const recurringDebtPayments = snapshot.schedule
+            ? state.recurringDebtPayments.map((r) => (r.id === snapshot.schedule!.id ? snapshot.schedule! : r))
+            : state.recurringDebtPayments
+          const nextState: FinanceStore = { ...state, debtPayments, expenses, recurringDebtPayments }
+          return {
+            debtPayments,
+            expenses,
+            recurringDebtPayments,
+            debts: settleDebt(nextState, snapshot.payment.debtId),
             goals: reconcileGoalsForState(nextState),
           }
         }),

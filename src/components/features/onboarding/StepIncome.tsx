@@ -17,6 +17,7 @@ import { JourneyFrame } from './JourneyFrame'
 import { BandBar, RevealScreen } from './RevealScreen'
 import { useOnboarding } from './useOnboarding'
 import { useOnboardingCopy } from './useOnboardingCopy'
+import { sanitizeAmount } from '@/lib/ui/amountSanitize'
 
 const QUICK_DAYS = [1, 15, 25, 28]
 const DEFAULT_DAY = 25
@@ -132,7 +133,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
               placeholder={c.income.otherDay}
               aria-label={c.income.otherDay}
               onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, '')
+                const digits = sanitizeAmount(e.target.value, 'integer')
                 setCustom(digits)
                 if (Number(digits) > 0) setDay(clampDay(Number(digits)))
               }}

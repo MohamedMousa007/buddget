@@ -19,6 +19,7 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
+import { cardDayError, parseCardDay } from '@/lib/debts/cardTerms'
 import {
   PAYMENT_TYPE_META, CARD_SETUP_TYPES, PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, asCardType,
   allowsLast4, providerInitials, composePaymentMethodName, decomposePaymentMethodName,
@@ -181,7 +182,8 @@ export function PaymentMethodSetupSheet({
   const hasProvider = providerName.trim().length > 0
   // The Debt tab locks the type; an existing bank account or wallet keeps its kind here (cards are the only thing this sheet can switch between).
   const typeLock: PaymentMethodType | undefined = lockType ?? (editing && !CARD_TYPES.includes(editing.type) ? editing.type : undefined)
-  const canSave = hasProvider && !(idMode === 'last4' && last4.length !== 0 && last4.length !== 4)
+  const dayInvalid = type === 'credit_card' && cardDayError(ccStatementDay)
+  const canSave = hasProvider && !dayInvalid && !(idMode === 'last4' && last4.length !== 0 && last4.length !== 4)
 
   const handleSave = () => {
     if (!canSave) return
@@ -207,7 +209,7 @@ export function PaymentMethodSetupSheet({
         updateDebt(linked.id, {
           creditLimit: num(ccLimit),
           startingBalance: num(ccOutstanding) ?? linked.startingBalance,
-          paymentDueDay: ccStatementDay.trim() ? parseInt(ccStatementDay, 10) : undefined,
+          paymentDueDay: parseCardDay(ccStatementDay) ?? undefined,
           gracePeriodDays: ccGrace.trim() ? parseInt(ccGrace, 10) : undefined,
         })
       }
@@ -362,12 +364,14 @@ export function PaymentMethodSetupSheet({
                     <AmountField value={ccLimit} onChange={setCcLimit} mode="decimal" currency={curCode} placeholder="30,000" />
                   </div>
                   <div>
-                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccOutstanding}</span>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.moneyFlows.ccOpeningBalance}</span>
                     <AmountField value={ccOutstanding} onChange={setCcOutstanding} mode="decimal" currency={curCode} placeholder="8,420" />
+                    <p className="mx-0.5 mt-1.5 text-[11.5px] text-[var(--color-brand-text-muted)]">{t.moneyFlows.ccOpeningHint}</p>
                   </div>
                   <div>
-                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccStatementDay}</span>
+                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.moneyFlows.ccDueDay}</span>
                     <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" placeholder="15" />
+                    {dayInvalid ? <p role="alert" className="mx-0.5 mt-1.5 text-[12px] text-[var(--color-brand-red)]">{t.moneyFlows.dayRange}</p> : null}
                   </div>
                   <div>
                     <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccGraceDays}</span>

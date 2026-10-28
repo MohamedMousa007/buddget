@@ -1,6 +1,7 @@
 import type { AIAction } from '@/lib/ai/gemini'
 import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { ambiguityMessage, checkAmount, checkCategory, checkDate, matchByHint, type HintMatch } from '@/lib/ai/legacyGuards'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import {
   calculateMonthlyIncome,
@@ -162,44 +163,77 @@ function coerceAISavingsType(raw: unknown): SavingsType {
   return 'other'
 }
 
-function findExpenseByHint(ctx: AIActionHandlerContext, hint: string): Expense | undefined {
-  const t = hint.trim().toLowerCase()
-  if (!t) return undefined
-  const sorted = [...ctx.expenses].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-  return sorted.find(
-    (e) => e.description.toLowerCase().includes(t) || t.includes(e.description.toLowerCase())
-  )
-}
+type Targetable = Pick<AIActionHandlerContext, 'expenses' | 'debts' | 'incomeSources' | 'savingsAccounts' | 'paymentMethods'>
 
-function findIncomeByHint(ctx: AIActionHandlerContext, hint: string): IncomeSource | undefined {
-  const t = hint.trim().toLowerCase()
-  if (!t) return undefined
-  return ctx.incomeSources.find(
-    (i) => i.name.toLowerCase().includes(t) || t.includes(i.name.toLowerCase())
-  )
-}
-
-function findDebtByHint(ctx: AIActionHandlerContext, hint: string): Debt | undefined {
-  const t = hint.trim().toLowerCase()
-  if (!t) return undefined
-  return ctx.debts.find(
-    (x) =>
-      x.name.toLowerCase().includes(t) ||
-      (x.person && x.person.toLowerCase().includes(t)) ||
-      t.includes(x.name.toLowerCase()) ||
-      (x.person ? t.includes(x.person.toLowerCase()) : false)
-  )
-}
-
-function findSavingsAccountByHint(
-  ctx: AIActionHandlerContext,
+interface Target {
+  noun: string
   hint: string
-): SavingsAccount | undefined {
-  const t = hint.trim().toLowerCase()
-  if (!t) return undefined
-  return ctx.savingsAccounts.find(
-    (a) => a.name.toLowerCase().includes(t) || t.includes(a.name.toLowerCase())
-  )
+  match: HintMatch<unknown>
+}
+
+const money = (amount: number, currency: string) => `${currency} ${amount}`
+
+/** The record a legacy update/delete/payment action points at, resolved the same way for validation, execution and the recap. */
+export function resolveActionTarget(ctx: Targetable, action: AIAction, d: Record<string, unknown>): Target | null {
+  const field = (...keys: string[]) => String(getField(d, ...keys) || '')
+  switch (action) {
+    case 'delete_expense':
+    case 'update_expense': {
+      const hint = field('description')
+      const expenses = [...ctx.expenses].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      return { noun: 'expenses', hint, match: matchByHint(expenses, hint, (e) => [e.description]) }
+    }
+    case 'add_debt_payment':
+    case 'delete_debt':
+    case 'clear_debt': {
+      const hint = action === 'add_debt_payment' ? field('debtName', 'debt_name', 'person', 'name') : field('name', 'person', 'debtName')
+      return { noun: 'debts', hint, match: matchByHint(ctx.debts, hint, (x) => [x.name, x.person]) }
+    }
+    case 'update_income':
+    case 'delete_income': {
+      const hint = field('name')
+      return { noun: 'income sources', hint, match: matchByHint(ctx.incomeSources, hint, (i) => [i.name]) }
+    }
+    case 'deposit_savings':
+    case 'withdraw_savings': {
+      const hint = field('account', 'name')
+      return { noun: 'savings accounts', hint, match: matchByHint(ctx.savingsAccounts, hint, (a) => [a.name]) }
+    }
+    case 'delete_payment_method': {
+      const hint = field('name')
+      return { noun: 'payment methods', hint, match: matchByHint(ctx.paymentMethods, hint, (m) => [m.name]) }
+    }
+    default:
+      return null
+  }
+}
+
+function labelOf(item: unknown): string {
+  const r = item as Record<string, unknown>
+  if (typeof r.description === 'string') return `${r.description} (${money(Number(r.amount), String(r.currency))}, ${String(r.date)})`
+  if (typeof r.person === 'string' && r.person) return `${String(r.name)} (${r.person})`
+  return String(r.name)
+}
+
+/** Null when exactly one record matches; otherwise the message that says why not and lists the candidates. */
+export function targetProblem(ctx: Targetable, action: AIAction, d: Record<string, unknown>): string | null {
+  const t = resolveActionTarget(ctx, action, d)
+  if (!t) return null
+  if (t.match.kind === 'one') return null
+  const pool = t.match.kind === 'many' ? t.match.items : []
+  if (t.match.kind === 'none') return t.hint.trim() ? `Nothing matches "${t.hint}" in ${t.noun}.` : `Say which of your ${t.noun} you mean.`
+  return ambiguityMessage(t.noun, t.hint, pool.map(labelOf))
+}
+
+/** Names the record an action will touch, for the confirmation text. Null when it is not a single match. */
+export function describeActionTarget(ctx: Targetable, action: AIAction, d: Record<string, unknown>): string | null {
+  const t = resolveActionTarget(ctx, action, d)
+  return t && t.match.kind === 'one' ? labelOf(t.match.item) : null
+}
+
+function resolved<T>(ctx: Targetable, action: AIAction, d: Record<string, unknown>): T | undefined {
+  const t = resolveActionTarget(ctx, action, d)
+  return t && t.match.kind === 'one' ? (t.match.item as unknown as T) : undefined
 }
 
 export function buildAIActionHandlerContext(store: FinanceStore): AIActionHandlerContext {
@@ -303,7 +337,8 @@ export function validateActionItem(
 ): string | null {
   if (action === 'add_expense') {
     const amount = Number(getField(d, 'amount')) || 0
-    if (amount <= 0) return 'Each expense needs a positive amount.'
+    const bad = checkAmount(amount) ?? checkDate(getField(d, 'date'))
+    if (bad) return bad
     const rawCat = String(getField(d, 'category') || 'Other')
     if (rawCat === 'Savings') {
       return 'Savings are not logged as expenses. Use add_savings_holding or the Savings page.'
@@ -318,17 +353,10 @@ export function validateActionItem(
   }
   if (action === 'add_debt_payment') {
     const originalAmount = Number(getField(d, 'amount', 'amountPaid')) || 0
-    if (originalAmount <= 0) return 'Each debt payment needs a positive amount.'
-    const personOrName = String(getField(d, 'debtName', 'debt_name', 'person', 'name') || '')
-    const searchTerm = personOrName.toLowerCase()
-    const debt = ctx.debts.find(
-      (x) =>
-        x.name.toLowerCase().includes(searchTerm) ||
-        x.person.toLowerCase().includes(searchTerm) ||
-        searchTerm.includes(x.person.toLowerCase()) ||
-        searchTerm.includes(x.name.toLowerCase())
-    )
-    if (!debt) return `No debt matched for "${personOrName}". Check Debts or spelling.`
+    const bad = checkAmount(originalAmount) ?? checkDate(getField(d, 'date'))
+    if (bad) return bad
+    const debt = resolved<Debt>(ctx, action, d)
+    if (!debt) return targetProblem(ctx, action, d)
     if (isDebtFullyPaid(debt, ctx.debtPayments, aiDebtBalanceCtx(ctx))) {
       return `The debt "${debt.name}" is already paid off.`
     }
@@ -414,6 +442,18 @@ export function validateActionItem(
     if (!String(getField(d, 'description') || '').trim()) {
       return `${action} needs data.description to find the expense.`
     }
+    const missing = targetProblem(ctx, action, d)
+    if (missing) return missing
+    if (action === 'delete_expense') return null
+    const nextAmount = getField(d, 'newAmount', 'amount')
+    const nextCat = getField(d, 'newCategory', 'category')
+    const nextDesc = getField(d, 'newDescription')
+    if (nextAmount === undefined && nextCat === undefined && nextDesc === undefined) return 'update_expense needs a new amount, category or description.'
+    if (nextAmount !== undefined) {
+      const badAmount = checkAmount(Number(nextAmount))
+      if (badAmount) return badAmount
+    }
+    if (nextCat !== undefined) return checkCategory(nextCat)
     return null
   }
   if (action === 'add_debt') {
@@ -424,7 +464,7 @@ export function validateActionItem(
     if (!String(getField(d, 'name', 'person', 'debtName') || '').trim()) {
       return `${action} needs data.name or data.person to match a debt.`
     }
-    return null
+    return targetProblem(ctx, action, d)
   }
   if (action === 'update_income') {
     if (!String(getField(d, 'name') || '').trim()) return 'update_income needs data.name.'
@@ -434,18 +474,18 @@ export function validateActionItem(
     ) {
       return 'update_income needs data.amount or data.currency.'
     }
-    return null
+    return targetProblem(ctx, action, d)
   }
   if (action === 'delete_income') {
     if (!String(getField(d, 'name') || '').trim()) return 'delete_income needs data.name.'
-    return null
+    return targetProblem(ctx, action, d)
   }
   if (action === 'deposit_savings' || action === 'withdraw_savings') {
     if (!String(getField(d, 'account', 'name') || '').trim()) {
       return `${action} needs data.account (savings account name).`
     }
     if ((Number(getField(d, 'amount')) || 0) <= 0) return `${action} needs a positive data.amount.`
-    return null
+    return targetProblem(ctx, action, d)
   }
   if (action === 'add_savings_account') {
     if (!String(getField(d, 'name') || '').trim()) return 'add_savings_account needs data.name.'
@@ -453,7 +493,7 @@ export function validateActionItem(
   }
   if (action === 'delete_payment_method') {
     if (!String(getField(d, 'name') || '').trim()) return 'delete_payment_method needs data.name.'
-    return null
+    return targetProblem(ctx, action, d)
   }
   if (action === 'update_goal') {
     if (!String(getField(d, 'name', 'goalName') || '').trim()) {
@@ -490,19 +530,19 @@ export function executeActionItem(
     return
   }
   if (action === 'delete_expense') {
-    const exp = findExpenseByHint(ctx, String(getField(d, 'description') || ''))
+    const exp = resolved<Expense>(ctx, action, d)
     if (exp) ctx.deleteExpense(exp.id)
     return
   }
   if (action === 'update_expense') {
-    const exp = findExpenseByHint(ctx, String(getField(d, 'description') || ''))
+    const exp = resolved<Expense>(ctx, action, d)
     if (!exp) return
     const nextAmount = getField(d, 'newAmount', 'amount')
     const nextCat = getField(d, 'newCategory', 'category')
-    const nextDesc = getField(d, 'newDescription', 'description')
+    const nextDesc = getField(d, 'newDescription')
     const patch: Partial<Expense> = {}
     if (nextDesc != null && String(nextDesc).trim()) patch.description = String(nextDesc).trim()
-    if (nextCat != null && String(nextCat).trim()) patch.category = String(nextCat).trim()
+    if (nextCat != null && String(nextCat).trim()) patch.category = String(nextCat).trim() as ExpenseCategory
     if (nextAmount !== undefined) {
       const na = Number(nextAmount)
       const ccy = String(getField(d, 'currency') || exp.currency) as Currency
@@ -516,15 +556,7 @@ export function executeActionItem(
   }
   if (action === 'add_debt_payment') {
     const originalAmount = Number(getField(d, 'amount', 'amountPaid')) || 0
-    const personOrName = String(getField(d, 'debtName', 'debt_name', 'person', 'name') || '')
-    const searchTerm = personOrName.toLowerCase()
-    const debt = ctx.debts.find(
-      (x) =>
-        x.name.toLowerCase().includes(searchTerm) ||
-        x.person.toLowerCase().includes(searchTerm) ||
-        searchTerm.includes(x.person.toLowerCase()) ||
-        searchTerm.includes(x.name.toLowerCase())
-    )
+    const debt = resolved<Debt>(ctx, action, d)
     if (!debt) return
     const rawCurrency = String(getField(d, 'currency') || ctx.settings.baseCurrency)
     const paymentCurrency = rawCurrency === 'XAU' ? ctx.settings.baseCurrency : rawCurrency
@@ -599,12 +631,12 @@ export function executeActionItem(
     return
   }
   if (action === 'delete_debt') {
-    const debt = findDebtByHint(ctx, String(getField(d, 'name', 'person', 'debtName') || ''))
+    const debt = resolved<Debt>(ctx, action, d)
     if (debt) ctx.deleteDebt(debt.id)
     return
   }
   if (action === 'clear_debt') {
-    const debt = findDebtByHint(ctx, String(getField(d, 'name', 'person', 'debtName') || ''))
+    const debt = resolved<Debt>(ctx, action, d)
     if (debt) ctx.clearDebt(debt.id)
     return
   }
@@ -690,7 +722,7 @@ export function executeActionItem(
     return
   }
   if (action === 'update_income') {
-    const inc = findIncomeByHint(ctx, String(getField(d, 'name') || ''))
+    const inc = resolved<IncomeSource>(ctx, action, d)
     if (!inc) return
     const patch: Partial<IncomeSource> = {}
     const newAmt = getField(d, 'amount', 'newAmount')
@@ -704,7 +736,7 @@ export function executeActionItem(
     return
   }
   if (action === 'delete_income') {
-    const inc = findIncomeByHint(ctx, String(getField(d, 'name') || ''))
+    const inc = resolved<IncomeSource>(ctx, action, d)
     if (inc) ctx.deleteIncomeSource(inc.id)
     return
   }
@@ -722,8 +754,7 @@ export function executeActionItem(
     return
   }
   if (action === 'delete_payment_method') {
-    const name = String(getField(d, 'name') || '').trim().toLowerCase()
-    const pm = ctx.paymentMethods.find((m) => m.name.toLowerCase() === name || m.name.toLowerCase().includes(name))
+    const pm = resolved<PaymentMethod>(ctx, action, d)
     if (pm) ctx.deletePaymentMethod(pm.id)
     return
   }
@@ -771,7 +802,7 @@ export function executeActionItem(
     return
   }
   if (action === 'deposit_savings') {
-    const acc = findSavingsAccountByHint(ctx, String(getField(d, 'account', 'name') || ''))
+    const acc = resolved<SavingsAccount>(ctx, action, d)
     if (!acc) return
     const amount = Number(getField(d, 'amount')) || 0
     const currency = clampFiatToAllowed(
@@ -782,7 +813,7 @@ export function executeActionItem(
     return
   }
   if (action === 'withdraw_savings') {
-    const acc = findSavingsAccountByHint(ctx, String(getField(d, 'account', 'name') || ''))
+    const acc = resolved<SavingsAccount>(ctx, action, d)
     if (!acc) return
     const amount = Number(getField(d, 'amount')) || 0
     const currency = clampFiatToAllowed(

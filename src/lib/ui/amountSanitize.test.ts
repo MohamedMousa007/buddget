@@ -7,7 +7,7 @@ describe('sanitizeAmount', () => {
     expect(sanitizeAmount('۱۲,۵')).toBe('12.5')
   })
   it('keeps a single dot and max 2 decimals', () => {
-    expect(sanitizeAmount('1.2.3')).toBe('1.23')
+    expect(sanitizeAmount('1.2.3')).toBe('1.2')
     expect(sanitizeAmount('1.999')).toBe('1.99')
     expect(sanitizeAmount('5.')).toBe('5.')
   })

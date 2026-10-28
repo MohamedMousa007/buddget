@@ -6,6 +6,10 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { parseZakatLine, resolveLineEdit } from '@/lib/savings/zakatLineInput'
+import { markZakatPaid, undoZakatPaid } from '@/lib/savings/zakatPaid'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeZakat } from '@/lib/savings/zakat'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -40,6 +44,9 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
   const t = useT().wealthSheets.zakat
   const { locale } = useLocale()
   const todayLabel = useT().expenseForm.today
+  const unit = useFinanceStore((s) => s.settings.baseCurrency)
+  const confirmDialog = useConfirm()
+  const showToast = useActionToast()
 
   const [nisabBasis, setNisabBasis] = useState<'silver' | 'gold'>(effectiveNisabBasis(cfg))
   const [basisChosen, setBasisChosen] = useState(zakatBasisChosen(cfg))
@@ -49,6 +56,8 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
   const [yearStart, setYearStart] = useState(cfg?.yearStartDate ?? '')
   const [manualAmount, setManualAmount] = useState(cfg?.manualAmount != null ? String(cfg.manualAmount) : '')
   const [overrides, setOverrides] = useState<Record<string, number>>(cfg?.lineOverrides ?? {})
+  const [drafts, setDrafts] = useState<Partial<Record<LineId, string>>>({})
+  const manualParsed = manualOn ? parseZakatLine(manualAmount) : null
 
   const val = (id: LineId, live: number) => (overrides[id] != null ? overrides[id] : live)
   const cash = val('cash', base.cashAndSavings)
@@ -61,16 +70,43 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     cashAndSavings: cash, goldValue: gold, cryptoValue: crypto, stocksValue: stocks,
     holdsForTrading, debtsDueThisYear: debts, nisabBasis,
     gold24kSellPerGram: base.gold24kSellPerGram, silverPerGram: base.silverPerGram,
-    manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null,
-  }), [cash, gold, crypto, stocks, holdsForTrading, debts, nisabBasis, base, manualOn, manualAmount])
+    manualAmount: manualParsed,
+  }), [cash, gold, crypto, stocks, holdsForTrading, debts, nisabBasis, base, manualParsed])
 
   // A choice already saved (here or on another phone) is never undone by an edit made while the sheet still held the old answer.
-  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { nisabBasis, nisabBasisChosen: basisChosen || zakatBasisChosen(useFinanceStore.getState().profile.zakatConfig), holdsForTrading, manualAmount: manualOn ? parseFloat(manualAmount) || 0 : null, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
-  const editLine = (id: LineId, raw: string) => {
+  const save = (patch: Partial<ZakatConfig>) => updateProfile({ zakatConfig: { ...useFinanceStore.getState().profile.zakatConfig, nisabBasis, nisabBasisChosen: basisChosen || zakatBasisChosen(useFinanceStore.getState().profile.zakatConfig), holdsForTrading, manualAmount: manualParsed, lineOverrides: overrides, yearStartDate: yearStart || null, ...patch } })
+  const commitLine = (id: LineId, live: number) => {
+    const raw = drafts[id]
+    setDrafts((d) => ({ ...d, [id]: undefined }))
+    if (raw === undefined) return
+    const edit = resolveLineEdit(raw, live, overrides[id])
+    if (edit.kind === 'keep') return
     const next = { ...overrides }
-    if (raw.trim() === '') delete next[id]
-    else next[id] = parseFloat(raw.replace(/,/g, '')) || 0
+    if (edit.kind === 'clear') delete next[id]
+    else next[id] = edit.value
     setOverrides(next); save({ lineOverrides: next })
+  }
+  const lineInput = (id: LineId, live: number) => ({
+    inputMode: 'decimal' as const,
+    value: drafts[id] ?? fmtNum(live),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDrafts((d) => ({ ...d, [id]: e.target.value })),
+    onBlur: () => commitLine(id, live),
+  })
+  const markPaid = async () => {
+    const amount = fmtNum(result.zakat)
+    if (!(await confirmDialog({ title: t.markPaidTitle, body: t.markPaidBody(amount, unit) }))) return
+    const before = useFinanceStore.getState().profile.zakatConfig
+    const paid = markZakatPaid({ ...before, nisabBasis, holdsForTrading, manualAmount: manualParsed, lineOverrides: overrides }, localTodayISO(), new Date().toISOString())
+    updateProfile({ zakatConfig: paid })
+    setYearStart(paid.yearStartDate ?? '')
+    onClose()
+    showToast(t.markPaidToast, {
+      undoLabel: t.undo,
+      undo: () => {
+        const cur = useFinanceStore.getState().profile.zakatConfig
+        if (cur && before) useFinanceStore.getState().updateProfile({ zakatConfig: undoZakatPaid(cur, before) })
+      },
+    })
   }
 
   const todayIso = localTodayISO()
@@ -101,10 +137,10 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
           {/* verdict */}
           <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: tint(accent, 35), background: tint(accent, 6) }}>
             <p className="text-sm font-semibold" style={{ color: accent }}>{result.due ? 'Zakat is due' : 'No zakat due'}</p>
-            <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">EGP</span></p>
-            <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? `2.5% × ${fmtNum(result.zakatable)} EGP zakatable` : `You are ${fmtNum(result.gap)} EGP under the line`}</p>
+            <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">{unit}</span></p>
+            <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? `2.5% × ${fmtNum(result.zakatable)} ${unit} zakatable` : `You are ${fmtNum(result.gap)} ${unit} under the line`}</p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--color-brand-sunken)' }}><div style={{ width: `${Math.min(100, result.nisab > 0 ? (result.zakatable / result.nisab) * 100 : 0)}%`, height: '100%', background: accent }} /></div>
-            <div className="mt-2 flex justify-between font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]"><span>Nisab · {fmtNum(result.nisab)} EGP</span><span>Hawl ends {hawlDate}</span></div>
+            <div className="mt-2 flex justify-between font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]"><span>Nisab · {fmtNum(result.nisab)} {unit}</span><span>Hawl ends {hawlDate}</span></div>
           </div>
 
           {/* what counts */}
@@ -116,7 +152,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint(r.color, 14), color: r.color }}>{r.icon}</span>
                   <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
                   {/* Deliberately compact (36px) so the row rhythm holds — not the app's 48px field. */}
-                  <input inputMode="numeric" defaultValue={fmtNum(r.value)} onBlur={(e) => editLine(r.id, e.target.value)}
+                  <input {...lineInput(r.id, r.value)}
                     className={cn(
                       'h-9 w-[84px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)] outline-none',
                       overrides[r.id] != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
@@ -134,7 +170,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-brand-red)', 14), color: 'var(--color-brand-red)' }}><CreditCard size={18} /></span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Debts due this year</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">Subtracted from your wealth</p></div>
                 <span className="mr-1 text-sm text-[var(--color-brand-red)]">−</span>
-                <input inputMode="numeric" defaultValue={fmtNum(debts)} onBlur={(e) => editLine('debts', e.target.value)}
+                <input {...lineInput('debts', debts)}
                   className={cn(
                     'h-9 w-[76px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-red)] outline-none',
                     overrides.debts != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
@@ -142,7 +178,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               </div>
               <div className="flex items-center justify-between bg-[var(--color-brand-elevated)] p-3">
                 <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Zakatable wealth</span>
-                <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(result.zakatable)} EGP</span>
+                <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(result.zakatable)} {unit}</span>
               </div>
             </Card>
           </div>
@@ -163,7 +199,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
             <div className="mt-2 flex items-start gap-2 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5">
               <BookOpen size={14} className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" />
               <p className="font-mono-numbers text-[11.5px] leading-relaxed text-[var(--color-brand-text-secondary)]">
-                {t.silver} ≈ {fmtNum(silverNisab)} · {t.gold} {fmtNum(goldNisab)} EGP. {t.silverEstimate}
+                {t.silver} ≈ {fmtNum(silverNisab)} · {t.gold} {fmtNum(goldNisab)} {unit}. {t.silverEstimate}
               </p>
             </div>
           </div>
@@ -206,11 +242,11 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                 size="touch"
                 aria-label={t.override}
                 checked={manualOn}
-                onCheckedChange={(v) => { setManualOn(v); save({ manualAmount: v ? parseFloat(manualAmount) || 0 : null }) }}
+                onCheckedChange={(v) => { setManualOn(v); save({ manualAmount: v ? parseZakatLine(manualAmount) : null }) }}
               />
             </div>
             {manualOn && (
-              <Input inputMode="numeric" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} onBlur={() => save({ manualAmount: parseFloat(manualAmount) || 0 })} placeholder="0"
+              <Input inputMode="decimal" value={manualAmount} onChange={(e) => setManualAmount(e.target.value)} onBlur={() => save({ manualAmount: parseZakatLine(manualAmount) })} placeholder="0"
                 className="mt-3 h-12 rounded-xl border-[var(--color-brand-primary)]/50 bg-[var(--color-brand-card)] px-4 font-mono-numbers text-lg text-[var(--color-brand-text-primary)]" />
             )}
           </Card>
@@ -222,8 +258,8 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
         </div>
 
         <div className="flex gap-3 px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <Button variant="outline" size="cta" onClick={onClose} className="flex-1 text-sm font-semibold">Remind me</Button>
-          <Button size="cta" onClick={() => { save({ lastPaidDate: new Date().toISOString() }); onClose() }} className="flex-1 text-sm font-semibold">{result.due ? 'Log zakat payment' : 'Save'}</Button>
+          <Button variant={result.due ? 'outline' : 'default'} size="cta" onClick={onClose} className="flex-1 text-sm font-semibold">{t.done}</Button>
+          {result.due ? <Button size="cta" onClick={markPaid} className="flex-1 text-sm font-semibold">{t.markPaid}</Button> : null}
         </div>
       </div>
     </ModalShell>

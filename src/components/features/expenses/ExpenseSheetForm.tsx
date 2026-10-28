@@ -69,6 +69,8 @@ export interface ExpenseSheetFormProps {
   /** Edit-only: someone repaid what was paid for them. */
   onMarkRepaid?: () => void
   owedSettled?: boolean
+  /** Edit-only: set when the expense came from a scanned receipt — opens its breakdown and photo. */
+  onViewReceipt?: () => void
   /** Add-only: BNPL "split into installments" controls (shown when the PM is `bnpl`). */
   installment?: {
     isBnplPurchase: boolean
@@ -80,6 +82,8 @@ export interface ExpenseSheetFormProps {
     setFirstDue: (v: string) => void
     fundingMethodId: string
     setFundingMethodId: (id: string) => void
+    /** Why the split cannot be saved yet; shown in the card. */
+    error?: string
   }
 }
 
@@ -113,6 +117,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     installment,
     onMarkRepaid,
     owedSettled,
+    onViewReceipt,
   } = props
   const t = useT()
   const { locale } = useLocale()
@@ -215,6 +220,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   id="ef-amount"
                   value={amount}
                   onChange={setAmount}
+                  currency={currency}
                   placeholder="0.00"
                   dir="ltr"
                   className="h-12 w-full min-w-0 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)] focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50"
@@ -384,6 +390,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     paymentMethods={paymentMethods.filter((m) => m.type !== 'bnpl')}
                     label={t.expenseForm.installmentPayFrom}
                   />
+                  {installment.error ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{installment.error}</p> : null}
                 </div>
               ) : null}
             </Card>
@@ -404,6 +411,10 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                 ) : null}
               </span>
             </div>
+          ) : null}
+
+          {onViewReceipt ? (
+            <Button variant="outline" size="touch" onClick={onViewReceipt}>{t.receiptDetail.viewReceipt}</Button>
           ) : null}
 
           {/* note */}

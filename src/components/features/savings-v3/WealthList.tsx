@@ -8,7 +8,7 @@ import { TransactionRow } from '@/components/transactions/TransactionRow'
 import { pocketIdentity } from '@/lib/savings/pocketIdentity'
 import type { CatKey, WealthRowVM } from '@/lib/savings/wealthModel'
 import { useT } from '@/lib/i18n'
-import { formatWhole } from '@/lib/utils/formatters'
+import { formatQuantity, formatWhole } from '@/lib/utils/formatters'
 
 const CAT: Record<CatKey, { Icon: LucideIcon; color: string }> = {
   bank: { Icon: Landmark, color: 'var(--color-cat-1)' },
@@ -44,10 +44,10 @@ function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], go
   const unit = h.assetType === 'gold' ? ' g' : h.assetType === 'property' ? ' m²' : ''
   if (row.unitPrice == null) {
     return h.assetType === 'property'
-      ? `${formatWhole(h.quantity)}${unit}`
-      : `${formatWhole(h.quantity)}${unit} · ${t.notPriced}${row.asOf ? ` · ${shortDate(row.asOf)}` : ''}`
+      ? `${formatQuantity(h.quantity, h.assetType)}${unit}`
+      : `${formatQuantity(h.quantity, h.assetType)}${unit} · ${t.notPriced}${row.asOf ? ` · ${shortDate(row.asOf)}` : ''}`
   }
-  return h.assetType === 'property' ? `${formatWhole(h.quantity)}${unit}` : `${formatWhole(h.quantity)}${unit} × ${formatWhole(row.unitPrice)}`
+  return h.assetType === 'property' ? `${formatQuantity(h.quantity, h.assetType)}${unit}` : `${formatQuantity(h.quantity, h.assetType)}${unit} × ${formatWhole(row.unitPrice)}`
 }
 
 /** Every balance and position in one list, with a filter by kind. The one Add button lives here. */

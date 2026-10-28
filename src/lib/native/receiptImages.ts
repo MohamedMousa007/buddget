@@ -45,6 +45,17 @@ export async function readReceiptImage(receiptId: string): Promise<string | null
   }
 }
 
+/** Removes one receipt's stored photo. Errors swallowed. */
+export async function deleteReceiptImage(receiptId: string): Promise<void> {
+  if (!isNative()) return
+  try {
+    const { Filesystem, Directory } = await fs()
+    await Filesystem.deleteFile({ path: `${DIR}/${receiptId}.jpg`, directory: Directory.Data })
+  } catch {
+    // already gone
+  }
+}
+
 /** Deletes stored receipt photos older than the retention window. Errors swallowed. */
 export async function cleanupOldReceiptImages(maxAgeDays = RETENTION_DAYS): Promise<void> {
   if (!isNative()) return

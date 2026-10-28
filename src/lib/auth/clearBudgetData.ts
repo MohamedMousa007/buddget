@@ -4,6 +4,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clearPendingAiJobs } from '@/lib/store/usePendingAiJobs'
 import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 import { SPLASH_DONE_KEY } from '@/lib/auth/splashLatch'
+import { resetNavConsent } from '@/lib/buddgy/tools/navConsent'
 import { resetFeatureFlags } from '@/lib/flags/useFeatureFlag'
 
 /**
@@ -53,6 +54,7 @@ export function clearBudgetData(): void {
 
   clearSyncCursors()
   resetFeatureFlags()
+  resetNavConsent()
 
   try {
     useFinanceStore.getState().reset()

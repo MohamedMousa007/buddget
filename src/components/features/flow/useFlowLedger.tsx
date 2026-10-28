@@ -8,6 +8,7 @@ import { CircleSlash, Link as LinkIcon, Link2, MessageSquare } from 'lucide-reac
 import { CategoryIcon } from '@/components/dashboard/CategoryIcon'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { Badge } from '@/components/ui/badge'
+import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { FlowLedgerGroup, FlowLedgerRow } from '@/components/features/flow/FlowLedger'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -68,6 +69,7 @@ export function useFlowLedger() {
   const t = useT()
   const { locale } = useLocale()
   const toast = useActionToast()
+  const { removeExpense } = useLinkedDelete()
   const {
     expenses,
     incomeSources,
@@ -75,10 +77,10 @@ export function useFlowLedger() {
     paymentMethods,
     settings,
     rates,
-    deleteExpense,
-    restoreExpense,
     deleteIncomeEvent,
     deleteIncomeSource,
+    restoreIncomeEvent,
+    restoreIncomeSource,
   } = useFinanceStore(
     useShallow((s) => ({
       expenses: s.expenses,
@@ -87,10 +89,10 @@ export function useFlowLedger() {
       paymentMethods: s.paymentMethods,
       settings: s.settings,
       rates: s.exchangeRates,
-      deleteExpense: s.deleteExpense,
-      restoreExpense: s.restoreExpense,
       deleteIncomeEvent: s.deleteIncomeEvent,
       deleteIncomeSource: s.deleteIncomeSource,
+      restoreIncomeEvent: s.restoreIncomeEvent,
+      restoreIncomeSource: s.restoreIncomeSource,
     })),
   )
   const { monthFilter, setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome } =
@@ -205,10 +207,7 @@ export function useFlowLedger() {
           },
           swipe: {
             deleteLabel: t.expenses.swipeDelete,
-            onDelete: () => {
-              deleteExpense(e.id)
-              toast(t.expenses.expenseDeleted, { undo: () => restoreExpense(e), undoLabel: t.common.undo })
-            },
+            onDelete: () => void removeExpense(e),
           },
         },
       }
@@ -329,7 +328,16 @@ export function useFlowLedger() {
           },
           swipe: {
             deleteLabel: t.income.swipeDelete,
-            onDelete: () => (inc.event ? deleteIncomeEvent(inc.event.id) : deleteIncomeSource(inc.legacySourceId!)),
+            onDelete: () => {
+              const { event, legacySourceId } = inc
+              const legacy = legacySourceId ? incomeSources.find((s) => s.id === legacySourceId) : undefined
+              if (event) deleteIncomeEvent(event.id)
+              else deleteIncomeSource(legacySourceId!)
+              toast(t.moneyFlows.incomeDeleted, {
+                undo: () => (event ? restoreIncomeEvent(event) : legacy && restoreIncomeSource(legacy)),
+                undoLabel: t.common.undo,
+              })
+            },
             rightAction: link ? { label: t.addIncome.assignBtn, icon: <Link2 className="h-5 w-5" />, onAction: link } : undefined,
           },
         },
@@ -381,7 +389,7 @@ export function useFlowLedger() {
   }, [
     expenses, incomeEvents, incomeSources, paymentMethods, previews, matches, resolved, base, secondary, rates, t,
     setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome,
-    deleteExpense, restoreExpense, deleteIncomeEvent, deleteIncomeSource, toast,
+    removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast,
   ])
 
   const amountOn = amountIsFiltered(filters.amtMin, filters.amtMax)

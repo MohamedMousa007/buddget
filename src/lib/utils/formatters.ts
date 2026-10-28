@@ -63,23 +63,33 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   ETH: 'Ξ',
 }
 
+const CRYPTO_CURRENCIES = new Set(['BTC', 'ETH'])
+
+/** Sign goes before the symbol ("-$5.00"); a value that rounds to zero carries no sign. */
+function withSign(negative: boolean, body: string): string {
+  return negative ? `-${body}` : body
+}
+
 export function formatCurrency(amount: number, currency: Currency | string, showCents = true): string {
+  const loc = numberLocale()
   if (currency === 'XAU') {
-    return `${amount.toFixed(2)}g`
+    const grams = Math.abs(amount)
+    return withSign(amount < 0 && grams >= 0.0005, `${formatQuantity(grams, 'gold')}g`)
   }
 
   const symbol = CURRENCY_SYMBOLS[currency] || currency
-  const loc = numberLocale()
-  const formatted = showCents
-    ? amount.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : amount.toLocaleString(loc, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const abs = Math.abs(amount)
+  const maxDigits = !showCents ? 0 : CRYPTO_CURRENCIES.has(currency as string) ? 8 : 2
+  const minDigits = showCents ? 2 : 0
+  const formatted = abs.toLocaleString(loc, { minimumFractionDigits: minDigits, maximumFractionDigits: maxDigits })
+  const negative = amount < 0 && Math.round(abs * 10 ** maxDigits) !== 0
 
   // Single-char sign → stick (e.g. `$1,234`, `﷼500`, `₿0.01`).
   // Multi-char abbrev → space (e.g. `د.إ 1,234`, `E£ 500`).
   if (Array.from(symbol).length === 1) {
-    return `${symbol}${formatted}`
+    return withSign(negative, `${symbol}${formatted}`)
   }
-  return `${symbol} ${formatted}`
+  return withSign(negative, `${symbol} ${formatted}`)
 }
 
 /**
@@ -94,11 +104,12 @@ export function formatMoneyHero(
   options: { compact?: 'auto' | 'on' | 'off'; fullMaxChars?: number } = {},
 ): string {
   const { compact = 'auto', fullMaxChars = 9 } = options
-  if (currency === 'XAU') return `${amount.toFixed(2)}g`
+  if (currency === 'XAU') return formatCurrency(amount, 'XAU')
 
   const symbol = CURRENCY_SYMBOLS[currency] || currency
   const loc = numberLocale()
-  const rounded = Math.round(amount)
+  const rounded = Math.abs(Math.round(amount))
+  const negative = amount < 0 && rounded !== 0
 
   const fullNumber = rounded.toLocaleString(loc, {
     minimumFractionDigits: 0,
@@ -110,7 +121,7 @@ export function formatMoneyHero(
   }).format(rounded)
 
   const stick = Array.from(symbol).length === 1
-  const join = (n: string) => (stick ? `${symbol}${n}` : `${symbol} ${n}`)
+  const join = (n: string) => withSign(negative, stick ? `${symbol}${n}` : `${symbol} ${n}`)
   const full = join(fullNumber)
 
   if (compact === 'off') return full
@@ -150,7 +161,15 @@ export function formatPercent(value: number): string {
 
 /** Round to the nearest whole unit, grouped ("1,234"). No currency symbol — pair with one at the call site. */
 export function formatWhole(n: number): string {
-  return Math.round(n).toLocaleString(numberLocale())
+  return (Math.round(n) + 0).toLocaleString(numberLocale())
+}
+
+const QUANTITY_MAX_DECIMALS: Record<string, number> = { crypto: 8, gold: 3, stock: 4, property: 2 }
+
+/** Unit-aware holding quantity: keeps the decimals that matter ("0.0123" BTC, "2.5" g), trims trailing zeros. */
+export function formatQuantity(n: number, assetType?: string): string {
+  const max = (assetType && QUANTITY_MAX_DECIMALS[assetType]) || 4
+  return (Math.round(n * 10 ** max) / 10 ** max + 0).toLocaleString(numberLocale(), { maximumFractionDigits: max })
 }
 
 /** Two decimals, grouped ("1,368.81"). Absolute value — callers place the sign. */

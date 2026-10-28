@@ -17,6 +17,7 @@ import { buildContext } from '@/lib/buddgy/client/context'
 import { readLabel } from '@/lib/buddgy/client/readLabels'
 import { readTurnEvents } from '@/lib/buddgy/client/sse'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
+import { hasNavConsent } from '@/lib/buddgy/tools/navConsent'
 import type { Proposal } from '@/lib/buddgy/tools/proposal'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 
@@ -96,6 +97,10 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext): CallsResu
         results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw) : raw) })
         reads.push({ tool: call.name, label: readLabel(call.name, ctx.locale) })
         needsModel = true
+      } else if (entry.nav && (hasNavConsent() || !entry.write)) {
+        const r = entry.nav(call.args, ctx)
+        results.push({ name: call.name, response: r })
+        if (!r.ok) needsModel = true
       } else if (entry.write) {
         const r = entry.write.propose(call.args, ctx)
         if (r.ok) {
@@ -105,10 +110,6 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext): CallsResu
           results.push({ name: call.name, response: { error: r.error, hint: r.hint, choices: r.choices } })
           needsModel = true
         }
-      } else if (entry.nav) {
-        const r = entry.nav(call.args, ctx)
-        results.push({ name: call.name, response: r })
-        if (!r.ok) needsModel = true
       }
     } catch {
       results.push({ name: call.name, response: { error: 'tool_failed' } })
@@ -182,7 +183,7 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
     if (!calls && !finished) throw new TurnFailure({ kind: 'failed' })
     if (!calls) break
 
-    const ran = executeCalls(calls, ctx)
+    const ran = executeCalls(calls, { ...ctx, afterRead: reads.length > 0 })
     proposals.push(...ran.proposals)
     reads.push(...ran.reads)
     if (!ran.needsModel || hop === TURN_LIMITS.maxHops) break

@@ -115,7 +115,10 @@ export function markPaidTarget(sub: Billable, expenses: PaidProbe[], today: Date
   const now = startOfDay(today)
   const state = cycleState(sub, expenses, now)
   if (state.kind !== 'upcoming') return now
-  const next = cycleWindow(sub, now).end
+  const win = cycleWindow(sub, now)
+  const next = win.end
+  // A cycle no longer than the pay-ahead window (weekly) has no "ahead": paying it would be a second charge in a row.
+  if (differenceInCalendarDays(next, win.start) <= PAY_AHEAD_DAYS) return null
   if (differenceInCalendarDays(next, now) > PAY_AHEAD_DAYS) return null
   return isCyclePaid(sub, expenses, next) ? null : next
 }

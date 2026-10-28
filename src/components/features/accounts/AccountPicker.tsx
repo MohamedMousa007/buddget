@@ -12,10 +12,12 @@ interface AccountPickerProps {
   accounts: AccountView[]
   value: string
   onChange: (id: string) => void
+  /** Overrides the default "From" caption (e.g. "To account"). */
+  label?: string
 }
 
 /** "From": the chosen account on one row; tap to unfold the rest in place (no second sheet). */
-export function AccountPicker({ accounts, value, onChange }: AccountPickerProps) {
+export function AccountPicker({ accounts, value, onChange, label }: AccountPickerProps) {
   const t = useT().accountsPage
   const [open, setOpen] = useState(false)
   const current = accounts.find((a) => a.method.id === value) ?? accounts[0]
@@ -27,7 +29,7 @@ export function AccountPicker({ accounts, value, onChange }: AccountPickerProps)
         className="flex min-h-[52px] w-full items-center gap-3 text-start">
         <BrandMark name={accountTitle(current.method)} color={accountColor(current.method)} size={36} />
         <span className="min-w-0 flex-1">
-          <span className="block text-xs text-[var(--color-brand-text-muted)]">{t.from}</span>
+          <span className="block text-xs text-[var(--color-brand-text-muted)]">{label ?? t.from}</span>
           <span className="block truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(current.method)}</span>
         </span>
         <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">{freeText(current)}</span>
