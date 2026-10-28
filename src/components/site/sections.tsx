@@ -84,8 +84,8 @@ export function StoreBadges({ locale, dark }: { locale: SiteLocale; dark?: boole
 export function Split({ children, visual, reverse, className }: { children: ReactNode; visual: ReactNode; reverse?: boolean; className?: string }) {
   return (
     <div className={cn('flex flex-col items-center gap-12 lg:gap-20', reverse ? 'lg:flex-row-reverse' : 'lg:flex-row', className)}>
-      <div className="flex min-w-0 flex-1 basis-[440px] flex-col gap-5">{children}</div>
-      <div className="relative flex flex-none basis-[420px] justify-center">{visual}</div>
+      <div className="flex min-w-0 flex-col gap-5 lg:flex-1 lg:basis-[440px]">{children}</div>
+      <div className="relative flex justify-center lg:flex-none lg:basis-[420px]">{visual}</div>
     </div>
   )
 }

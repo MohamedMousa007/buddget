@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Buddget', url: SITE_URL }],
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
   icons: {
-    icon: [{ url: '/icons/icon.svg', type: 'image/svg+xml' }, { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
   },
 }

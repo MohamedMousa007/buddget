@@ -26,7 +26,7 @@ export function HomePage({ locale }: P) {
         <div aria-hidden className="site-glow pointer-events-none absolute -end-40 -top-40 size-[900px] rounded-full" />
         <Container className="relative">
           <div className="flex flex-col items-center gap-14 py-10 lg:flex-row lg:py-16">
-            <div className="flex min-w-0 flex-1 basis-[520px] flex-col gap-7">
+            <div className="flex min-w-0 flex-col gap-7 lg:flex-1 lg:basis-[520px]">
               <h1 className="font-heading text-5xl font-bold leading-[1] tracking-tight text-balance sm:text-7xl rtl:leading-[1.2] rtl:tracking-normal">{h.hero.h1}</h1>
               <Lede className="max-w-[34ch] text-xl sm:text-2xl">{h.hero.lede}</Lede>
               <div className="flex flex-wrap items-center gap-3.5">
@@ -37,7 +37,7 @@ export function HomePage({ locale }: P) {
                 {h.hero.assurances.map((a) => <li key={a}>{a}</li>)}
               </ul>
             </div>
-            <div className="flex flex-1 basis-[420px] justify-center">
+            <div className="flex justify-center lg:flex-1 lg:basis-[420px]">
               <HeroShowcase locale={locale} />
             </div>
           </div>
@@ -83,13 +83,13 @@ export function HomePage({ locale }: P) {
       <Section id="calc" pad="lg">
         <Container>
           <div className="flex flex-col gap-14 lg:flex-row lg:items-center">
-            <div className="flex flex-1 basis-[380px] flex-col gap-5">
+            <div className="flex flex-col gap-5 lg:flex-1 lg:basis-[380px]">
               <Eyebrow>{h.calc.eyebrow}</Eyebrow>
               <H2>{h.calc.h2}</H2>
               <Lede>{h.calc.lede}</Lede>
               <TextLink locale={locale} slug={h.calc.link.slug}>{h.calc.link.label}</TextLink>
             </div>
-            <div className="flex-1 basis-[480px]"><DailyNumberCalculator locale={locale} /></div>
+            <div className="lg:flex-1 lg:basis-[480px]"><DailyNumberCalculator locale={locale} /></div>
           </div>
         </Container>
       </Section>
@@ -365,13 +365,13 @@ export function ContactPage({ locale }: P) {
       <PageHero locale={locale} trail={[{ label: c.footer.links.contact }]} eyebrow={t.intro.eyebrow} h1={t.intro.h1} lede={t.intro.lede} />
       <Section pad="md">
         <Container>
-          <div className="flex flex-wrap gap-10">
-            <Card className="flex-1 basis-[460px]">
+          <div className="flex flex-col gap-10 md:flex-row">
+            <Card className="md:flex-1 md:basis-[460px]">
               <H3 className="mb-5">{t.formH}</H3>
               <LeadForm kind="contact" locale={locale} labels={{ name: t.name, email: t.email, message: t.message, submit: t.send, sent: t.sent, error: t.error }} />
               <p className="mt-4 text-sm text-brand-text-secondary">{t.responseNote}</p>
             </Card>
-            <div className="grid flex-1 basis-[320px] content-start gap-5">
+            <div className="grid content-start gap-5 md:flex-1 md:basis-[320px]">
               <Card><H3>{t.emailH}</H3><p className="mt-2 text-brand-text-secondary">{t.emailP}</p><a dir="ltr" href={`mailto:${SUPPORT_EMAIL}`} className="mt-3 inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{SUPPORT_EMAIL}</a></Card>
               <Card><H3>{t.appH}</H3><p className="mt-2 text-brand-text-secondary">{t.appP}</p></Card>
               {hasSocialLinks() ? <Card><H3 className="mb-3">{t.followH}</H3><SocialLinks label={c.footer.follow} /></Card> : null}
@@ -425,7 +425,7 @@ export function PressPage({ locale }: P) {
             <Card className="grid gap-4">
               <H3>{p.logoH}</H3>
               <div className="flex flex-wrap gap-4">
-                <div className="grid min-h-28 flex-1 basis-44 place-items-center rounded-2xl border border-brand-border bg-brand-bg"><Image src="/icons/icon.svg" alt="Buddget" width={64} height={64} unoptimized /></div>
+                <div className="grid min-h-28 flex-1 basis-44 place-items-center rounded-2xl border border-brand-border bg-brand-bg"><Image src="/icons/icon-192.png" alt="Buddget" width={64} height={64} unoptimized /></div>
               </div>
               <H3>{p.colorsH}</H3>
               <ul className="grid grid-cols-2 gap-3">
