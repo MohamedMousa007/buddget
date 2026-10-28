@@ -16,7 +16,7 @@ export function SocialLinks({ label }: { label: string }) {
               {s.short}
             </a>
           ) : (
-            <span role="img" aria-label={`${s.label} (soon)`} title={`${s.label} (soon)`} className={`${base} border-dashed border-brand-border-strong text-brand-text-muted`}>
+            <span role="img" aria-label={`${s.label} (soon)`} title={`${s.label} (soon)`} className={`${base} border-dashed border-brand-border-strong text-brand-text-secondary`}>
               {s.short}
             </span>
           )}

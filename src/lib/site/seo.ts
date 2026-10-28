@@ -3,7 +3,7 @@ import { SITE_URL, SOCIAL_LINKS, STORE_LINKS, SUPPORT_EMAIL, SITE_LOCALES, type 
 import { findRoute, pathFor, siteContent, urlFor } from './routes'
 
 const OG_LOCALE: Record<SiteLocale, string> = { en: 'en_US', ar: 'ar_EG' }
-const OG_IMAGE = { url: '/opengraph-image.png', width: 1200, height: 630, alt: 'Buddget' }
+const ogImage = (locale: SiteLocale) => ({ url: `/og-${locale}.png`, width: 1200, height: 630, alt: siteContent[locale].meta.homeTitle })
 
 export function buildMetadata(locale: SiteLocale, slug: string): Metadata {
   const route = findRoute(locale, slug)
@@ -24,9 +24,9 @@ export function buildMetadata(locale: SiteLocale, slug: string): Metadata {
       url: urlFor(locale, slug),
       title: route.title,
       description: route.description,
-      images: [OG_IMAGE],
+      images: [ogImage(locale)],
     },
-    twitter: { card: 'summary_large_image', title: route.title, description: route.description, images: [OG_IMAGE.url] },
+    twitter: { card: 'summary_large_image', title: route.title, description: route.description, images: [ogImage(locale).url] },
   }
 }
 

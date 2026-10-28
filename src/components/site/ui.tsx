@@ -41,8 +41,9 @@ export function H2({ children, className }: { children: ReactNode; className?: s
   return <h2 className={cn('font-heading text-3xl font-bold leading-tight tracking-tight text-balance sm:text-4xl rtl:tracking-normal', className)}>{children}</h2>
 }
 
-export function H3({ children, className }: { children: ReactNode; className?: string }) {
-  return <h3 className={cn('font-heading text-xl font-semibold leading-snug', className)}>{children}</h3>
+/** Card and block titles. Defaults to h2 so a title directly under the page heading never skips a level. */
+export function H3({ children, className, as: Tag = 'h2' }: { children: ReactNode; className?: string; as?: 'h2' | 'h3' }) {
+  return <Tag className={cn('font-heading text-xl font-semibold leading-snug', className)}>{children}</Tag>
 }
 
 export function Lede({ children, className }: { children: ReactNode; className?: string }) {
@@ -72,9 +73,9 @@ type ButtonLinkProps = {
 export function ButtonLink({ href, children, variant = 'default', size = 'md', className, external }: ButtonLinkProps) {
   const cls = cn(buttonVariants({ variant, size: 'cta' }), 'rounded-full px-7 text-base font-semibold', size === 'lg' && 'h-14 px-9', className)
   return external ? (
-    <a href={href} className={cls}>{children}</a>
+    <a href={href} className={cls} data-track="cta">{children}</a>
   ) : (
-    <Link href={href} className={cls}>{children}</Link>
+    <Link href={href} className={cls} data-track="cta">{children}</Link>
   )
 }
 

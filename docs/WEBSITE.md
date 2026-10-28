@@ -10,5 +10,7 @@ Static marketing site in English and Arabic, served from the same Next app as th
 - **Config:** `src/lib/site/config.ts` — social URLs (empty hides the link), store links (null shows the beta list), support email.
 - **Reviews:** `src/lib/site/content/reviews.ts`. `REAL_REVIEWS` empty hides the section; samples render only when `NEXT_PUBLIC_SITE_SAMPLE_REVIEWS=1`.
 - **Leads:** `POST /api/site/lead` writes beta-list and contact messages to `site_leads` (service role only, RLS on, honeypot and rate limit).
+- **Analytics:** cookieless first-party counters. `SiteAnalytics` sends one view per page and one click per `data-track="cta"` element to `POST /api/site/event`, which bumps a daily row in `site_stats` (no IP, no user agent; Do Not Track and Global Privacy Control are honoured). Read it with SQL on `site_stats`.
+- **Share images:** `public/og-en.png` and `public/og-ar.png`, 1200x630, set per language in `seo.ts`.
 - **CSP:** site pages use `SITE_CSP` (inline scripts allowed because static pages carry no nonce); the app keeps its nonce CSP.
 - **Claims:** the automation figure on the home page is beta data and needs a refresh and date before launch.

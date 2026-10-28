@@ -164,7 +164,7 @@ export function FeaturesHub({ locale }: P) {
               <li key={it.slug}>
                 <Link href={pathFor(locale, `features/${it.slug}`)} className={`flex h-full flex-col gap-3 rounded-2xl border bg-brand-card p-7 transition-colors hover:border-brand-primary ${i === 0 ? 'border-brand-primary' : 'border-brand-border'}`}>
                   {i === 0 ? <span className="inline-flex self-start rounded-full border border-brand-border px-3 py-1 text-xs font-medium text-brand-text-secondary">{f.core}</span> : null}
-                  <H3>{it.name}</H3>
+                  <H3 as="h2">{it.name}</H3>
                   <p className="text-brand-text-secondary">{it.short}</p>
                   <span className="mt-auto pt-2 font-semibold text-brand-primary-ink">{c.common.readMore} <span aria-hidden className="inline-block rtl:rotate-180">→</span></span>
                 </Link>
@@ -247,13 +247,13 @@ export function PricingPage({ locale }: P) {
         <Container>
           <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
             <Card className="flex flex-col gap-5 border-brand-primary">
-              <div><H3 className="text-2xl">{p.free.name}</H3><p className="mt-1 text-brand-text-secondary">{p.free.tag}</p></div>
+              <div><H3 as="h2" className="text-2xl">{p.free.name}</H3><p className="mt-1 text-brand-text-secondary">{p.free.tag}</p></div>
               <div dir="auto" className="font-mono text-5xl font-medium">{p.free.price}</div>
               <Ticks items={p.free.items} />
               <ButtonLink href={pathFor(locale, 'download')} className="mt-auto">{p.free.cta}</ButtonLink>
             </Card>
             <Card className="flex flex-col gap-5">
-              <div><H3 className="text-2xl">{p.plus.name}</H3><p className="mt-1 text-brand-text-secondary">{p.plus.tag}</p></div>
+              <div><H3 as="h2" className="text-2xl">{p.plus.name}</H3><p className="mt-1 text-brand-text-secondary">{p.plus.tag}</p></div>
               <div dir="auto" className="font-mono text-3xl font-medium text-brand-text-secondary">{p.plus.price}</div>
               <Ticks items={p.plus.items} />
               <ButtonLink href={pathFor(locale, 'download')} variant="outline" className="mt-auto">{p.plus.cta}</ButtonLink>
@@ -316,7 +316,7 @@ export function SecurityPage({ locale }: P) {
       <Section pad="md">
         <Container>
           <ul className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {s.cards.map((x) => <li key={x.h}><Card className="h-full"><H3>{x.h}</H3><p className="mt-2 text-brand-text-secondary">{x.p}</p></Card></li>)}
+            {s.cards.map((x) => <li key={x.h}><Card className="h-full"><H3 as="h2">{x.h}</H3><p className="mt-2 text-brand-text-secondary">{x.p}</p></Card></li>)}
           </ul>
         </Container>
       </Section>
@@ -372,9 +372,9 @@ export function ContactPage({ locale }: P) {
               <p className="mt-4 text-sm text-brand-text-secondary">{t.responseNote}</p>
             </Card>
             <div className="grid content-start gap-5 md:flex-1 md:basis-[320px]">
-              <Card><H3>{t.emailH}</H3><p className="mt-2 text-brand-text-secondary">{t.emailP}</p><a dir="ltr" href={`mailto:${SUPPORT_EMAIL}`} className="mt-3 inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{SUPPORT_EMAIL}</a></Card>
-              <Card><H3>{t.appH}</H3><p className="mt-2 text-brand-text-secondary">{t.appP}</p></Card>
-              <Card><H3 className="mb-3">{t.followH}</H3><SocialLinks label={c.footer.follow} /></Card>
+              <Card><H3 as="h2">{t.emailH}</H3><p className="mt-2 text-brand-text-secondary">{t.emailP}</p><a dir="ltr" href={`mailto:${SUPPORT_EMAIL}`} className="mt-3 inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{SUPPORT_EMAIL}</a></Card>
+              <Card><H3 as="h2">{t.appH}</H3><p className="mt-2 text-brand-text-secondary">{t.appP}</p></Card>
+              <Card><H3 as="h2" className="mb-3">{t.followH}</H3><SocialLinks label={c.footer.follow} /></Card>
             </div>
           </div>
         </Container>
@@ -392,7 +392,7 @@ export function AboutPage({ locale }: P) {
       <PageHero locale={locale} trail={[{ label: c.footer.links.about }]} eyebrow={a.intro.eyebrow} h1={a.intro.h1} lede={a.intro.lede} />
       <Section pad="md">
         <Container>
-          <ul className="grid gap-5 md:grid-cols-3">{a.pillars.map((p) => <li key={p.h}><Card className="h-full"><H3>{p.h}</H3><p className="mt-2 text-brand-text-secondary">{p.p}</p></Card></li>)}</ul>
+          <ul className="grid gap-5 md:grid-cols-3">{a.pillars.map((p) => <li key={p.h}><Card className="h-full"><H3 as="h2">{p.h}</H3><p className="mt-2 text-brand-text-secondary">{p.p}</p></Card></li>)}</ul>
         </Container>
       </Section>
       <Section pad="md" tone="card">
@@ -614,11 +614,11 @@ export function ComparePage({ locale }: P) {
         <Container>
           <div className="overflow-x-auto rounded-2xl border border-brand-border bg-brand-card">
             <table className="w-full min-w-[560px] border-collapse text-start">
-              <thead><tr className="border-b border-brand-border text-start"><th scope="col" className="p-4" /><th scope="col" className="p-4 text-start font-semibold text-brand-primary-ink">{m.cols[0]}</th><th scope="col" className="p-4 text-start font-semibold">{m.cols[1]}</th></tr></thead>
+              <thead><tr className="border-b border-brand-border text-start"><th scope="col" className="p-4"><span className="sr-only">{m.intro.eyebrow}</span></th><th scope="col" className="p-4 text-start font-semibold text-brand-primary-ink">{m.cols[0]}</th><th scope="col" className="p-4 text-start font-semibold">{m.cols[1]}</th></tr></thead>
               <tbody>{m.rows.map((r) => (<tr key={r.f} className="border-b border-brand-border last:border-0"><th scope="row" className="p-4 text-start font-medium">{r.f}</th><td className="p-4 font-medium text-brand-primary-ink">{r.a}</td><td className="p-4 text-brand-text-secondary">{r.b}</td></tr>))}</tbody>
             </table>
           </div>
-          <Card className="mt-8 max-w-3xl"><H3>{m.honestH}</H3><p className="mt-2 text-brand-text-secondary">{m.honest}</p></Card>
+          <Card className="mt-8 max-w-3xl"><H3 as="h2">{m.honestH}</H3><p className="mt-2 text-brand-text-secondary">{m.honest}</p></Card>
         </Container>
       </Section>
       <BottomCta locale={locale} title={m.cta} />

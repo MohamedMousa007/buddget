@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { track } from './track'
 
 type Kind = 'waitlist' | 'contact'
 type Props = {
@@ -31,6 +32,7 @@ export function LeadForm({ kind, locale, labels, inline }: Props) {
           company: form.get('company') ?? undefined,
         }),
       })
+      if (res.ok && kind === 'waitlist') track('lead_submit')
       setState(res.ok ? 'sent' : 'error')
     } catch {
       setState('error')

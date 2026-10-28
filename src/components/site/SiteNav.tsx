@@ -46,7 +46,7 @@ export function SiteNav({ locale, slug, dark }: Props) {
         <Link href={pathFor(other, slug)} hrefLang={other} lang={other} aria-label={c.switchTo} className="hidden min-h-11 items-center px-2 text-sm font-medium text-brand-text-secondary hover:text-brand-text-primary sm:inline-flex">
           {c.switchLabel}
         </Link>
-        <Link href={pathFor(locale, 'download')} className={cn(buttonVariants({ variant: 'default', size: 'touch' }), 'hidden rounded-full px-6 font-semibold sm:inline-flex')}>
+        <Link href={pathFor(locale, 'download')} data-track="cta" className={cn(buttonVariants({ variant: 'default', size: 'touch' }), 'hidden rounded-full px-6 font-semibold sm:inline-flex')}>
           {c.cta}
         </Link>
         <IconButton variant="outlined" size="md" className="lg:hidden" aria-expanded={open} aria-controls="site-menu" aria-label={open ? c.close : c.menu} onClick={() => setOpen((v) => !v)}>

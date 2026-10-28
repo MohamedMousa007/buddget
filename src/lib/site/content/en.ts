@@ -49,7 +49,7 @@ export const en: SiteContent = {
         {
           eyebrow: 'Where it goes',
           h: 'Find the one category eating your month',
-          p: 'Every payment lands in a category. You see the biggest one first and compare it with last month. Most people find their leak within a week.',
+          p: 'Every payment lands in a category. You see the biggest one first and compare it with last month. A week of entries is enough to see the pattern.',
           bullets: ['Spending by category, week and month', 'The places you pay most often', 'Plain sentences, not only charts'],
           link: { label: 'See spending reports', slug: 'features/reports' },
           screens: ['reports', 'reports-charts'],
@@ -216,7 +216,7 @@ export const en: SiteContent = {
       {
         slug: 'reports', name: 'Spending reports', short: 'Where your money goes, by category.',
         h1: 'Find where your money goes', lede: 'See spending by category, by week and by month, and compare with last month.',
-        screen: 'reports', heading: 'Spot the leak in a week', body: 'Reports show your biggest categories, the places you pay most often and how this month compares with the last.',
+        screen: 'reports', heading: 'See the pattern in a week', body: 'Reports show your biggest categories, the places you pay most often and how this month compares with the last.',
         bullets: ['Category totals and trends', 'Biggest purchases', 'This month against last month'],
         faq: [{ q: 'Can I export my data?', a: 'Contact us and we will send your data. Self-serve export is planned.' }],
       },
