@@ -48,32 +48,27 @@ export function SiteFooter({ locale }: { locale: SiteLocale }) {
     },
   ]
   return (
-    <footer className="border-t border-brand-border bg-brand-bg text-brand-text-primary">
-      <div className="mx-auto max-w-[1200px] px-5 py-14 sm:px-8">
-        <div className="flex flex-wrap gap-12">
-          <div className="flex min-w-[240px] flex-1 basis-64 flex-col gap-4">
+    <footer className="foot dark">
+      <div className="wrap">
+        <div className="foot-g g5">
+          <div className="flex flex-col gap-4">
             <BuddgetWordmark height={26} />
-            <p className="max-w-[32ch] text-sm leading-relaxed text-brand-text-secondary">{f.tag}</p>
+            <p className="max-w-[28ch] text-[15px] leading-relaxed" style={{ color: 'var(--muted)' }}>{f.tag}</p>
             <SocialLinks label={f.follow} />
           </div>
           {groups.map((g) => (
-            <nav key={g.title} aria-label={g.title} className="min-w-[140px] flex-1 basis-36">
-              <h2 className="mb-2 font-mono text-xs font-medium uppercase tracking-[0.1em] text-brand-text-secondary rtl:font-sans rtl:text-sm rtl:normal-case rtl:tracking-normal">{g.title}</h2>
+            <nav key={g.title} aria-label={g.title}>
+              <h2>{g.title}</h2>
               <ul>
                 {g.items.map((i) => (
-                  <li key={i.href}>
-                    <Link href={i.href} className="flex min-h-11 items-center text-[15px] hover:text-brand-primary-ink">{i.label}</Link>
-                  </li>
+                  <li key={i.href}><Link className="l" href={i.href}>{i.label}</Link></li>
                 ))}
               </ul>
             </nav>
           ))}
         </div>
-        <hr className="my-9 border-brand-border" />
-        <div className="flex flex-wrap justify-between gap-3 text-sm text-brand-text-secondary">
-          <span>{f.copy}</span>
-          <span>{f.legalNote}</span>
-        </div>
+        <div className="ghost" aria-hidden="true"><BuddgetWordmark mono height={120} title="" /></div>
+        <div className="foot-b"><span>{f.copy}</span><span>{f.legalNote}</span></div>
       </div>
     </footer>
   )

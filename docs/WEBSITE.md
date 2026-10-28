@@ -17,3 +17,7 @@ Static marketing site in English and Arabic, served from the same Next app as th
 
 ## Two-host mode (root domain = website, my.buddget.app = product)
 Set `NEXT_PUBLIC_MY_HOST=my.buddget.app` (optionally `NEXT_PUBLIC_MARKETING_HOST`, default is the parent domain). Logic in `decideSiteRoute` (`src/lib/site/entry.ts`), covered by tests. On the root domain: `/` is the website, `/api`, `/auth/callback`, `/legal`, static files stay, app routes redirect to the app host; `www` redirects to the root; the app host redirects website paths back and serves a closed `robots.txt`. Unset, nothing changes.
+
+## Home page (Day Ring)
+
+The home page is built from `src/components/site/home/*` (hero day ring, pinned story, "Can you afford it?" checker, feature tabs) with copy in `landing` of `src/lib/site/content/{en,ar}.ts`. Styles live in `home.css`, scoped under `.hm`. App screens are replica cards (`AppCards.tsx`), not screenshots. Nav (Features mega menu) and footer are shared by every site page via `SiteShell`.

@@ -4,156 +4,39 @@ import Link from 'next/link'
 import { STORE_LINKS, SUPPORT_EMAIL, WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
 import type { ScreenKey } from '@/lib/site/screens'
-import { BuddgyQA } from './BuddgyQA'
 import { DailyNumberCalculator } from './DailyNumberCalculator'
 import { EmergencyCalculator } from './EmergencyCalculator'
-import { HeroShowcase } from './HeroShowcase'
 import { LeadForm } from './LeadForm'
-import { PhonePair, PhoneShot } from './PhoneShot'
+import { PhoneShot } from './PhoneShot'
 import { SocialLinks } from './SocialLinks'
-import { BottomCta, FaqList, Gallery, PageHero, Reviews, Split, StoreBadges } from './sections'
+import { HomeAfford } from './home/HomeAfford'
+import { HomeHero } from './home/HomeHero'
+import { HomeInside } from './home/HomeInside'
+import { HomeStatement } from './home/HomeStatement'
+import { HomeStory } from './home/HomeStory'
+import { HomeClose, HomeCompare, HomeFaq, HomePricing, HomeProof, HomeTrust } from './home/HomeSections'
+import { BottomCta, FaqList, PageHero, Reviews, Split, StoreBadges } from './sections'
 import { ButtonLink, Card, Container, Eyebrow, H2, H3, Lede, Section, SectionHead, TextLink, Ticks } from './ui'
 
 type P = { locale: SiteLocale }
 
 /* ───────── Home ───────── */
 export function HomePage({ locale }: P) {
-  const c = siteContent[locale]
-  const h = c.home
+  const st = siteContent[locale].landing.statement
   return (
     <>
-      <Section dark pad="sm" className="relative overflow-hidden">
-        <div aria-hidden className="site-glow pointer-events-none absolute -end-40 -top-40 size-[900px] rounded-full" />
-        <Container className="relative">
-          <div className="flex flex-col items-center gap-14 py-10 lg:flex-row lg:py-16">
-            <div className="flex min-w-0 flex-col gap-7 lg:flex-1 lg:basis-[520px]">
-              <h1 className="font-heading text-5xl font-bold leading-[1] tracking-tight text-balance sm:text-7xl rtl:leading-[1.2] rtl:tracking-normal">{h.hero.h1}</h1>
-              <Lede className="max-w-[34ch] text-xl sm:text-2xl">{h.hero.lede}</Lede>
-              <div className="flex flex-wrap items-center gap-3.5">
-                <ButtonLink href={pathFor(locale, 'download')} size="lg">{c.common.getApp}</ButtonLink>
-                <ButtonLink href={WEB_APP_URL} variant="outline" size="lg" external>{c.common.tryBrowser}</ButtonLink>
-              </div>
-              <p className="text-sm text-brand-text-secondary">
-                {c.common.noInstall} {c.common.haveAccount}{' '}
-                <a href={WEB_APP_URL} data-track="cta" className="inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{c.common.logIn}</a>
-              </p>
-              <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-text-secondary">
-                {h.hero.assurances.map((a) => <li key={a}>{a}</li>)}
-                <li><a href="#how" className="inline-flex min-h-11 items-center hover:text-brand-primary-ink">{c.common.seeHow} <span aria-hidden className="ms-1 rtl:rotate-180">↓</span></a></li>
-              </ul>
-            </div>
-            <div className="flex justify-center lg:flex-1 lg:basis-[420px]">
-              <HeroShowcase locale={locale} />
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      <Section id="answers" pad="lg">
-        <Container className="flex flex-col gap-24">
-          <SectionHead center title={h.answers.h2} lede={h.answers.lede} />
-          {h.answers.items.map((it, i) => (
-            <Split key={it.h} reverse={i % 2 === 1} visual={<PhonePair a={it.screens[0]} b={it.screens[1]} locale={locale} />}>
-              <Eyebrow>{it.eyebrow}</Eyebrow>
-              <H2 className="sm:text-4xl">{it.h}</H2>
-              <Lede>{it.p}</Lede>
-              <Ticks items={it.bullets} />
-              <TextLink locale={locale} slug={it.link.slug}>{it.link.label}</TextLink>
-            </Split>
-          ))}
-        </Container>
-      </Section>
-
-      <Section id="how" dark pad="lg">
-        <Container>
-          <SectionHead center title={h.how.h2} lede={h.how.lede} />
-          <ol className="mt-14 grid gap-6 lg:grid-cols-3">
-            {h.how.steps.map((s) => (
-              <li key={s.n} className="flex flex-col gap-3 rounded-3xl border border-brand-border bg-brand-card p-7">
-                <span className="font-mono text-sm tracking-widest text-brand-primary-ink">{s.n}</span>
-                <H3>{s.h}</H3>
-                <p className="text-brand-text-secondary">{s.p}</p>
-                <div className="mt-4 flex justify-center"><PhoneShot screen={s.screen} locale={locale} size="sm" /></div>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-14 flex flex-wrap items-center justify-center gap-5 text-brand-text-secondary">
-            <span dir="auto" className="font-mono text-5xl font-medium tracking-tight text-brand-text-primary">{h.how.stat.value}</span>
-            <span className="max-w-[46ch] text-lg">{h.how.stat.text}</span>
-          </div>
-          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-brand-text-secondary">{h.how.note}</p>
-        </Container>
-      </Section>
-
-      <Section id="calc" pad="lg">
-        <Container>
-          <div className="flex flex-col gap-14 lg:flex-row lg:items-center">
-            <div className="flex flex-col gap-5 lg:flex-1 lg:basis-[380px]">
-              <Eyebrow>{h.calc.eyebrow}</Eyebrow>
-              <H2>{h.calc.h2}</H2>
-              <Lede>{h.calc.lede}</Lede>
-              <TextLink locale={locale} slug={h.calc.link.slug}>{h.calc.link.label}</TextLink>
-            </div>
-            <div className="lg:flex-1 lg:basis-[480px]"><DailyNumberCalculator locale={locale} /></div>
-          </div>
-        </Container>
-      </Section>
-
-      <Section id="buddgy" dark pad="lg" className="relative overflow-hidden">
-        <Container className="relative">
-          <Split visual={<PhonePair a={locale === 'ar' ? 'buddgy-ar' : 'buddgy-1'} b={locale === 'ar' ? 'buddgy-ar' : 'buddgy-2'} locale={locale} />}>
-            <span className="inline-flex min-h-9 items-center gap-2 self-start rounded-full border border-brand-primary/40 bg-brand-primary-soft px-4 text-[13px] font-semibold text-brand-primary-ink">
-              <span className="site-spark size-2 rounded-full bg-brand-primary" />{h.buddgy.pill}
-            </span>
-            <H2>{h.buddgy.h2}</H2>
-            <Lede>{h.buddgy.lede}</Lede>
-            <BuddgyQA locale={locale} />
-          </Split>
-        </Container>
-      </Section>
-
-      <Section id="gallery" pad="lg">
-        <Container>
-          <div className="mb-10"><SectionHead eyebrow={h.gallery.eyebrow} title={h.gallery.h2} lede={h.gallery.lede} /></div>
-          <Gallery items={h.gallery.items} locale={locale} />
-        </Container>
-      </Section>
-
-      <Reviews locale={locale} />
-
-      <Section dark pad="sm">
-        <Container>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {h.trust.map((t) => (
-              <Card key={t.h} className="flex flex-col gap-3">
-                <H3>{t.h}</H3>
-                <p className="text-brand-text-secondary">{t.p}</p>
-                <TextLink locale={locale} slug={t.link.slug}>{t.link.label}</TextLink>
-              </Card>
-            ))}
-          </div>
-        </Container>
-      </Section>
-
-      <Section id="faq" pad="lg">
-        <Container narrow>
-          <div className="mb-10"><SectionHead center title={h.faq.h2} /></div>
-          <FaqList items={h.faq.items} />
-        </Container>
-      </Section>
-
-      <Section dark pad="lg" className="relative overflow-hidden">
-        <div aria-hidden className="site-glow pointer-events-none absolute inset-x-1/4 -top-64 h-[700px] rounded-full" />
-        <Container className="relative flex flex-col items-center gap-6 text-center">
-          <H2 className="max-w-[18ch] sm:text-5xl">{h.final.h2}</H2>
-          <Lede className="mx-auto">{h.final.lede}</Lede>
-          <StoreBadges locale={locale} dark />
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <ButtonLink href={WEB_APP_URL} variant="outline" external>{c.common.tryBrowser}</ButtonLink>
-            <TextLink locale={locale} slug="download">{c.common.joinBeta}</TextLink>
-          </div>
-        </Container>
-      </Section>
+      <HomeHero locale={locale} />
+      <HomeProof locale={locale} />
+      <HomeStatement parts={st} label={st.map((s) => s.text).join(' ')} />
+      <HomeStory locale={locale} />
+      <HomeAfford locale={locale} />
+      <HomeInside locale={locale} />
+      <HomeTrust locale={locale} />
+      <HomeCompare locale={locale} />
+      <HomePricing locale={locale} />
+      <div className="dark"><Reviews locale={locale} /></div>
+      <HomeFaq locale={locale} />
+      <HomeClose locale={locale} />
     </>
   )
 }
