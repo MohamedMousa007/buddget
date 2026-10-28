@@ -1,6 +1,9 @@
 import UIKit
 import Capacitor
 import FirebaseCore
+#if canImport(Sentry)
+import Sentry
+#endif
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -9,6 +12,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         FirebaseApp.configure()
+        #if canImport(Sentry)
+        // Started here so a crash before the WebView loads is captured; the JS init later reconfigures it.
+        if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDsn") as? String, dsn.hasPrefix("https://") {
+            SentrySDK.start { options in
+                options.dsn = dsn
+                options.sendDefaultPii = false
+            }
+        }
+        #endif
         return true
     }
 

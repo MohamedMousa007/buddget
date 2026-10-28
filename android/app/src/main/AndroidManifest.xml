@@ -56,6 +56,9 @@
             </intent-filter>
         </receiver>
 
+        <!-- Sentry auto-inits from this at process start, so launch crashes before the WebView are captured. -->
+        <meta-data android:name="io.sentry.dsn" android:value="${sentryDsn}" />
+
         <!-- FCM: use the app icon for push notification tray icon -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"

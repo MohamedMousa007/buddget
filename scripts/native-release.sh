@@ -21,6 +21,10 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 [ -x "$JAVA_HOME/bin/java" ] || { echo "No JDK 21 found (looked in ~/Library/Java)." >&2; exit 1; }
 [ -d "$ANDROID_HOME/platforms" ] || { echo "No Android SDK at $ANDROID_HOME." >&2; exit 1; }
 [ -f .env.local ] || { echo ".env.local is missing." >&2; exit 1; }
+# Native crash reporting starts before the web bundle, so the DSN is also baked into Info.plist / the Android manifest.
+SENTRY_DSN="$(grep -E '^NEXT_PUBLIC_SENTRY_DSN=' .env.local | tail -1 | cut -d= -f2- | tr -d "\"'")"
+[ -n "$SENTRY_DSN" ] || { echo "NEXT_PUBLIC_SENTRY_DSN is empty in .env.local: this build would ship without crash reporting." >&2; exit 1; }
+export SENTRY_DSN
 
 # The build must be what is on GitHub: nothing uncommitted, nothing unpushed.
 if [ -n "$(git status --porcelain)" ]; then echo "Working tree is not clean. Commit or stash first." >&2; exit 1; fi
@@ -41,7 +45,7 @@ npm run cap:build
 echo "== iOS archive"
 (cd ios/App && xcodebuild -scheme App -configuration Release -destination "generic/platform=iOS" \
   -archivePath "$WORK/App.xcarchive" -allowProvisioningUpdates \
-  CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=$TEAM archive) > "$WORK/ios-archive.log" 2>&1 || { tail -30 "$WORK/ios-archive.log"; echo "iOS archive failed (log: $WORK/ios-archive.log)" >&2; exit 1; }
+  CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=$TEAM SENTRY_DSN="$SENTRY_DSN" archive) > "$WORK/ios-archive.log" 2>&1 || { tail -30 "$WORK/ios-archive.log"; echo "iOS archive failed (log: $WORK/ios-archive.log)" >&2; exit 1; }
 
 echo "== iOS upload to TestFlight"
 (cd ios/App && xcodebuild -exportArchive -archivePath "$WORK/App.xcarchive" -exportPath "$WORK/export" \
