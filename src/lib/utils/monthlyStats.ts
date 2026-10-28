@@ -98,6 +98,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
       realizedMonthSavings: 0,
       savingsThisMonth: 0,
       leftToSpend: 0,
+      netCashFlow: 0,
       categoryBudgetCaps: {} as Record<string, number>,
       debtRemainingTotal: 0,
       debtRemainingIncomplete: false,
@@ -225,7 +226,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
   const realizedMonthSavings = Math.max(0, totalIncome - totalSpentForExpenseBudget)
   const savingsThisMonth = monthClosed ? realizedMonthSavings : projectedMonthSavings
 
-  const leftToSpend = calculateLeftToSpendCashFlow({
+  const netCashFlow = calculateLeftToSpendCashFlow({
     monthStr: monthFilter,
     monthStartDay: settings.monthStartDay,
     expenses,
@@ -243,12 +244,10 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
   const effectiveBudgetRows = planForCategoryBar
     ? budgetCategoriesFromPlan(planForCategoryBar, settings.baseCurrency, exchangeRates)
     : []
-  const categoryBudgetCaps = Object.fromEntries(
-    effectiveBudgetRows.map((b) => [
-      b.category,
-      planForCategoryBar ? b.budgetedAmount : effectiveCategoryBudget(b, settings, projectedIncome),
-    ])
-  ) as Record<string, number>
+  const categoryBudgetCaps: Record<string, number> = {}
+  for (const b of effectiveBudgetRows) {
+    categoryBudgetCaps[b.category] = (categoryBudgetCaps[b.category] ?? 0) + (planForCategoryBar ? b.budgetedAmount : effectiveCategoryBudget(b, settings, projectedIncome))
+  }
 
   const { total: debtRemainingTotal, incomplete: debtRemainingIncomplete } = totalDebtRemainingDetail(
     debts.filter((d) => !isOwedToUser(d)),
@@ -322,7 +321,10 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     projectedMonthSavings,
     realizedMonthSavings,
     savingsThisMonth,
-    leftToSpend,
+    /** The hero figure: expense budget minus spent. */
+    leftToSpend: remaining,
+    /** Income minus spend, savings deposits and the unfunded savings target. */
+    netCashFlow,
     categoryBudgetCaps,
     debtRemainingTotal,
     /** True when an owed gold debt is left out of the total because gold has no live price. */

@@ -22,6 +22,14 @@ describe('latePaydays', () => {
   })
 })
 
+describe('openPaydays across a mid-month cycle', () => {
+  it('still sees the previous cycle when the start day is after today', () => {
+    const rent = { ...src('rent', 1250, 20, 5), effectiveStart: '2026-07-01' }
+    const late = latePaydays([rent], [], 25, new Date(2026, 9, 10))
+    expect(late.map((l) => l.occ.date.slice(0, 7))).toContain('2026-09')
+  })
+})
+
 describe('incomeMatches', () => {
   const salary = src('salary', 14500, 22)
   const credit = ev('credit', 14380, '2026-09-25')

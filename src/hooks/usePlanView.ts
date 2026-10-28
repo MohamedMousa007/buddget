@@ -96,7 +96,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
       spentByLine: spend.byLine,
       averageByLine: history.average,
       monthsOverCapByLine: history.monthsOverCap,
-      learning: isLearning(plan, s.budgetPlanActivations, cycleKeyOf(now, startDay)),
+      learning: isLearning(plan, s.budgetPlanActivations, cycleKeyOf(now, startDay), base, rates),
       unassignedSpend: spend.unassigned,
       subscriptions: {
         monthly: subs.monthly,

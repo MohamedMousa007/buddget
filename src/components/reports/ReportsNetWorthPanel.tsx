@@ -21,7 +21,7 @@ export function ReportsNetWorthPanel() {
         {t.reports.netWorthTitle}
       </h2>
       <p
-        className={`text-2xl font-bold font-mono-numbers ${
+        className={`text-2xl font-bold font-mono-numbers whitespace-nowrap ${
           nw.netWorth >= 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red-text)]'
         }`}
       >

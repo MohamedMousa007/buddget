@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { closeKey, isSuppressed, nextCloseMemory } from './closeMemory'
+import { closeKey, isSuppressed, mergeClosedCycles, nextCloseMemory } from './closeMemory'
 import { buildClose, type CloseLine } from './monthClose'
 import type { CloseMemory } from '@/lib/store/types'
 
@@ -48,5 +48,16 @@ describe('buildClose with memory', () => {
   })
   it('the key is the same whatever the casing or spacing of the name', () => {
     expect(closeKey('everyday', '  Dining Out ')).toBe(closeKey('everyday', 'dining out'))
+  })
+})
+
+describe('mergeClosedCycles', () => {
+  it('unions device and account cycles, sorted, capped at 24, and keeps identity when nothing is new', () => {
+    const local = ['2026-09']
+    expect(mergeClosedCycles(local, ['2026-08', '2026-09'])).toEqual(['2026-08', '2026-09'])
+    expect(mergeClosedCycles(local, undefined)).toBe(local)
+    expect(mergeClosedCycles(local, ['2026-09'])).toBe(local)
+    const many = Array.from({ length: 30 }, (_, i) => `${2024 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}`)
+    expect(mergeClosedCycles([], many)).toHaveLength(24)
   })
 })

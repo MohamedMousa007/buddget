@@ -22,7 +22,7 @@ describe('debtFreeMonth', () => {
 
   it('rolls a cleared minimum onto the remaining debt', () => {
     const rolled = debtFreeMonth([{ balance: 100, minimum: 100 }, { balance: 1000, minimum: 100 }], 0, now)
-    expect(rolled).toBe('2027-02')
+    expect(rolled).toBe('2027-03')
   })
 
   it('sends the extra to the smallest balance, whatever order the debts come in', () => {
@@ -33,5 +33,10 @@ describe('debtFreeMonth', () => {
 
   it('ignores a debt already at zero', () => {
     expect(debtFreeMonth([{ balance: 0, minimum: 100 }], 0, now)).toBeNull()
+  })
+
+  it('a smaller final payment rolls only its leftover that month, the full minimum after', () => {
+    // A: 150 at 100/mo clears in month 2 paying 50; B takes the spare 50 then 100 + 100 from the next month.
+    expect(debtFreeMonth([{ balance: 150, minimum: 100 }, { balance: 1000, minimum: 100 }], 0, now)).toBe('2027-03')
   })
 })

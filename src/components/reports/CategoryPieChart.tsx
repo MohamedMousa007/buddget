@@ -9,7 +9,17 @@ interface CategoryPieChartProps {
   currency: string
 }
 
-const COLORS = ['var(--color-brand-primary)', 'var(--color-brand-green)', 'var(--color-brand-gold)', 'var(--color-brand-amber)', '#3B82F6', '#A855F7', '#EC4899', '#6B7280']
+const COLORS = [1, 2, 3, 4, 5, 6].map((n) => `var(--color-cat-${n})`)
+const OTHER_COLOR = 'var(--color-brand-text-muted)'
+const OTHER_NAME = 'Other'
+
+/** Top slices keep a distinct token colour; the long tail folds into one neutral "Other" slice so no colour repeats. */
+export function foldTail(data: { name: string; value: number }[]): { name: string; value: number }[] {
+  if (data.length <= COLORS.length) return data
+  const head = data.slice(0, COLORS.length - 1)
+  const rest = data.slice(COLORS.length - 1).reduce((s, d) => s + d.value, 0)
+  return [...head, { name: OTHER_NAME, value: rest }]
+}
 
 export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
   const [mounted, setMounted] = useState(false)
@@ -20,6 +30,9 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
       if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current)
     }
   }, [])
+
+  const slices = foldTail(data)
+  const total = slices.reduce((s, d) => s + d.value, 0)
 
   return (
     <div className="glass-card rounded-2xl p-5">
@@ -36,7 +49,7 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
               <Pie
-                data={data}
+                data={slices}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
@@ -44,8 +57,8 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
                 paddingAngle={2}
                 dataKey="value"
               >
-                {data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                {slices.map((d, index) => (
+                  <Cell key={d.name} fill={d.name === OTHER_NAME && slices.length === COLORS.length ? OTHER_COLOR : COLORS[index]} />
                 ))}
               </Pie>
               <Tooltip
@@ -53,9 +66,9 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
                   backgroundColor: 'var(--color-brand-elevated)',
                   border: '1px solid var(--color-brand-border)',
                   borderRadius: '12px',
-                  color: '#fff',
+                  color: 'var(--color-brand-text-primary)',
                 }}
-                formatter={(value) => [formatCurrency(Number(value), currency), undefined]}
+                formatter={(value, name) => [`${formatCurrency(Number(value), currency)} (${total > 0 ? Math.round((Number(value) / total) * 100) : 0}%)`, name]}
               />
               <Legend
                 wrapperStyle={{ color: 'var(--color-brand-text-secondary)', fontSize: 12 }}

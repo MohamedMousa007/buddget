@@ -82,6 +82,17 @@ describe('M9 days left on a custom cycle', () => {
   })
 })
 
+describe('R33 days left outside the current cycle', () => {
+  it('a future cycle has its whole length ahead, not the days until it ends', () => {
+    at('2026-10-10T12:00:00')
+    expect(calculateDaysLeftInMonth('2026-10', 25)).toBe(31)
+  })
+  it('a closed cycle has none left', () => {
+    at('2026-10-30T12:00:00')
+    expect(calculateDaysLeftInMonth('2026-09', 25)).toBe(0)
+  })
+})
+
 describe('M10 spending pace elapsed days', () => {
   beforeEach(() => at('2026-10-27T12:00:00'))
   it('a closed month has had all of its days', () => {

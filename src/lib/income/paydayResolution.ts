@@ -1,4 +1,5 @@
 import { format, parseISO, subMonths } from 'date-fns'
+import { cycleKeyFor } from '@/lib/settings/payCycle'
 import { convertCurrency } from '@/lib/utils/currency'
 import { buildOccurrences, missedAfterDaysFor, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import { toISODate } from '@/lib/utils/paydaySchedule'
@@ -47,14 +48,15 @@ function daysBetween(a: string, b: string): number {
   return Math.round(Math.abs(parseISO(a).getTime() - parseISO(b).getTime()) / DAY)
 }
 
-/** Recurring paydays with nothing recorded against them, this month and last (a late one spans months). */
+/** Recurring paydays with nothing recorded against them, this cycle and last (a late one spans cycles). */
 export function openPaydays(
   sources: IncomeSource[],
   events: IncomeEvent[],
   monthStartDay: number,
   today: Date,
 ): OpenPayday[] {
-  const months = [format(subMonths(today, 1), 'yyyy-MM'), format(today, 'yyyy-MM')]
+  const key = cycleKeyFor(today, monthStartDay)
+  const months = [format(subMonths(parseISO(`${key}-01`), 1), 'yyyy-MM'), key]
   const out: OpenPayday[] = []
   const seen = new Set<string>()
   for (const source of sources) {

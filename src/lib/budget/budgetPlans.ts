@@ -221,3 +221,13 @@ export function unassignedSpend(
   }
   return out
 }
+
+/** `name`, numbered (`Category 2`) when another row already has it, so same-name rows never merge their caps or spend. */
+export function uniquePlanCategoryName(rows: readonly { name: string }[], name: string): string {
+  const taken = new Set(rows.map((r) => r.name.trim().toLowerCase()))
+  const base = name.trim()
+  if (!taken.has(base.toLowerCase())) return base
+  let n = 2
+  while (taken.has(`${base} ${n}`.toLowerCase())) n++
+  return `${base} ${n}`
+}

@@ -51,7 +51,7 @@ import { StressTestSheet } from './sheets/StressTestSheet'
 import { useBudgetStressCopy } from './useStressCopy'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
-import { nextCloseMemory } from '@/lib/budget/closeMemory'
+import { mergeClosedCycles, nextCloseMemory } from '@/lib/budget/closeMemory'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetStudioCopy } from './useStudioCopy'
@@ -94,6 +94,12 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   }, [studioRequested])
   const [review, setReview] = useState<{ id: string; aiNote: boolean } | null>(null)
   const [adjusting, setAdjusting] = useState(false)
+  const accountClosedCycles = useFinanceStore((st) => st.profile.financialProfile?.closedCycles)
+  useEffect(() => {
+    const local = useSettingsStore.getState().budgetClosedCycles
+    const merged = mergeClosedCycles(local, accountClosedCycles)
+    if (merged !== local) useSettingsStore.setState({ budgetClosedCycles: merged })
+  }, [accountClosedCycles])
   const monthClose = useMonthClose()
   const [closeOpen, setCloseOpen] = useState(false)
   const [stressOpen, setStressOpen] = useState(false)
@@ -444,7 +450,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)
           const { profile, updateProfile } = store.getState()
           const closeMemory = nextCloseMemory(profile.financialProfile?.closeMemory, monthClose.proposals, appliedIds, monthClose.cycleKey)
-          updateProfile({ financialProfile: { ...profile.financialProfile, closeMemory } })
+          const closedCycles = mergeClosedCycles(useSettingsStore.getState().budgetClosedCycles, profile.financialProfile?.closedCycles)
+          updateProfile({ financialProfile: { ...profile.financialProfile, closeMemory, closedCycles } })
         }}
       />
       <CardActionMenu

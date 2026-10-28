@@ -6,6 +6,8 @@ import { addMonths, format, subMonths } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { PaydaysButton } from '@/components/features/income/PaydaysButton'
+import { cycleKeyFor } from '@/lib/settings/payCycle'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { navigate } from '@/lib/navigation/navigate'
 import { useLocale, useT } from '@/lib/i18n'
@@ -35,7 +37,8 @@ export function FlowMonthRow({ range, onBackToMonth }: { range?: string; onBackT
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   const setMonthFilter = useSettingsStore((s) => s.setMonthFilter)
   const month = new Date(`${monthFilter}-01T00:00:00`)
-  const atCurrent = monthFilter >= format(new Date(), 'yyyy-MM')
+  const monthStartDay = useFinanceStore((st) => st.settings.monthStartDay)
+  const atCurrent = monthFilter >= cycleKeyFor(new Date(), monthStartDay)
   const fmt = (m: 'long' | 'short') => new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { month: m }).format(month)
   const longName = fmt('long')
   const shortName = fmt('short')

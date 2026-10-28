@@ -1,5 +1,5 @@
 import type { BudgetPlan, BudgetPlanActivation } from '@/lib/store/types'
-import { selectActivePlan } from '@/lib/budget/activePlan'
+import { isLivePlan, selectActivePlan } from '@/lib/budget/activePlan'
 
 /** `YYYY-MM` of the cycle `date` falls in, for a cycle that starts on `monthStartDay` (clamped to 28). */
 export function cycleKeyOf(date: Date, monthStartDay: number): string {
@@ -13,7 +13,7 @@ const keyOf = (a: BudgetPlanActivation) => a.effectiveFrom.slice(0, 7)
 
 /**
  * The plan a month is judged by: the latest activation at or before it. A month before the first
- * activation uses the first plan. Without any activation (pre-v2 data) the stored active plan applies.
+ * activation uses the first plan. An explicitly active plan that the log has not caught up with governs the months after the log. Without any activation (pre-v2 data) the stored active plan applies.
  */
 export function planForMonth(
   plans: readonly BudgetPlan[],
@@ -24,6 +24,10 @@ export function planForMonth(
   const sorted = [...activations].sort((a, b) => keyOf(a).localeCompare(keyOf(b)))
   const byId = new Map(plans.map((p) => [p.id, p]))
   const atOrBefore = sorted.filter((a) => keyOf(a) <= monthKey).reverse()
+  // The active plan was chosen without logging a switch: it governs every month the log does not reach.
+  const latest = sorted.at(-1)
+  const active = plans.find((p) => p.id === activeId)
+  if (latest && active && isLivePlan(active) && keyOf(latest) <= monthKey && latest.planId !== active.id) return active
   for (const a of [...atOrBefore, ...sorted]) {
     const plan = byId.get(a.planId)
     if (plan) return plan
@@ -33,7 +37,7 @@ export function planForMonth(
 
 /**
  * Records that `planId` took over from `cycleKey`. One row per cycle: switching twice in the same
- * cycle replaces the first switch (the last one wins).
+ * cycle replaces the first switch (the last one wins); switching back to the plan already in force adds no row.
  */
 export function recordActivation(
   activations: readonly BudgetPlanActivation[],
@@ -42,8 +46,10 @@ export function recordActivation(
   newId: () => string,
   now: string
 ): BudgetPlanActivation[] {
-  const next: BudgetPlanActivation = { id: newId(), planId, effectiveFrom: `${cycleKey}-01`, createdAt: now }
-  return [...activations.filter((a) => keyOf(a) !== cycleKey), next]
+  const rest = activations.filter((a) => keyOf(a) !== cycleKey)
+  const inForce = [...rest].filter((a) => keyOf(a) < cycleKey).sort((a, b) => keyOf(a).localeCompare(keyOf(b))).at(-1)
+  if (inForce?.planId === planId) return rest
+  return [...rest, { id: newId(), planId, effectiveFrom: `${cycleKey}-01`, createdAt: now }]
 }
 
 export interface PlanSpan {

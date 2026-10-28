@@ -56,7 +56,11 @@ export function useBudgetPageActions(view: PlanView | null) {
   }, [syncLive, view])
 
   const moveFreeToBuffer = useCallback(() => {
-    if (!view || !planId || view.free <= 0) return
+    if (!view || !planId) return
+    if (view.free <= 0) {
+      toast(t.bufferNoFree)
+      return
+    }
     const buffer = view.blocks.grow.lines.find((l) => l.line.name.trim().toLowerCase() === 'buffer')
     const rates = store.getState().exchangeRates
     const cur = buffer?.line.currency ?? view.base

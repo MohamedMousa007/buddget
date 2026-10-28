@@ -58,8 +58,8 @@ export function buildClose(lines: readonly CloseLine[], memory?: { past: CloseMe
   const spent = tracked.reduce((s, l) => s + l.spent, 0)
 
   const over = tracked
-    .filter((l) => l.spent > l.cap)
     .map((l) => ({ id: l.id, name: l.name, by: Math.round(l.spent - l.cap) }))
+    .filter((l) => l.by > 0)
     .sort((a, b) => b.by - a.by)
     .slice(0, 3)
 

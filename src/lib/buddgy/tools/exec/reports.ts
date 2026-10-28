@@ -5,6 +5,7 @@ import { reportsSpecs } from '@/lib/buddgy/tools/specs/reports'
 import { cycleKeyOf } from '@/lib/budget/activations'
 import { fin, ui } from '@/lib/buddgy/tools/stores'
 import type { ReadImpl } from '@/lib/buddgy/tools/types'
+import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
 import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
@@ -41,8 +42,8 @@ const get_summary: ReadImpl = (args) => {
     savingsHoldings: s.savingsHoldings,
     savingsAccounts: s.savingsAccounts,
     savingsTransactions: s.savingsTransactions,
-    debts: s.debts,
-    debtPayments: s.debtPayments,
+    debts: countedDebts(s.debts, s.paymentMethods),
+    debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
     settings: s.settings,
     exchangeRates: s.exchangeRates,
     goldPricePerGram: s.goldPricePerGram,
@@ -62,6 +63,7 @@ const get_summary: ReadImpl = (args) => {
     spent: r0(st.totalSpentExcludingSavings),
     budget: r0(st.totalExpenseBudget),
     left_to_spend: r0(st.leftToSpend),
+    net_cash_flow: r0(st.netCashFlow),
     safe_daily: r0(st.suggestedDaily),
     days_left: st.daysLeft,
     pace: st.paceStatus,

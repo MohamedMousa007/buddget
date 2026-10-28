@@ -79,6 +79,7 @@ export function useNotifications() {
     const plan = selectActivePlan(st.budgetPlans, st.activeBudgetPlanId)
     return plan ? isLearning(plan, st.budgetPlanActivations, cycleKeyOf(new Date(), st.settings.monthStartDay)) : false
   })
+  const viewingPastOrFuture = useFinanceStore((st) => monthFilter !== cycleKeyOf(new Date(), st.settings.monthStartDay))
 
   const [readIds, setReadIds] = useState<Set<string>>(() => loadReadIds())
   const [serverNotifications, setServerNotifications] = useState<ServerNotificationRow[]>([])
@@ -120,7 +121,7 @@ export function useNotifications() {
     const now = new Date().toISOString()
 
     for (const [category, cap] of Object.entries(stats.categoryBudgetCaps)) {
-      if (planLearning || category === 'Savings' || cap <= 0) continue
+      if (viewingPastOrFuture || planLearning || category === 'Savings' || cap <= 0) continue
       const spent = stats.categorySpending[category] ?? 0
       const pct = (spent / cap) * 100
       if (pct > 80) {
@@ -159,7 +160,7 @@ export function useNotifications() {
     }
 
     return list
-  }, [monthFilter, stats, t, planLearning])
+  }, [monthFilter, viewingPastOrFuture, stats, t, planLearning])
 
   const localUnread = useMemo(
     () => notifications.filter((n) => !readIds.has(n.id)).length,

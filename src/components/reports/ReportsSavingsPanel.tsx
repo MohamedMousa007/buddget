@@ -34,7 +34,7 @@ export function ReportsSavingsPanel({
     let w = 0
     for (const tx of transactions) {
       const day = parseISO(tx.date.length > 10 ? tx.date : `${tx.date}T12:00:00`)
-      if (!isWithinInterval(day, { start: startDate, end: endDate })) continue
+      if (tx.isCashFlow === false || !isWithinInterval(day, { start: startDate, end: endDate })) continue
       const v = tryConvertWithGold(tx.amount, tx.currency, baseCurrency, exchangeRates, baseCurrency, gold)
       if (v === null) continue
       if (tx.type === 'deposit') d += v
@@ -52,19 +52,19 @@ export function ReportsSavingsPanel({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3">
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.savingsDeposits}</p>
-          <p className="text-lg font-mono-numbers text-[var(--color-brand-green)]">
+          <p className="text-lg font-mono-numbers whitespace-nowrap text-[var(--color-brand-green)]">
             {formatCurrency(deposits, baseCurrency)}
           </p>
         </div>
         <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3">
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.savingsWithdrawals}</p>
-          <p className="text-lg font-mono-numbers text-[var(--color-brand-amber)]">
+          <p className="text-lg font-mono-numbers whitespace-nowrap text-[var(--color-brand-amber)]">
             {formatCurrency(withdrawals, baseCurrency)}
           </p>
         </div>
         <div className="rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3">
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.savingsNet}</p>
-          <p className="text-lg font-mono-numbers text-[var(--color-brand-text-primary)]">
+          <p className="text-lg font-mono-numbers whitespace-nowrap text-[var(--color-brand-text-primary)]">
             {formatCurrency(deposits - withdrawals, baseCurrency)}
           </p>
         </div>

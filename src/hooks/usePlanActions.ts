@@ -7,7 +7,7 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useBudgetDeckCopy } from '@/components/features/budget/useDeckCopy'
 import { useBudgetPageCopy } from '@/components/features/budget/usePageCopy'
 import { cycleKeyOf } from '@/lib/budget/activations'
-import { duplicatePlanCategories } from '@/lib/budget/duplicatePlan'
+import { duplicatePlanCategories, duplicatePlanExtras } from '@/lib/budget/duplicatePlan'
 
 const newId = () => crypto.randomUUID()
 
@@ -26,7 +26,7 @@ export function usePlanActions() {
       if (!source) return
       // Created as a draft so the copy does not take over; ready once its lines are in.
       const copy = s.addBudgetPlan(page.planNames.copyOf(source.name), { status: 'draft', origin: 'clone', intent: source.intent })
-      s.updateBudgetPlan(copy, { status: 'ready', categories: duplicatePlanCategories(source, newId) })
+      s.updateBudgetPlan(copy, { status: 'ready', categories: duplicatePlanCategories(source, newId), ...duplicatePlanExtras(source) })
       toast(d.deck.duplicated(page.planNames.copyOf(source.name)))
       return copy
     },

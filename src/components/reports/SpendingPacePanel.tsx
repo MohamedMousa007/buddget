@@ -65,9 +65,11 @@ export function SpendingPacePanel({
         <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {t.reports.spendingPaceTitle}
         </h3>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeBg[paceStatus]}`}>
-          {paceLabel}
-        </span>
+        {totalExpenseBudget > 0 && (
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeBg[paceStatus]}`}>
+            {paceLabel}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

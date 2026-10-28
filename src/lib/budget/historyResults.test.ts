@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { monthKeysBetween, monthResult } from '@/lib/budget/historyResults'
 
 describe('monthResult', () => {
+  it('treats an overrun that rounds to zero as on plan, not "over by 0"', () => {
+    expect(monthResult(100.4, 100)).toEqual({ kind: 'onPlan' })
+  })
+
   it('over, kept, on plan and unknown', () => {
     expect(monthResult(10640, 10000)).toEqual({ kind: 'over', amount: 640 })
     expect(monthResult(9800, 10000)).toEqual({ kind: 'kept', percent: 2 })

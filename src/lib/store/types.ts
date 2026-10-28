@@ -499,6 +499,8 @@ export interface FinancialProfile {
   cashHeavy?: boolean
   /** What month-close proposals were applied or passed on, per line, so a declined change is not repeated. */
   closeMemory?: CloseMemory
+  /** Cycles whose month-close sheet was finished, so another device or a reinstall does not ask again. */
+  closedCycles?: string[]
   /** First-run journey progress; absent for accounts that predate it. */
   onboarding?: OnboardingRecord
 }

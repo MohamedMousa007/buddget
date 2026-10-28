@@ -44,6 +44,7 @@ export default function ReportsPage() {
           endDate={r.endDate}
           baseCurrency={r.settings.baseCurrency}
           periodRecurringIncome={r.periodRecurringIncome}
+          periodReceivedIncome={r.periodReceivedIncome}
           remittances={r.remittances}
           totalExpenses={r.totalExpenses}
           largestExpense={r.largestExpense}
@@ -59,6 +60,7 @@ export default function ReportsPage() {
         <PageDivider />
 
         <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+        {r.dateRange === 'thisMonth' && stats.monthClosed === false && (
         <SpendingPacePanel
           dailyRate={stats.dailyRate}
           projectedSpend={stats.projectedSpend}
@@ -68,6 +70,7 @@ export default function ReportsPage() {
           overBudgetCategories={stats.overBudgetCategories}
           currency={stats.baseCurrency}
         />
+        )}
 
         <ReportsSavingsPanel
           transactions={r.savingsTransactions}

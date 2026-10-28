@@ -5,7 +5,7 @@ import { totalExpenseBudgetFromPlan } from '@/lib/budget/budgetPlans'
 import { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { cycleKeyFor } from '@/lib/settings/payCycle'
 import { isNative } from '@/lib/native/isNative'
 import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase, filterExpensesByMonth } from '@/lib/utils/calculations'
@@ -38,9 +38,9 @@ export function WidgetSync() {
       exchangeRates: s.exchangeRates,
     })),
   )
-  const monthFilter = useSettingsStore((s) => s.monthFilter)
 
   const snapshot = useMemo<WidgetSnapshot>(() => {
+    const monthFilter = cycleKeyFor(new Date(), monthStartDay)
     // Honour a custom pay-cycle start, as every other surface does — a raw
     // `date.startsWith(monthFilter)` disagreed with the app for monthStartDay != 1.
     const monthExpenses = filterExpensesByMonth(expenses, monthFilter, monthStartDay)
@@ -61,7 +61,7 @@ export function WidgetSync() {
       .slice(0, 3)
 
     const latest = [...monthExpenses].sort((a, b) => (a.date < b.date ? 1 : -1))[0]
-    const locale = language === 'ar' ? 'ar-EG' : 'en-EG'
+    const locale = language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-EG'
 
     return {
       currency: baseCurrency || 'EGP',
@@ -79,7 +79,7 @@ export function WidgetSync() {
       locale,
       updatedAt: new Date().toISOString(),
     }
-  }, [expenses, monthFilter, monthStartDay, exchangeRates, baseCurrency, language, monthlyBudgetTotal])
+  }, [expenses, monthStartDay, exchangeRates, baseCurrency, language, monthlyBudgetTotal])
 
   // We intentionally don't use the cross-currency value but keep the field
   // present in the union for future expansion.
@@ -114,6 +114,6 @@ function planBudgetTotal(s: ReturnType<typeof useFinanceStore.getState>): number
 
 function sumBudget(rows: Array<{ budgetedAmount: number; category: string }>): number {
   return rows
-    .filter((r) => !isNonSpendCategory(r.category) && r.category !== 'Debt' && r.category !== 'Remittance')
+    .filter((r) => !isNonSpendCategory(r.category))
     .reduce((sum, r) => sum + (r.budgetedAmount || 0), 0)
 }

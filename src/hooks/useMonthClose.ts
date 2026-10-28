@@ -7,6 +7,7 @@ import { differenceInCalendarDays } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { cycleKeyOf, planForMonth } from '@/lib/budget/activations'
+import { selectActivePlan } from '@/lib/budget/activePlan'
 import { lineBlock } from '@/lib/budget/blocks'
 import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
 import { debtPaidByDebt } from '@/lib/budget/liveLinks'
@@ -52,7 +53,7 @@ export function useMonthClose(): MonthCloseState | null {
     if (differenceInCalendarDays(now, getMonthRange(currentKey, startDay).start) + 1 > PROMPT_DAYS) return null
 
     const plan = planForMonth(s.plans, s.activations, cycleKey, s.activeId)
-    if (!plan || plan.id !== s.activeId || plan.categories.length === 0) return null
+    if (!plan || plan.id !== selectActivePlan(s.plans, s.activeId)?.id || plan.categories.length === 0) return null
 
     const spending = calculateCategorySpending(filterExpensesByMonth(s.expenses, cycleKey, startDay), base, s.rates)
     if (Object.keys(spending).length === 0) return null

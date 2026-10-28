@@ -1440,6 +1440,11 @@ export interface Dictionary {
     kpiSentHome: string
     kpiTotalOut: string
     kpiNetSaved: string
+    kpiTotalInExpected: string
+    kpiReceivedSoFar: (amount: string) => string
+    kpiNetCashFlow: string
+    summaryCopied: string
+    summaryCopyFailed: string
     kpiBiggestPurchase: string
     kpiGoToPayment: string
     timesUsed: (n: number) => string

@@ -12,6 +12,7 @@ import { amountIsFiltered, useExpenseFilterStore } from '@/lib/store/useExpenseF
 import { formatFixed2, formatSigned, formatWhole } from '@/lib/utils/formatters'
 import { shortDate } from '@/lib/utils/shortDate'
 import { budgetHero } from '@/components/features/flow/budgetHero'
+import { getMonthRange } from '@/lib/utils/calculations'
 import { totalDaysInMonth } from '@/lib/utils/spendingPace'
 import type { FlowSummaryBandProps } from '@/components/features/flow/FlowSummaryBand'
 import type { FlowStickyStripProps } from '@/components/features/flow/FlowStickyStrip'
@@ -74,7 +75,10 @@ export function useFlowBand({
     const monthName = new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { month: 'long' }).format(monthDate)
     const startLabel = shortDate(format(resolved.start, 'yyyy-MM-dd'))
     const endLabel = shortDate(format(resolved.end, 'yyyy-MM-dd'))
-    const moneyIn = all.filter((i) => i.dir === 'in' && i.counted).reduce((s, i) => s + i.amountBase, 0)
+    const cycle = getMonthRange(monthFilter, monthStartDay)
+    const cycleStartLabel = shortDate(format(cycle.start, 'yyyy-MM-dd'))
+    const cycleEndLabel = shortDate(format(cycle.end, 'yyyy-MM-dd'))
+    const moneyIn = stats.totalIncome
     const spent = stats.totalSpentExcludingSavings
     const budget = stats.totalExpenseBudget
     const totalDays = totalDaysInMonth(monthFilter, monthStartDay)
@@ -221,6 +225,7 @@ export function useFlowBand({
     const isOver = hero.kind === 'over'
     const left = budget - spent
     const empty = all.length === 0
+    const closedCycle = stats.daysLeft <= 0
     const days = empty ? totalDays : Math.max(1, stats.daysLeft)
     return {
       monthName,
@@ -236,10 +241,10 @@ export function useFlowBand({
               : { label: t.flow.onTrack, icon: 'check' },
         big: formatFixed2(hero.amount),
         of: t.flow.of(formatWhole(budget)),
-        side: t.flow.perDay(formatWhole(Math.max(0, left) / Math.max(1, days))),
-        sideSub: isOver ? t.flow.budgetUsedUp : empty ? t.flow.forDays(days) : t.flow.untilDate(endLabel),
+        side: t.flow.perDay(formatWhole(closedCycle ? spent / totalDays : Math.max(0, left) / Math.max(1, days))),
+        sideSub: closedCycle ? t.flow.averageSoFar : isOver ? t.flow.budgetUsedUp : empty ? t.flow.forDays(days) : t.flow.untilDate(cycleEndLabel),
         bar: { pct: (spent / budget) * 100, tick },
-        scale: [startLabel, isOver ? t.flow.scaleOverBy(formatWhole(hero.amount)) : t.flow.scaleSpent(formatWhole(spent)), endLabel],
+        scale: [cycleStartLabel, isOver ? t.flow.scaleOverBy(formatWhole(hero.amount)) : t.flow.scaleSpent(formatWhole(spent)), cycleEndLabel],
         stats: allStats(),
       },
       sticky: {

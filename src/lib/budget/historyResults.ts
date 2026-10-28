@@ -3,7 +3,8 @@ export type MonthResult = { kind: 'onPlan' } | { kind: 'kept'; percent: number }
 /** How a finished month went against the plan's expense budget. Null when the plan had no budget. */
 export function monthResult(spent: number, budget: number): MonthResult | null {
   if (!(budget > 0)) return null
-  if (spent > budget) return { kind: 'over', amount: Math.round(spent - budget) }
+  const over = Math.round(spent - budget)
+  if (over > 0) return { kind: 'over', amount: over }
   const kept = Math.round(((budget - spent) / budget) * 100)
   return kept >= 2 ? { kind: 'kept', percent: kept } : { kind: 'onPlan' }
 }
