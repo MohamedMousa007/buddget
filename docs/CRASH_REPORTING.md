@@ -13,6 +13,10 @@ JS errors, route and layout error boundaries, and native iOS and Android crashes
 
 Scrubbed on the device first (`src/lib/crash/scrub.ts`): no emails, tokens, amounts, SMS text, query strings or request bodies. Events carry the platform, the app version, the native build number, the device id and the signed-in account's opaque id.
 
+## Native start
+
+The DSN is also baked into native code so a crash before the WebView loads is captured: iOS reads `SentryDsn` from Info.plist (filled from the `SENTRY_DSN` build setting) in `AppDelegate`; Android reads `io.sentry.dsn` from the manifest (filled from the `SENTRY_DSN` env var). `scripts/native-release.sh` exports it from `.env.local` and aborts when it is empty; `npm run cap:env:check` and `cap:build` also fail without `NEXT_PUBLIC_SENTRY_DSN`.
+
 ## Limits
 
-A crash before the JS bundle loads (the very first native frames) is only caught once the native SDK is initialised natively in `AppDelegate` / `MainActivity`, which needs the DSN in native code. The JS init covers everything after the WebView starts.
+Readable native stacks need dSYM / mapping uploads (`SENTRY_AUTH_TOKEN`, step 4 above), still not wired.

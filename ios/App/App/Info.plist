@@ -39,6 +39,8 @@
 			</array>
 		</dict>
 	</array>
+	<key>SentryDsn</key>
+	<string>$(SENTRY_DSN)</string>
 	<key>CFBundleVersion</key>
 	<string>6</string>
 	<key>LSRequiresIPhoneOS</key>
