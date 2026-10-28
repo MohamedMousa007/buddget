@@ -8,6 +8,7 @@ import {
 } from '@/lib/supabase/env'
 import { publicApiRateLimitOk } from '@/lib/server/publicApiRateLimit'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
+import { SITE_CSP, hasAuthCookie, isSitePath, siteHomeRewrite } from '@/lib/site/entry'
 import { appHostFor, configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
 import {
   COOKIE_DOMAIN_MARKER,
@@ -51,6 +52,23 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = hostRoute.pathname
     return NextResponse.rewrite(url, { request })
+  }
+
+  // The public website is static and anonymous: skip the session refresh entirely.
+  if (!onAdminHost) {
+    const siteHome = siteHomeRewrite({
+      pathname: request.nextUrl.pathname,
+      hasSession: hasAuthCookie(request.cookies.getAll().map((c) => c.name)),
+      acceptLanguage: request.headers.get('accept-language'),
+    })
+    if (siteHome || isSitePath(request.nextUrl.pathname)) {
+      const url = request.nextUrl.clone()
+      if (siteHome) url.pathname = siteHome
+      const response = siteHome ? NextResponse.rewrite(url) : NextResponse.next()
+      response.headers.set('Content-Security-Policy', SITE_CSP)
+      if (siteHome) response.headers.set('Vary', 'Cookie, Accept-Language')
+      return response
+    }
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')

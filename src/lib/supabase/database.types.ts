@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      site_leads: {
+        Row: {
+          id: string
+          kind: string
+          email: string
+          name: string | null
+          message: string | null
+          locale: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          kind: string
+          email: string
+          name?: string | null
+          message?: string | null
+          locale: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          kind?: string
+          email?: string
+          name?: string | null
+          message?: string | null
+          locale?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       sms_stats_outbox: {
         Row: {
           id: number
