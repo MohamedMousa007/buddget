@@ -38,10 +38,10 @@ export function onAdminHost(): boolean {
  * page origin is `https://localhost`, so callbacks must target the deployed site.
  */
 export function appOrigin(): string {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '')
-  if (apiBase) return apiBase
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, '')
   if (appUrl && !appUrl.includes('localhost')) return appUrl
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '')
+  if (apiBase) return apiBase
   if (typeof window !== 'undefined') return window.location.origin
   return appUrl ?? ''
 }

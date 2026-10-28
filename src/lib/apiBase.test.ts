@@ -22,3 +22,14 @@ describe('apiUrl on the admin host', () => {
     expect(usesRemoteApi()).toBe(true)
   })
 })
+
+describe('appOrigin', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('prefers the app URL over the API base so auth redirects land on the product host', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://my.buddget.app')
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'https://buddget.app')
+    const { appOrigin } = await import('./apiBase')
+    expect(appOrigin()).toBe('https://my.buddget.app')
+  })
+})

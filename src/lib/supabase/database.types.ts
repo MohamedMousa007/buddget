@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      site_stats: {
+        Row: { day: string; path: string; locale: string; event: string; ref: string; n: number }
+        Insert: { day: string; path: string; locale: string; event: string; ref?: string; n?: number }
+        Update: { day?: string; path?: string; locale?: string; event?: string; ref?: string; n?: number }
+        Relationships: []
+      }
+      site_leads: {
+        Row: {
+          id: string
+          kind: string
+          email: string
+          name: string | null
+          message: string | null
+          locale: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          kind: string
+          email: string
+          name?: string | null
+          message?: string | null
+          locale: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          kind?: string
+          email?: string
+          name?: string | null
+          message?: string | null
+          locale?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       sms_stats_outbox: {
         Row: {
           id: number
@@ -4151,6 +4187,10 @@ export type Database = {
       }
     }
     Functions: {
+      site_stat_bump: {
+        Args: { p_path: string; p_locale: string; p_event: string; p_ref: string }
+        Returns: undefined
+      }
       adjust_pocket_balance: {
         Args: { p_user: string; p_pocket: string; p_delta: number; p_kind: Database["public"]["Enums"]["savings_transaction_kind"]; p_group?: string; p_payment_method?: string; p_date?: string; p_note?: string; p_source?: string }
         Returns: number

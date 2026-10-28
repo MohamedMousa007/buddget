@@ -5,14 +5,14 @@ import { UserRound } from 'lucide-react'
 import { BuddgetMark } from '@/components/brand'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { appHostFor, configuredAdminHost, normalizeHost } from '@/lib/admin/host'
+import { appHostForRedirects, configuredAdminHost, normalizeHost } from '@/lib/admin/host'
 import { createClient } from '@/lib/supabase/client'
 
 /** Where "Not you?" sends people: the app's own sign-in, on the app host when we are on the admin host. */
 async function switchAccount() {
   await createClient().auth.signOut().catch(() => undefined)
   const onAdminHost = normalizeHost(window.location.hostname) === configuredAdminHost()
-  window.location.assign(onAdminHost ? `https://${appHostFor(configuredAdminHost())}` : '/')
+  window.location.assign(onAdminHost ? `https://${appHostForRedirects()}` : '/')
 }
 
 /** Which account the portal is acting for, with a way out when it is the wrong one. */

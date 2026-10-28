@@ -8,7 +8,8 @@ import {
 } from '@/lib/supabase/env'
 import { publicApiRateLimitOk } from '@/lib/server/publicApiRateLimit'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
-import { appHostFor, configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
+import { SITE_CSP, decideSiteRoute, hasAuthCookie, isSitePath, splitHosts } from '@/lib/site/entry'
+import { appHostForRedirects, configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
 import {
   COOKIE_DOMAIN_MARKER,
   domainCookieOptions,
@@ -51,6 +52,31 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = hostRoute.pathname
     return NextResponse.rewrite(url, { request })
+  }
+
+  // The public website is static and anonymous: skip the session refresh entirely.
+  if (!onAdminHost) {
+    const route = decideSiteRoute({
+      host: normalizeHost(host),
+      pathname: request.nextUrl.pathname,
+      search: request.nextUrl.search,
+      hasSession: hasAuthCookie(request.cookies.getAll().map((c) => c.name)),
+      acceptLanguage: request.headers.get('accept-language'),
+      split: splitHosts(),
+    })
+    if (route.kind === 'redirect') return NextResponse.redirect(route.url, 308)
+    if (route.kind === 'robots-closed') {
+      return new NextResponse('User-agent: *\nDisallow: /\n', { headers: { 'Content-Type': 'text/plain', 'X-Robots-Tag': 'noindex' } })
+    }
+    const onWebsite = route.kind === 'rewrite' || isSitePath(request.nextUrl.pathname)
+    if (onWebsite) {
+      const url = request.nextUrl.clone()
+      if (route.kind === 'rewrite') url.pathname = route.pathname
+      const response = route.kind === 'rewrite' ? NextResponse.rewrite(url) : NextResponse.next()
+      response.headers.set('Content-Security-Policy', SITE_CSP)
+      if (route.kind === 'rewrite') response.headers.set('Vary', 'Cookie, Accept-Language')
+      return response
+    }
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
@@ -170,7 +196,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     if (isAdmin) {
-      if (onAdminHost) return NextResponse.redirect(`https://${appHostFor(configuredAdminHost())}/`, 307)
+      if (onAdminHost) return NextResponse.redirect(`https://${appHostForRedirects()}/`, 307)
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)

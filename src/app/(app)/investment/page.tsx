@@ -4,4 +4,4 @@
  * Investments are listed on the merged Wealth page; the path survives only so old deep
  * links resolve.
  */
-export { default } from '@/app/wealth/page'
+export { default } from '@/app/(app)/wealth/page'

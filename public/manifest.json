@@ -2,7 +2,7 @@
   "name": "Buddget",
   "short_name": "Buddget",
   "description": "Your money, finally makes sense.",
-  "start_url": "/",
+  "start_url": "/flow",
   "scope": "/",
   "display_override": [
     "fullscreen",
