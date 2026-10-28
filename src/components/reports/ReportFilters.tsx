@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import { OptionChip } from '@/components/ui/OptionChip'
 
 type DateRange = 'thisMonth' | 'lastMonth' | 'last3Months' | 'last6Months' | 'thisYear'
@@ -9,18 +10,18 @@ interface ReportFiltersProps {
   onSelect: (range: DateRange) => void
 }
 
-const OPTIONS: { value: DateRange; label: string }[] = [
-  { value: 'thisMonth', label: 'This Month' },
-  { value: 'lastMonth', label: 'Last Month' },
-  { value: 'last3Months', label: 'Last 3 Months' },
-  { value: 'last6Months', label: 'Last 6 Months' },
-  { value: 'thisYear', label: 'This Year' },
-]
-
 export function ReportFilters({ selected, onSelect }: ReportFiltersProps) {
+  const t = useT()
+  const options: { value: DateRange; label: string }[] = [
+    { value: 'thisMonth', label: t.reports.rangeThisMonth },
+    { value: 'lastMonth', label: t.reports.rangeLastMonth },
+    { value: 'last3Months', label: t.reports.rangeLast3Months },
+    { value: 'last6Months', label: t.reports.rangeLast6Months },
+    { value: 'thisYear', label: t.reports.rangeThisYear },
+  ]
   return (
     <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-      {OPTIONS.map((opt) => (
+      {options.map((opt) => (
         <OptionChip
           key={opt.value}
           selected={selected === opt.value}

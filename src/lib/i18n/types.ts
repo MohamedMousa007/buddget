@@ -1415,6 +1415,11 @@ export interface Dictionary {
     useSingular: string
     usePlural: string
     expenseFilterHeading: string
+    rangeThisMonth: string
+    rangeLastMonth: string
+    rangeLast3Months: string
+    rangeLast6Months: string
+    rangeThisYear: string
     expenseFilterAll: string
     expenseFilterDebtOnly: string
     expenseFilterExcludeDebt: string
