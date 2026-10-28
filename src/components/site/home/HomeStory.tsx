@@ -95,7 +95,7 @@ export function HomeStory({ locale }: { locale: SiteLocale }) {
             <div className={`sc${s === 0 ? ' on' : ''}`} aria-hidden={s !== 0}>
               <div className="sms-s">
                 {merchants.map((m, i) => (
-                  <div key={m[1]} className={`sms-row${s === 0 && t > i * 0.38 + 0.04 ? ' on' : ''}${s === 0 && t > i * 0.38 + 0.2 ? ' parsed' : ''}`}>
+                  <div key={m[1]} className={`sms-row${s === 0 && t >= i * 0.38 ? ' on' : ''}${s === 0 && t > i * 0.38 + 0.2 ? ' parsed' : ''}`}>
                     <div className="sms"><b><span>CIB</span><span>{c.landing.hero.ago}</span></b>{smsNode(c.landing.hero.sms, m[0], m[1])}</div>
                     <CardTx index={i as 0 | 1} locale={locale} />
                   </div>
@@ -125,7 +125,10 @@ export function HomeStory({ locale }: { locale: SiteLocale }) {
             </div>
           </div>
         </div>
-        <div className="chap"><ol>{st.chap.map((x, i) => <li key={x} className={s === i ? 'on' : undefined}>{x}</li>)}</ol></div>
+        <div className="chap">
+          <ol>{st.chap.map((x, i) => <li key={x} className={s === i ? 'on' : undefined}>{x}</li>)}</ol>
+          <a className="chap-skip" href="#afford" aria-label={`${st.skip}: ${st.label}`}>{st.skip}</a>
+        </div>
       </div>
     </section>
   )

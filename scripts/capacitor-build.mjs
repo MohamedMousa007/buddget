@@ -14,7 +14,7 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync, renameSync, mkdirSync } from 'node:fs'
+import { existsSync, renameSync, mkdirSync, readFileSync, rmSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import {
@@ -55,6 +55,26 @@ const STASH_TARGETS = [
   { from: 'src/app/(app)/install/layout.tsx', to: '.cap-stash/install-layout.tsx' },
   { from: 'src/app/(app)/reset-password/confirm/layout.tsx', to: '.cap-stash/reset-password-confirm-layout.tsx' },
 ]
+
+/** Uploads the web bundle's source maps to Sentry, then deletes every .map so none ship inside the app. */
+function uploadAndStripSourceMaps() {
+  const out = resolve(ROOT, 'out')
+  const version = /APP_CLIENT_VERSION = '([^']+)'/.exec(readFileSync(resolve(ROOT, 'src/lib/appVersion.ts'), 'utf8'))?.[1]
+  try {
+    execSync(`sentry-cli sourcemaps inject "${out}"`, { stdio: 'inherit', cwd: ROOT })
+    execSync(`sentry-cli sourcemaps upload --release "buddget@${version}" "${out}"`, { stdio: 'inherit', cwd: ROOT })
+  } catch (err) {
+    console.warn(`[cap-build] WARNING: source map upload failed, web stacks in Sentry will be minified: ${err?.message ?? err}`)
+  }
+  const strip = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = resolve(dir, e.name)
+      if (e.isDirectory()) strip(p)
+      else if (e.name.endsWith('.map')) rmSync(p)
+    }
+  }
+  strip(out)
+}
 
 function ensureStashDir() {
   if (!existsSync(STASH_DIR)) mkdirSync(STASH_DIR, { recursive: true })
@@ -102,6 +122,8 @@ try {
   const env = { ...process.env, CAPACITOR: 'true', NEXT_PUBLIC_NATIVE_SHELL: 'true' }
   console.log('[cap-build] running next build (static export)…')
   execSync('next build --webpack', { stdio: 'inherit', env, cwd: ROOT })
+
+  uploadAndStripSourceMaps()
 
   const hasAndroid = existsSync(resolve(ROOT, 'android'))
   const hasIos = existsSync(resolve(ROOT, 'ios'))

@@ -7,7 +7,7 @@ JS errors, route and layout error boundaries, and native iOS and Android crashes
 1. Create a Sentry project (Capacitor / React). Copy its DSN.
 2. Set `NEXT_PUBLIC_SENTRY_DSN` on Vercel (web) and add the same line to the `.env.local` that is stored in the `NATIVE_ENV_LOCAL_B64` GitHub secret (the native bundle reads it from there). Without it the reporter does nothing.
 3. In Sentry, create an Internal Integration with a webhook to `https://<app>/api/webhooks/sentry`, enable "Alert Rule Action", and put its Client Secret in `SENTRY_WEBHOOK_SECRET` on Vercel. Add an issue alert rule that notifies this integration for every new issue and for regressions.
-4. Source maps and dSYMs: add a `SENTRY_AUTH_TOKEN` secret and run the upload step in the native workflows so stacks are readable. (Not wired yet.)
+4. Source maps and dSYMs: `brew install getsentry/tools/sentry-cli`, then put an organization token in `~/.sentryclirc` (`[auth] token=`, `[defaults] org=buddget`, `project=buddget`). `cap:build` uploads and strips the web source maps; `native-release.sh` uploads the iOS dSYMs and aborts if sentry-cli cannot reach Sentry.
 
 ## What is sent
 
@@ -19,4 +19,4 @@ The DSN is also baked into native code so a crash before the WebView loads is ca
 
 ## Limits
 
-Readable native stacks need dSYM / mapping uploads (`SENTRY_AUTH_TOKEN`, step 4 above), still not wired.
+Android builds are debug (not minified), so no mapping upload is needed. Add `sentry-cli upload-proguard` if release minify is ever turned on.

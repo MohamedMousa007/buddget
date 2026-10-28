@@ -11,7 +11,7 @@ export const en: SiteContent = {
   nav: {
     login: 'Log in',
     features: 'Features', how: 'How it works', afford: 'Can I afford it?', pricing: 'Pricing', security: 'Security', help: 'Help',
-    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode', megaAfford: 'Can I afford it?', day: 'Day {n} of 30', getAppShort: 'Get the app', tryShort: 'Try in browser',
+    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode', megaAfford: 'Can I afford it?', getAppShort: 'Get the app', tryShort: 'Try in browser',
     menu: 'Menu', close: 'Close menu', cta: 'Get the app', skip: 'Skip to content', switchLabel: 'العربية', switchTo: 'Switch to Arabic',
   },
   footer: {
@@ -36,7 +36,7 @@ export const en: SiteContent = {
     hero: {
       h1: 'What can you spend today?',
       lede: 'Buddget reads your bank texts, sorts every payment and answers that question, live.',
-      assure: ['Free to start', 'No download needed to try it', 'Arabic and English', 'Delete your data any time'],
+      assure: ['Free to start', 'No download needed to try it', 'Delete your data any time'],
       hint: 'Tap something you bought', again: 'Start over', say0: 'Tap something you bought.', sayLow: 'That is most of today.',
       sayOver: 'Over by {n}. Tomorrow’s number shrinks.', sayOk: ['Logged.', 'Sorted.', 'Got it.'], sayReset: 'Fresh day.',
       leftToday: 'left to spend today', unit: 'EGP',
@@ -50,9 +50,9 @@ export const en: SiteContent = {
       coin: 'TRY IT IN YOUR BROWSER · LOG IN · ',
     },
     proof: {
-      p: 'Available in Arabic and English. The beta is open.',
-      items: [{ v: '8 in 10', t: 'beta entries were logged from bank texts' }, { v: '0', t: 'bank passwords asked for' }, { v: 'Free', t: 'to start' }],
-      note: 'Beta data, October 2026: 497 of 588 entries came from bank texts. Based on 15 beta users, so treat it as early.',
+      label: 'Buddget in numbers',
+      items: [{ v: '85%', t: 'of beta entries were logged straight from bank texts' }, { v: '0', t: 'bank passwords asked for, ever' }, { v: '1', t: 'daily number that shows what is safe to spend' }],
+      note: 'Beta data, October 2026: 497 of 588 entries came from bank texts, across 15 beta users.',
     },
     statement: [
       { text: 'Your salary arrives on the 25th. By the 3rd you are guessing.' },
@@ -68,6 +68,7 @@ export const en: SiteContent = {
         { h: 'Ask Buddgy.', p: 'Where did it go? Can I afford this? Add a coffee. Plain answers from your own numbers.' },
       ],
       chap: ['Text', 'Bills', 'Goals', 'Ask'],
+      skip: 'Skip',
       day: 'Day {n} of 30',
       plan: 'left this month',
       legend: ['Rent', 'Food and groceries', 'Everything else', 'Left to spend'],
@@ -110,15 +111,16 @@ export const en: SiteContent = {
       link: { label: 'How we protect your data', slug: 'security' },
     },
     compare: {
-      h2: 'Buddget, a spreadsheet, or a notes app?',
-      cols: ['', 'Buddget', 'Spreadsheet', 'Notes app'],
+      h2: 'How Buddget is different',
+      cols: ['', 'Buddget', 'Manual-entry apps', 'Bank-sync apps'],
       rows: [
-        ['Logs spending', 'From bank texts, voice and receipts', 'You type every entry', 'You type every entry'],
-        ['What is safe today', 'Calculated for you', 'You build the formula', 'Not possible'],
-        ['Goals with a date', 'Built in', 'You build it', 'A list'],
-        ['Installments and debts', 'Built in, with due dates', 'You build it', 'A list'],
-        ['Arabic', 'Arabic and English', 'Depends on you', 'Yes'],
+        ['Logs spending', 'Automatically, from bank texts, voice and receipts', 'You type every entry', 'Automatically, through a bank connection'],
+        ['Needs your bank login', 'Never', 'No', 'Usually'],
+        ['What is safe today', 'One number, calculated for you', 'You work it out', 'Rarely'],
+        ['AI assistant for your own numbers', 'Buddgy answers from your data', 'Rare', 'Sometimes'],
+        ['Debts, installments and subscriptions', 'Tracked with due dates', 'Partly', 'Partly'],
       ],
+      note: 'A general comparison of common types of budgeting apps.',
     },
     pricing: {
       h2: 'Free to start. Plus is planned.', p: 'Everything you use today stays free. Plus is planned for the features that cost us the most to run.',
@@ -145,7 +147,6 @@ export const en: SiteContent = {
         { q: 'Is Buddget free?', a: 'Yes. Tracking, budgets, goals, subscriptions and the essentials of Buddgy are free. A paid plan, Plus, is planned with more AI and exports. What you use today is meant to stay available.' },
         { q: 'Does it read my bank texts?', a: 'Only if you turn it on. When you do, the text of the bank messages you allow is sent to our servers to find the amount and merchant. The raw text is not kept after that, and you can switch it off at any time.' },
         { q: 'Does it connect to my bank account?', a: 'No. Buddget never logs in to your bank and cannot move money. It works from the texts you receive and from what you add yourself.' },
-        { q: 'Does it work in Arabic?', a: 'Yes. The app, Buddgy and bank text reading work in Arabic and English.' },
         { q: 'Can I use it if my salary is not on the 1st?', a: 'Yes. Set your payday and your month runs from payday to payday.' },
         { q: 'What happens to my data if I leave?', a: 'You can delete your account and all its data from inside the app, or ask us to do it.' },
       ],

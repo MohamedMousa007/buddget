@@ -25,6 +25,8 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 SENTRY_DSN="$(grep -E '^NEXT_PUBLIC_SENTRY_DSN=' .env.local | tail -1 | cut -d= -f2- | tr -d "\"'")"
 [ -n "$SENTRY_DSN" ] || { echo "NEXT_PUBLIC_SENTRY_DSN is empty in .env.local: this build would ship without crash reporting." >&2; exit 1; }
 export SENTRY_DSN
+command -v sentry-cli >/dev/null || { echo "sentry-cli is missing (brew install getsentry/tools/sentry-cli)." >&2; exit 1; }
+sentry-cli releases list >/dev/null 2>&1 || { echo "sentry-cli cannot reach Sentry: check ~/.sentryclirc (auth token, org, project)." >&2; exit 1; }
 
 # The build must be what is on GitHub: nothing uncommitted, nothing unpushed.
 if [ -n "$(git status --porcelain)" ]; then echo "Working tree is not clean. Commit or stash first." >&2; exit 1; fi
@@ -51,6 +53,9 @@ echo "== iOS archive"
 (cd ios/App && xcodebuild -scheme App -configuration Release -destination "generic/platform=iOS" \
   -archivePath "$WORK/App.xcarchive" -allowProvisioningUpdates \
   CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=$TEAM SENTRY_DSN="$SENTRY_DSN" archive) > "$WORK/ios-archive.log" 2>&1 || { tail -30 "$WORK/ios-archive.log"; echo "iOS archive failed (log: $WORK/ios-archive.log)" >&2; exit 1; }
+
+echo "== iOS dSYMs to Sentry"
+sentry-cli debug-files upload --include-sources "$WORK/App.xcarchive/dSYMs" > "$WORK/dsym.log" 2>&1 || echo "WARNING: dSYM upload failed (see $WORK/dsym.log); iOS native stacks will be unreadable." >&2
 
 echo "== iOS upload to TestFlight"
 (cd ios/App && xcodebuild -exportArchive -archivePath "$WORK/App.xcarchive" -exportPath "$WORK/export" \

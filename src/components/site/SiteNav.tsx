@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { BuddgetWordmark } from '@/components/brand'
 import { WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
-import { fill } from './home/format'
 import { ThemeToggle } from './ThemeToggle'
 
 type Props = { locale: SiteLocale; slug: string }
@@ -19,32 +18,15 @@ const MEGA: { slug: string; color: string; icon: React.ReactNode }[] = [
   { slug: 'subscriptions', color: '#1FC3B2', icon: <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5" /> },
 ]
 
-/** Floating tabbed header. Tabs reach the real pages; the day ring fills as the page scrolls. */
+/** Floating tabbed header. Tabs reach the real pages; the Features menu opens a panel of feature pages. */
 export function SiteNav({ locale, slug }: Props) {
   const c = siteContent[locale]
   const n = c.nav
   const other: SiteLocale = locale === 'en' ? 'ar' : 'en'
   const [mega, setMega] = useState(false)
   const [sheet, setSheet] = useState(false)
-  const [day, setDay] = useState(1)
-  const [prog, setProg] = useState(0)
   const megaRef = useRef<HTMLElement>(null)
   const home = pathFor(locale, '')
-
-  useEffect(() => {
-    let frame = 0
-    const update = () => {
-      frame = 0
-      const h = document.documentElement.scrollHeight - window.innerHeight
-      const p = h > 0 ? Math.max(0, Math.min(1, window.scrollY / h)) : 0
-      setProg(p)
-      setDay(1 + Math.round(p * 29))
-    }
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update) }
-    update()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
-  }, [])
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => { if (megaRef.current && !megaRef.current.contains(e.target as Node)) setMega(false) }
@@ -82,10 +64,6 @@ export function SiteNav({ locale, slug }: Props) {
         <div className="nav-in">
           <div className="nav-bar">
             <Link className="wm" href={home} aria-label="Buddget"><BuddgetWordmark height={24} /></Link>
-            <span className="day" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" className="day-track" strokeWidth="3" /><circle cx="12" cy="12" r="9" fill="none" stroke="#1FC3B2" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(prog * 56.5).toFixed(1)} 57`} /></svg>
-              <span>{fill(n.day, { n: day })}</span>
-            </span>
             <nav className="tabs" aria-label="Main" ref={megaRef}>
               <button className="tab" type="button" aria-expanded={mega} aria-controls="hm-mega" onClick={(e) => { e.stopPropagation(); setMega((v) => !v) }}>
                 <span>{n.features}</span>

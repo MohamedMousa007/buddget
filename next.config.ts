@@ -39,6 +39,8 @@ const nextConfig: NextConfig = {
         trailingSlash: true,
         images: { unoptimized: true },
         skipTrailingSlashRedirect: true,
+        // Uploaded to Sentry and stripped from the bundle by scripts/capacitor-build.mjs.
+        productionBrowserSourceMaps: true,
       }
     : {}),
   headers: async () => [

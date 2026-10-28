@@ -33,11 +33,12 @@ export function initCrashReporting(): void {
 }
 
 async function loadSentry(): Promise<void> {
-  const [Sentry, SentryReact] = await Promise.all([import('@sentry/capacitor'), import('@sentry/react')])
+  const [Sentry, SentryReact, build] = await Promise.all([import('@sentry/capacitor'), import('@sentry/react'), nativeBuild()])
   Sentry.init(
     {
       dsn: DSN,
       release: `buddget@${APP_CLIENT_VERSION}`,
+      dist: build,
       environment: IN_DEV ? 'development' : 'production',
       enableNative: isNative(),
       sendDefaultPii: false,
@@ -60,16 +61,20 @@ export async function fingerprintDeviceId(id: string): Promise<string> {
   return Array.from(new Uint8Array(digest).slice(0, 6), (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-/** Build number and device id arrive asynchronously; they are tags, so a crash before they land still reports. */
-async function tagDevice(Sentry: SentryModules['Sentry']): Promise<void> {
-  if (isNative()) {
-    try {
-      const info = await App.getInfo()
-      Sentry.setTag('build', info.build)
-    } catch {
-      /* the release still carries the version */
-    }
+/** The native build number, or undefined on the web or when the plugin fails: the release still carries the version. */
+async function nativeBuild(): Promise<string | undefined> {
+  if (!isNative()) return undefined
+  try {
+    return (await App.getInfo()).build
+  } catch {
+    return undefined
   }
+}
+
+/** The device id arrives asynchronously; it is a tag, so a crash before it lands still reports. */
+async function tagDevice(Sentry: SentryModules['Sentry']): Promise<void> {
+  const build = await nativeBuild()
+  if (build) Sentry.setTag('build', build)
   const id = await getOrCreateDeviceId()
   if (id) Sentry.setTag('device_id', await fingerprintDeviceId(id))
 }
