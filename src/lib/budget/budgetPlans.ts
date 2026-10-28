@@ -9,9 +9,9 @@ import { tryConvertCurrency } from '@/lib/utils/currency'
  */
 export function isSavingsPlanCategory(c: BudgetPlanCategory): boolean {
   if (c.isSavings === true) return true
-  // Safety-net and goal lines are savings movements by definition (not spend).
-  if (c.block === 'safety' || c.block === 'goals') return true
+  // Safety-net, goal and grow lines are savings movements unless explicitly marked spendable (isSavings false).
   if (c.isSavings === false) return false
+  if (c.block === 'safety' || c.block === 'goals' || c.block === 'grow') return true
   return c.name.trim().toLowerCase() === 'savings'
 }
 

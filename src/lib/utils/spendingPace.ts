@@ -38,6 +38,26 @@ export function projectedMonthSpend(dailyRate: number, totalDays: number): numbe
   return dailyRate * totalDays
 }
 
+/**
+ * Where the month's spend is heading. Committed lines (bills, subscriptions, debts) are lumpy: they land
+ * once, so they count at what is paid or planned, whichever is larger, and only the discretionary
+ * spend is extrapolated at its daily rate. A cycle that has not started, or has already closed, is not projected: it is what was spent.
+ */
+export function projectPaceSpend(a: {
+  totalSpent: number
+  committedSpent: number
+  committedBudget: number
+  elapsed: number
+  totalDays: number
+  started: boolean
+  closed?: boolean
+}): number {
+  if (!a.started || a.closed) return a.totalSpent
+  const committedSpent = Math.min(a.committedSpent, a.totalSpent)
+  const discretionary = a.totalSpent - committedSpent
+  return Math.max(committedSpent, a.committedBudget) + projectedMonthSpend(dailySpendingRate(discretionary, a.elapsed), a.totalDays)
+}
+
 /** Classify the projected spend vs budget. */
 export function spendingPaceStatus(projectedSpend: number, budget: number): PaceStatus {
   if (budget <= 0) return 'on_track'

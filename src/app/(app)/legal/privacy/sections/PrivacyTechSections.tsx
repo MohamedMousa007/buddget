@@ -7,8 +7,9 @@ export function PrivacyTechSections() {
       <LegalSection title="8. Cookies and Local Storage">
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Authentication cookies:</strong>{' '}
-          Session tokens from Supabase are stored in secure HTTP-only cookies. Strictly necessary —
-          cannot be opted out of while using the Service.
+          On the web, session tokens from Supabase are kept in your browser storage and, where the
+          server needs them, in secure cookies. In the native app the session is kept in the app&apos;s
+          local storage. Strictly necessary, cannot be opted out of while using the Service.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">
@@ -21,8 +22,8 @@ export function PrivacyTechSections() {
           settings (theme, language, display preferences) stored locally.
         </p>
         <p>
-          We do not use advertising cookies, behavioral tracking cookies, or any third-party analytics
-          cookies. We do not participate in cross-site tracking or advertising networks.
+          We do not use advertising cookies or behavioral tracking cookies. Crash reporting (Sentry) is
+          the only third-party diagnostic service, described in section 4. We do not participate in cross-site tracking or advertising networks.
         </p>
       </LegalSection>
 

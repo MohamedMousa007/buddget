@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Textarea } from '@/components/ui/textarea'
 import { useT } from '@/lib/i18n'
+import { apiFetchAuth } from '@/lib/apiBase'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { SupportBoardSheet } from './SupportBoardSheet'
 import { SupportInboxSheet } from './SupportInboxSheet'
@@ -46,7 +47,7 @@ function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/support/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chosen: type, title, description }) })
+      const res = await apiFetchAuth('/api/support/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chosen: type, title, description }) })
       const data = (await res.json()) as { error?: string; number?: number }
       if (!res.ok) throw new Error(data.error ?? 'Failed')
       setDone(data.number ? `#${data.number}` : '✓')

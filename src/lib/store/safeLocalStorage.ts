@@ -1,10 +1,30 @@
 import type { StateStorage } from 'zustand/middleware'
 
-/** In-memory fallback when `localStorage` throws (Safari private mode, quota). */
+/** Values that localStorage refused (quota, Safari private mode). The newest write always lives here until it fits again. */
 const memory = new Map<string, string>()
+
+/** Fired once per session the first time a write is refused, so the shell can warn that edits may not survive a restart. */
+export const STORAGE_QUOTA_EVENT = 'buddget:storage-quota'
+let quotaAnnounced = false
+
+export function __resetSafeStorageForTests(): void {
+  memory.clear()
+  quotaAnnounced = false
+}
+
+function announceQuota() {
+  if (quotaAnnounced) return
+  quotaAnnounced = true
+  try {
+    window.dispatchEvent(new CustomEvent(STORAGE_QUOTA_EVENT))
+  } catch {
+    /* noop */
+  }
+}
 
 /**
  * Zustand `persist` storage that survives Safari private browsing / quota errors.
+ * Memory wins on read: it only holds a value when the newer write could not be persisted.
  */
 export function createSafeLocalStorage(): StateStorage {
   if (typeof window === 'undefined') {
@@ -16,24 +36,29 @@ export function createSafeLocalStorage(): StateStorage {
   }
   return {
     getItem: (name) => {
+      const pending = memory.get(name)
+      if (pending !== undefined) return pending
       try {
         return window.localStorage.getItem(name)
       } catch {
-        return memory.get(name) ?? null
+        return null
       }
     },
     setItem: (name, value) => {
       try {
         window.localStorage.setItem(name, value)
+        memory.delete(name)
       } catch {
         memory.set(name, value)
+        announceQuota()
       }
     },
     removeItem: (name) => {
+      memory.delete(name)
       try {
         window.localStorage.removeItem(name)
       } catch {
-        memory.delete(name)
+        /* noop */
       }
     },
   }

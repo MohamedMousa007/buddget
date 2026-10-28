@@ -1,6 +1,7 @@
-import type { FinanceStore } from '@/lib/store/types'
+import type { BudgetPlanCategory, FinanceStore } from '@/lib/store/types'
 import { isOwedToUser } from '@/lib/debts/debtDirection'
 import { planForMonth } from '@/lib/budget/activations'
+import { lineBlock } from '@/lib/budget/blocks'
 import {
   budgetCategoriesFromPlan,
   categorySpendingForPlanRows,
@@ -8,6 +9,8 @@ import {
   planRowNames,
   unassignedSpend,
   totalExpenseBudgetFromPlan,
+  effectivePlanCategoryAmountInBase,
+  isSavingsPlanCategory,
   totalPlannedExpensesForPlan,
   totalPlannedSavingsAllocationForPlan,
 } from '@/lib/budget/budgetPlans'
@@ -38,13 +41,16 @@ import {
   daysElapsedInMonth,
   totalDaysInMonth,
   dailySpendingRate,
-  projectedMonthSpend,
+  projectPaceSpend,
   spendingPaceStatus,
   suggestedDailyBudget,
   topOverspentCategories,
   type PaceStatus,
   type OverspentCategory,
 } from '@/lib/utils/spendingPace'
+
+/** Lines paid once, on their own date: pace does not extrapolate them. */
+const COMMITTED_BLOCKS = ['bills', 'subscriptions', 'debts']
 
 export interface MonthlyStatsInput {
   expenses: FinanceStore['expenses']
@@ -75,6 +81,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     return {
       monthlyExpenses: [],
       totalIncome: 0,
+      receivedIncome: 0,
       totalSpent: 0,
       totalSpentExcludingSavings: 0,
       cashOutflow: 0,
@@ -135,6 +142,10 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     settings.noIncomeDeclared === true && incomeSources.length === 0 && incomeEvents.length === 0
   const projectedIncome = incomeBlocked ? 0 : rawProjectedIncome
   const totalIncome = incomeBlocked ? 0 : rawActualIncome
+  // Money that really arrived (realized events only), the hero's Money in; `totalIncome` still fills open paydays with the expected amount.
+  const receivedIncome = incomeBlocked
+    ? 0
+    : actualIncomeForMonth(incomeSources, incomeEvents, settings.baseCurrency, exchangeRates, monthFilter, settings.monthStartDay, true)
   const totalSpent = calculateTotalSpent(monthlyExpenses, settings.baseCurrency, exchangeRates)
   const totalSpentForExpenseBudget = calculateTotalSpentExcludingSavings(
     monthlyExpenses,
@@ -281,7 +292,23 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
   const elapsed = daysElapsedInMonth(monthFilter, settings.monthStartDay)
   const totalDays = totalDaysInMonth(monthFilter, settings.monthStartDay)
   const dailyRate = dailySpendingRate(totalSpentForExpenseBudget, elapsed)
-  const projectedSpend = projectedMonthSpend(dailyRate, totalDays)
+  const committedRows = planForCategoryBar
+    ? planForCategoryBar.categories.filter((c) => !isSavingsPlanCategory(c) && COMMITTED_BLOCKS.includes(lineBlock(c)) && c.name.trim())
+    : []
+  const committedByName = new Map<string, BudgetPlanCategory>()
+  for (const c of committedRows) if (!committedByName.has(c.name.trim())) committedByName.set(c.name.trim(), c)
+  const committedBudget = [...committedByName.values()].reduce((sum, c) => sum + effectivePlanCategoryAmountInBase(c, settings.baseCurrency, exchangeRates), 0)
+  const committedSpent = [...committedByName.keys()].reduce((sum, n) => sum + (categorySpending[n] ?? 0), 0)
+  const currentBudgetMonth = budgetMonthKeyFor(new Date(), settings.monthStartDay)
+  const projectedSpend = projectPaceSpend({
+    totalSpent: totalSpentForExpenseBudget,
+    committedSpent,
+    committedBudget,
+    elapsed,
+    totalDays,
+    started: monthFilter <= currentBudgetMonth,
+    closed: monthFilter < currentBudgetMonth,
+  })
   const paceStatus = spendingPaceStatus(projectedSpend, totalExpenseBudget)
   const suggestedDaily = suggestedDailyBudget(remaining, daysLeft)
 
@@ -299,6 +326,7 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
   return {
     monthlyExpenses,
     totalIncome,
+    receivedIncome,
     totalSpent,
     totalSpentExcludingSavings: totalSpentForExpenseBudget,
     totalBudget,

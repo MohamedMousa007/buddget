@@ -1,6 +1,7 @@
 'use client'
 
 import { isNative } from '@/lib/native/isNative'
+import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { dataUrlToBytes } from '@/lib/utils/dataUrl'
 import {
   isDocumentScannerAvailable,
@@ -85,7 +86,7 @@ async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImag
   // Explicit permission request before accessing hardware — avoids silent failure.
   const permCheck = await Camera.checkPermissions()
   if (permCheck.camera !== 'granted') {
-    const req = await Camera.requestPermissions({ permissions: ['camera'] })
+    const req = await withNativeFlow(() => Camera.requestPermissions({ permissions: ['camera'] }))
     if (req.camera !== 'granted') {
       throw new Error(
         'Camera access denied. Please go to Settings → Apps → Buddget → Permissions and enable Camera.'
@@ -95,14 +96,14 @@ async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImag
 
   let photo
   try {
-    photo = await Camera.getPhoto({
+    photo = await withNativeFlow(() => Camera.getPhoto({
       quality: 80,
       allowEditing: false,
       resultType: CameraResultType.DataUrl,
       source: source === 'camera' ? CameraSource.Camera : CameraSource.Photos,
       correctOrientation: true,
       saveToGallery: false,
-    })
+    }))
   } catch (e) {
     // User backed out of the camera/picker — silent cancel, not a failure.
     if (isCaptureCancellation(e)) throw new ReceiptCaptureCancelled()

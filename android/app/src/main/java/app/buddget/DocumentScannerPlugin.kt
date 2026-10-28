@@ -55,12 +55,13 @@ class DocumentScannerPlugin : Plugin() {
     @PluginMethod
     fun scan(call: PluginCall) {
         val activity: Activity = activity ?: run { call.reject("no activity"); return }
+        if (pendingCall != null) { call.reject("scan already in progress"); return }
         val pageLimit = call.getInt("pageLimit") ?: 5
+        pendingCall = call
 
         val scanner = GmsDocumentScanning.getClient(baseOptions(pageLimit))
         scanner.getStartScanIntent(activity)
             .addOnSuccessListener { intentSender ->
-                pendingCall = call
                 try {
                     scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
                 } catch (e: Exception) {
@@ -69,6 +70,7 @@ class DocumentScannerPlugin : Plugin() {
                 }
             }
             .addOnFailureListener { e ->
+                pendingCall = null
                 call.reject(e.message ?: "Scanner unavailable")
             }
     }
@@ -110,8 +112,17 @@ class DocumentScannerPlugin : Plugin() {
         return try {
             val orientation = ExifInterface(ByteArrayInputStream(bytes))
                 .getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-            var bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            var sample = 1
+            while (maxOf(bounds.outWidth, bounds.outHeight) / sample > MAX_EDGE_PX * 2) sample *= 2
+            var bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
                 ?: return Base64.encodeToString(bytes, Base64.NO_WRAP)
+            val longEdge = maxOf(bmp.width, bmp.height)
+            if (longEdge > MAX_EDGE_PX) {
+                val k = MAX_EDGE_PX.toFloat() / longEdge
+                bmp = Bitmap.createScaledBitmap(bmp, (bmp.width * k).toInt(), (bmp.height * k).toInt(), true)
+            }
             val m = Matrix()
             when (orientation) {
                 ExifInterface.ORIENTATION_ROTATE_90 -> m.postRotate(90f)
@@ -130,7 +141,13 @@ class DocumentScannerPlugin : Plugin() {
             Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
         } catch (e: Exception) {
             Base64.encodeToString(bytes, Base64.NO_WRAP)
+        } catch (e: OutOfMemoryError) {
+            Base64.encodeToString(bytes, Base64.NO_WRAP)
         }
+    }
+
+    private companion object {
+        const val MAX_EDGE_PX = 2400
     }
 
     private fun baseOptions(pageLimit: Int): GmsDocumentScannerOptions =

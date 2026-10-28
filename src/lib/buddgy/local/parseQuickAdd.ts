@@ -1,7 +1,7 @@
 import { extractAmount } from './quickAddAmount'
 import { extractDate } from './quickAddDate'
 import { matchCategories } from './lexicon'
-import { escapeRe, foldArabic, normalizeText, stripAll, wordRe } from './text'
+import { boundedRe, escapeRe, foldArabic, normalizeText, stripAll, wordRe } from './text'
 
 export interface QuickAddInput {
   baseCurrency: string
@@ -66,7 +66,7 @@ function extractCurrency(
     if (!source) continue
     const re = wordRe(source)
     for (const m of rest.matchAll(new RegExp(re.source, 'giu'))) {
-      codes.add(code === 'KNOWN' ? m[0].toUpperCase() : code)
+      codes.add(code === 'KNOWN' ? (m.groups?.w ?? m[0]).toUpperCase() : code)
     }
     rest = stripAll(rest, re)
   }
@@ -93,7 +93,7 @@ function extractMethod(
     .filter((m) => m.name.trim())
     .map((m) => {
       const name = escapeRe(m.name.trim())
-      const re = new RegExp(`(?<![\\p{L}\\d])(?:(?:with|using|by|on|via|عن طريق)\\s+|بـ|ب\\s?)${name}(?![\\p{L}\\d])`, 'iu')
+      const re = boundedRe(`(?:(?:with|using|by|on|via|عن طريق)\\s+|بـ|ب\\s?)${name}`)
       return { ...m, re, match: text.match(re) }
     })
     .filter((h) => h.match)

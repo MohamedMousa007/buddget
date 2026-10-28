@@ -29,6 +29,7 @@ class MainActivity : BridgeActivity() {
                         } else {
                             // First run: OS permission not answered yet — request it,
                             // then grant/deny the WebView in onRequestPermissionsResult.
+                            pendingMicRequest?.deny()
                             pendingMicRequest = request
                             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), MIC_PERMISSION_CODE)
                         }

@@ -77,7 +77,7 @@ export function useNotifications() {
   // A mostly estimated plan in its first cycle may simply be wrong, so it does not raise budget alerts yet.
   const planLearning = useFinanceStore((st) => {
     const plan = selectActivePlan(st.budgetPlans, st.activeBudgetPlanId)
-    return plan ? isLearning(plan, st.budgetPlanActivations, cycleKeyOf(new Date(), st.settings.monthStartDay)) : false
+    return plan ? isLearning(plan, st.budgetPlanActivations, cycleKeyOf(new Date(), st.settings.monthStartDay), st.settings.baseCurrency, st.exchangeRates) : false
   })
   const viewingPastOrFuture = useFinanceStore((st) => monthFilter !== cycleKeyOf(new Date(), st.settings.monthStartDay))
 

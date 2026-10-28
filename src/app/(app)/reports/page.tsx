@@ -14,6 +14,8 @@ import { SpendingPacePanel } from '@/components/reports/SpendingPacePanel'
 import { ReportsSavingsPanel } from '@/components/reports/ReportsSavingsPanel'
 import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { reportCycles } from '@/lib/reports/reportsPeriod'
 
 const MonthlyChart = dynamic(
   () => import('@/components/reports/MonthlyChart').then((m) => ({ default: m.MonthlyChart })),
@@ -28,6 +30,9 @@ const CategoryPieChart = dynamic(
 export default function ReportsPage() {
   const r = useReportsPage()
   const stats = useMonthlyStats()
+  const monthFilter = useSettingsStore((s) => s.monthFilter)
+  // The pace panel reads the viewed month's stats, so it shows only when that month is the report's current cycle.
+  const paceInRange = r.dateRange === 'thisMonth' && reportCycles('thisMonth', new Date(), r.settings.monthStartDay).at(-1) === monthFilter
 
   return (
     <div>
@@ -60,7 +65,7 @@ export default function ReportsPage() {
         <PageDivider />
 
         <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
-        {r.dateRange === 'thisMonth' && stats.monthClosed === false && (
+        {paceInRange && stats.monthClosed === false && (
         <SpendingPacePanel
           dailyRate={stats.dailyRate}
           projectedSpend={stats.projectedSpend}

@@ -55,9 +55,12 @@ export function PrivacyDataSections() {
             SMS transaction data (opt-in only):
           </strong>{' '}
           When you enable SMS auto-tracking, the text content of bank notification SMS messages you
-          authorize is transmitted to our servers for parsing. Only extracted expense data (amount,
-          merchant, date, category) is stored. Raw SMS text is not permanently retained after
-          processing.
+          authorize is transmitted to our servers for parsing, and the expense data extracted from it
+          (amount, merchant, date, category) is stored with your account. We keep the raw message for
+          at most 30 days (7 days for messages that are rejected or contain a one-time code), then
+          delete it. After that only a masked version, with numbers, names and account details
+          removed, is kept to improve how messages are parsed. The corpus of learned message patterns
+          is kept for 180 days, and no raw message is ever kept longer than 60 days.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">AI query data:</strong>{' '}
@@ -131,7 +134,7 @@ export function PrivacyDataSections() {
             <strong className="text-[var(--color-brand-text-primary)]">
               Google Gemini API (Google LLC):
             </strong>{' '}
-            Processes Buddgy queries and receipt image analysis. Your budget context and images are
+            Processes Buddgy queries, receipt image analysis and the AI fallback for parsing bank messages we cannot read with learned patterns. Your budget context and images are
             transmitted to Google servers when you use AI features. We use the paid tier to prevent
             your data from being used for Google model training.{' '}
             <a
@@ -158,10 +161,52 @@ export function PrivacyDataSections() {
           </li>
           <li>
             <strong className="text-[var(--color-brand-text-primary)]">
+              Sentry (Functional Software, Inc.):
+            </strong>{' '}
+            Receives crash and error reports from the app, including your account identifier and device information, so we can find and fix bugs.{' '}
+            <a
+              href="https://sentry.io/privacy/"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+          </li>
+          <li>
+            <strong className="text-[var(--color-brand-text-primary)]">
+              Resend (resend.com):
+            </strong>{' '}
+            Sends account emails on our behalf (sign-in codes, password resets, support replies). Receives your email address and the message content.{' '}
+            <a
+              href="https://resend.com/legal/privacy-policy"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+          </li>
+          <li>
+            <strong className="text-[var(--color-brand-text-primary)]">
+              Linear (linear.app):
+            </strong>{' '}
+            Your feedback and support requests are forwarded to our issue tracker so we can act on them. The subject and details you write are included.{' '}
+            <a
+              href="https://linear.app/privacy"
+              className="text-[var(--color-brand-primary-ink)] hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+          </li>
+          <li>
+            <strong className="text-[var(--color-brand-text-primary)]">
               Firebase Cloud Messaging (Google LLC):
             </strong>{' '}
             Delivers push notifications to Android devices and web browsers. Only a notification
-            payload (title, body) is transmitted — no financial data is included in push payloads.
+            payload (title and a short body) and your device token are transmitted.
           </li>
           <li>
             <strong className="text-[var(--color-brand-text-primary)]">

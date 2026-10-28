@@ -255,6 +255,7 @@ export const ar: Dictionary = {
     toastSavingsDeposited: 'تم حفظ الإيداع',
     ariaSwapCurrencies: 'تبديل العملتين من وإلى',
     pressBackAgainToExit: 'اضغط رجوع مرة أخرى للخروج',
+    storageFull: 'مساحة التخزين على هاتفك ممتلئة. قد لا تُحفظ التغييرات الأخيرة إذا أغلقت التطبيق.',
   },
 
   exclusion: {

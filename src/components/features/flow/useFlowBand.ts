@@ -78,7 +78,11 @@ export function useFlowBand({
     const cycle = getMonthRange(monthFilter, monthStartDay)
     const cycleStartLabel = shortDate(format(cycle.start, 'yyyy-MM-dd'))
     const cycleEndLabel = shortDate(format(cycle.end, 'yyyy-MM-dd'))
-    const moneyIn = stats.totalIncome
+    // Received money on the cycle basis; a week or custom range shows that range's income rows, like the list below.
+    const moneyIn =
+      rangePreset === 'month'
+        ? stats.receivedIncome
+        : all.filter((i) => i.dir === 'in').reduce((s, i) => s + i.amountBase, 0)
     const spent = stats.totalSpentExcludingSavings
     const budget = stats.totalExpenseBudget
     const totalDays = totalDaysInMonth(monthFilter, monthStartDay)

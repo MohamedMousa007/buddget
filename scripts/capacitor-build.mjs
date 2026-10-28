@@ -108,7 +108,7 @@ try {
   if (hasAndroid || hasIos) {
     execSync('node scripts/patch-android-plugins.mjs', { stdio: 'inherit', cwd: ROOT })
     console.log('[cap-build] running npx cap sync…')
-    execSync('npx cap sync', { stdio: 'inherit', env, cwd: ROOT })
+    execSync('npx cap sync', { stdio: 'inherit', env: { ...env, NODE_ENV: 'production' }, cwd: ROOT })
   } else {
     console.log('[cap-build] no android/ or ios/ folder — skipping cap sync. Run `npx cap add android` or `npx cap add ios` first.')
   }

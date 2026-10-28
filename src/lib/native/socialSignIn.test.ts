@@ -260,6 +260,7 @@ describe('nativeSocialSignIn — Apple — iOS', () => {
     expect(mocks.signInWithIdToken).toHaveBeenCalledWith({
       provider: 'apple',
       token: 'apple-ios-token',
+      nonce: expect.stringMatching(/^[0-9a-f]{64}$/),
     })
   })
 
@@ -530,5 +531,26 @@ describe('cancellation detection', () => {
     expect(result.cancelled).toBe(false)
     expect(result.error).toBeNull()
     expect(result.user).toEqual({ id: 'u1' })
+  })
+})
+
+describe('Apple nonce', () => {
+  it('iOS: sends the hashed nonce to Apple and the raw one to Supabase', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: false })
+    await nativeSocialSignIn('apple')
+    const options = (mocks.login.mock.calls[0][0] as { options: { nonce?: string } }).options
+    const sent = mocks.signInWithIdToken.mock.calls[0][0] as { nonce?: string }
+    expect(options.nonce).toMatch(/^[0-9a-f]{64}$/)
+    expect(sent.nonce).toMatch(/^[0-9a-f]{64}$/)
+    const { createHash } = await import('node:crypto')
+    expect(createHash('sha256').update(sent.nonce!).digest('hex')).toBe(options.nonce)
+  })
+
+  it('Android: the web flow carries no nonce on either side', async () => {
+    const { nativeSocialSignIn } = await freshModule({ android: true, appleServicesId: 'svc' })
+    await nativeSocialSignIn('apple')
+    const options = (mocks.login.mock.calls[0][0] as { options: { nonce?: string } }).options
+    expect(options.nonce).toBeUndefined()
+    expect((mocks.signInWithIdToken.mock.calls[0][0] as { nonce?: string }).nonce).toBeUndefined()
   })
 })

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
+import { apiFetchAuth } from '@/lib/apiBase'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 
 type Item = { number: number; title: string; summary: string; state: string; votes: number; mine: number }
@@ -17,7 +18,7 @@ export function SupportBoardSheet({ open, onClose }: { open: boolean; onClose: (
 
   useEffect(() => {
     if (!open) return
-    void fetch('/api/support/board', { cache: 'no-store' })
+    void apiFetchAuth('/api/support/board', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : { items: [] }))
       .then((d: { items: Item[] }) => setItems(d.items))
       .catch(() => setItems([]))
@@ -28,7 +29,7 @@ export function SupportBoardSheet({ open, onClose }: { open: boolean; onClose: (
     const prev = items
     setItems((cur) => cur?.map((i) => (i.number === item.number ? { ...i, mine: next, votes: i.votes - i.mine + next } : i)) ?? cur)
     try {
-      const res = await fetch(`/api/support/board/${item.number}/vote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: next }) })
+      const res = await apiFetchAuth(`/api/support/board/${item.number}/vote`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ value: next }) })
       if (!res.ok) throw new Error()
       const d = (await res.json()) as { votes: number }
       setItems((cur) => cur?.map((i) => (i.number === item.number ? { ...i, votes: d.votes } : i)) ?? cur)

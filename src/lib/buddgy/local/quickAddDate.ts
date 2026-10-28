@@ -10,8 +10,8 @@ const WEEKDAYS: [number, string][] = [
   [6, 'saturday|السبت'],
 ]
 
-const ISO_RE = /(?<![\d-])(\d{4})-(\d{2})-(\d{2})(?![\d-])/g
-const SLASH_RE = /(?<![\d/])(\d{1,2})\/(\d{1,2})(?:\/(\d{4}|\d{2}))?(?![\d/])/g
+const ISO_RE = new RegExp('(?:^|[^\\d-])(?<w>(\\d{4})-(\\d{2})-(\\d{2}))(?![\\d-])', 'g')
+const SLASH_RE = new RegExp('(?:^|[^\\d/])(?<w>(\\d{1,2})/(\\d{1,2})(?:/(\\d{4}|\\d{2}))?)(?![\\d/])', 'g')
 const DAY_BEFORE_YESTERDAY = wordRe('day before yesterday|اول (?:امس|امبارح)')
 const YESTERDAY = wordRe('yesterday|امس|امبارح|البارحة')
 const TODAY = wordRe('today|اليوم|النهاردة|النهارده|انهاردة')
@@ -35,16 +35,17 @@ export function extractDate(text: string, today: string): { date?: string; rest:
   let rest = text
 
   for (const m of rest.matchAll(ISO_RE)) {
-    if (!validIso(m[0]) || m[0] > today) return null
-    found.push(m[0])
+    const iso = m.groups!.w
+    if (!validIso(iso) || iso > today) return null
+    found.push(iso)
   }
-  rest = rest.replace(ISO_RE, ' ')
+  rest = stripAll(rest, ISO_RE)
 
   for (const m of rest.matchAll(SLASH_RE)) {
-    const day = Number(m[1])
-    const month = Number(m[2])
+    const day = Number(m[2])
+    const month = Number(m[3])
     const pad = (n: number) => String(n).padStart(2, '0')
-    const explicitYear = m[3] ? (m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3])) : null
+    const explicitYear = m[4] ? (m[4].length === 2 ? 2000 + Number(m[4]) : Number(m[4])) : null
     const todayYear = Number(today.slice(0, 4))
     let iso = `${explicitYear ?? todayYear}-${pad(month)}-${pad(day)}`
     if (!validIso(iso)) return null
@@ -52,7 +53,7 @@ export function extractDate(text: string, today: string): { date?: string; rest:
     if (!validIso(iso) || iso > today) return null
     found.push(iso)
   }
-  rest = rest.replace(SLASH_RE, ' ')
+  rest = stripAll(rest, SLASH_RE)
 
   const relative: [RegExp, number][] = [
     [DAY_BEFORE_YESTERDAY, -2],

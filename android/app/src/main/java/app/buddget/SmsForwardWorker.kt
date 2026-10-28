@@ -28,7 +28,7 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val receivedAt = inputData.getString(KEY_RECEIVED_AT) ?: ""
         val eventId    = inputData.getString(KEY_EVENT_ID) ?: ""
 
-        val prefs  = applicationContext.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        val prefs  = SmsStore.prefs(applicationContext)
         val token  = prefs.getString("access_token", null)
         val apiUrl = prefs.getString("api_url", null)
 

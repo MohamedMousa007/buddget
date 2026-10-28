@@ -1,3 +1,4 @@
+import { contentDedupeKey } from '@/lib/server/notificationDedupe'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { can } from '@/lib/admin/permissions'
 import { readValidated, ticketUpdateBody } from '@/lib/server/admin/bodySchemas'
@@ -55,7 +56,7 @@ export async function POST(req: Request, { params }: Params) {
           userId: ticket.user_id,
           category: 'support_reply',
           severity: 'info',
-          dedupeKey: `ticket:${id}:${Date.now()}`,
+          dedupeKey: contentDedupeKey(`ticket:${id}`, ticket.subject, text, Date.now()),
           title: `Support: ${ticket.subject}`.slice(0, 80),
           body: text.slice(0, 300),
           metadata: { ticketNumber: ticket.number },

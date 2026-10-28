@@ -28,7 +28,7 @@ export default function PrivacyPage() {
         </p>
         <h1 className="text-3xl font-bold font-heading tracking-tight">Privacy Policy</h1>
         <p className="text-sm text-[var(--color-brand-text-muted)]">
-          Effective date: May 24, 2026 &nbsp;·&nbsp; Last updated: May 24, 2026
+          Effective date: October 28, 2026 &nbsp;·&nbsp; Last updated: October 28, 2026
         </p>
         <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
           This policy explains how Buddget collects, uses, stores, and protects your data. Also see our{' '}

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { useGoalAllocationRuns } from '@/hooks/useGoalAllocationRuns'
 import { useT } from '@/lib/i18n'
+import { useDismissable } from '@/hooks/useDismissable'
 import { navigate } from '@/lib/navigation/navigate'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -21,6 +22,7 @@ const CONFETTI = Array.from({ length: 16 }, (_, i) => ({
 /** Full-screen "goal achieved": brand teal, white disc with a teal trophy, confetti (static when motion is reduced). */
 export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; current: number; onClose: () => void }) {
   const t = useT().goals.celebrate
+  useDismissable(true, onClose)
   const runs = useGoalAllocationRuns()[goal.id] ?? []
   const deposits = useFinanceStore((s) =>
     s.savingsTransactions.filter((x) => goal.linkedSavingsAccountIds.includes(x.accountId) && x.type === 'deposit').length,

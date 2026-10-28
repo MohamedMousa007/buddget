@@ -60,7 +60,7 @@ const LEXICON: LexiconEntry[] = [
 const COMPILED = LEXICON.map(({ category, en, ar }) => ({
   category,
   en: new RegExp(`\\b(?:${en})`, 'i'),
-  ar: new RegExp(`(?<![\\p{L}])(?:ال|بال|وال|ب|ل|و)?(?:${foldArabic(ar)})(?![\\p{L}])`, 'iu'),
+  ar: new RegExp(`(?:^|[^\\p{L}])(?:ال|بال|وال|ب|ل|و)?(?:${foldArabic(ar)})(?![\\p{L}])`, 'iu'),
 }))
 
 /** Distinct categories whose keywords appear in the text. */

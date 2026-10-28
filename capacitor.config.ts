@@ -23,6 +23,7 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     captureInput: true,
+    minWebViewVersion: 111,
     webContentsDebuggingEnabled: process.env.NODE_ENV !== 'production',
   },
   ios: {
@@ -59,12 +60,6 @@ const config: CapacitorConfig = {
     },
     Camera: {
       androidScaleType: 'CENTER_CROP',
-    },
-    Preferences: {
-      group: 'group.app.buddget',
-    },
-    SpeechRecognition: {
-      // Plugin reads at runtime; no static config required.
     },
     BiometricAuth: {
       // Reason / fallback strings handled per-call from the JS layer.

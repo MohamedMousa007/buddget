@@ -161,6 +161,7 @@ export interface Dictionary {
     toastSavingsDeposited: string
     ariaSwapCurrencies: string
     pressBackAgainToExit: string
+    storageFull: string
   }
 
   exclusion: {

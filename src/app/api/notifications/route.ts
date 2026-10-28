@@ -5,7 +5,7 @@ import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const patchSchema = z.object({
-  ids: z.array(z.string().uuid()).optional(),
+  ids: z.array(z.string().uuid()).max(200).optional(),
   markAllRead: z.boolean().optional(),
 })
 

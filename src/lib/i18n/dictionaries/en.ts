@@ -254,6 +254,7 @@ export const en: Dictionary = {
     toastSavingsDeposited: 'Savings deposit saved',
     ariaSwapCurrencies: 'Swap from and to currencies',
     pressBackAgainToExit: 'Press back again to exit',
+    storageFull: 'Phone storage is full. Recent changes may not be saved if you close the app.',
   },
 
   exclusion: {

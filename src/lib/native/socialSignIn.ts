@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { createClient } from '@/lib/supabase/client'
 import type { OAuthProvider } from '@/lib/auth/oauthProviders'
 import { isAndroid } from '@/lib/native/isNative'
@@ -124,11 +125,11 @@ function isCancellation(e: unknown): boolean {
 }
 
 /**
- * A nonce pair for Google id-token sign-in: the raw value goes to Supabase
+ * A nonce pair for id-token sign-in: the raw value goes to Supabase
  * (`signInWithIdToken`), its SHA-256 goes to capgo so Google embeds it in the
  * ID token. Supabase re-hashes the raw value and compares — they must round-trip.
  */
-async function makeGoogleNoncePair(): Promise<{ raw: string; hashed: string }> {
+async function makeNoncePair(): Promise<{ raw: string; hashed: string }> {
   const bytes = new Uint8Array(32)
   crypto.getRandomValues(bytes)
   const raw = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
@@ -143,13 +144,14 @@ async function makeGoogleNoncePair(): Promise<{ raw: string; hashed: string }> {
  * with Supabase via `signInWithIdToken` — the session lands directly in the app
  * with no browser hand-off and no deep-link round-trip.
  *
- * Nonce is intentionally omitted: capgo forwards the nonce to Apple UNHASHED
- * (`AppleProvider.swift` sets `request.nonce = nonce`), while Supabase expects
- * the token's `nonce` claim to be SHA-256 of the value passed to
- * `signInWithIdToken`. Reconciling the two is error-prone; omitting the nonce
- * is the supported, reliable path (the id token is short-lived + audience-bound).
+ * Every iOS flow and Android Google carry a nonce pair (hash to the OS, raw to Supabase). Android Apple runs as a
+ * web flow that forwards none, so it stays nonce-free.
  */
-export async function nativeSocialSignIn(
+export function nativeSocialSignIn(provider: OAuthProvider, signal?: AbortSignal): Promise<NativeSignInResult> {
+  return withNativeFlow(() => runNativeSocialSignIn(provider, signal))
+}
+
+async function runNativeSocialSignIn(
   provider: OAuthProvider,
   signal?: AbortSignal,
 ): Promise<NativeSignInResult> {
@@ -170,11 +172,15 @@ export async function nativeSocialSignIn(
           /* best-effort: no prior session / not implemented */
         }
       }
+      // iOS only: the native sheet embeds the nonce we pass verbatim, so it carries the hash and Supabase gets the raw
+      // value. The Android web flow forwards no nonce, and a token without one must be sent without one.
+      const nonce = isAndroid() ? null : await makeNoncePair()
+      if (nonce) googleRawNonce = nonce.raw
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'apple',
         options: isAndroid()
           ? { scopes: ['name', 'email'], useBroadcastChannel: true }
-          : { scopes: ['name', 'email'] },
+          : { scopes: ['name', 'email'], nonce: nonce!.hashed },
       }), signal)
       idToken = result.idToken
     } else if (isAndroid()) {
@@ -184,7 +190,7 @@ export async function nativeSocialSignIn(
       // openid are the plugin's defaults, and passing ANY scopes array makes
       // capgo's GoogleProvider demand a ModifiedMainActivityForSocialLoginPlugin
       // and reject the call.
-      const nonce = await makeGoogleNoncePair()
+      const nonce = await makeNoncePair()
       googleRawNonce = nonce.raw
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',
@@ -207,7 +213,7 @@ export async function nativeSocialSignIn(
       } catch {
         /* best-effort: no prior session */
       }
-      const nonce = await makeGoogleNoncePair()
+      const nonce = await makeNoncePair()
       googleRawNonce = nonce.raw
       const { result } = await withTimeout(SocialLogin.login({
         provider: 'google',

@@ -9,12 +9,12 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { cycleKeyOf, planForMonth } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { lineBlock } from '@/lib/budget/blocks'
-import { effectivePlanCategoryAmountInBase } from '@/lib/budget/budgetPlans'
+import { effectivePlanCategoryAmountInBase, totalExpenseBudgetFromPlan } from '@/lib/budget/budgetPlans'
 import { debtPaidByDebt } from '@/lib/budget/liveLinks'
 import { ledgerDebtPaidByDebt, lineHistory, shiftMonth, spendByLine } from '@/lib/budget/lineSpend'
 import { buildClose, type CloseLine, type MonthClose } from '@/lib/budget/monthClose'
 import { closeKey } from '@/lib/budget/closeMemory'
-import { calculateCategorySpending, filterExpensesByMonth, getMonthRange } from '@/lib/utils/calculations'
+import { calculateCategorySpending, calculateTotalSpentExcludingSavings, filterExpensesByMonth, getMonthRange } from '@/lib/utils/calculations'
 
 /** The close prompt stays up for this many days into the new cycle, then stops nagging. */
 const PROMPT_DAYS = 15
@@ -55,7 +55,8 @@ export function useMonthClose(): MonthCloseState | null {
     const plan = planForMonth(s.plans, s.activations, cycleKey, s.activeId)
     if (!plan || plan.id !== selectActivePlan(s.plans, s.activeId)?.id || plan.categories.length === 0) return null
 
-    const spending = calculateCategorySpending(filterExpensesByMonth(s.expenses, cycleKey, startDay), base, s.rates)
+    const monthExpenses = filterExpensesByMonth(s.expenses, cycleKey, startDay)
+    const spending = calculateCategorySpending(monthExpenses, base, s.rates)
     if (Object.keys(spending).length === 0) return null
 
     const debtCtx = {
@@ -80,6 +81,9 @@ export function useMonthClose(): MonthCloseState | null {
       locked: !!c.locked,
       linked: (c.linkType ?? 'none') !== 'none',
     }))
-    return { cycleKey, ...buildClose(lines, { past: s.closeMemory, cycleKey }) }
+    return { cycleKey, ...buildClose(lines, { past: s.closeMemory, cycleKey }, {
+      planned: totalExpenseBudgetFromPlan(plan, base, s.rates),
+      spent: calculateTotalSpentExcludingSavings(monthExpenses, base, s.rates),
+    }) }
   }, [s, closed])
 }
