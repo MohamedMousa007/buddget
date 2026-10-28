@@ -14,8 +14,9 @@ import {
 import { AnalyticsHeartbeat } from '@/components/sync/AnalyticsHeartbeat'
 import { DeviceTimeZoneSync } from '@/components/sync/DeviceTimeZoneSync'
 import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
-import { unbindBiometricOnSignOut } from '@/lib/native/biometricAuth'
-import { unregisterPushToken } from '@/lib/native/pushNotifications'
+import { isAppLockEnabled, unbindBiometricOnSignOut } from '@/lib/native/biometricAuth'
+import { isNativeFlowActive, shouldRelock } from '@/lib/native/appLockPolicy'
+import { attachPushListeners, unregisterPushToken } from '@/lib/native/pushNotifications'
 import { AuthModal } from '@/components/features/auth-modal/AuthModal'
 import { LockScreen } from '@/components/auth/LockScreen'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
@@ -248,6 +249,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [welcomeUserId])
 
   const t = useT()
+  useEffect(() => { if (isNative()) void attachPushListeners() }, [])
+  const sessionExpiredRef = useRef(t.auth.sessionExpired)
+  useEffect(() => { sessionExpiredRef.current = t.auth.sessionExpired }, [t.auth.sessionExpired])
   const wasAuthedRef = useRef(false)
   /** Set by `signOut()` just before telling Supabase to end the session.
    *  The SIGNED_OUT handler consumes it to tell "user clicked sign out"
@@ -308,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           !pathnameRef.current.startsWith('/reset-password')
         ) {
           wasAuthedRef.current = false
-          setAuthModalMessage(t.auth.sessionExpired)
+          setAuthModalMessage(sessionExpiredRef.current)
           setAuthModalOpen(true)
         } else {
           wasAuthedRef.current = false
@@ -339,7 +343,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // token while locked (sole owner → no refresh-token reuse). unlock() thaws.
       if (s?.user && isNative()) {
         try {
-          const { isAppLockEnabled } = await import('@/lib/native/biometricAuth')
           if (await isAppLockEnabled()) {
             bioLockCheckedRef.current = true
             wasAuthedRef.current = true
@@ -366,18 +369,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // foreground (which refreshes immediately if needed) and stopAutoRefresh on
     // background. On web the SDK's own timer suffices, so this is native-only.
     let onVisibility: (() => void) | undefined
+    let hiddenAt: number | null = null
     if (isNative()) {
       onVisibility = () => {
         // Locked: leave the token frozen so the SDK stays the sole owner until
         // the user unlocks. Thawing here would rotate it behind the lock screen.
         if (lockedRef.current) return
         if (document.visibilityState === 'visible') {
+          const away = hiddenAt
+          hiddenAt = null
+          // A process that stayed alive in the background must ask again, like a cold start does.
+          if (wasAuthedRef.current && !isNativeFlowActive() && shouldRelock(away, Date.now())) {
+            void isAppLockEnabled().then((on) => {
+              if (on && !lockedRef.current) {
+                setLockedBoth(true)
+                return
+              }
+              void supabase.auth.startAutoRefresh()
+            })
+            return
+          }
           // startAutoRefresh alone — it already refreshes immediately if the
           // token is stale. A manual getSession() here races the SDK's refresh
           // (single-use refresh tokens) and churns auth events on every
           // foreground, e.g. right after the Android permission dialog.
           void supabase.auth.startAutoRefresh()
         } else {
+          hiddenAt = Date.now()
           void supabase.auth.stopAutoRefresh()
         }
       }
@@ -389,7 +407,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe()
       if (onVisibility) document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [configured, t.auth.sessionExpired])
+  }, [configured, setLockedBoth])
 
   const signOut = useCallback(async () => {
     if (!configured) return

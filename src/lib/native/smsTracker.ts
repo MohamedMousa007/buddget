@@ -1,9 +1,12 @@
 'use client'
 
 import { isNative } from '@/lib/native/isNative'
+import { withNativeFlow } from '@/lib/native/appLockPolicy'
 
 export interface SmsBridgeStatus {
   tokenSaved: boolean
+  /** Android: the secure store was recreated empty; re-save the ingest token on next open. */
+  needsResync?: boolean
   enabled: boolean
   /** iOS: Shortcut setup guide finished. Android: == tokenSaved (no guide). */
   setupCompleted: boolean
@@ -138,7 +141,7 @@ export async function checkSmsPermission(): Promise<boolean> {
 }
 
 export async function requestSmsPermission(): Promise<boolean> {
-  return callNative('requestPermission', async (p) => (await p.requestPermission()).granted, false)
+  return callNative('requestPermission', (p) => withNativeFlow(async () => (await p.requestPermission()).granted), false)
 }
 
 /**

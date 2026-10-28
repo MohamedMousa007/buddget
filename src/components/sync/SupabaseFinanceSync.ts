@@ -407,6 +407,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // Native resume: `visibilitychange` isn't reliable across every backgrounding
     // path on Capacitor (see AppShell's SMS resume listener), so also hook the
     // native app-state event directly.
+    let cancelledListeners = false
     let removeAppStateListener: (() => void) | null = null
     void (async () => {
       try {
@@ -416,7 +417,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         const handle = await App.addListener('appStateChange', ({ isActive }) => {
           if (isActive) onShow()
         })
-        removeAppStateListener = () => { void handle.remove() }
+        if (cancelledListeners) void handle.remove()
+        else removeAppStateListener = () => { void handle.remove() }
       } catch { /* web build without @capacitor/app — ignore */ }
     })()
 
@@ -461,6 +463,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       if (reconnectTimer) clearTimeout(reconnectTimer)
       window.removeEventListener('pagehide', onHide)
       document.removeEventListener('visibilitychange', onVisibility)
+      cancelledListeners = true
       removeAppStateListener?.()
       if (timer.current) clearTimeout(timer.current)
       if (retryTimer) clearTimeout(retryTimer)

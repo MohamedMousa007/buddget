@@ -14,11 +14,11 @@ const OTHER_COLOR = 'var(--color-brand-text-muted)'
 const OTHER_NAME = 'Other'
 
 /** Top slices keep a distinct token colour; the long tail folds into one neutral "Other" slice so no colour repeats. */
-export function foldTail(data: { name: string; value: number }[]): { name: string; value: number }[] {
+export function foldTail(data: { name: string; value: number }[]): { name: string; value: number; folded?: boolean }[] {
   if (data.length <= COLORS.length) return data
   const head = data.slice(0, COLORS.length - 1)
   const rest = data.slice(COLORS.length - 1).reduce((s, d) => s + d.value, 0)
-  return [...head, { name: OTHER_NAME, value: rest }]
+  return [...head, { name: OTHER_NAME, value: rest, folded: true }]
 }
 
 export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
@@ -58,7 +58,7 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
                 dataKey="value"
               >
                 {slices.map((d, index) => (
-                  <Cell key={d.name} fill={d.name === OTHER_NAME && slices.length === COLORS.length ? OTHER_COLOR : COLORS[index]} />
+                  <Cell key={index} fill={d.folded ? OTHER_COLOR : COLORS[index]} />
                 ))}
               </Pie>
               <Tooltip

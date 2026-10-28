@@ -25,7 +25,7 @@ import { useThemeSync } from '@/hooks/useThemeSync'
 import { useRates } from '@/hooks/useRates'
 import { useCycleAwareMonth } from '@/hooks/useCycleAwareMonth'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
-import { WidgetSync } from '@/lib/native/WidgetSync'
+import { subscribePushActions } from '@/lib/native/pushActionQueue'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
@@ -33,6 +33,7 @@ import { isNative } from '@/lib/native/isNative'
 import { isAndroid } from '@/lib/native/isNative'
 import { runBackGuards } from '@/lib/navigation/backGuard'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { StorageQuotaToast } from '@/components/layout/StorageQuotaToast'
 import { useT } from '@/lib/i18n'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -98,13 +99,13 @@ function SmsStartupSync() {
       // Every phone checks in (a phone that does not collect texts still belongs in the devices list).
       void import('@/lib/devices/client').then((m) => m.sendDeviceHeartbeat(userId, status?.enabled ?? false))
       // No Shortcut/receiver physically on this device → nothing to arm or drain.
-      if (!status?.wired) return
+      if (!status?.wired && !status?.needsResync) return
 
       // 2. Reconcile armed-state to the account's remembered intent — this is what
       //    makes on/off follow the ACCOUNT across sign-out/in: A stays armed, B
       //    starts off, A auto-resumes on return. Online-only (both reads need the
       //    network); offline leaves current device state as-is.
-      if (refreshToken && isOnline()) {
+      if ((refreshToken || status?.needsResync) && isOnline()) {
         // This phone's own role first (another phone turning tracking off must not disarm it); the account setting only
         // decides for a phone the server has not met yet.
         const { fetchDeviceCollectsSms } = await import('@/lib/devices/client')
@@ -125,6 +126,7 @@ function SmsStartupSync() {
       await drainAndSubmitPendingSms(token, userId)
     }
 
+    let cancelled = false
     let unsub: (() => void) | null = null
     let removeResume: (() => void) | null = null
     void (async () => {
@@ -132,6 +134,7 @@ function SmsStartupSync() {
       const client = createClient()
       // Initial mount — handles re-launch while already logged in
       const { data } = await client.auth.getSession()
+      if (cancelled) return
       void tryStart(data.session?.access_token ?? '', data.session?.user?.id ?? '')
       // Auth state changes — handles login after fresh install / account switch
       const { data: listener } = client.auth.onAuthStateChange((event, session) => {
@@ -144,6 +147,7 @@ function SmsStartupSync() {
       // forward then never remounts, so mount+SIGNED_IN alone would strand it
       // until the next cold start.
       const { App } = await import('@capacitor/app')
+      if (cancelled) { unsub?.(); return }
       const handle = await App.addListener('appStateChange', ({ isActive }) => {
         if (!isActive) return
         void (async () => {
@@ -151,10 +155,11 @@ function SmsStartupSync() {
           void tryStart(s.session?.access_token ?? '', s.session?.user?.id ?? '', false)
         })()
       })
+      if (cancelled) { void handle.remove(); return }
       removeResume = () => { void handle.remove() }
     })()
 
-    return () => { unsub?.(); removeResume?.() }
+    return () => { cancelled = true; unsub?.(); removeResume?.() }
   }, []) // mount only — auth + resume listeners cover the rest
   return null
 }
@@ -223,7 +228,7 @@ function AndroidBackHandler() {
     void (async () => {
       const { App } = await import('@capacitor/app')
       if (cancelled) return
-      handle = await App.addListener('backButton', ({ canGoBack }) => {
+      const added = await App.addListener('backButton', ({ canGoBack }) => {
         // Guards first: inner dismissable layers (number pad, unsaved-changes
         // dialogs) must consume the back press before the modal itself closes.
         if (runBackGuards()) return
@@ -244,6 +249,8 @@ function AndroidBackHandler() {
         showToastRef.current(tRef.current.common.pressBackAgainToExit)
         window.setTimeout(() => { exitPending.current = false }, 2000)
       })
+      if (cancelled) void added.remove()
+      else handle = added
     })()
     return () => {
       cancelled = true
@@ -314,12 +321,12 @@ export function AppShell({ children }: AppShellProps) {
       <SyncFailureBanner />
       <BottomNav />
       <ModalProvider />
-      <WidgetSync />
       <SmsStartupSync />
       <OnboardingGate />
       <SmsNudgeSync />
       <SmsPushActionHandler />
       <AndroidBackHandler />
+      <StorageQuotaToast />
     </div>
   )
 }
@@ -328,16 +335,15 @@ const withTimeout = (p: Promise<unknown>, ms: number): Promise<unknown> =>
   Promise.race([p.catch(() => undefined), new Promise((resolve) => setTimeout(resolve, ms))])
 
 /**
- * Listens for native FCM push tap events (dispatched by pushNotifications.ts as
- * `buddget:push-action`) and routes the user to the correct screen.
+ * Routes native FCM push taps (queued by pushNotifications.ts, replayed once this mounts) and routes the user to the correct screen.
  * Renders nothing — side-effect only.
  */
 function SmsPushActionHandler() {
   useEffect(() => {
     if (!isNative()) return
-    const handler = (e: Event): void => {
+    const handler = (detail: unknown): void => {
       const data = (
-        ((e as CustomEvent).detail as { notification?: { data?: Record<string, string> } } | undefined)
+        (detail as { notification?: { data?: Record<string, string> } } | undefined)
           ?.notification?.data ?? {}
       )
       const kind = data.kind
@@ -349,7 +355,10 @@ function SmsPushActionHandler() {
             headers: { 'Content-Type': 'application/json', ...deviceHeaders },
             body: JSON.stringify({ hash: data.hash }),
           }))
-          .then((r) => r.json())
+          .then((r) => {
+            if (!r.ok) throw new Error(`sms_confirm ${r.status}`)
+            return r.json()
+          })
           .then((res: { expenseId?: string }) => {
             navigate(res.expenseId ? '/flow' : '/')
           })
@@ -379,8 +388,7 @@ function SmsPushActionHandler() {
         navigate('/paydays')
       }
     }
-    window.addEventListener('buddget:push-action', handler)
-    return () => window.removeEventListener('buddget:push-action', handler)
+    return subscribePushActions(handler as (action: unknown) => void)
   }, [])
   return null
 }

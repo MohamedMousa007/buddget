@@ -11,6 +11,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { sendNativePush } from '@/lib/server/sendNativePush'
+import { pushBody } from '@/lib/server/notificationDedupe'
 
 export type NotificationSeverity = 'info' | 'warning' | 'success' | 'error'
 
@@ -59,7 +60,7 @@ export async function emitNotification(
       await sendNativePush({
         userId: args.userId,
         title: args.title,
-        body: args.body,
+        body: pushBody(args.body),
         data: args.push?.data,
         collapseKey: args.push?.collapseKey,
       })

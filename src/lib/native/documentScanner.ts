@@ -2,6 +2,7 @@
 
 import { registerPlugin } from '@capacitor/core'
 import { isNative, isAndroid } from '@/lib/native/isNative'
+import { withNativeFlow } from '@/lib/native/appLockPolicy'
 
 /**
  * Native document scanner — iOS VisionKit (`VNDocumentCameraViewController`) and
@@ -41,7 +42,7 @@ export async function scanDocumentPages(
   pageLimit = 5,
 ): Promise<string[]> {
   // Android's ML Kit UI handles both camera and gallery; iOS VisionKit is camera-only.
-  const { images } = await DocumentScanner.scan({ source, pageLimit })
+  const { images } = await withNativeFlow(() => DocumentScanner.scan({ source, pageLimit }))
   return images
 }
 

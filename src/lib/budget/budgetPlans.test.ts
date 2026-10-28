@@ -38,6 +38,12 @@ describe('isSavingsPlanCategory', () => {
     ).toBe(false)
   })
 
+  it('lets an explicit isSavings false win over the grow block', () => {
+    const c = { id: 'g', name: 'Giving', icon: 'x', amount: 10, block: 'grow' as const, subcategories: [] }
+    expect(isSavingsPlanCategory(c)).toBe(true)
+    expect(isSavingsPlanCategory({ ...c, isSavings: false })).toBe(false)
+  })
+
   it('falls back to name Savings when isSavings omitted', () => {
     expect(
       isSavingsPlanCategory({

@@ -29,7 +29,6 @@ object SmsTime {
 }
 
 object PendingSmsQueue {
-    private const val PREFS = "buddget_sms"
     private const val KEY = "pending_queue"
     private const val CAP = 200
     private const val EVICTED_KEY = "evicted_count"
@@ -77,19 +76,19 @@ object PendingSmsQueue {
     fun count(context: Context): Int = read(context).length()
 
     private fun read(context: Context): JSONArray {
-        val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val raw = SmsStore.prefs(context)
             .getString(KEY, null) ?: return JSONArray()
         return try { JSONArray(raw) } catch (_: Exception) { JSONArray() }
     }
 
     private fun write(context: Context, items: JSONArray) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        SmsStore.prefs(context)
             .edit().putString(KEY, items.toString()).apply()
     }
 
     @Synchronized
     fun evictedCount(context: Context): Int =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(EVICTED_KEY, 0)
+        SmsStore.prefs(context).getInt(EVICTED_KEY, 0)
 
     /** receivedAt of the oldest queued SMS ("" when empty) - the backlog age metric. */
     @Synchronized
@@ -110,7 +109,7 @@ object PendingSmsQueue {
         val kept = JSONArray()
         for (i in 0 until items.length()) if (i !in evict) kept.put(items.getJSONObject(i))
         if (evict.isNotEmpty()) {
-            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val prefs = SmsStore.prefs(context)
             prefs.edit().putInt(EVICTED_KEY, prefs.getInt(EVICTED_KEY, 0) + evict.size).apply()
         }
         return kept

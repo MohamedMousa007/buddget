@@ -13,3 +13,12 @@ describe('foldTail', () => {
     expect(out.reduce((s, d) => s + d.value, 0)).toBe(mk(9).reduce((s, d) => s + d.value, 0))
   })
 })
+
+describe('foldTail folded flag', () => {
+  it('marks only the synthetic slice, even next to a real "Other"', () => {
+    const data = [{ name: 'Other', value: 90 }, ...Array.from({ length: 7 }, (_, i) => ({ name: `c${i}`, value: 10 - i }))]
+    const out = foldTail(data)
+    expect(out.filter((d) => d.folded)).toHaveLength(1)
+    expect(out[0].folded).toBeUndefined()
+  })
+})

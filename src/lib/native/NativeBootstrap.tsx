@@ -57,6 +57,8 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
     bootstrapped.current = userId
 
     void cleanupOldReceiptImages()
+    // The retired home-screen widget mirror left a financial snapshot in Preferences (and so in backups).
+    void import('@capacitor/preferences').then(({ Preferences }) => Preferences.remove({ key: 'buddget.widget.snapshot.v1' })).catch(() => {})
 
     void (async () => {
       const accessToken = tokenRef.current

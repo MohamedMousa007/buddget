@@ -52,10 +52,15 @@ export interface MonthClose {
 const spends = (l: CloseLine) => SPEND_BLOCKS.includes(l.block) && l.linked === false && l.cap > 0
 
 /** What a finished cycle says about the plan: the result, the lines that overran, and small fixes to propose. */
-export function buildClose(lines: readonly CloseLine[], memory?: { past: CloseMemory | undefined; cycleKey: string }): MonthClose {
+export function buildClose(
+  lines: readonly CloseLine[],
+  memory?: { past: CloseMemory | undefined; cycleKey: string },
+  totals?: { planned: number; spent: number },
+): MonthClose {
   const tracked = lines.filter((l) => SPEND_BLOCKS.includes(l.block) && l.cap > 0)
-  const planned = tracked.reduce((s, l) => s + l.cap, 0)
-  const spent = tracked.reduce((s, l) => s + l.spent, 0)
+  // `totals` is the figure History and the hero use (every non-savings line, all spend), so the three agree.
+  const planned = totals?.planned ?? tracked.reduce((s, l) => s + l.cap, 0)
+  const spent = totals?.spent ?? tracked.reduce((s, l) => s + l.spent, 0)
 
   const over = tracked
     .map((l) => ({ id: l.id, name: l.name, by: Math.round(l.spent - l.cap) }))

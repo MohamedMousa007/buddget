@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { apiFetchAuth } from '@/lib/apiBase'
 import { useAssetPricesStore } from '@/lib/store/useAssetPricesStore'
 import {
   buildAssetPriceMap,
@@ -74,7 +75,7 @@ async function readAssetPrices(): Promise<void> {
     const oldest = rows.reduce((m, r) => Math.min(m, Date.parse(r.asOf) || 0), Infinity)
     if ((!Number.isFinite(oldest) || Date.now() - oldest > SELF_HEAL_MS) && mayAskSelfHeal()) {
       try {
-        const res = await fetch('/api/prices/refresh', { method: 'POST' })
+        const res = await apiFetchAuth('/api/prices/refresh', { method: 'POST' })
         const body = (await res.json().catch(() => null)) as { written?: number } | null
         if (body && (body.written ?? 0) > 0) {
           const { data: fresh } = await supabase

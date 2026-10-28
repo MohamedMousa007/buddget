@@ -8,7 +8,7 @@
  * (Budget-threshold and savings-nudge alerts remain client-side in-app status
  * notifications — they don't need OS push and depend on the full stats engine.)
  */
-import { addDays, differenceInDays, format } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
 import { getMonthRange } from '@/lib/utils/calculations'
 import type { Dictionary } from '@/lib/i18n/types'
 
@@ -41,6 +41,9 @@ export interface AlertDescriptor {
   params: { debtName?: string; amount?: number; currency?: string; daysLeft?: number; recurringId?: string }
 }
 
+/** Overdue days that remind: 1, 3, 7, then every 7 days, 6 reminders at most. */
+const OVERDUE_REMINDER_DAYS = [1, 3, 7, 14, 21, 28]
+
 export function evaluateAlerts(input: EvaluateAlertsInput): AlertDescriptor[] {
   const out: AlertDescriptor[] = []
   const todayYmd = format(input.now, 'yyyy-MM-dd')
@@ -59,11 +62,12 @@ export function evaluateAlerts(input: EvaluateAlertsInput): AlertDescriptor[] {
         params: { debtName, amount: r.amount, currency: r.currency },
       })
     }
-    // Due today (or overdue) — matches client isRecurringDebtDue (<= today).
-    if (r.nextDueDate <= todayYmd) {
+    // Due today, then reminders at fixed overdue days; the key carries the due date and overdue day so none collides.
+    const overdueDays = differenceInCalendarDays(parseISO(todayYmd), parseISO(r.nextDueDate))
+    if (overdueDays === 0 || OVERDUE_REMINDER_DAYS.includes(overdueDays)) {
       out.push({
         type: 'recurring_due',
-        dedupeKey: `recurring_due:${r.id}:${todayYmd}`,
+        dedupeKey: `recurring_due:${r.id}:${r.nextDueDate}:${overdueDays}`,
         severity: 'warning',
         params: { debtName, amount: r.amount, currency: r.currency, recurringId: r.id },
       })
@@ -73,11 +77,11 @@ export function evaluateAlerts(input: EvaluateAlertsInput): AlertDescriptor[] {
   // Days left in the active month, evaluated against `input.now` (kept pure for
   // testability — mirrors calculateDaysLeftInMonth which uses the wall clock).
   const { end } = getMonthRange(input.monthStr, input.monthStartDay)
-  const daysLeft = Math.max(0, differenceInDays(end, input.now) + 1)
+  const daysLeft = differenceInCalendarDays(end, input.now)
   if (daysLeft >= 0 && daysLeft <= 3) {
     out.push({
       type: 'month_end',
-      dedupeKey: `month_end:${input.monthStr}`,
+      dedupeKey: `month_end:${input.monthStr}:${daysLeft}`,
       severity: daysLeft === 0 ? 'warning' : 'info',
       params: { daysLeft },
     })

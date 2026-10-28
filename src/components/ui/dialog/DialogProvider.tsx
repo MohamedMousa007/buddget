@@ -1,10 +1,11 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/lib/i18n'
+import { registerBackGuard } from '@/lib/navigation/backGuard'
 
 /**
  * Imperative confirm / alert dialog infrastructure.
@@ -102,6 +103,16 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   )
 
   const isConfirm = current?.kind === 'confirm'
+
+  // Android back dismisses the dialog (cancel / acknowledge) before it reaches whatever sits underneath. Back only:
+  // Base UI already owns Escape, and a second Escape handler would resolve the next queued prompt too.
+  const dismissRef = useRef<() => void>(() => {})
+  useEffect(() => { dismissRef.current = () => resolveCurrent(!isConfirm) })
+  const hasCurrent = current != null
+  useEffect(() => {
+    if (!hasCurrent) return
+    return registerBackGuard(() => { dismissRef.current(); return true })
+  }, [hasCurrent])
   const opts = current?.options
   const destructive = isConfirm && (opts as ConfirmOptions).destructive === true
   const confirmLabel = isConfirm

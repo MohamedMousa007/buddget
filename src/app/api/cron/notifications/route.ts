@@ -1,8 +1,10 @@
 /**
- * GET /api/cron/notifications  (Vercel Cron, daily)
+ * GET /api/cron/notifications  (Supabase pg_cron hourly; Vercel Cron daily as backup)
  *
  * Evaluates the time-sensitive alerts (recurring debt due/tomorrow, month-end)
  * for every account and emits them as localized in-app notifications + OS push.
+ * Each user is evaluated only between 09:00 and 21:00 in their own timezone (Cairo when none is reported), so an hourly
+ * caller delivers at each user's 09:00 and the daily backup only reaches users already past 09:00.
  * Idempotent via notifications.dedupe_key — safe to run repeatedly.
  *
  * Auth: `Authorization: Bearer ${CRON_SECRET}`.
@@ -20,7 +22,8 @@ import { subscriptionFromRow } from '@/lib/supabase/remote/mappers/subscriptionM
 import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
 import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
 import { evaluateGoalAlerts, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
-import { DEFAULT_USER_TIME_ZONE, isValidTimeZone } from '@/lib/server/userTimeZone'
+import { isDeliveryWindow, resolveUserTimeZone } from '@/lib/notifications/deliveryWindow'
+import { CRON_LAST_RUN_KEY } from '@/lib/server/cronHealth'
 import { wallClockNow } from '@/lib/time/deviceTimeZone'
 import { median } from '@/lib/goals/fundingScenario'
 import { normalizeRuns } from '@/lib/goals/goalDetail'
@@ -38,6 +41,7 @@ export async function GET(request: Request) {
   const utcNow = new Date()
   let emitted = 0
   let scanned = 0
+  let skipped = 0
   const started = Date.now()
 
   // Only users with something that can alert get the full evaluation (the rest still get the month-end notice, which
@@ -65,8 +69,13 @@ export async function GET(request: Request) {
     if (!settingsRows || settingsRows.length === 0) break
 
     const handleUser = async (s: (typeof settingsRows)[number]) => {
+      const timeZone = resolveUserTimeZone(s.timezone as string | null)
+      if (!isDeliveryWindow(utcNow, timeZone)) {
+        skipped++
+        return
+      }
       scanned++
-      const now = wallClockNow(utcNow, s.timezone && isValidTimeZone(s.timezone) ? s.timezone : DEFAULT_USER_TIME_ZONE)
+      const now = wallClockNow(utcNow, timeZone)
       const full = candidates.has(s.user_id as string)
       const userId = s.user_id as string
 
@@ -234,6 +243,10 @@ export async function GET(request: Request) {
     if (settingsRows.length < PAGE) break
   }
 
-  await service.from('platform_settings').upsert({ key: 'notification_cron_cursor', value: { after: stoppedEarly ? cursor : '' } })
-  return NextResponse.json({ ok: true, scanned, emitted, partial: stoppedEarly })
+  const [cursorSave, runSave] = await Promise.all([
+    service.from('platform_settings').upsert({ key: 'notification_cron_cursor', value: { after: stoppedEarly ? cursor : '' } }),
+    service.from('platform_settings').upsert({ key: CRON_LAST_RUN_KEY, value: { at: new Date().toISOString(), scanned, skipped, emitted, partial: stoppedEarly } }),
+  ])
+  if (cursorSave.error || runSave.error) console.error('[cron/notifications] could not record the run', cursorSave.error?.message ?? runSave.error?.message)
+  return NextResponse.json({ ok: true, scanned, skipped, emitted, partial: stoppedEarly })
 }

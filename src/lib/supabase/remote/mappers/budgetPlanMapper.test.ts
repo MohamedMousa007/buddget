@@ -7,6 +7,9 @@ const row = (over: Partial<BudgetPlanCategory>): BudgetPlanCategory => ({
 })
 
 describe('budgetCategoryToRow is_savings', () => {
+  it('persists an explicit false on a grow line', () => {
+    expect(budgetCategoryToRow(row({ name: 'Giving', block: 'grow', isSavings: false }), 'p', 'u', 0, 'EGP').is_savings).toBe(false)
+  })
   it('keeps the name-based savings fallback across a sync round trip', () => {
     expect(budgetCategoryToRow(row({ name: 'Savings' }), 'p', 'u', 0, 'EGP').is_savings).toBe(true)
   })

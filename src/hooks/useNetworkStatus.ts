@@ -7,8 +7,9 @@ import { isNative } from '@/lib/native/isNative'
  * Single source of truth for connectivity.
  *
  * Web: navigator.onLine + online/offline window events.
- * Native: @capacitor/network — the OS-level status, because navigator.onLine
- * is unreliable inside Capacitor webviews (can stay true in airplane mode).
+ * Native: @capacitor/network only — the OS-level status, because navigator.onLine
+ * is unreliable inside Capacitor webviews (can stay true in airplane mode), and the
+ * web events would flip state against it. Web events are used only if the plugin fails.
  *
  * React components use `useNetworkStatus()`; non-React modules (sync engine,
  * SMS drain) use `subscribeNetwork(cb)` / `isOnline()`.
@@ -32,16 +33,21 @@ function start() {
   if (started || typeof window === 'undefined') return
   started = true
   if (!isNative()) markReady()
-  window.addEventListener('online', () => emit(true))
-  window.addEventListener('offline', () => emit(false))
-  if (isNative()) {
+  if (!isNative()) {
+    window.addEventListener('online', () => emit(true))
+    window.addEventListener('offline', () => emit(false))
+  } else {
     void (async () => {
       try {
         const { Network } = await import('@capacitor/network')
         const status = await Network.getStatus()
         emit(status.connected)
         await Network.addListener('networkStatusChange', (s) => emit(s.connected))
-      } catch { /* web events above remain the fallback */ }
+      } catch {
+        // The OS status is unreadable: fall back to the web events rather than staying frozen.
+        window.addEventListener('online', () => emit(true))
+        window.addEventListener('offline', () => emit(false))
+      }
       finally { markReady() }
     })()
   }

@@ -33,7 +33,7 @@ class SmsReceiver : BroadcastReceiver() {
         // ── Enable gate: when tracking is OFF the receiver does nothing. ───────
         // Default false ⇒ users who never enabled tracking get no notifications.
         // Enabled users get the flag set on next app open via startSMSTracking → saveToken.
-        val prefs = context.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        val prefs = SmsStore.prefs(context)
         if (!prefs.getBoolean("sms_enabled", false)) return
 
         val bundle = intent.extras ?: return

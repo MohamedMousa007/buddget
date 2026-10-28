@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { deleteUserCompletely } from '@/lib/server/deleteAccount'
 import { removeAvatarObject, stampDataReset, wipeUserData } from '@/lib/server/userData'
+import { contentDedupeKey } from '@/lib/server/notificationDedupe'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { sendNativePush } from '@/lib/server/sendNativePush'
 import { isFeatureOverrideKey, isLimitKey } from '@/lib/entitlements/limits'
@@ -194,7 +195,7 @@ export async function POST(req: Request, { params }: Params) {
         userId: id,
         category: 'support_message',
         severity: 'info',
-        dedupeKey: `support:${id}:${Date.now()}`,
+        dedupeKey: contentDedupeKey(`support:${id}`, title, text, Date.now()),
         title,
         body: text,
       })

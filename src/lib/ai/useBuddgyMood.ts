@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from 'react'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import type { BuddgyMood } from '@/components/ai/BuddgyIcon'
 
 /**
@@ -30,17 +31,11 @@ export function useBuddgyMood(): BuddgyMood {
   const active = useSettingsStore((s) => s.buddgyActive)
   const setBuddgyMood = useSettingsStore((s) => s.setBuddgyMood)
 
-  // Offline is driven by the browser, not by a caller, so own it here.
+  // Offline follows the app's single connectivity source (OS status on native, web events on web).
+  const { online } = useNetworkStatus()
   useEffect(() => {
-    const sync = () => setBuddgyMood('offline', !navigator.onLine)
-    sync()
-    window.addEventListener('online', sync)
-    window.addEventListener('offline', sync)
-    return () => {
-      window.removeEventListener('online', sync)
-      window.removeEventListener('offline', sync)
-    }
-  }, [setBuddgyMood])
+    setBuddgyMood('offline', !online)
+  }, [online, setBuddgyMood])
 
   // Self-clearing one-shots. Each timer is keyed to the mood that set it, so a
   // mood re-entered before its timer fires restarts the clock rather than being

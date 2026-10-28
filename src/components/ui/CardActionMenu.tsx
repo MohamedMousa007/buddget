@@ -1,6 +1,7 @@
 'use client'
 
 import { createPortal } from 'react-dom'
+import { useDismissable } from '@/hooks/useDismissable'
 
 /**
  * App-wide kebab (⋮) action menu for cards — pockets, payment methods, debts, income, subscriptions.
@@ -34,6 +35,7 @@ const WIDTH = 216
 const ROW = 44
 
 export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-[60]' }: CardActionMenuProps) {
+  useDismissable(anchor !== null, onClose)
   // Only ever rendered from a client click (anchor is a live DOMRect), so no SSR guard needed
   // beyond confirming document exists for the portal target.
   if (!anchor || typeof document === 'undefined') return null

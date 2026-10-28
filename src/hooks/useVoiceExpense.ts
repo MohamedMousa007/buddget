@@ -25,6 +25,7 @@ import {
 import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isOnline } from '@/hooks/useNetworkStatus'
 import { isNative } from '@/lib/native/isNative'
+import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import { useBuddgyMoodWhile, useBuddgyMoodOnce } from '@/lib/ai/useBuddgyMood'
 
@@ -211,7 +212,7 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     if (getMicPermissionStatus() === 'granted') return
     setState('permission')
     try {
-      const status = await requestMicPermission()
+      const status = await withNativeFlow(() => requestMicPermission())
       if (status === 'granted') {
         setState('idle')
       } else {

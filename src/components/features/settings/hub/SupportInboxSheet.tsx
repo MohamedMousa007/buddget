@@ -7,6 +7,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
+import { apiFetchAuth } from '@/lib/apiBase'
 import { Textarea } from '@/components/ui/textarea'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 
@@ -15,7 +16,7 @@ type Message = { id: string; author_type: string; author_label: string; body: st
 
 async function getJson<T>(url: string): Promise<T | null> {
   try {
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await apiFetchAuth(url, { cache: 'no-store' })
     return res.ok ? ((await res.json()) as T) : null
   } catch {
     return null
@@ -53,7 +54,7 @@ export function SupportInboxSheet({ open, onClose }: { open: boolean; onClose: (
     if (!current || !draft.trim()) return
     setSending(true)
     try {
-      const res = await fetch(`/api/support/tickets/${current.number}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: draft }) })
+      const res = await apiFetchAuth(`/api/support/tickets/${current.number}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: draft }) })
       if (res.ok) {
         setDraft('')
         await loadThread(current.number)

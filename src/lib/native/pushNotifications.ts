@@ -1,8 +1,10 @@
 'use client'
 
 import { getOrCreateDeviceId } from '@/lib/native/deviceId'
+import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { isNative, getPlatform, isIOS } from '@/lib/native/isNative'
 import { apiUrl } from '@/lib/apiBase'
+import { enqueuePushAction } from '@/lib/native/pushActionQueue'
 
 // Tracks WHICH account the device is currently registered for. A bare boolean
 // (the old design) never reset on account switch, so a second user on the same
@@ -27,6 +29,31 @@ interface RegisterArgs {
   notify?: boolean
 }
 
+let tapListenersAttached = false
+
+/**
+ * Routes push taps and foreground pushes. Independent of registration so a cold start from a notification tap is
+ * never lost to the sync/permission gates; taps wait in the queue until the router subscribes.
+ */
+export async function attachPushListeners(): Promise<void> {
+  if (!isNative() || tapListenersAttached) return
+  tapListenersAttached = true
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications')
+    await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+      try {
+        window.dispatchEvent(new CustomEvent('buddget:push-received', { detail: notification }))
+      } catch {
+        /* noop */
+      }
+    })
+    await PushNotifications.addListener('pushNotificationActionPerformed', (action) => enqueuePushAction(action))
+  } catch (e) {
+    tapListenersAttached = false
+    console.error('[push] tap listeners failed', e)
+  }
+}
+
 /**
  * Registers the device for native push (FCM token on Android, APNS token via
  * Firebase on iOS). Re-registers when the signed-in account changes; otherwise
@@ -41,7 +68,7 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')
 
-    const permission = await PushNotifications.requestPermissions()
+    const permission = await withNativeFlow(() => PushNotifications.requestPermissions())
     if (permission.receive !== 'granted') {
       registeredUserId = null
       return false
@@ -56,32 +83,12 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
       // is fetched explicitly via @capacitor-firebase/messaging below.
       if (!isIOS()) {
         PushNotifications.addListener('registration', (payload) => {
-          if (currentArgs) void postToken(payload.value, currentArgs)
+          if (currentArgs) void postPushToken(payload.value, currentArgs)
         })
       }
 
       PushNotifications.addListener('registrationError', (err) => {
         console.error('[push] registrationError', err)
-      })
-
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        try {
-          window.dispatchEvent(
-            new CustomEvent('buddget:push-received', { detail: notification }),
-          )
-        } catch {
-          /* noop */
-        }
-      })
-
-      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-        try {
-          window.dispatchEvent(
-            new CustomEvent('buddget:push-action', { detail: action }),
-          )
-        } catch {
-          /* noop */
-        }
       })
 
       // FCM/APNs tokens rotate. Re-post the refreshed token so the server never
@@ -95,7 +102,7 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
           | undefined
         if (Capacitor.isPluginAvailable('FirebaseMessaging') && fm?.addListener) {
           fm.addListener('tokenReceived', (d) => {
-            if (d?.token && currentArgs) void postToken(d.token, currentArgs)
+            if (d?.token && currentArgs) void postPushToken(d.token, currentArgs)
           })
         }
       } catch (e) {
@@ -118,7 +125,7 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
         const plugins = (Capacitor as unknown as { Plugins: Record<string, unknown> }).Plugins
         if (Capacitor.isPluginAvailable('FirebaseMessaging') && plugins) {
           const result = await (plugins['FirebaseMessaging'] as { getToken: () => Promise<{ token: string }> }).getToken()
-          if (result?.token) void postToken(result.token, args)
+          if (result?.token) void postPushToken(result.token, args)
         }
       } catch (e) {
         console.error('[push] iOS FCM token fetch failed', e)
@@ -133,29 +140,51 @@ export async function registerPushNotifications(args: RegisterArgs): Promise<boo
   }
 }
 
-async function postToken(token: string, args: RegisterArgs): Promise<void> {
-  lastToken = token
+const POST_ATTEMPTS = 3
+
+/** The session's current token: the one captured at registration expires within the hour, long before a rotation arrives. */
+async function currentAccessToken(fallback: string): Promise<string> {
   try {
-    await fetch(apiUrl('/api/push/register'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${args.accessToken}`,
-      },
-      body: JSON.stringify({
-        token,
-        platform: getPlatform(),
-        appVersion: args.appVersion,
-        locale: args.locale ?? (typeof navigator !== 'undefined' ? navigator.language : null),
-        deviceModel:
-          typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 200) : null,
-        deviceId: await getOrCreateDeviceId(),
-        ...(args.notify !== undefined ? { notify: args.notify } : {}),
-      }),
-    })
-  } catch (e) {
-    console.error('[push] postToken failed', e)
+    const { createClient } = await import('@/lib/supabase/client')
+    const { data } = await createClient().auth.getSession()
+    return data.session?.access_token ?? fallback
+  } catch {
+    return fallback
   }
+}
+
+/** Posts the token with the live session token and retries transient failures; a 4xx other than 401/408/429 is final. */
+export async function postPushToken(token: string, args: RegisterArgs, opts: { delayMs?: number } = {}): Promise<boolean> {
+  lastToken = token
+  const delayMs = opts.delayMs ?? 2000
+  for (let attempt = 1; attempt <= POST_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(apiUrl('/api/push/register'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${await currentAccessToken(args.accessToken)}`,
+        },
+        body: JSON.stringify({
+          token,
+          platform: getPlatform(),
+          appVersion: args.appVersion,
+          locale: args.locale ?? (typeof navigator !== 'undefined' ? navigator.language : null),
+          deviceModel:
+            typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 200) : null,
+          deviceId: await getOrCreateDeviceId(),
+          ...(args.notify !== undefined ? { notify: args.notify } : {}),
+        }),
+      })
+      if (res.ok) return true
+      const retryable = res.status >= 500 || res.status === 401 || res.status === 408 || res.status === 429
+      if (!retryable) break
+    } catch (e) {
+      console.error('[push] postToken failed', e)
+    }
+    if (attempt < POST_ATTEMPTS) await new Promise((r) => setTimeout(r, delayMs * attempt))
+  }
+  return false
 }
 
 /**
@@ -205,7 +234,7 @@ export async function scheduleLocalNotification(opts: {
 
     const perm = await LocalNotifications.checkPermissions()
     if (perm.display !== 'granted') {
-      const r = await LocalNotifications.requestPermissions()
+      const r = await withNativeFlow(() => LocalNotifications.requestPermissions())
       if (r.display !== 'granted') return
     }
 

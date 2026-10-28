@@ -12,6 +12,7 @@ import { reportThisDevice } from '@/lib/devices/notify'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { isNative } from '@/lib/native/isNative'
+import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { cn } from '@/lib/utils'
 
@@ -19,7 +20,7 @@ import { cn } from '@/lib/utils'
 async function askPermission(): Promise<boolean> {
   if (isNative()) {
     const { PushNotifications } = await import('@capacitor/push-notifications')
-    const { receive } = await PushNotifications.requestPermissions()
+    const { receive } = await withNativeFlow(() => PushNotifications.requestPermissions())
     return receive === 'granted'
   }
   if (typeof Notification === 'undefined') return false

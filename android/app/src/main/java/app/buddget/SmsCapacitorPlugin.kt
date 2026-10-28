@@ -1,6 +1,5 @@
 package app.buddget
 
-import android.content.Context
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -13,7 +12,7 @@ import com.getcapacitor.annotation.PermissionCallback
     name = "SmsCapacitorPlugin",
     permissions = [
         Permission(
-            strings = ["android.permission.RECEIVE_SMS", "android.permission.READ_SMS"],
+            strings = ["android.permission.RECEIVE_SMS"],
             alias = "sms"
         )
     ]
@@ -53,7 +52,7 @@ class SmsCapacitorPlugin : Plugin() {
         val token  = call.getString("token")  ?: run { call.reject("token required"); return }
         val apiUrl = call.getString("apiUrl") ?: ""
         val userId = call.getString("userId") ?: ""
-        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        SmsStore.prefs(activity)
             .edit()
             .putString("access_token", token)
             .putString("api_url", apiUrl)
@@ -61,6 +60,7 @@ class SmsCapacitorPlugin : Plugin() {
             // that belongs to the previous user before SmsReceiver forwards with it.
             .putString("token_user_id", userId)
             .apply()
+        SmsStore.clearNeedsResync(activity)
         call.resolve()
     }
 
@@ -68,7 +68,7 @@ class SmsCapacitorPlugin : Plugin() {
     @PluginMethod
     fun setEnabled(call: PluginCall) {
         val enabled = call.getBoolean("enabled") ?: false
-        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        SmsStore.prefs(activity)
             .edit()
             .putBoolean("sms_enabled", enabled)
             .apply()
@@ -82,13 +82,14 @@ class SmsCapacitorPlugin : Plugin() {
      */
     @PluginMethod
     fun getStatus(call: PluginCall) {
-        val prefs = activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        val prefs = SmsStore.prefs(activity)
         val tokenSaved = prefs.getString("access_token", null) != null
         val enabled = prefs.getBoolean("sms_enabled", false)
         val permission = getPermissionState("sms")?.name == "GRANTED"
         val lastRunAt = prefs.getString("last_run_at", "") ?: ""
         call.resolve(JSObject().apply {
             put("tokenSaved", tokenSaved)
+            put("needsResync", SmsStore.needsResync(activity))
             put("enabled", enabled)
             put("setupCompleted", tokenSaved)
             // Device capability: a receiver is armed here (token saved) or has fired.
@@ -127,7 +128,7 @@ class SmsCapacitorPlugin : Plugin() {
     @PluginMethod
     fun setForwardMode(call: PluginCall) {
         val mode = call.getString("mode") ?: "sender"
-        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        SmsStore.prefs(activity)
             .edit()
             .putString("sms_forward_mode", mode)
             .apply()
@@ -142,7 +143,7 @@ class SmsCapacitorPlugin : Plugin() {
      */
     @PluginMethod
     fun clearCredentials(call: PluginCall) {
-        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        SmsStore.prefs(activity)
             .edit()
             .remove("access_token")
             .remove("api_url")
@@ -155,7 +156,7 @@ class SmsCapacitorPlugin : Plugin() {
     /** Full device wipe (forget device): also clears the queue + owner. */
     @PluginMethod
     fun clearState(call: PluginCall) {
-        activity.getSharedPreferences("buddget_sms", Context.MODE_PRIVATE)
+        SmsStore.prefs(activity)
             .edit()
             .remove("access_token")
             .remove("api_url")

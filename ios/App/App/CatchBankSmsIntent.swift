@@ -55,6 +55,7 @@ struct CatchBankSmsIntent: AppIntent {
                                           userId: SmsCredentialStore.tokenUserId ?? "", eventId: eventId)
 
         guard let token = SmsCredentialStore.token,
+              SmsCredentialStore.tokenUserId?.isEmpty == false,
               let base = SmsCredentialStore.apiUrl,
               let url = URL(string: base + "/api/sms/parse") else {
             SmsCredentialStore.recordRun(result: "no_token")
