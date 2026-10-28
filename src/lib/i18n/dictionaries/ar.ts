@@ -2130,6 +2130,7 @@ export const ar: Dictionary = {
     fabAskAi: 'إعداد الميزانية',
     fabRequireAuth: 'سجّل الدخول لتتبع أموالك والمزامنة بين الأجهزة.',
     fabRequireAuthAi: 'سجّل الدخول لفتح إعداد الميزانية.',
+    sheetUnavailableOffline: 'غير متاح بدون اتصال. أعد الاتصال وحاول مرة أخرى.',
     requireAuthBudgetSetup: 'سجل دخولك أو أنشئ حساباً لإعداد خطط ميزانيتك.',
     addPaymentTitle: 'إضافة طريقة دفع',
     addPaymentLabelName: 'الاسم',

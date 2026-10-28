@@ -33,6 +33,13 @@ public/fallback-*.js
 # misc
 .DS_Store
 *.pem
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+*.certSigningRequest
+.env.*.local
+rclone.conf
 
 # debug
 npm-debug.log*

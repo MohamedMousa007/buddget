@@ -73,15 +73,23 @@ export function useReportsPage() {
       actualIncomeForMonth(incomeSources, incomeEvents, baseCurrency, exchangeRates, cycle, monthStartDay, realizedOnly),
     [incomeSources, incomeEvents, baseCurrency, exchangeRates, monthStartDay]
   )
-  const periodRecurringIncome = cycles.reduce((sum, c) => sum + incomeForCycle(c, false), 0)
-  const periodReceivedIncome = cycles.reduce((sum, c) => sum + incomeForCycle(c, true), 0)
-  const totalExpenses = filteredExpenses.reduce(
-    (sum, e) => sum + expenseAmountInBase(e, baseCurrency, exchangeRates),
-    0
+  const { periodRecurringIncome, periodReceivedIncome } = useMemo(
+    () => ({
+      periodRecurringIncome: cycles.reduce((sum, c) => sum + incomeForCycle(c, false), 0),
+      periodReceivedIncome: cycles.reduce((sum, c) => sum + incomeForCycle(c, true), 0),
+    }),
+    [cycles, incomeForCycle],
   )
-  const remittances = filteredExpenses
-    .filter((e) => e.category === 'Remittance')
-    .reduce((sum, e) => sum + expenseAmountInBase(e, baseCurrency, exchangeRates), 0)
+  const { totalExpenses, remittances } = useMemo(() => {
+    let total = 0
+    let remit = 0
+    for (const e of filteredExpenses) {
+      const amount = expenseAmountInBase(e, baseCurrency, exchangeRates)
+      total += amount
+      if (e.category === 'Remittance') remit += amount
+    }
+    return { totalExpenses: total, remittances: remit }
+  }, [filteredExpenses, baseCurrency, exchangeRates])
 
   const categoryData = useMemo(() => {
     const byCategory: Record<string, number> = {}
@@ -110,22 +118,23 @@ export function useReportsPage() {
     })
   }, [cycles, filteredExpenses, incomeForCycle, monthStartDay, baseCurrency, exchangeRates, savingsTransactions, gold])
 
-  const methodBreakdown = getPaymentMethodBreakdown(
-    filteredExpenses,
-    paymentMethods,
-    baseCurrency,
-    exchangeRates
+  const methodBreakdown = useMemo(
+    () => getPaymentMethodBreakdown(filteredExpenses, paymentMethods, baseCurrency, exchangeRates),
+    [filteredExpenses, paymentMethods, baseCurrency, exchangeRates],
   )
 
-  const largestExpense =
-    filteredExpenses.length > 0
-      ? filteredExpenses.reduce((max, e) =>
-          expenseAmountInBase(e, baseCurrency, exchangeRates) >
-          expenseAmountInBase(max, baseCurrency, exchangeRates)
-            ? e
-            : max
-        )
-      : null
+  const largestExpense = useMemo(
+    () =>
+      filteredExpenses.length > 0
+        ? filteredExpenses.reduce((max, e) =>
+            expenseAmountInBase(e, baseCurrency, exchangeRates) >
+            expenseAmountInBase(max, baseCurrency, exchangeRates)
+              ? e
+              : max
+          )
+        : null,
+    [filteredExpenses, baseCurrency, exchangeRates],
+  )
   const mostUsedMethod =
     methodBreakdown.length > 0 ? methodBreakdown.reduce((max, m) => (m.count > max.count ? m : max)) : null
 

@@ -345,14 +345,21 @@ function throwOnError<T extends { error: { message: string } | null }>(res: T, l
   return res
 }
 
-/** Every live row of a user-owned table, paged past PostgREST's row cap. A failed query throws instead of reading as "no rows". */
+type KeysetQuery = PromiseLike<PageResult> & {
+  gt: (c: string, v: string) => KeysetQuery
+}
+
+/** Every live row of a user-owned table, keyset-paged on id past PostgREST's row cap. A failed query throws instead of reading as "no rows". */
 async function fetchLive<TN extends TableName>(client: Client, table: TN, userId: string): Promise<Database['public']['Tables'][TN]['Row'][]> {
-  const rows: unknown[] = []
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const res = (await (client.from(table) as never as {
+  const rows: Record<string, unknown>[] = []
+  let after: string | null = null
+  for (;;) {
+    const base = (client.from(table) as never as {
       select: (c: string) => {
         eq: (c: string, v: string) => {
-          is: (c: string, v: null) => { order: (c: string) => { range: (a: number, b: number) => PromiseLike<PageResult> } }
+          is: (c: string, v: null) => {
+            order: (c: string) => { limit: (n: number) => KeysetQuery }
+          }
         }
       }
     })
@@ -360,10 +367,13 @@ async function fetchLive<TN extends TableName>(client: Client, table: TN, userId
       .eq('user_id', userId)
       .is('deleted_at', null)
       .order('id')
-      .range(from, from + PAGE_SIZE - 1)) as PageResult
+      .limit(PAGE_SIZE)
+    const res = (await (after === null ? base : base.gt('id', after))) as PageResult
     throwOnError(res, String(table))
-    rows.push(...(res.data ?? []))
-    if ((res.data?.length ?? 0) < PAGE_SIZE) return rows as Database['public']['Tables'][TN]['Row'][]
+    const page = (res.data ?? []) as Record<string, unknown>[]
+    rows.push(...page)
+    if (page.length < PAGE_SIZE) return rows as Database['public']['Tables'][TN]['Row'][]
+    after = String(page[page.length - 1].id)
   }
 }
 

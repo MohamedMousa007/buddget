@@ -100,6 +100,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!isSupabaseConfigured()) {
+    // A production deploy without Supabase must fail its health check, not serve the app with no auth gate.
+    if (process.env.VERCEL_ENV === 'production') return new NextResponse('Service misconfigured', { status: 503 })
     if (pathname.startsWith('/api')) {
       return withNativeApiCors(request, NextResponse.next())
     }

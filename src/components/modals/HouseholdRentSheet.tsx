@@ -22,7 +22,8 @@ type Household = NonNullable<UserProfile['household']>
  * `profile` via `updateProfile`.
  */
 export function HouseholdRentSheet() {
-  const { profile, updateProfile } = useFinanceStore()
+  const profile = useFinanceStore((s) => s.profile)
+  const updateProfile = useFinanceStore((s) => s.updateProfile)
   const { activeModal, setActiveModal } = useSettingsStore()
   const t = useT()
   const isOpen = activeModal === 'householdRent'

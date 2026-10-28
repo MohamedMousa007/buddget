@@ -6,7 +6,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { EditExpenseForm } from '@/components/features/expenses/EditExpenseForm'
 
 export function EditExpenseSheet() {
-  const { expenses } = useFinanceStore()
+  const expenses = useFinanceStore((s) => s.expenses)
   const { activeModal, setActiveModal, editingExpenseId, setEditingExpenseId } = useSettingsStore()
   const isOpen = activeModal === 'editExpense'
   const expense = expenses.find((e) => e.id === editingExpenseId)

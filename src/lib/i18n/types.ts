@@ -2006,6 +2006,7 @@ export interface Dictionary {
     fabAskAi: string
     fabRequireAuth: string
     fabRequireAuthAi: string
+    sheetUnavailableOffline: string
     requireAuthBudgetSetup: string
     addPaymentTitle: string
     addPaymentLabelName: string

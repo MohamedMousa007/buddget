@@ -22,7 +22,8 @@ type LifestyleTier = NonNullable<UserProfile['lifestyleTier']>
  * through to `profile` via `updateProfile` so data persists + syncs.
  */
 export function LifestyleSheet() {
-  const { profile, updateProfile } = useFinanceStore()
+  const profile = useFinanceStore((s) => s.profile)
+  const updateProfile = useFinanceStore((s) => s.updateProfile)
   const { activeModal, setActiveModal } = useSettingsStore()
   const t = useT()
   const isOpen = activeModal === 'lifestyle'

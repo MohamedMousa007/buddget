@@ -1,5 +1,5 @@
 import { clearSyncCursors } from '@/lib/supabase/remote/cursor'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useFinanceStore, cancelPendingFinancePersist } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clearPendingAiJobs } from '@/lib/store/usePendingAiJobs'
 import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
@@ -30,6 +30,7 @@ const STORAGE_KEYS = [
  * Call before `supabase.auth.signOut()` when possible; still sign out if this throws.
  */
 export function clearBudgetData(): void {
+  cancelPendingFinancePersist()
   if (typeof window !== 'undefined') {
     for (const key of STORAGE_KEYS) {
       try {
@@ -61,6 +62,8 @@ export function clearBudgetData(): void {
   } catch (e) {
     console.error('[clearBudgetData] finance reset failed', e)
   }
+  // reset() re-queues the empty state through the debounce; drop it so nothing stale can land later.
+  cancelPendingFinancePersist()
 
   try {
     useSettingsStore.getState().reset()

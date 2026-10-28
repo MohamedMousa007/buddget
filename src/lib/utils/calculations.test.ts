@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { filterExpensesByRange } from './calculations'
 import {
   calculateMonthlyIncome,
   expectedRecurringForMonth,
@@ -406,5 +407,17 @@ describe('gold helpers', () => {
     const grams = moneyToGoldGrams(1000, 350, 22)
     const back = goldGramsToMoney(grams, 350, 22)
     expect(back).toBeCloseTo(1000, 0)
+  })
+})
+
+describe('filterExpensesByRange invalid dates', () => {
+  it('drops garbage date strings instead of throwing', () => {
+    const mk = (date: string) => ({ date }) as never
+    const range = { start: new Date(2026, 0, 1), end: new Date(2026, 0, 31, 23, 59, 59) }
+    const out = filterExpensesByRange(
+      [mk('2026-01-15'), mk('not-a-date'), mk('2026-13-45'), mk('2026-01-20T10:00:00Z'), mk('2026-01-xx-zz-99'), mk('')],
+      range,
+    )
+    expect(out.map((e: { date: string }) => e.date)).toEqual(['2026-01-15', '2026-01-20T10:00:00Z'])
   })
 })

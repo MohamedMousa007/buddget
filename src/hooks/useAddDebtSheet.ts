@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { paymentExpenseMoney } from '@/lib/debts/paymentAmounts'
@@ -47,7 +48,6 @@ function isDebtListedAsActive(d: { status?: 'active' | 'cleared' }): boolean {
 export function useAddDebtSheet() {
   const showToast = useActionToast()
   const tI18n = useT()
-  const store = useFinanceStore()
   const {
     addDebt,
     addCreditCardDebt,
@@ -63,7 +63,24 @@ export function useAddDebtSheet() {
     settings,
     exchangeRates,
     goldPricePerGram,
-  } = store
+  } = useFinanceStore(
+    useShallow((s) => ({
+      addDebt: s.addDebt,
+      addCreditCardDebt: s.addCreditCardDebt,
+      updateDebt: s.updateDebt,
+      deleteDebt: s.deleteDebt,
+      addDebtPayment: s.addDebtPayment,
+      addDebtPaymentWithExpense: s.addDebtPaymentWithExpense,
+      addRecurringDebtPayment: s.addRecurringDebtPayment,
+      debts: s.debts,
+      debtPayments: s.debtPayments,
+      expenses: s.expenses,
+      paymentMethods: s.paymentMethods,
+      settings: s.settings,
+      exchangeRates: s.exchangeRates,
+      goldPricePerGram: s.goldPricePerGram,
+    })),
+  )
   const {
     activeModal,
     setActiveModal,

@@ -43,7 +43,7 @@ export function BrandTile({
     >
       {brandKey && logoAllowed(brandKey) ? (
         <Image
-          src={`/subscription-icons/${brandKey}.png`}
+          src={`/subscription-icons/${brandKey}.webp`}
           alt=""
           width={size}
           height={size}

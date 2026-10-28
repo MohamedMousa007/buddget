@@ -8,6 +8,7 @@ import {
   differenceInCalendarDays,
   subDays,
   eachMonthOfInterval,
+  format,
 } from 'date-fns'
 import type {
   Expense,
@@ -27,7 +28,7 @@ import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalanc
 import { isNonSpendCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency, tryConvertCurrency, tryConvertWithGold, type GoldQuote } from './currency'
 import { monthlyPaydayCount, paydayDatesForWindow } from './paydaySchedule'
-import { localDayKey } from './localDate'
+import { localDayKey, safeLocalDayKey } from './localDate'
 
 /** When set, credit card outstanding is derived from expenses + payments. */
 export type DebtBalanceContext = {
@@ -117,7 +118,12 @@ export function filterExpensesByRange(
   expenses: Expense[],
   { start, end }: { start: Date; end: Date },
 ): Expense[] {
-  return expenses.filter((e) => isWithinInterval(parseISO(e.date), { start, end }))
+  const startKey = format(start, 'yyyy-MM-dd')
+  const endKey = format(end, 'yyyy-MM-dd')
+  return expenses.filter((e) => {
+    const key = safeLocalDayKey(e.date)
+    return key !== null && key >= startKey && key <= endKey
+  })
 }
 
 export function calculateMonthlyIncome(

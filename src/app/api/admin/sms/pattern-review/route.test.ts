@@ -71,8 +71,13 @@ describe('GET pack and coverage', () => {
   it('calls the pack function with the real period params (last closed review end to today)', async () => {
     state.rpc = { data: [], error: null }
     state.tables.sms_pattern_reviews = { data: [{ period_end: '2026-09-30' }], error: null }
-    await GET(new Request('http://x?view=pack'))
-    expect(state.rpcCalls[0]).toEqual(['sms_review_pack', { period_start: '2026-09-30', period_end: new Date().toISOString().slice(0, 10) }])
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-15T12:00:00Z') })
+    try {
+      await GET(new Request('http://x?view=pack'))
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(state.rpcCalls[0]).toEqual(['sms_review_pack', { period_start: '2026-09-30', period_end: '2026-10-15' }])
   })
 })
 

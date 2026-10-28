@@ -10,3 +10,10 @@ design/
 
 # auto-deploy verification ping (2026-09-05): confirms git push actually
 # triggers a Vercel deploy without a manual `vercel --prod`.
+
+# Docs, assets and tests are not part of the deployed app.
+docs/
+assets/
+scripts/qa/
+**/*.test.ts
+**/*.pg.test.ts

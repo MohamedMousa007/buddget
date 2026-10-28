@@ -20,3 +20,13 @@ export function localTodayISO(ref: Date = new Date()): string {
 export function localDayKey(isoOrDate: string): string {
   return isoOrDate.length === 10 ? isoOrDate : format(new Date(isoOrDate), 'yyyy-MM-dd')
 }
+
+const DAY_PREFIX = /^\d{4}-\d{2}-\d{2}/
+
+/** Like {@link localDayKey} but returns null for anything that is not a valid `yyyy-MM-dd` or ISO instant. */
+export function safeLocalDayKey(isoOrDate: unknown): string | null {
+  if (typeof isoOrDate !== 'string' || !DAY_PREFIX.test(isoOrDate)) return null
+  if (isoOrDate.length === 10) return Number.isNaN(Date.parse(isoOrDate)) ? null : isoOrDate
+  const d = new Date(isoOrDate)
+  return Number.isNaN(d.getTime()) ? null : format(d, 'yyyy-MM-dd')
+}

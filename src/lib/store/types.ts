@@ -1308,8 +1308,8 @@ export interface FinanceStore {
   updateRates: (rates: Record<string, number>) => void
   updateGoldPrice: (price: number) => void
   setGoldUnavailable: () => void
-  /** @throws Error on invalid JSON or failed Zod validation (message is user-facing). */
-  importData: (data: string) => void
+  /** Rejects with an Error on invalid JSON or failed Zod validation (message is user-facing). */
+  importData: (data: string) => Promise<void>
   exportData: () => string
   resetAllData: () => void
   /** Same as `resetAllData` (logout / full client wipe). */

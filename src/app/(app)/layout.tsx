@@ -15,16 +15,10 @@ import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 import { PlatformBodyClass } from '@/lib/native/PlatformBodyClass'
 import { CrashReporter } from '@/lib/crash/CrashReporter'
 
+// One variable-weight file serves body and headings (was 8 static weight files).
 const dmSans = DM_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
-  weight: ['300', '400', '500', '600', '700'],
-})
-
-const dmSansHeading = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  weight: ['600', '700', '800'],
 })
 
 const jetbrainsMono = JetBrains_Mono({
@@ -36,7 +30,8 @@ const jetbrainsMono = JetBrains_Mono({
 const ibmPlexArabic = IBM_Plex_Sans_Arabic({
   subsets: ['arabic'],
   variable: '--font-sans-ar',
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '500', '600', '700'],
+  preload: false,
 })
 
 export const metadata: Metadata = {
@@ -148,7 +143,8 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Buddget" />
       </head>
       <body
-        className={`${dmSans.variable} ${dmSansHeading.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
+        style={{ '--font-heading': 'var(--font-sans)' } as React.CSSProperties}
+        className={`${dmSans.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
       >
         <PlatformBodyClass />
         <TooltipProvider>
