@@ -75,15 +75,25 @@ export async function POST(request: Request) {
   ] as const
   for (const { table, id, label } of targets) {
     if (!id) continue
-    const { error } = await serviceClient
-      .from(table)
-      .update({ deleted_at: deletedAt })
-      .eq('id', id)
-      .eq('user_id', userId)
+    // A refund/declined/twin log points at the ORIGINAL purchase (expense_id): only rows this log created are retired.
+    let retire = serviceClient.from(table).update({ deleted_at: deletedAt }).eq('id', id).eq('user_id', userId)
+    if (table !== 'debt_payments') retire = retire.eq('sms_log_id', parseLogId)
+    const { error } = await retire
     if (error) {
       console.error(`[sms/undo] ${label} delete error`, error.message)
       return NextResponse.json({ error: `Failed to undo ${label}` }, { status: 500 })
     }
+  }
+
+  // A refund/decline matched onto an earlier purchase marked it: undoing the SMS clears that mark.
+  const { error: unmarkErr } = await serviceClient
+    .from('expenses')
+    .update({ refunded_at: null, refund_kind: null, refund_sms_log_id: null })
+    .eq('refund_sms_log_id', parseLogId)
+    .eq('user_id', userId)
+  if (unmarkErr) {
+    console.error('[sms/undo] refund unmark error', unmarkErr.message)
+    return NextResponse.json({ error: 'Failed to undo refund' }, { status: 500 })
   }
 
   // A paired sibling still points at this log; leave neither side half-linked.

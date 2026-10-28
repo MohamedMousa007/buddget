@@ -57,10 +57,7 @@ class SmsReceiver : BroadcastReceiver() {
         // number; personal (long numeric) senders still require a keyword match,
         // so personal SMS stay off the API. "keyword" restores the legacy gate.
         val mode = prefs.getString("sms_forward_mode", "sender") ?: "sender"
-        val shouldForward = when (mode) {
-            "keyword" -> isBankishMessage(fullBody)
-            else      -> (isBusinessSender(sender) && hasDigit(fullBody)) || isBankishMessage(fullBody)
-        }
+        val shouldForward = SmsGate.shouldForward(mode, sender, fullBody)
         if (fullBody.isEmpty() || !shouldForward) return
 
         // WorkManager is the SINGLE forwarding path — works whether the app is
@@ -76,11 +73,15 @@ class SmsReceiver : BroadcastReceiver() {
         // The app renders this as a waiting-to-sync card while offline. Stamp the
         // owning account so an account switch can't drain it into the wrong user.
         val tokenUserId = prefs.getString("token_user_id", "") ?: ""
-        PendingSmsQueue.enqueue(context, fullBody, sender ?: "", receivedAt, tokenUserId)
+        // Generated ONCE per received SMS and persisted with it: a queue retry reuses it
+        // (server treats it as the same message), while a genuine twin gets its own.
+        val eventId = java.util.UUID.randomUUID().toString()
+        PendingSmsQueue.enqueue(context, fullBody, sender ?: "", receivedAt, tokenUserId, eventId)
         val data = workDataOf(
             SmsForwardWorker.KEY_MESSAGE     to fullBody,
             SmsForwardWorker.KEY_SENDER      to (sender ?: ""),
             SmsForwardWorker.KEY_RECEIVED_AT to receivedAt,
+            SmsForwardWorker.KEY_EVENT_ID    to eventId,
         )
         WorkManager.getInstance(context).enqueue(
             OneTimeWorkRequestBuilder<SmsForwardWorker>()
@@ -101,44 +102,5 @@ class SmsReceiver : BroadcastReceiver() {
                 )
                 .build()
         )
-    }
-
-    private fun hasDigit(text: String): Boolean = text.any { it.isDigit() }
-
-    /**
-     * A "business" sender is an alphanumeric ID (e.g. "VF-Cash", "CIB") or a
-     * short numeric code (≤7 digits, e.g. "19666") — i.e. NOT a normal personal
-     * phone number (≥8 digits). Financial institutions always send from these,
-     * so forwarding any business-sender SMS with a number captures every
-     * bank/wallet transaction regardless of wording, while personal SMS (long
-     * numeric senders) are still excluded unless they hit a keyword.
-     */
-    private fun isBusinessSender(sender: String?): Boolean {
-        val s = sender?.trim()?.removePrefix("+") ?: return false
-        if (s.isEmpty()) return false
-        if (s.any { it.isLetter() }) return true               // alphanumeric ID
-        val digits = s.count { it.isDigit() }
-        return digits in 1..7                                   // short code
-    }
-
-    /**
-     * Broad keyword filter — the Phase-2 path and the fallback for personal
-     * senders. The server's curated pattern library + pre-filter do the precise
-     * classification.
-     */
-    private fun isBankishMessage(text: String): Boolean {
-        val lower = text.lowercase()
-        val englishKeywords = listOf(
-            "egp", "aed", "sar", "qar", "kwd", "omr", "bhd",
-            "debited", "credited", "spent at", "purchase of",
-            "transaction of", "withdrawn", "inward transfer",
-            "deposit", "instapay", "vodafone cash", "fawry",
-        )
-        val arabicKeywords = listOf(
-            "جنيه", "تم خصم", "تم سحب", "تم دفع",
-            "عملية شراء", "تم إيداع", "تم إضافة",
-        )
-        return englishKeywords.any { lower.contains(it) } ||
-               arabicKeywords.any { text.contains(it) }
     }
 }

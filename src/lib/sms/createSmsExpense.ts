@@ -147,6 +147,138 @@ function emptyResult(): CreateSmsExpenseResult {
   return { expenseId: null, incomeId: null, debtPaymentId: null, savingsTransactionId: null, error: null }
 }
 
+const UNIQUE_VIOLATION = '23505'
+
+/** A retry of the same SMS hits the unique sms_log_id index: the row already exists, so that is success, not failure. */
+async function existingExpenseForLog(service: ServiceClient, userId: string, logId: string) {
+  const { data } = await service
+    .from('expenses')
+    .select('id, linked_debt_payment_id')
+    .eq('user_id', userId)
+    .eq('sms_log_id', logId)
+    .neq('description', 'Transfer fee')
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle()
+  return data ?? null
+}
+
+type DebtPaymentArgs = {
+  debtId: string
+  debtCurrency: string | null
+  isGold: boolean
+  fundingPaymentMethodId: string | null
+  description: string
+  category: ExpenseCategory
+}
+
+/**
+ * The SMS amount is money in the SMS currency; a debt payment stores it in DEBT units. Only a same-currency,
+ * non-gold debt can be settled without a rate, so anything else is left to the user (never mislabel units).
+ */
+function debtUnits(row: SmsRowData, a: DebtPaymentArgs) {
+  if (a.isGold || (a.debtCurrency && a.debtCurrency !== row.currency)) return null
+  return { amountInDebtUnit: row.amount, originalAmount: row.amount, originalCurrency: dbCurrency(row.currency) }
+}
+
+type RpcCaller = (fn: string, args: Record<string, unknown>) => Promise<{
+  data: { outcome?: string; debt_payment_id?: string; expense_id?: string } | null
+  error: PostgrestError | null
+}>
+
+function isMissingRpc(e: PostgrestError): boolean {
+  return e.code === 'PGRST202' || /could not find the function/i.test(e.message ?? '')
+}
+
+/**
+ * Debt payment + its expense as one idempotent unit (migration 0210 RPC, keyed on sms_log_id). Falls back to the
+ * legacy two-insert path while the RPC is not deployed yet (PGRST202); the legacy path still reuses an expense a
+ * previous attempt already booked for this SMS, so a retry cannot reduce the debt twice.
+ */
+async function postSmsDebtPayment(
+  service: ServiceClient,
+  row: SmsRowData,
+  a: DebtPaymentArgs,
+): Promise<CreateSmsExpenseResult & { needsConfirm?: boolean }> {
+  const units = debtUnits(row, a)
+  if (!units) return { ...emptyResult(), needsConfirm: true }
+  const debtCurrency = dbCurrency(a.debtCurrency ?? row.currency)
+  const payment = {
+    debt_id: a.debtId,
+    payment_method_id: a.fundingPaymentMethodId,
+    amount: row.amount,
+    currency: debtCurrency,
+    payment_date: row.day,
+    occurred_at: row.receivedAtIso ?? null,
+    amount_in_debt_unit: units.amountInDebtUnit,
+    original_amount: units.originalAmount,
+    original_currency: units.originalCurrency,
+  }
+
+  if (row.logId) {
+    const { data, error } = await (service as unknown as { rpc: RpcCaller }).rpc('add_sms_debt_payment_with_expense', {
+      p_user_id: row.userId,
+      p_sms_log_id: row.logId,
+      p_payment: payment,
+      p_expense: {
+        description: a.description,
+        category: a.category,
+        amount: row.amount,
+        currency: dbCurrency(row.currency),
+        expense_date: row.day,
+        occurred_at: row.receivedAtIso ?? null,
+        payment_method_id: a.fundingPaymentMethodId,
+      },
+    })
+    if (!error) {
+      if (data?.outcome === 'overpay') return { ...emptyResult(), needsConfirm: true }
+      return { ...emptyResult(), expenseId: data?.expense_id ?? null, debtPaymentId: data?.debt_payment_id ?? null }
+    }
+    if (!isMissingRpc(error)) return { ...emptyResult(), error }
+
+    const prior = await existingExpenseForLog(service, row.userId, row.logId)
+    if (prior) return { ...emptyResult(), expenseId: prior.id, debtPaymentId: prior.linked_debt_payment_id ?? null }
+  }
+
+  const { data: payRow, error: payErr } = await service
+    .from('debt_payments')
+    .insert({
+      user_id: row.userId,
+      debt_id: a.debtId,
+      amount: row.amount,
+      currency: debtCurrency,
+      payment_date: row.day,
+      payment_method_id: a.fundingPaymentMethodId,
+      amount_in_debt_unit: units.amountInDebtUnit,
+      original_amount: units.originalAmount,
+      original_currency: units.originalCurrency,
+      notes: null,
+    })
+    .select('id')
+    .single()
+  if (payErr || !payRow) return { ...emptyResult(), error: payErr }
+
+  const { data: expRow, error: expErr } = await service
+    .from('expenses')
+    .insert({
+      user_id: row.userId,
+      expense_date: row.day,
+      description: a.description,
+      category: a.category,
+      amount: row.amount,
+      currency: dbCurrency(row.currency),
+      payment_method_id: a.fundingPaymentMethodId,
+      is_debt_payment: true,
+      linked_debt_id: a.debtId,
+      linked_debt_payment_id: payRow.id,
+      notes: null,
+      sms_log_id: row.logId ?? null,
+    })
+    .select('id')
+    .single()
+  return { ...emptyResult(), expenseId: expRow?.id ?? null, debtPaymentId: payRow.id, error: expErr }
+}
+
 /**
  * The single chokepoint for what a transaction is called. Every parse tier (curated,
  * learned template, AI) and the user-confirm path reach the DB through here, which is why
@@ -201,6 +333,29 @@ async function resolvePaymentMethodByProvider(
   return null
 }
 
+/** PostgREST code for "more than one row" on a single-row request. */
+const MULTIPLE_ROWS = 'PGRST116'
+
+/**
+ * The one registered method with this last4. Two or more sharing it is ambiguous: neither is picked, because
+ * attributing money to the wrong account is worse than asking.
+ */
+async function findUniqueByLast4(
+  service: ServiceClient,
+  userId: string,
+  last4: string,
+): Promise<{ id: string | null; ambiguous: boolean }> {
+  const { data, error } = await service
+    .from('payment_methods')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('last4', last4)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (error?.code === MULTIPLE_ROWS) return { id: null, ambiguous: true }
+  return { id: data?.id ?? null, ambiguous: false }
+}
+
 /**
  * Resolves the user's payment method for an SMS, most specific signal first:
  *   1. the account/card last4 the SMS names — exact, when the user registered that card
@@ -217,15 +372,9 @@ export async function resolvePaymentMethodByLast4(
   provider?: { sender?: string | null; bankName?: string | null },
 ): Promise<string | null> {
   if (last4) {
-    const { data: byLast4 } = await service
-      .from('payment_methods')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('last4', last4)
-      .is('deleted_at', null)
-      .limit(1)
-      .maybeSingle()
-    if (byLast4?.id) return byLast4.id
+    const byLast4 = await findUniqueByLast4(service, userId, last4)
+    if (byLast4.ambiguous) return null
+    if (byLast4.id) return byLast4.id
   }
   const byProvider = await resolvePaymentMethodByProvider(
     service,
@@ -290,6 +439,17 @@ export async function createSmsExpense(
       })
       .select('id')
       .single()
+    if (error?.code === UNIQUE_VIOLATION && row.logId) {
+      const { data: prior } = await service
+        .from('income_events')
+        .select('id')
+        .eq('user_id', row.userId)
+        .eq('sms_log_id', row.logId)
+        .is('deleted_at', null)
+        .limit(1)
+        .maybeSingle()
+      if (prior) return { ...emptyResult(), incomeId: prior.id }
+    }
     return { ...emptyResult(), incomeId: data?.id ?? null, error }
   }
 
@@ -345,6 +505,10 @@ export async function createSmsExpense(
     })
     .select('id')
     .single()
+  if (error?.code === UNIQUE_VIOLATION && row.logId) {
+    const prior = await existingExpenseForLog(service, row.userId, row.logId)
+    if (prior) return { ...emptyResult(), expenseId: prior.id }
+  }
   return { ...emptyResult(), expenseId: data?.id ?? null, error }
 }
 
@@ -369,7 +533,7 @@ export async function createSmsInstallmentPayment(
 ): Promise<CreateSmsExpenseResult & { needsConfirm?: boolean }> {
   const { data: plans } = await service
     .from('debts')
-    .select('id, currency, installment_amount, installment_provider_name, linked_payment_method_id')
+    .select('id, currency, is_gold, installment_amount, installment_provider_name, linked_payment_method_id')
     .eq('user_id', row.userId)
     .eq('debt_type', 'installment')
     .eq('status', 'active')
@@ -413,46 +577,14 @@ export async function createSmsInstallmentPayment(
   // The SMS from an installment provider usually names the funding card directly.
   const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, row.last4)
 
-  const { data: payRow, error: payErr } = await service
-    .from('debt_payments')
-    .insert({
-      user_id: row.userId,
-      debt_id: plan.id,
-      amount: row.amount,
-      currency: dbCurrency((plan.currency as string) ?? row.currency),
-      payment_date: row.day,
-      payment_method_id: fundingPaymentMethodId,
-      notes: null,
-    })
-    .select('id')
-    .single()
-  if (payErr || !payRow) return { ...emptyResult(), error: payErr }
-
-  const { data: expRow, error: expErr } = await service
-    .from('expenses')
-    .insert({
-      user_id: row.userId,
-      expense_date: row.day,
-      description: smsTitle(row) ?? 'Installment payment',
-      category: isBnpl ? 'Installment' : 'Debt',
-      amount: row.amount,
-      currency: dbCurrency(row.currency),
-      payment_method_id: fundingPaymentMethodId,
-      is_debt_payment: true,
-      linked_debt_id: plan.id,
-      linked_debt_payment_id: payRow.id,
-      notes: null,
-      sms_log_id: row.logId ?? null,
-    })
-    .select('id')
-    .single()
-
-  return {
-    ...emptyResult(),
-    expenseId: expRow?.id ?? null,
-    debtPaymentId: payRow.id,
-    error: expErr,
-  }
+  return postSmsDebtPayment(service, row, {
+    debtId: plan.id as string,
+    debtCurrency: (plan.currency as string | null) ?? null,
+    isGold: plan.is_gold === true,
+    fundingPaymentMethodId,
+    description: smsTitle(row) ?? 'Installment payment',
+    category: isBnpl ? 'Installment' : 'Debt',
+  })
 }
 
 /**
@@ -465,15 +597,7 @@ export async function resolveExactPaymentMethod(
   last4: string | null | undefined,
 ): Promise<string | null> {
   if (!last4) return null
-  const { data } = await service
-    .from('payment_methods')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('last4', last4)
-    .is('deleted_at', null)
-    .limit(1)
-    .maybeSingle()
-  return data?.id ?? null
+  return (await findUniqueByLast4(service, userId, last4)).id
 }
 
 /** ± window (days) for treating a second refund SMS as a duplicate of the same event. */
@@ -594,7 +718,7 @@ export async function createSmsDebtPayment(
   // Active credit-card debts for this user.
   const { data: ccDebts } = await service
     .from('debts')
-    .select('id, currency, starting_balance, linked_payment_method_id')
+    .select('id, currency, is_gold, starting_balance, linked_payment_method_id')
     .eq('user_id', row.userId)
     .eq('debt_type', 'credit_card')
     .eq('status', 'active')
@@ -626,45 +750,12 @@ export async function createSmsDebtPayment(
   // (renders as Cash) rather than becoming a confident wrong answer.
   const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, opts.fundingLast4)
 
-  // Record payment in the debt's own currency to keep balance arithmetic correct.
-  const { data: payRow, error: payErr } = await service
-    .from('debt_payments')
-    .insert({
-      user_id: row.userId,
-      debt_id: debt.id,
-      amount: row.amount,
-      currency: dbCurrency((debt.currency as string) ?? row.currency),
-      payment_date: row.day,
-      payment_method_id: fundingPaymentMethodId,
-      notes: null,
-    })
-    .select('id')
-    .single()
-  if (payErr || !payRow) return { ...emptyResult(), error: payErr }
-
-  // Non-spend CC Payoff expense, attributed to the funding account.
-  const { data: expRow, error: expErr } = await service
-    .from('expenses')
-    .insert({
-      user_id: row.userId,
-      expense_date: row.day,
-      description: smsTitle(row) ?? 'Credit Card Payment',
-      category: 'CC Payoff',
-      amount: row.amount,
-      currency: dbCurrency(row.currency),
-      payment_method_id: fundingPaymentMethodId,
-      is_debt_payment: true,
-      linked_debt_payment_id: payRow.id,
-      notes: null,
-      sms_log_id: row.logId ?? null,
-    })
-    .select('id')
-    .single()
-
-  return {
-    ...emptyResult(),
-    expenseId: expRow?.id ?? null,
-    debtPaymentId: payRow.id,
-    error: expErr,
-  }
+  return postSmsDebtPayment(service, row, {
+    debtId: debt.id as string,
+    debtCurrency: (debt.currency as string | null) ?? null,
+    isGold: debt.is_gold === true,
+    fundingPaymentMethodId,
+    description: smsTitle(row) ?? 'Credit Card Payment',
+    category: 'CC Payoff',
+  })
 }

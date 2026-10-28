@@ -32,6 +32,12 @@ struct CatchBankSmsIntent: AppIntent {
         // the "wired" capability that gates the Settings switch vs. setup CTA.
         SmsCredentialStore.recordRun(result: "detected")
         guard SmsCredentialStore.isEnabled else { return .result() }
+        // Same on-device gate as Android's SmsGate: one-time codes never leave the phone
+        // unless the text also states an actual money movement.
+        guard !SmsOtpGate.shouldDrop(message) else {
+            SmsCredentialStore.recordRun(result: "skipped_otp")
+            return .result()
+        }
 
         // Ledger-first, mirroring Android's SmsReceiver/SmsForwardWorker split: the
         // SMS is durable BEFORE any network work, and delivery only ever REMOVES it.
@@ -42,9 +48,11 @@ struct CatchBankSmsIntent: AppIntent {
         // no trace on the device or the server. Enqueueing first turns that same kill
         // into a delay: the app-open drain replays whatever is still queued.
         let receivedAt = ISO8601DateFormatter().string(from: Date())
+        // One id per received SMS, persisted in the queue: a retry reuses it, a genuine twin gets its own.
+        let eventId = UUID().uuidString
         let from = sender ?? ""
         SmsCredentialStore.enqueuePending(message: message, sender: from, receivedAt: receivedAt,
-                                          userId: SmsCredentialStore.tokenUserId ?? "")
+                                          userId: SmsCredentialStore.tokenUserId ?? "", eventId: eventId)
 
         guard let token = SmsCredentialStore.token,
               let base = SmsCredentialStore.apiUrl,
@@ -57,6 +65,7 @@ struct CatchBankSmsIntent: AppIntent {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue(eventId, forHTTPHeaderField: "x-sms-event-id")
         // Single short attempt. The old 20s + 2s sleep + 20s retry could hold the
         // background window for 42s, which is what got the process killed in the
         // first place — the retry meant to prevent loss was causing it. The queue
@@ -69,11 +78,12 @@ struct CatchBankSmsIntent: AppIntent {
             "message": message,
             "sender": from,
             "source": "sms",
-            "receivedAt": receivedAt
+            "receivedAt": receivedAt,
+            "eventId": eventId
         ])
 
         if await send(req) {
-            SmsCredentialStore.removePending([["message": message, "receivedAt": receivedAt]])
+            SmsCredentialStore.removePending([["message": message, "receivedAt": receivedAt, "eventId": eventId]])
             SmsCredentialStore.recordRun(result: "delivered")
         } else {
             SmsCredentialStore.recordRun(result: "queued")
@@ -84,6 +94,42 @@ struct CatchBankSmsIntent: AppIntent {
     private func send(_ req: URLRequest) async -> Bool {
         guard let (_, response) = try? await URLSession.shared.data(for: req),
               let http = response as? HTTPURLResponse else { return false }
-        return (200..<300).contains(http.statusCode)
+        // 202 / 409 mean the server is mid-claim on this SMS: keep it queued.
+        return (200..<300).contains(http.statusCode) && http.statusCode != 202
+    }
+}
+
+/// Mirror of Android SmsGate.shouldDrop for the OTP rule (the Shortcut has no other on-device gate).
+enum SmsOtpGate {
+    private static let otp = try! NSRegularExpression(
+        pattern: "(?<![a-z])(otp|one[- ]time (password|code|pin)|verification code|security code|passcode|do not share|never share|don't share)(?![a-z])",
+        options: .caseInsensitive)
+    private static let txn = try! NSRegularExpression(
+        pattern: "(?<![a-z])(debited|credited|spent at|purchase of|transaction of|withdrawn|inward transfer)(?![a-z])",
+        options: .caseInsensitive)
+    private static let currency = try! NSRegularExpression(
+        pattern: "(?:\\d[\\d.,]*\\s?(?:egp|aed|sar|qar|kwd|omr|bhd)(?![a-z]))|(?:(?<![a-z])(?:egp|aed|sar|qar|kwd|omr|bhd)\\s?\\d)",
+        options: .caseInsensitive)
+    private static let moneyVerb = try! NSRegularExpression(
+        pattern: "(?<![a-z])(used (for|at)|paid|payment|received|refund(ed)?|debit(ed)?|credit(ed)?|purchase|spent|withdr(awn|awal)|transfer(red)?|deposit(ed)?|charged|sent)(?![a-z])",
+        options: .caseInsensitive)
+    private static let moneyVerbArabic = ["تم الدفع", "دفع", "خصم", "تحويل", "شراء", "سحب", "إيداع", "استلام", "استرداد"]
+    private static let otpArabic = ["رمز التحقق", "كلمة المرور المؤقتة", "رمز التفعيل", "لا تشارك"]
+    private static let txnArabic = ["تم خصم", "تم سحب", "تم دفع", "عملية شراء", "تم إيداع", "تم إضافة"]
+
+    private static func matches(_ r: NSRegularExpression, _ s: String) -> Bool {
+        r.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) != nil
+    }
+
+    /// An amount with a currency AND a verb for money that moved; "never share" boilerplate alone is not an OTP.
+    static func carriesMoneyMovement(_ message: String) -> Bool {
+        if matches(txn, message) || txnArabic.contains(where: { message.contains($0) }) { return true }
+        let hasAmount = matches(currency, message) || (message.contains("جنيه") && message.contains(where: { $0.isNumber }))
+        return hasAmount && (matches(moneyVerb, message) || moneyVerbArabic.contains { message.contains($0) })
+    }
+
+    static func shouldDrop(_ message: String) -> Bool {
+        let isOtp = matches(otp, message) || otpArabic.contains { message.contains($0) }
+        return isOtp && !carriesMoneyMovement(message)
     }
 }

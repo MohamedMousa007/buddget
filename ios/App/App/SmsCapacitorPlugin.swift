@@ -77,7 +77,9 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
             "permission": true,
             "lastRunAt": SmsCredentialStore.lastRunAt ?? "",
             "lastResult": SmsCredentialStore.lastResult ?? "",
-            "pendingCount": SmsCredentialStore.pendingCount
+            "pendingCount": SmsCredentialStore.pendingCount,
+            "evictedCount": SmsCredentialStore.evictedCount,
+            "oldestPendingAt": SmsCredentialStore.oldestPendingAt ?? ""
         ])
     }
 
@@ -130,15 +132,30 @@ enum SmsCredentialStore {
     /// thread) and the Capacitor bridge queue mutate the same UserDefaults array;
     /// an unlocked interleave could drop a freshly-enqueued SMS.
     private static let queueLock = NSLock()
+    private static let queueCap = 200
+    private static let evictedKey = "buddget.sms.evicted_count"
 
-    static func enqueuePending(message: String, sender: String, receivedAt: String, userId: String) {
+    static var evictedCount: Int { UserDefaults.standard.integer(forKey: evictedKey) }
+
+    /// receivedAt of the oldest queued SMS (backlog age); nil when the queue is empty.
+    static var oldestPendingAt: String? {
+        queueLock.lock(); defer { queueLock.unlock() }
+        let q = (UserDefaults.standard.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
+        return q.compactMap { $0["receivedAt"] }.min()
+    }
+
+    static func enqueuePending(message: String, sender: String, receivedAt: String, userId: String, eventId: String = "") {
         queueLock.lock(); defer { queueLock.unlock() }
         let d = UserDefaults.standard
         var queue = (d.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
         // Stamp the owning account so an account switch can't drain this SMS into
         // the wrong user (the JS drain filters by userId before POSTing).
-        queue.append(["message": message, "sender": sender, "receivedAt": receivedAt, "source": "sms", "userId": userId])
-        if queue.count > 50 { queue = Array(queue.suffix(50)) }
+        queue.append(["message": message, "sender": sender, "receivedAt": receivedAt, "source": "sms", "userId": userId, "eventId": eventId])
+        if queue.count > queueCap {
+            let overflow = queue.count - queueCap
+            queue = Array(queue.suffix(queueCap))
+            d.set(d.integer(forKey: evictedKey) + overflow, forKey: evictedKey)
+        }
         d.set(queue, forKey: pendingQueueKey)
     }
 
@@ -154,7 +171,8 @@ enum SmsCredentialStore {
         var queue = (d.array(forKey: pendingQueueKey) as? [[String: String]]) ?? []
         for item in items {
             if let idx = queue.firstIndex(where: {
-                $0["message"] == item["message"] && $0["receivedAt"] == item["receivedAt"]
+                if let id = item["eventId"], !id.isEmpty, $0["eventId"] != nil { return $0["eventId"] == id }
+                return $0["message"] == item["message"] && $0["receivedAt"] == item["receivedAt"]
             }) {
                 queue.remove(at: idx)
             }

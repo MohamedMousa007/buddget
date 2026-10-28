@@ -12,6 +12,8 @@ import type { AdminStatus, DailyPoint } from '../types'
 import { FAILURE_LABELS, METHOD } from '../smsDisplay'
 import { KeywordPoolPanel } from './sms/KeywordPoolPanel'
 import { SMS_TABS } from '@/lib/admin/smsTabs'
+import { CoveragePanel } from './sms/CoveragePanel'
+import { PatternReviewPanel, PurgeBanner, REVIEW_PATH, type ReviewOverview } from './sms/PatternReviewPanel'
 import { PromotionPanel } from './sms/PromotionPanel'
 import { SmsLogPanel } from './sms/SmsLogPanel'
 import { TemplatesPanel } from './sms/TemplatesPanel'
@@ -35,6 +37,7 @@ export default function SmsView({ status }: { status: AdminStatus }) {
   const tab = (TABS.find((t) => t.value === route.params.tab)?.value ?? 'health') as Tab
   const perms = new Set(status.permissions ?? [])
   const can = (p: string) => perms.has('*') || perms.has(p)
+  const review = useAdminQuery<ReviewOverview>(REVIEW_PATH)
 
   return (
     <>
@@ -42,12 +45,15 @@ export default function SmsView({ status }: { status: AdminStatus }) {
       <div className="mb-5 overflow-x-auto">
         <SegmentedControl ariaLabel="SMS section" fill={false} options={TABS} value={tab} onChange={(v) => adminNavigate('sms', { tab: v })} />
       </div>
+      {tab !== 'review' && review.data ? <div className="mb-5"><PurgeBanner overview={review.data} onOpen={() => adminNavigate('sms', { tab: 'review' })} /></div> : null}
       {tab === 'health' ? <HealthTab /> : null}
       {tab === 'errors' ? <SmsLogPanel key="errors" queue="errors" canTicket={can('support.reply')} /> : null}
       {tab === 'tracked' ? <SmsLogPanel key={`all-${route.params.userId ?? ''}`} queue="all" userId={route.params.userId} canTicket={can('support.reply')} /> : null}
       {tab === 'templates' ? <TemplatesPanel canManage={can('sms.manage')} /> : null}
       {tab === 'promotion' ? <PromotionPanel canManage={can('sms.manage')} /> : null}
       {tab === 'keywords' ? <KeywordPoolPanel /> : null}
+      {tab === 'review' ? <PatternReviewPanel canManage={can('sms.manage')} /> : null}
+      {tab === 'coverage' ? <CoveragePanel /> : null}
     </>
   )
 }

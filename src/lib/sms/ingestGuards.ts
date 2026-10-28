@@ -1,8 +1,11 @@
 import crypto from 'crypto'
+import { normalizeDigits } from '@/lib/sms/normalizeDigits'
 import { isNonTransaction, type NonTransactionReason } from '@/lib/sms/patterns/preFilter'
 import { Constants } from '@/lib/supabase/database.types'
 import type { Database } from '@/lib/supabase/database.types'
 import type { ServiceClient } from '@/lib/supabase/service'
+import { ALL_PATTERN_SETS } from '@/lib/sms/patterns'
+import type { SmsTxResult } from '@/lib/sms/dispatch'
 
 type CurrencyCode = Database['public']['Enums']['currency_code']
 
@@ -12,14 +15,24 @@ const MAX_AMOUNT = 1_000_000_000
 const MAX_FUTURE_DAYS = 2
 const MAX_PAST_DAYS = 400
 const STALE_PROCESSING_MS = 90_000
+/** Longer messages are cut to this (the money and the date sit at the front) instead of being refused forever. */
+export const MAX_SMS_BODY_CHARS = 2000
 
 /**
+ * Dedup hash over the RAW SMS body as received (whitespace and case folded only; never bidi/digit-normalised,
+ * so a retry from any build hashes the same). Matching and learning use `normalizeSmsText`, not this.
  * Dedup hash over the normalized SMS body plus the receive time rounded to a ~2 minute bucket, so a
  * client retry of one SMS collapses while the same "debited EGP 99.00 for NETFLIX" a month later does not.
  * Without a client timestamp only the body is hashed: the server clock would differ on every retry.
  */
-export function computeSmsHash(message: string, receivedAt?: string): string {
-  return hashForBucket(message, receivedAt, 0)
+export function computeSmsHash(message: string, receivedAt?: string, eventId?: string): string {
+  return eventId ? hashForEvent(message, eventId) : hashForBucket(message, receivedAt, 0)
+}
+
+/** A capture id is the exact retry identity: twin purchases (different ids) both book, a retry (same id) collapses. */
+function hashForEvent(message: string, eventId: string): string {
+  const normalized = message.trim().replace(/\s+/g, ' ').toLowerCase()
+  return crypto.createHash('sha256').update(`${normalized}|evt:${eventId.toLowerCase()}`).digest('hex')
 }
 
 function hashForBucket(message: string, receivedAt: string | undefined, offset: number): string {
@@ -29,8 +42,18 @@ function hashForBucket(message: string, receivedAt: string | undefined, offset: 
   return crypto.createHash('sha256').update(normalized + bucket).digest('hex')
 }
 
+/**
+ * Hashes older builds stored for a body with Arabic digits (they hashed the digit-normalised text). A retry
+ * is a duplicate if EITHER the raw-body hash or one of these is already held. Empty for ASCII-digit bodies.
+ */
+export function computeLegacySmsHashes(rawMessage: string, receivedAt?: string): string[] {
+  const legacy = normalizeDigits(rawMessage)
+  return legacy === rawMessage ? [] : [hashForBucket(legacy, receivedAt, 0)]
+}
+
 /** Hashes of the buckets next to the current one: a retry straddling a bucket edge hashes into a neighbour. */
-export function computeNeighbourSmsHashes(message: string, receivedAt?: string): string[] {
+export function computeNeighbourSmsHashes(message: string, receivedAt?: string, eventId?: string): string[] {
+  if (eventId) return []
   if (!receivedAt || !Number.isFinite(Date.parse(receivedAt))) return []
   return [-1, 1].map((offset) => hashForBucket(message, receivedAt, offset))
 }
@@ -79,4 +102,48 @@ export async function hasPostedTransaction(service: ServiceClient, userId: strin
     service.from('income_events').select('id').eq('user_id', userId).eq('sms_log_id', logId).limit(1),
   ])
   return (expense.data?.length ?? 0) > 0 || (income.data?.length ?? 0) > 0
+}
+
+/** A claim whose first delivery has not finished: the sender must keep its queued copy until that run ends. */
+export function isClaimInFlight(status: string | null): boolean {
+  return status === 'processing'
+}
+
+/** Not a 2xx: the device drain deletes the item on any success, and the first run may still die. */
+export function claimInProgressResponse(): Response {
+  return Response.json({ ok: false, reason: 'in_progress', retry: true }, { status: 409 })
+}
+
+/** Replaces every run of 4+ digits (a one-time code, a card tail) with '#', keeping the wording for the corpus. */
+export function maskOtpDigits(message: string): string {
+  return message.replace(/\d{4,}/g, '#')
+}
+
+const CREDIT_KINDS = new Set<string>(['income', 'instant_transfer_in', 'refund'])
+
+export type SenderCheck = 'ok' | 'mismatch' | 'absent'
+
+/**
+ * Credits are auto-booked from a spoofable alphanumeric sender. When a sender IS present and the matched
+ * bank has known sender ids, a credit from any other sender is held for the user. An empty sender (iOS never
+ * sends one) is reported as 'absent' so the caller only counts it: it never changes how the SMS is booked.
+ */
+export function checkCreditSender(bank: string | null | undefined, kind: string | null | undefined, sender: string | null | undefined): SenderCheck {
+  if (!kind || !CREDIT_KINDS.has(kind)) return 'ok'
+  const given = sender?.trim().toUpperCase()
+  if (!given) return 'absent'
+  const known = ALL_PATTERN_SETS.filter((set) => set.bank === bank).flatMap((set) => set.senderIds.map((id) => id.toUpperCase()))
+  if (known.length === 0) return 'ok'
+  // A real sender id often carries a suffix or prefix ("CIB-EG", "HSBC EG"): match on whole tokens, never substrings.
+  const tokens = given.split(/[\s\-_.:]+/).filter(Boolean)
+  const squashed = given.replace(/[^A-Z0-9\u0600-\u06FF]/g, '')
+  return known.some((id) => id === given || id.replace(/[^A-Z0-9\u0600-\u06FF]/g, '') === squashed || tokens.includes(id)) ? 'ok' : 'mismatch'
+}
+
+/** The dispatcher outcome for a credit held for confirmation: nothing posted, the row stays claimable by /confirm. */
+export function heldForConfirmation(kind: SmsTxResult['kind']): SmsTxResult {
+  return {
+    outcome: 'awaiting_confirmation', kind, expenseId: null, incomeId: null, debtPaymentId: null, category: null,
+    confirmReason: null, matchedSourceId: null, linkedSubscriptionId: null, error: null,
+  }
 }

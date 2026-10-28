@@ -8,24 +8,15 @@
  */
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
+import { smsDeviceGate } from '@/lib/sms/deviceGate'
 
 export async function GET(request: Request) {
-  const auth = request.headers.get('authorization') ?? ''
-  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
-  if (!bearer) {
+  const caller = await resolveSmsCaller(request)
+  if (!caller.userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-
-  const service = createServiceRoleClient()
-  const { data: tokenRow } = await service
-    .from('sms_ingest_tokens')
-    .select('user_id')
-    .eq('token', bearer)
-    .eq('is_active', true)
-    .single()
-
-  if (!tokenRow) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const blocked = await smsDeviceGate(createServiceRoleClient(), caller)
+  if (blocked) return blocked
   return NextResponse.json({ ok: true })
 }

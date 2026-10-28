@@ -177,7 +177,8 @@ export const importDataSchema = z.object({
         createdAt: z.string(),
         updatedAt: z.string().optional(),
       })
-        .transform((o) => ({ ...o, updatedAt: o.updatedAt ?? o.createdAt }))
+        // smsLogId is dropped on import: a restore into the same account would hit the unique booking index (23505).
+        .transform(({ smsLogId: _smsLogId, ...o }) => ({ ...o, updatedAt: o.updatedAt ?? o.createdAt }))
     )
     .optional(),
   expenses: z

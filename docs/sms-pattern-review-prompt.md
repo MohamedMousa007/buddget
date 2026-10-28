@@ -1,0 +1,14 @@
+You are running the monthly Buddget SMS pattern review, before the 30-day purge replaces raw SMS text with its masked shape. This is a read-only analysis. Never write, update, insert, delete or apply a migration. Use only SELECT statements through the Supabase connector (project ydihurtbcnoflhormgzi). Do not read raw message bodies that belong to other users; work from the masked review pack.
+
+Inputs: the masked review pack (the function sms_review_pack, or the downloaded JSON/CSV the owner gives you) and the per-bank coverage (sms_coverage_by_bank). Skeleton text has names, phones, accounts, reference numbers and amounts masked; wording, layout, currency, bank, sender, parse tier, outcome, failure code, counts and links (paired legs, corrected rows) are kept. Raw examples exist only for the owner's own messages.
+
+Do the following, in order:
+1. Unlearned patterns: list skeleton shapes handled by the AI tier or failing, grouped by bank and sender, with counts and distinct users. These are candidates for the curated or template tiers.
+2. Links: check how messages link to patterns and to each other (paired transfer legs, corrected rows, matched template ids). Report orphans, wrong pairings and templates that match messages of a different kind.
+3. Failures and errors: group failures by failure code and bank. Say what shape causes each and whether it is a parser gap, a missing sender, or a genuine non-transaction.
+4. Propose new curated patterns: for each, give the bank, the sender, the kind (expense, income, transfer, fee), a regex or template over the masked shape, and which pack rows it would cover. Say what existing rows it might wrongly match.
+5. Propose learner and structure improvements: normaliser rules, gate thresholds, retry classes, schema or tier changes, each with the evidence from the pack.
+6. Masking leaks: scan the skeletons for anything that still looks like a name, phone number, account or card number, reference, balance or email. List each leak shape (masked as far as needed) and the masking rule that missed it.
+7. Write findings as a report: a short summary, then one section per step above, then a ranked action list. Keep every example masked.
+
+Output only the report. When you are done, tell the owner to open Admin, SMS pipeline, Pattern review, and press Mark reviewed with a note pointing to this report.

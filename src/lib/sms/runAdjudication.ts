@@ -14,10 +14,11 @@ import {
   ADJUDICATOR_PROMPT,
   buildAdjudicationPrompt,
   parseAdjudication,
-  redactBody,
   verdictCountsAgainstTemplate,
   type AdjudicationInput,
 } from '@/lib/sms/adjudicator'
+import { bumpTemplateFailure } from '@/lib/sms/bumpTemplateFailure'
+import { maskPii } from '@/lib/sms/maskPii'
 import { bodyShapeKey } from '@/lib/sms/routingKey'
 
 /** Templates adjudicated per invocation — this is background work riding on a user request. */
@@ -27,6 +28,7 @@ interface SignalRow {
   id: string
   template_id: string | null
   sms_log_id: string | null
+  user_id: string
   signal_kind: 'objective_edit' | 'delete' | 'reported'
   field: string | null
   old_value: string | null
@@ -60,7 +62,7 @@ export async function runAdjudication(
     for (const { template_id } of templates) {
       const { data: signalRows } = await service
         .from('sms_template_signals')
-        .select('id, template_id, sms_log_id, signal_kind, field, old_value, new_value')
+        .select('id, template_id, sms_log_id, user_id, signal_kind, field, old_value, new_value')
         .eq('template_id', template_id)
         .is('verdict', null)
         .order('created_at', { ascending: true })
@@ -113,12 +115,13 @@ export async function runAdjudication(
 
       if (verdictCountsAgainstTemplate(result.verdict)) {
         counted++
-        await service.rpc('bump_sms_template_failure', {
-          p_template_id: template_id,
+        await bumpTemplateFailure(service, {
+          templateId: template_id,
           // A user-reported defect is real but singular; let it accumulate as a rate rather than
           // retire a template on one person's say-so.
-          p_hard: false,
-          p_reason: `adjudicated_${result.verdict}: ${result.reason ?? ''}`.slice(0, 200),
+          hard: false,
+          reason: `adjudicated_${result.verdict}: ${result.reason ?? ''}`.slice(0, 200),
+          userId: signals[0].user_id,
         })
 
         // The correction is the system's memory: injected into future prompts for this message
@@ -128,7 +131,7 @@ export async function runAdjudication(
           if (shape) {
             await service.from('sms_corrections').insert({
               body_shape_key: shape,
-              redacted_body: redactBody(input.body),
+              redacted_body: maskPii(input.body),
               corrected_fields: result.corrected,
               source_template_id: template_id,
               source_signal_id: signals[0].id,
@@ -163,7 +166,7 @@ async function adjudicateAiOnly(service: ServiceClient, deps: AdjudicationDeps):
   const graceCutoff = new Date(Date.now() - 120_000).toISOString()
   const { data: signalRows } = await service
     .from('sms_template_signals')
-    .select('id, template_id, sms_log_id, signal_kind, field, old_value, new_value')
+    .select('id, template_id, sms_log_id, user_id, signal_kind, field, old_value, new_value')
     .is('template_id', null)
     .is('verdict', null)
     .lt('created_at', graceCutoff)
@@ -212,7 +215,7 @@ async function adjudicateAiOnly(service: ServiceClient, deps: AdjudicationDeps):
       if (shape) {
         await service.from('sms_corrections').insert({
           body_shape_key: shape,
-          redacted_body: redactBody(input.body),
+          redacted_body: maskPii(input.body),
           corrected_fields: result.corrected,
           source_template_id: null,
           source_signal_id: sig.id,
