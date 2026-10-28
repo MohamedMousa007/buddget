@@ -117,7 +117,7 @@ export type Database = {
           id: string
           created_at: string
           user_id: string | null
-          to_email: string
+          to_email: string | null
           template_key: string
           locale: string
           provider_message_id: string | null
@@ -145,7 +145,7 @@ export type Database = {
           id?: string
           created_at?: string
           user_id?: string | null
-          to_email?: string
+          to_email?: string | null
           template_key?: string
           locale?: string
           provider_message_id?: string | null
@@ -2190,6 +2190,18 @@ export type Database = {
           source?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      email_suppressions: {
+        Row: { email: string; reason: string; created_at: string; expires_at: string }
+        Insert: { email: string; reason: string; created_at?: string; expires_at: string }
+        Update: { email?: string; reason?: string; created_at?: string; expires_at?: string }
+        Relationships: []
+      }
+      merchant_category_votes: {
+        Row: { merchant_key: string; user_id: string; category: Database["public"]["Enums"]["expense_category"]; voted_at: string }
+        Insert: { merchant_key: string; user_id: string; category: Database["public"]["Enums"]["expense_category"]; voted_at?: string }
+        Update: { merchant_key?: string; user_id?: string; category?: Database["public"]["Enums"]["expense_category"]; voted_at?: string }
         Relationships: []
       }
       merchant_category_overrides: {
