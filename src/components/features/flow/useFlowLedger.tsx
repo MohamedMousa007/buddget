@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { localDayKey } from '@/lib/utils/localDate'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -28,6 +29,7 @@ import { usePendingSmsPreviews } from '@/hooks/usePendingSmsPreviews'
 import { catalogCategory, merchantCategoryKey } from '@/lib/sms/merchantCategoryCache'
 import { useIncomeResolution } from '@/components/features/flow/IncomePrompts'
 import { useLocale, useT } from '@/lib/i18n'
+import { useWeekStart } from '@/hooks/useWeekStart'
 import type { Expense, IncomeEvent, IncomeSource, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 const REALIZED = new Set<IncomeEvent['status']>(['confirmed', 'late', 'partial'])
@@ -119,12 +121,13 @@ export function useFlowLedger() {
   )
   const previews = usePendingSmsPreviews()
   const { matches } = useIncomeResolution()
+  const weekStart = useWeekStart()
   const base = settings.baseCurrency
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : undefined
 
   const resolved = useMemo(
-    () => resolveRange(filters.range, monthFilter, settings.monthStartDay),
-    [filters.range, monthFilter, settings.monthStartDay],
+    () => resolveRange(filters.range, monthFilter, settings.monthStartDay, new Date(), weekStart),
+    [filters.range, monthFilter, settings.monthStartDay, weekStart],
   )
 
   /** Every item in the range, before segment and filters. */
@@ -414,7 +417,7 @@ export function useFlowLedger() {
     const now = new Date()
     const today = format(now, 'yyyy-MM-dd')
     const yesterday = format(subDays(now, 1), 'yyyy-MM-dd')
-    const weekday = new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { weekday: 'long' })
+    const weekday = new Intl.DateTimeFormat(intlTag(locale), { weekday: 'long' })
     const byDay = new Map<string, FlowItem[]>()
     for (const i of items) {
       const list = byDay.get(i.date)

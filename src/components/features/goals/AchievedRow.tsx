@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react'
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useLocale, useT } from '@/lib/i18n'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import type { Goal } from '@/lib/store/types'
@@ -24,7 +25,7 @@ export function AchievedRow({ goal }: { goal: Goal }) {
   const months = goalMonthsTaken(goal)
   const early = goalMonthsEarly(goal)
   const finished = goal.achievedAt
-    ? new Date(goal.achievedAt).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' })
+    ? new Date(goal.achievedAt).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short', year: 'numeric' })
     : ''
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 shadow-sm">

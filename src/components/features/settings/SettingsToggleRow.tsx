@@ -5,7 +5,6 @@ import { SettingsChip, type RowTone } from '@/components/features/settings/Setti
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { useSettingToggle, type ToggleSettingId } from '@/hooks/useSettingToggle'
 import { SETTING_BY_ID } from '@/lib/settings/registry'
-import { useLocale } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { cn } from '@/lib/utils'
 
@@ -21,7 +20,6 @@ interface SettingsToggleRowProps {
 /** A whole-row switch: label, optional hint, and the shared store-backed toggle for `id`. */
 export function SettingsToggleRow({ id, tone = 'neutral', hint, tag, disabled }: SettingsToggleRowProps) {
   const copy = useSettingsHubCopy()
-  const { locale } = useLocale()
   const { on, set } = useSettingToggle(id)
   const label = copy.items[id].label
   const Icon = SETTING_ICONS[SETTING_BY_ID[id].icon]
@@ -35,7 +33,7 @@ export function SettingsToggleRow({ id, tone = 'neutral', hint, tag, disabled }:
       )}
     >
       <SettingsChip icon={Icon} tone={tone} />
-      <span className={cn('min-w-0 flex-1', locale === 'ar' && 'text-end')}>
+      <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{label}</span>
         {hint ? <span className="mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]">{hint}</span> : null}
         {tag ? <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{tag}</span> : null}

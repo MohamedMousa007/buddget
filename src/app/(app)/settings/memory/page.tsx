@@ -12,40 +12,15 @@ import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { migrateLegacyNotes } from '@/lib/ai/memoryActions'
-import { useLocale } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
+import { useWeekStart } from '@/hooks/useWeekStart'
+import type { WeekStartDay } from '@/lib/time/weekStart'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { AppSettings, FinancialProfile, UserProfile } from '@/lib/store/types'
 
 type EntryMode = AppSettings['budgetEntryMode']
-
-const WORDS = {
-  en: {
-    household: { solo: 'Just me', couple: 'Couple', family: 'Family' },
-    food: { everyday: 'Every day', mostdays: 'Most days', sometimes: 'Sometimes', rarely: 'Rarely' },
-    transport: { public: 'Public transport', car: 'Car', taxi: 'Taxi', walk: 'Walking' },
-    tier: { minimal: 'Minimal', balanced: 'Balanced', comfortable: 'Comfortable' },
-    housing: { rent: 'Renting', own: 'Own home', family: 'With family', company: 'Company housing' },
-    stability: { fixed: 'Fixed', variable: 'Variable', mixed: 'Mixed' },
-    rent: 'Rent',
-    housing_: 'Housing', dependents: 'Dependents', supports: 'Supports others', income: 'Income', car: 'Has a car',
-    lean: 'Saving vs comfort', invest: 'Interested in investing', yes: 'Yes', no: 'No', notSet: 'Not set',
-    kinds: { fact: 'Facts', preference: 'Preferences', constraint: 'Limits' },
-  },
-  ar: {
-    household: { solo: 'أنا فقط', couple: 'زوجان', family: 'عائلة' },
-    food: { everyday: 'كل يوم', mostdays: 'معظم الأيام', sometimes: 'أحيانًا', rarely: 'نادرًا' },
-    transport: { public: 'مواصلات عامة', car: 'سيارة', taxi: 'تاكسي', walk: 'مشيًا' },
-    tier: { minimal: 'بسيط', balanced: 'متوازن', comfortable: 'مريح' },
-    housing: { rent: 'إيجار', own: 'ملك', family: 'مع العائلة', company: 'سكن الشركة' },
-    stability: { fixed: 'ثابت', variable: 'متغير', mixed: 'مختلط' },
-    rent: 'الإيجار',
-    housing_: 'السكن', dependents: 'المعالون', supports: 'تعول آخرين', income: 'الدخل', car: 'لديك سيارة',
-    lean: 'الادخار مقابل الراحة', invest: 'مهتم بالاستثمار', yes: 'نعم', no: 'لا', notSet: 'غير محدد',
-    kinds: { fact: 'حقائق', preference: 'تفضيلات', constraint: 'حدود' },
-  },
-}
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
@@ -63,9 +38,10 @@ export default function SettingsMemoryPage() {
   const copy = useSettingsHubCopy()
   const m = copy.memory
   const { locale } = useLocale()
-  const w = WORDS[locale]
+  const w = useT().inlineCopy.memoryWords
   const profile = useFinanceStore((s) => s.profile) as UserProfile
   const settings = useFinanceStore((s) => s.settings)
+  const weekStart = useWeekStart()
   const memories = useFinanceStore((s) => s.buddgyMemories)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
   const forget = useFinanceStore((s) => s.removeBuddgyMemory)
@@ -76,7 +52,7 @@ export default function SettingsMemoryPage() {
   useEffect(migrateLegacyNotes, [])
 
   const answers: Array<[string, string]> = [
-    [w.housing_, fp.housing ? w.housing[fp.housing] : w.notSet],
+    [w.housingLabel, fp.housing ? w.housing[fp.housing] : w.notSet],
     [w.dependents, fp.dependents === undefined ? w.notSet : String(fp.dependents)],
     [w.supports, bool(fp.supportsOthers, w)],
     [w.income, fp.incomeStability ? w.stability[fp.incomeStability] : w.notSet],
@@ -121,6 +97,19 @@ export default function SettingsMemoryPage() {
             options={[
               { value: 'amount', label: m.entryAmount },
               { value: 'percent_of_income', label: m.entryPercent },
+            ]}
+          />
+        </div>
+        <div data-setting-id="weekStart" className="space-y-2.5 px-4 py-3">
+          <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{m.weekStart}</span>
+          <SegmentedControl<`${WeekStartDay}`>
+            ariaLabel={m.weekStart}
+            value={`${weekStart}`}
+            onChange={(v) => updateSettings({ weekStartDay: Number(v) as WeekStartDay })}
+            options={[
+              { value: '6', label: m.weekSat },
+              { value: '0', label: m.weekSun },
+              { value: '1', label: m.weekMon },
             ]}
           />
         </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { addMonths, format, subMonths } from 'date-fns'
@@ -39,7 +40,7 @@ export function FlowMonthRow({ range, onBackToMonth }: { range?: string; onBackT
   const month = new Date(`${monthFilter}-01T00:00:00`)
   const monthStartDay = useFinanceStore((st) => st.settings.monthStartDay)
   const atCurrent = monthFilter >= cycleKeyFor(new Date(), monthStartDay)
-  const fmt = (m: 'long' | 'short') => new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { month: m }).format(month)
+  const fmt = (m: 'long' | 'short') => new Intl.DateTimeFormat(intlTag(locale), { month: m }).format(month)
   const longName = fmt('long')
   const shortName = fmt('short')
   const year = format(month, 'yyyy')

@@ -557,6 +557,23 @@ html[data-locale='ar'] .font-mono-numbers {
   unicode-bidi: isolate;
 }
 
+/* Tracking disconnects Arabic letters into isolated glyphs. */
+html[data-locale='ar'] *,
+html[data-locale='ar'] *::before,
+html[data-locale='ar'] *::after,
+:lang(ar) *,
+:lang(ar) *::before,
+:lang(ar) *::after {
+  letter-spacing: 0;
+}
+
+/* Layout stays LTR. Only running prose picks its base direction from its first strong character (so Arabic
+   punctuation lands on the correct visual end); rows, labels, headings and tables keep one consistent base
+   direction. Zero specificity so .font-mono-numbers still wins. */
+html[data-locale='ar'] :where(p, li, blockquote, figcaption, [class*='prose-']) {
+  unicode-bidi: plaintext;
+}
+
 html[data-locale='ar'] .prose-rtl {
   text-align: end;
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useState } from 'react'
@@ -31,7 +32,7 @@ import { useBudgetDeckCopy } from './useDeckCopy'
 
 const monthName = (key: string, locale: string, withYear = false) => {
   const [y, m] = key.split('-').map(Number)
-  return new Date(y, m - 1, 1).toLocaleDateString(locale, { month: 'short', ...(withYear ? { year: 'numeric' } : {}) })
+  return new Date(y, m - 1, 1).toLocaleDateString(intlTag(locale), { month: 'short', ...(withYear ? { year: 'numeric' } : {}) })
 }
 const nextKey = (key: string) => {
   const [y, m] = key.split('-').map(Number)

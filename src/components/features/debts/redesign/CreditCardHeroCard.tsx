@@ -1,11 +1,12 @@
 'use client'
 
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import { Receipt } from 'lucide-react'
 import type { CreditCardVM } from '@/hooks/useDebtTabData'
 import { DebtBar, DebtCardFrame, EditPin, fmtWhole, soft } from './heroCardShared'
 import { Button } from '@/components/ui/button'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 
 export interface CreditCardHeroCardProps {
   vm: CreditCardVM
@@ -29,6 +30,7 @@ const STAT_VALUE = 'mt-0.5 font-mono-numbers text-[14px] font-bold leading-tight
 /** Revolving credit-card hero — compact card-like, 3 stat boxes (handoff §3). */
 export function CreditCardHeroCard({ vm, onEdit, onDelete, onPay, onCharges }: CreditCardHeroCardProps) {
   const t = useT().debts
+  const { locale } = useLocale()
   const over = vm.overBy > 0
   const tone = barTone(vm.utilPct)
 
@@ -77,7 +79,7 @@ export function CreditCardHeroCard({ vm, onEdit, onDelete, onPay, onCharges }: C
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         <div className={STAT_BOX}>
-          <p className={STAT_LABEL}>{vm.due ? t.dueOn(format(parseISO(vm.due), 'MMM d')) : t.dueShort}</p>
+          <p className={STAT_LABEL}>{vm.due ? t.dueOn(formatLocalized(parseISO(vm.due), 'MMM d', locale)) : t.dueShort}</p>
           <p className={STAT_VALUE}>{vm.daysLeft != null ? t.daysLeftShort(vm.daysLeft) : '—'}</p>
         </div>
         <div className={STAT_BOX}>

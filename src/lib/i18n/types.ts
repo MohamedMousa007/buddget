@@ -1,4 +1,10 @@
 import type { SubscriptionsCopy } from './subscriptionsCopy'
+import type { VoiceCopy } from './voiceCopy'
+import type { ReceiptScanCopy } from './receiptCopy'
+import type { SavingsFormsCopy } from './savingsFormsCopy'
+import type { SystemPagesCopy } from './systemPagesCopy'
+import type { InlineCopy } from './inlineCopy'
+import type { CatalogCopy } from './catalogCopy'
 /** Buddget i18n dictionary shape — every key in ar.ts must match en.ts exactly. */
 
 /** Tutorial tour copy. Top-level so copyKeys in the manifest stay short
@@ -91,6 +97,12 @@ export interface Dictionary {
   /** Document layout direction; kept `ltr` for Arabic so chrome matches English. */
   dir: 'ltr' | 'rtl'
   locale: string
+  voice: VoiceCopy
+  receiptScan: ReceiptScanCopy
+  savingsForms: SavingsFormsCopy
+  systemPages: SystemPagesCopy
+  inlineCopy: InlineCopy
+  catalogs: CatalogCopy
 
   common: {
     save: string
@@ -704,6 +716,7 @@ export interface Dictionary {
     effectiveEnd: string
     receivedDate: string
     confirmDelete: string
+    confirmDeleteEntry: string
     deleteWithDebtTitle: string
     deleteWithDebtBody: (debtName: string) => string
     deleteBoth: string
@@ -1479,6 +1492,32 @@ export interface Dictionary {
     netWorthTitle: string
     netWorthHint: string
     netWorthGoldIncomplete: string
+    chart: {
+      monthTitle: string
+      monthHint: string
+      monthEmpty: string
+      moneyIn: string
+      moneyOut: string
+      saved: string
+      pieTitle: string
+      pieEmpty: string
+      other: string
+    }
+    csv: {
+      date: string
+      description: string
+      category: string
+      amount: string
+      currency: string
+      baseAmount: string
+      counted: string
+      yes: string
+      no: string
+      savingsLedger: string
+      account: string
+      type: string
+      notes: string
+    }
   }
 
   landing: {
@@ -1985,6 +2024,22 @@ export interface Dictionary {
       smsSalaryBody: string
       smsSalaryDiffersBody: string
     }
+  }
+
+  /** Copy for notifications the server writes outside the cron evaluators (carry, devices, support). */
+  serverNotifications: {
+    carryTitle: string
+    carryBody: (amount: string, currency: string) => string
+    causeRemoved: string
+    causeStale: (days: number) => string
+    deviceNoneTitle: string
+    deviceNoneBody: (cause: string) => string
+    deviceMainTitle: (name: string) => string
+    deviceMainBody: (cause: string) => string
+    deviceJoinedTitle: string
+    deviceJoinedBody: (name: string) => string
+    supportResolvedTitle: (subject: string) => string
+    supportResolvedBody: (number: number) => string
   }
 
   modals: {

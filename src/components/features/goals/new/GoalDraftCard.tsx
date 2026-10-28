@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { Check, Flag } from 'lucide-react'
 import { CheckpointBar } from '@/components/features/goals/CheckpointBar'
 import { useLocale, useT } from '@/lib/i18n'
@@ -26,7 +27,7 @@ export function GoalDraftCard({
   const { icon: Icon, cat } = goalVisual(category)
   const percent = target > 0 ? Math.min(100, Math.round((saved / target) * 100)) : 0
   const due = targetDate
-    ? new Date(`${targetDate.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
+    ? new Date(`${targetDate.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
     : t.chat.dateMissing
   const ready = target > 0 && pace !== null
   const stretch = pace?.zone === 'stretch' || pace?.zone === 'ambitious'

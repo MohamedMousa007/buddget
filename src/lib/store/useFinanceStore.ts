@@ -2005,7 +2005,7 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsTransactions,
             recurringSavingsDeposits: data.recurringSavingsDeposits ?? state.recurringSavingsDeposits,
             settings: data.settings
-              ? { ...state.settings, ...data.settings }
+              ? { ...state.settings, ...data.settings, weekStartDay: data.settings.weekStartDay ?? state.settings.weekStartDay }
               : state.settings,
             goals: data.goals ? data.goals.map(withGoalDefaults) : state.goals,
             subscriptions: data.subscriptions ?? state.subscriptions,

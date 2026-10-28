@@ -135,7 +135,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
   const baseCurrency = profileResult?.extras.baseCurrency ?? local.settings.baseCurrency
   const secondaryCurrency = profileResult ? (profileResult.extras.secondaryCurrency ?? null) : (local.settings.secondaryCurrency ?? null)
   const settings: AppSettings = d.settings
-    ? { ...d.settings, baseCurrency, secondaryCurrency }
+    ? { ...d.settings, weekStartDay: d.settings.weekStartDay ?? local.settings.weekStartDay, baseCurrency, secondaryCurrency }
     : profileResult
       ? { ...local.settings, baseCurrency, secondaryCurrency }
       : local.settings

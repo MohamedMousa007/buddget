@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { capForCategory, sharedBudgetKey } from '@/lib/budget/budgetPlans'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -72,7 +73,7 @@ export function useFlowBand({
 
   return useMemo(() => {
     const monthDate = new Date(`${monthFilter}-01T00:00:00`)
-    const monthName = new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { month: 'long' }).format(monthDate)
+    const monthName = new Intl.DateTimeFormat(intlTag(locale), { month: 'long' }).format(monthDate)
     const startLabel = shortDate(format(resolved.start, 'yyyy-MM-dd'))
     const endLabel = shortDate(format(resolved.end, 'yyyy-MM-dd'))
     const cycle = getMonthRange(monthFilter, monthStartDay)

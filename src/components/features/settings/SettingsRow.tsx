@@ -2,8 +2,7 @@
 
 import type { ComponentType, CSSProperties, ReactNode } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
-import { ChevronRight, ChevronLeft } from 'lucide-react'
-import { useLocale } from '@/lib/i18n'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /** Which category hue tints the icon chip; `neutral` is the plain elevated chip. */
@@ -54,24 +53,17 @@ export function SettingsRow({
   destructive = false,
   settingId,
 }: SettingsRowProps) {
-  const { locale } = useLocale()
-  const isRtl = locale === 'ar'
-
-  const defaultTrailing = trailing ?? (
-    isRtl
-      ? <ChevronLeft className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" />
-      : <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" />
-  )
+  const defaultTrailing = trailing ?? <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" />
 
   const content = (
     <>
       {icon ? <SettingsChip icon={icon} tone={tone} destructive={destructive} /> : null}
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[15px] font-semibold leading-tight', destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]', isRtl && 'text-end')}>
+        <span className={cn('block text-[15px] font-semibold leading-tight', destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]')}>
           {title}
         </span>
         {subtitle ? (
-          <span className={cn('mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]', isRtl && 'text-end')}>
+          <span className={cn('mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]')}>
             {subtitle}
           </span>
         ) : null}

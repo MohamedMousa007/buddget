@@ -11,7 +11,7 @@ import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { SelectField } from '@/components/ui/SelectField'
 import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
-import { useT } from '@/lib/i18n'
+import { useT, type Dictionary } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
 
 export interface VoiceRecapEditorProps {
@@ -27,27 +27,30 @@ export interface VoiceRecapEditorProps {
   compact?: boolean
 }
 
-const ACTION_META: Record<string, { emoji: string; label: string }> = {
-  add_expense: { emoji: '📝', label: 'Expense' },
-  add_income: { emoji: '💵', label: 'Income' },
-  add_debt: { emoji: '🤝', label: 'Debt' },
-  add_debt_payment: { emoji: '🏦', label: 'Debt payment' },
-  deposit_savings: { emoji: '🐷', label: 'Savings deposit' },
-  withdraw_savings: { emoji: '🏧', label: 'Savings withdrawal' },
-  add_savings_account: { emoji: '🏦', label: 'Savings account' },
-  add_payment_method: { emoji: '💳', label: 'Payment method' },
+type VoiceActionKey = keyof Dictionary['voice']['recap']['actionLabels']
+type VoiceFieldLabelKey = keyof Dictionary['voice']['recap']['fieldLabels']
+
+const ACTION_EMOJI: Record<VoiceActionKey, string> = {
+  add_expense: '📝',
+  add_income: '💵',
+  add_debt: '🤝',
+  add_debt_payment: '🏦',
+  deposit_savings: '🐷',
+  withdraw_savings: '🏧',
+  add_savings_account: '🏦',
+  add_payment_method: '💳',
 }
 
-function primaryField(action: AIAction): { key: string; label: string } {
+function primaryField(action: AIAction): { key: string; label: VoiceFieldLabelKey } {
   switch (action) {
-    case 'add_income': return { key: 'name', label: 'Source' }
-    case 'add_debt': return { key: 'name', label: 'Debt name' }
-    case 'add_debt_payment': return { key: 'person', label: 'Person' }
+    case 'add_income': return { key: 'name', label: 'source' }
+    case 'add_debt': return { key: 'name', label: 'debtName' }
+    case 'add_debt_payment': return { key: 'person', label: 'person' }
     case 'deposit_savings':
-    case 'withdraw_savings': return { key: 'account', label: 'Account' }
-    case 'add_savings_account': return { key: 'name', label: 'Account name' }
-    case 'add_payment_method': return { key: 'name', label: 'Name' }
-    default: return { key: 'description', label: 'Description' }
+    case 'withdraw_savings': return { key: 'account', label: 'account' }
+    case 'add_savings_account': return { key: 'name', label: 'accountName' }
+    case 'add_payment_method': return { key: 'name', label: 'name' }
+    default: return { key: 'description', label: 'description' }
   }
 }
 
@@ -73,13 +76,14 @@ export function VoiceRecapEditor({
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const t = useT()
+  const r = t.voice.recap
   const multiple = actions.length > 1
 
   return (
     <div className={compact ? 'px-4 py-3' : 'w-full'}>
       <div className="flex items-center justify-between">
         <h3 className={compact ? 'text-sm font-semibold text-[var(--color-brand-text-primary)]' : 'text-base font-semibold text-[var(--color-brand-text-primary)]'}>
-          {actions.length === 0 ? 'Nothing to save' : multiple ? `${actions.length} transactions` : 'Confirm to save'}
+          {actions.length === 0 ? r.nothingToSave : multiple ? r.transactionsCount(actions.length) : r.confirmToSave}
         </h3>
         {transcript && !compact ? (
           <span className="text-[10px] text-[var(--color-brand-text-muted)] truncate max-w-[45%]">&ldquo;{transcript}&rdquo;</span>
@@ -89,7 +93,8 @@ export function VoiceRecapEditor({
       <div className={`mt-2 space-y-2 overflow-y-auto ${compact ? 'max-h-[46vh]' : 'max-h-[48vh]'}`}>
         {actions.map((item, idx) => {
           const action = item.action
-          const meta = ACTION_META[action] ?? { emoji: '•', label: action }
+          const actionLabels: Record<string, string> = r.actionLabels
+          const meta = { emoji: ACTION_EMOJI[action as VoiceActionKey] ?? '•', label: actionLabels[action] ?? action }
           const pf = primaryField(action)
           const showAmount = action !== 'add_payment_method'
           const showCurrency = action !== 'add_payment_method'
@@ -117,7 +122,7 @@ export function VoiceRecapEditor({
 
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <label className="col-span-2 block">
-                  <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{pf.label}</span>
+                  <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.fieldLabels[pf.label]}</span>
                   <input
                     className={FIELD_CLS}
                     value={String(getField(item.data, pf.key) ?? '')}
@@ -127,7 +132,7 @@ export function VoiceRecapEditor({
 
                 {showAmount ? (
                   <label className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Amount</span>
+                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.amount}</span>
                     <AmountField
                       bare
                       className={FIELD_CLS}
@@ -139,7 +144,7 @@ export function VoiceRecapEditor({
 
                 {showCurrency ? (
                   <label className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Currency</span>
+                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.currency}</span>
                     <CurrencyField
                       value={String(getField(item.data, 'currency') ?? baseCurrency)}
                       onChange={(c) => onUpdateField(idx, 'currency', c)}
@@ -150,7 +155,7 @@ export function VoiceRecapEditor({
 
                 {showCategory ? (
                   <div className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Category</span>
+                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.category}</span>
                     <SelectField
                       aria-label="Category"
                       value={String(getField(item.data, 'category') ?? 'Other')}
@@ -166,7 +171,7 @@ export function VoiceRecapEditor({
 
                 {showPayment ? (
                   <label className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">Payment method</span>
+                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.paymentMethod}</span>
                     <select
                       className={FIELD_CLS}
                       value={pmValue}
@@ -202,7 +207,7 @@ export function VoiceRecapEditor({
           size="touch"
           className="flex-1 gap-1.5 px-3 text-sm font-semibold"
         >
-          <Check className="h-4 w-4" /> {multiple ? 'Save all' : 'Save'}
+          <Check className="h-4 w-4" /> {multiple ? r.saveAll : r.save}
         </Button>
         <Button
           type="button"
@@ -211,7 +216,7 @@ export function VoiceRecapEditor({
           size="touch"
           className="gap-1 bg-transparent px-3 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
-          <Mic className="h-4 w-4" /> Redo
+          <Mic className="h-4 w-4" /> {r.redo}
         </Button>
         <IconButton onClick={onCancel} aria-label="Cancel">
           <X className="h-4 w-4" />

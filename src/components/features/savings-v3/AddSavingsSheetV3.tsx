@@ -16,6 +16,7 @@ import type { PocketVM } from '@/components/features/savings-v3/types'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
+import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import type { Currency } from '@/lib/store/types'
 
 export interface AddSavingsSheetV3Props {
@@ -29,6 +30,7 @@ export interface AddSavingsSheetV3Props {
 
 export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: AddSavingsSheetV3Props) {
   const t = useT().wealthSheets.money
+  const sf = useT().savingsForms
   const deposit = useFinanceStore((s) => s.depositToSavings)
   const showToast = useActionToast()
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
@@ -115,7 +117,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
           <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
-            {selected ? t.addCta(amountNum > 0 ? fmtNum(amountNum) : '', selected.account.name) : t.choosePocket}
+            {selected ? t.addCta(amountNum > 0 ? fmtNum(amountNum) : '', pocketDisplayName(selected.account, sf.systemNames)) : t.choosePocket}
           </Button>
         </div>
       </div>

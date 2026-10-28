@@ -49,6 +49,7 @@ export function AddHoldingSheet({ open, ...rest }: AddHoldingSheetProps) {
 
 function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldingSheetProps, 'open'>) {
   const t = useT().addHolding
+  const sf = useT().savingsForms
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const savingsAccounts = useFinanceStore((s) => s.savingsAccounts)
   const wealthGoldStrip = useFinanceStore((s) => s.settings.wealthGoldStrip)
@@ -128,8 +129,8 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
                           <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: tint(def.color, 16), color: def.color }}>
                             <SavingsAccountIcon account={{ type: def.savingsType, icon: def.icon }} className="h-5 w-5" />
                           </span>
-                          <p className="mt-1 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{def.label}</p>
-                          <p className="text-xs text-[var(--color-brand-text-muted)]">{def.sub}</p>
+                          <p className="mt-1 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{sf.pocketKinds[k].label}</p>
+                          <p className="text-xs text-[var(--color-brand-text-muted)]">{sf.pocketKinds[k].sub}</p>
                         </SelectableCard>
                       )
                     })}

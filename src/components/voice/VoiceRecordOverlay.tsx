@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
 import { useDismissable } from '@/hooks/useDismissable'
 import { IconButton } from '@/components/ui/IconButton'
+import { useT } from '@/lib/i18n'
 
 const BARS = 36
 const W = BARS * 5
@@ -183,6 +184,7 @@ function FloatingRecordingWidget({
   nearTrash: boolean
   trashRef: RefObject<HTMLDivElement | null>
 }) {
+  const v = useT().voice
   const [startTs] = useState(() => Date.now())
   const [elapsed, setElapsed] = useState(0)
 
@@ -252,7 +254,7 @@ function FloatingRecordingWidget({
         style={{ bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}
       >
         <span className="text-xs text-[var(--color-brand-text-muted)] bg-[var(--color-brand-card)]/80 backdrop-blur px-3 py-1 rounded-full">
-          {nearTrash ? 'Release to cancel' : 'Release to save · drag up to cancel'}
+          {nearTrash ? v.releaseToCancel : v.releaseToSave}
         </span>
       </div>
     </>
@@ -262,11 +264,12 @@ function FloatingRecordingWidget({
 // ── Processing panel ─────────────────────────────────────────────────────────
 
 function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
+  const v = useT().voice
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
         <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="thinking" size={26} strokeWidth={1.75} filled /></span>
-        <span className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing…</span>
+        <span className="text-sm text-[var(--color-brand-text-secondary)]">{v.transcribingShort}</span>
       </div>
       <IconButton onClick={onCancel} aria-label="Cancel">
         <X className="size-4" />
@@ -278,12 +281,13 @@ function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
 // ── Queued panel (offline save) ──────────────────────────────────────────────
 
 function QueuedPanel({ onClose }: { onClose: () => void }) {
+  const v = useT().voice
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--color-brand-green)]" />
         <p className="text-xs text-[var(--color-brand-text-secondary)] min-w-0">
-          Recording saved — you&apos;re offline. Tap the chip at the top when you&apos;re back online to finish it.
+          {v.offlineBodyShort}
         </p>
       </div>
       <IconButton onClick={onClose} aria-label="Close">
@@ -304,11 +308,12 @@ function ErrorPanel({
   onRedo: () => void
   onClose: () => void
 }) {
+  const v = useT().voice
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="worried" size={26} strokeWidth={1.75} filled /></span>
       <p className="text-xs text-[var(--color-brand-text-secondary)] min-w-0 truncate flex-1">
-        {error ?? 'Something went wrong'}
+        {error ?? v.somethingWrong}
       </p>
       <div className="flex items-center gap-1.5 shrink-0">
         <Button
@@ -318,7 +323,7 @@ function ErrorPanel({
           size="xs"
           className="gap-1 rounded-lg bg-[var(--color-brand-elevated)] text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]"
         >
-          <RotateCcw className="h-3 w-3" /> Retry
+          <RotateCcw className="h-3 w-3" /> {v.tryAgain}
         </Button>
         <IconButton onClick={onClose} aria-label="Close">
           <X className="size-4" />
@@ -341,6 +346,7 @@ function AnswerPanel({
   onRedo: () => void
   onClose: () => void
 }) {
+  const v = useT().voice
   return (
     <div className="px-4 py-3 space-y-2">
       <div className="flex items-start gap-2">
@@ -354,7 +360,7 @@ function AnswerPanel({
           size="sm"
           className="h-8 flex-1 gap-1.5 rounded-xl px-3 text-xs font-semibold"
         >
-          <MessageCircle className="h-3.5 w-3.5" /> Open in chat
+          <MessageCircle className="h-3.5 w-3.5" /> {v.openInChat}
         </Button>
         <Button
           type="button"
@@ -363,7 +369,7 @@ function AnswerPanel({
           size="sm"
           className="h-8 rounded-xl bg-transparent px-3 text-xs text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
-          Ask again
+          {v.askAgain}
         </Button>
         <IconButton onClick={onClose} aria-label="Close">
           <X className="size-4" />
@@ -384,11 +390,12 @@ function ClarifyPanel({
   onAnswer: () => void
   onClose: () => void
 }) {
+  const v = useT().voice
   return (
     <div className="px-4 py-3 space-y-2">
       <div className="flex items-start gap-2">
         <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="curious" size={26} strokeWidth={1.75} filled /></span>
-        <p className="text-xs text-[var(--color-brand-text-secondary)]">{message || 'Could you add a bit more detail?'}</p>
+        <p className="text-xs text-[var(--color-brand-text-secondary)]">{message || v.detailPrompt}</p>
       </div>
       <div className="flex gap-2">
         <Button
@@ -397,7 +404,7 @@ function ClarifyPanel({
           size="sm"
           className="h-8 flex-1 gap-1.5 rounded-xl px-3 text-xs font-semibold"
         >
-          <Mic className="h-3.5 w-3.5" /> Answer by voice
+          <Mic className="h-3.5 w-3.5" /> {v.answerByVoice}
         </Button>
         <IconButton onClick={onClose} aria-label="Close">
           <X className="size-4" />

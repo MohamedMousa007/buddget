@@ -42,6 +42,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
   const updateProfile = useFinanceStore((s) => s.updateProfile)
   const cfg = useFinanceStore((s) => s.profile.zakatConfig) ?? undefined
   const t = useT().wealthSheets.zakat
+  const z = useT().savingsForms.zakat
   const { locale } = useLocale()
   const todayLabel = useT().expenseForm.today
   const unit = useFinanceStore((s) => s.settings.baseCurrency)
@@ -120,32 +121,32 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
   if (!open) return null
 
   const rows: Array<{ id: LineId; icon: React.ReactNode; color: string; name: string; sub: string; value: number; negative?: boolean }> = [
-    { id: 'cash', icon: <Wallet size={18} />, color: 'var(--color-cat-5)', name: 'Cash & savings', sub: 'Every pocket you hold', value: cash },
-    { id: 'gold', icon: <Gem size={18} />, color: 'var(--color-brand-gold)', name: 'Gold', sub: "At today's sell price", value: gold },
-    { id: 'crypto', icon: <Bitcoin size={18} />, color: 'var(--color-cat-6)', name: 'Crypto', sub: 'Treated like cash', value: crypto },
-    { id: 'stocks', icon: <TrendingUp size={18} />, color: 'var(--color-brand-green)', name: 'Stocks', sub: `${holdsForTrading ? 'For trading · 100%' : 'Long-term · 30%'} counted`, value: stocks },
+    { id: 'cash', icon: <Wallet size={18} />, color: 'var(--color-cat-5)', name: z.cash, sub: z.cashSub, value: cash },
+    { id: 'gold', icon: <Gem size={18} />, color: 'var(--color-brand-gold)', name: z.gold, sub: z.goldSub, value: gold },
+    { id: 'crypto', icon: <Bitcoin size={18} />, color: 'var(--color-cat-6)', name: z.crypto, sub: z.cryptoSub, value: crypto },
+    { id: 'stocks', icon: <TrendingUp size={18} />, color: 'var(--color-brand-green)', name: z.stocks, sub: z.stocksSub(holdsForTrading), value: stocks },
   ]
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
-          <V3SheetHeader.Title>Zakat</V3SheetHeader.Title>
+          <V3SheetHeader.Title>{z.title}</V3SheetHeader.Title>
         </V3SheetHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {/* verdict */}
           <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: tint(accent, 35), background: tint(accent, 6) }}>
-            <p className="text-sm font-semibold" style={{ color: accent }}>{result.due ? 'Zakat is due' : 'No zakat due'}</p>
+            <p className="text-sm font-semibold" style={{ color: accent }}>{result.due ? z.due : z.notDue}</p>
             <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">{unit}</span></p>
-            <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? `2.5% × ${fmtNum(result.zakatable)} ${unit} zakatable` : `You are ${fmtNum(result.gap)} ${unit} under the line`}</p>
+            <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? z.zakatableLine('2.5%', fmtNum(result.zakatable), unit) : z.underLine(fmtNum(result.gap), unit)}</p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--color-brand-sunken)' }}><div style={{ width: `${Math.min(100, result.nisab > 0 ? (result.zakatable / result.nisab) * 100 : 0)}%`, height: '100%', background: accent }} /></div>
-            <div className="mt-2 flex justify-between font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]"><span>Nisab · {fmtNum(result.nisab)} {unit}</span><span>Hawl ends {hawlDate}</span></div>
+            <div className="mt-2 flex justify-between font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]"><span>{z.nisab(fmtNum(result.nisab), unit)}</span><span>{z.hawlEnds(hawlDate)}</span></div>
           </div>
 
           {/* what counts */}
           <div>
-            <p style={micro}>What counts</p>
+            <p style={micro}>{z.whatCounts}</p>
             <Card padding="none" className="mt-2 overflow-hidden">
               {rows.map((r, i) => (
                 <div key={r.id} className="flex items-center gap-3 p-3" style={{ borderTop: i ? '1px solid var(--color-brand-border)' : undefined }}>
@@ -162,13 +163,13 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               {/* property */}
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-cat-1)', 14), color: 'var(--color-cat-1)' }}><Home size={18} /></span>
-                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Property</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">Not counted — only rent you kept</p></div>
-                <span className="rounded-full border border-dashed border-[var(--color-brand-border)] px-3 py-1.5 text-[11px] text-[var(--color-brand-text-muted)]">Not counted</span>
+                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.property}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{z.propertySub}</p></div>
+                <span className="rounded-full border border-dashed border-[var(--color-brand-border)] px-3 py-1.5 text-[11px] text-[var(--color-brand-text-muted)]">{z.notCounted}</span>
               </div>
               {/* debts (negative) */}
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-brand-red)', 14), color: 'var(--color-brand-red)' }}><CreditCard size={18} /></span>
-                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Debts due this year</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">Subtracted from your wealth</p></div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.debts}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{z.debtsSub}</p></div>
                 <span className="mr-1 text-sm text-[var(--color-brand-red)]">−</span>
                 <input {...lineInput('debts', debts)}
                   className={cn(
@@ -177,7 +178,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                   )} />
               </div>
               <div className="flex items-center justify-between bg-[var(--color-brand-elevated)] p-3">
-                <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">Zakatable wealth</span>
+                <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.zakatableWealth}</span>
                 <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(result.zakatable)} {unit}</span>
               </div>
             </Card>
@@ -206,10 +207,10 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
           {/* stock factor */}
           <div>
-            <p style={micro}>How you hold stocks</p>
+            <p style={micro}>{z.stockHold}</p>
             <div className="mt-2 grid grid-cols-2 gap-2.5">
-              <FactorCard title="Long-term" sub="30% counted" on={!holdsForTrading} onClick={() => { setHoldsForTrading(false); save({ holdsForTrading: false }) }} />
-              <FactorCard title="For trading" sub="100% counted" on={holdsForTrading} onClick={() => { setHoldsForTrading(true); save({ holdsForTrading: true }) }} />
+              <FactorCard title={z.longTerm} sub={z.longTermSub} on={!holdsForTrading} onClick={() => { setHoldsForTrading(false); save({ holdsForTrading: false }) }} />
+              <FactorCard title={z.forTrading} sub={z.forTradingSub} on={holdsForTrading} onClick={() => { setHoldsForTrading(true); save({ holdsForTrading: true }) }} />
             </div>
           </div>
 
@@ -253,7 +254,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
           <div className="flex items-start gap-2 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
             <BookOpen size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-brand-gold)' }} />
-            <p className="text-xs text-[var(--color-brand-text-secondary)]">Zakat is 2.5% of the wealth you have held for one lunar year above nisab. A home you live in and land you rent out are not counted — only the rent you kept. Buddget follows the majority view; check anything unusual with someone you trust.</p>
+            <p className="text-xs text-[var(--color-brand-text-secondary)]">{z.explainer}</p>
           </div>
         </div>
 

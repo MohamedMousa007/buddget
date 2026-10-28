@@ -2,10 +2,11 @@
 
 import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useShallow } from 'zustand/react/shallow'
 import { currentCycle } from '@/lib/settings/payCycle'
-import { format, parse, parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks, isWithinInterval } from 'date-fns'
+import { parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks, isWithinInterval } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
@@ -25,7 +26,7 @@ import {
 } from '@/lib/debt/computeCreditCardBalance'
 import { debtFreeBy, lastPaymentDate, paymentsToClear } from '@/lib/debts/heroStats'
 import { paidAsEntered } from '@/lib/debts/paymentAmounts'
-import { installmentPaymentsCompleted, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
+import { installmentPaymentsCompleted, nextInstallmentDueDate, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
 import { decomposePaymentMethodName, providerInitials } from '@/lib/payment/paymentMethodDefaults'
 import type { Currency, Debt, DebtGoal, DebtPayment, GoldKarat } from '@/lib/store/types'
@@ -140,6 +141,7 @@ function paidInBase(debt: Debt, payments: DebtPayment[], base: Currency, rates: 
 export function useDebtTabData() {
   const stats = useMonthlyStats()
   const t = useT()
+  const { locale } = useLocale()
   const { debts, debtPayments, paymentMethods, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
     useShallow((s) => ({
       debts: countedDebts(s.debts, s.paymentMethods),
@@ -214,11 +216,11 @@ export function useDebtTabData() {
             // On track = paid at least what the schedule expects by now (capped at total).
             const expected = Math.min(g.calculatedAmount * elapsed, d.startingBalance)
             return {
-              by: format(parseISO(g.targetDate), 'MMM yyyy'),
+              by: formatLocalized(parseISO(g.targetDate), 'MMM yyyy', locale),
               per: g.calculatedAmount,
               cadence: g.paymentFrequency,
               remaining: g.calculatedAmount > 0 ? Math.ceil(remaining / g.calculatedAmount) : 0,
-              next: format(nextDate, 'MMM d'),
+              next: formatLocalized(nextDate, 'MMM d', locale),
               onTrack: paid + 1e-6 >= expected,
             }
           })() : undefined,
@@ -290,7 +292,7 @@ export function useDebtTabData() {
           per,
           remaining: calculateDebtRemaining(d, pays, balanceCtx),
           currency: d.currency,
-          next: nextInstallmentDueFormatted(d, paid) ?? undefined,
+          next: nextInstallmentDueFormatted(d, paid, locale) ?? undefined,
           method,
           onCardLast4: cardLast4 ?? undefined,
         }
@@ -321,7 +323,7 @@ export function useDebtTabData() {
         name: d.name || d.person || '—',
         original: d.startingBalance,
         currency: d.currency,
-        clearedMonth: d.clearedAt ? format(parseISO(d.clearedAt), 'MMM yyyy') : '—',
+        clearedMonth: d.clearedAt ? formatLocalized(parseISO(d.clearedAt), 'MMM yyyy', locale) : '—',
         history: paymentsFor(d.id)
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .map((p) => ({
@@ -342,7 +344,7 @@ export function useDebtTabData() {
           amount: cand.amount,
           currency: cand.currency,
           method: (cand.paymentMethodId && paymentMethods.find((m) => m.id === cand.paymentMethodId)?.name) || t.debts.paymentFallback,
-          date: format(parseISO(cand.date), 'MMM d'),
+          date: formatLocalized(parseISO(cand.date), 'MMM d', locale),
           debtId: (() => {
             const matches = active.filter(
               (d) => debtFamily(d) === 'installment' && d.currency === cand.currency && Math.abs((d.installmentAmount ?? 0) - cand.amount) < 0.5,
@@ -372,9 +374,8 @@ export function useDebtTabData() {
         continue
       }
       if (d.debtType === 'installment') {
-        const nextStr = nextInstallmentDueFormatted(d, installmentPaymentsCompleted(d, paymentsFor(d.id)))
-        if (nextStr && d.installmentAmount) {
-          const next = parse(nextStr, 'MMM d, yyyy', now)
+        const next = nextInstallmentDueDate(d, installmentPaymentsCompleted(d, paymentsFor(d.id)))
+        if (next && d.installmentAmount) {
           scheduled.push({ debtId: d.id, name: nameOf(d), date: next, amount: toBase(d.installmentAmount, d.currency) })
           const left = (d.installmentCount ?? 0) - installmentPaymentsCompleted(d, paymentsFor(d.id))
           projectedEnds.push(lastPaymentDate(next, d.installmentFrequency ?? 'monthly', left))
@@ -433,5 +434,5 @@ export function useDebtTabData() {
       assignCandidate,
       base,
     }
-  }, [debts, debtPayments, recurring, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, settings.monthStartDay, stats.debtRemainingTotal, t])
+  }, [debts, debtPayments, recurring, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, settings.monthStartDay, stats.debtRemainingTotal, t, locale])
 }

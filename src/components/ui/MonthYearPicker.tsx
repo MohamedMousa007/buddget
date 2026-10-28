@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
 import { CalendarDays, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -48,7 +49,7 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact, her
 
   const label = compact ? formatMonthShort(monthFilter) : formatMonth(monthFilter)
   const monthLong = new Date(parsed.year, parsed.month - 1, 1).toLocaleString(
-    locale === 'ar' ? 'ar-EG' : 'en-US',
+    intlTag(locale),
     { month: 'long' },
   )
 

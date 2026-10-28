@@ -18,7 +18,9 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { FAMILY_ACCENT, type PaymentVM } from '@/hooks/useDebtTabData'
 import { debtFamily, DEBT_FAMILY_ORDER, type DebtFamily } from '@/lib/debts/debtFamily'
 import { resolveRange, type RangePreset } from '@/lib/expenses/dateRange'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { useWeekStart } from '@/hooks/useWeekStart'
 import { fmtWhole, soft } from './heroCardShared'
 
 const FAMILY_ICON: Record<DebtFamily, typeof Check> = {
@@ -70,6 +72,7 @@ export function DebtPaymentsFeed({
   onOpenCompleted?: () => void
 }) {
   const t = useT()
+  const { locale } = useLocale()
   const td = t.debts
   const tm = t.debtMoves
   const familyLabel: Record<DebtFamily, string> = { borrow: td.feedBorrow, credit_card: td.feedCard, installment: td.feedPlan }
@@ -81,6 +84,7 @@ export function DebtPaymentsFeed({
     })),
   )
   const monthFilter = useSettingsStore((s) => s.monthFilter)
+  const weekStart = useWeekStart()
   const { removeDebtPayment } = useLinkedDelete()
   const [filters, setFilters] = useState<MoveFilters>(NO_FILTERS)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -101,7 +105,7 @@ export function DebtPaymentsFeed({
     const bounds =
       filters.range === 'any'
         ? null
-        : resolveRange({ preset: filters.range, from: filters.from || null, to: filters.to || null }, monthFilter, monthStartDay)
+        : resolveRange({ preset: filters.range, from: filters.from || null, to: filters.to || null }, monthFilter, monthStartDay, new Date(), weekStart)
     return moves.filter(
       (m) =>
         (filters.kind === 'all' || m.kind === filters.kind) &&
@@ -109,7 +113,7 @@ export function DebtPaymentsFeed({
         (!filters.debtId || m.debtId === filters.debtId) &&
         (!bounds || isWithinInterval(parseISO(m.date.slice(0, 10)), bounds)),
     )
-  }, [moves, filters, monthFilter, monthStartDay])
+  }, [moves, filters, monthFilter, monthStartDay, weekStart])
 
   const groups = useMemo(() => {
     const map = new Map<string, Move[]>()
@@ -119,11 +123,11 @@ export function DebtPaymentsFeed({
     }
     return Array.from(map.entries()).map(([key, items]) => ({
       key,
-      label: format(parseISO(key), 'MMM d'),
+      label: formatLocalized(parseISO(key), 'MMM d', locale),
       total: items.reduce((s, x) => s + (x.kind === 'paid' ? -x.amount : 0), 0),
       items,
     }))
-  }, [shown])
+  }, [shown, locale])
 
   if (moves.length === 0) {
     return (
@@ -189,7 +193,7 @@ export function DebtPaymentsFeed({
                     caption={m.kind === 'added' ? tm.added : familyLabel[m.family]}
                     captionColor={accent}
                     title={m.name}
-                    subtitle={m.kind === 'added' ? familyLabel[m.family] : `${format(parseISO(m.date), 'MMM d')}${m.method ? ` · ${m.method}` : ''}`}
+                    subtitle={m.kind === 'added' ? familyLabel[m.family] : `${formatLocalized(parseISO(m.date), 'MMM d', locale)}${m.method ? ` · ${m.method}` : ''}`}
                     amount={m.kind === 'paid' ? `−${fmtWhole(m.amount)}` : m.amount > 0 ? `+${fmtWhole(m.amount)}` : '—'}
                     sub={
                       m.kind === 'paid' ? (

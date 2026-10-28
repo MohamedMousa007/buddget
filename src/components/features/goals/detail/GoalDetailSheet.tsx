@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
 import { MoreHorizontal, Pause, Pencil, Play, Trash2, Trophy, X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -75,8 +76,8 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
 
   const money = (n: number) => formatCurrency(Math.round(n), goal.currency, false)
   const short = (iso: string | null) =>
-    iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(locale, { month: 'short', year: '2-digit' }) : '—'
-  const month = (iso: string) => new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
+    iso ? new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: '2-digit' }) : '—'
+  const month = (iso: string) => new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
 
   const chipKind =
     goal.status === 'achieved' ? 'chipAchieved'

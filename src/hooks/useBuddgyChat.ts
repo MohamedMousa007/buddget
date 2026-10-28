@@ -265,7 +265,7 @@ export function useBuddgyChat() {
     void send(lastUser.text)
   }, [commit, send])
 
-  const keepGoing = useCallback(() => void send(locale === 'ar' ? 'كمّل' : 'Continue'), [locale, send])
+  const keepGoing = useCallback(() => void send(t.inlineCopy.buddgyContinue), [t, send])
 
   // A seed either pre-fills the composer (voice "Open in chat") or, from a Buddgy tip, is sent straight away.
   const sendRef = useRef(send)

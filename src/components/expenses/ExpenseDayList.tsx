@@ -18,7 +18,8 @@ import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { Expense } from '@/lib/store/types'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,7 @@ interface DayGroup {
 
 export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
   const t = useT()
+  const { locale } = useLocale()
   const { settings, exchangeRates, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       settings: s.settings,
@@ -83,12 +85,12 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
     return Array.from(map.entries()).map(([key, items]) => ({
       key,
       rel: key === todayKey ? t.common.today : key === yesterdayKey ? t.common.yesterday : null,
-      abs: format(parseISO(key), 'MMM d'),
+      abs: formatLocalized(parseISO(key), 'MMM d', locale),
       total: items.reduce((sum, e) => isNonSpendExpense(e) ? sum : sum + expenseAmountInBase(e, base, exchangeRates), 0),
       incomplete: items.some((e) => !isNonSpendExpense(e) && isExpenseUnconverted(e, base, exchangeRates)),
       items,
     }))
-  }, [expenses, base, exchangeRates, t])
+  }, [expenses, base, exchangeRates, t, locale])
 
   const openEdit = (id: string) => {
     setEditingExpenseId(id)
@@ -144,7 +146,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
               const usd = showSecondary && secondary
                 ? formatCurrency(convertCurrency(baseVal, base, secondary, exchangeRates), secondary)
                 : null
-              const statusDate = format(parseISO(e.refundedAt ?? e.date), 'MMM d')
+              const statusDate = formatLocalized(parseISO(e.refundedAt ?? e.date), 'MMM d', locale)
               const nonSpend = isNonSpendExpense(e)
               return (
                 <div key={e.id}>

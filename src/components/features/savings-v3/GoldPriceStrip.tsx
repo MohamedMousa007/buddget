@@ -5,7 +5,8 @@ import { useMemo, useState } from 'react'
 import { IconButton } from '@/components/ui/IconButton'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatClock, formatLocalized } from '@/lib/i18n/dateFormat'
 import { egyptKaratPrice, usdPerGram } from '@/lib/prices/egyptGold'
 import { formatWhole } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
@@ -15,8 +16,6 @@ type Freshness = 'fresh' | 'stale' | 'unavailable'
 const KARATS = [24, 21, 18] as const
 const DAY_MS = 86_400_000
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-
 /**
  * Egypt's gold prices in one bar, and the page's freshness status. The world row carries the
  * Sagha gap: gold here is priced at a dollar above the banks' rate, so it costs about that much
@@ -24,6 +23,7 @@ const time = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: 
  */
 export function GoldPriceStrip() {
   const t = useT().wealthPage
+  const { locale } = useLocale()
   const { lookupDisplay, refresh } = useAssetPrices()
   const state = useFinanceStore((s) => s.settings.wealthGoldStrip ?? 'collapsed')
   const officialFallback = useFinanceStore((s) => s.exchangeRates['USD_EGP'] ?? null)
@@ -105,7 +105,7 @@ export function GoldPriceStrip() {
           {pill.text}
         </span>
         <span className="min-w-0 flex-1 truncate text-xs text-[var(--color-brand-text-secondary)]">
-          {t.stripSagha}{vm ? ` · ${t.stripAsOf(freshness === 'fresh' ? time(vm.asOf) : new Date(vm.asOf).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}` : ''}
+          {t.stripSagha}{vm ? ` · ${t.stripAsOf(freshness === 'fresh' ? formatClock(new Date(vm.asOf), locale) : formatLocalized(new Date(vm.asOf), 'd MMM', locale))}` : ''}
         </span>
         <IconButton aria-label={t.refreshPrices} size="sm" variant={freshness === 'fresh' ? 'ghost' : 'brand'} onClick={() => void refresh()}>
           <RefreshCw size={16} />

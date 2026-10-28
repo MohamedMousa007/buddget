@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageBody } from '@/components/layout/PageContainer'
@@ -279,9 +280,9 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const base = view.base
   // The month the activation really takes over from follows the pay cycle, not the calendar.
   const cycleKey = cycleKeyOf(new Date(), store.getState().settings.monthStartDay)
-  const cycleMonthLabel = new Date(Number(cycleKey.slice(0, 4)), Number(cycleKey.slice(5, 7)) - 1, 1).toLocaleDateString(locale, { month: 'long' })
+  const cycleMonthLabel = new Date(Number(cycleKey.slice(0, 4)), Number(cycleKey.slice(5, 7)) - 1, 1).toLocaleDateString(intlTag(locale), { month: 'long' })
   const closeMonth = monthClose
-    ? new Date(Number(monthClose.cycleKey.slice(0, 4)), Number(monthClose.cycleKey.slice(5, 7)) - 1, 1).toLocaleDateString(locale, { month: 'long' })
+    ? new Date(Number(monthClose.cycleKey.slice(0, 4)), Number(monthClose.cycleKey.slice(5, 7)) - 1, 1).toLocaleDateString(intlTag(locale), { month: 'long' })
     : ''
   const summaries = Object.fromEntries(plans.map((p) => [p.id, summarizePlan(p, view.income, base, rates)]))
   const sinceKey = activations
@@ -290,7 +291,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     .sort()
     .pop()
   const activeSince = sinceKey
-    ? new Date(Number(sinceKey.slice(0, 4)), Number(sinceKey.slice(5, 7)) - 1, 1).toLocaleDateString(locale, { month: 'short' })
+    ? new Date(Number(sinceKey.slice(0, 4)), Number(sinceKey.slice(5, 7)) - 1, 1).toLocaleDateString(intlTag(locale), { month: 'short' })
     : null
   return (
     <PageBody className="space-y-4 lg:pb-6">

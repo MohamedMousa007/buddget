@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useState } from 'react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
@@ -29,7 +30,7 @@ export function CounselorCard({
   const [keptKey, setKeptKey] = useState<string | null>(null)
   const { locale } = useLocale()
   const month = (iso: string) =>
-    new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
+    new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
   const money = (n: number) => formatCurrency(Math.round(n), currency, false)
   const stretch = pace.zone === 'stretch' || pace.zone === 'ambitious'
   const unknown = pace.zone === 'unknown'

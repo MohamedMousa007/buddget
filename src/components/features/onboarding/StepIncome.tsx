@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useState } from 'react'
 import { Info } from 'lucide-react'
 import { AmountField } from '@/components/ui/AmountField'
@@ -65,7 +66,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
 
   if (reveal) {
     const allowance = dailyAllowance(model.totalInBase, new Date(), day)
-    const paydayLabel = allowance.payday.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
+    const paydayLabel = allowance.payday.toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' })
     const today = allowance.days === 0
     return (
       <RevealScreen

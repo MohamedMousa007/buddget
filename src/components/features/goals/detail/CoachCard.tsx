@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { useLocale, useT } from '@/lib/i18n'
@@ -39,8 +40,8 @@ export function CoachCard({
   const t = useT().goals.detail
   const { locale } = useLocale()
   const month = (iso: string) =>
-    new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
-  const sinceLabel = new Date(`${coach.since.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'long' })
+    new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
+  const sinceLabel = new Date(`${coach.since.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'long' })
   const money = (n: number) => formatCurrency(Math.round(n), currency, false)
   const { moveDate, keepDate } = coach.options
 

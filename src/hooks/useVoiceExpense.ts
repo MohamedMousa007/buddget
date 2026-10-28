@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
+import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
@@ -18,7 +19,6 @@ import type { AIResponse, AIActionItem } from '@/lib/ai/gemini'
 import {
   logVoiceStage,
   runStage,
-  voiceStageLabel,
   VoiceStageError,
   type VoiceStage,
 } from '@/lib/voice/voiceStages'
@@ -156,6 +156,7 @@ async function queueVoiceCapture(audio: Blob, mimeType: string | null): Promise<
 
 export function useVoiceExpense(): UseVoiceCommandResult {
   const { session } = useAuth()
+  const vt = useT().voice
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   const stats = useMonthlyStats()
   const statsRef = useRef<AiCommandStats>(stats)
@@ -168,6 +169,10 @@ export function useVoiceExpense(): UseVoiceCommandResult {
   } | null>(null)
   const rafRef = useRef<number | null>(null)
   const stopPendingRef = useRef(false)
+  const stageFormat = useCallback(
+    (stage: VoiceStage) => (message: string) => vt.errors.stepFormat(vt.stages[stage], message),
+    [vt],
+  )
   const abortRef = useRef<AbortController | null>(null)
 
   const [state, setState] = useState<VoiceState>('idle')
@@ -216,13 +221,13 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       if (status === 'granted') {
         setState('idle')
       } else {
-        setError('Microphone access denied. Please enable it in your device Settings.')
+        setError(vt.errors.micDenied)
         setState('error')
       }
     } catch {
       setState('idle')
     }
-  }, [])
+  }, [vt])
 
   const start = useCallback(async () => {
     setError(null)
@@ -256,11 +261,11 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       }
       rafRef.current = requestAnimationFrame(poll)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not access the microphone'
-      setError(`${voiceStageLabel('record')} step — ${msg}`)
+      const msg = e instanceof Error ? e.message : vt.errors.micFallback
+      setError(vt.errors.stepFormat(vt.stages.record, msg))
       setState('error')
     }
-  }, [requestPermission])
+  }, [requestPermission, vt])
 
   /** POST the audio to the transcribe route (base64 JSON bypasses CapacitorHttp
    *  header stripping) and return the text. Handles the 401 self-heal. */
@@ -295,12 +300,12 @@ export function useVoiceExpense(): UseVoiceCommandResult {
           }
           throw new VoiceStageError('transcribe', diag.message)
         }
-        throw new VoiceStageError('transcribe', err?.error || `transcription failed (${res.status})`)
+        throw new VoiceStageError('transcribe', err?.error || vt.errors.transcriptionFailed(res.status))
       }
       const data = (await res.json()) as { text?: string }
       return data.text?.trim() ?? ''
     },
-    [session],
+    [session, vt],
   )
 
   const stop = useCallback(async () => {
@@ -352,32 +357,34 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       if (!text && audio && !isNative() && !isOnline()) {
         throw new VoiceStageError(
           'transcribe',
-          "You're offline. Voice needs an internet connection — please try again once you're back online.",
+          vt.errors.offline,
         )
       }
 
       if (!text && audio) {
-        text = await runStage('transcribe', "couldn't reach the server", () =>
+        text = await runStage('transcribe', vt.errors.serverUnreachable, () =>
           withTimeout(
             transcribeAudio(audio, mimeType, abort.signal),
             TRANSCRIBE_TIMEOUT_MS,
             'transcribe',
-            'Transcription took too long. Please try again.',
+            vt.errors.transcribeSlow,
           ),
+          stageFormat('transcribe'),
         )
       }
 
-      if (!text) throw new VoiceStageError('transcribe', "Didn't catch that — try again in a quieter spot.")
+      if (!text) throw new VoiceStageError('transcribe', vt.errors.noCatch)
       setTranscript(text)
 
       const store = useFinanceStore.getState()
-      const aiResponse = await runStage('extract', "the assistant didn't respond", () =>
+      const aiResponse = await runStage('extract', vt.errors.assistantNoReply, () =>
         withTimeout(
           extractCommand(store, statsRef.current, monthFilter, text, abort.signal),
           EXTRACT_TIMEOUT_MS,
           'extract',
-          'The assistant took too long. Please try again.',
+          vt.errors.extractSlow,
         ),
+        stageFormat('extract'),
       )
 
       setResponse(aiResponse)
@@ -402,13 +409,13 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       }
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return
-      const msg = e instanceof VoiceStageError ? e.userMessage : e instanceof Error ? e.message : 'Something went wrong'
+      const msg = e instanceof VoiceStageError ? e.userMessage : e instanceof Error ? e.message : vt.errors.saveFallback
       setError(msg)
       setState('error')
     } finally {
       abortRef.current = null
     }
-  }, [monthFilter, stopRaf, transcribeAudio])
+  }, [monthFilter, stopRaf, transcribeAudio, vt, stageFormat])
 
   const cancel = useCallback(async () => {
     abortRef.current?.abort()
@@ -457,15 +464,15 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       }
       logVoiceStage('apply', 'ok', `items=${draftActions.length}`)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not save'
+      const msg = e instanceof Error ? e.message : vt.errors.saveFallback
       logVoiceStage('apply', 'fail', msg)
-      setError(`${voiceStageLabel('apply')} step — ${msg}`)
+      setError(vt.errors.stepFormat(vt.stages.apply, msg))
       setState('error')
       return false
     }
     reset()
     return true
-  }, [draftActions, reset])
+  }, [draftActions, reset, vt])
 
   const openInChat = useCallback(() => {
     const text = transcript

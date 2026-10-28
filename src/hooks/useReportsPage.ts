@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import { format, isWithinInterval, parseISO } from 'date-fns'
+import { isWithinInterval, parseISO } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { formatCurrency, escapeCsvField } from '@/lib/utils/formatters'
@@ -18,7 +18,8 @@ import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { downloadOrShareFile } from '@/lib/utils/exportFile'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useGoldQuote } from '@/hooks/useGoldQuote'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import type { DateRange } from '@/components/reports/ReportFilters'
 import type { ExpenseDebtFilterMode } from '@/components/reports/ReportExpenseDebtFilter'
 import type { Expense } from '@/lib/store/types'
@@ -32,6 +33,7 @@ function isDebtLinkedExpense(e: Expense): boolean {
  */
 export function useReportsPage() {
   const t = useT()
+  const { locale } = useLocale()
   const { expenses, incomeSources, incomeEvents, paymentMethods, settings, exchangeRates, savingsTransactions, savingsAccounts } =
     useFinanceStore(
       useShallow((s) => ({
@@ -110,13 +112,13 @@ export function useReportsPage() {
         0
       )
       return {
-        month: format(window.start, 'MMM yyyy'),
+        month: formatLocalized(window.start, 'MMM yyyy', locale),
         income: incomeForCycle(cycle, false),
         expenses: expSum,
         savings: cashSavingsDepositsInBaseForMonth(savingsTransactions, cycle, monthStartDay, baseCurrency, exchangeRates, gold),
       }
     })
-  }, [cycles, filteredExpenses, incomeForCycle, monthStartDay, baseCurrency, exchangeRates, savingsTransactions, gold])
+  }, [cycles, filteredExpenses, incomeForCycle, monthStartDay, baseCurrency, exchangeRates, savingsTransactions, gold, locale])
 
   const methodBreakdown = useMemo(
     () => getPaymentMethodBreakdown(filteredExpenses, paymentMethods, baseCurrency, exchangeRates),
@@ -139,7 +141,7 @@ export function useReportsPage() {
     methodBreakdown.length > 0 ? methodBreakdown.reduce((max, m) => (m.count > max.count ? m : max)) : null
 
   const handleCopySummary = useCallback(async () => {
-    const summary = `${t.reports.summaryHeading(format(startDate, 'd MMM'), format(endDate, 'd MMM yyyy'))}
+    const summary = `${t.reports.summaryHeading(formatLocalized(startDate, 'd MMM', locale), formatLocalized(endDate, 'd MMM yyyy', locale))}
 ${t.reports.kpiTotalInExpected}: ${formatCurrency(periodRecurringIncome, baseCurrency)}
 ${t.reports.kpiReceivedSoFar(formatCurrency(periodReceivedIncome, baseCurrency))}
 ${t.reports.kpiSentHome}: ${formatCurrency(remittances, baseCurrency)}
@@ -163,6 +165,7 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
     remittances,
     baseCurrency,
     startDate,
+    locale,
     t,
     toast,
     totalExpenses,
@@ -170,7 +173,8 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
 
   const handleExportCSV = useCallback(async () => {
     const accountNames = new Map(savingsAccounts.map((a) => [a.id, a.name]))
-    const headers = 'Date,Description,Category,Amount,Currency,Base Amount,Counted in spending\n'
+    const c = t.reports.csv
+    const headers = `${[c.date, c.description, c.category, c.amount, c.currency, c.baseAmount, c.counted].map(escapeCsvField).join(',')}\n`
     const rows = inPeriod
       .map((e) =>
         [
@@ -180,11 +184,11 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
           escapeCsvField(e.amount),
           escapeCsvField(e.currency),
           escapeCsvField(expenseAmountInBase(e, baseCurrency, exchangeRates)),
-          escapeCsvField(isNonSpendExpense(e) ? 'no' : 'yes'),
+          escapeCsvField(isNonSpendExpense(e) ? c.no : c.yes),
         ].join(',')
       )
       .join('\n')
-    const savHeader = '\n\nSavings ledger,Date,Account,Type,Amount,Currency,Notes\n'
+    const savHeader = `\n\n${[c.savingsLedger, c.date, c.account, c.type, c.amount, c.currency, c.notes].map(escapeCsvField).join(',')}\n`
     const savRows = savingsTransactions
       .filter((tx) => {
         const d = parseISO(tx.date.length > 10 ? tx.date : `${tx.date}T12:00:00`)

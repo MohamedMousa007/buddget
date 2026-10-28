@@ -20,6 +20,7 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { micro } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
+import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
@@ -57,6 +58,7 @@ export interface WithdrawSheetV3Props {
 
 export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNeedAsset }: WithdrawSheetV3Props) {
   const t = useT().wealthSheets.money
+  const sf = useT().savingsForms
   const withdraw = useFinanceStore((s) => s.withdrawFromSavings)
   const showToast = useActionToast()
   const transfer = useFinanceStore((s) => s.transferBetweenPockets)
@@ -164,7 +166,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const ctaLabel = (() => {
     if (!from) return t.choosePocket
     const verb = { spend: t.verbSpend, debt: t.verbPay, transfer: t.verbInvest, income: t.verbIncome, move: t.verbMove }[purpose]
-    return t.withdrawCta(verb, amountNum > 0 ? fmtNum(amountNum) : '', from.account.name)
+    return t.withdrawCta(verb, amountNum > 0 ? fmtNum(amountNum) : '', pocketDisplayName(from.account, sf.systemNames))
   })()
 
   const canSubmit =
@@ -274,7 +276,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {pockets.filter((p) => p.account.id !== fromId).map((p) => (
                   <OptionChip key={p.account.id} selected={moveToId === p.account.id} onClick={() => setMoveToId(p.account.id)}>
-                    {p.account.name}
+                    {pocketDisplayName(p.account, sf.systemNames)}
                   </OptionChip>
                 ))}
               </div>

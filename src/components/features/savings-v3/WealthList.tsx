@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { TransactionRow } from '@/components/transactions/TransactionRow'
-import { pocketIdentity } from '@/lib/savings/pocketIdentity'
+import { pocketDisplayName, pocketIdentity } from '@/lib/savings/pocketIdentity'
 import type { CatKey, WealthRowVM } from '@/lib/savings/wealthModel'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatClock, formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
 import { formatQuantity, formatWhole } from '@/lib/utils/formatters'
 
 const CAT: Record<CatKey, { Icon: LucideIcon; color: string }> = {
@@ -23,8 +24,6 @@ const CAT: Record<CatKey, { Icon: LucideIcon; color: string }> = {
 }
 
 const tint = (color: string) => `color-mix(in oklab, ${color} 16%, transparent)`
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-const clock = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 export interface WealthListProps {
   rows: WealthRowVM[]
@@ -38,14 +37,14 @@ export interface WealthListProps {
   goalLines?: Record<string, string>
 }
 
-function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], goal?: string): string {
-  if (row.account) return [pocketIdentity(row.account), goal].filter(Boolean).join(' · ')
+function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], identity: ReturnType<typeof useT>['savingsForms']['identity'], locale: AppLocale, goal?: string): string {
+  if (row.account) return [pocketIdentity(row.account, identity), goal].filter(Boolean).join(' · ')
   const h = row.holding!
   const unit = h.assetType === 'gold' ? ' g' : h.assetType === 'property' ? ' m²' : ''
   if (row.unitPrice == null) {
     return h.assetType === 'property'
       ? `${formatQuantity(h.quantity, h.assetType)}${unit}`
-      : `${formatQuantity(h.quantity, h.assetType)}${unit} · ${t.notPriced}${row.asOf ? ` · ${shortDate(row.asOf)}` : ''}`
+      : `${formatQuantity(h.quantity, h.assetType)}${unit} · ${t.notPriced}${row.asOf ? ` · ${formatLocalized(new Date(row.asOf), 'd MMM', locale)}` : ''}`
   }
   return h.assetType === 'property' ? `${formatQuantity(h.quantity, h.assetType)}${unit}` : `${formatQuantity(h.quantity, h.assetType)}${unit} × ${formatWhole(row.unitPrice)}`
 }
@@ -53,6 +52,8 @@ function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], go
 /** Every balance and position in one list, with a filter by kind. The one Add button lives here. */
 export function WealthList({ rows, categories, filter, onFilter, onRowPress, onAdd, goalLines }: WealthListProps) {
   const t = useT().wealthPage
+  const sf = useT().savingsForms
+  const { locale } = useLocale()
   const shown = filter ? rows.filter((r) => r.cat === filter) : rows
   const groups = filter
     ? [{ key: 'all', title: null as string | null, rows: shown }]
@@ -115,10 +116,10 @@ export function WealthList({ rows, categories, filter, onFilter, onRowPress, onA
                       icon={<Icon className="size-5" aria-hidden />}
                       iconBg={tint(color)}
                       iconFg={color}
-                      title={r.title}
-                      subtitle={subtitle(r, t, goalLines?.[r.id])}
+                      title={r.account ? pocketDisplayName(r.account, sf.systemNames) : r.title}
+                      subtitle={subtitle(r, t, sf.identity, locale, goalLines?.[r.id])}
                       amount={r.amount != null ? formatWhole(r.amount) : '—'}
-                      sub={r.asOf && r.source === 'holding' && r.pricing === 'market' ? clock(r.asOf) : undefined}
+                      sub={r.asOf && r.source === 'holding' && r.pricing === 'market' ? formatClock(new Date(r.asOf), locale) : undefined}
                       onClick={() => undefined}
                       dimmed={r.amount == null}
                     />

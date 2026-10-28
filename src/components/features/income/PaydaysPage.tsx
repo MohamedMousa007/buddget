@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ArrowUpDown, Briefcase, CalendarCog, Building2, ChevronLeft, ChevronRight, Plus, TrendingUp, type LucideIcon } from 'lucide-react'
@@ -121,7 +122,7 @@ export function PaydaysPage() {
     return { expected, received }
   }, [streams, incomeEvents, monthFilter, monthStartDay, base, rates])
 
-  const monthName = new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-US', { month: 'long' }).format(new Date(`${monthFilter}-01T00:00:00`))
+  const monthName = new Intl.DateTimeFormat(intlTag(locale), { month: 'long' }).format(new Date(`${monthFilter}-01T00:00:00`))
 
   const commitOrder = () => {
     order?.forEach((id, i) => {
@@ -230,7 +231,7 @@ export function PaydaysPage() {
               </Button>
             ) : (
               <div className="flex gap-1">
-                <IconButton variant="ghost" size="md" aria-label={locale === 'ar' ? 'دورة الراتب' : 'Pay cycle'} onClick={() => setCycleOpen(true)}>
+                <IconButton variant="ghost" size="md" aria-label={t.inlineCopy.payCycle.title} onClick={() => setCycleOpen(true)}>
                   <CalendarCog className="size-5" strokeWidth={1.75} />
                 </IconButton>
                 <IconButton variant="ghost" size="md" aria-label={t.paydays.reorderAria} onClick={() => setOrder(streams.map((s) => s.id))}>

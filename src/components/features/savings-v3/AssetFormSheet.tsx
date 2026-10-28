@@ -22,8 +22,6 @@ import { SelectableCard } from '@/components/ui/SelectableCard'
 
 const ACCENT: Record<InvestmentAssetType, string> = { gold: 'var(--color-brand-gold)', crypto: 'var(--color-cat-6)', stock: 'var(--color-cat-2)', property: 'var(--color-cat-5)' }
 const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
-const UNIT_SUFFIX: Record<GoldUnit, string> = { grams: 'g', pounds: 'pounds', ounces: 'oz' }
-const TITLE: Record<InvestmentAssetType, string> = { gold: 'Add gold', crypto: 'Add crypto', stock: 'Add a position', property: 'Add property' }
 
 export interface AssetFormSheetProps {
   open: boolean
@@ -36,6 +34,8 @@ export interface AssetFormSheetProps {
 
 export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetProps) {
   const t = useT().addHolding
+  const a = useT().savingsForms.asset
+  const UNIT_SUFFIX = a.unitSuffix
   const addHolding = useFinanceStore((s) => s.addInvestmentHolding)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const { lookup } = useAssetPrices()
@@ -88,37 +88,37 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
-          <V3SheetHeader.Title>{TITLE[type]}</V3SheetHeader.Title>
+          <V3SheetHeader.Title>{a.titles[type]}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{type === 'property' ? `${t.step2} ${t.propertyNote}` : t.step2}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 space-y-4">
           {type === 'gold' && (
             <>
-              <Field label="Karat">
+              <Field label={a.karat}>
                 <div className="flex gap-2.5 overflow-x-auto no-scrollbar">
                   {([24, 21, 18] as GoldKarat[]).map((k) => {
                     const price = sagha != null && ounceUsd != null ? egyptKaratPrice(ounceUsd, sagha, k) : null
                     const pure = k === 24 ? '999' : k === 21 ? '875' : '750'
                     return (
-                      <PriceCard key={k} on={karat === k} onClick={() => setKarat(k)} title={`${k}k`} sub={`${pure} pure${price != null ? ` · ${fmtNum(price)}/g` : ''}`} />
+                      <PriceCard key={k} on={karat === k} onClick={() => setKarat(k)} title={`${k}k`} sub={`${a.pure(pure)}${price != null ? ` · ${a.perGram(fmtNum(price))}` : ''}`} />
                     )
                   })}
                 </div>
               </Field>
-              <Field label="Counted as">
+              <Field label={a.countedAs}>
                 <SegmentedControl<GoldUnit>
-                  ariaLabel="Counted as"
+                  ariaLabel={a.countedAs}
                   value={goldUnit}
                   onChange={setGoldUnit}
-                  options={[{ value: 'grams', label: 'Grams' }, { value: 'pounds', label: 'Gold pounds' }, { value: 'ounces', label: 'Ounces' }]}
+                  options={[{ value: 'grams', label: a.grams }, { value: 'pounds', label: a.goldPounds }, { value: 'ounces', label: a.ounces }]}
                 />
               </Field>
-              <Field label="How much">
-                <UnitField value={amount} onChange={setAmount} suffix={UNIT_SUFFIX[goldUnit]} label="How much" />
+              <Field label={a.howMuch}>
+                <UnitField value={amount} onChange={setAmount} suffix={UNIT_SUFFIX[goldUnit]} label={a.howMuch} />
                 {goldUnit !== 'grams' && qty > 0 && (
                   <p className="mt-2 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
-                    = {fmtNum(grams)} g. Your row will say &ldquo;{qty} {UNIT_SUFFIX[goldUnit]}&rdquo;.
+                    {a.rowWillSay(fmtNum(grams), String(qty), UNIT_SUFFIX[goldUnit])}
                   </p>
                 )}
               </Field>
@@ -127,24 +127,24 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
 
           {type === 'crypto' && (
             <>
-              <Field label="Coin">
+              <Field label={a.coin}>
                 <div className="flex gap-2.5 overflow-x-auto no-scrollbar">
                   {Object.keys(COINGECKO_IDS).map((c) => {
                     const p = lookup(c, 'USD')?.price ?? null
-                    return <PriceCard key={c} on={symbol === c} onClick={() => setSymbol(c)} title={c} sub={p != null ? `$${fmtNum(p)}` : 'live price'} />
+                    return <PriceCard key={c} on={symbol === c} onClick={() => setSymbol(c)} title={c} sub={p != null ? `$${fmtNum(p)}` : a.livePrice} />
                   })}
-                  <PriceCard on={!['BTC', 'ETH'].includes(symbol)} onClick={() => setSymbol('')} title="Other" sub="type it" />
+                  <PriceCard on={!['BTC', 'ETH'].includes(symbol)} onClick={() => setSymbol('')} title={a.other} sub={a.typeIt} />
                 </div>
               </Field>
-              {!['BTC', 'ETH'].includes(symbol) && <Field label="Symbol"><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="SOL" size="brand" className="font-mono-numbers" /></Field>}
-              <Field label="How much"><UnitField value={amount} onChange={setAmount} suffix={symbol || 'coins'} label="How much" /></Field>
+              {!['BTC', 'ETH'].includes(symbol) && <Field label={a.symbol}><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="SOL" size="brand" className="font-mono-numbers" /></Field>}
+              <Field label={a.howMuch}><UnitField value={amount} onChange={setAmount} suffix={symbol || a.coins} label={a.howMuch} /></Field>
             </>
           )}
 
           {type === 'stock' && (
             <>
-              <Field label="Ticker"><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL" size="brand" className="font-mono-numbers" /></Field>
-              <Field label="Shares"><UnitField value={amount} onChange={setAmount} suffix="shares" label="Shares" /></Field>
+              <Field label={a.ticker}><Input value={symbol} onChange={(e) => setSymbol(e.target.value.toUpperCase())} placeholder="AAPL" size="brand" className="font-mono-numbers" /></Field>
+              <Field label={a.shares}><UnitField value={amount} onChange={setAmount} suffix={a.shares} label={a.shares} /></Field>
             </>
           )}
 
@@ -152,8 +152,8 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
             <>
               <Field label={t.propertyWorth}><UnitField value={propValue} onChange={setPropValue} suffix={baseCurrency} label={t.propertyWorth} /></Field>
               <div className="grid gap-2.5" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)' }}>
-                <Field label="Size"><UnitField value={size} onChange={setSize} suffix="m²" label="Size" compact /></Field>
-                <Field label="Your share"><UnitField value={share} onChange={setShare} suffix="%" label="Your share" compact /></Field>
+                <Field label={a.size}><UnitField value={size} onChange={setSize} suffix="m²" label={a.size} compact /></Field>
+                <Field label={a.yourShare}><UnitField value={share} onChange={setShare} suffix="%" label={a.yourShare} compact /></Field>
               </div>
             </>
           )}
@@ -164,15 +164,15 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
                 className="rounded-2xl border p-4"
                 style={{ borderColor: tint(accent, 40), background: tint(accent, 8) }}
               >
-                <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{type === 'gold' ? 'What a shop would pay you today' : 'What it is worth today'}</p>
+                <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{type === 'gold' ? a.shopWouldPay : a.worthToday}</p>
                 <p className="mt-1 font-mono-numbers text-2xl font-bold" style={{ color: accent }}>{liveValue != null ? `${fmtNum(liveValue)} EGP` : '—'}</p>
-                <p className="mt-1 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{liveValue != null ? 'Live valuation' : 'Live price refreshing — value will appear shortly'}</p>
+                <p className="mt-1 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{liveValue != null ? a.liveValuation : a.priceRefreshing}</p>
               </div>
             </div>
           )}
 
-          <Field label="Where did the money come from?">
-            <div className="space-y-2.5" role="radiogroup" aria-label="Where did the money come from?">
+          <Field label={a.moneySource}>
+            <div className="space-y-2.5" role="radiogroup" aria-label={a.moneySource}>
               <SelectableCard selected={source === 'budget'} onClick={() => setSource('budget')}>
                 <SourceIcon><ArrowDownLeft size={18} /></SourceIcon>
                 <SourceText title={t.boughtThisMonth} sub={t.boughtThisMonthSub} />
@@ -191,7 +191,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
           )}
           {type !== 'property' && (
             <Field label={source === 'had' ? `${t.whatYouPaid} · ${t.optional}` : t.whatYouPaid}>
-              <UnitField value={paid} onChange={setPaid} suffix={type === 'stock' ? 'USD' : 'EGP'} label={t.whatYouPaid} placeholder="Total" />
+              <UnitField value={paid} onChange={setPaid} suffix={type === 'stock' ? 'USD' : 'EGP'} label={t.whatYouPaid} placeholder={a.total} />
               {source === 'had' && <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{t.paidHint}</p>}
             </Field>
           )}
@@ -199,7 +199,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
           <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
-            {type === 'gold' && qty > 0 ? `Add ${qty} ${UNIT_SUFFIX[goldUnit]} of ${karat}k` : 'Add investment'}
+            {type === 'gold' && qty > 0 ? a.addGold(String(qty), UNIT_SUFFIX[goldUnit], karat) : a.addInvestment}
           </Button>
         </div>
       </div>

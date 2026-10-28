@@ -1,5 +1,6 @@
 import { format, formatDistanceToNow, isToday, isYesterday, parseISO } from 'date-fns'
 import type { Currency } from '@/lib/store/types'
+import { THREE_DECIMAL_CURRENCIES } from '@/lib/ui/amountParse'
 
 /**
  * Numeric formatting always uses `en-US` so digits render as 0-9 and separators as `,` / `.`
@@ -21,6 +22,11 @@ export function toLatinDigits(input: string): string {
     const base = code >= 0x06f0 ? 0x06f0 : 0x0660
     return String(code - base)
   })
+}
+
+/** Compact number ("1.2K" / "1.2 ألف"): the suffix follows the app language, digits stay Latin. */
+export function formatCompact(n: number, locale: 'en' | 'ar' = 'en'): string {
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
 }
 
 /**
@@ -52,7 +58,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   KWD: 'KD',
   QAR: 'QR',
   BHD: 'BD',
-  OMR: 'OR',
+  OMR: 'RO',
   MAD: 'DH',
   TND: 'DT',
   JOD: 'JD',
@@ -79,8 +85,9 @@ export function formatCurrency(amount: number, currency: Currency | string, show
 
   const symbol = CURRENCY_SYMBOLS[currency] || currency
   const abs = Math.abs(amount)
-  const maxDigits = !showCents ? 0 : CRYPTO_CURRENCIES.has(currency as string) ? 8 : 2
-  const minDigits = showCents ? 2 : 0
+  const fiatDigits = THREE_DECIMAL_CURRENCIES.has(currency as string) ? 3 : 2
+  const maxDigits = !showCents ? 0 : CRYPTO_CURRENCIES.has(currency as string) ? 8 : fiatDigits
+  const minDigits = showCents ? fiatDigits : 0
   const formatted = abs.toLocaleString(loc, { minimumFractionDigits: minDigits, maximumFractionDigits: maxDigits })
   const negative = amount < 0 && Math.round(abs * 10 ** maxDigits) !== 0
 
@@ -101,9 +108,9 @@ export function formatCurrency(amount: number, currency: Currency | string, show
 export function formatMoneyHero(
   amount: number,
   currency: Currency | string,
-  options: { compact?: 'auto' | 'on' | 'off'; fullMaxChars?: number } = {},
+  options: { compact?: 'auto' | 'on' | 'off'; fullMaxChars?: number; locale?: 'en' | 'ar' } = {},
 ): string {
-  const { compact = 'auto', fullMaxChars = 9 } = options
+  const { compact = 'auto', fullMaxChars = 9, locale = 'en' } = options
   if (currency === 'XAU') return formatCurrency(amount, 'XAU')
 
   const symbol = CURRENCY_SYMBOLS[currency] || currency
@@ -115,10 +122,7 @@ export function formatMoneyHero(
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })
-  const compactNumber = new Intl.NumberFormat(loc, {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(rounded)
+  const compactNumber = formatCompact(rounded, locale)
 
   const stick = Array.from(symbol).length === 1
   const join = (n: string) => withSign(negative, stick ? `${symbol}${n}` : `${symbol} ${n}`)

@@ -4119,6 +4119,7 @@ export type Database = {
           updated_at: string
           user_id: string
           wealth_gold_strip: string
+          week_start_day: number | null
         }
         Insert: {
           privacy?: Json
@@ -4146,6 +4147,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           wealth_gold_strip?: string
+          week_start_day?: number | null
         }
         Update: {
           privacy?: Json
@@ -4173,6 +4175,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           wealth_gold_strip?: string
+          week_start_day?: number | null
         }
         Relationships: []
       }

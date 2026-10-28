@@ -1,12 +1,13 @@
 'use client'
 
+import { sortByLabel } from '@/lib/i18n/sortLocale'
 import { useMemo, useState } from 'react'
 import { Check, Search } from 'lucide-react'
 import { CurrencyMark, hasCurrencySign } from '@/components/ui/CurrencyMark'
 import { Input } from '@/components/ui/input'
 import { CURRENCY_META, COMMON_CURRENCIES } from '@/lib/constants/currencyMeta'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import { useLocale } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import type { Currency } from '@/lib/store/types'
 
@@ -44,6 +45,7 @@ interface CurrencyListProps {
 /** Search, a pinned grid of common currencies, then everything A to Z. Shared by every currency picker. */
 export function CurrencyList({ value, onSelect, base, includeGold = false, codes, leading, autoFocus = false }: CurrencyListProps) {
   const { locale } = useLocale()
+  const cp = useT().inlineCopy.currencyPicker
   const nameOf = useCurrencyName()
   const [query, setQuery] = useState('')
 
@@ -63,7 +65,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
     for (const c of COMMON_CURRENCIES) if (all.includes(c) && !list.includes(c)) list.push(c)
     return list.slice(0, 6)
   }, [all, base])
-  const rest = useMemo(() => all.filter((c) => !common.includes(c)).sort(), [all, common])
+  const rest = useMemo(() => sortByLabel(all.filter((c) => !common.includes(c)), nameOf, locale), [all, common, nameOf, locale])
 
   const row = (code: string) => {
     const selected = code === value
@@ -99,8 +101,8 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={locale === 'ar' ? 'ابحث عن عملة أو دولة' : 'Search currency or country'}
-          aria-label={locale === 'ar' ? 'بحث عن عملة' : 'Search currency'}
+          placeholder={cp.searchPlaceholder}
+          aria-label={cp.searchAria}
           autoFocus={autoFocus}
           className="ps-10"
         />
@@ -111,13 +113,13 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
             hits.map(row)
           ) : (
             <p className="px-3 py-8 text-center text-sm font-medium text-[var(--color-brand-text-muted)]">
-              {locale === 'ar' ? `لا توجد عملة تطابق “${query.trim()}”` : `No currency matches “${query.trim()}”`}
+              {cp.noMatch(query.trim())}
             </p>
           )
         ) : (
           <>
             {leading}
-            <p className={caption}>{locale === 'ar' ? 'الأكثر استخدامًا' : 'Common'}</p>
+            <p className={caption}>{cp.common}</p>
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
               {common.map((code) => {
                 const selected = code === value
@@ -141,7 +143,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
                 )
               })}
             </div>
-            {rest.length ? <p className={caption}>{locale === 'ar' ? 'كل العملات' : 'All currencies'}</p> : null}
+            {rest.length ? <p className={caption}>{cp.all}</p> : null}
             {rest.map(row)}
           </>
         )}

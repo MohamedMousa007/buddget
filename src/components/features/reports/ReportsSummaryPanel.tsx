@@ -1,9 +1,9 @@
 'use client'
 
-import { format } from 'date-fns'
 import { formatCurrency } from '@/lib/utils/formatters'
 import type { Currency, Expense } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 
 export interface ReportsSummaryPanelProps {
   startDate: Date
@@ -35,10 +35,11 @@ export function ReportsSummaryPanel({
   mostUsedMethod,
 }: ReportsSummaryPanelProps) {
   const t = useT()
+  const { formatPattern } = useLocalizedFormatters()
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
-        {t.reports.summaryHeading(format(startDate, 'd MMM'), format(endDate, 'd MMM yyyy'))}
+        {t.reports.summaryHeading(formatPattern(startDate, 'd MMM'), formatPattern(endDate, 'd MMM yyyy'))}
       </h3>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div>

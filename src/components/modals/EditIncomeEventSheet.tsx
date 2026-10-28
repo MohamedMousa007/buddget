@@ -58,7 +58,7 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
       setDebtChoiceOpen(true)
       return
     }
-    if (!(await confirm({ title: t.income.confirmDelete, destructive: true }))) return
+    if (!(await confirm({ title: t.income.confirmDeleteEntry, destructive: true }))) return
     deleteIncomeEvent(event.id)
     onDone()
   }

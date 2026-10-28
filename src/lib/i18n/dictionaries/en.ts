@@ -1,9 +1,21 @@
 import type { Dictionary } from '../types'
 import { subscriptionsCopyEn } from '../subscriptionsCopy'
+import { voiceCopyEn } from '../voiceCopy'
+import { receiptScanCopyEn } from '../receiptCopy'
+import { savingsFormsCopyEn } from '../savingsFormsCopy'
+import { systemPagesCopyEn } from '../systemPagesCopy'
+import { inlineCopyEn } from '../inlineCopy'
+import { catalogCopyEn } from '../catalogCopy'
 
 export const en: Dictionary = {
   dir: 'ltr',
   locale: 'en-US',
+  voice: voiceCopyEn,
+  receiptScan: receiptScanCopyEn,
+  savingsForms: savingsFormsCopyEn,
+  systemPages: systemPagesCopyEn,
+  inlineCopy: inlineCopyEn,
+  catalogs: catalogCopyEn,
 
   tour: {
     debug: {
@@ -241,7 +253,7 @@ export const en: Dictionary = {
     showingExpenses: (n) => `Showing ${n} expense${n !== 1 ? 's' : ''}`,
     totalSpent: (amount) => `Total spent: ${amount}`,
     percentSymbol: '%',
-    confirmDeleteGeneric: 'Remove this? This will be gone for good.',
+    confirmDeleteGeneric: 'Delete this? This can’t be undone.',
     getStarted: 'Get started',
     tryAgain: 'Try again',
     yearLabel: 'Year',
@@ -438,7 +450,7 @@ export const en: Dictionary = {
     menuEdit: 'Edit',
     menuDelete: 'Delete',
     menuMakeDefault: 'Make default for monthly savings',
-    deleteBodyBalance: (amount) => `This removes it and its history. ${amount} will leave your net worth. You can undo for a few seconds.`,
+    deleteBodyBalance: (amount) => `This deletes it and its history. ${amount} will leave your net worth. You can undo for a few seconds.`,
     deleteDefaultTitle: 'This is your monthly savings pocket',
     deleteDefaultBody: 'Month-end savings land here. Make another pocket the default for monthly savings first, then delete this one.',
     deleteOnlyTitle: 'Keep at least one pocket',
@@ -446,7 +458,7 @@ export const en: Dictionary = {
     nothingHeld: 'Nothing here yet',
     feeds: (goal, pct) => `Feeds ${goal} · ${pct}%`,
     deleteTitle: (name) => `Delete ${name}?`,
-    deleteBody: 'This removes it and its history. You can undo for a few seconds.',
+    deleteBody: 'This deletes it and its history. You can undo for a few seconds.',
     deletedToast: (name) => `${name} deleted`,
     deleteUndo: 'Undo',
     priceFeedDown: (grams) => `Gold prices unavailable · ${grams} not counted`,
@@ -569,7 +581,7 @@ export const en: Dictionary = {
       'Set up your budget categories in Budget Setup to see your spending breakdown here.',
     categoryEmptyCta: 'Open Budget Setup',
     recentSeeAll: 'See everything →',
-    confirmDeleteExpense: 'Remove this transaction? This will be gone for good.',
+    confirmDeleteExpense: 'Delete this expense? This can’t be undone.',
     savingsTitle: 'Your Savings',
     savingsLink: 'See your stash →',
     savingsStashedAway: 'Stashed away ',
@@ -649,7 +661,7 @@ export const en: Dictionary = {
     downloadData: 'Download my data',
     editPurchase: 'Edit purchase',
     removePurchase: 'Remove purchase',
-    confirmDelete: 'Remove this transaction? This will be gone for good.',
+    confirmDelete: 'Delete this expense? This can’t be undone.',
     badgeDebt: 'Debt',
     spentThisMonth: 'Spent this month',
     spentToday: 'Spent today',
@@ -838,7 +850,8 @@ export const en: Dictionary = {
     effectiveStart: 'Starts',
     effectiveEnd: 'Ends (optional)',
     receivedDate: 'Received',
-    confirmDelete: 'Remove this income source? This will be gone for good.',
+    confirmDelete: 'Delete this income source? This can’t be undone.',
+    confirmDeleteEntry: 'Delete this income entry? This can’t be undone.',
     deleteWithDebtTitle: 'Delete this borrowed money?',
     deleteWithDebtBody: (debtName: string) =>
       `This income is linked to the debt "${debtName}". Do you want to delete that debt too, or keep it (you still owe it)?`,
@@ -1047,7 +1060,7 @@ export const en: Dictionary = {
     subtypeOther: 'Other',
     bucketLiquid: 'Liquid',
     bucketInvestment: 'Investment',
-    confirmDelete: 'Remove this saving? This will be gone for good.',
+    confirmDelete: 'Delete this savings entry? This can’t be undone.',
     addAccount: 'Add new savings',
     addToSavings: 'Add',
     withdraw: 'Withdraw',
@@ -1189,7 +1202,7 @@ export const en: Dictionary = {
     freqWeekly: 'Weekly',
     paymentNext: 'next ',
     activeLabel: 'Active',
-    confirmDeleteSchedule: 'Remove this recurring schedule? This will be gone for good.',
+    confirmDeleteSchedule: 'Delete this recurring schedule? This can’t be undone.',
     paymentHistory: (name) => `${name} \u2014 Payment History`,
     paymentHistorySectionTitle: 'Payment history',
     filterByDebt: 'Debt',
@@ -1228,7 +1241,7 @@ export const en: Dictionary = {
     editSheetTitle: 'Edit debt',
     goalSectionTitle: 'Payoff goal',
     goalEditButton: 'Edit goal',
-    confirmRemoveGoal: 'Remove this payoff goal and any linked reminder schedule?',
+    confirmRemoveGoal: 'Delete this payoff goal and any linked reminder schedule?',
     installmentProgress: (paid, total) => `${paid} of ${total} installments logged`,
     installmentNextDue: (date) => `Next due ${date}`,
     goalPayoffLine: 'Payoff goal',
@@ -1292,13 +1305,13 @@ export const en: Dictionary = {
     deleteConfirmBody: 'This cannot be undone.',
     editDebtAria: 'Edit debt',
     deleteDebtLabel: 'Delete debt',
-    deleteDebtBody: 'This removes the debt and its payment history. This cannot be undone.',
+    deleteDebtBody: 'This deletes the debt and its payment history. This cannot be undone.',
     editCardAria: 'Edit card',
     deleteCardLabel: 'Delete card',
-    deleteCardBody: 'This removes the card debt and its history. This cannot be undone.',
+    deleteCardBody: 'This deletes the card debt and its history. This cannot be undone.',
     editPlanAria: 'Edit plan',
     deletePlanLabel: 'Delete plan',
-    deletePlanBody: 'This removes the installment plan and its history. This cannot be undone.',
+    deletePlanBody: 'This deletes the installment plan and its history. This cannot be undone.',
     iOwe: 'I owe',
     owedToMe: 'Owed to me',
     leftSuffix: 'left',
@@ -1598,6 +1611,32 @@ export const en: Dictionary = {
     netWorthTitle: 'Net worth',
     netWorthHint: 'Account balances + this month’s cash flow − active debt (see Savings for detail).',
     netWorthGoldIncomplete: 'Net worth may be incomplete — gold price unavailable.',
+    chart: {
+      monthTitle: 'Month by Month',
+      monthHint: 'Your income, spending, and savings for each month at a glance.',
+      monthEmpty: 'Nothing here yet — add some transactions to see your trends',
+      moneyIn: 'Money in',
+      moneyOut: 'Money out',
+      saved: 'Saved',
+      pieTitle: 'Where It Goes',
+      pieEmpty: 'No spending yet — your breakdown will appear here',
+      other: 'Other',
+    },
+    csv: {
+      date: 'Date',
+      description: 'Description',
+      category: 'Category',
+      amount: 'Amount',
+      currency: 'Currency',
+      baseAmount: 'Base Amount',
+      counted: 'Counted in spending',
+      yes: 'yes',
+      no: 'no',
+      savingsLedger: 'Savings ledger',
+      account: 'Account',
+      type: 'Type',
+      notes: 'Notes',
+    },
   },
 
   landing: {
@@ -1671,7 +1710,7 @@ export const en: Dictionary = {
 
     paymentMethodsTitle: 'Your Payment Methods',
     paymentMethodsAdd: '+ Add a method',
-    paymentMethodsRemoveConfirm: "Remove this payment method? Your existing expenses won\u2019t be affected.",
+    paymentMethodsRemoveConfirm: "Delete this payment method? Your existing expenses won\u2019t be affected.",
 
     aiTitle: 'Buddgy',
     aiToggle: 'Turn on Buddgy',
@@ -1724,7 +1763,7 @@ export const en: Dictionary = {
     adminLink: 'Go to Admin \u2192',
 
     importSuccess: 'Your data is all set \u2014 import complete!',
-    importError: 'Something went wrong with the import. Give it another try.',
+    importError: 'Something went wrong with the import. Try again.',
 
     hub: {
       sectionAccount: 'Account',
@@ -1864,7 +1903,7 @@ export const en: Dictionary = {
     setupTitle: 'Complete account setup',
     setupComplete: "All set \u2014 setup complete.",
     deleteAccountTitle: 'Delete account',
-    deleteAccountBody: 'Permanently remove your account and every piece of data Buddget holds about you. This cannot be undone.',
+    deleteAccountBody: 'Permanently delete your account and every piece of data Buddget holds about you. This cannot be undone.',
     deleteAccountButton: 'Delete account permanently',
     deleteAccountConfirmTitle: 'Delete your account?',
     deleteAccountConfirmBody: "Every record we have about you \u2014 profile, income, expenses, debts, savings, budgets, goals, subscriptions, payment methods \u2014 will be wiped from our servers. This action is final.",
@@ -1899,7 +1938,7 @@ export const en: Dictionary = {
     savingsAllocationBadge: 'Savings',
     aiEvalTitle: "Buddgy's take",
     aiEvalLoading: 'Reviewing your plan…',
-    aiEvalError: 'Could not evaluate the plan right now.',
+    aiEvalError: 'Couldn’t evaluate the plan right now. Try again.',
     aiEvalStatusGood: 'Good',
     aiEvalStatusNeedsAdjustment: 'Needs adjustment',
     aiEvalStatusUnrealistic: 'Unrealistic',
@@ -1986,7 +2025,7 @@ export const en: Dictionary = {
     errorBadPassword: "That password doesn\u2019t look right. Try again or reset it.",
     errorUnconfirmed: "Looks like your email isn\u2019t confirmed yet. Resend confirmation code?",
     errorOtpExpired: 'This code has expired. Request a new one.',
-    errorFallback: "Oops, something went wrong. Let\u2019s try again.",
+    errorFallback: "Something went wrong. Try again.",
     errorEmailInvalid: 'Please enter a real email address.',
     errorMissingPassword: 'Enter your email and password to continue.',
     errorPasswordShort: 'Password needs to be at least 8 characters.',
@@ -2050,7 +2089,7 @@ export const en: Dictionary = {
     placeholderConfirm: 'Confirm new password',
     errorMinLength: (min) => `Password needs to be at least ${min} characters.`,
     errorMismatch: "Those passwords don\u2019t match. Try again.",
-    errorUpdateFailed: "Oops, something went wrong. Let\u2019s try again.",
+    errorUpdateFailed: "Something went wrong. Try again.",
     errorLinkExpired: 'That reset link has expired or already been used. Request a fresh one and we\u2019ll email it to you.',
     errorLinkExpiredTitle: 'Reset link expired',
     errorSamePassword: 'That\u2019s the same password you already have. Choose a different one.',
@@ -2103,6 +2142,21 @@ export const en: Dictionary = {
       smsSalaryBody: 'Matched to your income — no duplicate added. Tap to view.',
       smsSalaryDiffersBody: 'Close to your set salary — tap if your pay changed.',
     },
+  },
+
+  serverNotifications: {
+    carryTitle: 'Money moved to savings',
+    carryBody: (amount, currency) => `We swept ${amount} ${currency} left over from last month into your savings.`,
+    causeRemoved: 'was removed',
+    causeStale: (days) => `has not been opened in ${days} days`,
+    deviceNoneTitle: 'No phone is set to get notifications',
+    deviceNoneBody: (cause) => `Your main phone ${cause}, and no other phone can take over. Open Buddget on the phone you want to use and turn notifications on in Settings, Your devices.`,
+    deviceMainTitle: (name) => `${name} is now your main phone`,
+    deviceMainBody: (cause) => `Your previous main phone ${cause}, so notifications now go to this phone. You can change it in Settings, Your devices.`,
+    deviceJoinedTitle: 'A new phone signed in',
+    deviceJoinedBody: (name) => `${name} signed in to your account. It stays quiet unless you turn notifications on for it in Settings, Your devices.`,
+    supportResolvedTitle: (subject) => `Fixed: ${subject}`,
+    supportResolvedBody: (number) => `Your request #${number} has been resolved. Thank you for telling us.`,
   },
 
   modals: {
@@ -2360,7 +2414,7 @@ export const en: Dictionary = {
     planChangeDowngrade: '{brand} looks like it moved to {plan} — update?',
     planChangeApply: 'Update plan',
     selectPlan: 'Select plan',
-    confirmDeleteSubscription: 'Remove this subscription?',
+    confirmDeleteSubscription: 'Delete this subscription?',
     ui: subscriptionsCopyEn,
   },
 
@@ -2405,7 +2459,7 @@ export const en: Dictionary = {
     monthsOfExpenses: 'months of expenses (3-mo avg.)',
     debtRemaining: 'Debt remaining',
     thisMonth: 'this month',
-    confirmDelete: 'Remove this goal?',
+    confirmDelete: 'Delete this goal?',
     deleteGoal: 'Delete goal',
     celebration: (name) => `🎉 You reached your goal: ${name}!`,
     split: {
@@ -2514,7 +2568,7 @@ export const en: Dictionary = {
       deleteMoveSub: 'The balance moves, then the goal is removed.',
       deleteConfirm: 'Delete goal',
       noOtherPocket: 'You have no other pocket to move the money to.',
-      deleteNoPocket: 'This removes the goal. Your accounts and transactions are not touched.',
+      deleteNoPocket: 'This deletes the goal. Your accounts and transactions are not touched.',
       deleteMoveFailed: 'Could not move the money, so the goal was kept. Try again.',
     },
     flow: {
@@ -3241,7 +3295,7 @@ export const en: Dictionary = {
     paymentDeleted: 'Payment and expense deleted',
     incomeDeleted: 'Income deleted',
     markedPaid: 'Marked as paid',
-    paidFailed: 'Could not record this payment',
+    paidFailed: 'Couldn’t record this payment. Try again.',
     currency: 'Currency',
     ccOpeningBalance: 'Opening balance',
     ccOpeningHint: 'What you already owed when you added the card. Charges you track are added on top.',

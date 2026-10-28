@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { captureAppError } from '@/lib/crash/init'
+import { useT } from '@/lib/i18n'
 
 export default function RouteError({
   error,
@@ -11,6 +12,7 @@ export default function RouteError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const t = useT().systemPages.routeError
   const [reportId, setReportId] = useState<string | undefined>()
 
   useEffect(() => {
@@ -21,13 +23,13 @@ export default function RouteError({
   return (
     <div className="min-h-[50vh] flex items-center justify-center p-6">
       <div className="text-center max-w-md space-y-4">
-        <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">Something went wrong</h2>
+        <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.title}</h2>
         <p className="text-sm text-[var(--color-brand-text-muted)]">{error.message}</p>
         {reportId ? (
-          <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">Report {reportId.slice(0, 8)}</p>
+          <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.report(reportId.slice(0, 8))}</p>
         ) : null}
         <Button size="touch" onClick={reset}>
-          Try again
+          {t.retry}
         </Button>
       </div>
     </div>

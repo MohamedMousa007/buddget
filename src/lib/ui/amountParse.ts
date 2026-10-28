@@ -10,7 +10,8 @@
  * Parsing rounds to the currency's decimals; typing caps them.
  */
 
-const THREE_DECIMAL = new Set(['KWD', 'BHD', 'OMR', 'JOD', 'TND'])
+/** ISO 4217 minor unit of 3. */
+export const THREE_DECIMAL_CURRENCIES: ReadonlySet<string> = new Set(['KWD', 'BHD', 'OMR', 'JOD', 'TND'])
 const EIGHT_DECIMAL = new Set(['BTC', 'ETH'])
 const MAX_INT_DIGITS = 12
 const DEFAULT_DECIMALS = 2
@@ -20,7 +21,7 @@ const EIGHT_DECIMAL_CAP = 8
 export function currencyDecimals(currency?: string): number {
   if (!currency) return DEFAULT_DECIMALS
   const c = currency.toUpperCase()
-  if (THREE_DECIMAL.has(c)) return 3
+  if (THREE_DECIMAL_CURRENCIES.has(c)) return 3
   if (EIGHT_DECIMAL.has(c)) return 8
   if (c === 'XAU') return 3
   return DEFAULT_DECIMALS

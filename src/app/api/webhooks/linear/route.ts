@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { freshTimestamp, parseIssueEvent, ticketStatusFor, validSignature } from '@/lib/integrations/linearWebhook'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { renderServerCopy } from '@/lib/notifications/serverCopy'
+import { getUserDictionary } from '@/lib/server/userDictionary'
 
 /** Linear tells us an issue moved; the matching ticket follows and the user hears when it is resolved. */
 export async function POST(request: Request) {
@@ -33,8 +35,7 @@ export async function POST(request: Request) {
       category: 'support_resolved',
       severity: 'success',
       dedupeKey: `ticket:${ticket.id}:resolved`,
-      title: `Fixed: ${ticket.subject}`.slice(0, 80),
-      body: `Your request #${ticket.number} has been resolved. Thank you for telling us.`,
+      ...renderServerCopy(await getUserDictionary(service, ticket.user_id), { kind: 'support_resolved', subject: ticket.subject, number: ticket.number }),
       metadata: { ticketNumber: ticket.number },
     })
   }

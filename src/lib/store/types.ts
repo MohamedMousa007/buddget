@@ -915,6 +915,8 @@ export interface AppSettings {
   monthStartDay: number
   /** IANA zone of the user's device, synced so server crons judge dates in their local calendar. */
   timezone?: string | null
+  /** First day of the week (0 Sun, 1 Mon, 6 Sat); `user_settings.week_start_day` (synced). Unset = default for the user's zone. */
+  weekStartDay?: 0 | 1 | 6
   /** Budget rows as fixed amounts in base currency vs % of monthly recurring income */
   budgetEntryMode: 'amount' | 'percent_of_income'
   /** AI chat / extraction (optional client preference; server may still gate by env) */

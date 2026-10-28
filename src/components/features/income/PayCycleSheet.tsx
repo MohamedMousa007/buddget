@@ -7,19 +7,14 @@ import { Minus, Plus, X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 import { Progress, ProgressIndicator, ProgressTrack } from '@/components/ui/progress'
-import { useLocale } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
 import { PAY_CYCLE_MAX_DAY, PAY_CYCLE_MIN_DAY, currentCycle } from '@/lib/settings/payCycle'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-
-const COPY = {
-  en: { title: 'Pay cycle', question: 'My month starts on day', hint: 'Usually the day your salary lands.', earlier: 'Earlier day', later: 'Later day', today: 'today', current: 'Your current cycle', note: 'Past entries keep their dates; your months are cut differently from now on.', close: 'Close' },
-  ar: { title: 'دورة الراتب', question: 'شهري بيبدأ يوم', hint: 'غالبًا يوم نزول المرتب.', earlier: 'يوم أبكر', later: 'يوم أبعد', today: 'النهاردة', current: 'دورتك الحالية', note: 'الإدخالات السابقة بتحتفظ بتواريخها؛ وشهورك بتتقسم بشكل مختلف من دلوقتي.', close: 'إغلاق' },
-}
 
 /** Where the budget month starts. It belongs with paydays: it is the day the salary lands. */
 export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { locale } = useLocale()
-  const c = COPY[locale]
+  const c = useT().inlineCopy.payCycle
   const day = useFinanceStore((s) => s.settings.monthStartDay)
   const updateSettings = useFinanceStore((s) => s.updateSettings)
   const cycle = useMemo(() => currentCycle(new Date(), day), [day])

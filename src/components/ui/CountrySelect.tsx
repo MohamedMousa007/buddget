@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { sortByLabel } from '@/lib/i18n/sortLocale'
 import { SelectField, type SelectFieldOption } from '@/components/ui/SelectField'
 import {
   PROFILE_COUNTRY_OPTIONS,
@@ -39,11 +40,12 @@ export function CountrySelect({
 
   const items = useMemo<ReadonlyArray<SelectFieldOption>>(
     () =>
-      PROFILE_COUNTRY_OPTIONS.map((o) => ({
-        value: o.code,
-        label: displayNames.of(o.code) ?? o.nameEn,
-      })),
-    [displayNames],
+      sortByLabel(
+        PROFILE_COUNTRY_OPTIONS.map((o) => ({ value: o.code, label: displayNames.of(o.code) ?? o.nameEn })),
+        (o) => o.label,
+        locale,
+      ),
+    [displayNames, locale],
   )
 
   const selectedCode = resolveProfileCountryToCode(value)

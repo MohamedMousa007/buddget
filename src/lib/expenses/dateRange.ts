@@ -8,6 +8,8 @@ import {
   startOfWeek,
   subDays,
 } from 'date-fns'
+import { formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
+import type { WeekStartDay } from '@/lib/time/weekStart'
 import { getMonthRange } from '@/lib/utils/calculations'
 
 export type RangePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom'
@@ -38,6 +40,7 @@ export function resolveRange(
   monthFilter: string,
   monthStartDay: number,
   ref: Date = new Date(),
+  weekStartsOn: WeekStartDay = 0,
 ): ResolvedRange {
   switch (range.preset) {
     case 'today':
@@ -47,7 +50,7 @@ export function resolveRange(
       return { start: startOfDay(y), end: endOfDay(y) }
     }
     case 'week':
-      return { start: startOfWeek(ref), end: endOfWeek(ref) }
+      return { start: startOfWeek(ref, { weekStartsOn }), end: endOfWeek(ref, { weekStartsOn }) }
     case 'custom': {
       if (!range.from || !range.to) break
       const start = startOfDay(parseISO(range.from))
@@ -80,9 +83,9 @@ export function isMonthPreset(range: ExpenseRange): boolean {
 
 /** Compact numeric text for a custom range, e.g. "12 – 18 Jul". Kept numeric so it can be
  *  rendered in `font-mono-numbers` (unicode-bidi: isolate) and never scramble under Arabic. */
-export function formatCustomRange({ start, end }: ResolvedRange): string {
+export function formatCustomRange({ start, end }: ResolvedRange, locale: AppLocale = 'en'): string {
   const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
   return sameMonth
-    ? `${format(start, 'd')} – ${format(end, 'd MMM')}`
-    : `${format(start, 'd MMM')} – ${format(end, 'd MMM')}`
+    ? `${format(start, 'd')} – ${formatLocalized(end, 'd MMM', locale)}`
+    : `${formatLocalized(start, 'd MMM', locale)} – ${formatLocalized(end, 'd MMM', locale)}`
 }

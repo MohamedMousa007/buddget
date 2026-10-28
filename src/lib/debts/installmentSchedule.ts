@@ -1,4 +1,5 @@
-import { addMonths, addQuarters, addWeeks, addYears, format, parseISO } from 'date-fns'
+import { formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
+import { addMonths, addQuarters, addWeeks, addYears, parseISO } from 'date-fns'
 import type { Debt, DebtPayment } from '@/lib/store/types'
 
 /**
@@ -32,10 +33,15 @@ export function addByFrequency(start: Date, freq: NonNullable<Debt['installmentF
 /**
  * Next scheduled installment date after `completed` installments (same calendar rules as the plan).
  */
-export function nextInstallmentDueFormatted(debt: Debt, completed: number): string | null {
+export function nextInstallmentDueDate(debt: Debt, completed: number): Date | null {
   if (debt.debtType !== 'installment' || !debt.startDate || !debt.installmentFrequency || !debt.installmentCount) {
     return null
   }
   if (completed >= debt.installmentCount) return null
-  return format(addByFrequency(parseISO(debt.startDate), debt.installmentFrequency, completed), 'MMM d, yyyy')
+  return addByFrequency(parseISO(debt.startDate), debt.installmentFrequency, completed)
+}
+
+export function nextInstallmentDueFormatted(debt: Debt, completed: number, locale: AppLocale = 'en'): string | null {
+  const due = nextInstallmentDueDate(debt, completed)
+  return due ? formatLocalized(due, 'MMM d, yyyy', locale) : null
 }

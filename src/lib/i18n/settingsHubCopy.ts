@@ -123,6 +123,10 @@ export interface SettingsHubCopy {
     entry: string
     entryAmount: string
     entryPercent: string
+    weekStart: string
+    weekSat: string
+    weekSun: string
+    weekMon: string
     gold: string
     goldHint: string
     learned: string
@@ -306,6 +310,10 @@ const en: SettingsHubCopy = {
     entry: 'Budget entry',
     entryAmount: 'Amount',
     entryPercent: '% of income',
+    weekStart: 'First day of week',
+    weekSat: 'Sat',
+    weekSun: 'Sun',
+    weekMon: 'Mon',
     gold: 'Gold price strip',
     goldHint: 'Live gold price on Wealth',
     learned: 'Learned from chats',
@@ -337,6 +345,7 @@ const en: SettingsHubCopy = {
     household: { label: 'Household & rent', keywords: 'family rent home people ايجار اسرة' },
     lifestyle: { label: 'Lifestyle', keywords: 'food transport habits نمط الحياة' },
     budgetEntryMode: { label: 'Budget entry', keywords: 'percent income amount budget ميزانية نسبة' },
+    weekStart: { label: 'First day of week', keywords: 'week start saturday sunday monday calendar أسبوع سبت أحد اثنين' },
     goldStrip: { label: 'Gold price strip', keywords: 'xau wealth ذهب' },
     pushStatus: { label: 'Notifications', keywords: 'push permission allow alerts إشعارات تنبيهات', exact: ['notifications', 'alerts', 'إشعارات'] },
     subDueReminders: { label: 'Subscription reminders', keywords: 'due renew bill notification اشتراك تذكير' },
@@ -522,6 +531,10 @@ const ar: SettingsHubCopy = {
     entry: 'إدخال الميزانية',
     entryAmount: 'مبلغ',
     entryPercent: '٪ من الدخل',
+    weekStart: 'أول يوم في الأسبوع',
+    weekSat: 'السبت',
+    weekSun: 'الأحد',
+    weekMon: 'الإثنين',
     gold: 'شريط سعر الذهب',
     goldHint: 'سعر الذهب المباشر في الثروة',
     learned: 'ما تعلّمه من المحادثات',
@@ -553,6 +566,7 @@ const ar: SettingsHubCopy = {
     household: { label: 'الأسرة والإيجار', keywords: 'family rent home people household ايجار اسرة' },
     lifestyle: { label: 'نمط الحياة', keywords: 'food transport habits lifestyle نمط الحياة' },
     budgetEntryMode: { label: 'إدخال الميزانية', keywords: 'percent income amount budget ميزانية نسبة' },
+    weekStart: { label: 'أول يوم في الأسبوع', keywords: 'week start saturday sunday monday calendar أسبوع سبت أحد اثنين' },
     goldStrip: { label: 'شريط سعر الذهب', keywords: 'xau wealth gold ذهب' },
     pushStatus: { label: 'الإشعارات', keywords: 'push permission allow alerts notifications إشعارات تنبيهات', exact: ['notifications', 'alerts', 'إشعارات'] },
     subDueReminders: { label: 'تذكير الاشتراكات', keywords: 'due renew bill notification اشتراك تذكير' },

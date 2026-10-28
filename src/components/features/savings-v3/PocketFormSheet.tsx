@@ -18,6 +18,7 @@ import { rgba } from '@/lib/utils/color'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { useT } from '@/lib/i18n'
 
 export interface PocketFormSheetProps {
   open: boolean
@@ -31,6 +32,9 @@ export interface PocketFormSheetProps {
 }
 
 export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: PocketFormSheetProps) {
+  const sf = useT().savingsForms
+  const pf = sf.pocket
+  const kindLabel = sf.pocketKinds[def.kind].label
   const addSavingsAccount = useFinanceStore((s) => s.addSavingsAccount)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
 
@@ -45,7 +49,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
   const [provider, setProvider] = useState(decomposed?.provider ?? '')
   const [last4, setLast4] = useState(linkedMethod?.last4 ?? '')
   const [maturity, setMaturity] = useState('')
-  const [name, setName] = useState(decomposed?.provider ?? def.label)
+  const [name, setName] = useState(decomposed?.provider ?? kindLabel)
   const [balance, setBalance] = useState('')
   const [currency, setCurrency] = useState<Currency>(linkedMethod?.currency ?? baseCurrency)
   const [color, setColor] = useState(def.color)
@@ -62,7 +66,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
   const create = () => {
     addSavingsAccount({
-      name: name.trim() || def.label,
+      name: name.trim() || kindLabel,
       category: 'savings',
       type: def.savingsType,
       currency,
@@ -83,7 +87,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
-          <V3SheetHeader.Title>New {def.label.toLowerCase()}</V3SheetHeader.Title>
+          <V3SheetHeader.Title>{pf.newTitle(kindLabel)}</V3SheetHeader.Title>
         </V3SheetHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 space-y-4">
@@ -93,14 +97,14 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
               <SavingsAccountIcon account={{ type: def.savingsType, icon: def.icon }} className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{name || def.label}</p>
-              <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{linkedMethod ? 'Linked' : 'Your new pocket'}</p>
+              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{name || kindLabel}</p>
+              <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{linkedMethod ? pf.linked : pf.newPocket}</p>
             </div>
           </div>
 
           {has('provider') && fromPM && (
             <div>
-              <label style={micro}>Provider</label>
+              <label style={micro}>{pf.provider}</label>
               <div className="mt-2 flex h-12 items-center gap-2 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 text-sm font-medium text-[var(--color-brand-text-primary)]">
                 {provider}{last4 ? <span className="font-mono-numbers text-[var(--color-brand-text-muted)]">••{last4}</span> : null}
               </div>
@@ -109,7 +113,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
           {has('provider') && !fromPM && (
             <div>
-              <label style={micro}>Provider</label>
+              <label style={micro}>{pf.provider}</label>
               <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
                 {providerNames.map((p) => (
                   <OptionChip key={p} selected={provider === p} onClick={() => setProvider(p)}>
@@ -117,7 +121,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
                   </OptionChip>
                 ))}
                 <OptionChip selected={provider === ''} onClick={() => setProvider('')}>
-                  Other
+                  {pf.other}
                 </OptionChip>
               </div>
             </div>
@@ -125,7 +129,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
           {has('last4') && !fromPM && (
             <div>
-              <label style={micro}>Last 4 digits</label>
+              <label style={micro}>{pf.last4}</label>
               <Input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="2016" inputMode="numeric"
                 size="brand" className="mt-2 font-mono-numbers" />
             </div>
@@ -133,46 +137,46 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 
           {has('maturity') && (
             <div>
-              <label style={micro}>Matures on</label>
+              <label style={micro}>{pf.maturesOn}</label>
               <Input type="date" value={maturity} onChange={(e) => setMaturity(e.target.value)}
                 size="brand" className="mt-2" />
             </div>
           )}
 
           <div>
-            <label style={micro}>Pocket name</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={def.label}
+            <label style={micro}>{pf.pocketName}</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={kindLabel}
               size="brand" className="mt-2" />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label style={micro}>What&apos;s in it now</label>
+              <label style={micro}>{pf.inItNow}</label>
               <AmountField value={balance} onChange={setBalance} currency={currency} placeholder="0.00"
                 className="mt-2 h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 font-mono-numbers" />
             </div>
             <div style={{ width: 104 }}>
-              <label style={micro}>Currency</label>
+              <label style={micro}>{pf.currency}</label>
               <CurrencyField value={currency} onChange={(c) => setCurrency(c as unknown as Currency)}
                 className="mt-2 h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)] w-full" />
             </div>
           </div>
 
           <div>
-            <label style={micro}>Colour</label>
+            <label style={micro}>{pf.colour}</label>
             <div className="mt-2">
               <ColorSwatchRow value={color} onChange={setColor} />
             </div>
           </div>
 
           {(def.kind === 'bank' || def.kind === 'wallet') && (
-            <ToggleRow title="Also add as a payment method" sub="So you can spend from it too" on={alsoPayment} onToggle={setAlsoPayment} />
+            <ToggleRow title={pf.alsoPayment} sub={pf.alsoPaymentSub} on={alsoPayment} onToggle={setAlsoPayment} />
           )}
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
           <Button size="cta-block" onClick={create} className="font-semibold">
-            Create pocket
+            {pf.create}
           </Button>
         </div>
       </div>

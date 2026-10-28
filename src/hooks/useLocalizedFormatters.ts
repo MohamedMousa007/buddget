@@ -6,6 +6,7 @@ import { arEG } from 'date-fns/locale/ar-EG'
 import { enUS } from 'date-fns/locale/en-US'
 import { useLocale, useT } from '@/lib/i18n'
 import { toLatinDigits } from '@/lib/utils/formatters'
+import { formatClock, formatLocalized } from '@/lib/i18n/dateFormat'
 
 /**
  * Date/time helpers that follow the active app locale (EN / AR) for month and weekday names.
@@ -55,9 +56,13 @@ export function useLocalizedFormatters() {
       formatDayAbbr(dateStr: string) {
         return format(parseISO(dateStr), 'EEE', { locale: dfLocale }).toUpperCase()
       },
-      /** Time respecting device 12/24h preference via Intl. */
+      /** Time in the app language with Latin digits. */
       formatTime(isoStr: string) {
-        return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(new Date(isoStr))
+        return formatClock(new Date(isoStr), locale)
+      },
+      /** Any date-fns pattern, localized: names follow the app language, digits stay Latin. */
+      formatPattern(date: Date | string, pattern: string) {
+        return formatLocalized(typeof date === 'string' ? parseISO(date) : date, pattern, locale)
       },
     }
   }, [dfLocale, t, locale])

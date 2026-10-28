@@ -14,7 +14,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { rgba } from '@/lib/utils/color'
 import { Button } from '@/components/ui/button'
 import { catForAccount, type CatKey } from '@/lib/savings/wealthModel'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatClock, formatLocalized } from '@/lib/i18n/dateFormat'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { formatCurrency } from '@/lib/utils/formatters'
 
@@ -42,6 +43,7 @@ export interface ActivityLedgerProps {
 
 export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll }: ActivityLedgerProps) {
   const t = useT().wealthPage
+  const { locale } = useLocale()
   const deleteTx = useFinanceStore((s) => s.deleteSavingsTransaction)
   const showToast = useActionToast()
   const onDelete = (id: string) => {
@@ -99,7 +101,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
       {days.map(([day, rows]) => (
         <div key={day} className="mt-3 lg:overflow-hidden lg:rounded-2xl lg:border lg:border-[var(--color-brand-border)] lg:bg-[var(--color-brand-card)]">
           <div className="flex items-center justify-between px-4 pb-1">
-            <span className="text-sm font-bold text-[var(--color-brand-text-primary)]">{new Date(day + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            <span className="text-sm font-bold text-[var(--color-brand-text-primary)]">{formatLocalized(new Date(day + 'T12:00:00'), 'MMM d', locale)}</span>
             <span className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{fmtSigned(dayTotal(rows))}.00 {baseCurrency}</span>
           </div>
           {rows.map((tx) => {
@@ -107,7 +109,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
             const tag = tagFor(tx)
             const amtBase = inBase(tx) ?? 0
             const usd = tryConvertCurrency(amtBase, baseCurrency, 'USD', exchangeRates) ?? 0
-            const time = new Date(tx.date.length > 10 ? tx.date : tx.date + 'T12:00:00').toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+            const time = formatClock(new Date(tx.date.length > 10 ? tx.date : tx.date + 'T12:00:00'), locale)
             return (
               <SwipeToDelete key={tx.id} onDelete={() => onDelete(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
                 <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] lg:bg-transparent">

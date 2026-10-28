@@ -3,20 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronLeft, ChevronRight, X, Search } from 'lucide-react'
-import { useLocale } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { buildMonthGrid, pickerYears, weekdayColumns } from '@/lib/time/monthGrid'
+import { monthNames, weekdayNames } from '@/lib/i18n/dateFormat'
+import { useWeekStart } from '@/hooks/useWeekStart'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { Scrim } from '@/components/ui/Scrim'
 import { IconButton } from '@/components/ui/IconButton'
-
-const MONS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const MON_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
-const WD = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-const WD_AR = ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س']
-const WDL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const WDL_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
-const YEARS = Array.from({ length: 2035 - 1970 + 1 }, (_, i) => 1970 + i)
 
 interface YMD {
   y: number
@@ -51,8 +46,8 @@ export function formatDatePillLabel(iso: string, locale: 'en' | 'ar', todayLabel
   if (p.y === t.y && p.m === t.m && p.d === t.d) return todayLabel
   const dow = new Date(p.y, p.m, p.d).getDay()
   return locale === 'ar'
-    ? `${WDL_AR[dow]}، ${p.d} ${MON_AR[p.m]}`
-    : `${WDL[dow]}, ${p.d} ${MONS[p.m]}`
+    ? `${weekdayNames('ar', 'long')[dow]}، ${p.d} ${monthNames('ar')[p.m]}`
+    : `${weekdayNames('en', 'short')[dow]}, ${p.d} ${monthNames('en', 'short')[p.m]}`
 }
 
 export interface UnifiedDatePickerProps {
@@ -71,9 +66,12 @@ export interface UnifiedDatePickerProps {
  */
 export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDatePickerProps) {
   const { locale } = useLocale()
+  const t = useT()
   const ar = locale === 'ar'
   const sel = useMemo(() => parseSeed(value), [value])
   const today = useMemo(() => todayYMD(), [])
+  const weekStart = useWeekStart()
+  const years = useMemo(() => pickerYears(), [])
   const [mode, setMode] = useState<'days' | 'months' | 'years'>('days')
   const [view, setView] = useState({ y: sel.y, m: sel.m })
   const [yearQuery, setYearQuery] = useState('')
@@ -143,20 +141,12 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   }
 
   // 6-row (42-cell) grid with leading/trailing adjacent-month days.
-  const first = new Date(y, m, 1).getDay()
-  const dim = new Date(y, m + 1, 0).getDate()
-  const prevDim = new Date(y, m, 0).getDate()
-  const prevM = m === 0 ? 11 : m - 1
-  const prevY = m === 0 ? y - 1 : y
-  const nextM = m === 11 ? 0 : m + 1
-  const nextY = m === 11 ? y + 1 : y
-  const raw: (YMD & { out: boolean })[] = []
-  for (let i = first - 1; i >= 0; i--) raw.push({ d: prevDim - i, y: prevY, m: prevM, out: true })
-  for (let d = 1; d <= dim; d++) raw.push({ d, y, m, out: false })
-  for (let nd = 1; raw.length < 42; nd++) raw.push({ d: nd, y: nextY, m: nextM, out: true })
+  const raw = buildMonthGrid(y, m, weekStart)
+  const monthLabels = monthNames(locale, 'short')
+  const weekdayLabels = weekdayNames(locale, 'narrow')
 
   const q = yearQuery.trim()
-  const yearList = q ? YEARS.filter((yr) => String(yr).includes(q)) : YEARS
+  const yearList = q ? years.filter((yr) => String(yr).includes(q)) : years
 
   const activePill =
     'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer border text-[var(--flow-band-fg)] border-[var(--flow-band-mix)]'
@@ -199,7 +189,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
         >
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setModeToggle('months')} className={monthPill}>
-              <span className="whitespace-nowrap">{ar ? MON_AR[m] : MONS[m]}</span>
+              <span className="whitespace-nowrap">{monthLabels[m]}</span>
               <ChevronDown
                 className="w-3.5 h-3.5 opacity-80 transition-transform"
                 style={{ transform: isMonths ? 'rotate(180deg)' : 'rotate(0deg)' }}
@@ -251,12 +241,12 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
           {isDays ? (
             <div>
               <div className="grid grid-cols-7 mb-1.5">
-                {(ar ? WD_AR : WD).map((w, i) => (
+                {weekdayColumns(weekStart).map((dow, i) => (
                   <div
                     key={i}
                     className="text-center text-[10px] font-bold tracking-[.04em] text-[var(--color-brand-text-muted)] py-px"
                   >
-                    {w}
+                    {weekdayLabels[dow]}
                   </div>
                 ))}
               </div>
@@ -292,7 +282,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
 
           {isMonths ? (
             <div className="grid grid-cols-3 grid-rows-4 gap-2.5 h-full">
-              {(ar ? MON_AR : MONS).map((lbl, i) => {
+              {monthLabels.map((lbl, i) => {
                 const isCur = i === m
                 const isTM = i === today.m && y === today.y
                 const cls = isCur
@@ -328,7 +318,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   onChange={(e) => setYearQuery(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   inputMode="numeric"
                   dir="ltr"
-                  placeholder={ar ? 'اكتب سنة…' : 'Type a year…'}
+                  placeholder={t.inlineCopy.yearPicker.typeYear}
                   className="w-full h-10 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] ps-9 pe-3.5 text-[var(--color-brand-text-primary)] text-sm font-semibold font-mono-numbers text-start placeholder:text-[var(--color-brand-text-muted)] focus:outline-none"
                 />
               </div>
@@ -359,7 +349,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 })}
                 {yearList.length === 0 ? (
                   <div className="col-span-3 text-center py-6 text-[var(--color-brand-text-muted)] text-sm font-medium">
-                    {ar ? 'لا توجد سنة مطابقة' : 'No matching year'}
+                    {t.inlineCopy.yearPicker.noMatch}
                   </div>
                 ) : null}
               </div>

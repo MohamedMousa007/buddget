@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { useT } from '@/lib/i18n'
 
 interface CategoryPieChartProps {
   data: { name: string; value: number }[]
@@ -11,17 +12,17 @@ interface CategoryPieChartProps {
 
 const COLORS = [1, 2, 3, 4, 5, 6].map((n) => `var(--color-cat-${n})`)
 const OTHER_COLOR = 'var(--color-brand-text-muted)'
-const OTHER_NAME = 'Other'
 
 /** Top slices keep a distinct token colour; the long tail folds into one neutral "Other" slice so no colour repeats. */
-export function foldTail(data: { name: string; value: number }[]): { name: string; value: number; folded?: boolean }[] {
+export function foldTail(data: { name: string; value: number }[], otherName = 'Other'): { name: string; value: number; folded?: boolean }[] {
   if (data.length <= COLORS.length) return data
   const head = data.slice(0, COLORS.length - 1)
   const rest = data.slice(COLORS.length - 1).reduce((s, d) => s + d.value, 0)
-  return [...head, { name: OTHER_NAME, value: rest, folded: true }]
+  return [...head, { name: otherName, value: rest, folded: true }]
 }
 
 export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
+  const c = useT().reports.chart
   const [mounted, setMounted] = useState(false)
   const rafRef = useRef<number | undefined>(undefined)
   useEffect(() => {
@@ -31,17 +32,17 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
     }
   }, [])
 
-  const slices = foldTail(data)
+  const slices = foldTail(data, c.other)
   const total = slices.reduce((s, d) => s + d.value, 0)
 
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
-        Where It Goes
+        {c.pieTitle}
       </h3>
       {data.length === 0 ? (
         <p className="text-[var(--color-brand-text-muted)] text-sm text-center py-8">
-          No spending yet — your breakdown will appear here
+          {c.pieEmpty}
         </p>
       ) : (
         <div className="h-72 min-h-72 min-w-24">

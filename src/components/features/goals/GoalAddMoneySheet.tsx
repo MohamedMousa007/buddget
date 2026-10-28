@@ -15,6 +15,7 @@ import type { Goal } from '@/lib/store/types'
 export function GoalAddMoneySheet({ goal, onClose }: { goal: Goal | null; onClose: () => void }) {
   const t = useT().goals.home
   const tMoney = useT().wealthSheets.money
+  const cat = useT().catalogs
   const pocket = useFinanceStore((s) => s.savingsAccounts.find((a) => !!goal && goal.linkedSavingsAccountIds.includes(a.id) && isEligibleCarryPocket(a)))
   const leg = useLegAccount(pocket, String(goal?.currency ?? ''))
   const [amount, setAmount] = useState('')
@@ -25,7 +26,7 @@ export function GoalAddMoneySheet({ goal, onClose }: { goal: Goal | null; onClos
     const s = useFinanceStore.getState()
     let pocketId = s.savingsAccounts.find((a) => goal.linkedSavingsAccountIds.includes(a.id) && isEligibleCarryPocket(a))?.id
     if (!pocketId) {
-      pocketId = s.addSavingsAccount({ name: `${goal.name} pocket`, category: 'savings', type: 'vault', currency: goal.currency })
+      pocketId = s.addSavingsAccount({ name: cat.goalPocketName(goal.name), category: 'savings', type: 'vault', currency: goal.currency })
       s.updateGoal(goal.id, { linkedSavingsAccountIds: [...goal.linkedSavingsAccountIds, pocketId] })
     }
     s.depositToSavings(pocketId, value, goal.currency, goal.name, { fromAccountId: leg.accountId })

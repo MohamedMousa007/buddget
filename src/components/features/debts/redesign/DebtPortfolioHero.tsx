@@ -1,9 +1,10 @@
 'use client'
 
-import { format } from 'date-fns'
 import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/components/features/hero/HeroBand'
 import { monthProgress } from '@/lib/debts/heroStats'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { formatCompact } from '@/lib/utils/formatters'
 import type { ScheduledPaymentVM } from '@/hooks/useDebtTabData'
 import { fmtWhole } from './heroCardShared'
 
@@ -46,10 +47,11 @@ export function DebtPortfolioHero({
   clearedCount,
 }: DebtPortfolioHeroProps) {
   const t = useT().debts
+  const { locale } = useLocale()
   const money = (n: number) => `${fmtWhole(n)} ${base}`
   const dash = '—'
 
-  const compact = (n: number) => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+  const compact = (n: number) => formatCompact(n, locale)
   const month = monthProgress(paidThisMonth, dueThisMonth)
   const monthCell: HeroBandCell =
     dueThisMonth > 0
@@ -61,12 +63,12 @@ export function DebtPortfolioHero({
       ? [
           { label: t.statDebtsCleared, value: clearedCount > 0 ? String(clearedCount) : dash },
           { label: t.statTotalPaidOff, value: paidOff > 0 ? money(paidOff) : dash },
-          { label: t.heroDebtFreeSince, value: lastClearedAt ? format(lastClearedAt, 'MMM yyyy') : dash },
+          { label: t.heroDebtFreeSince, value: lastClearedAt ? formatLocalized(lastClearedAt, 'MMM yyyy', locale) : dash },
         ]
       : [
           { label: t.heroNext, value: nextPayment ? money(nextPayment.amount) : dash },
           monthCell,
-          { label: t.heroDebtFreeBy, value: debtFreeDate ? format(debtFreeDate, 'MMM yyyy') : dash },
+          { label: t.heroDebtFreeBy, value: debtFreeDate ? formatLocalized(debtFreeDate, 'MMM yyyy', locale) : dash },
         ]
 
   const progressing = borrowedTotal > 0 && activeCount > 0

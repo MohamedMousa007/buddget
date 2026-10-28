@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
+import { useT } from '@/lib/i18n'
 import type { ParsedGoal } from '@/lib/goals/goalAi'
 import { addMonthsIso, computePace, monthsUntil } from '@/lib/goals/goalPlan'
 import { averageMonthlySpend, fieldAdvice } from '@/lib/goals/fieldAdvice'
@@ -35,6 +36,7 @@ const num = (s: string) => {
 }
 
 export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
+  const cat = useT().catalogs
   const s = useFinanceStore(
     useShallow((st) => ({
       settings: st.settings,
@@ -57,7 +59,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [draft] = useState<NewGoalDraft | null>(() => (seed?.category || seed?.text ? null : loadDraft()))
   const [step, setStep] = useState<1 | 2 | 3>(draft?.step ?? (seed?.category ? 2 : 1))
   const [category, setCategory] = useState<GoalCategory>(draft?.category ?? seed?.category ?? 'custom')
-  const [name, setName] = useState(draft?.name ?? (seed?.category ? defaultGoalName(seed.category) : ''))
+  const [name, setName] = useState(draft?.name ?? (seed?.category ? defaultGoalName(seed.category, cat.goalNames) : ''))
   const [targetAmount, setTargetAmount] = useState(draft?.targetAmount ?? '')
   const [currency, setCurrency] = useState<Currency>((draft?.currency as Currency) ?? baseCcy)
   const [targetDate, setTargetDate] = useState(() =>
@@ -129,14 +131,14 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
       if (c === 'debt_freedom') {
         const pool = freeDebts.filter((d) => (preset === 'card' ? d.debtType === 'credit_card' : d.debtType !== 'credit_card'))
         setLinkedDebtIds(pool.map((d) => d.id))
-        setName(preset === 'card' ? 'Credit card' : defaultGoalName(c))
+        setName(preset === 'card' ? cat.creditCardGoalName : defaultGoalName(c, cat.goalNames))
       } else {
         setLinkedDebtIds([])
-        setName(defaultGoalName(c))
+        setName(defaultGoalName(c, cat.goalNames))
       }
       setStep(2)
     },
-    [freeDebts],
+    [freeDebts, cat],
   )
 
   /** "Paying this off instead?": turn the goal into one that follows an existing debt, so nothing is duplicated. */
@@ -175,7 +177,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
 
   const submit = useCallback(() => {
     const st = useFinanceStore.getState()
-    const goalName = name.trim() || defaultGoalName(category)
+    const goalName = name.trim() || defaultGoalName(category, cat.goalNames)
     // A debt goal's target is the debts' base-currency total, so it is always saved in the base currency.
     const ccy = clampFiatToAllowed(st.settings, kind === 'debt' ? st.settings.baseCurrency : currency)
     try {
@@ -209,7 +211,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
           monthlyContribution: fundingMode === 'fixed' && num(fixedAmount) > 0 ? num(fixedAmount) : null,
           frequency,
         })
-        const pocketId = st.addSavingsAccount({ name: `${goalName} pocket`, category: 'savings', type: 'vault', currency: ccy })
+        const pocketId = st.addSavingsAccount({ name: cat.goalPocketName(goalName), category: 'savings', type: 'vault', currency: ccy })
         st.updateGoal(goalId, { linkedSavingsAccountIds: [pocketId] })
         if (num(alreadySaved) > 0) {
           st.depositToSavings(pocketId, num(alreadySaved), ccy, goalName, { mode: 'declare', source: 'goal_opening' })
@@ -222,7 +224,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     submitted.current = true
     clearDraft()
     onDone()
-  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone])
+  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone, cat])
 
   return {
     now, step, setStep, category, pickCategory, kind, name, setName, targetAmount, setTargetAmount,

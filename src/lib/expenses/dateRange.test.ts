@@ -20,6 +20,22 @@ describe('resolveRange', () => {
     expect(end.getHours()).toBe(23)
   })
 
+  it('week opens on the chosen first day (Sat, Sun, Mon)', () => {
+    const day = (d: Date) => d.getDate()
+    const sat = resolveRange(range('week'), '2026-07', 1, REF, 6)
+    expect([day(sat.start), day(sat.end)]).toEqual([11, 17])
+    const sun = resolveRange(range('week'), '2026-07', 1, REF, 0)
+    expect([day(sun.start), day(sun.end)]).toEqual([12, 18])
+    const mon = resolveRange(range('week'), '2026-07', 1, REF, 1)
+    expect([day(mon.start), day(mon.end)]).toEqual([13, 19])
+  })
+
+  it('formats a custom range with Arabic month names when given the ar locale', () => {
+    const r = resolveRange(range('custom', '2026-10-05', '2026-10-27'), '2026-10', 1, REF)
+    expect(formatCustomRange(r, 'ar')).toContain('أكتوبر')
+    expect(formatCustomRange(r)).toBe('5 – 27 Oct')
+  })
+
   it('yesterday is the previous local day', () => {
     const { start, end } = resolveRange(range('yesterday'), '2026-07', 1, REF)
     expect(start.getDate()).toBe(14)

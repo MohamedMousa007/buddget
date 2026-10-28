@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import type { KeyboardEvent } from 'react'
 import { useLocale, useT } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
@@ -39,10 +40,10 @@ export function GoalCard({
   const isLimit = goal.category === 'spending_control'
   const basis = isLimit ? goal.monthlySpendingLimit : goal.targetAmount
   const month = (iso: string) =>
-    new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' })
+    new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' })
   const dueLine = status.kind === 'paused'
     ? goal.targetDate ? t.pausedWas(month(goal.targetDate)) : ''
-    : isLimit ? t.resets(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(locale, { day: 'numeric', month: 'short' }))
+    : isLimit ? t.resets(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' }))
     : goal.targetDate ? month(goal.targetDate) : ''
   const open = () => onOpen(goal)
   const onKey = (e: KeyboardEvent) => {

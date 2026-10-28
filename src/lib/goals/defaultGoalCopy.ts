@@ -1,25 +1,7 @@
 import type { GoalCategory } from '@/lib/store/types'
+import { catalogCopyEn } from '@/lib/i18n/catalogCopy'
 
-/** Suggested default title when picking a category (user can edit). */
-export function defaultGoalName(category: GoalCategory): string {
-  const m: Record<GoalCategory, string> = {
-    emergency_fund: 'Emergency Fund',
-    house: 'House Down Payment',
-    car: 'New Car',
-    vacation: 'Vacation',
-    education: 'Education',
-    wedding: 'Wedding',
-    phone_device: 'Phone / Device',
-    family_support: 'Family Support',
-    sadaqah_charity: 'Sadaqah',
-    gift: 'Gift',
-    investment: 'Investments',
-    debt_freedom: 'Debt Freedom',
-    quality_of_life: 'Quality of Life',
-    spending_control: 'Spending Control',
-    retirement: 'Retirement',
-    business: 'Business',
-    custom: 'My Goal',
-  }
-  return m[category] ?? 'My Goal'
+/** Suggested default title when picking a category (user can edit). Pass the dictionary's names to show it translated. */
+export function defaultGoalName(category: GoalCategory, names: Record<GoalCategory, string> = catalogCopyEn.goalNames): string {
+  return names[category] ?? names.custom
 }

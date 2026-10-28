@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { Check, Coins } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { AmountField } from '@/components/ui/AmountField'
@@ -29,7 +30,7 @@ export function useFundCopy(form: Form) {
   const periodMul = quarterly ? 3 : 1
   const money = (n: number) => formatCurrency(Math.round(n), form.currency, false)
   const month = (iso: string | null) =>
-    iso ? new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(locale, { month: 'short', year: 'numeric' }) : ''
+    iso ? new Date(`${iso.slice(0, 7)}-01T00:00:00`).toLocaleDateString(intlTag(locale), { month: 'short', year: 'numeric' }) : ''
   const remaining = Math.max(0, num(form.targetAmount) - num(form.alreadySaved))
   const keep = form.usualKeep
   const perPeriodAt = (pct: number) => (keep ? (keep * periodMul * pct) / 100 : 0)

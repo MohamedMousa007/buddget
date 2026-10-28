@@ -35,7 +35,8 @@ import { useNetWorth } from '@/hooks/useNetWorth'
 import { useNetWorthTrend } from '@/hooks/useNetWorthTrend'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { canDeletePocket } from '@/lib/savings/canDeletePocket'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
 import { deriveHawl } from '@/lib/savings/hawl'
@@ -58,6 +59,7 @@ const COLLAPSE_AT = 150
 export default function WealthPage() {
   useEnsureMonthlySavingsVault()
   const t = useT().wealthPage
+  const { locale } = useLocale()
   const dataReady = useFinanceStore((s) => s.dataReady)
   const requireAuth = useRequireAuthAction()
   const confirmDialog = useConfirm()
@@ -159,7 +161,7 @@ export default function WealthPage() {
     () => deriveHawl({ yearStartDate: profile.zakatConfig?.yearStartDate, lastPaidDate: profile.zakatConfig?.lastPaidDate, createdAt: profile.createdAt }),
     [profile.zakatConfig?.yearStartDate, profile.zakatConfig?.lastPaidDate, profile.createdAt],
   )
-  const hawlDate = useMemo(() => new Date(hawl.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }), [hawl.dueDate])
+  const hawlDate = useMemo(() => formatLocalized(new Date(hawl.dueDate), 'd MMM yyyy', locale), [hawl.dueDate, locale])
   const silverNisab = 595 * zakatBase.silverPerGram
   const goldNisab = 85 * zakatBase.gold24kSellPerGram
   const prompt = {
@@ -274,7 +276,7 @@ export default function WealthPage() {
         badges={
           <WealthHeroBadges
             emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
-            zakat={hasZakat ? { amount: formatWhole(zakatResult.zakat), due: hawl.isPlaceholder ? '—' : new Date(hawl.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) } : undefined}
+            zakat={hasZakat ? { amount: formatWhole(zakatResult.zakat), due: hawl.isPlaceholder ? '—' : formatLocalized(new Date(hawl.dueDate), 'd MMM', locale) } : undefined}
             onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
             onOpenZakat={() => guard(() => setZakatOpen(true))}
           />

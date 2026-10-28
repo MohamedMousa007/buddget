@@ -1,5 +1,6 @@
 'use client'
 
+import { formatFixed2 } from '@/lib/utils/formatters'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
@@ -12,7 +13,7 @@ import { useT } from '@/lib/i18n'
 
 /** Read-only view of a scanned receipt's itemized breakdown (items + charges). */
 /** Receipt rows come from the AI scan; a missing number must not crash the sheet. */
-const money = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? n.toFixed(2) : '—')
+const money = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? `${n < 0 ? '-' : ''}${formatFixed2(n)}` : '—')
 
 export function ReceiptDetailSheet({
   receiptId,

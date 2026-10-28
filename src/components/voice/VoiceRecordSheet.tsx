@@ -13,6 +13,7 @@ import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
 import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isNative } from '@/lib/native/isNative'
 import { IconButton } from '@/components/ui/IconButton'
+import { useT } from '@/lib/i18n'
 
 interface VoiceRecordSheetProps {
   open: boolean
@@ -173,6 +174,7 @@ function RecordingView({
   onStop: () => void
   onCancel: () => void
 }) {
+  const v = useT().voice
   const isRecording = state === 'recording'
   const x = useMotionValue(0)
   const y = useMotionValue(0)
@@ -201,7 +203,7 @@ function RecordingView({
         <BuddgyIcon mood={isRecording ? 'listening' : 'awake'} size={48} strokeWidth={1.5} filled alive />
       </span>
       <p className="text-sm text-[var(--color-brand-text-muted)]">
-        {isRecording ? 'Listening… speak your expense.' : 'Hold mic to record'}
+        {isRecording ? v.listening : v.holdMic}
       </p>
 
       {isRecording ? <Visualizer amplitude={amplitude} animTime={animTime} /> : null}
@@ -295,9 +297,8 @@ function RecordingView({
 
       <p className="text-center text-xs text-[var(--color-brand-text-muted)] max-w-64">
         {isRecording
-          ? 'Release to transcribe · Drag to trash to cancel'
-          : 'Try "200 جنيه taxi", "90 EGP Talabat", or "120 dirhams Carrefour".' +
-            (!isNative() ? ' (Microphone access required.)' : '')}
+          ? v.releaseHint
+          : v.tryExamples + (!isNative() ? v.micRequired : '')}
       </p>
 
       {!isRecording ? (
@@ -308,7 +309,7 @@ function RecordingView({
           size="touch"
           className="mt-2 gap-1 px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
-          <X className="h-4 w-4" /> Cancel
+          <X className="h-4 w-4" /> {v.cancel}
         </Button>
       ) : null}
     </>
@@ -318,19 +319,20 @@ function RecordingView({
 // ── Permission ───────────────────────────────────────────────────────────────
 
 function PermissionView({ onRequest }: { onRequest: () => void }) {
+  const v = useT().voice
   return (
     <div className="flex flex-col items-center gap-4 py-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)]">
         <MicOff className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
       </div>
       <div>
-        <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Microphone access needed</p>
+        <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{v.micNeededTitle}</p>
         <p className="mt-1 text-xs text-[var(--color-brand-text-muted)] max-w-64">
-          Allow microphone access so Buddget can hear your expense.
+          {v.micNeededBody}
         </p>
       </div>
       <Button type="button" onClick={onRequest} size="touch" className="px-5 text-sm font-medium">
-        <Mic className="h-4 w-4" /> Allow Microphone
+        <Mic className="h-4 w-4" /> {v.allowMic}
       </Button>
     </div>
   )
@@ -339,10 +341,11 @@ function PermissionView({ onRequest }: { onRequest: () => void }) {
 // ── Processing ──────────────────────────────────────────────────────────────
 
 function ProcessingView({ onCancel }: { onCancel: () => void }) {
+  const v = useT().voice
   return (
     <div className="flex flex-col items-center gap-3 py-6 w-full">
       <span className="text-[var(--color-brand-text)]"><BuddgyIcon mood="thinking" size={48} strokeWidth={1.5} filled alive /></span>
-      <p className="text-sm text-[var(--color-brand-text-secondary)]">Transcribing your voice…</p>
+      <p className="text-sm text-[var(--color-brand-text-secondary)]">{v.transcribing}</p>
       <Button
         type="button"
         onClick={onCancel}
@@ -351,7 +354,7 @@ function ProcessingView({ onCancel }: { onCancel: () => void }) {
         className="mt-1 gap-1.5 text-sm text-[var(--color-brand-text-muted)]"
         aria-label="Cancel transcription"
       >
-        <X className="h-4 w-4" /> Cancel
+        <X className="h-4 w-4" /> {v.cancel}
       </Button>
     </div>
   )
@@ -372,6 +375,7 @@ function AnswerView({
   onOpenChat: () => void
   onClose: () => void
 }) {
+  const v = useT().voice
   const muted = useSettingsStore((s) => s.voiceSpeakMuted)
   const setMuted = useSettingsStore((s) => s.setVoiceSpeakMuted)
 
@@ -414,7 +418,7 @@ function AnswerView({
           className="flex-1 gap-1.5 text-sm font-medium"
         >
           <MessageCircle className="h-4 w-4" />
-          Open in chat
+          {v.openInChat}
         </Button>
         <Button
           type="button"
@@ -423,7 +427,7 @@ function AnswerView({
           size="touch"
           className="bg-transparent px-3 text-sm text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-elevated)]"
         >
-          Ask again
+          {v.askAgain}
         </Button>
         <Button
           type="button"
@@ -432,7 +436,7 @@ function AnswerView({
           size="touch"
           className="px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
-          Close
+          {v.close}
         </Button>
       </div>
     </div>
@@ -450,16 +454,17 @@ function ClarifyView({
   onAnswer: () => void
   onCancel: () => void
 }) {
+  const v = useT().voice
   return (
     <div className="w-full text-center">
       <span className="inline-flex text-[var(--color-brand-text)]"><BuddgyIcon mood="curious" size={48} strokeWidth={1.5} filled alive /></span>
       <p className="mt-3 text-sm text-[var(--color-brand-text-primary)] max-w-72 mx-auto">
-        {message || 'Could you add a bit more detail?'}
+        {message || v.detailPrompt}
       </p>
       <div className="mt-5 flex justify-center gap-2">
         <Button type="button" onClick={onAnswer} size="touch" className="gap-1.5 text-sm font-medium">
           <Mic className="h-4 w-4" />
-          Answer by voice
+          {v.answerByVoice}
         </Button>
         <Button
           type="button"
@@ -468,7 +473,7 @@ function ClarifyView({
           size="touch"
           className="px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
-          Cancel
+          {v.cancel}
         </Button>
       </div>
     </div>
@@ -478,19 +483,18 @@ function ClarifyView({
 // ── Error ────────────────────────────────────────────────────────────────────
 
 function QueuedView({ onClose }: { onClose: () => void }) {
+  const v = useT().voice
   return (
     <div className="flex flex-col items-center gap-3 py-4 text-center">
       <CheckCircle2 className="h-8 w-8 text-[var(--color-brand-green)]" />
       <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
-        Recording saved
+        {v.recordingSaved}
       </p>
       <p className="text-xs text-[var(--color-brand-text-muted)] max-w-72">
-        You&apos;re offline right now, so we kept it on your device. When you&apos;re back
-        online, a chip will appear at the top of the app — tap it to finish adding
-        this expense.
+        {v.offlineBody}
       </p>
       <Button type="button" onClick={onClose} size="touch" className="mt-2 text-sm font-medium">
-        Done
+        {v.done}
       </Button>
     </div>
   )
@@ -505,18 +509,19 @@ function ErrorView({
   onRetry: () => void
   onClose: () => void
 }) {
+  const v = useT().voice
   return (
     <div className="flex flex-col items-center gap-3 py-4 text-center">
       <span className="text-[var(--color-brand-text)]"><BuddgyIcon mood="worried" size={48} strokeWidth={1.5} filled alive /></span>
       <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">
-        Couldn&apos;t capture that
+        {v.couldntCapture}
       </p>
       <p className="text-xs text-[var(--color-brand-text-muted)] max-w-72">
-        {error ?? 'Something went wrong. Try again or close.'}
+        {error ?? v.errorFallback}
       </p>
       <div className="mt-2 flex gap-2">
         <Button type="button" onClick={onRetry} size="touch" className="text-sm font-medium">
-          Try again
+          {v.tryAgain}
         </Button>
         <Button
           type="button"
@@ -525,7 +530,7 @@ function ErrorView({
           size="touch"
           className="px-3 text-sm text-[var(--color-brand-text-muted)]"
         >
-          Close
+          {v.close}
         </Button>
       </div>
     </div>

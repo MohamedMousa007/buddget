@@ -1,5 +1,7 @@
 import { STALE_MAIN_DAYS, defaultDeviceName, nextMain } from '@/lib/devices/policy'
 import { emitNotification } from '@/lib/server/emitNotification'
+import { renderServerCopy } from '@/lib/notifications/serverCopy'
+import { getUserDictionary } from '@/lib/server/userDictionary'
 import type { ServiceClient } from '@/lib/supabase/service'
 
 export interface SelfReport {
@@ -33,12 +35,11 @@ export async function setMain(service: ServiceClient, userId: string, deviceId: 
 export async function promoteMain(service: ServiceClient, userId: string, leavingDeviceId: string, why: 'removed' | 'stale', prefer?: string): Promise<void> {
   const { data: rows } = await service.from('user_devices').select('device_id, name, platform, collects_sms, last_seen_at, revoked_at, push_permission').eq('user_id', userId).is('revoked_at', null)
   const next = prefer ? rows?.find((d) => d.device_id === prefer) : nextMain(rows ?? [], leavingDeviceId)
-  const cause = why === 'removed' ? 'was removed' : `has not been opened in ${STALE_MAIN_DAYS} days`
+  const dict = await getUserDictionary(service, userId)
   if (!next) {
     await emitNotification(service, {
       userId, category: 'device_main_changed', severity: 'warning', dedupeKey: `main-none:${leavingDeviceId}`,
-      title: 'No phone is set to get notifications',
-      body: `Your main phone ${cause}, and no other phone can take over. Open Buddget on the phone you want to use and turn notifications on in Settings, Your devices.`,
+      ...renderServerCopy(dict, { kind: 'device_none', cause: why }),
       push: false,
     })
     return
@@ -46,8 +47,7 @@ export async function promoteMain(service: ServiceClient, userId: string, leavin
   if (!(await setMain(service, userId, next.device_id))) return
   await emitNotification(service, {
     userId, category: 'device_main_changed', severity: 'info', dedupeKey: `main:${leavingDeviceId}:${next.device_id}`,
-    title: `${next.name ?? defaultDeviceName(next.platform, null)} is now your main phone`,
-    body: `Your previous main phone ${cause}, so notifications now go to this phone. You can change it in Settings, Your devices.`,
+    ...renderServerCopy(dict, { kind: 'device_main', deviceName: next.name ?? defaultDeviceName(next.platform, null), cause: why }),
   })
 }
 
@@ -73,8 +73,7 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
     if (!error && main) {
       await emitNotification(service, {
         userId, category: 'device_joined', severity: 'info', dedupeKey: `device-joined:${deviceId}`,
-        title: 'A new phone signed in',
-        body: `${name} signed in to your account. It stays quiet unless you turn notifications on for it in Settings, Your devices.`,
+        ...renderServerCopy(await getUserDictionary(service, userId), { kind: 'device_joined', deviceName: name }),
       })
     }
   } else {

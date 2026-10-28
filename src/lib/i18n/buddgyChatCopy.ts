@@ -1,4 +1,5 @@
 import { useLocale } from '@/lib/i18n'
+import { intlTag } from '@/lib/i18n/dateFormat'
 import type { Locale } from '@/lib/i18n/types'
 import type { ChatError } from '@/lib/buddgy/client/chatTypes'
 import type { ToolRisk } from '@/lib/buddgy/tools/spec'
@@ -39,7 +40,7 @@ export interface BuddgyChatCopy {
 }
 
 const hhmm = (iso: string | null, locale: Locale) =>
-  iso ? new Date(iso).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US', { hour: 'numeric', minute: '2-digit' }) : null
+  iso ? new Date(iso).toLocaleTimeString(intlTag(locale), { hour: 'numeric', minute: '2-digit' }) : null
 
 function quotaEn(layer: string, resetAt: string | null): string {
   const at = hhmm(resetAt, 'en')

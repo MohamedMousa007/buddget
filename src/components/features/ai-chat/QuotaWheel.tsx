@@ -1,5 +1,6 @@
 'use client'
 
+import { intlTag } from '@/lib/i18n/dateFormat'
 import { useState } from 'react'
 import { useBuddgyUsage } from '@/hooks/useBuddgyUsage'
 import { useDismissable } from '@/hooks/useDismissable'
@@ -21,7 +22,7 @@ export function QuotaWheel({ refreshKey }: { refreshKey: string }) {
   useDismissable(open, () => setOpen(false))
   if (!status) return null
   const { rows, pct } = summarizeUsage(status)
-  const at = (iso: string) => new Date(iso).toLocaleTimeString(locale === 'ar' ? 'ar-EG' : 'en-US', { hour: 'numeric', minute: '2-digit' })
+  const at = (iso: string) => new Date(iso).toLocaleTimeString(intlTag(locale), { hour: 'numeric', minute: '2-digit' })
 
   return (
     <div className="relative shrink-0">

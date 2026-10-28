@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, formatMoneyHero, formatQuantity, formatWhole } from './formatters'
+import { formatCompact, formatCurrency, formatMoneyHero, formatQuantity, formatWhole } from './formatters'
 
 describe('formatQuantity', () => {
   it('keeps crypto and gold decimals, trims zeros', () => {
@@ -32,5 +32,26 @@ describe('formatCurrency negative zero', () => {
     expect(formatCurrency(-0.004, 'USD')).not.toContain('-')
     expect(formatCurrency(-0.004, 'USD', false)).not.toContain('-')
     expect(formatCurrency(-0.006, 'USD')).toContain('-')
+  })
+})
+
+describe('currency symbols and decimals (T15)', () => {
+  it('uses one symbol per currency, matching the currency catalogue', () => {
+    expect(formatCurrency(5, 'OMR', false)).toBe('RO 5')
+  })
+  it('shows three decimals for 3-decimal currencies', () => {
+    expect(formatCurrency(1.5, 'KWD')).toBe('KD 1.500')
+    expect(formatCurrency(-2.25, 'BHD')).toBe('-BD 2.250')
+    expect(formatCurrency(1.5, 'AED')).toBe('Dh 1.50')
+  })
+})
+
+describe('formatCompact', () => {
+  it('uses Arabic suffixes with Latin digits in ar', () => {
+    expect(formatCompact(1500, 'en')).toBe('1.5K')
+    const ar = formatCompact(1500, 'ar')
+    expect(ar).toMatch(/^1\.5/)
+    expect(ar).not.toMatch(/[٠-٩]/)
+    expect(ar).toMatch(/[؀-ۿ]/)
   })
 })

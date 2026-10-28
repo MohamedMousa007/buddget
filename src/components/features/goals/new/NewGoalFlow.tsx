@@ -11,12 +11,14 @@ import { StepMakeItReal } from '@/components/features/goals/new/StepMakeItReal'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { useNewGoalForm, type FlowSeed } from '@/hooks/useNewGoalForm'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { cn } from '@/lib/utils'
 
 function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void }) {
   const t = useT().goals.flow
+  const { locale } = useLocale()
   const form = useNewGoalForm(seed, onClose)
   const fund = useFundCopy(form)
   const [split, setSplit] = useState(false)
@@ -26,7 +28,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
   const step = Math.min(form.step, total) as 1 | 2 | 3
   const last = step === total
   const quarterly = form.frequency === 'quarterly'
-  const finish = new Date(`${form.targetDate.slice(0, 7)}-01T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  const finish = formatLocalized(new Date(`${form.targetDate.slice(0, 7)}-01T00:00:00`), 'd MMM yyyy', locale)
 
   const summary =
     step === 2 && form.kind === 'save' && form.pace.asked > 0

@@ -50,6 +50,7 @@ export async function runStage<T>(
   stage: VoiceStage,
   userFailMessage: string,
   fn: () => Promise<T>,
+  formatMessage: (message: string) => string = (m) => `${STAGE_LABEL[stage]} step — ${m}`,
 ): Promise<T> {
   const started = Date.now()
   logVoiceStage(stage, 'start')
@@ -65,6 +66,6 @@ export async function runStage<T>(
     }
     const detail = e instanceof Error ? e.message : String(e)
     logVoiceStage(stage, 'fail', `latency=${Date.now() - started}ms err=${detail}`)
-    throw new VoiceStageError(stage, `${STAGE_LABEL[stage]} step — ${userFailMessage}`, e)
+    throw new VoiceStageError(stage, formatMessage(userFailMessage), e)
   }
 }

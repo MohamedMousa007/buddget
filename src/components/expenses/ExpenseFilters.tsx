@@ -21,6 +21,7 @@ import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { formatWhole } from '@/lib/utils/formatters'
+import { useWeekStart } from '@/hooks/useWeekStart'
 import { useDismissable } from '@/hooks/useDismissable'
 import { useT } from '@/lib/i18n'
 import type { IncomeSourceType, PaymentMethod } from '@/lib/store/types'
@@ -180,7 +181,8 @@ function PeriodControl() {
   const { range, setRangePreset, setCustomRange } = useExpenseFilterStore(
     useShallow((s) => ({ range: s.range, setRangePreset: s.setRangePreset, setCustomRange: s.setCustomRange })),
   )
-  const resolved = resolveRange(range, monthFilter, monthStartDay)
+  const weekStart = useWeekStart()
+  const resolved = resolveRange(range, monthFilter, monthStartDay, new Date(), weekStart)
   const from = range.from ?? format(resolved.start, 'yyyy-MM-dd')
   const to = range.to ?? format(resolved.end, 'yyyy-MM-dd')
   return (

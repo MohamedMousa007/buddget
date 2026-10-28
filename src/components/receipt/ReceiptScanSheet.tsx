@@ -1,5 +1,6 @@
 'use client'
 
+import { formatFixed2 } from '@/lib/utils/formatters'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { Camera, Check, X, ScanLine, ReceiptText, RefreshCcw, Images } from 'lucide-react'
@@ -32,6 +33,7 @@ import {
 } from '@/lib/receipt/normaliseReceipt'
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
 import { reconcileTyped } from '@/lib/ui/typedAmount'
+import { useT } from '@/lib/i18n'
 
 type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'notReceipt' | 'error' | 'queued'
 
@@ -75,6 +77,8 @@ async function queueReceiptCapture(dataUrl: string): Promise<boolean> {
 }
 
 export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptScanSheetProps) {
+  const t = useT()
+  const rc = t.receiptScan
   const [state, setState] = useState<ScanState>('idle')
 
   // Buddgy reflects the OCR pipeline: scanning while it reads, then the outcome.
@@ -135,15 +139,15 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       const { apiFetchAuth } = await import('@/lib/apiBase')
       const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include', signal: ctrl.signal })
       if (!res.ok) {
-        if (res.status === 503) throw new Error('AI scanning is temporarily offline. Please set up manually or try again in a moment.')
-        if (res.status === 422) throw new Error('We had trouble reading this receipt. Make sure the total and merchant are clearly visible, then try again.')
-        if (res.status === 429) throw new Error('Receipt scanning limit reached. Please try again in a moment.')
-        if (res.status === 401) throw new Error('Please sign in to use receipt scanning.')
+        if (res.status === 503) throw new Error(rc.errors.unavailable)
+        if (res.status === 422) throw new Error(rc.errors.unreadable)
+        if (res.status === 429) throw new Error(rc.errors.limitReached)
+        if (res.status === 401) throw new Error(rc.errors.signInRequired)
         const err = (await res.json().catch(() => null)) as { error?: string } | null
-        throw new Error(err?.error || `Scan failed (${res.status})`)
+        throw new Error(err?.error || rc.errors.scanFailed(res.status))
       }
       const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
-      if (!data.receipt) throw new Error('We had trouble reading this receipt. Make sure the total and merchant are clearly visible, then try again.')
+      if (!data.receipt) throw new Error(rc.errors.unreadable)
       if (ctrl.signal.aborted) return
       const normalised = normaliseReceipt(data.receipt, baseCurrency)
       setResult(normalised)
@@ -156,16 +160,16 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         return
       }
       const msg = !isOnline()
-        ? "You're offline. Receipt scanning needs an internet connection — please try again once you're back online."
+        ? rc.errors.offline
         : e instanceof TypeError
-          ? 'Network connection lost. Please check your internet and try again.'
+          ? rc.errors.networkLost
           : e instanceof Error
             ? e.message
-            : 'Could not scan that receipt'
+            : rc.errors.scanFallback
       setError(msg)
       setState('error')
     }
-  }, [baseCurrency, seed])
+  }, [baseCurrency, seed, rc])
 
   /**
    * Opens the native document scanner and sends the captured pages straight to
@@ -188,10 +192,10 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         else setState('idle')
         return
       }
-      setError(e instanceof Error ? e.message : 'Could not open the scanner')
+      setError(e instanceof Error ? e.message : rc.errors.scannerFallback)
       setState('error')
     }
-  }, [onClose, submitPhotos])
+  }, [onClose, submitPhotos, rc])
 
   /** Handles seeded (offline-queued) review: parses the stored photo immediately. */
   const startSeedScan = useCallback(async () => {
@@ -208,19 +212,19 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       form.append('image', blob)
       const { apiFetchAuth } = await import('@/lib/apiBase')
       const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include', signal: ctrl.signal })
-      if (!res.ok) throw new Error(`Scan failed (${res.status})`)
+      if (!res.ok) throw new Error(rc.errors.scanFailed(res.status))
       const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
-      if (!data.receipt) throw new Error('Could not read the stored receipt image.')
+      if (!data.receipt) throw new Error(rc.errors.storedImageUnreadable)
       if (ctrl.signal.aborted) return
       const normalised = normaliseReceipt(data.receipt, baseCurrency)
       setResult(normalised)
       setState(normalised.isReceipt ? 'result' : 'notReceipt')
     } catch (e) {
       if (ctrl.signal.aborted) return
-      setError(e instanceof Error ? e.message : 'Could not scan that receipt')
+      setError(e instanceof Error ? e.message : rc.errors.scanFallback)
       setState('error')
     }
-  }, [seed, baseCurrency])
+  }, [seed, baseCurrency, rc])
 
   // ponytail: web auto-start skipped — input.click() from useEffect lacks user gesture on mobile browsers
   useEffect(() => {
@@ -282,32 +286,30 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       panelClassName="!max-h-[min(86vh,720px)]"
     >
       {state === 'scanning' ? (
-        <ProcessingView preview={null} title="Opening camera…" subtitle="Line up your receipt and capture it." />
+        <ProcessingView preview={null} title={rc.openingCamera} subtitle={rc.openingCameraHint} />
       ) : null}
 
       {state === 'parsing' ? (
         <ProcessingView
           preview={preview}
-          title="Reading your receipt…"
-          subtitle="Pulling out the merchant, total, and items."
+          title={rc.reading}
+          subtitle={rc.readingHint}
         />
       ) : null}
 
       {state === 'queued' ? (
         <Centered>
           <Check className="h-8 w-8 text-[var(--color-brand-green)]" />
-          <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Receipt captured</p>
+          <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{rc.captured}</p>
           <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">
-            You&apos;re offline right now, so we saved the photo on your device. When
-            you&apos;re back online, a chip will appear at the top of the app — tap it
-            to finish adding this receipt.
+            {rc.capturedOffline}
           </p>
           <Button
             type="button"
             onClick={onClose}
             size="touch" className="mt-2 hover:bg-[var(--color-brand-primary-hover)]"
           >
-            Done
+            {rc.done}
           </Button>
         </Centered>
       ) : null}
@@ -326,10 +328,9 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             <span className="text-[var(--color-brand-text)]">
               <BuddgyIcon mood="curious" size={56} strokeWidth={1.5} filled alive />
             </span>
-            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">That doesn&apos;t look like a receipt</p>
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{rc.notReceiptTitle}</p>
             <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">
-              We couldn&apos;t find a total or merchant. Point the camera at a printed
-              receipt, or pick a clearer photo.
+              {rc.notReceiptBody}
             </p>
             <div className="mt-1 flex flex-col items-stretch gap-2">
               <Button
@@ -337,14 +338,14 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
                 onClick={() => { reset(); void runScan('camera') }}
                 size="touch" className="text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
-                <Camera className="h-4 w-4" /> Scan again
+                <Camera className="h-4 w-4" /> {rc.scanAgain}
               </Button>
               <Button
                 onClick={() => { reset(); void runScan('gallery') }}
                 variant="outline"
                 size="touch"
               >
-                <Images className="h-4 w-4" /> Choose from gallery
+                <Images className="h-4 w-4" /> {rc.chooseGallery}
               </Button>
             </div>
           </Centered>
@@ -365,7 +366,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand-elevated)]">
               <ReceiptText className="h-7 w-7 text-[var(--color-brand-text-muted)]" />
             </div>
-            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Let&apos;s try that again</p>
+            <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">{rc.tryAgainTitle}</p>
             <p className="max-w-72 text-xs text-[var(--color-brand-text-muted)] text-center">{error}</p>
             {photos.length > 0 ? (
               <Button
@@ -373,7 +374,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
                 onClick={() => void submitPhotos(photos)}
                 size="touch" className="mt-1 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
-                <RefreshCcw className="h-4 w-4" /> Try again
+                <RefreshCcw className="h-4 w-4" /> {rc.tryAgain}
               </Button>
             ) : (
               <Button
@@ -381,7 +382,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
                 onClick={() => void runScan('camera')}
                 size="touch" className="mt-1 text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
               >
-                <RefreshCcw className="h-4 w-4" /> Scan again
+                <RefreshCcw className="h-4 w-4" /> {rc.scanAgain}
               </Button>
             )}
           </Centered>
@@ -406,21 +407,21 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       {state === 'idle' ? (
         <Centered>
           <Camera className="h-8 w-8 text-[var(--color-brand-text-muted)]" />
-          <p className="text-sm text-[var(--color-brand-text-secondary)]">Scan a receipt to add it as an expense.</p>
+          <p className="text-sm text-[var(--color-brand-text-secondary)]">{rc.idlePrompt}</p>
           <div className="flex gap-2">
             <Button
               type="button"
               onClick={() => void runScan('camera')}
               size="touch" className="text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
             >
-              <Camera className="h-4 w-4" /> Scan
+              <Camera className="h-4 w-4" /> {rc.scan}
             </Button>
             <Button
               onClick={() => void runScan('gallery')}
               variant="outline"
               size="touch"
             >
-              <Images className="h-4 w-4" /> Gallery
+              <Images className="h-4 w-4" /> {rc.gallery}
             </Button>
           </div>
         </Centered>
@@ -446,6 +447,8 @@ function ResultView({
   onCancel: () => void
   onChange: (next: Partial<ScannedReceipt>) => void
 }) {
+  const rc = useT().receiptScan
+  const categoryLabels = useT().expenseForm.categoryLabels
   const [amountDraft, setAmountDraft] = useState(String(result.amount))
   return (
     <div className="w-full">
@@ -455,7 +458,7 @@ function ResultView({
             <div className="relative flex-shrink-0">
               <Image
                 src={preview}
-                alt="Receipt preview"
+                alt={rc.previewAlt}
                 width={44}
                 height={60}
                 unoptimized
@@ -468,7 +471,7 @@ function ResultView({
               ) : null}
             </div>
           ) : null}
-          <p className="truncate text-base font-semibold text-[var(--color-brand-text-primary)]">Review &amp; save</p>
+          <p className="truncate text-base font-semibold text-[var(--color-brand-text-primary)]">{rc.reviewTitle}</p>
         </div>
         <IconButton
           onClick={onCancel}
@@ -482,7 +485,7 @@ function ResultView({
 
       {/* Amount + currency — mirrors the expense sheet's field pattern. */}
       <div className="mt-4 grid grid-cols-[1fr_112px] items-end gap-3">
-        <Field label="Amount">
+        <Field label={rc.amount}>
           <AmountField
             bare
             value={reconcileTyped(amountDraft, result.amount)}
@@ -493,7 +496,7 @@ function ResultView({
             className="flex h-12 w-full items-center rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]"
           />
         </Field>
-        <Field label="Currency">
+        <Field label={rc.currency}>
           <CurrencyField
             value={result.currency}
             onChange={(c) => onChange({ currency: c as Currency })}
@@ -505,27 +508,27 @@ function ResultView({
       </div>
 
       <div className="mt-3 space-y-2">
-        <Field label="Merchant">
+        <Field label={rc.merchant}>
           <input
             value={result.merchant}
             onChange={(e) => onChange({ merchant: e.target.value })}
-            placeholder="Where you spent"
+            placeholder={rc.merchantPlaceholder}
             className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-sm text-[var(--color-brand-text-primary)]"
           />
         </Field>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Category">
+          <Field label={rc.category}>
             <select
               value={result.category}
               onChange={(e) => onChange({ category: e.target.value as ExpenseCategory })}
               className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)]"
             >
               {SUPPORTED_CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{categoryLabels[c] ?? c}</option>
               ))}
             </select>
           </Field>
-          <Field label="Date">
+          <Field label={rc.date}>
             <DatePickerField value={result.date} onChange={(date) => onChange({ date })} />
           </Field>
         </div>
@@ -540,14 +543,14 @@ function ResultView({
           disabled={!(result.amount > 0)}
           size="cta-block" className="text-sm font-medium text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-primary-hover)]"
         >
-          <Check className="h-4 w-4" /> Save expense
+          <Check className="h-4 w-4" /> {rc.saveExpense}
         </Button>
         <Button
           onClick={onRescan}
           variant="outline"
           size="cta-block"
         >
-          <RefreshCcw className="h-4 w-4" /> Rescan
+          <RefreshCcw className="h-4 w-4" /> {rc.rescan}
         </Button>
       </div>
     </div>
@@ -561,6 +564,7 @@ function ReceiptBreakdown({
   result: ScannedReceipt
   onChange: (next: Partial<ScannedReceipt>) => void
 }) {
+  const rc = useT().receiptScan
   const { items, charges, amount, currency } = result
   if (items.length === 0 && charges.length === 0) return null
 
@@ -570,11 +574,11 @@ function ReceiptBreakdown({
     charges.reduce((s, c) => s + c.amount, 0)
   const mismatch = Math.abs(breakdownSum - amount) > 0.01
 
-  const fmt = (n: number) => `${n.toFixed(2)} ${currency}`
+  const fmt = (n: number) => `${n < 0 ? '-' : ''}${formatFixed2(n)} ${currency}`
 
   return (
     <div className="mt-3 rounded-xl border border-[var(--color-brand-border)] p-3">
-      <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">Breakdown</p>
+      <p className="mb-2 text-xs font-semibold text-[var(--color-brand-text-secondary)]">{rc.breakdown}</p>
 
       {items.length > 0 ? (
         <ul className="space-y-1">
@@ -618,8 +622,8 @@ function ReceiptBreakdown({
       {mismatch ? (
         <p className="mt-2 text-xs text-[var(--color-brand-amber)]">
           {breakdownSum < amount
-            ? `${fmt(Math.round((amount - breakdownSum) * 100) / 100)} unassigned — it will be saved under the unread items so the breakdown matches the total.`
-            : `Breakdown sums to ${fmt(breakdownSum)} but the total reads ${fmt(amount)}. The total is what gets saved.`}
+            ? rc.unassigned(fmt(Math.round((amount - breakdownSum) * 100) / 100))
+            : rc.mismatch(fmt(breakdownSum), fmt(amount))}
         </p>
       ) : null}
     </div>
@@ -641,12 +645,13 @@ function Centered({ children }: { children: React.ReactNode }) {
 
 /** Framed scan-line loader for the opening-camera and reading states. */
 function ProcessingView({ preview, title, subtitle }: { preview: string | null; title: string; subtitle: string }) {
+  const rc = useT().receiptScan
   return (
     <div className="flex flex-col items-center gap-4 py-8">
       <div className="relative">
       <div className="relative h-44 w-32 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]">
         {preview ? (
-          <Image src={preview} alt="Receipt" fill unoptimized className="object-cover" />
+          <Image src={preview} alt={rc.receiptAlt} fill unoptimized className="object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
             <ScanLine className="h-10 w-10 text-[var(--color-brand-text-muted)]" />

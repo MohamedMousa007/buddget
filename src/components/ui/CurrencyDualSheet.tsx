@@ -10,7 +10,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { defaultSecondCurrency } from '@/hooks/useSettingToggle'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
-import { useLocale } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import type { Currency } from '@/lib/store/types'
@@ -33,33 +33,6 @@ interface CurrencyDualSheetProps {
 
 const SAMPLE = 1250
 
-const COPY = {
-  en: {
-    title: 'Currencies',
-    main: 'Main',
-    second: 'Second',
-    off: 'Off',
-    offHint: 'Amounts show in your main currency only',
-    previewTitle: 'How a second currency shows',
-    sampleTxn: 'Groceries',
-    previewOff: 'Pick a currency below and every amount in Flow and on your heroes shows its equivalent underneath.',
-    close: 'Close',
-    tabs: 'Currency to change',
-  },
-  ar: {
-    title: 'العملات',
-    main: 'الأساسية',
-    second: 'الثانية',
-    off: 'إيقاف',
-    offHint: 'تظهر المبالغ بالعملة الأساسية فقط',
-    previewTitle: 'إزاي بتظهر العملة الثانية',
-    sampleTxn: 'بقالة',
-    previewOff: 'اختار عملة من تحت وكل مبلغ في فلو وعلى شاشاتك الرئيسية هيظهر تحته المقابل.',
-    close: 'إغلاق',
-    tabs: 'العملة المراد تغييرها',
-  },
-}
-
 const fmt = (n: number) => (n >= 100 ? Math.round(n).toLocaleString('en-US') : n.toFixed(2))
 
 /**
@@ -67,8 +40,7 @@ const fmt = (n: number) => (n >= 100 ? Math.round(n).toLocaleString('en-US') : n
  * an explicit Off choice for the second, and a preview of how an amount reads in the app with the current choice.
  */
 export function CurrencyDualSheet({ open, onClose, base, second, rates, onPickMain, onPickSecond, initialTab = 'main', footer }: CurrencyDualSheetProps) {
-  const { locale } = useLocale()
-  const c = COPY[locale]
+  const c = useT().inlineCopy.currencyDual
   const [tab, setTab] = useState<Tab>(initialTab)
   const [wasOpen, setWasOpen] = useState(open)
   if (open !== wasOpen) {

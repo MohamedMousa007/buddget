@@ -28,6 +28,7 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { allocateGoalFunding } from '@/lib/server/allocateGoalFunding'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
+import { renderServerCopy } from '@/lib/notifications/serverCopy'
 import { goalMilestoneAlert, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 
@@ -177,7 +178,7 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
 
   await emitNotification(service, {
     userId, category: 'savings_carry', severity: 'success', dedupeKey: `carry:${monthKey}`,
-    title: 'Money moved to savings', body: `We swept ${Math.round(remainder).toLocaleString('en-US')} ${base} left over from last month into your savings.`,
+    ...renderServerCopy(dict, { kind: 'carry', amount: remainder, currency: base }),
     metadata: { monthKey, carry }, push: { data: { kind: 'notification', notifType: 'savings_carry' }, collapseKey: `carry:${monthKey}` },
   })
   return true
