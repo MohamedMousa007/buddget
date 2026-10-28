@@ -67,10 +67,20 @@ export function PlanHistoryPage() {
     return active ? [{ plan: active, fromKey: cycleKeyOf(new Date(active.createdAt), 1), toKey: null }] : []
   }, [plans, activations, activeId])
 
-  const resultOf = (plan: PlanSpan['plan'], key: string): MonthResult | null => {
-    const spent = calculateTotalSpentExcludingSavings(filterExpensesByMonth(expenses, key, startDay), base, rates)
-    return monthResult(spent, totalExpenseBudgetFromPlan(plan, base, rates))
-  }
+  const spentByKey = useMemo(() => {
+    const out = new Map<string, number>()
+    for (const span of spans) {
+      for (const key of monthKeysBetween(span.fromKey, span.toKey ?? currentKey)) {
+        if (!out.has(key)) {
+          out.set(key, calculateTotalSpentExcludingSavings(filterExpensesByMonth(expenses, key, startDay), base, rates))
+        }
+      }
+    }
+    return out
+  }, [spans, currentKey, expenses, startDay, base, rates])
+
+  const resultOf = (plan: PlanSpan['plan'], key: string): MonthResult | null =>
+    monthResult(spentByKey.get(key) ?? 0, totalExpenseBudgetFromPlan(plan, base, rates))
 
   const range = getMonthRange(currentKey, startDay)
   const dayOf = Math.max(1, differenceInCalendarDays(new Date(), range.start) + 1)

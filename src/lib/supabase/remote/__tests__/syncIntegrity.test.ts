@@ -49,6 +49,15 @@ function pullClient(opts: { failTable?: string; expenseCount?: number }) {
     calls,
     client: {
       from: (table: string) => {
+        let cursor = 0
+        const page = (size: number) => {
+          const from = cursor
+          if (table === 'expenses') calls.push([from, from + size - 1])
+          if (table === opts.failTable) return { data: null, error: { message: 'boom' } }
+          const total = table === 'expenses' ? (opts.expenseCount ?? 0) : 0
+          const n = Math.max(0, Math.min(from + size, total) - from)
+          return { data: Array.from({ length: n }, (_, i) => ({ id: `${from + i}` })), error: null }
+        }
         const chain = {
           select: () => chain,
           eq: () => chain,
@@ -59,12 +68,15 @@ function pullClient(opts: { failTable?: string; expenseCount?: number }) {
               data: table === 'profiles' ? { id: 'u', base_currency: 'USD' } : null,
               error: null,
             }),
-          range: (from: number, to: number) => {
-            if (table === 'expenses') calls.push([from, to])
-            if (table === opts.failTable) return Promise.resolve({ data: null, error: { message: 'boom' } })
-            const total = table === 'expenses' ? (opts.expenseCount ?? 0) : 0
-            const n = Math.max(0, Math.min(to + 1, total) - from)
-            return Promise.resolve({ data: Array.from({ length: n }, (_, i) => ({ id: `${from + i}` })), error: null })
+          limit: (size: number) => {
+            const q = {
+              gt: (_c: string, v: string) => {
+                cursor = Number(v) + 1
+                return q
+              },
+              then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => Promise.resolve(page(size)).then(res, rej),
+            }
+            return q
           },
         }
         return chain

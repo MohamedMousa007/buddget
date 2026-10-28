@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
+import { computeMonthlyStatsShared } from '@/lib/utils/monthlyStatsShared'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
 function supabaseAuthConfigured(): boolean {
@@ -61,7 +61,7 @@ export function useMonthlyStats() {
 
   return useMemo(
     () =>
-      computeMonthlyStats({
+      computeMonthlyStatsShared({
         expenses,
         incomeSources,
         incomeEvents,

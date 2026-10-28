@@ -7,9 +7,9 @@ import { uniquePlanCategoryName } from '@/lib/budget/budgetPlans'
 import { format } from 'date-fns'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { createJSONStorage, persist } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
+import { createDebouncedJsonStorage } from './debouncedPersistStorage'
 import { tryConvertCurrency, tryConvertWithGold, withoutGoldRates, type GoldQuote } from '@/lib/utils/currency'
-import { importDataSchema } from './financeImportSchema'
 import {
   DEFAULT_BUDGET,
   DEFAULT_DEBTS,
@@ -68,6 +68,14 @@ import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receipt
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 22
+const PERSIST_WRITE_DEBOUNCE_MS = 150
+
+const persistStorage = createDebouncedJsonStorage<FinanceStore>(() => createSafeLocalStorage(), PERSIST_WRITE_DEBOUNCE_MS)
+
+/** Drops any queued (not yet written) persist so a stale user's state can never flush after sign-out. */
+export function cancelPendingFinancePersist(): void {
+  persistStorage.cancelPending()
+}
 
 export const goldQuoteOf = (s: Pick<FinanceStore, 'goldPricePerGram' | 'goldPriceAvailable'>): GoldQuote => ({
   pricePerGram: s.goldPricePerGram,
@@ -1938,7 +1946,7 @@ export const useFinanceStore = create<FinanceStore>()(
             : { goldPriceAvailable: false, goldPriceStale: false }
         ),
 
-      importData: (jsonString) => {
+      importData: async (jsonString) => {
         let parsed: unknown
         try {
           parsed = JSON.parse(jsonString)
@@ -1948,6 +1956,7 @@ export const useFinanceStore = create<FinanceStore>()(
           )
         }
 
+        const { importDataSchema } = await import('./financeImportSchema')
         const result = importDataSchema.safeParse(parsed)
         if (!result.success) {
           const issues = result.error.issues
@@ -2298,7 +2307,14 @@ export const useFinanceStore = create<FinanceStore>()(
           lastRatesFetch: null,
         } as never
       },
-      storage: createJSONStorage(() => createSafeLocalStorage()),
+      storage: persistStorage,
+      // dataReady is recomputed by `merge` on every boot and goldPriceStale is always reset there.
+      partialize: (state) => {
+        const rest: Partial<FinanceStore> = { ...state }
+        delete rest.dataReady
+        delete rest.goldPriceStale
+        return rest as FinanceStore
+      },
       merge: (persisted, current) => {
         const p = persisted as Partial<typeof current>
         return {

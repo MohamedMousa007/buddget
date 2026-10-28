@@ -5,7 +5,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { IncomeSheetForm } from '@/components/modals/IncomeSheetForm'
 
 export function EditIncomeSheet() {
-  const { incomeSources } = useFinanceStore()
+  const incomeSources = useFinanceStore((s) => s.incomeSources)
   const { activeModal, setActiveModal, editingIncomeId, setEditingIncomeId } = useSettingsStore()
   const source = incomeSources.find((s) => s.id === editingIncomeId)
 

@@ -19,7 +19,16 @@ function goldUsdToBase(usdPerGram: number): number | null {
  * them to the store. Plain async — usable outside React (e.g. the sync pull)
  * via `useFinanceStore.getState()`. Never throws; keeps cached values on error.
  */
-export async function fetchExchangeRates(): Promise<void> {
+let ratesInFlight: Promise<void> | null = null
+
+export function fetchExchangeRates(): Promise<void> {
+  ratesInFlight ??= requestExchangeRates().finally(() => {
+    ratesInFlight = null
+  })
+  return ratesInFlight
+}
+
+async function requestExchangeRates(): Promise<void> {
   try {
     const { apiFetch } = await import('@/lib/apiBase')
     const res = await apiFetch('/api/rates')

@@ -8,6 +8,8 @@ on:
     paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     paths-ignore: ['docs/**', '**/*.md']
+  schedule:
+    - cron: '17 5 * * 1'  # weekly: advisories appear without any push
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -17,14 +19,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  lint-test-build:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -32,14 +34,58 @@ jobs:
 
       - run: npm run lint
 
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
       - run: npx tsc --noEmit
 
-      # Pinned zone: tests must not depend on the runner's local timezone.
+  # The suite is pinned to Cairo (the product's wall clock) by default; the New York leg catches code that
+  # depends on the runner's local zone.
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tz: [Africa/Cairo, America/New_York]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
       - run: npm run test
         env:
-          TZ: America/New_York
+          TZ: ${{ matrix.tz }}
 
-      # Dummy values: the build only needs the vars to exist. No real secrets are exposed to PR runs.
+  # Dummy values: the build only needs the vars to exist. No real secrets are exposed to PR runs.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
       - name: Build
         run: npm run build
         env:
@@ -48,6 +94,24 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
           SUPABASE_SECRET_KEY: dummy-secret-key
           NEXT_PUBLIC_APP_URL: https://my.buddget.app
+
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
+      - name: Migration prefixes are unique (new ones only)
+        run: node scripts/check-migrations.mjs
+      - name: Production dependency audit (high and critical)
+        run: node scripts/audit-gate.mjs
 
   # The six *.pg.test.ts admin suites skip silently without QA_PG_URL. scripts/qa/setup.sh builds a stub auth schema,
   # the public tables and the admin migrations on a plain Postgres (no Supabase roles/extensions needed beyond what
@@ -72,13 +136,13 @@ jobs:
       PGPORT: '5432'
       PGUSER: postgres
       QA_PG_URL: postgres://postgres@localhost:5432/qa
-      TZ: America/New_York
+      TZ: Africa/Cairo
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -91,3 +155,12 @@ jobs:
         run: |
           npx vitest run .pg.test.ts --reporter=json --outputFile=pg-report.json
           node -e "const r=require('./pg-report.json'); if(r.numPendingTests>0||r.numTotalTests===0){console.error('pg suites skipped:',r.numPendingTests,'of',r.numTotalTests);process.exit(1)}"
+
+  # Aggregate gate under the historical check name so branch protection that requires `lint-test-build` still reports.
+  lint-test-build:
+    if: ${{ always() }}
+    needs: [lint, typecheck, test, build, hygiene, pg-admin-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo '${{ toJSON(needs) }}' | node -e "const n=JSON.parse(require('fs').readFileSync(0,'utf8'));const bad=Object.entries(n).filter(([k,v])=>k!=='pg-admin-tests'&&v.result!=='success');if(bad.length){console.error('failed:',bad.map(([k,v])=>k+'='+v.result).join(', '));process.exit(1)}"

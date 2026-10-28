@@ -2124,6 +2124,7 @@ export const en: Dictionary = {
     fabAskAi: 'Set up your budget',
     fabRequireAuth: 'Sign in to track your finances and sync across devices.',
     fabRequireAuthAi: 'Sign in to open Budget Setup.',
+    sheetUnavailableOffline: 'Not available offline. Reconnect and try again.',
     requireAuthBudgetSetup: 'Sign in or create an account to set up your budget plans.',
     addPaymentTitle: 'Add a Payment Method',
     addPaymentLabelName: 'Name',

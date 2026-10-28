@@ -88,11 +88,11 @@ export function useSettingsPage() {
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const text = event.target?.result as string
       if (!text) return
       try {
-        store.importData(text)
+        await store.importData(text)
         setImportBanner({ variant: 'success', text: t.settings.importSuccess })
       } catch (err) {
         setImportBanner({

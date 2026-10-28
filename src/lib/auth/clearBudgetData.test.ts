@@ -3,6 +3,7 @@ import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 
 const mocks = vi.hoisted(() => ({
   financeReset: vi.fn(),
+  cancelPending: vi.fn(),
   settingsReset: vi.fn(),
   resetHydrationGuard: vi.fn(),
   clearPendingAiJobs: vi.fn(),
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@/lib/store/useFinanceStore', () => ({
   useFinanceStore: { getState: vi.fn(() => ({ reset: mocks.financeReset })) },
+  cancelPendingFinancePersist: mocks.cancelPending,
 }))
 vi.mock('@/lib/store/useSettingsStore', () => ({
   useSettingsStore: { getState: vi.fn(() => ({ reset: mocks.settingsReset })) },
@@ -59,6 +61,15 @@ describe('clearBudgetData', () => {
   it('resets finance store', () => {
     clearBudgetData()
     expect(mocks.financeReset).toHaveBeenCalledOnce()
+  })
+
+  it('drops pending debounced persists before and after the finance reset', () => {
+    mocks.cancelPending.mockClear()
+    mocks.financeReset.mockClear()
+    clearBudgetData()
+    expect(mocks.cancelPending).toHaveBeenCalledTimes(2)
+    expect(mocks.cancelPending.mock.invocationCallOrder[0]).toBeLessThan(mocks.financeReset.mock.invocationCallOrder[0])
+    expect(mocks.cancelPending.mock.invocationCallOrder[1]).toBeGreaterThan(mocks.financeReset.mock.invocationCallOrder[0])
   })
 
   it('resets settings store', () => {
