@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { formatCurrency } from '@/lib/utils/formatters'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface MonthlyChartProps {
@@ -51,9 +52,9 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
                   backgroundColor: 'var(--color-brand-elevated)',
                   border: '1px solid var(--color-brand-border)',
                   borderRadius: '12px',
-                  color: '#fff',
+                  color: 'var(--color-brand-text-primary)',
                 }}
-                formatter={(value) => [`${currency} ${Number(value).toLocaleString('en-US')}`, undefined]}
+                formatter={(value, name) => [formatCurrency(Number(value), currency), name]}
               />
               <Legend
                 wrapperStyle={{ color: 'var(--color-brand-text-secondary)', fontSize: 12 }}

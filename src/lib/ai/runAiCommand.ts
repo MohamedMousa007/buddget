@@ -26,6 +26,7 @@ export interface AiCommandStats {
   debtRemainingTotal: number
   daysLeft: number
   leftToSpend: number
+  netCashFlow: number
   suggestedDaily: number
   projectedSpend: number
   paceStatus: string
@@ -61,7 +62,8 @@ export function buildLiveDataBlock(
     `Savings total (holdings + legacy Savings-tagged expenses this month): ${stats.savingsTotal}`,
     `Debt remaining (approx): ${stats.debtRemainingTotal}`,
     `Days left in month: ${stats.daysLeft}`,
-    `Left to spend: ${round(stats.leftToSpend)} (safe daily: ${round(stats.suggestedDaily)})`,
+    `Left to spend (budget minus spent): ${round(stats.leftToSpend)} (safe daily: ${round(stats.suggestedDaily)})`,
+    `Net cash flow (income minus spend, savings and unfunded savings target): ${round(stats.netCashFlow)}`,
     `Pace: ${stats.paceStatus} (projected month spend ${round(stats.projectedSpend)})`,
     `Spent by category (spent/budget): ${byCategory || '(nothing yet)'}`,
   ].join('\n')

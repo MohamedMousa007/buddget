@@ -3,6 +3,7 @@ import { removePaymentMethod } from '@/lib/accounts/removePaymentMethod'
 import { create } from 'zustand'
 import { cycleKeyOf, prevKey, recordActivation } from '@/lib/budget/activations'
 import { selectActivePlan } from '@/lib/budget/activePlan'
+import { uniquePlanCategoryName } from '@/lib/budget/budgetPlans'
 import { format } from 'date-fns'
 import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/constants/subscriptionCatalog'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -1383,7 +1384,7 @@ export const useFinanceStore = create<FinanceStore>()(
             const row: BudgetPlanCategory = {
               ...definedOnly(category),
               id: catId,
-              name: category.name.trim() || 'Category',
+              name: uniquePlanCategoryName(p.categories, category.name.trim() || 'Category'),
               icon: category.icon || '📦',
               amount: Number.isFinite(category.amount) ? category.amount : 0,
               currency: rowCurrency,

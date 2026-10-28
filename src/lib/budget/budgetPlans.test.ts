@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { BudgetPlan } from '@/lib/store/types'
 import {
   isSavingsPlanCategory,
+  uniquePlanCategoryName,
   totalPlannedExpensesForPlan,
   totalPlannedSavingsAllocationForPlan,
 } from '@/lib/budget/budgetPlans'
@@ -73,5 +74,13 @@ describe('plan totals', () => {
     ])
     expect(totalPlannedExpensesForPlan(plan, 'AED', rates)).toBe(5000)
     expect(totalPlannedSavingsAllocationForPlan(plan, 'AED', rates)).toBe(2000)
+  })
+})
+
+describe('uniquePlanCategoryName', () => {
+  const rows = [{ name: 'Category' }, { name: 'category 2' }] as BudgetPlan['categories']
+  it('keeps a free name and numbers a taken one, ignoring case', () => {
+    expect(uniquePlanCategoryName(rows, 'Food')).toBe('Food')
+    expect(uniquePlanCategoryName(rows, ' CATEGORY ')).toBe('CATEGORY 3')
   })
 })

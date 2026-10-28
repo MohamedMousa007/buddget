@@ -753,8 +753,10 @@ export function calculateBudgetUsedPercent(totalSpent: number, totalBudget: numb
 }
 
 export function calculateDaysLeftInMonth(monthStr: string, monthStartDay = 1): number {
-  const { end } = getMonthRange(monthStr, monthStartDay)
-  return Math.max(0, differenceInCalendarDays(end, new Date()) + 1)
+  const { start, end } = getMonthRange(monthStr, monthStartDay)
+  const today = new Date()
+  if (today < start) return differenceInCalendarDays(end, start) + 1
+  return Math.max(0, differenceInCalendarDays(end, today) + 1)
 }
 
 export function getDaysInSelectedMonth(monthStr: string): number {

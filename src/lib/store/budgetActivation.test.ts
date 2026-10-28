@@ -35,8 +35,9 @@ describe('activateBudgetPlan', () => {
     const st = useFinanceStore.getState()
     st.activateBudgetPlan('new', '2026-10')
     st.activateBudgetPlan('old', '2026-10')
-    const rows = useFinanceStore.getState().budgetPlanActivations.filter((a) => a.effectiveFrom === '2026-10-01')
-    expect(rows.map((r) => r.planId)).toEqual(['old'])
+    const s = useFinanceStore.getState()
+    expect(s.budgetPlanActivations.filter((a) => a.effectiveFrom === '2026-10-01')).toEqual([])
+    expect(planForMonth(s.budgetPlans, s.budgetPlanActivations, '2026-10', s.activeBudgetPlanId)?.id).toBe('old')
   })
 
   it('an old plan created in the switch month still covers the months before it', () => {

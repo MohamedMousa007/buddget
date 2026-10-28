@@ -29,6 +29,11 @@ describe('planForMonth', () => {
   it('skips activations of deleted plans', () => {
     expect(planForMonth([plan('aug'), plan('oct')], log, '2026-09', null)?.id).toBe('aug')
   })
+  it('lets an explicit active plan govern months after the last activation', () => {
+    expect(planForMonth(plans, log, '2026-12', 'sep')?.id).toBe('sep')
+    expect(planForMonth(plans, log, '2026-10', 'sep')?.id).toBe('sep')
+    expect(planForMonth(plans, log, '2026-09', 'aug')?.id).toBe('sep')
+  })
   it('falls back to the stored active plan with no history', () => {
     expect(planForMonth(plans, [], '2026-10', 'sep')?.id).toBe('sep')
   })
@@ -36,9 +41,13 @@ describe('planForMonth', () => {
 
 describe('recordActivation', () => {
   it('replaces a switch made in the same cycle', () => {
-    const next = recordActivation(log, 'sep', '2026-10', () => 'n', 'now')
-    expect(next.filter((a) => a.effectiveFrom === '2026-10-01')).toEqual([expect.objectContaining({ planId: 'sep', id: 'n' })])
+    const next = recordActivation(log, 'aug', '2026-10', () => 'n', 'now')
+    expect(next.filter((a) => a.effectiveFrom === '2026-10-01')).toEqual([expect.objectContaining({ planId: 'aug', id: 'n' })])
     expect(next).toHaveLength(3)
+  })
+  it('switching back to the plan already in force leaves no duplicate span', () => {
+    const next = recordActivation([act('aug', '2026-07'), act('sep', '2026-10')], 'aug', '2026-10', () => 'n', 'now')
+    expect(next.map((a) => [a.planId, a.effectiveFrom])).toEqual([['aug', '2026-07-01']])
   })
   it('appends a new cycle', () => {
     expect(recordActivation(log, 'sep', '2026-11', () => 'n', 'now')).toHaveLength(4)

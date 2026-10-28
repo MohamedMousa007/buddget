@@ -10,3 +10,8 @@ export function duplicatePlanCategories(plan: BudgetPlan, newId: () => string): 
     subcategories: c.subcategories.map((s) => ({ ...s, id: newId() })),
   }))
 }
+
+/** The plan-level inputs a copy must keep, or its free money and percentages drift from the original. */
+export function duplicatePlanExtras(plan: BudgetPlan): Pick<BudgetPlan, 'incomeOverride' | 'household' | 'rationale'> {
+  return { incomeOverride: plan.incomeOverride, household: plan.household, rationale: plan.rationale }
+}

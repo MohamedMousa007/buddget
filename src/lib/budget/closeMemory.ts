@@ -35,3 +35,11 @@ export function nextCloseMemory(
   const newest = Object.entries(next).sort((a, b) => cycleIndex(b[1].cycle) - cycleIndex(a[1].cycle)).slice(0, MAX_ENTRIES)
   return Object.fromEntries(newest)
 }
+
+const MAX_CLOSED_CYCLES = 24
+
+/** Closed cycles known on this device plus the account's; returns `local` itself when the account adds nothing. */
+export function mergeClosedCycles(local: readonly string[], remote: readonly string[] | undefined): string[] {
+  if (!remote?.some((k) => !local.includes(k))) return local as string[]
+  return [...new Set([...local, ...remote])].sort().slice(-MAX_CLOSED_CYCLES)
+}

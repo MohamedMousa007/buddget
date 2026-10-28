@@ -4,7 +4,8 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { useMemo } from 'react'
 import { useT } from '@/lib/i18n'
 import { useShallow } from 'zustand/react/shallow'
-import { format, parse, parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks, endOfMonth, isSameMonth } from 'date-fns'
+import { currentCycle } from '@/lib/settings/payCycle'
+import { format, parse, parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks, isWithinInterval } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
@@ -400,11 +401,11 @@ export function useDebtTabData() {
     }, null)
     scheduled.sort((a, b) => a.date.getTime() - b.date.getTime())
     const nextPayment = scheduled[0] ?? null
-    const dueThisMonthEnd = endOfMonth(now)
-    const dueList = scheduled.filter((p) => p.date <= dueThisMonthEnd)
+    const cycle = currentCycle(now, settings.monthStartDay)
+    const dueList = scheduled.filter((p) => p.date <= cycle.end)
     const dueThisMonth = dueList.reduce((sum, p) => sum + p.amount, 0)
     const paidThisMonth = debtPayments
-      .filter((p) => isSameMonth(parseISO(p.date), now))
+      .filter((p) => isWithinInterval(parseISO(p.date), { start: cycle.start, end: cycle.end }))
       .reduce((sum, p) => {
         const d = debts.find((x) => x.id === p.debtId)
         if (d?.isGold && (p.originalAmount == null || p.paymentCurrency === 'XAU')) return sum + goldGramsToMoney(p.amountPaid, goldPricePerGram, d.goldKarat)
@@ -432,5 +433,5 @@ export function useDebtTabData() {
       assignCandidate,
       base,
     }
-  }, [debts, debtPayments, recurring, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, stats.debtRemainingTotal, t])
+  }, [debts, debtPayments, recurring, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, settings.monthStartDay, stats.debtRemainingTotal, t])
 }

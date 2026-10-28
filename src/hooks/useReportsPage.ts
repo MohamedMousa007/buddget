@@ -1,24 +1,23 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import {
-  subMonths,
-  format,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  isWithinInterval,
-  parseISO,
-  eachMonthOfInterval,
-} from 'date-fns'
+import { format, isWithinInterval, parseISO } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { formatCurrency, escapeCsvField } from '@/lib/utils/formatters'
 import {
   actualIncomeForMonth,
+  cashSavingsDepositsInBaseForMonth,
+  filterExpensesByRange,
+  getMonthRange,
   getPaymentMethodBreakdown,
   expenseAmountInBase,
 } from '@/lib/utils/calculations'
+import { reportCycles, reportRange, reportSpendRows } from '@/lib/reports/reportsPeriod'
+import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
+import { downloadOrShareFile } from '@/lib/utils/exportFile'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { useGoldQuote } from '@/hooks/useGoldQuote'
 import { useT } from '@/lib/i18n'
 import type { DateRange } from '@/components/reports/ReportFilters'
 import type { ExpenseDebtFilterMode } from '@/components/reports/ReportExpenseDebtFilter'
@@ -33,7 +32,7 @@ function isDebtLinkedExpense(e: Expense): boolean {
  */
 export function useReportsPage() {
   const t = useT()
-  const { expenses, incomeSources, incomeEvents, paymentMethods, settings, exchangeRates, savingsTransactions } =
+  const { expenses, incomeSources, incomeEvents, paymentMethods, settings, exchangeRates, savingsTransactions, savingsAccounts } =
     useFinanceStore(
       useShallow((s) => ({
         expenses: s.expenses,
@@ -43,41 +42,19 @@ export function useReportsPage() {
         settings: s.settings,
         exchangeRates: s.exchangeRates,
         savingsTransactions: s.savingsTransactions,
+        savingsAccounts: s.savingsAccounts,
       }))
     )
   const [dateRange, setDateRange] = useState<DateRange>('thisMonth')
   const [expenseDebtFilter, setExpenseDebtFilter] = useState<ExpenseDebtFilterMode>('all')
+  const toast = useActionToast()
+  const gold = useGoldQuote()
+  const { monthStartDay, baseCurrency } = settings
 
-  const { inPeriod, startDate, endDate } = useMemo(() => {
+  const { inPeriod, startDate, endDate, cycles } = useMemo(() => {
     const now = new Date()
-    let start: Date
-    let end = endOfMonth(now)
-
-    switch (dateRange) {
-      case 'thisMonth':
-        start = startOfMonth(now)
-        break
-      case 'lastMonth':
-        start = startOfMonth(subMonths(now, 1))
-        end = endOfMonth(subMonths(now, 1))
-        break
-      case 'last3Months':
-        start = startOfMonth(subMonths(now, 2))
-        break
-      case 'last6Months':
-        start = startOfMonth(subMonths(now, 5))
-        break
-      case 'thisYear':
-        start = startOfYear(now)
-        break
-      default:
-        start = startOfMonth(now)
-    }
-
-    const inRange = expenses.filter((e) => {
-      const date = parseISO(e.date)
-      return isWithinInterval(date, { start, end })
-    })
+    const { start, end } = reportRange(dateRange, now, monthStartDay)
+    const inRange = filterExpensesByRange(expenses, { start, end })
 
     const filtered =
       expenseDebtFilter === 'all'
@@ -86,88 +63,65 @@ export function useReportsPage() {
           ? inRange.filter(isDebtLinkedExpense)
           : inRange.filter((e) => !isDebtLinkedExpense(e))
 
-    return { inPeriod: filtered, startDate: start, endDate: end }
-  }, [expenses, dateRange, expenseDebtFilter])
-  // Spending figures leave out what the user marked not counted; the CSV below keeps every logged row.
-  const filteredExpenses = useMemo(() => inPeriod.filter((e) => !e.spendExclusion), [inPeriod])
+    return { inPeriod: filtered, startDate: start, endDate: end, cycles: reportCycles(dateRange, now, monthStartDay) }
+  }, [expenses, dateRange, expenseDebtFilter, monthStartDay])
+  // Spending leaves out money movements and rows the user marked not counted, like the Flow hero; the CSV keeps every logged row.
+  const filteredExpenses = useMemo(() => reportSpendRows(inPeriod), [inPeriod])
 
-  // Actual income received across the period (events + projected fallback), summed
-  // over each calendar month the range touches.
-  const periodRecurringIncome = eachMonthOfInterval({
-    start: startOfMonth(startDate),
-    end: startOfMonth(endDate),
-  }).reduce(
-    (sum, m) =>
-      sum +
-      actualIncomeForMonth(
-        incomeSources,
-        incomeEvents,
-        settings.baseCurrency,
-        exchangeRates,
-        format(m, 'yyyy-MM'),
-        1
-      ),
-    0
+  const incomeForCycle = useCallback(
+    (cycle: string, realizedOnly: boolean) =>
+      actualIncomeForMonth(incomeSources, incomeEvents, baseCurrency, exchangeRates, cycle, monthStartDay, realizedOnly),
+    [incomeSources, incomeEvents, baseCurrency, exchangeRates, monthStartDay]
   )
+  const periodRecurringIncome = cycles.reduce((sum, c) => sum + incomeForCycle(c, false), 0)
+  const periodReceivedIncome = cycles.reduce((sum, c) => sum + incomeForCycle(c, true), 0)
   const totalExpenses = filteredExpenses.reduce(
-    (sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates),
+    (sum, e) => sum + expenseAmountInBase(e, baseCurrency, exchangeRates),
     0
   )
   const remittances = filteredExpenses
     .filter((e) => e.category === 'Remittance')
-    .reduce((sum, e) => sum + expenseAmountInBase(e, settings.baseCurrency, exchangeRates), 0)
+    .reduce((sum, e) => sum + expenseAmountInBase(e, baseCurrency, exchangeRates), 0)
 
   const categoryData = useMemo(() => {
     const byCategory: Record<string, number> = {}
     for (const e of filteredExpenses) {
-      if (e.category === 'Savings') continue
       byCategory[e.category] =
-        (byCategory[e.category] || 0) + expenseAmountInBase(e, settings.baseCurrency, exchangeRates)
+        (byCategory[e.category] || 0) + expenseAmountInBase(e, baseCurrency, exchangeRates)
     }
     return Object.entries(byCategory)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
-  }, [filteredExpenses, settings.baseCurrency, exchangeRates])
+  }, [filteredExpenses, baseCurrency, exchangeRates])
 
   const monthlyData = useMemo(() => {
-    const monthStarts = eachMonthOfInterval({ start: startOfMonth(startDate), end: startOfMonth(endDate) })
-
-    return monthStarts.map((monthStart) => {
-      const monthEnd = endOfMonth(monthStart)
-      const monthLabel = format(monthStart, 'MMM yyyy')
-      const income = actualIncomeForMonth(
-        incomeSources,
-        incomeEvents,
-        settings.baseCurrency,
-        exchangeRates,
-        format(monthStart, 'yyyy-MM'),
-        1
+    return cycles.map((cycle) => {
+      const window = getMonthRange(cycle, monthStartDay)
+      const expSum = filterExpensesByRange(filteredExpenses, window).reduce(
+        (sum, e) => sum + expenseAmountInBase(e, baseCurrency, exchangeRates),
+        0
       )
-      let expSum = 0
-      let savings = 0
-      for (const e of filteredExpenses) {
-        const d = parseISO(e.date)
-        if (!isWithinInterval(d, { start: monthStart, end: monthEnd })) continue
-        const inBase = expenseAmountInBase(e, settings.baseCurrency, exchangeRates)
-        expSum += inBase
-        if (e.category === 'Savings') savings += inBase
+      return {
+        month: format(window.start, 'MMM yyyy'),
+        income: incomeForCycle(cycle, false),
+        expenses: expSum,
+        savings: cashSavingsDepositsInBaseForMonth(savingsTransactions, cycle, monthStartDay, baseCurrency, exchangeRates, gold),
       }
-      return { month: monthLabel, income, expenses: expSum, savings }
     })
-  }, [filteredExpenses, incomeSources, incomeEvents, settings.baseCurrency, exchangeRates, startDate, endDate])
+  }, [cycles, filteredExpenses, incomeForCycle, monthStartDay, baseCurrency, exchangeRates, savingsTransactions, gold])
 
   const methodBreakdown = getPaymentMethodBreakdown(
     filteredExpenses,
     paymentMethods,
-    settings.baseCurrency,
+    baseCurrency,
     exchangeRates
   )
 
   const largestExpense =
     filteredExpenses.length > 0
       ? filteredExpenses.reduce((max, e) =>
-          expenseAmountInBase(e, settings.baseCurrency, exchangeRates) >
-          expenseAmountInBase(max, settings.baseCurrency, exchangeRates)
+          expenseAmountInBase(e, baseCurrency, exchangeRates) >
+          expenseAmountInBase(max, baseCurrency, exchangeRates)
             ? e
             : max
         )
@@ -175,29 +129,38 @@ export function useReportsPage() {
   const mostUsedMethod =
     methodBreakdown.length > 0 ? methodBreakdown.reduce((max, m) => (m.count > max.count ? m : max)) : null
 
-  const handleCopySummary = useCallback(() => {
+  const handleCopySummary = useCallback(async () => {
     const summary = `${t.reports.summaryHeading(format(startDate, 'd MMM'), format(endDate, 'd MMM yyyy'))}
-${t.reports.kpiTotalIn}: ${formatCurrency(periodRecurringIncome, settings.baseCurrency)}
-${t.reports.kpiSentHome}: ${formatCurrency(remittances, settings.baseCurrency)}
-${t.reports.kpiTotalOut}: ${formatCurrency(totalExpenses, settings.baseCurrency)}
-${t.reports.kpiNetSaved}: ${formatCurrency(periodRecurringIncome - totalExpenses, settings.baseCurrency)}
-${largestExpense ? `${t.reports.kpiBiggestPurchase}: ${largestExpense.description} (${formatCurrency(expenseAmountInBase(largestExpense, settings.baseCurrency, exchangeRates), settings.baseCurrency)})` : ''}
+${t.reports.kpiTotalInExpected}: ${formatCurrency(periodRecurringIncome, baseCurrency)}
+${t.reports.kpiReceivedSoFar(formatCurrency(periodReceivedIncome, baseCurrency))}
+${t.reports.kpiSentHome}: ${formatCurrency(remittances, baseCurrency)}
+${t.reports.kpiTotalOut}: ${formatCurrency(totalExpenses, baseCurrency)}
+${t.reports.kpiNetCashFlow}: ${formatCurrency(periodRecurringIncome - totalExpenses, baseCurrency)}
+${largestExpense ? `${t.reports.kpiBiggestPurchase}: ${largestExpense.description} (${formatCurrency(expenseAmountInBase(largestExpense, baseCurrency, exchangeRates), baseCurrency)})` : ''}
 ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.reports.timesUsed(mostUsedMethod.count)}` : ''}`
-    void navigator.clipboard.writeText(summary)
+    try {
+      await navigator.clipboard.writeText(summary)
+      toast(t.reports.summaryCopied)
+    } catch {
+      toast(t.reports.summaryCopyFailed)
+    }
   }, [
     endDate,
     exchangeRates,
     largestExpense,
     mostUsedMethod,
     periodRecurringIncome,
+    periodReceivedIncome,
     remittances,
-    settings.baseCurrency,
+    baseCurrency,
     startDate,
     t,
+    toast,
     totalExpenses,
   ])
 
-  const handleExportCSV = useCallback(() => {
+  const handleExportCSV = useCallback(async () => {
+    const accountNames = new Map(savingsAccounts.map((a) => [a.id, a.name]))
     const headers = 'Date,Description,Category,Amount,Currency,Base Amount,Counted in spending\n'
     const rows = inPeriod
       .map((e) =>
@@ -207,37 +170,32 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
           escapeCsvField(e.category),
           escapeCsvField(e.amount),
           escapeCsvField(e.currency),
-          escapeCsvField(expenseAmountInBase(e, settings.baseCurrency, exchangeRates)),
-          escapeCsvField(e.spendExclusion ? 'no' : 'yes'),
+          escapeCsvField(expenseAmountInBase(e, baseCurrency, exchangeRates)),
+          escapeCsvField(isNonSpendExpense(e) ? 'no' : 'yes'),
         ].join(',')
       )
       .join('\n')
-    const savHeader = '\n\nSavings ledger,Date,AccountId,Type,Amount,Currency,Notes\n'
+    const savHeader = '\n\nSavings ledger,Date,Account,Type,Amount,Currency,Notes\n'
     const savRows = savingsTransactions
-      .filter((t) => {
-        const d = parseISO(t.date.length > 10 ? t.date : `${t.date}T12:00:00`)
+      .filter((tx) => {
+        const d = parseISO(tx.date.length > 10 ? tx.date : `${tx.date}T12:00:00`)
         return isWithinInterval(d, { start: startDate, end: endDate })
       })
-      .map((t) =>
+      .map((tx) =>
         [
           '',
-          escapeCsvField(t.date),
-          escapeCsvField(t.accountId),
-          escapeCsvField(t.type),
-          escapeCsvField(t.amount),
-          escapeCsvField(t.currency),
-          escapeCsvField(t.notes ?? ''),
+          escapeCsvField(tx.date),
+          escapeCsvField(accountNames.get(tx.accountId) ?? ''),
+          escapeCsvField(tx.type),
+          escapeCsvField(tx.amount),
+          escapeCsvField(tx.currency),
+          escapeCsvField(tx.notes ?? ''),
         ].join(',')
       )
       .join('\n')
-    const blob = new Blob([headers + rows + savHeader + savRows], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `buddget-report-${dateRange}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [dateRange, inPeriod, savingsTransactions, startDate, endDate, settings.baseCurrency, exchangeRates])
+    const result = await downloadOrShareFile(`buddget-report-${dateRange}.csv`, headers + rows + savHeader + savRows, 'text/csv')
+    if (result === 'saved') toast(t.expenses.fileSaved)
+  }, [dateRange, inPeriod, savingsTransactions, savingsAccounts, startDate, endDate, baseCurrency, exchangeRates, toast, t])
 
   return {
     dateRange,
@@ -250,6 +208,7 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
     startDate,
     endDate,
     periodRecurringIncome,
+    periodReceivedIncome,
     totalExpenses,
     remittances,
     categoryData,
