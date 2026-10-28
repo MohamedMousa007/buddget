@@ -1,75 +1,133 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
 import { BuddgetWordmark } from '@/components/brand'
-import { IconButton } from '@/components/ui/IconButton'
-import { buttonVariants } from '@/components/ui/buttonVariants'
-import { cn } from '@/lib/utils'
 import { WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
-import { pathFor } from '@/lib/site/routes'
-import { siteContent } from '@/lib/site/routes'
+import { pathFor, siteContent } from '@/lib/site/routes'
+import { fill } from './home/format'
 
-type Props = { locale: SiteLocale; slug: string; dark?: boolean }
+type Props = { locale: SiteLocale; slug: string }
 
-export function SiteNav({ locale, slug, dark }: Props) {
-  const c = siteContent[locale].nav
-  const [open, setOpen] = useState(false)
+const MEGA: { slug: string; color: string; icon: React.ReactNode }[] = [
+  { slug: 'bank-text-tracking', color: '#1FC3B2', icon: <><path d="M4 5h16v11H9l-5 4V5z" /><path d="M8 9.5h8M8 12.5h5" /></> },
+  { slug: 'budgets-and-daily-number', color: '#F0BE5B', icon: <><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5v4M12 12l3 2" /></> },
+  { slug: 'buddgy-assistant', color: '#8B5CF6', icon: <><path d="M3.5 12.5a8.5 8.5 0 0 1 17 0V16a5 5 0 0 1-5 5h-7a5 5 0 0 1-5-5z" /><path d="M9.5 13v1.5M14.5 13v1.5" /></> },
+  { slug: 'goals-and-savings', color: '#389BD9', icon: <path d="M5 21V4M5 5h12l-2.5 3.5L17 12H5" /> },
+  { slug: 'debts-and-installments', color: '#E5684D', icon: <><rect x="3" y="6" width="18" height="12" rx="3" /><path d="M3 10.5h18M7 15h3" /></> },
+  { slug: 'subscriptions', color: '#1FC3B2', icon: <path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5" /> },
+]
+
+/** Floating tabbed header. Tabs reach the real pages; the day ring fills as the page scrolls. */
+export function SiteNav({ locale, slug }: Props) {
+  const c = siteContent[locale]
+  const n = c.nav
   const other: SiteLocale = locale === 'en' ? 'ar' : 'en'
+  const [mega, setMega] = useState(false)
+  const [sheet, setSheet] = useState(false)
+  const [day, setDay] = useState(1)
+  const [prog, setProg] = useState(0)
+  const megaRef = useRef<HTMLElement>(null)
+  const home = pathFor(locale, '')
+
+  useEffect(() => {
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const h = document.documentElement.scrollHeight - window.innerHeight
+      const p = h > 0 ? Math.max(0, Math.min(1, window.scrollY / h)) : 0
+      setProg(p)
+      setDay(1 + Math.round(p * 29))
+    }
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update) }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(frame) }
+  }, [])
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => { if (megaRef.current && !megaRef.current.contains(e.target as Node)) setMega(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMega(false); setSheet(false) } }
+    document.addEventListener('click', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('click', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.style.overflow = sheet ? 'hidden' : ''
+    return () => { document.documentElement.style.overflow = '' }
+  }, [sheet])
+
   const links = [
-    { label: c.features, slug: 'features' },
-    { label: c.how, slug: 'how-it-works' },
-    { label: c.pricing, slug: 'pricing' },
-    { label: c.security, slug: 'security' },
-    { label: c.help, slug: 'support' },
+    { label: n.how, href: `${home}#story`, cls: '' },
+    { label: n.afford, href: `${home}#afford`, cls: '' },
+    { label: n.pricing, href: pathFor(locale, 'pricing'), cls: 'opt', slug: 'pricing' },
+    { label: n.security, href: pathFor(locale, 'security'), cls: 'opt', slug: 'security' },
+    { label: n.help, href: pathFor(locale, 'support'), cls: 'opt', slug: 'support' },
   ]
+  const mobile = [
+    { label: n.features, href: pathFor(locale, 'features') },
+    { label: n.how, href: `${home}#story` },
+    { label: n.afford, href: `${home}#afford` },
+    { label: n.pricing, href: pathFor(locale, 'pricing') },
+    { label: n.security, href: pathFor(locale, 'security') },
+    { label: n.help, href: pathFor(locale, 'support') },
+  ]
+  const feats = MEGA.map((m) => ({ ...m, item: c.features.items.find((f) => f.slug === m.slug) })).filter((m) => m.item)
+
   return (
-    <header className={cn(dark && 'dark', 'sticky top-0 z-40 border-b border-brand-border/60 bg-brand-bg/80 text-brand-text-primary backdrop-blur-xl')}>
-      <div className="mx-auto flex h-[72px] max-w-[1200px] items-center gap-6 px-5 sm:px-8">
-        <Link href={pathFor(locale, '')} aria-label="Buddget" className="flex min-h-11 items-center">
-          <BuddgetWordmark height={26} />
-        </Link>
-        <nav aria-label="Main" className="ms-4 hidden items-center gap-1 lg:flex">
-          {links.map((l) => (
-            <Link
-              key={l.slug}
-              href={pathFor(locale, l.slug)}
-              aria-current={slug === l.slug || slug.startsWith(`${l.slug}/`) ? 'page' : undefined}
-              className="inline-flex min-h-11 items-center rounded-lg px-3 text-[15px] font-medium text-brand-text-secondary hover:text-brand-text-primary aria-[current=page]:text-brand-text-primary"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex-1" />
-        <Link href={pathFor(other, slug)} hrefLang={other} lang={other} aria-label={c.switchTo} className="hidden min-h-11 items-center px-2 text-sm font-medium text-brand-text-secondary hover:text-brand-text-primary sm:inline-flex">
-          {c.switchLabel}
-        </Link>
-        <a href={WEB_APP_URL} data-track="cta" className="hidden min-h-11 items-center px-3 text-[15px] font-semibold hover:text-brand-primary-ink sm:inline-flex">{c.login}</a>
-        <Link href={pathFor(locale, 'download')} data-track="cta" className={cn(buttonVariants({ variant: 'default', size: 'touch' }), 'hidden rounded-full px-6 font-semibold sm:inline-flex')}>
-          {c.cta}
-        </Link>
-        <IconButton variant="outlined" size="md" className="lg:hidden" aria-expanded={open} aria-controls="site-menu" aria-label={open ? c.close : c.menu} onClick={() => setOpen((v) => !v)}>
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </IconButton>
-      </div>
-      {open ? (
-        <div id="site-menu" className="border-t border-brand-border bg-brand-bg px-5 pb-6 pt-2 lg:hidden">
-          <nav aria-label="Mobile" className="flex flex-col">
-            {links.map((l) => (
-              <Link key={l.slug} href={pathFor(locale, l.slug)} onClick={() => setOpen(false)} className="flex min-h-12 items-center border-b border-brand-border text-lg font-medium">
-                {l.label}
+    <>
+      <header className="nav dark">
+        <div className="nav-in">
+          <div className="nav-bar">
+            <Link className="wm" href={home} aria-label="Buddget"><BuddgetWordmark height={24} /></Link>
+            <span className="day" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#233633" strokeWidth="3" /><circle cx="12" cy="12" r="9" fill="none" stroke="#1FC3B2" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(prog * 56.5).toFixed(1)} 57`} /></svg>
+              <span>{fill(n.day, { n: day })}</span>
+            </span>
+            <nav className="tabs" aria-label="Main" ref={megaRef}>
+              <button className="tab" type="button" aria-expanded={mega} aria-controls="hm-mega" onClick={(e) => { e.stopPropagation(); setMega((v) => !v) }}>
+                <span>{n.features}</span>
+                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5" /></svg>
+              </button>
+              {links.map((l) => (
+                <Link key={l.href} className={`tab ${l.cls}`} href={l.href} aria-current={l.slug && (slug === l.slug || slug.startsWith(`${l.slug}/`)) ? 'page' : undefined}>{l.label}</Link>
+              ))}
+            </nav>
+            <div className="nav-end">
+              <a className="pill login" href={WEB_APP_URL} data-track="cta">{n.login}</a>
+              <Link className="lang" href={pathFor(other, slug)} hrefLang={other} lang={other} aria-label={n.switchTo}>{n.switchLabel}</Link>
+              <Link className="pill pill-p nav-cta" href={pathFor(locale, 'download')} data-track="cta">{n.cta}</Link>
+              <button className="burger" type="button" aria-label={n.menu} aria-expanded={sheet} aria-controls="hm-sheet" onClick={() => setSheet(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+              </button>
+            </div>
+          </div>
+          <div className={`mega${mega ? ' open' : ''}`} id="hm-mega" role="region" aria-label={n.menuTitle} onClick={(e) => { if ((e.target as Element).closest('a')) setMega(false) }}>
+            {feats.map((m) => (
+              <Link key={m.slug} className="mi" href={pathFor(locale, `features/${m.slug}`)} tabIndex={mega ? 0 : -1}>
+                <i style={{ background: `${m.color}26`, color: m.color }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{m.icon}</svg></i>
+                <span><b>{m.item!.name}</b><span>{m.item!.short}</span></span>
               </Link>
             ))}
-            <a href={WEB_APP_URL} className="flex min-h-12 items-center border-b border-brand-border text-lg font-semibold">{c.login}</a>
-            <Link href={pathFor(other, slug)} hrefLang={other} lang={other} className="flex min-h-12 items-center text-lg font-medium text-brand-text-secondary">{c.switchLabel}</Link>
-          </nav>
-          <Link href={pathFor(locale, 'download')} onClick={() => setOpen(false)} className={cn(buttonVariants({ variant: 'default', size: 'cta-block' }), 'mt-3 rounded-full text-base font-semibold')}>
-            {c.cta}
-          </Link>
+            <div className="mega-foot">
+              <Link href={`${home}#afford`} tabIndex={mega ? 0 : -1}>{n.megaAfford} {locale === 'ar' ? '←' : '→'}</Link>
+              <Link href={pathFor(locale, 'tools')} tabIndex={mega ? 0 : -1}>{n.megaTools}</Link>
+              <Link href={pathFor(locale, 'features')} tabIndex={mega ? 0 : -1}>{n.features}</Link>
+            </div>
+          </div>
         </div>
-      ) : null}
-    </header>
+      </header>
+      <div className={`sheet dark${sheet ? ' open' : ''}`} id="hm-sheet" role="dialog" aria-modal="true" aria-label={n.menu} aria-hidden={!sheet} onClick={(e) => { if ((e.target as Element).closest('a')) setSheet(false) }}>
+        <button className="sheet-x" type="button" aria-label={n.close} onClick={() => setSheet(false)} tabIndex={sheet ? 0 : -1}>×</button>
+        {mobile.map((l) => <Link key={l.href} className="sl" href={l.href} tabIndex={sheet ? 0 : -1}>{l.label}</Link>)}
+        <div className="sh-cta">
+          <Link className="pill pill-p pill-lg" href={pathFor(locale, 'download')} data-track="cta" tabIndex={sheet ? 0 : -1}>{n.cta}</Link>
+          <a className="pill pill-g pill-lg" href={WEB_APP_URL} data-track="cta" tabIndex={sheet ? 0 : -1}>{c.common.tryBrowser}</a>
+          <a className="pill pill-g pill-lg" href={WEB_APP_URL} data-track="cta" tabIndex={sheet ? 0 : -1}>{n.login}</a>
+          <Link className="pill pill-g pill-lg" href={pathFor(other, slug)} hrefLang={other} lang={other} tabIndex={sheet ? 0 : -1}>{n.switchLabel}</Link>
+        </div>
+      </div>
+    </>
   )
 }

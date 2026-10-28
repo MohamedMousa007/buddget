@@ -98,22 +98,6 @@ export function Split({ children, visual, reverse, className }: { children: Reac
   )
 }
 
-export function Gallery({ items, locale }: { items: { screen: ScreenKey; title: string; cap: string }[]; locale: SiteLocale }) {
-  return (
-    <div tabIndex={0} aria-label={siteContent[locale].home.gallery.h2} className="site-gallery -mx-5 flex gap-7 overflow-x-auto px-5 pb-6 sm:-mx-8 sm:px-8">
-      {items.map((g) => (
-        <figure key={g.screen} className="m-0 flex w-[232px] flex-none flex-col gap-3">
-          <PhoneShot screen={g.screen} locale={locale} size="sm" />
-          <figcaption className="grid gap-0.5">
-            <b className="text-[17px]">{g.title}</b>
-            <span className="text-sm text-brand-text-secondary">{g.cap}</span>
-          </figcaption>
-        </figure>
-      ))}
-    </div>
-  )
-}
-
 export function Reviews({ locale }: { locale: SiteLocale }) {
   const r = siteContent[locale].home.reviews
   const { reviews, isSample } = reviewsFor(locale)

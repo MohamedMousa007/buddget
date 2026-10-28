@@ -3,6 +3,7 @@ import { siteFontClasses } from '@/lib/site/fonts'
 import { SITE_URL } from '@/lib/site/config'
 import '../globals.css'
 import '@/components/site/site.css'
+import '@/components/site/home.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

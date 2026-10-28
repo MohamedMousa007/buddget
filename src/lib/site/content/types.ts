@@ -2,7 +2,6 @@ import type { ScreenKey } from '../screens'
 
 export type Link = { label: string; slug: string }
 export type Faq = { q: string; a: string }
-export type ScreenCaption = { screen: ScreenKey; title: string; cap: string }
 
 export type Feature = {
   slug: string
@@ -33,12 +32,55 @@ export type Review = { quote: string; name: string; meta: string; initial: strin
 
 export type PageIntro = { eyebrow: string; h1: string; lede: string }
 
+
+export type DemoCat = 'food' | 'transport' | 'groceries' | 'fun'
+
+export type Landing = {
+  hero: {
+    h1: string; lede: string; assure: string[]; hint: string; again: string; say0: string; sayLow: string; sayOver: string; sayOk: string[]; sayReset: string
+    leftToday: string; unit: string; nudge: string; nudgeCta: string; ago: string
+    chips: { label: string; amount: number; cat: DemoCat }[]
+    cat: Record<DemoCat, string>
+    sms: string
+    coin: string
+  }
+  proof: { p: string; items: { v: string; t: string }[]; note: string }
+  statement: { text: string; hl?: boolean }[]
+  story: {
+    label: string
+    steps: { h: string; p: string }[]
+    chap: string[]
+    day: string
+    plan: string
+    legend: string[]
+    chat: { who: 'u' | 'a'; text: string }[]
+    chatDone: string
+  }
+  afford: {
+    nav: string; h2: string; p: string; hint: string; custom: string; note: string; unit: string
+    items: { label: string; price: number }[]
+    v0: { h: string; p: string }
+    v1: { h: string; p: string }
+    v2: { h: string; p: string }
+    v3: { h: string; p: string }
+    v4: { h: string; p: string }
+    before: string; after: string; share: string; days: string; cta: string; foot: string
+  }
+  inside: {
+    h2: string; p: string; learn: string
+    tabs: { key: 'acc' | 'sub' | 'inst' | 'rep' | 'bud'; name: string; h: string; p: string; bullets: string[]; slug: string }[]
+  }
+  trust: { h2: string; items: { icon: 'lock' | 'sms' | 'eye' | 'trash'; h: string; p: string }[]; link: Link }
+  compare: { h2: string; cols: [string, string, string, string]; rows: [string, string, string, string][] }
+  pricing: { h2: string; p: string; plans: { name: string; price: string; tag: string; items: string[]; cta: string; main?: boolean }[] }
+  close: { h2: string; lede: string; qr: string; soon: string }
+}
+
 export type SiteContent = {
   locale: 'en' | 'ar'
   name: string
   meta: { homeTitle: string; homeDescription: string }
-  announce: { text: string; slug: string }
-  nav: { login: string; features: string; how: string; pricing: string; security: string; help: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
+  nav: { login: string; features: string; how: string; afford: string; pricing: string; security: string; help: string; menuTitle: string; megaTools: string; megaAfford: string; day: string; getAppShort: string; tryShort: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
   footer: {
     tag: string; follow: string
     product: string; learn: string; company: string; legal: string
@@ -46,17 +88,11 @@ export type SiteContent = {
     copy: string; legalNote: string
   }
   common: { tryBrowser: string; logIn: string; noInstall: string; haveAccount: string; getApp: string; seeHow: string; joinBeta: string; readMore: string; home: string; breadcrumb: string; contactUs: string; example: string; free: string; share: string }
+  landing: Landing
   home: {
-    hero: { h1: string; lede: string; assurances: string[]; tabs: { key: ScreenKey; label: string }[] }
-    answers: { h2: string; lede: string; items: { eyebrow: string; h: string; p: string; bullets: string[]; link: Link; screens: [ScreenKey, ScreenKey] }[] }
-    how: { h2: string; lede: string; steps: { n: string; h: string; p: string; screen: ScreenKey }[]; stat: { value: string; text: string }; note: string }
     calc: { eyebrow: string; h2: string; lede: string; link: Link; income: string; bills: string; save: string; result: string; cta: string; note: string; currency: string }
-    buddgy: { pill: string; h2: string; lede: string; qa: { q: string; a1: string; a2: string }[]; disclaimer: string; sample: string }
-    gallery: { eyebrow: string; h2: string; lede: string; items: ScreenCaption[] }
     reviews: { h2: string; sub: string; sample: string }
-    trust: { h: string; p: string; link: Link }[]
     faq: { h2: string; items: Faq[] }
-    final: { h2: string; lede: string; soon: string }
   }
   features: { intro: PageIntro; core: string; items: Feature[]; hubCta: string }
   how: { intro: PageIntro; steps: { n: string; h: string; p: string; screen: ScreenKey }[]; ctaH: string; ctaP: string }

@@ -8,14 +8,14 @@ export const en: SiteContent = {
     homeDescription:
       'Buddget reads your bank texts, sorts your spending and shows what is safe to spend today. Free to start, in Arabic and English.',
   },
-  announce: { text: 'Beta is open. Join the list and tell us what to build next.', slug: 'download' },
   nav: {
     login: 'Log in',
-    features: 'Features', how: 'How it works', pricing: 'Pricing', security: 'Security', help: 'Help',
+    features: 'Features', how: 'How it works', afford: 'Can I afford it?', pricing: 'Pricing', security: 'Security', help: 'Help',
+    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', megaAfford: 'Can I afford it?', day: 'Day {n} of 30', getAppShort: 'Get the app', tryShort: 'Try in browser',
     menu: 'Menu', close: 'Close menu', cta: 'Get the app', skip: 'Skip to content', switchLabel: 'العربية', switchTo: 'Switch to Arabic',
   },
   footer: {
-    tag: 'Know where your money goes, and keep more of it. Made in Egypt, in Arabic and English.',
+    tag: 'Know where your money goes, and keep more of it.',
     follow: 'Follow Buddget',
     product: 'Product', learn: 'Learn', company: 'Company', legal: 'Legal',
     links: {
@@ -32,59 +32,104 @@ export const en: SiteContent = {
     getApp: 'Get the app', seeHow: 'See how it works', joinBeta: 'Join the beta list', readMore: 'Learn more',
     home: 'Home', breadcrumb: 'Breadcrumb', contactUs: 'Contact us', example: 'Example from a demo account', free: 'Free', share: 'Share',
   },
-  home: {
+  landing: {
     hero: {
-      h1: 'See where your money goes. Keep more of it.',
-      lede: 'Buddget reads your bank texts, sorts every payment and tells you what is safe to spend today. Your goals get funded first.',
-      assurances: ['Free to start', 'Arabic and English', 'Delete your data any time'],
-      tabs: [
-        { key: 'flow', label: 'Flow' },
-        { key: 'buddgy-1', label: 'Buddgy' },
-        { key: 'goals', label: 'Goals' },
-        { key: 'accounts', label: 'Accounts' },
+      h1: 'What can you spend today?',
+      lede: 'Buddget reads your bank texts, sorts every payment and answers that question, live.',
+      assure: ['Free to start', 'No download needed to try it', 'Arabic and English', 'Delete your data any time'],
+      hint: 'Tap something you bought', again: 'Start over', say0: 'Tap something you bought.', sayLow: 'That is most of today.',
+      sayOver: 'Over by {n}. Tomorrow’s number shrinks.', sayOk: ['Logged.', 'Sorted.', 'Got it.'], sayReset: 'Fresh day.',
+      leftToday: 'left to spend today', unit: 'EGP',
+      nudge: 'That is every bank text, sorted without typing.', nudgeCta: 'Try it with yours', ago: 'now',
+      chips: [
+        { label: 'Coffee', amount: 45, cat: 'food' }, { label: 'Lunch', amount: 120, cat: 'food' }, { label: 'Uber', amount: 96, cat: 'transport' },
+        { label: 'Groceries', amount: 410, cat: 'groceries' }, { label: 'Cinema', amount: 260, cat: 'fun' },
       ],
+      cat: { food: 'Food', transport: 'Transport', groceries: 'Groceries', fun: 'Fun' },
+      sms: 'Purchase of EGP {a} at {m} with card ending 1234.',
+      coin: 'TRY IT IN YOUR BROWSER · LOG IN · ',
     },
-    answers: {
-      h2: 'Three answers you never had at the end of the month',
-      lede: 'Most people guess. Buddget shows you.',
-      items: [
-        {
-          eyebrow: 'Where it goes',
-          h: 'Find the one category eating your month',
-          p: 'Every payment lands in a category. You see the biggest one first and compare it with last month. A week of entries is enough to see the pattern.',
-          bullets: ['Spending by category, week and month', 'The places you pay most often', 'Plain sentences, not only charts'],
-          link: { label: 'See spending reports', slug: 'features/reports' },
-          screens: ['reports', 'reports-charts'],
-        },
-        {
-          eyebrow: 'What you can spend',
-          h: 'Know what is safe to spend, today',
-          p: 'Buddget sets aside your rent, bills, installments and savings, then divides what is left by the days to payday. One number that updates with every payment.',
-          bullets: ['Counts down to your own payday', 'Bills and installments are set aside first', 'Changes the moment you spend'],
-          link: { label: 'Try the maths yourself', slug: 'tools/daily-spending-number' },
-          screens: ['flow', 'paydays'],
-        },
-        {
-          eyebrow: 'Your goals',
-          h: 'Reach a goal on a date you picked',
-          p: 'Name it, set an amount and a date. Buddget works out the monthly amount and shows how far you are. An emergency fund, a trip, a new laptop.',
-          bullets: ['Milestones at 25, 50, 75 and 100 percent', 'Funded from your budget each month', 'Savings pockets in pounds, dollars and gold'],
-          link: { label: 'See goals and savings', slug: 'features/goals-and-savings' },
-          screens: ['goals', 'budget'],
-        },
-      ],
+    proof: {
+      p: 'Available in Arabic and English. The beta is open.',
+      items: [{ v: '8 in 10', t: 'beta entries were logged from bank texts' }, { v: '0', t: 'bank passwords asked for' }, { v: 'Free', t: 'to start' }],
+      note: 'Beta data, October 2026: 497 of 588 entries came from bank texts. Based on 15 beta users, so treat it as early.',
     },
-    how: {
-      h2: 'It does the tracking, so you do not have to',
-      lede: 'Most of your spending logs itself. You only check the odd one.',
+    statement: [
+      { text: 'Your salary arrives on the 25th. By the 3rd you are guessing.' },
+      { text: 'Buddget stops the guessing.', hl: true },
+      { text: 'It reads every bank text, sets aside what is already spoken for, and tells you what is left for today.' },
+    ],
+    story: {
+      label: 'How it works',
       steps: [
-        { n: '01', h: 'Bank texts become entries', p: 'The amount, merchant and card are read from your bank texts and filed. Arabic and English texts both work.', screen: 'sms-setup' },
-        { n: '02', h: 'Say it, snap it or type it', p: 'For cash and anything without a text, say "coffee 45", photograph a receipt or tap the plus.', screen: 'quickadd' },
-        { n: '03', h: 'Ask Buddgy anything', p: 'Buddgy is the assistant inside the app. Ask where the money went or whether you can afford something.', screen: 'buddgy-2' },
+        { h: 'A bank text arrives.', p: 'Buddget reads the amount, the merchant and the card, then files it. You do not type.' },
+        { h: 'Then it does the maths.', p: 'Rent and bills come out of the month. What is left, divided by the days to payday, is today’s number.' },
+        { h: 'Goals get paid first.', p: 'Every payday your goals take their share. You see the percentage and the date.' },
+        { h: 'Ask Buddgy.', p: 'Where did it go? Can I afford this? Add a coffee. Plain answers from your own numbers.' },
       ],
-      stat: { value: '8 in 10', text: 'entries in our beta were logged from bank texts, with nobody typing.' },
-      note: 'Beta data, October 2026: 497 of 588 entries (84.5%) came from bank texts, 77.5% over the last 30 days. Based on 15 beta users, so treat it as early.',
+      chap: ['Text', 'Bills', 'Goals', 'Ask'],
+      day: 'Day {n} of 30',
+      plan: 'left this month',
+      legend: ['Rent', 'Food and groceries', 'Everything else', 'Left to spend'],
+      chat: [
+        { who: 'u', text: 'How much can I spend per day' }, { who: 'a', text: 'You can safely spend 687 EGP a day for the next 12 days.' },
+        { who: 'u', text: 'coffee 45' }, { who: 'a', text: 'Got it.' },
+      ],
+      chatDone: 'Done · coffee · EGP 45',
     },
+    afford: {
+      nav: 'Can I afford it?', h2: 'Can you afford it?', p: 'Pick something you want. Buddget checks it against what is left of your month.',
+      hint: 'Things you might buy', custom: 'Or type a price (EGP)', note: 'Based on 8,247 EGP left and 12 days to payday, the same numbers you see above.', unit: 'EGP',
+      items: [{ label: 'Headphones', price: 1800 }, { label: 'Dinner out', price: 700 }, { label: 'Weekend trip', price: 4500 }, { label: 'New phone', price: 9000 }],
+      v0: { h: 'Pick something.', p: 'Choose an item or type a price to see what it does to your daily number.' },
+      v1: { h: 'Yes. Easy.', p: 'It takes about {s}% of what is left. You will barely notice.' },
+      v2: { h: 'Yes, with a smaller number.', p: 'It is affordable, and every day until payday gets a little smaller.' },
+      v3: { h: 'Possible, but it is a big bite.', p: 'It uses {s}% of what is left. Buddgy would suggest waiting a week.' },
+      v4: { h: 'Not this month.', p: 'It does not fit before payday. As a goal over 8 weeks it is about {w} EGP a week.' },
+      before: 'Per day now', after: 'Per day after', share: '{s}% of what is left', days: '{d} days of spending', cta: 'Make it a goal in Buddget',
+      foot: 'An example with sample numbers. In the app it uses your real month.',
+    },
+    inside: {
+      h2: 'Everything else it keeps track of.', p: 'Accounts, subscriptions, installments and reports, in the same calm place.', learn: 'Learn more',
+      tabs: [
+        { key: 'acc', name: 'Accounts', h: 'Every balance, one list.', p: 'Bank accounts, wallets, cash and cards together. Debit cards link to their account, and you see what you really have.', bullets: ['Bank accounts, wallets and cash', 'Debit and credit cards', 'Totals in your main currency'], slug: 'features/accounts-and-cards' },
+        { key: 'sub', name: 'Subscriptions', h: 'Caught before they renew.', p: 'Every subscription with its next billing date, and a reminder before it renews.', bullets: ['Next billing date for each', 'A reminder before renewal', 'A monthly total'], slug: 'features/subscriptions' },
+        { key: 'inst', name: 'Installments', h: 'See what ends, and when.', p: 'Installments, loans and cards, with the next payment and the last one.', bullets: ['Remaining payments at a glance', 'Counted against your daily number', 'Credit card limits and due dates'], slug: 'features/debts-and-installments' },
+        { key: 'rep', name: 'Reports', h: 'Find where it goes.', p: 'Spending by category and by month, against last month, in plain sentences.', bullets: ['Category totals and trends', 'Biggest purchases', 'This month against last'], slug: 'features/reports' },
+        { key: 'bud', name: 'Budget', h: 'A plan that follows your payday.', p: 'Bills, everyday spending, savings and goals, planned for the cycle you actually live.', bullets: ['Built in minutes', 'Follows your own payday', 'Goals funded first'], slug: 'features/budgets-and-daily-number' },
+      ],
+    },
+    trust: {
+      h2: 'Your money data stays yours.',
+      items: [
+        { icon: 'lock', h: 'No bank login', p: 'Buddget never asks for your bank password and cannot move money.' },
+        { icon: 'sms', h: 'Bank texts are optional', p: 'Reading is off until you turn it on, and you can switch it off any time.' },
+        { icon: 'eye', h: 'Private by default', p: 'Your data belongs to your account. Other users cannot see it.' },
+        { icon: 'trash', h: 'Delete everything', p: 'Remove your account and all its data from inside the app.' },
+      ],
+      link: { label: 'How we protect your data', slug: 'security' },
+    },
+    compare: {
+      h2: 'Buddget, a spreadsheet, or a notes app?',
+      cols: ['', 'Buddget', 'Spreadsheet', 'Notes app'],
+      rows: [
+        ['Logs spending', 'From bank texts, voice and receipts', 'You type every entry', 'You type every entry'],
+        ['What is safe today', 'Calculated for you', 'You build the formula', 'Not possible'],
+        ['Goals with a date', 'Built in', 'You build it', 'A list'],
+        ['Installments and debts', 'Built in, with due dates', 'You build it', 'A list'],
+        ['Arabic', 'Arabic and English', 'Depends on you', 'Yes'],
+      ],
+    },
+    pricing: {
+      h2: 'Free to start. Plus is planned.', p: 'Everything you use today stays free. Plus is planned for the features that cost us the most to run.',
+      plans: [
+        { name: 'Free', price: '0 EGP', tag: 'For tracking your money day to day.', items: ['Bank text, voice and receipt tracking', 'Budgets and the daily number', 'Goals, debts, installments and subscriptions', 'Buddgy essentials'], cta: 'Get the app', main: true },
+        { name: 'Plus', price: 'Soon', tag: 'Planned. Not on sale yet.', items: ['More Buddgy conversations', 'Data export', 'Extra reports'], cta: 'Join the beta list' },
+      ],
+    },
+    close: { h2: 'Find out what you can spend today.', lede: 'Join the beta list, or open it in your browser right now.', qr: 'Scan to open Buddget on your phone', soon: 'Coming soon to' },
+  },
+  home: {
     calc: {
       eyebrow: 'Your daily number', h2: 'What could you spend a day?',
       lede: 'Move the sliders. This is the same sum Buddget runs for you every day, with your real payday and bills.',
@@ -93,38 +138,7 @@ export const en: SiteContent = {
       result: 'Safe to spend per day', cta: 'Track it for real',
       note: 'An estimate across a 30 day month. The app uses your actual payday and your real spending.', currency: 'EGP',
     },
-    buddgy: {
-      pill: 'Meet Buddgy',
-      h2: 'Ask your money a question. Get a plain answer.',
-      lede: 'Buddgy knows your accounts, budget and goals, so the answers are about your numbers. It works in Arabic and English.',
-      qa: [
-        { q: 'Where did my money go?', a1: 'Rent first, then groceries and food.', a2: 'Rent was 8,000. Groceries came to 2,810 and food delivery and cafes to 1,809. Food is the one you can change this month.' },
-        { q: 'What can I spend today?', a1: '687 EGP is safe today.', a2: 'You have 8,247 left until Nov 8. Rent, bills and your savings transfer are already set aside.' },
-        { q: 'Can I afford a 1,200 installment?', a1: 'It fits, with less room.', a2: 'Your daily number drops from 687 to 587 until payday and your savings goal stays funded.' },
-        { q: 'Add coffee 45', a1: 'Added.', a2: 'Coffee, 45 EGP, today. It went into Food and your daily number is now 684.' },
-      ],
-      disclaimer: 'Buddgy gives guidance from your own data. It is not financial advice.',
-      sample: 'Example answers on a demo account.',
-    },
-    gallery: {
-      eyebrow: 'Inside the app', h2: 'Everything money-related, in one place', lede: 'These are real screens. Swipe through.',
-      items: [
-        { screen: 'flow', title: 'Flow', cap: 'Your month and your day.' },
-        { screen: 'accounts', title: 'Accounts', cap: 'Every balance in one list.' },
-        { screen: 'budget', title: 'Budget plan', cap: 'A plan that follows your payday.' },
-        { screen: 'goals', title: 'Goals', cap: 'See how far, and by when.' },
-        { screen: 'debts-installments', title: 'Installments', cap: 'See what ends, and when.' },
-        { screen: 'subscriptions', title: 'Subscriptions', cap: 'Caught before they renew.' },
-        { screen: 'reports', title: 'Reports', cap: 'Where it goes, by category.' },
-        { screen: 'flow-dark', title: 'Dark mode', cap: 'Easy on the eyes at night.' },
-      ],
-    },
     reviews: { h2: 'What people notice in the first month', sub: 'Words from real budgets.', sample: 'Sample reviews, replace with real ones before launch' },
-    trust: [
-      { h: 'Your data is yours', p: 'Each account is private to you. Bank text reading is opt-in, and you can delete everything from inside the app.', link: { label: 'How we protect it', slug: 'security' } },
-      { h: 'Made for Egypt', p: 'Egyptian pounds first, Arabic bank texts, a payday on any date, gold and dollar savings.', link: { label: 'See what is built in', slug: 'features' } },
-      { h: 'Free to start', p: 'Tracking, budgets, goals and the essentials of Buddgy are free. A paid plan with more AI and exports is planned.', link: { label: 'See pricing', slug: 'pricing' } },
-    ],
     faq: {
       h2: 'Questions people ask first',
       items: [
@@ -136,7 +150,6 @@ export const en: SiteContent = {
         { q: 'What happens to my data if I leave?', a: 'You can delete your account and all its data from inside the app, or ask us to do it.' },
       ],
     },
-    final: { h2: 'Find out where this month went', lede: 'Set up in a few minutes. See your first answer today.', soon: 'Coming soon' },
   },
   features: {
     intro: {
@@ -326,9 +339,9 @@ export const en: SiteContent = {
     followH: 'Follow along', responseNote: 'We use your details only to reply.', formH: 'Send a message', name: 'Your name', email: 'Email', message: 'Message', send: 'Send message', sent: 'Message sent. We will reply soon.', error: 'That did not send. Try again or email us.',
   },
   about: {
-    intro: { eyebrow: 'About', h1: 'Month-end should not be a surprise', lede: 'Buddget is a budgeting app made in Egypt. It reads the bank texts you already get, so you can see where your money goes and spend with confidence.' },
+    intro: { eyebrow: 'About', h1: 'Month-end should not be a surprise', lede: 'Buddget is a budgeting app. It reads the bank texts you already get, so you can see where your money goes and spend with confidence.' },
     pillars: [
-      { h: 'Our mission', p: 'Help people in Egypt see their money clearly, save on purpose and reach the goals they set.' },
+      { h: 'Our mission', p: 'Help people see their money clearly, save on purpose and reach the goals they set.' },
       { h: 'What we believe', p: 'Tracking should take seconds, not hours. Your data is yours. Arabic is a first language, not a translation.' },
       { h: 'How we work', p: 'Small releases, a reply to every message from users and notes on what changes.' },
     ],
@@ -342,7 +355,7 @@ export const en: SiteContent = {
   press: {
     intro: { eyebrow: 'Press kit', h1: 'Everything you need to write about Buddget', lede: 'The facts, the logo and the colours in one place.' },
     aboutH: 'About Buddget',
-    boilerplate: 'Buddget is a budgeting app made in Egypt. It reads bank text messages to log spending, shows what is safe to spend today and helps people reach savings goals. It works in Arabic and English on iPhone and Android and is free to start.',
+    boilerplate: 'Buddget is a budgeting app. It reads bank text messages to log spending, shows what is safe to spend today and helps people reach savings goals. It works in Arabic and English on iPhone and Android and is free to start.',
     facts: [
       { k: 'Platforms', v: 'iPhone and Android' }, { k: 'Languages', v: 'Arabic, English' }, { k: 'Price', v: 'Free to start, paid plan planned' }, { k: 'Contact', v: 'support@buddget.app' },
     ],
@@ -356,7 +369,7 @@ export const en: SiteContent = {
   ai: {
     intro: { eyebrow: 'Buddgy facts', h1: 'What Buddget is, in facts', lede: 'A plain page for people and for AI assistants. Short, current and checkable.' },
     facts: [
-      { k: 'What it is', v: 'A budgeting app for iPhone and Android, made in Egypt.' },
+      { k: 'What it is', v: 'A budgeting app for iPhone and Android.' },
       { k: 'What it does', v: 'Logs spending from bank text messages, voice and receipts. Shows what is left to spend until payday. Tracks budgets, goals, debts, installments, subscriptions and savings.' },
       { k: 'Assistant', v: 'Buddgy answers questions about your own finances in Arabic and English. It gives guidance, not financial advice.' },
       { k: 'Languages', v: 'Arabic and English.' },
@@ -370,7 +383,7 @@ export const en: SiteContent = {
     updated: 'Last updated October 2026',
   },
   guides: {
-    intro: { eyebrow: 'Guides', h1: 'Money, in plain words', lede: 'Practical guides on budgeting, saving and getting through the month. Written for Egypt.' },
+    intro: { eyebrow: 'Guides', h1: 'Money, in plain words', lede: 'Practical guides on budgeting, saving and getting through the month.' },
     readLabel: 'Read the guide', minLabel: 'min read', relatedH: 'More guides',
     items: [
       {
