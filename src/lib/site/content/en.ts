@@ -256,7 +256,7 @@ export const en: SiteContent = {
     intro: { eyebrow: 'Download', h1: 'Get Buddget on your phone', lede: 'Free on iPhone and Android. Set up takes about two minutes and you see your daily number straight away.' },
     betaH: 'Join the beta list', betaP: 'We send one email when the app is ready for your phone. Nothing else.',
     emailLabel: 'Email address', emailPlaceholder: 'you@example.com', submit: 'Join the list', sent: 'You are on the list. Thank you.', error: 'That did not work. Check the address and try again.',
-    soonApple: 'Coming soon to the App Store', soonGoogle: 'Coming soon to Google Play', badge: 'Coming soon', webApp: 'Open the web app',
+    soonApple: 'Coming soon to the App Store', soonGoogle: 'Coming soon to Google Play', badge: 'Coming soon', storeGet: 'Download on', webApp: 'Open the web app',
     steps: [
       { h: 'Install and sign up', p: 'Create an account with your email, Google or Apple.' },
       { h: 'Set your payday', p: 'Add your salary date and the accounts you use.' },

@@ -5,7 +5,7 @@ export const SITE_LOCALES: readonly SiteLocale[] = ['en', 'ar']
 
 export const SUPPORT_EMAIL = 'support@buddget.app'
 
-/** Profile URLs. An empty `url` hides the link, so channels appear as soon as the URL is filled in. */
+/** Profile URLs. Empty shows an inert placeholder button; fill the URL to make it a live link. */
 export const SOCIAL_LINKS: readonly { id: string; label: string; short: string; url: string }[] = [
   { id: 'instagram', label: 'Instagram', short: 'IG', url: '' },
   { id: 'tiktok', label: 'TikTok', short: 'TT', url: '' },

@@ -10,7 +10,7 @@ import { EmergencyCalculator } from './EmergencyCalculator'
 import { HeroShowcase } from './HeroShowcase'
 import { LeadForm } from './LeadForm'
 import { PhonePair, PhoneShot } from './PhoneShot'
-import { SocialLinks, hasSocialLinks } from './SocialLinks'
+import { SocialLinks } from './SocialLinks'
 import { BottomCta, FaqList, Gallery, PageHero, Reviews, Split, StoreBadges } from './sections'
 import { ButtonLink, Card, Container, Eyebrow, H2, H3, Lede, Section, SectionHead, TextLink, Ticks } from './ui'
 
@@ -284,7 +284,7 @@ export function DownloadPage({ locale }: P) {
             <Card className="grid gap-5 bg-brand-primary-soft sm:p-9">
               <div><H2 className="text-3xl">{d.betaH}</H2><p className="mt-2 text-brand-text-secondary">{d.betaP}</p></div>
               <LeadForm kind="waitlist" locale={locale} inline labels={{ email: d.emailLabel, placeholder: d.emailPlaceholder, submit: d.submit, sent: d.sent, error: d.error }} />
-              {hasSocialLinks() ? <SocialLinks label={c.footer.follow} /> : null}
+              <SocialLinks label={c.footer.follow} />
             </Card>
           </Container>
         </Section>
@@ -374,7 +374,7 @@ export function ContactPage({ locale }: P) {
             <div className="grid content-start gap-5 md:flex-1 md:basis-[320px]">
               <Card><H3>{t.emailH}</H3><p className="mt-2 text-brand-text-secondary">{t.emailP}</p><a dir="ltr" href={`mailto:${SUPPORT_EMAIL}`} className="mt-3 inline-flex min-h-11 items-center font-semibold text-brand-primary-ink hover:underline">{SUPPORT_EMAIL}</a></Card>
               <Card><H3>{t.appH}</H3><p className="mt-2 text-brand-text-secondary">{t.appP}</p></Card>
-              {hasSocialLinks() ? <Card><H3 className="mb-3">{t.followH}</H3><SocialLinks label={c.footer.follow} /></Card> : null}
+              <Card><H3 className="mb-3">{t.followH}</H3><SocialLinks label={c.footer.follow} /></Card>
             </div>
           </div>
         </Container>
@@ -399,7 +399,7 @@ export function AboutPage({ locale }: P) {
         <Container narrow>
           <H2 className="mb-5 text-3xl">{a.storyH}</H2>
           <div className="grid gap-4 text-lg leading-relaxed text-brand-text-secondary">{a.story.map((p) => <p key={p}>{p}</p>)}</div>
-          {hasSocialLinks() ? <div className="mt-10"><H3 className="mb-2">{a.followH}</H3><p className="mb-4 text-brand-text-secondary">{a.followP}</p><SocialLinks label={c.footer.follow} /></div> : null}
+          <div className="mt-10"><H3 className="mb-2">{a.followH}</H3><p className="mb-4 text-brand-text-secondary">{a.followP}</p><SocialLinks label={c.footer.follow} /></div>
         </Container>
       </Section>
     </>

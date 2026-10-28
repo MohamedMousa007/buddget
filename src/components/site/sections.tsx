@@ -57,26 +57,34 @@ export function FaqList({ items, className }: { items: Faq[]; className?: string
   )
 }
 
-export function StoreBadges({ locale, dark }: { locale: SiteLocale; dark?: boolean }) {
+const APPLE = 'M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.8-3-.8c-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.100 2.800-2.200c.9-1.300 1.200-2.500 1.300-2.600-.1 0-2.500-1-2.500-3.900zM14.200 5.700c.6-.8 1.100-1.800.9-2.900-.9 0-2 .6-2.700 1.400-.6.700-1.100 1.800-1 2.800 1 .1 2.100-.5 2.800-1.300z'
+const PLAY = 'M4 3.500v17c0 .5.600.8 1 .5l14-8.500c.4-.3.4-.8 0-1L5 3c-.4-.3-1 0-1 .5z'
+
+/** Store buttons. Inert and dashed until the listing URL is set in `STORE_LINKS`, then real links. */
+export function StoreBadges({ locale }: { locale: SiteLocale; dark?: boolean }) {
   const d = siteContent[locale].download
   const items = [
-    { href: STORE_LINKS.appStore, name: 'App Store', note: d.soonApple },
-    { href: STORE_LINKS.googlePlay, name: 'Google Play', note: d.soonGoogle },
+    { href: STORE_LINKS.appStore, name: 'App Store', note: d.soonApple, glyph: APPLE },
+    { href: STORE_LINKS.googlePlay, name: 'Google Play', note: d.soonGoogle, glyph: PLAY },
   ]
   return (
     <div className="flex flex-wrap gap-3">
-      {items.map((s) =>
-        s.href ? (
-          <a key={s.name} href={s.href} className="inline-flex min-h-14 items-center rounded-xl border border-brand-border-strong bg-brand-text-primary px-5 text-brand-bg">
-            <strong className="text-lg">{s.name}</strong>
-          </a>
+      {items.map((s) => {
+        const inner = (
+          <>
+            <svg aria-hidden viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d={s.glyph} /></svg>
+            <span className="flex flex-col text-start">
+              <small className="text-[11px] leading-tight opacity-80">{s.href ? d.storeGet : d.badge}</small>
+              <strong className="text-lg leading-tight">{s.name}</strong>
+            </span>
+          </>
+        )
+        return s.href ? (
+          <a key={s.name} href={s.href} className="inline-flex min-h-14 items-center gap-3 rounded-xl border border-brand-border-strong bg-brand-text-primary px-5 text-brand-bg">{inner}</a>
         ) : (
-          <span key={s.name} aria-label={s.note} className={cn('inline-flex min-h-14 flex-col justify-center rounded-xl border border-dashed px-5', dark ? 'border-brand-border-strong text-brand-text-primary' : 'border-brand-border-strong text-brand-text-primary')}>
-            <small className="text-[11px] leading-tight text-brand-text-secondary">{d.badge}</small>
-            <strong className="text-lg leading-tight">{s.name}</strong>
-          </span>
-        ),
-      )}
+          <span key={s.name} role="img" aria-label={s.note} className="inline-flex min-h-14 items-center gap-3 rounded-xl border border-dashed border-brand-border-strong px-5 text-brand-text-primary">{inner}</span>
+        )
+      })}
     </div>
   )
 }

@@ -1,27 +1,27 @@
 import { SOCIAL_LINKS } from '@/lib/site/config'
 
-/** Renders only the channels that have a URL in `SOCIAL_LINKS`; nothing at all when none are set. */
+const base = 'grid size-11 place-items-center rounded-full border text-sm font-semibold'
+
+/**
+ * Every channel shows as a button. Until its URL is set in `SOCIAL_LINKS` it is an inert, dashed placeholder;
+ * filling the URL turns it into a real link with no other change.
+ */
 export function SocialLinks({ label }: { label: string }) {
-  const links = SOCIAL_LINKS.filter((s) => s.url)
-  if (links.length === 0) return null
   return (
     <ul aria-label={label} className="flex flex-wrap gap-2.5">
-      {links.map((s) => (
+      {SOCIAL_LINKS.map((s) => (
         <li key={s.id}>
-          <a
-            href={s.url}
-            rel="me noopener"
-            aria-label={s.label}
-            className="grid size-11 place-items-center rounded-full border border-brand-border-strong text-sm font-semibold text-brand-text-primary hover:border-brand-primary hover:text-brand-primary-ink"
-          >
-            {s.short}
-          </a>
+          {s.url ? (
+            <a href={s.url} rel="me noopener" aria-label={s.label} className={`${base} border-brand-border-strong text-brand-text-primary hover:border-brand-primary hover:text-brand-primary-ink`}>
+              {s.short}
+            </a>
+          ) : (
+            <span role="img" aria-label={`${s.label} (soon)`} title={`${s.label} (soon)`} className={`${base} border-dashed border-brand-border-strong text-brand-text-muted`}>
+              {s.short}
+            </span>
+          )}
         </li>
       ))}
     </ul>
   )
-}
-
-export function hasSocialLinks(): boolean {
-  return SOCIAL_LINKS.some((s) => s.url)
 }

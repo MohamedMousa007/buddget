@@ -67,7 +67,7 @@ export type SiteContent = {
     note: string
     faq: Faq[]
   }
-  download: { intro: PageIntro; betaH: string; betaP: string; emailLabel: string; emailPlaceholder: string; submit: string; sent: string; error: string; soonApple: string; soonGoogle: string; badge: string; webApp: string; steps: { h: string; p: string }[] }
+  download: { intro: PageIntro; betaH: string; betaP: string; emailLabel: string; emailPlaceholder: string; submit: string; sent: string; error: string; soonApple: string; soonGoogle: string; badge: string; storeGet: string; webApp: string; steps: { h: string; p: string }[] }
   security: { intro: PageIntro; cards: { h: string; p: string }[]; dataH: string; data: { k: string; v: string }[]; policyCta: string; faq: Faq[] }
   support: { intro: PageIntro; groups: { h: string; items: Faq[] }[]; stillH: string; stillP: string; inApp: string }
   contact: { intro: PageIntro; emailH: string; emailP: string; appH: string; appP: string; followH: string; responseNote: string; formH: string; name: string; email: string; message: string; send: string; sent: string; error: string }
