@@ -190,6 +190,38 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[0]] })
   })
 
+  it('sends the per-SMS eventId as header and body, and a claim-in-progress answer never deletes the item', async () => {
+    const withId = { ...items[0], eventId: 'evt-1' }
+    mocks.peekPendingQueue.mockResolvedValue({ items: [withId, { ...items[1], eventId: 'evt-2' }, { ...items[2], eventId: 'evt-3' }] })
+    mocks.fetch
+      .mockResolvedValueOnce(new Response('{"retry":true}', { status: 409 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 202 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    const init = mocks.fetch.mock.calls[0][1] as RequestInit
+    expect((init.headers as Record<string, string>)['x-sms-event-id']).toBe('evt-1')
+    expect(JSON.parse(init.body as string).eventId).toBe('evt-1')
+    expect(mocks.removePending).toHaveBeenCalledTimes(1)
+    expect(mocks.removePending.mock.calls[0][0].items.map((i) => i.eventId)).toEqual(['evt-3'])
+  })
+
+  it('does not overlap two drains', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items: [items[0]] })
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
+    const sms = await freshModule()
+    await Promise.all([sms.drainAndSubmitPendingSms('jwt', 'user-1'), sms.drainAndSubmitPendingSms('jwt', 'user-1')])
+    expect(mocks.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('truncates a >2000 char message to 2000 and flags it', async () => {
+    const sms = await freshModule()
+    const out = sms.buildSmsPayload({ ...items[0], message: 'x'.repeat(2500) })
+    expect(out.message).toHaveLength(2000)
+    expect(out.truncated).toBe(true)
+    expect(sms.buildSmsPayload(items[0])).toBe(items[0])
+  })
+
   it('does nothing when the queue is empty', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items: [] })
     const sms = await freshModule()

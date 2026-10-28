@@ -227,6 +227,8 @@ export async function tryPairLeg(
      * tolerance to the amount.
      */
     requireRegisteredSibling?: boolean
+    /** This leg's own account tail; published with the amount so a concurrent sibling can match on it. */
+    accountLast4?: string | null
   },
 ): Promise<PairSibling | null> {
   const requireEqual =
@@ -258,11 +260,16 @@ export async function tryPairLeg(
     p_reference: params.reference ?? undefined,
     p_require_registered_sibling: params.requireRegisteredSibling ?? false,
   })
-  // sms_try_pair only sees siblings that are parsed_ok with a kind, and the parse route persists both only at
-  // the end. Publish them now so two legs arriving together can find each other.
+  // sms_try_pair only sees siblings that are parsed_ok with a kind, and compares their amount and account_last4,
+  // all of which the parse route persists only at the end. Publish them now so two legs arriving together can find each other.
   const { error: publishErr } = await service
     .from('sms_parse_log')
-    .update({ kind: params.kind, parsed_ok: true })
+    .update({
+      kind: params.kind,
+      parsed_ok: true,
+      amount: params.amount,
+      ...(params.accountLast4 ? { account_last4: params.accountLast4 } : {}),
+    })
     .eq('id', params.logId)
   if (publishErr) console.warn('[sms/pairing] publishing leg kind failed', publishErr)
   let { data, error } = await claim()

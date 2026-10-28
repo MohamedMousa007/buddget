@@ -14,6 +14,7 @@
  *  - Confidence >= 0.6 → expense/income auto-added immediately.
  *  - Confidence < 0.6 → ignored (logged but not stored as an expense).
  */
+import { aiCallsToday } from '@/lib/sms/aiUsage'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
@@ -41,9 +42,13 @@ import {
   extractionToObjective,
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
-import { computeNeighbourSmsHashes, computeSmsHash, hasPostedTransaction, isStaleClaim, nonTransactionReason, smsLocalDay, smsPlausibilityIssue } from '@/lib/sms/ingestGuards'
+import { MAX_SMS_BODY_CHARS, checkCreditSender, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, hasPostedTransaction, isClaimInFlight, isStaleClaim, maskOtpDigits, nonTransactionReason, smsLocalDay, smsPlausibilityIssue } from '@/lib/sms/ingestGuards'
 import { withSmsAiQuota } from '@/lib/sms/meteredAi'
-import { normalizeDigits } from '@/lib/sms/normalizeDigits'
+import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
+import { senderCapReached } from '@/lib/sms/senderCap'
+import { classifyLearnStatus, decideLearnRetry, encodeLearnStatus } from '@/lib/sms/learnRetry'
+import { loadReplayCases } from '@/lib/sms/replayLoader'
+import { bumpTemplateFailure } from '@/lib/sms/bumpTemplateFailure'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { fetchCorrectionExemplar } from '@/lib/sms/correctionExemplar'
@@ -67,6 +72,8 @@ const GEMINI_MODEL = 'gemini-2.5-flash'
 /** Typical cost of one SMS parse (prompt plus a short JSON answer) in quota units. */
 const SMS_PARSE_UNITS = 1500
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+/** The key travels in a header, never the URL, so request-URL logs and proxies cannot capture it. */
+const geminiHeaders = (apiKey: string) => ({ 'Content-Type': 'application/json', 'x-goog-api-key': apiKey })
 
 const RATE_LIMIT_PER_DAY = 100
 const CONFIRM_CONFIDENCE = 0.6
@@ -75,11 +82,16 @@ const PATTERN_LEARN_CONFIDENCE = 0.9
 // schedule). A maintenance pass, not per-message logic; it costs an AI call, so it is kept rare.
 const HEALTH_SWEEP_SAMPLE_RATE = 0.02
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 const bodySchema = z.object({
-  message: z.string().min(1).max(2000),
+  message: z.string().min(1).max(MAX_SMS_BODY_CHARS * 10).transform((m) => m.slice(0, MAX_SMS_BODY_CHARS)),
   sender: z.string().max(120).nullable().optional(),
   source: z.enum(['sms', 'notification', 'manual']).optional(),
   receivedAt: z.string().datetime({ offset: true }).optional(),
+  /** Per-capture id minted by the native queue: the retry identity (header `x-sms-event-id` carries the same value). */
+  eventId: z.string().uuid().optional(),
+  truncated: z.boolean().optional(),
 })
 
 interface ParsedTx {
@@ -143,11 +155,12 @@ type TemplateTier = 'template' | 'curated_db'
 function applyTemplate(
   message: string,
   tpl: { id: string; regex_pattern: string; mapping_rules: Record<string, unknown>; match_count: number; tier?: string | null },
+  receivedAt?: string,
 ): TemplateMatch | null {
   const rules = tpl.mapping_rules as unknown as MappingRules
   if (!rules?.amount) return null
   // Same extraction path the learn-time gates verify against — see templateApply.ts.
-  const got = applyMappingRules(message, tpl.regex_pattern, rules)
+  const got = applyMappingRules(message, tpl.regex_pattern, rules, { receivedAt })
   if (!got) return null
 
   const { merchant, bankName, kind } = got
@@ -212,6 +225,7 @@ async function fetchTemplateCandidates(
   keys: string[],
   service: ReturnType<typeof createServiceRoleClient>,
   userId: string,
+  receivedAt?: string,
 ): Promise<{
   match: TemplateMatch | null
   validationOnly: TemplateCandidate[]
@@ -220,7 +234,7 @@ async function fetchTemplateCandidates(
 }> {
   // Trusted tier first, straight from memory — no query on the common path.
   for (const tpl of await getCuratedDbTemplates(service)) {
-    const result = applyTemplate(message, tpl)
+    const result = applyTemplate(message, tpl, receivedAt)
     if (result) return { match: result, validationOnly: [], shadow: [] }
   }
 
@@ -261,7 +275,7 @@ async function fetchTemplateCandidates(
 
   const shadow: TemplateMatch[] = []
   for (const q of quarantined) {
-    const r = applyTemplate(message, q)
+    const r = applyTemplate(message, q, receivedAt)
     if (r) shadow.push(r)
   }
 
@@ -273,7 +287,7 @@ async function fetchTemplateCandidates(
   const { usable, validationOnly } = partitionByScope(candidates, contributed)
 
   for (const tpl of usable) {
-    const result = applyTemplate(message, tpl)
+    const result = applyTemplate(message, tpl, receivedAt)
     if (result) return { match: result, validationOnly, shadow }
   }
   return { match: null, validationOnly, shadow }
@@ -311,6 +325,12 @@ async function recordTemplateUser(
 // Pattern learning (async, never blocks the response)
 // ---------------------------------------------------------------------------
 
+/** A failure is stored as `<class>#<attempt>|<reason>` so the retry policy and the coverage view can read it; outcomes stay plain. */
+function withFailureClass(status: string): string {
+  const cls = classifyLearnStatus(status)
+  return cls === 'terminal' || status === 'pending' || /^[a-z_]+#\d+\|/.test(status) ? status : encodeLearnStatus(cls, 1, status)
+}
+
 /** Persist the template-learning outcome on the parse-log row (admin-visible). */
 async function recordLearnOutcome(
   service: ReturnType<typeof createServiceRoleClient>,
@@ -319,6 +339,7 @@ async function recordLearnOutcome(
   templateId: string | null = null,
 ): Promise<void> {
   try {
+    status = withFailureClass(status)
     await service
       .from('sms_parse_log')
       .update({ learn_status: status, learn_template_id: templateId })
@@ -343,16 +364,17 @@ async function generateMatchingRegex(
   sender: string,
   parsed: ParsedTx,
   apiKey: string,
+  ctx: { receivedAt: string; replay: Awaited<ReturnType<typeof loadReplayCases>>; hint: string | null },
 ): Promise<RegexAttempt> {
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+  const res = await fetch(GEMINI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: geminiHeaders(apiKey),
     // Bounded so a single attempt can't run past the route's budget; the retry
     // loop compensates for flaky calls. (15s + default thinking always aborted;
     // thinkingBudget:0 produced empty responses — a small cap is the sweet spot.)
     signal: AbortSignal.timeout(18_000),
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(message, sender, parsed) }] }],
+      contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(message, sender, parsed, ctx.hint) }] }],
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.1,
@@ -382,7 +404,7 @@ async function generateMatchingRegex(
     return { ok: false, status: 'regex_invalid' }
   }
   if (!re.test(message)) {
-    return { ok: false, status: `regex_no_match: ${learned.regex_pattern}`.slice(0, 200) }
+    return { ok: false, status: 'regex_no_match' }
   }
 
   // Matching is not enough. A regex can match its own sample while its capture groups point at
@@ -393,7 +415,7 @@ async function generateMatchingRegex(
     amount: parsed.amount,
     currency: parsed.currency,
     detectedAccountLast4: parsed.detectedAccountLast4,
-  })
+  }, { receivedAt: ctx.receivedAt, replay: ctx.replay })
   if (!gate.ok) {
     return { ok: false, status: `${gate.status}${gate.detail ? `: ${gate.detail}` : ''}`.slice(0, 200) }
   }
@@ -409,14 +431,18 @@ async function learnPattern(
   apiKey: string,
   userId: string,
   logId: string,
+  receivedAt: string,
 ): Promise<void> {
   try {
     // The LLM is non-deterministic — a single call routinely returns no JSON or
     // a regex that doesn't match its own sample. Retry up to 3× and keep the
     // first attempt that compiles AND matches; record the last failure otherwise.
     let attempt: RegexAttempt = { ok: false, status: 'no_json' }
+    const replay = await loadReplayCases(service, sender)
     for (let i = 0; i < 3; i++) {
-      const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, () => generateMatchingRegex(message, sender, parsed, apiKey))
+      // The previous failure's class tells the next attempt what to fix.
+      const hint: string | null = i === 0 ? null : decideLearnRetry(attempt.ok ? null : attempt.status, new Date()).hint
+      const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, (): Promise<RegexAttempt> => generateMatchingRegex(message, sender, parsed, apiKey, { receivedAt, replay, hint }))
       if (metered.denied) return recordLearnOutcome(service, logId, 'quota_denied')
       attempt = metered.value
       if (attempt.ok) break
@@ -458,12 +484,12 @@ async function learnPattern(
     })
     if (twin) {
       await recordTemplateUser(twin.id, userId, service)
-      await checkAndAutoPromote(sender, service)
+      await checkAndAutoPromote(sender, service, { loadReplayCases: (s) => loadReplayCases(service, s) })
       return recordLearnOutcome(service, logId, 'merged_equivalent', twin.id)
     }
 
     // Global cap: 10 templates per sender prevents runaway growth.
-    if (siblings.length >= 10) return recordLearnOutcome(service, logId, 'cap_reached')
+    if (senderCapReached(siblings)) return recordLearnOutcome(service, logId, 'cap_reached')
 
     // UNIQUE INDEX on (sender, md5(regex_pattern)) silently ignores exact duplicates.
     // user_id null = global — learned templates serve every user.
@@ -488,7 +514,7 @@ async function learnPattern(
     } else if (!tplErr && inserted) {
       console.log('[sms/parse] template learned', { sender, regex: attempt.regex })
       await recordTemplateUser(inserted.id, userId, service)
-      await checkAndAutoPromote(sender, service)
+      await checkAndAutoPromote(sender, service, { loadReplayCases: (s) => loadReplayCases(service, s) })
       return recordLearnOutcome(service, logId, 'learned', inserted.id)
     } else {
       // Duplicate template (23505): record this user in the junction so the
@@ -511,12 +537,12 @@ async function learnPattern(
   }
 }
 
-function buildRegexLearningPrompt(message: string, sender: string, parsed: ParsedTx): string {
+function buildRegexLearningPrompt(message: string, sender: string, parsed: ParsedTx, hint: string | null): string {
   return `You are a regex engineer. Given a bank SMS and its extracted fields, generate a JavaScript regex to match future SMS from this sender.
 
 SMS: ${JSON.stringify(message)}
 Sender: ${JSON.stringify(sender)}
-Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON.stringify(parsed.merchant)}, kind=${parsed.kind}, last4=${parsed.detectedAccountLast4}, counterpartyLast4=${parsed.detectedCounterpartyLast4}
+${hint ? `Previous attempt failed. ${hint}\n` : ''}Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON.stringify(parsed.merchant)}, kind=${parsed.kind}, last4=${parsed.detectedAccountLast4}, counterpartyLast4=${parsed.detectedCounterpartyLast4}
 
 Rules:
 - Use numbered capture groups (NOT named groups)
@@ -587,22 +613,28 @@ export async function POST(request: Request) {
   }
 
   const { sender, source, receivedAt } = parsedBody.data
-  const message = normalizeDigits(parsedBody.data.message)
+  const rawMessage = parsedBody.data.message
+  const message = normalizeSmsText(rawMessage)
   const service = createServiceRoleClient()
 
   // sms_hash identifies the row for /api/sms/confirm + the FCM sms_confirm push.
-  const hash = computeSmsHash(message, receivedAt)
+  const eventId = parsedBody.data.eventId ?? (UUID_RE.test(request.headers.get('x-sms-event-id') ?? '') ? request.headers.get('x-sms-event-id') : null)
+  const hash = computeSmsHash(rawMessage, receivedAt, eventId ?? undefined)
   const nowIso = receivedAt ?? new Date().toISOString()
 
   // Idempotency: a WorkManager/Shortcut retry of an SMS we already hold hits the unique (user_id, sms_hash)
   // index in the insert below, which answers with the prior row. No separate lookup.
+  // The pre-filter is pure: an OTP is masked BEFORE the claim row exists, so its digits are never persisted (N3).
+  const curated = matchCuratedPattern(message, sender ?? null)
+  const rejectReason = nonTransactionReason(message, !!curated)
+  const keptBody = rejectReason === 'otp' ? maskOtpDigits(message) : message
   const claimLog = () => service
     .from('sms_parse_log')
     .insert({
       user_id: userId,
       source: source ?? 'sms',
       sender: sender ?? null,
-      raw_body: message,
+      raw_body: keptBody,
       parsed_ok: false,
       status: 'processing',
       failure_code: 'processing',
@@ -614,7 +646,8 @@ export async function POST(request: Request) {
     .select('id')
     .single()
   // The same SMS forwarded twice either side of a bucket edge hashes differently; a live claim in a neighbouring bucket is the same SMS.
-  const neighbours = computeNeighbourSmsHashes(message, receivedAt)
+  // Older builds hashed the digit-normalised text: their row for this SMS is the same SMS.
+  const neighbours = [...computeNeighbourSmsHashes(rawMessage, receivedAt, eventId ?? undefined), ...computeLegacySmsHashes(rawMessage, receivedAt)]
   if (neighbours.length > 0) {
     const { data: near } = await service
       .from('sms_parse_log')
@@ -623,7 +656,10 @@ export async function POST(request: Request) {
       .in('sms_hash', neighbours)
       .eq('is_duplicate', false)
     const live = (near ?? []).find((r) => !isStaleClaim(r.status, r.parsed_at))
-    if (live) return NextResponse.json({ ok: true, duplicate: true, expenseId: live.expense_id ?? null, incomeId: live.income_id ?? null })
+    if (live) {
+      if (isClaimInFlight(live.status)) return claimInProgressResponse()
+      return NextResponse.json({ ok: true, duplicate: true, expenseId: live.expense_id ?? null, incomeId: live.income_id ?? null })
+    }
   }
   let { data: logRow, error: logErr } = await claimLog()
 
@@ -656,11 +692,12 @@ export async function POST(request: Request) {
     if (logErr?.code === '23505') {
       const { data: prior } = await service
         .from('sms_parse_log')
-        .select('expense_id, income_id')
+        .select('expense_id, income_id, status')
         .eq('user_id', userId)
         .eq('sms_hash', hash)
         .eq('is_duplicate', false)
         .maybeSingle()
+      if (prior && isClaimInFlight(prior.status)) return claimInProgressResponse()
       return NextResponse.json({
         ok: true,
         duplicate: true,
@@ -676,13 +713,11 @@ export async function POST(request: Request) {
   try {
   // ---- Pre-filter: deterministic non-transaction rejector -----------------
   // Kills OTPs / telecom marketing / balance-only SMS at ~0ms, zero AI cost.
-  const curated = matchCuratedPattern(message, sender ?? null)
-  const rejectReason = nonTransactionReason(message, !!curated)
   if (rejectReason) {
-    await service.from('sms_parse_log')
-      .update({ status: 'rejected', failure_code: 'not_transaction', parse_method: 'fully_curated', harvested_at: new Date().toISOString() })
-      .eq('id', logId)
-    after(() => recordSmsStats(service, { userId, senderKey: effectiveSender(sender, message, null), message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: null, parseMethod: 'fully_curated', currencyCode: null }))
+    const rejectedRow = { status: 'rejected', failure_code: 'not_transaction', parse_method: 'fully_curated', harvested_at: new Date().toISOString(), raw_body: keptBody }
+    const { error: rejectErr } = await service.from('sms_parse_log').update(rejectedRow).eq('id', logId)
+    if (rejectErr) await service.from('sms_parse_log').update(rejectedRow).eq('id', logId)
+    after(() => recordSmsStats(service, { userId, senderKey: effectiveSender(sender, message, null), message: keptBody, rejectReason, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: null, parseMethod: 'fully_curated', currencyCode: null }))
     return NextResponse.json({ ok: false, reason: 'not_transaction', rejected: rejectReason })
   }
 
@@ -705,7 +740,7 @@ export async function POST(request: Request) {
   const candidateKeys = lookupKeys(sender, message)
   const templateLookup = curated
     ? null
-    : await fetchTemplateCandidates(message, candidateKeys, service, userId)
+    : await fetchTemplateCandidates(message, candidateKeys, service, userId, nowIso)
   const staticMatch = templateLookup?.match ?? null
   // Templates this user may not parse with — tested later against the AI's own reading, which
   // is how a supervised template earns the cross-user agreement that promotes it.
@@ -764,13 +799,7 @@ export async function POST(request: Request) {
     }
 
     // Rate-limit (per UTC day — counts Gemini calls only).
-    const { data: usage } = await service
-      .from('sms_parse_today')
-      .select('parsed_count_today')
-      .eq('user_id', userId)
-      .maybeSingle()
-
-    if ((usage?.parsed_count_today ?? 0) >= RATE_LIMIT_PER_DAY) {
+    if ((await aiCallsToday(service as never, userId)) >= RATE_LIMIT_PER_DAY) {
       await service.from('sms_parse_log')
         .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new', is_duplicate: true })
         .eq('id', logId)
@@ -822,7 +851,7 @@ export async function POST(request: Request) {
     else if (parsed.confidence < PATTERN_LEARN_CONFIDENCE) learnStatus = 'skipped_low_conf'
     else {
       learnStatus = 'pending' // learnPattern overwrites with its real outcome
-      after(() => learnPattern(message, learnKey, parsed, service, apiKey, userId, logId))
+      after(() => learnPattern(message, learnKey, parsed, service, apiKey, userId, logId, nowIso))
     }
   }
 
@@ -905,7 +934,10 @@ export async function POST(request: Request) {
   // Classify + persist via the shared dispatcher: own-account/transfer/FX
   // pairing → CC payoff → salary dedup → ATM → subscription → purchase. Posts
   // the right record(s) (or intentionally none for paired/matched cases).
-  const tx: SmsTxResult = await createSmsTransaction(service, {
+  const senderCheck = checkCreditSender(curated?.bank ?? parsed.bank_name, parsed.kind, sender)
+  if (senderCheck === 'absent') console.info('[sms/parse] credit without sender (log only)', { bank: curated?.bank ?? parsed.bank_name, kind: parsed.kind })
+  const senderHeld = senderCheck === 'mismatch'
+  const tx: SmsTxResult = senderHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
     userId,
     amount: parsed.amount,
     currency: parsed.currency,
@@ -958,11 +990,21 @@ export async function POST(request: Request) {
   }
 
   const isIncome = tx.outcome === 'income'
-  // Some outcomes intentionally post no row (paired transfer leg / matched salary).
-  const intentionalNoPost =
-    tx.outcome === 'income_matched' || (tx.outcome === 'transfer_paired' && !expenseId)
+  // A weak salary match posts nothing until the user confirms: the row must stay claimable by /confirm (N1).
+  // Owner audit of the ghost rows this left behind (read-only, masked; review before any repair):
+  //   select id, user_id, kind, parse_method, received_at from sms_parse_log
+  //   where status = 'confirmed' and parsed_ok and not is_duplicate and awaiting_confirmation = false
+  //     and expense_id is null and income_id is null and debt_payment_id is null and paired_log_id is null
+  //     and not exists (select 1 from expenses e where e.sms_log_id = sms_parse_log.id)
+  //     and not exists (select 1 from income_events i where i.sms_log_id = sms_parse_log.id)
+  //   order by received_at;
+  const salaryAwaitingUser = tx.outcome === 'income_matched'
+  // A debt/instalment payment that cannot be tied to one debt posts nothing until the user picks it (F11).
+  const debtAwaitingUser = tx.outcome === 'awaiting_confirmation'
+  // A paired transfer leg intentionally posts no row.
+  const intentionalNoPost = tx.outcome === 'transfer_paired' && !expenseId
   const postedSomething = !!(expenseId || incomeId || debtPaymentId)
-  const addFailed = !!tx.error || (!postedSomething && !intentionalNoPost)
+  const addFailed = !!tx.error || (!postedSomething && !intentionalNoPost && !salaryAwaitingUser && !debtAwaitingUser)
   if (tx.error) console.error('[sms/parse] auto-add insert failed', tx.error)
 
   // Provisional currency: the row IS added (auto-when-confident), but the value
@@ -973,7 +1015,7 @@ export async function POST(request: Request) {
   const provisionalConfirm =
     (currencyProvisional || quarantinedFallback) && !addFailed && postedSomething
 
-  const success = !addFailed && (postedSomething || tx.outcome === 'income_matched')
+  const success = !addFailed && (postedSomething || salaryAwaitingUser || debtAwaitingUser)
   // Everything statistical about this SMS (keyword and sender pools, the learned sender currency, the template's
   // match count and contributor, the corpus skeleton) is ONE insert; a scheduled drain applies them in batches.
   after(() =>
@@ -992,7 +1034,7 @@ export async function POST(request: Request) {
     }),
   )
 
-  const preAck = !addFailed && !provisionalConfirm && (postedSomething || tx.outcome === 'income_matched')
+  const preAck = !addFailed && !provisionalConfirm && postedSomething
 
   // Promote the log row with the full parse result + an HONEST add status.
   // add_failed keeps parsed_ok=true and awaiting_confirmation=true so the row
@@ -1006,7 +1048,7 @@ export async function POST(request: Request) {
       status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : preAck ? 'confirmed' : 'logged',
       ...(preAck && tx.outcome !== 'transfer_paired' ? { acked_at: new Date().toISOString(), confirmed_at: new Date().toISOString() } : {}),
       harvested_at: new Date().toISOString(),
-      failure_code: addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : null,
+      failure_code: addFailed ? (senderHeld ? 'sender_mismatch' : 'insert_failed') : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
@@ -1029,7 +1071,7 @@ export async function POST(request: Request) {
       matched_template_id: matchedTemplateId,
       payment_instrument: paymentInstrument,
       learn_status: learnStatus,
-      awaiting_confirmation: addFailed || provisionalConfirm,
+      awaiting_confirmation: addFailed || provisionalConfirm || salaryAwaitingUser || debtAwaitingUser,
       expense_id: expenseId,
       income_id: incomeId,
       debt_payment_id: debtPaymentId,
@@ -1059,14 +1101,14 @@ export async function POST(request: Request) {
     tx.category === 'Transfer' || tx.category === 'Currency Exchange' || tx.category === 'ATM Cash Withdrawal'
 
   // Notification feed bucket (web center) — keep to the 3 known categories.
-  const notifCategory = addFailed || provisionalConfirm ? 'sms_confirm' : isIncome || tx.outcome === 'income_matched' ? 'sms_income' : 'sms_expense'
-  const notifSeverity = addFailed || provisionalConfirm ? 'warning' : isIncome || tx.outcome === 'income_matched' ? 'success' : 'info'
+  const notifCategory = addFailed || provisionalConfirm || debtAwaitingUser ? 'sms_confirm' : isIncome || tx.outcome === 'income_matched' ? 'sms_income' : 'sms_expense'
+  const notifSeverity = addFailed || provisionalConfirm || debtAwaitingUser ? 'warning' : isIncome || tx.outcome === 'income_matched' ? 'success' : 'info'
 
   // Push runs in after() so Vercel keeps the function alive until delivery,
   // and the result is logged — a missing FIREBASE_SERVICE_ACCOUNT_JSON or an
   // all-stale token list shows up in the logs instead of failing silently.
   let pushArgs: SendNativePushArgs
-  if (addFailed) {
+  if (addFailed || debtAwaitingUser) {
     pushArgs = {
       userId,
       title: np.smsConfirmTitle,
@@ -1225,7 +1267,7 @@ export async function POST(request: Request) {
           ...validationCandidates.flatMap((c) => {
             const rules = c.mapping_rules as unknown as MappingRules
             if (!rules?.amount) return []
-            const got = applyMappingRules(message, c.regex_pattern, rules)
+            const got = applyMappingRules(message, c.regex_pattern, rules, { receivedAt: nowIso })
             return got ? [{ templateId: c.id, fields: extractionToObjective(got) }] : []
           }),
         ]
@@ -1257,11 +1299,7 @@ export async function POST(request: Request) {
       ]
       for (const sig of signals) {
         try {
-          await service.rpc('bump_sms_template_failure', {
-            p_template_id: sig.templateId,
-            p_hard: false,
-            p_reason: sig.reason.slice(0, 200),
-          })
+          await bumpTemplateFailure(service, { templateId: sig.templateId, hard: false, reason: sig.reason.slice(0, 200), userId })
         } catch (e) {
           console.warn('[sms/health] soft signal failed', e)
         }
@@ -1339,11 +1377,7 @@ export async function POST(request: Request) {
             } else {
               // Matched but extracted something else — a defect in that template, recorded as a
               // soft signal. Judged as a RATE against match_count, never as an absolute count.
-              await service.rpc('bump_sms_template_failure', {
-                p_template_id: o.templateId,
-                p_hard: false,
-                p_reason: `cross_user_disagreement: ${o.detail}`.slice(0, 200),
-              })
+              await bumpTemplateFailure(service, { templateId: o.templateId, hard: false, reason: `cross_user_disagreement: ${o.detail}`.slice(0, 200), userId })
             }
           } catch (e) {
             console.warn('[sms/parse] cross-user validation failed', e)
@@ -1410,12 +1444,7 @@ async function geminiBudget(
   userId: string,
 ): Promise<number | null> {
   if (!process.env.GEMINI_API_KEY?.trim()) return null
-  const { data } = await service
-    .from('sms_parse_today')
-    .select('parsed_count_today')
-    .eq('user_id', userId)
-    .maybeSingle()
-  return RATE_LIMIT_PER_DAY - (data?.parsed_count_today ?? 0)
+  return RATE_LIMIT_PER_DAY - (await aiCallsToday(service as never, userId))
 }
 
 function aiAvailable(budget: number | null): boolean {
@@ -1424,9 +1453,9 @@ function aiAvailable(budget: number | null): boolean {
 
 async function askModelJson(apiKey: string, system: string, user: string): Promise<unknown | null> {
   try {
-    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    const res = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: geminiHeaders(apiKey),
       signal: AbortSignal.timeout(20_000),
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: system }, { text: user }] }],
@@ -1465,9 +1494,9 @@ async function aiCategorizeMerchant(
     `Use "Other" only if genuinely unclassifiable.\n` +
     `Merchant: ${merchant}\nSMS (context): ${rawBody.slice(0, 300)}`
   try {
-    const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    const res = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: geminiHeaders(apiKey),
       signal: AbortSignal.timeout(15_000),
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -1507,9 +1536,9 @@ async function callGemini(apiKey: string, message: string, exemplar?: string | n
     },
   }
 
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+  const res = await fetch(GEMINI_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: geminiHeaders(apiKey),
     signal: AbortSignal.timeout(30_000),
     body: JSON.stringify(body),
   })

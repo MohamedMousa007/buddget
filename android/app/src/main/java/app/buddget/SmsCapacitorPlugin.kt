@@ -99,6 +99,8 @@ class SmsCapacitorPlugin : Plugin() {
             put("lastRunAt", lastRunAt)
             put("lastResult", prefs.getString("last_result", "") ?: "")
             put("pendingCount", PendingSmsQueue.count(activity))
+            put("evictedCount", PendingSmsQueue.evictedCount(activity))
+            PendingSmsQueue.oldestReceivedAt(activity).takeIf { it.isNotEmpty() }?.let { put("oldestPendingAt", it) }
         })
     }
 
@@ -116,7 +118,7 @@ class SmsCapacitorPlugin : Plugin() {
         val arr = org.json.JSONArray(items.toString())
         for (i in 0 until arr.length()) {
             val item = arr.getJSONObject(i)
-            PendingSmsQueue.remove(activity, item.optString("message"), item.optString("receivedAt"))
+            PendingSmsQueue.remove(activity, item.optString("message"), item.optString("receivedAt"), item.optString("eventId"))
         }
         call.resolve()
     }

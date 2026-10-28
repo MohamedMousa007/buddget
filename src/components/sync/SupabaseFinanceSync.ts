@@ -21,6 +21,8 @@ import {
   emptySnapshot,
   mergeSnapshots,
 } from '@/lib/supabase/remote'
+import { cacheOwnerMismatch } from '@/lib/auth/cacheOwnerCheck'
+import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
 import { ensureMarketDataFresh } from '@/lib/market/marketData'
 import { applyTheme } from '@/lib/theme/applyTheme'
@@ -154,6 +156,12 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // Fresh session: clear any suspend flag left behind by a previous
     // sign-out so this user's edits start flowing to the server again.
     syncSuspended = false
+    // Last line of defence: a cache owned by another account is wiped, never merged or pushed under this user.
+    if (ownedByAnother(userId)) {
+      syncSuspended = true
+      clearBudgetData()
+      syncSuspended = false
+    }
     if (!supabaseRef.current) supabaseRef.current = createClient()
     const supabase = supabaseRef.current
 
@@ -262,6 +270,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       // empty defaults, and flushing would soft-delete all server-side data.
       if (syncSuspended) return true
       if (useFinanceStore.getState().profile.id === 'local') return true
+      // Never push rows to the server under a different user than the cache owner.
+      if (ownedByAnother(userId)) return true
       if (timer.current) {
         clearTimeout(timer.current)
         timer.current = null
@@ -460,6 +470,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
   }, [userId])
 
   return null
+}
+
+function ownedByAnother(userId: string): boolean {
+  return (
+    cacheOwnerMismatch(useFinanceStore.getState().profile.id, userId) ||
+    cacheOwnerMismatch(useSettingsStore.getState().serverSyncedFor, userId)
+  )
 }
 
 /**

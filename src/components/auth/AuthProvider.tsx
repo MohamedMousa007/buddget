@@ -20,6 +20,7 @@ import { AuthModal } from '@/components/features/auth-modal/AuthModal'
 import { LockScreen } from '@/components/auth/LockScreen'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
+import { reconcileCacheOwner } from '@/lib/auth/cacheOwner'
 import { readSplashDone, writeSplashDone } from '@/lib/auth/splashLatch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -325,6 +326,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // explicitly once the user passes the biometric prompt. SIGNED_OUT above
       // already cleared the lock, so it flows through and drops to landing.
       if (lockedRef.current || !bioLockCheckedRef.current) return
+      if (incomingUser) reconcileCacheOwner(incomingUser.id)
       setSession(nextSession)
       setUser(incomingUser)
       if (incomingUser) setAuthModalOpen(false)
@@ -349,6 +351,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch { /* fall through to a normal reveal */ }
       }
       bioLockCheckedRef.current = true
+      if (s?.user) reconcileCacheOwner(s.user.id)
       setSession(s)
       setUser(s?.user ?? null)
       if (s?.user) {
@@ -465,6 +468,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLockedBoth(false)
       bioLockCheckedRef.current = true
       wasAuthedRef.current = true
+      reconcileCacheOwner(s.user.id)
       setSession(s)
       setUser(s.user)
       setAuthModalOpen(false)

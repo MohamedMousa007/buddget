@@ -23,8 +23,12 @@ const OTP_RE =
 const OTP_CODE_RE =
   /(?:\bOTP\b|pass(?:word|code)|\bpin\b|\bcode\b|رمز|كلمة\s*(?:السر|المرور))\D{0,30}\b\d{4,8}\b(?![.,]\d)/i
 
+/** A card-authorisation reference printed on a purchase receipt: a code, but not a secret. */
+const AUTH_REF_RE = /\b(?:auth(?:orization|orisation)?|approval)\s*(?:code|no\.?|number|#)?\s*:?\s*\d{4,8}\b/gi
+
 function carriesOtpCode(text: string): boolean {
   const withoutAmounts = text
+    .replace(AUTH_REF_RE, ' ')
     .replace(/(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\s*[\d,]+(?:\.\d+)?/gi, ' ')
     .replace(/[\d,]+(?:\.\d+)?\s*(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\b/gi, ' ')
   return OTP_CODE_RE.test(withoutAmounts)

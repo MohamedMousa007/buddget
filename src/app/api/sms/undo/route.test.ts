@@ -46,6 +46,14 @@ describe('POST /api/sms/undo', () => {
     h.log.mockResolvedValue({ data: { user_id: 'u1', expense_id: 'e1', income_id: null, debt_payment_id: 'p1' }, error: null })
   })
 
+  it('retires only rows this log created and clears the refund mark it set (N10)', async () => {
+    await POST(req())
+    expect(h.updates.find((u) => u.table === 'expenses' && 'deleted_at' in u.values)?.eqs).toMatchObject({ id: 'e1', sms_log_id: LOG_ID })
+    const unmark = h.updates.find((u) => u.table === 'expenses' && 'refund_sms_log_id' in u.values)
+    expect(unmark?.values).toEqual({ refunded_at: null, refund_kind: null, refund_sms_log_id: null })
+    expect(unmark?.eqs).toMatchObject({ refund_sms_log_id: LOG_ID, user_id: 'u1' })
+  })
+
   it('accepts a JWT/ingest bearer through the shared resolver', async () => {
     expect((await POST(req())).status).toBe(200)
     expect(h.caller).toHaveBeenCalled()

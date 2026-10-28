@@ -1,8 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  computeSmsHash, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction,
+  computeSmsHash, claimInProgressResponse, isClaimInFlight, maskOtpDigits, checkCreditSender, heldForConfirmation, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction,
 } from './ingestGuards'
 import { parseSmsDay, matchCuratedPattern } from './patterns'
+
+describe('parseSmsDay year boundary', () => {
+  it('a 01/01 SMS received 23:00 UTC on 31 Dec belongs to the new year', () => {
+    expect(parseSmsDay('01/01', '2026-12-31T23:00:00Z')).toBe('2027-01-01')
+    expect(parseSmsDay('31/12', '2027-01-01T08:00:00Z')).toBe('2026-12-31')
+    expect(parseSmsDay('15/06', '2026-06-16T08:00:00Z')).toBe('2026-06-15')
+  })
+})
 
 describe('computeSmsHash', () => {
   const body = 'Debited EGP 99.00 for NETFLIX'
@@ -106,5 +114,39 @@ describe('hasPostedTransaction', () => {
   })
   it('is false when nothing references it', async () => {
     expect(await hasPostedTransaction(client({}), 'u', 'l')).toBe(false)
+  })
+})
+
+describe('N8/N12/N18/N3 ingest guards (masked fixtures)', () => {
+  const body = 'Debited EGP 99.00 for SHOP'
+  it('twin purchases with different event ids hash apart, a retry with the same id collapses', () => {
+    const t = '2026-10-01T10:00:10Z'
+    expect(computeSmsHash(body, t, 'evt-a')).not.toBe(computeSmsHash(body, t, 'evt-b'))
+    expect(computeSmsHash(body, t, 'evt-a')).toBe(computeSmsHash(body, '2026-10-01T10:09:00Z', 'evt-a'))
+    expect(computeNeighbourSmsHashes(body, t, 'evt-a')).toEqual([])
+  })
+  it('claim in flight answers 409 retry, never a 2xx', async () => {
+    const res = claimInProgressResponse()
+    expect(res.status).toBe(409)
+    expect(await res.json()).toMatchObject({ retry: true })
+    expect(isClaimInFlight('processing')).toBe(true)
+    expect(isClaimInFlight('confirmed')).toBe(false)
+  })
+  it('masks OTP digit runs', () => {
+    expect(maskOtpDigits('Code 123456 for card 9999')).toBe('Code # for card #')
+  })
+  it('credit sender: mismatch only when a sender is present', () => {
+    expect(checkCreditSender('CIB', 'instant_transfer_in', 'CIB')).toBe('ok')
+    expect(checkCreditSender('CIB', 'instant_transfer_in', 'RANDOM-X')).toBe('mismatch')
+    expect(checkCreditSender('CIB', 'instant_transfer_in', '')).toBe('absent')
+    expect(checkCreditSender('CIB', 'instant_transfer_in', null)).toBe('absent')
+    expect(checkCreditSender('CIB', 'instant_transfer_in', 'CIB-EG')).toBe('ok')
+    expect(checkCreditSender('CIB', 'instant_transfer_in', 'cib eg')).toBe('ok')
+    expect(checkCreditSender('CIB', 'instant_transfer_in', 'CIBFAKE')).toBe('mismatch')
+    expect(checkCreditSender('CIB', 'purchase', 'RANDOM-X')).toBe('ok')
+    expect(checkCreditSender('Bank', 'income', 'ANY')).toBe('ok')
+  })
+  it('held credit posts nothing', () => {
+    expect(heldForConfirmation('income')).toMatchObject({ outcome: 'awaiting_confirmation', expenseId: null, incomeId: null })
   })
 })

@@ -22,6 +22,10 @@ export interface SmsBridgeStatus {
   lastResult?: string
   /** SMS captured but not yet delivered to the server (offline / bad token). */
   pendingCount?: number
+  /** Messages the native queue cap evicted since the last time the app acknowledged them. */
+  evictedCount?: number
+  /** receivedAt of the oldest still-queued SMS (backlog age); absent when the queue is empty. */
+  oldestPendingAt?: string
 }
 
 export interface PendingSmsItem {
@@ -31,6 +35,10 @@ export interface PendingSmsItem {
   source: string
   /** Account that owned the bridge when this SMS was captured ('' / absent = legacy). */
   userId?: string
+  /** Generated once natively per received SMS and persisted with it; sent as `eventId` + `x-sms-event-id`. */
+  eventId?: string
+  /** Set natively when the body was already cut to MAX_SMS_CHARS. */
+  truncated?: boolean
 }
 
 export interface SmsHealthResult {
@@ -73,6 +81,9 @@ export const SMS_NATIVE_ERROR_EVENT = 'buddget:sms-native-error'
 
 /** Drain attempts after which a 400 that is not an explicit invalid-payload rejection is dropped. */
 export const MAX_DRAIN_ATTEMPTS = 5
+
+/** Longest SMS body the server accepts; longer bodies are cut client-side and flagged `truncated`. */
+export const MAX_SMS_CHARS = 2000
 
 let _nativeError: string | null = null
 
@@ -226,7 +237,7 @@ export async function clearSmsNative(): Promise<void> {
 }
 
 const attempts = new Map<string, number>()
-const itemKey = (i: PendingSmsItem) => `${i.receivedAt}|${i.sender}|${i.message}`
+const itemKey = (i: PendingSmsItem) => i.eventId ?? `${i.receivedAt}|${i.sender}|${i.message}`
 
 /**
  * 422 and a zod "Invalid body" 400 mean the payload itself can never succeed. Any other 400
@@ -244,26 +255,44 @@ async function isPermanentRejection(res: Response, item: PendingSmsItem): Promis
   return n >= MAX_DRAIN_ATTEMPTS
 }
 
+/** Server answered "another delivery of this SMS is being claimed right now": retry later, never delete. */
+async function isClaimInProgress(res: Response): Promise<boolean> {
+  if (res.status === 202) return true
+  if (res.status !== 409) return false
+  const body = (await res.json().catch(() => null)) as { retry?: boolean } | null
+  return body?.retry === true
+}
+
+/** Body as sent to the server: oversized messages are cut and flagged instead of being rejected forever. */
+export function buildSmsPayload(item: PendingSmsItem): PendingSmsItem {
+  if (item.message.length <= MAX_SMS_CHARS) return item
+  return { ...item, message: item.message.slice(0, MAX_SMS_CHARS), truncated: true }
+}
+
+let draining: Promise<void> | null = null
+
 /**
  * Replays the native pending queue (SMS captured offline / undeliverable) to
  * /api/sms/parse SEQUENTIALLY. The queue stays authoritative the whole time:
  * items are only removed AFTER the server confirmed (2xx) or permanently
  * rejected (422 / invalid-body 400, or a persistent 400 after MAX_DRAIN_ATTEMPTS) them, so an app kill mid-replay never loses an SMS.
- * Auth (401/403), rate-limit (429), 5xx and network errors leave the item
- * queued for the next drain. The server dedups by sms_hash, so re-delivering
- * an item whose removal didn't land is harmless.
+ * Auth (401/403), rate-limit (429), 5xx, "claim in progress" (202 / 409 {retry:true}) and network
+ * errors leave the item queued for the next drain. Concurrent calls share one run (no overlapping drains).
  */
-export async function drainAndSubmitPendingSms(accessToken: string, userId: string): Promise<void> {
+export function drainAndSubmitPendingSms(accessToken: string, userId: string): Promise<void> {
+  if (draining) return draining
+  draining = runDrain(accessToken, userId).finally(() => { draining = null })
+  return draining
+}
+
+async function runDrain(accessToken: string, userId: string): Promise<void> {
   if (!isNative() || !accessToken || !userId) return
   const peeked = await callNative<PendingSmsItem[] | null>('peekPendingQueue', async (p) => (await p.peekPendingQueue()).items ?? [], null)
   if (!peeked) return
-  let items = peeked
   // Only replay SMS captured under the CURRENT account. Items owned by a previous
-  // account (item.userId set and different) stay queued for when that user returns
-  // — draining them now would file them under the wrong account (the server
-  // resolves the user from this session's JWT, not the item). Legacy items (no
-  // owner stamp) deliver to the current user, matching pre-owner-stamp behavior.
-  items = items.filter((i) => !i.userId || i.userId === userId)
+  // account (item.userId set and different) stay queued for when that user returns.
+  // Legacy items (no owner stamp) deliver to the current user.
+  const items = peeked.filter((i) => !i.userId || i.userId === userId)
   if (items.length === 0) return
 
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')
@@ -274,9 +303,15 @@ export async function drainAndSubmitPendingSms(accessToken: string, userId: stri
     try {
       const res = await fetch(buildUrl('/api/sms/parse'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...deviceHeaders },
-        body: JSON.stringify(item),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          ...(item.eventId ? { 'x-sms-event-id': item.eventId } : {}),
+          ...deviceHeaders,
+        },
+        body: JSON.stringify(buildSmsPayload(item)),
       })
+      if (await isClaimInProgress(res)) continue
       if (res.ok || (await isPermanentRejection(res, item))) {
         done.push(item)
         attempts.delete(itemKey(item))

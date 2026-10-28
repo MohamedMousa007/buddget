@@ -12,7 +12,10 @@
  */
 import { isSafeRegexPattern } from '@/lib/sms/safeRegex'
 import { balanceClauseSpans } from '@/lib/sms/patterns/preFilter'
-import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
+import { applyMappingRules, last4Agrees, type MappingRules } from '@/lib/sms/templateApply'
+import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
+import { perUserLiteralKinds } from '@/lib/sms/literalLeaks'
+import { replayCandidate, type ReplayCase } from '@/lib/sms/replayHarness'
 
 export type GateFailure =
   | 'gate_no_match'
@@ -23,6 +26,8 @@ export type GateFailure =
   | 'gate_capture_unsound'
   | 'gate_regex_too_greedy'
   | 'gate_regex_unsafe'
+  | 'gate_per_user_literal'
+  | 'gate_replay_regression'
 
 export type GateResult = { ok: true } | { ok: false; status: GateFailure; detail?: string }
 
@@ -63,11 +68,15 @@ export interface ExpectedFields {
  * matches but captures the wrong groups fails here instead of in a user's ledger.
  */
 export function runLearnGates(
-  message: string,
+  rawMessage: string,
   regexPattern: string,
   rules: MappingRules,
   expected: ExpectedFields,
+  opts: { receivedAt?: string | null; replay?: readonly ReplayCase[] } = {},
 ): GateResult {
+  // The learner works on the normalised text (no bidi marks, ASCII digits) so spans and balance
+  // clauses are measured on the same string the regex ran against.
+  const message = normalizeSmsText(rawMessage)
   if (!isSafeRegexPattern(regexPattern)) {
     return { ok: false, status: 'gate_regex_unsafe', detail: 'nested quantifier or overlong pattern' }
   }
@@ -79,8 +88,12 @@ export function runLearnGates(
   }
 
   // ---- L1: value verification --------------------------------------------
-  const got = applyMappingRules(message, regexPattern, rules)
+  const got = applyMappingRules(message, regexPattern, rules, { receivedAt: opts.receivedAt })
   if (!got) return { ok: false, status: 'gate_no_match' }
+
+  // N14: a regex that embeds this user's own account/phone/name/amount serves nobody else.
+  const literals = perUserLiteralKinds(regexPattern, { amount: expected.amount, last4: expected.detectedAccountLast4 })
+  if (literals.length) return { ok: false, status: 'gate_per_user_literal', detail: literals.join(',') }
 
   if (expected.amount != null && Math.abs(got.amount - expected.amount) > AMOUNT_EPSILON) {
     return {
@@ -98,7 +111,7 @@ export function runLearnGates(
       detail: `regex=${got.currency} ai=${expected.currency}`,
     }
   }
-  if (expected.detectedAccountLast4 && got.last4 && got.last4 !== expected.detectedAccountLast4) {
+  if (expected.detectedAccountLast4 && got.last4 && !last4Agrees(got.last4, expected.detectedAccountLast4)) {
     return {
       ok: false,
       status: 'gate_last4_mismatch',
@@ -124,8 +137,10 @@ export function runLearnGates(
   if (rules.last4 && got.last4 && !/^\d{4}$/.test(got.last4)) {
     return { ok: false, status: 'gate_capture_unsound', detail: 'last4 not 4 digits' }
   }
-  if (rules.datetime && got.txDay === null) {
-    return { ok: false, status: 'gate_capture_unsound', detail: 'datetime group unparseable' }
+  // LF2: a year-less or unusual date is fine (production falls back to the arrival date); only a
+  // datetime group that captured no digits at all points at the wrong token.
+  if (rules.datetime && got.txDay === null && !/\d/.test(got.rawDatetime ?? '')) {
+    return { ok: false, status: 'gate_capture_unsound', detail: 'datetime group has no digits' }
   }
 
   for (const [groupKey, span] of Object.entries(got.spans)) {
@@ -140,6 +155,11 @@ export function runLearnGates(
   }
   if (got.merchant && /[\r\n]/.test(got.merchant)) {
     return { ok: false, status: 'gate_capture_unsound', detail: 'newline inside merchant' }
+  }
+
+  if (opts.replay?.length) {
+    const replay = replayCandidate({ regex: regexPattern, rules }, opts.replay)
+    if (!replay.ok) return { ok: false, status: 'gate_replay_regression', detail: `${replay.regressions.length} regressed: ${replay.regressions.map((r) => r.id).slice(0, 3).join(',')}` }
   }
 
   return { ok: true }
