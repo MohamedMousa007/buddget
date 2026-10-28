@@ -18,12 +18,11 @@ const TRUST_ICON = {
 export function HomeProof({ locale }: { locale: SiteLocale }) {
   const p = siteContent[locale].landing.proof
   return (
-    <section className="proof" aria-label={p.p}>
+    <section className="proof" aria-label={p.label}>
       <div className="wrap">
-        <p>{p.p}</p>
         <ul>{p.items.map((i) => <li key={i.t}><b>{i.v}</b><span>{i.t}</span></li>)}</ul>
+        <p>{p.note}</p>
       </div>
-      <p className="wrap" style={{ margin: 0, paddingBottom: 16, fontSize: 12.5, color: 'var(--muted)' }}>{p.note}</p>
     </section>
   )
 }
@@ -61,6 +60,7 @@ export function HomeCompare({ locale }: { locale: SiteLocale }) {
             <tbody>{c.rows.map((r) => <tr key={r[0]}><th scope="row">{r[0]}</th><td className="me">{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td></tr>)}</tbody>
           </table>
         </div>
+        <p className="cmp-note">{c.note}</p>
       </div>
     </section>
   )
@@ -116,11 +116,11 @@ export function HomeClose({ locale }: { locale: SiteLocale }) {
           <div className="max-w-[520px]">
             <LeadForm kind="waitlist" locale={locale} inline labels={{ email: d.emailLabel, placeholder: d.emailPlaceholder, submit: d.submit, sent: d.sent, error: d.error }} />
           </div>
-          <div className="row">
-            <a className="pill pill-g pill-lg" href={WEB_APP_URL} data-track="cta">{c.common.tryBrowser}</a>
-            <a className="pill" href={WEB_APP_URL} data-track="cta">{c.common.logIn}</a>
-          </div>
-          <div style={{ marginTop: 20 }}><StoreBadges locale={locale} dark /></div>
+          <p className="close-alt">
+            <a className="lnk" href={WEB_APP_URL} data-track="cta">{c.common.tryBrowser}</a>
+            <a className="lnk" href={WEB_APP_URL} data-track="cta">{c.common.logIn}</a>
+          </p>
+          <div style={{ marginTop: 8 }}><StoreBadges locale={locale} dark /></div>
         </div>
       </div>
     </section>

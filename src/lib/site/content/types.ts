@@ -44,12 +44,13 @@ export type Landing = {
     sms: string
     coin: string
   }
-  proof: { p: string; items: { v: string; t: string }[]; note: string }
+  proof: { label: string; items: { v: string; t: string }[]; note: string }
   statement: { text: string; hl?: boolean }[]
   story: {
     label: string
     steps: { h: string; p: string }[]
     chap: string[]
+    skip: string
     day: string
     plan: string
     legend: string[]
@@ -71,7 +72,7 @@ export type Landing = {
     tabs: { key: 'acc' | 'sub' | 'inst' | 'rep' | 'bud'; name: string; h: string; p: string; bullets: string[]; slug: string }[]
   }
   trust: { h2: string; items: { icon: 'lock' | 'sms' | 'eye' | 'trash'; h: string; p: string }[]; link: Link }
-  compare: { h2: string; cols: [string, string, string, string]; rows: [string, string, string, string][] }
+  compare: { h2: string; cols: [string, string, string, string]; rows: [string, string, string, string][]; note: string }
   pricing: { h2: string; p: string; plans: { name: string; price: string; tag: string; items: string[]; cta: string; main?: boolean }[] }
   close: { h2: string; lede: string; qr: string; soon: string }
 }
@@ -80,7 +81,7 @@ export type SiteContent = {
   locale: 'en' | 'ar'
   name: string
   meta: { homeTitle: string; homeDescription: string }
-  nav: { login: string; features: string; how: string; afford: string; pricing: string; security: string; help: string; menuTitle: string; megaTools: string; themeToLight: string; themeToDark: string; megaAfford: string; day: string; getAppShort: string; tryShort: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
+  nav: { login: string; features: string; how: string; afford: string; pricing: string; security: string; help: string; menuTitle: string; megaTools: string; themeToLight: string; themeToDark: string; megaAfford: string; getAppShort: string; tryShort: string; menu: string; close: string; cta: string; skip: string; switchLabel: string; switchTo: string }
   footer: {
     tag: string; follow: string
     product: string; learn: string; company: string; legal: string
