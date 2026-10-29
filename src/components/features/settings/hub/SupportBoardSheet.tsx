@@ -1,6 +1,6 @@
 'use client'
 
-import { SheetTitleBar } from './SheetTitleBar'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -41,7 +41,7 @@ export function SupportBoardSheet({ open, onClose }: { open: boolean; onClose: (
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <SheetTitleBar title={h.board} onClose={onClose} />
+        <V3SheetHeader title={h.board} onClose={onClose} />
         {items && items.length === 0 ? (
           <p className="py-8 text-center text-sm text-[var(--color-brand-text-muted)]">{h.boardEmpty}</p>
         ) : (

@@ -2,10 +2,9 @@
 
 import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { useMemo, useState } from 'react'
-import { Plus, ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, X, Coins, Bitcoin, LineChart } from 'lucide-react'
+import { ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, Coins, Bitcoin, LineChart } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
@@ -15,17 +14,15 @@ import { convertCurrency, tryConvertWithGold } from '@/lib/utils/currency'
 import { debtPaymentForWithdrawal } from '@/lib/debts/withdrawalPayment'
 import { investTopUpPatch } from '@/lib/savings/investTopUp'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { AccountLegRow, AmountCurrencyRow, PocketRadioList, tint } from '@/components/features/savings-v3/MoneySheetParts'
+import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketRadioList, SheetBody, SheetFooter, tint } from '@/components/features/savings-v3/MoneySheetParts'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
-import { micro } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import { useActionToast } from '@/components/ui/ActionToast'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
-import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { FieldButton } from '@/components/ui/FieldButton'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -192,19 +189,17 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           <V3SheetHeader.Subtitle>{t.withdrawSub}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-2">
-          <div>
-            <p style={micro} className="mb-2">{t.from}</p>
+        <SheetBody>
+          <LabeledBlock label={t.from}>
             <PocketRadioList pockets={pockets} value={fromId} onChange={pickFrom} label={t.from} />
-          </div>
+          </LabeledBlock>
 
           <AmountCurrencyRow
             amount={amount} onAmount={setAmount} currency={currency} onCurrency={setCurrency}
             amountLabel={t.amount} currencyLabel={t.currency}
           />
 
-          <div>
-            <p style={micro} className="mb-2">{t.purpose}</p>
+          <LabeledBlock label={t.purpose}>
             <div role="radiogroup" aria-label={t.purpose} className="space-y-2">
               {PURPOSES.map((p) => (
                 <SelectableCard key={p.key} selected={purpose === p.key} onClick={() => { setPurpose(p.key); setDebtId(null); setDebtOpen(false); setAssetClass(null); setMoveToId(null) }}>
@@ -216,11 +211,10 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                 </SelectableCard>
               ))}
             </div>
-          </div>
+          </LabeledBlock>
 
           {!moveOn && reason === 'debt' && (
-            <div>
-              <p style={micro} className="mb-2">{t.whichDebt}</p>
+            <LabeledBlock label={t.whichDebt}>
               {debtChips.length === 0 ? (
                 <p className="text-xs text-[var(--color-brand-text-muted)]">{t.noDebts}</p>
               ) : (
@@ -244,7 +238,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                   )}
                 </>
               )}
-            </div>
+            </LabeledBlock>
           )}
 
           {/* Which asset? (screen 08) */}
@@ -272,8 +266,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           )}
 
           {moveOn && (
-            <div>
-              <p style={micro} className="mb-2">{t.moveTo}</p>
+            <LabeledBlock label={t.moveTo}>
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {pockets.filter((p) => p.account.id !== fromId).map((p) => (
                   <OptionChip key={p.account.id} selected={moveToId === p.account.id} onClick={() => setMoveToId(p.account.id)}>
@@ -281,30 +274,20 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                   </OptionChip>
                 ))}
               </div>
-            </div>
+            </LabeledBlock>
           )}
 
           {!moveOn && reason === 'income' ? <AccountLegRow leg={leg} label={t.toAccount} /> : null}
 
-          {noteOpen ? (
-            <div className="relative">
-              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t.notePlaceholder}
-                size="brand" className="pe-12" />
-              <IconButton onClick={() => { setNote(''); setNoteOpen(false) }} aria-label={t.clearNote} size="sm"
-                className="absolute end-2 top-1/2 -translate-y-1/2"><X size={16} /></IconButton>
-            </div>
-          ) : (
-            <Button variant="link" size="sm" onClick={() => setNoteOpen(true)} className="font-semibold no-underline hover:underline">
-              <Plus size={14} /> {t.note}
-            </Button>
-          )}
-        </div>
+          <NoteField open={noteOpen} onOpen={() => setNoteOpen(true)} onClose={() => setNoteOpen(false)} value={note} onChange={setNote}
+            labels={{ add: t.note, placeholder: t.notePlaceholder, clear: t.clearNote }} />
+        </SheetBody>
 
-        <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
+        <SheetFooter safeArea>
           <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
             {ctaLabel}
           </Button>
-        </div>
+        </SheetFooter>
       </div>
     </ModalShell>
   )

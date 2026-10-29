@@ -12,9 +12,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { RecurringIncomeCarousel } from '@/components/features/income/RecurringIncomeCarousel'
 import { DebtPortfolioHero } from '@/components/features/debts/redesign/DebtPortfolioHero'
 import { DebtFamilyTabs } from '@/components/features/debts/redesign/DebtFamilyTabs'
-import { BorrowHeroCard } from '@/components/features/debts/redesign/BorrowHeroCard'
-import { CreditCardHeroCard } from '@/components/features/debts/redesign/CreditCardHeroCard'
-import { InstallmentHeroCard } from '@/components/features/debts/redesign/InstallmentHeroCard'
+import { DebtCard } from '@/components/features/debts/redesign/DebtCard'
 import { DebtsEmptyDesktop } from '@/components/features/debts/redesign/DebtsEmptyDesktop'
 import { DebtsEmptyFamilies } from '@/components/features/debts/redesign/DebtsEmptyFamilies'
 import { DebtPaymentsFeed } from '@/components/features/debts/redesign/DebtPaymentsFeed'
@@ -92,12 +90,13 @@ export default function DebtsPage() {
   const renderCard = (i: number) => {
     if (tab === 'borrow') {
       const vm = data.borrow[i]
-      return <BorrowHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)} onPay={() => guardPay(vm.id)} />
+      return <DebtCard kind="borrow" vm={vm} onEdit={() => editDebt(vm.id)} onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)} onPay={() => guardPay(vm.id)} />
     }
     if (tab === 'credit_card') {
       const vm = data.cards[i]
       return (
-        <CreditCardHeroCard
+        <DebtCard
+          kind="card"
           vm={vm}
           onEdit={() => editDebt(vm.id)}
           onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)}
@@ -107,7 +106,7 @@ export default function DebtsPage() {
       )
     }
     const vm = data.installments[i]
-    return <InstallmentHeroCard vm={vm} onEdit={() => editDebt(vm.id)} onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)} onPay={() => guardPay(vm.id)} />
+    return <DebtCard kind="installment" vm={vm} onEdit={() => editDebt(vm.id)} onDelete={() => useFinanceStore.getState().deleteDebt(vm.id)} onPay={() => guardPay(vm.id)} />
   }
 
   const noneActive = data.counts.borrow + data.counts.credit_card + data.counts.installment === 0

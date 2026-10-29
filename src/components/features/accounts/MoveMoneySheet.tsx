@@ -12,6 +12,7 @@ import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { AccountPicker } from './AccountPicker'
+import { SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { splitMoney } from './accountDisplay'
 
 export type MoveMode = 'cash' | 'set'
@@ -63,7 +64,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
     <ModalShell open={open} onBackdropClick={onClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}><V3SheetHeader.Title>{mode === 'cash' ? t.cashOut : t.setAsideAction}</V3SheetHeader.Title></V3SheetHeader>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-2">
+        <SheetBody>
           <SegmentedControl ariaLabel={t.cashOut} value={mode} onChange={setMode}
             options={[{ value: 'cash', label: t.cashOut }, { value: 'set', label: t.setAsideAction }]} />
           <AccountPicker accounts={sources} value={account.method.id} onChange={setAccountId} />
@@ -83,12 +84,12 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
             <AmountField value={amount} onChange={setAmount} currency={cur} placeholder="0" />
             <p className={`mt-2 min-h-[19px] text-[13px] ${v > free ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-secondary)]'}`}>{info}</p>
           </div>
-        </div>
-        <div className="px-5 pb-5 pt-2">
+        </SheetBody>
+        <SheetFooter>
           <Button size="cta-block" onClick={submit} disabled={!valid} className="font-semibold">
             {mode === 'cash' ? t.withdraw(fmt(v)) : t.setAsideIn(fmt(v), pocket?.name ?? '')}
           </Button>
-        </div>
+        </SheetFooter>
       </div>
     </ModalShell>
   )

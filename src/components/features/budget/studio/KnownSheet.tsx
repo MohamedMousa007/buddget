@@ -2,7 +2,7 @@
 
 import { ChevronRight } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 
@@ -26,7 +26,7 @@ export function KnownSheet({ open, rows, onPick, onClose }: KnownSheetProps) {
     <ModalShell open={open} onBackdropClick={onClose} padContent>
       {open ? (
         <div className="flex flex-col gap-3 pt-1">
-          <ModalSheetHeader title={c.title} onClose={onClose} titleRowClassName="mb-0" />
+          <V3SheetHeader title={c.title} onClose={onClose} />
           <p className="text-sm text-[var(--color-brand-text-secondary)]">{c.sub}</p>
           {rows.length === 0 ? <p className="text-sm text-[var(--color-brand-text-muted)]">{c.empty}</p> : null}
           <div className="flex flex-col">

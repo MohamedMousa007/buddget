@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Check, Minus, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
@@ -89,7 +89,7 @@ function LineForm({
           <LineIcon name={line.icon} />
         </TintedTile>
         <div className="min-w-0 flex-1">
-          <ModalSheetHeader title={line.name} onClose={onClose} titleRowClassName="mb-0" />
+          <V3SheetHeader title={line.name} onClose={onClose} />
           <p className="-mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{c.blocks[lv.block]}</p>
         </div>
       </div>

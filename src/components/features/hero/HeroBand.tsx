@@ -1,17 +1,21 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
+import { ArrowDown, ArrowUp } from 'lucide-react'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { cn } from '@/lib/utils'
 import { fitCellValue } from '@/components/features/hero/fitText'
 
+/** The band's gradient, shared with the sticky strip and the status-bar cover. */
+export const FLOW_BAND_BG = 'linear-gradient(120deg, var(--flow-band-a) 0%, var(--flow-band-b) 100%)'
 export const BAND_FG2 = 'text-[var(--flow-band-fg-2)]'
 export const BAND_MIX = 'var(--flow-band-mix)'
 
 export interface HeroBandCell {
   label: string
   value: string
+  /** Money in / out gets a small arrow chip beside the label. */
+  dir?: 'in' | 'out'
 }
 
 export interface HeroBandProps {
@@ -27,6 +31,19 @@ export interface HeroBandProps {
   cells: [HeroBandCell, HeroBandCell, HeroBandCell]
   /** Shrink long cell figures instead of truncating them. Off by default: short figures render the same either way. */
   fitCells?: boolean
+}
+
+function DirChip({ dir }: { dir: 'in' | 'out' }) {
+  const Arrow = dir === 'in' ? ArrowDown : ArrowUp
+  return (
+    <span
+      aria-hidden
+      className="flex size-4 shrink-0 items-center justify-center rounded-full"
+      style={{ background: BAND_MIX, color: dir === 'in' ? 'var(--flow-band-in)' : 'var(--flow-band-fg)' }}
+    >
+      <Arrow className="size-3" strokeWidth={2.5} />
+    </span>
+  )
 }
 
 /** Flow's band skeleton (190px fixed): Wealth and Debts fill the same slots so the three heroes are siblings. */
@@ -47,7 +64,8 @@ export function HeroBand({ label, aside, numbers, bar, cells, fitCells = false }
         <PageContainer wide className="grid h-[66px] grid-cols-3 px-0 lg:px-0">
           {cells.map((c, i) => (
             <div key={i} className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 && 'border-s')} style={i > 0 ? { borderColor: BAND_MIX } : undefined}>
-              <p className={`flex h-4 items-center whitespace-nowrap text-[10.5px] font-bold uppercase tracking-[0.06em] ${BAND_FG2}`}>
+              <p className={`flex h-4 items-center gap-1.5 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-[0.06em] ${BAND_FG2}`}>
+                {c.dir ? <DirChip dir={c.dir} /> : null}
                 <span className="min-w-0 truncate">{c.label}</span>
               </p>
               <p className={cn('mt-1 h-6 truncate whitespace-nowrap font-mono-numbers font-bold leading-6', fitCells ? fitCellValue(c.value) : 'text-base')}>{c.value}</p>

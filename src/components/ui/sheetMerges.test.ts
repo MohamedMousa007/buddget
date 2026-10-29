@@ -12,15 +12,22 @@ describe('merged sheet header', () => {
     expect(html).toContain('text-[22px]')
     expect(html).toContain('aria-label="Close"')
   })
-  it('modal variant keeps the h3 look and title row margin', () => {
-    const html = renderToStaticMarkup(createElement(V3SheetHeader, { variant: 'modal', title: 'T', onClose: () => {} }))
-    expect(html).toContain('<h3')
-    expect(html).toContain('mb-4')
-  })
-  it('bar variant keeps the truncating h2', () => {
-    const html = renderToStaticMarkup(createElement(V3SheetHeader, { variant: 'bar', title: 'T', onClose: () => {} }))
+  it('title shorthand renders the v3 look flush, with subtitle and leading slots', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3SheetHeader, { title: 'T', subtitle: 'Sub', leading: createElement('i', { id: 'lead' }), onClose: () => {} }),
+    )
     expect(html).toContain('<h2')
-    expect(html).toContain('truncate')
+    expect(html).toContain('text-[22px]')
+    expect(html).toContain('Sub')
+    expect(html).toContain('id="lead"')
+    expect(html).not.toContain('px-5')
+    expect(html).toContain('aria-label="Close"')
+  })
+  it('compound form keeps its own inset', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3SheetHeader, { onClose: () => {} } as never, createElement(V3SheetHeader.Title, null, 'Hi')),
+    )
+    expect(html).toContain('px-5')
   })
 })
 

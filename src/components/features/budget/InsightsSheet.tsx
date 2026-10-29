@@ -2,7 +2,7 @@
 
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { MAX_INSIGHTS, type Insight } from '@/lib/budget/insights'
@@ -34,7 +34,7 @@ export function InsightsSheet({ open, insights, base, onClose, onInsightAction, 
     )
   return (
     <ModalShell open={open} onBackdropClick={onClose} padContent>
-      <ModalSheetHeader title={c.sheetTitle} onClose={onClose} />
+      <V3SheetHeader title={c.sheetTitle} onClose={onClose} />
       <ul className="flex flex-col gap-3">
         {insights.slice(0, MAX_INSIGHTS).map((i) => (
           <li key={i.id}>

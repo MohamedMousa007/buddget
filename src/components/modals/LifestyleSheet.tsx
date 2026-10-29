@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -57,7 +57,7 @@ export function LifestyleSheet() {
   return (
     <ModalShell open={isOpen} onBackdropClick={() => setActiveModal(null)} padContent>
       <div className="p-5">
-        <ModalSheetHeader title={t.onboarding.lifestyleTitle} onClose={() => setActiveModal(null)} />
+        <V3SheetHeader title={t.onboarding.lifestyleTitle} onClose={() => setActiveModal(null)} />
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4 -mt-1">
           {t.onboarding.lifestyleSubtitle}
         </p>

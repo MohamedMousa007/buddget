@@ -8,6 +8,7 @@ import { AmountField } from '@/components/ui/AmountField'
 import { updateBalance } from '@/lib/accounts/actions'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useT } from '@/lib/i18n'
+import { SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { splitMoney } from './accountDisplay'
 
 interface UpdateBalanceSheetProps {
@@ -42,18 +43,18 @@ export function UpdateBalanceSheet({ open, onClose, account, onDone }: UpdateBal
           <V3SheetHeader.Title>{t.whatBankShows}</V3SheetHeader.Title>
           <V3SheetHeader.Subtitle>{account.method.name}{account.method.last4 ? ` •• ${account.method.last4}` : ''}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 pb-3 pt-3">
+        <SheetBody className="space-y-3 pt-3">
           <AmountField value={value} onChange={setValue} currency={cur} placeholder="0" />
           <p className={`text-[13px] font-semibold ${diff === 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-amber)]'}`}>
             {diff === 0 ? t.matchesBuddget : t.vsBuddget(`${diff > 0 ? '+' : '−'}${fmt(Math.abs(diff))}`)}
           </p>
           <p className="text-[13px] text-[var(--color-brand-text-muted)]">{t.buddgetHas(fmt(current))}</p>
-        </div>
-        <div className="px-5 pb-5 pt-2">
+        </SheetBody>
+        <SheetFooter>
           <Button size="cta-block" onClick={submit} disabled={!has} className="font-semibold">
             {diff === 0 ? t.looksRight : t.setBalanceTo(fmt(reported))}
           </Button>
-        </div>
+        </SheetFooter>
       </div>
     </ModalShell>
   )

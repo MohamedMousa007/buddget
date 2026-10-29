@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { Lock, Trash2, Unlink } from 'lucide-react'
 import { ModalShell, useModalTitleId } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -287,7 +287,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
     <>
     <div className="flex min-h-0 flex-1 flex-col outline-none">
       <div className="shrink-0 px-5 pt-1">
-        <ModalSheetHeader title={t.editIncome.title} onClose={onClose} />
+        <V3SheetHeader title={t.editIncome.title} onClose={onClose} />
       </div>
       <div className={`${MODAL_BODY_SCROLL_CLASS} px-5`}>
         {!typeLocked ? (

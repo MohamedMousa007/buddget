@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SavingsProductTypePicker } from '@/components/modals/SavingsProductTypePicker'
 import { SavingsAccountIcon } from '@/components/features/savings/SavingsAccountIcon'
 import { AmountField } from '@/components/ui/AmountField'
@@ -95,7 +95,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
   return (
     <ModalShell open onBackdropClick={onClose}>
       <div className="p-5">
-        <ModalSheetHeader title={t.savings.sheetEditTitle} onClose={onClose} />
+        <V3SheetHeader title={t.savings.sheetEditTitle} onClose={onClose} />
         <div className="mt-4 space-y-4">
           {typeLocked ? (
             <p className="text-xs text-[var(--color-brand-text-muted)]">{t.savings.typeLockedHint}</p>

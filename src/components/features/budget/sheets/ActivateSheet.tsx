@@ -2,7 +2,7 @@
 
 import { ArrowRight, CalendarDays } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -75,7 +75,7 @@ export function ActivateSheet({ open, plan, current, next, now, base, monthLabel
     <ModalShell open={open && !!plan} onBackdropClick={onClose} padContent>
       {plan ? (
         <div className="flex flex-col gap-4">
-          <ModalSheetHeader title={c.title(plan.name)} onClose={onClose} />
+          <V3SheetHeader title={c.title(plan.name)} onClose={onClose} />
           <Card variant="elevated" padding="none" divide className="overflow-hidden">
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
               <span className="truncate">{current ? c.activeNow : ''}</span>

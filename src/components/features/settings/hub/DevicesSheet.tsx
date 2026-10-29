@@ -1,6 +1,6 @@
 'use client'
 
-import { SheetTitleBar } from './SheetTitleBar'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useCallback, useEffect, useState } from 'react'
 import { MessageSquareText, Smartphone } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -123,7 +123,7 @@ export function DevicesSheet({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <SheetTitleBar title={d.title} onClose={onClose} />
+        <V3SheetHeader title={d.title} onClose={onClose} />
         {!data && !failed ? <SkeletonList rows={2} /> : null}
         {!data && failed ? (
           <EmptyState title={d.loadFailed} action={<Button variant="outline" size="touch" onClick={() => { void refresh() }}>{d.retry}</Button>} />

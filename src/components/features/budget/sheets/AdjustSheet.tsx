@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -97,7 +97,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
 
   return (
     <div className="flex flex-col gap-4 pt-1">
-      <ModalSheetHeader title={c.title} onClose={onClose} titleRowClassName="mb-0" />
+      <V3SheetHeader title={c.title} onClose={onClose} />
 
       {phase.kind === 'preview' ? (
         <>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Badge } from '@/components/ui/badge'
 import { usePlanView } from '@/hooks/usePlanView'
 import type { BudgetChapter } from '@/lib/budget/blocks'
@@ -19,7 +19,7 @@ function PastPlanBody({ planId, onClose }: { planId: string; onClose: () => void
   if (!view) return null
   return (
     <div className="flex flex-col gap-4 pb-6">
-      <ModalSheetHeader title={view.plan.name} onClose={onClose} />
+      <V3SheetHeader title={view.plan.name} onClose={onClose} />
       <Badge variant="muted" className="self-start">{c.readOnly}</Badge>
       {/* Read only: inert blocks every tap, and Button-component calls to action are hidden. */}
       <div inert className="flex flex-col gap-4 [&_.group\/button]:hidden">

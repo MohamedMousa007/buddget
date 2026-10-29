@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import type { MonthCloseState } from '@/hooks/useMonthClose'
@@ -46,7 +46,7 @@ function CloseBody({ close, base, month, onApply, onFinish, onDismiss }: Omit<Mo
 
   return (
     <div className="flex flex-col gap-4 pt-1">
-      <ModalSheetHeader title={c.title(month)} onClose={onDismiss} titleRowClassName="mb-0" />
+      <V3SheetHeader title={c.title(month)} onClose={onDismiss} />
 
       <Card padding="md" className="flex flex-col gap-3">
         <div className="flex justify-between">

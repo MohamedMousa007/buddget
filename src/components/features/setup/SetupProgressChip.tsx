@@ -1,7 +1,7 @@
 'use client'
 
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SetupChecklist } from '@/components/features/setup/SetupChecklist'
 import { useT } from '@/lib/i18n'
 
@@ -10,7 +10,7 @@ export function SetupChecklistSheet({ open, onClose }: { open: boolean; onClose:
   const t = useT()
   return (
     <ModalShell open={open} onBackdropClick={onClose} padContent>
-      <ModalSheetHeader title={t.setup.title} onClose={onClose} />
+      <V3SheetHeader title={t.setup.title} onClose={onClose} />
       <SetupChecklist onNavigate={onClose} className="border-0 p-0" />
     </ModalShell>
   )

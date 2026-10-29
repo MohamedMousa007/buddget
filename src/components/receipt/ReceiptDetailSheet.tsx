@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Card } from '@/components/ui/card'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { readReceiptImage } from '@/lib/native/receiptImages'
@@ -49,7 +49,7 @@ export function ReceiptDetailSheet({
     <ModalShell open={shellOpen} onBackdropClick={onClose}>
       {receipt ? (
         <div className="p-5">
-          <ModalSheetHeader title={t.title} onClose={onClose} />
+          <V3SheetHeader title={t.title} onClose={onClose} />
 
           {/* Hero: merchant + total, mirroring the scan result card. */}
           <Card padding="md" className="flex items-center gap-3">

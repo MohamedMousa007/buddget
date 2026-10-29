@@ -1,6 +1,6 @@
 'use client'
 
-import { SheetTitleBar } from './SheetTitleBar'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { accountIdentifier, accountTitle } from '@/components/features/accounts/accountDisplay'
 import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
@@ -37,7 +37,7 @@ export function NotCountedSheet({ open, onClose }: { open: boolean; onClose: () 
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <SheetTitleBar title={copy.items.notCounted.label} onClose={onClose} />
+        <V3SheetHeader title={copy.items.notCounted.label} onClose={onClose} />
         <p className="text-sm leading-relaxed text-[var(--color-brand-text-secondary)]">{c.intro}</p>
         {list.length === 0 ? <p className="py-6 text-center text-sm text-[var(--color-brand-text-muted)]">{c.empty}</p> : null}
         <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">

@@ -1,5 +1,10 @@
 'use client'
 
+import type { ReactNode } from 'react'
+import { Plus, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
+import { Input } from '@/components/ui/input'
 import { AmountField } from '@/components/ui/AmountField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -83,5 +88,48 @@ export function AccountLegRow({ leg, label }: { leg: LegAccount; label: string }
     <div>
       <AccountPicker accounts={leg.views} value={leg.accountId} onChange={leg.setAccountId} label={label} />
     </div>
+  )
+}
+
+/** A micro-labelled block: the small uppercase caption above a control group. */
+export function LabeledBlock({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <p style={micro} className="mb-2">{label}</p>
+      {children}
+    </div>
+  )
+}
+
+/** The scrolling body of a money sheet; `className` swaps the vertical rhythm. */
+export function SheetBody({ children, className = 'space-y-4 pt-2' }: { children: ReactNode; className?: string }) {
+  return <div className={`min-h-0 flex-1 overflow-y-auto px-5 pb-3 ${className}`}>{children}</div>
+}
+
+/** The pinned CTA row of a money sheet; `safeArea` clears the home indicator. */
+export function SheetFooter({ children, safeArea }: { children: ReactNode; safeArea?: boolean }) {
+  return <div className={safeArea ? 'px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]' : 'px-5 pb-5 pt-2'}>{children}</div>
+}
+
+/** Optional note: a "+ Note" link that expands into an input with a clear button. */
+export function NoteField({ open, onOpen, onClose, value, onChange, labels }: {
+  open: boolean
+  onOpen: () => void
+  onClose: () => void
+  value: string
+  onChange: (v: string) => void
+  labels: { add: string; placeholder: string; clear: string }
+}) {
+  return open ? (
+    <div className="relative">
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={labels.placeholder} size="brand" className="pe-12" />
+      <IconButton onClick={() => { onChange(''); onClose() }} aria-label={labels.clear} size="sm" className="absolute end-2 top-1/2 -translate-y-1/2">
+        <X size={16} />
+      </IconButton>
+    </div>
+  ) : (
+    <Button variant="link" size="sm" onClick={onOpen} className="font-semibold no-underline hover:underline">
+      <Plus size={14} /> {labels.add}
+    </Button>
   )
 }

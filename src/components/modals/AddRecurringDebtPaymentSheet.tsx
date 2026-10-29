@@ -2,7 +2,7 @@
 
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useRecurringDebtPaymentSheet } from '@/hooks/useRecurringDebtPaymentSheet'
 import { RecurringDebtPaymentForm } from '@/components/features/debts/RecurringDebtPaymentForm'
 import { useT } from '@/lib/i18n'
@@ -15,7 +15,7 @@ export function AddRecurringDebtPaymentSheet() {
   return (
     <ModalShell open={sheet.isOpen} onBackdropClick={sheet.close}>
       <div className="p-5">
-        <ModalSheetHeader title={t.recurringDebt.sheetTitle} onClose={sheet.close} />
+        <V3SheetHeader title={t.recurringDebt.sheetTitle} onClose={sheet.close} />
 
         <p className="text-xs text-[var(--color-brand-text-muted)] mb-4">
           {t.recurringDebt.sheetDescription}

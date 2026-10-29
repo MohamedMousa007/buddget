@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Card } from '@/components/ui/card'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { BUDGET_BLOCKS } from '@/lib/budget/blocks'
@@ -56,7 +56,7 @@ function StressBody({ view, onClose }: { view: PlanView; onClose: () => void }) 
 
   return (
     <div className="flex flex-col gap-4 pt-1">
-      <ModalSheetHeader title={c.title} onClose={onClose} titleRowClassName="mb-0" />
+      <V3SheetHeader title={c.title} onClose={onClose} />
       <p className="text-sm text-[var(--color-brand-text-secondary)]">{c.intro}</p>
 
       <div className="flex flex-wrap gap-2">

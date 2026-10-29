@@ -1,6 +1,6 @@
 'use client'
 
-import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
+import { FLOW_BAND_BG } from '@/components/features/hero/HeroBand'
 
 export interface FlowStickyStripProps {
   visible: boolean

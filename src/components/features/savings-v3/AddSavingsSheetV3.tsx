@@ -1,20 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { AccountLegRow, AmountCurrencyRow, PocketRadioList } from '@/components/features/savings-v3/MoneySheetParts'
+import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketRadioList, SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
-import { micro } from '@/lib/ui/microLabelStyle'
 import { useT } from '@/lib/i18n'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
 import type { Currency } from '@/lib/store/types'
@@ -74,19 +70,17 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
           <V3SheetHeader.Subtitle>{t.addSub}</V3SheetHeader.Subtitle>
         </V3SheetHeader>
 
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-3 pt-2">
-          <div>
-            <p style={micro} className="mb-2">{t.into}</p>
+        <SheetBody>
+          <LabeledBlock label={t.into}>
             <PocketRadioList pockets={pockets} value={selectedId} onChange={pickPocket} label={t.into} />
-          </div>
+          </LabeledBlock>
 
           <AmountCurrencyRow
             amount={amount} onAmount={setAmount} currency={currency} onCurrency={setCurrency}
             amountLabel={t.amount} currencyLabel={t.currency}
           />
 
-          <div>
-            <p style={micro} className="mb-2">{t.whereFrom}</p>
+          <LabeledBlock label={t.whereFrom}>
             <SegmentedControl
               ariaLabel={t.whereFrom}
               value={source}
@@ -97,29 +91,19 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
               ]}
             />
             <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{source === 'budget' ? t.tipThisMonth : t.tipOutside}</p>
-          </div>
+          </LabeledBlock>
 
           {source === 'budget' ? <AccountLegRow leg={leg} label={t.fromAccount} /> : null}
 
-          {noteOpen ? (
-            <div className="relative">
-              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t.notePlaceholder} size="brand" className="pe-12" />
-              <IconButton onClick={() => { setNote(''); setNoteOpen(false) }} aria-label={t.clearNote} size="sm" className="absolute end-2 top-1/2 -translate-y-1/2">
-                <X size={16} />
-              </IconButton>
-            </div>
-          ) : (
-            <Button variant="link" size="sm" onClick={() => setNoteOpen(true)} className="font-semibold no-underline hover:underline">
-              <Plus size={14} /> {t.note}
-            </Button>
-          )}
-        </div>
+          <NoteField open={noteOpen} onOpen={() => setNoteOpen(true)} onClose={() => setNoteOpen(false)} value={note} onChange={setNote}
+            labels={{ add: t.note, placeholder: t.notePlaceholder, clear: t.clearNote }} />
+        </SheetBody>
 
-        <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
+        <SheetFooter safeArea>
           <Button size="cta-block" onClick={submit} disabled={!canSubmit} className="font-semibold">
             {selected ? t.addCta(amountNum > 0 ? fmtNum(amountNum) : '', pocketDisplayName(selected.account, sf.systemNames)) : t.choosePocket}
           </Button>
-        </div>
+        </SheetFooter>
       </div>
     </ModalShell>
   )

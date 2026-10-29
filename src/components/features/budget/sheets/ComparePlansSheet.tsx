@@ -1,7 +1,7 @@
 'use client'
 
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Card } from '@/components/ui/card'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { comparePlans } from '@/lib/budget/comparePlans'
@@ -48,7 +48,7 @@ export function ComparePlansSheet({ open, plans, aId, bId, base, rates, onChange
   return (
     <ModalShell open={open} onBackdropClick={onClose} padContent>
       <div className="flex flex-col gap-4 pb-4">
-        <ModalSheetHeader title={c.title} onClose={onClose} />
+        <V3SheetHeader title={c.title} onClose={onClose} />
         {picker(c.a, aId, bId, (id) => bId && onChange(id, bId))}
         {picker(c.b, bId, aId, (id) => aId && onChange(aId, id))}
         {cmp && a && b ? (

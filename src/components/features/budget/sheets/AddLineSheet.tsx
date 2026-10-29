@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalSheetHeader } from '@/components/modals/ModalSheetHeader'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -88,7 +88,7 @@ function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) 
 
   return (
     <div className="flex flex-col gap-4 pt-1">
-      <ModalSheetHeader title={c.add.title(c.blocks[block])} onClose={onClose} titleRowClassName="mb-0" />
+      <V3SheetHeader title={c.add.title(c.blocks[block])} onClose={onClose} />
 
       {suggestions.length > 0 ? (
         <div className="flex flex-col gap-2">
