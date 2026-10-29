@@ -962,14 +962,15 @@ export function getPaymentMethodBreakdown(
   expenses: Expense[],
   paymentMethods: { id: string; name: string }[],
   baseCurrency: Currency,
-  rates: Record<string, number>
+  rates: Record<string, number>,
+  unknownLabel = 'Unknown',
 ): { name: string; count: number; total: number }[] {
   const breakdown: Record<string, { count: number; total: number }> = {}
 
   for (const expense of expenses) {
     if (isNonSpendExpense(expense)) continue
     const method = paymentMethods.find((m) => m.id === expense.paymentMethodId)
-    const name = method?.name || 'Unknown'
+    const name = method?.name || unknownLabel
     if (!breakdown[name]) breakdown[name] = { count: 0, total: 0 }
     breakdown[name].count++
     breakdown[name].total += expenseAmountInBase(expense, baseCurrency, rates)

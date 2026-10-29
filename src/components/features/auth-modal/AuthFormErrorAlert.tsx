@@ -36,7 +36,7 @@ export function AuthFormErrorAlert({ error, onSignInInstead, onResendCode }: Aut
                 </button>
               </>
             ) : null}
-            {error === t.auth.errorUnconfirmed ? (
+            {error === t.auth.errorBadPassword ? (
               <>
                 {' '}
                 <button type="button" className="underline font-medium" onClick={() => void onResendCode()}>

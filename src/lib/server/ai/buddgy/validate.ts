@@ -29,6 +29,12 @@ function cleanModelParts(parts: unknown, knownTools: ReadonlySet<string>): unkno
   return out
 }
 
+/** Names of the function calls issued by the directly preceding model message; a tool result may only answer one of these. */
+function issuedCalls(prev: WireMessage | undefined): string[] {
+  if (prev?.role !== 'model' || !prev.parts) return []
+  return (prev.parts as { functionCall?: { name: string } }[]).flatMap((p) => (p.functionCall ? [p.functionCall.name] : []))
+}
+
 export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>): ParseResult {
   if (!isRecord(raw)) return { ok: false, reason: 'body' }
   const { messages, context, carry, locale, intent, chatId } = raw
@@ -62,9 +68,13 @@ export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>):
       }
     } else if (m.role === 'tool') {
       if (!Array.isArray(m.results) || m.results.length === 0 || m.results.length > 12) return { ok: false, reason: 'tool' }
+      const issued = issuedCalls(clean[clean.length - 1])
       const results: { name: string; response: unknown }[] = []
       for (const r of m.results) {
         if (!isRecord(r) || typeof r.name !== 'string' || !knownTools.has(r.name)) return { ok: false, reason: 'toolResult' }
+        const at = issued.indexOf(r.name)
+        if (at < 0) return { ok: false, reason: 'toolUnissued' }
+        issued.splice(at, 1)
         results.push({ name: r.name, response: r.response ?? null })
       }
       total += JSON.stringify(results).length

@@ -17,7 +17,7 @@ import { overdueDays, recentPaydays } from '@/lib/income/paydaySummary'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency, formatFixed2, formatFlex } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import type { IncomeSource } from '@/lib/store/types'
 import { cadenceLine } from '@/lib/income/cadence'
@@ -31,6 +31,7 @@ const HISTORY_LEN = 24
  * actions under it, and what actually arrived for the earlier ones.
  */
 export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack: () => void }) {
+  const shortDate = useShortDate()
   const t = useT()
   const { incomeEvents, paymentMethods, monthStartDay, base, secondary, rates } = useFinanceStore(
     useShallow((s) => ({

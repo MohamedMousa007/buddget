@@ -2029,8 +2029,7 @@ export const en: Dictionary = {
 
     errorNetwork: "Can\u2019t connect right now. Check your internet and try again.",
     errorRateLimit: 'Too many attempts. Wait a moment, then try again.',
-    errorBadPassword: "Email or password is incorrect. Try again or reset your password.",
-    errorUnconfirmed: "Your email isn\u2019t confirmed yet.",
+    errorBadPassword: "Email or password is incorrect, or the email is not confirmed yet. Check your inbox or reset your password.",
     errorOtpExpired: 'This code has expired. Request a new one.',
     errorFallback: "Something went wrong. Try again.",
     errorEmailInvalid: 'Enter a valid email address.',
@@ -2038,7 +2037,6 @@ export const en: Dictionary = {
     errorPasswordShort: 'Password needs to be at least 8 characters.',
     errorPasswordMismatch: "Those passwords don\u2019t match. Try again.",
     errorAccountExists: 'Looks like you already have an account. Sign in instead?',
-    errorNoAccountForEmail: "Couldn\u2019t sign in with those details. Check them and try again.",
     errorPasswordWeakComposition: 'Your password needs at least one letter and one number.',
     errorSignUpGeneric: "Couldn\u2019t create your account. Try again.",
     errorEmailSendFailed: "Couldn\u2019t send the confirmation email. Try again in a moment.",

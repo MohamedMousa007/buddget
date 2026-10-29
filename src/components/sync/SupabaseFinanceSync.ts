@@ -25,6 +25,7 @@ import { cacheOwnerMismatch } from '@/lib/auth/cacheOwnerCheck'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
 import { ensureMarketDataFresh } from '@/lib/market/marketData'
+import { isSecondFactorBlocked, onSecondFactorResolved, useSecondFactorGate } from '@/lib/auth/secondFactorGate'
 import { applyTheme } from '@/lib/theme/applyTheme'
 import { isOnline, networkReady, subscribeNetwork } from '@/hooks/useNetworkStatus'
 import type { Snapshot } from '@/lib/supabase/remote'
@@ -259,6 +260,16 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }, delay)
     }
 
+    let gateTimer: ReturnType<typeof setTimeout> | null = null
+    const retryAfterSuppress = () => {
+      const { open, suppressUntil } = useSecondFactorGate.getState()
+      if (gateTimer || open) return
+      gateTimer = setTimeout(() => {
+        gateTimer = null
+        void flush()
+      }, Math.max(0, suppressUntil - Date.now()) + 50)
+    }
+
     const flush = async (): Promise<boolean> => {
       if (!hydrated.current) return true
       // Offline: don't attempt a doomed flush that would raise the sync-failure
@@ -272,6 +283,12 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       if (useFinanceStore.getState().profile.id === 'local') return true
       // Never push rows to the server under a different user than the cache owner.
       if (ownedByAnother(userId)) return true
+      // The server wants the second factor: sending now would only be refused. Nothing is dropped
+      // (prevSnap does not advance); the challenge resumes the sync when passed.
+      if (isSecondFactorBlocked()) {
+        retryAfterSuppress()
+        return false
+      }
       if (timer.current) {
         clearTimeout(timer.current)
         timer.current = null
@@ -312,6 +329,10 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
 
     // Expose for imperative callers (signOut).
     pendingFlush = flush
+    const stopResume = onSecondFactorResolved(() => {
+      retryAttempt = 0
+      void pendingSync?.().catch((e) => console.error('[finance sync] resume after second factor failed', e))
+    })
 
     // Expose full-sync for pull-to-refresh and the reconnect trigger. Flush
     // FIRST, then pull: running them concurrently let pullAll read the server
@@ -458,6 +479,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     })
 
     return () => {
+      stopResume()
       unsub()
       unsubNet()
       if (reconnectTimer) clearTimeout(reconnectTimer)
@@ -467,6 +489,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       removeAppStateListener?.()
       if (timer.current) clearTimeout(timer.current)
       if (retryTimer) clearTimeout(retryTimer)
+      if (gateTimer) clearTimeout(gateTimer)
       if (pendingFlush === flush) pendingFlush = null
       pendingSync = null
     }

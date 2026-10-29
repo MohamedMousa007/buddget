@@ -16,6 +16,10 @@ export interface AuthSecurityCopy {
   twoFaOffCancel: string
   twoFaOffNeedsSignIn: string
   twoFaChangeFailed: string
+  gateIntro: string
+  gateFailed: string
+  gateNotNow: string
+  gateSignOut: string
 }
 
 const en: AuthSecurityCopy = {
@@ -34,6 +38,10 @@ const en: AuthSecurityCopy = {
   twoFaOffCancel: 'Keep it on',
   twoFaOffNeedsSignIn: 'Sign out and sign in again, then turn it off.',
   twoFaChangeFailed: 'Couldn\u2019t change two-factor authentication. Try again.',
+  gateIntro: 'For your security, confirm it is you with the code we email you. Your data is safe and will sync right after.',
+  gateFailed: 'We couldn\u2019t confirm that code. Your data is safe on this device. Try again, or sign out.',
+  gateNotNow: 'Not now',
+  gateSignOut: 'Sign out',
 }
 
 const ar: AuthSecurityCopy = {
@@ -52,6 +60,10 @@ const ar: AuthSecurityCopy = {
   twoFaOffCancel: 'إبقاؤها مفعّلة',
   twoFaOffNeedsSignIn: 'سجّل الخروج ثم الدخول من جديد، ثم أوقفها.',
   twoFaChangeFailed: 'تعذّر تغيير المصادقة الثنائية. حاول مرة أخرى.',
+  gateIntro: 'لحمايتك، أكّد أنك أنت بالرمز الذي أرسلناه إلى بريدك. بياناتك بأمان وستتم مزامنتها فور التأكيد.',
+  gateFailed: 'تعذّر تأكيد الرمز. بياناتك بأمان على هذا الجهاز. حاول مرة أخرى أو سجّل الخروج.',
+  gateNotNow: 'ليس الآن',
+  gateSignOut: 'تسجيل الخروج',
 }
 
 export function useAuthSecurityCopy(): AuthSecurityCopy {

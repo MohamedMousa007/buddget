@@ -33,7 +33,7 @@ import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
 import { cadenceLine } from '@/lib/income/cadence'
 import { formatFixed2 } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { occurrenceChange } from '@/lib/income/occurrenceChange'
 import { navigate } from '@/lib/navigation/navigate'
 import {
@@ -102,6 +102,7 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
  * late payday reads "3 days after the payday" for good. Editing is behind the pencil.
  */
 function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onClose: () => void; onEdit: () => void }) {
+  const shortDate = useShortDate()
   const t = useT()
   const { incomeSources, paymentMethods, updateIncomeEvent } = useFinanceStore(
     useShallow((s) => ({ incomeSources: s.incomeSources, paymentMethods: s.paymentMethods, updateIncomeEvent: s.updateIncomeEvent })),

@@ -1909,7 +1909,6 @@ export interface Dictionary {
     errorNetwork: string
     errorRateLimit: string
     errorBadPassword: string
-    errorUnconfirmed: string
     errorOtpExpired: string
     errorFallback: string
     errorEmailInvalid: string
@@ -1917,7 +1916,6 @@ export interface Dictionary {
     errorPasswordShort: string
     errorPasswordMismatch: string
     errorAccountExists: string
-    errorNoAccountForEmail: string
     errorPasswordWeakComposition: string
     errorSignUpGeneric: string
     errorEmailSendFailed: string

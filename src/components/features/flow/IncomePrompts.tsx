@@ -8,7 +8,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
 import { incomeMatches, latePaydays, matchKey } from '@/lib/income/paydayResolution'
 import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { settlePrompt } from '@/lib/prompts/settle'
 
@@ -42,6 +42,7 @@ export function useIncomeResolution() {
  * zero payday pixels anywhere.
  */
 export function IncomePrompts() {
+  const shortDate = useShortDate()
   const t = useT()
   const { matches, late } = useIncomeResolution()
   const { updateIncomeEvent, addIncomeEvent } = useFinanceStore(

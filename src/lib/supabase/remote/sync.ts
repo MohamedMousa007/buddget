@@ -29,7 +29,7 @@ import {
   budgetSubcategoryToRow,
   assembleBudgetPlan,
 } from './mappers/budgetPlanMapper'
-import type { AppSettings, Currency } from '@/lib/store/types'
+import type { AppSettings, Currency, SavingsAccount } from '@/lib/store/types'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 type Client = SupabaseClient<Database>
@@ -105,18 +105,24 @@ class OpRunner {
    * not poison the whole batch: the rows are retried one by one, a duplicate payday event adopts the live row,
    * and only the rows that still fail are reported.
    */
-  upsert<T extends TableName>(table: T, rows: readonly Database['public']['Tables'][T]['Insert'][], label: string) {
+  upsert<T extends TableName>(
+    table: T,
+    rows: readonly Database['public']['Tables'][T]['Insert'][],
+    label: string,
+    withRequired?: (row: Database['public']['Tables'][T]['Insert']) => Database['public']['Tables'][T]['Insert']
+  ) {
     if (rows.length === 0) return
     this.ops.push(async () => {
       const res = await this.from(table).upsert(rows)
       this.writes++
       if (!res.error) return
-      if (!PER_ROW_RETRY_CODES.has(res.error.code ?? '')) {
+      if (!PER_ROW_RETRY_CODES.has(res.error.code ?? '') && !(withRequired && res.error.code === '23502')) {
         this.errors.push(`${label}: ${res.error.message}`)
         return
       }
       for (const row of rows) {
-        const one = await this.from(table).upsert([row])
+        let one = await this.from(table).upsert([row])
+        if (one.error?.code === '23502' && withRequired) one = await this.from(table).upsert([withRequired(row)])
         if (!one.error) continue
         if (one.error.code === '23505' && table === 'income_events' && (await this.adoptLivePayday(row as Record<string, unknown>))) continue
         this.errors.push(`${label}: ${one.error.message}`)
@@ -213,6 +219,36 @@ function emitList<T extends HasId, TN extends TableName>(
 }
 
 /**
+ * W7: the server also moves pocket balances (month-carry, goal funding), so a pocket edit that does not
+ * change the balance (rename, colour, target) must not send the device's possibly stale absolute
+ * `current_balance`. Those rows go in their own balance-less batch (never mixed with full rows).
+ */
+function emitSavingsAccounts(
+  runner: OpRunner,
+  next: readonly SavingsAccount[],
+  prev: readonly SavingsAccount[],
+  userId: string
+) {
+  const diff = diffLists(next, prev)
+  const prevById = new Map(prev.map((a) => [a.id, a]))
+  const balanceKept = (a: SavingsAccount) => prevById.get(a.id)?.currentBalance === a.currentBalance
+  const inserts = diff.inserts.map((x) => ({ ...savingsAccountToRow(x, userId), deleted_at: null }))
+  const full = diff.updates.filter((a) => !balanceKept(a)).map((x) => savingsAccountToRow(x, userId))
+  const metaOnly = diff.updates.filter(balanceKept).map((x) => {
+    const { current_balance: _balance, ...row } = savingsAccountToRow(x, userId)
+    return row
+  })
+  runner.upsert('savings_accounts', [...inserts, ...full], 'savings_accounts.upsert')
+  // A balance-less row whose server row was hard-deleted becomes an INSERT with a NULL balance (23502): resend it with its balance.
+  const nextById = new Map(next.map((a) => [a.id, a]))
+  runner.upsert('savings_accounts', metaOnly as never, 'savings_accounts.upsert', (row) => ({
+    ...row,
+    current_balance: nextById.get(String((row as { id: string }).id))?.currentBalance,
+  }) as never)
+  runner.tombstone('savings_accounts', diff.deletes, 'savings_accounts.tombstone')
+}
+
+/**
  * Diff prev → next and emit per-table writes in parallel.
  */
 export async function flushDiff(
@@ -266,7 +302,7 @@ export async function flushDiff(
   emitList(level1, 'debts', next.debts, prev.debts, debtToRow, userId)
   emitList(level2, 'debt_payments', next.debtPayments, prev.debtPayments, debtPaymentToRow, userId)
   emitList(level2, 'recurring_debt_payments', next.recurringDebtPayments, prev.recurringDebtPayments, recurringDebtPaymentToRow, userId)
-  emitList(level1, 'savings_accounts', next.savingsAccounts, prev.savingsAccounts, savingsAccountToRow, userId)
+  emitSavingsAccounts(level1, next.savingsAccounts, prev.savingsAccounts, userId)
   emitList(level2, 'savings_holdings', next.investmentHoldings, prev.investmentHoldings, investmentHoldingToRow, userId)
   emitList(level2, 'savings_transactions', next.savingsTransactions, prev.savingsTransactions, savingsTransactionToRow, userId)
   emitList(level2, 'recurring_savings_deposits', next.recurringSavingsDeposits, prev.recurringSavingsDeposits, recurringSavingsDepositToRow, userId)

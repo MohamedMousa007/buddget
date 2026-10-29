@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import type { PaceStatus, OverspentCategory } from '@/lib/utils/spendingPace'
@@ -117,7 +118,7 @@ export function SpendingPacePanel({
               <div key={c.category} className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5 text-[var(--color-brand-text-primary)]">
                   {c.icon && <span>{c.icon}</span>}
-                  {c.category}
+                  {categoryLabel(t, c.category)}
                 </span>
                 <span className="font-mono-numbers text-[var(--color-brand-primary-ink)]">
                   {formatCurrency(c.spent, currency)} / {formatCurrency(c.cap, currency)}

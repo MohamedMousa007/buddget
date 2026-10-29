@@ -56,9 +56,9 @@ describe('buildContents', () => {
   })
 
   it('wraps non-object tool results as an object', () => {
-    const parsed = parseTurnRequest({ ...valid, messages: [{ role: 'user', text: 'q' }, { role: 'tool', results: [{ name: 'get_summary', response: 5 }] }] }, TOOLS)
+    const parsed = parseTurnRequest({ ...valid, messages: [{ role: 'user', text: 'q' }, { role: 'model', parts: [{ functionCall: { name: 'get_summary', args: {} } }] }, { role: 'tool', results: [{ name: 'get_summary', response: 5 }] }] }, TOOLS)
     if (!parsed.ok) throw new Error('invalid')
-    expect(buildContents(parsed.value)[1].parts).toEqual([{ functionResponse: { name: 'get_summary', response: { result: 5 } } }])
+    expect(buildContents(parsed.value)[2].parts).toEqual([{ functionResponse: { name: 'get_summary', response: { result: 5 } } }])
   })
 })
 

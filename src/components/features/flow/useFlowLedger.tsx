@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { localDayKey } from '@/lib/utils/localDate'
 import { useMemo } from 'react'
@@ -22,7 +23,7 @@ import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
 import { formatCurrency, formatFixed2, formatSigned } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { usePendingSmsPreviews } from '@/hooks/usePendingSmsPreviews'
@@ -71,6 +72,7 @@ function inRange(iso: string, { start, end }: ResolvedRange): boolean {
  * TransactionRow. Also returns the day groups and the pieces the band and count line need.
  */
 export function useFlowLedger() {
+  const shortDate = useShortDate()
   const t = useT()
   const { locale } = useLocale()
   const toast = useActionToast()
@@ -180,7 +182,7 @@ export function useFlowLedger() {
             icon: <CategoryIcon category={e.category} className="h-5 w-5" />,
             iconBg: colors.bg,
             iconFg: colors.fg,
-            caption: e.category,
+            caption: categoryLabel(t, e.category),
             captionColor: 'var(--color-brand-text-secondary)',
             dimmed: dim,
             onClick: () => {
@@ -401,7 +403,7 @@ export function useFlowLedger() {
   }, [
     expenses, incomeEvents, incomeSources, paymentMethods, previews, matches, resolved, base, secondary, rates, t,
     setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome,
-    removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast,
+    removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast, shortDate,
   ])
 
   const amountOn = amountIsFiltered(filters.amtMin, filters.amtMax)
@@ -443,7 +445,7 @@ export function useFlowLedger() {
         rows: list.map((i) => i.row),
       }
     })
-  }, [items, locale, t])
+  }, [items, locale, t, shortDate])
 
   return { all, items, groups, resolved }
 }

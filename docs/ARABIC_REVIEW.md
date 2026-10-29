@@ -458,3 +458,18 @@ File: `src/lib/i18n/settingsHubCopy.ts` (ar block). Keys unchanged. Each row is 
 | a11y.previous | السابق |
 
 Reused (no new strings): common.close, cancel, delete, edit, loading, next, selectDate.
+
+## Final
+
+### Sign-in error (single neutral message, replaces errorBadPassword and removed errorUnconfirmed / errorNoAccountForEmail)
+| Key | Arabic |
+|---|---|
+| auth.errorBadPassword | البريد الإلكتروني أو كلمة المرور غير صحيحة، أو لم يتم تأكيد البريد بعد. تحقق من صندوق الوارد أو أعد تعيين كلمة المرور. |
+
+### Second-factor gate challenge (authSecurityCopy.ts, en+ar)
+| Key | Arabic |
+|---|---|
+| gateIntro | لحمايتك، أكّد أنك أنت بالرمز الذي أرسلناه إلى بريدك. بياناتك بأمان وستتم مزامنتها فور التأكيد. |
+| gateFailed | تعذّر تأكيد الرمز. بياناتك بأمان على هذا الجهاز. حاول مرة أخرى أو سجّل الخروج. |
+| gateNotNow | ليس الآن |
+| gateSignOut | تسجيل الخروج |

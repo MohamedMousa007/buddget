@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { localTodayISO } from '@/lib/utils/localDate'
 import type {
   Currency,
@@ -98,20 +97,49 @@ const AI_ACTIONS: AIAction[] = [
   'remember',
 ]
 
-const actionItemSchema = z.object({
-  action: z.string(),
-  data: z.record(z.string(), z.unknown()).default({}),
-})
+type ParsedAiRow = {
+  actions?: { action: string; data: Record<string, unknown> }[]
+  action?: string
+  data: Record<string, unknown>
+  confidence: number
+  clarificationNeeded: string | null
+  message: string
+  mood?: string
+}
 
-const aiResponseSchema = z.object({
-  actions: z.array(actionItemSchema).optional(),
-  action: z.string().optional(),
-  data: z.record(z.string(), z.unknown()).optional().default({}),
-  confidence: z.coerce.number().default(1),
-  clarificationNeeded: z.union([z.string(), z.null()]).nullable().optional().default(null),
-  message: z.string().default(''),
-  mood: z.string().optional(),
-})
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+/** Hand-written replacement for the former zod schema (keeps zod out of the client bundle). Returns null when the shape is invalid. */
+function validateAiRow(raw: unknown): ParsedAiRow | null {
+  if (!isRecord(raw)) return null
+  const { actions, action, data, confidence, clarificationNeeded, message, mood } = raw
+  let items: ParsedAiRow['actions']
+  if (actions !== undefined) {
+    if (!Array.isArray(actions)) return null
+    items = []
+    for (const it of actions) {
+      if (!isRecord(it) || typeof it.action !== 'string') return null
+      if (it.data !== undefined && !isRecord(it.data)) return null
+      items.push({ action: it.action, data: (it.data as Record<string, unknown> | undefined) ?? {} })
+    }
+  }
+  if (action !== undefined && typeof action !== 'string') return null
+  if (data !== undefined && !isRecord(data)) return null
+  const conf = confidence === undefined ? 1 : Number(confidence)
+  if (Number.isNaN(conf)) return null
+  if (clarificationNeeded !== undefined && clarificationNeeded !== null && typeof clarificationNeeded !== 'string') return null
+  if (message !== undefined && typeof message !== 'string') return null
+  if (mood !== undefined && typeof mood !== 'string') return null
+  return {
+    actions: items,
+    action,
+    data: data ?? {},
+    confidence: conf,
+    clarificationNeeded: (clarificationNeeded as string | null | undefined) ?? null,
+    message: message ?? '',
+    mood,
+  }
+}
 
 function normalizeAction(raw: string): AIAction {
   return (AI_ACTIONS as string[]).includes(raw) ? (raw as AIAction) : 'query'
@@ -135,8 +163,8 @@ export function parseModelJsonToAIResponse(text: string, rawFallbackMessage?: st
     }
   }
 
-  const zResult = aiResponseSchema.safeParse(parsedUnknown)
-  if (!zResult.success) {
+  const row = validateAiRow(parsedUnknown)
+  if (!row) {
     return {
       actions: [{ action: 'query', data: {} }],
       confidence: 1,
@@ -144,8 +172,6 @@ export function parseModelJsonToAIResponse(text: string, rawFallbackMessage?: st
       message: 'I could not parse the assistant JSON. Please rephrase your request.',
     }
   }
-
-  const row = zResult.data
 
   let actions: AIActionItem[]
   if (row.actions && row.actions.length > 0) {

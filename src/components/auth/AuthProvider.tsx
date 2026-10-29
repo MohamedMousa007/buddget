@@ -17,6 +17,7 @@ import { NativeBootstrap } from '@/lib/native/NativeBootstrap'
 import { isAppLockEnabled, unbindBiometricOnSignOut } from '@/lib/native/biometricAuth'
 import { isNativeFlowActive, shouldRelock } from '@/lib/native/appLockPolicy'
 import { attachPushListeners, unregisterPushToken } from '@/lib/native/pushNotifications'
+import { SecondFactorGate } from '@/components/auth/SecondFactorGate'
 import { AuthModal } from '@/components/features/auth-modal/AuthModal'
 import { LockScreen } from '@/components/auth/LockScreen'
 import { AuthContext, type AuthContextValue, type AuthMode, useAuth } from '@/components/auth/auth-context'
@@ -682,6 +683,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             <AnalyticsHeartbeat userId={user.id} />
             <DeviceTimeZoneSync />
             <NativeBootstrap session={session} />
+            <SecondFactorGate />
           </>
         ) : null}
         {showAuthModal ? (

@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { paydayCandidates } from '@/lib/income/paydayResolution'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import type { Currency } from '@/lib/store/types'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
@@ -42,6 +42,7 @@ export interface ReviewMatch {
  *  - add-failed rescue (nothing created yet)   → confirming creates it
  */
 export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: SmsReviewSheetProps) {
+  const shortDate = useShortDate()
   const t = useT()
   const { incomeSources, incomeEvents, paymentMethods, monthStartDay, rates } = useFinanceStore(
     useShallow((s) => ({

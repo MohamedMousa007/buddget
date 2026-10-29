@@ -18,7 +18,7 @@ import { SelectableCard } from '@/components/ui/SelectableCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { formatWhole } from '@/lib/utils/formatters'
 
 /** Loads debts only while the sheet is open, so the always-mounted sheet adds no startup queries. */
@@ -33,6 +33,7 @@ function HydrateDebtsWhileOpen() {
  * payment-method sheet (AddCreditCardSheet). Logic in `useAddDebtSheet`.
  */
 export function AddDebtSheet() {
+  const shortDate = useShortDate()
   const d = useAddDebtSheet()
   const t = useT()
   // Credit-card add & edit are handled by the payment-method sheet, not here.

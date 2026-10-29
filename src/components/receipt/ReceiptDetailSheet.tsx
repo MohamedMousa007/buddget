@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { formatFixed2 } from '@/lib/utils/formatters'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -24,7 +25,8 @@ export function ReceiptDetailSheet({
   open: boolean
   onClose: () => void
 }) {
-  const t = useT().receiptDetail
+  const tAll = useT()
+  const t = tAll.receiptDetail
   const { receipt, paymentMethods } = useFinanceStore(
     useShallow((s) => ({
       receipt: receiptId ? s.receipts.find((r) => r.id === receiptId) ?? null : null,
@@ -66,7 +68,7 @@ export function ReceiptDetailSheet({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{receipt.merchant || t.defaultMerchant}</p>
               <p className="mt-0.5 truncate text-xs text-[var(--color-brand-text-muted)]">
-                {receipt.receiptDate} · {receipt.category}
+                {receipt.receiptDate} · {categoryLabel(tAll, receipt.category)}
                 {(() => {
                   const pm = paymentMethods.find((m) => m.id === receipt.paymentMethodId)
                   return pm ? ` · ${pm.name}` : ''

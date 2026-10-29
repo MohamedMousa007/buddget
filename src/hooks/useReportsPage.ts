@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { useState, useMemo, useCallback } from 'react'
 import { isWithinInterval, parseISO } from 'date-fns'
 import { useShallow } from 'zustand/react/shallow'
@@ -100,9 +101,9 @@ export function useReportsPage() {
         (byCategory[e.category] || 0) + expenseAmountInBase(e, baseCurrency, exchangeRates)
     }
     return Object.entries(byCategory)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ name: categoryLabel(t, name), value }))
       .sort((a, b) => b.value - a.value)
-  }, [filteredExpenses, baseCurrency, exchangeRates])
+  }, [filteredExpenses, baseCurrency, exchangeRates, t])
 
   const monthlyData = useMemo(() => {
     return cycles.map((cycle) => {
@@ -121,8 +122,8 @@ export function useReportsPage() {
   }, [cycles, filteredExpenses, incomeForCycle, monthStartDay, baseCurrency, exchangeRates, savingsTransactions, gold, locale])
 
   const methodBreakdown = useMemo(
-    () => getPaymentMethodBreakdown(filteredExpenses, paymentMethods, baseCurrency, exchangeRates),
-    [filteredExpenses, paymentMethods, baseCurrency, exchangeRates],
+    () => getPaymentMethodBreakdown(filteredExpenses, paymentMethods, baseCurrency, exchangeRates, t.common.unknown),
+    [filteredExpenses, paymentMethods, baseCurrency, exchangeRates, t.common.unknown],
   )
 
   const largestExpense = useMemo(

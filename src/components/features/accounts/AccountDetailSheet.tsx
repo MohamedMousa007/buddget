@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { useMemo, useState } from 'react'
 import { Banknote, MoreVertical, Pencil, PiggyBank, RefreshCw, ShoppingBag, Star, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -124,7 +125,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             {activity.length === 0 ? (
               <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{t.noActivity}</p>
             ) : activity.map((e) => (
-              <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || e.category}
+              <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(tAll, e.category)}
                 subtitle={new Date(instantOf(e.occurredAt, e.date)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 amount={masked ? MASK : `−${splitMoney(e.amount, String(e.currency)).int}`} />
             ))}

@@ -15,7 +15,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { paydayCandidates } from '@/lib/income/paydayResolution'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { fillSlots } from '@/lib/ui/fillSlots'
 import { useT } from '@/lib/i18n'
 import type { IncomeEvent } from '@/lib/store/types'
@@ -46,6 +46,7 @@ interface Props {
  * `receivedDate` (§8.0), so a late payday still reads as late.
  */
 export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemplateId, zIndexClassName, from }: Props) {
+  const shortDate = useShortDate()
   const t = useT()
   const { incomeSources, incomeEvents, monthStartDay, rates } = useFinanceStore(
     useShallow((s) => ({

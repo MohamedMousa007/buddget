@@ -1,5 +1,6 @@
 'use client'
 
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -28,11 +29,11 @@ interface FixGapSheetProps {
   onResolved: () => void
 }
 
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-
 /** Unexplained money, shown as a timeline, resolved with one of four plain answers. */
 export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolved }: FixGapSheetProps) {
   const t = useT().accountsPage
+  const { formatPattern } = useLocalizedFormatters()
+  const shortDate = (iso: string) => formatPattern(new Date(iso), 'MMM d')
   const ledger = useLedgerInput()
   const addExpense = useFinanceStore((s) => s.addExpense)
   const [choice, setChoice] = useState<Choice>('cash')

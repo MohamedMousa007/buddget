@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, parseISO, subDays } from 'date-fns'
@@ -161,7 +162,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       icon={<CategoryIcon category={e.category} className="h-5 w-5" />}
                       iconBg={colors.bg}
                       iconFg={colors.fg}
-                      caption={e.category}
+                      caption={categoryLabel(t, e.category)}
                       captionColor={colors.fg}
                       dimmed={netZero}
                       onClick={() => openEdit(e.id)}

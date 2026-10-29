@@ -23,7 +23,7 @@ import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculation
 import { buildOccurrences, isRealizedOccurrence } from '@/lib/utils/incomeOccurrences'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatFlex, formatWhole } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { focusPayday, isLate, overdueDays } from '@/lib/income/paydaySummary'
 import { cadenceLine } from '@/lib/income/cadence'
 import { cn } from '@/lib/utils'
@@ -33,7 +33,7 @@ import type { Dictionary } from '@/lib/i18n'
 import type { IncomeEvent, IncomeSource, IncomeSourceType } from '@/lib/store/types'
 
 /** The one status a payday card carries for this month. */
-function cardStatus(source: IncomeSource, events: IncomeEvent[], month: string, monthStartDay: number, t: Dictionary): { variant: PaydayBadgeVariant; label: string } {
+function cardStatus(source: IncomeSource, events: IncomeEvent[], month: string, monthStartDay: number, t: Dictionary, shortDate: (iso: string) => string): { variant: PaydayBadgeVariant; label: string } {
   const today = new Date()
   const occ = buildOccurrences(source, events, month, monthStartDay, today)
   const focus = focusPayday(occ, today)
@@ -62,6 +62,7 @@ const STARTERS: { type: IncomeSourceType; icon: LucideIcon; name: keyof Dictiona
  * never lives here — it is a row in Flow.
  */
 export function PaydaysPage() {
+  const shortDate = useShortDate()
   const t = useT()
   const { locale } = useLocale()
   const { dataReady, incomeSources, incomeEvents, paymentMethods, monthStartDay, base, rates, updateIncomeSource } = useFinanceStore(
@@ -275,7 +276,7 @@ export function PaydaysPage() {
                   destination={pm ? `→ ${pm}` : t.paydays.paidIntoNotSet}
                   destinationMissing={!pm}
                   amount={formatFlex(s.amount)}
-                  status={cardStatus(s, incomeEvents, monthFilter, monthStartDay, t)}
+                  status={cardStatus(s, incomeEvents, monthFilter, monthStartDay, t, shortDate)}
                   onOpen={() => setOpenId(s.id)}
                   reorder={
                     reordering

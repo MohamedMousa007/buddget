@@ -12,7 +12,7 @@ import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { navigate } from '@/lib/navigation/navigate'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { formatWhole, formatFixed2, formatSigned } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { orderedCategories, categoryFilterIds } from '@/lib/budget/categoryOrder'
 import { sharedBudgetKey } from '@/lib/budget/budgetPlans'
@@ -44,6 +44,7 @@ const COLLAPSE_AT = 94
  * filters; payday questions only surface on In, and only when they would change a number.
  */
 export default function FlowPage() {
+  const shortDate = useShortDate()
   const t = useT()
   const dataReady = useFinanceStore((s) => s.dataReady)
   const hasHistory = useFinanceStore((s) => s.expenses.length + s.incomeEvents.length > 0)
@@ -231,7 +232,7 @@ export default function FlowPage() {
           primary={
             <div className="lg:-mx-4 lg:-mt-2.5">
       <FlowMonthRow
-        range={filters.rangePreset === 'month' ? undefined : periodText(resolved)}
+        range={filters.rangePreset === 'month' ? undefined : periodText(resolved, shortDate)}
         onBackToMonth={() => filters.setRangePreset('month')}
       />
 

@@ -74,11 +74,11 @@ export function useFlowBand({
   return useMemo(() => {
     const monthDate = new Date(`${monthFilter}-01T00:00:00`)
     const monthName = new Intl.DateTimeFormat(intlTag(locale), { month: 'long' }).format(monthDate)
-    const startLabel = shortDate(format(resolved.start, 'yyyy-MM-dd'))
-    const endLabel = shortDate(format(resolved.end, 'yyyy-MM-dd'))
+    const startLabel = shortDate(format(resolved.start, 'yyyy-MM-dd'), locale)
+    const endLabel = shortDate(format(resolved.end, 'yyyy-MM-dd'), locale)
     const cycle = getMonthRange(monthFilter, monthStartDay)
-    const cycleStartLabel = shortDate(format(cycle.start, 'yyyy-MM-dd'))
-    const cycleEndLabel = shortDate(format(cycle.end, 'yyyy-MM-dd'))
+    const cycleStartLabel = shortDate(format(cycle.start, 'yyyy-MM-dd'), locale)
+    const cycleEndLabel = shortDate(format(cycle.end, 'yyyy-MM-dd'), locale)
     // Received money on the cycle basis; a week or custom range shows that range's income rows, like the list below.
     const moneyIn =
       rangePreset === 'month'
@@ -199,7 +199,7 @@ export function useFlowBand({
             : [
                 { label: t.flow.statSpent, value: formatWhole(outSum) },
                 { label: t.flow.statTransactions, value: String(out.length) },
-                { label: t.flow.statPeriod, value: periodText(resolved) },
+                { label: t.flow.statPeriod, value: periodText(resolved, (iso) => shortDate(iso, locale)) },
               ],
         },
         sticky: { primary: formatFixed2(outSum), secondary: names, right: [t.flow.stickyResults(out.length)] },
@@ -265,7 +265,7 @@ export function useFlowBand({
 }
 
 /** "Sep 5–28" or "Sep 28 – Oct 3". */
-export function periodText({ start, end }: ResolvedRange): string {
+export function periodText({ start, end }: ResolvedRange, shortDate: (iso: string) => string): string {
   const s = shortDate(format(start, 'yyyy-MM-dd'))
   if (start.toDateString() === end.toDateString()) return s
   return start.getMonth() === end.getMonth() ? `${s}–${format(end, 'd')}` : `${s} – ${shortDate(format(end, 'yyyy-MM-dd'))}`

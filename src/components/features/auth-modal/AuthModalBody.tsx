@@ -86,7 +86,7 @@ export function AuthModalBody({ showBranding = true }: { showBranding?: boolean 
                 a.setStep('forgot')
                 a.setError('')
               }}
-              resendCode={a.resendCode}
+              resendCode={a.sendSignInCode}
               rememberMe={a.rememberMe}
               setRememberMe={a.setRememberMe}
             />

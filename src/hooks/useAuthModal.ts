@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
-import { mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
+import { isUnknownAccountOtpError, mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
@@ -573,6 +573,29 @@ export function useAuthModal() {
     startResendCooldown()
   }, [email, resendCooldown, startResendCooldown, supabase, t, verifyPurpose])
 
+  /** Bad-password recovery: email a sign-in code and open the code-entry step. Unknown emails look identical. */
+  const sendSignInCode = useCallback(async () => {
+    if (!supabase) {
+      setError(t.auth.errorFallback)
+      return
+    }
+    setError('')
+    setLoading(true)
+    const { error: e } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: { shouldCreateUser: false },
+    })
+    setLoading(false)
+    if (e && !isUnknownAccountOtpError(e)) {
+      setError(mapAuthError(e, 'resend', t))
+      return
+    }
+    setVerifyPurpose('2fa')
+    setOtp('')
+    setStep('verify')
+    startResendCooldown()
+  }, [email, startResendCooldown, supabase, t])
+
   const sendForgot = useCallback(async () => {
     if (!supabase) {
       setError(t.auth.errorFallback)
@@ -649,6 +672,7 @@ export function useAuthModal() {
     verifyOtpCode,
     submitNewPassword,
     resendCode,
+    sendSignInCode,
     sendForgot,
     // Animation key
     contentKey: step,

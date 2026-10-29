@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapOAuthCallbackReason, mapOAuthError } from '@/components/auth/authErrors'
+import { isUnknownAccountOtpError, mapAuthError, mapOAuthCallbackReason, mapOAuthError } from '@/components/auth/authErrors'
 import { en } from '@/lib/i18n/dictionaries/en'
 
 describe('mapOAuthCallbackReason', () => {
@@ -50,5 +50,23 @@ describe('mapOAuthError', () => {
 
   it('maps no identity token error to oauthFailed', () => {
     expect(mapOAuthError(new Error('No identity token returned'), null, en)).toBe(en.auth.oauthFailed)
+  })
+})
+
+describe('mapAuthError sign-in enumeration safety', () => {
+  it('returns one identical message for wrong password, no account and unconfirmed', () => {
+    const msgs = ['Invalid login credentials', 'invalid credentials', 'Email not confirmed'].map((m) => mapAuthError(new Error(m), 'signin', en))
+    expect(new Set(msgs)).toEqual(new Set([en.auth.errorBadPassword]))
+    expect(en.auth.errorBadPassword).toBe('Email or password is incorrect, or the email is not confirmed yet. Check your inbox or reset your password.')
+  })
+})
+
+describe('resend neutrality', () => {
+  it('unknown-account OTP errors are detected and never mapped to account wording', () => {
+    const err = new Error('Signups not allowed for otp')
+    expect(isUnknownAccountOtpError(err)).toBe(true)
+    expect(isUnknownAccountOtpError({ message: 'User not found' })).toBe(true)
+    expect(isUnknownAccountOtpError(new Error('Failed to fetch'))).toBe(false)
+    expect(mapAuthError(err, 'resend', en).toLowerCase()).not.toMatch(/no account|not found|exist/)
   })
 })

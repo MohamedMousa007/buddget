@@ -1,3 +1,4 @@
+import { noteSecondFactorResponse } from '@/lib/auth/secondFactorGate'
 import { configuredAdminHost, normalizeHost } from '@/lib/admin/host'
 
 /**
@@ -83,7 +84,7 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
 /** Authenticated fetch — Bearer JWT on Capacitor, cookies on web. */
 export async function apiFetchAuth(input: string, init?: RequestInit): Promise<Response> {
   const headers = await buildAuthHeaders(init?.headers)
-  return fetch(apiUrl(input), { ...init, headers })
+  return noteSecondFactorResponse(await fetch(apiUrl(input), { ...init, headers }))
 }
 
 /** Convenience wrapper around `fetch` that prepends the API base when present. */

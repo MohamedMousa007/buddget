@@ -2,6 +2,7 @@ import { createBrowserClient, serializeCookieHeader, type CookieOptions } from '
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { hostOnlyExpiryOptions, parseCookiesPreferLast, supabaseCookieDomain } from '@/lib/supabase/cookieDomain'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
+import { secondFactorAwareFetch } from '@/lib/auth/secondFactorGate'
 import { isNative } from '@/lib/native/isNative'
 import '@/lib/clientInfo'
 
@@ -30,18 +31,20 @@ export function createClient() {
           autoRefreshToken: true,
           detectSessionInUrl: false,
         },
+        global: { fetch: secondFactorAwareFetch },
       })
     }
     return _nativeClient
   }
 
   const domain = typeof window === 'undefined' ? undefined : supabaseCookieDomain(window.location.hostname)
-  if (!domain) return createBrowserClient(url, key)
+  if (!domain) return createBrowserClient(url, key, { global: { fetch: secondFactorAwareFetch } })
 
   // Shared across buddget.app and admin.buddget.app. Every write also expires the old host-only twin so it cannot
   // shadow the fresh cookie, and reads take the newest copy if both exist (see cookieDomain.ts).
   return createBrowserClient(url, key, {
     cookieOptions: { domain },
+    global: { fetch: secondFactorAwareFetch },
     cookies: {
       getAll: () => parseCookiesPreferLast(document.cookie),
       setAll: (cookies: { name: string; value: string; options: CookieOptions }[]) => {

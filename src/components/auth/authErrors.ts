@@ -100,11 +100,8 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
   }
 
   if (context === 'signin') {
-    if (m.includes('invalid login credentials') || m.includes('invalid credentials')) {
+    if (m.includes('invalid login credentials') || m.includes('invalid credentials') || m.includes('email not confirmed')) {
       return t.auth.errorBadPassword
-    }
-    if (m.includes('email not confirmed')) {
-      return t.auth.errorUnconfirmed
     }
   }
 
@@ -114,6 +111,12 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
 
   if (raw) console.warn('[auth] unmapped:', raw)
   return t.auth.errorFallback
+}
+
+/** signInWithOtp(shouldCreateUser:false) for an email with no account: must look exactly like a successful send. */
+export function isUnknownAccountOtpError(err: unknown): boolean {
+  const m = (err instanceof Error ? err.message : String((err as { message?: unknown })?.message ?? err)).toLowerCase()
+  return m.includes('signups not allowed') || m.includes('user not found')
 }
 
 export function isValidEmailFormat(email: string): boolean {

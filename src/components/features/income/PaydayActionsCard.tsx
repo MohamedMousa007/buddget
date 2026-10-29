@@ -16,7 +16,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { isRealizedOccurrence, missedAfterDaysFor, pendingStatus, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import { toISODate } from '@/lib/utils/paydaySchedule'
 import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
-import { shortDate } from '@/lib/utils/shortDate'
+import { useShortDate } from '@/hooks/useShortDate'
 import { overdueDays, isLate } from '@/lib/income/paydaySummary'
 import { fillSlots } from '@/lib/ui/fillSlots'
 import { useT } from '@/lib/i18n'
@@ -34,6 +34,7 @@ type ActionState = 'untouched' | 'received' | 'missedRecent' | 'missedPast' | 'n
  * only; a payday not in turn yet → a note to settle the earlier one first.
  */
 export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: IncomeOccurrence }) {
+  const shortDate = useShortDate()
   const t = useT()
   const toast = useActionToast()
   const confirm = useConfirm()
@@ -159,6 +160,7 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
  * credit keeps its own date (§8.0) — only the payday it fulfils is written.
  */
 function LinkCreditSheet({ open, onClose, source, occ }: { open: boolean; onClose: () => void; source: IncomeSource; occ: IncomeOccurrence }) {
+  const shortDate = useShortDate()
   const t = useT()
   const { incomeEvents, updateIncomeEvent } = useFinanceStore(
     useShallow((s) => ({ incomeEvents: s.incomeEvents, updateIncomeEvent: s.updateIncomeEvent })),

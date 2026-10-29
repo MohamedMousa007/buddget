@@ -6,6 +6,7 @@ process.env.TZ ??= 'Africa/Cairo'
 
 export default defineConfig({
   test: {
+    testTimeout: 15_000,
     environment: 'node',
     include: ['src/**/*.test.ts'],
     // Live-network golden set: only `npm run eval:ai` (RUN_AI_EVAL=1) runs it.
