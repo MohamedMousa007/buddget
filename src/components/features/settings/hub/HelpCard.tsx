@@ -19,6 +19,7 @@ import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { SupportBoardSheet } from './SupportBoardSheet'
 import { SupportInboxSheet } from './SupportInboxSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 const APP_VERSION = '1.0'
 
@@ -62,7 +63,7 @@ function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }
     <ModalShell open={open} onBackdropClick={close} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{copy.help.feedback}</h2>
+          <ModalTitle>{copy.help.feedback}</ModalTitle>
           <IconButton onClick={close} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
         </div>
         {done ? (
@@ -94,7 +95,7 @@ function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }
               maxLength={5000}
               className="resize-none rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-4 py-3"
             />
-            {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
+            {error ? <p role="alert" className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
             <Button type="submit" size="cta-block" disabled={loading || title.length < 3}>
               <Send className="size-4" />{loading ? t.settings.feedback.submitting : t.settings.feedback.submit}
             </Button>
@@ -112,7 +113,7 @@ function AboutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{h.about}</h2>
+          <ModalTitle>{h.about}</ModalTitle>
           <IconButton onClick={onClose} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
         </div>
         <div className="flex flex-col items-center gap-2 py-2">

@@ -6,6 +6,7 @@ import { AuthPasswordField } from '@/components/features/auth-modal/AuthPassword
 import { Button } from '@/components/ui/button'
 import { setTwoFactor } from '@/lib/auth/twoFactor'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 interface Props {
   open: boolean
@@ -54,7 +55,7 @@ export function TwoFactorOffSheet({ open, hasPassword, onClose, onTurnedOff }: P
   return (
     <ModalShell open={open} onBackdropClick={close} padContent>
       <form className="flex flex-col gap-3 pt-1" onSubmit={(e) => { e.preventDefault(); void confirm() }}>
-        <h2 className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.twoFaOffTitle}</h2>
+        <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.twoFaOffTitle}</ModalTitle>
         <p className="text-[14.5px] leading-snug text-[var(--color-brand-text-secondary)]">{c.twoFaOffBody}</p>
         {hasPassword ? (
           <AuthPasswordField

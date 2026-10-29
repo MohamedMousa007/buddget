@@ -10,7 +10,7 @@ const iconButtonVariants = cva(
   // because every size relies on it.
   'relative inline-flex shrink-0 items-center justify-center bg-clip-padding border border-transparent transition-colors outline-none select-none ' +
     'after:absolute after:left-1/2 after:top-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:min-h-[44px] after:min-w-[44px] after:content-[""] ' +
-    'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50 focus-visible:border-[var(--color-brand-focus)] ' +
+    'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)] focus-visible:border-[var(--color-brand-focus)] ' +
     'disabled:pointer-events-none disabled:opacity-50 ' +
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:relative [&_svg]:z-[1]",
   {

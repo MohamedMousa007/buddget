@@ -54,7 +54,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           includeGold={debt?.isGold}
         />
         {d.paymentPreview() ? <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">{d.paymentPreview()}</p> : null}
-        {d.paymentRateError ? <p className="mt-2 px-0.5 text-[12px] text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
+        {d.paymentRateError ? <p role="alert" className="mt-2 px-0.5 text-[12px] text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
       </div>
 
       {/* Date */}

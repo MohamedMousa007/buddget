@@ -9,16 +9,16 @@ import { isRealizedOccurrence, type IncomeOccurrence, type IncomeOccurrenceStatu
  * the status color always stays legible. `rgb` drives the alpha tints.
  */
 export const STATUS_STYLE: Record<IncomeOccurrenceStatus, { rgb: string; text: string; Icon: LucideIcon }> = {
-  received: { rgb: '53,212,111', text: '#8FF0B4', Icon: Check },
-  late: { rgb: '255,177,61', text: '#FFD68A', Icon: Clock },
-  partial: { rgb: '125,182,255', text: '#BFD4FF', Icon: Contrast },
-  missed: { rgb: '229,9,20', text: '#FF9B9B', Icon: AlertCircle },
-  awaiting: { rgb: '138,138,150', text: '#C7C7D2', Icon: Hourglass },
+  received: { rgb: '53,212,111', text: 'var(--color-status-ok-fg)', Icon: Check },
+  late: { rgb: '255,177,61', text: 'var(--color-status-warn-fg)', Icon: Clock },
+  partial: { rgb: '125,182,255', text: 'var(--cat-transport-fg)', Icon: Contrast },
+  missed: { rgb: '229,9,20', text: 'var(--color-status-danger-fg)', Icon: AlertCircle },
+  awaiting: { rgb: '138,138,150', text: 'var(--color-brand-text-secondary)', Icon: Hourglass },
 }
 
 const GREEN = '53,212,111'
 const RED = '229,9,20'
-const FAINT = 'rgba(255,255,255,.14)'
+const FAINT = 'var(--color-brand-border-strong)'
 
 interface Props {
   occurrences: IncomeOccurrence[]

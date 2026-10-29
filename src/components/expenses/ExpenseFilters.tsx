@@ -205,7 +205,7 @@ function AmountRangeControl({ currency }: { currency: string }) {
   const box = (label: string, value: number, onChange: (v: number) => void) => (
     <label className="flex min-w-0 flex-1 flex-col gap-1.5">
       <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{label}</span>
-      <span className="flex h-12 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3">
+      <span className="flex h-12 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 focus-within:border-[var(--color-brand-focus)] focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]">
         <AmountField
           bare
           className="min-w-0 flex-1 border-none bg-transparent text-start font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)] outline-none"

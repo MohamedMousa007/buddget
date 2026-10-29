@@ -67,7 +67,7 @@ export function UpdateGate() {
   if (!blocked) return null
   const copy = UPDATE_GATE_COPY[locale]
   return (
-    <div role="alertdialog" aria-modal="true" aria-labelledby="update-gate-title" className="fixed inset-0 z-[300] flex items-center justify-center bg-[var(--color-brand-bg)] px-6 py-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div data-inert-exempt role="alertdialog" aria-modal="true" aria-labelledby="update-gate-title" className="fixed inset-0 z-[var(--z-system)] flex items-center justify-center bg-[var(--color-brand-bg)] px-6 py-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       <Card padding="lg" className="w-full max-w-sm text-center">
         <span className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
           <Download className="size-6" aria-hidden />

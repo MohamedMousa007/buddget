@@ -7,6 +7,7 @@ import { CurrencyMark } from '@/components/ui/CurrencyMark'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { convertCurrency } from '@/lib/utils/currency'
 import type { Currency } from '@/lib/store/types'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 interface Props {
   from: Currency
@@ -40,7 +41,7 @@ export function BaseCurrencyChangeSheet({ from, to, rates, noRate, onConfirm, on
           </span>
         </div>
         <div className="text-center">
-          <h2 className="text-xl font-semibold text-[var(--color-brand-text-primary)]">{copy.sheetTitle(target)}</h2>
+          <ModalTitle className="text-xl font-semibold text-[var(--color-brand-text-primary)]">{copy.sheetTitle(target)}</ModalTitle>
           <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-brand-text-muted)]">{copy.body(target)}</p>
         </div>
         {noRate ? (

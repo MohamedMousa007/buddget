@@ -96,7 +96,7 @@ export function ActionToastProvider({ children }: { children: React.ReactNode })
     <ToastContext.Provider value={show}>
       {children}
       {toasts.length ? (
-        <div className="fixed top-[calc(env(safe-area-inset-top)+1rem)] inset-x-0 z-[200] flex flex-col items-center gap-2 pointer-events-none px-4">
+        <div data-toast-region className="fixed top-[calc(env(safe-area-inset-top)+1rem)] inset-x-0 z-[var(--z-toast)] flex flex-col items-center gap-2 pointer-events-none px-4">
           {toasts.map((item) => (
             <ToastCard key={item.id} item={item} onDone={done} />
           ))}

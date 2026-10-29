@@ -64,9 +64,9 @@ export default function NotificationsPage() {
               <Bell className="h-4 w-4" />
             </span>
             <div>
-              <h1 className="text-base lg:text-xl font-semibold text-[var(--color-brand-text-primary)]">
+              <h2 className="text-base lg:text-xl font-semibold text-[var(--color-brand-text-primary)]">
                 {t.notifications.title}
-              </h1>
+              </h2>
               {unreadCount > 0 ? (
                 <p className="text-xs text-[var(--color-brand-text-muted)]">{unreadCount}</p>
               ) : null}

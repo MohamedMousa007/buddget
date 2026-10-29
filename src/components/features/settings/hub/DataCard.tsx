@@ -12,6 +12,7 @@ import { useSettingsPage } from '@/hooks/useSettingsPage'
 import { NotCountedSheet, useNotCountedCount } from './NotCountedSheet'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 /**
  * Export and import. When the data lives in the account there is nothing to back up, so the only action is a CSV
@@ -52,7 +53,7 @@ export function DataCard() {
       <ModalShell open={sheet === 'export' && !synced} onBackdropClick={() => openSheet(null)} zIndexClassName="z-[110]" panelClassName="md:w-[420px]" padContent>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{d.export}</h2>
+            <ModalTitle>{d.export}</ModalTitle>
             <IconButton onClick={() => openSheet(null)} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
           </div>
           <div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">

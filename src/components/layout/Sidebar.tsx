@@ -19,6 +19,7 @@ import type { ComponentType } from 'react'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import { BuddgetWordmark } from '@/components/brand'
+import { HIT_AREA } from '@/lib/ui/hitArea'
 import { FlowTabIcon } from '@/components/icons/FlowTabIcon'
 import { activeNavHref } from '@/lib/navigation/isTabActive'
 
@@ -74,7 +75,7 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-[var(--sidebar-w)] bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 inset-y-0 z-40 overflow-hidden">
       <div className="p-4">
-        <Link href="/flow" className="flex items-center gap-2">
+        <Link href="/flow" aria-label={t.common.homeLink} className={cn('flex items-center gap-2 outline-none', HIT_AREA, 'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)] rounded-sm')}>
           <BuddgetWordmark height={24} />
         </Link>
       </div>

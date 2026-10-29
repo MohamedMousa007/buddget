@@ -171,7 +171,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
               </OptionChip>
             ))}
           </div>
-          {phase.kind === 'error' ? <p className="text-sm text-[var(--color-brand-red-text)]">{phase.message}</p> : null}
+          {phase.kind === 'error' ? <p role="alert" className="text-sm text-[var(--color-brand-red-text)]">{phase.message}</p> : null}
           <Button size="cta" className="w-full" disabled={!text.trim() || phase.kind === 'loading'} onClick={send}>
             {phase.kind === 'loading' ? c.thinking : c.send}
           </Button>

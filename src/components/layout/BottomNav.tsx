@@ -44,7 +44,7 @@ export function BottomNav() {
   if (pathname === '/start') return null
 
   return (
-    <nav className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] safe-area-bottom">
+    <nav aria-label={t.common.mainNavigation} className="lg:hidden fixed bottom-0 start-0 end-0 z-50 bg-[var(--color-brand-card)] border-t border-[var(--color-brand-border)] safe-area-bottom">
       <VoiceRecordOverlay
         state={voice.state}
         amplitude={voice.amplitude}
@@ -87,7 +87,7 @@ export function BottomNav() {
           const isActive = isTabActive(pathname, item.href)
           return (
             <div key={item.href} className="flex justify-center">
-              <Link href={item.href} className={cn(TAB, isActive ? TAB_ON : TAB_OFF)}>
+              <Link href={item.href} aria-current={isActive ? 'page' : undefined} className={cn(TAB, isActive ? TAB_ON : TAB_OFF)}>
                 <item.icon className={cn('size-6', isActive && 'text-[var(--color-brand-primary)]')} strokeWidth={1.75} />
                 <span className="text-[10.5px]">{t.nav[item.label as keyof Dictionary['nav']]}</span>
               </Link>

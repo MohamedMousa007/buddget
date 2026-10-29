@@ -90,3 +90,13 @@ describe('unselected surface', () => {
     }
   })
 })
+
+describe('Button dense sizes', () => {
+  it('keep their box but gain a 44px hit area', async () => {
+    const { buttonVariants } = await import('@/components/ui/buttonVariants')
+    for (const size of ['default', 'xs', 'sm', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg'] as const) {
+      expect(buttonVariants({ size }), size).toContain('after:min-h-[44px]')
+    }
+    expect(buttonVariants({ size: 'xs' })).toContain('h-6')
+  })
+})

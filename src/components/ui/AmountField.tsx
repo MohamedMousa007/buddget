@@ -43,7 +43,7 @@ interface AmountFieldProps {
 
 // Mirrors the shared <Input> base so call-site classNames layer on identically.
 const BASE =
-  'h-8 w-full min-w-0 flex items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base text-start md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55'
+  'h-8 w-full min-w-0 flex items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base text-start md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]'
 
 export function AmountField({
   value,
@@ -103,7 +103,7 @@ export function AmountField({
     return (
       <div
         dir={dir}
-        className={glass ? undefined : bare ? className : cn(BASE, 'focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]/55', className)}
+        className={glass ? undefined : bare ? className : cn(BASE, 'focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]', className)}
         style={
           glass
             ? {

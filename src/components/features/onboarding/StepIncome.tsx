@@ -127,6 +127,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
               </OptionChip>
             ))}
             <Input
+              size="brand"
               inputMode="numeric"
               maxLength={2}
               className="w-24"

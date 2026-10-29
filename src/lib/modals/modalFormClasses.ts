@@ -8,7 +8,7 @@ export const MODAL_LABEL_CLASS =
  * (now-neutral) `--ring` token, so don't add this on top of them. Red is reserved
  * for error/invalid states. */
 export const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55'
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]'
 
 /**
  * Primary text / number inputs inside modals. Focus is left to the underlying

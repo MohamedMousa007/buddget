@@ -283,6 +283,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       open={open}
       onBackdropClick={onClose}
       padContent
+      ariaLabel={t.common.receiptSheetLabel}
       panelClassName="!max-h-[min(86vh,720px)]"
     >
       {state === 'scanning' ? (

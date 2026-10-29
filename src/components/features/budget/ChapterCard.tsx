@@ -49,7 +49,7 @@ export function ChapterCard({ chapter, index, chapterCount = 3, mode, base, expa
           aria-controls={bodyId}
           aria-label={(expanded ? c.chapter.collapse : c.chapter.expand)(meta.name)}
           onClick={onToggle}
-          className="block w-full py-3.5 pe-3.5 ps-3 text-start outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55"
+          className="block w-full py-3.5 pe-3.5 ps-3 text-start outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]"
           style={{ background: `color-mix(in srgb, ${tint} 8%, var(--color-brand-card))` }}
         >
           <span className="flex items-center gap-3">

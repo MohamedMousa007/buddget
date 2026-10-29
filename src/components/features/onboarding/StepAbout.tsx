@@ -58,7 +58,7 @@ export function StepAbout({ chrome }: { chrome: StepChrome }) {
       <div className="mt-6 flex flex-col gap-[18px]">
         <label className="block">
           <span className="mb-1.5 block text-xs font-semibold text-[var(--color-brand-text-secondary)]">{c.about.nameLabel}</span>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={c.about.namePlaceholder} autoComplete="given-name" maxLength={40} />
+          <Input size="brand" value={name} onChange={(e) => setName(e.target.value)} placeholder={c.about.namePlaceholder} autoComplete="given-name" maxLength={40} />
         </label>
 
         <div>

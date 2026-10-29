@@ -70,7 +70,7 @@ const cardVariants = cva(
       },
       /** Press affordance. Use when the card itself is the tap target. */
       interactive: {
-        true: "cursor-pointer text-start outline-none hover:border-[var(--color-brand-border-strong)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55 active:translate-y-px",
+        true: "cursor-pointer text-start outline-none hover:border-[var(--color-brand-border-strong)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)] active:translate-y-px",
         false: "",
       },
     },

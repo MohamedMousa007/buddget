@@ -536,7 +536,7 @@ export function NotFoundView({ locale }: P) {
     <Section dark pad="lg" className="min-h-[70vh]">
       <Container className="flex flex-col items-center gap-6 text-center">
         <Eyebrow>404</Eyebrow>
-        <H2 className="max-w-[18ch]">{n.h}</H2>
+        <H2 as="h1" className="max-w-[18ch]">{n.h}</H2>
         <Lede className="mx-auto">{n.p}</Lede>
         <div className="flex flex-wrap justify-center gap-3"><ButtonLink href={pathFor(locale, '')}>{n.home}</ButtonLink><ButtonLink href={pathFor(locale, 'support')} variant="outline">{n.help}</ButtonLink></div>
       </Container>

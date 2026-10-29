@@ -6,7 +6,7 @@ export interface ToastItem {
 }
 
 export const MAX_TOASTS = 3
-export const TOAST_MS = 3000
+export const TOAST_MS = 4000
 export const TOAST_UNDO_MS = 8000
 
 export function toastDuration(hasUndo: boolean): number {

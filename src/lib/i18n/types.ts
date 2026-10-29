@@ -121,6 +121,11 @@ export interface Dictionary {
     close: string
     /** Accessible name for a card's ⋮ action-menu trigger. */
     moreActions: string
+    /** Accessible names: bottom tab bar landmark, header logo link. */
+    mainNavigation: string
+    homeLink: string
+    voiceSheetLabel: string
+    receiptSheetLabel: string
     selectDate: string
     /** Walkthrough / tutorial primary action */
     next: string

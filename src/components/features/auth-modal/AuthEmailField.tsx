@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, type KeyboardEvent } from 'react'
+import { forwardRef, useId, type KeyboardEvent } from 'react'
 import { ArrowRight, Loader2, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -45,6 +45,7 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
     ref,
   ) {
     const t = useT()
+    const inputId = useId()
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
@@ -55,13 +56,14 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
 
     return (
       <div>
-        <label className="text-xs text-[var(--color-brand-text-muted)] mb-0.5 block">
+        <label htmlFor={inputId} className="text-xs text-[var(--color-brand-text-muted)] mb-0.5 block">
           {t.auth.labelEmail}
         </label>
         <div className="relative">
           <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
             ref={ref}
+            id={inputId}
             type="email"
             name="email"
             dir="ltr"
@@ -77,6 +79,7 @@ export const AuthEmailField = forwardRef<HTMLInputElement, AuthEmailFieldProps>(
             style={inputStyle}
             placeholder={t.auth.placeholderEmail}
             aria-label={t.auth.labelEmail}
+            aria-invalid={tone === 'error' || undefined}
           />
           {showAdvanceButton ? (
             <IconButton

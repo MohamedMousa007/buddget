@@ -1,5 +1,6 @@
 'use client'
 
+import { ModalTitle } from '@/components/modals/ModalTitle'
 import { useMemo, useState } from 'react'
 import { X, Search, Check, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -68,9 +69,9 @@ export function ProviderPickerSheet({
     <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={zIndexClassName} panelClassName="h-[64dvh] md:w-[420px]">
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
         <div className="flex shrink-0 items-center justify-between pb-3 pt-1">
-          <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
+          <ModalTitle className="font-semibold text-[var(--color-brand-text-primary)]">
             {t.paymentMethods.chooseProvider}
-          </span>
+          </ModalTitle>
           <IconButton aria-label={t.common.close} onClick={onClose} variant="tinted" size="sm" shape="round">
             <X />
           </IconButton>

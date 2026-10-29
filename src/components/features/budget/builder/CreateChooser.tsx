@@ -66,7 +66,7 @@ export function CreateChooser(p: CreateChooserProps) {
             <BuddgyIcon mood="curious" size={52} />
             <div className="flex min-w-0 flex-col gap-1 pb-1">
               <span className={microClassName}>{c.buddgyAsks}</span>
-              <h1 className="text-xl font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.title}</h1>
+              <h2 className="text-xl font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.title}</h2>
             </div>
           </div>
           <p className="text-[13.5px] text-[var(--color-brand-text-secondary)]">{c.sub}</p>

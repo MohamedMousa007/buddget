@@ -102,7 +102,11 @@ export function AmountReceivedSheet() {
   const short = Math.max(0, Math.round(expected - (valid ? amt : 0)))
   // Input colour is meaningful: white while typing → green when it meets/exceeds
   // expected → blue (partial) when it is less (handoff §4).
-  const inputColorDisplay = !valid ? '#FFFFFF' : meetsExpected ? '#35D46F' : '#7DB6FF'
+  const inputColorDisplay = !valid
+    ? 'var(--color-brand-text-primary)'
+    : meetsExpected
+      ? 'var(--color-status-ok-fg)'
+      : 'var(--cat-transport-fg)'
 
   // Re-marking a settled payday with the same amount is a no-op — keep the CTA dimmed.
   // But a MISSED payday is not settled: receiving it flips status missed → confirmed even
@@ -179,8 +183,8 @@ export function AmountReceivedSheet() {
         <Card
           variant="elevated"
           padding="none"
-          className="mt-1.5 flex items-center gap-2 px-4"
-          style={{ boxShadow: `inset 0 0 0 1px ${valid ? inputColorDisplay + '55' : 'transparent'}` }}
+          className="mt-1.5 flex items-center gap-2 px-4 focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]"
+          style={{ boxShadow: `inset 0 0 0 1px ${valid ? `color-mix(in srgb, ${inputColorDisplay} 33%, transparent)` : 'transparent'}` }}
         >
           <span className="font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">{currency}</span>
           <input
@@ -203,7 +207,7 @@ export function AmountReceivedSheet() {
             </Button>
           ) : null}
         </Card>
-        <p className="mt-2 font-mono-numbers text-xs" style={{ color: meetsExpected ? 'var(--color-brand-text-muted)' : '#FFB13D' }}>
+        <p className="mt-2 font-mono-numbers text-xs" style={{ color: meetsExpected ? 'var(--color-brand-text-muted)' : 'var(--color-status-warn-fg)' }}>
           {!valid || meetsExpected ? t.income.matchesExpected : t.income.shortOfExpected(`${fmtNum(short)} ${currency}`, `${fmtNum(expected)} ${currency}`)}
         </p>
 

@@ -86,7 +86,7 @@ export function SegmentedControl<T extends string>({
               // on the 44px tap minimum without each segment looking oversized.
               'inline-flex min-w-0 items-center justify-center gap-1.5 px-4 text-[13.5px] font-semibold transition-colors outline-none',
               size === 'field' ? 'h-full rounded-[11px]' : 'h-9 rounded-[9px]',
-              'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/55',
+              'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
               fill && 'flex-1',
               selected
                 ? 'bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)] shadow-[var(--shadow-sm)]'

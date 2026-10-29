@@ -92,7 +92,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
       </div>
       {step > 1 ? (
         <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">
-          {form.saveError ? <p className="text-xs text-[var(--color-brand-red-text)]">{t.saveError}</p> : null}
+          {form.saveError ? <p role="alert" className="text-xs text-[var(--color-brand-red-text)]">{t.saveError}</p> : null}
           {summary ? <p className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">{summary}</p> : null}
           <Button size="cta-block" disabled={step === 2 && !form.canNext2} onClick={next}>
             {nextLabel}
@@ -106,10 +106,12 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
 
 /** Create-goal flow: describe or pick, make it real (date first), fund it. A draft survives closing. */
 export function NewGoalFlow({ open, seed, onClose }: { open: boolean; seed: FlowSeed | null; onClose: () => void }) {
+  const t = useT()
   if (!open) return null
   return (
     <ModalShell
       open={open}
+      ariaLabel={t.goals.addGoal}
       onBackdropClick={onClose}
       scrollChild
       panelClassName="h-[calc(100dvh-40px)] max-h-[calc(100dvh-40px)] md:h-[min(46rem,calc(100dvh-4rem))] md:max-h-[calc(100dvh-4rem)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"

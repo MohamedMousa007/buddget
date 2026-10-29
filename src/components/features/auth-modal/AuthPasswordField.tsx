@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, useState, type KeyboardEvent } from 'react'
+import { forwardRef, useId, useState, type KeyboardEvent } from 'react'
 import { Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -47,6 +47,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldP
   ) {
     const t = useT()
     const [show, setShow] = useState(false)
+    const inputId = useId()
 
     const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
@@ -57,13 +58,15 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldP
 
     return (
       <div>
-        <label className="text-xs text-[var(--color-brand-text-muted)] mb-0.5 block">
+        <label htmlFor={inputId} className="text-xs text-[var(--color-brand-text-muted)] mb-0.5 block">
           {label}
         </label>
         <div className="relative">
           <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
             ref={ref}
+            id={inputId}
+            aria-invalid={tone === 'error' || undefined}
             type={show ? 'text' : 'password'}
             dir="ltr"
             name={name}

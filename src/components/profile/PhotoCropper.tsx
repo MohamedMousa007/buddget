@@ -63,7 +63,7 @@ export function PhotoCropper({ src, onChange }: PhotoCropperProps) {
         role="group"
         aria-label={t.profile.avatarFrameTitle}
         tabIndex={0}
-        className="relative touch-none select-none overflow-hidden rounded-2xl bg-[var(--color-brand-sunken)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50"
+        className="relative touch-none select-none overflow-hidden rounded-2xl bg-[var(--color-brand-sunken)] outline-none focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]"
         style={{ width: FRAME_PX, height: FRAME_PX }}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId)

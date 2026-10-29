@@ -60,7 +60,7 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact, her
           type="button"
           className={cn(
             'inline-flex items-center gap-2 cursor-pointer outline-none',
-            'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/50',
+            'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
             className,
           )}
         >
@@ -78,7 +78,7 @@ export function MonthYearPicker({ monthFilter, onChange, className, compact, her
           className={cn(
             'inline-flex items-center gap-1.5 cursor-pointer',
             'text-[var(--color-brand-text-primary)] hover:text-[var(--color-brand-text-secondary)] transition-colors duration-150',
-            'outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]/50',
+            'outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
             className
           )}
         >

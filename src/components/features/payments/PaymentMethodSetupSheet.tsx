@@ -1,5 +1,6 @@
 'use client'
 
+import { ModalTitle } from '@/components/modals/ModalTitle'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -261,9 +262,9 @@ export function PaymentMethodSetupSheet({
                 <ArrowLeft />
               </IconButton>
             ) : null}
-            <span className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">
+            <ModalTitle className="min-w-0 flex-1 font-semibold text-[var(--color-brand-text-primary)]">
               {editing ? t.paymentMethods.editTitle : (titleOverride ?? t.paymentMethods.addTitle)}
-            </span>
+            </ModalTitle>
             <IconButton
               aria-label={t.common.close} onClick={onClose}
               variant="tinted" size="sm" shape="round"
@@ -524,6 +525,7 @@ function FloatingCardPreview({
       {open && (
         <motion.div
           key="pm-float-card"
+          data-inert-exempt
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.97 }}

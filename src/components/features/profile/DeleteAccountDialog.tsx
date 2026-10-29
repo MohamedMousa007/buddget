@@ -108,7 +108,7 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
             ) : null}
 
             {error ? (
-              <p className="mt-3 text-xs text-[var(--color-brand-red)]">{error}</p>
+              <p role="alert" className="mt-3 text-xs text-[var(--color-brand-red)]">{error}</p>
             ) : null}
 
             <div className="mt-5 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">

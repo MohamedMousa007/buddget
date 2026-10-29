@@ -14,6 +14,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import type { Currency } from '@/lib/store/types'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 type Tab = 'main' | 'second'
 
@@ -56,7 +57,7 @@ export function CurrencyDualSheet({ open, onClose, base, second, rates, onPickMa
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="flex shrink-0 items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{c.title}</h2>
+          <ModalTitle>{c.title}</ModalTitle>
           <IconButton onClick={onClose} aria-label={c.close} variant="tinted" size="sm" shape="round">
             <X className="h-full w-full" />
           </IconButton>

@@ -56,7 +56,7 @@ export function LeadForm({ kind, locale, labels, inline }: Props) {
       {kind === 'contact' ? (
         <label className="grid gap-1.5 text-[15px]">
           <span>{labels.message}</span>
-          <textarea name="message" required rows={5} maxLength={4000} className="rounded-xl border border-brand-border bg-brand-elevated p-3.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring/55" />
+          <textarea name="message" required rows={5} maxLength={4000} className="rounded-xl border border-brand-border bg-brand-elevated p-3.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         </label>
       ) : null}
       <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />

@@ -10,6 +10,7 @@ import { Progress, ProgressIndicator, ProgressTrack } from '@/components/ui/prog
 import { useLocale, useT } from '@/lib/i18n'
 import { PAY_CYCLE_MAX_DAY, PAY_CYCLE_MIN_DAY, currentCycle } from '@/lib/settings/payCycle'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 /** Where the budget month starts. It belongs with paydays: it is the day the salary lands. */
 export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -27,7 +28,7 @@ export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () =>
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[440px]" padContent>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{c.title}</h2>
+          <ModalTitle>{c.title}</ModalTitle>
           <IconButton onClick={onClose} aria-label={c.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
         </div>
         <div className="flex items-center justify-between gap-3">

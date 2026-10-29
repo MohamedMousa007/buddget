@@ -7,6 +7,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 interface CurrencySheetProps {
   open: boolean
@@ -32,7 +33,7 @@ export function CurrencySheet({ open, value, onSelect, onClose, base, includeGol
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName ?? 'z-[110]'} panelClassName="md:w-[440px]" padContent>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         <div className="flex shrink-0 items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{c.title}</h2>
+          <ModalTitle>{c.title}</ModalTitle>
           <IconButton onClick={onClose} aria-label={c.close} variant="tinted" size="sm" shape="round">
             <X className="h-full w-full" />
           </IconButton>

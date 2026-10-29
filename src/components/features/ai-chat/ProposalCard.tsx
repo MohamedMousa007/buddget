@@ -105,7 +105,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo }: Pr
               <FieldControl field={f} value={valueOf(f)} onChange={(v) => setDraft((d) => ({ ...d, [f.key]: v }))} />
             </div>
           ))}
-          {state.message ? <p className="text-xs text-[var(--color-brand-red)]">{state.message}</p> : null}
+          {state.message ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{state.message}</p> : null}
           <div className="flex gap-2">
             <Button
               size="touch"
@@ -127,7 +127,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo }: Pr
         <div className="space-y-3 p-3">
           <FactsTable rows={preview.rows.map((r) => ({ label: r.label, value: r.value, sub: r.before ? <s className="opacity-70">{r.before}</s> : undefined }))} />
           {preview.effect ? <p className="px-1 text-xs text-[var(--color-brand-amber)]">{preview.effect}</p> : null}
-          {state.message ? <p className="px-1 text-xs text-[var(--color-brand-red)]">{state.message}</p> : null}
+          {state.message ? <p role="alert" className="px-1 text-xs text-[var(--color-brand-red)]">{state.message}</p> : null}
           <div className="flex gap-2">
             <Button variant={danger ? 'destructive-solid' : 'default'} size="touch" className="flex-1" onClick={onApply}>
               {copy.approveRisk(proposal.risk, preview.tone)}

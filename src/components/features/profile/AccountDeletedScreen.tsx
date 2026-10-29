@@ -26,8 +26,8 @@ export function AccountDeletedScreen() {
       className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[var(--color-brand-bg)] px-6 text-center"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/15 mb-6">
-        <CheckCircle2 className="h-8 w-8 text-green-500" aria-hidden />
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-brand-green-soft)] mb-6">
+        <CheckCircle2 className="h-8 w-8 text-[var(--color-status-ok-fg)]" aria-hidden />
       </div>
       <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)] mb-3 leading-snug max-w-xs">
         {t.profile.deleteAccountSuccessTitle}

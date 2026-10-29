@@ -145,7 +145,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className={cn('mt-1 h-10', inputClass)}
+              className={cn('mt-1 h-12', inputClass)}
             />
           </div>
 
@@ -157,7 +157,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
               currency={currency}
               label={t.savings.sheetUpdateTitle}
               aria-label={t.savings.sheetUpdateTitle}
-              className={cn('mt-1 h-10', inputClass)}
+              className={cn('mt-1 h-12', inputClass)}
             />
           </div>
 
@@ -181,7 +181,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               className={cn(
-                'mt-1 w-full min-h-[4.5rem] resize-y px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-focus)]/30',
+                'mt-1 w-full min-h-[4.5rem] resize-y px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-brand-focus)]',
                 inputClass
               )}
             />

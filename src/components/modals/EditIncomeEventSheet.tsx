@@ -23,6 +23,7 @@ import { IncomeSourceTypePicker } from '@/components/features/income/IncomeSourc
 import { IncomeTemplatePicker } from '@/components/features/income/IncomeTemplatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { Badge } from '@/components/ui/badge'
 import { FactsTable, type Fact } from '@/components/ui/FactsTable'
@@ -49,7 +50,14 @@ const DATE_FIELD_CLASS = 'mt-1.5 h-12 rounded-xl'
  */
 function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
   const t = useT()
-  const { deleteIncomeEvent, debts } = useFinanceStore(useShallow((s) => ({ deleteIncomeEvent: s.deleteIncomeEvent, debts: s.debts })))
+  const toast = useActionToast()
+  const { deleteIncomeEvent, restoreIncomeEvent, debts } = useFinanceStore(
+    useShallow((s) => ({ deleteIncomeEvent: s.deleteIncomeEvent, restoreIncomeEvent: s.restoreIncomeEvent, debts: s.debts })),
+  )
+  const deleteWithUndo = (deleteLinkedDebt?: boolean) => {
+    deleteIncomeEvent(event.id, deleteLinkedDebt)
+    if (!deleteLinkedDebt) toast(t.moneyFlows.incomeDeleted, { undo: () => restoreIncomeEvent(event), undoLabel: t.common.undo })
+  }
   const linkedDebt = event.linkedDebtId ? debts.find((d) => d.id === event.linkedDebtId) : undefined
   const [debtChoiceOpen, setDebtChoiceOpen] = useState(false)
   const confirm = useConfirm()
@@ -59,11 +67,11 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
       return
     }
     if (!(await confirm({ title: t.income.confirmDeleteEntry, destructive: true }))) return
-    deleteIncomeEvent(event.id)
+    deleteWithUndo()
     onDone()
   }
   const finish = (deleteLinkedDebt: boolean) => {
-    deleteIncomeEvent(event.id, deleteLinkedDebt)
+    deleteWithUndo(deleteLinkedDebt)
     setDebtChoiceOpen(false)
     onDone()
   }

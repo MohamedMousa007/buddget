@@ -167,7 +167,7 @@ export function PaymentCardCarousel({
                         <MoreVertical />
                       </IconButton>
                     ) : isSelected ? (
-                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#38D96B] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
+                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green)] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
                         <Check className="h-[14px] w-[14px]" strokeWidth={3} />
                       </span>
                     ) : null}
@@ -211,7 +211,7 @@ export function PaymentCardCarousel({
             className="h-1.5 rounded-full transition-all"
             style={{
               width: i === safeActive ? 18 : 6,
-              background: i === safeActive ? '#12B0A0' : 'var(--color-brand-border)',
+              background: i === safeActive ? 'var(--color-brand-primary-bright)' : 'var(--color-brand-border)',
             }}
           />
         ))}

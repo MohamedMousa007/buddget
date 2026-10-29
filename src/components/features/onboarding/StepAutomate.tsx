@@ -17,6 +17,7 @@ import type { StepChrome } from './chrome'
 import { JourneyFrame } from './JourneyFrame'
 import { useOnboarding } from './useOnboarding'
 import { useOnboardingCopy } from './useOnboardingCopy'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 type Sheet = 'android' | 'ios' | null
 
@@ -119,7 +120,7 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
 
       <ModalShell open={sheet === 'android'} onBackdropClick={() => setSheet(null)} padContent>
         <div className="flex flex-col gap-3 pt-1">
-          <h2 className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.android.title}</h2>
+          <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.android.title}</ModalTitle>
           <ul className="flex flex-col gap-3">
             {c.android.bullets.map((b) => (
               <li key={b} className="flex gap-3 text-[14.5px] text-[var(--color-brand-text-secondary)]">
@@ -136,7 +137,7 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
 
       <ModalShell open={sheet === 'ios'} onBackdropClick={() => setSheet(null)} padContent>
         <div className="flex flex-col gap-3 pt-1">
-          <h2 className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.ios.title}</h2>
+          <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.ios.title}</ModalTitle>
           <p className="text-[14.5px] leading-snug text-[var(--color-brand-text-secondary)]">{c.ios.lead}</p>
           <div className="flex items-start gap-1.5 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
             {[MessageSquare, Zap, Check].map((Icon, i) => (

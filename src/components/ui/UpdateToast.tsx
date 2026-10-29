@@ -16,7 +16,8 @@ export function UpdateToast() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center px-4 pb-4"
+      data-inert-exempt
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-toast)] flex justify-center px-4 pb-4"
       style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       aria-hidden={!updateAvailable}
     >
@@ -42,7 +43,7 @@ export function UpdateToast() {
                 <X className="h-4 w-4" aria-hidden />
               </IconButton>
               <div className="flex min-w-0 items-start gap-3 pe-8 sm:pe-0">
-                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 shadow-inner shadow-blue-500/10">
+                <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)] shadow-inner">
                   <Sparkles className="h-4 w-4" aria-hidden />
                 </span>
                 <p className="text-sm leading-snug text-[var(--color-brand-text-secondary)]">

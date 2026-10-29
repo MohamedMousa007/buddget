@@ -152,10 +152,10 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                 <div key={r.id} className="flex items-center gap-3 p-3" style={{ borderTop: i ? '1px solid var(--color-brand-border)' : undefined }}>
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint(r.color, 14), color: r.color }}>{r.icon}</span>
                   <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
-                  {/* Deliberately compact (36px) so the row rhythm holds — not the app's 48px field. */}
+                  {/* Standard 48px field. */}
                   <input {...lineInput(r.id, r.value)}
                     className={cn(
-                      'h-9 w-[84px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)] outline-none',
+                      'h-12 w-[84px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)] outline-none focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
                       overrides[r.id] != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
                     )} />
                 </div>
@@ -173,7 +173,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
                 <span className="mr-1 text-sm text-[var(--color-brand-red)]">−</span>
                 <input {...lineInput('debts', debts)}
                   className={cn(
-                    'h-9 w-[76px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-red)] outline-none',
+                    'h-12 w-[76px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-red)] outline-none focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
                     overrides.debts != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
                   )} />
               </div>

@@ -65,7 +65,7 @@ export function AccentTile({
       aria-checked={selected}
       className={cn(
         'relative flex flex-col items-center justify-center gap-1.5 rounded-2xl transition-all outline-none',
-        'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50',
+        'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]',
         'disabled:cursor-not-allowed disabled:opacity-60',
         className
       )}

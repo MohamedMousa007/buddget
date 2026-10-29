@@ -86,7 +86,7 @@ export function RecurringIncomeCard({
       style={heroCardStyle(colors.fg)}
     >
       {showTick ? (
-        <span className="absolute end-3 top-3 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#38D96B] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
+        <span className="absolute end-3 top-3 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green)] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
           <Check className="h-[14px] w-[14px]" strokeWidth={3} />
         </span>
       ) : null}
@@ -134,7 +134,7 @@ export function RecurringIncomeCard({
       <div className="mt-2.5">
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-[#35D46F] transition-[width] duration-300"
+            className="h-full rounded-full bg-[var(--color-brand-green)] transition-[width] duration-300"
             style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
           />
         </div>

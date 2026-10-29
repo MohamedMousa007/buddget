@@ -381,9 +381,9 @@ function QuestionStep({ question: q, initial, confirmN, base, saved, onAnswer, o
         <BuddgyIcon mood="curious" size={44} />
         <p className={`${microClassName} pb-1`}>{ui.buddgyAsks}</p>
       </div>
-      <h1 className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
+      <h2 className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
         {copy.label.replace('{n}', confirmN)}
-      </h1>
+      </h2>
       <p className="text-[13.5px] text-[var(--color-brand-text-secondary)]">
         <span className="font-semibold">{ui.why}: </span>
         {copy.why}
@@ -432,7 +432,7 @@ function BuildingScreen({ error, onRetry, onClose }: { error: boolean; onRetry: 
   return (
     <PageBody className="flex min-h-[60vh] flex-col items-center justify-center gap-5 text-center">
       <BuddgyIcon mood="thinking" size={88} />
-      <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{ui.title}</h1>
+      <h2 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{ui.title}</h2>
       <p className="text-sm text-[var(--color-brand-text-secondary)]" aria-live="polite">
         {error ? ui.error : ui.steps[step]}
       </p>

@@ -21,6 +21,7 @@ interface VoiceRecordSheetProps {
 }
 
 export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
+  const t = useT()
   const {
     state, response, draftActions, itemErrors, transcript, error, amplitude, animTime,
     start, stop, cancel, updateDraftField, removeDraftAction, confirm, reset, requestPermission, openInChat,
@@ -46,6 +47,7 @@ export function VoiceRecordSheet({ open, onClose }: VoiceRecordSheetProps) {
       open={open}
       onBackdropClick={() => void handleCancel()}
       padContent
+      ariaLabel={t.common.voiceSheetLabel}
       panelClassName="!max-h-[min(70vh,540px)]"
     >
       <div className="flex flex-col items-center gap-4 pb-2">

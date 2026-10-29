@@ -48,7 +48,7 @@ export function SettingsSubPageShell({ title, children, backHref = '/settings' }
           <Button variant="ghost" size="touch" onClick={() => navigate(backHref)} aria-label={t.common.back} className="-ms-2 px-2">
             <ChevronLeft className="size-5" />
           </Button>
-          <h1 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
+          <h2 className="text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
         </div>
         {children}
       </PageBody>

@@ -283,7 +283,7 @@ export default function ResetPasswordConfirmPage() {
         </div>
 
         {fromSettings ? <p className="text-xs text-[var(--color-brand-text-muted)]">{sec.otherDevicesNote}</p> : null}
-        {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
+        {error ? <p role="alert" className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
 
         <AuthPrimaryButton type="submit" disabled={loading}>
           {loading ? (

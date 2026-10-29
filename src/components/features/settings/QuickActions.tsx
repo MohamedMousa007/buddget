@@ -18,6 +18,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { cn } from '@/lib/utils'
 import type { Currency } from '@/lib/store/types'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 interface TileProps {
   /** Glyph inside the button: an icon, or a short mark such as the language's initials. */
@@ -139,7 +140,7 @@ export function QuickActions({ variant, onSearch }: { variant: 'hub' | 'menu'; o
       <ModalShell open={converting} onBackdropClick={() => setConverting(false)} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{copy.convertTitle}</h2>
+            <ModalTitle>{copy.convertTitle}</ModalTitle>
             <IconButton onClick={() => setConverting(false)} aria-label={copy.close} variant="tinted" size="sm" shape="round">
               <X className="h-full w-full" />
             </IconButton>

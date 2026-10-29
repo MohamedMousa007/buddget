@@ -167,7 +167,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
       aria-modal="true"
       aria-label={ar ? 'اختر التاريخ' : 'Select date'}
       tabIndex={-1}
-      className="fixed inset-0 z-[130] flex items-center justify-center p-6 outline-none"
+      className="fixed inset-0 z-[var(--z-picker)] flex items-center justify-center p-6 outline-none"
       style={{ animation: 'efFade .16s ease' }}
     >
       <Scrim label={ar ? 'إغلاق' : 'Close'} onClick={onClose} tone="heavy" blur={false} />

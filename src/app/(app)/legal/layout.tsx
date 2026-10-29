@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { BuddgetWordmark } from '@/components/brand'
+import { HIT_AREA } from '@/lib/ui/hitArea'
 
 /**
  * Shared layout for all /legal/* pages (Terms, Privacy Policy).
@@ -13,7 +14,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
       {/* Minimal header */}
       <header className="sticky top-0 z-10 border-b border-white/5 backdrop-blur-md bg-[var(--color-brand-bg)]/80">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" aria-label="Buddget home" className={`flex items-center gap-2 outline-none ${HIT_AREA} focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)] rounded-sm`}>
             <BuddgetWordmark height={24} />
           </Link>
           <nav className="flex items-center gap-4 text-xs text-[var(--color-brand-text-muted)]">

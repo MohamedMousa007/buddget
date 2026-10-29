@@ -37,8 +37,8 @@ export function H1({ children, className }: { children: ReactNode; className?: s
   return <h1 className={cn('font-heading text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-6xl rtl:leading-tight rtl:tracking-normal', className)}>{children}</h1>
 }
 
-export function H2({ children, className }: { children: ReactNode; className?: string }) {
-  return <h2 className={cn('font-heading text-3xl font-bold leading-tight tracking-tight text-balance sm:text-4xl rtl:tracking-normal', className)}>{children}</h2>
+export function H2({ children, className, as: Tag = 'h2' }: { children: ReactNode; className?: string; as?: 'h1' | 'h2' }) {
+  return <Tag className={cn('font-heading text-3xl font-bold leading-tight tracking-tight text-balance sm:text-4xl rtl:tracking-normal', className)}>{children}</Tag>
 }
 
 /** Card and block titles. Defaults to h2 so a title directly under the page heading never skips a level. */

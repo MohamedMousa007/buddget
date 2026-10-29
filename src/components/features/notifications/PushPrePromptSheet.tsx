@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { registerPushNotifications } from '@/lib/native/pushNotifications'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { ModalTitle } from '@/components/modals/ModalTitle'
 
 /**
  * Asks, in the app's own words, before the OS permission dialog ever appears. Allow starts the OS request; "Not now" is
@@ -61,7 +62,7 @@ export function PushPrePromptSheet({ open, onClose }: { open: boolean; onClose: 
     <ModalShell open={open} onBackdropClick={later} padContent>
       <div className="flex flex-col gap-3 pt-1">
         <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-cat-4)] text-white"><Bell className="size-5" aria-hidden /></span>
-        <h2 className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.pushTitle}</h2>
+        <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.pushTitle}</ModalTitle>
         <p className="text-[14.5px] leading-snug text-[var(--color-brand-text-secondary)]">{c.pushSub}</p>
         <Button size="cta" className="w-full" loading={busy} onClick={() => void allow()}>{c.pushAllow}</Button>
         <Button variant="ghost" size="touch" className="w-full" disabled={busy} onClick={later}>{c.notNow}</Button>

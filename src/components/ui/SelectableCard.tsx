@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 const selectableCardVariants = cva(
   'relative flex w-full border text-start transition-colors outline-none select-none ' +
-    'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50 ' +
+    'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)] ' +
     'disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {

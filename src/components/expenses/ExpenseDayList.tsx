@@ -186,7 +186,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       amountColor={netZero ? 'var(--color-brand-text-secondary)' : nonSpend ? 'var(--color-brand-text-muted)' : 'var(--color-brand-text-primary)'}
                       sub={
                         e.refundKind === 'refunded' ? (
-                          <span className="font-semibold" style={{ color: '#37C368' }}>↩ {t.expenses.statusReturned} {statusDate}</span>
+                          <span className="font-semibold" style={{ color: 'var(--color-status-ok-fg)' }}>↩ {t.expenses.statusReturned} {statusDate}</span>
                         ) : e.refundKind === 'declined' ? (
                           <span className="font-semibold">✕ {t.expenses.statusBlocked} {statusDate}</span>
                         ) : usd ? (<>≈ −{usd}</>) : null

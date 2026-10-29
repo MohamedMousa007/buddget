@@ -233,7 +233,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
             <Sparkles size={15} className={aiBusy ? 'animate-pulse' : ''} />
             {aiBusy ? t.estimating : t.estimate}
           </Button>
-          {aiError ? <p className="text-xs text-[var(--color-brand-red)]">{aiError}</p> : null}
+          {aiError ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{aiError}</p> : null}
           {aiNote ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{aiNote}</p> : null}
 
           <Card padding="md" className="flex items-center justify-between gap-3">

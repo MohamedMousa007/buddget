@@ -188,33 +188,33 @@
 
   /* Category chip accents. `utilities` and `health` were teal/emerald and would
      now read as the brand accent — moved to olive and true green. */
-  --cat-rent-fg: #DC2626;
+  --cat-rent-fg: #BD2121;
   --cat-rent-bg: rgba(220, 38, 38, 0.12);
-  --cat-food-fg: #E5684D;
+  --cat-food-fg: #A34A37;
   --cat-food-bg: rgba(229, 104, 77, 0.12);
-  --cat-transport-fg: #389BD9;
+  --cat-transport-fg: #276B96;
   --cat-transport-bg: rgba(56, 155, 217, 0.12);
-  --cat-enjoy-fg: #8B5CF6;
+  --cat-enjoy-fg: #714BC7;
   --cat-enjoy-bg: rgba(139, 92, 246, 0.12);
   --cat-debt-fg: #BE123C;
   --cat-debt-bg: rgba(190, 18, 60, 0.12);
-  --cat-savings-fg: #B68E30;
+  --cat-savings-fg: #7E6221;
   --cat-savings-bg: rgba(182, 142, 48, 0.12);
-  --cat-utilities-fg: #4D7C0F;
+  --cat-utilities-fg: #456E0D;
   --cat-utilities-bg: rgba(77, 124, 15, 0.12);
-  --cat-shopping-fg: #DB2777;
+  --cat-shopping-fg: #B82164;
   --cat-shopping-bg: rgba(219, 39, 119, 0.12);
-  --cat-health-fg: #15803D;
+  --cat-health-fg: #137236;
   --cat-health-bg: rgba(21, 128, 61, 0.12);
-  --cat-education-fg: #6E7BF2;
+  --cat-education-fg: #535CB6;
   --cat-education-bg: rgba(110, 123, 242, 0.12);
   --cat-subscription-fg: #A21CAF;
   --cat-subscription-bg: rgba(162, 28, 175, 0.12);
-  --cat-remittance-fg: #0E7490;
+  --cat-remittance-fg: #0D6B84;
   --cat-remittance-bg: rgba(14, 116, 144, 0.12);
   --cat-transfer-fg: #475569;
   --cat-transfer-bg: rgba(71, 85, 105, 0.12);
-  --cat-neutral-fg: #687371;
+  --cat-neutral-fg: #5C6563;
   --cat-neutral-bg: rgba(104, 115, 113, 0.12);
 
   /* Hero card gradient — now brand teal, was navy. */
@@ -257,7 +257,7 @@
   /* Focus ring is now the brand teal. The old neutral-grey rule existed because a
      RED ring read as an error state; teal carries no such confusion, and the kit
      specifies a brand-coloured focus ring on inputs. */
-  --color-brand-focus: #12B0A0;  /* focus ring keeps the bright identity teal */
+  --color-brand-focus: #0B7568;  /* primary-ink: 4.9-5.6:1 on card/bg/elevated, full-alpha ring (WCAG 1.4.11) */
   --ring: var(--color-brand-focus);
   --chart-1: #11A596;
   --chart-2: #B68E30;
@@ -272,7 +272,7 @@
   --sidebar-accent: #ECF1F0;
   --sidebar-accent-foreground: #0D1A18;
   --sidebar-border: #DDE6E4;
-  --sidebar-ring: #12B0A0;
+  --sidebar-ring: #0B7568;
 }
 
 /* ── Dark theme — the product default ── */
@@ -332,7 +332,7 @@
   --cat-food-bg: rgba(242, 126, 102, 0.13);
   --cat-transport-fg: #57B2ED;
   --cat-transport-bg: rgba(87, 178, 237, 0.13);
-  --cat-enjoy-fg: #A17DF9;
+  --cat-enjoy-fg: #A380F9;
   --cat-enjoy-bg: rgba(161, 125, 249, 0.13);
   --cat-debt-fg: #FF5C5C;
   --cat-debt-bg: rgba(255, 92, 92, 0.13);
@@ -352,7 +352,7 @@
   --cat-remittance-bg: rgba(34, 211, 238, 0.14);
   --cat-transfer-fg: #8AA0C8;
   --cat-transfer-bg: rgba(138, 160, 200, 0.14);
-  --cat-neutral-fg: #7A8A87;
+  --cat-neutral-fg: #899794;
   --cat-neutral-bg: rgba(122, 138, 135, 0.13);
 
   --color-hero-from: #0E9384;
@@ -407,11 +407,18 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   /* Safe-area insets mirrored as custom props so JS (e.g. the orb-anchored AI
      chat) can read resolved px via getComputedStyle. */
   :root {
+    /* Stacking scale: sheet < nested sheet < picker < dialog < toast < system gate. */
+    --z-sheet: 110;
+    --z-sheet-nested: 120;
+    --z-picker: 130;
+    --z-dialog: 140;
+    --z-toast: 200;
+    --z-system: 300;
     --sai-top: env(safe-area-inset-top, 0px);
     --sai-bottom: env(safe-area-inset-bottom, 0px);
     --sai-left: env(safe-area-inset-left, 0px);
@@ -422,6 +429,9 @@
   }
   html {
     @apply scroll-smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
   }
   button {
     cursor: pointer;
@@ -491,6 +501,9 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
     scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .native-scroll { scroll-behavior: auto; }
   }
 
   .no-tap-highlight {
@@ -689,4 +702,14 @@ html[data-locale='ar'] .prose-rtl {
 @media (prefers-reduced-motion: reduce) {
   .goal-confetti { animation: none; transform: translateY(20vh); opacity: 0.8; }
   .goal-pulse { animation: none; opacity: 0.25; }
+}
+
+/* Reduced motion: Tailwind enter/exit, skeleton pulse and bounce become static. Spinners stay (state indicator). */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-bounce,
+  [class*="animate-in"],
+  [class*="animate-out"] {
+    animation: none !important;
+  }
 }

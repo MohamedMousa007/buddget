@@ -120,7 +120,7 @@ export function AuthResetPasswordStep({ loading, error, setError, onSubmit }: Au
         </div>
       </div>
 
-      {error ? <p className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
+      {error ? <p role="alert" className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
 
       <AuthPrimaryButton type="submit" disabled={loading}>
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.resetPassword.buttonSubmit}

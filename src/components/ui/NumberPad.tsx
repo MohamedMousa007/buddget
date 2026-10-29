@@ -152,7 +152,7 @@ export function NumberPad({
   }
 
   return (
-    <div dir={dir} className="fixed inset-0 z-[120] font-sans [overscroll-behavior:contain] [touch-action:none]">
+    <div dir={dir} className="fixed inset-0 z-[var(--z-sheet-nested)] font-sans [overscroll-behavior:contain] [touch-action:none]">
       {/* Transparent scrim: the form and its live value stay visible above the pad, like the OS keyboard. Tap closes. */}
       <button
         type="button"

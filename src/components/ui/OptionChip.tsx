@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 const optionChipVariants = cva(
   'inline-flex shrink-0 items-center justify-center gap-1.5 border font-semibold whitespace-nowrap transition-colors outline-none select-none ' +
-    'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50 ' +
+    'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)] ' +
     'disabled:pointer-events-none disabled:opacity-50 ' +
     "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {

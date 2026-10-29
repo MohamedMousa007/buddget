@@ -120,7 +120,7 @@ export function RecurringDebtPaymentForm({
         </div>
       </div>
 
-      {error ? <p className="text-xs text-[var(--color-brand-red)]">{error}</p> : null}
+      {error ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{error}</p> : null}
       {previewLine ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{previewLine}</p> : null}
 
       <div>

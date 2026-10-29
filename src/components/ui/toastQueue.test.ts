@@ -12,6 +12,9 @@ describe('toastQueue', () => {
     expect(pushToast(list, t(4, true)).map((x) => x.id)).toEqual([1, 3, 4])
     expect(pushToast(list, t(4, true))).toHaveLength(MAX_TOASTS)
   })
+  it('keeps a plain toast up for 4s (WCAG 2.2.1)', () => {
+    expect(toastDuration(false)).toBe(4000)
+  })
   it('gives Undo toasts longer', () => {
     expect(toastDuration(true)).toBeGreaterThan(toastDuration(false))
     expect(toastDuration(true)).toBeGreaterThanOrEqual(8000)

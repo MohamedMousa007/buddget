@@ -4,10 +4,12 @@ import { createContext, useContext, useEffect, useId, useRef, useState, useSyncE
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { inertBackground } from '@/lib/ui/inertBackground'
 import { useNumpadInset } from '@/lib/ui/numpadInset'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useT } from '@/lib/i18n'
 
 const OVERLAY_Z = 'z-[100]'
 
@@ -100,6 +102,8 @@ interface ModalShellProps {
    * bottom-end FAB; the backdrop turns into a light, non-blurring scrim there.
    */
   anchor?: 'center' | 'corner'
+  /** Accessible name for a sheet whose content has no single title (multi-state flows). */
+  ariaLabel?: string
 }
 
 /**
@@ -115,11 +119,13 @@ export function ModalShell({
   padContent = false,
   scrollChild = false,
   anchor = 'center',
+  ariaLabel,
 }: ModalShellProps) {
   const dragControls = useDragControls()
   const zStack = zIndexClassName ?? OVERLAY_Z
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
+  const t = useT()
 
   // Lock the background scroll while open so a touch-drag on the backdrop /
   // non-scrolling chrome can't scroll the page behind the sheet.
@@ -169,7 +175,7 @@ export function ModalShell({
       const last = nodes[nodes.length - 1]
       const active = document.activeElement as HTMLElement | null
       if (e.shiftKey) {
-        if (active === first) {
+        if (active === first || active === el) {
           e.preventDefault()
           last.focus()
         }
@@ -180,10 +186,13 @@ export function ModalShell({
     }
 
     el.addEventListener('keydown', onKeyDown)
+    const restoreBackground = inertBackground(el)
     return () => {
+      restoreBackground()
       cancelAnimationFrame(id)
       el.removeEventListener('keydown', onKeyDown)
-      if (opener?.isConnected && (document.activeElement === document.body || el.contains(document.activeElement))) opener.focus()
+      const active = document.activeElement
+      if (opener?.isConnected && (active === document.body || el.contains(active) || active?.hasAttribute('data-modal-backdrop'))) opener.focus()
     }
   }, [open])
 
@@ -266,7 +275,12 @@ export function ModalShell({
     <AnimatePresence>
       {open && (
         <>
-          <motion.div
+          <motion.button
+            type="button"
+            tabIndex={-1}
+            aria-label={t.common.close}
+            data-modal-backdrop
+            data-modal-layer
             key="modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -277,10 +291,12 @@ export function ModalShell({
           />
           <motion.div
             ref={panelRef}
+            data-modal-layer
             key="modal-panel"
             role="dialog"
             aria-modal="true"
-            aria-labelledby={titleId}
+            aria-labelledby={ariaLabel ? undefined : titleId}
+            aria-label={ariaLabel}
             tabIndex={-1}
             data-keyboard-open={keyboardUp ? 'true' : undefined}
             initial={desktopFadePanel ? { opacity: 0, scale: 0.98 } : { y: '100%' }}

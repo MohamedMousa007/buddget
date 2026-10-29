@@ -27,7 +27,7 @@ export const inputStyle: CSSProperties = {
  * successful validation. See `inputFocusError` / `inputFocusValid` below.
  */
 export const inputFocus =
-  'focus:border-[var(--color-brand-text-secondary)] focus:ring-1 focus:ring-[var(--color-brand-text-secondary)]/30'
+  'focus:border-[var(--color-brand-focus)] focus:ring-1 focus:ring-[var(--color-brand-focus)]'
 
 export const inputFocusError =
   'border-[var(--color-brand-red)] focus:border-[var(--color-brand-red)] focus:ring-1 focus:ring-[var(--color-brand-red)]/40'

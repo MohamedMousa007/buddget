@@ -71,6 +71,8 @@ export interface ExpenseSheetFormProps {
   owedSettled?: boolean
   /** Edit-only: set when the expense came from a scanned receipt — opens its breakdown and photo. */
   onViewReceipt?: () => void
+  /** Edit-only: a visible Delete button (the swipe on the row is not reachable by keyboard or screen reader). */
+  onDelete?: () => void | Promise<boolean>
   /** Add-only: BNPL "split into installments" controls (shown when the PM is `bnpl`). */
   installment?: {
     isBnplPurchase: boolean
@@ -118,6 +120,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     onMarkRepaid,
     owedSettled,
     onViewReceipt,
+    onDelete,
   } = props
   const t = useT()
   const { locale } = useLocale()
@@ -125,6 +128,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
   const [calOpen, setCalOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [noteOpen, setNoteOpen] = useState(mode === 'edit' && Boolean(notes.trim()))
 
   // subtle scroll-position indicator for the category grid
@@ -223,7 +227,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                   currency={currency}
                   placeholder="0.00"
                   dir="ltr"
-                  className="h-12 w-full min-w-0 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)] focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]/50"
+                  className="h-12 w-full min-w-0 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-start font-mono-numbers text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)] outline-none placeholder:text-[var(--color-brand-text-muted)] focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)]"
                 />
               )}
               {amountPad.pad}
@@ -256,7 +260,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             />
           </div>
 
-          {submitError ? <p className="text-xs text-[var(--color-brand-red)]">{submitError}</p> : null}
+          {submitError ? <p role="alert" className="text-xs text-[var(--color-brand-red)]">{submitError}</p> : null}
 
           {/* category grid */}
           <div>
@@ -415,6 +419,18 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
 
           {onViewReceipt ? (
             <Button variant="outline" size="touch" onClick={onViewReceipt}>{t.receiptDetail.viewReceipt}</Button>
+          ) : null}
+
+          {onDelete ? (
+            <Button
+              variant="destructive"
+              size="touch"
+              disabled={deleting}
+              onClick={() => {
+                setDeleting(true)
+                void Promise.resolve(onDelete()).then((done) => { if (done === false) setDeleting(false) })
+              }}
+            >{t.common.delete}</Button>
           ) : null}
 
           {/* note */}

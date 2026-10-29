@@ -1,5 +1,6 @@
 'use client'
 
+import { ModalTitle } from '@/components/modals/ModalTitle'
 import { pickablePaymentMethods } from '@/lib/accounts/kinds'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { X } from 'lucide-react'
@@ -55,9 +56,9 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods: allMetho
       <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]">
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex shrink-0 items-center justify-between px-[18px] pb-2 pt-1">
-            <span className="text-lg font-semibold text-[var(--color-brand-text-primary)]">
+            <ModalTitle className="font-semibold text-[var(--color-brand-text-primary)]">
               {t.paymentMethods.title}
-            </span>
+            </ModalTitle>
             <IconButton aria-label={t.common.close} onClick={onClose} variant="tinted" size="sm" shape="round">
               <X />
             </IconButton>

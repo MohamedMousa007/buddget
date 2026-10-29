@@ -7,11 +7,13 @@ import { RepaidSheet } from '@/components/features/spending/RepaidSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
 import { ReceiptDetailSheet } from '@/components/receipt/ReceiptDetailSheet'
+import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { ExpenseSheetForm } from '@/components/features/expenses/ExpenseSheetForm'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
   useEscapeClose(true, onClose)
   const f = useEditExpenseForm(expense, onClose)
+  const { removeExpense } = useLinkedDelete()
   const [repaidOpen, setRepaidOpen] = useState(false)
   const [receiptOpen, setReceiptOpen] = useState(false)
   const hasReceipt = useFinanceStore((s) => !!expense.receiptId && s.receipts.some((r) => r.id === expense.receiptId))
@@ -70,6 +72,7 @@ export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClos
       onMarkRepaid={expense.spendExclusion === 'for_someone' ? () => setRepaidOpen(true) : undefined}
       owedSettled={Boolean(expense.owedSettledAt)}
       onViewReceipt={hasReceipt ? () => setReceiptOpen(true) : undefined}
+      onDelete={() => removeExpense(expense).then((done) => { if (done) onClose(); return done })}
     />
     {hasReceipt ? <ReceiptDetailSheet receiptId={expense.receiptId ?? null} open={receiptOpen} onClose={() => setReceiptOpen(false)} /> : null}
     {repaidOpen ? <RepaidSheet open expense={expense} onClose={() => setRepaidOpen(false)} onDone={onClose} /> : null}
