@@ -27,7 +27,7 @@ export function railDots(
 }
 
 /** The Everyday cap bar spans 0 to 1.5x the cap, so overspend has visible room past the cap line. */
-export const CAP_SPAN = 1.5
+const CAP_SPAN = 1.5
 
 export interface CapBar {
   fill: number

@@ -8,6 +8,7 @@ import { CurrencyField } from '@/components/ui/CurrencyField'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { Switch } from '@/components/ui/switch'
 import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
 import { PAYMENT_BRANDS, QUICK_ADD_BLEND, brandIssuesType, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
@@ -138,8 +139,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
           {has('maturity') && (
             <div>
               <label style={micro}>{pf.maturesOn}</label>
-              <Input type="date" value={maturity} onChange={(e) => setMaturity(e.target.value)}
-                size="brand" className="mt-2" />
+              <DatePickerField value={maturity} onChange={setMaturity} className="mt-2" />
             </div>
           )}
 

@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { BaseCurrencyChangeSheet } from '@/components/features/settings/BaseCurrencyChangeSheet'
 import { CurrencyConverter } from '@/components/features/settings/CurrencyConverter'
-import { CurrencyDualSheet } from '@/components/ui/CurrencyDualSheet'
+import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { IconButton } from '@/components/ui/IconButton'
 import { Switch } from '@/components/ui/switch'
 import { defaultSecondCurrency, useSettingToggle } from '@/hooks/useSettingToggle'
@@ -119,7 +119,8 @@ export function QuickActions({ variant, onSearch }: { variant: 'hub' | 'menu'; o
         ) : null}
       </div>
 
-      <CurrencyDualSheet
+      <CurrencySheet
+        dual
         open={picking}
         onClose={() => setPicking(false)}
         base={settings.baseCurrency}

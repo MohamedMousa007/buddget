@@ -1,10 +1,6 @@
 'use client'
 
-import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useT } from '@/lib/i18n'
-import { useModalTitleId } from '@/components/modals/ModalShell'
-import { IconButton } from '@/components/ui/IconButton'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 /**
  * Deprecated: ModalShell now always renders the drag-handle grab strip, so a
@@ -22,22 +18,7 @@ export interface ModalSheetHeaderProps {
   titleRowClassName?: string
 }
 
-export function ModalSheetHeader({ title, onClose, titleRowClassName = 'mb-4' }: ModalSheetHeaderProps) {
-  const t = useT()
-  return (
-    <>
-      <ModalSheetDragHandle />
-      <div
-        className={cn(
-          'flex items-center justify-between shadow-none',
-          titleRowClassName,
-        )}
-      >
-        <h3 id={useModalTitleId()} className="text-base font-semibold text-[var(--color-brand-text-primary)]">{title}</h3>
-        <IconButton onClick={onClose} aria-label={t.common.close}>
-          <X className="w-5 h-5 text-[var(--color-brand-text-muted)]" aria-hidden />
-        </IconButton>
-      </div>
-    </>
-  )
+/** Legacy modal look of {@link V3SheetHeader}; callers move to the v3 look in step 2. */
+export function ModalSheetHeader(props: ModalSheetHeaderProps) {
+  return <V3SheetHeader variant="modal" {...props} />
 }

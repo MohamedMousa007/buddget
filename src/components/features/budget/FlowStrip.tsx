@@ -1,6 +1,7 @@
 'use client'
 
 import { Check } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -40,10 +41,10 @@ export function FlowStrip({ view, onFix, onJump }: FlowStripProps) {
           </span>
         </div>
         {view.balanced ? (
-          <span className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-[var(--color-brand-green-soft)] px-2.5 text-xs font-semibold text-[var(--color-brand-green)]">
-            <Check className="size-3" aria-hidden />
+          <Badge variant="positive" className="h-7 px-2.5 font-semibold">
+            <Check aria-hidden />
             {f.balanced}
-          </span>
+          </Badge>
         ) : (
           <span
             className={

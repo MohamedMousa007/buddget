@@ -34,6 +34,8 @@ export interface AuthPasswordFieldProps {
   tone?: PasswordFieldTone
   disabled?: boolean
   placeholder?: string
+  /** Label bottom margin; defaults to the morph form's tight spacing. */
+  labelClassName?: string
 }
 
 /**
@@ -42,7 +44,7 @@ export interface AuthPasswordFieldProps {
  */
 export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldProps>(
   function AuthPasswordField(
-    { value, onChange, onSubmit, label, autoComplete, name, tone = 'neutral', disabled, placeholder },
+    { value, onChange, onSubmit, label, autoComplete, name, tone = 'neutral', disabled, placeholder, labelClassName = 'mb-0.5' },
     ref,
   ) {
     const t = useT()
@@ -58,7 +60,7 @@ export const AuthPasswordField = forwardRef<HTMLInputElement, AuthPasswordFieldP
 
     return (
       <div>
-        <label htmlFor={inputId} className="text-xs text-[var(--color-brand-text-muted)] mb-0.5 block">
+        <label htmlFor={inputId} className={cn('text-xs text-[var(--color-brand-text-muted)] block', labelClassName)}>
           {label}
         </label>
         <div className="relative">

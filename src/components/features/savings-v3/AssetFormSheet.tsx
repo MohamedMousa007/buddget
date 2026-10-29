@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { ArrowDownLeft, Gem } from 'lucide-react'
 import { AmountField } from '@/components/ui/AmountField'
@@ -186,7 +187,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
 
           {type !== 'property' && source === 'had' && (
             <Field label={`${t.whenBought} · ${t.optional}`}>
-              <Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} size="brand" />
+              <DatePickerField value={purchaseDate} onChange={setPurchaseDate} />
             </Field>
           )}
           {type !== 'property' && (

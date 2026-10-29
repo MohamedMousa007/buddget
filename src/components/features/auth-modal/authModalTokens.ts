@@ -34,6 +34,3 @@ export const inputFocusError =
 
 export const inputFocusValid =
   'border-[var(--color-brand-green)] focus:border-[var(--color-brand-green)] focus:ring-1 focus:ring-[var(--color-brand-green)]/40'
-
-export const primaryBtn =
-  'w-full h-11 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'

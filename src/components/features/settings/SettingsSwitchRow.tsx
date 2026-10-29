@@ -12,13 +12,15 @@ interface SettingsSwitchRowProps {
   label: string
   tone?: RowTone
   hint?: string
+  /** Small caption under the hint, e.g. "This device only". */
+  tag?: string
   checked: boolean
   onChange: (next: boolean) => void
   disabled?: boolean
 }
 
 /** A whole-row switch for settings whose state does not live in a plain store field (SMS, notifications, 2-step). */
-export function SettingsSwitchRow({ id, label, tone = 'neutral', hint, checked, onChange, disabled }: SettingsSwitchRowProps) {
+export function SettingsSwitchRow({ id, label, tone = 'neutral', hint, tag, checked, onChange, disabled }: SettingsSwitchRowProps) {
   const Icon = id ? SETTING_ICONS[SETTING_BY_ID[id].icon] : null
   return (
     <label
@@ -32,6 +34,7 @@ export function SettingsSwitchRow({ id, label, tone = 'neutral', hint, checked, 
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{label}</span>
         {hint ? <span className="mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]">{hint}</span> : null}
+        {tag ? <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{tag}</span> : null}
       </span>
       <Switch size="touch" aria-label={label} checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </label>

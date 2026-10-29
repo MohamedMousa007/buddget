@@ -66,11 +66,6 @@ export function noteLabel(note: AmountNote, ui: SubscriptionsCopy, usdSymbol: (a
 /** The headline amount of a row: `≈ 1,069` for an estimate, `190.00` otherwise. */
 export const rowAmount = (amount: number, approx: boolean) => (approx ? `≈ ${formatWhole(amount)}` : formatFixed2(amount))
 
-export function cycleSuffix(cycle: SubscriptionBillingCycle, ui: SubscriptionsCopy): string {
-  const a = ui.add
-  return { weekly: a.perWeekShort, monthly: a.perMonthShort, quarterly: a.perQuarterShort, semiannual: a.perHalfYearShort, yearly: a.perYearShort }[cycle]
-}
-
 export function cycleWord(cycle: SubscriptionBillingCycle, ui: SubscriptionsCopy): string {
   const d = ui.detail
   return { weekly: d.perWeek, monthly: d.perMonth, quarterly: d.perQuarter, semiannual: d.perHalfYear, yearly: d.perYear }[cycle]

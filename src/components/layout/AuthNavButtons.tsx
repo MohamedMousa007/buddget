@@ -21,7 +21,7 @@ import { useSetupProgress } from '@/hooks/useSetupProgress'
 import { BudgetHeaderButton } from '@/components/layout/BudgetHeaderButton'
 
 /** The avatar that opens ProfileDropdown — the mobile header's, and Flow's own header's. */
-export function ProfileAvatarWithMenu({ className }: { className?: string }) {
+function ProfileAvatarWithMenu({ className }: { className?: string }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)

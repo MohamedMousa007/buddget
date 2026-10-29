@@ -3,6 +3,7 @@
 import { CreditCard, HandCoins, Layers, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useT } from '@/lib/i18n'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 
@@ -22,15 +23,18 @@ export function DebtsEmptyDesktop({ title, description, onAdd }: DebtsEmptyDeskt
   ]
   return (
     <div className="hidden flex-col gap-6 lg:flex">
-      <Card padding="lg" className="flex flex-col items-center py-10 text-center" role="status">
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-          <ShieldCheck className="size-7" aria-hidden />
-        </span>
-        <h2 className="mt-4 text-lg font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
-        <p className="mt-1 max-w-md text-sm text-[var(--color-brand-text-muted)]">{description}</p>
-        <Button size="cta" className="mt-5" onClick={() => onAdd()}>
-          {t.emptyAddDebt}
-        </Button>
+      <Card padding="lg" className="py-10">
+        <EmptyState
+          variant="hero"
+          illustration={
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+              <ShieldCheck className="size-7" aria-hidden />
+            </span>
+          }
+          title={title}
+          description={description}
+          action={<Button size="cta" onClick={() => onAdd()}>{t.emptyAddDebt}</Button>}
+        />
       </Card>
       <div className="grid grid-cols-3 gap-4">
         {families.map(({ family, Icon, title: name, line, add }) => (

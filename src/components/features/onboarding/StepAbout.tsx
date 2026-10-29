@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Info } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -51,7 +52,7 @@ export function StepAbout({ chrome }: { chrome: StepChrome }) {
     >
       <div className="flex items-center gap-3">
         <BuddgyHead mood="happy" />
-        <span className="rounded-full bg-[var(--color-brand-primary-soft)] px-2.5 py-1 text-xs font-bold text-[var(--color-brand-primary-ink)]">{c.about.badge}</span>
+        <Badge variant="brand" className="h-auto px-2.5 py-1 font-bold">{c.about.badge}</Badge>
       </div>
       <h1 className={`${stepTitle} mt-[18px]`}>{c.about.title}</h1>
 

@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils'
  * - PageBody: the standard body for pages without a PageGrid (16px phone / 24px lg gutters, shared gap under
  *   the header or hero, no bottom padding: AppShell owns the bottom clearance).
  * - PageDivider: the lg-only hairline between major sections.
- * - FullBleedHero: band background spans the full width, its content is capped like PageContainer.
  */
 export interface PageContainerProps {
   /** Use the wide cap (`--page-max-wide`) instead of `--page-max`. */
@@ -32,26 +31,6 @@ export function PageContainer({ wide = false, as: Tag = 'div', className, childr
     >
       {children}
     </Tag>
-  )
-}
-
-export interface FullBleedHeroProps {
-  /** Cap the inner content at `--page-max-wide` (match a wide body). */
-  wide?: boolean
-  /** Classes for the full-width band (background, borders, vertical padding). */
-  className?: string
-  /** Classes for the capped inner column. */
-  innerClassName?: string
-  children: ReactNode
-}
-
-export function FullBleedHero({ wide = false, className, innerClassName, children }: FullBleedHeroProps) {
-  return (
-    <div className={cn('w-full', className)}>
-      <PageContainer wide={wide} className={innerClassName}>
-        {children}
-      </PageContainer>
-    </div>
   )
 }
 

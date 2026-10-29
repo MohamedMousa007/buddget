@@ -23,7 +23,6 @@ import {
   calculateCategorySpending,
   calculateTotalBudget,
   calculateTotalBudgetExcludingSavings,
-  calculateBudgetUsedPercent,
   budgetMonthKeyFor,
   calculateDaysLeftInMonth,
   totalSavingsHoldingsInBase,
@@ -88,7 +87,6 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
       totalBudget: 0,
       totalExpenseBudget: 0,
       remaining: 0,
-      budgetUsedPercent: 0,
       categorySpending: {} as ReturnType<typeof calculateCategorySpending>,
       spendingByEnum: {} as ReturnType<typeof calculateCategorySpending>,
       unassignedSpendByCategory: {} as Record<string, number>,
@@ -170,7 +168,6 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
         .filter((b) => b.category === 'Savings')
         .reduce((s, b) => s + effectiveCategoryBudget(b, settings, projectedIncome), 0)
   const remaining = totalExpenseBudget - totalSpentForExpenseBudget
-  const budgetUsedPercent = calculateBudgetUsedPercent(totalSpentForExpenseBudget, totalExpenseBudget)
   const spendingByEnum = calculateCategorySpending(
     monthlyExpenses,
     settings.baseCurrency,
@@ -332,7 +329,6 @@ export function computeMonthlyStats(input: MonthlyStatsInput) {
     totalBudget,
     totalExpenseBudget,
     remaining,
-    budgetUsedPercent,
     categorySpending,
     spendingByEnum,
     unassignedSpendByCategory,

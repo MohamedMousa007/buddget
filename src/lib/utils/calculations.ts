@@ -747,17 +747,6 @@ export function totalDebtRemainingDetail(
   return { total, incomplete }
 }
 
-/**
- * When `totalBudget` is 0 but there is spending, returns **-1** so the UI can show
- * a “no budget set” state instead of contradictory 0% vs over-budget copy.
- */
-export function calculateBudgetUsedPercent(totalSpent: number, totalBudget: number): number {
-  if (totalBudget === 0) {
-    return totalSpent > 0 ? -1 : 0
-  }
-  return (totalSpent / totalBudget) * 100
-}
-
 export function calculateDaysLeftInMonth(monthStr: string, monthStartDay = 1): number {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
   const today = new Date()

@@ -13,9 +13,9 @@ import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedD
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DatePickerField } from '@/components/ui/DatePickerField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
-import { cn } from '@/lib/utils'
 import { rgba } from '@/lib/utils/color'
 import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
 import { AmountTextInput } from '@/components/ui/AmountTextInput'
@@ -381,12 +381,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
                     <span className="mb-1 block text-xs font-medium text-[var(--color-brand-text-muted)]">
                       {t.expenseForm.installmentFirstDue}
                     </span>
-                    <Input
-                      type="date"
-                      value={installment.firstDue}
-                      onChange={(e) => installment.setFirstDue(e.target.value)}
-                      size="brand" className={cn('rounded-lg px-3 text-sm')}
-                    />
+                    <DatePickerField value={installment.firstDue} onChange={installment.setFirstDue} />
                   </label>
                   <PaymentMethodPicker
                     value={installment.fundingMethodId}

@@ -6,7 +6,9 @@ import { Check, ChevronLeft, Coffee, Copy, MessageSquare, Plus, ShieldCheck, X }
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Badge } from '@/components/ui/badge'
-import { MoneyDisplay } from '@/components/ui/MoneyDisplay'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { convertCurrency } from '@/lib/utils/currency'
+import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { ShortcutsScene, type SceneId } from './sms/ShortcutsScenes'
@@ -47,6 +49,8 @@ function Emphasis({ text }: { text: string }) {
 
 function Hero() {
   const g = useT().smsTracking.guide
+  const base = useFinanceStore((s) => s.settings.baseCurrency)
+  const exchangeRates = useFinanceStore((s) => s.exchangeRates)
   return (
     <div className="mx-auto flex w-full max-w-[310px] flex-col items-center">
       <div className="flex w-full items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 shadow-[var(--shadow-md)]">
@@ -66,7 +70,8 @@ function Hero() {
           <span className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-brand-amber-soft)] text-[var(--color-brand-amber)]" aria-hidden><Coffee className="size-5" /></span>
           <div className="min-w-0 flex-1"><p className="text-sm font-bold text-[var(--color-brand-text-primary)]">{g.heroMerchant}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroCategory}</p></div>
           <div className="shrink-0 text-end">
-            <MoneyDisplay amount={45} currency="EGP" variant="table" primaryClassName="text-sm font-bold text-[var(--color-brand-text-primary)]" />
+            <span className="font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">{formatCurrency(45, 'EGP')}</span>
+            {base !== 'EGP' && <span className="block text-[10px] text-[var(--color-brand-text-muted)]">{formatCurrency(convertCurrency(45, 'EGP', base, exchangeRates), base)}</span>}
             <p className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroMethod}</p>
           </div>
         </div>

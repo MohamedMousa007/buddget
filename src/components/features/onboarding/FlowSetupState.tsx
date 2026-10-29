@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { Calendar, Check, ChevronRight, MessageSquare, Plus, SlidersHorizontal, Wallet } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAccounts } from '@/lib/accounts/useAccounts'
@@ -109,7 +110,7 @@ export function FlowSetupState({ className }: { className?: string }) {
               aria-expanded={open}
               className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3.5 text-start shadow-sm"
             >
-              <span className="rounded-full bg-[var(--color-brand-primary-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-brand-primary-ink)]">{c.flow.finishLeft(doneCount, steps.length)}</span>
+              <Badge variant="brand" className="px-2.5 font-bold">{c.flow.finishLeft(doneCount, steps.length)}</Badge>
               <span className="flex-1 text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.flow.finish}</span>
               <ChevronRight className={cn('size-4 text-[var(--color-brand-text-muted)] transition-transform', open && 'rotate-90')} aria-hidden />
             </button>

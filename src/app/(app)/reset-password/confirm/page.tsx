@@ -1,34 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Loader2, Lock, AlertTriangle } from 'lucide-react'
+import { Loader2, AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { useT } from '@/lib/i18n'
-import { cn } from '@/lib/utils'
-import {
-  inputClass,
-  inputFocus,
-  inputFocusError,
-  inputFocusValid,
-  inputStyle,
-  MIN_PASSWORD_LEN,
-} from '@/components/features/auth-modal/authModalTokens'
+import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
-import { PasswordVisibilityToggle } from '@/components/features/auth-modal/PasswordVisibilityToggle'
 import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryButton'
 import { AuthPasswordField } from '@/components/features/auth-modal/AuthPasswordField'
 import { changePassword } from '@/lib/auth/changePassword'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
 
 type ValidationTone = 'neutral' | 'valid' | 'error'
-
-function toneClass(tone: ValidationTone): string {
-  if (tone === 'error') return inputFocusError
-  if (tone === 'valid') return inputFocusValid
-  return inputFocus
-}
 
 export default function ResetPasswordConfirmPage() {
   const t = useT()
@@ -43,8 +28,6 @@ export default function ResetPasswordConfirmPage() {
   const [current, setCurrent] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const [showNew, setShowNew] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
   const [error, setError] = useState('')
@@ -231,56 +214,31 @@ export default function ResetPasswordConfirmPage() {
         ) : null}
 
         <div>
-          <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">
-            {t.resetPassword.labelNew}
-          </label>
-          <div className="relative">
-            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
-            <input
-              type={showNew ? 'text' : 'password'}
-              dir="ltr"
-              name="new-password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t.resetPassword.placeholderNew}
-              className={cn(inputClass, toneClass(passwordTone), 'ps-10 pe-10')}
-              style={inputStyle}
-            />
-            <PasswordVisibilityToggle
-              visible={showNew}
-              onToggle={() => setShowNew((v) => !v)}
-              label={showNew ? t.auth.hidePassword : t.auth.showPassword}
-            />
-          </div>
+          <AuthPasswordField
+            value={password}
+            onChange={setPassword}
+            onSubmit={() => void submit()}
+            label={t.resetPassword.labelNew}
+            labelClassName="mb-1"
+            placeholder={t.resetPassword.placeholderNew}
+            autoComplete="new-password"
+            name="new-password"
+            tone={passwordTone}
+          />
           <PasswordStrengthMeter password={password} />
         </div>
 
-        <div>
-          <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">
-            {t.resetPassword.labelConfirm}
-          </label>
-          <div className="relative">
-            <Lock className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
-            <input
-              type={showConfirm ? 'text' : 'password'}
-              dir="ltr"
-              name="confirm-password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder={t.resetPassword.placeholderConfirm}
-              className={cn(inputClass, toneClass(confirmTone), 'ps-10 pe-10')}
-              style={inputStyle}
-              aria-invalid={confirmTone === 'error'}
-            />
-            <PasswordVisibilityToggle
-              visible={showConfirm}
-              onToggle={() => setShowConfirm((v) => !v)}
-              label={showConfirm ? t.auth.hidePassword : t.auth.showPassword}
-            />
-          </div>
-        </div>
+        <AuthPasswordField
+          value={confirm}
+          onChange={setConfirm}
+          onSubmit={() => void submit()}
+          label={t.resetPassword.labelConfirm}
+          labelClassName="mb-1"
+          placeholder={t.resetPassword.placeholderConfirm}
+          autoComplete="new-password"
+          name="confirm-password"
+          tone={confirmTone}
+        />
 
         {fromSettings ? <p className="text-xs text-[var(--color-brand-text-muted)]">{sec.otherDevicesNote}</p> : null}
         {error ? <p role="alert" className="text-sm text-[var(--color-brand-red)]">{error}</p> : null}
