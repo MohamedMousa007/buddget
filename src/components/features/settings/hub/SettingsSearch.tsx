@@ -15,7 +15,7 @@ import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useOpenSetting } from '@/hooks/useOpenSetting'
 import { isToggleSetting, useSettingToggle, type ToggleSettingId } from '@/hooks/useSettingToggle'
 import { useSettingValue } from '@/hooks/useSettingValue'
-import { useLocale } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { navigate } from '@/lib/navigation/navigate'
@@ -55,13 +55,14 @@ function ToggleTrail({ id }: { id: ToggleSettingId }) {
 }
 
 function ThemeTrail() {
+  const t = useT()
   const theme = useFinanceStore((s) => s.settings.theme)
   const update = useFinanceStore((s) => s.updateSettings)
   const dark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   return (
     <Switch
       size="touch"
-      aria-label="Dark mode"
+      aria-label={t.a11y.darkMode}
       checked={dark}
       onCheckedChange={(on) => {
         update({ theme: on ? 'dark' : 'light' })

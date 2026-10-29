@@ -97,7 +97,7 @@ export function AddDebtSheet() {
         <div className="flex shrink-0 items-center gap-2.5 px-5 pb-3 pt-4">
           <span id={useModalTitleId()} className="min-w-0 flex-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</span>
           <IconButton
-            aria-label="Close"
+            aria-label={t.common.close}
             onClick={d.closeSheet}
             variant="tinted"
             size="sm"

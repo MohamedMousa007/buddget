@@ -115,7 +115,7 @@ export function VoiceRecapEditor({
                 <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">
                   {meta.emoji} {meta.label}
                 </span>
-                <IconButton onClick={() => onRemove(idx)} aria-label="Remove item">
+                <IconButton onClick={() => onRemove(idx)} aria-label={t.a11y.removeItem}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </IconButton>
               </div>
@@ -157,7 +157,7 @@ export function VoiceRecapEditor({
                   <div className="block">
                     <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.category}</span>
                     <SelectField
-                      aria-label="Category"
+                      aria-label={t.a11y.category}
                       value={String(getField(item.data, 'category') ?? 'Other')}
                       onChange={(c) => onUpdateField(idx, 'category', c)}
                       items={EXPENSE_ENTRY_CATEGORIES.map((c) => ({
@@ -218,7 +218,7 @@ export function VoiceRecapEditor({
         >
           <Mic className="h-4 w-4" /> {r.redo}
         </Button>
-        <IconButton onClick={onCancel} aria-label="Cancel">
+        <IconButton onClick={onCancel} aria-label={t.common.cancel}>
           <X className="h-4 w-4" />
         </IconButton>
       </div>

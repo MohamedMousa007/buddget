@@ -3167,6 +3167,28 @@ export interface Dictionary {
     splitNeedsFunding: string
     splitFirstDueInvalid: string
   }
+  /** Screen-reader names for icon-only controls. Visible text lives in its own sections. */
+  a11y: {
+    closeNumberPad: string
+    decimalPoint: string
+    padAmount: string
+    padCardLast4: string
+    dismissUpdate: string
+    colour: (name: string) => string
+    goToSlide: (n: number) => string
+    filters: string
+    manage: string
+    darkMode: string
+    cancelTranscription: string
+    holdToRecord: string
+    releaseToTranscribe: string
+    muteAnswer: string
+    unmuteAnswer: string
+    removeItem: string
+    removeNamed: (name: string) => string
+    category: string
+    previous: string
+  }
 }
 
 export type Locale = 'en' | 'ar'

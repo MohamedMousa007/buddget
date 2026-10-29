@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import { createElement, useRef, useState } from 'react'
 import { MoreVertical, Plus, Check } from 'lucide-react'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
@@ -50,6 +51,7 @@ interface Props {
 export function PaymentCardCarousel({
   methods, active, onActiveChange, defaultLabel, hint, onCardSelect, onMenu, selectedId, onAddCard, addLabel,
 }: Props) {
+  const t = useT()
   const slotCount = methods.length + (onAddCard ? 1 : 0)
   const start = useRef<{ x: number; y: number } | null>(null)
   const didDrag = useRef(false)
@@ -161,7 +163,7 @@ export function PaymentCardCarousel({
                         size="sm"
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); onMenu(m.id, e.currentTarget.getBoundingClientRect()) }}
-                        aria-label="Manage"
+                        aria-label={t.a11y.manage}
                         className="-mr-1.5 -mt-0.5 text-white/90 hover:bg-white/15 hover:text-white"
                       >
                         <MoreVertical />

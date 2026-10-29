@@ -36,7 +36,7 @@ export function UpdateToast() {
             <div className="relative flex flex-col gap-3 rounded-2xl border border-[var(--color-brand-text-primary)]/[0.08] bg-[var(--color-brand-card)]/70 px-4 py-3.5 shadow-lg shadow-blue-500/20 backdrop-blur-xl ring-1 ring-blue-500/20 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <IconButton
                 onClick={dismiss}
-                aria-label="Dismiss update notice"
+                aria-label={t.a11y.dismissUpdate}
                 size="sm"
                 className="absolute end-2 top-2 shrink-0 sm:end-3 sm:top-3"
               >

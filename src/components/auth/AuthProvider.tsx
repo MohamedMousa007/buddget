@@ -39,10 +39,11 @@ import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
  * on reload) and matches the reset-password page's own loading treatment.
  */
 function AuthLoadingSplash() {
+  const t = useT()
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-brand-bg)]">
       <div
-        role="status" aria-label="Loading"
+        role="status" aria-label={t.common.loading}
         className="w-8 h-8 border-2 border-[var(--color-brand-border)] border-t-[var(--color-brand-primary)] rounded-full animate-spin"
       />
     </div>

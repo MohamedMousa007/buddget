@@ -264,14 +264,14 @@ function FloatingRecordingWidget({
 // ── Processing panel ─────────────────────────────────────────────────────────
 
 function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
-  const v = useT().voice
+  const { voice: v, common } = useT()
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2">
         <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="thinking" size={26} strokeWidth={1.75} filled /></span>
         <span className="text-sm text-[var(--color-brand-text-secondary)]">{v.transcribingShort}</span>
       </div>
-      <IconButton onClick={onCancel} aria-label="Cancel">
+      <IconButton onClick={onCancel} aria-label={common.cancel}>
         <X className="size-4" />
       </IconButton>
     </div>
@@ -281,7 +281,7 @@ function ProcessingPanel({ onCancel }: { onCancel: () => void }) {
 // ── Queued panel (offline save) ──────────────────────────────────────────────
 
 function QueuedPanel({ onClose }: { onClose: () => void }) {
-  const v = useT().voice
+  const { voice: v, common } = useT()
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -290,7 +290,7 @@ function QueuedPanel({ onClose }: { onClose: () => void }) {
           {v.offlineBodyShort}
         </p>
       </div>
-      <IconButton onClick={onClose} aria-label="Close">
+      <IconButton onClick={onClose} aria-label={common.close}>
         <X className="size-4" />
       </IconButton>
     </div>
@@ -308,7 +308,7 @@ function ErrorPanel({
   onRedo: () => void
   onClose: () => void
 }) {
-  const v = useT().voice
+  const { voice: v, common } = useT()
   return (
     <div className="px-4 py-3 flex items-center justify-between gap-3">
       <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="worried" size={26} strokeWidth={1.75} filled /></span>
@@ -325,7 +325,7 @@ function ErrorPanel({
         >
           <RotateCcw className="h-3 w-3" /> {v.tryAgain}
         </Button>
-        <IconButton onClick={onClose} aria-label="Close">
+        <IconButton onClick={onClose} aria-label={common.close}>
           <X className="size-4" />
         </IconButton>
       </div>
@@ -346,7 +346,7 @@ function AnswerPanel({
   onRedo: () => void
   onClose: () => void
 }) {
-  const v = useT().voice
+  const { voice: v, common } = useT()
   return (
     <div className="px-4 py-3 space-y-2">
       <div className="flex items-start gap-2">
@@ -371,7 +371,7 @@ function AnswerPanel({
         >
           {v.askAgain}
         </Button>
-        <IconButton onClick={onClose} aria-label="Close">
+        <IconButton onClick={onClose} aria-label={common.close}>
           <X className="size-4" />
         </IconButton>
       </div>
@@ -390,7 +390,7 @@ function ClarifyPanel({
   onAnswer: () => void
   onClose: () => void
 }) {
-  const v = useT().voice
+  const { voice: v, common } = useT()
   return (
     <div className="px-4 py-3 space-y-2">
       <div className="flex items-start gap-2">
@@ -406,7 +406,7 @@ function ClarifyPanel({
         >
           <Mic className="h-3.5 w-3.5" /> {v.answerByVoice}
         </Button>
-        <IconButton onClick={onClose} aria-label="Close">
+        <IconButton onClick={onClose} aria-label={common.close}>
           <X className="size-4" />
         </IconButton>
       </div>

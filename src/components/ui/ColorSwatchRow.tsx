@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import { CARD_COLORS } from '@/lib/payment/paymentMethodDefaults'
 
 /**
@@ -16,6 +17,7 @@ export interface ColorSwatchRowProps {
 }
 
 export function ColorSwatchRow({ value, onChange, colors = CARD_COLORS, className }: ColorSwatchRowProps) {
+  const a = useT().a11y
   return (
     <div className={`native-scroll flex gap-2.5 overflow-x-auto px-0.5 pb-1 ${className ?? ''}`}>
       {colors.map((c) => (
@@ -23,7 +25,7 @@ export function ColorSwatchRow({ value, onChange, colors = CARD_COLORS, classNam
           key={c}
           type="button"
           onClick={() => onChange(c)}
-          aria-label={`Colour ${c}`}
+          aria-label={a.colour(c)}
           className="h-[34px] w-[34px] shrink-0 rounded-[10px]"
           style={{
             background: c,

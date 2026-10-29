@@ -165,12 +165,12 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
-      aria-label={ar ? 'اختر التاريخ' : 'Select date'}
+      aria-label={t.common.selectDate}
       tabIndex={-1}
       className="fixed inset-0 z-[var(--z-picker)] flex items-center justify-center p-6 outline-none"
       style={{ animation: 'efFade .16s ease' }}
     >
-      <Scrim label={ar ? 'إغلاق' : 'Close'} onClick={onClose} tone="heavy" blur={false} />
+      <Scrim label={t.common.close} onClick={onClose} tone="heavy" blur={false} />
       <div
         className="relative w-full max-w-72 md:max-w-80 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]"
         style={{
@@ -207,7 +207,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
             {!isYears ? (
               <>
                 <IconButton
-                  aria-label={ar ? 'السابق' : 'Previous'}
+                  aria-label={t.a11y.previous}
                   variant="onBand"
                   size="sm"
                   onClick={() => (isMonths ? shiftYear(-1) : shiftMonth(-1))}
@@ -215,7 +215,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                   <ChevronLeft />
                 </IconButton>
                 <IconButton
-                  aria-label={ar ? 'التالي' : 'Next'}
+                  aria-label={t.common.next}
                   variant="onBand"
                   size="sm"
                   onClick={() => (isMonths ? shiftYear(1) : shiftMonth(1))}
@@ -225,7 +225,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
               </>
             ) : null}
             <IconButton
-              aria-label={ar ? 'إغلاق' : 'Close'}
+              aria-label={t.common.close}
               variant="onBand"
               size="sm"
               onClick={onClose}

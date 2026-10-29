@@ -237,6 +237,6 @@ describe('change_setting baseCurrency', () => {
 
   it('localizes the sheet title', () => {
     const p = change('baseCurrency', 'USD', ar)
-    expect(p.ok && p.proposal.preview.title).toMatch(/نبدّل العملة الأساسية/)
+    expect(p.ok && p.proposal.preview.title).toMatch(/تغيير العملة الأساسية/)
   })
 })

@@ -36,6 +36,7 @@ export interface FilterCategoryOption {
  * sticky card-coloured strip (rows pass under it) and an optional footer pinned below.
  */
 export function FilterSheet({ open, onClose, children, footer }: { open: boolean; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+  const t = useT()
   // This sheet deliberately does NOT use ModalShell: it contains range sliders,
   // and ModalShell's drag-to-dismiss would capture the pointer drag on a thumb.
   // It still has to honour Android back and Escape.
@@ -57,7 +58,7 @@ export function FilterSheet({ open, onClose, children, footer }: { open: boolean
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Filters"
+            aria-label={t.a11y.filters}
             initial={{ y: '110%' }}
             animate={{ y: 0 }}
             exit={{ y: '110%' }}

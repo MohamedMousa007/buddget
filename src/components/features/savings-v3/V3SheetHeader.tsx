@@ -48,6 +48,7 @@ interface BarHeaderProps {
 export type SheetHeaderProps = V3HeaderProps | ModalHeaderProps | BarHeaderProps
 
 function V3Header({ onClose, children }: Omit<V3HeaderProps, 'variant'>) {
+  const t = useT()
   const kids = Children.toArray(children)
   const extra = kids.find((c) => isValidElement(c) && c.type === Extra)
   const hasSubtitle = kids.some((c) => isValidElement(c) && c.type === Subtitle)
@@ -60,7 +61,7 @@ function V3Header({ onClose, children }: Omit<V3HeaderProps, 'variant'>) {
         {extra}
         <IconButton
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.common.close}
           variant="tinted"
           className="shrink-0"
         >

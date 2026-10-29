@@ -176,7 +176,7 @@ function RecordingView({
   onStop: () => void
   onCancel: () => void
 }) {
-  const v = useT().voice
+  const { voice: v, a11y: a } = useT()
   const isRecording = state === 'recording'
   const x = useMotionValue(0)
   const y = useMotionValue(0)
@@ -290,7 +290,7 @@ function RecordingView({
           />
           <div
             className="relative flex size-20 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)] shadow-2xl shadow-[var(--color-brand-primary)]/40 select-none"
-            aria-label={isRecording ? 'Release to transcribe' : 'Hold to record'}
+            aria-label={isRecording ? a.releaseToTranscribe : a.holdToRecord}
           >
             <Mic className="h-9 w-9 pointer-events-none" />
           </div>
@@ -321,7 +321,7 @@ function RecordingView({
 // ── Permission ───────────────────────────────────────────────────────────────
 
 function PermissionView({ onRequest }: { onRequest: () => void }) {
-  const v = useT().voice
+  const { voice: v, a11y: a } = useT()
   return (
     <div className="flex flex-col items-center gap-4 py-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)]">
@@ -343,7 +343,7 @@ function PermissionView({ onRequest }: { onRequest: () => void }) {
 // ── Processing ──────────────────────────────────────────────────────────────
 
 function ProcessingView({ onCancel }: { onCancel: () => void }) {
-  const v = useT().voice
+  const { voice: v, a11y: a } = useT()
   return (
     <div className="flex flex-col items-center gap-3 py-6 w-full">
       <span className="text-[var(--color-brand-text)]"><BuddgyIcon mood="thinking" size={48} strokeWidth={1.5} filled alive /></span>
@@ -354,7 +354,7 @@ function ProcessingView({ onCancel }: { onCancel: () => void }) {
         variant="ghost"
         size="touch"
         className="mt-1 gap-1.5 text-sm text-[var(--color-brand-text-muted)]"
-        aria-label="Cancel transcription"
+        aria-label={a.cancelTranscription}
       >
         <X className="h-4 w-4" /> {v.cancel}
       </Button>
@@ -377,7 +377,7 @@ function AnswerView({
   onOpenChat: () => void
   onClose: () => void
 }) {
-  const v = useT().voice
+  const { voice: v, a11y: a } = useT()
   const muted = useSettingsStore((s) => s.voiceSpeakMuted)
   const setMuted = useSettingsStore((s) => s.setVoiceSpeakMuted)
 
@@ -405,7 +405,7 @@ function AnswerView({
             else speak(message)
           }}
           size="sm"
-          aria-label={muted ? 'Unmute answer' : 'Mute answer'}
+          aria-label={muted ? a.unmuteAnswer : a.muteAnswer}
           aria-pressed={muted}
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
@@ -456,7 +456,7 @@ function ClarifyView({
   onAnswer: () => void
   onCancel: () => void
 }) {
-  const v = useT().voice
+  const { voice: v, a11y: a } = useT()
   return (
     <div className="w-full text-center">
       <span className="inline-flex text-[var(--color-brand-text)]"><BuddgyIcon mood="curious" size={48} strokeWidth={1.5} filled alive /></span>
@@ -485,7 +485,7 @@ function ClarifyView({
 // ── Error ────────────────────────────────────────────────────────────────────
 
 function QueuedView({ onClose }: { onClose: () => void }) {
-  const v = useT().voice
+  const { voice: v, a11y: a } = useT()
   return (
     <div className="flex flex-col items-center gap-3 py-4 text-center">
       <CheckCircle2 className="h-8 w-8 text-[var(--color-brand-green)]" />
@@ -511,7 +511,7 @@ function ErrorView({
   onRetry: () => void
   onClose: () => void
 }) {
-  const v = useT().voice
+  const { voice: v, a11y: a } = useT()
   return (
     <div className="flex flex-col items-center gap-3 py-4 text-center">
       <span className="text-[var(--color-brand-text)]"><BuddgyIcon mood="worried" size={48} strokeWidth={1.5} filled alive /></span>

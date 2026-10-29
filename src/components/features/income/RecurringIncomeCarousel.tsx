@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { useRef, useState, type ReactNode, type PointerEvent } from 'react'
 
@@ -26,6 +27,7 @@ const TAP_SLOP = 6
  * preserved via `touch-action: pan-y` and a vertical-intent bail-out.
  */
 export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, renderItem, dotColor = 'var(--color-brand-primary)', activeDotWidth = 16, lgGrid = false }: Props) {
+  const t = useT()
   const trackRef = useRef<HTMLDivElement>(null)
   const start = useRef<{ x: number; y: number } | null>(null)
   const axis = useRef<'h' | 'v' | null>(null)
@@ -110,7 +112,7 @@ export function RecurringIncomeCarousel({ count, activeIndex, onActiveChange, re
             <button data-raw-button-ok="a carousel position dot, 8px visible with a 24px hit area"
               key={i}
               type="button"
-              aria-label={`Go to ${i + 1}`}
+              aria-label={t.a11y.goToSlide(i + 1)}
               onClick={() => onActiveChange(i)}
               className="relative rounded-full transition-all after:absolute after:-inset-2 after:content-['']"
               style={{ width: i === activeIndex ? activeDotWidth : 8, height: 8, background: i === activeIndex ? dotColor : 'var(--color-brand-border-strong)' }}

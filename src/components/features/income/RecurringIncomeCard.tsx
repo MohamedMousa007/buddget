@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18n'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Check, MoreVertical, Pencil } from 'lucide-react'
@@ -75,6 +76,7 @@ export function RecurringIncomeCard({
   editAriaLabel,
   footer,
 }: Props) {
+  const t = useT()
   const colors = incomeTypeColors(sourceType)
   const cornered = showTick || Boolean(onEdit)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
@@ -94,7 +96,7 @@ export function RecurringIncomeCard({
         <>
           <IconButton
             onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget.getBoundingClientRect()) }}
-            aria-label={editAriaLabel ?? 'Edit'}
+            aria-label={editAriaLabel ?? t.common.edit}
             className="absolute end-1 top-1"
           >
             <MoreVertical className="h-4 w-4" />

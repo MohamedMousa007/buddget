@@ -320,7 +320,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         <div className="relative">
           <IconButton
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t.common.close}
             shape="round"
             className="absolute end-0 top-0"
           >
@@ -358,7 +358,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         <div className="relative">
           <IconButton
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t.common.close}
             shape="round"
             className="absolute end-0 top-0"
           >
@@ -449,7 +449,7 @@ function ResultView({
   onCancel: () => void
   onChange: (next: Partial<ScannedReceipt>) => void
 }) {
-  const rc = useT().receiptScan
+  const { receiptScan: rc, common } = useT()
   const categoryLabels = useT().expenseForm.categoryLabels
   const [amountDraft, setAmountDraft] = useState(String(result.amount))
   return (
@@ -477,7 +477,7 @@ function ResultView({
         </div>
         <IconButton
           onClick={onCancel}
-          aria-label="Close"
+          aria-label={common.close}
           shape="round"
           className="shrink-0"
         >
@@ -566,7 +566,7 @@ function ReceiptBreakdown({
   result: ScannedReceipt
   onChange: (next: Partial<ScannedReceipt>) => void
 }) {
-  const rc = useT().receiptScan
+  const { receiptScan: rc, a11y } = useT()
   const { items, charges, amount, currency } = result
   if (items.length === 0 && charges.length === 0) return null
 
@@ -595,7 +595,7 @@ function ReceiptBreakdown({
                   {it.price === 0 ? '—' : fmt(it.price)}
                 </span>
                 <IconButton
-                  aria-label={`Remove ${it.name}`}
+                  aria-label={a11y.removeNamed(it.name)}
                   variant="danger"
                   onClick={() => onChange({ items: items.filter((_, idx) => idx !== i) })}
                 >
@@ -613,7 +613,7 @@ function ReceiptBreakdown({
             <li key={`charge-${i}`} className="flex items-center gap-2 text-sm">
               <span className="flex-1 truncate text-[var(--color-brand-text-muted)]">{c.label}</span>
               <span className="tabular-nums text-[var(--color-brand-text-secondary)]">{fmt(c.amount)}</span>
-              <IconButton aria-label={`Remove ${c.label}`} onClick={() => onChange({ charges: charges.filter((_, idx) => idx !== i) })}>
+              <IconButton aria-label={a11y.removeNamed(c.label)} onClick={() => onChange({ charges: charges.filter((_, idx) => idx !== i) })}>
                 <X className="h-3.5 w-3.5" />
               </IconButton>
             </li>

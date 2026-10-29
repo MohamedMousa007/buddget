@@ -10,6 +10,7 @@
  * Controlled: each press computes the next string via nextValue() and calls onChange.
  */
 
+import { useT } from '@/lib/i18n'
 import { useEffect, useRef } from 'react'
 import { motion, useDragControls } from 'framer-motion'
 import { Delete } from 'lucide-react'
@@ -75,9 +76,10 @@ export function NumberPad({
   showDisplay = false,
   dir = 'ltr',
 }: NumberPadProps) {
+  const t = useT()
   const isPin = mode === 'pin'
   const keys = mode === 'decimal' ? KEYS_DECIMAL : KEYS_NODOT
-  const caption = label ?? (isPin ? 'Card last 4 digits' : 'Amount')
+  const caption = label ?? (isPin ? t.a11y.padCardLast4 : t.a11y.padAmount)
 
   const close = () => (onClose ?? onDone)()
 
@@ -156,7 +158,7 @@ export function NumberPad({
       {/* Transparent scrim: the form and its live value stay visible above the pad, like the OS keyboard. Tap closes. */}
       <button
         type="button"
-        aria-label="Close number pad"
+        aria-label={t.a11y.closeNumberPad}
         onClick={close}
         onTouchMove={(e) => e.preventDefault()}
         className="absolute inset-0 cursor-default border-0 bg-transparent [touch-action:none]"
@@ -228,7 +230,7 @@ export function NumberPad({
                   onPointerUp={stopHold}
                   onPointerLeave={stopHold}
                   onPointerCancel={stopHold}
-                  aria-label="Delete"
+                  aria-label={t.common.delete}
                 >
                   <Delete size={24} strokeWidth={1.75} />
                 </button>
@@ -240,7 +242,7 @@ export function NumberPad({
                 type="button"
                 className="np-key"
                 onPointerDown={(e) => { e.preventDefault(); press(k) }}
-                aria-label={k === '.' ? 'Decimal point' : k}
+                aria-label={k === '.' ? t.a11y.decimalPoint : k}
               >
                 {k}
               </button>
