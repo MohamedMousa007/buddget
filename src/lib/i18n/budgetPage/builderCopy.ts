@@ -150,7 +150,7 @@ export const budgetBuilderCopyAr: BudgetBuilderCopy = {
   linkedFromPage: 'مرتبط',
   due: (day) => `يستحق ${day}`,
   noDue: 'حدد يوم الاستحقاق',
-  remove: (name) => `حذف ${name}`,
+  remove: (name) => `إزالة ${name}`,
   amountOf: (name) => `مبلغ ${name}`,
   addLine: (block) => `أضف إلى ${block}`,
   next: 'القسم التالي',

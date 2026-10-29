@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { apiFetchAuth } from '@/lib/apiBase'
 import { useAssetPricesStore } from '@/lib/store/useAssetPricesStore'
 import {
@@ -41,6 +42,7 @@ function mayAskSelfHeal(): boolean {
 }
 
 export function refreshAssetPrices(opts: { force?: boolean } = {}): Promise<void> {
+  if (!isSupabaseConfigured()) return Promise.resolve()
   if (inflight) return inflight
   if (!opts.force && Date.now() - lastRun < MIN_GAP_MS) return Promise.resolve()
   inflight = readAssetPrices().finally(() => {

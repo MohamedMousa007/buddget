@@ -15,7 +15,7 @@ export function pocketColor(a: Pick<SavingsAccount, 'type' | 'color'>): string {
 }
 
 /** The stored name of the vault the app creates for every user; shown translated, never rewritten. */
-const SYSTEM_VAULT_NAME = 'Monthly Savings'
+export const SYSTEM_VAULT_NAME = 'Monthly Savings'
 
 export function pocketDisplayName(a: Pick<SavingsAccount, 'type' | 'name'>, systemNames: SavingsFormsCopy['systemNames']): string {
   return a.type === 'vault' && a.name === SYSTEM_VAULT_NAME ? systemNames.monthlySavings : a.name

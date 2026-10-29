@@ -7,6 +7,15 @@ export function validSignature(raw: string, signature: string | null, secret: st
   return given.length === expected.length && timingSafeEqual(given, expected)
 }
 
+const MAX_HOOK_AGE_MS = 5 * 60_000
+
+/** Sentry stamps each delivery in unix seconds; a replayed old delivery is dropped. A missing stamp passes (older integrations). */
+export function freshHook(stamp: string | null, now: number): boolean {
+  if (stamp === null) return true
+  const ms = Number(stamp) * 1000
+  return Number.isFinite(ms) && Math.abs(now - ms) <= MAX_HOOK_AGE_MS
+}
+
 export interface CrashEvent {
   fingerprint: string
   release: string

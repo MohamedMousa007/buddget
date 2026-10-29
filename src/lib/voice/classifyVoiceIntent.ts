@@ -17,7 +17,7 @@ const QUESTION_EN_RE =
   /\b(how much|how many|what'?s|what is|what are|what was|how'?s|how am i|show|list|why|when|which|do i|can i|could i|should i|am i|breakdown|summary|report|left|remaining|afford|compare|trend|average|overview)\b/i
 
 /** Question / analytics phrasing (AR — Egyptian + MSA). */
-const QUESTION_AR_RE = /كام|كم|قد ?اي[هة]|اي[هة]|لي[هة]|امتى|اعرض|اعرضلي|باقي|متبقي|ملخص|كشف|قارن|اجمالي|متوسط/
+const QUESTION_AR_RE = /(?<![\u0600-\u06FF])(?:كام|كم|قد ?اي[هة]|اي[هة]|لي[هة]|امتى|اعرض|اعرضلي|باقي|متبقي|ملخص|كشف|قارن|اجمالي|متوسط)(?![\u0600-\u06FF])/
 
 /** Casual money-movement verbs (EN) — "spent 250", "paid mom", "got salary". */
 const TXN_VERB_EN_RE =

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { SavingsAccount } from '@/lib/store/types'
-import { savingsAccountConversionAmounts, savingsAccountBalanceInBase } from './savingsConversions'
+import { savingsAccountConversionAmounts, savingsAccountBalanceInBase, pocketBalanceInBase } from './savingsConversions'
 
 const gold = (grams: number): SavingsAccount => ({
   id: 'g1',
@@ -68,5 +68,17 @@ describe('savingsAccountBalanceInBase — fail-closed', () => {
     // 100 USDT -> USD -> AED at 3.6725
     const v = savingsAccountBalanceInBase(acc('USDT', 100), 'AED', { USD_AED: 3.6725 }, 5000, true)
     expect(v).toBeCloseTo(367.25, 2)
+  })
+})
+
+describe('pocketBalanceInBase - BTC', () => {
+  const btc: SavingsAccount = { id: 'b', name: 'BTC', category: 'investment', type: 'other', currency: 'BTC', currentBalance: 0.5, createdAt: '2026-01-01' }
+  const live = (price: number) => ({ price, asOf: '2026-10-29T00:00:00Z', confidence: null })
+  it('prices a BTC pocket from the live cache', () => {
+    const lookup = (s: string, c: string) => (s === 'BTC' && c === 'EGP' ? live(3_000_000) : null)
+    expect(pocketBalanceInBase(btc, 'EGP', {}, 0, true, lookup)).toBe(1_500_000)
+  })
+  it('stays unpriced without a cache row', () => {
+    expect(pocketBalanceInBase(btc, 'EGP', {}, 0, true, () => null)).toBeNull()
   })
 })

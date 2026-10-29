@@ -143,6 +143,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
         if (res.status === 422) throw new Error(rc.errors.unreadable)
         if (res.status === 429) throw new Error(rc.errors.limitReached)
         if (res.status === 401) throw new Error(rc.errors.signInRequired)
+        if (res.status === 413) throw new Error(rc.errors.tooLarge)
         const err = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(err?.error || rc.errors.scanFailed(res.status))
       }
@@ -212,7 +213,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       form.append('image', blob)
       const { apiFetchAuth } = await import('@/lib/apiBase')
       const res = await apiFetchAuth('/api/receipt/scan', { method: 'POST', body: form, credentials: 'include', signal: ctrl.signal })
-      if (!res.ok) throw new Error(rc.errors.scanFailed(res.status))
+      if (!res.ok) throw new Error(res.status === 413 ? rc.errors.tooLarge : rc.errors.scanFailed(res.status))
       const data = (await res.json()) as { receipt?: Record<string, unknown> | null }
       if (!data.receipt) throw new Error(rc.errors.storedImageUnreadable)
       if (ctrl.signal.aborted) return

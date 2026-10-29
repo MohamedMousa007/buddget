@@ -66,6 +66,28 @@ describe('runTurn', () => {
     expect(seen).toContain('')
   })
 
+  it('keeps proposals gathered in an earlier hop when a later hop fails', async () => {
+    apiFetchAuth
+      .mockResolvedValueOnce(
+        sse([
+          meta,
+          {
+            t: 'calls',
+            parts: [{ functionCall: { name: 'add_expense', args: {} } }, { functionCall: { name: 'get_summary', args: {} } }],
+            calls: [
+              { name: 'add_expense', args: { description: 'Coffee', amount: 45, category: 'Food' } },
+              { name: 'get_summary', args: {} },
+            ],
+          },
+          done,
+        ]),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ layer: 'window_5h' }), { status: 429 }))
+    const out = await runTurn({ ...base, text: 'coffee 45', intent: 'action', onText: () => undefined })
+    expect(out.proposals).toHaveLength(1)
+    expect(out.truncated).toBe(true)
+  })
+
   it('maps quota, auth and offline failures', async () => {
     apiFetchAuth.mockResolvedValueOnce(new Response(JSON.stringify({ layer: 'window_5h', resetAt: '2026-10-19T18:00:00Z' }), { status: 429 }))
     await expect(runTurn({ ...base, onText: () => undefined })).rejects.toMatchObject({ detail: { kind: 'quota', layer: 'window_5h' } })

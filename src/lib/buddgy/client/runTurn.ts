@@ -133,66 +133,72 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
   const proposals: Proposal[] = []
   const reads: ReadNote[] = []
 
-  for (let hop = 0; hop <= TURN_LIMITS.maxHops; hop++) {
-    const body: TurnRequest = {
-      ...(chatId ? { chatId } : {}),
-      ...(hop > 0 ? { hop: true } : {}),
-      messages,
-      context,
-      carry: args.carry,
-      locale: args.locale,
-      intent: args.intent,
-    }
-    let res: Response
-    try {
-      res = await apiFetchAuth('/api/buddgy/turn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: args.signal,
-      })
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') throw e
-      throw new TurnFailure({ kind: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'failed' })
-    }
-    if (!res.ok) throw await failureFromResponse(res)
-
-    let calls: WireToolCall[] | null = null
-    let parts: unknown[] = []
-    let finished = false
-    for await (const ev of readTurnEvents(res)) {
-      if (ev.t === 'meta') {
-        chatId = ev.chatId ?? chatId
-        if (ev.chatId) args.onChat?.(ev.chatId)
-        rolled ||= ev.rolled
-        soft ||= ev.soft
-      } else if (ev.t === 'text') {
-        text += ev.d
-        args.onText(text)
-      } else if (ev.t === 'calls') {
-        calls = ev.calls
-        parts = ev.parts
-      } else if (ev.t === 'done') {
-        finished = true
-        truncated ||= ev.truncated
-      } else if (ev.t === 'error') {
-        throw toFailure(ev)
+  try {
+    for (let hop = 0; hop <= TURN_LIMITS.maxHops; hop++) {
+      const body: TurnRequest = {
+        ...(chatId ? { chatId } : {}),
+        ...(hop > 0 ? { hop: true } : {}),
+        messages,
+        context,
+        carry: args.carry,
+        locale: args.locale,
+        intent: args.intent,
       }
+      let res: Response
+      try {
+        res = await apiFetchAuth('/api/buddgy/turn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: args.signal,
+        })
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') throw e
+        throw new TurnFailure({ kind: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'failed' })
+      }
+      if (!res.ok) throw await failureFromResponse(res)
+
+      let calls: WireToolCall[] | null = null
+      let parts: unknown[] = []
+      let finished = false
+      for await (const ev of readTurnEvents(res)) {
+        if (ev.t === 'meta') {
+          chatId = ev.chatId ?? chatId
+          if (ev.chatId) args.onChat?.(ev.chatId)
+          rolled ||= ev.rolled
+          soft ||= ev.soft
+        } else if (ev.t === 'text') {
+          text += ev.d
+          args.onText(text)
+        } else if (ev.t === 'calls') {
+          calls = ev.calls
+          parts = ev.parts
+        } else if (ev.t === 'done') {
+          finished = true
+          truncated ||= ev.truncated
+        } else if (ev.t === 'error') {
+          throw toFailure(ev)
+        }
+      }
+      // A stream that ends with neither a result nor a done frame was cut off mid-reply.
+      if (!calls && !finished) throw new TurnFailure({ kind: 'failed' })
+      if (!calls) break
+
+      const ran = executeCalls(calls, { ...ctx, afterRead: reads.length > 0 })
+      proposals.push(...ran.proposals)
+      reads.push(...ran.reads)
+      if (!ran.needsModel || hop === TURN_LIMITS.maxHops) break
+
+      for (const r of ran.reads) args.onStep?.(r.label)
+      // What was streamed before a data lookup was only a lead-in; the answer comes after the data.
+      text = ''
+      args.onText('')
+      messages.push({ role: 'model', parts }, { role: 'tool', results: ran.results })
     }
-    // A stream that ends with neither a result nor a done frame was cut off mid-reply.
-    if (!calls && !finished) throw new TurnFailure({ kind: 'failed' })
-    if (!calls) break
-
-    const ran = executeCalls(calls, { ...ctx, afterRead: reads.length > 0 })
-    proposals.push(...ran.proposals)
-    reads.push(...ran.reads)
-    if (!ran.needsModel || hop === TURN_LIMITS.maxHops) break
-
-    for (const r of ran.reads) args.onStep?.(r.label)
-    // What was streamed before a data lookup was only a lead-in; the answer comes after the data.
-    text = ''
-    args.onText('')
-    messages.push({ role: 'model', parts }, { role: 'tool', results: ran.results })
+  } catch (e) {
+    // Proposals from earlier hops are real work the user can still approve; a later hop failing must not discard them.
+    if (proposals.length === 0 || (e instanceof DOMException && e.name === 'AbortError')) throw e
+    truncated = true
   }
 
   return { text: text.trim(), proposals, reads, chatId, rolled, soft, truncated, intent: args.intent }

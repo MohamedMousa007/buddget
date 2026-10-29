@@ -28,7 +28,7 @@ describe('POST /api/ai', () => {
     vi.stubEnv('GEMINI_API_KEY', 'k')
     h.call.mockReset().mockResolvedValue(new Response(JSON.stringify({ candidates: [] }), { status: 200 }))
     h.limited.mockReset().mockResolvedValue(false)
-    h.runtime.mockReset().mockReturnValue({ rateLimitingEnabled: true, rateLimitMaxRequests: 5, rateLimitWindowMs: 60_000 })
+    h.runtime.mockReset().mockResolvedValue({ rateLimitingEnabled: true, rateLimitMaxRequests: 5, rateLimitWindowMs: 60_000 })
   })
 
   it('rejects an oversized body before parsing it', async () => {
@@ -59,5 +59,25 @@ describe('POST /api/ai', () => {
     const res = await post({ contents })
     expect(res.status).toBe(502)
     expect(JSON.stringify(await res.json())).not.toContain('projects/123')
+  })
+
+  it('answers invalid JSON with 400, not 500', async () => {
+    expect((await post('{nope')).status).toBe(400)
+    expect(h.call).not.toHaveBeenCalled()
+  })
+
+  it('bounds every upstream call with a deadline signal inside the function budget', async () => {
+    await post({ contents })
+    expect(h.call.mock.calls[0][4]).toBeInstanceOf(AbortSignal)
+  })
+
+  it('cancels the first response body before falling back to the legacy model', async () => {
+    const cancel = vi.fn().mockResolvedValue(undefined)
+    const first = new Response('x', { status: 404 })
+    first.body!.cancel = cancel as never
+    h.call.mockResolvedValueOnce(first)
+    await post({ contents, tier: 'fast' })
+    expect(cancel).toHaveBeenCalled()
+    expect(h.call).toHaveBeenCalledTimes(2)
   })
 })

@@ -9,6 +9,7 @@ import { findBrandByKey, plansForRegion, type CatalogRegion } from '@/lib/consta
 import { localTodayISO } from '@/lib/utils/localDate'
 import { persist } from 'zustand/middleware'
 import { createDebouncedJsonStorage } from './debouncedPersistStorage'
+import { balanceEpsilon, settleBalance } from '@/lib/savings/balanceMath'
 import { tryConvertCurrency, tryConvertWithGold, withoutGoldRates, type GoldQuote } from '@/lib/utils/currency'
 import {
   DEFAULT_BUDGET,
@@ -448,7 +449,7 @@ export const useFinanceStore = create<FinanceStore>()(
             incomeEvents,
             savingsTransactions: state.savingsTransactions.filter((tx) => tx.id !== reversal.id),
             savingsAccounts: state.savingsAccounts.map((a) =>
-              a.id === reversal.accountId ? { ...a, currentBalance: a.currentBalance - reversal.amount } : a
+              a.id === reversal.accountId ? { ...a, currentBalance: settleBalance(a.currentBalance - reversal.amount) } : a
             ),
           }
           return {
@@ -533,7 +534,7 @@ export const useFinanceStore = create<FinanceStore>()(
                 incomeEvents,
                 savingsTransactions: [...state.savingsTransactions, tx],
                 savingsAccounts: state.savingsAccounts.map((a) =>
-                  a.id === acc.id ? { ...a, currentBalance: a.currentBalance + back } : a
+                  a.id === acc.id ? { ...a, currentBalance: settleBalance(a.currentBalance + back) } : a
                 ),
               }
               return { ...nextState, goals: reconcileGoalsForState(nextState) }
@@ -1706,7 +1707,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state,
             savingsTransactions: [...state.savingsTransactions, tx],
             savingsAccounts: state.savingsAccounts.map((a) =>
-              a.id === accountId ? { ...a, currentBalance: a.currentBalance + amt } : a
+              a.id === accountId ? { ...a, currentBalance: settleBalance(a.currentBalance + amt) } : a
             ),
           }
           ok = true
@@ -1726,7 +1727,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const from = state.savingsAccounts.find((a) => a.id === fromId)
           const to = state.savingsAccounts.find((a) => a.id === toId)
           if (!from || !to) return state
-          if (from.currentBalance + 0.0001 < raw) return state // insufficient
+          if (from.currentBalance + balanceEpsilon(from.currency) < raw) return state // insufficient
           // Convert into the destination's unit; fails closed when there is no path or gold is unpriced.
           const toAmt =
             to.currency === from.currency
@@ -1752,9 +1753,9 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsTransactions: [...state.savingsTransactions, outTx, inTx],
             savingsAccounts: state.savingsAccounts.map((a) =>
               a.id === fromId
-                ? { ...a, currentBalance: Math.max(0, a.currentBalance - raw) }
+                ? { ...a, currentBalance: settleBalance(Math.max(0, a.currentBalance - raw)) }
                 : a.id === toId
-                  ? { ...a, currentBalance: a.currentBalance + toAmt }
+                  ? { ...a, currentBalance: settleBalance(a.currentBalance + toAmt) }
                   : a
             ),
           }
@@ -1777,7 +1778,7 @@ export const useFinanceStore = create<FinanceStore>()(
             cIn === acc.currency
               ? raw
               : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
-          if (amt === null || amt <= 0 || acc.currentBalance + 0.0001 < amt) return state
+          if (amt === null || amt <= 0 || acc.currentBalance + balanceEpsilon(acc.currency) < amt) return state
           const tx: SavingsTransaction = {
             id: generateId(),
             accountId,
@@ -1824,7 +1825,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state,
             savingsTransactions: [...state.savingsTransactions, tx],
             savingsAccounts: state.savingsAccounts.map((a) =>
-              a.id === accountId ? { ...a, currentBalance: Math.max(0, a.currentBalance - amt) } : a
+              a.id === accountId ? { ...a, currentBalance: settleBalance(Math.max(0, a.currentBalance - amt)) } : a
             ),
             incomeEvents: incomeEvent ? [...state.incomeEvents, incomeEvent] : state.incomeEvents,
             settings: incomeEvent
@@ -1858,7 +1859,7 @@ export const useFinanceStore = create<FinanceStore>()(
           // Never clamp: a delete that would drive a pocket negative is refused so ledger and balance stay equal.
           for (const a of state.savingsAccounts) {
             const next = a.currentBalance + (balanceDelta[a.id] ?? 0)
-            if (balanceDelta[a.id] != null && next < -0.0001) {
+            if (balanceDelta[a.id] != null && next < -balanceEpsilon(a.currency)) {
               result = { ok: false, reason: 'would_go_negative', accountId: a.id, shortBy: -next }
               return state
             }
@@ -1868,7 +1869,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state,
             savingsTransactions: state.savingsTransactions.filter((t) => !ids.includes(t.id)),
             savingsAccounts: state.savingsAccounts.map((a) =>
-              balanceDelta[a.id] != null ? { ...a, currentBalance: a.currentBalance + balanceDelta[a.id] } : a
+              balanceDelta[a.id] != null ? { ...a, currentBalance: settleBalance(a.currentBalance + balanceDelta[a.id]) } : a
             ),
             incomeEvents: state.incomeEvents.filter((e) => !pairedEventIds.has(e.id)),
           }
@@ -1884,7 +1885,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const acc = state.savingsAccounts.find((a) => a.id === accountId)
           if (!acc) return state
           const diff = nb - acc.currentBalance
-          if (Math.abs(diff) < 0.0001) return state
+          if (Math.abs(diff) < balanceEpsilon(acc.currency)) return state
           const type: SavingsTransaction['type'] = diff > 0 ? 'deposit' : 'withdrawal'
           const tx: SavingsTransaction = {
             id: generateId(),

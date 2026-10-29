@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { startRecording, requestMicPermission, getMicPermissionStatus } from '@/lib/native/voiceRecorder'
 import { runAiCommand, type AiCommandStats } from '@/lib/ai/runAiCommand'
+import { quotaDeniedMessage } from '@/lib/ai/quotaDeniedCopy'
 import { classifyVoiceIntent } from '@/lib/voice/classifyVoiceIntent'
 import { needsEscalation } from '@/lib/voice/escalation'
 import {
@@ -289,7 +290,11 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       const res = await apiFetchAuth('/api/voice/transcribe', { method: 'POST', body, signal, headers })
 
       if (!res.ok) {
-        const err = (await res.json().catch(() => null)) as { error?: string } | null
+        if (res.status === 413) throw new VoiceStageError('transcribe', vt.errors.tooLarge)
+        const err = (await res.json().catch(() => null)) as { error?: string; stage?: string; layer?: string; resetAt?: string | null } | null
+        if (err?.stage === 'quota') {
+          throw new VoiceStageError('transcribe', quotaDeniedMessage(err.layer, err.resetAt, useFinanceStore.getState().settings.language === 'ar' ? 'ar' : 'en'))
+        }
         if (res.status === 401 || res.status === 403) {
           const diag = await diagnoseAuth(res.status)
           if (!diag.hasToken) {

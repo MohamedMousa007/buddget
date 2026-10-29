@@ -3,6 +3,8 @@ import {
   isBuddgetServerThrottleMessage,
 } from '@/lib/ai/formatAiProxyError'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { quotaDeniedMessage } from '@/lib/ai/quotaDeniedCopy'
 
 /** POST body for `/api/ai` (Gemini proxy). */
 export interface GeminiProxyRequestBody {
@@ -22,6 +24,13 @@ const DEFAULT_BACKOFF_MS = 1800
 
 /** User-facing copy when the app-side throttle or cooldown applies. */
 export const SYSTEM_RESTING_MESSAGE = 'Taking a quick breather — try again in a moment 😊'
+
+/** A quota denial (stage 'quota') is a plan limit, not a transient 429: retrying cannot help. */
+async function isQuotaDenied(response: Response): Promise<boolean> {
+  if (response.status !== 429) return false
+  const body = (await response.clone().json().catch(() => null)) as { stage?: string } | null
+  return body?.stage === 'quota'
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -47,7 +56,7 @@ export async function generateWithFallback(
       signal: options?.signal,
     })
     last = response
-    if (response.status !== 429) return response
+    if (response.status !== 429 || (await isQuotaDenied(response))) return response
     if (attempt < maxAttempts - 1) await sleep(backoffMs * (attempt + 1))
   }
   return last as Response
@@ -78,7 +87,7 @@ export async function generateWithFallbackFromRequest(
       body: JSON.stringify(body),
     })
     last = response
-    if (response.status !== 429) return response
+    if (response.status !== 429 || (await isQuotaDenied(response))) return response
     if (attempt < maxAttempts - 1) await sleep(backoffMs * (attempt + 1))
   }
   return last as Response
@@ -91,7 +100,11 @@ export const AI_UNAVAILABLE_MANUAL_SETUP_MESSAGE =
 /** Maps failed proxy responses to a single Error for callers (Gemini vs Buddget throttle). */
 export async function throwIfAiProxyNotOk(response: Response): Promise<void> {
   if (response.ok) return
-  const errorData = (await response.json().catch(() => null)) as { error?: string } | null
+  const errorData = (await response.clone().json().catch(() => null)) as { error?: string; stage?: string; layer?: string; resetAt?: string | null } | null
+  if (errorData?.stage === 'quota') {
+    const lang = useFinanceStore.getState().settings.language === 'ar' ? 'ar' : 'en'
+    throw new Error(quotaDeniedMessage(errorData.layer, errorData.resetAt, lang))
+  }
   const raw = errorData?.error || `Oops, something didn't go as planned (${response.status})`
   if (response.status === 503) {
     throw new Error(AI_UNAVAILABLE_MANUAL_SETUP_MESSAGE)

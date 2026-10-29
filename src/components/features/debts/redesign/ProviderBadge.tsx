@@ -1,6 +1,7 @@
 'use client'
 
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
+import { useT } from '@/lib/i18n'
 
 /**
  * Provider logo badge. Renders the provider's OFFICIAL logo (from `public/providers/`)
@@ -47,6 +48,7 @@ export interface ProviderBadgeProps {
 }
 
 export function ProviderBadge({ slug, name, color, size = 40, className }: ProviderBadgeProps) {
+  const t = useT()
   const brand = findProviderBrand(slug)
   const label = name ?? brand?.name ?? 'Other'
   const c = color ?? brand?.color ?? 'var(--color-brand-text-muted)'
@@ -59,7 +61,7 @@ export function ProviderBadge({ slug, name, color, size = 40, className }: Provi
         style={{ width: size, height: size, borderRadius: size * 0.26 }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- static provider logo, no optimization needed */}
-        <img src={logo} alt={`${label} logo`} className="h-full w-full object-contain" style={{ padding: size * 0.12 }} />
+        <img src={logo} alt={t.common.logoAlt(label)} className="h-full w-full object-contain" style={{ padding: size * 0.12 }} />
       </span>
     )
   }

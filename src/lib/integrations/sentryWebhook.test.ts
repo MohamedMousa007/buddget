@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { parseCrashEvent, validSignature } from './sentryWebhook'
+import { freshHook, parseCrashEvent, validSignature } from './sentryWebhook'
 
 describe('validSignature', () => {
   const raw = '{"a":1}'
@@ -36,5 +36,15 @@ describe('parseCrashEvent', () => {
     expect(parseCrashEvent({ data: { event: { ...event, user: { id: 'someone' }, level: 'weird' } } })).toMatchObject({ userId: null, level: 'error' })
     expect(parseCrashEvent({ data: {} })).toBeNull()
     expect(parseCrashEvent(null)).toBeNull()
+  })
+})
+
+describe('freshHook', () => {
+  const now = Date.UTC(2026, 9, 1, 12, 0, 0)
+  it('accepts a recent or absent stamp and drops a replayed one', () => {
+    expect(freshHook(String(now / 1000 - 30), now)).toBe(true)
+    expect(freshHook(null, now)).toBe(true)
+    expect(freshHook(String(now / 1000 - 3600), now)).toBe(false)
+    expect(freshHook('abc', now)).toBe(false)
   })
 })

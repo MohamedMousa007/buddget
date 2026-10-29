@@ -193,3 +193,12 @@ describe('deleteSavingsAccount — default carry pocket', () => {
     expect(S().profile.defaultCarryPocketId).toBe('p1')
   })
 })
+
+describe('balances settle float drift', () => {
+  beforeEach(() => seed([pocket('p1', 'EGP', 0)]))
+  it('0.1 + 0.2 is exactly 0.3', () => {
+    S().depositToSavings('p1', 0.1, 'EGP')
+    S().depositToSavings('p1', 0.2, 'EGP')
+    expect(S().savingsAccounts[0].currentBalance).toBe(0.3)
+  })
+})

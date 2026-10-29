@@ -1,6 +1,7 @@
 import type { Currency, SavingsAccount } from '@/lib/store/types'
 import { goldGramsToMoney } from '@/lib/utils/calculations'
 import { tryConvertCurrency } from '@/lib/utils/currency'
+import { saghaRate, valueCrypto, type PriceLookup } from '@/lib/savings/holdingValuation'
 
 /**
  * Balance of a savings account expressed in the user's primary (base) currency for rollups.
@@ -24,6 +25,21 @@ export function savingsAccountBalanceInBase(
     return goldGramsToMoney(account.currentBalance, goldPricePerGram, 24)
   }
   return tryConvertCurrency(account.currentBalance, c, baseCurrency, rates)
+}
+
+/** Like {@link savingsAccountBalanceInBase}, but a BTC/ETH pocket is priced from the live crypto cache (valued in EGP, then to base); null when that price is missing. */
+export function pocketBalanceInBase(
+  account: SavingsAccount,
+  baseCurrency: Currency,
+  rates: Record<string, number>,
+  goldPricePerGram: number,
+  goldPriceAvailable: boolean,
+  lookup: PriceLookup,
+): number | null {
+  const c = account.currency
+  if (c !== 'BTC' && c !== 'ETH') return savingsAccountBalanceInBase(account, baseCurrency, rates, goldPricePerGram, goldPriceAvailable)
+  const v = valueCrypto(account.currentBalance, c, lookup, saghaRate(lookup))
+  return v.priced && v.value != null ? tryConvertCurrency(v.value, 'EGP', baseCurrency, rates) : null
 }
 
 export function needsLiveValuationPlaceholder(account: SavingsAccount): boolean {

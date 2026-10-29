@@ -101,7 +101,8 @@ export function useAddExpenseSheet() {
         setCategory(expensePrefill.category)
       }
       if (expensePrefill.paymentMethod) {
-        setPaymentMethodId(matchPaymentMethodForExpense(expensePrefill.paymentMethod, paymentMethods))
+        const matched = matchPaymentMethodForExpense(expensePrefill.paymentMethod, paymentMethods)
+        if (matched) setPaymentMethodId(matched)
       }
       if (expensePrefill.notes) setNotes(expensePrefill.notes)
       setExpensePrefill(null)

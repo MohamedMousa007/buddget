@@ -27,6 +27,8 @@ export const linearConfig = (env: Record<string, string | undefined> = process.e
 /** Linear priority: 1 urgent, 2 high, 3 medium, 4 low. */
 const PRIORITY: Record<string, number> = { critical: 1, high: 2, normal: 3, low: 4 }
 
+const KIND_TITLE: Record<string, string> = { bug: 'Bug report', feature: 'Feature request' }
+
 export function buildIssue(p: IssuePayload, cfg: LinearConfig, portalUrl = 'https://admin.buddget.app') {
   const facts = [
     `Ticket #${p.number}`,
@@ -37,7 +39,7 @@ export function buildIssue(p: IssuePayload, cfg: LinearConfig, portalUrl = 'http
   ].filter(Boolean)
   return {
     teamId: cfg.teamId,
-    title: `[#${p.number}] ${p.subject}`.slice(0, 200),
+    title: `[#${p.number}] ${KIND_TITLE[p.kind] ?? 'Feedback'}${p.area ? ` (${p.area})` : ''}`.slice(0, 200),
     description: `${facts.join('\n')}\n\nFull report and conversation: ${portalUrl} (Support, ticket #${p.number}).`,
     priority: PRIORITY[p.severity] ?? 3,
     labelIds: [cfg.labelFeedback, p.kind === 'feature' ? cfg.labelFeature : cfg.labelBug],

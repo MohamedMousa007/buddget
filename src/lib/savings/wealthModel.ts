@@ -1,6 +1,6 @@
 import type { Currency, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
-import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
+import { pocketBalanceInBase } from '@/lib/savings/savingsConversions'
 import { valueInvestmentHolding, type PriceLookup } from '@/lib/savings/holdingValuation'
 
 export type CatKey =
@@ -74,7 +74,7 @@ export function buildWealth(input: WealthInput): WealthModel {
 
   for (const a of accounts) {
     const cat = catForAccount(a)
-    const amount = savingsAccountBalanceInBase(a, baseCurrency, rates, goldPricePerGram, goldOk)
+    const amount = pocketBalanceInBase(a, baseCurrency, rates, goldPricePerGram, goldOk, lookup)
     const pricing: Pricing = a.category === 'investment' ? 'market' : 'balance'
     if (amount === null) anyUnpriced = true
     else {

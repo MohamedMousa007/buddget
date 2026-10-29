@@ -59,4 +59,20 @@ describe('POST /api/receipt/scan', () => {
     await call([file('image/png')])
     expect(h.fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
   })
+
+  it('stops retrying once the shared deadline is nearly spent, so the reservation settles before the function is killed', async () => {
+    let now = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    h.fetch.mockImplementation(async () => {
+      now += 30_000
+      throw new Error('network')
+    })
+    expect((await call([file('image/jpeg')])).status).toBe(502)
+    expect(h.fetch).toHaveBeenCalledTimes(2)
+    vi.restoreAllMocks()
+  })
+
+  it('rejects a payload over the platform body cap with a 413', async () => {
+    expect((await call([file('image/jpeg', 4_100_000)])).status).toBe(413)
+  })
 })

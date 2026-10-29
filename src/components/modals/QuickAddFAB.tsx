@@ -85,10 +85,10 @@ export function QuickAddFAB() {
     }, msg)
   }
 
-  const renderTile = (tile: QuickAddTile) => {
+  const renderTile = (tile: QuickAddTile, index: number) => {
     const Icon = tile.icon
     return (
-      <div key={tile.id} className="min-w-0">
+      <div key={tile.id} className={tiles.length % 2 === 1 && index === tiles.length - 1 ? 'col-span-2 min-w-0' : 'min-w-0'}>
         <SelectableCard as="action" surface="elevated" layout="row" onClick={() => runTile(tile.id)} className="w-full min-w-0">
           <span className="flex w-full min-w-0 items-center gap-2.5 overflow-hidden text-start">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px]" style={{ background: tile.bg, color: tile.fg }}>
@@ -96,7 +96,7 @@ export function QuickAddFAB() {
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-px">
               <span className="truncate text-sm font-bold leading-[1.25] text-[var(--color-brand-text-primary)]">{tile.label}</span>
-              <span className="truncate text-[11.5px] leading-[1.3] text-[var(--color-brand-text-secondary)]">{tile.hint}</span>
+              <span className="line-clamp-2 text-[11.5px] leading-[1.3] text-[var(--color-brand-text-secondary)]">{tile.hint}</span>
             </span>
           </span>
         </SelectableCard>
@@ -148,7 +148,7 @@ export function QuickAddFAB() {
           {/* Plain centred text — not a button or a pill. */}
           <p className="mt-0.5 flex items-center justify-center gap-[7px] text-center text-[12.5px] leading-[1.4] text-[var(--color-brand-text-secondary)]">
             <Mic className="size-[15px] shrink-0 text-[var(--color-brand-primary-ink)]" strokeWidth={2} aria-hidden />
-            <span>
+            <span className="min-w-0">
               <b className="font-bold text-[var(--color-brand-primary-ink)]">{tipLead}</b>
               {tipRest}
             </span>

@@ -156,13 +156,13 @@ async function captureWeb(source: 'camera' | 'gallery' = 'camera'): Promise<Capt
 
 // 2048px keeps Arabic item lines legible inside Gemini's 768px tiles — 1600px
 // left dense receipt text too small to OCR reliably (misread Arabic, missed lines).
-const MAX_EDGE = 2048
-const JPEG_QUALITY = 0.85
+const MAX_EDGE = 1800
+const JPEG_QUALITY = 0.8
 
 /**
  * Downscales a captured image to a JPEG with its longest edge ≤ {@link MAX_EDGE}.
  * Normalizes large photos and HEIC/PNG captures into a small, Gemini-friendly JPEG
- * (keeps payloads well under the 10 MB cap and improves OCR reliability).
+ * (keeps a five-page scan under the 4 MB body cap and improves OCR reliability).
  * Falls back to the original data URL if canvas decoding fails.
  */
 async function downscaleCaptured(dataUrl: string, filename: string): Promise<CapturedImage> {

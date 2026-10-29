@@ -33,6 +33,7 @@ import type {
 import { goalAmountPerPayment, goalDurationFromTarget, goalTargetDate, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
+import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
 
@@ -572,7 +573,7 @@ export function useAddDebtSheet() {
         currency: payCur as Currency,
         frequency: recurringFrequency,
         nextDueDate: paymentDate,
-        dueDay: Number(paymentDate.slice(8, 10)),
+        dueDay: recurringDueDayFor(recurringFrequency, paymentDate),
         paymentMethodId: pmId,
         isActive: true,
         notes: paymentNotes || undefined,
@@ -700,6 +701,7 @@ export function useAddDebtSheet() {
     const amount = parseFloat(paymentAmount)
     if (isNaN(amount) || amount <= 0) return null
     if (selectedDebt.isGold && paymentCurrency !== 'XAU') {
+      if (useFinanceStore.getState().goldPriceAvailable === false) return '≈ —'
       const gramsViaHelper = convertPaymentToDebtUnit(
         amount,
         paymentCurrency,

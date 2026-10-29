@@ -78,9 +78,9 @@ export function BorrowHeroCard({ vm, onEdit, onDelete, onPay }: BorrowHeroCardPr
           </span>
         </div>
       ) : owe ? (
-        <div className="mt-3 flex items-center gap-2 rounded-[11px] border border-dashed border-[var(--color-brand-border)] px-2.5 py-1.5">
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[11px] border border-dashed border-[var(--color-brand-border)] px-2.5 py-1.5">
           <Target className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
-          <p className="min-w-0 flex-1 text-[12px] text-[var(--color-brand-text-muted)]">{t.fPayoffGoalHint}</p>
+          <p className="min-w-[8rem] flex-1 text-[12px] text-[var(--color-brand-text-muted)]">{t.fPayoffGoalHint}</p>
           <Button onClick={() => openGoalEdit(vm.id)} variant="outline" size="touch" className="shrink-0">
             {t.fPayoffGoal}
           </Button>

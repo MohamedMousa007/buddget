@@ -227,6 +227,7 @@ const CAT_RAW: Record<string, CatEntry> = {
   meeza: { name: 'Meeza', type: 'prepaid_card', colors: ['#C6A24E', '#7A6428'], country: 'EG', aliases: ['ميزة', 'meeza card'] },
   meezadebit: { name: 'Meeza (debit)', type: 'debit_card', colors: ['#C6A24E', '#7A6428'], country: 'EG', aliases: ['meeza debit'] },
   valu: { name: 'valU', type: 'bnpl', colors: ['#F04E23', '#8A2A12'], country: 'EG', aliases: ['value'] },
+  souhoola: { name: 'Souhoola', type: 'bnpl', country: 'EG', aliases: ['sohoola', 'سهولة'] },
   sympl: { name: 'Sympl', type: 'bnpl', country: 'EG', aliases: ['simple'] },
   aman: { name: 'Aman', type: 'bnpl', country: 'EG', aliases: ['aman installments'] },
   contact: { name: 'Contact', type: 'bnpl', country: 'EG', aliases: ['contact installments', 'sarwa'] },
@@ -327,7 +328,7 @@ const CAT_RAW: Record<string, CatEntry> = {
 
 /** First 2–3 letters of a provider name, uppercased (card/picker chip). */
 export function providerInitials(name: string): string {
-  const s = (name || '').replace(/[^a-z]/gi, '')
+  const s = (name || '').replace(/[^a-z\u0600-\u06FF]/gi, '')
   return (s.slice(0, 3) || '—').toUpperCase()
 }
 
@@ -346,7 +347,7 @@ export const PAYMENT_BRANDS: Record<string, PaymentBrand> = Object.fromEntries(
  * length-guarded substring pass. Mirrors `resolveBrandKeyFromMerchant` for subs.
  */
 export function normalizeBrandToken(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  return s.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, '')
 }
 
 const MIN_CONTAINMENT_TOKEN = 3
@@ -354,7 +355,7 @@ const SHORT_TOKEN_MAX = 5
 
 /** A short token must land on a word boundary; a long one may match anywhere. */
 function textMentions(raw: string, norm: string, token: string): boolean {
-  if (token.length > SHORT_TOKEN_MAX) return norm.includes(token)
+  if (token.length > SHORT_TOKEN_MAX || /[\u0600-\u06FF]/.test(token)) return norm.includes(token)
   return new RegExp(`\\b${token}\\b`, 'i').test(raw)
 }
 
@@ -449,9 +450,9 @@ export function composePaymentMethodName(
   opts: { last4?: string; tag?: string } = {},
 ): string {
   const p = provider.trim()
-  if (opts.last4) return `${p} ••${opts.last4}`
-  if (opts.tag && opts.tag.trim()) return `${p} · ${opts.tag.trim()}`
-  return p
+  const tag = opts.tag?.trim()
+  const head = opts.last4 ? `${p} ••${opts.last4}` : p
+  return tag ? `${head} · ${tag}` : head
 }
 
 /** Reverse of {@link composePaymentMethodName} for prefilling the edit form. */
@@ -460,11 +461,8 @@ export function decomposePaymentMethodName(
   last4?: string,
 ): { provider: string; tag: string } {
   if (last4) {
-    const suffix4 = ` ••••${last4}`
-    const suffix = ` ••${last4}`
-    if (name.endsWith(suffix4)) return { provider: name.slice(0, -suffix4.length), tag: '' }
-    if (name.endsWith(suffix)) return { provider: name.slice(0, -suffix.length), tag: '' }
-    return { provider: name, tag: '' }
+    const m = name.match(new RegExp(` ••(?:••)?${last4}(?:(?: · |\\s+)(.+))?$`))
+    return m ? { provider: name.slice(0, m.index), tag: m[1] ?? '' } : { provider: name, tag: '' }
   }
   const sep = name.indexOf(' · ')
   if (sep !== -1) return { provider: name.slice(0, sep), tag: name.slice(sep + 3) }

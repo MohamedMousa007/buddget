@@ -256,6 +256,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               onCompositionUpdate={(e) => setDescription(e.currentTarget.value)}
               onCompositionEnd={(e) => setDescription(e.currentTarget.value)}
               placeholder={t.expenseForm.descriptionPlaceholder}
+              enterKeyHint="next"
               size="brand"
             />
           </div>

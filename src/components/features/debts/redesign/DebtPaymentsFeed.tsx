@@ -194,7 +194,7 @@ export function DebtPaymentsFeed({
                     captionColor={accent}
                     title={m.name}
                     subtitle={m.kind === 'added' ? familyLabel[m.family] : `${formatLocalized(parseISO(m.date), 'MMM d', locale)}${m.method ? ` · ${m.method}` : ''}`}
-                    amount={m.kind === 'paid' ? `−${fmtWhole(m.amount)}` : m.amount > 0 ? `+${fmtWhole(m.amount)}` : '—'}
+                    amount={m.kind === 'paid' ? `−${fmtWhole(m.amount)}` : m.amount > 0 ? fmtWhole(m.amount) : '—'}
                     sub={
                       m.kind === 'paid' ? (
                         <span className="inline-flex items-center gap-0.5 font-semibold text-[var(--color-brand-green)]">

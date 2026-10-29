@@ -197,7 +197,7 @@ export default function WealthPage() {
     [pockets, goals, coverPocketIds, profile.defaultCarryPocketId],
   )
 
-  const trendRaw = useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced, nw.accountsTotal != null ? 'accounts' : 'legacy')
+  const trendRaw = useNetWorthTrend(nw.netWorth, base, dataReady && !model.anyUnpriced && !nw.netWorthIncomplete, nw.accountsTotal != null ? 'accounts' : 'legacy')
   const trend = trendRaw ? { points: trendRaw.points, dir: trendRaw.dir, pct: `${Math.abs(trendRaw.pct).toFixed(1)}%` } : undefined
 
   const split = useMemo<HeroSplitSegment[]>(() => {

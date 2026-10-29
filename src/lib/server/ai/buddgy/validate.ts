@@ -31,7 +31,7 @@ function cleanModelParts(parts: unknown, knownTools: ReadonlySet<string>): unkno
 
 export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>): ParseResult {
   if (!isRecord(raw)) return { ok: false, reason: 'body' }
-  const { messages, context, carry, locale, intent, chatId, hop } = raw
+  const { messages, context, carry, locale, intent, chatId } = raw
 
   if (!Array.isArray(messages) || messages.length === 0 || messages.length > TURN_LIMITS.maxMessages) return { ok: false, reason: 'messages' }
   if (typeof context !== 'string' || context.length > TURN_LIMITS.maxContextChars) return { ok: false, reason: 'context' }
@@ -86,7 +86,7 @@ export function parseTurnRequest(raw: unknown, knownTools: ReadonlySet<string>):
       locale: locale as BuddgyLocale,
       intent: intent as BuddgyIntent | undefined,
       chatId: chatId as string | undefined,
-      hop: hop === true,
+      hop: clean[clean.length - 1].role === 'tool',
     },
   }
 }

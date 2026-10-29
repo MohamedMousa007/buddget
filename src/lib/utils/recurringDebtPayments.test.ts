@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { advanceRecurringDebtDueDate } from './recurringDebtPayments'
+import { advanceRecurringDebtDueDate, recurringDueDayFor } from './recurringDebtPayments'
 
 describe('advanceRecurringDebtDueDate anchor day', () => {
   it('returns to day 31 after a short month instead of drifting to 28', () => {
@@ -26,5 +26,18 @@ describe('advanceRecurringDebtDueDate stored anchor', () => {
   })
   it('a schedule due on 28 stays on 28', () => {
     expect(advanceRecurringDebtDueDate('2026-02-28', 'monthly', 28)).toBe('2026-03-28')
+  })
+})
+
+describe('annual and weekly schedules (D27)', () => {
+  it('annual keeps Feb 29 across a non-leap year', () => {
+    const y1 = advanceRecurringDebtDueDate('2028-02-29', 'annually', 29)
+    expect(y1).toBe('2029-02-28')
+    expect(advanceRecurringDebtDueDate(y1, 'annually', 29)).toBe('2030-02-28')
+    expect(advanceRecurringDebtDueDate('2031-02-28', 'annually', 29)).toBe('2032-02-29')
+  })
+  it('weekly rows store no due day', () => {
+    expect(recurringDueDayFor('weekly', '2026-10-17')).toBeUndefined()
+    expect(recurringDueDayFor('monthly', '2026-10-17')).toBe(17)
   })
 })

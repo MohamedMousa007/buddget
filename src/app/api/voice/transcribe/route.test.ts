@@ -33,4 +33,28 @@ describe('POST /api/voice/transcribe', () => {
     expect((await POST(new Request('http://x', { method: 'POST', body: form }) as never)).status).toBe(200)
     expect(h.ctor).toHaveBeenCalledWith(expect.objectContaining({ timeout: expect.any(Number) }))
   })
+
+  const post = () => {
+    const form = new FormData()
+    form.append('audio', new File([new Uint8Array(10)], 'a.mp4', { type: 'audio/mp4' }))
+    return POST(new Request('http://x', { method: 'POST', body: form }) as never)
+  }
+
+  it('returns empty text when Whisper echoes the prompt on silence', async () => {
+    h.create.mockResolvedValue({ text: 'Carrefour Egypt, Spinneys Egypt, Gourmet, Seoudi' })
+    expect(await (await post()).json()).toMatchObject({ text: '' })
+  })
+
+  it('returns empty text when every segment is no-speech', async () => {
+    h.create.mockResolvedValue({ text: 'spent 250 EGP', segments: [{ no_speech_prob: 0.95 }] })
+    expect(await (await post()).json()).toMatchObject({ text: '' })
+  })
+
+  it('lets Whisper auto-detect the language and carries no concrete expense example in the prompt', async () => {
+    h.create.mockResolvedValue({ text: 'دفعت خمسين جنيه في الكافيه' })
+    await post()
+    const args = h.create.mock.calls[0][0]
+    expect(args).not.toHaveProperty('language')
+    expect(args.prompt).not.toMatch(/spent 250|Formats expected/)
+  })
 })

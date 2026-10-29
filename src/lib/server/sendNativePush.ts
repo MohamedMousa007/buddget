@@ -1,6 +1,8 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getFirebaseAdmin } from '@/lib/server/firebaseAdmin'
+import { maskPush } from '@/lib/privacy/pushMask'
+import type { PrivacySettings } from '@/lib/store/types'
 import { pushTargets, type DevicePrefs } from '@/lib/devices/policy'
 
 export interface SendNativePushArgs {
@@ -55,6 +57,12 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
   }
   if (targets.length === 0) return { ok: true, sent: 0, failed: 0 }
   const tokens = targets.map((r) => r.token)
+  const { data: prefs, error: prefsError } = await service.from('user_settings').select('privacy, language').eq('user_id', args.userId).maybeSingle()
+  const { title, body, data } = maskPush(
+    { title: args.title, body: args.body, data: args.data },
+    prefsError ? null : ((prefs?.privacy ?? undefined) as PrivacySettings | undefined),
+    prefs?.language,
+  )
 
   let sent = 0
   let failed = 0
@@ -66,8 +74,8 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
     try {
       const res = await fa.messaging.sendEachForMulticast({
         tokens: batch,
-        notification: { title: args.title, body: args.body },
-        data: args.data,
+        notification: { title, body },
+        data,
         android: {
           priority: 'high',
           collapseKey: args.collapseKey,

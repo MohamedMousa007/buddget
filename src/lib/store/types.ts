@@ -692,7 +692,7 @@ export interface RecurringSavingsDeposit {
   amount: number
   currency: Currency
   frequency: 'monthly'
-  /** Calendar day 1–28. */
+  /** Anchor calendar day 1–31; a clamped month-end run (Feb 28) still returns to it (Mar 31). */
   dayOfMonth: number
   /** Next run date YYYY-MM-DD. */
   nextDueDate: string

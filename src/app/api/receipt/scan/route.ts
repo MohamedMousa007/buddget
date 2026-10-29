@@ -94,7 +94,11 @@ const RESPONSE_SCHEMA = {
 
 const MAX_ATTEMPTS = 3
 const GEMINI_TIMEOUT_MS = 40_000
-const MAX_TOTAL_BYTES = 10 * 1024 * 1024
+/** All attempts together must end before the function is killed at maxDuration (60s), or the reservation is never settled. */
+const DEADLINE_MS = 52_000
+const MIN_ATTEMPT_MS = 5_000
+/** Vercel rejects request bodies over 4.5 MB before this route runs. */
+const MAX_TOTAL_BYTES = 4_000_000
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
 
 const receiptSchema = z.object({
@@ -125,8 +129,11 @@ class GeminiError extends Error {
  */
 async function callGeminiText(apiKey: string, requestBody: unknown, spent: { usage: TokenUsage }): Promise<string> {
   let lastErr: GeminiError | null = null
+  const deadline = Date.now() + DEADLINE_MS
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (attempt > 0) await sleep(400 * 2 ** (attempt - 1)) // 400ms, 800ms
+    const left = deadline - Date.now()
+    if (left < MIN_ATTEMPT_MS) break
 
     let res: Response
     try {
@@ -134,7 +141,7 @@ async function callGeminiText(apiKey: string, requestBody: unknown, spent: { usa
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
+        signal: AbortSignal.timeout(Math.min(GEMINI_TIMEOUT_MS, left)),
       })
     } catch {
       lastErr = new GeminiError('Failed to reach AI service', 502, true)
@@ -240,7 +247,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unsupported image type' }, { status: 415 })
   }
   if (images.reduce((sum, img) => sum + img.size, 0) > MAX_TOTAL_BYTES) {
-    return NextResponse.json({ error: 'Images exceed 10 MB total' }, { status: 413 })
+    return NextResponse.json({ error: 'Images exceed 4 MB total' }, { status: 413 })
   }
   const imageParts = await Promise.all(
     images.map(async (img) => ({ inlineData: { mimeType: mimeOf(img), data: Buffer.from(await img.arrayBuffer()).toString('base64') } })),

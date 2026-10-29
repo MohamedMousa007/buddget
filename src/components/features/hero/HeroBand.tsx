@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { FLOW_BAND_BG } from '@/components/features/flow/FlowSummaryBand'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { cn } from '@/lib/utils'
+import { fitCellValue } from '@/components/features/hero/fitText'
 
 export const BAND_FG2 = 'text-[var(--flow-band-fg-2)]'
 export const BAND_MIX = 'var(--flow-band-mix)'
@@ -24,10 +25,12 @@ export interface HeroBandProps {
   bar: ReactNode
   /** Always three cells; the strip is 66px. */
   cells: [HeroBandCell, HeroBandCell, HeroBandCell]
+  /** Shrink long cell figures instead of truncating them. Off by default: short figures render the same either way. */
+  fitCells?: boolean
 }
 
 /** Flow's band skeleton (190px fixed): Wealth and Debts fill the same slots so the three heroes are siblings. */
-export function HeroBand({ label, aside, numbers, bar, cells }: HeroBandProps) {
+export function HeroBand({ label, aside, numbers, bar, cells, fitCells = false }: HeroBandProps) {
   return (
     <section className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]" style={{ background: FLOW_BAND_BG }}>
       <PageContainer wide className="px-0 lg:px-0">
@@ -47,7 +50,7 @@ export function HeroBand({ label, aside, numbers, bar, cells }: HeroBandProps) {
               <p className={`flex h-4 items-center whitespace-nowrap text-[10.5px] font-bold uppercase tracking-[0.06em] ${BAND_FG2}`}>
                 <span className="min-w-0 truncate">{c.label}</span>
               </p>
-              <p className="mt-1 h-6 truncate whitespace-nowrap font-mono-numbers text-base font-bold leading-6">{c.value}</p>
+              <p className={cn('mt-1 h-6 truncate whitespace-nowrap font-mono-numbers font-bold leading-6', fitCells ? fitCellValue(c.value) : 'text-base')}>{c.value}</p>
             </div>
           ))}
         </PageContainer>

@@ -15,4 +15,13 @@ describe('redactBalances', () => {
   it('leaves an expense total alone', () => {
     expect(redactBalances({ count: 2, total: 160 })).toEqual({ count: 2, total: 160 })
   })
+
+  it('hides net-worth components, debt positions and goal progress', () => {
+    const out = redactBalances({ net_worth: 1, savings: 2, investments: 3, debt: 4, month_flow: 5, owe: 6, owedToYou: 7, debts: [{ name: 'Car', left: 8, each: 9, paymentsLeft: 3 }], goals: [{ name: 'Trip', target: 10, saved: 11, need_mo: 12, pct: 40 }], left_to_spend: 13, days_left: 5 })
+    expect(out).toEqual({ net_worth: HIDDEN, savings: HIDDEN, investments: HIDDEN, debt: HIDDEN, month_flow: HIDDEN, owe: HIDDEN, owedToYou: HIDDEN, debts: [{ name: 'Car', left: HIDDEN, each: HIDDEN, paymentsLeft: 3 }], goals: [{ name: 'Trip', target: HIDDEN, saved: HIDDEN, need_mo: HIDDEN, pct: 40 }], left_to_spend: HIDDEN, days_left: 5 })
+  })
+
+  it('masks numbers only so status fields stay readable', () => {
+    expect(redactBalances({ name: 'Netflix', paid: true, left: 'soon', value: 'n/a', limit: 500 })).toEqual({ name: 'Netflix', paid: true, left: 'soon', value: 'n/a', limit: HIDDEN })
+  })
 })

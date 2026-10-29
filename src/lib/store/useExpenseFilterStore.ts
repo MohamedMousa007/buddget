@@ -81,3 +81,8 @@ export const useExpenseFilterStore = create<ExpenseFilterState>((set) => ({
 export function amountIsFiltered(amtMin: number, amtMax: number): boolean {
   return amtMin !== AMOUNT_MIN || amtMax !== AMOUNT_MAX
 }
+
+/** The slider's top stop means "no upper limit", so amounts above it still show. */
+export function amountInRange(amount: number, amtMin: number, amtMax: number): boolean {
+  return amount >= amtMin && (amtMax >= AMOUNT_MAX || amount <= amtMax)
+}

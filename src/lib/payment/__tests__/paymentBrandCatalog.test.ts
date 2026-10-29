@@ -4,6 +4,8 @@ import {
   QUICK_ADD,
   resolvePaymentBrandKey,
   composePaymentMethodName,
+  decomposePaymentMethodName,
+  providerInitials,
   PAYMENT_TYPE_META,
   SETUP_TYPES,
   typesForBrand,
@@ -154,5 +156,24 @@ describe('typesForBrand / brandIssuesType', () => {
 
   it('falls back to every setup type for a custom (unmatched) provider', () => {
     expect(typesForBrand(null)).toEqual(SETUP_TYPES)
+  })
+})
+
+describe('D24/D26 brand matcher and name round-trip', () => {
+  it('resolves Arabic names and Souhoola', () => {
+    expect(resolvePaymentBrandKey('بنك مصر')).toBe('banquemisr')
+    expect(resolvePaymentBrandKey('فودافون كاش')).toBe('vodafone')
+    expect(resolvePaymentBrandKey('Souhoola')).toBe('souhoola')
+    expect(PAYMENT_BRANDS.souhoola.type).toBe('bnpl')
+  })
+  it('gives Arabic names initials instead of a dash', () => {
+    expect(providerInitials('بنك مصر')).toBe('بنك')
+  })
+  it('keeps the label next to the last4 through compose and decompose', () => {
+    const name = composePaymentMethodName('CIB', { last4: '1234', tag: 'Salary' })
+    expect(name).toBe('CIB ••1234 · Salary')
+    expect(decomposePaymentMethodName(name, '1234')).toEqual({ provider: 'CIB', tag: 'Salary' })
+    expect(decomposePaymentMethodName('Bank ••1234 X', '1234')).toEqual({ provider: 'Bank', tag: 'X' })
+    expect(decomposePaymentMethodName('CIB ••••1234', '1234')).toEqual({ provider: 'CIB', tag: '' })
   })
 })

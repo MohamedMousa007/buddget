@@ -18,6 +18,7 @@ import {
 } from '@/lib/utils/currencyPickerOptions'
 import { selectedPayableDebtId } from '@/lib/debt/selectedPayableDebtId'
 import type { Currency, DebtRecurringFrequency } from '@/lib/store/types'
+import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
 
 export function useRecurringDebtPaymentSheet() {
   const {
@@ -140,7 +141,7 @@ export function useRecurringDebtPaymentSheet() {
       paymentMethodId: paymentMethodId || paymentMethods[0]?.id || '',
       frequency,
       nextDueDate,
-      dueDay: Number(nextDueDate.slice(8, 10)),
+      dueDay: recurringDueDayFor(frequency, nextDueDate),
       isActive,
       notes: notes || undefined,
     })
@@ -170,6 +171,7 @@ export function useRecurringDebtPaymentSheet() {
     const n = parseFloat(amount)
     if (Number.isNaN(n) || n <= 0) return null
     if (selectedDebt.isGold && paymentCurrency !== 'XAU') {
+      if (useFinanceStore.getState().goldPriceAvailable === false) return '≈ —'
       const grams = convertPaymentToDebtUnit(
         n,
         paymentCurrency,

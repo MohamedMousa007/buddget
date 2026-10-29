@@ -14,7 +14,7 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import type { FlowLedgerGroup, FlowLedgerRow } from '@/components/features/flow/FlowLedger'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
+import { amountInRange, amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { resolveRange, type ResolvedRange } from '@/lib/expenses/dateRange'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
 import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
@@ -28,6 +28,7 @@ import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { usePendingSmsPreviews } from '@/hooks/usePendingSmsPreviews'
 import { catalogCategory, merchantCategoryKey } from '@/lib/sms/merchantCategoryCache'
 import { useIncomeResolution } from '@/components/features/flow/IncomePrompts'
+import { compareFlowItems, instantOf } from '@/components/features/flow/flowOrder'
 import { useLocale, useT } from '@/lib/i18n'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import type { Expense, IncomeEvent, IncomeSource, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
@@ -41,6 +42,8 @@ export interface FlowItem {
   dir: 'in' | 'out'
   /** Local `yyyy-MM-dd`. */
   date: string
+  /** Epoch ms: orders rows inside a day. */
+  at: number
   /** Base currency, gross (a refunded row keeps its struck original here). */
   amountBase: number
   /** Counts toward totals — refunded, declined, non-spend and pending do not. */
@@ -166,6 +169,7 @@ export function useFlowLedger() {
         id: e.id,
         dir: 'out',
         date,
+        at: instantOf(e.occurredAt, date),
         amountBase: gross,
         counted: !dim && !nonSpend,
         facet: e.category,
@@ -226,6 +230,7 @@ export function useFlowLedger() {
       currency: string
       sourceType?: IncomeSourceType
       date: string
+      at: number
       paymentMethodId?: string
       template?: IncomeSource
       event?: IncomeEvent
@@ -241,6 +246,7 @@ export function useFlowLedger() {
         currency: e.currency,
         sourceType: e.sourceType,
         date: e.receivedDate.slice(0, 10),
+        at: instantOf(e.occurredAt, e.receivedDate.slice(0, 10)),
         paymentMethodId: e.paymentMethodId,
         template: e.templateId ? sourceById.get(e.templateId) : undefined,
         event: e,
@@ -255,6 +261,7 @@ export function useFlowLedger() {
         currency: s.currency,
         sourceType: s.sourceType,
         date: localDayKey(s.createdAt),
+        at: Date.parse(s.createdAt),
         paymentMethodId: s.paymentMethodId,
         legacySourceId: s.id,
       })
@@ -289,6 +296,7 @@ export function useFlowLedger() {
         id: inc.id,
         dir: 'in',
         date: inc.date,
+        at: inc.at,
         amountBase,
         counted: true,
         facet: recurring ? (inc.sourceType ?? 'other') : ONE_TIME_INCOME,
@@ -367,6 +375,7 @@ export function useFlowLedger() {
         id: p.key,
         dir,
         date,
+        at: Date.parse(p.receivedAt),
         amountBase,
         counted: false,
         facet: '',
@@ -406,10 +415,10 @@ export function useFlowLedger() {
           if (filters.segment !== 'in' && filters.cats.length && (i.dir !== 'out' || !filters.cats.includes(i.facet))) return false
           if (filters.segment === 'in' && filters.incomeTypes.length && !filters.incomeTypes.includes(i.facet)) return false
           if (filters.methods.length && !filters.methods.includes(i.methodId ?? '')) return false
-          if (amountOn && (i.amountBase < filters.amtMin || i.amountBase > filters.amtMax)) return false
+          if (amountOn && !amountInRange(i.amountBase, filters.amtMin, filters.amtMax)) return false
           return true
         })
-        .sort((a, b) => b.date.localeCompare(a.date)),
+        .sort(compareFlowItems),
     [all, filters, amountOn],
   )
 

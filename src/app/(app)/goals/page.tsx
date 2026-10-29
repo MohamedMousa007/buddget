@@ -1,5 +1,6 @@
 'use client'
 
+import { partitionGoals } from '@/lib/goals/partitionGoals'
 import { useMemo, useState } from 'react'
 import { AlertTriangle, Plus } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
@@ -58,17 +59,10 @@ export default function GoalsPage() {
     }
   }
 
-  const { running, paused, achieved } = useMemo(
-    () => ({
-      running: rows.filter((r) => r.goal.status === 'active'),
-      paused: rows.filter((r) => r.goal.status === 'paused'),
-      achieved: rows
-        .filter((r) => r.goal.status === 'achieved')
-        .map((r) => r.goal)
-        .sort((a, b) => (b.achievedAt ?? '').localeCompare(a.achievedAt ?? '')),
-    }),
-    [rows],
-  )
+  const { running, paused, achieved } = useMemo(() => {
+    const parts = partitionGoals(rows)
+    return { ...parts, achieved: parts.achieved.map((r) => r.goal).sort((a, b) => (b.achievedAt ?? '').localeCompare(a.achievedAt ?? '')) }
+  }, [rows])
 
   const detailRow = rows.find((r) => r.goal.id === detailId) ?? null
 

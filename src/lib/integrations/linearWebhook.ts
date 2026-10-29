@@ -13,15 +13,16 @@ export function freshTimestamp(ts: unknown, now: number): boolean {
   return typeof ts === 'number' && Math.abs(now - ts) <= MAX_SKEW_MS
 }
 
-export interface IssueEvent { identifier: string; stateType: string }
+export interface IssueEvent { identifier: string; stateType: string; updatedAt: number | null }
 
 /** The one thing we act on: an issue whose workflow state changed. */
 export function parseIssueEvent(body: unknown): IssueEvent | null {
-  const b = body as { type?: string; action?: string; data?: { identifier?: string; state?: { type?: string } } } | null
+  const b = body as { type?: string; action?: string; data?: { identifier?: string; updatedAt?: string; state?: { type?: string } } } | null
   if (b?.type !== 'Issue' || b.action !== 'update') return null
   const identifier = b.data?.identifier
   const stateType = b.data?.state?.type
-  return identifier && stateType ? { identifier, stateType } : null
+  const at = b.data?.updatedAt ? Date.parse(b.data.updatedAt) : NaN
+  return identifier && stateType ? { identifier, stateType, updatedAt: Number.isNaN(at) ? null : at } : null
 }
 
 /** Linear workflow state type to the ticket status we mirror; anything else changes nothing. */
@@ -29,4 +30,10 @@ export function ticketStatusFor(stateType: string): 'resolved' | 'open' | null {
   if (stateType === 'completed') return 'resolved'
   if (stateType === 'started' || stateType === 'unstarted' || stateType === 'backlog' || stateType === 'triage') return 'open'
   return null
+}
+
+/** A delayed retry that predates the ticket's resolution must not reopen it. */
+export function staleReopen(status: 'resolved' | 'open', eventAt: number | null, resolvedAt: string | null): boolean {
+  if (status !== 'open' || eventAt === null || !resolvedAt) return false
+  return eventAt <= Date.parse(resolvedAt)
 }

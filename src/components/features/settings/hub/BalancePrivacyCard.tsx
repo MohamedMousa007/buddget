@@ -8,7 +8,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { PrivacySettings } from '@/lib/store/types'
 import { useT } from '@/lib/i18n'
 
-const SURFACES: PrivacySurface[] = ['hero', 'lists', 'notifications', 'widgets', 'buddgy']
+const SURFACES: PrivacySurface[] = ['hero', 'lists', 'notifications', 'buddgy']
 type Preset = NonNullable<PrivacySettings['preset']>
 
 /** Where hidden balances are masked: one preset, or each surface on its own. */

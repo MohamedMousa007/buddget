@@ -75,7 +75,7 @@ const en: BuddgyChatCopy = {
   cancel: 'Cancel',
   dismiss: 'Not now',
   undo: 'Undo',
-  statuses: { applied: 'Done', dismissed: 'Skipped', failed: 'Could not apply', stale: 'Out of date, ask me again', undone: 'Undone' },
+  statuses: { applied: 'Done', dismissed: 'Skipped', failed: 'Couldn\u2019t apply', stale: 'Out of date, ask me again', undone: 'Undone' },
   offline: "You're offline. Short notes like “coffee 45” still work; for anything else I need a connection.",
   offlineShort: 'Offline',
   error: (e) =>
@@ -83,7 +83,7 @@ const en: BuddgyChatCopy = {
     : e.kind === 'quota' ? quotaEn(e.layer, e.resetAt)
     : e.kind === 'unauthorized' ? 'Please sign in again and I will pick this up.'
     : e.kind === 'blocked' ? "I can't help with that one. Try saying it a different way."
-    : "That didn't go through. Give it another try.",
+    : "Couldn\u2019t finish that. Try again.",
   stopped: 'Stopped',
   localTag: 'Instant',
   quickAddLead: 'Got it. Here is what I will add:',
@@ -123,7 +123,7 @@ const ar: BuddgyChatCopy = {
     : e.kind === 'quota' ? quotaAr(e.layer, e.resetAt)
     : e.kind === 'unauthorized' ? 'سجّل الدخول مرة أخرى وأكمل معك.'
     : e.kind === 'blocked' ? 'مقدرش أساعد في ده. جرّب صياغة تانية.'
-    : 'العملية ما تمّتش. جرّب مرة أخرى.',
+    : 'تعذّر إكمال ذلك. حاول مرة أخرى.',
   stopped: 'تم الإيقاف',
   localTag: 'فوري',
   quickAddLead: 'تمام. ده اللي هضيفه:',

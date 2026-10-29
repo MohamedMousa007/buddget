@@ -38,6 +38,7 @@ const URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODE
 const RATE_WINDOW_SECONDS = 3600
 const MAX_BODY_CHARS = 60_000
 const MAX_ADJUST_CHARS = 500
+const DEADLINE_MS = 52_000
 
 async function overQuota(userId: string): Promise<boolean> {
   const service = createServiceRoleClient()
@@ -70,13 +71,15 @@ async function askGated(userId: string, apiKey: string, system: string, user: st
 
 async function askModel(apiKey: string, system: string, user: string, schema: object, thinking: number): Promise<{ data: unknown | null; usage: TokenUsage }> {
   const none: TokenUsage = { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }
+  // One deadline for the attempt and its retry: two 45s calls would outlive the 60s function and strand the reservation.
+  const deadline = AbortSignal.timeout(DEADLINE_MS)
   try {
     const res = await retryOnOverload(
       () =>
         fetch(URL_BASE, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          signal: AbortSignal.timeout(45_000),
+          signal: deadline,
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: system }] },
             contents: [{ role: 'user', parts: [{ text: user }] }],
@@ -94,7 +97,12 @@ async function askModel(apiKey: string, system: string, user: string, schema: ob
     if (!res.ok) return { data: null, usage: none }
     const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
     const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('').trim()
-    return { data: text ? JSON.parse(text) : null, usage: usageFromPayload(payload) }
+    const usage = usageFromPayload(payload)
+    try {
+      return { data: text ? JSON.parse(text) : null, usage }
+    } catch {
+      return { data: null, usage }
+    }
   } catch {
     return { data: null, usage: none }
   }

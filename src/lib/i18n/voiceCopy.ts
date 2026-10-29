@@ -37,6 +37,7 @@ export interface VoiceCopy {
     serverUnreachable: string
     assistantNoReply: string
     transcriptionFailed: (status: number) => string
+    tooLarge: string
     saveFallback: string
   }
   recap: {
@@ -113,6 +114,7 @@ export const voiceCopyEn: VoiceCopy = {
     serverUnreachable: 'couldn\u2019t reach the server',
     assistantNoReply: 'the assistant didn\u2019t respond',
     transcriptionFailed: (status) => `transcription failed (${status})`,
+    tooLarge: 'That recording is too long. Keep it under about 3 minutes.',
     saveFallback: 'Couldn\u2019t save. Try again.',
   },
   recap: {
@@ -189,6 +191,7 @@ export const voiceCopyAr: VoiceCopy = {
     serverUnreachable: 'تعذّر الوصول إلى الخادم',
     assistantNoReply: 'لم يستجب المساعد',
     transcriptionFailed: (status) => `فشل التفريغ (${status})`,
+    tooLarge: 'التسجيل طويل جدًا. اجعله أقل من 3 دقائق تقريبًا.',
     saveFallback: 'تعذّر الحفظ. حاول مرة أخرى.',
   },
   recap: {

@@ -23,6 +23,8 @@ export const dynamic = 'force-dynamic'
 /** The largest request body the proxy will read. A chat turn with its context is far below this. */
 const MAX_BODY_BYTES = 256 * 1024
 const MAX_CONTENTS = 60
+/** One deadline across the call, its retry and the model fallback; the function is killed at maxDuration (30s) and would leave the reservation unsettled. */
+const UPSTREAM_DEADLINE_MS = 25_000
 
 export async function POST(req: Request) {
   const outdated = await gateOutdatedClient(req)
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
     }
     const userId = auth.userId
 
-    const runtime = getEffectiveAiRuntimeConfig()
+    const runtime = await getEffectiveAiRuntimeConfig()
     const apiKey = process.env.GEMINI_API_KEY?.trim()
     if (!apiKey) {
       return NextResponse.json(
@@ -62,7 +64,12 @@ export async function POST(req: Request) {
 
     const rawBody = await req.text()
     if (rawBody.length > MAX_BODY_BYTES) return NextResponse.json({ error: 'Request too large' }, { status: 413 })
-    const body = JSON.parse(rawBody)
+    let body: unknown
+    try {
+      body = JSON.parse(rawBody)
+    } catch {
+      return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
+    }
     const { contents, generationConfig, grounded, systemInstruction, tier, stream } = body as {
       contents?: unknown[]
       generationConfig?: Record<string, unknown>
@@ -96,13 +103,15 @@ export async function POST(req: Request) {
     grant = quota
 
     const wantStream = stream === true
-    let response = await retryOnOverload(() => callGemini(model, apiKey, geminiBody, wantStream), model)
+    const deadline = AbortSignal.timeout(UPSTREAM_DEADLINE_MS)
+    let response = await retryOnOverload(() => callGemini(model, apiKey, geminiBody, wantStream, deadline), model)
     // A tier model this key can't reach or doesn't accept (404/403/400) falls back to
     // the legacy model rather than taking Buddgy offline. 429 is quota, not the model.
     if (response.status >= 400 && response.status < 500 && response.status !== 429 && model !== LEGACY_MODEL) {
       console.error(`[AI] model=${model} status=${response.status}, falling back to ${LEGACY_MODEL}`)
       model = LEGACY_MODEL
-      response = await retryOnOverload(() => callGemini(model, apiKey, geminiBody, wantStream), model)
+      await response.body?.cancel().catch(() => undefined)
+      response = await retryOnOverload(() => callGemini(model, apiKey, geminiBody, wantStream, deadline), model)
     }
 
     const estInput = Math.ceil((JSON.stringify(contents).length + JSON.stringify(systemInstruction ?? '').length) / 4)

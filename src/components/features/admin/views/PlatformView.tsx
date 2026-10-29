@@ -19,7 +19,7 @@ import type { AdminStatus } from '../types'
 
 interface AiSlice { rateLimitingEnabled: boolean; rateLimitMaxRequests: number; rateLimitWindowMs: number }
 interface PlatformData {
-  ai: { keyPresent: boolean; model: string; stored: AiSlice; effective: AiSlice; persistedToDisk: boolean; envHints: Record<string, string | null> }
+  ai: { keyPresent: boolean; model: string; stored: AiSlice; effective: AiSlice; envHints: Record<string, string | null> }
   services: Array<{ name: string; ok: boolean; optional?: boolean }>
   environment: string
   appUrl: string
@@ -107,7 +107,6 @@ function AiThrottle({ data, canManage, onSaved }: { data: PlatformData; canManag
               {PRESETS.map((p) => <Button key={p.label} variant="outline" size="sm" onClick={() => { setEnabled(p.enabled); setMax(String(p.max)); setWindowSec(String(p.windowSec)) }}>{p.label}</Button>)}
             </div>
             <Button size="touch" loading={busy} onClick={() => void save()}>Save throttle</Button>
-            {!data.ai.persistedToDisk ? <p className="text-xs text-[var(--color-brand-text-muted)]">On serverless hosting the file may be read-only; if saving fails, set the AI_RATE_LIMIT_* environment variables instead.</p> : null}
           </>
         ) : null}
       </div>

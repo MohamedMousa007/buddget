@@ -31,6 +31,9 @@ export function buildContents(req: TurnRequest): GeminiContent[] {
   })
 }
 
+/** A live stream sends something every few seconds; silence this long means the upstream hung and the function would be killed unsettled. */
+const IDLE_TIMEOUT_MS = 25_000
+
 export interface TurnOutcome {
   usage: TokenUsage
   finish: string
@@ -45,6 +48,7 @@ export function turnEventStream(
   upstream: ReadableStream<Uint8Array>,
   head: TurnEvent,
   onFinish: (outcome: TurnOutcome) => void | Promise<void>,
+  idleMs = IDLE_TIMEOUT_MS,
 ): ReadableStream<Uint8Array> {
   const decoder = new TextDecoder()
   const reader = upstream.getReader()
@@ -97,7 +101,13 @@ export function turnEventStream(
 
       try {
         for (;;) {
-          const { done, value } = await reader.read()
+          let idle: ReturnType<typeof setTimeout> | undefined
+          const { done, value } = await Promise.race([
+            reader.read(),
+            new Promise<never>((_, reject) => {
+              idle = setTimeout(() => reject(new Error('upstream stalled')), idleMs)
+            }),
+          ]).finally(() => clearTimeout(idle))
           if (done) break
           buffer += decoder.decode(value, { stream: true })
           const lines = buffer.split('\n')
@@ -126,10 +136,11 @@ export function turnEventStream(
           controller.close()
           return
         }
-        controller.enqueue(frame({ t: 'done', units: 0, finish, truncated: finish === 'MAX_TOKENS' }))
+        controller.enqueue(frame({ t: 'done', units: 0, finish, truncated: finish === 'MAX_TOKENS' || finish === 'SAFETY' || finish === 'RECITATION' }))
         await settle({ usage, finish, status: 'ok' })
         controller.close()
       } catch {
+        void reader.cancel().catch(() => undefined)
         try {
           controller.enqueue(frame({ t: 'error', code: 'upstream' }))
           controller.close()

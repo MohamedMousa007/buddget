@@ -1,5 +1,6 @@
 import { generateWithFallback, throwIfAiProxyNotOk } from '@/lib/ai/generateWithFallback'
 import { coerceGoalCategory } from '@/lib/goals/coerceGoalCategory'
+import { isThisMonthOrLater, localPromptDay } from '@/lib/goals/goalDate'
 import type { ParsedGoal } from '@/lib/goals/goalAi'
 
 export interface ChatMsg {
@@ -28,7 +29,7 @@ export function parseChatReply(text: string, prev: ParsedGoal | null, now: Date)
   const name = typeof d.name === 'string' && d.name.trim() ? d.name.trim() : prev?.name
   const target = Number(d.target)
   const date = typeof d.date === 'string' && /^\d{4}-\d{2}/.test(d.date) ? `${d.date.slice(0, 7)}-01` : undefined
-  const future = date && date > now.toISOString().slice(0, 7)
+  const future = date && isThisMonthOrLater(date, now)
   return {
     reply,
     draft: {
@@ -53,7 +54,7 @@ export async function goalChatTurn(
   signal?: AbortSignal,
 ): Promise<ChatTurn> {
   const facts =
-    `Today is ${input.now.toISOString().slice(0, 10)}. Currency ${input.currency}. ` +
+    `Today is ${localPromptDay(input.now)}. Currency ${input.currency}. ` +
     (input.usualKeep ? `The user usually keeps about ${Math.round(input.usualKeep)} ${input.currency} a month.` : 'Their monthly savings are not known yet.')
   const system =
     `You are Buddgy, a warm, brief money counselor inside a budgeting app, helping the user shape ONE savings goal. ${facts} ` +

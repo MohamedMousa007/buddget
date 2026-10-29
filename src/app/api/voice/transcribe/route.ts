@@ -16,6 +16,7 @@ import Groq from 'groq-sdk'
 import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { audioMimeToExt } from '@/lib/voice/audioMime'
+import { isPhantomTranscript } from '@/lib/voice/whisperEcho'
 
 export const maxDuration = 30
 
@@ -25,11 +26,14 @@ const EGYPT_FIRST_PROMPT = [
   'Common Egyptian merchants: Talabat, Otlob, Carrefour Egypt, Spinneys Egypt, Gourmet, Seoudi, Metro Market, Uber Egypt, Careem Egypt, Breadfast, InstaShop Egypt, Mahmoud Pharmacy, El Ezaby, Cairo Festival City, Mall of Egypt, City Stars, Vodafone Cash, Fawry.',
   'Common UAE / GCC merchants: Carrefour, Lulu, Spinneys, Choithrams, Talabat UAE, Noon, Amazon.ae, ADCB, Emirates NBD.',
   'Egyptian Arabic phrases: متشكر, دفعت, اشتريت, جنيه, خصم, عملية شراء.',
-  'Formats expected: "spent 250 EGP at Talabat", "دفعت ٥٠ جنيه في كافيه", "120 dirhams at Carrefour", "200 جنيه taxi to office".',
 ].join(' ')
 
+/** Whisper's own silence score above this means the clip had no speech. */
+const NO_SPEECH_PROB = 0.6
+
 /** A spoken expense is seconds long; anything past this is not one. */
-const MAX_AUDIO_BYTES = 8 * 1024 * 1024
+/** Base64 in JSON inflates 4/3 and Vercel rejects bodies over 4.5 MB before this code runs, so stay under it. */
+const MAX_AUDIO_BYTES = 3_300_000
 /** Audio is billed by length, not tokens: one unit per ~20 bytes keeps it on the same wheel. */
 const BYTES_PER_UNIT = 20
 /** A hung upstream must fail inside the function budget so the quota reservation is settled. */
@@ -55,22 +59,20 @@ export async function POST(request: NextRequest) {
   }
 
   let audio: Blob
-  let language: string
   const contentType = request.headers.get('content-type') ?? ''
   if (contentType.includes('application/json')) {
-    let body: { audio?: string; mimeType?: string; language?: string }
+    let body: { audio?: string; mimeType?: string }
     try {
-      body = await request.json() as { audio?: string; mimeType?: string; language?: string }
+      body = await request.json() as { audio?: string; mimeType?: string }
     } catch {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
     if (!body.audio) return NextResponse.json({ error: 'Missing audio field' }, { status: 400 })
     const buffer = Buffer.from(body.audio, 'base64')
     if (buffer.byteLength > MAX_AUDIO_BYTES) {
-      return NextResponse.json({ error: 'Audio too large' }, { status: 413 })
+      return NextResponse.json({ error: 'Audio too large', stage: 'transcribe' }, { status: 413 })
     }
     audio = new Blob([buffer], { type: body.mimeType || 'audio/mp4' })
-    language = body.language?.trim() || 'en'
   } else {
     let form: FormData
     try {
@@ -83,10 +85,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing audio blob' }, { status: 400 })
     }
     if (file.size > MAX_AUDIO_BYTES) {
-      return NextResponse.json({ error: 'Audio too large' }, { status: 413 })
+      return NextResponse.json({ error: 'Audio too large', stage: 'transcribe' }, { status: 413 })
     }
     audio = file
-    language = (form.get('language') as string | null)?.trim() || 'en'
   }
 
   const units = Math.round(audio.size / BYTES_PER_UNIT)
@@ -100,13 +101,12 @@ export async function POST(request: NextRequest) {
     const type = audio.type || 'audio/mp4'
     const file = new File([audio], `recording.${audioMimeToExt(type)}`, { type })
 
-    // `json` (not `verbose_json`) — we only read `.text`; smaller response payload.
+    // Language is left to Whisper's auto-detect: the UI locale says nothing about the language spoken.
     const transcribe = () => groq.audio.transcriptions.create({
       file,
       model: 'whisper-large-v3',
       prompt: EGYPT_FIRST_PROMPT,
-      language: language === 'ar' ? 'ar' : 'en',
-      response_format: 'json',
+      response_format: 'verbose_json',
       temperature: 0,
     })
 
@@ -124,10 +124,10 @@ export async function POST(request: NextRequest) {
 
     await spent('ok')
     console.info(`[VOICE:transcribe] ok user=${user.id} latency=${Date.now() - started}ms bytes=${audio.size}`)
-    return NextResponse.json({
-      text: result.text ?? '',
-      language: (result as { language?: string }).language ?? language,
-    })
+    const { language, segments } = result as { language?: string; segments?: { no_speech_prob?: number }[] }
+    const silent = Boolean(segments?.length) && segments!.every((g) => (g.no_speech_prob ?? 0) > NO_SPEECH_PROB)
+    const text = result.text ?? ''
+    return NextResponse.json({ text: silent || isPhantomTranscript(text, EGYPT_FIRST_PROMPT) ? '' : text, language })
   } catch (err) {
     await spent('error')
     const msg = err instanceof Error ? err.message : 'Unknown transcription error'

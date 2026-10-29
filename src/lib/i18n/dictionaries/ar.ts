@@ -86,7 +86,7 @@ export const ar: Dictionary = {
         },
         save: {
           title: 'احفظه',
-          body: 'بعد الحفظ، سيساعدك Buddget في تحديد حصة "الديون" ضمن خطتك.',
+          body: 'بعد الحفظ، سيساعدك Buddget في تحديد حصة "الديون" ضمن ميزانيتك.',
         },
       },
       savings: {
@@ -124,13 +124,13 @@ export const ar: Dictionary = {
         },
         save: {
           title: 'ثبّته',
-          body: 'يستخدم Buddget أهدافك لموازنة حصة الادخار في خطتك.',
+          body: 'يستخدم Buddget أهدافك لموازنة حصة الادخار في ميزانيتك.',
         },
       },
     },
     postOnboard: {
       planRoot: {
-        title: 'خطتك جاهزة',
+        title: 'ميزانيتك جاهزة',
         body: 'أعدّها Buddget بناءً على ما قلته. لا شيء ثابت — كل رقم قابل للتعديل.',
       },
       categoryRow: {
@@ -139,7 +139,7 @@ export const ar: Dictionary = {
       },
       rebuild: {
         title: 'حسّنها مع Buddget',
-        body: 'تريد تقليل الطعام، زيادة الادخار، أو خطة جديدة بعد تغيّر ظروفك؟ أعد البناء من هنا متى شئت.',
+        body: 'تريد تقليل الطعام، زيادة الادخار، أو ميزانية جديدة بعد تغيّر ظروفك؟ أعد البناء من هنا متى شئت.',
       },
       dashboard: {
         title: 'أموالك في لمحة',
@@ -175,7 +175,7 @@ export const ar: Dictionary = {
       },
       navMore: {
         title: 'كل شيء آخر',
-        body: 'اضغط "المزيد" للوصول إلى خطتك، الادّخار، الدخل، التقارير، والملف الشخصي.',
+        body: 'اضغط "المزيد" للوصول إلى ميزانيتك، المدخرات، الدخل، التقارير، والملف الشخصي.',
       },
       firstDebt: {
         title: 'أضفت هذا',
@@ -209,6 +209,7 @@ export const ar: Dictionary = {
 
   common: {
     save: 'حفظ',
+    logoAlt: (name) => `شعار ${name}`,
     saveAndSync: 'حفظ ومزامنة',
     savedSynced: 'تم الحفظ والمزامنة',
     saved: 'تم الحفظ',
@@ -668,7 +669,7 @@ export const ar: Dictionary = {
     searchPlaceholder: 'ابحث عن معاملة...',
     downloadData: 'تحميل بياناتي',
     editPurchase: 'تعديل المشتريات',
-    removePurchase:'حذف المشتريات',
+    removePurchase:'حذف المصروف',
     confirmDelete: 'هل تريد حذف هذا المصروف؟ لا يمكن التراجع عن هذا.',
     badgeDebt: 'دين',
     spentThisMonth: 'المصروف هذا الشهر',
@@ -831,7 +832,7 @@ export const ar: Dictionary = {
     pageTitle: 'دخلي',
     requireAuth: 'سجل دخولك لإضافة مصادر الدخل والحفاظ على ميزانيتك.',
     addSource: '+ أضف مصدر دخل',
-    helperText: 'يُعرض الدخل المتكرر كمجموع شهري لخطة ميزانيتك. المبالغ الأسبوعية ونصف الشهرية تعكس ما تكسبه لكل دفعة.',
+    helperText: 'يُعرض الدخل المتكرر كمجموع شهري لميزانيتك. المبالغ الأسبوعية ونصف الشهرية تعكس ما تكسبه لكل دفعة.',
     emptyIcon: '💵',
     emptyTitle: 'لم تُضف مصادر دخل بعد',
     emptyDesc: 'أضف مصادر دخلك وشاهد ميزانيتك تنبض بالحياة 🌱',
@@ -1084,6 +1085,7 @@ export const ar: Dictionary = {
     tabAddAccount: 'إضافة حساب',
     sheetEditTitle: 'تعديل المدخرات',
     currencyLockedHint: 'تُقفل العملة عندما تحتوي الخزنة على مال أو سجل.',
+    typeLockedHint: 'تستقبل هذه الخزنة المبلغ المرحّل شهريًا، لذلك لا يمكن تغيير نوعها.',
     sheetWithdrawTitle: 'سحب من المدخرات',
     sheetUpdateTitle: 'تحديث الرصيد',
     labelWhichSavings: 'أي مدخرات؟',
@@ -1249,7 +1251,7 @@ export const ar: Dictionary = {
     editSheetTitle: 'تعديل الدين',
     goalSectionTitle: 'هدف السداد',
     goalEditButton: 'تعديل الهدف',
-    confirmRemoveGoal: 'حذف هدف السداد وأي تذكير مرتبط به؟',
+    confirmRemoveGoal: 'حذف هدف السداد وأي تذكير مرتبط به؟ لا يمكن التراجع عن هذا.',
     installmentProgress: (paid, total) => `${paid} من ${total} أقساط مسجّلة`,
     installmentNextDue: (date) => `الاستحقاق التالي ${date}`,
     goalPayoffLine: 'هدف السداد',
@@ -1572,6 +1574,7 @@ export const ar: Dictionary = {
     placeholderAmount: '0.00',
     labelFrequency: 'التكرار',
     labelNextDue: 'تاريخ الاستحقاق التالي',
+    pastDueHint: 'هذا التاريخ مضى، لذلك ستظهر الدفعة الأولى مستحقة فورًا.',
     labelPaidVia: 'الدفع عبر',
     labelActive: 'نشط',
     labelNotes: 'ملاحظات؟',
@@ -1712,7 +1715,7 @@ export const ar: Dictionary = {
     goldPriceDelayed: 'قد تكون الأسعار متأخرة',
     ratesAttribution: 'الأسعار عبر Exchange Rate API',
     showMeAround: 'أرني الجولة',
-    showMeAroundDesc: 'أعِد تشغيل الجولة الإرشادية على خطتك والتطبيق.',
+    showMeAroundDesc: 'أعِد تشغيل الجولة الإرشادية على ميزانيتك والتطبيق.',
 
     pageLinksIncomeTitle: 'دخلك',
     pageLinksIncomeDesc: 'أضف أو عدّل أو احذف مصادر الراتب والدخل الأخرى في صفحة الدخل.',
@@ -1845,7 +1848,7 @@ export const ar: Dictionary = {
     discard: 'تجاهل',
     saveChanges: 'حفظ التغييرات',
 
-    budgetTitle: 'خطة ميزانيتك الشهرية',
+    budgetTitle: 'ميزانيتك الشهرية',
     budgetEditLink: 'تعديل الميزانية ←',
     budgetModeFixed: 'مبالغ ثابتة',
     budgetModePercent: '% من الدخل الشهري',
@@ -2033,9 +2036,9 @@ export const ar: Dictionary = {
     sendNewCode: 'أرسل رمزاً جديداً',
 
     errorNetwork: 'لا يمكن الاتصال حالياً. تحقق من الإنترنت وحاول مرة أخرى.',
-    errorRateLimit: 'تمهل قليلاً — حاول مرة أخرى بعد لحظة.',
-    errorBadPassword: 'كلمة المرور غير صحيحة. حاول مرة أخرى أو أعد تعيينها.',
-    errorUnconfirmed: 'يبدو أن بريدك لم يُؤكد بعد. أعد إرسال رمز التأكيد؟',
+    errorRateLimit: 'محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى.',
+    errorBadPassword: 'البريد الإلكتروني أو كلمة المرور غير صحيحة. حاول مرة أخرى أو أعد تعيين كلمة المرور.',
+    errorUnconfirmed: 'لم يتم تأكيد بريدك الإلكتروني بعد.',
     errorOtpExpired: 'انتهت صلاحية هذا الرمز. اطلب رمزاً جديداً.',
     errorFallback: 'حدث خطأ ما. حاول مرة أخرى.',
     errorEmailInvalid: 'أدخل بريداً إلكترونياً صحيحاً.',
@@ -2043,11 +2046,11 @@ export const ar: Dictionary = {
     errorPasswordShort: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
     errorPasswordMismatch: 'كلمتا المرور غير متطابقتين. حاول مرة أخرى.',
     errorAccountExists: 'يبدو أن لديك حساباً بالفعل. سجل دخولك بدلاً من ذلك؟',
-    errorNoAccountForEmail: 'لم نجد حساباً بهذا البريد الإلكتروني. تحقق من الإملاء أو أنشئ حساباً جديداً.',
+    errorNoAccountForEmail: 'تعذّر تسجيل الدخول بهذه البيانات. تحقق منها وحاول مرة أخرى.',
     errorPasswordWeakComposition: 'يجب أن تحتوي كلمة المرور على حرف ورقم واحد على الأقل.',
-    errorSignUpGeneric: 'حدث خطأ. حاول مرة أخرى.',
-    errorEmailSendFailed: 'تعذّر إرسال رسالة التأكيد الآن. حاول مرة أخرى بعد لحظات.',
-    errorOtpIncomplete: 'أدخل كل الأرقام الستة للمتابعة.',
+    errorSignUpGeneric: 'تعذّر إنشاء حسابك. حاول مرة أخرى.',
+    errorEmailSendFailed: 'تعذّر إرسال رسالة التأكيد. حاول مرة أخرى بعد لحظات.',
+    errorOtpIncomplete: 'أدخل الرمز المكوّن من 6 أرقام.',
     passwordStrengthLabel: 'قوة كلمة المرور',
     passwordStrengthWeak: 'ضعيفة',
     passwordStrengthFair: 'متوسطة',
@@ -2823,6 +2826,7 @@ export const ar: Dictionary = {
         : `${count} تسجيلات محفوظة — بانتظار الاتصال`,
     failed: 'تعذّرت معالجة التسجيل — اضغط لإعادة المحاولة',
     voiceEmpty: 'لم نتمكن من سماع أي شيء في هذا التسجيل، لذلك تمت إزالته.',
+    dismiss: 'إزالة هذا التسجيل',
     buddgyOffline: 'بادجي يحتاج اتصالاً بالإنترنت — بياناتك ما زالت متاحة دون اتصال.',
   },
 
@@ -2842,7 +2846,7 @@ export const ar: Dictionary = {
     confirmCurrencyBtn: (currency: string) => `تأكيد ${currency}`,
     confirmCurrencyHelp: 'أُضيفت بالفعل — فقط أكّد العملة.',
     dismiss: 'تجاهل',
-    actionFailed: 'لم تنجح العملية. تحقق من اتصالك وحاول مرة أخرى.',
+    actionFailed: 'تعذّر إكمال ذلك. تحقق من اتصالك وحاول مرة أخرى.',
     confirmAndLink: 'تأكيد وربط',
     matchedTo: (date: string) => `مطابق ليوم قبض ${date}`,
     arrivedLate: (n: number) => `وصل متأخراً ${arCount(n, 'day')}`,

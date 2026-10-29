@@ -183,7 +183,7 @@ const en: BudgetStudioCopy = {
     over: (amount) => `${amount} over income`,
     apply: 'Apply',
     cancel: 'Cancel',
-    nothing: 'I could not turn that into a change. Try naming a line and an amount.',
+    nothing: 'I couldn\u2019t turn that into a change. Try naming a line and an amount.',
     failed: 'Buddgy could not read that. Try again, or edit by hand.',
     quota: 'You have reached today’s limit for Buddgy changes.',
     unavailable: 'Buddgy is unavailable right now. You can still edit by hand.',

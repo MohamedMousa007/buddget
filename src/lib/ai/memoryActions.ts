@@ -13,10 +13,3 @@ export function migrateLegacyNotes(): void {
 export function activeMemoryTexts(): string[] {
   return useFinanceStore.getState().buddgyMemories.filter((m) => m.status === 'active').map((m) => m.text)
 }
-
-/** Facts Buddgy picked up in chat; skipped while the user has learning paused. */
-export function learnFromChat(notes: string[]): void {
-  if (!useSettingsStore.getState().buddgyLearning) return
-  const add = useFinanceStore.getState().addBuddgyMemory
-  for (const n of notes) add(n, 'chat')
-}

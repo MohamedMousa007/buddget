@@ -3,7 +3,6 @@ import { getFirebaseAdmin } from '@/lib/server/firebaseAdmin'
 import {
   getEffectiveAiRuntimeConfig,
   getStoredAiRuntimeConfig,
-  hasPersistedRuntimeConfigFile,
   saveAiRuntimeConfig,
 } from '@/lib/server/aiRuntimeConfig'
 import { can } from '@/lib/admin/permissions'
@@ -49,9 +48,8 @@ export async function GET(req: Request) {
     ai: {
       keyPresent: present('GEMINI_API_KEY'),
       model: 'gemini-2.5-flash',
-      stored: getStoredAiRuntimeConfig(),
-      effective: getEffectiveAiRuntimeConfig(),
-      persistedToDisk: hasPersistedRuntimeConfigFile(),
+      stored: await getStoredAiRuntimeConfig(),
+      effective: await getEffectiveAiRuntimeConfig(),
       envHints: {
         AI_RATE_LIMITING_ENABLED: process.env.AI_RATE_LIMITING_ENABLED?.trim() || null,
         AI_RATE_LIMIT_MAX: process.env.AI_RATE_LIMIT_MAX?.trim() || null,
@@ -93,12 +91,12 @@ export async function PATCH(req: Request) {
   if (Object.keys(patch).length === 0) return bad('No valid fields to update.')
 
   try {
-    const stored = saveAiRuntimeConfig(patch)
+    const stored = await saveAiRuntimeConfig(patch, g.ctx.staff.id)
     await g.ctx.audit('platform.ai_throttle', { summary: 'Changed AI throttling', metadata: patch })
-    return json({ ok: true, stored, effective: getEffectiveAiRuntimeConfig() })
+    return json({ ok: true, stored, effective: await getEffectiveAiRuntimeConfig() })
   } catch (err) {
-    console.error('[admin/platform] failed to write ai-runtime-config', err)
-    return bad('Could not save to disk (read-only filesystem). Set AI_RATE_LIMITING_ENABLED, AI_RATE_LIMIT_MAX and AI_RATE_LIMIT_WINDOW_MS in your host environment instead.', 507)
+    console.error('[admin/platform] failed to save the AI throttle', err)
+    return bad('Could not save the AI throttle.', 500)
   }
 }
 

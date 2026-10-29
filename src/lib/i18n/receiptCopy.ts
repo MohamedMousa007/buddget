@@ -7,6 +7,7 @@ export interface ReceiptScanCopy {
     offline: string
     networkLost: string
     scanFailed: (status: number) => string
+    tooLarge: string
     scanFallback: string
     scannerFallback: string
     storedImageUnreadable: string
@@ -52,6 +53,7 @@ export const receiptScanCopyEn: ReceiptScanCopy = {
     offline: 'You’re offline. Receipt scanning needs an internet connection. Try again once you’re back online.',
     networkLost: 'Network connection lost. Check your internet and try again.',
     scanFailed: (status) => `Scan failed (${status}). Try again.`,
+    tooLarge: 'Those photos are too large to send. Scan fewer pages or retake them closer.',
     scanFallback: 'Couldn’t scan that receipt. Try again.',
     scannerFallback: 'Couldn’t open the scanner. Try again.',
     storedImageUnreadable: 'Couldn’t read the stored receipt image.',
@@ -98,6 +100,7 @@ export const receiptScanCopyAr: ReceiptScanCopy = {
     offline: 'أنت غير متصل. مسح الإيصالات يحتاج إلى اتصال بالإنترنت. حاول مرة أخرى عند عودة الاتصال.',
     networkLost: 'انقطع الاتصال بالشبكة. تحقق من الإنترنت وحاول مرة أخرى.',
     scanFailed: (status) => `فشل المسح (${status}). حاول مرة أخرى.`,
+    tooLarge: 'الصور كبيرة جدًا للإرسال. امسح صفحات أقل أو أعد التصوير عن قرب.',
     scanFallback: 'تعذّر مسح هذا الإيصال. حاول مرة أخرى.',
     scannerFallback: 'تعذّر فتح الماسح. حاول مرة أخرى.',
     storedImageUnreadable: 'تعذّرت قراءة صورة الإيصال المحفوظة.',

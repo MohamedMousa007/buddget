@@ -12,6 +12,7 @@ import { DatePickerField } from '@/components/ui/DatePickerField'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { useT } from '@/lib/i18n'
+import { localTodayISO } from '@/lib/utils/localDate'
 import { Button } from '@/components/ui/button'
 
 export interface RecurringDebtPaymentFormProps {
@@ -137,6 +138,7 @@ export function RecurringDebtPaymentForm({
       <div>
         <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.recurringDebt.labelNextDue}</Label>
         <DatePickerField value={nextDueDate} onChange={onNextDueDateChange} className="mt-1" />
+        {nextDueDate < localTodayISO() && <p className="mt-1 text-xs text-[var(--color-brand-text-muted)]">{t.recurringDebt.pastDueHint}</p>}
       </div>
 
       <div>

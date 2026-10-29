@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { applyDelta, type MappedDelta } from './delta'
+import { applyDelta, pullDelta, type MappedDelta } from './delta'
 import { emptySnapshot, type Snapshot } from './snapshot'
 import { readSyncCursor, writeSyncCursor, clearSyncCursors } from './cursor'
 
@@ -12,7 +12,7 @@ function noDelta(over: Partial<MappedDelta> = {}): MappedDelta {
     paymentMethods: none, incomeSources: none, incomeEvents: none, expenses: none, receipts: none, recurringExpenses: none,
     subscriptions: none, debts: none, debtPayments: none, recurringDebtPayments: none, savingsAccounts: none, investmentHoldings: none,
     savingsTransactions: none, recurringSavingsDeposits: none, goals: none, buddgyMemories: none, accountAdjustments: none,
-    budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [],
+    budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [], staleBefore: null,
     ...over,
   }
 }
@@ -69,6 +69,32 @@ describe('applyDelta', () => {
     expect(out.settings).toMatchObject({ baseCurrency: 'EGP', secondaryCurrency: 'USD' })
     expect(out.activeBudgetPlanId).toBe('p9')
     expect(out.financialGoalsNotes).toBe('save')
+  })
+})
+
+describe('stale cursor (full pull)', () => {
+  it('drops local rows the server no longer has that predate the stale cursor, keeps newer unsynced ones', () => {
+    const local = withExpenses([exp('old', '2026-06-01T00:00:00Z'), exp('kept', '2026-06-01T00:00:00Z'), exp('offline', '2026-09-01T00:00:00Z')])
+    const out = applyDelta(local, noDelta({ staleBefore: '2026-08-01T00:00:00Z', expenses: { upserts: [exp('kept', '2026-06-01T00:00:00Z')], deletedIds: [] } }))
+    expect(out.expenses.map((e) => e.id).sort()).toEqual(['kept', 'offline'])
+  })
+
+  it('compares instants not strings, and never prunes budget plans or unparseable stamps', () => {
+    const local = { ...withExpenses([exp('plus', '2026-06-01T00:00:00.000+00:00'), exp('bad', 'not-a-date')]), budgetPlans: [{ id: 'p1', updatedAt: '2026-01-01T00:00:00Z' }] } as unknown as Snapshot
+    const out = applyDelta(local, noDelta({ staleBefore: '2026-08-01T00:00:00Z' }))
+    expect(out.expenses.map((e) => e.id)).toEqual(['bad'])
+    expect(out.budgetPlans).toHaveLength(1)
+  })
+
+  it('pullDelta repeats as a full pull when the server says needs_full', async () => {
+    const full = { cursor: 'c2', has_profile: true, profile: null, settings: null, lists: {}, budget_plans: [], budget_plans_deleted: [], budget_categories: [], budget_subcategories: [], budget_plan_activations: [] }
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: { needs_full: true, cursor: 'c1' }, error: null })
+      .mockResolvedValueOnce({ data: full, error: null })
+    const out = await pullDelta({ rpc } as never, '2026-01-01T00:00:00Z')
+    expect(rpc).toHaveBeenNthCalledWith(1, 'sync_pull_v2', { p_since: '2026-01-01T00:00:00Z' })
+    expect(rpc).toHaveBeenNthCalledWith(2, 'sync_pull_v2', {})
+    expect(out).toMatchObject({ cursor: 'c2', staleBefore: '2026-01-01T00:00:00Z' })
   })
 })
 

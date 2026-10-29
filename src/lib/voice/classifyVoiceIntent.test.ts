@@ -55,4 +55,9 @@ describe('classifyVoiceIntent', () => {
       expect(classifyVoiceIntent('add 50 for coffee')).toBe('transactional')
     })
   })
+
+  it('does not read an Arabic question word inside another word', () => {
+    expect(classifyVoiceIntent('كمان 200 جنيه على القهوة')).toBe('transactional')
+    expect(classifyVoiceIntent('كام صرفت الشهر ده')).toBe('complex')
+  })
 })

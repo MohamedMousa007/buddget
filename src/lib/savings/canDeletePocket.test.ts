@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canDeletePocket } from './canDeletePocket'
+import { canDeletePocket, isTypeLockedPocket } from './canDeletePocket'
 import { isSavingsCurrencyLocked } from './savingsCurrencyLock'
 import type { SavingsAccount } from '@/lib/store/types'
 
@@ -40,5 +40,14 @@ describe('isSavingsCurrencyLocked', () => {
   it('locks once the pocket has any transaction, even at zero', () => {
     expect(isSavingsCurrencyLocked(acc('a'), [{ accountId: 'a' }])).toBe(true)
     expect(isSavingsCurrencyLocked(acc('a'), [{ accountId: 'b' }])).toBe(false)
+  })
+})
+
+describe('isTypeLockedPocket', () => {
+  it('locks the default carry pocket and the system vault only', () => {
+    const profile = { defaultCarryPocketId: 'def' }
+    expect(isTypeLockedPocket(profile, acc('def', 'bank'))).toBe(true)
+    expect(isTypeLockedPocket(profile, { ...acc('v', 'vault'), name: 'Monthly Savings' })).toBe(true)
+    expect(isTypeLockedPocket(profile, acc('other', 'bank'))).toBe(false)
   })
 })

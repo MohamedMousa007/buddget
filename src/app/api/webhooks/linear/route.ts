@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { freshTimestamp, parseIssueEvent, ticketStatusFor, validSignature } from '@/lib/integrations/linearWebhook'
+import { freshTimestamp, parseIssueEvent, staleReopen, ticketStatusFor, validSignature } from '@/lib/integrations/linearWebhook'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { renderServerCopy } from '@/lib/notifications/serverCopy'
@@ -24,8 +24,8 @@ export async function POST(request: Request) {
   if (!event || !status) return NextResponse.json({ ok: true })
 
   const service = createServiceRoleClient()
-  const { data: ticket } = await service.from('support_tickets').select('id, number, user_id, subject, status').eq('linear_issue_id', event.identifier).maybeSingle()
-  if (!ticket || ticket.status === status || ticket.status === 'closed') return NextResponse.json({ ok: true })
+  const { data: ticket } = await service.from('support_tickets').select('id, number, user_id, subject, status, resolved_at').eq('linear_issue_id', event.identifier).maybeSingle()
+  if (!ticket || ticket.status === status || ticket.status === 'closed' || staleReopen(status, event.updatedAt, ticket.resolved_at)) return NextResponse.json({ ok: true })
 
   await service.from('support_tickets').update({ status, resolved_at: status === 'resolved' ? new Date().toISOString() : null }).eq('id', ticket.id)
   await service.from('support_ticket_messages').insert({ ticket_id: ticket.id, author_type: 'system', author_label: 'Linear', body: `Engineering marked this ${status === 'resolved' ? 'done' : 'in progress'}.`, internal: true })

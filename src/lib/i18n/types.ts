@@ -106,6 +106,7 @@ export interface Dictionary {
 
   common: {
     save: string
+    logoAlt: (name: string) => string
     /** Settings force-sync button label */
     saveAndSync: string
     /** Toast shown after a successful force-sync */
@@ -965,6 +966,7 @@ export interface Dictionary {
     tabAddAccount: string
     sheetEditTitle: string
     currencyLockedHint: string
+    typeLockedHint: string
     sheetWithdrawTitle: string
     sheetUpdateTitle: string
     labelWhichSavings: string
@@ -1445,6 +1447,7 @@ export interface Dictionary {
     placeholderAmount: string
     labelFrequency: string
     labelNextDue: string
+    pastDueHint: string
     labelPaidVia: string
     labelActive: string
     labelNotes: string
@@ -2683,6 +2686,7 @@ export interface Dictionary {
     waitingOffline: (count: number) => string
     failed: string
     voiceEmpty: string
+    dismiss: string
     buddgyOffline: string
   }
 

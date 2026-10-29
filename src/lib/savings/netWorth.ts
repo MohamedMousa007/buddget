@@ -1,5 +1,5 @@
 import type { Currency, Debt, FinanceStore, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
-import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
+import { pocketBalanceInBase } from '@/lib/savings/savingsConversions'
 import { totalInvestmentValue, type PriceLookup } from '@/lib/savings/holdingValuation'
 import { convertCurrency } from '@/lib/utils/currency'
 
@@ -58,7 +58,7 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   let valuationIncomplete = false
   for (const a of i.savingsAccounts) {
     if (i.accountsBasis !== undefined && i.heldInPocketIds?.has(a.id)) continue
-    const v = savingsAccountBalanceInBase(a, base, exchangeRates, i.goldPricePerGram, goldOk)
+    const v = pocketBalanceInBase(a, base, exchangeRates, i.goldPricePerGram, goldOk, i.lookup)
     if (v === null) {
       valuationIncomplete = true
       continue

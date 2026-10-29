@@ -4,6 +4,7 @@ import { AlertCircle, ArrowDown, ArrowUp, Check, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/layout/PageContainer'
+import { fitBigNumber, fitCellValue } from '@/components/features/hero/fitText'
 
 export type FlowBandVariant = 'budget' | 'filtered' | 'noBudget' | 'loading'
 
@@ -97,7 +98,7 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
           <>
             <div className="mt-1.5 flex h-[34.5px] items-end justify-between gap-3">
               <p className="flex min-w-0 items-baseline gap-1.5">
-                <span className="shrink-0 font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{big}</span>
+                <span className={cn('min-w-0 shrink font-mono-numbers font-semibold leading-none tracking-[-0.03em]', big ? fitBigNumber(big) : 'text-[32px]')}>{big}</span>
                 {of ? <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${FG2}`}>{of}</span> : null}
               </p>
               {side ? (
@@ -156,7 +157,7 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
                 ) : null}
                 <span className="min-w-0 truncate">{s.label}</span>
               </p>
-              <p className="mt-1 h-6 truncate whitespace-nowrap font-mono-numbers text-base font-bold leading-6">{s.value}</p>
+              <p className={cn('mt-1 h-6 truncate whitespace-nowrap font-mono-numbers font-bold leading-6', fitCellValue(s.value))}>{s.value}</p>
             </div>
           )
         })}

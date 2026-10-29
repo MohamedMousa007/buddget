@@ -3,12 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
 import { createClient } from '@/lib/supabase/client'
+import { buildNetWorthTrend, type NetWorthTrend } from '@/lib/savings/netWorthTrend'
 
-export interface NetWorthTrend {
-  points: number[]
-  pct: number
-  dir: 'up' | 'down'
-}
+export type { NetWorthTrend }
 
 const DAYS = 30
 const SETTLE_MS = 2000
@@ -22,7 +19,9 @@ const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
  */
 export function useNetWorthTrend(netWorth: number, currency: string, ready: boolean, basis: 'legacy' | 'accounts' = 'legacy'): NetWorthTrend | null {
   const { user } = useAuth()
-  const [trend, setTrend] = useState<NetWorthTrend | null>(null)
+  // Keyed by currency and basis: a trend read for another one is never shown.
+  const [loaded, setLoaded] = useState<{ key: string; trend: NetWorthTrend | null } | null>(null)
+  const key = `${currency}:${basis}`
   const userId = user?.id
 
   useEffect(() => {
@@ -52,14 +51,11 @@ export function useNetWorthTrend(netWorth: number, currency: string, ready: bool
         .eq('basis', basis)
         .gte('day', isoDay(since))
         .order('day', { ascending: true })
-      if (cancelled || !data || data.length < 2) return
-      const points = data.map((r) => Number(r.net_worth))
-      const first = points[0]
-      const last = points[points.length - 1]
-      setTrend({ points, pct: first === 0 ? 0 : ((last - first) / Math.abs(first)) * 100, dir: last >= first ? 'up' : 'down' })
+      if (cancelled) return
+      setLoaded({ key, trend: buildNetWorthTrend(data) })
     }, SETTLE_MS)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [userId, ready, netWorth, currency, basis])
+  }, [userId, ready, netWorth, currency, basis, key])
 
-  return trend
+  return loaded?.key === key ? loaded.trend : null
 }

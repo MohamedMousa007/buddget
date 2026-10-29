@@ -16,7 +16,6 @@ vi.mock('@/lib/server/aiRuntimeConfig', () => {
   return {
     getStoredAiRuntimeConfig: () => stored,
     getEffectiveAiRuntimeConfig: () => stored,
-    hasPersistedRuntimeConfigFile: () => false,
     saveAiRuntimeConfig: (patch: Partial<typeof stored>) => (stored = { ...stored, ...patch }),
   }
 })

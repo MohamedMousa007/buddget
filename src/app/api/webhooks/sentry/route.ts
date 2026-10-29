@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { parseCrashEvent, validSignature } from '@/lib/integrations/sentryWebhook'
+import { freshHook, parseCrashEvent, validSignature } from '@/lib/integrations/sentryWebhook'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const MAX_BODY = 200_000
@@ -11,6 +11,7 @@ export async function POST(request: Request) {
   const raw = await request.text()
   if (raw.length > MAX_BODY) return NextResponse.json({ error: 'Too large' }, { status: 413 })
   if (!validSignature(raw, request.headers.get('sentry-hook-signature'), secret)) return NextResponse.json({ error: 'Bad signature' }, { status: 401 })
+  if (!freshHook(request.headers.get('sentry-hook-timestamp'), Date.now())) return NextResponse.json({ error: 'Stale' }, { status: 400 })
   let body: unknown
   try {
     body = JSON.parse(raw)

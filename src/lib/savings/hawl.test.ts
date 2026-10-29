@@ -22,6 +22,11 @@ describe('deriveHawl', () => {
     expect(h.isPlaceholder).toBe(false)
   })
 
+  it('reads a late-night payment timestamp as the local day', () => {
+    const h = deriveHawl({ lastPaidDate: '2025-05-31T22:30:00.000Z', createdAt })
+    expect(h.dueDate).toBe('2026-05-21')
+  })
+
   it('falls back to account creation but marks it a placeholder', () => {
     const h = deriveHawl({ createdAt })
     expect(h.dueDate).toBe('2024-12-20')

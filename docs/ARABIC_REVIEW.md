@@ -332,3 +332,23 @@ Function strings show a sample render (args 3, "X", "Y").
 | إزاي بتظهر العملة الثانية | كيف تظهر العملة الثانية |
 | اختار عملة من تحت وكل مبلغ في فلو … هيظهر تحته المقابل | اختر عملة من الأسفل ليظهر مقابل كل مبلغ في التدفق … تحته |
 | كمّل (Buddgy continue) | أكمل |
+
+## B11 (W4 copy sweep: U46-U50)
+
+| Key | New Arabic |
+|---|---|
+| auth.errorRateLimit | محاولات كثيرة. انتظر قليلاً ثم حاول مرة أخرى. |
+| auth.errorBadPassword (neutral, no enumeration) | البريد الإلكتروني أو كلمة المرور غير صحيحة. حاول مرة أخرى أو أعد تعيين كلمة المرور. |
+| auth.errorUnconfirmed | لم يتم تأكيد بريدك الإلكتروني بعد. |
+| auth.errorNoAccountForEmail (neutral) | تعذّر تسجيل الدخول بهذه البيانات. تحقق منها وحاول مرة أخرى. |
+| auth.errorSignUpGeneric | تعذّر إنشاء حسابك. حاول مرة أخرى. |
+| auth.errorEmailSendFailed | تعذّر إرسال رسالة التأكيد. حاول مرة أخرى بعد لحظات. |
+| auth.errorOtpIncomplete | أدخل الرمز المكوّن من 6 أرقام. |
+| actionFailed | تعذّر إكمال ذلك. تحقق من اتصالك وحاول مرة أخرى. |
+| buddgyChat error fallback (was Egyptian) | تعذّر إكمال ذلك. حاول مرة أخرى. |
+| expenses.removePurchase | حذف المصروف |
+| debts.confirmRemoveGoal | حذف هدف السداد وأي تذكير مرتبط به؟ لا يمكن التراجع عن هذا. |
+| budgetPage builder remove | إزالة {name} |
+| budget plan -> budget (onboarding, tour, income helper, settings) | ميزانيتك / ميزانية جديدة / ميزانيتك الشهرية / للوصول إلى ميزانيتك، المدخرات |
+
+Not rewritten (flagged): `settingsHubCopy.ts` Arabic (devices, notCounted, sms, ai, notif sections) is still Egyptian dialect; needs a dedicated MSA pass.

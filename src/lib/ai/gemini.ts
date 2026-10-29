@@ -188,6 +188,13 @@ export type AiPromptMode = 'chat' | 'voice'
 
 /** User entity name lists shared by every prompt so the model can match
  *  "mom" / "nol silver" / an account name to a real record. */
+/** Names can come from SMS or receipts; JSON quoting keeps a quote or newline from ending the name and starting an instruction. */
+const q = (value: string): string => JSON.stringify(value)
+
+function quoteLines(block: string): string {
+  return block.split('\n').map((l) => l.replace(/^\s*[-•]\s*/, '').trim()).filter(Boolean).map((l) => `- ${q(l)}`).join('\n')
+}
+
 function buildEntityContext(
   paymentMethods: PaymentMethod[],
   debts: Debt[],
@@ -195,25 +202,25 @@ function buildEntityContext(
   savingsAccounts: SavingsAccount[],
   goals: Goal[],
 ) {
-  const methodList = paymentMethods.map((m) => `"${m.name}" (id: ${m.id})`).join(', ')
+  const methodList = paymentMethods.map((m) => `${q(m.name)} (id: ${m.id})`).join(', ')
   const debtList = debts
     .map((d) => {
       const goldish = d.receivedVia === 'gold' || d.isGold
       const typeStr = goldish ? `gold ${d.goldKarat || 24}K, ${d.startingBalance}g` : `${d.currency} ${d.startingBalance}`
-      return `"${d.name}" (person: ${d.person}, ${typeStr})`
+      return `${q(d.name)} (person: ${q(d.person)}, ${typeStr})`
     })
     .join(', ')
   const incomeList = incomeSources
     .map(
       (i) =>
-        `"${i.name}" (${i.currency} ${i.amount}${i.isRecurring ? '/mo equiv' : ' one-time'})`
+        `${q(i.name)} (${i.currency} ${i.amount}${i.isRecurring ? '/mo equiv' : ' one-time'})`
     )
     .join(', ')
   const savingsAccountList = savingsAccounts
-    .map((a) => `"${a.name}" (${a.currency} ${a.currentBalance})`)
+    .map((a) => `${q(a.name)} (${a.currency} ${a.currentBalance})`)
     .join(', ')
   const goalsList = goals
-    .map((g) => `"${g.name}" (${g.category}${g.targetAmount != null ? `, target ${g.currency} ${g.targetAmount}` : ''})`)
+    .map((g) => `${q(g.name)} (${g.category}${g.targetAmount != null ? `, target ${g.currency} ${g.targetAmount}` : ''})`)
     .join(', ')
   return { methodList, debtList, incomeList, savingsAccountList, goalsList }
 }
@@ -258,7 +265,7 @@ CONTEXT (the user's accounts and live totals — use these):
 - Budget updates may still use Savings as a category for allocation targets
 - Active debts: ${debtList}
 - Savings goals: ${goalsList || '(none)'}
-${memoryBlock ? `\nWHAT YOU KNOW ABOUT THIS USER (use it to fill unsaid fields; don't recite it):\n${memoryBlock}\n` : ''}${live}${mode === 'chat' && budgetPlanContext ? `
+${memoryBlock ? `\nWHAT YOU KNOW ABOUT THIS USER (use it to fill unsaid fields; don't recite it):\n${quoteLines(memoryBlock)}\n` : ''}${live}${mode === 'chat' && budgetPlanContext ? `
 ACTIVE_BUDGET_PLAN:
 - Plan ID: ${budgetPlanContext.planId}
 - Plan Name: ${budgetPlanContext.planName}

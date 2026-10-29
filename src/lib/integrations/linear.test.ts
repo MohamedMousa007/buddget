@@ -7,7 +7,8 @@ const cfg = linearConfig({})
 describe('buildIssue', () => {
   it('carries the ticket number and the engineering facts, and nothing about the person', () => {
     const issue = buildIssue(payload, cfg)
-    expect(issue.title).toBe('[#42] Messages stopped importing')
+    expect(issue.title).toBe('[#42] Bug report (sms)')
+    expect(issue.title).not.toContain(payload.subject)
     expect(issue.description).toContain('Platform: ios')
     expect(issue.description).toContain('App version: 1.4.0')
     expect(JSON.stringify(issue)).not.toMatch(/@|email/i)
@@ -18,10 +19,10 @@ describe('buildIssue', () => {
     expect(buildIssue(payload, cfg).labelIds).toContain(cfg.labelBug)
     expect(buildIssue({ ...payload, kind: 'feature' }, cfg).labelIds).toContain(cfg.labelFeature)
   })
-  it('leaves out facts it does not have and caps the title', () => {
+  it('leaves out facts it does not have and never puts the subject in the title', () => {
     const issue = buildIssue({ ...payload, area: null, platform: null, version: null, subject: 'x'.repeat(400) }, cfg)
     expect(issue.description).not.toContain('Area:')
-    expect(issue.title.length).toBe(200)
+    expect(issue.title).toBe('[#42] Bug report')
   })
 })
 

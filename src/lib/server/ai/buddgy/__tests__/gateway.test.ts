@@ -114,4 +114,22 @@ describe('turnEventStream', () => {
     const { events } = await collect([{ candidates: [{ content: { parts: [{ text: 'long' }] }, finishReason: 'MAX_TOKENS' }] }])
     expect(events.at(-1)).toMatchObject({ t: 'done', truncated: true })
   })
+
+  it('flags a reply cut short by a safety or recitation stop as truncated', async () => {
+    for (const finishReason of ['SAFETY', 'RECITATION']) {
+      const { events } = await collect([{ candidates: [{ content: { parts: [{ text: 'partial' }] }, finishReason }] }])
+      expect(events.at(-1)).toMatchObject({ t: 'done', truncated: true })
+    }
+  })
+
+  it('gives up on a stalled upstream stream and settles it as aborted', async () => {
+    let outcome!: TurnOutcome
+    const stalled = new ReadableStream<Uint8Array>({ start() {} })
+    const stream = turnEventStream(stalled, { t: 'meta', chatId: null, newChat: false, rolled: false, soft: false, tier: 'fast' }, (o) => {
+      outcome = o
+    }, 20)
+    const text = await new Response(stream).text()
+    expect(text).toContain('"code":"upstream"')
+    expect(outcome.status).toBe('aborted')
+  })
 })

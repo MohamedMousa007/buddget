@@ -1,8 +1,9 @@
-import fs from 'fs'
-import path from 'path'
+import 'server-only'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 
-const CONFIG_DIR = path.join(process.cwd(), 'data')
-const CONFIG_PATH = path.join(CONFIG_DIR, 'ai-runtime-config.json')
+/** Row key in `platform_settings`; a serverless host has no durable local disk, so the database is the store. */
+const SETTING_KEY = 'ai_throttle'
+const CACHE_MS = 30_000
 
 export type AiRuntimeConfig = {
   /**
@@ -46,63 +47,47 @@ function defaultFromEnv(): AiRuntimeConfig {
   }
 }
 
-function parseStored(raw: unknown): Partial<AiRuntimeConfig> & { _legacyAssistantField?: boolean } | null {
-  if (!raw || typeof raw !== 'object') return null
+function parseStored(raw: unknown): Partial<AiRuntimeConfig> {
+  if (!raw || typeof raw !== 'object') return {}
   const o = raw as Record<string, unknown>
-  const out: Partial<AiRuntimeConfig> & { _legacyAssistantField?: boolean } = {}
+  const out: Partial<AiRuntimeConfig> = {}
   if (typeof o.rateLimitingEnabled === 'boolean') out.rateLimitingEnabled = o.rateLimitingEnabled
   if (typeof o.rateLimitMaxRequests === 'number') out.rateLimitMaxRequests = o.rateLimitMaxRequests
   if (typeof o.rateLimitWindowMs === 'number') out.rateLimitWindowMs = o.rateLimitWindowMs
-  if (typeof o.assistantEnabled === 'boolean') out._legacyAssistantField = true
   return out
 }
 
-/**
- * Config as stored on disk (or defaults if missing / invalid).
- */
-export function getStoredAiRuntimeConfig(): AiRuntimeConfig {
-  const defaults = defaultFromEnv()
-  try {
-    if (!fs.existsSync(CONFIG_PATH)) return defaults
-    const raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) as unknown
-    const partial = parseStored(raw)
-    if (!partial) return defaults
-
-    let rateLimitingEnabled: boolean
-    if (typeof partial.rateLimitingEnabled === 'boolean') {
-      rateLimitingEnabled = partial.rateLimitingEnabled
-    } else if (partial._legacyAssistantField) {
-      // Old file shape: keep throttling on so behavior matches previous “limits active” installs.
-      rateLimitingEnabled = true
-    } else {
-      rateLimitingEnabled = defaults.rateLimitingEnabled
-    }
-
-    return {
-      rateLimitingEnabled,
-      rateLimitMaxRequests: clampInt(
-        partial.rateLimitMaxRequests ?? defaults.rateLimitMaxRequests,
-        1,
-        1000,
-        defaults.rateLimitMaxRequests
-      ),
-      rateLimitWindowMs: clampInt(
-        partial.rateLimitWindowMs ?? defaults.rateLimitWindowMs,
-        1000,
-        3_600_000,
-        defaults.rateLimitWindowMs
-      ),
-    }
-  } catch {
-    return defaults
+function normalise(partial: Partial<AiRuntimeConfig>, base: AiRuntimeConfig): AiRuntimeConfig {
+  return {
+    rateLimitingEnabled: typeof partial.rateLimitingEnabled === 'boolean' ? partial.rateLimitingEnabled : base.rateLimitingEnabled,
+    rateLimitMaxRequests: clampInt(partial.rateLimitMaxRequests ?? base.rateLimitMaxRequests, 1, 1000, base.rateLimitMaxRequests),
+    rateLimitWindowMs: clampInt(partial.rateLimitWindowMs ?? base.rateLimitWindowMs, 1000, 3_600_000, base.rateLimitWindowMs),
   }
 }
 
-/**
- * Effective config: stored values, then optional env overrides (serverless / ops).
- */
-export function getEffectiveAiRuntimeConfig(): AiRuntimeConfig {
-  const stored = getStoredAiRuntimeConfig()
+let cache: { at: number; value: AiRuntimeConfig } | null = null
+
+export function resetAiRuntimeConfigCache(): void {
+  cache = null
+}
+
+/** The throttle as stored in `platform_settings` (env defaults when unset or unreadable). Cached briefly per instance. */
+export async function getStoredAiRuntimeConfig(): Promise<AiRuntimeConfig> {
+  if (cache && Date.now() - cache.at < CACHE_MS) return cache.value
+  const defaults = defaultFromEnv()
+  try {
+    const { data } = await createServiceRoleClient().from('platform_settings').select('value').eq('key', SETTING_KEY).maybeSingle()
+    const value = data ? normalise(parseStored(data.value), defaults) : defaults
+    cache = { at: Date.now(), value }
+    return value
+  } catch {
+    return cache?.value ?? defaults
+  }
+}
+
+/** Stored values, then optional env overrides (ops). */
+export async function getEffectiveAiRuntimeConfig(): Promise<AiRuntimeConfig> {
+  const stored = await getStoredAiRuntimeConfig()
 
   let rateLimitingEnabled = stored.rateLimitingEnabled
   if (process.env.AI_RATE_LIMITING_ENABLED?.trim()) {
@@ -111,56 +96,21 @@ export function getEffectiveAiRuntimeConfig(): AiRuntimeConfig {
 
   let rateLimitMaxRequests = stored.rateLimitMaxRequests
   if (process.env.AI_RATE_LIMIT_MAX?.trim()) {
-    const n = parseInt(process.env.AI_RATE_LIMIT_MAX, 10)
-    rateLimitMaxRequests = clampInt(n, 1, 1000, stored.rateLimitMaxRequests)
+    rateLimitMaxRequests = clampInt(parseInt(process.env.AI_RATE_LIMIT_MAX, 10), 1, 1000, stored.rateLimitMaxRequests)
   }
 
   let rateLimitWindowMs = stored.rateLimitWindowMs
   if (process.env.AI_RATE_LIMIT_WINDOW_MS?.trim()) {
-    const n = parseInt(process.env.AI_RATE_LIMIT_WINDOW_MS, 10)
-    rateLimitWindowMs = clampInt(n, 1000, 3_600_000, stored.rateLimitWindowMs)
+    rateLimitWindowMs = clampInt(parseInt(process.env.AI_RATE_LIMIT_WINDOW_MS, 10), 1000, 3_600_000, stored.rateLimitWindowMs)
   }
 
-  return {
-    rateLimitingEnabled,
-    rateLimitMaxRequests,
-    rateLimitWindowMs,
-  }
+  return { rateLimitingEnabled, rateLimitMaxRequests, rateLimitWindowMs }
 }
 
-export function saveAiRuntimeConfig(
-  patch: Partial<
-    Pick<AiRuntimeConfig, 'rateLimitingEnabled' | 'rateLimitMaxRequests' | 'rateLimitWindowMs'>
-  >
-): AiRuntimeConfig {
-  const current = getStoredAiRuntimeConfig()
-  const next: AiRuntimeConfig = {
-    rateLimitingEnabled:
-      typeof patch.rateLimitingEnabled === 'boolean'
-        ? patch.rateLimitingEnabled
-        : current.rateLimitingEnabled,
-    rateLimitMaxRequests: clampInt(
-      patch.rateLimitMaxRequests ?? current.rateLimitMaxRequests,
-      1,
-      1000,
-      current.rateLimitMaxRequests
-    ),
-    rateLimitWindowMs: clampInt(
-      patch.rateLimitWindowMs ?? current.rateLimitWindowMs,
-      1000,
-      3_600_000,
-      current.rateLimitWindowMs
-    ),
-  }
-  fs.mkdirSync(CONFIG_DIR, { recursive: true })
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(next, null, 2), 'utf8')
+export async function saveAiRuntimeConfig(patch: Partial<AiRuntimeConfig>, staffId: string | null): Promise<AiRuntimeConfig> {
+  const next = normalise(patch, await getStoredAiRuntimeConfig())
+  const { error } = await createServiceRoleClient().from('platform_settings').upsert({ key: SETTING_KEY, value: next, updated_by: staffId })
+  if (error) throw new Error(error.message)
+  cache = { at: Date.now(), value: next }
   return next
-}
-
-export function hasPersistedRuntimeConfigFile(): boolean {
-  try {
-    return fs.existsSync(CONFIG_PATH)
-  } catch {
-    return false
-  }
 }

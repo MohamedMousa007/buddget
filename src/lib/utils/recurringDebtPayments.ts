@@ -1,4 +1,4 @@
-import { addMonths, addWeeks, addYears, format, getDaysInMonth, parseISO, setDate } from 'date-fns'
+import { addMonths, addWeeks, format, getDaysInMonth, parseISO, setDate } from 'date-fns'
 import type { DebtRecurringFrequency } from '@/lib/store/types'
 
 /**
@@ -21,11 +21,16 @@ export function advanceRecurringDebtDueDate(
   if (frequency === 'biweekly') return format(addWeeks(d, 2), 'yyyy-MM-dd')
   if (frequency === 'weekly') return format(addWeeks(d, 1), 'yyyy-MM-dd')
   if (frequency === 'quarterly') return format(addMonthsAnchored(d, 3, anchorDay), 'yyyy-MM-dd')
-  if (frequency === 'annually') return format(addYears(d, 1), 'yyyy-MM-dd')
+  if (frequency === 'annually') return format(addMonthsAnchored(d, 12, anchorDay), 'yyyy-MM-dd')
   return format(addWeeks(d, 1), 'yyyy-MM-dd')
 }
 
 export function isRecurringDebtDue(nextDueDate: string): boolean {
   const ymd = format(new Date(), 'yyyy-MM-dd')
   return nextDueDate <= ymd
+}
+
+/** The day-of-month a schedule keeps across short months. Weekly and biweekly rows have none: their day moves every period. */
+export function recurringDueDayFor(frequency: DebtRecurringFrequency, nextDueDate: string): number | undefined {
+  return frequency === 'monthly' || frequency === 'quarterly' || frequency === 'annually' ? Number(nextDueDate.slice(8, 10)) : undefined
 }

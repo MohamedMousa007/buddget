@@ -93,5 +93,5 @@ export const DEFAULT_MARKET_RATES: Record<string, number> = {
   SAR_AED: 0.98,
 }
 
-// Gold ~$4,760/oz ÷ 31.1035 × 3.6725 = ~562 AED/gram (Apr 2026)
-export const DEFAULT_GOLD_PRICE_PER_GRAM = 562
+/** No price until a fetch lands (`goldPriceAvailable` stays false): the old 562 was AED-scale and wrong for an EGP base. */
+export const DEFAULT_GOLD_PRICE_PER_GRAM = 0

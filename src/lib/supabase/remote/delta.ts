@@ -60,10 +60,17 @@ export interface MappedDelta {
   budgetPlans: BudgetPlan[]
   deletedBudgetPlanIds: string[]
   budgetPlanActivations: BudgetPlanActivation[]
+  /**
+   * Set when this was a full pull taken because the device's cursor was too old for tombstones to be kept (the cursor
+   * it had). Local rows absent from the server and last touched before it were deleted long ago: drop them instead of
+   * pushing them back.
+   */
+  staleBefore: string | null
 }
 
 interface SyncPullPayload {
   cursor: string
+  needs_full?: boolean
   has_profile: boolean
   profile: Database['public']['Tables']['profiles']['Row'] | null
   settings: Database['public']['Tables']['user_settings']['Row'] | null
@@ -86,9 +93,13 @@ function listDelta<T>(rows: Row[] | undefined, fromRow: (row: never) => T): List
 
 /** One request for everything that changed since `since` (null = the live rows, i.e. a full first pull). Null when the account has no profile yet. */
 export async function pullDelta(client: SupabaseClient<Database>, since: string | null): Promise<MappedDelta | null> {
-  const { data, error } = await client.rpc('sync_pull', since ? { p_since: since } : {})
+  const { data, error } = await client.rpc('sync_pull_v2', since ? { p_since: since } : {})
   if (error) throw new Error(error.message)
   const p = data as unknown as SyncPullPayload | null
+  if (p?.needs_full && since) {
+    const full = await pullDelta(client, null)
+    return full && { ...full, staleBefore: since }
+  }
   if (!p?.has_profile) return null
 
   const l = p.lists
@@ -117,12 +128,16 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
     budgetPlans: p.budget_plans.map((plan) => assembleBudgetPlan({ plan, categories: p.budget_categories, subcategories: p.budget_subcategories })),
     deletedBudgetPlanIds: p.budget_plans_deleted,
     budgetPlanActivations: p.budget_plan_activations.map(activationFromRow),
+    staleBefore: null,
   }
 }
 
-function applyList<T extends WithId>(local: T[], d: ListDelta<T>): T[] {
+function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefore: string | null): T[] {
   const dead = new Set(d.deletedIds)
-  return mergeList(local, d.upserts).filter((r) => !dead.has(r.id))
+  const live = new Set(d.upserts.map((r) => r.id))
+  const cutoff = staleBefore === null ? NaN : Date.parse(staleBefore)
+  const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && !!r.updatedAt && Date.parse(r.updatedAt) <= cutoff
+  return mergeList(local, d.upserts).filter((r) => !dead.has(r.id) && !gone(r))
 }
 
 /**
@@ -141,6 +156,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
       : local.settings
 
   const deadPlans = new Set(d.deletedBudgetPlanIds)
+  const applyList = <T extends WithId>(local: T[], delta: ListDelta<T>): T[] => applyListWith(local, delta, d.staleBefore)
   return {
     profile: profileResult?.profile ?? local.profile,
     settings,
@@ -163,7 +179,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
     goals: applyList(local.goals, d.goals),
     buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>) as Snapshot['buddgyMemories'],
     accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>) as Snapshot['accountAdjustments'],
-    budgetPlans: applyList(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }) as Snapshot['budgetPlans'],
+    budgetPlans: applyListWith(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }, null) as Snapshot['budgetPlans'],
     budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId)),
   }
 }

@@ -4214,6 +4214,7 @@ export type Database = {
         Returns: { status: string; n: number }[]
       }
       sync_pull: { Args: { p_since?: string }; Returns: Json }
+      sync_pull_v2: { Args: { p_since?: string }; Returns: Json }
       sync_table_delta: { Args: { p_table: string; p_win: string }; Returns: Json }
       analytics_touch: {
         Args: { p_seconds?: number; p_sessions?: number; p_paths?: Json }

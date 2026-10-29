@@ -25,7 +25,7 @@ export function useRecurringSavingsScheduler() {
         const amount = Math.max(0, Number(r.amount) || 0)
         if (amount <= 0) continue
 
-        const { due, next } = dueDatesThrough(r.nextDueDate, todayStr)
+        const { due, next } = dueDatesThrough(r.nextDueDate, todayStr, r.dayOfMonth)
         state.depositToSavings(r.accountId, amount, r.currency, r.notes?.trim() || 'Recurring savings', {
           source: 'recurring_savings',
           txId: recurringTxId(r.id, due),

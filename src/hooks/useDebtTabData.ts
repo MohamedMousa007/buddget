@@ -128,9 +128,10 @@ export interface AssignCandidateVM {
   debtId?: string
 }
 
-function paidInBase(debt: Debt, payments: DebtPayment[], base: Currency, rates: Record<string, number>, gpg: number): number {
+function paidInBase(debt: Debt, payments: DebtPayment[], base: Currency, rates: Record<string, number>, gpg: number, goldOk: boolean): number {
   const paid = totalPaidTowardDebt(debt.id, payments)
   if (paid <= 0) return 0
+  if (debt.isGold && !goldOk) return 0
   return debt.isGold ? goldGramsToMoney(paid, gpg, debt.goldKarat) : convertCurrency(paid, debt.currency, base, rates)
 }
 
@@ -142,7 +143,7 @@ export function useDebtTabData() {
   const stats = useMonthlyStats()
   const t = useT()
   const { locale } = useLocale()
-  const { debts, debtPayments, paymentMethods, settings, exchangeRates, goldPricePerGram } = useFinanceStore(
+  const { debts, debtPayments, paymentMethods, settings, exchangeRates, goldPricePerGram, goldPriceAvailable } = useFinanceStore(
     useShallow((s) => ({
       debts: countedDebts(s.debts, s.paymentMethods),
       debtPayments: countedDebtPayments(s.debtPayments, s.debts, s.paymentMethods),
@@ -150,6 +151,7 @@ export function useDebtTabData() {
       settings: s.settings,
       exchangeRates: s.exchangeRates,
       goldPricePerGram: s.goldPricePerGram,
+      goldPriceAvailable: s.goldPriceAvailable !== false,
     })),
   )
   const expenses = useFinanceStore((s) => s.expenses)
@@ -164,7 +166,7 @@ export function useDebtTabData() {
 
     // --- portfolio totals ---
     const owed = stats.debtRemainingTotal
-    const paidOff = debts.reduce((s, d) => s + paidInBase(d, paymentsFor(d.id), base, exchangeRates, goldPricePerGram), 0)
+    const paidOff = debts.reduce((s, d) => s + paidInBase(d, paymentsFor(d.id), base, exchangeRates, goldPricePerGram, goldPriceAvailable), 0)
     const everBorrowed = owed + paidOff
     const clearedPct = everBorrowed > 0 ? Math.round((paidOff / everBorrowed) * 100) : 0
 
@@ -409,7 +411,7 @@ export function useDebtTabData() {
       .filter((p) => isWithinInterval(parseISO(p.date), { start: cycle.start, end: cycle.end }))
       .reduce((sum, p) => {
         const d = debts.find((x) => x.id === p.debtId)
-        if (d?.isGold && (p.originalAmount == null || p.paymentCurrency === 'XAU')) return sum + goldGramsToMoney(p.amountPaid, goldPricePerGram, d.goldKarat)
+        if (d?.isGold && (p.originalAmount == null || p.paymentCurrency === 'XAU')) return goldPriceAvailable ? sum + goldGramsToMoney(p.amountPaid, goldPricePerGram, d.goldKarat) : sum
         const paid = paidAsEntered(p, d?.currency ?? base)
         return sum + toBase(paid.amount, paid.currency)
       }, 0)
@@ -434,5 +436,5 @@ export function useDebtTabData() {
       assignCandidate,
       base,
     }
-  }, [debts, debtPayments, recurring, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, settings.monthStartDay, stats.debtRemainingTotal, t, locale])
+  }, [debts, debtPayments, recurring, paymentMethods, expenses, base, exchangeRates, goldPricePerGram, goldPriceAvailable, settings.monthStartDay, stats.debtRemainingTotal, t, locale])
 }

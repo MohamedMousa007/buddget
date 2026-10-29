@@ -1,5 +1,6 @@
 import { generateWithFallback, throwIfAiProxyNotOk } from '@/lib/ai/generateWithFallback'
 import { coerceGoalCategory } from '@/lib/goals/coerceGoalCategory'
+import { isThisMonthOrLater, localPromptDay } from '@/lib/goals/goalDate'
 import type { GoalCategory } from '@/lib/store/types'
 
 export interface ParsedGoal {
@@ -56,7 +57,7 @@ export function parseGoalReply(text: string, now: Date): ParsedGoal {
     category: coerceGoalCategory(o.category),
     name,
     target: Number.isFinite(target) && target > 0 ? Math.round(target) : undefined,
-    date: date && date > now.toISOString().slice(0, 7) ? date : undefined,
+    date: date && isThisMonthOrLater(date, now) ? date : undefined,
   }
 }
 
@@ -67,7 +68,7 @@ export async function parseGoalText(
   signal?: AbortSignal,
 ): Promise<ParsedGoal> {
   const prompt =
-    `Turn the user's savings goal into JSON. Today is ${input.now.toISOString().slice(0, 10)}. ` +
+    `Turn the user's savings goal into JSON. Today is ${localPromptDay(input.now)}. ` +
     `Currency: ${input.currency}. Reply with ONLY JSON: {"category": one of emergency_fund, house, car, vacation, education, ` +
     `wedding, retirement, business, phone_device, gift, investment, family_support, sadaqah_charity, custom; ` +
     `"name": short title; "target": number in ${input.currency} only if the user stated or clearly implied one; ` +

@@ -1,5 +1,6 @@
 'use client'
 
+import { balanceEpsilon } from '@/lib/savings/balanceMath'
 import { useMemo, useState } from 'react'
 import { Plus, ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, X, Coins, Bitcoin, LineChart } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -172,7 +173,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const canSubmit =
     !!from &&
     amountNum > 0 &&
-    free + 0.001 >= amountInPocket &&
+    free + balanceEpsilon(from.account.currency) >= amountInPocket &&
     (moveOn
       ? !!moveToId
       : reason === 'debt'

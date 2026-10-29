@@ -1,6 +1,7 @@
 export interface SystemPagesCopy {
   routeError: { title: string; retry: string; report: (id: string) => string }
   rootError: { title: string; body: string; retry: string; report: (id: string) => string }
+  notFound: { title: string; body: string; back: string }
   offline: { title: string; body: string; retry: string }
   iosSmsSetup: {
     tokenMissing: string
@@ -17,6 +18,7 @@ export interface SystemPagesCopy {
 
 export const systemPagesCopyEn: SystemPagesCopy = {
   routeError: { title: 'Something went wrong', retry: 'Try again', report: (id) => `Report ${id}` },
+  notFound: { title: 'Page not found', body: 'That page does not exist or has moved.', back: 'Back to Flow' },
   rootError: {
     title: 'Buddget hit a problem',
     body: 'Your data is safe. Try again, and if it keeps happening, quote the report number to support.',
@@ -43,6 +45,7 @@ export const systemPagesCopyEn: SystemPagesCopy = {
 
 export const systemPagesCopyAr: SystemPagesCopy = {
   routeError: { title: 'حدث خطأ ما', retry: 'حاول مرة أخرى', report: (id) => `البلاغ ${id}` },
+  notFound: { title: 'الصفحة غير موجودة', body: 'هذه الصفحة غير موجودة أو تم نقلها.', back: 'العودة إلى المعاملات' },
   rootError: {
     title: 'واجه Buddget مشكلة',
     body: 'بياناتك بأمان. حاول مرة أخرى، وإذا تكرر الأمر فاذكر رقم البلاغ للدعم.',

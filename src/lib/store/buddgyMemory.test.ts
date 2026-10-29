@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { memoryFromRow, memoryToRow } from '@/lib/supabase/remote/mappers/buddgyMemoryMapper'
-import { learnFromChat, migrateLegacyNotes } from '@/lib/ai/memoryActions'
+import { migrateLegacyNotes } from '@/lib/ai/memoryActions'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
 describe('buddgy memories', () => {
@@ -28,14 +28,11 @@ describe('buddgy memories', () => {
     expect(memoryFromRow({ ...memoryToRow(m, 'u1'), deleted_at: null } as Parameters<typeof memoryFromRow>[0])).toEqual(m)
   })
 
-  it('moves device-only notes over once and respects paused learning', () => {
+  it('moves device-only notes over once', () => {
     useSettingsStore.setState({ buddgyNotes: ['lives in Dubai'] })
     migrateLegacyNotes()
     expect(useFinanceStore.getState().buddgyMemories.map((m) => m.text)).toEqual(['lives in Dubai'])
     expect(useSettingsStore.getState().buddgyNotes).toEqual([])
-    useSettingsStore.setState({ buddgyLearning: false })
-    learnFromChat(['drives a Tesla'])
-    expect(useFinanceStore.getState().buddgyMemories).toHaveLength(1)
   })
 
   it('round-trips the plan link and deleting the plan removes only its notes', () => {

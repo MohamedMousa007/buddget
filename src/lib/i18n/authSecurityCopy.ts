@@ -26,14 +26,14 @@ const en: AuthSecurityCopy = {
   errorWrongPassword: 'That is not your current password.',
   errorReauthRequired: 'Sign in again to change your password.',
   errorTooManyAttempts: 'Too many attempts. Try again in a few minutes.',
-  errorChangeFailed: 'Could not change your password. Try again.',
+  errorChangeFailed: 'Couldn\u2019t change your password. Try again.',
   secondStepUnavailable: 'We could not check your second step. Check your connection and try again.',
   twoFaOffTitle: 'Turn off two-factor authentication?',
   twoFaOffBody: 'Enter your password to confirm it is you. Anyone with your password will be able to sign in without an email code.',
   twoFaOffConfirm: 'Turn off',
   twoFaOffCancel: 'Keep it on',
   twoFaOffNeedsSignIn: 'Sign out and sign in again, then turn it off.',
-  twoFaChangeFailed: 'Could not change two-factor authentication. Try again.',
+  twoFaChangeFailed: 'Couldn\u2019t change two-factor authentication. Try again.',
 }
 
 const ar: AuthSecurityCopy = {

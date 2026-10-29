@@ -14,6 +14,7 @@ import { INVESTMENT_PRODUCT_TYPES, SAVINGS_PRODUCT_TYPES } from '@/lib/constants
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency, SavingsAccount, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
 import { buildSavingsCurrencyOptions, pickDefaultSavingsCurrency } from '@/lib/savings/savingsCurrencyOptions'
+import { isTypeLockedPocket } from '@/lib/savings/canDeletePocket'
 import { isSavingsCurrencyLocked } from '@/lib/savings/savingsCurrencyLock'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
@@ -40,6 +41,7 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
   const settings = useFinanceStore((s) => s.settings)
   const updateSavingsAccount = useFinanceStore((s) => s.updateSavingsAccount)
   const correctSavingsBalance = useFinanceStore((s) => s.correctSavingsBalance)
+  const typeLocked = useFinanceStore((s) => isTypeLockedPocket(s.profile, account))
   const currencyLocked = useFinanceStore((s) => isSavingsCurrencyLocked(account, s.savingsTransactions))
 
   const [productCategory, setProductCategory] = useState<SavingsAccountCategory>(account.category)
@@ -95,31 +97,37 @@ function EditSavingsAccountForm({ account, onClose }: { account: SavingsAccount;
       <div className="p-5">
         <ModalSheetHeader title={t.savings.sheetEditTitle} onClose={onClose} />
         <div className="mt-4 space-y-4">
-          <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelProductCategory}</Label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <OptionChip selected={productCategory === 'savings'} onClick={() => pickCategory('savings')}>
-                {t.savings.categorySavings}
-              </OptionChip>
-              <OptionChip selected={productCategory === 'investment'} onClick={() => pickCategory('investment')}>
-                {t.savings.categoryInvestment}
-              </OptionChip>
-            </div>
-          </div>
+          {typeLocked ? (
+            <p className="text-xs text-[var(--color-brand-text-muted)]">{t.savings.typeLockedHint}</p>
+          ) : (
+            <>
+              <div>
+                <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelProductCategory}</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <OptionChip selected={productCategory === 'savings'} onClick={() => pickCategory('savings')}>
+                    {t.savings.categorySavings}
+                  </OptionChip>
+                  <OptionChip selected={productCategory === 'investment'} onClick={() => pickCategory('investment')}>
+                    {t.savings.categoryInvestment}
+                  </OptionChip>
+                </div>
+              </div>
 
-          <div>
-            <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelType}</Label>
-            <div className="mt-2">
-              <SavingsProductTypePicker
-                types={typeList}
-                value={savingsType}
-                labels={t.savings.types}
-                onSelect={onPickType}
-              />
-            </div>
-          </div>
+              <div>
+                <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelType}</Label>
+                <div className="mt-2">
+                  <SavingsProductTypePicker
+                    types={typeList}
+                    value={savingsType}
+                    labels={t.savings.types}
+                    onSelect={onPickType}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
-          {savingsType === 'other' && (
+          {savingsType === 'other' && !typeLocked && (
             <div>
               <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.savings.labelPickIcon}</Label>
               <div className="mt-2 flex flex-wrap gap-2">

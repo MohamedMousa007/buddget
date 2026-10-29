@@ -19,15 +19,26 @@ export interface PendingAiJob {
   kind: 'voice' | 'receipt'
   mimeType: string
   createdAt: string
+  attempts?: number
 }
 
 const MAX_JOBS = 20
+const JOB_TTL_MS = 7 * 24 * 3600 * 1000
 
 interface PendingAiJobsState {
   jobs: PendingAiJob[]
   /** Returns false when the queue is full (caller shows the plain offline error). */
   addJob: (job: PendingAiJob) => boolean
   removeJob: (id: string) => void
+  /** Records a failed attempt: a retryable job rotates to the back and stays until success, dismiss or TTL; a permanent failure is dropped. */
+  failJob: (id: string, retryable: boolean) => 'requeued' | 'dropped'
+  /** Drops jobs older than the TTL; returns their ids so the caller can delete the media. */
+  pruneExpired: () => string[]
+}
+
+/** Whether a failed upload may be retried later. Auth (401/403) and quota (429) are paused, never fatal: the media is the only copy. */
+export function isRetryableStatus(status: number): boolean {
+  return status === 0 || status === 401 || status === 403 || status === 429 || status >= 500
 }
 
 export const usePendingAiJobs = create<PendingAiJobsState>()(
@@ -40,6 +51,25 @@ export const usePendingAiJobs = create<PendingAiJobsState>()(
         return true
       },
       removeJob: (id) => set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) })),
+      failJob: (id, retryable) => {
+        const job = get().jobs.find((j) => j.id === id)
+        if (!job) return 'dropped'
+        const attempts = (job.attempts ?? 0) + 1
+        if (!retryable) {
+          set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) }))
+          return 'dropped'
+        }
+        set((s) => ({ jobs: [...s.jobs.filter((j) => j.id !== id), { ...job, attempts }] }))
+        return 'requeued'
+      },
+      pruneExpired: () => {
+        const cutoff = Date.now() - JOB_TTL_MS
+        const expired = get().jobs.filter((j) => new Date(j.createdAt).getTime() < cutoff)
+        if (expired.length) {
+          set((s) => ({ jobs: s.jobs.filter((j) => !expired.includes(j)) }))
+        }
+        return expired.map((j) => j.id)
+      },
     }),
     {
       name: 'buddget-pending-ai-jobs',

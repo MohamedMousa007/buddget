@@ -1,3 +1,6 @@
+import { addDays, format, parseISO } from 'date-fns'
+import { localDayKey } from '@/lib/utils/localDate'
+
 /**
  * The hawl (الحول) — the lunar year wealth must sit above nisab before zakat is owed.
  *
@@ -35,10 +38,10 @@ export interface Hawl {
 /** A lunar year. Zakat is reckoned on the Hijri calendar, which runs ~354 days. */
 export const LUNAR_YEAR_DAYS = 354
 
+/** `lastPaidDate` is a timestamp and `yearStartDate` a date: both reduce to the user's local day first. */
 function addLunarYear(iso: string): string {
-  return new Date(new Date(iso).getTime() + LUNAR_YEAR_DAYS * 24 * 3600 * 1000)
-    .toISOString()
-    .slice(0, 10)
+  const day = iso.length > 10 ? localDayKey(iso) : iso
+  return format(addDays(parseISO(day), LUNAR_YEAR_DAYS), 'yyyy-MM-dd')
 }
 
 function usable(d: string | null | undefined): d is string {
