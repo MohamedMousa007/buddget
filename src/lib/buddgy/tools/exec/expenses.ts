@@ -3,6 +3,7 @@ import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { planRowNames } from '@/lib/budget/budgetPlans'
 import { AUTO_DATE_WINDOW_DAYS, AUTO_MAX_AMOUNT_BASE, claimAutoSlot, withinDays } from '@/lib/buddgy/tools/autoApplyGuard'
+import { categoryLabelFor } from '@/lib/i18n/categoryLabel'
 import { labels } from '@/lib/buddgy/tools/copy'
 import type { EditableField, Proposal, ProposeResult } from '@/lib/buddgy/tools/proposal'
 import { refOf, resolveByRefOrName, resolveRef } from '@/lib/buddgy/tools/refs'
@@ -29,11 +30,11 @@ function resolveCategory(s: FinanceStore, input: unknown): string | null {
   return plan ? (planRowNames(plan).find((n) => n.toLowerCase() === wanted) ?? null) : null
 }
 
-function categoryField(s: FinanceStore, current: string, label: string): EditableField {
+function categoryField(s: FinanceStore, current: string, label: string, locale: 'en' | 'ar'): EditableField {
   const plan = selectActivePlan(s.budgetPlans, s.activeBudgetPlanId)
   const rows = plan ? planRowNames(plan) : []
   const values = [...new Set([current, ...EXPENSE_ENTRY_CATEGORIES, ...rows])]
-  return { key: 'category', label, kind: 'select', value: current, options: values.map((v) => ({ value: v, label: v })) }
+  return { key: 'category', label, kind: 'select', value: current, options: values.map((v) => ({ value: v, label: categoryLabelFor(locale, v) })) }
 }
 
 function methodField(s: FinanceStore, currentId: string, label: string): EditableField {
@@ -83,7 +84,7 @@ function previewFields(s: FinanceStore, ctx: ToolContext, e: { description: stri
   return [
     { key: 'description', label: L.description, kind: 'text', value: e.description },
     { key: 'amount', label: L.amount, kind: 'amount', value: String(e.amount), currency: e.currency },
-    categoryField(s, e.category, L.category),
+    categoryField(s, e.category, L.category, ctx.locale),
     methodField(s, e.paymentMethodId, L.method),
     { key: 'date', label: L.date, kind: 'date', value: e.date },
   ]
@@ -139,7 +140,7 @@ function buildAddExpense(args: Record<string, unknown>, ctx: ToolContext, claimS
         rows: [
           { label: L.description, value: description },
           { label: L.amount, value: money(amount, currency) },
-          { label: L.category, value: category },
+          { label: L.category, value: categoryLabelFor(ctx.locale, category) },
           ...(methodName ? [{ label: L.method, value: methodName }] : []),
           { label: L.date, value: date },
         ],
@@ -227,7 +228,7 @@ const update_expense: WriteImpl = {
       if (!category) return fail('Unknown category.', `Use one of: ${EXPENSE_ENTRY_CATEGORIES.join(', ')}.`)
       if (category !== e.category) {
         changes.category = category
-        rows.push({ label: L.category, before: e.category, value: category })
+        rows.push({ label: L.category, before: categoryLabelFor(ctx.locale, e.category), value: categoryLabelFor(ctx.locale, category) })
       }
     }
     if (args.date !== undefined) {
@@ -331,7 +332,7 @@ const delete_expense: WriteImpl = {
           title: `${L.deleteExpense}: ${e.description}`,
           rows: [
             { label: L.amount, value: money(e.amount, e.currency) },
-            { label: L.category, value: e.category },
+            { label: L.category, value: categoryLabelFor(ctx.locale, e.category) },
             { label: L.date, value: e.date },
           ],
         },

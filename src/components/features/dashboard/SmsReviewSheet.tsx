@@ -11,6 +11,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { useT } from '@/lib/i18n'
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import type { PendingConfirmation } from '@/hooks/useSmsConfirmations'
 import { formatFixed2 } from '@/lib/utils/formatters'
 import { Button } from '@/components/ui/button'
@@ -108,7 +109,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem,
             ? [t.smsReview.matchedTo(shortDate(match.date)), match.daysLate ? t.smsReview.arrivedLate(match.daysLate) : null].filter(Boolean).join(' · ')
             : provisional && !credit
               ? t.smsReview.confirmCurrencyHelp
-              : [credit ? null : item.category, instrument].filter(Boolean).join(' · ')
+              : [credit || !item.category ? null : categoryLabel(t, item.category), instrument].filter(Boolean).join(' · ')
           return (
             <div
               key={item.id}

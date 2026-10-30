@@ -10,6 +10,7 @@ import type { useNewGoalForm } from '@/hooks/useNewGoalForm'
 import { useLocale, useT } from '@/lib/i18n'
 import { projectedFinish } from '@/lib/goals/goalPlan'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { Badge } from '@/components/ui/badge'
 
 type NewForm = ReturnType<typeof useNewGoalForm>
 /** The slice of the form step 3 reads, so the goal detail's funding editor can reuse it. */
@@ -84,10 +85,10 @@ export function StepFundIt({ form, existing = false, onOpenSplit }: { form: Form
           <p className="mt-1 text-sm text-[var(--color-brand-text-secondary)]">{t.sub(form.name)}</p>
         </div>
       )}
-      <p className="flex w-fit items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--color-brand-text-primary)]">
+      <Badge tone="ink" size="md" bordered={false} className="gap-1.5">
         <Check className="size-3.5 text-[var(--color-brand-primary-bright)]" aria-hidden />
         {c.pill}
-      </p>
+      </Badge>
       {existing ? null : (
         <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] px-3.5 py-3 text-[13px] text-[var(--color-brand-text-secondary)]">
           <Coins className="size-5 shrink-0 text-[var(--color-brand-primary-bright)]" aria-hidden />

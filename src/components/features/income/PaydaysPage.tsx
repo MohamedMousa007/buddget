@@ -193,6 +193,7 @@ export function PaydaysPage() {
           {header(null)}
           <div className="mx-4 mt-6 lg:mx-auto lg:mt-10 lg:max-w-md">
             <EmptyState
+              variant="card"
               title={t.paydays.emptyTitle}
               description={t.paydays.emptyBody}
               action={

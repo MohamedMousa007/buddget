@@ -36,14 +36,13 @@ export default function ReportsPage() {
 
   return (
     <div>
+      <ReportsNetWorthPanel />
       <PageBody className="space-y-4">
         <ReportFilters selected={r.dateRange} onSelect={r.setDateRange} />
 
         <ReportExpenseDebtFilter value={r.expenseDebtFilter} onChange={r.setExpenseDebtFilter} />
 
-        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
-        <ReportsNetWorthPanel />
-
+        <div>
         <ReportsSummaryPanel
           startDate={r.startDate}
           endDate={r.endDate}

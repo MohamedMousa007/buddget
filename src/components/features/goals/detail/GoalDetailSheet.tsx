@@ -28,6 +28,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { navigate } from '@/lib/navigation/navigate'
 import { ModalTitle } from '@/components/modals/ModalTitle'
+import { Badge } from '@/components/ui/badge'
 
 const CHIP: Record<string, { dot: string }> = {
   green: { dot: 'var(--color-brand-green)' },
@@ -163,10 +164,10 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
               </span>
               <div className="min-w-0">
                 <ModalTitle className="truncate text-[22px] font-bold text-[var(--color-brand-text-primary)]">{goal.name}</ModalTitle>
-                <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-brand-text-primary)]">
+                <Badge tone="ink" size="sm" bordered={false} className="mt-1 gap-1.5 font-semibold">
                   <span className="size-1.5 rounded-full" style={{ background: CHIP[chipTone].dot }} aria-hidden />
                   {d[chipKind as 'chipOnTrack']}
-                </span>
+                </Badge>
               </div>
             </div>
 

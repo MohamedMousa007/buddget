@@ -23,32 +23,31 @@ export function EmptyPlan({ onBuildWithBuddgy, onManual }: EmptyPlanProps) {
   return (
     <EmptyState
       className="min-h-[60vh]"
-      icon={<BuddgyIcon mood="happy" size={72} />}
+      illustration={<BuddgyIcon mood="happy" size={72} />}
       title={drafted ? c.drafted.headline(months) : c.headline}
       description={drafted ? c.drafted.body : c.body}
       action={
-        <div className="flex w-full max-w-sm flex-col gap-4">
-          {drafted ? null : (
-            <ul className="flex flex-col gap-2 text-start">
-              {c.points.map((point) => (
-                <li key={point} className="flex items-center gap-2 text-sm text-[var(--color-brand-text-secondary)]">
-                  <Check className="size-4 shrink-0 text-[var(--color-brand-green)]" aria-hidden />
-                  {point}
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="flex flex-col gap-2">
-            <Button size="cta" className="w-full" onClick={onBuildWithBuddgy}>
-              <Sparkles aria-hidden />
-              {drafted ? c.drafted.cta : c.buddgy}
-            </Button>
-            <Button size="touch" variant="ghost" className="w-full" onClick={onManual}>
-              {c.manual}
-            </Button>
-          </div>
+        <div className="flex w-full max-w-sm flex-col gap-2">
+          <Button size="cta" className="w-full" onClick={onBuildWithBuddgy}>
+            <Sparkles aria-hidden />
+            {drafted ? c.drafted.cta : c.buddgy}
+          </Button>
+          <Button size="touch" variant="ghost" className="w-full" onClick={onManual}>
+            {c.manual}
+          </Button>
         </div>
       }
-    />
+    >
+      {drafted ? null : (
+        <ul className="mx-auto flex max-w-sm flex-col gap-2">
+          {c.points.map((point) => (
+            <li key={point} className="flex items-center gap-2 text-sm text-[var(--color-brand-text-secondary)]">
+              <Check className="size-4 shrink-0 text-[var(--color-brand-green)]" aria-hidden />
+              {point}
+            </li>
+          ))}
+        </ul>
+      )}
+    </EmptyState>
   )
 }

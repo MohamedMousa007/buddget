@@ -5,6 +5,7 @@ import { AlertTriangle, Landmark, PiggyBank, SlidersHorizontal, Sparkles } from 
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { useBuddgyIdeaContext } from '@/hooks/useBuddgyIdeaContext'
 import { buddgyIdeas, type BuddgyIdea } from '@/lib/ai/buddgyIdeas'
@@ -35,12 +36,13 @@ export function AIChatEmptyState({ onPickSuggestion }: AIChatEmptyStateProps) {
   const greeting = hour < 12 ? t.buddgy.greetingMorning : hour < 18 ? t.buddgy.greetingAfternoon : t.buddgy.greetingEvening
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col items-center gap-2 pt-2 text-center text-[var(--color-brand-text)]">
-        <BuddgyIcon mood="wink" size={64} strokeWidth={1.5} filled alive />
-        <p className="text-base font-bold text-[var(--color-brand-text-primary)]">{greeting(name)}</p>
-        <p className="max-w-64 text-sm text-[var(--color-brand-text-muted)]">{t.buddgy.greetingSub}</p>
-      </div>
+    <EmptyState
+      variant="hero"
+      className="pt-2"
+      illustration={<BuddgyIcon mood="wink" size={64} strokeWidth={1.5} filled alive />}
+      title={greeting(name)}
+      description={t.buddgy.greetingSub}
+    >
       <div className="flex flex-col gap-2">
         {ideas.map(({ id, prompt, kind }) => {
           const Icon = KIND_ICON[kind]
@@ -49,7 +51,7 @@ export function AIChatEmptyState({ onPickSuggestion }: AIChatEmptyStateProps) {
               key={id}
               as="action"
               onClick={() => onPickSuggestion(prompt)}
-              className="gap-3 rounded-lg px-3.5 py-3"
+              className="min-h-11 gap-3 rounded-lg px-3.5 py-3"
             >
               <span
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
@@ -65,6 +67,6 @@ export function AIChatEmptyState({ onPickSuggestion }: AIChatEmptyStateProps) {
           )
         })}
       </div>
-    </div>
+    </EmptyState>
   )
 }

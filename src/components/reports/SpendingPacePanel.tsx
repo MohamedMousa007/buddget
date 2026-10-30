@@ -4,6 +4,7 @@ import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import type { PaceStatus, OverspentCategory } from '@/lib/utils/spendingPace'
+import { Badge } from '@/components/ui/badge'
 
 interface SpendingPacePanelProps {
   dailyRate: number
@@ -21,10 +22,10 @@ const statusColor: Record<PaceStatus, string> = {
   over: 'text-[var(--color-brand-red)]',
 }
 
-const badgeBg: Record<PaceStatus, string> = {
-  on_track: 'bg-[var(--color-brand-green)]/15 text-[var(--color-brand-green)]',
-  warning: 'bg-[var(--color-brand-amber)]/15 text-[var(--color-brand-amber)]',
-  over: 'bg-[var(--color-brand-primary)]/15 text-[var(--color-brand-red)]',
+const badgeTone: Record<PaceStatus, 'positive' | 'warn' | 'negative'> = {
+  on_track: 'positive',
+  warning: 'warn',
+  over: 'negative',
 }
 
 /**
@@ -67,9 +68,7 @@ export function SpendingPacePanel({
           {t.reports.spendingPaceTitle}
         </h3>
         {totalExpenseBudget > 0 && (
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeBg[paceStatus]}`}>
-            {paceLabel}
-          </span>
+          <Badge tone={badgeTone[paceStatus]} bordered={false}>{paceLabel}</Badge>
         )}
       </div>
 

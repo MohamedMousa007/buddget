@@ -566,7 +566,7 @@ export function useAuthModal() {
               options: { shouldCreateUser: false },
             })
     setLoading(false)
-    if (e) {
+    if (e && !(verifyPurpose !== 'signup' && verifyPurpose !== 'recovery' && isUnknownAccountOtpError(e))) {
       setError(mapAuthError(e, 'resend', t))
       return
     }

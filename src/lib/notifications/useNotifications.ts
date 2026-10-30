@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useT } from '@/lib/i18n'
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { cycleKeyOf } from '@/lib/budget/activations'
@@ -128,11 +129,11 @@ export function useNotifications() {
         list.push({
           id: `budget_alert:${category}:${monthFilter}`,
           type: 'budget_alert',
-          title: t.notifications.budgetAlertTitle(category),
+          title: t.notifications.budgetAlertTitle(categoryLabel(t, category)),
           body:
             pct >= 100
-              ? t.notifications.budgetAlertBodyOver(pct, category)
-              : t.notifications.budgetAlertBodyUnder(pct, category, 100 - Math.round(pct)),
+              ? t.notifications.budgetAlertBodyOver(pct, categoryLabel(t, category))
+              : t.notifications.budgetAlertBodyUnder(pct, categoryLabel(t, category), 100 - Math.round(pct)),
           severity: pct >= 100 ? 'critical' : 'warning',
           createdAt: now,
         })

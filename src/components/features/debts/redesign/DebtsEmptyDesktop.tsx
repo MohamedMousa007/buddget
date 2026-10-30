@@ -23,19 +23,14 @@ export function DebtsEmptyDesktop({ title, description, onAdd }: DebtsEmptyDeskt
   ]
   return (
     <div className="hidden flex-col gap-6 lg:flex">
-      <Card padding="lg" className="py-10">
-        <EmptyState
-          variant="hero"
-          illustration={
-            <span className="flex size-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-              <ShieldCheck className="size-7" aria-hidden />
-            </span>
-          }
-          title={title}
-          description={description}
-          action={<Button size="cta" onClick={() => onAdd()}>{t.emptyAddDebt}</Button>}
-        />
-      </Card>
+      <EmptyState
+        variant="card"
+        icon={<ShieldCheck />}
+        iconTone="positive"
+        title={title}
+        description={description}
+        action={<Button size="cta" onClick={() => onAdd()}>{t.emptyAddDebt}</Button>}
+      />
       <div className="grid grid-cols-3 gap-4">
         {families.map(({ family, Icon, title: name, line, add }) => (
           <Card key={family} variant="plain" padding="lg" className="flex flex-col items-center border-dashed border-[var(--color-brand-border)] text-center">

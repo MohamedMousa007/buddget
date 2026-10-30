@@ -105,7 +105,7 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
     }
   }
 
-  if (context === 'otp' && m.includes('expired')) {
+  if (context === 'otp' && (m.includes('expired') || isUnknownAccountOtpError(err))) {
     return t.auth.errorOtpExpired
   }
 

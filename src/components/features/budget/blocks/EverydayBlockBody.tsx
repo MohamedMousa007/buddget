@@ -1,5 +1,6 @@
 'use client'
 
+import { useCategoryLabel } from '@/hooks/useCategoryLabel'
 import { LineIcon } from '@/components/features/budget/LineIcon'
 import { TintedTile } from '@/components/features/budget/TintedTile'
 import { useBudgetBlocksCopy } from '@/components/features/budget/useBlocksCopy'
@@ -22,6 +23,7 @@ function fillColor(kind: LineView['status']['kind']): string {
 /** Two-column category tiles. Plan: amount against the 3-month average. Month: spent against the cap. */
 export function EverydayBlockBody({ view, block, mode, onOpenLine, onLineAction, onAdd }: BlockBodyProps) {
   const t = useBudgetBlocksCopy()
+  const catLabel = useCategoryLabel()
   const statusText = useLineStatusText(view)
   const money = (n: number) => formatCurrency(n, view.base, false)
   const month = mode === 'month'
@@ -43,7 +45,7 @@ export function EverydayBlockBody({ view, block, mode, onOpenLine, onLineAction,
                   <TintedTile cat={5} size="sm">
                     <LineIcon name={lineIconKey(lv.line.icon)} />
                   </TintedTile>
-                  <span className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{lv.line.name}</span>
+                  <span className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{catLabel(lv.line.name)}</span>
                 </span>
                 {month ? (
                   <span className="flex flex-col font-mono-numbers">

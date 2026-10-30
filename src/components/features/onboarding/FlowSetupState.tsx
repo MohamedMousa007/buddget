@@ -5,6 +5,7 @@ import { Calendar, Check, ChevronRight, MessageSquare, Plus, SlidersHorizontal, 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useAccounts } from '@/lib/accounts/useAccounts'
 import { useSetupProgress, type SetupStepId } from '@/hooks/useSetupProgress'
 import { dailyAllowance } from '@/lib/onboarding/payday'
@@ -77,47 +78,48 @@ export function FlowSetupState({ className }: { className?: string }) {
   if (ready) {
     const allowance = dailyAllowance(model.totalInBase, new Date(), payday)
     return (
-      <div className={cn('flex flex-col gap-3', className)}>
-        <Card className="flex flex-col gap-1 !bg-[var(--color-brand-primary)] !text-[var(--color-brand-on-primary)]">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">{c.flow.allSet(name)}</span>
-            <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold">{c.flow.daysToPayday(allowance.days)}</span>
-          </div>
-          <p className="mt-1 flex items-baseline gap-1.5">
-            <span className="font-mono-numbers text-4xl font-semibold leading-none tracking-[-0.03em]">{fmt(allowance.perDay ?? model.totalInBase)}</span>
-            <span className="text-[13px] opacity-90">{allowance.perDay !== null ? c.flow.perDay(base) : base}</span>
-          </p>
-        </Card>
-        <Card className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <BuddgyHead mood="awake" size={44} />
-            <div className="min-w-0 flex-1">
-              <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">{c.flow.firstTitle}</p>
-              <p className="mt-0.5 text-[13px] text-[var(--color-brand-text-secondary)]">{c.flow.firstBody}</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
+      <EmptyState
+        variant="card"
+        className={className}
+        illustration={<BuddgyHead mood="awake" size={52} />}
+        title={c.flow.firstTitle}
+        description={c.flow.firstBody}
+        action={
+          <div className="flex w-full gap-2">
             <Button size="cta" className="flex-[1.3]" onClick={() => setActiveModal('quickAdd')}><Plus aria-hidden />{c.flow.addExpense}</Button>
             {done.has('sms') ? null : <Button size="cta" variant="outline" className="flex-1" onClick={() => navigate('/settings/sms')}>{c.flow.bankTexts}</Button>}
           </div>
-        </Card>
-        {todo.length > 0 ? (
-          <>
-            <button
-              type="button"
-              data-raw-button-ok="a whole-row tap target, sized by its content"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-              className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3.5 text-start shadow-sm"
-            >
-              <Badge variant="brand" className="px-2.5 font-bold">{c.flow.finishLeft(doneCount, steps.length)}</Badge>
-              <span className="flex-1 text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.flow.finish}</span>
-              <ChevronRight className={cn('size-4 text-[var(--color-brand-text-muted)] transition-transform', open && 'rotate-90')} aria-hidden />
-            </button>
-            {open ? rows(todo) : null}
-          </>
-        ) : null}
-      </div>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1 rounded-2xl bg-[var(--color-brand-primary)] p-4 text-[var(--color-brand-on-primary)]">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">{c.flow.allSet(name)}</span>
+              <Badge tone="onBrand" size="sm" bordered={false}>{c.flow.daysToPayday(allowance.days)}</Badge>
+            </div>
+            <p className="mt-1 flex items-baseline gap-1.5">
+              <span className="font-mono-numbers text-4xl font-semibold leading-none tracking-[-0.03em]">{fmt(allowance.perDay ?? model.totalInBase)}</span>
+              <span className="text-[13px] opacity-90">{allowance.perDay !== null ? c.flow.perDay(base) : base}</span>
+            </p>
+          </div>
+          {todo.length > 0 ? (
+            <>
+              <button
+                type="button"
+                data-raw-button-ok="a whole-row tap target, sized by its content"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3.5 text-start shadow-sm"
+              >
+                <Badge variant="brand" className="px-2.5 font-bold">{c.flow.finishLeft(doneCount, steps.length)}</Badge>
+                <span className="flex-1 text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.flow.finish}</span>
+                <ChevronRight className={cn('size-4 text-[var(--color-brand-text-muted)] transition-transform', open && 'rotate-90')} aria-hidden />
+              </button>
+              {open ? rows(todo) : null}
+            </>
+          ) : null}
+        </div>
+      </EmptyState>
     )
   }
 
@@ -125,18 +127,24 @@ export function FlowSetupState({ className }: { className?: string }) {
   const rest = todo.slice(1)
   const stepNo = steps.findIndex((s) => s.id === next?.id) + 1
   return (
-    <div className={cn('flex flex-col gap-3.5', className)}>
-      <Card className="flex flex-col gap-3.5 p-[18px]">
-        <div className="flex items-center gap-3">
-          <BuddgyHead mood="awake" size={52} />
-          <div className="min-w-0 flex-1">
-            <h2 className="text-xl font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.flow.resumeTitle}</h2>
-            {name ? <p className="mt-0.5 text-[13px] text-[var(--color-brand-text-secondary)]">{c.flow.welcomeBack(name)}</p> : null}
-          </div>
-        </div>
+    <EmptyState
+      variant="card"
+      className={className}
+      illustration={<BuddgyHead mood="awake" size={52} />}
+      title={c.flow.resumeTitle}
+      description={name ? c.flow.welcomeBack(name) : undefined}
+      action={
+        next ? (
+          <Button size="cta" className="w-full" onClick={() => (journeyOpen ? resume() : run(next.id))}>
+            {c.flow.continueSetup}
+          </Button>
+        ) : undefined
+      }
+    >
+      <div className="flex flex-col gap-3.5">
         {next ? (
           <div className="flex items-center gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] px-3.5 py-3">
-            <span className="rounded-full bg-[var(--color-brand-card)] px-2.5 py-0.5 text-xs font-bold text-[var(--color-brand-primary-ink)]">{c.flow.stepLabel(stepNo, steps.length)}</span>
+            <Badge tone="card" size="sm" bordered={false} className="text-[var(--color-brand-primary-ink)]">{c.flow.stepLabel(stepNo, steps.length)}</Badge>
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{rowCopy[next.id].title}</p>
               <p className="text-xs text-[var(--color-brand-text-secondary)]">{MINUTES[next.id] === 1 ? c.flow.minute : c.flow.minutes(MINUTES[next.id])}</p>
@@ -145,18 +153,13 @@ export function FlowSetupState({ className }: { className?: string }) {
         ) : (
           <p className="flex items-center gap-2 text-sm font-semibold text-[var(--color-brand-green)]"><Check className="size-4" aria-hidden />{c.automate.done}</p>
         )}
-        {next ? (
-          <Button size="cta" className="w-full" onClick={() => (journeyOpen ? resume() : run(next.id))}>
-            {c.flow.continueSetup}
-          </Button>
+        {rest.length > 0 ? (
+          <div>
+            <span className="mb-2 block px-1 text-[13px] font-semibold text-[var(--color-brand-text-secondary)]">{c.flow.more}</span>
+            {rows(rest)}
+          </div>
         ) : null}
-      </Card>
-      {rest.length > 0 ? (
-        <div>
-          <span className="mb-2 block px-1 text-[13px] font-semibold text-[var(--color-brand-text-secondary)]">{c.flow.more}</span>
-          {rows(rest)}
-        </div>
-      ) : null}
-    </div>
+      </div>
+    </EmptyState>
   )
 }

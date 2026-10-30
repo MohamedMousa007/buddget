@@ -1,5 +1,6 @@
 'use client'
 
+import { useCategoryLabel } from '@/hooks/useCategoryLabel'
 import { useState } from 'react'
 import { Check, Minus, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -48,6 +49,7 @@ function LineForm({
   onSyncLive,
 }: LineSheetProps & { line: LineView }) {
   const c = useBudgetSheetsCopy()
+  const catLabel = useCategoryLabel()
   const confirm = useConfirm()
   const { line } = lv
   const linked = !!line.linkType && line.linkType !== 'none'
@@ -89,7 +91,7 @@ function LineForm({
           <LineIcon name={line.icon} />
         </TintedTile>
         <div className="min-w-0 flex-1">
-          <V3SheetHeader title={line.name} onClose={onClose} />
+          <V3SheetHeader title={catLabel(line.name)} onClose={onClose} />
           <p className="-mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{c.blocks[lv.block]}</p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge } from '@/components/ui/badge'
 import { Flame, Flag } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,6 @@ export function MilestoneCheerSheet({ goal, pct, current, onClose }: { goal: Goa
   const runs = useGoalAllocationRuns()[goal.id] ?? []
   const status = getGoalStatus({ goal, current, runs, now: new Date() })
   const next = [25, 50, 75, 100].find((p) => p > pct)
-  const chip = 'flex items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-3 py-1.5 text-xs font-semibold text-[var(--color-brand-text-primary)]'
   return (
     <ModalShell open onBackdropClick={onClose} padContent>
       <div className="flex flex-col items-center gap-4 pb-4 pt-2 text-center">
@@ -30,16 +30,16 @@ export function MilestoneCheerSheet({ goal, pct, current, onClose }: { goal: Goa
         </p>
         <div className="flex flex-wrap justify-center gap-2">
           {status.kind === 'streak' ? (
-            <span className={chip}>
+            <Badge tone="ink" size="md" bordered={false} className="gap-1.5">
               <Flame className="size-3.5 text-[var(--color-brand-amber)]" aria-hidden />
               {t.streakChip(status.params.count ?? 3)}
-            </span>
+            </Badge>
           ) : null}
           {next ? (
-            <span className={chip}>
+            <Badge tone="ink" size="md" bordered={false} className="gap-1.5">
               <Flag className="size-3.5 text-[var(--color-brand-primary-ink)]" aria-hidden />
               {t.nextChip(next)}
-            </span>
+            </Badge>
           ) : null}
         </div>
         <Button size="cta-block" onClick={onClose}>

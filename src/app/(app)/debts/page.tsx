@@ -5,7 +5,7 @@ import { PageGrid } from '@/components/layout/PageGrid'
 import { DebtGoalPrompt } from '@/components/features/goals/DebtGoalPrompt'
 import { GoalLensList } from '@/components/features/goals/GoalLensList'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CreditCard, HandCoins, Layers, Plus, ShieldCheck } from 'lucide-react'
+import { CreditCard, HandCoins, Layers, Plus } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -145,22 +145,11 @@ export default function DebtsPage() {
 
                 {noneActive ? (
                   <>
-                  <EmptyState
-                    className="mt-2 lg:hidden"
-                    icon={
-                      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-                        <ShieldCheck className="h-7 w-7" aria-hidden />
-                      </span>
-                    }
+                  <DebtsEmptyFamilies
                     title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
                     description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}
-                    action={
-                      <Button size="cta" onClick={() => addDebt()}>
-                        {t.debts.emptyAddDebt}
-                      </Button>
-                    }
+                    onAdd={addDebt}
                   />
-                  <DebtsEmptyFamilies onAdd={addDebt} />
                   <DebtsEmptyDesktop
                     title={clearedCount > 0 ? t.debts.emptyClearedTitle : t.debts.emptyNoneTitle}
                     description={clearedCount > 0 ? t.debts.emptyClearedBody : t.debts.emptyNoneBody}
@@ -181,11 +170,9 @@ export default function DebtsPage() {
 
                     {listLen === 0 ? (
                       <EmptyState
-                        icon={
-                          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
-                            <FamilyIcon className="h-6 w-6" strokeWidth={1.8} aria-hidden />
-                          </span>
-                        }
+                        variant="card"
+                        className="mt-5"
+                        icon={<FamilyIcon strokeWidth={1.8} />}
                         title={family.emptyLine}
                         action={
                           <Button size="cta" onClick={() => addDebt(tab)}>

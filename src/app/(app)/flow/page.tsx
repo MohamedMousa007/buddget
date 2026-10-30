@@ -273,6 +273,7 @@ export default function FlowPage() {
       ) : empty === 'emptyMonth' ? (
         <div className="mx-4 mt-7">
           <EmptyState
+            variant="card"
             title={t.flow.emptyMonthTitle(monthName)}
             description={t.flow.emptyMonthBody}
             action={
@@ -287,6 +288,7 @@ export default function FlowPage() {
       ) : empty === 'emptySegment' ? (
         <div className="mx-4 mt-7">
           <EmptyState
+            variant="card"
             title={segment === 'in' ? t.flow.emptySegmentInTitle(monthName) : t.flow.emptySegmentOutTitle(monthName)}
             description={segment === 'in' ? t.flow.emptySegmentInBody : t.flow.emptySegmentOutBody}
             action={
@@ -304,6 +306,7 @@ export default function FlowPage() {
       ) : empty === 'noMatch' ? (
         <div className="mx-4 mt-7">
           <EmptyState
+            variant="card"
             title={t.flow.noMatchTitle}
             description={noMatchBody}
             action={

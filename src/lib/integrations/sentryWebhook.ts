@@ -30,6 +30,7 @@ export interface CrashEvent {
   issueId: string | null
   url: string | null
   seen: string
+  eventId: string | null
 }
 
 type Frame = { filename?: string; function?: string; lineno?: number; in_app?: boolean }
@@ -40,6 +41,7 @@ type SentryEvent = {
   platform?: string
   release?: string | { version?: string }
   datetime?: string
+  event_id?: string
   issue_id?: string | number
   issue_url?: string
   web_url?: string
@@ -83,6 +85,7 @@ export function parseCrashEvent(body: unknown): CrashEvent | null {
     userId,
     issueId,
     url: event.web_url ?? event.issue_url ?? null,
+    eventId: event.event_id ? String(event.event_id).slice(0, 64) : null,
     seen: event.datetime && !Number.isNaN(Date.parse(event.datetime)) ? new Date(event.datetime).toISOString() : new Date().toISOString(),
   }
 }

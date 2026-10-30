@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useLocale, useT } from '@/lib/i18n'
 import { USUAL_TICK, type PaceResult } from '@/lib/goals/goalPlan'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { Badge } from '@/components/ui/badge'
 
 /** Buddgy's deterministic read on the pace for the chosen date. Offline-safe: no AI involved. */
 export function CounselorCard({
@@ -51,9 +52,9 @@ export function CounselorCard({
         <BuddgyIcon size={24} />
         <p className="min-w-0 flex-1 text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
         {!unknown ? (
-          <span className="rounded-full bg-[var(--color-brand-card)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-brand-text-primary)]">
+          <Badge tone="card" size="sm" bordered={false}>
             {stretch ? t.zoneStretch : t.zoneComfortable}
-          </span>
+          </Badge>
         ) : null}
       </div>
       {!unknown ? (

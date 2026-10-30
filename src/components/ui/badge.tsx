@@ -20,31 +20,43 @@ const badgeVariants = cva(
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
 
-        /* ── Status variants (Buddget) ───────────────────────────────────────
-           Tinted fill + matching text, both sides token-driven so they track the
-           theme. These replace the inline <span> badges the ledgers hand-rolled
-           with hardcoded hex. */
-        /** Income received, refunded, on track. */
-        positive:
-          "bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]",
-        /** Late, due soon, partial. */
-        warning:
-          "bg-[var(--color-brand-amber-soft)] text-[var(--color-brand-amber)]",
-        /** Declined, missed, over budget. */
-        negative:
-          "bg-[var(--color-brand-red-soft)] text-[var(--color-brand-red)]",
-        /** Recurring, linked, automated — the brand tint. */
-        brand:
-          "bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]",
+        /** No colour of its own: the colour comes from `tone`. */
+        none: "",
+        /* Legacy status names, kept as aliases of `tone` (see STATUS_ALIAS). */
+        positive: "",
+        warning: "",
+        negative: "",
+        brand: "",
+        muted: "",
+      },
+      /** Tinted fill + matching text, token-driven. Replaces the hand-rolled `rounded-full px-* py-*` pills. */
+      tone: {
+        brand: "bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]",
+        positive: "bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]",
+        warn: "bg-[var(--color-brand-amber-soft)] text-[var(--color-brand-amber)]",
+        negative: "bg-[var(--color-brand-red-soft)] text-[var(--color-brand-red)]",
         /** Neutral metadata (one-time, manual). */
-        muted:
-          "bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]",
+        neutral: "bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]",
+        /** Counts and quiet facts on a page. */
+        soft: "bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]",
+        /** Same fill as `soft`, primary ink: the fact is the point. */
+        ink: "bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)]",
+        /** On a tinted surface. */
+        card: "bg-[var(--color-brand-card)] text-[var(--color-brand-text-primary)]",
+        /** On a brand-filled surface. */
+        onBrand: "bg-white/20 text-inherit",
+        /** Placeholder for something that does not count. */
+        dashed: "border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)]",
       },
       size: {
         default: "h-5 px-2 py-0.5 text-xs font-medium",
         /** Matches the ledger chips exactly. Deliberately smaller than `default`
          *  so adopting Badge in a TransactionRow does not grow its 60px rhythm. */
         xs: "px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]",
+        /** Page pills: counts, "last 3", step labels. */
+        sm: "px-2.5 py-1 text-[11px] font-bold",
+        /** Fact chips with an icon. */
+        md: "px-3 py-1.5 text-xs font-semibold",
       },
     },
     defaultVariants: {
@@ -54,18 +66,50 @@ const badgeVariants = cva(
   }
 )
 
+type BadgeTone = NonNullable<VariantProps<typeof badgeVariants>["tone"]>
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>
+
+/** The old status variant names resolve to a tone, so existing callers are unchanged. */
+export const STATUS_ALIAS: Partial<Record<BadgeVariant, BadgeTone>> = {
+  positive: "positive",
+  warning: "warn",
+  negative: "negative",
+  brand: "brand",
+  muted: "neutral",
+}
+
+/** Class list for a badge: `tone` wins, else a status-named variant maps to its tone. `bordered={false}` drops the 1px border so the pill does not grow. */
+export function badgeClasses({
+  variant = "default",
+  tone,
+  size = "default",
+  bordered = true,
+  className,
+}: {
+  variant?: BadgeVariant | null
+  tone?: BadgeTone | null
+  size?: VariantProps<typeof badgeVariants>["size"]
+  bordered?: boolean
+  className?: string
+}) {
+  const resolved = tone ?? (variant ? STATUS_ALIAS[variant] : undefined)
+  return cn(badgeVariants({ variant: resolved ? "none" : variant, tone: resolved, size }), !bordered && "border-0", className)
+}
+
 function Badge({
   className,
   variant = "default",
+  tone,
   size = "default",
+  bordered = true,
   render,
   ...props
-}: useRender.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
+}: useRender.ComponentProps<"span"> & VariantProps<typeof badgeVariants> & { bordered?: boolean }) {
   return useRender({
     defaultTagName: "span",
     props: mergeProps<"span">(
       {
-        className: cn(badgeVariants({ variant, size }), className),
+        className: badgeClasses({ variant, tone, size, bordered, className }),
       },
       props
     ),
@@ -73,6 +117,7 @@ function Badge({
     state: {
       slot: "badge",
       variant,
+      tone,
       size,
     },
   })

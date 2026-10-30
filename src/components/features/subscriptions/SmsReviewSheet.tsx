@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge } from '@/components/ui/badge'
 import { Link as LinkIcon, MessageSquare } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { Button } from '@/components/ui/button'
@@ -113,9 +114,9 @@ function FindCard({ find, onAdd, onDismiss }: { find: SmsFind; onAdd: () => void
           </div>
           <div className="flex gap-1">
             {find.dates.map((d) => (
-              <span key={d} className="font-mono-numbers rounded-full bg-[var(--color-brand-elevated)] px-2 py-0.5 text-[11px] text-[var(--color-brand-text-secondary)]">
+              <Badge key={d} tone="soft" bordered={false} className="font-mono-numbers text-[11px] font-normal">
                 {formatDateShort(d)}
-              </span>
+              </Badge>
             ))}
           </div>
         </div>

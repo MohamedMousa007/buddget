@@ -69,4 +69,12 @@ describe('resend neutrality', () => {
     expect(isUnknownAccountOtpError(new Error('Failed to fetch'))).toBe(false)
     expect(mapAuthError(err, 'resend', en).toLowerCase()).not.toMatch(/no account|not found|exist/)
   })
+
+  it('verify and resend failures read the same whether or not the account exists', () => {
+    const unknown = new Error('User not found')
+    const generic = new Error('Something odd')
+    expect(mapAuthError(unknown, 'resend', en)).toBe(mapAuthError(generic, 'resend', en))
+    expect(mapAuthError(new Error('Token has expired or is invalid'), 'otp', en)).toBe(en.auth.errorOtpExpired)
+    expect(mapAuthError(unknown, 'otp', en)).toBe(en.auth.errorOtpExpired)
+  })
 })

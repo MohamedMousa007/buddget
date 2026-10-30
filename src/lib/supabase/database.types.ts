@@ -3869,9 +3869,15 @@ export type Database = {
         Relationships: []
       }
       client_crashes: {
-        Row: { build: string | null; culprit: string | null; device_id: string | null; fingerprint: string; first_seen: string; id: string; last_seen: string; level: string; occurrences: number; platform: string | null; release: string; sentry_issue_id: string | null; sentry_url: string | null; stack: string | null; status: string; title: string; user_id: string | null }
-        Insert: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint: string; first_seen?: string; id?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title: string; user_id?: string | null }
-        Update: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint?: string; first_seen?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title?: string; user_id?: string | null }
+        Row: { build: string | null; culprit: string | null; device_id: string | null; fingerprint: string; first_seen: string; id: string; last_seen: string; level: string; occurrences: number; platform: string | null; release: string; resolved_at: string | null; resolved_build: string | null; sentry_issue_id: string | null; sentry_url: string | null; stack: string | null; status: string; title: string; user_id: string | null }
+        Insert: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint: string; first_seen?: string; id?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; resolved_at?: string | null; resolved_build?: string | null; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title: string; user_id?: string | null }
+        Update: { build?: string | null; culprit?: string | null; device_id?: string | null; fingerprint?: string; first_seen?: string; last_seen?: string; level?: string; occurrences?: number; platform?: string | null; release?: string; resolved_at?: string | null; resolved_build?: string | null; sentry_issue_id?: string | null; sentry_url?: string | null; stack?: string | null; status?: string; title?: string; user_id?: string | null }
+        Relationships: []
+      }
+      client_crash_events: {
+        Row: { crash_id: string; event_id: string }
+        Insert: { crash_id: string; event_id: string }
+        Update: { crash_id?: string; event_id?: string }
         Relationships: []
       }
       admin_financial_exclusions: {
@@ -4270,6 +4276,7 @@ export type Database = {
         Returns: { ticket_id: string; ticket_number: number }[]
       }
       admin_granted_users: { Args: { p_staff: string; p_users: string[] }; Returns: string[] }
+      record_client_crash_v2: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string; p_event_id?: string | null }; Returns: undefined }
       record_client_crash: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string }; Returns: undefined }
       admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }
       admin_user_financial_snapshot: { Args: { p_staff: string; p_user: string }; Returns: Json }
@@ -4312,6 +4319,15 @@ export type Database = {
       ai_quota_release: {
         Args: { p_reservation: string; p_user: string }
         Returns: undefined
+      }
+      ai_quota_reserve_v2: {
+        Args: {
+          p_chat: string
+          p_est: number
+          p_feature: string
+          p_user: string
+        }
+        Returns: Json
       }
       ai_quota_reserve: {
         Args: {

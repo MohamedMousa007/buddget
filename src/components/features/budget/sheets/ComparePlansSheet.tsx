@@ -1,5 +1,6 @@
 'use client'
 
+import { useCategoryLabel } from '@/hooks/useCategoryLabel'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Card } from '@/components/ui/card'
@@ -25,6 +26,7 @@ export interface ComparePlansSheetProps {
 /** Two budgets side by side: totals, each block, and the lines that differ. */
 export function ComparePlansSheet({ open, plans, aId, bId, base, rates, onChange, onClose }: ComparePlansSheetProps) {
   const c = useBudgetDeckCopy().compare
+  const catLabel = useCategoryLabel()
   const blockNames = useBudgetSheetsCopy().blocks
   const a = plans.find((p) => p.id === aId) ?? null
   const b = plans.find((p) => p.id === bId) ?? null
@@ -90,7 +92,7 @@ export function ComparePlansSheet({ open, plans, aId, bId, base, rates, onChange
                 {cmp.lines.map((l) => (
                   <div key={`${l.block}-${l.name}`} className="flex min-h-12 items-center gap-3 px-4 py-2">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-[var(--color-brand-text-primary)]">{l.name}</p>
+                      <p className="truncate text-sm font-medium text-[var(--color-brand-text-primary)]">{catLabel(l.name)}</p>
                       <p className="truncate text-xs text-[var(--color-brand-text-muted)]">
                         {l.a == null ? c.onlyIn(b.name) : l.b == null ? c.onlyIn(a.name) : `${money(l.a)} → ${money(l.b)}`}
                       </p>

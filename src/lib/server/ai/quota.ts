@@ -69,14 +69,24 @@ export async function reserveAiQuota(args: {
   }
   if (await spendBlocks(args.feature)) return { allowed: false, layer: 'feature_disabled', resetAt: null }
   try {
-    const reserve = () =>
-      createServiceRoleClient().rpc('ai_quota_reserve', {
-        p_user: args.userId,
-        // The generated RPC type requires a string; the function treats NULL as "no chat yet".
-        p_chat: (args.chatId ?? null) as string,
-        p_feature: args.feature,
-        p_est: Math.max(0, Math.round(args.estUnits)),
-      })
+    const params = {
+      p_user: args.userId,
+      // The generated RPC type requires a string; the function treats NULL as "no chat yet".
+      p_chat: (args.chatId ?? null) as string,
+      p_feature: args.feature,
+      p_est: Math.max(0, Math.round(args.estUnits)),
+    }
+    // v2 also counts in-flight reservations against per-month/day caps; until migration 0224 is applied fall back to v1.
+    let useV1 = false
+    const reserve = async () => {
+      const client = createServiceRoleClient()
+      if (!useV1) {
+        const res = await client.rpc('ai_quota_reserve_v2', params)
+        if (res.error?.code !== 'PGRST202') return res
+        useV1 = true
+      }
+      return client.rpc('ai_quota_reserve', params)
+    }
     let { data, error } = await reserve()
     // The database can blink (a 503 for a second); one retry turns that into a slow message, not a dead one.
     if (error || !data) {

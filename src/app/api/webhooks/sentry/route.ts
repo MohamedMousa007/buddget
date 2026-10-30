@@ -21,7 +21,8 @@ export async function POST(request: Request) {
   const crash = parseCrashEvent(body)
   if (!crash) return NextResponse.json({ ok: true })
 
-  const { error } = await createServiceRoleClient().rpc('record_client_crash', {
+  const service = createServiceRoleClient()
+  const args = {
     p_fingerprint: crash.fingerprint,
     p_release: crash.release,
     p_title: crash.title,
@@ -35,7 +36,10 @@ export async function POST(request: Request) {
     p_sentry_issue_id: crash.issueId,
     p_sentry_url: crash.url,
     p_seen: crash.seen,
-  })
+  }
+  let { error } = await service.rpc('record_client_crash_v2', { ...args, p_event_id: crash.eventId })
+  // Until migration 0223 is applied, v2 does not exist: fall back to the original function.
+  if (error?.code === 'PGRST202') ({ error } = await service.rpc('record_client_crash', args))
   if (error) return NextResponse.json({ error: 'Could not record' }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

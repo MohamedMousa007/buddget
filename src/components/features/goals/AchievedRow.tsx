@@ -4,6 +4,8 @@ import { useLocale, useT } from '@/lib/i18n'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import type { Goal } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { MASK } from '@/lib/privacy/mask'
+import { useMask } from '@/lib/privacy/useMask'
 
 function monthsBetween(a: string, b: string): number {
   const x = new Date(a)
@@ -20,6 +22,7 @@ export const goalMonthsEarly = (g: Goal) =>
 /** One finished goal in the trophy room. */
 export function AchievedRow({ goal }: { goal: Goal }) {
   const t = useT().goals.achievedView
+  const hidden = useMask('lists')
   const { locale } = useLocale()
   const { icon: Icon } = goalVisual(goal.category)
   const months = goalMonthsTaken(goal)
@@ -39,7 +42,7 @@ export function AchievedRow({ goal }: { goal: Goal }) {
         <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{goal.name}</p>
         {goal.targetAmount !== null ? (
           <p className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
-            {formatCurrency(goal.targetAmount, goal.currency, false)}
+            {hidden ? MASK : formatCurrency(goal.targetAmount, goal.currency, false)}
           </p>
         ) : null}
         <p className="text-xs font-semibold text-[var(--color-brand-primary-ink)]">

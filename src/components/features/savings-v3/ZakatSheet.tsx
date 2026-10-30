@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge } from '@/components/ui/badge'
 import { useMemo, useState } from 'react'
 import { Wallet, Gem, Bitcoin, TrendingUp, Home, CreditCard, BookOpen, Calendar } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -164,7 +165,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-cat-1)', 14), color: 'var(--color-cat-1)' }}><Home size={18} /></span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.property}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{z.propertySub}</p></div>
-                <span className="rounded-full border border-dashed border-[var(--color-brand-border)] px-3 py-1.5 text-[11px] text-[var(--color-brand-text-muted)]">{z.notCounted}</span>
+                <Badge tone="dashed" size="md" className="text-[11px] font-normal">{z.notCounted}</Badge>
               </div>
               {/* debts (negative) */}
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>

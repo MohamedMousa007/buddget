@@ -15,6 +15,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { Badge } from '@/components/ui/badge'
 
 function Row({
   goal, index, last, keep, onMove,
@@ -123,7 +124,7 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
           <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
             {t.keep(formatCurrency(Math.round(keep), ccy, false))}
           </p>
-          <span className="rounded-full bg-[var(--color-brand-card)] px-2.5 py-1 text-[11px] font-bold text-[var(--color-brand-text-secondary)]">{t.last3}</span>
+          <Badge tone="card" size="sm" bordered={false} className="text-[var(--color-brand-text-secondary)]">{t.last3}</Badge>
         </div>
       ) : null}
       <Reorder.Group axis="y" values={order} onReorder={setOrder} className="flex flex-col gap-2.5">

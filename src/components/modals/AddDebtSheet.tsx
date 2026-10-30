@@ -115,11 +115,8 @@ export function AddDebtSheet() {
             payShowsSelect ? (
               d.payableRows.length === 0 ? (
                 <EmptyState
-                  icon={
-                    <span className="inline-flex size-14 items-center justify-center rounded-[18px] bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-                      <CircleCheck className="size-8" aria-hidden />
-                    </span>
-                  }
+                  icon={<CircleCheck />}
+                  iconTone="positive"
                   title={tp.emptyTitle}
                   description={tp.emptyBody}
                   action={

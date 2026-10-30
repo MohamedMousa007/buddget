@@ -25,10 +25,14 @@ export interface HeroBandProps {
   aside?: ReactNode
   /** The 34.5px number row: big figure left, side info right. */
   numbers: ReactNode
-  /** The 38.75px progress block: 12px gap, 6px bar, 5px gap, 15.75px scale row. */
-  bar: ReactNode
-  /** Always three cells; the strip is 66px. */
-  cells: [HeroBandCell, HeroBandCell, HeroBandCell]
+  /** The 38.75px progress block: 12px gap, 6px bar, 5px gap, 15.75px scale row. Omit for a band with no progress. */
+  bar?: ReactNode
+  /** Free text under the numbers (a hint, a warning); only drawn when given. */
+  note?: ReactNode
+  /** Three cells; the strip is 66px. Omit for a band with no facts strip. */
+  cells?: [HeroBandCell, HeroBandCell, HeroBandCell]
+  /** A rounded card for pages that sit in a padded column, instead of the full-bleed band. */
+  contained?: boolean
   /** Shrink long cell figures instead of truncating them. Off by default: short figures render the same either way. */
   fitCells?: boolean
 }
@@ -47,9 +51,9 @@ function DirChip({ dir }: { dir: 'in' | 'out' }) {
 }
 
 /** Flow's band skeleton (190px fixed): Wealth and Debts fill the same slots so the three heroes are siblings. */
-export function HeroBand({ label, aside, numbers, bar, cells, fitCells = false }: HeroBandProps) {
+export function HeroBand({ label, aside, numbers, bar, note, cells, fitCells = false, contained = false }: HeroBandProps) {
   return (
-    <section className="border-b border-[var(--flow-band-line)] text-[var(--flow-band-fg)]" style={{ background: FLOW_BAND_BG }}>
+    <section className={cn('text-[var(--flow-band-fg)]', contained ? 'overflow-hidden rounded-3xl' : 'border-b border-[var(--flow-band-line)]')} style={{ background: FLOW_BAND_BG }}>
       <PageContainer wide className="px-0 lg:px-0">
         <div className="px-[18px] pb-3 pt-2.5">
           <div className="flex h-[22px] items-center justify-between gap-2">
@@ -57,9 +61,11 @@ export function HeroBand({ label, aside, numbers, bar, cells, fitCells = false }
             {aside}
           </div>
           <div className="mt-1.5 flex h-[34.5px] items-end justify-between gap-3">{numbers}</div>
-          <div className="h-[38.75px] pt-3">{bar}</div>
+          {bar ? <div className="h-[38.75px] pt-3">{bar}</div> : null}
+          {note ? <div className={`mt-2 text-xs leading-relaxed ${BAND_FG2}`}>{note}</div> : null}
         </div>
       </PageContainer>
+      {cells ? (
       <div className="border-t bg-[var(--flow-band-deep)]" style={{ borderColor: BAND_MIX }}>
         <PageContainer wide className="grid h-[66px] grid-cols-3 px-0 lg:px-0">
           {cells.map((c, i) => (
@@ -73,6 +79,7 @@ export function HeroBand({ label, aside, numbers, bar, cells, fitCells = false }
           ))}
         </PageContainer>
       </div>
+      ) : null}
     </section>
   )
 }

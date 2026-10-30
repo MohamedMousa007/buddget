@@ -25,6 +25,7 @@ import { navigate } from '@/lib/navigation/navigate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Goal } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
+import { Badge } from '@/components/ui/badge'
 
 type View = 'all' | 'active' | 'paused' | 'achieved'
 const VIEW_KEY = 'goals-view'
@@ -130,9 +131,7 @@ export default function GoalsPage() {
                 <div className="flex min-h-11 items-center justify-between gap-3">
                   <h2 className="flex items-center gap-2 text-lg font-bold text-[var(--color-brand-text-primary)]">
                     {titleByView[view]}
-                    <span className="min-w-6 rounded-full bg-[var(--color-brand-elevated)] px-2 py-0.5 text-center font-mono-numbers text-xs font-semibold text-[var(--color-brand-text-secondary)]">
-                      {count}
-                    </span>
+                    <Badge tone="soft" bordered={false} className="min-w-6 font-mono-numbers font-semibold">{count}</Badge>
                   </h2>
                   <Button size="touch" onClick={() => openAdd()}>
                     <Plus aria-hidden />

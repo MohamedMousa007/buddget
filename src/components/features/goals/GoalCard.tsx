@@ -12,6 +12,8 @@ import type { GoalStatusView } from '@/lib/goals/goalStatus'
 import { goalVisual } from '@/lib/goals/goalVisual'
 import type { Goal } from '@/lib/store/types'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { MASK } from '@/lib/privacy/mask'
+import { useMask } from '@/lib/privacy/useMask'
 import { cn } from '@/lib/utils'
 
 export type GoalCardAction = GoalStatusView['button']['action']
@@ -35,6 +37,7 @@ export function GoalCard({
 }) {
   const { goal, current, percent, status } = row
   const t = useT().goals.home
+  const hidden = useMask('lists')
   const { locale } = useLocale()
   const { icon: Icon, cat } = goalVisual(goal.category)
   const isLimit = goal.category === 'spending_control'
@@ -86,11 +89,11 @@ export function GoalCard({
 
       <p className="flex h-6 items-baseline gap-1.5 font-mono-numbers leading-6">
         <span className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-          {formatCurrency(current, goal.currency, false)}
+          {hidden ? MASK : formatCurrency(current, goal.currency, false)}
         </span>
         {basis ? (
           <span className="text-[13px] text-[var(--color-brand-text-secondary)]">
-            {t.ofTarget(formatCurrency(basis, goal.currency, false))}
+            {t.ofTarget(hidden ? MASK : formatCurrency(basis, goal.currency, false))}
           </span>
         ) : null}
       </p>

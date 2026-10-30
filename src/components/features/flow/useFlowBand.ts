@@ -10,7 +10,9 @@ import { useNetWorth } from '@/hooks/useNetWorth'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { amountIsFiltered, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
-import { formatFixed2, formatSigned, formatWhole } from '@/lib/utils/formatters'
+import { formatFixed2 as fixed2, formatSigned as signed, formatWhole as whole } from '@/lib/utils/formatters'
+import { MASK } from '@/lib/privacy/mask'
+import { useMask } from '@/lib/privacy/useMask'
 import { shortDate } from '@/lib/utils/shortDate'
 import { budgetHero } from '@/components/features/flow/budgetHero'
 import { getMonthRange } from '@/lib/utils/calculations'
@@ -55,6 +57,7 @@ export function useFlowBand({
   const t = useT()
   const { locale } = useLocale()
   const stats = useMonthlyStats()
+  const hidden = useMask('hero')
   const { netWorth } = useNetWorth()
   const { base, monthStartDay } = useFinanceStore(
     useShallow((s) => ({ base: s.settings.baseCurrency, monthStartDay: s.settings.monthStartDay })),
@@ -72,6 +75,9 @@ export function useFlowBand({
   )
 
   return useMemo(() => {
+    const formatWhole = (n: number) => (hidden ? MASK : whole(n))
+    const formatFixed2 = (n: number) => (hidden ? MASK : fixed2(n))
+    const formatSigned = (n: number) => (hidden ? MASK : signed(n))
     const monthDate = new Date(`${monthFilter}-01T00:00:00`)
     const monthName = new Intl.DateTimeFormat(intlTag(locale), { month: 'long' }).format(monthDate)
     const startLabel = shortDate(format(resolved.start, 'yyyy-MM-dd'), locale)
@@ -260,7 +266,7 @@ export function useFlowBand({
     }
   }, [
     t, locale, monthFilter, monthStartDay, resolved, all, items, stats, netWorth, loading, cats, methods, amtMin, amtMax,
-    rangePreset, segment, filterCount, filterNames, base, onSetBudget,
+    rangePreset, segment, filterCount, filterNames, base, onSetBudget, hidden,
   ])
 }
 

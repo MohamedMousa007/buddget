@@ -30,6 +30,8 @@ describe('parseCrashEvent', () => {
   it('maps an issue alert event to a crash row', () => {
     const c = parseCrashEvent({ data: { event } })
     expect(c).toMatchObject({ fingerprint: '4521', release: 'buddget@1.1.0', level: 'fatal', platform: 'ios', build: '128', deviceId: 'dev-1', userId: event.user.id, url: 'https://sentry.io/issues/4521/' })
+    expect(c?.eventId).toBeNull()
+    expect(parseCrashEvent({ data: { event: { ...event, event_id: 'abc' } } })?.eventId).toBe('abc')
     expect(c?.stack).toBe('TypeError: x is undefined\n  at b (b.js:2)\n  at a (a.js:1)')
   })
   it('ignores non-uuid users, unknown levels and bodies without an event', () => {

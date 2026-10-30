@@ -6,7 +6,9 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { formatCompact } from '@/lib/utils/formatters'
 import type { ScheduledPaymentVM } from '@/hooks/useDebtTabData'
-import { fmtWhole } from './heroCardShared'
+import { MASK } from '@/lib/privacy/mask'
+import { useMask } from '@/lib/privacy/useMask'
+import { fmtWhole as whole } from './heroCardShared'
 
 export interface DebtPortfolioHeroProps {
   owed: number
@@ -48,10 +50,12 @@ export function DebtPortfolioHero({
 }: DebtPortfolioHeroProps) {
   const t = useT().debts
   const { locale } = useLocale()
-  const money = (n: number) => `${fmtWhole(n)} ${base}`
+  const hidden = useMask('hero')
+  const fmtWhole = (n: number) => (hidden ? MASK : whole(n))
+  const money = (n: number) => (hidden ? MASK : `${whole(n)} ${base}`)
   const dash = '—'
 
-  const compact = (n: number) => formatCompact(n, locale)
+  const compact = (n: number) => (hidden ? MASK : formatCompact(n, locale))
   const month = monthProgress(paidThisMonth, dueThisMonth)
   const monthCell: HeroBandCell =
     dueThisMonth > 0
@@ -98,7 +102,7 @@ export function DebtPortfolioHero({
           </div>
           <BandScale>
             <span className="min-w-0 truncate whitespace-nowrap">{progressing ? t.heroBorrowedTotal(money(borrowedTotal)) : t.heroDebtFree}</span>
-            {secondaryText ? <span className="min-w-0 shrink-0 truncate whitespace-nowrap">≈ {secondaryText}</span> : null}
+            {secondaryText ? <span className="min-w-0 shrink-0 truncate whitespace-nowrap">≈ {hidden ? MASK : secondaryText}</span> : null}
           </BandScale>
         </>
       }
