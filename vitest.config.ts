@@ -8,7 +8,7 @@ export default defineConfig({
   test: {
     testTimeout: 15_000,
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     // Live-network golden set: only `npm run eval:ai` (RUN_AI_EVAL=1) runs it.
     exclude: process.env.RUN_AI_EVAL ? configDefaults.exclude : [...configDefaults.exclude, '**/*.eval.test.ts'],
     coverage: {

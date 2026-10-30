@@ -12,7 +12,7 @@ describe('emptyStateClasses', () => {
     }
   })
   it('default pads itself, hero does not, card sits on the brand card surface', () => {
-    expect(emptyStateClasses('default').root).toContain('py-8 sm:py-12')
+    expect(emptyStateClasses('default').root).toMatch(/py-8.*sm:py-12/)
     expect(emptyStateClasses('hero').root).not.toContain('py-')
     expect(emptyStateClasses('card').root).toContain('bg-[var(--color-brand-card)]')
     expect(emptyStateClasses('card').root).toContain('rounded-3xl')

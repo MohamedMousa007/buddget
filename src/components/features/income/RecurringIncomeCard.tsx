@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { Check, MoreVertical, Pencil } from 'lucide-react'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { IncomeTypeIcon, incomeTypeColors } from '@/components/features/income/IncomeTypeIcon'
-import { heroCardStyle } from '@/components/features/income/incomeGlass'
+import { BAND_FG2, BAND_MIX, BandScale, HeroBand } from '@/components/features/hero/HeroBand'
 import { PaydayTimeline } from '@/components/features/income/PaydayTimeline'
 import type { IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import type { IncomeSourceType } from '@/lib/store/types'
@@ -48,7 +48,7 @@ interface Props {
 }
 
 /**
- * Unified recurring-income hero card. Fixed 213px height regardless of cadence —
+ * Unified recurring-income hero card. Drawn through HeroBand (contained) —
  * the payday timeline adapts to frequency (monthly: one full-width pill;
  * biweekly: two pills with amounts; weekly: a 4-dot timeline) without ever
  * reflowing or scrolling the card. Presentational: the parent owns selection +
@@ -82,82 +82,80 @@ export function RecurringIncomeCard({
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
 
   return (
-    <div
-      onClick={onCardTap}
-      className={`relative flex h-[224px] flex-col p-4 text-white ${onCardTap ? 'cursor-pointer' : ''}`}
-      style={heroCardStyle(colors.fg)}
-    >
-      {showTick ? (
-        <span className="absolute end-3 top-3 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green)] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
-          <Check className="h-[14px] w-[14px]" strokeWidth={3} />
-        </span>
-      ) : null}
-      {!showTick && onEdit ? (
-        <>
-          <IconButton
-            onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget.getBoundingClientRect()) }}
-            aria-label={editAriaLabel ?? t.common.edit}
-            className="absolute end-1 top-1"
-          >
-            <MoreVertical className="h-4 w-4" />
-          </IconButton>
-          <CardActionMenu
-            anchor={menuAnchor}
-            onClose={() => setMenuAnchor(null)}
-            items={[{ label: 'Edit', icon: <Pencil size={17} />, onSelect: onEdit }]}
-          />
-        </>
-      ) : null}
-
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[11px]"
-          style={{ background: colors.bg, color: colors.fg }}
-        >
-          <IncomeTypeIcon type={sourceType} className="h-5 w-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold leading-tight">{name}</p>
-          <p className="mt-0.5 truncate font-mono-numbers text-[11px] leading-tight text-white/65">{cadenceLine}</p>
-          {paymentLine ? (
-            <div className="mt-1 flex items-center gap-1.5 truncate text-[11px] leading-tight text-white/55">{paymentLine}</div>
-          ) : null}
-        </div>
-        <div className={`max-w-[38%] shrink-0 text-end ${cornered ? 'me-7 mt-1.5' : ''}`}>
-          <p className="truncate font-mono-numbers text-base font-bold leading-none tracking-[-0.5px]">
-            {expectedBig} <span className="text-[10px] font-medium text-white/55">{expectedCurrency}</span>
-          </p>
-          <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/55">{expectedTag}</p>
-        </div>
-      </div>
-
-      {/* Progress */}
-      <div className="mt-2.5">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-[var(--color-brand-green)] transition-[width] duration-300"
-            style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
-          />
-        </div>
-        <p className="mt-1.5 truncate font-mono-numbers text-[11px] text-white/70">{progressLine}</p>
-      </div>
-
-      {/* Payday timeline — never scrolls, so a drag starting here swipes the carousel.
-          mb-2 is the structural gap between the paydays and the footer CTA. */}
-      <div className="mb-2 mt-2.5">
-        <PaydayTimeline
-          occurrences={occurrences}
-          dateLabel={dateLabel}
-          amountLabel={amountLabel}
-          statusBracket={statusBracket}
-          selectedKey={selectedKey}
-          onSelect={onChipTap}
-        />
-      </div>
-
-      {/* Footer (tip / CTA) — fixed-height slot so tip↔CTA swap never reflows the card. */}
-      <div className="mt-auto flex h-11 items-center">{footer}</div>
+    <div onClick={onCardTap} className={onCardTap ? 'cursor-pointer' : undefined}>
+      <HeroBand
+        contained
+        label={name}
+        aside={
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="flex size-[22px] items-center justify-center rounded-md" style={{ background: colors.bg, color: colors.fg }}>
+              <IncomeTypeIcon type={sourceType} className="size-3.5" />
+            </span>
+            {showTick ? (
+              <span className="flex size-[22px] items-center justify-center rounded-full bg-[var(--color-brand-green)] text-[var(--color-brand-on-primary)]">
+                <Check className="size-3.5" strokeWidth={3} />
+              </span>
+            ) : null}
+            {!showTick && onEdit ? (
+              <>
+                <IconButton
+                  onClick={(e) => { e.stopPropagation(); setMenuAnchor(e.currentTarget.getBoundingClientRect()) }}
+                  aria-label={editAriaLabel ?? t.common.edit}
+                  className="-my-1 -me-2 text-[var(--flow-band-fg)]"
+                >
+                  <MoreVertical className="size-4" />
+                </IconButton>
+                <CardActionMenu
+                  anchor={menuAnchor}
+                  onClose={() => setMenuAnchor(null)}
+                  items={[{ label: t.common.edit, icon: <Pencil size={17} />, onSelect: onEdit }]}
+                />
+              </>
+            ) : null}
+          </span>
+        }
+        numbers={
+          <>
+            <p className="min-w-0 truncate font-mono-numbers text-[28px] font-semibold leading-none tracking-[-0.03em]">
+              {expectedBig} <span className={`text-xs font-medium ${BAND_FG2}`}>{expectedCurrency}</span>
+            </p>
+            <div className={`min-w-0 text-end text-[11px] leading-tight ${BAND_FG2}`}>
+              <p className="truncate font-mono-numbers">{cadenceLine}</p>
+              {paymentLine ? <div className="mt-0.5 flex items-center justify-end gap-1.5 truncate">{paymentLine}</div> : null}
+            </div>
+          </>
+        }
+        bar={
+          <>
+            <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: BAND_MIX }}>
+              <div
+                className="h-full rounded-full bg-[var(--color-brand-green)] transition-[width] duration-300"
+                style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
+              />
+            </div>
+            <BandScale>
+              <span className="truncate">{progressLine}</span>
+              <span className="shrink-0 uppercase">{expectedTag}</span>
+            </BandScale>
+          </>
+        }
+        extra={
+          <>
+            {/* Payday timeline never scrolls, so a drag starting here swipes the carousel. */}
+            <div className="mt-2">
+              <PaydayTimeline
+                occurrences={occurrences}
+                dateLabel={dateLabel}
+                amountLabel={amountLabel}
+                statusBracket={statusBracket}
+                selectedKey={selectedKey}
+                onSelect={onChipTap}
+              />
+            </div>
+            <div className="flex h-11 items-center">{footer}</div>
+          </>
+        }
+      />
     </div>
   )
 }

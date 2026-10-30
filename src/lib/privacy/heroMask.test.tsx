@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -6,7 +6,16 @@ import { TrophyHero } from '@/components/features/goals/TrophyHero'
 import { SavingsHero } from '@/components/features/savings-v3/SavingsHero'
 import { DebtPortfolioHero } from '@/components/features/debts/redesign/DebtPortfolioHero'
 import { ReportsNetWorthPanel } from '@/components/reports/ReportsNetWorthPanel'
-import { MASK } from './mask'
+import { MASK, isMasked } from './mask'
+
+// renderToStaticMarkup reads zustand's server snapshot (initial state), so the live setting is bridged here.
+vi.mock('./useMask', () => ({
+  useMask: (surface: Parameters<typeof isMasked>[1]) => isMasked(useFinanceStore.getState().settings.privacy, surface),
+}))
+vi.mock('@/components/auth/AuthProvider', async (orig) => ({
+  ...(await orig<object>()),
+  useAuth: () => ({ session: null, user: null, loading: false }),
+}))
 
 const setPrivacy = (privacy: { preset: 'off' | 'hero' | 'all' }) =>
   useFinanceStore.setState((s) => ({ settings: { ...s.settings, privacy } }))

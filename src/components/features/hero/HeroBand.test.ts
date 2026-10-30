@@ -31,4 +31,8 @@ describe('HeroBand slots', () => {
     expect(html).toContain('rounded-3xl')
     expect(html).not.toContain('border-b')
   })
+  it('draws extra under the note only when given', () => {
+    expect(renderToStaticMarkup(h(HeroBand, { ...base, extra: h('u', null, 'XTRA') }))).toContain('XTRA')
+    expect(renderToStaticMarkup(h(HeroBand, base))).not.toContain('XTRA')
+  })
 })
