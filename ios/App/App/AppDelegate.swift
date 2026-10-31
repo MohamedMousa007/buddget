@@ -11,16 +11,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        FirebaseApp.configure()
         #if canImport(Sentry)
-        // Started here so a crash before the WebView loads is captured; the JS init later reconfigures it.
+        // First, so a crash in anything below (Firebase, plugins, the WebView) is captured and sent on the next launch.
         if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDsn") as? String, dsn.hasPrefix("https://") {
+            let info = Bundle.main.infoDictionary
             SentrySDK.start { options in
                 options.dsn = dsn
                 options.sendDefaultPii = false
+                options.releaseName = "buddget@\(info?["CFBundleShortVersionString"] as? String ?? "0")"
+                options.dist = info?["CFBundleVersion"] as? String
+                options.initialScope = { scope in
+                    scope.setTag(value: "ios", key: "platform")
+                    return scope
+                }
             }
         }
         #endif
+        FirebaseApp.configure()
         return true
     }
 

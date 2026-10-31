@@ -71,7 +71,7 @@ export default function AiCostView({ status }: { status: AdminStatus }) {
         <Panel title="By model" flush><DataTable rows={byModel} columns={modelColumns} rowKey={(r) => r.model} /></Panel>
         <Panel title="Price book" description="Per million tokens. Seeded from public list prices: confirm against your provider invoice.">
           <ul className="divide-y divide-[var(--color-brand-border)] text-sm">
-            {data.prices.map((p) => (
+            {(data.prices ?? []).map((p) => (
               <li key={p.model} className="py-2"><span className="font-medium">{p.model}</span> <span className="text-[var(--color-brand-text-muted)]">in ${p.in_usd_per_mtok} · cached ${p.cached_usd_per_mtok} · out ${p.out_usd_per_mtok}</span>
                 {canEdit ? <button type="button" className="ms-2 text-xs text-[var(--color-brand-primary)] underline" onClick={() => { void edit(p) }}>Edit</button> : null}</li>
             ))}

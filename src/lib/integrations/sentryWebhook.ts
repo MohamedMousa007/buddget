@@ -53,6 +53,8 @@ type SentryEvent = {
 const LEVELS = new Set(['fatal', 'error', 'warning', 'info'])
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const MAX_STACK = 6000
+/** Sentry's own platform names for events that never reached the JS layer, so carry no `platform` tag. */
+const NATIVE_PLATFORMS: Record<string, string> = { cocoa: 'ios', java: 'android', native: 'android' }
 
 function stackOf(event: SentryEvent): string | null {
   const values = event.exception?.values
@@ -79,7 +81,7 @@ export function parseCrashEvent(body: unknown): CrashEvent | null {
     level: LEVELS.has(event.level ?? '') ? (event.level as CrashEvent['level']) : 'error',
     culprit: event.culprit?.slice(0, 300) ?? null,
     stack: stackOf(event),
-    platform: tags.get('platform') ?? event.platform ?? null,
+    platform: tags.get('platform') ?? (event.platform ? (NATIVE_PLATFORMS[event.platform] ?? event.platform) : null),
     build: tags.get('build') ?? null,
     deviceId: tags.get('device_id') ?? null,
     userId,
