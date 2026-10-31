@@ -68,7 +68,7 @@ export function parseCrashLog(logText: string): { title: string; culprit: string
 /** Crashes TestFlight testers have shared since `since`, with Apple's own crash log. Covers crashes before any SDK can start. */
 export async function fetchIosCrashes(c: AscCredentials, since: Date, limit = 50): Promise<IosCrash[]> {
   const token = ascToken(c)
-  const page = (await get(`/v1/apps/${c.appId}/betaFeedbackCrashSubmissions?limit=${limit}&sort=-createdDate&include=build&fields[builds]=version&fields[betaFeedbackCrashSubmissions]=createdDate,email,appPlatform,buildBundleId`, token)) as Page
+  const page = (await get(`/v1/apps/${c.appId}/betaFeedbackCrashSubmissions?limit=${limit}&sort=-createdDate&include=build&fields[builds]=version&fields[betaFeedbackCrashSubmissions]=createdDate,email,build`, token)) as Page
   const builds = new Map((page.included ?? []).filter((r) => r.type === 'builds').map((r) => [r.id, str(r.attributes?.version)]))
   const out: IosCrash[] = []
   for (const sub of page.data ?? []) {
