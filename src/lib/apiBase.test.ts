@@ -16,6 +16,14 @@ describe('apiUrl on the admin host', () => {
     expect(usesRemoteApi()).toBe(false)
   })
 
+  it('keeps calls relative on the product and marketing hosts, whatever the build env says', () => {
+    for (const hostname of ['my.buddget.app', 'buddget.app']) {
+      vi.stubGlobal('window', { location: { hostname } })
+      expect(apiUrl('/api/account/delete')).toBe('/api/account/delete')
+      expect(usesRemoteApi()).toBe(false)
+    }
+  })
+
   it('still targets the remote API from other hosts (native shells)', () => {
     vi.stubGlobal('window', { location: { hostname: 'localhost' } })
     expect(apiUrl('/api/foo')).toBe('https://buddget.app/api/foo')

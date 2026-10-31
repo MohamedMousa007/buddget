@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { freshHook, parseCrashEvent, validSignature } from '@/lib/integrations/sentryWebhook'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
-const MAX_BODY = 200_000
+// Native crash events carry every thread and the loaded-image list, well past 200 KB; Vercel's own cap is 4.5 MB.
+const MAX_BODY = 4_000_000
 
 /** Sentry tells us an issue fired; the crash lands in client_crashes for the admin portal. */
 export async function POST(request: Request) {

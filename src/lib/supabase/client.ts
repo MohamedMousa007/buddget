@@ -1,5 +1,5 @@
 import { createBrowserClient, serializeCookieHeader, type CookieOptions } from '@supabase/ssr'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createClient as createSupabaseClient, processLock } from '@supabase/supabase-js'
 import { hostOnlyExpiryOptions, parseCookiesPreferLast, supabaseCookieDomain } from '@/lib/supabase/cookieDomain'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 import { secondFactorAwareFetch } from '@/lib/auth/secondFactorGate'
@@ -30,6 +30,8 @@ export function createClient() {
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: false,
+          // One WebView, one client: an in-process lock cannot be stolen the way navigator.locks is ("Lock broken by another request").
+          lock: processLock,
         },
         global: { fetch: secondFactorAwareFetch },
       })
