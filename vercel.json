@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/sms-harvest",
       "schedule": "10 4 * * *"
+    },
+    {
+      "path": "/api/cron/ios-crashes",
+      "schedule": "20 */6 * * *"
     }
   ]
 }

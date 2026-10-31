@@ -20,6 +20,7 @@ Where each variable is set: **Vercel** (server + build), **.env.local** (native 
 | `FINNHUB_KEY`, `GOLDAPI_IO_KEY`, `GOLDPRICEZ_KEY` | Price providers (cron/prices). Missing keys skip that provider. |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` or `FIREBASE_SERVICE_ACCOUNT_JSON` | Native push (firebase-admin). |
 | `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `EMAIL_FROM`, `SUPPORT_EMAIL`, `SEND_EMAIL_HOOK_SECRET` | Email and the Supabase auth email hook. |
+| `ASC_ISSUER_ID`, `ASC_KEY_ID`, `ASC_PRIVATE_KEY`, `ASC_APP_ID` | App Store Connect API key (Users and Access > Integrations > App Store Connect API, role Developer) and the app's numeric Apple ID. Feeds `/api/cron/ios-crashes`. |
 | `SENTRY_WEBHOOK_SECRET`, `LINEAR_API_KEY`, `LINEAR_WEBHOOK_SECRET` | Webhooks. Signatures are verified with these. |
 | `ADMIN_AUTH_SECRET`, `NEXT_PUBLIC_ADMIN_HOST`, `NEXT_PUBLIC_MARKETING_HOST`, `NEXT_PUBLIC_MY_HOST` | Admin portal and multi-host routing. |
 | `AI_RATE_LIMITING_ENABLED`, `AI_RATE_LIMIT_MAX`, `AI_RATE_LIMIT_WINDOW_MS` | AI rate limiting. |

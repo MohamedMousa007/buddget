@@ -4276,6 +4276,7 @@ export type Database = {
         Returns: { ticket_id: string; ticket_number: number }[]
       }
       admin_granted_users: { Args: { p_staff: string; p_users: string[] }; Returns: string[] }
+      user_id_by_email: { Args: { p_email: string }; Returns: string | null }
       record_client_crash_v2: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string; p_event_id?: string | null }; Returns: undefined }
       record_client_crash: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string }; Returns: undefined }
       admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }
