@@ -51,8 +51,8 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   const [last4, setLast4] = useState(prefill?.last4 ?? '')
   const [label, setLabel] = useState('')
   const prefillCountry = prefillBrand ? PAYMENT_BRANDS[prefillBrand].country : undefined
-  const [currency, setCurrency] = useState<Currency>(prefillCountry && prefillCountry in BRAND_CURRENCY ? BRAND_CURRENCY[prefillCountry as keyof typeof BRAND_CURRENCY] : base)
-  const [currencyChosen, setCurrencyChosen] = useState(false)
+  const [currency, setCurrency] = useState<Currency>((prefill?.currency as Currency | undefined) ?? (prefillCountry && prefillCountry in BRAND_CURRENCY ? BRAND_CURRENCY[prefillCountry as keyof typeof BRAND_CURRENCY] : base))
+  const [currencyChosen, setCurrencyChosen] = useState(!!prefill?.currency)
   const [pickOpen, setPickOpen] = useState(false)
 
   const brand = brandId ? PAYMENT_BRANDS[brandId] : null

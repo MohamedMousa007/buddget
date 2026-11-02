@@ -141,7 +141,7 @@ export function PaymentMethodSetupSheet({
           // even offer it, and handleSave would persist a last4 anyway.
           setIdMode(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
           const suggestedParent = prefill?.parentId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === prefill.parentId) : undefined
-          setCurCode(suggestedParent?.currency ?? baseCurrency); setCardColor(null); setIsDefault(false)
+          setCurCode((prefill?.currency as Currency | undefined) ?? suggestedParent?.currency ?? baseCurrency); setCardColor(null); setIsDefault(false)
         }
       }
       if (lockType) setType(lockType)

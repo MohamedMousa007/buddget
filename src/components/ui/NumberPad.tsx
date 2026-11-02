@@ -230,6 +230,8 @@ export function NumberPad({
                   onPointerUp={stopHold}
                   onPointerLeave={stopHold}
                   onPointerCancel={stopHold}
+                  // Pointer presses are handled above; a click with no pointer (keyboard, screen reader, switch control) deletes once.
+                  onClick={(e) => { if (e.detail === 0) press('back') }}
                   aria-label={t.common.delete}
                 >
                   <Delete size={24} strokeWidth={1.75} />
@@ -242,6 +244,7 @@ export function NumberPad({
                 type="button"
                 className="np-key"
                 onPointerDown={(e) => { e.preventDefault(); press(k) }}
+                onClick={(e) => { if (e.detail === 0) press(k) }}
                 aria-label={k === '.' ? t.a11y.decimalPoint : k}
               >
                 {k}

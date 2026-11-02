@@ -8,10 +8,13 @@ import { paymentTypeFromSms } from '@/lib/payment/smsPaymentType'
 import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { useShallow } from 'zustand/react/shallow'
 import { answersTo, tailsMatch } from '@/lib/accounts/identity/accountRef'
+import { extractBalance } from '@/lib/sms/balanceReport'
 
 export interface DetectedAccount {
   /** Prompt identity; see detectAccounts. */
   key: string
+  /** The account's currency when its messages state a balance (that balance is in the account's own currency), else null. */
+  currency: string | null
   /** Best provider token — SMS sender ID ("QNB EGYPT") or parsed bank name. Bare provider, never composed with the last4. */
   provider: string | null
   last4: string
@@ -19,6 +22,12 @@ export interface DetectedAccount {
   type: PaymentMethodType | null
   /** Parsed SMS that mention this account in the lookback week. */
   count: number
+}
+
+/** Currency named next to a message's trailing balance; "LE" is the Egyptian pound. */
+function balanceCurrency(body: string): string | null {
+  const c = extractBalance(body)?.currency
+  return c === 'LE' ? 'EGP' : (c ?? null)
 }
 
 /** An account seen in messages stays offered this long, so one seen last week is not forgotten. */
@@ -91,7 +100,8 @@ export function detectAccounts(rows: Row[], methods: readonly PaymentMethod[]): 
       if (methods.some((pm) => answersTo(pm, c.tail))) continue
       // Most frequent inference across this account's messages: one oddly worded SMS shouldn't decide the type.
       const type = mode(c.rows.map((r) => paymentTypeFromSms(r.raw_body, r.payment_instrument))) as PaymentMethodType | null
-      found.push({ provider, last4: c.tail, type, count: c.rows.length })
+      const currency = mode(c.rows.map((r) => (r.raw_body ? balanceCurrency(r.raw_body) : null)))
+      found.push({ provider, last4: c.tail, type, currency, count: c.rows.length })
     }
   }
   const sharing = (last4: string) => found.filter((f) => f.last4 === last4).length > 1

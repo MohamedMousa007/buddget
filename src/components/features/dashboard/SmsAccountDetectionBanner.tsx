@@ -41,7 +41,7 @@ export function SmsAccountDetectionBanner() {
 
   useRegisterPrompts(
     'account-detection',
-    detected.map(({ key, last4, provider, type, count }): Prompt => {
+    detected.map(({ key, last4, provider, type, currency, count }): Prompt => {
       const add = addFor(type, t.prompts, t.accountsPage.addAccount)
       return {
         key,
@@ -56,11 +56,11 @@ export function SmsAccountDetectionBanner() {
             variant: 'default',
             onPress: () => {
               if (type === 'bank_account') {
-                openAddAccountWithPrefill({ provider: provider ?? '', last4 })
+                openAddAccountWithPrefill({ provider: provider ?? '', last4, ...(currency ? { currency } : {}) })
                 router.push('/accounts')
               } else {
                 const parentId = type === 'debit_card' || type === null ? parentAccountFor(paymentMethods, provider) : undefined
-                openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}), ...(parentId ? { parentId } : {}) })
+                openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}), ...(parentId ? { parentId } : {}), ...(currency ? { currency } : {}) })
               }
             },
           },

@@ -29,4 +29,12 @@ describe('detectAccounts', () => {
     const body = 'Purchase from 103-104***-001 EGP 925.00- Your available balance is EGP 598.99'
     expect(detectAccounts([row('001', 'HSBC Egypt', null, body)], [])[0].type).toBe('bank_account')
   })
+
+  it('takes the currency from the balance a message states, with LE meaning EGP, and leaves it open otherwise', () => {
+    const usd = detectAccounts([row('0110', 'HSBC', null, 'Transfer from 103-104***-110 USD 200.00- Your available balance is USD 2,172.73')], [])
+    expect(usd[0].currency).toBe('USD')
+    const le = detectAccounts([row('5555', 'Bank', null, 'Withdrawal ending 5555. Your available balance is LE 1,000.00')], [])
+    expect(le[0].currency).toBe('EGP')
+    expect(detectAccounts([row('7777', 'HSBC Egypt', null, 'Purchase ending 7777 USD 12.00 at SHOP')], [])[0].currency).toBeNull()
+  })
 })

@@ -21,6 +21,8 @@ export interface AccountPrefill {
   /** Bare provider name; the sheet resolves it to a catalogue brand. */
   provider: string
   last4: string
+  /** The account's currency when its messages state one. */
+  currency?: string
 }
 
 export interface PmPrefill {
@@ -31,6 +33,8 @@ export interface PmPrefill {
   type?: PaymentMethodType
   /** The account this card draws on, when the user has exactly one at the same bank. */
   parentId?: string
+  /** The account's currency when its messages state one. */
+  currency?: string
 }
 
 /** Seed for the New payday sheet. Every field optional: a starter card only knows the type. */

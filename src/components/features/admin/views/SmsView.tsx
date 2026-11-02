@@ -23,6 +23,7 @@ type Tab = (typeof TABS)[number]['value']
 
 interface Health {
   days: number
+  attribution: { total: number; placed: number } | null
   health: {
     total: number; parsed: number; failed: number; rejected: number; undelivered: number; users: number
     by_method: Record<string, number>
@@ -73,6 +74,9 @@ function HealthTab() {
         <StatTile label="SMS received · 7d" value={num(h.total)} sub={`${num(h.users)} users`} />
         <StatTile label="Import rate" value={pct(h.parsed, h.total)} tone={h.total && h.parsed / h.total >= 0.9 ? 'positive' : 'default'} sub={`${num(h.parsed)} imported`} />
         <StatTile label="Failed" value={num(h.failed)} tone={h.failed ? 'negative' : 'default'} sub={`${num(h.rejected)} ignored as non-transactions`} onClick={() => adminNavigate('sms', { tab: 'errors' })} />
+        {data.attribution ? (
+          <StatTile label="Placed on an account" value={pct(data.attribution.placed, data.attribution.total)} tone={data.attribution.total && data.attribution.placed / data.attribution.total >= 0.9 ? 'positive' : 'negative'} sub={`${num(data.attribution.total - data.attribution.placed)} imported expenses on no account`} />
+        ) : null}
         <StatTile label="Never reached app" value={num(h.undelivered)} tone={h.undelivered ? 'negative' : 'default'} sub="logged/pushed, not confirmed" onClick={() => adminNavigate('sms', { tab: 'errors' })} />
       </KpiGrid>
       <Panel title="Daily volume">

@@ -116,3 +116,24 @@ R3 (legacy AI delete refuses debt-linked expenses); V1+R6 (learned regex is safe
 - **A8:** an "account unknown" confirmation reason was not added; the Accounts-page notice and review sheet give the same outcome without extra prompts.
 
 **Waiting on the owner (cannot be done from here):** R30 enable leaked-password protection in Supabase Auth; R1 confirm the 3 Nov 00:50 UTC retention run masked and purged parsed text older than 30 days and that learning quality is acceptable before relying on it; R21 and R25 need a real-device and signed-in Lighthouse pass; first compile of the Kotlin and Swift edits happens in the next native build.
+
+## Remaining items: validation and fixes (2026-11-02, last pass)
+
+Each leftover was checked against live data (read-only) and the code before deciding.
+
+| Item | Evidence | Verdict | Outcome |
+|---|---|---|---|
+| Missing-transaction detection | Bank balance chains from the stored messages: 8 consecutive pairs, 3 consistent, 2 broken (the rest not comparable). Drift alert needed a repeated identical gap, so a growing gap stayed silent. | **Real** | `detectGap` now also fires when the unexplained amount grew since the previous report (once the newest report is 15 minutes old); shrinking or sign-flipping gaps stay quiet. Tests added. |
+| Safety net for rejected messages | 149 rejected messages system-wide; masked text is kept, so they are not lost. 43 carried money words, but nearly all are promos, balance notices or reminders. **One real class was wrongly rejected as marketing**: a completed Vodafone Cash transfer receipt that ends with "get a chance to win a gold coin". | **Premise wrong, real bug found** | Pre-filter no longer treats a completed-transfer statement with an amount as an ad; tests added. Two Saudi SADAD "Amount: x SR" messages are rejected by the AI tier; left as a judgement call. |
+| Explain before adjusting | `FixGapSheet` offered only guesses (cash, spent, set aside). | **Real** | New first answer "Bank messages on no account" (same currency) places them on the account, then the gap recomputes. |
+| Admin metric | No view of how many imported expenses sit on an account. | **Real** | SMS health tab shows "Placed on an account" (share and count) for the last 7 days. |
+| Back-fill for other users | Of 401 unplaced SMS expenses, only 9 match an account their owner already has; 314 name a number the user never created an account for; 78 have no number. | **Concern invalid as stated** | No server back-fill and no change to other users' data. The real fix is discovery, which is shipped; the new dashboard prompt and Accounts notice cover the rest. |
+| A4 currency | Detection ignored the currency printed next to the balance. | **Real** | Detected accounts carry the currency of their balance line (LE means EGP); the Add account and card sheets and Find my accounts use it. |
+| A5 Find my accounts | Grouped by bank plus digits and offered cards as accounts. | **Real** | Uses the same per-bank grouping as the prompt, skips cards, sets the account currency. |
+| A8 | Unplaced messages were only visible on the Accounts page. | **Real (UX)** | One prompt in the shared stack ("N bank messages are not on any account") opens Accounts. |
+| A14 | Account versus card is already inferred from the message text at detection time. | **Not needed** | Closed. |
+| R25 | Reproduced: unbroken 80-character names and 12-digit amounts widened `/savings`, `/wealth` and `/debts` by 490-630 px. | **Real, low** | Row subtitles truncate and prompt titles wrap; re-measured 0 px overflow on 11 routes. A 12-digit hero amount still overlaps its label; not realistic, left. |
+| Keyboard sweep | 55 tab stops, none stuck, all with a visible focus ring. **The Quick add button and the Buddgy bubble opened only on pointer events, so keyboard and screen-reader users could not open them.** | **Real (WCAG 2.1.1)** | Both (and the on-screen number pad) now act on a pointer-less click; verified in a browser for Quick add (Enter and Space open it, Tab stays inside, Escape closes and returns focus). The bubble and number pad use the same pattern as `DateStepper` but could not be exercised here (no AI key). |
+| Signed-in form check | Add account driven in a browser: a 6-digit field, `001` accepted, `1` disables Save, `0001` saved. | Works | None needed. |
+| 21 moderate advisories | All sit in build-time tooling (next-pwa and workbox chain, Capacitor CLI) or in `firebase-admin`'s `uuid`; none is reachable from a user request. npm's suggested "fixes" are downgrades (`next-pwa@0.0.1`, `@capacitor/cli@4.8.2`). | **Not actionable** | Closed with this note; revisit when `next-pwa` or `firebase-admin` is upgraded. |
+| Postgres suites, AI evals, Kotlin/Swift compile, device performance | Need Docker, an AI key, Xcode/Android SDK and a phone. | Cannot be run here | Remain with the owner. |

@@ -214,6 +214,9 @@ export interface Dictionary {
     unplacedAttach: (n: number) => string
     unplacedAccount: string
     reattached: (n: number) => string
+    attachMessagesName: string
+    attachMessagesSub: (n: number, amount: string) => string
+    attachMessagesCta: string
     bankAccounts: string
     walletsCash: string
     addAccountOrCard: string

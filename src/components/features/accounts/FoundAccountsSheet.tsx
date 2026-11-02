@@ -13,19 +13,22 @@ import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { BrandMark } from './BrandMark'
 import { splitMoney } from './accountDisplay'
-import { answersTo } from '@/lib/accounts/identity/accountRef'
+import { tailsMatch } from '@/lib/accounts/identity/accountRef'
+import { detectAccounts, pickProvider, type Row } from '@/hooks/usePaymentMethodDetector'
+import type { Currency, PaymentMethodType } from '@/lib/store/types'
 
 interface Found {
   key: string
   bank: string
   last4: string
+  type: PaymentMethodType | null
   balance: number | null
   receivedAt: string | null
   /** Currency the message states; a balance in another currency is not an opening balance in the base currency. */
   currency: string | null
 }
 
-/** Accounts the bank messages already mention, grouped by (bank, last 4). Nothing is read from the inbox here. */
+/** Accounts the bank messages already mention (one per bank and number). Nothing is read from the inbox here. */
 export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean; onClose: () => void; onManual: () => void }) {
   const t = useT().accountsPage
   const methods = useFinanceStore((s) => s.paymentMethods)
@@ -38,19 +41,22 @@ export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean;
     if (!open) return
     let off = false
     void createClient().from('sms_parse_log')
-      .select('bank_name, account_last4, balance_after, received_at, currency')
-      .not('bank_name', 'is', null).not('account_last4', 'is', null)
+      .select('bank_name, sender, payment_instrument, raw_body, account_last4, balance_after, received_at')
+      .not('account_last4', 'is', null)
       .order('received_at', { ascending: false }).limit(300)
       .then(({ data }) => {
         if (off) return
-        const seen = new Map<string, Found>()
-        for (const r of data ?? []) {
-          const key = `${r.bank_name}|${r.account_last4}`
-          const prev = seen.get(key)
-          if (!prev) seen.set(key, { key, bank: r.bank_name!, last4: r.account_last4!, balance: r.balance_after, receivedAt: r.balance_after != null ? r.received_at : null, currency: r.currency })
-          else if (prev.balance == null && r.balance_after != null) { prev.balance = r.balance_after; prev.receivedAt = r.received_at; prev.currency = r.currency }
-        }
-        const list = [...seen.values()].filter((f) => !methods.some((m) => answersTo(m, f.last4)))
+        const rows = data ?? []
+        // Same grouping as the detection prompt: per bank, one account printed as 001 and 0001 is one, cards belong under an account.
+        const list: Found[] = detectAccounts(rows as Row[], methods)
+          .filter((a) => a.type !== 'debit_card' && a.type !== 'credit_card' && a.type !== 'prepaid_card')
+          .map((a) => {
+            const withBalance = rows.find((r) => r.balance_after != null && tailsMatch(r.account_last4, a.last4) && pickProvider(r.sender, r.bank_name) === a.provider)
+            return {
+              key: a.key, bank: a.provider ?? 'Bank', last4: a.last4, type: a.type,
+              balance: withBalance?.balance_after ?? null, receivedAt: withBalance?.received_at ?? null, currency: a.currency,
+            }
+          })
         setFound(list)
         setPicked(new Set(list.map((f) => f.key)))
       })
@@ -62,12 +68,13 @@ export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean;
     for (const f of found ?? []) {
       if (!picked.has(f.key)) continue
       const brand = PAYMENT_BRANDS[resolvePaymentBrandKey(f.bank) ?? '']
-      const type = brand?.type === 'wallet' ? 'wallet' : 'bank_account'
+      const type = brand?.type === 'wallet' || f.type === 'wallet' ? 'wallet' : 'bank_account'
+      const accountCurrency = (f.currency ?? String(base)) as Currency
       const id = addPaymentMethod({
-        name: composePaymentMethodName(brand?.name ?? f.bank, { last4: f.last4 }), type, currency: base, isDefault: false,
+        name: composePaymentMethodName(brand?.name ?? f.bank, { last4: f.last4 }), type, currency: accountCurrency, isDefault: false,
         color: brand?.colors[0] ?? PAYMENT_TYPE_META[type].color, last4: f.last4,
       })
-      if (f.balance != null && f.receivedAt && (!f.currency || f.currency === String(base))) setOpeningBalance(id, f.balance, new Date(f.receivedAt))
+      if (f.balance != null && f.receivedAt) setOpeningBalance(id, f.balance, new Date(f.receivedAt))
     }
     onClose()
   }
@@ -88,7 +95,7 @@ export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean;
           ) : null}
           {(found ?? []).map((f) => {
             const on = picked.has(f.key)
-            const m = f.balance != null && (!f.currency || f.currency === String(base)) ? splitMoney(f.balance, String(base)) : null
+            const m = f.balance != null ? splitMoney(f.balance, f.currency ?? String(base)) : null
             return (
               <SelectableCard key={f.key} selected={on} role="checkbox" aria-checked={on}
                 onClick={() => setPicked((p) => { const q = new Set(p); if (on) q.delete(f.key); else q.add(f.key); return q })}>

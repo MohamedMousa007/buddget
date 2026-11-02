@@ -19,7 +19,8 @@ export const SETTLE_MS = 15 * 60 * 1000
 
 /**
  * A gap is real when the two newest reports both disagree with the ledger by about the same amount
- * (one report can be a timing race), or when the ledger matched the previous report and misses the newest by more than
+ * (one report can be a timing race), when the unexplained amount has grown since the previous report (money went
+ * missing between the two, once the newest report has settled), or when the ledger matched the previous report and misses the newest by more than
  * the tolerance, once that report has settled: money left between the two reports that no entry explains.
  * `balanceAt(instant)` is the ledger balance at that instant.
  * `tolerance` is in account currency (1 unit exact, wider when the account has converted rows).
@@ -45,6 +46,12 @@ export function detectGap(
     const settled = now - new Date(newest.reportedAt).getTime() >= SETTLE_MS
     return settled ? { amount: g1, reportedAt: newest.reportedAt, newest, previous } : null
   }
-  if (Math.sign(g1) !== Math.sign(g0) || Math.abs(g1 - g0) > tolerance) return null
+  if (Math.sign(g1) !== Math.sign(g0)) return null
+  const persistent = Math.abs(g1 - g0) <= tolerance
+  // More money is unexplained than at the previous report: it went missing between the two. Less is a deposit or a
+  // correction catching up, which is not a reason to alarm.
+  const growing = Math.abs(g1) > Math.abs(g0) + tolerance
+  if (!persistent && !growing) return null
+  if (!persistent && now - new Date(newest.reportedAt).getTime() < SETTLE_MS) return null
   return { amount: g1, reportedAt: newest.reportedAt, newest, previous }
 }
