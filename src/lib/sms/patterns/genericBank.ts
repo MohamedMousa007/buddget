@@ -30,6 +30,17 @@ export const GENERIC_BANK_PATTERNS: BankPatternSet = {
       verified: true,
     },
     {
+      // Saudi SADAD bill payment, short form: "<bank>: 12345 Amount:55.50 SR Reason: SADAD Payment" (the first number is
+      // a reference, not an account). Rejected as a non-transaction in the first version of the pipeline.
+      id: 'generic-sadad-payment',
+      regex: /Amount:\s*([\d,]+(?:\.\d+)?)\s*(?:SR|SAR)\s+Reason:\s*SADAD\s+Payment/i,
+      kind: 'purchase',
+      groups: { amount: 1 },
+      currencyLiteral: 'SAR',
+      paymentInstrument: 'account',
+      verified: true,
+    },
+    {
       // "تم تحويل لحظى بمبلغ 200 إلى  رقم مرجعى BEC93BC في 17/05/2026 04:54 …"
       id: 'generic-ipn-out-ar',
       regex: /تم\s+تحويل\s+لحظ[يى]\s+بمبلغ\s+([\d,]+(?:\.\d+)?)\s+إلى\s+.*?رقم\s+مرجع[يى]\s+\S+\s+في\s+(\d{2}\/\d{2}\/\d{4})/,

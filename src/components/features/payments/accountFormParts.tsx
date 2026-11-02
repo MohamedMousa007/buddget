@@ -1,5 +1,6 @@
 'use client'
 
+import { X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useT } from '@/lib/i18n'
@@ -66,6 +67,28 @@ export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4,
           {last4 ? <div className="mt-2 px-0.5 text-[11.5px] text-[var(--color-brand-text-muted)]">{t.labelKeepsDigits}</div> : null}
         </>
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * The other numbers bank messages use for this account (its account number, a linked card). Shown so a wrong link can
+ * be undone: each one can be removed. Built from OptionChip (size sm) with an X, like the rest of the form.
+ */
+export function AccountAliasChips({ aliases, onRemove }: { aliases: readonly string[]; onRemove: (digits: string) => void }) {
+  const t = useT().paymentMethods
+  if (aliases.length === 0) return null
+  return (
+    <div>
+      <div className={`mx-0.5 mb-2 ${microClassName}`}>{t.alsoRecognised}</div>
+      <div className="flex flex-wrap gap-2">
+        {aliases.map((digits) => (
+          <OptionChip key={digits} size="sm" selected={false} onClick={() => onRemove(digits)} aria-label={t.removeNumber(digits)}>
+            <span className="font-mono-numbers">••{digits}</span>
+            <X className="size-3.5" aria-hidden />
+          </OptionChip>
+        ))}
+      </div>
     </div>
   )
 }

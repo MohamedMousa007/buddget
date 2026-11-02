@@ -2253,6 +2253,8 @@ export interface Dictionary {
     identifier: string
     optional: string
     fourDigits: string
+    alsoRecognised: string
+    removeNumber: (digits: string) => string
     label: string
     none: string
     last4Help: string

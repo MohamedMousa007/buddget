@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/components/features/hero/HeroBand'
+import { fitBigNumber } from '@/components/features/hero/fitText'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { useT } from '@/lib/i18n'
@@ -57,7 +58,7 @@ export function SavingsHero({
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
             {totalPrefix ? <span className={`shrink-0 text-[15px] ${BAND_FG2}`} title={totalPrefix === 'At least' ? t.atLeast : undefined}>{prefix(totalPrefix).trim()}</span> : null}
-            <span className="shrink-0 font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{hidden ? MASK : total}</span>
+            <span className={`shrink-0 font-mono-numbers font-semibold leading-none tracking-[-0.03em] ${hidden ? 'text-[32px]' : fitBigNumber(total)}`}>{hidden ? MASK : total}</span>
             <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{currency}</span>
           </p>
           <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${BAND_FG2}`}>

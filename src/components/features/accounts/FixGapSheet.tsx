@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,8 @@ import { cashOut } from '@/lib/accounts/actions'
 import { computeBalances } from '@/lib/accounts/balance'
 import type { GapResult } from '@/lib/accounts/gap'
 import { snoozeGap } from '@/lib/accounts/useAccountGaps'
-import { unplacedSmsExpenses } from '@/lib/accounts/unplacedSms'
+import { findUnplacedForAccount } from '@/lib/accounts/unplacedForTail'
+import type { Expense } from '@/lib/store/types'
 import { useLedgerInput, type AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -43,7 +44,14 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
   const money = (n: number) => splitMoney(n, cur).int + splitMoney(n, cur).dec
   const missing = Math.abs(gap.amount)
   // Money the bank's own messages already described: placing it is the first thing to try, before guessing where cash went.
-  const unplaced = useMemo(() => unplacedSmsExpenses(ledger.expenses).filter((e) => String(e.currency) === cur), [ledger.expenses, cur])
+  const [unplaced, setUnplaced] = useState<Expense[]>([])
+  useEffect(() => {
+    if (!open) return
+    let off = false
+    void findUnplacedForAccount(ledger.expenses, account.method).then((rows) => { if (!off) setUnplaced(rows) }).catch(() => undefined)
+    return () => { off = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, account.method.id, ledger.expenses.length])
 
   const steps = useMemo<TimelineStep[]>(() => {
     const at = (iso: string) => new Date(iso).getTime()
@@ -73,7 +81,8 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
     { id: 'unsure', name: t.notSure, sub: t.notSureSub, cta: t.remindMeLater },
   ]
 
-  const choice: Choice = picked ?? tiles[0].id
+  // A pick whose tile has gone (its messages were just placed) falls back to the first one rather than leaving no tile selected.
+  const choice: Choice = picked && tiles.some((x) => x.id === picked) ? picked : tiles[0].id
 
   // The money left before the newest bank report, so the resolving entry is dated just before it: that is what lets the report match.
   const apply = () => {

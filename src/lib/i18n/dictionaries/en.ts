@@ -2378,6 +2378,8 @@ export const en: Dictionary = {
     identifier: 'Identifier',
     optional: 'optional',
     fourDigits: 'Last digits',
+    alsoRecognised: 'Also recognised as',
+    removeNumber: (d) => `Remove ••${d}`,
     label: 'Label',
     none: 'None',
     last4Help: 'Enter the last 2 to 6 digits of your card or account number, as your bank prints them.',

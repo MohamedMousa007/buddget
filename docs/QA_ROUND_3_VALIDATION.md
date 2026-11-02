@@ -137,3 +137,12 @@ Each leftover was checked against live data (read-only) and the code before deci
 | Signed-in form check | Add account driven in a browser: a 6-digit field, `001` accepted, `1` disables Save, `0001` saved. | Works | None needed. |
 | 21 moderate advisories | All sit in build-time tooling (next-pwa and workbox chain, Capacitor CLI) or in `firebase-admin`'s `uuid`; none is reachable from a user request. npm's suggested "fixes" are downgrades (`next-pwa@0.0.1`, `@capacitor/cli@4.8.2`). | **Not actionable** | Closed with this note; revisit when `next-pwa` or `firebase-admin` is upgraded. |
 | Postgres suites, AI evals, Kotlin/Swift compile, device performance | Need Docker, an AI key, Xcode/Android SDK and a phone. | Cannot be run here | Remain with the owner. |
+
+
+## Final pass before the push (2026-11-02)
+
+- **SADAD (corrected):** my earlier statement that "the AI tier rejects" these was wrong. The two rejected rows are from August and were rejected by the earlier version of the deterministic filter; the current filter lets that shape through, and later SADAD messages in the long form were confirmed normally. A curated pattern (`generic-sadad-payment`: "Amount:x SR Reason: SADAD Payment") now parses the short form deterministically, with tests that also assert the filter passes it.
+- **Hero amounts:** the Wealth hero began to overlap at about 1.2 billion (10 digits). The Wealth, Accounts and Debts heroes now use the existing `fitBigNumber` step-down already used by Flow; short figures keep the 32px default. Re-measured at 10 and 11 digits: no overlap.
+- **Alias visibility:** the account edit sheet shows "Also recognised as" with one removable chip per alias (verified in a browser: two chips, one removed, saved).
+- **Logo tiles:** kept; text that is part of a logo is exempt from the contrast rule.
+- **Other users' unplaced expenses:** no data changes, as decided.

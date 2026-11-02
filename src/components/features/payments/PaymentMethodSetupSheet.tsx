@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, ArrowLeft, CreditCard, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencyField } from '@/components/ui/CurrencyField'
-import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
+import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountAliasChips, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
@@ -84,6 +84,7 @@ export function PaymentMethodSetupSheet({
   const [idMode, setIdMode] = useState<Identifier>('none')
   const [last4, setLast4] = useState('')
   const [label, setLabel] = useState('')
+  const [aliases, setAliases] = useState<string[]>([])
   const [curCode, setCurCode] = useState<Currency>(baseCurrency)
   const [cardColor, setCardColor] = useState<string | null>(null)
   const [isDefault, setIsDefault] = useState(false)
@@ -106,7 +107,7 @@ export function PaymentMethodSetupSheet({
         // A label an older version folded into the name ("CIB · Salary") is shown as the label it always was.
         const savedLabel = editing.label ?? decTag
         setBrandId(null); setProviderName(provider); setType(editing.type)
-        setLast4(editing.last4 ?? ''); setLabel(savedLabel)
+        setLast4(editing.last4 ?? ''); setLabel(savedLabel); setAliases(editing.last4Aliases ?? [])
         setIdMode(savedLabel ? 'label' : editing.last4 ? 'last4' : 'none')
         setCurCode(editing.currency); setCardColor(editing.color ?? null); setIsDefault(editing.isDefault)
         // Load the linked credit-card debt's terms so they're editable here.
@@ -200,7 +201,7 @@ export function PaymentMethodSetupSheet({
     const payload = { name, type, currency: curCode, color: effectiveColor, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
-      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, label: words || undefined })
+      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined })
       pmId = editing.id
     } else {
       // A credit_card PM auto-creates its linked credit-card debt in the store.
@@ -354,6 +355,7 @@ export function PaymentMethodSetupSheet({
                 mode={idMode} onModeChange={setIdMode} allowsLast4={allowsLast4(type)}
                 last4={last4} onLast4Change={setLast4} label={label} onLabelChange={setLabel}
               />
+              {editing ? <AccountAliasChips aliases={aliases} onRemove={(d) => setAliases((a) => a.filter((x) => x !== d))} /> : null}
 
               {/* Currency */}
               <div>

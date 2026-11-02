@@ -1,5 +1,6 @@
 'use client'
 
+import { fitBigNumber } from '@/components/features/hero/fitText'
 import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/components/features/hero/HeroBand'
 import { monthProgress } from '@/lib/debts/heroStats'
 import { useLocale, useT } from '@/lib/i18n'
@@ -82,7 +83,7 @@ export function DebtPortfolioHero({
       numbers={
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
-            <span className="shrink-0 font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{fmtWhole(owed)}</span>
+            <span className={`shrink-0 font-mono-numbers font-semibold leading-none tracking-[-0.03em] ${fitBigNumber(fmtWhole(owed))}`}>{fmtWhole(owed)}</span>
             <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{base}</span>
           </p>
           {progressing ? (

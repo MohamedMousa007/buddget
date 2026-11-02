@@ -2385,6 +2385,8 @@ export const ar: Dictionary = {
     identifier: 'تفصيل',
     optional: 'اختياري',
     fourDigits: 'آخر الأرقام',
+    alsoRecognised: 'يُعرف أيضًا بـ',
+    removeNumber: (d) => `إزالة ••${d}`,
     label: 'وسم',
     none: 'بلا',
     last4Help: 'أدخل آخر ٢ إلى ٦ أرقام من رقم بطاقتك أو حسابك كما يطبعها البنك.',
