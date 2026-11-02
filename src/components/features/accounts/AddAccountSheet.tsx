@@ -13,10 +13,11 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ensureCashAccount, setOpeningBalance } from '@/lib/accounts/actions'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
-import { PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, PAYMENT_TYPE_META, composePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, PAYMENT_TYPE_META, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency } from '@/lib/store/types'
 import { isSavableTail } from '@/lib/accounts/identity/accountRef'
+import type { AccountPrefill } from '@/lib/store/useSettingsStore'
 import { BrandMark } from './BrandMark'
 
 type Kind = 'bank_account' | 'wallet' | 'cash'
@@ -25,6 +26,8 @@ interface AddAccountSheetProps {
   open: boolean
   onClose: () => void
   initialKind?: Kind
+  /** A bank account the messages already name: provider and number start filled in. */
+  prefill?: AccountPrefill
   /** A bank can be followed straight by its first card: saves the account, then hands over its id. */
   onAddCard?: (accountId: string) => void
 }
@@ -33,19 +36,21 @@ const COUNTRY: Partial<Record<Currency, 'EG' | 'SA' | 'AE'>> = { EGP: 'EG', SAR:
 const BRAND_CURRENCY = { EG: 'EGP', SA: 'SAR', AE: 'AED' } as const
 
 /** Add an account by hand: who it is with, how it is told apart, its currency and what it holds today. */
-export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', onAddCard }: AddAccountSheetProps) {
+export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', prefill, onAddCard }: AddAccountSheetProps) {
   const t = useT().accountsPage
   const tp = useT().paymentMethods
   const base = useFinanceStore((s) => s.settings.baseCurrency)
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
   const [kind, setKind] = useState<Kind>(initialKind)
-  const [brandId, setBrandId] = useState<string | null>(null)
-  const [custom, setCustom] = useState('')
+  const prefillBrand = prefill ? resolvePaymentBrandKey(prefill.provider) : null
+  const [brandId, setBrandId] = useState<string | null>(prefillBrand)
+  const [custom, setCustom] = useState(prefill && !prefillBrand ? prefill.provider : '')
   const [balance, setBalance] = useState('')
-  const [idMode, setIdMode] = useState<Identifier>('none')
-  const [last4, setLast4] = useState('')
+  const [idMode, setIdMode] = useState<Identifier>(prefill ? 'last4' : 'none')
+  const [last4, setLast4] = useState(prefill?.last4 ?? '')
   const [label, setLabel] = useState('')
-  const [currency, setCurrency] = useState<Currency>(base)
+  const prefillCountry = prefillBrand ? PAYMENT_BRANDS[prefillBrand].country : undefined
+  const [currency, setCurrency] = useState<Currency>(prefillCountry && prefillCountry in BRAND_CURRENCY ? BRAND_CURRENCY[prefillCountry as keyof typeof BRAND_CURRENCY] : base)
   const [currencyChosen, setCurrencyChosen] = useState(false)
   const [pickOpen, setPickOpen] = useState(false)
 

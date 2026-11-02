@@ -28,6 +28,8 @@ const TYPE_RULES: [RegExp, PaymentMethodType][] = [
   [/debit\s*card|mada\s*card|بطاقة\s*(?:ال)?خصم|بطاقة\s+الخصم\s+المباشر/i, 'debit_card'],
   [/prepaid\s*card|بطاقة\s+مسبقة\s+الدفع/i, 'prepaid_card'],
   [/\bwallet\b|محفظة|cash\s*wallet/i, 'wallet'],
+  // "Purchase from 103-104***-001": a masked ACCOUNT number (digits, then stars, then the tail), not a card.
+  [/\bfrom\s+\d[\d-]*\*{2,}[-\s]?\d{2,}/i, 'bank_account'],
   [/\bcard\b|بطاقة/i, 'debit_card'],
   [/\baccount\b|\bA\/C\b|حساب/i, 'bank_account'],
 ]

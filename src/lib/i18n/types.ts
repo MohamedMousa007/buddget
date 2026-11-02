@@ -208,6 +208,11 @@ export interface Dictionary {
     setAside: string
     creditOwed: string
     accountsCount: (n: number) => string
+    unplacedTitle: (n: number) => string
+    unplacedSub: string
+    unplacedReview: string
+    unplacedAttach: (n: number) => string
+    unplacedAccount: string
     bankAccounts: string
     walletsCash: string
     addAccountOrCard: string

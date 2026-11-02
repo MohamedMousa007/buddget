@@ -42,4 +42,9 @@ describe('paymentTypeFromSms', () => {
     expect(paymentTypeFromSms('EGP 200 spent at Talabat', null)).toBeNull()
     expect(paymentTypeFromSms(null, 'account')).toBe('bank_account')
   })
+
+  it('reads a masked account number ("from 103-104***-001") as a bank account, but a named card stays a card', () => {
+    expect(paymentTypeFromSms('27OCT26 SHOP Purchase from 103-104***-001 EGP 925.00- Your available balance is EGP 598.99', null)).toBe('bank_account')
+    expect(paymentTypeFromSms('Debit card purchase from 103-104***-001 EGP 50', null)).toBe('debit_card')
+  })
 })

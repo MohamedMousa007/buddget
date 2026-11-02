@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { CreditCard, Wallet, type LucideIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { CreditCard, Landmark, Wallet, type LucideIcon } from 'lucide-react'
 import { usePaymentMethodDetector, type DetectedAccount } from '@/hooks/usePaymentMethodDetector'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -14,8 +15,9 @@ import { useT } from '@/lib/i18n'
 import type { Dictionary } from '@/lib/i18n'
 
 /** The primary CTA names what will be created, from the type the SMS implies. */
-function addFor(type: DetectedAccount['type'], t: Dictionary['prompts']): { label: string; icon: LucideIcon } {
+function addFor(type: DetectedAccount['type'], t: Dictionary['prompts'], addAccountLabel: string): { label: string; icon: LucideIcon } {
   if (type === 'wallet') return { label: t.addWallet, icon: Wallet }
+  if (type === 'bank_account') return { label: addAccountLabel, icon: Landmark }
   return { label: t.addCard, icon: CreditCard }
 }
 
@@ -30,11 +32,13 @@ export function SmsAccountDetectionBanner() {
   const t = useT()
   const [linkFor, setLinkFor] = useState<string | null>(null)
   const openAddPaymentMethodWithPrefill = useSettingsStore((s) => s.openAddPaymentMethodWithPrefill)
+  const openAddAccountWithPrefill = useSettingsStore((s) => s.openAddAccountWithPrefill)
+  const router = useRouter()
 
   useRegisterPrompts(
     'account-detection',
     detected.map(({ last4, provider, type, count }): Prompt => {
-      const add = addFor(type, t.prompts)
+      const add = addFor(type, t.prompts, t.accountsPage.addAccount)
       return {
         key: `pm:${last4}`,
         priority: PROMPT_PRIORITY.account,
@@ -46,7 +50,12 @@ export function SmsAccountDetectionBanner() {
           {
             label: add.label,
             variant: 'default',
-            onPress: () => openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}) }),
+            onPress: () => {
+              if (type === 'bank_account') {
+                openAddAccountWithPrefill({ provider: provider ?? '', last4 })
+                router.push('/accounts')
+              } else openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}) })
+            },
           },
           { label: t.prompts.linkExisting, variant: 'secondary', onPress: () => setLinkFor(last4) },
           { label: t.prompts.notMine, variant: 'secondary', onPress: () => settlePrompt(`pm:${last4}`) },
