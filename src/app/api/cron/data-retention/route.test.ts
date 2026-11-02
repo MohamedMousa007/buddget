@@ -8,7 +8,9 @@ chain.select = () => Promise.resolve(result)
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({ from: () => chain }) }))
 vi.mock('@/lib/server/cronAuth', () => ({ isAuthorizedCron: (r: Request) => r.headers.get('authorization') === 'Bearer ok' }))
 
-import { EMAIL_LOG_RETENTION_DAYS, GET } from './route'
+import { GET } from './route'
+
+const EMAIL_LOG_RETENTION_DAYS = 90
 
 const req = (auth?: string) => new Request('http://x/api/cron/data-retention', { headers: auth ? { authorization: auth } : {} })
 beforeEach(() => { calls.length = 0; result = { data: [{ id: 'a' }, { id: 'b' }], error: null } })

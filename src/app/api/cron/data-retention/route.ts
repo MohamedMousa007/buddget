@@ -13,7 +13,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export const maxDuration = 60
 
-export const EMAIL_LOG_RETENTION_DAYS = 90
+const EMAIL_LOG_RETENTION_DAYS = 90
 const ERASED_ADDRESS = '[erased]'
 
 export async function GET(request: Request) {
