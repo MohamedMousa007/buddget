@@ -160,8 +160,9 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
   return {
     profile: profileResult?.profile ?? local.profile,
     settings,
-    financialGoalsNotes: profileResult ? profileResult.extras.financialGoalsNotes || local.financialGoalsNotes : local.financialGoalsNotes,
-    activeBudgetPlanId: profileResult ? (profileResult.extras.activeBudgetPlanId ?? local.activeBudgetPlanId) : local.activeBudgetPlanId,
+    // A profile in the delta is the server's current row (local edits were flushed first), so a cleared plan or cleared notes stay cleared.
+    financialGoalsNotes: profileResult ? profileResult.extras.financialGoalsNotes : local.financialGoalsNotes,
+    activeBudgetPlanId: profileResult ? profileResult.extras.activeBudgetPlanId : local.activeBudgetPlanId,
     paymentMethods: applyList(local.paymentMethods as WithId[], d.paymentMethods as ListDelta<WithId>) as Snapshot['paymentMethods'],
     incomeSources: applyList(local.incomeSources, d.incomeSources),
     incomeEvents: applyList(local.incomeEvents, d.incomeEvents),

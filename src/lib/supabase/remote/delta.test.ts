@@ -70,6 +70,21 @@ describe('applyDelta', () => {
     expect(out.activeBudgetPlanId).toBe('p9')
     expect(out.financialGoalsNotes).toBe('save')
   })
+
+  it('clears the active plan and the notes when another device cleared them', () => {
+    const local = { ...emptySnapshot(), activeBudgetPlanId: 'p9', financialGoalsNotes: 'save' }
+    const profile = { profile: { id: 'u1', name: 'Sara', createdAt: 'x' }, extras: { financialGoalsNotes: '', activeBudgetPlanId: null, baseCurrency: 'EGP', secondaryCurrency: null } } as never
+    const out = applyDelta(local, noDelta({ profile }))
+    expect(out.activeBudgetPlanId).toBeNull()
+    expect(out.financialGoalsNotes).toBe('')
+  })
+
+  it('keeps the local plan and notes when the profile did not change', () => {
+    const local = { ...emptySnapshot(), activeBudgetPlanId: 'p9', financialGoalsNotes: 'save' }
+    const out = applyDelta(local, noDelta())
+    expect(out.activeBudgetPlanId).toBe('p9')
+    expect(out.financialGoalsNotes).toBe('save')
+  })
 })
 
 describe('stale cursor (full pull)', () => {

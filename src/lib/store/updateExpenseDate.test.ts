@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import { describe, it, expect } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
@@ -8,6 +9,7 @@ describe('updateExpense date move (L14)', () => {
     const id = useFinanceStore.getState().expenses.at(-1)!.id
     useFinanceStore.getState().updateExpense(id, { date: '2026-10-05' })
     const e = useFinanceStore.getState().expenses.find((x) => x.id === id)!
-    expect(e.occurredAt!.slice(0, 10)).toBe('2026-10-05')
+    // The instant is local noon on the new day; its calendar day in UTC differs in zones far from Greenwich.
+    expect(format(new Date(e.occurredAt!), 'yyyy-MM-dd')).toBe('2026-10-05')
   })
 })

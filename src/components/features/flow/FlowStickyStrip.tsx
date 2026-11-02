@@ -33,8 +33,9 @@ export function FlowStickyStrip({ visible, primary, secondary, right }: FlowStic
         <span className="truncate whitespace-nowrap text-xs text-[var(--flow-band-fg-2)]">{secondary}</span>
       </span>
       <span className="flex gap-2.5 whitespace-nowrap font-mono-numbers text-xs font-semibold">
-        {right.map((r) => (
-          <span key={r}>{r}</span>
+        {right.map((r, i) => (
+          // Two figures can read the same ("0" and "0"); the pair is positional, so the position is the key.
+          <span key={i}>{r}</span>
         ))}
       </span>
     </div>

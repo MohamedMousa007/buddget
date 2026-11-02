@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { deriveHawl, LUNAR_YEAR_DAYS } from './hawl'
+import { pinTimeZone } from '@/test/pinTimeZone'
+
+pinTimeZone('Africa/Cairo')
 
 /**
  * The precedence here is the whole point. Before this existed the due date was always

@@ -4,6 +4,7 @@ vi.mock('@/lib/navigation/navigate', () => ({ navigate: vi.fn() }))
 vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: vi.fn() }))
 
 import { resetAutoSlots } from '@/lib/buddgy/tools/autoApplyGuard'
+import { resetSameTurnMemory } from '@/lib/buddgy/tools/exec/expenses'
 import { executeCalls } from '@/lib/buddgy/client/runTurn'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { resetNavConsent } from '@/lib/buddgy/tools/navConsent'
@@ -18,6 +19,7 @@ const riskOf = (r: ReturnType<typeof add>) => (r.ok ? r.proposal.risk : 'error')
 
 beforeEach(() => {
   resetAutoSlots()
+  resetSameTurnMemory()
   resetNavConsent()
   vi.mocked(navigate).mockClear()
   useFinanceStore.setState({

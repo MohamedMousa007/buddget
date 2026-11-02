@@ -6,7 +6,7 @@
  * two could drift, and a regex could pass the gate but extract something else in production —
  * which is precisely the failure class the gates exist to prevent.
  */
-import { isSafeRegexPattern, MAX_TEMPLATE_INPUT_CHARS } from '@/lib/sms/safeRegex'
+import { isSafeRegexPattern, MAX_TEMPLATE_INPUT_CHARS, squeezeWhitespace } from '@/lib/sms/safeRegex'
 import { parseSmsDay } from '@/lib/sms/patterns'
 import { normalizeDigits, normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
@@ -101,8 +101,8 @@ export function applyMappingRules(
 
   // Normalised text first (marks stripped, Arabic digits mapped); the digit-only form is the legacy
   // fallback for stored regexes that embed a bidi mark literally.
-  const normalised = normalizeSmsText(rawMessage).slice(0, MAX_TEMPLATE_INPUT_CHARS)
-  const legacy = normalizeDigits(rawMessage).slice(0, MAX_TEMPLATE_INPUT_CHARS)
+  const normalised = squeezeWhitespace(normalizeSmsText(rawMessage).slice(0, MAX_TEMPLATE_INPUT_CHARS))
+  const legacy = squeezeWhitespace(normalizeDigits(rawMessage).slice(0, MAX_TEMPLATE_INPUT_CHARS))
   let message = normalised
   let m: RegExpExecArray | null
   try {

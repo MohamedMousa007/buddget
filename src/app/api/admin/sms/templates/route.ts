@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const safe: { updated_at: string; ai_enabled?: boolean; regex_pattern?: string } = { updated_at: now }
     if (typeof patch?.ai_enabled === 'boolean') safe.ai_enabled = patch.ai_enabled
     if (typeof patch?.regex_pattern === 'string') {
-      if (!isSafeRegexPattern(patch.regex_pattern)) return bad('Regex is too long or has nested quantifiers.')
+      if (!isSafeRegexPattern(patch.regex_pattern)) return bad('Regex is too long, nests quantifiers, or chains three or more overlapping repeats (such as \\d+\\d+\\d+).')
       try { new RegExp(patch.regex_pattern) } catch { return bad('Invalid regex pattern.') }
       safe.regex_pattern = patch.regex_pattern
     }

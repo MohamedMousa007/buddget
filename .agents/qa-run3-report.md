@@ -3,20 +3,25 @@
 Date: 2026-10-31. Branch `claude/relaxed-allen-hixdfp` (merged with `origin/main` at `ca96bd8`). All 21 skills from `petrkindlmann/qa-skills` were loaded during this run.
 Evidence tags: **[live]** read-only query on the live Supabase project, **[probe]** executed test or script, **[measured]** browser or CI measurement, **[code]** read in source, **[schema]** read in live grants/policies, **[reasoned]** inferred, not exercised. No user data was changed and no account was created.
 
+## 0. Retractions (2026-11-02)
+- **R2 is retracted.** The live database already has the trigger `guard_two_factor_flag` on `user_settings` (migration 0208), and `platform_settings.enforce_2fa_gate.mode` is `report` (not `off`), so a signed-in client write that turns 2FA off is reverted to on. My earlier claim that "no trigger guards the column" came from misreading a two-statement query (only the last result is shown). The trigger protects the true-to-false change only while the platform mode is not `off`.
+- **R3 is narrowed.** Buddgy's `delete_expense` tool refuses debt-linked expenses (`lockedReason`) when proposing and applying. Only the legacy AI action path (`aiActionHandlers.ts:534`, used by voice/legacy AI) could delete the expense alone. The store now handles every caller.
+- **R13 is downgraded to P3.** `profiles.email` is client-writable (the existing guard covers only `welcome_email_sent_at` and `data_reset_at`), but the effect is limited to the user's own support contact address.
+
 ## 1. Corrections to earlier statements in this session
 - The 83.2% line / 74.1% branch coverage I quoted applies only to the five directories in `vitest.config.ts` (`lib/utils`, `lib/savings`, `lib/debt`, `lib/sms`, `lib/supabase/remote`). UI, API routes, the store, Buddgy and admin are not measured.
 - My branch was 4 commits behind `main` when this run began. It is now merged; `tsc` is clean on the merged tree.
 - Counts in earlier summaries (24, then more) are superseded by the table below.
 
-## 2. Findings, triaged (36)
+## 2. Findings, triaged (35 after the R2 retraction)
 Priority follows the severity x scope matrix: P1 fix now, P2 fix this cycle, P3 backlog.
 
-### P1 (4)
+### P1 (3 after the retraction)
 | ID | Finding | Area | Evidence |
 |---|---|---|---|
 | R1 | SMS raw bodies kept far beyond the published policy (30 d, 7 d for rejected/OTP, never 60 d). 908 raw bodies; 703 older than 30 d; 457 older than 60 d; 118 rejected/OTP older than 7 d; oldest 136 d. The policy's rights section also says "SMS text: Not stored". | SMS, compliance | [live] [code] |
-| R2 | Email 2FA can be switched off with no re-auth: `user_settings.two_factor_email_enabled` is writable by the signed-in user (RLS + column grant, no trigger), while `/api/auth/device/check` trusts it. | Auth | [schema] (not exercised) |
-| R3 | Deleting an expense linked to a debt payment through Buddgy `delete_expense` (`buddgy/tools/exec/expenses.ts:348`) or the AI handler (`ai/aiActionHandlers.ts:534`) leaves the payment and a cleared debt behind. The UI path (`useLinkedDelete`) is safe. | Money, debts | [probe] regression test RED |
+| R2 | RETRACTED: a guard trigger exists and is active (see section 0). | Auth | [live] |
+| R3 | Deleting an expense linked to a debt payment through the legacy AI action path (`ai/aiActionHandlers.ts:534`) left the payment and a cleared debt behind. The UI path and Buddgy's tool refuse or route correctly. FIXED in the store. | Money, debts | [probe] |
 | R4 | CI is not gating anything: all 8 jobs of the latest `main` run failed in ~2 s with no steps (Actions unavailable). Separately, 3 tests fail deterministically in `America/New_York` and UTC, so CI's New York leg would be red even if it ran. | Process | [measured] GitHub API + local runs |
 
 ### P2 (18)
@@ -30,7 +35,7 @@ Priority follows the severity x scope matrix: P1 fix now, P2 fix this cycle, P3 
 | R10 | Account deletion never removes support ticket subjects or `support_ticket_messages` bodies (ticket `user_id` is set null). No tickets exist today. | Compliance | [code] |
 | R11 | Biometric sign-in mints a magic-link session from the device secret alone; whether it skips email 2FA is unverified. | Auth | [reasoned] |
 | R12 | `/api/ai` passes client-supplied `systemInstruction`, `tier` and `grounded` to Gemini (quota and size caps apply). | AI cost | [code] |
-| R13 | `profiles.email` is client-writable; `support/submit` reads it as the requester email. Impact unconfirmed. | Auth, profile | [schema] |
+| R13 | (now P3) `profiles.email` is client-writable; `support/submit` reads it as the requester email. | Auth, profile | [live] |
 | R14 | Clearing the active budget plan does not propagate across devices (`delta.ts:164`, `merge.ts:41` use `??`). | Sync | [code] |
 | R15 | Contrast: 8 light-mode nodes on 5 routes and 17 dark-mode nodes (13 on `/reports`); 2 heading-order, 1 landmark issue. | Accessibility | [measured] axe |
 | R16 | Touch targets under 44 px are widespread (Flow/Income 23-34 per page, Reports ~20, Savings 6-18, sign-in arrow 32 px, language toggle 36 px). Violates `CLAUDE.md`. | UI | [measured] |
@@ -71,7 +76,7 @@ Revert-to-verify has not been run, because no fix exists yet.
 R19 reproduces with `TZ=America/New_York npx vitest run src/lib/goals/goalDate.test.ts src/lib/savings/hawl.test.ts` and `npx vitest run --sequence.shuffle --sequence.seed=11`.
 
 ## 4. Release readiness
-QA recommendation: **NO-GO for any release that relies on the privacy policy or on 2FA as written** (R1, R2). Conditional on those, the build itself is releasable. No named approver has decided; none is recorded here.
+QA recommendation: **NO-GO for any release that relies on the privacy policy as written** (R1). Conditional on those, the build itself is releasable. No named approver has decided; none is recorded here.
 
 | Check | Candidate / environment | Result | Gap |
 |---|---|---|---|
@@ -91,3 +96,22 @@ QA recommendation: **NO-GO for any release that relies on the privacy policy or 
 
 ## 5. Not covered
 Android and iOS devices, push/SMS/biometric flows, Add Expense and other signed-in forms (they require a real session; I did not create an account on the production database), the AI eval suite, Garak red-team scan, Lighthouse on signed-in routes, visual baselines, most of the 455 components and the 219 migrations in detail, and a keyboard-only focus sweep.
+
+## 6. Fix status (2026-11-02)
+Gates on the fixed tree: lint 0 errors (45 warnings, unchanged); `tsc` clean; full suite 3,931 passed / 188 skipped in Africa/Cairo, America/New_York and UTC (New York and UTC used to fail 3 tests each); production build exit 0; duplicate-key warning 0 on eight routes (was 3-4 per load).
+
+| ID | Fix | Test |
+|---|---|---|
+| R3 | `deleteExpense` hands a payment-linked expense to `deleteDebtPayment` (removes both, reopens a cleared debt) | `store/deleteExpenseLinked.test.ts` |
+| R5 | 54 date fields in the import schema now validate (real calendar date, ISO timestamp, or empty) | `store/financeImportDates.test.ts` |
+| R6 | `safeRegex` rejects 3+ overlapping unbounded atoms in a row and more than 2 `.` wildcards; input cap 2,000 to 1,000; runs of 8+ whitespace characters are squeezed before a template runs; results cached | `sms/safeRegex.test.ts` (real-shaped templates still accepted; 50 SMS test files pass) |
+| R14 | `applyDelta` takes the server's `activeBudgetPlanId` and notes when the profile row arrives | `remote/delta.test.ts` |
+| R18 | `database.types.ts` regenerated from the live schema; two crash RPC call sites cast because generated argument types are non-null | `tsc` |
+| R19 | Cairo-bound tests pin their zone (`src/test/pinTimeZone.ts`); `updateExpenseDate` compares the local day; `useNetworkStatus` restores its web mock; guardrails test resets the same-turn memory | 6 shuffle seeds x 2 files, 5 time zones |
+| R20 | Coverage floor raised to 78/76/78/68 (lines/statements/functions/branches) over the five measured directories | `vitest.config.ts` |
+| R22 | `FlowStickyStrip` keyed spans by their text; two equal figures collided. Now keyed by position | browser check, 8 routes |
+| R23 | Notifications use the localized relative-time formatter | `tsc`, route tests |
+| R24 | Notifications page title is now the `h1` | - |
+| R28 (part) | `voice/transcribe` no longer returns the raw upstream error | route tests |
+
+Still open (need a decision or are outside code): R1 SMS retention purge (deletes user data; needs owner confirmation), R4 CI (Actions unavailable), R7-R9 live data repairs, R10 ticket erasure, R11 biometric vs 2FA, R12 `/api/ai` relay, R15-R17 UI contrast, touch targets and the Net-worth caption, R21 mobile performance, R25-R27, R29-R36.
