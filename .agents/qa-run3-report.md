@@ -97,21 +97,5 @@ QA recommendation: **NO-GO for any release that relies on the privacy policy as 
 ## 5. Not covered
 Android and iOS devices, push/SMS/biometric flows, Add Expense and other signed-in forms (they require a real session; I did not create an account on the production database), the AI eval suite, Garak red-team scan, Lighthouse on signed-in routes, visual baselines, most of the 455 components and the 219 migrations in detail, and a keyboard-only focus sweep.
 
-## 6. Fix status (2026-11-02)
-Gates on the fixed tree: lint 0 errors (45 warnings, unchanged); `tsc` clean; full suite 3,931 passed / 188 skipped in Africa/Cairo, America/New_York and UTC (New York and UTC used to fail 3 tests each); production build exit 0; duplicate-key warning 0 on eight routes (was 3-4 per load).
-
-| ID | Fix | Test |
-|---|---|---|
-| R3 | `deleteExpense` hands a payment-linked expense to `deleteDebtPayment` (removes both, reopens a cleared debt) | `store/deleteExpenseLinked.test.ts` |
-| R5 | 54 date fields in the import schema now validate (real calendar date, ISO timestamp, or empty) | `store/financeImportDates.test.ts` |
-| R6 | `safeRegex` rejects 3+ overlapping unbounded atoms in a row and more than 2 `.` wildcards; input cap 2,000 to 1,000; runs of 8+ whitespace characters are squeezed before a template runs; results cached | `sms/safeRegex.test.ts` (real-shaped templates still accepted; 50 SMS test files pass) |
-| R14 | `applyDelta` takes the server's `activeBudgetPlanId` and notes when the profile row arrives | `remote/delta.test.ts` |
-| R18 | `database.types.ts` regenerated from the live schema; two crash RPC call sites cast because generated argument types are non-null | `tsc` |
-| R19 | Cairo-bound tests pin their zone (`src/test/pinTimeZone.ts`); `updateExpenseDate` compares the local day; `useNetworkStatus` restores its web mock; guardrails test resets the same-turn memory | 6 shuffle seeds x 2 files, 5 time zones |
-| R20 | Coverage floor raised to 78/76/78/68 (lines/statements/functions/branches) over the five measured directories | `vitest.config.ts` |
-| R22 | `FlowStickyStrip` keyed spans by their text; two equal figures collided. Now keyed by position | browser check, 8 routes |
-| R23 | Notifications use the localized relative-time formatter | `tsc`, route tests |
-| R24 | Notifications page title is now the `h1` | - |
-| R28 (part) | `voice/transcribe` no longer returns the raw upstream error | route tests |
-
-Still open (need a decision or are outside code): R1 SMS retention purge (deletes user data; needs owner confirmation), R4 CI (Actions unavailable), R7-R9 live data repairs, R10 ticket erasure, R11 biometric vs 2FA, R12 `/api/ai` relay, R15-R17 UI contrast, touch targets and the Net-worth caption, R21 mobile performance, R25-R27, R29-R36.
+## 6. Fix status
+No fixes are applied. A set of code fixes was written and tested on 2026-11-02, then reverted at the owner's request (this run is for finding bugs, not fixing them). The findings above stand as written, apart from the retractions in section 0. The consolidated plan with causes, priorities and proposed fixes is in `docs/QA_ROUND_3_PLAN.md`.

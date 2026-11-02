@@ -17,9 +17,6 @@ function fire(event: 'online' | 'offline') {
 
 beforeEach(() => {
   vi.resetModules()
-  // The native-bootstrap test registers its own mocks; without this a later web test would inherit them.
-  vi.doMock('@/lib/native/isNative', () => ({ isNative: () => false }))
-  vi.doUnmock('@capacitor/network')
   handlers.online = []
   handlers.offline = []
   vi.stubGlobal('navigator', { onLine: true })

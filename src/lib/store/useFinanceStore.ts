@@ -319,15 +319,9 @@ export const useFinanceStore = create<FinanceStore>()(
 
       deleteExpense: (id) => {
         const removed = get().expenses.find((e) => e.id === id)
-        // A payment and its expense go together: removing only the expense would leave the debt paid with no cash leg.
-        const pairedPayment = removed?.linkedDebtPaymentId
-        if (pairedPayment && get().debtPayments.some((p) => p.id === pairedPayment)) {
-          get().deleteDebtPayment(pairedPayment)
-        } else {
-          set((state) => ({
-            expenses: state.expenses.filter((e) => e.id !== id),
-          }))
-        }
+        set((state) => ({
+          expenses: state.expenses.filter((e) => e.id !== id),
+        }))
         if (removed?.receiptId) dropExpenseReceipt(removed.receiptId, get().receipts, get().deleteReceipt)
       },
 

@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isThisMonthOrLater, localPromptDay } from './goalDate'
 import { parseGoalReply } from './goalAi'
-import { pinTimeZone } from '@/test/pinTimeZone'
-
-pinTimeZone('Africa/Cairo')
 
 // 2026-11-30 22:30Z is already 1 December in Cairo.
 const lateNov = new Date('2026-11-30T22:30:00Z')

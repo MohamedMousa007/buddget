@@ -32,7 +32,6 @@ export async function GET(request: Request) {
   let recorded = 0
   for (const c of crashes) {
     const userId = c.email ? ((await service.rpc('user_id_by_email', { p_email: c.email })).data ?? null) : null
-    // The generated argument types are non-null; the function accepts null for the optional ones.
     const { error } = await service.rpc('record_client_crash_v2', {
       p_fingerprint: c.fingerprint,
       p_release: c.release,
@@ -48,7 +47,7 @@ export async function GET(request: Request) {
       p_sentry_url: null,
       p_seen: c.seen,
       p_event_id: `asc:${c.submissionId}`,
-    } as never)
+    })
     if (error) console.error('[cron/ios-crashes] record failed', error.code)
     else recorded += 1
   }

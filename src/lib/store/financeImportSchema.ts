@@ -1,23 +1,6 @@
 import { z } from 'zod'
 import type { ExpenseCategory } from '@/lib/store/types'
 
-const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
-
-/** A real calendar date (`2026-02-30` is not one), an ISO timestamp, or empty for "no date". Anything else would crash date formatting later. */
-function isDateText(value: string): boolean {
-  if (value === '') return true
-  const m = DATE_ONLY.exec(value)
-  if (m) {
-    const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
-    const t = new Date(Date.UTC(y, mo - 1, d))
-    return t.getUTCFullYear() === y && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d
-  }
-  return /^\d{4}-\d{2}-\d{2}T/.test(value) && !Number.isNaN(Date.parse(value))
-}
-
-const dateText = z.string().refine(isDateText, 'Expected a date (YYYY-MM-DD) or an ISO timestamp')
-
-
 const GCC_FIATS = [
   'KWD',
   'QAR',
@@ -96,7 +79,7 @@ export const importDataSchema = z.object({
       transportMode: z.enum(['public', 'car', 'taxi', 'walk']).nullable().optional(),
       monthlyRent: z.number().nullable().optional(),
       rentIncludesUtilities: z.boolean().optional(),
-      createdAt: dateText,
+      createdAt: z.string(),
     })
     .optional(),
   settings: z
@@ -114,7 +97,7 @@ export const importDataSchema = z.object({
       noIncomeDeclared: z.boolean().optional(),
       showAllCurrenciesInForms: z.boolean().optional(),
       twoFactorEmailEnabled: z.boolean().optional(),
-      legacyOnboardingMigratedAt: dateText.nullable().optional(),
+      legacyOnboardingMigratedAt: z.string().nullable().optional(),
       dashboardLayout: z.enum(['standard', 'minimal']).optional(),
       weekStartDay: z.union([z.literal(0), z.literal(1), z.literal(6)]).optional(),
       wealthGoldStrip: z.enum(['collapsed', 'expanded', 'hidden']).optional(),
@@ -132,10 +115,10 @@ export const importDataSchema = z.object({
         recurringFrequency: z.enum(['monthly', 'biweekly', 'weekly']).optional(),
         dayOfMonth: z.number().int().min(1).max(31).optional(),
         notes: z.string().optional(),
-        createdAt: dateText,
-        updatedAt: dateText.optional(),
-        effectiveStart: dateText.optional(),
-        effectiveEnd: dateText.nullable().optional(),
+        createdAt: z.string(),
+        updatedAt: z.string().optional(),
+        effectiveStart: z.string().optional(),
+        effectiveEnd: z.string().nullable().optional(),
         sharedPlanId: z.string().uuid().nullable().optional(),
         sourceType: z
           .enum([
@@ -166,7 +149,7 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: dateText.optional(),
+        occurredAt: z.string().optional(),
         templateId: z.string().nullable().optional(),
         name: z.string(),
         amount: z.number(),
@@ -184,7 +167,7 @@ export const importDataSchema = z.object({
             'other',
           ])
           .optional(),
-        receivedDate: dateText,
+        receivedDate: z.string(),
         status: z.enum(['confirmed', 'projected', 'late', 'missed', 'partial']),
         paymentMethodId: z.string().optional(),
         linkedSavingsAccountId: z.string().optional(),
@@ -192,8 +175,8 @@ export const importDataSchema = z.object({
         sharedPlanId: z.string().uuid().nullable().optional(),
         smsLogId: z.string().nullable().optional(),
         notes: z.string().optional(),
-        createdAt: dateText,
-        updatedAt: dateText.optional(),
+        createdAt: z.string(),
+        updatedAt: z.string().optional(),
       })
         // smsLogId is dropped on import: a restore into the same account would hit the unique booking index (23505).
         .transform(({ smsLogId: _smsLogId, ...o }) => ({ ...o, updatedAt: o.updatedAt ?? o.createdAt }))
@@ -203,12 +186,12 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: dateText.optional(),
+        occurredAt: z.string().optional(),
         toPaymentMethodId: z.string().optional(),
         spendExclusion: z.enum(['method', 'manual', 'for_someone']).optional(),
         owedBy: z.string().optional(),
-        owedSettledAt: dateText.optional(),
-        date: dateText,
+        owedSettledAt: z.string().optional(),
+        date: z.string(),
         description: z.string(),
         category: z.string(),
         subcategory: z.string().optional(),
@@ -218,8 +201,8 @@ export const importDataSchema = z.object({
         paymentMethodId: z.string(),
         isRecurring: z.boolean(),
         notes: z.string().optional(),
-        createdAt: dateText,
-        updatedAt: dateText,
+        createdAt: z.string(),
+        updatedAt: z.string(),
         sharedPlanId: z.string().uuid().nullable().optional(),
         linkedDebtId: z.string().optional(),
         isDebtPayment: z.boolean().optional(),
@@ -255,7 +238,7 @@ export const importDataSchema = z.object({
     )
     .optional(),
   budgetPlanActivations: z
-    .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: dateText, createdAt: dateText }))
+    .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: z.string(), createdAt: z.string() }))
     .optional(),
   accountAdjustments: z
     .array(
@@ -264,10 +247,10 @@ export const importDataSchema = z.object({
         paymentMethodId: z.string(),
         delta: z.number(),
         reason: z.enum(['manual_update', 'gap', 'opening_correction']),
-        occurredAt: dateText,
+        occurredAt: z.string(),
         note: z.string().optional(),
-        createdAt: dateText,
-        updatedAt: dateText,
+        createdAt: z.string(),
+        updatedAt: z.string(),
       }),
     )
     .optional(),
@@ -279,8 +262,8 @@ export const importDataSchema = z.object({
         kind: z.enum(['fact', 'preference', 'constraint']),
         source: z.enum(['budget', 'chat', 'settings']),
         status: z.enum(['proposed', 'active']),
-        createdAt: dateText,
-        updatedAt: dateText,
+        createdAt: z.string(),
+        updatedAt: z.string(),
       }),
     )
     .max(40)
@@ -290,8 +273,8 @@ export const importDataSchema = z.object({
       z.object({
         id: z.string(),
         name: z.string(),
-        createdAt: dateText,
-        updatedAt: dateText.optional(),
+        createdAt: z.string(),
+        updatedAt: z.string().optional(),
         household: z.enum(['solo', 'partner', 'family']).nullable().optional(),
         buddgyGuidedComplete: z.boolean().optional(),
         status: z.enum(['draft', 'ready', 'archived']).optional(),
@@ -364,9 +347,9 @@ export const importDataSchema = z.object({
         amount: z.number(),
         currency: fiatCurrencySchema,
         notes: z.string().optional(),
-        asOfDate: dateText.optional(),
-        createdAt: dateText,
-        updatedAt: dateText,
+        asOfDate: z.string().optional(),
+        createdAt: z.string(),
+        updatedAt: z.string(),
       })
     )
     .optional(),
@@ -383,7 +366,7 @@ export const importDataSchema = z.object({
         targetAmount: z.number().optional(),
         currency: savingsCurrencySchema,
         currentBalance: z.number(),
-        createdAt: dateText,
+        createdAt: z.string(),
         notes: z.string().optional(),
         autoSave: z.unknown().optional(),
       })
@@ -398,10 +381,10 @@ export const importDataSchema = z.object({
         currency: savingsCurrencySchema,
         frequency: z.literal('monthly'),
         dayOfMonth: z.number().int().min(1).max(28),
-        nextDueDate: dateText,
+        nextDueDate: z.string(),
         isActive: z.boolean(),
         notes: z.string().optional(),
-        createdAt: dateText,
+        createdAt: z.string(),
       })
     )
     .optional(),
@@ -409,13 +392,13 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: dateText.optional(),
+        occurredAt: z.string().optional(),
         paymentMethodId: z.string().optional(),
         accountId: z.string(),
         type: z.enum(['deposit', 'withdrawal']),
         amount: z.number(),
         currency: savingsCurrencySchema,
-        date: dateText,
+        date: z.string(),
         source: z.string().optional(),
         notes: z.string().optional(),
         isAutoSave: z.boolean().optional(),
@@ -428,8 +411,8 @@ export const importDataSchema = z.object({
         id: z.string(),
         parentId: z.string().optional(),
         openingBalance: z.number().optional(),
-        openingAt: dateText.optional(),
-        closedAt: dateText.optional(),
+        openingAt: z.string().optional(),
+        closedAt: z.string().optional(),
         trackSms: z.boolean().optional(),
         excluded: z.boolean().optional(),
         name: z.string(),
@@ -456,9 +439,9 @@ export const importDataSchema = z.object({
         description: z.string().optional(),
         notes: z.string().optional(),
         sharedPlanId: z.string().uuid().nullable().optional(),
-        createdAt: dateText,
+        createdAt: z.string(),
         status: z.enum(['active', 'cleared']).optional(),
-        clearedAt: dateText.optional(),
+        clearedAt: z.string().optional(),
         emoji: z.string().optional(),
         debtType: z.enum(['personal', 'installment', 'general', 'credit_card']).optional(),
         creditLimit: z.number().optional(),
@@ -474,7 +457,7 @@ export const importDataSchema = z.object({
         installmentCount: z.number().optional(),
         installmentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']).optional(),
         installmentAmount: z.number().optional(),
-        startDate: dateText.optional(),
+        startDate: z.string().optional(),
         interestFree: z.boolean().optional(),
         creditor: z.string().optional(),
         receivedVia: z
@@ -482,7 +465,7 @@ export const importDataSchema = z.object({
           .optional(),
         goal: z
           .object({
-            targetDate: dateText,
+            targetDate: z.string(),
             paymentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']),
             calculatedAmount: z.number(),
           })
@@ -494,9 +477,9 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: dateText.optional(),
+        occurredAt: z.string().optional(),
         debtId: z.string(),
-        date: dateText,
+        date: z.string(),
         amountPaid: z.number(),
         paymentCurrency: z.string().optional(),
         originalAmount: z.number().optional(),
@@ -504,7 +487,7 @@ export const importDataSchema = z.object({
         rateAtEntry: z.number().optional(),
         notes: z.string().optional(),
         sharedPlanId: z.string().uuid().nullable().optional(),
-        createdAt: dateText,
+        createdAt: z.string(),
       })
     )
     .optional(),
@@ -517,10 +500,10 @@ export const importDataSchema = z.object({
         currency: currencySchema,
         paymentMethodId: z.string(),
         frequency: z.enum(['monthly', 'biweekly', 'weekly', 'quarterly', 'annually']),
-        nextDueDate: dateText,
+        nextDueDate: z.string(),
         isActive: z.boolean(),
         notes: z.string().optional(),
-        createdAt: dateText,
+        createdAt: z.string(),
       })
     )
     .optional(),
@@ -540,23 +523,23 @@ export const importDataSchema = z.object({
         currency: fiatCurrencySchema,
         billingCycle: z.enum(['monthly', 'quarterly', 'semiannual', 'yearly', 'weekly']),
         billingDay: z.number().int().min(1).max(31),
-        startDate: dateText,
-        nextBillingDate: dateText.nullable(),
+        startDate: z.string(),
+        nextBillingDate: z.string().nullable(),
         paymentMethodId: z.string().nullable(),
         expenseCategory: z.string(),
         linkedRecurringExpenseId: z.string().nullable(),
         status: z.enum(['active', 'cancelled', 'paused', 'trial']),
         notes: z.string().nullable(),
-        createdAt: dateText,
-        cancelledAt: dateText.nullable(),
-        updatedAt: dateText.optional(),
+        createdAt: z.string(),
+        cancelledAt: z.string().nullable(),
+        updatedAt: z.string().optional(),
         tracking: z.enum(['sms', 'ask', 'log']).optional(),
         reminder: z.boolean().optional(),
-        trialEnd: dateText.nullable().optional(),
-        endsOn: dateText.nullable().optional(),
-        pausedAt: dateText.nullable().optional(),
+        trialEnd: z.string().nullable().optional(),
+        endsOn: z.string().nullable().optional(),
+        pausedAt: z.string().nullable().optional(),
         priceHistory: z.array(z.object({ amount: z.number(), from: z.string() })).optional(),
-        pendingPlanFrom: dateText.nullable().optional(),
+        pendingPlanFrom: z.string().nullable().optional(),
         sharedWith: z.array(z.string()).nullable().optional(),
         myShare: z.number().nullable().optional(),
       })
@@ -590,7 +573,7 @@ export const importDataSchema = z.object({
         targetAmount: z.number().nullable(),
         currency: savingsCurrencySchema,
         manualCurrentAmount: z.number(),
-        targetDate: dateText.nullable(),
+        targetDate: z.string().nullable(),
         linkedSavingsAccountIds: z.array(z.string()),
         linkedDebtIds: z.array(z.string()),
         monthlySpendingLimit: z.number().nullable(),
@@ -601,10 +584,10 @@ export const importDataSchema = z.object({
         fundingMode: z.enum(['share', 'fixed', 'manual']).optional(),
         sharePct: z.number().nullable().optional(),
         frequency: z.enum(['monthly', 'quarterly']).optional(),
-        planStart: dateText.nullable().optional(),
+        planStart: z.string().nullable().optional(),
         notes: z.string().nullable(),
-        createdAt: dateText,
-        achievedAt: dateText.nullable(),
+        createdAt: z.string(),
+        achievedAt: z.string().nullable(),
       })
     )
     .optional(),

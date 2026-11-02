@@ -1,9 +1,9 @@
 'use client'
 
 import { PageBody } from '@/components/layout/PageContainer'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Bell, MessageSquare, ShieldCheck, CheckCheck } from 'lucide-react'
-import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
+import { formatDistanceToNow } from 'date-fns'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { useT } from '@/lib/i18n'
@@ -27,22 +27,15 @@ export default function NotificationsPage() {
   const t = useT()
   const { notifications, unreadCount, markAllRead } = useNotifications()
   const { isEnabled, lastReceivedAt } = useSmsTracking()
-  const { formatRelativeTime } = useLocalizedFormatters()
-  const relativeTime = useCallback((iso: string): string => {
-    try {
-      return formatRelativeTime(iso)
-    } catch {
-      return ''
-    }
-  }, [formatRelativeTime])
 
   const smsStatus = useMemo(() => {
     if (!isEnabled) return null
     if (lastReceivedAt) {
-      return { connected: true, label: t.smsTracking.iosStatusConnected(relativeTime(lastReceivedAt)) }
+      const rel = formatDistanceToNow(new Date(lastReceivedAt), { addSuffix: true })
+      return { connected: true, label: t.smsTracking.iosStatusConnected(rel) }
     }
     return { connected: false, label: t.smsTracking.iosStatusWaiting }
-  }, [isEnabled, lastReceivedAt, t, relativeTime])
+  }, [isEnabled, lastReceivedAt, t])
 
   const smsCard = (className?: string) =>
     smsStatus ? (
@@ -71,9 +64,9 @@ export default function NotificationsPage() {
               <Bell className="h-4 w-4" />
             </span>
             <div>
-              <h1 className="text-base lg:text-xl font-semibold text-[var(--color-brand-text-primary)]">
+              <h2 className="text-base lg:text-xl font-semibold text-[var(--color-brand-text-primary)]">
                 {t.notifications.title}
-              </h1>
+              </h2>
               {unreadCount > 0 ? (
                 <p className="text-xs text-[var(--color-brand-text-muted)]">{unreadCount}</p>
               ) : null}
@@ -131,4 +124,12 @@ export default function NotificationsPage() {
       </PageBody>
     </div>
   )
+}
+
+function relativeTime(iso: string): string {
+  try {
+    return formatDistanceToNow(new Date(iso), { addSuffix: true })
+  } catch {
+    return ''
+  }
 }

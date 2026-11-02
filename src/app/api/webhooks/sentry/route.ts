@@ -38,10 +38,9 @@ export async function POST(request: Request) {
     p_sentry_url: crash.url,
     p_seen: crash.seen,
   }
-  // The generated argument types are non-null; these functions accept null for the optional ones.
-  let { error } = await service.rpc('record_client_crash_v2', { ...args, p_event_id: crash.eventId } as never)
+  let { error } = await service.rpc('record_client_crash_v2', { ...args, p_event_id: crash.eventId })
   // Until migration 0223 is applied, v2 does not exist: fall back to the original function.
-  if (error?.code === 'PGRST202') ({ error } = await service.rpc('record_client_crash', args as never))
+  if (error?.code === 'PGRST202') ({ error } = await service.rpc('record_client_crash', args))
   if (error) return NextResponse.json({ error: 'Could not record' }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
