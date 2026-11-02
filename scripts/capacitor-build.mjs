@@ -44,6 +44,8 @@ const STASH_TARGETS = [
   { from: 'src/instrumentation.ts', to: '.cap-stash/instrumentation.ts' },
   { from: 'src/instrumentation-node.ts', to: '.cap-stash/instrumentation-node.ts' },
   { from: 'src/app/auth/callback', to: '.cap-stash/auth-callback' },
+  // Catch-all that renders the branded 404: a dynamic route cannot be exported without generateStaticParams, and the export already emits 404.html.
+  { from: 'src/app/(app)/[...slug]', to: '.cap-stash/app-catch-all' },
   { from: 'src/app/setup', to: '.cap-stash/setup' },
   { from: 'src/app/sitemap.ts', to: '.cap-stash/sitemap.ts' },
   // The marketing website is web-only: static pages with their own root layouts.
