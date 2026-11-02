@@ -1,18 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { isRateLimited } from '@/lib/server/rateLimit'
 
-const WINDOW_MS = 60_000
+const WINDOW_SECONDS = 60
 const MAX_PER_WINDOW = 5
-const hits = new Map<string, number[]>()
-
-function allowed(ip: string): boolean {
-  const now = Date.now()
-  const recent = (hits.get(ip) ?? []).filter((t) => t > now - WINDOW_MS)
-  recent.push(now)
-  hits.set(ip, recent)
-  return recent.length <= MAX_PER_WINDOW
-}
 
 const bodySchema = z.object({
   kind: z.enum(['waitlist', 'contact']),
@@ -26,7 +18,9 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (!allowed(ip)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  const service = createServiceRoleClient()
+  // Shared across instances (Postgres); a database hiccup must not lose a sign-up, so it fails open like check-email.
+  if (await isRateLimited(service, `site-lead:${ip}`, WINDOW_SECONDS, MAX_PER_WINDOW, true)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 
   let json: unknown
   try { json = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
@@ -36,7 +30,7 @@ export async function POST(request: Request) {
   const { kind, locale, email, name, message } = parsed.data
   if (kind === 'contact' && !message) return NextResponse.json({ error: 'Message required' }, { status: 400 })
 
-  const { error } = await createServiceRoleClient().from('site_leads').insert({ kind, locale, email, name: name ?? null, message: message ?? null })
+  const { error } = await service.from('site_leads').insert({ kind, locale, email, name: name ?? null, message: message ?? null })
   // A repeat waitlist sign-up hits the unique index; the person is already on the list, so that is a success.
   if (error && error.code !== '23505') {
     console.error('[site/lead] insert failed', error.code)

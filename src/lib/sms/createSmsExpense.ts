@@ -359,14 +359,14 @@ async function findUniqueByLast4(
 
   const { data: all, error: listError } = await service
     .from('payment_methods')
-    .select('id, last4')
+    .select('id, last4, last4_aliases')
     .eq('user_id', userId)
     .is('deleted_at', null)
   if (listError) {
     console.warn('[sms/account] method lookup failed', listError.message)
     return { id: null, ambiguous: false }
   }
-  return matchByTail((all ?? []) as { id: string; last4: string | null }[], last4)
+  return matchByTail(((all ?? []) as { id: string; last4: string | null; last4_aliases?: string[] | null }[]).map((m) => ({ id: m.id, last4: m.last4, last4Aliases: m.last4_aliases })), last4)
 }
 
 /**

@@ -95,6 +95,8 @@
 
 /* ── Light theme (default) ── */
 :root {
+  /* The dark floor shared by the welcome, lock and landing screens (they have no light variant). */
+  --auth-floor: linear-gradient(180deg, #0E1614 0%, #0A100F 55%, #070C0B 100%);
   /* Layout foundation: header heights (excl. safe-area inset), sidebar, page widths. */
   --app-header-h: 57px;
   --app-header-h-lg: 48px;

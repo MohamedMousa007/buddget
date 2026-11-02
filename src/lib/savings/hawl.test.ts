@@ -23,7 +23,7 @@ describe('deriveHawl', () => {
   })
 
   it('reads a late-night payment timestamp as the local day', () => {
-    const h = deriveHawl({ lastPaidDate: '2025-05-31T22:30:00.000Z', createdAt })
+    const h = deriveHawl({ lastPaidDate: new Date(2025, 5, 1, 0, 30).toISOString(), createdAt })
     expect(h.dueDate).toBe('2026-05-21')
   })
 

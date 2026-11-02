@@ -399,7 +399,8 @@ describe('delete_debt', () => {
     if (!p.ok) return
     const slices = () => {
       const { debts, debtPayments, recurringDebtPayments, goals, expenses } = st()
-      return structuredClone({ debts, debtPayments, recurringDebtPayments, goals, expenses })
+      // Undo re-stamps restored rows (so they win the sync tiebreak), so `updatedAt` is compared separately.
+      return structuredClone({ debts, debtPayments, recurringDebtPayments, goals, expenses: expenses.map(({ updatedAt: _u, ...rest }) => rest) })
     }
     const before = slices()
     const applied = write('delete_debt').apply(p.proposal, ctx)

@@ -22,8 +22,9 @@ export default defineConfig({
       ],
       exclude: ['**/*.test.ts', '**/__tests__/**'],
       reporter: ['text-summary', 'lcov'],
-      // Modest floor against regression; raise it once the first measured run is in.
-      thresholds: { lines: 40, statements: 40, functions: 40, branches: 30 },
+      // A ratchet under the measured run (2026-11-02: lines 83.6, statements 81.1, functions 84.5, branches 74.4): raise it
+      // when coverage rises, never lower it. Only these directories are measured; UI, routes and the store are not.
+      thresholds: { lines: 75, statements: 73, functions: 75, branches: 65 },
     },
   },
   resolve: {

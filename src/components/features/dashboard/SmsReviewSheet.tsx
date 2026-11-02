@@ -1,5 +1,5 @@
 'use client'
-import { tailsMatch } from '@/lib/accounts/identity/accountRef'
+import { answersTo } from '@/lib/accounts/identity/accountRef'
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format } from 'date-fns'
@@ -100,7 +100,7 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem,
           const credit = item.kind ? CREDIT_KINDS.has(item.kind) : false
           const busy = busyId === item.id
           const match = matches.get(item.id)
-          const pm = item.account_last4 ? paymentMethods.find((m) => m.last4 === item.account_last4 || tailsMatch(m.last4, item.account_last4)) : undefined
+          const pm = item.account_last4 ? paymentMethods.find((m) => answersTo(m, item.account_last4)) : undefined
           const instrument = item.account_last4
             ? pm
               ? methodLabel(pm)

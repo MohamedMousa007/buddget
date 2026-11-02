@@ -305,6 +305,7 @@ export const en: Dictionary = {
     unplacedReview: 'Review',
     unplacedAttach: (n) => `Add ${n} to this account`,
     unplacedAccount: 'Account',
+    reattached: (n) => `${n} earlier bank ${n === 1 ? 'message' : 'messages'} added to this account`,
     bankAccounts: 'Bank accounts',
     walletsCash: 'Wallets and cash',
     addAccountOrCard: 'Add account or card',

@@ -89,3 +89,30 @@ R3 (legacy AI delete refuses debt-linked expenses); V1+R6 (learned regex is safe
 **Native (edited, not built or run here):** N1, N2, N5 are Kotlin/Swift edits without a compile in this environment; Android `SmsGateTest` gained two tests. They will compile when the apps are built.
 
 **Open, waiting for the owner:** R10 (delete the text of a deleted user's support tickets, or keep it as anonymised staff history: current code already erases the requester email and context); R4 (CI choice); R30 (dashboard toggle); R35 (privacy label).
+
+## Resolution log (batches 4-5, 2026-11-02, after the owner's decisions)
+
+**Owner decisions applied:** R10 keep bug, feature and praise tickets as history and erase the rest; R4 local gate only; R35 update the manifest for store approval.
+
+**Fixed (tests added):**
+- **R10:** on account deletion the subject and messages of private tickets (support, billing, account, other) are blanked to `[deleted]` before the sign-in is deleted; bug, feature and praise tickets are kept. Requester email and context were already erased.
+- **R4:** `npm run verify` (`scripts/verify.sh`) is the gate: lint, types, tests in Cairo with the coverage floor, tests in New York, migration check, dependency audit, production build. `CLAUDE.md` now names it. CI is not relied on.
+- **R19:** zone-dependent fixtures rewritten (goal dates, hawl) and pass in Cairo, New York, UTC and UTC+14; order-dependent tests fixed (network status mock leak, Buddgy same-turn memory); a millisecond race in the sync tests removed at its source (`emptySnapshot` now has a fixed profile stamp). Shuffled runs with five seeds pass.
+- **R20:** measured coverage (lines 83.6, statements 81.1, functions 84.5, branches 74.4) is now protected by a ratchet (75 / 73 / 75 / 65) inside the gate.
+- **R35:** `PrivacyInfo.xcprivacy` declares the 12 collected data types (linked, no tracking); `docs/STORE_PRIVACY.md` has the App Store label, the Play data-safety answers and the approval risks (the Play SMS permission declaration is the main one).
+- **R36:** `middleware.ts` is now `proxy.ts`; CSP, nonce and site routing headers compared before and after on a running server and are identical; the native build stash list and docs follow.
+- **R27:** the dark auth floor gradient is one token (`--auth-floor`) used by the welcome, lock and landing screens. The remaining hex values are brand marks (Google logo, avatar share palette) or are parsed as hex by `rgba()`/`inkOn()`, so they stay.
+- **R29:** the site lead form uses the shared database limiter; `check-email` already did, and the Buddgy per-minute auto-apply cap is correctly per session.
+- **R32:** new daily `data-retention` cron erases the address of `email_log` rows with no user after 90 days.
+- **V3:** deleting a debt, a savings account or a recurring expense clears the ids that pointed at it (expenses, income events and sources, subscriptions) and keeps the rows; Buddgy's undo for debt and pocket deletes restores the links.
+- **R33 / A11:** messages waiting on the user and accounts seen in messages stay visible for 30 days (was 7), so an `add_failed` message no longer disappears from review. The profile without settings no longer exists.
+- **Account detection (A5-A10, A14 in part), migration 0226 applied:** accounts can hold alias numbers (`payment_methods.last4_aliases`); linking a detected number adds an alias instead of overwriting; server and client matching, balance reports and detection are alias-aware; detection groups per bank and merges `001`/`0001`, with prompt keys widened only when two banks share digits; a detected debit card is suggested the single account at the same bank as its parent; adding or linking an account places earlier unplaced bank messages on it with Undo; the Accounts page lists anything still unplaced.
+
+**Checked and closed without a change:**
+- **R31:** the three high advisories are one build-time chain (`serialize-javascript` through `workbox-build`), already allow-listed with a reason in `scripts/audit-gate.mjs`; the gate stays green.
+- **V5:** importing another account's export keeps its ids; the per-row upsert fallback contains the damage. Accepted, documented.
+- **N3:** a double Keystore failure can drop one SMS on Android. Very rare, no safe fix without a second store. Accepted.
+- **R7:** the 23 confirmed messages with no link are individual cases (9 income, 9 purchases, 2 ATM, 3 transfers); the unplaced-messages list and the new re-placement cover purchases and ATM; income and transfers need per-row review by the owner.
+- **A8:** an "account unknown" confirmation reason was not added; the Accounts-page notice and review sheet give the same outcome without extra prompts.
+
+**Waiting on the owner (cannot be done from here):** R30 enable leaked-password protection in Supabase Auth; R1 confirm the 3 Nov 00:50 UTC retention run masked and purged parsed text older than 30 days and that learning quality is acceptable before relying on it; R21 and R25 need a real-device and signed-in Lighthouse pass; first compile of the Kotlin and Swift edits happens in the next native build.

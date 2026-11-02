@@ -34,6 +34,7 @@ import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/typ
 import { FieldButton } from '@/components/ui/FieldButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { isSavableTail } from '@/lib/accounts/identity/accountRef'
+import { useReattribute } from '@/lib/accounts/useReattribute'
 
 /** Banks, wallets and cash have their own sheet; this one only adds cards, and edits an account's look, never its kind. */
 const CARD_TYPES: PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card']
@@ -139,7 +140,8 @@ export function PaymentMethodSetupSheet({
           // bnpl) must not land on the last4 identifier — the tab row wouldn't
           // even offer it, and handleSave would persist a last4 anyway.
           setIdMode(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
-          setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)
+          const suggestedParent = prefill?.parentId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === prefill.parentId) : undefined
+          setCurCode(suggestedParent?.currency ?? baseCurrency); setCardColor(null); setIsDefault(false)
         }
       }
       if (lockType) setType(lockType)
@@ -181,6 +183,7 @@ export function PaymentMethodSetupSheet({
 
   const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
   const effectiveColor = cardColor || (brand ? brand.colors[0] : null) || PAYMENT_TYPE_META[type].color
+  const reattribute = useReattribute()
   const hasProvider = providerName.trim().length > 0
   // The Debt tab locks the type; an existing bank account or wallet keeps its kind here (cards are the only thing this sheet can switch between).
   const typeLock: PaymentMethodType | undefined = lockType ?? (editing && !CARD_TYPES.includes(editing.type) ? editing.type : undefined)
@@ -201,7 +204,8 @@ export function PaymentMethodSetupSheet({
       pmId = editing.id
     } else {
       // A credit_card PM auto-creates its linked credit-card debt in the store.
-      pmId = addPaymentMethod(parentAccountId ? { ...payload, parentId: parentAccountId } : payload)
+      const parentId = parentAccountId ?? (type === 'debit_card' ? prefill?.parentId : undefined)
+      pmId = addPaymentMethod(parentId ? { ...payload, parentId } : payload)
     }
     // Persist the credit-card terms onto the linked credit-card debt.
     if (type === 'credit_card') {
@@ -216,6 +220,7 @@ export function PaymentMethodSetupSheet({
         })
       }
     }
+    if (use4) void reattribute(pmId, last4)
     onSaved?.(pmId)
     onClose()
   }

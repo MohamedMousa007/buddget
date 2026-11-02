@@ -30,6 +30,9 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  // The native test re-mocks these with doMock, which outlives resetModules: put the web defaults back for the next test.
+  vi.doMock('@/lib/native/isNative', () => ({ isNative: () => false }))
+  vi.doUnmock('@capacitor/network')
 })
 
 describe('network status', () => {

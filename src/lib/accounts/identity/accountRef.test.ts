@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { digitsOf, extractAccountTail, isSavableTail, matchByTail, tailsMatch } from './accountRef'
+import { answersTo, withAlias, digitsOf, extractAccountTail, isSavableTail, matchByTail, tailsMatch } from './accountRef'
 
 const m = (id: string, last4: string | null) => ({ id, last4 })
 
@@ -70,5 +70,41 @@ describe('isSavableTail', () => {
   it('accepts no number or 2 to 6 digits and nothing else', () => {
     for (const ok of ['', '01', '001', '0001', '00001', '000001']) expect(isSavableTail(ok)).toBe(true)
     for (const bad of ['1', '0000001']) expect(isSavableTail(bad)).toBe(false)
+  })
+})
+
+describe('aliases', () => {
+  const acct = { id: 'acct', last4: '0001', last4Aliases: ['5950'] }
+  const other = { id: 'other', last4: '2000', last4Aliases: [] as string[] }
+  it('an account answers to its displayed number and each alias', () => {
+    expect(answersTo(acct, '0001')).toBe(true)
+    expect(answersTo(acct, '001')).toBe(true)
+    expect(answersTo(acct, '5950')).toBe(true)
+    expect(answersTo(acct, '2000')).toBe(false)
+  })
+  it('matching finds the account by an alias, and one account holding a tail twice is not ambiguous', () => {
+    expect(matchByTail([acct, other], '5950')).toEqual({ id: 'acct', ambiguous: false })
+    expect(matchByTail([{ id: 'a', last4: '0001', last4Aliases: ['001'] }], '001')).toEqual({ id: 'a', ambiguous: false })
+  })
+  it('two accounts sharing an alias are ambiguous', () => {
+    expect(matchByTail([acct, { id: 'b', last4: '9999', last4Aliases: ['5950'] }], '5950')).toEqual({ id: null, ambiguous: true })
+  })
+})
+
+describe('withAlias (linking a detected number to an existing account)', () => {
+  it('sets the number when the account has none', () => {
+    expect(withAlias({ last4: null, last4Aliases: [] }, '5950')).toEqual({ last4: '5950' })
+  })
+  it('keeps the number that already matches and adds the new one as an alias', () => {
+    expect(withAlias({ last4: '0001', last4Aliases: [] }, '5950')).toEqual({ last4Aliases: ['5950'] })
+  })
+  it('changes nothing for a number the account already answers to, including a shorter print of it', () => {
+    expect(withAlias({ last4: '0001' }, '001')).toEqual({})
+    expect(withAlias({ last4: '0001', last4Aliases: ['5950'] }, '5950')).toEqual({})
+  })
+  it('ignores a number too short to mean anything, and caps the list', () => {
+    expect(withAlias({ last4: '0001' }, '7')).toEqual({})
+    const many = Array.from({ length: 8 }, (_, i) => `10${i}0`)
+    expect(withAlias({ last4: '0001', last4Aliases: many }, '9999').last4Aliases).toHaveLength(8)
   })
 })

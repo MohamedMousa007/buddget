@@ -2328,6 +2328,7 @@ export type Database = {
           is_default: boolean
           label: string | null
           last4: string | null
+          last4_aliases: string[]
           name: string
           notes: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
@@ -2349,6 +2350,7 @@ export type Database = {
           is_default?: boolean
           label?: string | null
           last4?: string | null
+          last4_aliases?: string[]
           name: string
           notes?: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
@@ -2370,6 +2372,7 @@ export type Database = {
           is_default?: boolean
           label?: string | null
           last4?: string | null
+          last4_aliases?: string[]
           name?: string
           notes?: string | null
           type?: Database["public"]["Enums"]["payment_method_type"]

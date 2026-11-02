@@ -6,8 +6,7 @@
  * use server APIs (`cookies()`, `headers()`, Supabase service client, etc).
  * The Capacitor shell never invokes those routes anyway — it talks to the
  * deployed origin via `NEXT_PUBLIC_API_BASE_URL`. So before running the
- * static export, we move `src/app/api` out of the way and `src/middleware.ts`
- * + `src/proxy.ts` aside, run the build, then restore them.
+ * static export, we move `src/app/api` out of the way and `src/proxy.ts` aside, run the build, then restore them.
  *
  * Idempotent: a SIGINT or crashed build still leaves the original tree
  * intact thanks to the `restore()` finally-block.
@@ -37,7 +36,6 @@ const STASH_DIR = resolve(ROOT, '.cap-stash')
  */
 const STASH_TARGETS = [
   { from: 'src/app/api', to: '.cap-stash/api' },
-  { from: 'src/middleware.ts', to: '.cap-stash/middleware.ts' },
   { from: 'src/proxy.ts', to: '.cap-stash/proxy.ts' },
   // Integration tests import the API route handlers stashed above, so they can't type-check in this build.
   { from: 'src/lib/server/admin/__tests__', to: '.cap-stash/admin-tests' },

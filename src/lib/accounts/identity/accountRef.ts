@@ -26,13 +26,36 @@ export function tailsMatch(a: string | null | undefined, b: string | null | unde
   return x.length <= y.length ? y.endsWith(x) : x.endsWith(y)
 }
 
-export interface Identified { id: string; last4: string | null }
+export interface Identified { id: string; last4?: string | null; last4Aliases?: readonly string[] | null }
+
+/** Every number tail an account answers to: the displayed one first, then its aliases. */
+export const tailsOf = (m: Pick<Identified, 'last4' | 'last4Aliases'>): string[] =>
+  [m.last4, ...(m.last4Aliases ?? [])].filter((t): t is string => !!t && digitsOf(t).length >= MIN_ACCOUNT_DIGITS)
 
 export interface TailMatch {
   /** The one account the tail names, else null. */
   id: string | null
   /** More than one account fits and none is exact: nothing is picked. */
   ambiguous: boolean
+}
+
+/** True when the tail is one the account already answers to (displayed number or alias, exact or the same number printed shorter). */
+export const answersTo = (m: Pick<Identified, 'last4' | 'last4Aliases'>, tail: string | null | undefined): boolean =>
+  tailsOf(m).some((saved) => digitsOf(saved) === digitsOf(tail) || tailsMatch(saved, tail))
+
+/** Most extra tails one account keeps (mirrors the database check). */
+export const MAX_ALIASES = 8
+
+/**
+ * The update that teaches an account a number it was not known by: it becomes the displayed number when the account
+ * has none, becomes an alias when the account already has a different one, and changes nothing when the account
+ * already answers to it. Linking never overwrites a number that still matches messages.
+ */
+export function withAlias(m: Pick<Identified, 'last4' | 'last4Aliases'>, tail: string): { last4?: string; last4Aliases?: string[] } {
+  const digits = digitsOf(tail)
+  if (digits.length < MIN_ACCOUNT_DIGITS || answersTo(m, digits)) return {}
+  if (!m.last4) return { last4: digits }
+  return { last4Aliases: [...(m.last4Aliases ?? []), digits].slice(-MAX_ALIASES) }
 }
 
 /** Fewest digits a partial (shorter or longer) tail may share with a saved number before money is attributed on it. */
@@ -42,11 +65,12 @@ export const MIN_PARTIAL_DIGITS = 3
 export function matchByTail(methods: readonly Identified[], captured: string | null | undefined): TailMatch {
   const tail = digitsOf(captured)
   if (tail.length < MIN_ACCOUNT_DIGITS) return { id: null, ambiguous: false }
-  const exact = methods.filter((m) => m.last4 !== null && digitsOf(m.last4) === tail)
-  if (exact.length === 1) return { id: exact[0].id, ambiguous: false }
+  const ids = (hit: (saved: string) => boolean) => [...new Set(methods.filter((m) => tailsOf(m).some(hit)).map((m) => m.id))]
+  const exact = ids((saved) => digitsOf(saved) === tail)
+  if (exact.length === 1) return { id: exact[0], ambiguous: false }
   if (exact.length > 1) return { id: null, ambiguous: true }
-  const partial = methods.filter((m) => Math.min(digitsOf(m.last4).length, tail.length) >= MIN_PARTIAL_DIGITS && tailsMatch(m.last4, tail))
-  if (partial.length === 1) return { id: partial[0].id, ambiguous: false }
+  const partial = ids((saved) => Math.min(digitsOf(saved).length, tail.length) >= MIN_PARTIAL_DIGITS && tailsMatch(saved, tail))
+  if (partial.length === 1) return { id: partial[0], ambiguous: false }
   return { id: null, ambiguous: partial.length > 1 }
 }
 

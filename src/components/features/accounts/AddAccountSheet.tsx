@@ -17,6 +17,7 @@ import { PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, PAYMENT_TYPE_META, composeP
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency } from '@/lib/store/types'
 import { isSavableTail } from '@/lib/accounts/identity/accountRef'
+import { useReattribute } from '@/lib/accounts/useReattribute'
 import type { AccountPrefill } from '@/lib/store/useSettingsStore'
 import { BrandMark } from './BrandMark'
 
@@ -57,6 +58,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
   const brand = brandId ? PAYMENT_BRANDS[brandId] : null
   const provider = brand?.name ?? custom
   const isCash = kind === 'cash'
+  const reattribute = useReattribute()
   const hasBalance = balance.trim() !== '' && Number.isFinite(parseFloat(balance))
   const digitsOk = idMode !== 'last4' || isSavableTail(last4)
   const canSave = hasBalance && digitsOk && (isCash || provider.trim() !== '')
@@ -91,6 +93,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
       ...(words ? { label: words } : {}),
     })
     setOpeningBalance(id, amount)
+    if (digits) void reattribute(id, digits)
     return id
   }
 

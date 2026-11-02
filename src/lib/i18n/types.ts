@@ -213,6 +213,7 @@ export interface Dictionary {
     unplacedReview: string
     unplacedAttach: (n: number) => string
     unplacedAccount: string
+    reattached: (n: number) => string
     bankAccounts: string
     walletsCash: string
     addAccountOrCard: string

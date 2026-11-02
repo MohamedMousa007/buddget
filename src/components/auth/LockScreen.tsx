@@ -73,7 +73,7 @@ export function LockScreen() {
         .lg-bg {
           background:
             radial-gradient(120% 60% at 50% -6%, rgba(31,195,178,.26) 0%, rgba(31,195,178,.06) 38%, rgba(20,18,26,0) 62%),
-            linear-gradient(180deg, #0E1614 0%, #0A100F 55%, #070C0B 100%) !important;
+            var(--auth-floor) !important;
         }
       `}</style>
 

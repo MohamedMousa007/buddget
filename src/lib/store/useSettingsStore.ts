@@ -29,6 +29,8 @@ export interface PmPrefill {
   last4: string
   /** Type implied by the source (e.g. an SMS card transaction); overrides the brand default. */
   type?: PaymentMethodType
+  /** The account this card draws on, when the user has exactly one at the same bank. */
+  parentId?: string
 }
 
 /** Seed for the New payday sheet. Every field optional: a starter card only knows the type. */

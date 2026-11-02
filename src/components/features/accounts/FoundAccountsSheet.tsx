@@ -13,7 +13,7 @@ import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { BrandMark } from './BrandMark'
 import { splitMoney } from './accountDisplay'
-import { tailsMatch } from '@/lib/accounts/identity/accountRef'
+import { answersTo } from '@/lib/accounts/identity/accountRef'
 
 interface Found {
   key: string
@@ -50,7 +50,7 @@ export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean;
           if (!prev) seen.set(key, { key, bank: r.bank_name!, last4: r.account_last4!, balance: r.balance_after, receivedAt: r.balance_after != null ? r.received_at : null, currency: r.currency })
           else if (prev.balance == null && r.balance_after != null) { prev.balance = r.balance_after; prev.receivedAt = r.received_at; prev.currency = r.currency }
         }
-        const list = [...seen.values()].filter((f) => !methods.some((m) => m.last4 && (m.last4 === f.last4 || tailsMatch(m.last4, f.last4))))
+        const list = [...seen.values()].filter((f) => !methods.some((m) => answersTo(m, f.last4)))
         setFound(list)
         setPicked(new Set(list.map((f) => f.key)))
       })

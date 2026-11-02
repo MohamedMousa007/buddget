@@ -307,6 +307,7 @@ export const ar: Dictionary = {
     unplacedReview: 'مراجعة',
     unplacedAttach: (n) => `أضف ${n} إلى هذا الحساب`,
     unplacedAccount: 'الحساب',
+    reattached: (n) => `تمت إضافة ${n} ${n === 1 ? 'رسالة بنكية سابقة' : 'رسائل بنكية سابقة'} إلى هذا الحساب`,
     bankAccounts: 'الحسابات البنكية',
     walletsCash: 'المحافظ والنقد',
     addAccountOrCard: 'إضافة حساب أو بطاقة',

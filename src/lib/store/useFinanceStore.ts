@@ -29,6 +29,7 @@ import type {
   DebtCurrency,
   DebtPaymentSnapshot,
   DebtReceivedVia,
+  Expense,
   FinanceStore,
   Goal,
   IncomeSource,
@@ -190,6 +191,27 @@ function migrateShowAllCurrenciesInForms(prevSettings: Record<string, unknown>):
     return false
   }
   return DEFAULT_SETTINGS.showAllCurrenciesInForms
+}
+
+/** Drops the ids that point at a deleted debt, and at the payments that went with it, keeping every expense and income row. */
+function unlinkDebt(state: Pick<FinanceStore, 'expenses' | 'incomeEvents' | 'incomeSources' | 'debtPayments'>, debtId: string) {
+  const gone = new Set(state.debtPayments.filter((p) => p.debtId === debtId).map((p) => p.id))
+  const at = new Date().toISOString()
+  const touchesExpense = (e: Expense) => e.linkedDebtId === debtId || (!!e.linkedDebtPaymentId && gone.has(e.linkedDebtPaymentId))
+  return {
+    expenses: state.expenses.map((e) => (touchesExpense(e) ? { ...e, linkedDebtId: undefined, linkedDebtPaymentId: undefined, updatedAt: at } : e)),
+    incomeEvents: state.incomeEvents.map((e) => (e.linkedDebtId === debtId ? { ...e, linkedDebtId: undefined, updatedAt: at } : e)),
+    incomeSources: state.incomeSources.map((i) => (i.linkedDebtId === debtId ? { ...i, linkedDebtId: undefined, updatedAt: at } : i)),
+  }
+}
+
+/** Drops the ids that point at a deleted savings account from income rows. */
+function unlinkSavingsAccount(state: Pick<FinanceStore, 'incomeEvents' | 'incomeSources'>, accountId: string) {
+  const at = new Date().toISOString()
+  return {
+    incomeEvents: state.incomeEvents.map((e) => (e.linkedSavingsAccountId === accountId ? { ...e, linkedSavingsAccountId: undefined, updatedAt: at } : e)),
+    incomeSources: state.incomeSources.map((i) => (i.linkedSavingsAccountId === accountId ? { ...i, linkedSavingsAccountId: undefined, updatedAt: at } : i)),
+  }
 }
 
 export const useFinanceStore = create<FinanceStore>()(
@@ -834,6 +856,7 @@ export const useFinanceStore = create<FinanceStore>()(
             debts: state.debts.filter((d) => d.id !== id),
             debtPayments: state.debtPayments.filter((p) => p.debtId !== id),
             recurringDebtPayments: state.recurringDebtPayments.filter((r) => r.debtId !== id),
+            ...unlinkDebt(state, id),
             // A debt goal exists only to follow its debts: once the last one is deleted the goal goes too
             // (an achieved goal stays as history).
             goals: state.goals.flatMap((g) => {
@@ -846,6 +869,9 @@ export const useFinanceStore = create<FinanceStore>()(
             debts: nextState.debts,
             debtPayments: nextState.debtPayments,
             recurringDebtPayments: nextState.recurringDebtPayments,
+            expenses: nextState.expenses,
+            incomeEvents: nextState.incomeEvents,
+            incomeSources: nextState.incomeSources,
             goals: reconcileGoalsForState(nextState),
           }
         }),
@@ -953,6 +979,8 @@ export const useFinanceStore = create<FinanceStore>()(
       deleteRecurringExpense: (id) =>
         set((state) => ({
           recurringExpenses: state.recurringExpenses.filter((e) => e.id !== id),
+          subscriptions: state.subscriptions.map((sub) =>
+            sub.linkedRecurringExpenseId === id ? { ...sub, linkedRecurringExpenseId: null, updatedAt: new Date().toISOString() } : sub),
         })),
 
       addSubscription: (input) => {
@@ -1626,6 +1654,7 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsAccounts: state.savingsAccounts.filter((a) => a.id !== id),
             savingsTransactions: state.savingsTransactions.filter((t) => t.accountId !== id),
             recurringSavingsDeposits: state.recurringSavingsDeposits.filter((r) => r.accountId !== id),
+            ...unlinkSavingsAccount(state, id),
             goals: state.goals.map((g) => ({
               ...g,
               linkedSavingsAccountIds: g.linkedSavingsAccountIds.filter((x) => x !== id),
@@ -1635,6 +1664,8 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsAccounts: nextState.savingsAccounts,
             savingsTransactions: nextState.savingsTransactions,
             recurringSavingsDeposits: nextState.recurringSavingsDeposits,
+            incomeEvents: nextState.incomeEvents,
+            incomeSources: nextState.incomeSources,
             goals: reconcileGoalsForState(nextState),
             ...(state.profile.defaultCarryPocketId === id
               ? { profile: { ...state.profile, defaultCarryPocketId: null } }

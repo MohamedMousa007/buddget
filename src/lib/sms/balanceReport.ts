@@ -45,6 +45,7 @@ interface MethodRow {
   name: string
   type: string
   last4: string | null
+  last4_aliases?: string[] | null
   currency: string | null
   parent_id: string | null
   track_sms: boolean | null
@@ -65,7 +66,7 @@ export function resolveReportTarget(
   currency?: string | null,
 ): MethodRow | null {
   const open = methods.filter((m) => !m.closed_at)
-  const byTail = matchByTail(open, last4)
+  const byTail = matchByTail(open.map((m) => ({ id: m.id, last4: m.last4, last4Aliases: m.last4_aliases })), last4)
   if (byTail.ambiguous) return null
   const hit = byTail.id ? open.find((m) => m.id === byTail.id) : undefined
   if (!hit) {
@@ -101,7 +102,7 @@ export async function recordBalanceReport(i: BalanceReportInput): Promise<void> 
     const found = extractBalance(i.body)
     if (!found || (i.amount != null && found.balance === i.amount)) return
     const { data } = await i.service.from('payment_methods')
-      .select('id, name, type, last4, currency, parent_id, track_sms, closed_at').eq('user_id', i.userId).is('deleted_at', null)
+      .select('id, name, type, last4, last4_aliases, currency, parent_id, track_sms, closed_at').eq('user_id', i.userId).is('deleted_at', null)
     const target = resolveReportTarget((data ?? []) as MethodRow[], i.last4, { sender: i.sender, bankName: i.bankName }, found.currency)
     if (!target) return
     if (found.currency && target.currency && found.currency !== 'LE' && found.currency !== target.currency) return

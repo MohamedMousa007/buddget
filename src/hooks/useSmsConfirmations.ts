@@ -24,8 +24,12 @@ export interface PendingConfirmation {
   payment_instrument: string | null
 }
 
+/** How far back a message waiting on the user is still shown. */
+export const PENDING_LOOKBACK_DAYS = 30
+
 function fetchPending() {
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  // As long as the raw text is kept (30 days): a message waiting on the user must not silently drop out of review.
+  const since = new Date(Date.now() - PENDING_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
   return createClient()
     .from('sms_parse_log')
     .select('id, kind, clean_title, merchant, amount, currency, bank_name, account_last4, received_at, failure_code, expense_id, income_id, raw_body, category, payment_instrument')

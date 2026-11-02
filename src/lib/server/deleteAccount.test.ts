@@ -3,14 +3,23 @@ import { deleteUserCompletely } from './deleteAccount'
 import { ACCOUNT_TABLES, SIGN_IN_TABLES, USER_DATA_TABLES, removeAvatarObject } from './userData'
 import type { ServiceClient } from '@/lib/supabase/service'
 
+const tickets = [{ id: 't-help', kind: 'support' }, { id: 't-bug', kind: 'bug' }, { id: 't-feat', kind: 'feature' }, { id: 't-bill', kind: 'billing' }]
+
 function fakeAdmin(staffRole: string | null, opts: { deleteUserError?: string; failTable?: string } = {}) {
   const calls: Array<{ table: string; op: string; payload?: unknown }> = []
   const deleteUser = vi.fn(async () => { calls.push({ table: 'auth', op: 'deleteUser' }); return { error: opts.deleteUserError ? { message: opts.deleteUserError } : null } })
   const getUserById = vi.fn(async () => ({ data: { user: { email: 'a@x.com' } } }))
   const from = (table: string) => ({
-    select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: table === 'admin_staff' && staffRole ? { role_key: staffRole } : null }) }) }),
+    select: () => ({
+      eq: () => Object.assign(Promise.resolve({ data: table === 'support_tickets' ? tickets : [], error: null }), {
+        maybeSingle: async () => ({ data: table === 'admin_staff' && staffRole ? { role_key: staffRole } : null }),
+      }),
+    }),
     delete: () => ({ eq: async () => { calls.push({ table, op: 'delete' }); return { error: table === opts.failTable ? { message: 'boom' } : null } } }),
-    update: (payload: unknown) => ({ eq: async () => { calls.push({ table, op: 'update', payload }); return { error: null } } }),
+    update: (payload: unknown) => ({
+      eq: async () => { calls.push({ table, op: 'update', payload }); return { error: null } },
+      in: async (_c: string, ids: string[]) => { calls.push({ table, op: 'update', payload: { ...(payload as object), ids } }); return { error: null } },
+    }),
   })
   return { admin: { from, auth: { admin: { deleteUser, getUserById } } } as unknown as ServiceClient, calls, deleteUser }
 }
@@ -34,6 +43,16 @@ describe('deleteUserCompletely', () => {
     expect(calls.findIndex((c) => c.op === 'deleteUser')).toBeLessThan(firstWipe)
     const deleted = calls.filter((c) => c.op === 'delete').map((c) => c.table)
     for (const { table } of [...ACCOUNT_TABLES, ...SIGN_IN_TABLES]) expect(deleted).toContain(table)
+  })
+
+  it('blanks the text of private tickets, keeps bug and feature tickets as history', async () => {
+    const { admin, calls } = fakeAdmin(null)
+    await deleteUserCompletely(admin, 'u1')
+    const erased = calls.filter((c) => c.table === 'support_tickets' && (c.payload as { subject?: string })?.subject === '[deleted]')
+    expect(erased.length).toBeGreaterThan(0)
+    for (const e of erased) expect((e.payload as { ids: string[] }).ids).toEqual(['t-help', 't-bill'])
+    const bodies = calls.filter((c) => c.table === 'support_ticket_messages')
+    expect(bodies.every((b) => (b.payload as { ids: string[] }).ids.join() === 't-help,t-bill')).toBe(true)
   })
 
   it('keeps the account and wipes nothing when the sign-in cannot be deleted', async () => {

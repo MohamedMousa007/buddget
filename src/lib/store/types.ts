@@ -75,6 +75,8 @@ export interface PaymentMethod {
   color?: string
   icon?: string
   last4?: string
+  /** Other visible number tails bank messages use for this account (its account number, a linked card). `last4` stays the displayed one. */
+  last4Aliases?: string[]
   /** A name the user gave the account, shown where the last four digits would be. `last4` stays stored for SMS matching. */
   label?: string
   isDefault: boolean

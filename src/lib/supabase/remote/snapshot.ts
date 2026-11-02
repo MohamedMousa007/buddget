@@ -70,7 +70,9 @@ export function snapshot(state: Pick<FinanceStore,
 
 export function emptySnapshot(): Snapshot {
   return {
-    profile: { id: 'local', name: '', createdAt: new Date().toISOString() },
+    // A fixed stamp: two empty snapshots must compare equal, or a diff between them reports a phantom profile change
+    // whenever the calls straddle a millisecond.
+    profile: { id: 'local', name: '', createdAt: '1970-01-01T00:00:00.000Z' },
     settings: {
       baseCurrency: DEFAULT_SETTINGS.baseCurrency,
       secondaryCurrency: null,
