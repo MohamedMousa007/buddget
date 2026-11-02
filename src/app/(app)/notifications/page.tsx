@@ -1,9 +1,9 @@
 'use client'
 
 import { PageBody } from '@/components/layout/PageContainer'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Bell, MessageSquare, ShieldCheck, CheckCheck } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { useT } from '@/lib/i18n'
@@ -26,16 +26,20 @@ const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
 export default function NotificationsPage() {
   const t = useT()
   const { notifications, unreadCount, markAllRead } = useNotifications()
+  const localized = useLocalizedFormatters()
+  const formatRelativeTime = useCallback((iso: string) => {
+    try { return localized.formatRelativeTime(iso) } catch { return '' }
+  }, [localized])
   const { isEnabled, lastReceivedAt } = useSmsTracking()
 
   const smsStatus = useMemo(() => {
     if (!isEnabled) return null
     if (lastReceivedAt) {
-      const rel = formatDistanceToNow(new Date(lastReceivedAt), { addSuffix: true })
+      const rel = formatRelativeTime(lastReceivedAt)
       return { connected: true, label: t.smsTracking.iosStatusConnected(rel) }
     }
     return { connected: false, label: t.smsTracking.iosStatusWaiting }
-  }, [isEnabled, lastReceivedAt, t])
+  }, [isEnabled, lastReceivedAt, t, formatRelativeTime])
 
   const smsCard = (className?: string) =>
     smsStatus ? (
@@ -64,9 +68,9 @@ export default function NotificationsPage() {
               <Bell className="h-4 w-4" />
             </span>
             <div>
-              <h2 className="text-base lg:text-xl font-semibold text-[var(--color-brand-text-primary)]">
+              <h1 className="text-base lg:text-xl font-semibold text-[var(--color-brand-text-primary)]">
                 {t.notifications.title}
-              </h2>
+              </h1>
               {unreadCount > 0 ? (
                 <p className="text-xs text-[var(--color-brand-text-muted)]">{unreadCount}</p>
               ) : null}
@@ -77,7 +81,7 @@ export default function NotificationsPage() {
               onClick={() => void markAllRead()}
               variant="link"
               size="xs"
-              className="no-underline hover:underline"
+              className="text-[var(--color-brand-primary-ink)] no-underline hover:underline"
             >
               <CheckCheck className="h-3.5 w-3.5" />
               {t.notifications.markAllRead}
@@ -100,7 +104,7 @@ export default function NotificationsPage() {
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{n.title}</p>
                     <span className="shrink-0 text-[10px] text-[var(--color-brand-text-muted)]">
-                      {relativeTime(n.createdAt)}
+                      {formatRelativeTime(n.createdAt)}
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-brand-text-secondary)]">{n.body}</p>
@@ -124,12 +128,4 @@ export default function NotificationsPage() {
       </PageBody>
     </div>
   )
-}
-
-function relativeTime(iso: string): string {
-  try {
-    return formatDistanceToNow(new Date(iso), { addSuffix: true })
-  } catch {
-    return ''
-  }
 }

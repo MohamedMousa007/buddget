@@ -72,6 +72,22 @@ describe('applyDelta', () => {
   })
 })
 
+describe('applyDelta clears', () => {
+  it('takes an emptied goals note and a cleared active plan from a changed server profile', () => {
+    const local = { ...emptySnapshot(), financialGoalsNotes: 'save', activeBudgetPlanId: 'p9' }
+    const profile = { profile: { id: 'u1', name: 'Sara', createdAt: 'x' }, extras: { financialGoalsNotes: '', activeBudgetPlanId: null, baseCurrency: 'EGP', secondaryCurrency: null } } as never
+    const out = applyDelta(local, noDelta({ profile }))
+    expect(out.financialGoalsNotes).toBe('')
+    expect(out.activeBudgetPlanId).toBeNull()
+  })
+  it('keeps both when no profile came down', () => {
+    const local = { ...emptySnapshot(), financialGoalsNotes: 'save', activeBudgetPlanId: 'p9' }
+    const out = applyDelta(local, noDelta())
+    expect(out.financialGoalsNotes).toBe('save')
+    expect(out.activeBudgetPlanId).toBe('p9')
+  })
+})
+
 describe('stale cursor (full pull)', () => {
   it('drops local rows the server no longer has that predate the stale cursor, keeps newer unsynced ones', () => {
     const local = withExpenses([exp('old', '2026-06-01T00:00:00Z'), exp('kept', '2026-06-01T00:00:00Z'), exp('offline', '2026-09-01T00:00:00Z')])

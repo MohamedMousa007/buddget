@@ -57,4 +57,18 @@ class SmsGateTest {
         for (c in listOf(401, 408, 409, 429, 500, 503, 202)) assertTrue(c.toString(), SmsGate.isRetryableStatus(c))
         for (c in listOf(400, 403, 404, 422)) assertFalse(c.toString(), SmsGate.isRetryableStatus(c))
     }
+
+    @Test fun aQueuedSmsIsOnlySentForTheAccountItArrivedUnder() {
+        assertTrue(SmsGate.belongsToCurrentAccount("user-a", "user-a"))
+        assertFalse(SmsGate.belongsToCurrentAccount("user-a", "user-b"))
+        assertTrue(SmsGate.belongsToCurrentAccount("", "user-b"))
+        assertTrue(SmsGate.belongsToCurrentAccount("user-a", ""))
+    }
+
+    @Test fun anOldSmsIsEvictedEvenWhenTheQueueIsNotFull() {
+        val day = 24L * 60 * 60 * 1000
+        val now = 100 * day
+        assertEquals(setOf(0), SmsGate.evictionIndexes(listOf(now - 40 * day, now - day), now, 200))
+        assertEquals(emptySet<Int>(), SmsGate.evictionIndexes(listOf(now - 2 * day, now - day), now, 200))
+    }
 }

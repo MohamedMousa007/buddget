@@ -29,6 +29,8 @@ import { monthNameInZone } from '@/lib/time/zonedMonth'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
+import { execBounded } from '@/lib/sms/boundedRegex'
+import { isSafeRegexPattern, MAX_TEMPLATE_INPUT_CHARS } from '@/lib/sms/safeRegex'
 import { runLearnGates } from '@/lib/sms/learnGates'
 import { runAdjudication } from '@/lib/sms/runAdjudication'
 import { recordSmsStats } from '@/lib/sms/statsOutbox'
@@ -401,13 +403,21 @@ async function generateMatchingRegex(
   if (!learned.regex_pattern || !learned.mapping_rules?.amount) {
     return { ok: false, status: 'no_regex_or_amount' }
   }
-  let re: RegExp
+  if (!isSafeRegexPattern(learned.regex_pattern)) {
+    return { ok: false, status: 'regex_unsafe' }
+  }
   try {
-    re = new RegExp(learned.regex_pattern)
+    new RegExp(learned.regex_pattern)
   } catch {
     return { ok: false, status: 'regex_invalid' }
   }
-  if (!re.test(message)) {
+  let hit: RegExpExecArray | null
+  try {
+    hit = execBounded(learned.regex_pattern, '', message.slice(0, MAX_TEMPLATE_INPUT_CHARS))
+  } catch {
+    return { ok: false, status: 'regex_timeout' }
+  }
+  if (!hit) {
     return { ok: false, status: 'regex_no_match' }
   }
 

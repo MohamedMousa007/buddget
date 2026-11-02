@@ -132,6 +132,6 @@ export async function POST(request: NextRequest) {
     await spent('error')
     const msg = err instanceof Error ? err.message : 'Unknown transcription error'
     console.error(`[VOICE:transcribe] fail status=502 user=${user.id} latency=${Date.now() - started}ms err=${msg}`)
-    return NextResponse.json({ error: msg, stage: 'transcribe' }, { status: 502 })
+    return NextResponse.json({ error: 'Transcription failed', stage: 'transcribe' }, { status: 502 })
   }
 }

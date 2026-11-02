@@ -40,3 +40,12 @@ describe('getConversionRate', () => {
     expect(getConversionRate('AED', 'UNKNOWN' as 'AED', {})).toBe(1)
   })
 })
+
+describe('unusable rates are ignored, never used to price money', () => {
+  it.each([-50, 0, Number.NaN, Number.POSITIVE_INFINITY])('a %s pair falls back to the built-in rate', (bad) => {
+    const good = tryConvertCurrency(100, 'USD', 'EGP', {})
+    const out = tryConvertCurrency(100, 'USD', 'EGP', { USD_EGP: bad })
+    expect(out).toBe(good)
+    expect(out).toBeGreaterThan(0)
+  })
+})

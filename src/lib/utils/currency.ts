@@ -46,12 +46,15 @@ export function tryConvertCurrency(
   return convertVia(amount, from, to, rates) ?? convertVia(amount, from, to, { ...DEFAULT_RATES, ...rates })
 }
 
+/** A rate that can price money: finite and above zero. Anything else is treated as absent. */
+const usableRate = (r: number | undefined): r is number => typeof r === 'number' && Number.isFinite(r) && r > 0
+
 function convertVia(amount: number, from: string, to: string, table: Record<string, number>): number | null {
   const direct = table[`${from}_${to}`]
-  if (direct) return amount * direct
+  if (usableRate(direct)) return amount * direct
 
   const reverse = table[`${to}_${from}`]
-  if (reverse) return amount / reverse
+  if (usableRate(reverse)) return amount / reverse
 
   const fromToAed = findRate(from, 'AED', table)
   const aedToTarget = findRate('AED', to, table)
@@ -143,10 +146,10 @@ function findRate(
   if (from === to) return 1
 
   const direct = rates[`${from}_${to}`]
-  if (direct) return direct
+  if (usableRate(direct)) return direct
 
   const reverse = rates[`${to}_${from}`]
-  if (reverse) return 1 / reverse
+  if (usableRate(reverse)) return 1 / reverse
 
   return null
 }

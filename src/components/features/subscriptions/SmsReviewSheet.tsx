@@ -113,8 +113,8 @@ function FindCard({ find, onAdd, onDismiss }: { find: SmsFind; onAdd: () => void
             <span className="text-xs font-semibold text-[var(--color-brand-text-primary)]">{sms.confidence[find.confidence]}</span>
           </div>
           <div className="flex gap-1">
-            {find.dates.map((d) => (
-              <Badge key={d} tone="soft" bordered={false} className="font-mono-numbers text-[11px] font-normal">
+            {find.dates.map((d, i) => (
+              <Badge key={`${i}-${d}`} tone="soft" bordered={false} className="font-mono-numbers text-[11px] font-normal">
                 {formatDateShort(d)}
               </Badge>
             ))}

@@ -73,3 +73,19 @@ A5/A6 collisions across providers (use scoped keys); A7 one identifier per accou
 4. **Batch 4:** R19 tests, R31, R36, R27, R29, V3.
 5. **Batch 5:** identifier table, A5-A14.
 6. **Owner actions:** R4 (CI choice), R30 (dashboard), R1 (check the 3 Nov audit row; confirm learning quality before any purge), R35 (compare with the App Store label).
+
+## Resolution log (batches 1-3, 2026-11-02)
+
+**Fixed in code (tests added; lint 0 errors, 3,961 tests, production build pass):**
+R3 (legacy AI delete refuses debt-linked expenses); V1+R6 (learned regex is safety-checked first, input capped, and every template match runs under a 50 ms vm time limit in `boundedRegex.ts`); R14 (a changed server profile now clears the goals note and active plan); R5 (calendar dates and timestamps validated in the import schema); R18 (types: 5 missing tables/views added, dropped `fx_rates` removed); N6 (non-positive or non-finite rates are ignored); V4 (refund windows use UTC arithmetic); R28 (`voice/transcribe` returns a generic error); R13 (support requester email now comes from the verified sign-in, not the editable profile field); N1 (Android job is only sent for the account the SMS arrived under); N2 (Android queue evicts by age on every enqueue); N5 (iOS Shortcut drops marketing text unless it states a money movement); R22/V2 (index-safe keys in the 6 duplicate-prone lists); R23 (notification times follow the app language); R24 (notifications title is an `h1`, same look); R16 (chips and segmented controls get the shared invisible 44px hit area; re-measured 0 undersized targets on 11 routes, no new scroll overflow); R15 (muted text tokens: light `#687371` to `#646F6D`, dark `#748380` to `#7B8A87`; notifications link uses `--color-brand-primary-ink`; axe colour-contrast now clean apart from third-party brand tiles).
+
+**Re-checked and withdrawn or narrowed during the work:**
+- R26: the "moon icon" is the theme toggle (the language control is already text) and "Get the app" appears in the nav and again as a scroll-triggered sticky bar by design. No change made.
+- V6: the UI already uses the localized formatters; only the notifications page was English-only (fixed above).
+- R12: `/api/ai` is a prompt proxy by design (tier is allow-listed, quota applies). No change.
+- N6 (route): `api/rates` already filters non-positive values (`validRates`); only the converter hardening was added.
+- R16 (scope): most "small" targets already had the invisible overlay; only chips and segmented controls lacked it.
+
+**Native (edited, not built or run here):** N1, N2, N5 are Kotlin/Swift edits without a compile in this environment; Android `SmsGateTest` gained two tests. They will compile when the apps are built.
+
+**Open, waiting for the owner:** R10 (delete the text of a deleted user's support tickets, or keep it as anonymised staff history: current code already erases the requester email and context); R4 (CI choice); R30 (dashboard toggle); R35 (privacy label).

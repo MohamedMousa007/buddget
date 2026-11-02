@@ -231,6 +231,10 @@ export function describeActionTarget(ctx: Targetable, action: AIAction, d: Recor
   return t && t.match.kind === 'one' ? labelOf(t.match.item) : null
 }
 
+/** An expense that is one side of a debt payment: deleting it alone would leave the payment and a cleared debt behind. */
+const isDebtLinked = (e: Pick<Expense, 'isDebtPayment' | 'linkedDebtId' | 'linkedDebtPaymentId'>): boolean =>
+  !!(e.isDebtPayment || e.linkedDebtId || e.linkedDebtPaymentId)
+
 function resolved<T>(ctx: Targetable, action: AIAction, d: Record<string, unknown>): T | undefined {
   const t = resolveActionTarget(ctx, action, d)
   return t && t.match.kind === 'one' ? (t.match.item as unknown as T) : undefined
@@ -444,7 +448,10 @@ export function validateActionItem(
     }
     const missing = targetProblem(ctx, action, d)
     if (missing) return missing
-    if (action === 'delete_expense') return null
+    if (action === 'delete_expense') {
+      const target = resolved<Expense>(ctx, action, d)
+      return target && isDebtLinked(target) ? 'That expense is a debt payment. Delete the payment from Debts so the balance stays right.' : null
+    }
     const nextAmount = getField(d, 'newAmount', 'amount')
     const nextCat = getField(d, 'newCategory', 'category')
     const nextDesc = getField(d, 'newDescription')
@@ -531,7 +538,7 @@ export function executeActionItem(
   }
   if (action === 'delete_expense') {
     const exp = resolved<Expense>(ctx, action, d)
-    if (exp) ctx.deleteExpense(exp.id)
+    if (exp && !isDebtLinked(exp)) ctx.deleteExpense(exp.id)
     return
   }
   if (action === 'update_expense') {

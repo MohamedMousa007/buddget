@@ -121,8 +121,8 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
           {phase.proposals.length > 0 ? (
             <div className="flex flex-col gap-1 rounded-2xl border border-[var(--color-brand-border)] p-3">
               <p className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{c.remember}</p>
-              {phase.proposals.map((x) => (
-                <div key={x} className="flex min-h-[44px] items-center gap-3">
+              {phase.proposals.map((x, i) => (
+                <div key={`${i}-${x}`} className="flex min-h-[44px] items-center gap-3">
                   <span className="flex-1 text-sm text-[var(--color-brand-text-primary)]">{x}</span>
                   <Switch
                     size="touch"

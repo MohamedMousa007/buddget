@@ -27,6 +27,7 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val sender     = inputData.getString(KEY_SENDER) ?: ""
         val receivedAt = inputData.getString(KEY_RECEIVED_AT) ?: ""
         val eventId    = inputData.getString(KEY_EVENT_ID) ?: ""
+        val owner      = inputData.getString(KEY_USER_ID) ?: ""
 
         val prefs  = SmsStore.prefs(applicationContext)
         val token  = prefs.getString("access_token", null)
@@ -36,6 +37,12 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         // terminal outcomes below just leave it there for the app-open drain.
         if (token == null || apiUrl == null) {
             recordRun(prefs, "no_token")
+            return@withContext Result.failure()
+        }
+
+        // The SMS stays queued under its own account and is delivered when that user is signed in again.
+        if (!SmsGate.belongsToCurrentAccount(owner, prefs.getString("token_user_id", "") ?: "")) {
+            recordRun(prefs, "other_account")
             return@withContext Result.failure()
         }
 
@@ -122,6 +129,7 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         const val KEY_SENDER      = "sender"
         const val KEY_RECEIVED_AT = "received_at"
         const val KEY_EVENT_ID    = "event_id"
+        const val KEY_USER_ID     = "user_id"
         const val MAX_CHARS = 2000
         const val MAX_ATTEMPTS = 8
     }

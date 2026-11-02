@@ -628,9 +628,9 @@ export async function findRefundedTwin(
   row: SmsRowData,
 ): Promise<{ id: string; category: string } | null> {
   const lo = new Date(row.day)
-  lo.setDate(lo.getDate() - REFUND_DEDUPE_DAYS)
+  lo.setUTCDate(lo.getUTCDate() - REFUND_DEDUPE_DAYS)
   const hi = new Date(row.day)
-  hi.setDate(hi.getDate() + REFUND_DEDUPE_DAYS + 1) // +1 so the far end includes its whole day
+  hi.setUTCDate(hi.getUTCDate() + REFUND_DEDUPE_DAYS + 1) // +1 so the far end includes its whole day
   const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
 
   let q = service
@@ -664,7 +664,7 @@ export async function matchOriginalExpense(
   row: SmsRowData,
 ): Promise<{ id: string; category: string } | null> {
   const from = new Date(row.day)
-  from.setDate(from.getDate() - 90)
+  from.setUTCDate(from.getUTCDate() - 90)
   const fromDay = from.toISOString().slice(0, 10)
 
   const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)

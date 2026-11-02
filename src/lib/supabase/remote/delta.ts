@@ -160,8 +160,10 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
   return {
     profile: profileResult?.profile ?? local.profile,
     settings,
-    financialGoalsNotes: profileResult ? profileResult.extras.financialGoalsNotes || local.financialGoalsNotes : local.financialGoalsNotes,
-    activeBudgetPlanId: profileResult ? (profileResult.extras.activeBudgetPlanId ?? local.activeBudgetPlanId) : local.activeBudgetPlanId,
+    // A profile only arrives in a delta when it changed on the server and local edits were flushed first, so an empty
+    // note or no active plan there is a deliberate clear on another device, not a missing value.
+    financialGoalsNotes: profileResult ? profileResult.extras.financialGoalsNotes : local.financialGoalsNotes,
+    activeBudgetPlanId: profileResult ? profileResult.extras.activeBudgetPlanId : local.activeBudgetPlanId,
     paymentMethods: applyList(local.paymentMethods as WithId[], d.paymentMethods as ListDelta<WithId>) as Snapshot['paymentMethods'],
     incomeSources: applyList(local.incomeSources, d.incomeSources),
     incomeEvents: applyList(local.incomeEvents, d.incomeEvents),
