@@ -58,6 +58,7 @@ import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
 import { recordBalanceReport } from '@/lib/sms/balanceReport'
+import { extractAccountTail } from '@/lib/accounts/identity/accountRef'
 import { providerFromBody } from '@/lib/sms/providerFromBody'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { getUserLocale } from '@/lib/server/userLocale'
@@ -69,6 +70,9 @@ import { nudgeUser } from '@/lib/server/realtime/nudge'
 export const maxDuration = 60
 
 const GEMINI_MODEL = 'gemini-2.5-flash'
+
+/** Kinds whose "from <masked number>" names the account the money left; a transfer's number names the other side. */
+const SOURCE_ACCOUNT_KINDS: ReadonlySet<string> = new Set(['purchase', 'online_purchase', 'atm_withdrawal', 'fee'])
 /** Typical cost of one SMS parse (prompt plus a short JSON answer) in quota units. */
 const SMS_PARSE_UNITS = 1500
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
@@ -916,7 +920,9 @@ export async function POST(request: Request) {
   }
 
   // Server-side security: strip non-digits and truncate to last 4 — never trust raw output.
-  const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4) || null
+  const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4)
+    || (SOURCE_ACCOUNT_KINDS.has(parsed.kind ?? '') ? extractAccountTail(message)?.slice(-4) : null)
+    || null
   const cleanCpLast4 = (parsed.detectedCounterpartyLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
   // Prefer the transaction date embedded in the SMS body (curated patterns)

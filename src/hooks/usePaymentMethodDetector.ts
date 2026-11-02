@@ -7,6 +7,7 @@ import { PAYMENT_BRANDS, resolvePaymentBrandKey } from '@/lib/payment/paymentMet
 import { paymentTypeFromSms } from '@/lib/payment/smsPaymentType'
 import type { PaymentMethodType } from '@/lib/store/types'
 import { useShallow } from 'zustand/react/shallow'
+import { tailsMatch } from '@/lib/accounts/identity/accountRef'
 
 export interface DetectedAccount {
   /** Best provider token — SMS sender ID ("QNB EGYPT") or parsed bank name. Bare provider, never composed with the last4. */
@@ -80,9 +81,7 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
     })
       .then((data) => {
         if (!data) return
-        const linked = new Set(
-          paymentMethods.filter((pm) => pm.last4).map((pm) => pm.last4!),
-        )
+        const isLinked = (l4: string) => paymentMethods.some((pm) => pm.last4 && (pm.last4 === l4 || tailsMatch(pm.last4, l4)))
         const groups = new Map<string, Row[]>()
         for (const row of data as Row[]) {
           const l4 = row.account_last4!
@@ -91,7 +90,7 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
         }
         const result: DetectedAccount[] = []
         for (const [l4, rows] of groups) {
-          if (linked.has(l4)) continue
+          if (isLinked(l4)) continue
           const provider = pickProvider(
             mode(rows.map((r) => r.sender)),
             mode(rows.map((r) => r.bank_name)),

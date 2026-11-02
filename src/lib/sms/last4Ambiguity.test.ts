@@ -18,7 +18,7 @@ function svc(methods: Method[]) {
           if (hits.length > 1) return { data: null, error: { code: 'PGRST116' } }
           return { data: hits[0] ? { id: hits[0].id } : null, error: null }
         },
-        then: (r: (v: unknown) => unknown) => r({ data: [], error: null }),
+        then: (r: (v: unknown) => unknown) => r({ data: methods.map((m) => ({ id: m.id, last4: m.last4 })), error: null }),
       }
       return chain
     },
@@ -44,5 +44,17 @@ describe('last4 shared by several registered methods', () => {
 
   it('an unknown last4 still falls back as before', async () => {
     expect(await resolveExactPaymentMethod(svc(unique), 'u', '9999')).toBeNull()
+  })
+
+  it('a shorter tail the bank prints names the account saved with more digits', async () => {
+    const hsbc: Method[] = [{ id: 'acct', last4: '0001' }, { id: 'usd', last4: '0110' }, { id: 'card', last4: '5950' }]
+    expect(await resolveExactPaymentMethod(svc(hsbc), 'u', '001')).toBe('acct')
+    expect(await resolvePaymentMethodByLast4(svc(hsbc), 'u', '110')).toBe('usd')
+  })
+
+  it('a partial tail that fits two methods picks neither and does not fall back', async () => {
+    const two: Method[] = [{ id: 'a', last4: '0001' }, { id: 'b', last4: '1001' }, { id: 'd', last4: null, is_default: true }]
+    expect(await resolveExactPaymentMethod(svc(two), 'u', '001')).toBeNull()
+    expect(await resolvePaymentMethodByLast4(svc(two), 'u', '001')).toBeNull()
   })
 })

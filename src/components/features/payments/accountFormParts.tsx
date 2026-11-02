@@ -3,6 +3,7 @@
 import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useT } from '@/lib/i18n'
+import { MAX_ACCOUNT_DIGITS } from '@/lib/accounts/identity/accountRef'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 
 /** Trigger styling for the shared `CurrencyField` inside the account and card sheets, so both pick a currency the same way. */
@@ -47,8 +48,8 @@ export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4,
         <>
           <Input
             value={last4}
-            onChange={(e) => onLast4Change(e.target.value.replace(/\D/g, '').slice(0, 4))}
-            dir="ltr" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder="e.g. 1234" aria-label={t.fourDigits}
+            onChange={(e) => onLast4Change(e.target.value.replace(/\D/g, '').slice(0, MAX_ACCOUNT_DIGITS))}
+            dir="ltr" inputMode="numeric" pattern="[0-9]*" maxLength={MAX_ACCOUNT_DIGITS} placeholder="e.g. 1234" aria-label={t.fourDigits}
             size="brand" className="mt-2.5 font-mono-numbers text-[15px] tracking-[0.1em] text-[var(--color-brand-text-primary)] text-start"
           />
           <div className="mt-2 px-0.5 text-[11.5px] text-[var(--color-brand-text-muted)]">{t.last4Help}</div>

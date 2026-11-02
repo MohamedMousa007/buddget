@@ -33,6 +33,7 @@ import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { FieldButton } from '@/components/ui/FieldButton'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { isSavableTail } from '@/lib/accounts/identity/accountRef'
 
 /** Banks, wallets and cash have their own sheet; this one only adds cards, and edits an account's look, never its kind. */
 const CARD_TYPES: PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card']
@@ -184,13 +185,13 @@ export function PaymentMethodSetupSheet({
   // The Debt tab locks the type; an existing bank account or wallet keeps its kind here (cards are the only thing this sheet can switch between).
   const typeLock: PaymentMethodType | undefined = lockType ?? (editing && !CARD_TYPES.includes(editing.type) ? editing.type : undefined)
   const dayInvalid = type === 'credit_card' && cardDayError(ccStatementDay)
-  const canSave = hasProvider && !dayInvalid && !(idMode === 'last4' && last4.length !== 0 && last4.length !== 4)
+  const canSave = hasProvider && !dayInvalid && (idMode !== 'last4' || isSavableTail(last4))
 
   const handleSave = () => {
     if (!canSave) return
     const provider = providerName.trim()
     // The digits survive a switch to Label: SMS matching reads them even when a label is what the user sees.
-    const use4 = idMode !== 'none' && last4.length === 4
+    const use4 = idMode !== 'none' && last4.length > 0 && isSavableTail(last4)
     const words = idMode === 'label' ? label.trim() : ''
     const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
     const payload = { name, type, currency: curCode, color: effectiveColor, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }

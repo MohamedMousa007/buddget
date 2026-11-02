@@ -16,6 +16,7 @@ import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, QUICK_ADD, QUICK_ADD_BLEND, PAYMENT_TYPE_META, composePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency } from '@/lib/store/types'
+import { isSavableTail } from '@/lib/accounts/identity/accountRef'
 import { BrandMark } from './BrandMark'
 
 type Kind = 'bank_account' | 'wallet' | 'cash'
@@ -52,7 +53,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', o
   const provider = brand?.name ?? custom
   const isCash = kind === 'cash'
   const hasBalance = balance.trim() !== '' && Number.isFinite(parseFloat(balance))
-  const digitsOk = !(idMode === 'last4' && last4.length !== 0 && last4.length !== 4)
+  const digitsOk = idMode !== 'last4' || isSavableTail(last4)
   const canSave = hasBalance && digitsOk && (isCash || provider.trim() !== '')
   const popular = (COUNTRY[base] ? QUICK_ADD[COUNTRY[base]!] : QUICK_ADD_BLEND)
 
@@ -75,7 +76,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', o
       return id
     }
     // The digits are kept whenever they were typed (SMS matching needs them), even when a label is what the user sees.
-    const digits = idMode !== 'none' && last4.length === 4 ? last4 : undefined
+    const digits = idMode !== 'none' && last4.length > 0 && isSavableTail(last4) ? last4 : undefined
     const words = idMode === 'label' ? label.trim() : ''
     const id = addPaymentMethod({
       name: composePaymentMethodName(provider, { last4: digits }),
