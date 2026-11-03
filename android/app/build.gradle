@@ -8,7 +8,7 @@ android {
         applicationId "app.buddget"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 166
+        versionCode 167
         versionName "1.1.0"
         manifestPlaceholders = [sentryDsn: System.getenv("SENTRY_DSN") ?: ""]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
