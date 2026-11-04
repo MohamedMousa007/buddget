@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
@@ -85,7 +85,10 @@ function proposeApply(tool: string, args: Record<string, unknown>) {
   return { proposal: p.proposal, applied: write(tool).apply(p.proposal, ctx) }
 }
 
+// The executors compare dates with the real clock too; pin it to the fixture's "now" so the suite does not rot.
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(ctx.now)
   useFinanceStore.setState({
     paymentMethods: [pm(CASH, 'Cash', true), pm(CARD, 'CIB Card', false)],
     expenses: [],
@@ -356,3 +359,5 @@ describe('delete_subscription', () => {
     expect(write('delete_subscription').apply(p.proposal, ctx).ok).toBe(false)
   })
 })
+
+afterEach(() => vi.useRealTimers())

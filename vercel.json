@@ -21,7 +21,7 @@
     },
     {
       "path": "/api/cron/ios-crashes",
-      "schedule": "20 */6 * * *"
+      "schedule": "20 7 * * *"
     },
     {
       "path": "/api/cron/data-retention",
