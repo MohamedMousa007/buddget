@@ -6,7 +6,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-vi.mock('@/lib/native/isNative', () => ({ isNative: () => false }))
+// One switch, hoisted with the mocks: re-mocking per test depended on module-cache timing and failed on a loaded machine.
+const mocks = vi.hoisted(() => ({ native: false, getStatus: vi.fn() }))
+vi.mock('@/lib/native/isNative', () => ({ isNative: () => mocks.native }))
+vi.mock('@capacitor/network', () => ({ Network: { getStatus: mocks.getStatus, addListener: vi.fn() } }))
 
 type Handler = () => void
 const handlers: Record<string, Handler[]> = {}
@@ -30,9 +33,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  // The native test re-mocks these with doMock, which outlives resetModules: put the web defaults back for the next test.
-  vi.doMock('@/lib/native/isNative', () => ({ isNative: () => false }))
-  vi.doUnmock('@capacitor/network')
+  mocks.native = false
+  mocks.getStatus.mockReset()
 })
 
 describe('network status', () => {
@@ -68,11 +70,9 @@ describe('network status', () => {
 
 describe('native bootstrap', () => {
   it('asks the OS for connectivity as soon as the module loads, not on first read', async () => {
-    const getStatus = vi.fn().mockResolvedValue({ connected: false })
-    vi.doMock('@/lib/native/isNative', () => ({ isNative: () => true }))
-    vi.doMock('@capacitor/network', () => ({ Network: { getStatus, addListener: vi.fn() } }))
+    mocks.native = true
+    mocks.getStatus.mockResolvedValue({ connected: false })
     await import('@/hooks/useNetworkStatus')
-    // The module imports the plugin lazily; on a loaded machine that takes longer than waitFor's one-second default.
-    await vi.waitFor(() => expect(getStatus).toHaveBeenCalled(), { timeout: 5000 })
+    await vi.waitFor(() => expect(mocks.getStatus).toHaveBeenCalled(), { timeout: 5000 })
   })
 })

@@ -14,7 +14,7 @@ describe('screens', () => {
     expect(head.id).toBe('housing')
     expect(screenNodes(s, head, {}, []).map((x) => x.id)).toEqual(['housing'])
     expect(screenNodes(s, head, { housing: 'own' }, []).map((x) => x.id)).toEqual(['housing', 'ownType'])
-    expect(screenNodes(s, head, { housing: 'rent' }, []).map((x) => x.id)).toEqual(['housing'])
+    expect(screenNodes(s, head, { housing: 'rent' }, []).map((x) => x.id)).toEqual(['housing', 'rent'])
   })
   it('puts a rent amount, how often, and utilities on one card', () => {
     let s = createFlow('save', {})

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { writeFileSync } from 'node:fs'
-import { answer, createFlow, MODULE_ORDER, nextQuestion, skip, worthAsking } from './flow'
+import { answer, createFlow, MODULE_ORDER, nextQuestion, screenNodes, skip, worthAsking } from './flow'
 import { NODE_BY_ID, NODES } from './nodes'
 import { debtCount, fixedObligations, get, goalMonthlyNeed, hasAnyGoal, highAprDebt, housingMonthly, is, monthsHeld, num, planIncome, slack, stability } from './derive'
 import { applyAnswers } from './toFacts'
@@ -163,15 +163,27 @@ function walk(intent: FlowIntent, known: Known, r: () => number, script?: Record
         if (dep && !['securityLean', 'investing'].includes(q.id) && !(k in s.a) && !s.skipped.includes(k) && s.known[k] === undefined && worthAsking(s, dep) && (dep.when ? dep.when(s) : true)) problems.push(`${q.id} reads ${k} which applied but was not asked`)
       }
     }
-    if (steps.some((x) => x.id === q.id)) problems.push(`${q.id} asked twice`)
-    const forced = script?.[q.id]
-    if (forced === 'skip' || (forced === undefined && q.skippable && r() < 0.18)) {
-      s = skip(s, q.id)
-      steps.push({ id: q.id, mod: q.mod, a: 'skip' })
-    } else {
-      const v = forced ?? sample(q, s, r)
-      s = answer(s, q.id, v)
-      steps.push({ id: q.id, mod: q.mod, a: v })
+    // A screen holds the question and the related fields its answers unlock: fill them the way a person would, top to bottom.
+    const values: Record<string, FlowValue> = {}
+    const skips: string[] = []
+    let nodes = screenNodes(s, q, values, skips)
+    for (let guard = 0; guard < 10; guard++) {
+      const open = nodes.find((x) => !(x.id in values) && !skips.includes(x.id))
+      if (!open) break
+      const forcedHere = script?.[open.id]
+      if (forcedHere === 'skip' || (forcedHere === undefined && open.skippable && r() < 0.18)) skips.push(open.id)
+      else values[open.id] = forcedHere ?? sample(open, s, r)
+      nodes = screenNodes(s, q, values, skips)
+    }
+    for (const x of nodes) {
+      if (steps.some((y) => y.id === x.id)) problems.push(`${x.id} asked twice`)
+      if (skips.includes(x.id)) {
+        s = skip(s, x.id)
+        steps.push({ id: x.id, mod: x.mod, a: 'skip' })
+      } else if (x.id in values) {
+        s = answer(s, x.id, values[x.id])
+        steps.push({ id: x.id, mod: x.mod, a: values[x.id] })
+      }
     }
   }
   if (steps.length >= MAX_STEPS) problems.push('did not terminate')
@@ -302,6 +314,6 @@ describe('budget flow graph', () => {
     expect(never).toEqual([])
     expect(unseenOpts).toEqual([])
     expect(noIncome).toEqual([])
-    for (const v of Object.values(stats)) expect(v.max).toBeLessThanOrEqual(26)
+    for (const v of Object.values(stats)) expect(v.max).toBeLessThanOrEqual(24)
   }, 900_000)
 })

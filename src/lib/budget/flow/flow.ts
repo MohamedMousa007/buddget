@@ -19,7 +19,7 @@ const FOCUS: Record<FlowIntent, readonly FlowModule[]> = {
 }
 
 /** Standard (not core, not follow-up) questions one run may ask. Core questions and unlocked follow-ups are never cut. */
-const STD_BUDGET = 5
+const STD_BUDGET = 4
 
 export const createFlow = (intent: FlowIntent, known: Record<string, FlowValue> = {}): FlowState => {
   const s: FlowState = { intent, a: {}, known: { ...known }, skipped: [], cursor: 0 }
@@ -40,7 +40,7 @@ const passed = (s: FlowState, x: FlowNode) => !isInterrupt(x) && MODULE_ORDER[s.
  */
 function stakeFloor(s: FlowState): number {
   const asked = new Set([...Object.keys(s.a), ...s.skipped].map((id) => NODES.find((x) => x.id === id)?.group ?? id)).size
-  return asked < 12 ? 0 : asked < 16 ? 0.3 : asked < 20 ? 0.4 : 0.55
+  return asked < 10 ? 0 : asked < 14 ? 0.3 : asked < 18 ? 0.4 : 0.55
 }
 export const worthAsking = (s: FlowState, x: FlowNode) => x.tier === 'core' || isInterrupt(x) || x.stake >= stakeFloor(s)
 const pending = (s: FlowState, x: FlowNode) => !done(s, x) && !isKnown(s, x) && !passed(s, x) && worthAsking(s, x) && (x.when ? x.when(s) : true)
