@@ -1,23 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronLeft, ChevronRight, Clock, Coins, Copy, FilePlus, Hammer, LayoutTemplate, Landmark, ListChecks, Scissors, Target, X, type LucideIcon } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Check, ChevronLeft, ChevronRight, Clock, Coins, Copy, FilePlus, Hammer, LayoutTemplate, Landmark, Target, X, type LucideIcon } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { PageBody } from '@/components/layout/PageContainer'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
+import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { CREATE_INTENTS, type CreateIntent } from '@/lib/budget/templates'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { BudgetPlan } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { TintedTile } from '../TintedTile'
 import { useBudgetBuilderCopy } from '../useBuilderCopy'
 
-const INTENT_UI: Record<CreateIntent, { icon: LucideIcon; cat: 1 | 2 | 3 | 4 | 5 }> = {
+const INTENT_UI: Record<CreateIntent, { icon: LucideIcon; cat: 1 | 2 | 3 }> = {
   save: { icon: Coins, cat: 1 },
-  debt: { icon: Landmark, cat: 3 },
-  overspending: { icon: Scissors, cat: 5 },
   goal: { icon: Target, cat: 2 },
-  organise: { icon: ListChecks, cat: 4 },
+  debt: { icon: Landmark, cat: 3 },
 }
 
 export interface CreateChooserProps {
@@ -28,7 +29,8 @@ export interface CreateChooserProps {
   onTemplate: () => void
   onCopy: (planId: string) => void
   onContinue: (planId: string) => void
-  onClose: () => void
+  /** Absent when this is the main screen (no budget yet), so there is nothing to close. */
+  onClose?: () => void
 }
 
 /** Intent-first entry to making a budget; the build-it-yourself paths sit below. */
@@ -37,12 +39,16 @@ export function CreateChooser(p: CreateChooserProps) {
   const c = copy.create
   const closeLabel = copy.close
   const [copying, setCopying] = useState(false)
+  // Months of spending the app already holds; with some, every starting point asks less.
+  const dataMonths = useMemo(() => buildFactsFromStore(useFinanceStore.getState(), new Date()).averageCycles ?? 0, [])
   return (
     <PageBody className="space-y-4 lg:pb-6">
       <div className="flex items-center gap-2">
-        <IconButton variant="outlined" aria-label={closeLabel} onClick={copying ? () => setCopying(false) : p.onClose}>
-          {copying ? <ChevronLeft className="rtl:rotate-180" /> : <X />}
-        </IconButton>
+        {copying || p.onClose ? (
+          <IconButton variant="outlined" aria-label={closeLabel} onClick={copying ? () => setCopying(false) : p.onClose}>
+            {copying ? <ChevronLeft className="rtl:rotate-180" /> : <X />}
+          </IconButton>
+        ) : null}
         <span className="flex-1" />
         <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--color-brand-elevated)] px-3 text-xs font-semibold text-[var(--color-brand-text-secondary)]">
           <Clock className="size-3" aria-hidden />
@@ -70,6 +76,12 @@ export function CreateChooser(p: CreateChooserProps) {
             </div>
           </div>
           <p className="text-[13.5px] text-[var(--color-brand-text-secondary)]">{c.sub}</p>
+          {dataMonths > 0 ? (
+            <Badge tone="brand" className="self-start">
+              <Check aria-hidden />
+              {c.usingData(dataMonths)}
+            </Badge>
+          ) : null}
 
           {p.drafts.map((d) => (
             <Button key={d.id} variant="outline" className="h-auto w-full justify-start gap-3 py-3 text-start" onClick={() => p.onContinue(d.id)}>

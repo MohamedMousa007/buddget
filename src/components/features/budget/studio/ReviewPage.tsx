@@ -11,6 +11,7 @@ import { usePlanView } from '@/hooks/usePlanView'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import type { BudgetChapter } from '@/lib/budget/blocks'
 import { findLineView } from '@/lib/budget/planView'
+import { learnFromLineEdit } from '@/lib/budget/learnHooks'
 import type { BudgetBlock } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { navigate } from '@/lib/navigation/navigate'
@@ -139,7 +140,11 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
         line={selected}
         view={view}
         onClose={() => setLineId(null)}
-        onSave={(patch) => selected && act.patchLine(selected.line.id, patch)}
+        onSave={(patch) => {
+          if (!selected) return
+          act.patchLine(selected.line.id, patch)
+          if (patch.amount !== undefined) learnFromLineEdit(planId, selected.line.id, selected.amount, patch.amount)
+        }}
         onDelete={act.deleteLine}
         onSyncLive={() => selected && act.syncLive(selected)}
       />

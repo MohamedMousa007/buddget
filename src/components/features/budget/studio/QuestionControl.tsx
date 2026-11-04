@@ -3,41 +3,37 @@
 import { useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import { AmountField } from '@/components/ui/AmountField'
-import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
-import type { Question } from '@/lib/budget/infoGaps'
+import type { FlowNode, FlowValue } from '@/lib/budget/flow/types'
 import type { Currency } from '@/lib/store/types'
 import { reconcileTyped } from '@/lib/ui/typedAmount'
 import type { BudgetStudioCopy, StudioQuestionCopy } from '@/lib/i18n/budgetPage/studioCopy'
 
 export interface QuestionControlProps {
-  question: Question
+  node: FlowNode
   copy: StudioQuestionCopy
   ui: BudgetStudioCopy
   base: Currency
-  value: unknown
-  onChange: (v: unknown) => void
+  value: FlowValue | undefined
+  onChange: (v: FlowValue | undefined) => void
 }
 
+/** Controls whose number is a share, so it reads with a percent sign. */
+const PERCENT_IDS = new Set(['partnerSharePct', 'taxPct'])
+
 const asArray = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : [])
+const step = (q: FlowNode) => (q.id === 'securityLean' ? 5 : 1)
 
 /** The input for one studio question, picked by the question's control kind. */
-export function QuestionControl({ question: q, copy, ui, base, value, onChange }: QuestionControlProps) {
+export function QuestionControl({ node: q, copy, ui, base, value, onChange }: QuestionControlProps) {
   switch (q.control) {
-    case 'confirm':
-      return (
-        <Button size="cta" className="w-full" onClick={() => onChange(true)}>
-          {ui.confirm}
-        </Button>
-      )
     case 'chips':
-    case 'single':
       return (
         <div className="flex flex-wrap gap-2">
-          {q.options?.map((o) => (
-            <OptionChip key={o.value} as="trigger" size="md" selected={value === o.value} onClick={() => onChange(o.value)}>
-              {copy.opts?.[o.value] ?? o.value}
+          {q.opts?.map((o) => (
+            <OptionChip key={o} as="trigger" size="md" selected={value === o} onClick={() => onChange(o)}>
+              {copy.opts?.[o] ?? o}
             </OptionChip>
           ))}
         </div>
@@ -46,19 +42,19 @@ export function QuestionControl({ question: q, copy, ui, base, value, onChange }
       const picked = asArray(value)
       return (
         <div className="flex flex-wrap gap-2">
-          {q.options?.map((o) => {
-            const on = picked.includes(o.value)
+          {q.opts?.map((o) => {
+            const on = picked.includes(o)
             const full = q.max !== undefined && picked.length >= q.max && !on
             return (
               <OptionChip
-                key={o.value}
+                key={o}
                 as="trigger"
                 size="md"
                 selected={on}
                 disabled={full}
-                onClick={() => onChange(on ? picked.filter((x) => x !== o.value) : [...picked, o.value])}
+                onClick={() => onChange(on ? picked.filter((x) => x !== o) : [...picked, o])}
               >
-                {copy.opts?.[o.value] ?? o.value}
+                {copy.opts?.[o] ?? o}
               </OptionChip>
             )
           })}
@@ -78,15 +74,14 @@ export function QuestionControl({ question: q, copy, ui, base, value, onChange }
       )
     case 'stepper': {
       const n = typeof value === 'number' ? value : (q.min ?? 0)
-      const step = q.step ?? 1
       const set = (next: number) => onChange(Math.min(q.max ?? Infinity, Math.max(q.min ?? 0, next)))
       return (
         <div className="flex items-center justify-center gap-6">
-          <IconButton variant="outlined" size="lg" aria-label={ui.stepper.less} onClick={() => set(n - step)}>
+          <IconButton variant="outlined" size="lg" aria-label={ui.stepper.less} onClick={() => set(n - step(q))}>
             <Minus />
           </IconButton>
-          <span className="font-mono-numbers min-w-16 text-center text-4xl font-semibold text-[var(--color-brand-text-primary)]">{n}</span>
-          <IconButton variant="outlined" size="lg" aria-label={ui.stepper.more} onClick={() => set(n + step)}>
+          <span className="font-mono-numbers min-w-16 text-center text-4xl font-semibold text-[var(--color-brand-text-primary)]">{PERCENT_IDS.has(q.id) ? `${n}%` : n}</span>
+          <IconButton variant="outlined" size="lg" aria-label={ui.stepper.more} onClick={() => set(n + step(q))}>
             <Plus />
           </IconButton>
         </div>
@@ -104,15 +99,19 @@ export function QuestionControl({ question: q, copy, ui, base, value, onChange }
             className="h-11 w-full accent-[var(--color-brand-primary)]"
             min={q.min ?? 0}
             max={q.max ?? 100}
-            step={q.step ?? 1}
+            step={step(q)}
             value={typeof value === 'number' ? value : 50}
             aria-label={copy.label}
             onChange={(e) => onChange(Number(e.target.value))}
           />
-          <div className="flex justify-between text-xs text-[var(--color-brand-text-secondary)]">
-            <span>{ui.slider.low}</span>
-            <span>{ui.slider.high}</span>
-          </div>
+          {q.id === 'partnerSharePct' ? (
+            <p className="font-mono-numbers text-center text-2xl font-semibold text-[var(--color-brand-text-primary)]">{typeof value === 'number' ? value : 50}%</p>
+          ) : (
+            <div className="flex justify-between text-xs text-[var(--color-brand-text-secondary)]">
+              <span>{ui.slider.low}</span>
+              <span>{ui.slider.high}</span>
+            </div>
+          )}
         </div>
       )
     default:

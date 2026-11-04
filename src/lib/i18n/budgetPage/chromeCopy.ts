@@ -46,15 +46,6 @@ export interface BudgetChromeCopy {
     reason: Record<InsightKind, (p: InsightText) => string>
     action: Record<'openLine' | 'raise' | 'cap' | 'moveBuffer' | 'update' | 'addLine', string>
   }
-  empty: {
-    headline: string
-    body: string
-    points: [string, string, string]
-    buddgy: string
-    /** Shown instead when the app already holds spending history to build from. */
-    drafted: { headline: (months: number) => string; body: string; cta: string }
-    manual: string
-  }
   learning: string
   upgrade: {
     title: (lines: number) => string
@@ -147,18 +138,6 @@ export const budgetChromeCopyEn: BudgetChromeCopy = {
       addLine: 'Add a line',
     },
   },
-  empty: {
-    headline: 'Plan every paycheck',
-    body: 'Answer a few questions and get a budget built around your life. It takes about two minutes.',
-    points: ['Built from your own numbers', 'Debts and goals included', 'Adjusts as you spend'],
-    buddgy: 'Start with Buddgy',
-    drafted: {
-      headline: (months) => `We can draft a plan from your last ${months === 1 ? 'month' : `${months} months`}`,
-      body: 'Buddgy only asks about what your records do not show.',
-      cta: 'Review my draft',
-    },
-    manual: 'Or set it up myself',
-  },
   learning: 'First month: some amounts are estimates, so going over is only a heads-up for now. They sharpen as you spend.',
   upgrade: {
     title: (n) => `We grouped your ${n} lines into blocks. Check they look right.`,
@@ -250,18 +229,6 @@ export const budgetChromeCopyAr: BudgetChromeCopy = {
       update: 'تحديث الخطة',
       addLine: 'إضافة بند',
     },
-  },
-  empty: {
-    headline: 'خطط لكل راتب',
-    body: 'أجب عن بضعة أسئلة لتحصل على ميزانية مبنية على حياتك. تستغرق دقيقتين تقريبًا.',
-    points: ['مبنية على أرقامك أنت', 'تشمل الديون والأهداف', 'تتكيف مع إنفاقك'],
-    buddgy: 'ابدأ مع Buddgy',
-    drafted: {
-      headline: (months) => `يمكننا صياغة خطة من ${months === 1 ? 'الشهر الماضي' : `آخر ${months} أشهر`}`,
-      body: 'يسألك Buddgy فقط عما لا تُظهره سجلاتك.',
-      cta: 'راجع المسودة',
-    },
-    manual: 'أو أعدها بنفسي',
   },
   learning: 'الشهر الأول: بعض المبالغ تقديرية، لذا تجاوزها مجرد تنبيه الآن. وتصبح أدق مع إنفاقك.',
   upgrade: {

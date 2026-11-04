@@ -68,11 +68,11 @@ export function suggestionToCategory(s: DraftLine, id: string, currency: Currenc
 }
 
 /** What the user wants their money to do; picks the starting template and the plan's intent. */
-export type CreateIntent = 'save' | 'debt' | 'overspending' | 'goal' | 'organise'
+export type CreateIntent = 'save' | 'goal' | 'debt'
 
-export const CREATE_INTENTS: readonly CreateIntent[] = ['save', 'debt', 'overspending', 'goal', 'organise']
+export const CREATE_INTENTS: readonly CreateIntent[] = ['save', 'goal', 'debt']
 
-/** Priorities an intent implies, seeded as the studio's priorities answer. Overspending and organise leave it to the user. */
+/** Priorities an intent implies, seeded as the studio's priorities answer. */
 export const INTENT_PRIORITIES: Partial<Record<CreateIntent, string[]>> = {
   save: ['safety', 'invest'],
   debt: ['debt', 'safety'],

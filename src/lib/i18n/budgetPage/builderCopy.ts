@@ -33,6 +33,7 @@ export interface BudgetBuilderCopy {
     sub: string
     buddgyAsks: string
     about: string
+    usingData: (months: number) => string
     intents: Record<CreateIntent, { name: string; sub: string }>
     orBuild: string
     blank: string
@@ -98,16 +99,15 @@ export const budgetBuilderCopyEn: BudgetBuilderCopy = {
   needIncome: 'Add your income under Flow first. Templates are sized on it.',
   readyToast: 'Plan ready',
   create: {
-    title: 'What should your money do?',
-    sub: 'Pick the closest one. Buddgy shapes the plan around it, and you can change anything.',
-    buddgyAsks: 'Buddgy asks',
+    title: 'Build your budget',
+    sub: 'Choose a starting point. Buddgy asks a few questions, then turns your answers into a monthly plan.',
+    buddgyAsks: 'Budget builder',
     about: 'About 3 minutes',
+    usingData: (months) => `Using your ${months === 1 ? 'last month' : `${months} months`} of data`,
     intents: {
-      save: { name: 'Save more', sub: 'Raise your savings rate without feeling it' },
-      debt: { name: 'Clear debt', sub: 'Aim spare money at the costliest debt first' },
-      overspending: { name: 'Stop overspending', sub: 'Set caps from what you really spend' },
-      goal: { name: 'Plan a big goal', sub: 'A trip, a new phone, a home deposit' },
-      organise: { name: 'Just organise it', sub: 'Put every dirham in a place, no pressure' },
+      save: { name: 'Save more', sub: 'Build a monthly saving habit around your real spending.' },
+      goal: { name: 'Plan a big goal', sub: 'A home, a car, a wedding or a trip, with a date and a monthly amount that fits.' },
+      debt: { name: 'Get out of debt', sub: 'Pay off cards and loans in the smartest order.' },
     },
     orBuild: 'or build it yourself',
     blank: 'Blank',
@@ -171,16 +171,15 @@ export const budgetBuilderCopyAr: BudgetBuilderCopy = {
   needIncome: 'أضف دخلك من صفحة التدفق أولًا. القوالب تعتمد عليه.',
   readyToast: 'الخطة جاهزة',
   create: {
-    title: 'ماذا تريد أن يفعل مالك؟',
-    sub: 'اختر الأقرب. يبني بادي الخطة حوله ويمكنك تغيير أي شيء.',
-    buddgyAsks: 'بادي يسأل',
+    title: 'ابنِ ميزانيتك',
+    sub: 'اختر نقطة بداية. يسألك بادي بضعة أسئلة ثم يحوّل إجاباتك إلى خطة شهرية.',
+    buddgyAsks: 'منشئ الميزانية',
     about: 'حوالي 3 دقائق',
+    usingData: (months) => `نستخدم بيانات ${months === 1 ? 'الشهر الماضي' : `آخر ${months} أشهر`}`,
     intents: {
-      save: { name: 'ادخار أكثر', sub: 'ارفع نسبة ادخارك دون أن تشعر' },
-      debt: { name: 'سداد الدين', sub: 'وجّه الفائض إلى أغلى دين أولًا' },
-      overspending: { name: 'وقف الإفراط في الإنفاق', sub: 'حدّد سقوفًا من إنفاقك الفعلي' },
-      goal: { name: 'التخطيط لهدف كبير', sub: 'رحلة أو هاتف جديد أو دفعة منزل' },
-      organise: { name: 'تنظيم فقط', sub: 'ضع كل درهم في مكانه دون ضغط' },
+      save: { name: 'ادخار أكثر', sub: 'ابنِ عادة ادخار شهرية حول إنفاقك الفعلي.' },
+      goal: { name: 'التخطيط لهدف كبير', sub: 'منزل أو سيارة أو زفاف أو رحلة، بتاريخ ومبلغ شهري مناسبين.' },
+      debt: { name: 'الخروج من الدين', sub: 'سدّد البطاقات والقروض بأذكى ترتيب.' },
     },
     orBuild: 'أو ابنِها بنفسك',
     blank: 'فارغة',

@@ -72,6 +72,7 @@ describe('native bootstrap', () => {
     vi.doMock('@/lib/native/isNative', () => ({ isNative: () => true }))
     vi.doMock('@capacitor/network', () => ({ Network: { getStatus, addListener: vi.fn() } }))
     await import('@/hooks/useNetworkStatus')
-    await vi.waitFor(() => expect(getStatus).toHaveBeenCalled())
+    // The module imports the plugin lazily; on a loaded machine that takes longer than waitFor's one-second default.
+    await vi.waitFor(() => expect(getStatus).toHaveBeenCalled(), { timeout: 5000 })
   })
 })

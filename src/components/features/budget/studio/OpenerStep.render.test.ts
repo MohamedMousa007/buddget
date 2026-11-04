@@ -3,13 +3,17 @@ import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { OpenerStep } from './OpenerStep'
 import { UnderstoodStep } from './UnderstoodStep'
+import { ScreenStep } from './ScreenStep'
+import { answer, createFlow } from '@/lib/budget/flow/flow'
+import { NODE_BY_ID } from '@/lib/budget/flow/nodes'
 
 describe('describe-yourself step', () => {
-  const html = renderToStaticMarkup(h(OpenerStep, { base: 'EGP', onDone: vi.fn(), onSkip: vi.fn() }))
+  const html = renderToStaticMarkup(h(OpenerStep, { base: 'EGP', onDone: vi.fn() }))
 
-  it('invites a sentence or two, and can be skipped', () => {
-    expect(html).toContain('Tell me about your situation')
-    expect(html).toContain('Skip, ask me instead')
+  it('asks for the details that prefill the most, and cannot be skipped', () => {
+    expect(html).toContain('Tell me about yourself')
+    expect(html).toContain('take-home pay')
+    expect(html).not.toContain('Skip')
     expect(html).toContain('maxLength="400"')
   })
   it('the continue button is disabled until something is written', () => {
@@ -20,5 +24,18 @@ describe('describe-yourself step', () => {
     const out = renderToStaticMarkup(h(UnderstoodStep, { rows, onContinue: vi.fn() }))
     expect(out).toContain('I picked up 2 things')
     expect(out).toContain('EGP 6,000')
+  })
+
+  const screen = (s: ReturnType<typeof createFlow>, id: string) =>
+    renderToStaticMarkup(h(ScreenStep, { state: s, head: NODE_BY_ID.get(id)!, reopen: false, base: 'EGP', saved: false, fill: () => '3', onSubmit: vi.fn() }))
+
+  it('shows tracked income, bills, debts and goals as one "found" card each, with a right / not right choice', () => {
+    const out = screen(createFlow('save', { income: 18000, knownBillCount: 3, knownDebtCount: 2, knownGoalCount: 1 }), 'confirmIncome')
+    expect(out).toContain('Here is what I found')
+    expect(out.match(/Not right/g)?.length).toBe(4)
+  })
+  it('a debt screen cannot continue until a kind is chosen', () => {
+    const s = answer(answer(createFlow('debt'), 'hasDebts', true), 'x', true)
+    expect(screen(s, 'debtKinds')).toMatch(/disabled[^>]*>[^<]*Continue|Continue[^<]*<\/button>/)
   })
 })

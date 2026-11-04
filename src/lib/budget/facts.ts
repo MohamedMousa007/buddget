@@ -51,6 +51,38 @@ export interface BudgetFacts {
   investInterest: boolean
   /** Other fixed monthly costs the user described in words (school fees, remittances); each becomes a bills line. */
   extraCommitments?: Array<{ name: string; amount: number }>
+  /** How the money is earned; self-employed income needs a tax reserve and a longer safety net. */
+  incomeType?: 'salary' | 'freelance' | 'business' | 'seasonal' | 'mixed' | 'benefits' | 'allowance'
+  /** The job may end or change soon, so the safety net targets at least six months. */
+  jobUncertain?: boolean
+  /** Share of income to hold back for tax before anything else (0 to 0.4). */
+  taxReservePct?: number
+  /** Fixed monthly costs from the household, each already reduced to this person's share. */
+  childcareMonthly?: number
+  schoolMonthly?: number
+  healthMonthly?: number
+  insuranceMonthly?: number
+  /** Building fees, maintenance and property tax on an owned home. */
+  propertyMonthly?: number
+  /** Yearly costs (car renewal, school start, travel, festivals) divided by twelve. */
+  annualMonthly?: number
+  /** Retirement: an employer plan or social insurance counts, so only `none` earns a recommended line. */
+  retirement?: 'employer' | 'self' | 'none'
+  retirementMonthly?: number
+  /** Overdue payments to clear first. */
+  arrears?: number
+  /** Share of income the person wants to save, from the "Save more" starting point. */
+  saveTargetPct?: number
+  /** Everyday lines to trim first when money is short, in the person's own order. */
+  cutFirst?: EverydayKey[]
+  /** When a goal and the safety net compete. */
+  goalVsSafety?: 'goal_first' | 'balanced' | 'safety_first'
+  /** Pay-off order chosen for several debts. */
+  debtStrategy?: 'avalanche' | 'snowball' | 'balanced'
+  /** Extra per month the person said they could put toward debt. */
+  debtExtra?: number
+  /** What past edits and month closes taught us about this person (see learned.ts). */
+  learned?: import('@/lib/budget/learned').Learned
 }
 
 export type EverydayKey = 'groceries' | 'dining' | 'transport' | 'health' | 'shopping' | 'fun' | 'family' | 'other'
@@ -76,6 +108,8 @@ export interface FactDebt {
   minimum: number
   balance: number
   kind: 'credit_card' | 'installment' | 'loan' | 'personal'
+  /** Yearly interest rate in percent when known; the engine orders payoff by it. */
+  apr?: number | null
 }
 
 export interface FactGoal {

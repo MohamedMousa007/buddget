@@ -30,7 +30,6 @@ import { FlowStrip } from './FlowStrip'
 import { PlanChapters } from './PlanChapters'
 import { InsightsChip } from './InsightsChip'
 import { InsightsSheet } from './InsightsSheet'
-import { EmptyPlan } from './EmptyPlan'
 import { LearningNote } from './LearningNote'
 import { UpgradeBanner } from './UpgradeBanner'
 import { LineSheet } from './sheets/LineSheet'
@@ -53,6 +52,7 @@ import { useBudgetStressCopy } from './useStressCopy'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
 import { mergeClosedCycles, nextCloseMemory } from '@/lib/budget/closeMemory'
+import { learnFromClose, learnFromLineEdit } from '@/lib/budget/learnHooks'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetStudioCopy } from './useStudioCopy'
@@ -248,34 +248,29 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     )
   }
 
-  if (creating) {
-    return (
-      <CreateChooser
-        plans={plans}
-        drafts={plans.filter((p) => p.status === 'draft')}
-        onIntent={(intent) => {
-          setCreating(false)
-          setStudio({ intent })
-        }}
-        onBlank={() => openBuilder(planActions.createDraft(), true)}
-        onTemplate={() => openBuilder(planActions.createDraft())}
-        onCopy={(id) => {
-          const copy = planActions.duplicate(id)
-          if (copy) openBuilder(copy)
-        }}
-        onContinue={openBuilder}
-        onClose={() => setCreating(false)}
-      />
-    )
-  }
+  const chooser = (onClose?: () => void) => (
+    <CreateChooser
+      plans={plans}
+      drafts={plans.filter((p) => p.status === 'draft')}
+      onIntent={(intent) => {
+        setCreating(false)
+        setStudio({ intent })
+      }}
+      onBlank={() => openBuilder(planActions.createDraft(), true)}
+      onTemplate={() => openBuilder(planActions.createDraft())}
+      onCopy={(id) => {
+        const copy = planActions.duplicate(id)
+        if (copy) openBuilder(copy)
+      }}
+      onContinue={openBuilder}
+      onClose={onClose}
+    />
+  )
 
-  if (!view) {
-    return (
-      <PageBody className="space-y-4">
-        <EmptyPlan onBuildWithBuddgy={() => setStudio({ intent: null })} onManual={startBuild} />
-      </PageBody>
-    )
-  }
+  if (creating) return chooser(() => setCreating(false))
+
+  // With no budget yet the chooser is the page: nothing to close.
+  if (!view) return chooser()
 
   const base = view.base
   // The month the activation really takes over from follows the pay cycle, not the calendar.
@@ -401,7 +396,11 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         line={selectedLine}
         view={view}
         onClose={() => setLineId(null)}
-        onSave={(patch) => selectedLine && act.patchLine(selectedLine.line.id, patch)}
+        onSave={(patch) => {
+          if (!selectedLine) return
+          act.patchLine(selectedLine.line.id, patch)
+          if (patch.amount !== undefined) learnFromLineEdit(view.plan.id, selectedLine.line.id, selectedLine.amount, patch.amount)
+        }}
         onDelete={act.deleteLine}
         onSyncLive={() => selectedLine && act.syncLive(selectedLine)}
       />
@@ -450,6 +449,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           if (!monthClose) return
           useSettingsStore.getState().closeBudgetCycle(monthClose.cycleKey)
           const { profile, updateProfile } = store.getState()
+          learnFromClose(monthClose.proposals)
           const closeMemory = nextCloseMemory(profile.financialProfile?.closeMemory, monthClose.proposals, appliedIds, monthClose.cycleKey)
           const closedCycles = mergeClosedCycles(useSettingsStore.getState().budgetClosedCycles, profile.financialProfile?.closedCycles)
           updateProfile({ financialProfile: { ...profile.financialProfile, closeMemory, closedCycles } })

@@ -68,7 +68,7 @@ describe('benchmarks', () => {
 
 describe('buildPlan', () => {
   it('exports version and everyday keys', () => {
-    expect(ENGINE_VERSION).toBe('v1')
+    expect(ENGINE_VERSION).toBe('v2')
     expect(EVERYDAY_KEYS).toContain('groceries')
   })
 
@@ -326,9 +326,94 @@ describe('extra payoff pace', () => {
     const extra = find(buildPlan({ ...rich, priorities: ['debt'] }), (l) => l.name.startsWith('Extra payoff'))
     expect(extra?.amount).toBe(Math.ceil(14200 / 24))
   })
-  it('is slower when debt is not a stated priority', () => {
-    const extra = find(buildPlan({ ...rich, priorities: [] }), (l) => l.name.startsWith('Extra payoff'))
+  it('is slower when debt is not a stated priority and the rate is modest', () => {
+    const cheap = { ...rich, debts: [{ ...card, apr: 8 }] }
+    const extra = find(buildPlan({ ...cheap, priorities: [] }), (l) => l.name.startsWith('Extra payoff'))
     expect(extra?.amount).toBeLessThanOrEqual(Math.ceil(14200 / 36))
+  })
+  it('treats a card with an unknown rate as costly, since cards rarely charge less than 15%', () => {
+    const extra = find(buildPlan({ ...rich, priorities: [] }), (l) => l.name.startsWith('Extra payoff'))
+    expect(extra?.amount).toBe(Math.ceil(14200 / 24))
+  })
+})
+
+describe('v2 rules', () => {
+  const rich: BudgetFacts = { ...base, monthlyIncome: 20000, liquidSavings: 60000 }
+  const sumOf = (p: PlanDraft) => p.lines.reduce((s, l) => s + l.amount, 0)
+  const loan = { id: 'l', name: 'Loan', minimum: 800, balance: 40000, kind: 'loan' as const }
+  const card = { id: 'c', name: 'Card', minimum: 500, balance: 9000, kind: 'credit_card' as const }
+
+  it('sends extra money to the highest rate first, not the smallest balance', () => {
+    const p = buildPlan({ ...rich, debts: [{ ...loan, apr: 19 }, { ...card, apr: 10 }] })
+    expect(find(p, (l) => l.name.startsWith('Extra payoff'))?.name).toBe('Extra payoff: Loan')
+  })
+  it('follows a chosen snowball: smallest balance first', () => {
+    const p = buildPlan({ ...rich, debtStrategy: 'snowball', debts: [{ ...loan, apr: 19 }, { ...card, apr: 10 }] })
+    expect(find(p, (l) => l.name.startsWith('Extra payoff'))?.name).toBe('Extra payoff: Card')
+  })
+  it('uses the extra amount the person offered', () => {
+    const p = buildPlan({ ...rich, debtExtra: 700, debts: [{ ...loan, apr: 19 }] })
+    expect(find(p, (l) => l.name.startsWith('Extra payoff'))?.amount).toBeLessThanOrEqual(700)
+  })
+  it('holds a tax reserve first for self-employed income and still balances to zero', () => {
+    const p = buildPlan({ ...rich, incomeType: 'freelance', incomeStability: 'variable', incomeFloor: 15000, taxReservePct: 0.15 })
+    expect(find(p, (l) => l.name === 'Tax reserve')?.amount).toBe(Math.round(15000 * 0.15))
+    expect(p.free).toBe(0)
+    expect(sumOf(p)).toBe(p.income)
+  })
+  it('sets yearly costs aside a month at a time', () => {
+    expect(find(buildPlan({ ...rich, annualMonthly: 900 }), (l) => l.name === 'Yearly costs')?.amount).toBe(900)
+  })
+  it('starts a small retirement line only when there is none and the basics are in place', () => {
+    expect(find(buildPlan({ ...rich, retirement: 'none' }), (l) => l.name === 'Retirement')?.amount).toBeGreaterThan(0)
+    expect(find(buildPlan({ ...rich, retirement: 'employer' }), (l) => l.name === 'Retirement')).toBeUndefined()
+    expect(find(buildPlan({ ...rich, retirement: 'none', debts: [{ ...card, apr: 25 }] }), (l) => l.name === 'Retirement')).toBeUndefined()
+  })
+  it('clears overdue amounts first and says so', () => {
+    const p = buildPlan({ ...rich, arrears: 3000, debts: [loan] })
+    expect(find(p, (l) => l.name === 'Catch up overdue')?.amount).toBe(1000)
+    expect(p.risks.some((r) => r.includes('behind on payments'))).toBe(true)
+  })
+  it('warns when debt payments pass the 36% guide, and says a budget cannot fix 50%', () => {
+    const heavy = { ...loan, minimum: 8000 }
+    expect(buildPlan({ ...rich, debts: [heavy] }).risks.some((r) => r.includes('above the 36% guide'))).toBe(true)
+    expect(buildPlan({ ...rich, debts: [{ ...heavy, minimum: 11000 }] }).risks.some((r) => r.includes('cannot fix'))).toBe(true)
+  })
+  it('sizes the safety net to nine months for self-employed people with dependants', () => {
+    const p = buildPlan({ ...rich, liquidSavings: 0, incomeType: 'freelance', incomeStability: 'variable', dependents: 2 })
+    expect(find(p, (l) => l.name === 'Safety net')?.rationale).toContain('of 9 months')
+  })
+  it('sizes the safety net to six months when the job feels uncertain', () => {
+    const p = buildPlan({ ...rich, liquidSavings: 0, jobUncertain: true })
+    expect(find(p, (l) => l.name === 'Safety net')?.rationale).toContain('of 6 months')
+  })
+  it('trims the lines the person chose first', () => {
+    const tight: BudgetFacts = { ...base, monthlyIncome: 6000, housing: 'rent', rent: 3000, liquidSavings: 20000 }
+    const a = find(buildPlan({ ...tight, cutFirst: ['groceries' as const] }), (l) => l.name === 'Groceries')?.amount ?? 0
+    const b = find(buildPlan(tight), (l) => l.name === 'Groceries')?.amount ?? 0
+    expect(a).toBeLessThanOrEqual(b)
+  })
+  it('lets a person who accepts none of the cuts set a saving target, and fills it from everyday spending', () => {
+    const a = buildPlan({ ...rich, saveTargetPct: 0.3 })
+    const saved = a.lines.filter((l) => l.isSavings).reduce((s, l) => s + l.amount, 0)
+    expect(saved / a.income).toBeGreaterThanOrEqual(0.29)
+    expect(a.free).toBe(0)
+  })
+  it('lowers a line the person keeps lowering, and never beyond the clamp', () => {
+    const plain = find(buildPlan(rich), (l) => l.name === 'Dining out')?.amount ?? 0
+    const learned = find(buildPlan({ ...rich, learned: { v: 1, everyday: { dining: { mult: 0.6, n: 5 } } } }), (l) => l.name === 'Dining out')?.amount ?? 0
+    expect(learned).toBeLessThan(plain)
+    expect(learned).toBeGreaterThanOrEqual(Math.round(plain * 0.55))
+  })
+  it('stretches goals that would eat the budget instead of funding them in full', () => {
+    const p = buildPlan({ ...rich, goals: [{ id: 'g', name: 'Car', monthly: 18000, targetAmount: 400000, saved: 0, targetDate: null, priority: 1, icon: 'car' }] })
+    const goal = find(p, (l) => l.block === 'goals')?.amount ?? 0
+    expect(goal).toBeLessThanOrEqual(Math.round(rich.monthlyIncome * 0.35))
+    expect(p.risks.some((r) => r.includes('take longer than you asked'))).toBe(true)
+  })
+  it('lists stated household costs as essential bills', () => {
+    const p = buildPlan({ ...rich, schoolMonthly: 2000, childcareMonthly: 1500, healthMonthly: 400, insuranceMonthly: 300, propertyMonthly: 500 })
+    for (const n of ['School', 'Childcare', 'Health costs', 'Insurance', 'Home upkeep']) expect(find(p, (l) => l.name === n)?.essential).toBe(true)
   })
 })
 

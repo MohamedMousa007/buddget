@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronLeft, ListChecks, X } from 'lucide-react'
+import { ChevronLeft, ListChecks, X } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { PageBody } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
@@ -13,41 +13,32 @@ import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
 import { refineDraft } from '@/lib/budget/budgetAiClient'
 import { applyRefinement } from '@/lib/budget/budgetAi'
-import { commitStudioEntities } from '@/lib/budget/studioEntities'
+import { commitFlowEntities, createdIds } from '@/lib/budget/studioEntities'
+import { recordBuild } from '@/lib/budget/learnHooks'
 import { isOnline } from '@/hooks/useNetworkStatus'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { repairDraft } from '@/lib/budget/validate'
-import {
-  STAGES,
-  acceptDescribed,
-  answersToProfilePatch,
-  applyAnswer,
-  createState,
-  defaultValue,
-  mergeFacts,
-  QUESTIONS,
-  questionById,
-  readiness,
-  skipQuestion,
-  visibleQuestions,
-  type Question,
-  type StudioState,
-} from '@/lib/budget/infoGaps'
-import type { BudgetFacts, PlanDraft } from '@/lib/budget/facts'
+import { acceptDescribed, answer, createFlow, flowReadiness, nextQuestion, pruneInapplicable, skip, STAGES, stageOf } from '@/lib/budget/flow/flow'
+import { get } from '@/lib/budget/flow/derive'
+import { knownFromStore } from '@/lib/budget/flow/known'
+import { NODES, NODE_BY_ID } from '@/lib/budget/flow/nodes'
+import { PROFILE_ANSWERS, profilePatch } from '@/lib/budget/flow/profile'
+import { applyAnswers } from '@/lib/budget/flow/toFacts'
+import type { FlowIntent, FlowState, FlowValue } from '@/lib/budget/flow/types'
+import type { PlanDraft } from '@/lib/budget/facts'
 import type { CreateIntent } from '@/lib/budget/templates'
-import { INTENT_PRIORITIES } from '@/lib/budget/templates'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useBudgetPageCopy } from '../usePageCopy'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import { KnownSheet, type KnownRow } from './KnownSheet'
-import { incomeKnownRow } from './incomeKnownRow'
-import { DraftStep } from './DraftStep'
 import { OpenerStep } from './OpenerStep'
-import { QuestionControl } from './QuestionControl'
+import { ScreenStep, type ScreenAnswer } from './ScreenStep'
 import { UnderstoodStep } from './UnderstoodStep'
 
 const newId = () => crypto.randomUUID()
+const BUILD_TIMEOUT_MS = 30_000
+const PERCENT_ANSWERS = new Set(['partnerSharePct', 'taxPct'])
 
 export interface StudioPageProps {
   intent: CreateIntent | null
@@ -56,60 +47,42 @@ export interface StudioPageProps {
   onBuilt: (planId: string, aiNote: boolean) => void
 }
 
-const MONEY_ANSWERS = new Set(['income', 'rent', 'lowMonth', 'debtTotal', 'debtMonthly', 'savingsOnHand', 'goalTarget'])
-
-const labelArg = (id: string, f: BudgetFacts, money: (n: number) => string): string =>
-  id === 'rentCheck' ? money(f.ledgerRent ?? 0)
-  : id === 'confirmIncome' ? money(f.monthlyIncome)
-    : id === 'confirmBills' ? String(f.bills.length + f.subscriptionCount)
-      : id === 'confirmDebts' ? String(f.debts.length)
-        : String(f.goals.length)
-
-/** Card-by-card builder: one question at a time, answers saved to the profile as they land. */
+/** Card-by-card builder: related questions share a screen, answers are saved to the profile as they land. */
 export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   const ui = useBudgetStudioCopy()
   const page = useBudgetPageCopy()
   const store = useFinanceStore
   const facts = useMemo(() => buildFactsFromStore(store.getState(), new Date()), [store])
-  const [state, setState] = useState<StudioState>(() => {
-    const resumed = resumeStudioDraft(useSettingsStore.getState().budgetStudioDraft, intent, Date.now())
-    if (resumed) return resumed
-    const s = createState()
-    return intent && INTENT_PRIORITIES[intent] ? applyAnswer(s, 'priorities', INTENT_PRIORITIES[intent]) : s
-  })
+  const [state, setState] = useState<FlowState>(
+    () => resumeStudioDraft(useSettingsStore.getState().budgetStudioDraft, intent, Date.now()) ?? createFlow((intent ?? 'mixed') as FlowIntent, knownFromStore(facts, store.getState().profile.financialProfile)),
+  )
   const [saved, setSaved] = useState(false)
   const [focusId, setFocusId] = useState<string | null>(null)
   const [knownOpen, setKnownOpen] = useState(false)
-  // Question ids answered or skipped this session, newest last, so Back can undo them one by one.
-  const [trail, setTrail] = useState<string[]>([])
+  // The state before each screen, so Back restores it exactly.
+  const [trail, setTrail] = useState<FlowState[]>([])
   const [attempt, setAttempt] = useState(0)
   const [buildNow, setBuildNow] = useState(false)
-  // Answer ids Buddgy picked out of the description, shown once before the remaining questions.
-  // Someone with history can build straight from it; this records that they chose the questions instead.
-  const [draftDeclined, setDraftDeclined] = useState(false)
   const [understood, setUnderstood] = useState<string[] | null>(null)
   const [buildError, setBuildError] = useState(false)
   const building = useRef(false)
   // Held outside state so a remounted or retried build cannot create the same records again.
   const created = useRef<Record<string, string>>(state.entities ?? {})
 
-  const next = visibleQuestions(facts, state)[0]
-  // A row picked in "What I know" reopens its question even though it is already answered.
-  const q = (focusId ? questionById(focusId) : undefined) ?? next
-  const merged = mergeFacts(facts, state)
-  const ready = readiness(facts, state)
   const base = facts.baseCurrency
-  const stage = q?.stage ?? 'priorities'
   const money = (n: number) => formatCurrency(n, base, false)
+  const next = nextQuestion(state)
+  const head = (focusId ? NODE_BY_ID.get(focusId) : undefined) ?? next
+  const ready = flowReadiness(state)
 
-  const commit = (next: StudioState) => {
-    useSettingsStore.getState().saveBudgetStudioDraft({ intent, state: next, savedAt: Date.now() })
-    setState(next)
+  const commit = (s: FlowState) => {
+    useSettingsStore.getState().saveBudgetStudioDraft({ v: 3, intent, state: s, savedAt: Date.now() })
+    setState(s)
   }
 
   /** Writes the answers that belong on the profile (household, rent, budget answers) as they land. */
-  const saveToProfile = (answered: StudioState) => {
-    const { profile, financial } = answersToProfilePatch(answered, facts)
+  const saveToProfile = (a: FlowState['a']) => {
+    const { profile, financial } = profilePatch(a)
     const s = store.getState()
     const patch: Record<string, unknown> = { ...profile }
     if (profile.emergencyFundConfig) patch.emergencyFundConfig = { ...s.profile.emergencyFundConfig, ...profile.emergencyFundConfig }
@@ -118,21 +91,26 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   }
 
   const finishOpener = (described: Record<string, unknown>) => {
-    const found = acceptDescribed(facts, state, described)
-    const start: StudioState = { ...state, opener: 'done' }
-    const answered = Object.entries(found).reduce((acc, [id, v]) => applyAnswer(acc, id, v), start)
-    saveToProfile(answered)
-    setUnderstood(Object.keys(found).length > 0 ? Object.keys(found) : null)
-    commit(answered)
+    const { state: after, kept } = acceptDescribed(state, described as Record<string, FlowValue>)
+    saveToProfile(after.a)
+    setUnderstood(kept.length > 0 ? kept : null)
+    commit({ ...after, opener: 'done' })
   }
 
-  const answer = (question: Question, value: unknown) => {
-    const answered = applyAnswer(state, question.id, value)
-    saveToProfile(answered)
-    setSaved(question.writes.kind === 'profile' || question.writes.kind === 'financial')
-    setTrail((t) => [...t, question.id])
+  const submit = (answers: ScreenAnswer[]) => {
+    // Reopening a screen replaces its answers, so they are cleared first.
+    const reopened = focusId !== null
+    const ids = new Set(answers.map((x) => x.id))
+    let after: FlowState = reopened
+      ? { ...state, a: Object.fromEntries(Object.entries(state.a).filter(([k]) => !ids.has(k))), skipped: state.skipped.filter((k) => !ids.has(k)) }
+      : state
+    for (const x of answers) after = 'skip' in x ? skip(after, x.id) : answer(after, x.id, x.value)
+    if (reopened) after = pruneInapplicable(after)
+    saveToProfile(after.a)
+    setSaved(answers.some((x) => PROFILE_ANSWERS.has(x.id)))
+    if (!reopened) setTrail((t) => [...t, state])
     setFocusId(null)
-    commit(answered)
+    commit(after)
   }
 
   useEffect(() => {
@@ -142,44 +120,53 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     let cancelled = false
     const controller = new AbortController()
     // A model that never answers must not hold the build forever.
-    const timer = setTimeout(() => controller.abort(), 30_000)
+    const timer = setTimeout(() => controller.abort(), BUILD_TIMEOUT_MS)
     void (async () => {
       try {
-      // What the user told us becomes real income, debt, goal and savings records first, so the plan links to them.
-      const live = store.getState()
-      created.current = {
-        ...created.current,
-        ...commitStudioEntities({ ...state, entities: created.current }, live, live.settings.baseCurrency, {
-          income: ui.entities.income, debt: ui.entities.debt, savings: ui.entities.savings,
-          goal: (kind) => ui.entities.goals[kind] ?? ui.entities.goals.custom,
-        }),
-      }
-      const committed = { ...state, entities: created.current }
-      commit(committed)
-      const merged = mergeFacts(buildFactsFromStore(store.getState(), new Date()), committed)
-      const engine = buildPlan(merged)
-      const ctx = (d: PlanDraft) => ({
-        income: d.income,
-        subscriptionsLive: merged.subscriptionsMonthly,
-        debtMinimums: Object.fromEntries(merged.debts.map((x) => [x.id, x.minimum])),
-        goalMonthly: Object.fromEntries(merged.goals.map((g) => [g.id, g.monthly])),
-      })
-      const base0 = repairDraft(engine, ctx(engine)).draft
-      const refined = await refineDraft(merged, base0, controller.signal)
-      if (cancelled) return
-      const folded = refined.ok ? applyRefinement(base0, refined.data) : null
-      const final = folded ? repairDraft(folded, ctx(folded)).draft : base0
-      const s = store.getState()
-      const id = s.addBudgetPlan(page.planNames.fresh, {
-        status: 'draft',
-        origin: 'ai',
-        intent: final.intent,
-        rationale: { reasons: final.reasons, risks: final.risks },
-        engineVersion: ENGINE_VERSION,
-      })
-      s.updateBudgetPlan(id, { categories: draftToCategories(final, newId, s.settings.baseCurrency) })
-      useSettingsStore.getState().clearBudgetStudioDraft()
-      onBuilt(id, !folded)
+        // What the user told us becomes real income, debt, goal and savings records first, so the plan links to them.
+        const live = store.getState()
+        created.current = {
+          ...created.current,
+          ...commitFlowEntities({ ...state, entities: created.current }, live, live.settings.baseCurrency, {
+            income: ui.entities.income,
+            savings: ui.entities.savings,
+            debt: (id) => ui.entities.debts[id] ?? ui.entities.debts['answered-loan'],
+            goal: (kind) => ui.entities.goals[kind] ?? ui.entities.goals.custom,
+          }),
+        }
+        const committed: FlowState = { ...state, entities: created.current }
+        commit(committed)
+        // The plan uses the richer answered debts and goals (with their rates and dates), not the records just created from them.
+        // Remembered answers and this run's answers are laid over the store facts together, once, so a partner share is never applied twice.
+        const live2 = store.getState()
+        const fresh = buildFactsFromStore(live2, new Date(), { remembered: false })
+        const made = createdIds(created.current)
+        const answers = { ...live2.profile.financialProfile?.budgetProfile, ...committed.a }
+        const merged = applyAnswers({ ...fresh, debts: fresh.debts.filter((d) => !made.has(d.id)), goals: fresh.goals.filter((g) => !made.has(g.id)) }, answers, committed.intent)
+        const engine = buildPlan(merged)
+        const ctx = (d: PlanDraft) => ({
+          income: d.income,
+          subscriptionsLive: merged.subscriptionsMonthly,
+          debtMinimums: Object.fromEntries(merged.debts.map((x) => [x.id, x.minimum])),
+          goalMonthly: Object.fromEntries(merged.goals.map((g) => [g.id, g.monthly])),
+        })
+        const base0 = repairDraft(engine, ctx(engine)).draft
+        const refined = await refineDraft(merged, base0, controller.signal)
+        if (cancelled) return
+        const folded = refined.ok ? applyRefinement(base0, refined.data) : null
+        const final = folded ? repairDraft(folded, ctx(folded)).draft : base0
+        const s = store.getState()
+        const id = s.addBudgetPlan(page.planNames.fresh, {
+          status: 'draft',
+          origin: 'ai',
+          intent: final.intent,
+          rationale: { reasons: final.reasons, risks: final.risks },
+          engineVersion: ENGINE_VERSION,
+        })
+        s.updateBudgetPlan(id, { categories: draftToCategories(final, newId, s.settings.baseCurrency) })
+        recordBuild(committed.a)
+        useSettingsStore.getState().clearBudgetStudioDraft()
+        onBuilt(id, !folded)
       } catch {
         if (!cancelled) setBuildError(true)
       } finally {
@@ -196,43 +183,36 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     // The build runs when the last question is answered, and again on retry.
   }, [next, focusId, attempt, buildNow]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const knownRows: KnownRow[] = [...incomeKnownRow(merged, state, ui.known.income, money), ...QUESTIONS.filter(
-    (x) => x.writes.kind !== 'none' && x.control !== 'confirm' && x.askIf(merged, state) && (x.id in state.answers || x.prefill(merged) != null),
-  ).map((x) => {
-    const copy = ui.q[x.id]
-    return { id: x.id, label: copy?.label ?? x.id, value: formatKnown(x, defaultValue(x, facts, state), copy, ui, money) }
-  })]
+  const fill = (id: string) =>
+    id === 'confirmIncome' ? money(Number(get(state, 'income')) || 0)
+      : id === 'confirmBills' ? String(Number(state.known.knownBillCount ?? 0) + Number(state.known.knownSubCount ?? 0))
+        : id === 'confirmDebts' ? String(state.known.knownDebtCount ?? 0)
+          : String(state.known.knownGoalCount ?? 0)
+
+  const formatKnown = (id: string, v: FlowValue): string => {
+    const x = NODE_BY_ID.get(id)
+    const copy = ui.q[id]
+    if (Array.isArray(v)) return v.map((o) => copy?.opts?.[o] ?? o).join(', ') || '-'
+    if (typeof v === 'boolean') return v ? ui.known.yes : ui.known.no
+    if (typeof v === 'number') return x?.control === 'amount' ? money(v) : PERCENT_ANSWERS.has(id) ? `${v}%` : String(v)
+    return copy?.opts?.[v] ?? v
+  }
+
+  const knownRows: KnownRow[] = NODES.filter((x) => x.control !== 'confirm' && x.needs === undefined && (x.when ? x.when(state) : true) && get(state, x.id) !== undefined).map((x) => ({
+    id: x.id,
+    label: ui.q[x.id]?.label ?? x.id,
+    value: formatKnown(x.id, get(state, x.id) as FlowValue),
+  }))
 
   const goBack = () => {
-    const last = trail.at(-1)
-    if (!last) return
+    const prev = trail.at(-1)
+    if (!prev) return
     setTrail((t) => t.slice(0, -1))
-    setFocusId(last)
-    commit({ ...state, answers: Object.fromEntries(Object.entries(state.answers).filter(([k]) => k !== last)), skipped: state.skipped.filter((k) => k !== last) })
+    setFocusId(null)
+    commit(prev)
   }
 
-  const draftMonths = facts.averageCycles ?? 0
-  const showDraft =
-    !buildNow && !draftDeclined && !state.opener && !focusId && trail.length === 0 && Object.keys(state.answers).length === 0 && state.skipped.length === 0 &&
-    draftMonths > 0 && facts.monthlyIncome > 0
-
-  if (showDraft) {
-    return (
-      <PageBody className="space-y-4 lg:pb-6">
-        <div className="flex items-center gap-2">
-          <IconButton variant="outlined" aria-label={ui.close} onClick={onClose}>
-            <X />
-          </IconButton>
-        </div>
-        <DraftStep months={draftMonths} onReview={() => setBuildNow(true)} onQuestions={() => setDraftDeclined(true)} />
-      </PageBody>
-    )
-  }
-
-  // The describe-yourself step is only worth showing to someone with plenty left to answer, and only when it can work.
-  const showOpener =
-    !buildNow && !state.opener && !focusId && !understood && trail.length === 0 && Object.keys(state.answers).length === 0 && isOnline() &&
-    visibleQuestions(facts, state).filter((x) => x.control !== 'confirm').length >= 4
+  const showOpener = !buildNow && !state.opener && !focusId && !understood && trail.length === 0 && isOnline()
 
   if (showOpener) {
     return (
@@ -242,7 +222,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
             <X />
           </IconButton>
         </div>
-        <OpenerStep base={base} onDone={finishOpener} onSkip={() => commit({ ...state, opener: 'done' })} />
+        <OpenerStep base={base} onDone={finishOpener} />
       </PageBody>
     )
   }
@@ -250,12 +230,13 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   if (understood) {
     const rows: KnownRow[] = understood.flatMap((id) => {
       if (id === 'commitments') {
-        return (state.answers.commitments as Array<{ name: string; amount: number }>).map((c) => ({ id: `commitment:${c.name}`, label: c.name, value: money(c.amount) }))
+        return (state.a.commitments as string[]).map((c) => {
+          const [name, amount] = c.split('|')
+          return { id: `commitment:${name}`, label: name, value: money(Number(amount)) }
+        })
       }
-      const x = questionById(id)
-      if (!x || !(id in state.answers)) return []
-      const copy = ui.q[id]
-      return [{ id, label: copy?.label ?? id, value: formatKnown(x, state.answers[id], copy, ui, money) }]
+      const v = state.a[id]
+      return v === undefined ? [] : [{ id, label: ui.q[id]?.label ?? id, value: formatKnown(id, v) }]
     })
     return (
       <PageBody className="space-y-4 lg:pb-6">
@@ -264,7 +245,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     )
   }
 
-  if (!q || (buildNow && !focusId)) {
+  if (!head || (buildNow && !focusId)) {
     return (
       <BuildingScreen
         error={buildError}
@@ -277,6 +258,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
     )
   }
 
+  const stage = stageOf(head.mod)
   return (
     <PageBody className="space-y-4 lg:pb-6">
       <div className="flex items-center gap-2">
@@ -295,9 +277,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
               <span
                 key={s}
                 className="h-1 flex-1 rounded-full"
-                style={{
-                  background: STAGES.indexOf(s) <= STAGES.indexOf(stage) ? 'var(--color-brand-primary)' : 'var(--color-brand-elevated)',
-                }}
+                style={{ background: STAGES.indexOf(s) <= STAGES.indexOf(stage) ? 'var(--color-brand-primary)' : 'var(--color-brand-elevated)' }}
               />
             ))}
           </div>
@@ -308,23 +288,19 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         </IconButton>
       </div>
 
-      <QuestionStep
-        key={q.id}
-        question={q}
-        initial={defaultValue(q, facts, state)}
-        confirmN={labelArg(q.id, merged, money)}
+      <ScreenStep
+        key={`${head.group}:${focusId ?? ''}:${state.cursor}:${trail.length}`}
+        state={state}
+        head={head}
+        reopen={focusId !== null}
         base={base}
         saved={saved}
-        onAnswer={(v) => answer(q, v)}
-        onSkip={() => {
-          setTrail((t) => [...t, q.id])
-          setFocusId(null)
-          commit(skipQuestion(state, q.id))
-        }}
+        fill={fill}
+        onSubmit={submit}
       />
       {ready.enough && next && trail.length > 0 ? (
         <Button size="touch" variant="ghost" className="w-full" onClick={() => setBuildNow(true)}>
-          {ui.buildNow}
+          {ui.buildNow(ready.percent)}
         </Button>
       ) : null}
       <KnownSheet
@@ -337,87 +313,6 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         onClose={() => setKnownOpen(false)}
       />
     </PageBody>
-  )
-}
-
-function formatKnown(
-  x: Question,
-  value: unknown,
-  copy: { opts?: Record<string, string> } | undefined,
-  ui: ReturnType<typeof useBudgetStudioCopy>,
-  money: (n: number) => string,
-): string {
-  if (value == null) return '-'
-  if (Array.isArray(value)) return value.map((v) => copy?.opts?.[String(v)] ?? String(v)).join(', ') || '-'
-  if (typeof value === 'boolean') return value ? ui.known.yes : ui.known.no
-  if (typeof value === 'number') return MONEY_ANSWERS.has(x.id) ? money(value) : String(value)
-  return copy?.opts?.[String(value)] ?? String(value)
-}
-
-interface StepProps {
-  question: Question
-  initial: unknown
-  confirmN: string
-  base: BudgetFacts['baseCurrency']
-  saved: boolean
-  onAnswer: (v: unknown) => void
-  onSkip: () => void
-}
-
-function QuestionStep({ question: q, initial, confirmN, base, saved, onAnswer, onSkip }: StepProps) {
-  const ui = useBudgetStudioCopy()
-  const copy = ui.q[q.id] ?? { label: q.id, why: '' }
-  const [value, setValue] = useState<unknown>(initial)
-  const skippable = q.tier !== 'required' && q.control !== 'confirm'
-  const ok =
-    q.control === 'amount' ? typeof value === 'number' && value >= (q.control === 'amount' && q.id === 'income' ? 1 : 0)
-      : q.control === 'chips' || q.control === 'single' ? value != null
-        : q.control === 'toggle' ? typeof value === 'boolean'
-          : true
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-end gap-3">
-        <BuddgyIcon mood="curious" size={44} />
-        <p className={`${microClassName} pb-1`}>{ui.buddgyAsks}</p>
-      </div>
-      <h2 className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
-        {copy.label.replace('{n}', confirmN)}
-      </h2>
-      <p className="text-[13.5px] text-[var(--color-brand-text-secondary)]">
-        <span className="font-semibold">{ui.why}: </span>
-        {copy.why}
-      </p>
-
-      <QuestionControl
-        question={q}
-        copy={copy}
-        ui={ui}
-        base={base}
-        value={value}
-        onChange={(v) => (q.control === 'confirm' ? onAnswer(v) : setValue(v))}
-      />
-
-      {saved ? (
-        <p className="flex items-center gap-1.5 text-xs text-[var(--color-brand-green)]">
-          <Check className="size-3.5" aria-hidden />
-          {ui.saved}
-        </p>
-      ) : null}
-
-      {q.control !== 'confirm' ? (
-        <div className="flex flex-col gap-2">
-          <Button size="cta" className="w-full" disabled={!ok} onClick={() => onAnswer(value)}>
-            {ui.cont}
-          </Button>
-          {skippable ? (
-            <Button size="touch" variant="ghost" className="w-full" onClick={onSkip}>
-              {ui.estimate}
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
   )
 }
 

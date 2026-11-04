@@ -1,23 +1,18 @@
 'use client'
 
 import { Check } from 'lucide-react'
-import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { microClassName } from '@/lib/ui/microLabelStyle'
 import { useBudgetStudioCopy } from '../useStudioCopy'
 import type { KnownRow } from './KnownSheet'
+import { StudioHeading } from './StudioHeading'
 
 /** What Buddgy picked out of the description, before the remaining questions. */
 export function UnderstoodStep({ rows, onContinue }: { rows: KnownRow[]; onContinue: () => void }) {
   const c = useBudgetStudioCopy().opener
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-end gap-3">
-        <BuddgyIcon mood="happy" size={44} />
-        <p className={`${microClassName} pb-1`}>{c.kicker}</p>
-      </div>
-      <h1 className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.understood(rows.length)}</h1>
+      <StudioHeading mood="happy" label={c.kicker} title={c.understood(rows.length)} />
       <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">
         {rows.map((r) => (
           <div key={r.id} className="flex items-center gap-3 px-4 py-3">

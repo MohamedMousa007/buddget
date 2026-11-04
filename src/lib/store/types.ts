@@ -505,6 +505,10 @@ export interface FinancialProfile {
   closedCycles?: string[]
   /** First-run journey progress; absent for accounts that predate it. */
   onboarding?: OnboardingRecord
+  /** Stable answers from the budget builder (type of income, housing, family, cover...), reused on the next build and by Buddgy. */
+  budgetProfile?: Record<string, string | number | boolean | string[]>
+  /** What editing, rebuilding and month closes have taught the engine about this person. */
+  learned?: import('@/lib/budget/learned').Learned
 }
 
 /** Who the budget is for (planner / household). */

@@ -1,3 +1,4 @@
+import { budgetMemoryLines } from '@/lib/budget/memoryLines'
 import type { FinanceStore } from '@/lib/store/types'
 import { merchantKey } from '@/lib/ai/buddgyLookup'
 
@@ -50,6 +51,7 @@ export function buildMemoryBlock(store: FinanceStore, notes: string[]): string {
     topMethods.length ? `- Usually pays with: ${topMethods.join(', ')} (default to the first when unsaid)` : '',
     merchants.length ? `- Usual categories: ${merchants.join('; ')}` : '',
     paydays.length ? `- Paydays: ${paydays.join('; ')}` : '',
+    ...budgetMemoryLines(store.profile?.financialProfile).map((l) => `- Budget profile: ${l}`),
     ...notes.map((n) => `- Remembered: ${n}`),
   ].filter(Boolean).join('\n')
 }

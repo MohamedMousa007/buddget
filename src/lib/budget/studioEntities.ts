@@ -1,13 +1,14 @@
-import type { Currency, FinanceStore, GoalCategory } from '@/lib/store/types'
+import type { Currency, FinanceStore, GoalCategory, IncomeSourceType } from '@/lib/store/types'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
-import type { StudioState } from '@/lib/budget/infoGaps'
-
-export const GOAL_KINDS: readonly GoalCategory[] = ['vacation', 'house', 'car', 'education', 'wedding', 'custom']
+import type { FactDebt, FactGoal } from '@/lib/budget/facts'
+import { answeredDebts, answeredGoals } from '@/lib/budget/flow/toFacts'
+import type { FlowState } from '@/lib/budget/flow/types'
 
 export interface StudioEntityNames {
   income: string
-  debt: string
   savings: string
+  /** Display name for a debt the studio created, by its fact id (`answered-card`, `answered-loan`...). */
+  debt: (factId: string) => string
   /** Display name for a goal kind. */
   goal: (kind: GoalCategory) => string
 }
@@ -15,9 +16,20 @@ export interface StudioEntityNames {
 type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals' | 'incomeSources' | 'debts' | 'savingsAccounts'>
 
 const DEFAULT_PAYDAY = 25
-const DEFAULT_GOAL_MONTHS = 12
+const MIN_INSTALMENT_MONTHS = 12
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const amountOf = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0)
+
+const GOAL_OF_KIND: Record<string, GoalCategory> = {
+  vacation: 'vacation', house: 'house', car: 'car', education: 'education', wedding: 'wedding', business: 'business', pilgrimage: 'custom', other: 'custom',
+}
+const SOURCE_OF_TYPE: Record<string, IncomeSourceType> = {
+  salary: 'salary', freelance: 'side_hustle', business: 'side_hustle', seasonal: 'side_hustle', mixed: 'salary', benefits: 'other', allowance: 'other',
+}
+
+/** Ids of the debts and goals created from these answers, so the plan can use the richer fact (with its interest rate) instead of counting both. */
+export const createdIds = (created: Record<string, string>): Set<string> =>
+  new Set(Object.entries(created).filter(([k]) => k.startsWith('debt:') || k.startsWith('goal:')).map(([, id]) => id))
 
 /**
  * Turns what the user told the studio into the real records the rest of the app reads, so the plan never
@@ -25,56 +37,52 @@ const amountOf = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) &&
  * in `state.entities` is never created twice, so a retried or resumed build adds nothing. Nothing is created when the
  * app already holds that kind of record: what the user typed in words must not double what they already track.
  */
-export function commitStudioEntities(
-  state: StudioState,
-  store: Actions,
-  base: Currency,
-  names: StudioEntityNames,
-  now: Date = new Date(),
-): Record<string, string> {
+export function commitFlowEntities(state: FlowState, store: Actions, base: Currency, names: StudioEntityNames, now: Date = new Date()): Record<string, string> {
   const done = state.entities ?? {}
+  const a = state.a
   const created: Record<string, string> = {}
 
-  const income = amountOf(state.answers.income)
+  const income = amountOf(a.income)
   if (income > 0 && !done.income && store.incomeSources.length === 0) {
-    const day = Math.min(31, Math.max(1, Math.round(Number(state.answers.payday) || DEFAULT_PAYDAY)))
+    const day = Math.min(31, Math.max(1, Math.round(Number(a.payday) || DEFAULT_PAYDAY)))
     store.addIncomeSource({
       name: names.income, amount: income, currency: base, isRecurring: true, recurringFrequency: 'monthly',
-      dayOfMonth: day, paydayDays: [day], sourceType: 'salary',
+      dayOfMonth: day, paydayDays: [day], sourceType: SOURCE_OF_TYPE[String(a.incomeType)] ?? 'salary',
     })
     created.income = 'done'
   }
 
-  const savings = amountOf(state.answers.savingsOnHand)
+  const savings = amountOf(a.savingsOnHand)
   if (savings > 0 && !done.savings && store.savingsAccounts.length === 0) {
     created.savings = store.addSavingsAccount({
       name: names.savings, category: 'savings', type: 'bank', currency: base, openingBalance: savings, isEmergencyCover: true,
     })
   }
 
-  const owed = amountOf(state.answers.debtTotal)
-  const monthly = amountOf(state.answers.debtMonthly)
-  if (state.answers.hasDebts === true && (owed > 0 || monthly > 0) && !done.debt && store.debts.length === 0) {
-    const total = owed > 0 ? owed : monthly
-    const payment = monthly > 0 ? monthly : total
-    created.debt = store.addDebt({
-      name: names.debt, person: '', startingBalance: total, currency: base, isGold: false, direction: 'i_owe',
-      debtType: 'installment', installmentCount: Math.max(1, Math.ceil(total / payment)), installmentFrequency: 'monthly',
-      installmentAmount: payment, startDate: isoDay(now), interestFree: true,
-    })
+  if (store.debts.length === 0) {
+    for (const d of answeredDebts(a).filter((x: FactDebt) => x.balance > 0 && !done[`debt:${x.id}`])) {
+      const payment = d.minimum > 0 ? d.minimum : Math.ceil(d.balance / MIN_INSTALMENT_MONTHS)
+      created[`debt:${d.id}`] = store.addDebt({
+        name: names.debt(d.id), person: '', startingBalance: d.balance, currency: base, isGold: false, direction: 'i_owe',
+        debtType: 'installment', installmentCount: Math.max(1, Math.ceil(d.balance / payment)), installmentFrequency: 'monthly',
+        installmentAmount: payment, startDate: isoDay(now), interestFree: (d.apr ?? 0) === 0,
+      })
+    }
   }
 
-  const target = amountOf(state.answers.goalTarget)
-  if (state.answers.hasGoal === true && target > 0 && !done.goal && store.goals.length === 0) {
-    const months = Math.max(1, Math.round(Number(state.answers.goalMonths) || DEFAULT_GOAL_MONTHS))
-    const kind = GOAL_KINDS.find((k) => k === state.answers.goalKind) ?? 'custom'
-    const due = new Date(now.getFullYear(), now.getMonth() + months, now.getDate())
-    created.goal = store.addGoal({
-      name: names.goal(kind), emoji: GOAL_CATEGORIES.find((c) => c.value === kind)?.emoji ?? '✏️', category: kind, currency: base,
-      targetAmount: target, targetDate: isoDay(due), monthlyContribution: Math.ceil(target / months), fundingMode: 'fixed',
-      frequency: 'monthly', monthlySpendingLimit: null, linkedSavingsAccountIds: [], linkedDebtIds: [],
-      priority: store.goals.reduce((m, g) => Math.max(m, g.priority + 1), 0), status: 'active', notes: null,
-    })
+  if (store.goals.length === 0) {
+    const kind = GOAL_OF_KIND[String(a.goalKind)] ?? 'custom'
+    let priority = 0
+    for (const g of answeredGoals(a).filter((x: FactGoal) => x.targetAmount && x.targetAmount > 0 && !done[`goal:${x.id}`])) {
+      const months = Math.max(1, Math.ceil((g.targetAmount as number) / Math.max(1, g.monthly)))
+      const due = new Date(now.getFullYear(), now.getMonth() + months, now.getDate())
+      const category: GoalCategory = g.id === 'answered-goal-1' ? kind : 'custom'
+      created[`goal:${g.id}`] = store.addGoal({
+        name: names.goal(category), emoji: GOAL_CATEGORIES.find((c) => c.value === category)?.emoji ?? '✏️', category, currency: base,
+        targetAmount: g.targetAmount as number, targetDate: isoDay(due), monthlyContribution: g.monthly, fundingMode: 'fixed',
+        frequency: 'monthly', monthlySpendingLimit: null, linkedSavingsAccountIds: [], linkedDebtIds: [], priority: priority++, status: 'active', notes: null,
+      })
+    }
   }
   return created
 }

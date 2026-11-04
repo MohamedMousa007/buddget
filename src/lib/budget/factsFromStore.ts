@@ -1,3 +1,4 @@
+import { applyAnswers } from '@/lib/budget/flow/toFacts'
 import type { Expense, FinanceStore, IncomeEvent, RecurringExpense, Currency } from '@/lib/store/types'
 import type { BudgetFacts, EverydayKey, FactBill, KnownFact, StudioPriority } from '@/lib/budget/facts'
 import { cycleKeyOf } from '@/lib/budget/activations'
@@ -148,7 +149,8 @@ function knownFacts(s: FactsSlice): ReadonlySet<KnownFact> {
 }
 
 /** Everything the budget engine and the studio know about the user, from the store, in base currency. */
-export function buildFactsFromStore(s: FactsSlice, now: Date): BudgetFacts {
+/** `remembered: false` leaves out the answers kept from earlier builds, for a caller that lays them over the facts itself. */
+export function buildFactsFromStore(s: FactsSlice, now: Date, { remembered = true }: { remembered?: boolean } = {}): BudgetFacts {
   const { profile, settings, exchangeRates: rates } = s
   const base = settings.baseCurrency
   const fp = profile.financialProfile ?? {}
@@ -168,7 +170,7 @@ export function buildFactsFromStore(s: FactsSlice, now: Date): BudgetFacts {
   const zakatAnnual = profile.zakatConfig?.manualAmount ?? 0
   const transportMode = profile.transportMode ?? null
 
-  return {
+  const facts: BudgetFacts = {
     baseCurrency: base,
     country: profile.country ?? null,
     monthlyIncome,
@@ -211,5 +213,8 @@ export function buildFactsFromStore(s: FactsSlice, now: Date): BudgetFacts {
     securityLean: fp.securityLean ?? 50,
     investInterest: fp.investInterest ?? false,
     cashHeavy: fp.cashHeavy,
+    learned: fp.learned,
   }
+  // What the person told the builder before (income type, cover, partner share...) carries into every rebuild.
+  return remembered && fp.budgetProfile ? applyAnswers(facts, fp.budgetProfile) : facts
 }

@@ -1,24 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import { parseSituation, situationMessages, SITUATION_SCHEMA, validateSituationInput } from './situationAi'
-import { QUESTIONS } from './infoGaps'
+import { NODE_BY_ID } from './flow/nodes'
 
 describe('parseSituation', () => {
   it('keeps valid answers and drops everything the graph would not accept', () => {
     expect(parseSituation({
       income: 22000, housing: 'rent', rent: 7000, household: 'family', dependents: 2.6, transportMode: 'spaceship', lifestyle: 'balanced',
-      cashHeavy: 'yes', foo: 1, rentIncludesUtilities: false,
+      cashHardly: 'yes', foo: 1, rentIncludesUtilities: false,
     })).toEqual({ income: 22000, housing: 'rent', rent: 7000, household: 'family', dependents: 3, lifestyle: 'balanced', rentIncludesUtilities: false })
   })
 
   it('clamps steppers and rejects negative or absurd money', () => {
-    expect(parseSituation({ dependents: 99, payday: 45, rent: -5, savingsOnHand: 1e15, goalMonths: 0 }))
-      .toEqual({ dependents: 10, payday: 31 })
+    expect(parseSituation({ dependents: 99, payday: 45, rent: -5, savingsOnHand: 1e15, goalMonths: 0 })).toEqual({ dependents: 10, payday: 31 })
   })
 
-  it('a debt payment implies debt, a "no" drops the amounts', () => {
-    expect(parseSituation({ debtMonthly: 450, debtTotal: 9000 })).toEqual({ hasDebts: true, debtMonthly: 450, debtTotal: 9000 })
-    expect(parseSituation({ hasDebts: false, debtTotal: 9000 })).toEqual({ hasDebts: false })
+  it('an owner has no rent, a renter has no mortgage', () => {
+    expect(parseSituation({ housing: 'own', ownType: 'mortgage', mortgagePayment: 7000, rent: 3000 })).toEqual({ housing: 'own', ownType: 'mortgage', mortgagePayment: 7000 })
+    expect(parseSituation({ housing: 'rent', rent: 3000, mortgagePayment: 7000, ownType: 'paid_off' })).toEqual({ housing: 'rent', rent: 3000 })
+  })
+
+  it('a card balance implies a card debt, and a "no" drops every amount', () => {
+    expect(parseSituation({ cardBalance: 9000, cardMin: 450 })).toEqual({ hasDebts: true, debtKinds: ['card'], cardBalance: 9000, cardMin: 450, cardPayFull: false })
+    expect(parseSituation({ hasDebts: false, cardBalance: 9000, loanMin: 300 })).toEqual({ hasDebts: false })
     expect(parseSituation({ hasDebts: true })).toEqual({})
+  })
+
+  it('a card paid in full is not a debt', () => {
+    expect(parseSituation({ debtKinds: ['card'], cardPayFull: true })).toEqual({ hasDebts: true, debtKinds: ['card'], cardPayFull: true })
   })
 
   it('a goal needs its cost; a kind alone is not enough to plan with', () => {
@@ -32,15 +40,14 @@ describe('parseSituation', () => {
   })
 
   it('only ever answers questions that exist in the graph', () => {
-    const ids = new Set(QUESTIONS.map((q) => q.id))
-    for (const k of Object.keys(SITUATION_SCHEMA.properties).filter((x) => x !== 'commitments')) expect(ids.has(k)).toBe(true)
+    for (const k of Object.keys(SITUATION_SCHEMA.properties).filter((x) => x !== 'commitments')) expect(NODE_BY_ID.has(k)).toBe(true)
   })
 })
 
 describe('commitments', () => {
   it('keeps a few named monthly costs and drops junk', () => {
     expect(parseSituation({ commitments: [{ name: ' School fees ', amount: 2500 }, { name: '', amount: 5 }, { name: 'Gym', amount: -3 }, { name: 'Remittance <x>', amount: 1000.456 }, 'bad'] }))
-      .toEqual({ commitments: [{ name: 'School fees', amount: 2500 }, { name: 'Remittance x', amount: 1000.46 }] })
+      .toEqual({ commitments: ['School fees|2500', 'Remittance x|1000.46'] })
   })
   it('keeps at most five', () => {
     const many = Array.from({ length: 9 }, (_, i) => ({ name: `Cost ${i}`, amount: 10 }))
