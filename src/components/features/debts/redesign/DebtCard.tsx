@@ -77,7 +77,7 @@ function BorrowBody({ vm, onEdit, onDelete, onPay }: { vm: BorrowVM } & Actions)
         </div>
       </div>
 
-      <DebtBar pct={pct} tone={accent} className="mt-2.5" />
+      <DebtBar pct={pct} tone={accent} label={t.paidOfTotal(fmtWhole(vm.paid), fmtWhole(vm.total))} className="mt-2.5" />
       <div className="mt-1.5 flex items-center justify-between gap-3 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">
         <span className="truncate">{t.paidOfTotal(fmtWhole(vm.paid), fmtWhole(vm.total))}</span>
         <span className="shrink-0 text-[12px] font-bold" style={{ color: accent }}>{Math.round(pct)}%</span>
@@ -156,7 +156,7 @@ function CardBody({ vm, onEdit, onDelete, onPay, onCharges }: { vm: CreditCardVM
         ) : null}
       </div>
 
-      <DebtBar pct={vm.utilPct ?? 0} tone={tone} className="mt-2.5" />
+      <DebtBar pct={vm.utilPct ?? 0} tone={tone} label={t.usedPct(vm.utilPct ?? 0)} className="mt-2.5" />
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         <div className={STAT_BOX}>

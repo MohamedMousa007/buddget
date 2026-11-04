@@ -20,13 +20,7 @@ export function soft(color: string, pct = 16): string {
   return `color-mix(in oklab, ${color} ${pct}%, transparent)`
 }
 
-/**
- * A data-driven brand colour pulled toward the text colour so it stays legible as a
- * fill or glyph on the card in both themes (a near-black brand tile would vanish in dark).
- */
-export function readable(color: string): string {
-  return `color-mix(in oklab, ${color} 70%, var(--color-brand-text-primary))`
-}
+export { readable } from '@/lib/utils/color'
 
 /** The shared debt-card surface: ui Card + the kebab slot. Children own their own layout. */
 export function DebtCardFrame({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -38,9 +32,9 @@ export function DebtCardFrame({ children, className }: { children: React.ReactNo
 }
 
 /** Token bar on the elevated track; `tone` is any CSS colour. */
-export function DebtBar({ pct, tone, className }: { pct: number; tone: string; className?: string }) {
+export function DebtBar({ pct, tone, label, className }: { pct: number; tone: string; label: string; className?: string }) {
   return (
-    <Progress value={Math.max(0, Math.min(100, pct))} className={className}>
+    <Progress value={Math.max(0, Math.min(100, pct))} aria-label={label} className={className}>
       <ProgressTrack className="h-1.5 bg-[var(--color-brand-elevated)]">
         <ProgressIndicator className="rounded-full" style={{ background: tone }} />
       </ProgressTrack>

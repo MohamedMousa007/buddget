@@ -1,5 +1,5 @@
 /**
- * GET /api/cron/notifications  (Supabase pg_cron hourly; Vercel Cron daily as backup)
+ * GET|POST /api/cron/notifications  (Supabase pg_cron hourly via net.http_post; Vercel Cron daily as backup)
  *
  * Evaluates the time-sensitive alerts (recurring debt due/tomorrow, month-end)
  * for every account and emits them as localized in-app notifications + OS push.
@@ -250,3 +250,6 @@ export async function GET(request: Request) {
   if (cursorSave.error || runSave.error) console.error('[cron/notifications] could not record the run', cursorSave.error?.message ?? runSave.error?.message)
   return NextResponse.json({ ok: true, scanned, skipped, emitted, partial: stoppedEarly })
 }
+
+// The hourly pg_cron job calls this with net.http_post; a GET-only route answered every call with 405.
+export const POST = GET

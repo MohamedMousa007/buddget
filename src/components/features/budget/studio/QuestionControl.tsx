@@ -39,7 +39,7 @@ export function QuestionControl({ node: q, copy, ui, base, value, onChange }: Qu
       const roomy = opts.length > 6
       const wide = opts.some((o) => (copy.opts?.[o] ?? o).length > 24)
       return (
-        <div role={multi ? 'group' : 'radiogroup'} aria-label={copy.label} className={roomy ? 'flex flex-wrap gap-2' : `grid gap-2 ${wide || opts.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        <div role={multi || roomy ? 'group' : 'radiogroup'} aria-label={copy.label} className={roomy ? 'flex flex-wrap gap-2' : `grid gap-2 ${wide || opts.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
           {opts.map((o) => {
             const on = multi ? picked.includes(o) : value === o
             const full = multi && q.max !== undefined && picked.length >= q.max && !on
@@ -47,7 +47,7 @@ export function QuestionControl({ node: q, copy, ui, base, value, onChange }: Qu
             const Icon = OPTION_ICONS[o]
             const pick = () => onChange(multi ? (on ? picked.filter((x) => x !== o) : [...picked, o]) : o)
             return roomy ? (
-              <OptionChip key={o} as="trigger" size="md" selected={on} disabled={full} onClick={pick}>
+              <OptionChip key={o} size="md" selected={on} disabled={full} onClick={pick}>
                 {label}
               </OptionChip>
             ) : (

@@ -22,6 +22,15 @@ describe('flow copy', () => {
       for (const [o, v] of Object.entries(flowCopyAr[n.id].opts ?? {})) expect(v, `${n.id}.${o}`).not.toMatch(latin)
     }
   })
+  it('counted cards have singular and dual wording in both languages, with no count left to fill', () => {
+    for (const id of ['confirmBills', 'confirmDebts', 'confirmGoals'])
+      for (const copy of [flowCopyEn, flowCopyAr])
+        for (const k of ['one', 'two']) {
+          const v = copy[id].variants?.[k]
+          expect(v, `${id}.${k}`).toBeTruthy()
+          expect(v).not.toContain('{n}')
+        }
+  })
   it('every wording variant a question can pick has copy in both languages', () => {
     const keys: Record<string, string[]> = { hasDebts: ['mortgage', 'car'], debtKinds: ['known'], rentIncludesUtilities: ['company'], goalTarget: ['down'] }
     for (const [id, vs] of Object.entries(keys)) for (const v of vs) { expect(flowCopyEn[id].variants?.[v]).toBeTruthy(); expect(flowCopyAr[id].variants?.[v]).toBeTruthy() }

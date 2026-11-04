@@ -79,6 +79,8 @@ export interface BudgetFacts {
   goalVsSafety?: 'goal_first' | 'balanced' | 'safety_first'
   /** Pay-off order chosen for several debts. */
   debtStrategy?: 'avalanche' | 'snowball' | 'balanced'
+  /** What the person already invests each month; the investing line never goes above it. */
+  investMonthly?: number
   /** Extra per month the person said they could put toward debt. */
   debtExtra?: number
   /** What past edits and month closes taught us about this person (see learned.ts). */

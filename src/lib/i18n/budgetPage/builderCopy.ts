@@ -67,7 +67,7 @@ export const budgetBuilderCopyEn: BudgetBuilderCopy = {
   blockHints: hintsEn,
   capsule: {
     left: 'Left to assign',
-    balanced: 'Every dirham has a place',
+    balanced: 'Every amount has a place',
     over: 'Over-assigned',
     notPlanned: (pct) => `${pct} not planned`,
     overBy: (pct) => `${pct} over income`,
@@ -139,7 +139,7 @@ export const budgetBuilderCopyAr: BudgetBuilderCopy = {
   },
   capsule: {
     left: 'المتبقي للتوزيع',
-    balanced: 'كل درهم له مكان',
+    balanced: 'لكل مبلغ مكانه',
     over: 'تجاوزت الدخل',
     notPlanned: (pct) => `${pct} غير مخطط`,
     overBy: (pct) => `${pct} فوق الدخل`,

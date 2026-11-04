@@ -1,5 +1,7 @@
 'use client'
 
+import { readable } from '@/lib/utils/color'
+
 /**
  * The app-wide transaction/activity row — one visual for expenses, savings activity, debt
  * payments, income and dashboard feeds. A slot-based presentational primitive: each page maps
@@ -50,7 +52,7 @@ export function TransactionRow({
           {icon}
         </span>
         {caption ? (
-          <span className="max-w-[54px] truncate text-center text-[9.5px] font-semibold leading-none" style={{ color: captionColor ?? 'var(--color-brand-text-muted)' }}>
+          <span className="max-w-[54px] truncate text-center text-[9.5px] font-semibold leading-none" style={{ color: captionColor ? readable(captionColor) : 'var(--color-brand-text-muted)' }}>
             {caption}
           </span>
         ) : null}

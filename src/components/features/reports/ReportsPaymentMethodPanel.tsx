@@ -23,9 +23,9 @@ export function ReportsPaymentMethodPanel({ methods, baseCurrency }: ReportsPaym
   if (methods.length === 0) return null
   return (
     <div className="glass-card rounded-2xl p-5">
-      <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
+      <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
         {t.reports.howYouPay}
-      </h3>
+      </h2>
       <div className="space-y-2">
         {[...methods]
           .sort((a, b) => b.total - a.total)

@@ -119,7 +119,7 @@ const get_net_worth: ReadImpl = () => {
     goldPricePerGram: s.goldPricePerGram,
     goldPriceAvailable: s.goldPriceAvailable,
     lookup: priceLookup(),
-    monthlyIncome: stats.totalIncome,
+    monthlyIncome: stats.receivedIncome,
     cashOutflow: stats.cashOutflow,
     debtRemaining: stats.debtRemainingTotal,
   })

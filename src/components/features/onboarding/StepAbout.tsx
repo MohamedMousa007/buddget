@@ -66,7 +66,7 @@ export function StepAbout({ chrome }: { chrome: StepChrome }) {
           <span className="mb-1.5 block text-xs font-semibold text-[var(--color-brand-text-secondary)]">{c.about.countryLabel}</span>
           <div className="flex flex-wrap gap-2">
             {([...(Object.keys(COUNTRIES) as CountryCode[]), 'OTHER'] as const).map((k) => (
-              <OptionChip key={k} as="trigger" size="md" selected={country === k} onClick={() => setCountry(k)}>
+              <OptionChip key={k} size="md" selected={country === k} onClick={() => setCountry(k)}>
                 {c.about.countries[k]}
               </OptionChip>
             ))}
@@ -74,7 +74,7 @@ export function StepAbout({ chrome }: { chrome: StepChrome }) {
           {country === 'OTHER' ? (
             <div className="mt-2 flex flex-wrap gap-2">
               {OTHER_CURRENCIES.map((cur) => (
-                <OptionChip key={cur} as="trigger" size="md" selected={other === cur} onClick={() => setOther(cur)}>
+                <OptionChip key={cur} size="md" selected={other === cur} onClick={() => setOther(cur)}>
                   {cur}
                 </OptionChip>
               ))}

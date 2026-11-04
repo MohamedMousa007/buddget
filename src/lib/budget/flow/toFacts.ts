@@ -71,6 +71,8 @@ export function applyAnswers(base: BudgetFacts, a: Answers, intent?: 'save' | 'g
   } else if (share !== 1 && base.housing === 'rent' && base.rent != null) f.rent = Math.round(base.rent * share)
   if (num(a, 'propertyCosts') !== undefined) f.propertyMonthly = Math.round((num(a, 'propertyCosts') as number) * share)
   if (typeof a.rentIncludesUtilities === 'boolean') f.rentIncludesUtilities = a.rentIncludesUtilities
+  // Records and the typed figure disagreed and the person chose the records.
+  if (str(a, 'rentCheck') === 'records' && base.ledgerRent !== undefined && f.housing === 'rent') f.rent = Math.round(base.ledgerRent * share)
 
   const extras = [...(base.extraCommitments ?? [])]
   const addCommitment = (name: string, amount: number | undefined) => {
@@ -125,6 +127,7 @@ export function applyAnswers(base: BudgetFacts, a: Answers, intent?: 'save' | 'g
   if (implied && !f.priorities.includes(implied)) f.priorities = [implied, ...f.priorities]
   if (num(a, 'securityLean') !== undefined) f.securityLean = num(a, 'securityLean') as number
   if (a.investing === 'already' || a.investing === 'want_to') f.investInterest = true
+  if (a.investing === 'already' && num(a, 'investMonthly') !== undefined) f.investMonthly = num(a, 'investMonthly')
   const st = str(a, 'saveTarget')
   if (st && SAVE_PCT[st]) f.saveTargetPct = SAVE_PCT[st]
   else if (st === 'custom' && num(a, 'saveCustom') && income > 0) f.saveTargetPct = clamp((num(a, 'saveCustom') as number) / income, 0, 0.6)

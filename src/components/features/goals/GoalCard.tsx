@@ -1,7 +1,6 @@
 'use client'
 
 import { intlTag } from '@/lib/i18n/dateFormat'
-import type { KeyboardEvent } from 'react'
 import { useLocale, useT } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { CheckpointBar, type CheckpointTone } from '@/components/features/goals/CheckpointBar'
@@ -48,23 +47,15 @@ export function GoalCard({
     ? goal.targetDate ? t.pausedWas(month(goal.targetDate)) : ''
     : isLimit ? t.resets(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' }))
     : goal.targetDate ? month(goal.targetDate) : ''
-  const open = () => onOpen(goal)
-  const onKey = (e: KeyboardEvent) => {
-    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault()
-      open()
-    }
-  }
-
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={open}
-      onKeyDown={onKey}
-      className="flex h-48 cursor-pointer flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 pt-4 text-start shadow-sm transition-transform duration-100 active:scale-[0.98]"
-    >
-      <div className="flex items-center gap-3">
+    <div className="relative flex h-48 flex-col gap-3 overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 pt-4 text-start shadow-sm transition-transform duration-100 active:scale-[0.98]">
+      {/* The card opens through this one button, stretched over the whole card; the footer action sits above it, so no control is nested in another. */}
+      <button
+        type="button"
+        onClick={() => onOpen(goal)}
+        className="flex cursor-pointer flex-col gap-3 text-start after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-[var(--color-brand-focus)]"
+      >
+      <span className="flex items-center gap-3">
         <span
           className="flex size-11 shrink-0 items-center justify-center rounded-[14px]"
           style={{
@@ -75,19 +66,19 @@ export function GoalCard({
         >
           <Icon className="size-[22px]" />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold leading-[1.15] text-[var(--color-brand-text-primary)]">{goal.name}</p>
-          <p className="mt-0.5 h-4 truncate font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{dueLine}</p>
-        </div>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-semibold leading-[1.15] text-[var(--color-brand-text-primary)]">{goal.name}</span>
+          <span className="mt-0.5 block h-4 truncate font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{dueLine}</span>
+        </span>
         <span
           className="font-mono-numbers text-xl font-semibold"
           style={{ color: PERCENT_COLOR[status.kind] ?? 'var(--color-brand-text-primary)' }}
         >
           {percent}%
         </span>
-      </div>
+      </span>
 
-      <p className="flex h-6 items-baseline gap-1.5 font-mono-numbers leading-6">
+      <span className="flex h-6 items-baseline gap-1.5 font-mono-numbers leading-6">
         <span className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
           {hidden ? MASK : formatCurrency(current, goal.currency, false)}
         </span>
@@ -96,9 +87,10 @@ export function GoalCard({
             {t.ofTarget(hidden ? MASK : formatCurrency(basis, goal.currency, false))}
           </span>
         ) : null}
-      </p>
+      </span>
 
       <CheckpointBar percent={percent} tone={TONE[status.kind] ?? 'default'} nodes={!isLimit} />
+      </button>
 
       <div
         className={cn(
@@ -109,10 +101,8 @@ export function GoalCard({
         <Button
           size="touch"
           variant={status.button.variant}
-          onClick={(e) => {
-            e.stopPropagation()
-            onAction(goal, status.button.action)
-          }}
+          className="relative z-10"
+          onClick={() => onAction(goal, status.button.action)}
         >
           {goal.category === 'debt_freedom' && status.button.action === 'addMoney' ? t.actionPay : t[ACTION_LABEL[status.button.action]]}
         </Button>

@@ -4,6 +4,7 @@ import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useAssetPricesStore } from '@/lib/store/useAssetPricesStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Goal, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
@@ -122,6 +123,18 @@ describe('list_savings and get_net_worth', () => {
     useAssetPricesStore.setState({ prices: Object.fromEntries([price('XAU_21K', 'EGP', 4000)]) })
     useFinanceStore.setState({ investmentHoldings: [holding(H1)] })
     expect(read('get_net_worth')).toMatchObject({ currency: 'EGP', net_worth: 41200, savings: 1200, investments: 40000, debt: 0, month_flow: 0 })
+  })
+
+
+  it('net worth counts money that arrived, not a payday still ahead this month', () => {
+    useSettingsStore.setState({ monthFilter: '2026-10' })
+    useFinanceStore.setState({
+      incomeSources: [{
+        id: '11111111-0000-0000-0000-000000000001', name: 'Salary', amount: 10000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly',
+        dayOfMonth: 25, effectiveStart: '2026-01-01', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
+      }],
+    })
+    expect(read('get_net_worth')).toMatchObject({ month_flow: 0 })
   })
 
   it('caps long lists', () => {

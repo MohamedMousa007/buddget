@@ -8,7 +8,7 @@ vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: h.service })
 
 import { GET as prices } from './prices/route'
 import { GET as monthCarry } from './month-carry/route'
-import { GET as notifications } from './notifications/route'
+import { GET as notifications, POST as notificationsPost } from './notifications/route'
 import { GET as integrations } from './integrations/route'
 
 const req = (auth?: string) => new Request('http://x/api/cron', { headers: auth ? { authorization: auth } : {} })
@@ -53,5 +53,13 @@ describe('GET /api/cron/prices', () => {
     h.refresh.mockResolvedValue({ updated: 1 })
     h.harvest.mockRejectedValue(new Error('db'))
     expect((await prices(req('Bearer s3cret'))).status).toBe(200)
+  })
+})
+
+describe('the hourly database caller', () => {
+  it('notifications accepts POST (net.http_post) with the same auth as GET', async () => {
+    process.env.CRON_SECRET = 's3cret'
+    expect(notificationsPost).toBe(notifications)
+    expect((await notificationsPost(req('Bearer wrong'))).status).toBe(401)
   })
 })

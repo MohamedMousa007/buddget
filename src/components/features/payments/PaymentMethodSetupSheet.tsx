@@ -28,7 +28,7 @@ import {
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
-import { rgba } from '@/lib/utils/color'
+import { readable, rgba } from '@/lib/utils/color'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { FieldButton } from '@/components/ui/FieldButton'
@@ -319,7 +319,7 @@ export function PaymentMethodSetupSheet({
                     style={{
                       background: rgba(PAYMENT_TYPE_META[typeLock].color, 0.15),
                       border: `1px solid ${rgba(PAYMENT_TYPE_META[typeLock].color, 0.5)}`,
-                      color: PAYMENT_TYPE_META[typeLock].color,
+                      color: readable(PAYMENT_TYPE_META[typeLock].color),
                     }}
                   >
                     <TypeGlyph type={typeLock} className="h-[15px] w-[15px]" />
@@ -338,7 +338,7 @@ export function PaymentMethodSetupSheet({
                           style={{
                             background: activeChip ? rgba(meta.color, 0.15) : undefined,
                             borderColor: activeChip ? rgba(meta.color, 0.5) : undefined,
-                            color: activeChip ? meta.color : undefined,
+                            color: activeChip ? readable(meta.color) : undefined,
                           }}
                         >
                           <TypeGlyph type={tp} className="h-[15px] w-[15px]" />

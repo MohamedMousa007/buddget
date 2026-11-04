@@ -122,7 +122,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
           <span className="mb-1.5 block text-xs font-semibold text-[var(--color-brand-text-secondary)]">{c.income.dayLabel}</span>
           <div className="flex flex-wrap items-center gap-2">
             {QUICK_DAYS.map((d) => (
-              <OptionChip key={d} as="trigger" size="md" selected={day === d} onClick={() => { setDay(d); setCustom('') }}>
+              <OptionChip key={d} size="md" selected={day === d} onClick={() => { setDay(d); setCustom('') }}>
                 {d}
               </OptionChip>
             ))}

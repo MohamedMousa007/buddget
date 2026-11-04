@@ -38,9 +38,9 @@ export function ReportsSummaryPanel({
   const { formatPattern } = useLocalizedFormatters()
   return (
     <div className="glass-card rounded-2xl p-5">
-      <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
+      <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-4">
         {t.reports.summaryHeading(formatPattern(startDate, 'd MMM'), formatPattern(endDate, 'd MMM yyyy'))}
-      </h3>
+      </h2>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <p className="text-xs text-[var(--color-brand-text-muted)]">{t.reports.kpiTotalInExpected}</p>

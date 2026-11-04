@@ -11,3 +11,11 @@ export function shade(hex: string, f: number): string {
   const m = (v: number) => Math.max(0, Math.min(255, Math.round(v * f)))
   return `rgb(${m(r)},${m(g)},${m(b)})`
 }
+
+/**
+ * A data-driven brand colour pulled toward the text colour so it stays legible as small text, a fill or a glyph on the
+ * card in both themes (a near-black brand tile would vanish in dark; a mid-tone category colour fails AA as 9px text).
+ */
+export function readable(color: string): string {
+  return `color-mix(in oklab, ${color} 70%, var(--color-brand-text-primary))`
+}

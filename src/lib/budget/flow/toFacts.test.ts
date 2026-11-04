@@ -18,6 +18,16 @@ describe('applyAnswers', () => {
     const f = applyAnswers({ ...base, housing: 'rent', rent: 6000 }, { partnerRole: 'shares', partnerSharePct: 50 })
     expect(f.rent).toBe(3000)
   })
+  it('uses the rent in the records when that is the one the person chose', () => {
+    const held = { ...base, housing: 'rent' as const, rent: 6000, ledgerRent: 4000 }
+    expect(applyAnswers(held, { rentCheck: 'records' }).rent).toBe(4000)
+    expect(applyAnswers(held, { rentCheck: 'stated' }).rent).toBe(6000)
+  })
+  it('caps the investing line at what the person already invests', () => {
+    const f = applyAnswers(base, { investing: 'already', investMonthly: 800 })
+    expect(f.investMonthly).toBe(800)
+    expect(applyAnswers(base, { investing: 'want_to' }).investMonthly).toBeUndefined()
+  })
   it('never invents a rent for an owner', () => {
     expect(applyAnswers(base, { housing: 'own', ownType: 'paid_off' }).rent).toBeNull()
     expect(applyAnswers(base, { housing: 'own', ownType: 'mortgage', mortgagePayment: 7000 }).rent).toBe(7000)

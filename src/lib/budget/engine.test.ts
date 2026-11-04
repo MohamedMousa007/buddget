@@ -417,6 +417,16 @@ describe('v2 rules', () => {
   })
 })
 
+describe('stated investing', () => {
+  it('never invests more than the person already puts in each month', () => {
+    const rich: BudgetFacts = { ...base, monthlyIncome: 60000, liquidSavings: 90000, investInterest: true, priorities: ['invest'] }
+    const free = buildPlan(rich).lines.find((l) => l.name === 'Investing')?.amount ?? 0
+    expect(free).toBeGreaterThan(1000)
+    const capped = buildPlan({ ...rich, investMonthly: 1000 }).lines.find((l) => l.name === 'Investing')?.amount ?? 0
+    expect(capped).toBe(1000)
+  })
+})
+
 describe('personal spending scale', () => {
   const egypt = { ...base, baseCurrency: 'EGP' as const, country: 'Egypt', monthlyIncome: 60000, averageCycles: 3 }
   const typical = benchmarkEveryday(getBenchmark('Egypt', 'EGP'), egypt, 60000)

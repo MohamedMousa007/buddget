@@ -49,7 +49,9 @@ export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit }:
   const copyOf = (x: FlowNode) => ui.q[x.id] ?? { label: x.id, why: '' }
   const textOf = (x: FlowNode) => {
     const c = copyOf(x)
-    return (c.variants?.[x.variant?.(state) ?? ''] ?? c.label).replace('{income}', fill(x.id)).replace('{n}', fill(x.id))
+    const count = Number(fill(x.id))
+    const plural = count === 1 ? 'one' : count === 2 ? 'two' : ''
+    return (c.variants?.[x.variant?.(state) ?? ''] ?? (x.control === 'confirm' ? c.variants?.[plural] : undefined) ?? c.label).replace('{income}', fill(x.id)).replace('{n}', fill(x.id))
   }
 
   const submit = () =>
@@ -98,7 +100,6 @@ export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit }:
               )}
               {x.skippable ? (
                 <OptionChip
-                  as="trigger"
                   size="md"
                   className="self-start"
                   selected={skips.includes(x.id)}

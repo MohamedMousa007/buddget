@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { OpenerStep } from './OpenerStep'
 import { UnderstoodStep } from './UnderstoodStep'
 import { ScreenStep } from './ScreenStep'
+import { QuestionControl } from './QuestionControl'
 import { answer, createFlow } from '@/lib/budget/flow/flow'
 import { NODE_BY_ID } from '@/lib/budget/flow/nodes'
 
@@ -37,5 +38,19 @@ describe('describe-yourself step', () => {
   it('a debt screen cannot continue until a kind is chosen', () => {
     const s = answer(answer(createFlow('debt'), 'hasDebts', true), 'x', true)
     expect(screen(s, 'debtKinds')).toMatch(/disabled[^>]*>[^<]*Continue|Continue[^<]*<\/button>/)
+  })
+})
+
+describe('choices announce which one is chosen', () => {
+  const copy = { label: 'How do you earn it?', why: '', opts: { salary: 'Salary', freelance: 'Freelance', business: 'Business', seasonal: 'Seasonal', mixed: 'Mixed', benefits: 'Benefits', allowance: 'Allowance' } }
+  const ui = {} as never
+  const render = (value: string) => renderToStaticMarkup(h(QuestionControl, { node: NODE_BY_ID.get('incomeType')!, copy, ui, base: 'EGP', value, onChange: vi.fn() }))
+
+  it('a long list of chips says which chip is pressed, inside a plain group', () => {
+    const out = render('freelance')
+    expect(out).toContain('role="group"')
+    expect(out).not.toContain('role="radiogroup"')
+    expect(out.match(/aria-pressed="true"/g)?.length).toBe(1)
+    expect(out.match(/aria-pressed="false"/g)?.length).toBe(6)
   })
 })

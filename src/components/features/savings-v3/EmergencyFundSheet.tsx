@@ -150,7 +150,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
                   </p>
                 </div>
               </div>
-              <Progress value={pct} className="mt-3">
+              <Progress value={pct} aria-label={status} className="mt-3">
                 <ProgressTrack className="h-1.5 bg-[var(--color-brand-sunken)]">
                   <ProgressIndicator className={`bg-[var(--color-brand-${tone})]`} />
                 </ProgressTrack>

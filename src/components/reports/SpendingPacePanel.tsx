@@ -64,9 +64,9 @@ export function SpendingPacePanel({
   return (
     <div className="glass-card rounded-2xl p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
+        <h2 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider">
           {t.reports.spendingPaceTitle}
-        </h3>
+        </h2>
         {totalExpenseBudget > 0 && (
           <Badge tone={badgeTone[paceStatus]} bordered={false}>{paceLabel}</Badge>
         )}

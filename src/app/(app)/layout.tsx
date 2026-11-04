@@ -127,7 +127,7 @@ export default async function RootLayout({
     process.env.CAPACITOR === 'true' ? undefined : ((await headers()).get('x-nonce') ?? undefined)
 
   return (
-    <html lang="en" dir="ltr" data-locale="en" suppressHydrationWarning>
+    <html lang="en" dir="ltr" data-locale="en" translate="no" suppressHydrationWarning>
       <head>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />

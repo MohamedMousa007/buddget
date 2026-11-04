@@ -173,6 +173,19 @@ const VARIANTS: Record<string, Record<string, Pair>> = {
   debtKinds: { known: ['What else do you owe?', 'ماذا أيضًا عليك؟'] },
   rentIncludesUtilities: { company: ['Does your company housing cover electricity and water?', 'هل سكن الشركة يشمل الكهرباء والمياه؟'] },
   goalTarget: { down: ['How much is the down payment?', 'كم الدفعة الأولى؟'] },
+  // Counted cards: "one" and "two" replace the {n} wording so nobody reads "1 debts".
+  confirmBills: {
+    one: ['We found 1 regular bill or subscription. Is it right?', 'وجدنا فاتورة أو اشتراكًا منتظمًا واحدًا. هل هو صحيح؟'],
+    two: ['We found 2 regular bills and subscriptions. Are they right?', 'وجدنا فاتورتين أو اشتراكين منتظمين. هل هما صحيحان؟'],
+  },
+  confirmDebts: {
+    one: ['We found 1 debt or instalment. Is it right?', 'وجدنا دينًا أو قسطًا واحدًا. هل هو صحيح؟'],
+    two: ['We found 2 debts and instalments. Are they right?', 'وجدنا دينين أو قسطين. هل هما صحيحان؟'],
+  },
+  confirmGoals: {
+    one: ['We found 1 goal. Keep it in the plan?', 'وجدنا هدفًا واحدًا. هل نُبقيه في الخطة؟'],
+    two: ['We found 2 goals. Keep them in the plan?', 'وجدنا هدفين. هل نُبقيهما في الخطة؟'],
+  },
 }
 
 const humanize = (v: string) => v.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
