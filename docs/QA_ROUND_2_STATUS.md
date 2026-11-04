@@ -34,3 +34,10 @@ Not verified live: dark theme visuals, focus ring look, tap-area overlaps on den
 
 ## Round 3 backlog
 Dark and Arabic visual sweeps on every route, keyboard focus sweep, add/edit flows for savings/goals/debts/BNPL/budget wizard, Budget Studio/engine, account detail sheets, investment page, deep links, real-device push/biometric/SMS, RLS impersonation tests, Gemini prompt-injection tests, rendered contrast and browser-measured performance, the deferred items above.
+
+## Pocket balance delta (option A), 2026-11-04
+Migration 0225 applied and ENABLED (`platform_settings.savings_balance_delta_enabled = true`). The server now applies ledger deltas to `savings_accounts.current_balance` and ignores a client's absolute balance on UPDATE, so a stale device can no longer erase a server job's deposit. No client change was needed; installed builds keep working.
+- Behaviour to know: with the switch on, a NEW pocket inserted by a client starts at 0 and the ledger rows that follow rebuild the opening balance (a pull between the two writes can briefly show 0). A client-created pocket with a balance but no ledger rows would stay at 0.
+- Rollback (instant): `update platform_settings set value='false'::jsonb where key='savings_balance_delta_enabled';` Full removal commands are in the migration header.
+- Monitor: `select * from public.savings_balance_drift();` (service role) lists pockets whose balance differs from opening + ledger. 0 rows when applied.
+- Known limits: a pocket soft-deleted before enabling keeps its old balance and undeleting it would apply its tombstoned rows on top; concurrent opposite transfers can deadlock (one retries); `correct` rows are owned by the server RPCs (absolute set).

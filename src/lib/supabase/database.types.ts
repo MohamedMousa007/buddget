@@ -4204,6 +4204,7 @@ export type Database = {
         Args: { p_user: string; p_pocket: string; p_delta: number; p_kind: Database["public"]["Enums"]["savings_transaction_kind"]; p_group?: string; p_payment_method?: string; p_date?: string; p_note?: string; p_source?: string }
         Returns: number
       }
+      savings_balance_drift: { Args: never; Returns: { id: string; current_balance: number; ledger_expected: number }[] }
       latest_balance_reports: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Tables"]["account_balance_reports"]["Row"][]
