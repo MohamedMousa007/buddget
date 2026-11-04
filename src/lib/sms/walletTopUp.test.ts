@@ -407,8 +407,12 @@ describe('resolvePaymentMethodByLast4 — provider fallback', () => {
 
   it('a registered card still wins — it is the more specific signal', async () => {
     const methods = [...barqOnly, { id: 'c1', name: 'STC ••8639', type: 'debit_card', last4: '8639' }]
-    const id = await resolvePaymentMethodByLast4(svc(methods), 'u1', '8639', { sender: 'barq app' })
+    const id = await resolvePaymentMethodByLast4(svc(methods), 'u1', '8639', { sender: 'STC', bankName: 'STC' })
     expect(id).toBe('c1')
+    // A wallet message that names the funding card by its exact 4-digit tail still finds the card.
+    expect(await resolvePaymentMethodByLast4(svc(methods), 'u1', '8639', { sender: 'barq app' })).toBe('c1')
+    const stc = await resolvePaymentMethodByLast4(svc(methods), 'u1', '639', { sender: 'STC', bankName: 'STC' })
+    expect(stc).toBe('c1')
   })
 
   it('does not attribute a Vodafone BILL to the Vodafone Cash wallet', async () => {

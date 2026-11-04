@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { resolveReportTarget } from '@/lib/sms/balanceReport'
+import { resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { extractAccountTail, matchByTail } from './accountRef'
 
 const m = (o: object) => ({ id: 'x', name: 'x', type: 'bank_account', last4: null, currency: 'EGP', parent_id: null, track_sms: true, closed_at: null, ...o })
@@ -20,20 +21,20 @@ describe('the reported HSBC messages resolve to the EGP account', () => {
   ])('%s', (body) => {
     const tail = extractAccountTail(body)
     expect(tail).toBe('001')
-    expect(matchByTail(owner, tail)).toEqual({ id: 'egp', ambiguous: false })
+    expect(matchByTail(owner.map((o) => ({ id: o.id, last4: o.last4, bankKey: resolvePaymentBrandKey(o.name) })), tail, resolvePaymentBrandKey('HSBC Egypt'))).toEqual({ id: 'egp', ambiguous: false })
     expect(resolveReportTarget(owner, tail, { bankName: 'HSBC Egypt' }, 'EGP')?.id).toBe('egp')
   })
 })
 
 describe('every visible length of a saved number resolves to its own account', () => {
   const saved = ['0001', '0110', '5950', '2000', '123456', '40507']
-  const methods = saved.map((d) => ({ id: d, last4: d }))
+  const methods = saved.map((d) => ({ id: d, last4: d, bankKey: 'hsbc' }))
   it('2 to 6 trailing digits find exactly the account that ends that way, or none when two do', () => {
     for (const d of saved) {
       for (let k = 3; k <= Math.min(6, d.length); k++) {
         const tail = d.slice(-k)
         const fits = saved.filter((o) => o.endsWith(tail) || tail.endsWith(o))
-        const r = matchByTail(methods, tail)
+        const r = matchByTail(methods, tail, 'hsbc')
         if (fits.length === 1) expect(r).toEqual({ id: d, ambiguous: false })
         else expect(r.id === null || r.id === d).toBe(true)
       }
@@ -42,7 +43,7 @@ describe('every visible length of a saved number resolves to its own account', (
   it('a wrong tail never resolves to an account that does not end with it', () => {
     for (let n = 0; n < 2000; n++) {
       const tail = String(n).padStart(4, '0')
-      const r = matchByTail(methods, tail)
+      const r = matchByTail(methods, tail, 'hsbc')
       if (r.id) expect(r.id.endsWith(tail) || tail.endsWith(r.id)).toBe(true)
     }
   })

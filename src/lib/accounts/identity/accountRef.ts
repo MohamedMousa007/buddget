@@ -26,7 +26,13 @@ export function tailsMatch(a: string | null | undefined, b: string | null | unde
   return x.length <= y.length ? y.endsWith(x) : x.endsWith(y)
 }
 
-export interface Identified { id: string; last4?: string | null; last4Aliases?: readonly string[] | null }
+export interface Identified {
+  id: string
+  last4?: string | null
+  last4Aliases?: readonly string[] | null
+  /** Brand key of the institution behind the account (resolvePaymentBrandKey), when it is known. */
+  bankKey?: string | null
+}
 
 /** Every number tail an account answers to: the displayed one first, then its aliases. */
 export const tailsOf = (m: Pick<Identified, 'last4' | 'last4Aliases'>): string[] =>
@@ -61,15 +67,31 @@ export function withAlias(m: Pick<Identified, 'last4' | 'last4Aliases'>, tail: s
 /** Fewest digits a partial (shorter or longer) tail may share with a saved number before money is attributed on it. */
 export const MIN_PARTIAL_DIGITS = 3
 
-/** An exact tail beats a partial one; otherwise exactly one account must fit, and the shared tail must be long enough to trust. */
-export function matchByTail(methods: readonly Identified[], captured: string | null | undefined): TailMatch {
+/** An exact tail this long names an account on its own; a shorter or partial one also needs the bank to agree. */
+export const MIN_BANK_FREE_DIGITS = 4
+
+/**
+ * An exact tail beats a partial one; otherwise exactly one account must fit, and the shared tail must be long enough to
+ * trust. Two banks can print the same short tail, so a 2-3 digit or partial match is only taken when the message's bank
+ * is known and is the account's bank. An exact 4+ digit tail needs no bank (a wallet message may name a card of another
+ * bank), but when several accounts share it the one whose bank agrees wins.
+ */
+export function matchByTail(methods: readonly Identified[], captured: string | null | undefined, smsBankKey?: string | null): TailMatch {
   const tail = digitsOf(captured)
   if (tail.length < MIN_ACCOUNT_DIGITS) return { id: null, ambiguous: false }
-  const ids = (hit: (saved: string) => boolean) => [...new Set(methods.filter((m) => tailsOf(m).some(hit)).map((m) => m.id))]
-  const exact = ids((saved) => digitsOf(saved) === tail)
+  const sameBank = (m: Identified) => !!smsBankKey && m.bankKey === smsBankKey
+  const hits = (hit: (saved: string) => boolean, needsBank: boolean) =>
+    methods.filter((m) => (!needsBank || sameBank(m)) && tailsOf(m).some(hit))
+  const uniq = (ms: readonly Identified[]) => [...new Set(ms.map((m) => m.id))]
+  let exactMs = hits((saved) => digitsOf(saved) === tail, tail.length < MIN_BANK_FREE_DIGITS)
+  if (exactMs.length > 1) {
+    const sameBankMs = exactMs.filter(sameBank)
+    if (sameBankMs.length > 0) exactMs = sameBankMs
+  }
+  const exact = uniq(exactMs)
   if (exact.length === 1) return { id: exact[0], ambiguous: false }
   if (exact.length > 1) return { id: null, ambiguous: true }
-  const partial = ids((saved) => Math.min(digitsOf(saved).length, tail.length) >= MIN_PARTIAL_DIGITS && tailsMatch(saved, tail))
+  const partial = uniq(hits((saved) => Math.min(digitsOf(saved).length, tail.length) >= MIN_PARTIAL_DIGITS && tailsMatch(saved, tail), true))
   if (partial.length === 1) return { id: partial[0], ambiguous: false }
   return { id: null, ambiguous: partial.length > 1 }
 }

@@ -78,11 +78,20 @@ function makeService(state: State) {
     return c
   }
 
+  const banks = () => {
+    const methods = state.registeredLast4.map((l4) => ({ id: `pm${l4}`, name: l4 === '0001' ? 'HSBC Egypt ••0001' : `QNB ••${l4}`, last4: l4, last4_aliases: [] }))
+    const c = chain({ single: () => ({ id: 'pm' }) })
+    let wallets = false
+    c.in = () => { wallets = true; return c }
+    c.then = (r: (v: unknown) => unknown) => r({ data: wallets ? [] : methods, error: null })
+    return c
+  }
+
   const from = (table: string) => {
     if (table === 'payment_methods')
       // No wallets (banks only) → step 0 is skipped; last4 lookups resolve to a stub id so
       // 1c's own-account registration check passes for a registered account.
-      return chain({ listData: [], single: () => ({ id: 'pm' }) })
+      return banks()
     if (table === 'expenses')
       return chain({
         onInsertExpense: (r) => { const id = `e${state.expenses.length + 1}`; state.expenses.push({ id, category: String(r.category), deleted: false }); return id },

@@ -346,27 +346,25 @@ async function findUniqueByLast4(
   service: ServiceClient,
   userId: string,
   last4: string,
+  provider?: { sender?: string | null; bankName?: string | null },
 ): Promise<{ id: string | null; ambiguous: boolean }> {
   const { data, error } = await service
     .from('payment_methods')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('last4', last4)
-    .is('deleted_at', null)
-    .maybeSingle()
-  if (error?.code === MULTIPLE_ROWS) return { id: null, ambiguous: true }
-  if (data?.id) return { id: data.id, ambiguous: false }
-
-  const { data: all, error: listError } = await service
-    .from('payment_methods')
-    .select('id, last4, last4_aliases')
+    .select('id, name, last4, last4_aliases')
     .eq('user_id', userId)
     .is('deleted_at', null)
-  if (listError) {
-    console.warn('[sms/account] method lookup failed', listError.message)
+  if (error) {
+    console.warn('[sms/account] method lookup failed', error.message)
     return { id: null, ambiguous: false }
   }
-  return matchByTail(((all ?? []) as { id: string; last4: string | null; last4_aliases?: string[] | null }[]).map((m) => ({ id: m.id, last4: m.last4, last4Aliases: m.last4_aliases })), last4)
+  const methods = ((data ?? []) as { id: string; name: string | null; last4: string | null; last4_aliases?: string[] | null }[]).map((m) => ({
+    id: m.id,
+    last4: m.last4,
+    last4Aliases: m.last4_aliases,
+    bankKey: resolvePaymentBrandKey(decomposePaymentMethodName((m.name ?? '').trim(), m.last4 ?? undefined).provider) ?? resolvePaymentBrandKey(m.name),
+  }))
+  const smsBankKey = resolvePaymentBrandKey(provider?.sender) ?? resolvePaymentBrandKey(provider?.bankName)
+  return matchByTail(methods, last4, smsBankKey)
 }
 
 /**
@@ -385,7 +383,7 @@ export async function resolvePaymentMethodByLast4(
   provider?: { sender?: string | null; bankName?: string | null },
 ): Promise<string | null> {
   if (last4) {
-    const byLast4 = await findUniqueByLast4(service, userId, last4)
+    const byLast4 = await findUniqueByLast4(service, userId, last4, provider)
     if (byLast4.ambiguous) return null
     if (byLast4.id) return byLast4.id
   }
@@ -408,7 +406,7 @@ export async function resolvePaymentMethodByLast4(
 
 /** Where a credit lands: the exact account/card the message names, else the sending provider. Never the default method. */
 async function resolveCreditAccount(service: ServiceClient, row: SmsRowData): Promise<string | null> {
-  return (await resolveExactPaymentMethod(service, row.userId, row.last4))
+  return (await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))
     ?? (await resolvePaymentMethodByProvider(service, row.userId, row.sender, row.bankName))
 }
 
@@ -588,7 +586,7 @@ export async function createSmsInstallmentPayment(
   }
 
   // The SMS from an installment provider usually names the funding card directly.
-  const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+  const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
 
   return postSmsDebtPayment(service, row, {
     debtId: plan.id as string,
@@ -608,9 +606,10 @@ export async function resolveExactPaymentMethod(
   service: ServiceClient,
   userId: string,
   last4: string | null | undefined,
+  provider?: { sender?: string | null; bankName?: string | null },
 ): Promise<string | null> {
   if (!last4) return null
-  return (await findUniqueByLast4(service, userId, last4)).id
+  return (await findUniqueByLast4(service, userId, last4, provider)).id
 }
 
 /** ± window (days) for treating a second refund SMS as a duplicate of the same event. */
@@ -631,7 +630,7 @@ export async function findRefundedTwin(
   lo.setUTCDate(lo.getUTCDate() - REFUND_DEDUPE_DAYS)
   const hi = new Date(row.day)
   hi.setUTCDate(hi.getUTCDate() + REFUND_DEDUPE_DAYS + 1) // +1 so the far end includes its whole day
-  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
 
   let q = service
     .from('expenses')
@@ -667,7 +666,7 @@ export async function matchOriginalExpense(
   from.setUTCDate(from.getUTCDate() - 90)
   const fromDay = from.toISOString().slice(0, 10)
 
-  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
 
   let q = service
     .from('expenses')

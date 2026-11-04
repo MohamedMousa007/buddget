@@ -324,7 +324,7 @@ export async function createSmsTransaction(
     //     both registered payment methods, within the window, amounts within the transfer fee.
     // ponytail: can in theory pair two unrelated IPN transfers colliding within the window and
     // fee tolerance — rare, and 1b handles the normal case first.
-    if (!sibling && (await resolveExactPaymentMethod(service, row.userId, row.last4))) {
+    if (!sibling && (await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))) {
       sibling = await tryPairLeg(service, {
         userId: row.userId,
         logId: row.logId,
@@ -358,7 +358,7 @@ export async function createSmsTransaction(
         // otherwise the user sees the same money twice, which is the whole bug. Back-fill
         // the funding account the payoff could not know, and keep the fee it took on top.
         if (sibling.siblingKind === 'cc_payoff') {
-          const fundingPmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
+          const fundingPmId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
           const { payoffAmount } = await attributeFundingToPayoff(service, sibling, fundingPmId)
           await postTransferFee(service, row, {
             fundingLast4: row.last4 ?? null,

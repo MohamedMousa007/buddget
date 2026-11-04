@@ -3,7 +3,7 @@ import { matchOriginalExpense, findRefundedTwin, type SmsRowData } from './creat
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** Minimal chainable Supabase stub: every filter returns `this`; awaiting resolves `result`. */
-function stub(tables: { payment_methods?: { id: string } | null; expenses?: unknown[] }): SupabaseClient {
+function stub(tables: { payment_methods?: { id: string; name: string; last4: string }[]; expenses?: unknown[] }): SupabaseClient {
   const builder = (result: unknown) => {
     const b: Record<string, unknown> = {}
     for (const m of ['select', 'eq', 'is', 'not', 'gte', 'lte', 'order', 'limit']) b[m] = () => b
@@ -13,7 +13,7 @@ function stub(tables: { payment_methods?: { id: string } | null; expenses?: unkn
   }
   return {
     from: (table: string) =>
-      table === 'payment_methods' ? builder(tables.payment_methods ?? null) : builder(tables.expenses ?? []),
+      table === 'payment_methods' ? builder(tables.payment_methods ?? []) : builder(tables.expenses ?? []),
   } as unknown as SupabaseClient
 }
 
@@ -53,7 +53,7 @@ describe('matchOriginalExpense', () => {
 
   it('resolves last4 to a payment method without throwing', async () => {
     const res = await matchOriginalExpense(
-      stub({ payment_methods: { id: 'pm1' }, expenses: [{ id: 'e9', category: 'Food', description: 'x' }] }),
+      stub({ payment_methods: [{ id: 'pm1', name: 'HSBC Egypt ••1234', last4: '1234' }], expenses: [{ id: 'e9', category: 'Food', description: 'x' }] }),
       row({ last4: '1234' }),
     )
     expect(res?.id).toBe('e9')

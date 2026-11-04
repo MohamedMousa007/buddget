@@ -66,12 +66,12 @@ export function resolveReportTarget(
   currency?: string | null,
 ): MethodRow | null {
   const open = methods.filter((m) => !m.closed_at)
-  const byTail = matchByTail(open.map((m) => ({ id: m.id, last4: m.last4, last4Aliases: m.last4_aliases })), last4)
+  const brand = resolvePaymentBrandKey(provider?.bankName) ?? resolvePaymentBrandKey(provider?.sender)
+  const byTail = matchByTail(open.map((m) => ({ id: m.id, last4: m.last4, last4Aliases: m.last4_aliases, bankKey: resolvePaymentBrandKey(m.name) })), last4, brand)
   if (byTail.ambiguous) return null
   const hit = byTail.id ? open.find((m) => m.id === byTail.id) : undefined
   if (!hit) {
     // Wallets often have no last 4: fall back to the sending provider, only when it names exactly one account.
-    const brand = resolvePaymentBrandKey(provider?.bankName) ?? resolvePaymentBrandKey(provider?.sender)
     if (!brand) return null
     const same = open.filter((m) => HOLDERS.has(m.type) && resolvePaymentBrandKey(m.name) === brand)
     if (same.length === 1) return same[0]
