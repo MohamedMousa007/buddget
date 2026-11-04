@@ -18,7 +18,7 @@ Method: Round 2's order (context, baseline, data layer, server, AI, web UI, nati
 ## Fixed in this round
 | ID | P | Finding | Fix |
 |---|---|---|---|
-| OPS1 | P1 | The hourly pg_cron job (id 15) calls `/api/cron/notifications` with `net.http_post`, but the route exported GET only: all 94 hourly runs returned 405, so per-user 09:00 notifications never ran (only Vercel's daily 06:00 UTC GET, which skips users still before 09:00, e.g. Cairo in winter) | route now also exports POST (same auth); test added. Takes effect on deploy |
+| OPS1 | P1 | The hourly pg_cron job (id 15) calls `/api/cron/notifications` with `net.http_post`, but the route exported GET only: all 94 hourly runs returned 405, so per-user 09:00 notifications never ran (only Vercel's daily 06:00 UTC GET, which skips users still before 09:00, e.g. Cairo in winter) | route now also exports POST (same auth); test added. Deployed (`67b560b`) and verified: a POST from the job's own request ran the route (`notification_cron_last_run` updated). The job's pg_net timeout was the 5 s default, shorter than the route, so cron job 15 was altered live to `timeout_milliseconds := 55000` |
 | NW1 | P2 | Net worth (no tracked accounts) added the whole month's expected income, including paydays not yet received: demo showed -3,037 instead of -57,037 | `useNetWorth` and Buddgy `get_net_worth` use `receivedIncome`; red/green test |
 | A11Y1 | P2 | `/goals` card was a `role=button` div containing a button (nested interactive) | one stretched button for the card, footer action above it |
 | A11Y2 | P2 | Debt cards and the emergency-fund sheet had unnamed progress bars | `aria-label` (required prop on `DebtBar`) |
