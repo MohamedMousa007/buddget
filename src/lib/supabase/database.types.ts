@@ -1764,24 +1764,6 @@ export type Database = {
         }
         Relationships: []
       }
-      fx_rates: {
-        Row: {
-          day: string
-          currency: string
-          per_usd: number
-        }
-        Insert: {
-          day: string
-          currency: string
-          per_usd: number
-        }
-        Update: {
-          day?: string
-          currency?: string
-          per_usd?: number
-        }
-        Relationships: []
-      }
       goal_allocation_runs: {
         Row: {
           amount: number
@@ -2346,6 +2328,7 @@ export type Database = {
           is_default: boolean
           label: string | null
           last4: string | null
+          last4_aliases: string[]
           name: string
           notes: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
@@ -2367,6 +2350,7 @@ export type Database = {
           is_default?: boolean
           label?: string | null
           last4?: string | null
+          last4_aliases?: string[]
           name: string
           notes?: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
@@ -2388,6 +2372,7 @@ export type Database = {
           is_default?: boolean
           label?: string | null
           last4?: string | null
+          last4_aliases?: string[]
           name?: string
           notes?: string | null
           type?: Database["public"]["Enums"]["payment_method_type"]
@@ -3430,6 +3415,42 @@ export type Database = {
           },
         ]
       }
+      sms_pattern_reviews: {
+        Row: {
+          id: string
+          period_start: string | null
+          period_end: string | null
+          status: string | null
+          notes: string | null
+          report: Json | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          period_start?: string | null
+          period_end?: string | null
+          status?: string | null
+          notes?: string | null
+          report?: Json | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          period_start?: string | null
+          period_end?: string | null
+          status?: string | null
+          notes?: string | null
+          report?: Json | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       sms_promotion_config: {
         Row: {
           id: number
@@ -3469,6 +3490,51 @@ export type Database = {
           quarantine_exonerate_after?: number
           signals_before_adjudication?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sms_retention_audit: {
+        Row: {
+          id: number
+          run_at: string
+          outcome: string
+          rejected_purged: number
+          rejected_cap_fired: number
+          parsed_masked: number
+          parsed_held: boolean
+          never_learned_purged: number
+          failed_blanked: number
+          failed_deleted: number
+          corpus_dropped: number
+          explicit_expired: number
+        }
+        Insert: {
+          id: number
+          run_at?: string
+          outcome: string
+          rejected_purged?: number
+          rejected_cap_fired?: number
+          parsed_masked?: number
+          parsed_held?: boolean
+          never_learned_purged?: number
+          failed_blanked?: number
+          failed_deleted?: number
+          corpus_dropped?: number
+          explicit_expired?: number
+        }
+        Update: {
+          id?: number
+          run_at?: string
+          outcome?: string
+          rejected_purged?: number
+          rejected_cap_fired?: number
+          parsed_masked?: number
+          parsed_held?: boolean
+          never_learned_purged?: number
+          failed_blanked?: number
+          failed_deleted?: number
+          corpus_dropped?: number
+          explicit_expired?: number
         }
         Relationships: []
       }
@@ -3517,6 +3583,27 @@ export type Database = {
           last_seen?: string
           sender?: string
           txn_count?: number
+        }
+        Relationships: []
+      }
+      sms_template_hard_signals: {
+        Row: {
+          template_id: string
+          user_id: string
+          reason: string | null
+          created_at: string
+        }
+        Insert: {
+          template_id: string
+          user_id: string
+          reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          template_id?: string
+          user_id?: string
+          reason?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -4187,6 +4274,23 @@ export type Database = {
       }
     }
     Views: {
+      app_activity_days: {
+        Row: {
+          active_seconds: number | null
+          day: string | null
+          last_event_at: string | null
+          sessions: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      sms_ai_today: {
+        Row: {
+          ai_count_today: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       sms_parse_today: {
         Row: {
           parsed_count_today: number | null
@@ -4277,6 +4381,7 @@ export type Database = {
         Returns: { ticket_id: string; ticket_number: number }[]
       }
       admin_granted_users: { Args: { p_staff: string; p_users: string[] }; Returns: string[] }
+      user_id_by_email: { Args: { p_email: string }; Returns: string | null }
       record_client_crash_v2: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string; p_event_id?: string | null }; Returns: undefined }
       record_client_crash: { Args: { p_fingerprint: string; p_release: string; p_title: string; p_level: string; p_culprit: string | null; p_stack: string | null; p_platform: string | null; p_build: string | null; p_device_id: string | null; p_user_id: string | null; p_sentry_issue_id: string | null; p_sentry_url: string | null; p_seen: string }; Returns: undefined }
       admin_has_grant: { Args: { p_scope: string; p_staff: string; p_user: string }; Returns: boolean }

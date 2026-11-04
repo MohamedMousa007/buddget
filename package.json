@@ -10,6 +10,7 @@
     "generate-icons": "node scripts/generate-pwa-icons.mjs",
     "test": "TZ=${TZ:-Africa/Cairo} vitest run",
     "test:coverage": "TZ=${TZ:-Africa/Cairo} vitest run --coverage",
+    "verify": "bash scripts/verify.sh",
     "test:watch": "vitest",
     "cap:env:check": "node scripts/native-env.mjs check",
     "cap:build": "node scripts/capacitor-build.mjs",

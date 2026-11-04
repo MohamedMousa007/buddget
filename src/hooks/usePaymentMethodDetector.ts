@@ -5,10 +5,16 @@ import { sharedFetch } from '@/lib/query/sharedFetch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { PAYMENT_BRANDS, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { paymentTypeFromSms } from '@/lib/payment/smsPaymentType'
-import type { PaymentMethodType } from '@/lib/store/types'
+import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { useShallow } from 'zustand/react/shallow'
+import { answersTo, tailsMatch } from '@/lib/accounts/identity/accountRef'
+import { extractBalance } from '@/lib/sms/balanceReport'
 
 export interface DetectedAccount {
+  /** Prompt identity; see detectAccounts. */
+  key: string
+  /** The account's currency when its messages state a balance (that balance is in the account's own currency), else null. */
+  currency: string | null
   /** Best provider token — SMS sender ID ("QNB EGYPT") or parsed bank name. Bare provider, never composed with the last4. */
   provider: string | null
   last4: string
@@ -17,6 +23,15 @@ export interface DetectedAccount {
   /** Parsed SMS that mention this account in the lookback week. */
   count: number
 }
+
+/** Currency named next to a message's trailing balance; "LE" is the Egyptian pound. */
+function balanceCurrency(body: string): string | null {
+  const c = extractBalance(body)?.currency
+  return c === 'LE' ? 'EGP' : (c ?? null)
+}
+
+/** An account seen in messages stays offered this long, so one seen last week is not forgotten. */
+const DETECT_LOOKBACK_DAYS = 30
 
 /** Most frequent non-empty value, else null. */
 function mode(values: (string | null)[]): string | null {
@@ -48,12 +63,49 @@ export function pickProvider(sender: string | null, bankName: string | null): st
   return brandId ? PAYMENT_BRANDS[brandId].name : best
 }
 
-type Row = {
+export type Row = {
   account_last4: string | null
   bank_name: string | null
   sender: string | null
   payment_instrument: string | null
   raw_body: string | null
+}
+
+/**
+ * Groups parsed messages into the accounts they mention, per provider: the same digits at two banks are two accounts, and
+ * one account printed as "001" and "0001" is one. Accounts the user already has (by displayed number or alias) are left out.
+ * `key` is the prompt identity: the plain `pm:<digits>` it always was, widened with the provider only when two groups
+ * share digits, so answers given before keep working.
+ */
+export function detectAccounts(rows: Row[], methods: readonly PaymentMethod[]): DetectedAccount[] {
+  const byProvider = new Map<string, { provider: string | null; rows: Row[] }>()
+  for (const row of rows) {
+    const provider = pickProvider(row.sender, row.bank_name)
+    const k = provider ?? ''
+    const g = byProvider.get(k) ?? { provider, rows: [] }
+    g.rows.push(row)
+    byProvider.set(k, g)
+  }
+  const found: Omit<DetectedAccount, 'key'>[] = []
+  for (const { provider, rows: group } of byProvider.values()) {
+    const clusters: { tail: string; rows: Row[] }[] = []
+    const tails = [...new Set(group.map((r) => r.account_last4!))].sort((a, b) => b.length - a.length)
+    for (const tail of tails) {
+      const into = clusters.find((c) => tailsMatch(c.tail, tail))
+      const mine = group.filter((r) => r.account_last4 === tail)
+      if (into) into.rows.push(...mine)
+      else clusters.push({ tail, rows: [...mine] })
+    }
+    for (const c of clusters) {
+      if (methods.some((pm) => answersTo(pm, c.tail))) continue
+      // Most frequent inference across this account's messages: one oddly worded SMS shouldn't decide the type.
+      const type = mode(c.rows.map((r) => paymentTypeFromSms(r.raw_body, r.payment_instrument))) as PaymentMethodType | null
+      const currency = mode(c.rows.map((r) => (r.raw_body ? balanceCurrency(r.raw_body) : null)))
+      found.push({ provider, last4: c.tail, type, currency, count: c.rows.length })
+    }
+  }
+  const sharing = (last4: string) => found.filter((f) => f.last4 === last4).length > 1
+  return found.map((f) => ({ ...f, key: sharing(f.last4) ? `pm:${resolvePaymentBrandKey(f.provider) ?? f.provider ?? 'unknown'}:${f.last4}` : `pm:${f.last4}` }))
 }
 
 export function usePaymentMethodDetector(): DetectedAccount[] {
@@ -67,7 +119,7 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
 
   useEffect(() => {
     if (!smsEnabled) return
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const since = new Date(Date.now() - DETECT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
     void sharedFetch('sms-accounts', 60_000, async () => {
       const { data } = await createClient()
         .from('sms_parse_log')
@@ -80,30 +132,7 @@ export function usePaymentMethodDetector(): DetectedAccount[] {
     })
       .then((data) => {
         if (!data) return
-        const linked = new Set(
-          paymentMethods.filter((pm) => pm.last4).map((pm) => pm.last4!),
-        )
-        const groups = new Map<string, Row[]>()
-        for (const row of data as Row[]) {
-          const l4 = row.account_last4!
-          if (!groups.has(l4)) groups.set(l4, [])
-          groups.get(l4)!.push(row)
-        }
-        const result: DetectedAccount[] = []
-        for (const [l4, rows] of groups) {
-          if (linked.has(l4)) continue
-          const provider = pickProvider(
-            mode(rows.map((r) => r.sender)),
-            mode(rows.map((r) => r.bank_name)),
-          )
-          // Most frequent inference across this account's messages — one oddly
-          // worded SMS shouldn't decide the type.
-          const type = mode(
-            rows.map((r) => paymentTypeFromSms(r.raw_body, r.payment_instrument)),
-          ) as PaymentMethodType | null
-          result.push({ last4: l4, provider, type, count: rows.length })
-        }
-        setDetected(result)
+        setDetected(detectAccounts(data as Row[], paymentMethods))
       })
       .catch(() => undefined)
   }, [smsEnabled, paymentMethods])

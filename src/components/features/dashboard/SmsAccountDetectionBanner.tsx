@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { CreditCard, Wallet, type LucideIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { CreditCard, Landmark, Wallet, type LucideIcon } from 'lucide-react'
 import { usePaymentMethodDetector, type DetectedAccount } from '@/hooks/usePaymentMethodDetector'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -11,11 +12,15 @@ import { ModalTitle } from '@/components/modals/ModalTitle'
 import { SelectField } from '@/components/ui/SelectField'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/lib/i18n'
+import { parentAccountFor } from '@/lib/accounts/parentAccount'
+import { withAlias } from '@/lib/accounts/identity/accountRef'
+import { useReattribute } from '@/lib/accounts/useReattribute'
 import type { Dictionary } from '@/lib/i18n'
 
 /** The primary CTA names what will be created, from the type the SMS implies. */
-function addFor(type: DetectedAccount['type'], t: Dictionary['prompts']): { label: string; icon: LucideIcon } {
+function addFor(type: DetectedAccount['type'], t: Dictionary['prompts'], addAccountLabel: string): { label: string; icon: LucideIcon } {
   if (type === 'wallet') return { label: t.addWallet, icon: Wallet }
+  if (type === 'bank_account') return { label: addAccountLabel, icon: Landmark }
   return { label: t.addCard, icon: CreditCard }
 }
 
@@ -28,15 +33,18 @@ function addFor(type: DetectedAccount['type'], t: Dictionary['prompts']): { labe
 export function SmsAccountDetectionBanner() {
   const detected = usePaymentMethodDetector()
   const t = useT()
-  const [linkFor, setLinkFor] = useState<string | null>(null)
+  const [linkFor, setLinkFor] = useState<{ key: string; last4: string } | null>(null)
   const openAddPaymentMethodWithPrefill = useSettingsStore((s) => s.openAddPaymentMethodWithPrefill)
+  const openAddAccountWithPrefill = useSettingsStore((s) => s.openAddAccountWithPrefill)
+  const router = useRouter()
+  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
 
   useRegisterPrompts(
     'account-detection',
-    detected.map(({ last4, provider, type, count }): Prompt => {
-      const add = addFor(type, t.prompts)
+    detected.map(({ key, last4, provider, type, currency, count }): Prompt => {
+      const add = addFor(type, t.prompts, t.accountsPage.addAccount)
       return {
-        key: `pm:${last4}`,
+        key,
         priority: PROMPT_PRIORITY.account,
         tone: 'brand',
         icon: add.icon,
@@ -46,23 +54,33 @@ export function SmsAccountDetectionBanner() {
           {
             label: add.label,
             variant: 'default',
-            onPress: () => openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}) }),
+            onPress: () => {
+              if (type === 'bank_account') {
+                openAddAccountWithPrefill({ provider: provider ?? '', last4, ...(currency ? { currency } : {}) })
+                router.push('/accounts')
+              } else {
+                const parentId = type === 'debit_card' || type === null ? parentAccountFor(paymentMethods, provider) : undefined
+                openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}), ...(parentId ? { parentId } : {}), ...(currency ? { currency } : {}) })
+              }
+            },
           },
-          { label: t.prompts.linkExisting, variant: 'secondary', onPress: () => setLinkFor(last4) },
-          { label: t.prompts.notMine, variant: 'secondary', onPress: () => settlePrompt(`pm:${last4}`) },
+          { label: t.prompts.linkExisting, variant: 'secondary', onPress: () => setLinkFor({ key, last4 }) },
+          { label: t.prompts.notMine, variant: 'secondary', onPress: () => settlePrompt(key) },
         ],
       }
     }),
   )
 
-  return <LinkExistingSheet last4={linkFor} onClose={() => setLinkFor(null)} />
+  return <LinkExistingSheet link={linkFor} onClose={() => setLinkFor(null)} />
 }
 
 /** "Link existing": the payment-method select, in a sheet, that stamps the detected last4. */
-function LinkExistingSheet({ last4, onClose }: { last4: string | null; onClose: () => void }) {
+function LinkExistingSheet({ link, onClose }: { link: { key: string; last4: string } | null; onClose: () => void }) {
+  const last4 = link?.last4 ?? null
   const t = useT()
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
+  const reattribute = useReattribute()
   const [choice, setChoice] = useState('')
   const close = () => {
     setChoice('')
@@ -86,9 +104,11 @@ function LinkExistingSheet({ last4, onClose }: { last4: string | null; onClose: 
           size="cta-block"
           disabled={!choice}
           onClick={() => {
-            if (!last4 || !choice) return
-            updatePaymentMethod(choice, { last4 })
-            settlePrompt(`pm:${last4}`)
+            if (!link || !choice) return
+            const target = paymentMethods.find((pm) => pm.id === choice)
+            if (target) updatePaymentMethod(choice, withAlias(target, link.last4))
+            void reattribute(choice, link.last4)
+            settlePrompt(link.key)
             close()
           }}
         >

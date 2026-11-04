@@ -1,5 +1,5 @@
 import { noteSecondFactorResponse } from '@/lib/auth/secondFactorGate'
-import { configuredAdminHost, normalizeHost } from '@/lib/admin/host'
+import { appHostFor, appHostForRedirects, configuredAdminHost, normalizeHost } from '@/lib/admin/host'
 
 /**
  * Resolves the absolute origin used by client-side `fetch` calls.
@@ -16,14 +16,14 @@ import { configuredAdminHost, normalizeHost } from '@/lib/admin/host'
  */
 export function apiUrl(path: string): string {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL?.trim().replace(/\/+$/, '') ?? ''
-  if (!base || onAdminHost()) return path
+  if (!base || onDeployedWebHost()) return path
   if (!path.startsWith('/')) return `${base}/${path}`
   return `${base}${path}`
 }
 
 /** True when the static bundle should call the deployed API origin. */
 export function usesRemoteApi(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_API_BASE_URL?.trim()) && !onAdminHost()
+  return Boolean(process.env.NEXT_PUBLIC_API_BASE_URL?.trim()) && !onDeployedWebHost()
 }
 
 /**
@@ -32,6 +32,17 @@ export function usesRemoteApi(): boolean {
  */
 export function onAdminHost(): boolean {
   return typeof window !== 'undefined' && normalizeHost(window.location.hostname) === configuredAdminHost()
+}
+
+/**
+ * The deployed web app (product, marketing or admin host) serves its own API with cookies. A remote API base left in its
+ * build env would make every call cross-origin, which CORS and the CSP refuse: "Failed to fetch".
+ */
+export function onDeployedWebHost(): boolean {
+  if (typeof window === 'undefined') return false
+  const host = normalizeHost(window.location.hostname)
+  const apex = appHostFor(configuredAdminHost())
+  return host === apex || host.endsWith(`.${apex}`) || host === appHostForRedirects()
 }
 
 /**

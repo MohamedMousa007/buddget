@@ -150,6 +150,8 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
         ref={btnRef}
         type="button"
         onPointerDown={handlePointerDown}
+        // A click with no pointer (keyboard, screen reader, switch control): the drag handler above only opens on pointer-up.
+        onClick={(e) => { if (e.detail === 0) onOpen() }}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}
         onContextMenu={(e) => e.preventDefault()}

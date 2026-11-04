@@ -74,6 +74,9 @@ export function BottomNav() {
                 <button data-raw-button-ok="the centre FAB: one raised 54px circle, not a button style"
                   type="button"
                   {...fabHandlers}
+                  // Pointer taps open it through the hold gesture; a keyboard or screen-reader activation arrives as a click with
+                  // no pointer (detail 0) and would otherwise do nothing.
+                  onClick={(e) => { if (e.detail === 0) setActiveModal('quickAdd') }}
                   style={{ touchAction: 'none' }}
                   className="flex items-center justify-center h-[54px] w-[54px] -mt-[26px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_0_0_4px_var(--color-brand-card),var(--shadow-md)] transition-[colors,transform] duration-[75ms] active:scale-[0.92] touch-none select-none"
                   aria-label={t.nav.quickAdd}

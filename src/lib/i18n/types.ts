@@ -208,6 +208,15 @@ export interface Dictionary {
     setAside: string
     creditOwed: string
     accountsCount: (n: number) => string
+    unplacedTitle: (n: number) => string
+    unplacedSub: string
+    unplacedReview: string
+    unplacedAttach: (n: number) => string
+    unplacedAccount: string
+    reattached: (n: number) => string
+    attachMessagesName: string
+    attachMessagesSub: (n: number, amount: string) => string
+    attachMessagesCta: string
     bankAccounts: string
     walletsCash: string
     addAccountOrCard: string
@@ -2244,6 +2253,8 @@ export interface Dictionary {
     identifier: string
     optional: string
     fourDigits: string
+    alsoRecognised: string
+    removeNumber: (digits: string) => string
     label: string
     none: string
     last4Help: string

@@ -34,6 +34,12 @@ describe('parseCrashEvent', () => {
     expect(parseCrashEvent({ data: { event: { ...event, event_id: 'abc' } } })?.eventId).toBe('abc')
     expect(c?.stack).toBe('TypeError: x is undefined\n  at b (b.js:2)\n  at a (a.js:1)')
   })
+  it('names native-only events by their Sentry platform', () => {
+    const untagged = { ...event, tags: [] }
+    expect(parseCrashEvent({ data: { event: { ...untagged, platform: 'cocoa' } } })?.platform).toBe('ios')
+    expect(parseCrashEvent({ data: { event: { ...untagged, platform: 'java' } } })?.platform).toBe('android')
+    expect(parseCrashEvent({ data: { event: { ...untagged, platform: 'javascript' } } })?.platform).toBe('javascript')
+  })
   it('ignores non-uuid users, unknown levels and bodies without an event', () => {
     expect(parseCrashEvent({ data: { event: { ...event, user: { id: 'someone' }, level: 'weird' } } })).toMatchObject({ userId: null, level: 'error' })
     expect(parseCrashEvent({ data: {} })).toBeNull()

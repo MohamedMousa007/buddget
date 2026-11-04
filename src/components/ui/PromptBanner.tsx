@@ -90,7 +90,7 @@ function OverlayPromptBanner({
           {icon}
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-px">
-          <span className="text-sm font-bold leading-[1.3] text-[var(--color-brand-text-primary)] [text-wrap:pretty]">{title}</span>
+          <span className="text-sm font-bold leading-[1.3] text-[var(--color-brand-text-primary)] [overflow-wrap:anywhere] [text-wrap:pretty]">{title}</span>
           {description ? (
             <span className="text-[12.5px] leading-[1.4] text-[var(--color-brand-text-secondary)]">{description}</span>
           ) : null}

@@ -257,7 +257,7 @@ Brain on the server, hands on the device. Full guide: `docs/buddgy/INTERNAL_GUID
 | Supabase client | `src/lib/supabase/client.ts` |
 | Native detection | `src/lib/native/isNative.ts` |
 | API base URL | `src/lib/apiBase.ts` |
-| Route middleware | `src/middleware.ts` |
+| Route proxy (middleware) | `src/proxy.ts` |
 | Capacitor config | `capacitor.config.ts` |
 | Migrations | `supabase/migrations/` |
 

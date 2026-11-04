@@ -1,6 +1,17 @@
 import { z } from 'zod'
 import type { ExpenseCategory } from '@/lib/store/types'
 
+/** A real calendar day ("2026-02-30" is not one), optionally followed by a time. */
+const dayString = z.string().refine((v) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
+  if (!m) return false
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3]
+}, 'Not a valid date')
+
+/** A timestamp the ledger can order by; anything `Date` cannot read would turn balances into NaN. */
+const stampString = z.string().refine((v) => !Number.isNaN(Date.parse(v)), 'Not a valid timestamp')
+
 const GCC_FIATS = [
   'KWD',
   'QAR',
@@ -149,7 +160,7 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: z.string().optional(),
+        occurredAt: stampString.optional(),
         templateId: z.string().nullable().optional(),
         name: z.string(),
         amount: z.number(),
@@ -167,7 +178,7 @@ export const importDataSchema = z.object({
             'other',
           ])
           .optional(),
-        receivedDate: z.string(),
+        receivedDate: dayString,
         status: z.enum(['confirmed', 'projected', 'late', 'missed', 'partial']),
         paymentMethodId: z.string().optional(),
         linkedSavingsAccountId: z.string().optional(),
@@ -186,12 +197,12 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: z.string().optional(),
+        occurredAt: stampString.optional(),
         toPaymentMethodId: z.string().optional(),
         spendExclusion: z.enum(['method', 'manual', 'for_someone']).optional(),
         owedBy: z.string().optional(),
         owedSettledAt: z.string().optional(),
-        date: z.string(),
+        date: dayString,
         description: z.string(),
         category: z.string(),
         subcategory: z.string().optional(),
@@ -238,7 +249,7 @@ export const importDataSchema = z.object({
     )
     .optional(),
   budgetPlanActivations: z
-    .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: z.string(), createdAt: z.string() }))
+    .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: dayString, createdAt: z.string() }))
     .optional(),
   accountAdjustments: z
     .array(
@@ -247,7 +258,7 @@ export const importDataSchema = z.object({
         paymentMethodId: z.string(),
         delta: z.number(),
         reason: z.enum(['manual_update', 'gap', 'opening_correction']),
-        occurredAt: z.string(),
+        occurredAt: stampString,
         note: z.string().optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
@@ -347,7 +358,7 @@ export const importDataSchema = z.object({
         amount: z.number(),
         currency: fiatCurrencySchema,
         notes: z.string().optional(),
-        asOfDate: z.string().optional(),
+        asOfDate: dayString.optional(),
         createdAt: z.string(),
         updatedAt: z.string(),
       })
@@ -381,7 +392,7 @@ export const importDataSchema = z.object({
         currency: savingsCurrencySchema,
         frequency: z.literal('monthly'),
         dayOfMonth: z.number().int().min(1).max(28),
-        nextDueDate: z.string(),
+        nextDueDate: dayString,
         isActive: z.boolean(),
         notes: z.string().optional(),
         createdAt: z.string(),
@@ -392,13 +403,13 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: z.string().optional(),
+        occurredAt: stampString.optional(),
         paymentMethodId: z.string().optional(),
         accountId: z.string(),
         type: z.enum(['deposit', 'withdrawal']),
         amount: z.number(),
         currency: savingsCurrencySchema,
-        date: z.string(),
+        date: dayString,
         source: z.string().optional(),
         notes: z.string().optional(),
         isAutoSave: z.boolean().optional(),
@@ -457,7 +468,7 @@ export const importDataSchema = z.object({
         installmentCount: z.number().optional(),
         installmentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']).optional(),
         installmentAmount: z.number().optional(),
-        startDate: z.string().optional(),
+        startDate: dayString.optional(),
         interestFree: z.boolean().optional(),
         creditor: z.string().optional(),
         receivedVia: z
@@ -465,7 +476,7 @@ export const importDataSchema = z.object({
           .optional(),
         goal: z
           .object({
-            targetDate: z.string(),
+            targetDate: dayString,
             paymentFrequency: z.enum(['weekly', 'monthly', 'quarterly', 'annually']),
             calculatedAmount: z.number(),
           })
@@ -477,9 +488,9 @@ export const importDataSchema = z.object({
     .array(
       z.object({
         id: z.string(),
-        occurredAt: z.string().optional(),
+        occurredAt: stampString.optional(),
         debtId: z.string(),
-        date: z.string(),
+        date: dayString,
         amountPaid: z.number(),
         paymentCurrency: z.string().optional(),
         originalAmount: z.number().optional(),
@@ -500,7 +511,7 @@ export const importDataSchema = z.object({
         currency: currencySchema,
         paymentMethodId: z.string(),
         frequency: z.enum(['monthly', 'biweekly', 'weekly', 'quarterly', 'annually']),
-        nextDueDate: z.string(),
+        nextDueDate: dayString,
         isActive: z.boolean(),
         notes: z.string().optional(),
         createdAt: z.string(),
@@ -523,8 +534,8 @@ export const importDataSchema = z.object({
         currency: fiatCurrencySchema,
         billingCycle: z.enum(['monthly', 'quarterly', 'semiannual', 'yearly', 'weekly']),
         billingDay: z.number().int().min(1).max(31),
-        startDate: z.string(),
-        nextBillingDate: z.string().nullable(),
+        startDate: dayString,
+        nextBillingDate: dayString.nullable(),
         paymentMethodId: z.string().nullable(),
         expenseCategory: z.string(),
         linkedRecurringExpenseId: z.string().nullable(),
@@ -573,7 +584,7 @@ export const importDataSchema = z.object({
         targetAmount: z.number().nullable(),
         currency: savingsCurrencySchema,
         manualCurrentAmount: z.number(),
-        targetDate: z.string().nullable(),
+        targetDate: dayString.nullable(),
         linkedSavingsAccountIds: z.array(z.string()),
         linkedDebtIds: z.array(z.string()),
         monthlySpendingLimit: z.number().nullable(),

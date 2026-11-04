@@ -120,11 +120,37 @@ export async function scrubPersonalText(admin: ServiceClient, uid: string, email
   const db = loose(admin)
   await run('email_log', db.from('email_log').update({ to_email: ERASED_ADDRESS }).eq('user_id', uid))
   await run('support_tickets', db.from('support_tickets').update({ requester_email: null, context: {} }).eq('user_id', uid))
+  await eraseSupportText(db, uid, null, run)
   if (email) {
+    await eraseSupportText(db, null, email, run)
     await run('email_log(email)', db.from('email_log').update({ to_email: ERASED_ADDRESS }).eq('to_email', email))
     await run('support_tickets(email)', db.from('support_tickets').update({ requester_email: null, context: {} }).eq('requester_email', email))
   }
   return errors
+}
+
+/** Ticket kinds worth keeping as product history (bug reports, feature requests, praise); everything else is private help. */
+const PRODUCT_FEEDBACK_KINDS = ['bug', 'feature', 'praise']
+const ERASED_TEXT = '[deleted]'
+
+/**
+ * Blanks the subject and message text of a leaving user's private tickets (support, billing, account, other). Product
+ * feedback tickets stay as history for fixing bugs and planning features; their requester email and context are
+ * already erased above.
+ */
+async function eraseSupportText(
+  db: SupabaseClient,
+  uid: string | null,
+  email: string | null,
+  run: (label: string, p: PromiseLike<{ error: { message: string } | null }>) => Promise<void>,
+): Promise<void> {
+  const base = db.from('support_tickets').select('id, kind')
+  const { data, error } = await (uid ? base.eq('user_id', uid) : base.eq('requester_email', email ?? ''))
+  if (error) return void (await run('support_tickets(read)', Promise.resolve({ error })))
+  const ids = ((data ?? []) as { id: string; kind: string }[]).filter((t) => !PRODUCT_FEEDBACK_KINDS.includes(t.kind)).map((t) => t.id)
+  if (ids.length === 0) return
+  await run('support_ticket_messages', db.from('support_ticket_messages').update({ body: ERASED_TEXT }).in('ticket_id', ids))
+  await run('support_tickets(text)', db.from('support_tickets').update({ subject: ERASED_TEXT }).in('id', ids))
 }
 
 /** Every row held about one person, for a data-subject access request. Credentials are left out. */

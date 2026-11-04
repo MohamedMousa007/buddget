@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,8 @@ import { cashOut } from '@/lib/accounts/actions'
 import { computeBalances } from '@/lib/accounts/balance'
 import type { GapResult } from '@/lib/accounts/gap'
 import { snoozeGap } from '@/lib/accounts/useAccountGaps'
+import { findUnplacedForAccount } from '@/lib/accounts/unplacedForTail'
+import type { Expense } from '@/lib/store/types'
 import { useLedgerInput, type AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -18,7 +20,7 @@ import { useT } from '@/lib/i18n'
 import { GapTimeline, type TimelineStep } from './GapTimeline'
 import { splitMoney } from './accountDisplay'
 
-type Choice = 'cash' | 'spent' | 'set' | 'unsure'
+type Choice = 'cash' | 'spent' | 'set' | 'unsure' | 'attach'
 
 interface FixGapSheetProps {
   open: boolean
@@ -36,10 +38,20 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
   const shortDate = (iso: string) => formatPattern(new Date(iso), 'MMM d')
   const ledger = useLedgerInput()
   const addExpense = useFinanceStore((s) => s.addExpense)
-  const [choice, setChoice] = useState<Choice>('cash')
+  const updateExpense = useFinanceStore((s) => s.updateExpense)
+  const [picked, setPicked] = useState<Choice | null>(null)
   const cur = String(account.method.currency)
   const money = (n: number) => splitMoney(n, cur).int + splitMoney(n, cur).dec
   const missing = Math.abs(gap.amount)
+  // Money the bank's own messages already described: placing it is the first thing to try, before guessing where cash went.
+  const [unplaced, setUnplaced] = useState<Expense[]>([])
+  useEffect(() => {
+    if (!open) return
+    let off = false
+    void findUnplacedForAccount(ledger.expenses, account.method).then((rows) => { if (!off) setUnplaced(rows) }).catch(() => undefined)
+    return () => { off = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, account.method.id, ledger.expenses.length])
 
   const steps = useMemo<TimelineStep[]>(() => {
     const at = (iso: string) => new Date(iso).getTime()
@@ -60,16 +72,23 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
   }, [ledger, gap, account.method.id])
 
   const tiles: Array<{ id: Choice; name: string; sub: string; cta: string; likely?: boolean }> = [
-    { id: 'cash', name: t.cashWithdrawal, sub: t.cashWithdrawalSub, cta: t.logCashWithdrawal, likely: true },
+    ...(unplaced.length > 0
+      ? [{ id: 'attach' as const, name: t.attachMessagesName, sub: t.attachMessagesSub(unplaced.length, money(unplaced.reduce((a, e) => a + e.amount, 0))), cta: t.attachMessagesCta, likely: true }]
+      : []),
+    { id: 'cash', name: t.cashWithdrawal, sub: t.cashWithdrawalSub, cta: t.logCashWithdrawal, },
     { id: 'spent', name: t.iSpentIt, sub: t.iSpentItSub, cta: t.addTheExpense },
     { id: 'set', name: t.setAsideAction, sub: t.pocketSub, cta: t.moveIntoPocket },
     { id: 'unsure', name: t.notSure, sub: t.notSureSub, cta: t.remindMeLater },
   ]
 
+  // A pick whose tile has gone (its messages were just placed) falls back to the first one rather than leaving no tile selected.
+  const choice: Choice = picked && tiles.some((x) => x.id === picked) ? picked : tiles[0].id
+
   // The money left before the newest bank report, so the resolving entry is dated just before it: that is what lets the report match.
   const apply = () => {
     const at = new Date(new Date(gap.newest.reportedAt).getTime() - 60_000)
-    if (choice === 'cash') cashOut(account.method.id, missing, account.method.currency, at)
+    if (choice === 'attach') { for (const e of unplaced) updateExpense(e.id, { paymentMethodId: account.method.id }) }
+    else if (choice === 'cash') cashOut(account.method.id, missing, account.method.currency, at)
     else if (choice === 'spent') addExpense({ description: 'Unlogged spending', category: 'Other', amount: missing, currency: account.method.currency, date: localTodayISO(at), occurredAt: at.toISOString(), paymentMethodId: account.method.id, isRecurring: false })
     else if (choice === 'set') { onSetAside(missing); return }
     else { snoozeGap(account.method.id, gap.reportedAt); onResolved(); onClose(); return }
@@ -90,7 +109,7 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
             <p className="mb-3 text-[17px] font-bold text-[var(--color-brand-text-primary)]">{t.whereDidItGo}</p>
             <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label={t.whereDidItGo}>
               {tiles.map((x) => (
-                <SelectableCard key={x.id} layout="stack" selected={choice === x.id} onClick={() => setChoice(x.id)} role="radio" aria-checked={choice === x.id}>
+                <SelectableCard key={x.id} layout="stack" selected={choice === x.id} onClick={() => setPicked(x.id)} role="radio" aria-checked={choice === x.id}>
                   <span className="flex w-full items-center justify-between gap-2">
                     <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{x.name}</span>
                     {x.likely ? <Badge variant="positive">{t.likely}</Badge> : null}

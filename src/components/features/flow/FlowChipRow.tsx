@@ -69,7 +69,7 @@ export function FlowChipRow({
 }) {
   const t = useT()
   return (
-    <div className="hide-scrollbar mt-2 flex gap-2 overflow-x-auto px-4 [touch-action:pan-x]">
+    <div className="hide-scrollbar mt-1 -mb-1 flex gap-2 overflow-x-auto px-4 py-1 [touch-action:pan-x]">
       <OptionChip
         as="trigger"
         surface="card"

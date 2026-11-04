@@ -125,8 +125,8 @@ export function GoalChat({ form, firstText, onContinue, onManual }: { form: Form
         ) : null}
         {lastChips?.length ? (
           <div className="flex flex-wrap gap-2">
-            {lastChips.map((c) => (
-              <OptionChip key={c} size="sm" onClick={() => send(c)}>
+            {lastChips.map((c, i) => (
+              <OptionChip key={`${i}-${c}`} size="sm" onClick={() => send(c)}>
                 {c}
               </OptionChip>
             ))}

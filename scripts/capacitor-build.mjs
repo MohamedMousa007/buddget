@@ -6,8 +6,7 @@
  * use server APIs (`cookies()`, `headers()`, Supabase service client, etc).
  * The Capacitor shell never invokes those routes anyway — it talks to the
  * deployed origin via `NEXT_PUBLIC_API_BASE_URL`. So before running the
- * static export, we move `src/app/api` out of the way and `src/middleware.ts`
- * + `src/proxy.ts` aside, run the build, then restore them.
+ * static export, we move `src/app/api` out of the way and `src/proxy.ts` aside, run the build, then restore them.
  *
  * Idempotent: a SIGINT or crashed build still leaves the original tree
  * intact thanks to the `restore()` finally-block.
@@ -37,13 +36,14 @@ const STASH_DIR = resolve(ROOT, '.cap-stash')
  */
 const STASH_TARGETS = [
   { from: 'src/app/api', to: '.cap-stash/api' },
-  { from: 'src/middleware.ts', to: '.cap-stash/middleware.ts' },
   { from: 'src/proxy.ts', to: '.cap-stash/proxy.ts' },
   // Integration tests import the API route handlers stashed above, so they can't type-check in this build.
   { from: 'src/lib/server/admin/__tests__', to: '.cap-stash/admin-tests' },
   { from: 'src/instrumentation.ts', to: '.cap-stash/instrumentation.ts' },
   { from: 'src/instrumentation-node.ts', to: '.cap-stash/instrumentation-node.ts' },
   { from: 'src/app/auth/callback', to: '.cap-stash/auth-callback' },
+  // Catch-all that renders the branded 404: a dynamic route cannot be exported without generateStaticParams, and the export already emits 404.html.
+  { from: 'src/app/(app)/[...slug]', to: '.cap-stash/app-catch-all' },
   { from: 'src/app/setup', to: '.cap-stash/setup' },
   { from: 'src/app/sitemap.ts', to: '.cap-stash/sitemap.ts' },
   // The marketing website is web-only: static pages with their own root layouts.

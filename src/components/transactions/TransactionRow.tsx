@@ -63,8 +63,8 @@ export function TransactionRow({
           {titleBadge}
         </span>
         {subtitle ? (
-          <span className="mt-1.5 flex items-center whitespace-nowrap font-mono-numbers text-xs font-medium text-[var(--color-brand-text-muted)]">
-            {subtitle}
+          <span className="mt-1.5 flex min-w-0 items-center overflow-hidden whitespace-nowrap font-mono-numbers text-xs font-medium text-[var(--color-brand-text-muted)]">
+            {typeof subtitle === 'string' ? <span className="truncate">{subtitle}</span> : subtitle}
           </span>
         ) : null}
       </span>

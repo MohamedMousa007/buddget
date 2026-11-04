@@ -40,6 +40,14 @@ const MARKETING_RE =
 /** Cashback / prize ads that carry transfer vocabulary, so the transaction-verb override would let them through to the AI tier. */
 const PROMO_AD_RE = /(?:كاش\s*باك\s*(?:مضمون|لحد)|تكسب\s*كاش\s*باك|chance\s+to\s+win|get\s+cashback\s+up\s+to)/i
 
+/**
+ * A completed-transfer statement ("5000 L.E were successfully transferred to ...", "تم تحويل ... بنجاح"). Wallet providers
+ * end real receipts with a prize or cashback line ("get a chance to win a gold coin"), which must not turn the receipt
+ * into an ad.
+ */
+const COMPLETED_TRANSFER_RE =
+  /(?:(?:was|were|been)\s+(?:successfully\s+)?(?:transferred|sent|paid)|successfully\s+(?:transferred|sent|paid)|تم\s*(?:تحويل|إرسال)[^.]{0,80}?بنجاح)/i
+
 const BALANCE_ONLY_RE =
   /(available\s+balance|current\s+balance|account\s+balance|balance\s+(?:is|inquiry)|رصيدك\s*(?:الحالي|المتاح)|الرصيد\s*(?:الحالي|المتاح)|استعلام\s*(?:عن\s*)?(?:ال)?رصيد)/i
 
@@ -105,7 +113,7 @@ export function isNonTransaction(rawText: string): NonTransactionReason | null {
   // An OTP message carries a code, or has no transaction amount. A purchase alert that merely
   // ends with an anti-fraud footer ("Never share your PIN or OTP") has a verb and an amount, no code.
   if (OTP_RE.test(text) && (carriesOtpCode(text) || !(TXN_VERBS.test(text) && hasNonBalanceAmount(text)))) return 'otp'
-  if (PROMO_AD_RE.test(text)) return 'marketing'
+  if (PROMO_AD_RE.test(text) && !(COMPLETED_TRANSFER_RE.test(text) && hasNonBalanceAmount(text))) return 'marketing'
   // A transaction verb overrides marketing/balance vocabulary —
   // "debited EGP 50 for bundle renewal" is a real fee.
   if (TXN_VERBS.test(text)) return null

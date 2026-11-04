@@ -1,5 +1,6 @@
 'use client'
 
+import { fitBigNumber } from '@/components/features/hero/fitText'
 import { Eye, EyeOff } from 'lucide-react'
 import { BAND_FG2, BAND_MIX, BandScale, HeroBand } from '@/components/features/hero/HeroBand'
 import { IconButton } from '@/components/ui/IconButton'
@@ -43,7 +44,7 @@ export function AccountsHero({ model, currency, netWorth, creditOwed, hidden, on
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
             {model.approx ? <span className={`shrink-0 text-[15px] ${BAND_FG2}`}>≈</span> : null}
-            <span className="shrink-0 font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">
+            <span className={`shrink-0 font-mono-numbers font-semibold leading-none tracking-[-0.03em] ${hidden ? 'text-[32px]' : fitBigNumber(big.int + big.dec)}`}>
               {hidden ? MASK : <>{big.int}<span className="opacity-45">{big.dec}</span></>}
             </span>
             <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{currency}</span>

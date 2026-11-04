@@ -98,6 +98,14 @@ object SmsGate {
         return out
     }
 
+    /**
+     * A queued SMS may only be sent with the token of the account it arrived under. A retried job can run hours later,
+     * after another user signed in, and would otherwise deliver one person's bank text into another's account. An
+     * unstamped SMS (arrived while signed out) or an unstamped token keeps the old behaviour.
+     */
+    fun belongsToCurrentAccount(smsOwner: String, tokenOwner: String): Boolean =
+        smsOwner.isEmpty() || tokenOwner.isEmpty() || smsOwner == tokenOwner
+
     /** Worker HTTP outcome: true = transient, retry with backoff; false = leave queued without retrying. */
     fun isRetryableStatus(code: Int): Boolean =
         code >= 500 || code == 408 || code == 429 || code == 401 || code == 409 || code == 202

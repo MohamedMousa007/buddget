@@ -12,6 +12,7 @@ import {
   decomposePaymentMethodName,
   resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
+import { matchByTail } from '@/lib/accounts/identity/accountRef'
 import { toSupportedCurrency } from './ingestGuards'
 import { normalizeMerchant } from './merchantNormalizer'
 import { resolveMerchantCategory, rememberMerchantCategory } from './merchantCategoryCache'
@@ -337,8 +338,9 @@ async function resolvePaymentMethodByProvider(
 const MULTIPLE_ROWS = 'PGRST116'
 
 /**
- * The one registered method with this last4. Two or more sharing it is ambiguous: neither is picked, because
- * attributing money to the wrong account is worse than asking.
+ * The one registered method this tail names. An exact saved match wins. Otherwise the tail may be a shorter or longer
+ * form of a saved one ("***-001" names the account saved as 0001) and exactly one method must fit. Two or more fitting
+ * is ambiguous: neither is picked, because attributing money to the wrong account is worse than asking.
  */
 async function findUniqueByLast4(
   service: ServiceClient,
@@ -353,7 +355,18 @@ async function findUniqueByLast4(
     .is('deleted_at', null)
     .maybeSingle()
   if (error?.code === MULTIPLE_ROWS) return { id: null, ambiguous: true }
-  return { id: data?.id ?? null, ambiguous: false }
+  if (data?.id) return { id: data.id, ambiguous: false }
+
+  const { data: all, error: listError } = await service
+    .from('payment_methods')
+    .select('id, last4, last4_aliases')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+  if (listError) {
+    console.warn('[sms/account] method lookup failed', listError.message)
+    return { id: null, ambiguous: false }
+  }
+  return matchByTail(((all ?? []) as { id: string; last4: string | null; last4_aliases?: string[] | null }[]).map((m) => ({ id: m.id, last4: m.last4, last4Aliases: m.last4_aliases })), last4)
 }
 
 /**
@@ -615,9 +628,9 @@ export async function findRefundedTwin(
   row: SmsRowData,
 ): Promise<{ id: string; category: string } | null> {
   const lo = new Date(row.day)
-  lo.setDate(lo.getDate() - REFUND_DEDUPE_DAYS)
+  lo.setUTCDate(lo.getUTCDate() - REFUND_DEDUPE_DAYS)
   const hi = new Date(row.day)
-  hi.setDate(hi.getDate() + REFUND_DEDUPE_DAYS + 1) // +1 so the far end includes its whole day
+  hi.setUTCDate(hi.getUTCDate() + REFUND_DEDUPE_DAYS + 1) // +1 so the far end includes its whole day
   const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)
 
   let q = service
@@ -651,7 +664,7 @@ export async function matchOriginalExpense(
   row: SmsRowData,
 ): Promise<{ id: string; category: string } | null> {
   const from = new Date(row.day)
-  from.setDate(from.getDate() - 90)
+  from.setUTCDate(from.getUTCDate() - 90)
   const fromDay = from.toISOString().slice(0, 10)
 
   const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4)

@@ -82,6 +82,7 @@ class SmsReceiver : BroadcastReceiver() {
             SmsForwardWorker.KEY_SENDER      to (sender ?: ""),
             SmsForwardWorker.KEY_RECEIVED_AT to receivedAt,
             SmsForwardWorker.KEY_EVENT_ID    to eventId,
+            SmsForwardWorker.KEY_USER_ID     to tokenUserId,
         )
         WorkManager.getInstance(context).enqueue(
             OneTimeWorkRequestBuilder<SmsForwardWorker>()

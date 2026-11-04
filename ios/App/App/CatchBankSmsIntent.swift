@@ -100,7 +100,7 @@ struct CatchBankSmsIntent: AppIntent {
     }
 }
 
-/// Mirror of Android SmsGate.shouldDrop for the OTP rule (the Shortcut has no other on-device gate).
+/// Mirror of Android SmsGate for the OTP and marketing rules (the Shortcut has no sender, so no sender gate).
 enum SmsOtpGate {
     private static let otp = try! NSRegularExpression(
         pattern: "(?<![a-z])(otp|one[- ]time (password|code|pin)|verification code|security code|passcode|do not share|never share|don't share)(?![a-z])",
@@ -114,6 +114,10 @@ enum SmsOtpGate {
     private static let moneyVerb = try! NSRegularExpression(
         pattern: "(?<![a-z])(used (for|at)|paid|payment|received|refund(ed)?|debit(ed)?|credit(ed)?|purchase|spent|withdr(awn|awal)|transfer(red)?|deposit(ed)?|charged|sent)(?![a-z])",
         options: .caseInsensitive)
+    private static let marketing = try! NSRegularExpression(
+        pattern: "(?<![a-z])(promo(tion)?|promo code|coupon|discount|\\d+\\s?% ?off|limited offer|special offer|exclusive offer|unsubscribe|reply stop|win a|free gift|flash sale)(?![a-z])",
+        options: .caseInsensitive)
+    private static let marketingArabic = ["عرض خاص", "خصم حصري", "كوبون", "اشترك الآن", "للإلغاء أرسل"]
     private static let moneyVerbArabic = ["تم الدفع", "دفع", "خصم", "تحويل", "شراء", "سحب", "إيداع", "استلام", "استرداد"]
     private static let otpArabic = ["رمز التحقق", "كلمة المرور المؤقتة", "رمز التفعيل", "لا تشارك"]
     private static let txnArabic = ["تم خصم", "تم سحب", "تم دفع", "عملية شراء", "تم إيداع", "تم إضافة"]
@@ -131,6 +135,7 @@ enum SmsOtpGate {
 
     static func shouldDrop(_ message: String) -> Bool {
         let isOtp = matches(otp, message) || otpArabic.contains { message.contains($0) }
-        return isOtp && !carriesMoneyMovement(message)
+        let isMarketing = matches(marketing, message) || marketingArabic.contains { message.contains($0) }
+        return (isOtp || isMarketing) && !carriesMoneyMovement(message)
     }
 }

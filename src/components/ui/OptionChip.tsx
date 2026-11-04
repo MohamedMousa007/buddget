@@ -3,6 +3,7 @@
 import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
+import { HIT_AREA } from '@/lib/ui/hitArea'
 
 const optionChipVariants = cva(
   'inline-flex shrink-0 items-center justify-center gap-1.5 border font-semibold whitespace-nowrap transition-colors outline-none select-none ' +
@@ -12,11 +13,10 @@ const optionChipVariants = cva(
   {
     variants: {
       size: {
-        /** 36px — a dense filter row. Below the 44px rule, so only for chips in a
-         *  scrollable row where the target is wide even if it is not tall. */
-        sm: 'h-9 rounded-full px-3 text-[13px]',
-        /** 40px — the usual chip. */
-        md: 'h-10 rounded-full px-3.5 text-[13px]',
+        /** 36px — a dense filter row. The tap area is still 44px (invisible overlay). */
+        sm: HIT_AREA + ' h-9 rounded-full px-3 text-[13px]',
+        /** 40px — the usual chip, with a 44px invisible tap area. */
+        md: HIT_AREA + ' h-10 rounded-full px-3.5 text-[13px]',
         /** 44px, squared — reads as a segment in a row of equal choices. */
         segment: 'h-11 flex-1 rounded-xl px-3 text-[13px]',
       },

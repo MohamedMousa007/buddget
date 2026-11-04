@@ -15,13 +15,16 @@ import { BrandMark } from '@/components/features/accounts/BrandMark'
 import { FixGapSheet } from '@/components/features/accounts/FixGapSheet'
 import { FoundAccountsSheet } from '@/components/features/accounts/FoundAccountsSheet'
 import { MoveMoneySheet, type MoveMode } from '@/components/features/accounts/MoveMoneySheet'
+import { UnplacedSmsSheet } from '@/components/features/accounts/UnplacedSmsSheet'
 import { UpdateBalanceSheet } from '@/components/features/accounts/UpdateBalanceSheet'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { snoozeGap, useAccountGaps } from '@/lib/accounts/useAccountGaps'
 import { useAccounts } from '@/lib/accounts/useAccounts'
+import { unplacedSmsExpenses } from '@/lib/accounts/unplacedSms'
 import { useNetWorth } from '@/hooks/useNetWorth'
 import { useMask, useToggleHideAll } from '@/lib/privacy/useMask'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { totalDebtRemainingInBase } from '@/lib/utils/calculations'
 import { useT } from '@/lib/i18n'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
@@ -36,6 +39,7 @@ type Sheet =
   | { kind: 'edit'; id: string }
   | { kind: 'add'; cash?: boolean }
   | { kind: 'found' }
+  | { kind: 'unplaced' }
 
 /** The Wealth and Debts header row: title, count, and the page's add action at the end. */
 function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count: number; onAdd?: () => void; addLabel?: string }) {
@@ -58,16 +62,21 @@ export default function AccountsPage() {
   const { toggle } = useToggleHideAll()
   const { debts, debtPayments, expenses, settings, exchangeRates, goldPricePerGram, goldPriceAvailable } = useFinanceStore((s) => s)
   const [sheet, setSheet] = useState<Sheet | null>(null)
+  const accountPrefill = useSettingsStore((s) => s.accountPrefill)
+  const clearAccountPrefill = useSettingsStore((s) => s.clearAccountPrefill)
 
   const owed = useMemo(
     () => totalDebtRemainingInBase(debts.filter((d) => d.debtType === 'credit_card'), debtPayments, settings.baseCurrency, exchangeRates, goldPricePerGram, goldPriceAvailable, expenses),
     [debts, debtPayments, expenses, settings.baseCurrency, exchangeRates, goldPricePerGram, goldPriceAvailable],
   )
 
+  const unplaced = useMemo(() => unplacedSmsExpenses(expenses), [expenses])
   const banks = model.accounts.filter((a) => a.method.type === 'bank_account' || a.method.type === 'prepaid_card')
   const wallets = model.accounts.filter((a) => a.method.type === 'wallet' || a.method.type === 'cash')
   const open = sheet && 'id' in sheet ? model.accounts.find((a) => a.method.id === sheet.id) : undefined
-  const close = () => setSheet(null)
+  const close = () => { setSheet(null); clearAccountPrefill() }
+  const addOpen = sheet?.kind === 'add' || accountPrefill !== null
+  const addKey = accountPrefill ? `p-${accountPrefill.last4}` : sheet?.kind === 'add' ? (sheet.cash ? 'c' : 'a') : 'x'
   const base = String(settings.baseCurrency)
 
   const renderRow = (a: (typeof model.accounts)[number]) => (
@@ -86,7 +95,7 @@ export default function AccountsPage() {
             <Button variant="outline" size="cta-block" onClick={() => setSheet({ kind: 'add' })}>{t.addOneMyself}</Button>
           </div>} />
         <FoundAccountsSheet open={sheet?.kind === 'found'} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
-        <AddAccountSheet key={sheet?.kind === 'add' ? 'a' : 'x'} open={sheet?.kind === 'add'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
+        <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
       </PageContainer>
     )
   }
@@ -95,6 +104,15 @@ export default function AccountsPage() {
     <div>
       <AccountsHero model={model} currency={base} netWorth={nw.netWorth} creditOwed={owed} hidden={heroMasked} onToggleHidden={toggle} />
       <PageContainer className="space-y-5 py-4">
+        {unplaced.length > 0 ? (
+          <Card className="flex items-center gap-3 rounded-2xl">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.unplacedTitle(unplaced.length)}</span>
+              <span className="block text-[13px] text-[var(--color-brand-text-muted)]">{t.unplacedSub}</span>
+            </span>
+            <Button variant="secondary" size="touch" onClick={() => setSheet({ kind: 'unplaced' })}>{t.unplacedReview}</Button>
+          </Card>
+        ) : null}
         <section>
           <SectionHeader title={t.bankAccounts} count={banks.length} onAdd={() => setSheet({ kind: 'add' })} addLabel={t.addAccount} />
           {banks.length > 0 ? <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">{banks.map(renderRow)}</Card> : null}
@@ -136,8 +154,9 @@ export default function AccountsPage() {
           <PaymentMethodSetupSheet key={`e-${open.method.id}`} open={sheet?.kind === 'edit'} editing={open.method} baseCurrency={settings.baseCurrency} nested onClose={close} />
         </>
       ) : null}
-      <AddAccountSheet key={sheet?.kind === 'add' ? (sheet.cash ? 'c' : 'a') : 'x'} open={sheet?.kind === 'add'} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
+      <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
       <FoundAccountsSheet open={sheet?.kind === 'found'} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
+      <UnplacedSmsSheet key={unplaced.length} open={sheet?.kind === 'unplaced'} onClose={close} items={unplaced} accounts={model.accounts} />
     </div>
   )
 }

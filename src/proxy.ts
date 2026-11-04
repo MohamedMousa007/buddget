@@ -24,7 +24,7 @@ import {
 const AUTH_CALLBACK = '/auth/callback'
 const AUTH_CHECK_TIMEOUT_MS = 1500
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.headers.get('host')
   const hostRoute = decideHostRoute({ host, pathname: request.nextUrl.pathname, search: request.nextUrl.search })
   if (hostRoute.kind === 'redirect') return NextResponse.redirect(hostRoute.url, 307)

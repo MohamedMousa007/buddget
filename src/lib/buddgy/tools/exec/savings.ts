@@ -2,7 +2,7 @@ import { countedDebtPayments, countedDebts } from '@/lib/spending/exclusion'
 import { accountsBasisFor } from '@/lib/accounts/netWorthBasis'
 import { defineTools } from '@/lib/buddgy/tools/define'
 import { savingsLabels } from '@/lib/buddgy/tools/exec/savingsCopy'
-import { restoreRows, revertRows } from '@/lib/buddgy/tools/exec/restoreKit'
+import { changedKeys, restoreRows, revertRows } from '@/lib/buddgy/tools/exec/restoreKit'
 import { goalsOnPocket, inPocketCurrency, ledgerUndo, no, pick, posted, priceLookup, snapshotLedger, type Refusal } from '@/lib/buddgy/tools/exec/wealthKit'
 import type { EditableField, PreviewRow } from '@/lib/buddgy/tools/proposal'
 import { refOf } from '@/lib/buddgy/tools/refs'
@@ -466,10 +466,12 @@ const delete_savings_account: WriteImpl = {
     const hit = pocketOf(fin(), again.proposal.args.pocket)
     if ('error' in hit) return { ok: false, error: 'That pocket no longer exists.' }
     const id = hit.item.id
-    const { savingsAccounts, savingsTransactions, recurringSavingsDeposits, goals } = fin()
+    const { savingsAccounts, savingsTransactions, recurringSavingsDeposits, goals, incomeEvents, incomeSources } = fin()
     const wasDefault = fin().profile.defaultCarryPocketId === id
     fin().deleteSavingsAccount(id)
-    const afterGoals = fin().goals
+    const { goals: afterGoals, incomeEvents: incomeEventsAfter, incomeSources: incomeSourcesAfter } = fin()
+    const eventKeys = changedKeys(incomeEvents, incomeEventsAfter)
+    const sourceKeys = changedKeys(incomeSources, incomeSourcesAfter)
     return {
       ok: true,
       message: hit.item.name,
@@ -485,6 +487,9 @@ const delete_savings_account: WriteImpl = {
             savingsTransactions: restoreRows(st.savingsTransactions, savingsTransactions, new Set(savingsTransactions.filter((t) => t.accountId === id).map((t) => t.id))),
             recurringSavingsDeposits: restoreRows(st.recurringSavingsDeposits, recurringSavingsDeposits, new Set(recurringSavingsDeposits.filter((r) => r.accountId === id).map((r) => r.id))),
             goals: relinked,
+            // Deleting the pocket cleared the income rows that deposited into it; undo links them back.
+            incomeEvents: revertRows(st.incomeEvents, incomeEvents, incomeEventsAfter, eventKeys, true),
+            incomeSources: revertRows(st.incomeSources, incomeSources, incomeSourcesAfter, sourceKeys, true),
             ...(wasDefault ? { profile: { ...st.profile, defaultCarryPocketId: id } } : {}),
           }
         }),

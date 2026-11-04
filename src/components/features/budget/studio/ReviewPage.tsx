@@ -65,7 +65,7 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
         {aiNote ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{c.aiNote}</p> : null}
         <ol className="flex flex-col gap-2">
           {rationale?.reasons.map((r, i) => (
-            <li key={r} className="flex gap-2.5 text-sm text-[var(--color-brand-text-primary)]">
+            <li key={`${i}-${r}`} className="flex gap-2.5 text-sm text-[var(--color-brand-text-primary)]">
               <span className="font-mono-numbers text-[var(--color-brand-text-muted)]">{i + 1}</span>
               {r}
             </li>
@@ -74,8 +74,8 @@ export function ReviewPage({ planId, aiNote, onClose, onEdit, onActivate }: Revi
         {rationale?.risks?.length ? (
           <div className="flex flex-col gap-1.5 border-t border-[var(--color-brand-border)] pt-3">
             <span className={microClassName}>{c.risks}</span>
-            {rationale.risks.map((r) => (
-              <p key={r} className="flex gap-2 text-sm text-[var(--color-brand-text-secondary)]">
+            {rationale.risks.map((r, i) => (
+              <p key={`${i}-${r}`} className="flex gap-2 text-sm text-[var(--color-brand-text-secondary)]">
                 <TriangleAlert className="mt-0.5 size-4 shrink-0 text-[var(--color-brand-amber)]" aria-hidden />
                 {r}
               </p>

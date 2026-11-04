@@ -103,7 +103,6 @@ object PendingSmsQueue {
     }
 
     private fun trim(context: Context, items: JSONArray): JSONArray {
-        if (items.length() <= CAP) return items
         val times = (0 until items.length()).map { SmsTime.parseMillis(items.getJSONObject(it).optString("receivedAt")) }
         val evict = SmsGate.evictionIndexes(times, System.currentTimeMillis(), CAP)
         val kept = JSONArray()

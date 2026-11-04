@@ -3,7 +3,8 @@ import { isThisMonthOrLater, localPromptDay } from './goalDate'
 import { parseGoalReply } from './goalAi'
 
 // 2026-11-30 22:30Z is already 1 December in Cairo.
-const lateNov = new Date('2026-11-30T22:30:00Z')
+// Half past midnight on 1 Dec LOCAL time: in any zone ahead of UTC the UTC date is still 30 Nov, which is what the tests guard.
+const lateNov = new Date(2026, 11, 1, 0, 30)
 
 describe('local month for goal dates (T18)', () => {
   it('uses the local month, not UTC', () => {

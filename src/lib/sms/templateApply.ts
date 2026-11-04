@@ -7,6 +7,7 @@
  * which is precisely the failure class the gates exist to prevent.
  */
 import { isSafeRegexPattern, MAX_TEMPLATE_INPUT_CHARS } from '@/lib/sms/safeRegex'
+import { execBounded } from '@/lib/sms/boundedRegex'
 import { parseSmsDay } from '@/lib/sms/patterns'
 import { normalizeDigits, normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
@@ -92,9 +93,8 @@ export function applyMappingRules(
     console.warn('[sms/templateApply] template skipped: unsafe regex', regexPattern.slice(0, 80))
     return null
   }
-  let re: RegExp
   try {
-    re = new RegExp(regexPattern, 'd')
+    new RegExp(regexPattern, 'd')
   } catch {
     return null
   }
@@ -106,10 +106,10 @@ export function applyMappingRules(
   let message = normalised
   let m: RegExpExecArray | null
   try {
-    m = re.exec(message)
+    m = execBounded(regexPattern, 'd', message)
     if (!m && legacy !== normalised) {
       message = legacy
-      m = re.exec(message)
+      m = execBounded(regexPattern, 'd', message)
     }
   } catch {
     return null

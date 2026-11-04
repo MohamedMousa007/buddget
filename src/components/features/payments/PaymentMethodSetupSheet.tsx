@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, ArrowLeft, CreditCard, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencyField } from '@/components/ui/CurrencyField'
-import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
+import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountAliasChips, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
 import { accountTitle } from '@/components/features/accounts/accountDisplay'
 import { AmountField } from '@/components/ui/AmountField'
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,8 @@ import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { FieldButton } from '@/components/ui/FieldButton'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { isSavableTail } from '@/lib/accounts/identity/accountRef'
+import { useReattribute } from '@/lib/accounts/useReattribute'
 
 /** Banks, wallets and cash have their own sheet; this one only adds cards, and edits an account's look, never its kind. */
 const CARD_TYPES: PaymentMethodType[] = ['debit_card', 'credit_card', 'prepaid_card']
@@ -82,6 +84,7 @@ export function PaymentMethodSetupSheet({
   const [idMode, setIdMode] = useState<Identifier>('none')
   const [last4, setLast4] = useState('')
   const [label, setLabel] = useState('')
+  const [aliases, setAliases] = useState<string[]>([])
   const [curCode, setCurCode] = useState<Currency>(baseCurrency)
   const [cardColor, setCardColor] = useState<string | null>(null)
   const [isDefault, setIsDefault] = useState(false)
@@ -104,7 +107,7 @@ export function PaymentMethodSetupSheet({
         // A label an older version folded into the name ("CIB · Salary") is shown as the label it always was.
         const savedLabel = editing.label ?? decTag
         setBrandId(null); setProviderName(provider); setType(editing.type)
-        setLast4(editing.last4 ?? ''); setLabel(savedLabel)
+        setLast4(editing.last4 ?? ''); setLabel(savedLabel); setAliases(editing.last4Aliases ?? [])
         setIdMode(savedLabel ? 'label' : editing.last4 ? 'last4' : 'none')
         setCurCode(editing.currency); setCardColor(editing.color ?? null); setIsDefault(editing.isDefault)
         // Load the linked credit-card debt's terms so they're editable here.
@@ -138,7 +141,8 @@ export function PaymentMethodSetupSheet({
           // bnpl) must not land on the last4 identifier — the tab row wouldn't
           // even offer it, and handleSave would persist a last4 anyway.
           setIdMode(prefill?.last4 && allowsLast4(pfType) ? 'last4' : 'none')
-          setCurCode(baseCurrency); setCardColor(null); setIsDefault(false)
+          const suggestedParent = prefill?.parentId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === prefill.parentId) : undefined
+          setCurCode((prefill?.currency as Currency | undefined) ?? suggestedParent?.currency ?? baseCurrency); setCardColor(null); setIsDefault(false)
         }
       }
       if (lockType) setType(lockType)
@@ -180,27 +184,29 @@ export function PaymentMethodSetupSheet({
 
   const brand = brandId && brandId !== '__custom' ? PAYMENT_BRANDS[brandId] : null
   const effectiveColor = cardColor || (brand ? brand.colors[0] : null) || PAYMENT_TYPE_META[type].color
+  const reattribute = useReattribute()
   const hasProvider = providerName.trim().length > 0
   // The Debt tab locks the type; an existing bank account or wallet keeps its kind here (cards are the only thing this sheet can switch between).
   const typeLock: PaymentMethodType | undefined = lockType ?? (editing && !CARD_TYPES.includes(editing.type) ? editing.type : undefined)
   const dayInvalid = type === 'credit_card' && cardDayError(ccStatementDay)
-  const canSave = hasProvider && !dayInvalid && !(idMode === 'last4' && last4.length !== 0 && last4.length !== 4)
+  const canSave = hasProvider && !dayInvalid && (idMode !== 'last4' || isSavableTail(last4))
 
   const handleSave = () => {
     if (!canSave) return
     const provider = providerName.trim()
     // The digits survive a switch to Label: SMS matching reads them even when a label is what the user sees.
-    const use4 = idMode !== 'none' && last4.length === 4
+    const use4 = idMode !== 'none' && last4.length > 0 && isSavableTail(last4)
     const words = idMode === 'label' ? label.trim() : ''
     const name = composePaymentMethodName(provider, { last4: use4 ? last4 : undefined })
     const payload = { name, type, currency: curCode, color: effectiveColor, isDefault, ...(use4 ? { last4 } : {}), ...(words ? { label: words } : {}) }
     let pmId: string
     if (editing) {
-      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, label: words || undefined })
+      updatePaymentMethod(editing.id, { ...payload, last4: use4 ? last4 : undefined, last4Aliases: aliases.length > 0 ? aliases : undefined, label: words || undefined })
       pmId = editing.id
     } else {
       // A credit_card PM auto-creates its linked credit-card debt in the store.
-      pmId = addPaymentMethod(parentAccountId ? { ...payload, parentId: parentAccountId } : payload)
+      const parentId = parentAccountId ?? (type === 'debit_card' ? prefill?.parentId : undefined)
+      pmId = addPaymentMethod(parentId ? { ...payload, parentId } : payload)
     }
     // Persist the credit-card terms onto the linked credit-card debt.
     if (type === 'credit_card') {
@@ -215,6 +221,7 @@ export function PaymentMethodSetupSheet({
         })
       }
     }
+    if (use4) void reattribute(pmId, last4)
     onSaved?.(pmId)
     onClose()
   }
@@ -348,6 +355,7 @@ export function PaymentMethodSetupSheet({
                 mode={idMode} onModeChange={setIdMode} allowsLast4={allowsLast4(type)}
                 last4={last4} onLast4Change={setLast4} label={label} onLabelChange={setLabel}
               />
+              {editing ? <AccountAliasChips aliases={aliases} onRemove={(d) => setAliases((a) => a.filter((x) => x !== d))} /> : null}
 
               {/* Currency */}
               <div>

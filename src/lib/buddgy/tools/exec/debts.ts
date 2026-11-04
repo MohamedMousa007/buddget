@@ -888,8 +888,16 @@ const delete_debt: WriteImpl = {
   apply(proposal) {
     const p = planDelete(proposal.args)
     if (p.error) return { ok: false, error: 'That debt no longer exists.' }
-    const { debts, debtPayments, recurringDebtPayments, goals } = p.s
+    const { debts, debtPayments, recurringDebtPayments, goals, expenses, incomeEvents, incomeSources } = p.s
     fin().deleteDebt(p.d.id)
+    const after = fin()
+    // Deleting the debt cleared the ids that pointed at it on expenses and income rows; undo puts them back.
+    const linkKeys = {
+      expenses: changedKeys(expenses, after.expenses),
+      incomeEvents: changedKeys(incomeEvents, after.incomeEvents),
+      incomeSources: changedKeys(incomeSources, after.incomeSources),
+    }
+    const { expenses: expensesAfter, incomeEvents: incomeEventsAfter, incomeSources: incomeSourcesAfter } = after
     const goalsAfter = fin().goals
     const goalKeys = changedKeys(goals, goalsAfter)
     const goalGone = new Set(goals.filter((g) => !goalsAfter.some((x) => x.id === g.id)).map((g) => g.id))
@@ -902,6 +910,9 @@ const delete_debt: WriteImpl = {
           debtPayments: restoreRows(st.debtPayments, debtPayments, new Set(debtPayments.filter((x) => x.debtId === p.d.id).map((x) => x.id))),
           recurringDebtPayments: restoreRows(st.recurringDebtPayments, recurringDebtPayments, new Set(recurringDebtPayments.filter((r) => r.debtId === p.d.id).map((r) => r.id))),
           goals: revertRows(restoreRows(st.goals, goals, goalGone), goals, goalsAfter, goalKeys, true),
+          expenses: revertRows(st.expenses, expenses, expensesAfter, linkKeys.expenses, true),
+          incomeEvents: revertRows(st.incomeEvents, incomeEvents, incomeEventsAfter, linkKeys.incomeEvents, true),
+          incomeSources: revertRows(st.incomeSources, incomeSources, incomeSourcesAfter, linkKeys.incomeSources, true),
         })),
     }
   },

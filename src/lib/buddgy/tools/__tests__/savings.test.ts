@@ -392,6 +392,20 @@ describe('delete_savings_account', () => {
     expect(st().goals[0].linkedSavingsAccountIds).toEqual([A1])
   })
 
+  it('undo links a deposit income row back to the pocket it deposited into', () => {
+    useFinanceStore.setState({
+      incomeEvents: [{ id: 'inc1', name: 'Salary', amount: 5, currency: 'EGP', sourceType: 'salary', receivedDate: '2026-10-01', status: 'confirmed', linkedSavingsAccountId: A1, createdAt: '', updatedAt: '' } as never],
+    })
+    const del = write('delete_savings_account')
+    const p = del.propose({ pocket: 'CIB' }, ctx)
+    if (!p.ok) throw new Error('propose failed')
+    const applied = del.apply(p.proposal, ctx)
+    if (!applied.ok) throw new Error('apply failed')
+    expect(st().incomeEvents[0].linkedSavingsAccountId).toBeUndefined()
+    applied.undo?.()
+    expect(st().incomeEvents[0].linkedSavingsAccountId).toBe(A1)
+  })
+
   it('refuses the default carry pocket', () => {
     useFinanceStore.setState({ profile: { ...st().profile, defaultCarryPocketId: A1 } })
     expect(write('delete_savings_account').propose({ pocket: 'CIB' }, ctx).ok).toBe(false)

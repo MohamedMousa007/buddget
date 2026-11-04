@@ -18,7 +18,7 @@ These rules ap
   2. `npm run test` — all tests pass (79 tests in vitest)
   3. `npm run build` with dummy Supabase env — full production build succeeds
   4. **Code audit** — review the diff for correctness bugs (inverted conditions, null deref, race conditions, wrong variable, missing await, falsy-zero confusion, error swallowing, cross-file contract breaks). Catch issues before they ship.
-- **Verification:** Full CI parity locally (lint + test + build) with dummy Supabase env before pushing.
+- **Verification:** GitHub Actions is not relied on. `npm run verify` is the gate: lint, types, tests in Cairo (with the coverage floor) and New York, migration check, dependency audit, and the production build with dummy Supabase env. It must pass before pushing to dev/main and before any native build.
 - **Design System:** Before writing or modifying any UI component, read `docs/DESIGN_SYSTEM.md`. All color tokens, spacing, border-radius, touch targets, safe-area classes, and typography must conform to the rules defined there. No hardcoded hex values, no non-standard heights for inputs, no touch targets below 44×44px.
 - **Native-Build Ownership (Capacitor):** When modifying code that touches native interfaces, storage, mappers, or plugins:
   - Do not delegate native tasks (such as editing AndroidManifest, Gradle files, Info.plist, or writing Kotlin/Swift) to the user. Execute these edits directly.

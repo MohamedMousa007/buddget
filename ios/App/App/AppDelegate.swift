@@ -11,16 +11,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        FirebaseApp.configure()
         #if canImport(Sentry)
-        // Started here so a crash before the WebView loads is captured; the JS init later reconfigures it.
+        // First, so a crash in anything below (Firebase, plugins, the WebView) is captured and sent on the next launch.
         if let dsn = Bundle.main.object(forInfoDictionaryKey: "SentryDsn") as? String, dsn.hasPrefix("https://") {
+            let info = Bundle.main.infoDictionary
             SentrySDK.start { options in
                 options.dsn = dsn
                 options.sendDefaultPii = false
+                options.releaseName = "buddget@\(info?["CFBundleShortVersionString"] as? String ?? "0")"
+                options.dist = info?["CFBundleVersion"] as? String
+                options.initialScope = { scope in
+                    scope.setTag(value: "ios", key: "platform")
+                    return scope
+                }
             }
         }
         #endif
+        FirebaseApp.configure()
         return true
     }
 
@@ -52,19 +59,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
-    }
-
-    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        // Called when the app was launched with a url. Feel free to add additional processing here,
-        // but if you want the App API to support tracking app url opens, make sure to keep this call
-        return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
-    }
-
-    func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-        // Called when the app was launched with an activity, including Universal Links.
-        // Feel free to add additional processing here, but if you want the App API to support
-        // tracking app url opens, make sure to keep this call
-        return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
 }

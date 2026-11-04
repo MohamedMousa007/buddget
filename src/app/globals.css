@@ -95,6 +95,8 @@
 
 /* ── Light theme (default) ── */
 :root {
+  /* The dark floor shared by the welcome, lock and landing screens (they have no light variant). */
+  --auth-floor: linear-gradient(180deg, #0E1614 0%, #0A100F 55%, #070C0B 100%);
   /* Layout foundation: header heights (excl. safe-area inset), sidebar, page widths. */
   --app-header-h: 57px;
   --app-header-h-lg: 48px;
@@ -149,7 +151,7 @@
   --color-brand-text-secondary: #566B68;     /* 5.68:1 */
   /* Kit shipped #8A9997 — 2.96:1 on white, the same AA failure this file had
      already fixed once before. Darkened to clear 4.5:1 on card AND page bg. */
-  --color-brand-text-muted: #687371;         /* 5.04:1 white, 4.68:1 bg */
+  --color-brand-text-muted: #646F6D;         /* 5.4:1 white, 4.56:1 on the sunken wells, 5.0:1 bg */
   --color-brand-red-text: #C0323A;
 
   /* Elevation — the kit replaces the old glass blur with a 3-step shadow scale. */
@@ -305,7 +307,7 @@
   --color-brand-text-primary: #EAF2F0;       /* 15.71:1 */
   --color-brand-text-secondary: #9BABA8;     /* 7.47:1 */
   /* Kit shipped #6B7B78 — 4.02:1 on the card, below AA. Lightened to clear it. */
-  --color-brand-text-muted: #748380;         /* 4.95:1 card, 5.31:1 bg */
+  --color-brand-text-muted: #7B8A87;         /* 5.3:1 card, 4.57:1 on the tinted wells, 5.6:1 bg */
   --color-brand-red-text: #F2646A;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);

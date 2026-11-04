@@ -17,12 +17,24 @@ export interface ExpensePrefill {
   notes?: string
 }
 
+export interface AccountPrefill {
+  /** Bare provider name; the sheet resolves it to a catalogue brand. */
+  provider: string
+  last4: string
+  /** The account's currency when its messages state one. */
+  currency?: string
+}
+
 export interface PmPrefill {
   /** Bare provider name (no ••last4 suffix) — the sheet composes the display name. */
   name: string
   last4: string
   /** Type implied by the source (e.g. an SMS card transaction); overrides the brand default. */
   type?: PaymentMethodType
+  /** The account this card draws on, when the user has exactly one at the same bank. */
+  parentId?: string
+  /** The account's currency when its messages state one. */
+  currency?: string
 }
 
 /** Seed for the New payday sheet. Every field optional: a starter card only knows the type. */
@@ -62,6 +74,8 @@ interface SettingsState {
   assignTarget: { eventId: string | null } | null
   expensePrefill: ExpensePrefill | null
   pmPrefill: PmPrefill | null
+  /** A bank account seen in messages, waiting for the Accounts page to open its add sheet. */
+  accountPrefill: AccountPrefill | null
   /** The add-subscription sheet on the Subscriptions page (Quick add opens it). Not persisted. */
   subscriptionAddOpen: boolean
   setSubscriptionAddOpen: (open: boolean) => void
@@ -167,6 +181,8 @@ interface SettingsState {
   openAddExpenseWithPrefill: (data: ExpensePrefill) => void
   openAddPaymentMethodWithPrefill: (data: PmPrefill) => void
   clearPmPrefill: () => void
+  openAddAccountWithPrefill: (data: AccountPrefill) => void
+  clearAccountPrefill: () => void
   dismissBanner: (key: string) => void
   snoozeBanner: (key: string, untilISO: string) => void
   hideStatus: (key: string, untilISO: string) => void
@@ -204,6 +220,7 @@ export const useSettingsStore = create<SettingsState>()(
       assignTarget: null,
       expensePrefill: null,
       pmPrefill: null,
+      accountPrefill: null,
       subscriptionAddOpen: false,
       setSubscriptionAddOpen: (open) => set({ subscriptionAddOpen: open }),
       subscriptionReviewOpen: false,
@@ -289,6 +306,8 @@ export const useSettingsStore = create<SettingsState>()(
       openAddPaymentMethodWithPrefill: (data) =>
         set({ activeModal: 'addPaymentMethod', pmPrefill: data }),
       clearPmPrefill: () => set({ pmPrefill: null }),
+      openAddAccountWithPrefill: (data) => set({ accountPrefill: data }),
+      clearAccountPrefill: () => set({ accountPrefill: null }),
       dismissBanner: (key) =>
         set((st) => (st.dismissedBanners.includes(key) ? st : { dismissedBanners: [...st.dismissedBanners, key] })),
       snoozeBanner: (key, untilISO) => set((st) => ({ snoozedBanners: { ...st.snoozedBanners, [key]: untilISO } })),
@@ -333,6 +352,7 @@ export const useSettingsStore = create<SettingsState>()(
           assignTarget: null,
           expensePrefill: null,
           pmPrefill: null,
+          accountPrefill: null,
           subscriptionAddOpen: false,
           subscriptionReviewOpen: false,
           monthFilter: getCurrentMonth(),

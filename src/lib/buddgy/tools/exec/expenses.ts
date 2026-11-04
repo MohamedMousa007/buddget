@@ -71,6 +71,11 @@ const monthIncome = (s: FinanceStore): number =>
 const proposedLately = new Map<string, number>()
 const SAME_TURN_MS = 15_000
 
+/** Forgets recent proposals (tests share this module state; a real session never needs it). */
+export function resetSameTurnMemory(): void {
+  proposedLately.clear()
+}
+
 function seenJustNow(key: string): boolean {
   const now = Date.now()
   for (const [k, at] of proposedLately) if (now - at > SAME_TURN_MS) proposedLately.delete(k)

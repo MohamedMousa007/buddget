@@ -1,5 +1,6 @@
 'use client'
 
+import { HIT_AREA } from '@/lib/ui/hitArea'
 import { cn } from '@/lib/utils'
 
 export interface SegmentedOption<T extends string> {
@@ -84,6 +85,7 @@ export function SegmentedControl<T extends string>({
             className={cn(
               // h-9 inside a 3px-padded 44px-tall track keeps the whole control
               // on the 44px tap minimum without each segment looking oversized.
+              HIT_AREA,
               'inline-flex min-w-0 items-center justify-center gap-1.5 px-4 text-[13.5px] font-semibold transition-colors outline-none',
               size === 'field' ? 'h-full rounded-[11px]' : 'h-9 rounded-[9px]',
               'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',

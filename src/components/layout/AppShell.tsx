@@ -16,6 +16,7 @@ import { PendingCapturesChip } from '@/components/features/pending/PendingCaptur
 import { BannerStack } from '@/components/features/dashboard/BannerStack'
 import { SmsReviewChip } from '@/components/features/dashboard/SmsReviewChip'
 import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
+import { UnplacedSmsPrompt } from '@/components/features/dashboard/UnplacedSmsPrompt'
 import { SmsSubscriptionDetectionBanner } from '@/components/features/dashboard/SmsSubscriptionDetectionBanner'
 import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
@@ -315,6 +316,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* One drop-down stack for every question; the sources register into it. */}
       <SmsReviewChip />
       <SmsAccountDetectionBanner />
+      <UnplacedSmsPrompt />
       <SmsSubscriptionDetectionBanner />
       <SubscriptionPlanChangeBanner />
       <BannerStack />

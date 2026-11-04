@@ -122,3 +122,17 @@ describe('legacy prompt entity names (I23)', () => {
     expect(prompt).toContain(JSON.stringify(evil))
   })
 })
+
+describe('legacy delete_expense on a debt payment', () => {
+  it('is refused and the expense, payment and debt are left alone', () => {
+    useFinanceStore.setState({ expenses: [{ ...exp('e9', 'Car loan payment', 500, '2026-10-12T10:00:00Z'), linkedDebtPaymentId: 'p1', linkedDebtId: 'd1' } as Expense] })
+    expect(validateActionItem(ctx(), 'delete_expense', { description: 'car loan payment' })).toMatch(/debt payment/i)
+    executeActionItem(ctx(), 'delete_expense', { description: 'car loan payment' })
+    expect(useFinanceStore.getState().expenses.map((e) => e.id)).toEqual(['e9'])
+  })
+
+  it('still deletes an ordinary expense', () => {
+    executeActionItem(ctx(), 'delete_expense', { description: 'coffee beans' })
+    expect(useFinanceStore.getState().expenses.map((e) => e.id)).not.toContain('e2')
+  })
+})

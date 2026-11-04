@@ -123,6 +123,28 @@ describe('detectGap', () => {
     expect(detectGap([{ balance: 1000, reportedAt: 'b' }, { balance: 1000, reportedAt: 'a' }], () => 1000)).toBeNull()
     expect(detectGap([{ balance: 800, reportedAt: '2' }, { balance: 700, reportedAt: '1' }], () => 1000)).toBeNull()
   })
+  it('fires when the ledger matched the previous report and misses the newest one once it has settled', () => {
+    const ledger = () => 1000
+    const rs = [{ balance: 750, reportedAt: '2026-10-11T10:00:00Z' }, { balance: 1000, reportedAt: '2026-10-10T10:00:00Z' }]
+    const later = Date.parse('2026-10-11T10:30:00Z')
+    expect(detectGap(rs, ledger, 1, later)).toMatchObject({ amount: -250, reportedAt: '2026-10-11T10:00:00Z' })
+  })
+  it('waits for the newest report to settle before trusting a drift the previous report did not have', () => {
+    const rs = [{ balance: 750, reportedAt: '2026-10-11T10:00:00Z' }, { balance: 1000, reportedAt: '2026-10-10T10:00:00Z' }]
+    expect(detectGap(rs, () => 1000, 1, Date.parse('2026-10-11T10:05:00Z'))).toBeNull()
+  })
+  it('fires when the unexplained amount grows between two reports, once the newest has settled', () => {
+    const rs = [{ balance: 750, reportedAt: '2026-10-11T10:00:00Z' }, { balance: 900, reportedAt: '2026-10-10T10:00:00Z' }]
+    const later = Date.parse('2026-10-11T11:00:00Z')
+    expect(detectGap(rs, () => 1000, 1, later)).toMatchObject({ amount: -250 })
+    expect(detectGap(rs, () => 1000, 1, Date.parse('2026-10-11T10:05:00Z'))).toBeNull()
+  })
+  it('stays quiet when the unexplained amount shrinks or flips sign', () => {
+    const shrinking = [{ balance: 900, reportedAt: '2026-10-11T10:00:00Z' }, { balance: 700, reportedAt: '2026-10-10T10:00:00Z' }]
+    expect(detectGap(shrinking, () => 1000, 1, Date.parse('2026-10-12T10:00:00Z'))).toBeNull()
+    const flipped = [{ balance: 1100, reportedAt: '2026-10-11T10:00:00Z' }, { balance: 900, reportedAt: '2026-10-10T10:00:00Z' }]
+    expect(detectGap(flipped, () => 1000, 1, Date.parse('2026-10-12T10:00:00Z'))).toBeNull()
+  })
   it('clears itself once the ledger explains the missing money', () => {
     const rs = [{ balance: 800, reportedAt: '2026-10-11T10:00:00Z' }, { balance: 800, reportedAt: '2026-10-10T10:00:00Z' }]
     expect(detectGap(rs, () => 800)).toBeNull()

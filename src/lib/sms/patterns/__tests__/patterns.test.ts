@@ -176,6 +176,18 @@ describe('Vodafone Cash + generic bank patterns', () => {
     expect(dep?.txDay).toBe('2026-04-06')
   })
 
+  it('parses a short Saudi SADAD bill payment and the pre-filter lets it through', () => {
+    for (const body of ['Alrajhi: 48213 Amount:55.5 SR Reason: SADAD Payment', 'Alrajhi: 48213 Amount:1,250 SR Reason: SADAD Payment']) {
+      const m = matchCuratedPattern(body, null)
+      expect(m?.patternId).toBe('generic-sadad-payment')
+      expect(m?.kind).toBe('purchase')
+      expect(m?.currency).toBe('SAR')
+      expect(isNonTransaction(body)).toBeNull()
+    }
+    expect(matchCuratedPattern('Alrajhi: 48213 Amount:55.5 SR Reason: SADAD Payment', null)?.amount).toBe(55.5)
+    expect(matchCuratedPattern('Alrajhi: 48213 Amount:1,250 SR Reason: SADAD Payment', null)?.amount).toBe(1250)
+  })
+
   it('parses HSBC credit card purchase', () => {
     const m = matchCuratedPattern(HSBC_CC, 'HSBC')
     expect(m?.patternId).toBe('hsbc-cc-purchase')

@@ -47,14 +47,17 @@ export async function POST(request: Request) {
   const service = createServiceRoleClient()
   if (await isRateLimited(service, `support-submit:${uid}`, 3600, PER_HOUR)) return NextResponse.json({ error: 'Too many requests, try again later' }, { status: 429 })
 
-  const { data: profile } = await service.from('profiles').select('email').eq('id', uid).maybeSingle()
+  // The signed-in address is verified; the profile email is a field the user can type anything into, so it is only a fallback.
+  const { data: authUser } = await service.auth.admin.getUserById(uid)
+  const { data: profile } = authUser?.user?.email ? { data: null } : await service.from('profiles').select('email').eq('id', uid).maybeSingle()
+  const requesterEmail = authUser?.user?.email ?? profile?.email ?? ''
   const t = triage({ chosen, title, body: description })
   const platform = context.platform ?? (['ios', 'android', 'web'].includes(request.headers.get('x-app-platform') ?? '') ? request.headers.get('x-app-platform') : null)
   const version = context.appVersion ?? request.headers.get('x-app-version')
 
   const { data, error } = await service.rpc('support_submit', {
     p_user: uid,
-    p_email: profile?.email ?? '',
+    p_email: requesterEmail,
     p_kind: t.kind,
     p_subject: title,
     p_body: description || title,
