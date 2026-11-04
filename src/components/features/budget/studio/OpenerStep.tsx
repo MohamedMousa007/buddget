@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { Textarea } from '@/components/ui/textarea'
@@ -45,6 +46,7 @@ export function OpenerStep({ base, onDone }: OpenerStepProps) {
       <div className="flex flex-wrap gap-2">
         {c.examples.map((x) => (
           <OptionChip key={x} as="trigger" size="md" disabled={busy} onClick={() => setText(x)}>
+            <Sparkles aria-hidden />
             {x}
           </OptionChip>
         ))}

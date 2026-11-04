@@ -79,14 +79,14 @@ function obligations(s: FlowState): number {
   const health = is(s, 'healthCover', 'full') ? 0 : num(s, 'healthCost') + (is(s, 'chronicMeds', true) ? num(s, 'chronicAmount') : 0)
   const ins = is(s, 'lifeInsurance', true) ? num(s, 'insurancePremium') : 0
   const ret = is(s, 'retirement', 'self') ? num(s, 'retirementAmount') : 0
-  return num(s, 'supportAmount') * (is(s, 'supportsOthers', true) ? 1 : 0) + sch + care + health + ins + ret + num(s, 'householdHelpAmount') + num(s, 'otherFixedBills') + num(s, 'subsAmount')
+  return num(s, 'supportAmount') * (is(s, 'supportsOthers', true) ? 1 : 0) + sch + care + health + ins + ret + num(s, 'subsAmount')
 }
 
 /** A rough essentials figure used only to decide which checks are worth asking about. The engine does the real sizing. */
 export function essentialsEstimate(s: FlowState): number {
   const inc = planIncome(s)
   const kids = Math.min(num(s, 'dependents'), 4)
-  const car = is(s, 'transportMode', 'car') ? num(s, 'fuelAndUpkeep') || inc * 0.05 : 0
+  const car = is(s, 'transportMode', 'car') ? inc * 0.05 : 0
   return (inc * (0.2 + 0.04 * kids) + car) * partnerShare(s)
 }
 

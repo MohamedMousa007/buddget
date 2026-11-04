@@ -92,8 +92,8 @@ function rng(seed: number) {
 /** Amount answers as multiples of income (or absolute for income itself). */
 const RATIO: Record<string, number[]> = {
   lowMonth: [0.4, 0.7, 0.95], rent: [0.12, 0.3, 0.55, 1.2], mortgagePayment: [0.2, 0.35, 0.6], propertyCosts: [0.02, 0.06], familyContributionAmount: [0.05, 0.2],
-  schoolFees: [0.05, 0.18], childcare: [0.08, 0.2], supportAmount: [0.03, 0.12], householdHelpAmount: [0.05, 0.1], carPayment: [0.08, 0.22], fuelAndUpkeep: [0.04, 0.1],
-  healthCost: [0.02, 0.08], chronicAmount: [0.02, 0.06], otherFixedBills: [0.03, 0.09], subsAmount: [0.01, 0.04],
+  schoolFees: [0.05, 0.18], childcare: [0.08, 0.2], supportAmount: [0.03, 0.12], carPayment: [0.08, 0.22],
+  healthCost: [0.02, 0.08], chronicAmount: [0.02, 0.06], subsAmount: [0.01, 0.04],
   cardBalance: [0.5, 3, 9], cardMin: [0.03, 0.1], loanBalance: [2, 10, 30], loanMin: [0.05, 0.25, 0.6], bnplMonthly: [0.05, 0.2], familyOwed: [1, 4], familyMonthly: [0, 0.05],
   studentBalance: [5, 20], studentMin: [0, 0.05, 0.1], taxOwed: [1, 5], arrears: [0.1, 0.5], debtExtra: [0.02, 0.1],
   savingsOnHand: [0, 0.3, 1.5, 6], insurancePremium: [0.01, 0.04], retirementAmount: [0.05, 0.1], investMonthly: [0.03, 0.1], zakatAmount: [0.01, 0.03],

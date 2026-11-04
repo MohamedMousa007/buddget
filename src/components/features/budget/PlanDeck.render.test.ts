@@ -12,8 +12,8 @@ describe('PlanDeck with only a draft', () => {
     const html = renderToStaticMarkup(
       h(PlanDeck, {
         plans: [draft], activeId: null, selectedId: 'd1', summaries: {}, income: 0, base: 'USD',
-        activeSince: null, onSelect: noop, onActivate: noop, onDuplicate: noop, onRename: noop, onDelete: noop,
-        onHistory: noop, onCompare: noop, onNew: noop, onContinue: noop,
+        activeSince: null, renamingId: null, onRenaming: noop, onSelect: noop, onActivate: noop, onDuplicate: noop, onRename: noop, onDelete: noop,
+        onCompare: noop, onNew: noop, onContinue: noop,
       }),
     )
     expect(html).toContain('Draft plan')

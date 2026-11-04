@@ -48,7 +48,7 @@ export interface BudgetStudioCopy {
     risks: string
     estimated: (n: number) => string
     adjust: string
-    edit: string
+    start: string
     activate: string
     aiNote: string
     close: string
@@ -91,7 +91,7 @@ const en: BudgetStudioCopy = {
   no: 'No',
   confirm: 'Looks right',
   found: { title: 'Here is what I found', sub: 'From your own records. Mark anything that is off and I will ask about it.', right: 'Right', change: 'Not right' },
-  estimate: 'Not sure, use a typical amount',
+  estimate: 'Not sure, let Buddgy estimate',
   buildNow: (percent) => `Good enough, build now (${percent}%)`,
   opener: {
     kicker: 'Buddgy listens',
@@ -128,8 +128,8 @@ const en: BudgetStudioCopy = {
     why: 'Why this plan',
     risks: 'Worth watching',
     estimated: (n) => `${n} ${n === 1 ? 'line is' : 'lines are'} estimated`,
-    adjust: 'Ask Buddgy to change',
-    edit: 'Edit by hand',
+    adjust: 'Ask Buddgy',
+    start: 'Go through it',
     activate: 'Confirm & activate',
     aiNote: 'Built from your numbers without Buddgy notes.',
     close: 'Close review',
@@ -173,7 +173,7 @@ const ar: BudgetStudioCopy = {
   no: 'لا',
   confirm: 'صحيح',
   found: { title: 'هذا ما وجدته', sub: 'من سجلاتك. حدّد أي شيء غير صحيح وسأسألك عنه.', right: 'صحيح', change: 'غير صحيح' },
-  estimate: 'لست متأكدًا، استخدم مبلغًا معتادًا',
+  estimate: 'لست متأكدًا، دع بادي يقدّر',
   buildNow: (percent) => `يكفي، ابنِ الآن (${percent}٪)`,
   opener: {
     kicker: 'Buddgy يستمع',
@@ -210,8 +210,8 @@ const ar: BudgetStudioCopy = {
     why: 'لماذا هذه الخطة',
     risks: 'يستحق المتابعة',
     estimated: (n) => `${n} بنود مقدّرة`,
-    adjust: 'اطلب من بادي التعديل',
-    edit: 'عدّل يدويًا',
+    adjust: 'اسأل بادي',
+    start: 'راجعها',
     activate: 'تأكيد وتفعيل',
     aiNote: 'بُنيت من أرقامك دون ملاحظات بادي.',
     close: 'إغلاق المراجعة',

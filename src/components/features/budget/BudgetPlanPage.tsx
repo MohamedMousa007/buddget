@@ -11,7 +11,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { usePlanActions } from '@/hooks/usePlanActions'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
-import { Gauge, History, Plus, Sparkles } from 'lucide-react'
+import { History, Plus, Sparkles } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
 import { fallbackPlanId } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
@@ -36,7 +36,9 @@ import { LineSheet } from './sheets/LineSheet'
 import { AddLineSheet } from './sheets/AddLineSheet'
 import { ActivateSheet } from './sheets/ActivateSheet'
 import { ComparePlansSheet } from './sheets/ComparePlansSheet'
-import { PlanDeck } from './PlanDeck'
+import { PlanDeck, planActionItems } from './PlanDeck'
+import { ModalShell } from '@/components/modals/ModalShell'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { ManualBuilder } from './builder/ManualBuilder'
 import { CreateChooser } from './builder/CreateChooser'
 import { StudioPage } from './studio/StudioPage'
@@ -47,8 +49,6 @@ import { PlanRail } from './PlanRail'
 import { LINKED_ROUTE } from './chromeFormat'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { cycleKeyOf } from '@/lib/budget/activations'
-import { StressTestSheet } from './sheets/StressTestSheet'
-import { useBudgetStressCopy } from './useStressCopy'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
 import { mergeClosedCycles, nextCloseMemory } from '@/lib/budget/closeMemory'
@@ -77,7 +77,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const [addBlock, setAddBlock] = useState<BudgetBlock | null>(null)
   const [insightsOpen, setInsightsOpen] = useState(false)
   // With more than one plan the switcher starts open; the user's own toggle wins afterwards.
-  const [deckToggled, setDeckToggled] = useState<boolean | null>(null)
+  const [switcherOpen, setSwitcherOpen] = useState(false)
+  const [renameId, setRenameId] = useState<string | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const [activateId, setActivateId] = useState<string | null>(null)
@@ -103,8 +104,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   }, [accountClosedCycles])
   const monthClose = useMonthClose()
   const [closeOpen, setCloseOpen] = useState(false)
-  const [stressOpen, setStressOpen] = useState(false)
-  const stressCopy = useBudgetStressCopy()
   const [buildEmpty, setBuildEmpty] = useState(false)
   const openBuilder = useCallback((id: string, empty = false) => {
     setCreating(false)
@@ -150,7 +149,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
       rates: s.exchangeRates,
     })),
   )
-  const deckOpen = deckToggled ?? plans.length > 1
 
   const selectedLine = useMemo<LineView | null>(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
@@ -235,10 +233,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         planId={review.id}
         aiNote={review.aiNote}
         onClose={() => setReview(null)}
-        onEdit={(id) => {
-          setReview(null)
-          openBuilder(id)
-        }}
         onActivate={(id) => {
           setReview(null)
           store.getState().updateBudgetPlan(id, { status: 'ready' })
@@ -288,6 +282,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const activeSince = sinceKey
     ? new Date(Number(sinceKey.slice(0, 4)), Number(sinceKey.slice(5, 7)) - 1, 1).toLocaleDateString(intlTag(locale), { month: 'short' })
     : null
+  const deckActions = {
+    plans: [...plans].sort((x, y) => Number(y.id === activeId) - Number(x.id === activeId)),
+    onDuplicate: planActions.duplicate,
+    onRename: planActions.rename,
+    onDelete: planActions.remove,
+    onCompare: (id: string) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id }),
+  }
   return (
     <PageBody className="space-y-4 lg:pb-6">
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-6">
@@ -296,33 +297,13 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         planName={view.plan.name}
         mode={mode}
         onModeChange={setMode}
-        expanded={deckOpen}
+        expanded={switcherOpen}
         onOpenPlans={() => {
           setSelectedPlanId(view.plan.id)
-          setDeckToggled(!deckOpen)
+          setSwitcherOpen(true)
         }}
         onOpenMenu={setMenuAnchor}
       />
-      {deckOpen ? (
-        <PlanDeck
-          plans={[...plans].sort((x, y) => Number(y.id === activeId) - Number(x.id === activeId))}
-          activeId={activeId}
-          selectedId={selectedPlanId ?? view.plan.id}
-          summaries={summaries}
-          income={view.income}
-          base={base}
-          activeSince={activeSince}
-          onSelect={setSelectedPlanId}
-          onActivate={setActivateId}
-          onDuplicate={planActions.duplicate}
-          onRename={planActions.rename}
-          onDelete={planActions.remove}
-          onHistory={() => navigate('/budget-history')}
-          onCompare={(id) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id })}
-          onNew={startBuild}
-          onContinue={(id) => openBuilder(id)}
-        />
-      ) : null}
       {mode === 'plan' && monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
       </div>
       <aside className="flex flex-col gap-4 lg:sticky lg:top-[calc(var(--app-header-h-lg)+1.25rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1">
@@ -436,7 +417,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         onClose={() => setCompare(null)}
       />
       <AdjustSheet open={adjusting} view={view} onClose={() => setAdjusting(false)} />
-      <StressTestSheet open={stressOpen} view={view} onClose={() => setStressOpen(false)} />
       <MonthCloseSheet
         open={closeOpen}
         close={monthClose}
@@ -459,12 +439,48 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         anchor={menuAnchor}
         onClose={() => setMenuAnchor(null)}
         items={[
-          { label: deckCopy.deck.history, icon: <History className="size-4" />, onSelect: () => navigate('/budget-history') },
+          ...planActionItems(view.plan.id, deckActions, deckCopy, () => {
+            setMenuAnchor(null)
+            setSelectedPlanId(view.plan.id)
+            setRenameId(view.plan.id)
+            setSwitcherOpen(true)
+          }),
           { label: studioCopy.adjust.title, icon: <Sparkles className="size-4" />, onSelect: () => setAdjusting(true) },
-          { label: stressCopy.menu, icon: <Gauge className="size-4" />, onSelect: () => setStressOpen(true) },
+          { label: deckCopy.deck.history, icon: <History className="size-4" />, onSelect: () => navigate('/budget-history') },
           { label: deckCopy.deck.newPlan, icon: <Plus className="size-4" />, onSelect: startBuild },
         ]}
       />
+      <ModalShell open={switcherOpen} onBackdropClick={() => setSwitcherOpen(false)} padContent>
+        <V3SheetHeader title={deckCopy.deck.title} onClose={() => setSwitcherOpen(false)} />
+        <PlanDeck
+          {...deckActions}
+          activeId={activeId}
+          selectedId={selectedPlanId ?? view.plan.id}
+          summaries={summaries}
+          income={view.income}
+          base={base}
+          activeSince={activeSince}
+          renamingId={renameId}
+          onRenaming={setRenameId}
+          onSelect={setSelectedPlanId}
+          onActivate={(id) => {
+            setSwitcherOpen(false)
+            setActivateId(id)
+          }}
+          onDuplicate={(id) => {
+            setSwitcherOpen(false)
+            planActions.duplicate(id)
+          }}
+          onNew={() => {
+            setSwitcherOpen(false)
+            startBuild()
+          }}
+          onContinue={(id) => {
+            setSwitcherOpen(false)
+            openBuilder(id)
+          }}
+        />
+      </ModalShell>
     </PageBody>
   )
 }

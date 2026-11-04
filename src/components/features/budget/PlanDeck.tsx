@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Ellipsis, GitCompare, Hammer, History, Pencil, Plus, Star, Trash2 } from 'lucide-react'
+import { Copy, GitCompare, Hammer, Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CardActionMenu } from '@/components/ui/CardActionMenu'
+import { type CardMenuItem } from '@/components/ui/CardActionMenu'
+import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -22,25 +23,39 @@ export interface PlanDeckProps {
   base: Currency
   /** Month label the active plan has been active since, e.g. "Oct". */
   activeSince: string | null
+  /** Budget being renamed (controlled so the page's overflow menu can start it). */
+  renamingId: string | null
+  onRenaming: (id: string | null) => void
   onSelect: (id: string) => void
   onActivate: (id: string) => void
   onDuplicate: (id: string) => void
   onRename: (id: string, name: string) => void
   onDelete: (id: string) => void
-  onHistory: () => void
   onCompare: (id: string) => void
   onNew: () => void
   /** Resume the builder for a draft plan. */
   onContinue: (id: string) => void
 }
 
+type PlanActions = Pick<PlanDeckProps, 'plans' | 'onDuplicate' | 'onDelete' | 'onCompare'>
+
+/** The per-budget actions, shared by the switcher sheet and the page's overflow menu. */
+export function planActionItems(id: string, p: PlanActions, copy: ReturnType<typeof useBudgetDeckCopy>, onRename: () => void): CardMenuItem[] {
+  const c = copy.deck
+  return [
+    { label: c.duplicate, icon: <Copy className="size-5" />, onSelect: () => p.onDuplicate(id) },
+    { label: c.rename, icon: <Pencil className="size-5" />, onSelect: onRename },
+    ...(p.plans.length > 1 ? [{ label: copy.compare.action, icon: <GitCompare className="size-5" />, onSelect: () => p.onCompare(id) }] : []),
+    { label: c.delete, icon: <Trash2 className="size-5" />, destructive: true, onSelect: () => p.onDelete(id) },
+  ]
+}
+
 /** Swipeable cards of every budget with the actions for the selected one. */
 export function PlanDeck(p: PlanDeckProps) {
   const copy = useBudgetDeckCopy()
   const c = copy.deck
-  const compareLabel = copy.compare.action
-  const [menu, setMenu] = useState<DOMRect | null>(null)
-  const [renaming, setRenaming] = useState<string | null>(null)
+  const renaming = p.renamingId
+  const setRenaming = p.onRenaming
   const selected = p.plans.find((x) => x.id === p.selectedId) ?? p.plans[0]
   const isActive = selected?.id === p.activeId
 
@@ -125,41 +140,27 @@ export function PlanDeck(p: PlanDeckProps) {
               }}
             />
           ) : null}
-          <div className="grid grid-cols-2 gap-2">
-            {selected.status === 'draft' ? (
-              <Button size="touch" onClick={() => p.onContinue(selected.id)}>
-                <Hammer />
-                {c.continueBuilding}
-              </Button>
-            ) : (
-              <Button size="touch" disabled={isActive} onClick={() => p.onActivate(selected.id)}>
-                <Star />
-                {c.setActive}
-              </Button>
-            )}
-            <Button size="touch" variant="outline" onClick={() => p.onDuplicate(selected.id)}>
-              <Copy />
-              {c.duplicate}
+          {selected.status === 'draft' ? (
+            <Button size="cta" className="w-full" onClick={() => p.onContinue(selected.id)}>
+              <Hammer />
+              {c.continueBuilding}
             </Button>
-            <Button size="touch" variant="outline" onClick={p.onHistory}>
-              <History />
-              {c.history}
+          ) : (
+            <Button size="cta" className="w-full" disabled={isActive} onClick={() => p.onActivate(selected.id)}>
+              <Star />
+              {isActive ? c.active : c.setActive}
             </Button>
-            <Button size="touch" variant="outline" onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
-              <Ellipsis />
-              {c.more}
-            </Button>
+          )}
+          <div className="grid grid-cols-4 gap-2">
+            {planActionItems(selected.id, p, copy, () => setRenaming(selected.id)).map((it) => (
+              <div key={it.label} className="flex flex-col items-center gap-1.5">
+                <IconButton variant={it.destructive ? 'danger' : 'outlined'} size="lg" aria-label={it.label} onClick={it.onSelect}>
+                  {it.icon}
+                </IconButton>
+                <span className="text-[11.5px] font-medium text-[var(--color-brand-text-secondary)]">{it.label}</span>
+              </div>
+            ))}
           </div>
-          {isActive ? <p className="text-center text-xs text-[var(--color-brand-text-muted)]">{c.alreadyActive(selected.name)}</p> : null}
-          <CardActionMenu
-            anchor={menu}
-            onClose={() => setMenu(null)}
-            items={[
-              ...(p.plans.length > 1 ? [{ label: compareLabel, icon: <GitCompare className="size-4" />, onSelect: () => p.onCompare(selected.id) }] : []),
-              { label: c.rename, icon: <Pencil className="size-4" />, onSelect: () => setRenaming(selected.id) },
-              { label: c.delete, icon: <Trash2 className="size-4" />, destructive: true, onSelect: () => p.onDelete(selected.id) },
-            ]}
-          />
         </>
       ) : null}
     </div>

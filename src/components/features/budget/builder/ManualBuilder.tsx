@@ -1,9 +1,8 @@
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/IconButton'
 import { PageBody } from '@/components/layout/PageContainer'
 import { useAlert } from '@/components/ui/dialog/DialogProvider'
@@ -12,18 +11,17 @@ import { usePlanView } from '@/hooks/usePlanView'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
-import { BLOCK_META, BUDGET_BLOCKS } from '@/lib/budget/blocks'
+import { BUDGET_BLOCKS } from '@/lib/budget/blocks'
 import { findLineView } from '@/lib/budget/planView'
 import { BUILD_TEMPLATES, suggestionToCategory, suggestionsByBlock, templateDraft, type BuildTemplate } from '@/lib/budget/templates'
 import type { DraftLine } from '@/lib/budget/facts'
 import type { LineView } from '@/lib/budget/planView.types'
-import { LineIcon } from '../LineIcon'
 import { AddLineSheet } from '../sheets/AddLineSheet'
 import { LineSheet } from '../sheets/LineSheet'
-import { useBudgetSheetsCopy } from '../useSheetsCopy'
 import { useBudgetBuilderCopy } from '../useBuilderCopy'
-import { blockColor } from '../chromeFormat'
+import { BlockStepper } from './BlockStepper'
 import { BuilderBlockStep } from './BuilderBlockStep'
+import { StepFooter } from './StepFooter'
 import { FreeCapsule } from './FreeCapsule'
 
 const newId = () => crypto.randomUUID()
@@ -40,7 +38,6 @@ export interface ManualBuilderProps {
 /** Block-by-block plan builder over a draft plan. Every edit lands in the store immediately. */
 export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: ManualBuilderProps) {
   const c = useBudgetBuilderCopy()
-  const blockNames = useBudgetSheetsCopy().blocks
   const alert = useAlert()
   const view = usePlanView('plan', planId)
   const act = useBudgetPageActions(view)
@@ -117,36 +114,7 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between">
-              {BUDGET_BLOCKS.map((b, i) => {
-                const state = i < step ? 'done' : i === step ? 'current' : 'todo'
-                const color = blockColor(b)
-                return (
-                  <IconButton
-                    key={b}
-                    variant="outlined"
-                    aria-label={c.stepLabel(blockNames[b], state)}
-                    aria-current={state === 'current' ? 'step' : undefined}
-                    onClick={() => setStep(i)}
-                    className="relative"
-                    style={state === 'todo' ? undefined : { color, borderColor: state === 'current' ? color : 'transparent', background: `color-mix(in srgb, ${color} 16%, var(--color-brand-card))` }}
-                  >
-                    <LineIcon name={BLOCK_META[b].icon} className="size-5" />
-                    {state === 'done' ? (
-                      <span className="absolute -end-1 -top-1 z-[2] flex size-[18px] items-center justify-center rounded-full border-2 border-[var(--color-brand-bg)] bg-[var(--color-brand-green)] text-[var(--color-brand-on-primary)]">
-                        <Check className="size-3" aria-hidden />
-                      </span>
-                    ) : null}
-                  </IconButton>
-                )
-              })}
-            </div>
-            <div className="flex items-center justify-between gap-2 text-xs text-[var(--color-brand-text-secondary)]">
-              <span className="font-semibold uppercase tracking-wider">{c.blockOf(step + 1, BUDGET_BLOCKS.length)}</span>
-              <span className="text-end">{c.linkedNote}</span>
-            </div>
-          </div>
+          <BlockStepper current={step} onSelect={setStep} note={c.linkedNote} />
 
           <FreeCapsule view={view} onToBuffer={act.moveFreeToBuffer} />
 
@@ -163,22 +131,10 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
             onAdd={() => setAdding(true)}
           />
 
-          <Card padding="md" className="flex gap-2">
-            <Button size="cta" variant="outline" className="flex-1" disabled={step === 0} onClick={() => setStep(step - 1)}>
-              <ChevronLeft className="rtl:rotate-180" aria-hidden />
-              {c.previous}
-            </Button>
-            {step < LAST ? (
-              <Button size="cta" className="flex-[1.4]" onClick={() => setStep(step + 1)}>
-                {c.next}
-                <ChevronRight className="rtl:rotate-180" aria-hidden />
-              </Button>
-            ) : (
-              <Button size="cta" className="flex-[1.4]" onClick={finish}>
-                {c.finish}
-              </Button>
-            )}
-          </Card>
+          <StepFooter
+            back={step > 0 ? { label: c.previous, onClick: () => setStep(step - 1) } : undefined}
+            next={step < LAST ? { label: c.next, onClick: () => setStep(step + 1) } : { label: c.finish, onClick: finish, final: true }}
+          />
         </>
       )}
 

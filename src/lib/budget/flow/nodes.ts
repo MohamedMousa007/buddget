@@ -52,7 +52,6 @@ const ALL: readonly FlowNode[] = [
   follow('partnerSharePct', 'household', 'slider', 'What share of the shared costs do you cover?', 'Your plan covers your share, not the whole bill.', (s) => is(s, 'partnerRole', 'shares'), { min: 10, max: 100, stake: 0.35 }),
   n('supportsOthers', 'household', 'toggle', 'Do you regularly send money to family?', 'Remittances are a fixed commitment.', { stake: 0.42 }),
   follow('supportAmount', 'household', 'amount', 'How much each month?', 'Counted as a fixed commitment.', (s) => is(s, 'supportsOthers', true), { stake: 0.45 }),
-  follow('householdHelpAmount', 'household', 'amount', 'Do you pay for household help? How much a month?', 'Common in larger households.', (s) => is(s, 'household', 'family') && is(s, 'youngestChild', 'under5'), { stake: 0.2, skippable: true }),
 
   // ---- life
   n('confirmBills', 'found', 'confirm', 'We found {n} regular bills and subscriptions. Are they right?', 'They are linked into your plan.', { tier: 'core', stake: 0.5, when: (s) => num(s, 'knownBillCount') > 0 }),
@@ -60,14 +59,12 @@ const ALL: readonly FlowNode[] = [
   follow('carOwnership', 'life', 'chips', 'Is the car paid off?', 'A car payment is a fixed commitment.', (s) => car(s) && !has(s, 'debtKinds', 'loan'), { opts: ['owned', 'financed', 'leased'], stake: 0.4 }),
   follow('carOverlap', 'life', 'chips', 'Is the car payment one of the loans you listed?', 'So it is not counted twice.', (s) => car(s) && has(s, 'debtKinds', 'loan'), { opts: ['listed', 'separate', 'paid_off'], stake: 0.4 }),
   follow('carPayment', 'life', 'amount', 'What is the monthly payment?', 'Counted with your debts.', (s) => is(s, 'carOwnership', 'financed') || is(s, 'carOwnership', 'leased') || is(s, 'carOverlap', 'separate'), { stake: 0.6 }),
-  follow('fuelAndUpkeep', 'life', 'amount', 'Fuel, parking and upkeep: about how much a month?', 'Running a car costs more than the car payment.', car, { stake: 0.3, skippable: true }),
   n('foodFrequency', 'life', 'chips', 'How often do you eat out or order in?', 'Sets your dining and groceries split.', { stake: 0.25, opts: ['everyday', 'mostdays', 'sometimes', 'rarely'] }),
   n('lifestyle', 'life', 'chips', 'How would you describe your spending style?', 'Moves every everyday cap up or down.', { stake: 0.35, opts: ['minimal', 'balanced', 'comfortable'] }),
   n('healthCover', 'life', 'chips', 'Is your health covered by insurance?', 'Uncovered health costs need a line.', { stake: 0.3, opts: ['full', 'partial', 'none'] }),
   follow('healthCost', 'life', 'amount', 'What do you spend on health a month?', 'Costs insurance does not cover.', (s) => is(s, 'healthCover', 'partial') || is(s, 'healthCover', 'none'), { stake: 0.3, skippable: true }),
   follow('chronicMeds', 'life', 'toggle', 'Do you take regular medication?', 'A steady cost to plan for.', (s) => is(s, 'healthCover', 'partial') || is(s, 'healthCover', 'none'), { stake: 0.2 }),
   follow('chronicAmount', 'life', 'amount', 'About how much a month?', 'Counted as health.', (s) => is(s, 'chronicMeds', true), { stake: 0.3 }),
-  n('otherFixedBills', 'life', 'amount', 'Phone, internet, electricity and subscriptions: what do they cost together?', 'Your regular bills, so nothing is missed.', { stake: 0.3, skippable: true, when: (s) => num(s, 'knownBillCount') === 0 }),
   n('cashHeavy', 'life', 'toggle', 'Do you pay mostly in cash?', 'Cash spending is under-counted in your records.', { stake: 0.2, when: (s) => s.known.hasHistory === true }),
 
   // ---- debts
@@ -157,7 +154,7 @@ const GROUPS: Record<string, readonly string[]> = {
   kids: ['dependents', 'youngestChild'],
   household: ['household', 'partnerRole', 'partnerSharePct'],
   sendMoney: ['supportsOthers', 'supportAmount'],
-  car: ['transportMode', 'carOwnership', 'carOverlap', 'carPayment', 'fuelAndUpkeep'],
+  car: ['transportMode', 'carOwnership', 'carOverlap', 'carPayment'],
   spending: ['foodFrequency', 'lifestyle'],
   aims: ['priorities', 'securityLean'],
   savings: ['savingsOnHand', 'emergencyMonths'],

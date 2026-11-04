@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { Sparkles } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
@@ -167,6 +168,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
           <div className="flex flex-wrap gap-2">
             {c.examples.map((x) => (
               <OptionChip key={x} as="trigger" size="md" onClick={() => setText(x)}>
+                <Sparkles aria-hidden />
                 {x}
               </OptionChip>
             ))}

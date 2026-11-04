@@ -78,13 +78,11 @@ export function applyAnswers(base: BudgetFacts, a: Answers, intent?: 'save' | 'g
   }
   if (a.familyContribution === true) addCommitment('Household contribution', num(a, 'familyContributionAmount'))
   if (a.supportsOthers === true) addCommitment('Family support', num(a, 'supportAmount'))
-  addCommitment('Household help', num(a, 'householdHelpAmount'))
   // Costs described in words, stored as "name|amount".
   for (const c of list(a, 'commitments')) {
     const [name, amount] = c.split('|')
     addCommitment(name, Number(amount))
   }
-  addCommitment('Phone, internet and utilities', num(a, 'otherFixedBills'))
   if (extras.length > 0) f.extraCommitments = extras
 
   const household = str(a, 'household') as BudgetFacts['household'] | undefined

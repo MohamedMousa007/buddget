@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Check } from 'lucide-react'
+import { Check, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -104,6 +104,7 @@ export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit }:
                   selected={skips.includes(x.id)}
                   onClick={() => setSkips((s) => (s.includes(x.id) ? s.filter((k) => k !== x.id) : [...s, x.id]))}
                 >
+                  <Sparkles aria-hidden />
                   {ui.estimate}
                 </OptionChip>
               ) : null}

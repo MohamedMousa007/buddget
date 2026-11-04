@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Minus, Plus } from 'lucide-react'
+import { Check, Minus, Plus } from 'lucide-react'
 import { AmountField } from '@/components/ui/AmountField'
 import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { SelectableCard } from '@/components/ui/SelectableCard'
 import type { FlowNode, FlowValue } from '@/lib/budget/flow/types'
 import type { Currency } from '@/lib/store/types'
 import { reconcileTyped } from '@/lib/ui/typedAmount'
@@ -29,33 +31,33 @@ const step = (q: FlowNode) => (q.id === 'securityLean' ? 5 : 1)
 export function QuestionControl({ node: q, copy, ui, base, value, onChange }: QuestionControlProps) {
   switch (q.control) {
     case 'chips':
-      return (
-        <div className="flex flex-wrap gap-2">
-          {q.opts?.map((o) => (
-            <OptionChip key={o} as="trigger" size="md" selected={value === o} onClick={() => onChange(o)}>
-              {copy.opts?.[o] ?? o}
-            </OptionChip>
-          ))}
-        </div>
-      )
     case 'multi': {
+      const multi = q.control === 'multi'
       const picked = asArray(value)
+      const opts = q.opts ?? []
+      const roomy = opts.length > 6
+      const wide = opts.some((o) => (copy.opts?.[o] ?? o).length > 24)
       return (
-        <div className="flex flex-wrap gap-2">
-          {q.opts?.map((o) => {
-            const on = picked.includes(o)
-            const full = q.max !== undefined && picked.length >= q.max && !on
-            return (
-              <OptionChip
-                key={o}
-                as="trigger"
-                size="md"
-                selected={on}
-                disabled={full}
-                onClick={() => onChange(on ? picked.filter((x) => x !== o) : [...picked, o])}
-              >
-                {copy.opts?.[o] ?? o}
+        <div role={multi ? 'group' : 'radiogroup'} aria-label={copy.label} className={roomy ? 'flex flex-wrap gap-2' : `grid gap-2 ${wide || opts.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {opts.map((o) => {
+            const on = multi ? picked.includes(o) : value === o
+            const full = multi && q.max !== undefined && picked.length >= q.max && !on
+            const label = copy.opts?.[o] ?? o
+            const pick = () => onChange(multi ? (on ? picked.filter((x) => x !== o) : [...picked, o]) : o)
+            return roomy ? (
+              <OptionChip key={o} as="trigger" size="md" selected={on} disabled={full} onClick={pick}>
+                {label}
               </OptionChip>
+            ) : (
+              <SelectableCard key={o} as={multi ? 'checkbox' : 'radio'} layout="row" surface="card" selected={on} disabled={full} onClick={pick} className="min-h-12 gap-2 px-3.5 py-2.5">
+                <span className="min-w-0 flex-1 text-[14.5px] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{label}</span>
+                <span
+                  aria-hidden
+                  className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${on ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'border-[var(--color-brand-border)]'}`}
+                >
+                  {on ? <Check className="size-3.5" /> : null}
+                </span>
+              </SelectableCard>
             )
           })}
         </div>
@@ -63,14 +65,15 @@ export function QuestionControl({ node: q, copy, ui, base, value, onChange }: Qu
     }
     case 'toggle':
       return (
-        <div className="flex gap-2">
-          <OptionChip as="trigger" size="segment" selected={value === true} onClick={() => onChange(true)}>
-            {ui.yes}
-          </OptionChip>
-          <OptionChip as="trigger" size="segment" selected={value === false} onClick={() => onChange(false)}>
-            {ui.no}
-          </OptionChip>
-        </div>
+        <SegmentedControl
+          ariaLabel={copy.label}
+          value={value === true ? 'yes' : value === false ? 'no' : ''}
+          onChange={(v) => onChange(v === 'yes')}
+          options={[
+            { value: 'yes', label: ui.yes },
+            { value: 'no', label: ui.no },
+          ]}
+        />
       )
     case 'stepper': {
       const n = typeof value === 'number' ? value : (q.min ?? 0)
