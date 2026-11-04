@@ -9,6 +9,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import type { FlowNode, FlowValue } from '@/lib/budget/flow/types'
 import type { Currency } from '@/lib/store/types'
+import { OPTION_ICONS } from './optionIcons'
 import { reconcileTyped } from '@/lib/ui/typedAmount'
 import type { BudgetStudioCopy, StudioQuestionCopy } from '@/lib/i18n/budgetPage/studioCopy'
 
@@ -43,6 +44,7 @@ export function QuestionControl({ node: q, copy, ui, base, value, onChange }: Qu
             const on = multi ? picked.includes(o) : value === o
             const full = multi && q.max !== undefined && picked.length >= q.max && !on
             const label = copy.opts?.[o] ?? o
+            const Icon = OPTION_ICONS[o]
             const pick = () => onChange(multi ? (on ? picked.filter((x) => x !== o) : [...picked, o]) : o)
             return roomy ? (
               <OptionChip key={o} as="trigger" size="md" selected={on} disabled={full} onClick={pick}>
@@ -50,6 +52,11 @@ export function QuestionControl({ node: q, copy, ui, base, value, onChange }: Qu
               </OptionChip>
             ) : (
               <SelectableCard key={o} as={multi ? 'checkbox' : 'radio'} layout="row" surface="card" selected={on} disabled={full} onClick={pick} className="min-h-12 gap-2 px-3.5 py-2.5">
+                {Icon ? (
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand-elevated)] text-[var(--color-brand-primary-ink)]">
+                    <Icon className="size-[18px]" aria-hidden />
+                  </span>
+                ) : null}
                 <span className="min-w-0 flex-1 text-[14.5px] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{label}</span>
                 <span
                   aria-hidden

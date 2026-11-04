@@ -9,6 +9,8 @@ import { useBudgetChromeCopy } from './useBudgetCopy'
 
 export interface PlanBarProps {
   planName: string
+  /** What the shown plan is: only the live one applies to every month. */
+  state: 'active' | 'ready' | 'draft'
   mode: PlanMode
   onModeChange: (mode: PlanMode) => void
   /** Toggles the deck of budgets under the bar. */
@@ -18,7 +20,7 @@ export interface PlanBarProps {
 }
 
 /** Plan chip, overflow menu and the Plan | This month switch. */
-export function PlanBar({ planName, mode, onModeChange, onOpenPlans, expanded, onOpenMenu }: PlanBarProps) {
+export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expanded, onOpenMenu }: PlanBarProps) {
   const c = useBudgetChromeCopy().planBar
   return (
     <div className="flex flex-col gap-3">
@@ -32,10 +34,10 @@ export function PlanBar({ planName, mode, onModeChange, onOpenPlans, expanded, o
           aria-expanded={expanded}
           className="h-14 min-w-0 flex-1 gap-3 px-3 py-0"
         >
-          <span className="size-2.5 shrink-0 rounded-full bg-[var(--color-brand-primary-bright)]" aria-hidden />
+          <span className={`size-2.5 shrink-0 rounded-full ${state === 'active' ? 'bg-[var(--color-brand-primary-bright)]' : 'bg-[var(--color-brand-text-muted)]'}`} aria-hidden />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{planName}</span>
-            <span className="truncate text-xs text-[var(--color-brand-text-secondary)]">{c.activeSub}</span>
+            <span className="truncate text-xs text-[var(--color-brand-text-secondary)]">{c[`${state}Sub`]}</span>
           </span>
           <ChevronDown className={`size-4 shrink-0 text-[var(--color-brand-text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden />
         </SelectableCard>

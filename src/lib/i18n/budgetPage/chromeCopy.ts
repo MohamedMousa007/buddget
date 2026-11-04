@@ -8,6 +8,8 @@ export type InsightText = Record<string, string>
 export interface BudgetChromeCopy {
   planBar: {
     activeSub: string
+    readySub: string
+    draftSub: string
     switchPlan: string
     options: string
     modeLabel: string
@@ -57,6 +59,8 @@ export interface BudgetChromeCopy {
 export const budgetChromeCopyEn: BudgetChromeCopy = {
   planBar: {
     activeSub: 'Active · applies to every month',
+    readySub: 'Not active · pick Set active to apply',
+    draftSub: 'Draft · not applied yet',
     switchPlan: 'Switch plan',
     options: 'Plan options',
     modeLabel: 'Budget view',
@@ -149,6 +153,8 @@ export const budgetChromeCopyEn: BudgetChromeCopy = {
 export const budgetChromeCopyAr: BudgetChromeCopy = {
   planBar: {
     activeSub: 'نشطة · تُطبَّق على كل شهر',
+    readySub: 'غير نشطة · اختر تفعيل لتطبيقها',
+    draftSub: 'مسودة · لم تُطبَّق بعد',
     switchPlan: 'تبديل الخطة',
     options: 'خيارات الخطة',
     modeLabel: 'عرض الميزانية',

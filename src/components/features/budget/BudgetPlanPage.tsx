@@ -13,7 +13,7 @@ import { usePlanActions } from '@/hooks/usePlanActions'
 import { CardActionMenu } from '@/components/ui/CardActionMenu'
 import { History, Plus, Sparkles } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
-import { fallbackPlanId } from '@/lib/budget/activePlan'
+import { fallbackPlanId, selectActivePlan } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
 import type { CreateIntent } from '@/lib/budget/templates'
@@ -295,6 +295,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
       <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-1">
       <PlanBar
         planName={view.plan.name}
+        state={view.plan.id === selectActivePlan(plans, activeId)?.id ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
         mode={mode}
         onModeChange={setMode}
         expanded={switcherOpen}
