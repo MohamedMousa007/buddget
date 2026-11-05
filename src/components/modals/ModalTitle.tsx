@@ -12,3 +12,15 @@ export function ModalTitle({ children, className }: { children: ReactNode; class
     </h2>
   )
 }
+
+/**
+ * A sheet's own heading element, wired to ModalShell's `aria-labelledby`. The id comes from context, so it must be
+ * rendered BELOW the shell: calling `useModalTitleId()` in the component that renders `<ModalShell>` reads nothing and leaves the dialog unnamed.
+ */
+export function ModalHeading({ as: Tag = 'h2', className, children }: { as?: 'h2' | 'span' | 'div'; className?: string; children: ReactNode }) {
+  return (
+    <Tag id={useModalTitleId()} className={className}>
+      {children}
+    </Tag>
+  )
+}

@@ -38,7 +38,7 @@ export function AchievedView({
   return (
     <div className="flex flex-col gap-3.5">
       <TrophyHero stats={stats} />
-      <h3 className={microClassName}>{t.yourWins}</h3>
+      <h2 className={microClassName}>{t.yourWins}</h2>
       {goals.map((g) => (
         <AchievedRow key={g.id} goal={g} />
       ))}

@@ -74,7 +74,7 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
           </form>
         ) : null}
 
-        <h3 className={microClassName}>{t.momentsLabel}</h3>
+        <h2 className={microClassName}>{t.momentsLabel}</h2>
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 lg:gap-3">
           {MOMENTS.map(([key, category]) => {
             const { icon: Icon, cat } = goalVisual(category)
@@ -104,7 +104,7 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
         </div>
 
         <section className="flex flex-col gap-2 rounded-2xl border-[1.5px] border-dashed border-[var(--color-brand-border)] p-3 lg:p-5">
-          <h3 className={microClassName}>{t.includesTitle}</h3>
+          <h2 className={microClassName}>{t.includesTitle}</h2>
           <CheckpointBar percent={50} />
           {[
             [Flag, t.includeCheckpoints],

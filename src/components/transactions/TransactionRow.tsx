@@ -61,12 +61,12 @@ export function TransactionRow({
       {/* B. Middle column */}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 overflow-hidden">
-          <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
+          <span dir="auto" className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
           {titleBadge}
         </span>
         {subtitle ? (
           <span className="mt-1.5 flex min-w-0 items-center overflow-hidden whitespace-nowrap font-mono-numbers text-xs font-medium text-[var(--color-brand-text-muted)]">
-            {typeof subtitle === 'string' ? <span className="truncate">{subtitle}</span> : subtitle}
+            {typeof subtitle === 'string' ? <span dir="auto" className="truncate">{subtitle}</span> : subtitle}
           </span>
         ) : null}
       </span>

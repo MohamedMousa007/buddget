@@ -6,7 +6,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useShallow } from 'zustand/react/shallow'
-import { useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalHeading } from '@/components/modals/ModalTitle'
 import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
 import { soft } from './heroCardShared'
@@ -33,7 +33,7 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
     <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName="h-[82dvh]">
       <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
         <div className="min-w-0">
-          <h2 id={useModalTitleId()} className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.chargesTitle}</h2>
+          <ModalHeading className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.chargesTitle}</ModalHeading>
           <p className="mt-0.5 text-sm text-[var(--color-brand-text-muted)]">{t.chargesSub}</p>
         </div>
         <IconButton

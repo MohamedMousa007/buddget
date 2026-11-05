@@ -11,7 +11,7 @@ import { AddBorrowForm } from '@/components/features/debts/redesign/AddBorrowFor
 import { AddInstallmentForm } from '@/components/features/debts/redesign/AddInstallmentForm'
 import { PayDebtForm } from '@/components/features/debts/redesign/PayDebtForm'
 import { useT } from '@/lib/i18n'
-import { useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalHeading } from '@/components/modals/ModalTitle'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -96,7 +96,7 @@ export function AddDebtSheet() {
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
         <div className="flex shrink-0 items-center gap-2.5 px-5 pb-3 pt-4">
-          <span id={useModalTitleId()} className="min-w-0 flex-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</span>
+          <ModalHeading as="span" className="min-w-0 flex-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</ModalHeading>
           <IconButton
             aria-label={t.common.close}
             onClick={d.closeSheet}

@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Lock, Trash2, Unlink } from 'lucide-react'
-import { ModalShell, useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalShell } from '@/components/modals/ModalShell'
+import { ModalHeading } from '@/components/modals/ModalTitle'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -160,9 +161,9 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
           <IncomeTypeIcon type={event.sourceType} className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <h2 id={useModalTitleId()} className="block text-[17px] font-bold text-[var(--color-brand-text-primary)]">
+          <ModalHeading className="block text-[17px] font-bold text-[var(--color-brand-text-primary)]">
             {event.name}
-          </h2>
+          </ModalHeading>
           <span className="block text-[12.5px] text-[var(--color-brand-text-secondary)]">
             {recurring ? `${typeLabel}${source ? ` · ${cadenceLine(source, t)}` : ''}` : t.income.oneTimeIncome}
           </span>

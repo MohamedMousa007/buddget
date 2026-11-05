@@ -26,7 +26,7 @@ import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChi
 import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
 import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
-import { useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalHeading } from '@/components/modals/ModalTitle'
 import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
@@ -216,9 +216,9 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
         {/* Header: title + subtitle, one-time date pill (add only), close */}
         <div className="flex shrink-0 items-start gap-2.5 px-4 pb-4 pt-1">
           <div className="min-w-0 flex-1">
-            <h2 id={useModalTitleId()} className="text-lg font-bold text-[var(--color-brand-text-primary)]">
+            <ModalHeading className="text-lg font-bold text-[var(--color-brand-text-primary)]">
               {edit ? t.editIncome.title : isRecurring ? t.paydays.newTitle : t.addIncome.sheetTitle}
-            </h2>
+            </ModalHeading>
             {!isRecurring ? (
               <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.addIncome.addSubtitleOneTime}</p>
             ) : null}

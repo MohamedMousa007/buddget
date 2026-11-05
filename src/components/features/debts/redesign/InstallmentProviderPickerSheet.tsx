@@ -8,7 +8,7 @@ import { INSTALLMENT_PROVIDER_CATALOGUE } from '@/lib/constants/installmentProvi
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import type { PaymentMethod } from '@/lib/store/types'
 import { ProviderBadge } from './ProviderBadge'
-import { useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalHeading } from '@/components/modals/ModalTitle'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -78,9 +78,9 @@ export function InstallmentProviderPickerSheet({
               <ArrowLeft />
             </IconButton>
           ) : null}
-          <span id={useModalTitleId()} className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">
+          <ModalHeading as="span" className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">
             {view === 'card' ? t.whichCardTitle : view === 'custom' ? t.customProviderTitle : t.chooseProvider}
-          </span>
+          </ModalHeading>
 <IconButton aria-label={t.closeLabel} variant="tinted" size="sm" shape="round" onClick={close}>
             <X />
           </IconButton>

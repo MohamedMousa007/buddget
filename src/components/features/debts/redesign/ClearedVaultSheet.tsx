@@ -7,7 +7,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import type { ClearedVM } from '@/hooks/useDebtTabData'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 import { fmtWhole, soft } from './heroCardShared'
-import { useModalTitleId } from '@/components/modals/ModalShell'
+import { ModalHeading } from '@/components/modals/ModalTitle'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/lib/i18n'
@@ -47,7 +47,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
           <Award className="h-6 w-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 id={useModalTitleId()} className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.vaultTitle}</h2>
+          <ModalHeading className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.vaultTitle}</ModalHeading>
           <p className="mt-0.5 font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">
             {t.vaultSummary(cleared.length, fmtWhole(sum), base)}
           </p>

@@ -94,7 +94,18 @@ Also: the Android manifest lost a catch-all `app.buddget` link filter (nothing i
 | MON-2, MON-3, BUD4, API-6, SIT8, SIT9, SMS6 | P3 | legacy weekly count, Egypt weekend, unused budget answers, and others | product decisions |
 | WLT9, SMS4, SYN9, DBL-1 | P3 | need a schema or database function change (payment-to-withdrawal link, FX pair direction, `sync_pull` deleted ids, migration ledger repair) | database writes beyond hygiene |
 | API-9, API-13, PRF8, DBL-3, HKS5 | P3 | design change, intentional unscheduled cron, FileProvider paths (needs a device), backup schema drop, confirm-before-replace | risk or decision |
-| LIV | - | the live browser sweep did not run | repeat on a quiet machine |
+| LIV | - | the live sweep ran at the end of the day (below); light theme, tablet and desktop widths were not repeated | |
+
+## Live UI sweep (run last, machine quiet, pane visible)
+Dark theme and Arabic, mobile 375px (and 320px on four routes). 14 routes and 13 sheets. axe, overflow, tap-target and hit tests, plus real keyboard presses and a stress-data check.
+
+| Result | Detail |
+|---|---|
+| Clean | no horizontal scroll on any route at 375 or 320; no unnamed controls or images; one visible h1 per route; Tab order is logical and every sampled stop shows a focus ring; real Escape closes a sheet and focus enters each sheet; sheets fit the viewport |
+| Fixed | **Seven sheets** (income, payment methods, debt, debt charges, cleared vault, installment provider, edit income event) opened a dialog with no accessible name. They read the title id in the component that renders the shell, where the context is empty. A `ModalHeading` helper reads it below the shell, and a guard test fails if the pattern returns. **Goals empty state** headings jumped h1 to h3 (now h2). **Arabic merchant names** were cut at their start, because the app keeps LTR layout and an Arabic string overflowed on the wrong side (`dir="auto"` on the row title and subtitle) |
+| Not a defect | the two contrast hits on Subscriptions are the YouTube and Apple Music logo tiles (exempt) |
+| Open, minor | amounts of about 100 million are cut with an ellipsis in the three-cell strip at 375px (the band already steps its size down, but not far enough); small tap targets remain on "Set budget", filter chips, the emergency-fund chip and the price refresh icon (design call); `region` best-practice notes for visually hidden text on two pages |
+| Not done | light theme and tablet and desktop widths were not repeated; double-submit and browser back inside nested sheets were not exercised in the live app |
 
 ## Not covered (stated plainly)
 Dark and Arabic visual sweeps, keyboard-only sweep, narrow and wide widths, stress data in the live app (the sweep did not run); real-device native paths; Buddgy model behaviour with the live model; terms, cookies, admin UI; analytics, spending, history months, reports hooks; recurring-expense generation; `useDebtTabData` maths; most form-level validation (double submit, 1e21, Arabic digits, state reset); a New York time-zone run of the money area.
