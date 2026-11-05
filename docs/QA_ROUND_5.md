@@ -22,7 +22,7 @@ Method: 13 read-only finder agents ran in parallel, one per area, each with the 
 
 Round 4 fixed 12 defects. This round reported 114, so the earlier "bug free" distance was too optimistic: the first rounds sampled other slices, and each new area (sync, device routes, forms, backups) produced P1s.
 
-## Fixed in this round (27, each with a test unless noted)
+## Fixed in the first pass (27, each with a test unless noted)
 | ID | P | Fix |
 |---|---|---|
 | SYN2 | P1 | sign-out starts its final flush before suspending sync (a flush after the suspend flag was a no-op and pending edits were wiped) |
@@ -53,30 +53,36 @@ Round 4 fixed 12 defects. This round reported 114, so the earlier "bug free" dis
 | BUD1 | P2 | `shave` never raises a line to its floor (saving targets no longer inflate everyday lines) |
 | UIS3 | P2 | goal-achieved screen respects the top/bottom safe area (no test: visual) |
 
+## Second pass (same day, after your replies)
+| ID | Fix |
+|---|---|
+| SIT3 | privacy policy section 7 now says what the app does: expenses as CSV from Settings, a full copy by writing to support within 30 days. Site FAQ (EN and AR) matches, and "Data export" is no longer listed as a Plus feature |
+| SIT1 | the retention job no longer waits for a human "pattern review" that was never recorded (migration 0229, applied live). Messages that are learned, masked and not awaiting you are blanked at 30 days. 170 rows qualify and will be blanked by the scheduled 00:50 UTC run (not run by hand). Site copy now says "deleted within 30 days (7 days if rejected or holding a one-time code)" |
+| SIT2, SIT4 | policy sections 2 and 6 agree on SMS retention and now disclose Buddgy's saved memory notes and usage counts |
+| AI-1 | failed chat calls no longer count toward the daily chat cap or the chat turn count (migration 0230, applied live) |
+| SYN1 | the last-flushed state is remembered as one short hash per row. At a warm start, rows edited, created or deleted while the app was closed or offline are found and sent by the first reconcile. First run after the update trusts the cache as before |
+| AI-5, AI-6 | `update_expense` is rejected when the currency cannot be converted; `update_goal` resolves its target like the other actions (no first-substring guess) |
+| BUD3 | the "goal needs more than your plan can spare" question is no longer asked for goals set as a monthly amount |
+| UIS1 | the payment card carousel takes the arrow keys and Enter/Space (focusable group, labelled with the active card) |
+| PRF9 | the old Linear bot LaunchAgent is unloaded and its plist renamed `com.buddget.linearbot.plist.disabled` |
+
 ## Open, needs a decision or a larger change
-| ID | P | What | Why not done now |
+| ID | P | What | Why not done |
 |---|---|---|---|
-| SYN1 | P1 | edits not pushed when the app closed (offline, failed retries, debounce window) are never sent: the flush baseline is the persisted cache at warm start | needs a persisted "last flushed" snapshot or outbox. A full re-upsert on launch would let a stale device overwrite newer edits from another device (SYN6). Design call |
-| SYN5-7 | P2 | rows without `updatedAt` always lose to the server copy; blind upsert (last pusher wins); device-clock comparison | same family as SYN1: needs a server-side `updated_at` precondition |
-| AI-1 | P2 | failed chat calls count toward the daily chat cap (7 of 10 live chat events were errors) | needs a change to `ai_quota_reserve` / settle |
-| AI-5, AI-6 | P2 | legacy voice handlers: stale base amount on unconvertible currency; `update_goal` matches loosely | not yet fixed |
-| SIT1 | P2 | policy says raw SMS is kept at most 30 days; 179 confirmed rows are older and the retention job masks nothing (`parsed_masked` = 0) | you ruled no manual purge. Needs the job fixed and your OK to run it |
-| SIT3 | P2 | policy promises a JSON export in Settings; signed-in users only get an expenses CSV | policy wording or product change |
-| PRF3 | P2 | `/api/cron/month-carry` is in neither `vercel.json` nor pg_cron, so it never runs | scheduling decision (Hobby plan allows daily) |
-| PRF9 | P2 | the old Linear bot LaunchAgent is still loaded hourly with `--dangerously-skip-permissions` | system change on your Mac. Asked first |
-| MON-6 | P2 | legacy-basis net worth follows the month being viewed | needs the cycle for "now", plus no snapshot while browsing |
-| BUD3 | P2 | "goal needs more than you can spare" follow-ups do nothing for by-amount goals | flow decision |
+| PRF3 | P2 | `/api/cron/month-carry` is unscheduled | it writes live money into savings; its own header requires a preview dry run and your explicit sign-off |
+| WLT1 | P2 | savings withdrawal "Spend" is labelled "Counts as an expense" but creates no expense | creating one touches the net-worth two-ledger model; product call (change the label, or book the expense) |
+| MON-6 | P2 | legacy-basis net worth follows the month being viewed | needs `useMonthlyStats` to take a month; touches every stats screen |
+| SYN5-7 | P2 | rows without `updatedAt` always lose; blind upsert (last pusher wins); device-clock comparison | needs a server `updated_at` precondition and mapper changes |
+| API-4 | P2 | biometric enrol needs only a valid session | adding a recent-sign-in requirement changes the enrolment flow |
 | SMS3 | P2 | pairing race (static) | reproduce first |
-| UIS1 | P2 | payment card carousel is click-only (no keyboard/screen reader) | component rework |
-| API-4, SIT2, SIT4, WLT1 | P2 | biometric register without recent sign-in; others listed in the area reports | see reports |
-| LIV | - | the live browser sweep did not run (dev server never served `/flow` under load) | repeat on a quiet machine or a production build |
+| LIV | - | the live browser sweep did not run | repeat on a quiet machine or a production build |
 | All P3 | P3 | 66 listed in the area reports | triage later |
 
 ## Not covered (stated plainly)
 Dark and Arabic visual sweeps, keyboard-only sweep, narrow and wide widths, stress data in the live app (the sweep did not run); real-device native paths; Buddgy model behaviour with the live model; terms, cookies, admin UI; analytics, spending, history months, reports hooks; recurring-expense generation; `useDebtTabData` maths; most form-level validation (double submit, 1e21, Arabic digits, state reset); a New York time-zone run of the money area.
 
 ## How far from bug-free
-- Known open: 0 P0, 1 P1 (SYN1), about 20 P2 (most need a decision), 66 P3.
+- Known open: 0 P0, 0 P1, about 12 P2 (most need a decision), 66 P3. 36 findings fixed in total.
 - Discovery is still not saturated: three of the four densest areas (sync, API, forms) had not been probed this deeply before and gave P1s; the live-UI layer produced nothing because it could not run.
 - Assurance score (judgement, 18 segments x depth 0-3): up from 34/54 (63%) to about 40/54 (74%), mostly from the API matrix, the English/Arabic diff (clean: 3,447 keys each), selector timings (linear, 91 ms at 40k transactions) and code-level sync review. A release gate would want 80%+ with native, AI, offline and live UI at 2.
-- Next, by yield: (1) SYN1 design, (2) live UI sweep on a production build, (3) render tests for the sheets and carousels (UIS1, forms), (4) real-device checklist, (5) Playwright smoke for the nine journeys.
+- Next, by yield: (1) live UI sweep on a production build, (3) render tests for the sheets and carousels (UIS1, forms), (4) real-device checklist, (5) Playwright smoke for the nine journeys.

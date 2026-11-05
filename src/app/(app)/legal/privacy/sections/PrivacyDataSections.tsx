@@ -65,8 +65,9 @@ export function PrivacyDataSections() {
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">AI query data:</strong>{' '}
           Natural-language messages and financial context submitted to Buddgy, our AI assistant. These
-          are sent to the Google Gemini API for processing. We do not maintain a permanent server-side
-          log of Buddgy conversations beyond what is necessary to render the current response.
+          are sent to the Google Gemini API for processing. We do not keep a transcript of Buddgy
+          conversations on our servers. We do keep usage counts and the short notes Buddgy saves to
+          remember your preferences and facts you tell it.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">

@@ -111,10 +111,30 @@ export function PaymentCardCarousel({
     else action()
   }
 
+  // Keyboard and screen-reader path: the cards are pointer-driven, so the carousel itself takes the arrows and Enter.
+  const activeMethod = methods[safeActive]
+  const activeLabel = activeMethod
+    ? `${decomposePaymentMethodName(activeMethod.name, activeMethod.last4).provider} ${activeMethod.label?.trim() || (activeMethod.last4 ? `•• ${activeMethod.last4}` : '')}`.trim()
+    : addLabel
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.target !== e.currentTarget) return // keys on the card's own menu button stay with that button
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); onActiveChange(Math.min(slotCount - 1, safeActive + 1)) }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); onActiveChange(Math.max(0, safeActive - 1)) }
+    else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      if (activeMethod) onCardSelect?.(activeMethod)
+      else onAddCard?.()
+    }
+  }
+
   return (
     <>
       <div
-        className="relative mt-2.5 h-[224px] touch-pan-y select-none"
+        role="group"
+        tabIndex={0}
+        aria-label={activeLabel}
+        onKeyDown={onKeyDown}
+        className="relative mt-2.5 h-[224px] touch-pan-y select-none rounded-[20px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-focus)]"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}

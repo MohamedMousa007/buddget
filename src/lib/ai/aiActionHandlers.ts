@@ -163,7 +163,7 @@ function coerceAISavingsType(raw: unknown): SavingsType {
   return 'other'
 }
 
-type Targetable = Pick<AIActionHandlerContext, 'expenses' | 'debts' | 'incomeSources' | 'savingsAccounts' | 'paymentMethods'>
+type Targetable = Pick<AIActionHandlerContext, 'expenses' | 'debts' | 'incomeSources' | 'savingsAccounts' | 'paymentMethods' | 'goals'>
 
 interface Target {
   noun: string
@@ -198,6 +198,10 @@ export function resolveActionTarget(ctx: Targetable, action: AIAction, d: Record
     case 'withdraw_savings': {
       const hint = field('account', 'name')
       return { noun: 'savings accounts', hint, match: matchByHint(ctx.savingsAccounts, hint, (a) => [a.name]) }
+    }
+    case 'update_goal': {
+      const hint = field('name', 'goalName')
+      return { noun: 'goals', hint, match: matchByHint(ctx.goals, hint, (g) => [g.name]) }
     }
     case 'delete_payment_method': {
       const hint = field('name')
@@ -459,6 +463,12 @@ export function validateActionItem(
     if (nextAmount !== undefined) {
       const badAmount = checkAmount(Number(nextAmount))
       if (badAmount) return badAmount
+      // Without a rate the base amount would stay at the old figure while amount and currency change.
+      const target = resolved<Expense>(ctx, action, d)
+      const currency = String(getField(d, 'currency') || target?.currency || ctx.settings.baseCurrency)
+      if (tryConvertCurrency(Number(nextAmount), currency, ctx.settings.baseCurrency, ctx.exchangeRates) === null) {
+        return `Could not convert ${currency} to ${ctx.settings.baseCurrency}. Add exchange rates in Settings.`
+      }
     }
     if (nextCat !== undefined) return checkCategory(nextCat)
     return null
@@ -511,7 +521,7 @@ export function validateActionItem(
     if (!String(getField(d, 'name', 'goalName') || '').trim()) {
       return 'update_goal needs data.name to match a goal.'
     }
-    return null
+    return targetProblem(ctx, action, d)
   }
   return null
 }
@@ -941,14 +951,7 @@ export function executeActionItem(
     return
   }
   if (action === 'update_goal') {
-    const hint = String(getField(d, 'name', 'goalName') || '')
-      .trim()
-      .toLowerCase()
-    const g = ctx.goals.find(
-      (x) =>
-        x.name.toLowerCase().includes(hint) ||
-        (hint.length > 0 && hint.includes(x.name.toLowerCase()))
-    )
+    const g = resolved<Goal>(ctx, action, d)
     if (!g) return
     const patch: Partial<Goal> = {}
     const ta = getField(d, 'targetAmount')

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
 import { baselineAfterFlush, flushRetryDelay } from './flushBaseline'
+import { baselineForBoot, saveFingerprint } from './flushedFingerprint'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   pullAll,
@@ -31,6 +32,14 @@ import { isOnline, networkReady, subscribeNetwork } from '@/hooks/useNetworkStat
 import type { Snapshot } from '@/lib/supabase/remote'
 
 const DEBOUNCE_MS = 500
+
+const fingerprintTimers = new Map<string, ReturnType<typeof setTimeout>>()
+/** Remembers what the server has received, so edits still unsent when the app closes are found at the next start. */
+function persistBaseline(userId: string, snap: Snapshot | null): void {
+  if (!snap) return
+  clearTimeout(fingerprintTimers.get(userId))
+  fingerprintTimers.set(userId, setTimeout(() => saveFingerprint(userId, snap), 300))
+}
 
 /** Imperative flush handle set by the mounted `SupabaseFinanceSync`. Other
  *  modules (e.g. AuthProvider.signOut) call `flushFinanceNow()` to drain any
@@ -180,7 +189,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       // local toggle. Requires the network; the offline case falls through to
       // the offline fast-path below.
       if (isOnline() && useFinanceStore.getState().profile.id === userId) {
-        prevSnap.current = snapshot(useFinanceStore.getState())
+        // The cache is not the server: unsent edits from last time are still in it. Mark those rows so the reconcile below pushes them.
+        prevSnap.current = baselineForBoot(userId, snapshot(useFinanceStore.getState()))
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
         lastPulledUserId = userId
@@ -204,7 +214,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       // offline edits diff correctly, and let the reconnect trigger run the
       // real sync in the background once the network returns.
       if (!isOnline()) {
-        prevSnap.current = snapshot(useFinanceStore.getState())
+        prevSnap.current = baselineForBoot(userId, snapshot(useFinanceStore.getState()))
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
         useFinanceStore.getState().setDataReady(true)
@@ -229,6 +239,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         try { await marketPromise } catch { /* keep cached/default rates */ }
         // A failed pull leaves no trustworthy baseline: keep it empty so the first flush sends local state.
         prevSnap.current = baselineAfterFlush(null, snapshot(useFinanceStore.getState()), pulled)
+        persistBaseline(userId, prevSnap.current)
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
         useFinanceStore.getState().setDataReady(true)
@@ -310,6 +321,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         }
         if (!result.anyError) {
           prevSnap.current = adopted.size > 0 ? { ...next, incomeEvents: next.incomeEvents.filter((e) => !adopted.has(e.id)) } : next
+          persistBaseline(userId, prevSnap.current)
           retryAttempt = 0
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)
@@ -357,6 +369,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           const flushed = await flush()
           await runFullSync(supabase, userId)
           prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed)
+          persistBaseline(userId, prevSnap.current)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
           if (!runAgain.current) break
         }

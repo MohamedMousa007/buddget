@@ -126,7 +126,7 @@ export const en: SiteContent = {
       h2: 'Free to start. Plus is planned.', p: 'Everything you use today stays free. Plus is planned for the features that cost us the most to run.',
       plans: [
         { name: 'Free', price: '0 EGP', tag: 'For tracking your money day to day.', items: ['Bank text, voice and receipt tracking', 'Budgets and the daily number', 'Goals, debts, installments and subscriptions', 'Buddgy essentials'], cta: 'Get the app', main: true },
-        { name: 'Plus', price: 'Soon', tag: 'Planned. Not on sale yet.', items: ['More Buddgy conversations', 'Data export', 'Extra reports'], cta: 'Join the beta list' },
+        { name: 'Plus', price: 'Soon', tag: 'Planned. Not on sale yet.', items: ['More Buddgy conversations', 'Extra reports'], cta: 'Join the beta list' },
       ],
     },
     close: { h2: 'Find out what you can spend today.', lede: 'Join the beta list, or open it in your browser right now.', qr: 'Scan to open Buddget on your phone', soon: 'Coming soon to' },
@@ -144,8 +144,8 @@ export const en: SiteContent = {
     faq: {
       h2: 'Questions people ask first',
       items: [
-        { q: 'Is Buddget free?', a: 'Yes. Tracking, budgets, goals, subscriptions and the essentials of Buddgy are free. A paid plan, Plus, is planned with more AI and exports. What you use today is meant to stay available.' },
-        { q: 'Does it read my bank texts?', a: 'Only if you turn it on. When you do, the text of the bank messages you allow is sent to our servers to find the amount and merchant. The raw text is not kept after that, and you can switch it off at any time.' },
+        { q: 'Is Buddget free?', a: 'Yes. Tracking, budgets, goals, subscriptions and the essentials of Buddgy are free. A paid plan, Plus, is planned with more AI and extra reports. What you use today is meant to stay available.' },
+        { q: 'Does it read my bank texts?', a: 'Only if you turn it on. When you do, the text of the bank messages you allow is sent to our servers to find the amount and merchant. The raw text is deleted within 30 days (7 days if it is rejected or holds a one-time code), and you can switch it off at any time.' },
         { q: 'Does it connect to my bank account?', a: 'No. Buddget never logs in to your bank and cannot move money. It works from the texts you receive and from what you add yourself.' },
         { q: 'Can I use it if my salary is not on the 1st?', a: 'Yes. Set your payday and your month runs from payday to payday.' },
         { q: 'What happens to my data if I leave?', a: 'You can delete your account and all its data from inside the app, or ask us to do it.' },
@@ -166,7 +166,7 @@ export const en: SiteContent = {
         screen: 'sms-setup', heading: 'Only the odd one needs you', body: 'Buddget reads the amount, the merchant and the card, then files the entry. If a text is unclear it waits for one tap. On Android it works directly. On iPhone you add a Shortcuts automation once.',
         bullets: ['Works with Arabic and English texts', 'Cards link to the right account', 'Opt in, and switch off any time'],
         faq: [
-          { q: 'What is sent to your servers?', a: 'The text of bank messages you allow is sent to find the amount, merchant and date. Only that extracted data is kept. The raw text is not stored after processing.' },
+          { q: 'What is sent to your servers?', a: 'The text of bank messages you allow is sent to find the amount, merchant and date. The extracted data is kept; the raw text is deleted within 30 days (7 days if it is rejected or holds a one-time code).' },
           { q: 'Does it work on iPhone?', a: 'Yes, through a Shortcuts automation that you set up once. The app walks you through it.' },
         ],
       },
@@ -234,7 +234,7 @@ export const en: SiteContent = {
         h1: 'Find where your money goes', lede: 'See spending by category, by week and by month, and compare with last month.',
         screen: 'reports', heading: 'See the pattern in a week', body: 'Reports show your biggest categories, the places you pay most often and how this month compares with the last.',
         bullets: ['Category totals and trends', 'Biggest purchases', 'This month against last month'],
-        faq: [{ q: 'Can I export my data?', a: 'Contact us and we will send your data. Self-serve export is planned.' }],
+        faq: [{ q: 'Can I export my data?', a: 'Settings has an Export Data option for your expenses as a CSV file. For a full copy of everything, contact us and we will send it.' }],
       },
     ],
   },
@@ -293,7 +293,7 @@ export const en: SiteContent = {
     data: [
       { k: 'Account', v: 'Email, name and the details you add to your profile.' },
       { k: 'Financial entries', v: 'Expenses, income, debts, savings, budgets, goals and subscriptions you create or approve.' },
-      { k: 'Bank texts (opt-in)', v: 'Message text is sent to extract amount, merchant and date. The raw text is not kept afterwards.' },
+      { k: 'Bank texts (opt-in)', v: 'Message text is sent to extract amount, merchant and date. The raw text is deleted within 30 days (7 days if rejected or holding a one-time code).' },
       { k: 'Voice and receipts', v: 'Sent for transcription or analysis, then discarded. The entry is kept.' },
       { k: 'Diagnostics', v: 'Crash information so we can fix problems.' },
     ],
@@ -328,7 +328,7 @@ export const en: SiteContent = {
         items: [
           { q: 'How do I delete my account?', a: 'Open Settings and choose Delete account. You will be asked to type DELETE to confirm.' },
           { q: 'I forgot my password.', a: 'Use Forgot password on the sign-in screen and follow the email we send.' },
-          { q: 'Can I get a copy of my data?', a: 'Write to us and we will send it. Self-serve export is planned.' },
+          { q: 'Can I get a copy of my data?', a: 'Settings has an Export Data option for your expenses as a CSV file. For a full copy of everything, write to us and we will send it.' },
         ],
       },
     ],
@@ -377,7 +377,7 @@ export const en: SiteContent = {
       { k: 'Currency', v: 'Egyptian pound by default. Other currencies and gold are supported for savings.' },
       { k: 'Price', v: 'Free to start. A paid plan, Plus, is planned.' },
       { k: 'Bank connection', v: 'None. Buddget does not log in to your bank and cannot move money.' },
-      { k: 'Bank texts', v: 'Optional. Message text is sent to the server to extract amount, merchant and date. The raw text is not kept.' },
+      { k: 'Bank texts', v: 'Optional. Message text is sent to the server to extract amount, merchant and date. The raw text is deleted within 30 days.' },
       { k: 'Data', v: 'Private to each account. Delete the account and its data from the app at any time.' },
       { k: 'Support', v: 'support@buddget.app' },
     ],

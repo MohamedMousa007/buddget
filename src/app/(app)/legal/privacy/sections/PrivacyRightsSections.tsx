@@ -23,15 +23,18 @@ export function PrivacyRightsSections() {
           immediately after expense data is extracted (not retained).
         </p>
         <p>
-          <strong className="text-[var(--color-brand-text-primary)]">SMS text:</strong> Not stored
-          after parsing. Only extracted expense data is retained.
+          <strong className="text-[var(--color-brand-text-primary)]">SMS text:</strong> The raw
+          message is deleted after at most 30 days (7 days for messages that are rejected or contain
+          a one-time code). The extracted expense data stays with your account, and a masked version
+          without numbers, names or account details is kept to improve parsing.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">
             Buddgy conversation history:
           </strong>{' '}
-          Not permanently logged on our servers beyond the current session. Subject to Google&apos;s API
-          data retention policies.
+          Your chat is not kept as a transcript on our servers. We keep usage counts, and short notes
+          Buddgy saves to remember your preferences and facts you tell it; these are deleted when you
+          delete your account. Subject to Google&apos;s API data retention policies.
         </p>
         <p>
           To request deletion, use Delete Account in Profile/Settings or contact{' '}
@@ -62,7 +65,11 @@ export function PrivacyRightsSections() {
           <strong className="text-[var(--color-brand-text-primary)]">
             Right to data portability:
           </strong>{' '}
-          Export your financial data in JSON format at any time from Settings &rarr; Export Data.
+          Export your expenses as a CSV file at any time from Settings &rarr; Export Data. For a complete copy of everything we hold about you, write to{' '}
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+            support@buddget.app
+          </a>{' '}
+          and we will send it within 30 days.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">
