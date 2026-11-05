@@ -55,10 +55,13 @@ export async function DELETE(request: Request, { params }: Params) {
   const id = (await params).id
   if (request.headers.get(DEVICE_ID_HEADER)?.trim() === id) return NextResponse.json({ error: 'Sign out on this phone instead' }, { status: 400 })
   const service = createServiceRoleClient()
-  const { data: before } = await service.from('user_devices').select('is_main').eq('user_id', o.userId).eq('device_id', id).is('revoked_at', null).maybeSingle()
+  // An already-removed phone is looked up too: a retry after a failed cleanup must be able to finish it.
+  const { data: before } = await service.from('user_devices').select('is_main, revoked_at').eq('user_id', o.userId).eq('device_id', id).maybeSingle()
   if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  const revoked = await service.from('user_devices').update({ revoked_at: new Date().toISOString(), collects_sms: false, is_main: false }).eq('user_id', o.userId).eq('device_id', id)
-  if (revoked.error) return NextResponse.json({ error: 'Could not remove the phone' }, { status: 500 })
+  if (!before.revoked_at) {
+    const revoked = await service.from('user_devices').update({ revoked_at: new Date().toISOString(), collects_sms: false, is_main: false }).eq('user_id', o.userId).eq('device_id', id)
+    if (revoked.error) return NextResponse.json({ error: 'Could not remove the phone' }, { status: 500 })
+  }
   const cleanup = await Promise.all([
     service.from('sms_ingest_tokens').update({ is_active: false }).eq('user_id', o.userId).eq('device_id', id),
     service.from('push_tokens').delete().eq('user_id', o.userId).eq('device_id', id),

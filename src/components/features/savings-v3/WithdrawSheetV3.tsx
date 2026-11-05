@@ -139,8 +139,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       const debt = debts.find((d) => d.id === debtId)
       if (!debt) return
       const noteTrim = note.trim() || undefined
-      const { amountPaid, amountInBase } = debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false })
-      if (!(amountPaid > 0)) return showToast(t.moveFailed)
+      const { amountPaid, amountInBase, exceeds } = debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left })
+      if (!(amountPaid > 0) || exceeds) return showToast(t.moveFailed)
       if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt')) return showToast(t.moveFailed)
       addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true })
       reconcileDebtSchedule(debt.id, { amount: amountPaid, currency: debt.currency })
@@ -167,7 +167,13 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
     return t.withdrawCta(verb, amountNum > 0 ? fmtNum(amountNum) : '', pocketDisplayName(from.account, sf.systemNames))
   })()
 
+  const debtOverpay = (() => {
+    const debt = reason === 'debt' ? debts.find((d) => d.id === debtId) : undefined
+    return !!debt && debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left }).exceeds
+  })()
+
   const canSubmit =
+    !debtOverpay &&
     !!from &&
     amountNum > 0 &&
     free + balanceEpsilon(from.account.currency) >= amountInPocket &&

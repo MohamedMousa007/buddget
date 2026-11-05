@@ -1,0 +1,20 @@
+import { it, expect } from 'vitest'
+import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
+import { computeNetWorth } from '@/lib/savings/netWorth'
+import { src, exp } from './_h'
+
+it('MON-6 legacy-basis net worth changes with the viewed month (and the wealth page snapshots it as today)', () => {
+  const settings: any = { baseCurrency: 'EGP', monthStartDay: 1, showSecondaryCurrency: false }
+  const base: any = {
+    expenses: [exp({ id: 'a', date: '2026-10-10', amount: 500, amountInBaseCurrency: 500 }), exp({ id: 'b', date: '2026-11-02', amount: 100, amountInBaseCurrency: 100 })],
+    incomeSources: [src({ amount: 1000, paydayDays: [5], dayOfMonth: 5 })], incomeEvents: [], budgetCategories: [], budgetPlans: [], budgetPlanActivations: [], activeBudgetPlanId: null,
+    savingsHoldings: [], savingsAccounts: [], savingsTransactions: [], debts: [], debtPayments: [], settings, exchangeRates: {}, goldPricePerGram: 0, goldPriceAvailable: false, trustLocalFinance: true,
+  }
+  const nw = (monthFilter: string) => {
+    const s = computeMonthlyStats({ ...base, monthFilter })
+    return computeNetWorth({ savingsAccounts: [], investmentHoldings: [], debts: [], settings, exchangeRates: {}, goldPricePerGram: 0, goldPriceAvailable: false, lookup: (() => null) as any,
+      monthlyIncome: s.receivedIncome, cashOutflow: s.cashOutflow, debtRemaining: s.debtRemainingTotal }).netWorth
+  }
+  console.log('NW', nw('2026-10'), nw('2026-11'))
+  expect(nw('2026-10')).toBe(nw('2026-11'))
+})

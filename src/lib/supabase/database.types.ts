@@ -1394,6 +1394,8 @@ export type Database = {
           debt_type: Database["public"]["Enums"]["debt_kind"]
           deleted_at: string | null
           description: string | null
+          emoji: string | null
+          goal: Json | null
           direction: Database["public"]["Enums"]["debt_direction"]
           due_date: string | null
           gold_karat: Database["public"]["Enums"]["gold_karat"] | null
@@ -1439,6 +1441,8 @@ export type Database = {
           debt_type?: Database["public"]["Enums"]["debt_kind"]
           deleted_at?: string | null
           description?: string | null
+          emoji?: string | null
+          goal?: Json | null
           direction?: Database["public"]["Enums"]["debt_direction"]
           due_date?: string | null
           gold_karat?: Database["public"]["Enums"]["gold_karat"] | null
@@ -1484,6 +1488,8 @@ export type Database = {
           debt_type?: Database["public"]["Enums"]["debt_kind"]
           deleted_at?: string | null
           description?: string | null
+          emoji?: string | null
+          goal?: Json | null
           direction?: Database["public"]["Enums"]["debt_direction"]
           due_date?: string | null
           gold_karat?: Database["public"]["Enums"]["gold_karat"] | null

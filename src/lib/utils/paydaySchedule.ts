@@ -76,11 +76,15 @@ export function shiftToBusinessDay(d: Date): Date {
   return addDays(d, dow === 6 ? 2 : 1)
 }
 
-/** The weekend shift, except a payday on the window's first day moves forward instead of out of its cycle. */
-function shiftIntoWindow(d: Date, start: Date): Date {
+/** The weekend shift, except a payday on a window edge moves the other way instead of out of its cycle. */
+function shiftIntoWindow(d: Date, start: Date, end: Date): Date {
   const shifted = shiftToBusinessDay(d)
-  if (shifted >= start) return shifted
-  return addDays(d, d.getDay() === 6 ? 2 : 1)
+  if (shifted >= start && shifted <= end) return shifted
+  const sat = d.getDay() === 6
+  const forward = addDays(d, sat ? 2 : 1)
+  if (forward >= start && forward <= end) return forward
+  const back = subDays(d, sat ? 1 : 2)
+  return back >= start && back <= end ? back : d
 }
 
 /** Historical weekly behavior: anchor on dayOfMonth, walk ±7 days across the window. */
@@ -114,7 +118,7 @@ export function paydayDatesForWindow(source: IncomeSource, start: Date, end: Dat
   const taken = new Set<number>()
   const out: Date[] = []
   for (const d of raw) {
-    const shifted = cycle ? shiftIntoWindow(d, start) : shiftToBusinessDay(d)
+    const shifted = cycle ? shiftIntoWindow(d, start, end) : shiftToBusinessDay(d)
     const pick = taken.has(shifted.getTime()) ? d : shifted
     if (taken.has(pick.getTime())) continue
     taken.add(pick.getTime())

@@ -1,0 +1,14 @@
+import { it, expect } from 'vitest'
+import { matchCuratedPattern } from '@/lib/sms/patterns'
+import { detectLedgerSign } from '@/lib/sms/directionGuard'
+// SMS2: observed currency "FOR", amount 250; expected null (no currency in message)
+it('lowercase word is not a currency', () => {
+  const r = matchCuratedPattern('Your HSBC Account ********0001 was debited for 250 for purchase at Carrefour on 09-06-2026', null)
+  expect(r?.currency).not.toBe('FOR')
+})
+// SMS5: observed null for all three; expected 'debit' / 'credit' / 'debit'
+it('ledger sign followed by punctuation', () => {
+  expect(detectLedgerSign('EGP 715.00-. balance')).toBe('debit')
+  expect(detectLedgerSign('EGP 715.00+, bal EGP 10.00')).toBe('credit')
+  expect(detectLedgerSign('LE 715.00- at X')).toBe('debit')
+})

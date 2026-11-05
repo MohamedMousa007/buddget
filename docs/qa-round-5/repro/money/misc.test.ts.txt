@@ -1,0 +1,68 @@
+import { describe, it, expect } from 'vitest'
+import { formatMoneyHero, formatWhole, formatSigned, formatCurrency } from '@/lib/utils/formatters'
+import { parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { tryConvertCurrency } from '@/lib/utils/currency'
+import { computeNextBillingDate } from '@/lib/subscriptions/subscriptionDates'
+import { cycleWindow } from '@/lib/subscriptions/subscriptionOccurrence'
+import { actualIncomeForMonth, getMonthRange } from '@/lib/utils/calculations'
+import { categorySpendingForPlanRows, unassignedSpend, planRowNames } from '@/lib/budget/budgetPlans'
+import { src, ev, key } from './_h'
+
+describe('misc', () => {
+  it('MON-4 formatMoneyHero rounds half away asymmetrically', () => {
+    console.log('HERO', formatMoneyHero(2.5, 'USD'), formatMoneyHero(-2.5, 'USD'), formatMoneyHero(1234.5, 'USD', { compact: 'off' }), formatMoneyHero(-1234.5, 'USD', { compact: 'off' }), '| whole', formatWhole(-2.5), formatWhole(2.5), '| signed', formatSigned(-2.5), formatSigned(2.5))
+    expect(formatMoneyHero(-2.5, 'USD').replace('-', '')).toBe(formatMoneyHero(2.5, 'USD'))
+  })
+  it('amountParse: Arabic digits/separators and round trip', () => {
+    const cases: [string, string, number][] = [['١٢٣٤٫٥٦', 'EGP', 1234.56], ['١٬٢٥٠٫٧٥', 'EGP', 1250.75], ['1,250', 'EGP', 1250], ['۱۲۳', 'USD', 123], ['1.005', 'EGP', 1.01], ['0.1', 'EGP', 0.1]]
+    for (const [raw, cur, want] of cases) expect(parseLocalizedAmount(raw, cur), raw).toBe(want)
+    for (let i = 0; i < 2000; i++) {
+      const cents = (i * 7919 + 13) % 10_000_000
+      const n = cents / 100
+      const s = n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      expect(parseLocalizedAmount(s, 'EGP'), s).toBe(n)
+    }
+  })
+  it('currency: round trip + no NaN, zero/negative rates ignored', () => {
+    const rates = { USD_EGP: 50, USD_AED: 3.6725, EUR_USD: 1.1 }
+    for (const [a, b] of [['EGP', 'USD'], ['EGP', 'AED'], ['EUR', 'EGP'], ['AED', 'EUR']] as const) {
+      for (const amt of [0.01, 1, 33.33, 1e6, -5]) {
+        const x = tryConvertCurrency(amt, a, b, rates)!, back = tryConvertCurrency(x, b, a, rates)!
+        expect(Math.abs(back - amt) / Math.abs(amt), `${a}${b}${amt}`).toBeLessThan(1e-9)
+      }
+    }
+    expect(tryConvertCurrency(10, 'USD', 'EGP', { USD_EGP: 0 })).not.toBe(0)
+    expect(tryConvertCurrency(NaN, 'USD', 'EGP', rates)).toBeNaN()
+  })
+  it('subscriptions: monthly next date never skips a month; billingDay 31 clamps', () => {
+    for (const bd of [28, 29, 30, 31]) {
+      let prev = ''
+      for (let m = 0; m < 24; m++) {
+        const ref = new Date(2026, m % 12 + 0, 1); ref.setFullYear(2026 + Math.floor(m / 12))
+        const d = computeNextBillingDate('2025-01-31', bd, 'monthly', ref)!
+        expect(d.slice(0, 7), `bd=${bd} ref=${ref.toDateString()}`).toBe(`${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}`)
+        prev = d
+      }
+      void prev
+    }
+    const w = cycleWindow({ startDate: '2025-01-31', billingDay: 31, billingCycle: 'monthly' }, new Date(2026, 2, 1))
+    expect(w.start.getMonth()).toBe(1) // Feb 28
+  })
+  it('income: same payday logged twice and event straddling cycles counts once across cycles', () => {
+    const s = src({ dayOfMonth: 5, paydayDays: [5] })
+    const events = [ev({ id: 'a', occurrenceDate: '2026-03-05', receivedDate: '2026-04-01', updatedAt: '2026-04-01T00:00:00Z' }), ev({ id: 'b', occurrenceDate: '2026-03-05', receivedDate: '2026-03-05', updatedAt: '2026-03-06T00:00:00Z' })]
+    let total = 0
+    for (let m = 0; m < 12; m++) total += actualIncomeForMonth([s], events, 'EGP', {}, key(2026, m), 1)
+    expect(total).toBe(12 * 1000)
+    void getMonthRange
+  })
+  it('MON-5 category case mismatch drops spend from plan rows', () => {
+    const plan: any = { id: 'p', categories: [{ id: 'c', name: 'Coffee', amount: 100, subcategories: [] }] }
+    const spend = { coffee: 50 }
+    const rows = categorySpendingForPlanRows(spend, plan)
+    const un = unassignedSpend(spend, planRowNames(plan))
+    const counted = Object.values(rows).reduce((a, b) => a + b, 0) + Object.values(un).reduce((a, b) => a + b, 0)
+    expect(counted).toBe(50)
+  })
+  void formatCurrency
+})

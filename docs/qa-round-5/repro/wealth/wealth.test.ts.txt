@@ -1,0 +1,64 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { debtPaymentForWithdrawal } from '@/lib/debts/withdrawalPayment'
+import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
+import { calculateDebtRemaining } from '@/lib/utils/calculations'
+import type { Debt, SavingsAccount } from '@/lib/store/types'
+
+const S = () => useFinanceStore.getState()
+const pocket = (id: string, cur: SavingsAccount['currency'], bal: number): SavingsAccount =>
+  ({ id, name: id, category: 'savings', type: 'bank', currency: cur, currentBalance: bal, createdAt: '2026-01-01' }) as SavingsAccount
+const debt = (o: Partial<Debt> = {}): Debt => ({ id: 'd1', name: 'Loan', person: 'x', startingBalance: 100, currency: 'EGP', isGold: false, status: 'active', debtType: 'personal', direction: 'i_owe', createdAt: '2026-01-01' , ...o }) as Debt
+
+beforeEach(() => useFinanceStore.setState({
+  savingsAccounts: [pocket('p', 'EGP', 1000)], savingsTransactions: [], incomeEvents: [], expenses: [], goals: [],
+  debts: [debt()], debtPayments: [], recurringDebtPayments: [],
+  exchangeRates: { USD_EGP: 50, EGP_USD: 0.02 }, goldPricePerGram: 3000, goldPriceAvailable: true,
+}))
+
+describe('WLT1 spend withdrawal creates no expense', () => {
+  it('pocket drops, expenses stay empty', () => {
+    S().withdrawFromSavings('p', 100, 'EGP', undefined, 'spend')
+    expect(S().savingsAccounts[0].currentBalance).toBe(900)
+    expect(S().expenses).toHaveLength(0)
+  })
+})
+
+describe('WLT2 withdraw-to-debt over-payment', () => {
+  it('1000 leaves the pocket for a 100 debt, payment recorded as 1000', () => {
+    const d = S().debts[0]
+    const { amountPaid, amountInBase } = debtPaymentForWithdrawal({ debt: d, amount: 1000, currency: 'EGP', base: 'EGP', rates: S().exchangeRates, goldPricePerGram: 3000, goldAvailable: true })
+    expect(S().withdrawFromSavings('p', 1000, 'EGP', undefined, 'debt')).toBe(true)
+    S().addDebtPayment({ debtId: 'd1', date: '2026-11-05', amountPaid, paymentCurrency: 'EGP', amountInPrimary: amountInBase, fundedFromSavings: true })
+    expect(S().savingsAccounts[0].currentBalance).toBe(0)
+    expect(S().debtPayments[0].amountPaid).toBe(1000)
+    expect(S().debts[0].status).toBe('cleared')
+    expect(calculateDebtRemaining(S().debts[0], S().debtPayments)).toBe(0)
+  })
+})
+
+describe('WLT3 gold pocket to debt', () => {
+  it('XAU sheet currency yields amountPaid 0', () => {
+    const r = debtPaymentForWithdrawal({ debt: debt(), amount: 2, currency: 'XAU', base: 'EGP', rates: {}, goldPricePerGram: 3000, goldAvailable: true })
+    expect(r.amountPaid).toBe(0)
+  })
+})
+
+describe('WLT4 dust vs reminder', () => {
+  it('debt cleared at 0.004 remaining keeps an active, advanced reminder', () => {
+    useFinanceStore.setState({ recurringDebtPayments: [{ id: 'r', debtId: 'd1', amount: 50, currency: 'EGP', frequency: 'monthly', nextDueDate: '2026-11-10', isActive: true, paymentMethodId: '' } as never] })
+    S().addDebtPayment({ debtId: 'd1', date: '2026-11-05', amountPaid: 99.996, paymentCurrency: 'EGP', amountInPrimary: 99.996 })
+    expect(S().debts[0].status).toBe('cleared')
+    reconcileDebtSchedule('d1')
+    expect(S().recurringDebtPayments[0].isActive).toBe(true)
+    expect(S().recurringDebtPayments[0].nextDueDate).toBe('2026-12-10')
+  })
+})
+
+describe('WLT7 scheduler ignores refused deposit', () => {
+  it('depositToSavings returns false for a gold pocket when gold is unpriced', () => {
+    useFinanceStore.setState({ goldPriceAvailable: false, savingsAccounts: [{ ...pocket('g', 'XAU', 0), category: 'investment', type: 'gold' } as never] })
+    expect(S().depositToSavings('g', 1000, 'EGP', 'Recurring savings')).toBe(false)
+    expect(S().savingsTransactions).toHaveLength(0)
+  })
+})

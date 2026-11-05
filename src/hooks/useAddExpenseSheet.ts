@@ -95,7 +95,7 @@ export function useAddExpenseSheet() {
       if (expensePrefill.description) setDescription(expensePrefill.description)
       if (expensePrefill.amount) setAmount(expensePrefill.amount)
       if (expensePrefill.currency && FIAT_CURRENCIES.includes(expensePrefill.currency as Currency)) {
-        setCurrency(clampFiatToAllowed(settings, expensePrefill.currency as Currency))
+        setCurrency(expensePrefill.currency as Currency)
       }
       if (expensePrefill.category) {
         setCategory(expensePrefill.category)
@@ -151,7 +151,7 @@ export function useAddExpenseSheet() {
     if (splitError) return
     const parsedAmount = parseFloat(amount)
     setSubmitError('')
-    const cur = clampFiatToAllowed(settings, currency)
+    const cur = expensePrefill?.currency === currency ? currency : clampFiatToAllowed(settings, currency)
     // BNPL purchase split into a plan: an `installment` debt (remaining =
     // purchase − settlements) + a recurring template that drives the reminders.
     // The purchase counts as spend once; installment settlements are non-spend
@@ -217,6 +217,7 @@ export function useAddExpenseSheet() {
     resetForm()
     setActiveModal(null)
   }, [
+    expensePrefill?.currency,
     splitError,
     addExpense,
     addDebt,

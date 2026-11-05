@@ -187,7 +187,12 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
       const ran = executeCalls(calls, { ...ctx, afterRead: reads.length > 0 })
       proposals.push(...ran.proposals)
       reads.push(...ran.reads)
-      if (!ran.needsModel || hop === TURN_LIMITS.maxHops) break
+      if (!ran.needsModel) break
+      // The last hop still asking for data means the model never answered: say so instead of a silent empty reply.
+      if (hop === TURN_LIMITS.maxHops) {
+        if (proposals.length === 0 && !text.trim()) throw new TurnFailure({ kind: 'failed' })
+        break
+      }
 
       for (const r of ran.reads) args.onStep?.(r.label)
       // What was streamed before a data lookup was only a lead-in; the answer comes after the data.

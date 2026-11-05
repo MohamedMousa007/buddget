@@ -31,7 +31,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     if (!description || !amount || parseFloat(amount) <= 0) return
 
     const parsedAmount = parseFloat(amount)
-    const cur = clampFiatToAllowed(settings, currency)
+    const cur = currency === expense.currency ? currency : clampFiatToAllowed(settings, currency)
     const amountInBase = tryConvertCurrency(parsedAmount, cur, settings.baseCurrency, exchangeRates)
     if (amountInBase === null) {
       setSubmitError(
@@ -68,6 +68,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     description,
     exchangeRates,
     expense.id,
+    expense.currency,
     expense.owedSettledAt,
     expense.paymentMethodId,
     spendExclusion,

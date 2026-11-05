@@ -1,5 +1,11 @@
 import { isNative } from '@/lib/native/isNative'
 
+/** A same-site path or '/'. Browsers read `\` as `/` and drop tabs and newlines, so `/\\evil.com` and `/\t/evil.com` leave the site. */
+export function safeInternalPath(path: string | null | undefined): string {
+  if (!path || !path.startsWith('/') || path.startsWith('//') || /[\\\u0000-\u001f]/.test(path)) return '/'
+  return path
+}
+
 /**
  * Navigate to a top-level route after a successful auth action.
  *
@@ -13,8 +19,9 @@ import { isNative } from '@/lib/native/isNative'
  */
 export function navigateAfterAuth(
   router: { replace: (href: string) => void },
-  target: string,
+  rawTarget: string,
 ): void {
+  const target = safeInternalPath(rawTarget)
   if (isNative()) {
     const href = target.endsWith('/') || target.includes('?') ? target : `${target}/`
     window.location.assign(href)

@@ -1,0 +1,31 @@
+import { describe, it, expect } from 'vitest'
+import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
+import { DEFAULT_SETTINGS, DEFAULT_BUDGET } from '@/lib/store/defaultFinanceData'
+import type { Expense } from '@/lib/store/types'
+
+const CATS = ['Food', 'Transport', 'Bills', 'Shopping', 'Health', 'Fun']
+function seed(n: number): Expense[] {
+  const out: Expense[] = []
+  for (let i = 0; i < n; i++) {
+    const m = i % 24
+    const y = 2025 + Math.floor(m / 12)
+    const mo = String((m % 12) + 1).padStart(2, '0')
+    const d = String((i % 27) + 1).padStart(2, '0')
+    out.push({ id: `e${i}`, date: `${y}-${mo}-${d}`, description: `x${i}`, category: CATS[i % 6], amount: 10 + (i % 90), currency: 'EGP', amountInBaseCurrency: 10 + (i % 90), paymentMethodId: 'pm1', isRecurring: false, createdAt: `${y}-${mo}-${d}T10:00:00Z` } as Expense)
+  }
+  return out
+}
+const run = (n: number, month: string) => {
+  const input = { expenses: seed(n), incomeSources: [], incomeEvents: [], budgetCategories: DEFAULT_BUDGET, budgetPlans: [], budgetPlanActivations: [], activeBudgetPlanId: null, savingsHoldings: [], savingsAccounts: [], savingsTransactions: [], debts: [], debtPayments: [], settings: DEFAULT_SETTINGS, exchangeRates: { EGP: 1 }, goldPricePerGram: 0, goldPriceAvailable: false, monthFilter: month, trustLocalFinance: true } as never
+  computeMonthlyStats(input)
+  const t = performance.now()
+  const reps = 5
+  for (let i = 0; i < reps; i++) computeMonthlyStats(input)
+  return (performance.now() - t) / reps
+}
+describe('perf', () => {
+  it('times', () => {
+    for (const n of [20000, 5000, 20000, 5000, 10000, 40000]) console.log('STATS_MS', n, run(n, '2026-10').toFixed(1))
+    expect(true).toBe(true)
+  })
+})

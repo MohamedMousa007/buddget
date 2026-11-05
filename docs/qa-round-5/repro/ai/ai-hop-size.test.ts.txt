@@ -1,0 +1,20 @@
+// Observed: parseTurnRequest returns ok:false (reason 'size')
+import { describe, expect, it } from 'vitest'
+import { parseTurnRequest } from '@/lib/server/ai/buddgy/validate'
+
+describe('hop size', () => {
+  it('five clamped 5000-char results exceed the 24000 cap', () => {
+    const known = new Set(['search_expenses'])
+    const big = { truncated: true, partial: 'x'.repeat(5000) }
+    const parts = Array.from({ length: 5 }, () => ({ functionCall: { name: 'search_expenses', args: {} } }))
+    const r = parseTurnRequest({
+      messages: [
+        { role: 'user', text: 'compare everything' },
+        { role: 'model', parts },
+        { role: 'tool', results: Array.from({ length: 5 }, () => ({ name: 'search_expenses', response: big })) },
+      ],
+      context: 'c', locale: 'en',
+    }, known)
+    expect(r.ok).toBe(true)
+  })
+})

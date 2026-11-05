@@ -221,7 +221,8 @@ function buildChange(args: Record<string, unknown>, ctx: ToolContext): Built {
     proposal: makeProposal({
       tool: 'change_setting',
       args: { setting: key, value: planned.value },
-      risk: AUTO.includes(key) ? 'auto' : 'approve',
+      // Text a read tool returned (a merchant name, a note) must never change a setting without a tap.
+      risk: AUTO.includes(key) && !ctx.afterRead ? 'auto' : 'approve',
       summary: `Pending approval: set ${label} to ${value}.`,
       preview: {
         domain: 'settings',

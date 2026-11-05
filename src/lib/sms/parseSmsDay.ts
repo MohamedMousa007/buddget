@@ -65,7 +65,16 @@ export function parseSmsDay(raw: string | null, ref: Date | string | null = null
   if (m) return iso(Number(m[1]), Number(m[2]), Number(m[3]))
 
   m = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4}|\d{2})(?!\d)/.exec(s)
-  if (m) return iso(fullYear(m[3]), Number(m[2]), Number(m[1]))
+  if (m) {
+    const direct = iso(fullYear(m[3]), Number(m[2]), Number(m[1]))
+    const future = (d: string | null) => d !== null && Date.parse(`${d}T00:00:00Z`) > base.getTime() + FUTURE_TOLERANCE_DAYS * DAY_MS
+    // "26/07/30" can be yy/mm/dd: when dd/mm/yy lands in the future and the other reading does not, take the other.
+    if (m[3].length === 2 && future(direct)) {
+      const yearFirst = iso(fullYear(m[1].padStart(2, '0')), Number(m[2]), Number(m[3]))
+      if (yearFirst && !future(yearFirst)) return yearFirst
+    }
+    return direct
+  }
 
   m = /^(\d{1,2})[-/.](\d{1,2})(?![\d/.-])/.exec(s)
   if (m) {

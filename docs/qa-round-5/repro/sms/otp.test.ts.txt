@@ -1,0 +1,15 @@
+// Copy to src/__qa5__/sms/otp.test.ts and run: npx vitest run src/__qa5__/sms
+import { it, expect } from 'vitest'
+import { nonTransactionReason } from '@/lib/sms/ingestGuards'
+import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
+const bodies = [
+  '482913 is your OTP for payment of EGP 500.00 at Amazon. Do not share it.',
+  '482913 is your one-time password for purchase of EGP 500.00 at Amazon',
+  'Your OTP for purchase of EGP 500.00 at Amazon is 482913',
+  'Use code 482913 to authorize payment of EGP 500.00 to MERCHANT',
+  'كود التحقق 482913 لعملية شراء بمبلغ 500.00 جنيه من AMAZON لا تشارك الكود',
+]
+// Observed: all five return null. Expected: 'otp'.
+it('otp with code before keyword is rejected', () => {
+  for (const b of bodies) expect(nonTransactionReason(normalizeSmsText(b), false)).toBe('otp')
+})

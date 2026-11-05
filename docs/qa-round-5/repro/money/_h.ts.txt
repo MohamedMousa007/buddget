@@ -1,0 +1,16 @@
+import type { IncomeSource, IncomeEvent, Expense } from '@/lib/store/types'
+export const pad = (n: number) => String(n).padStart(2, '0')
+export const key = (y: number, m: number) => `${y}-${pad(m + 1)}`
+export const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+export function src(over: Partial<IncomeSource> = {}): IncomeSource {
+  return { id: 's1', name: 'Salary', amount: 1000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly',
+    dayOfMonth: 5, effectiveStart: '2020-01-01', createdAt: '2020-01-01T00:00:00.000Z', updatedAt: '2020-01-01T00:00:00.000Z', ...over } as IncomeSource
+}
+export function ev(over: Partial<IncomeEvent> = {}): IncomeEvent {
+  return { id: 'e1', templateId: 's1', name: 'Salary', amount: 1000, currency: 'EGP', receivedDate: '2026-03-05', occurrenceDate: '2026-03-05',
+    status: 'confirmed', createdAt: '2026-03-05T00:00:00.000Z', updatedAt: '2026-03-05T00:00:00.000Z', ...over } as IncomeEvent
+}
+export function exp(over: Partial<Expense> = {}): Expense {
+  return { id: 'x1', date: '2026-03-05', description: 'x', category: 'Food', amount: 10, currency: 'EGP', amountInBaseCurrency: 10,
+    paymentMethodId: 'pm1', isRecurring: false, createdAt: '2026-03-05T00:00:00.000Z', updatedAt: '2026-03-05T00:00:00.000Z', ...over } as Expense
+}

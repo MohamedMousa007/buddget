@@ -1,0 +1,14 @@
+// Copy to src/__qa5__/dbl/parseSmsDay.test.ts and run: npx vitest run src/__qa5__/dbl
+// Observed: 2030-07-26 (fails 2 of 3). Live row: expense_date 2030-07-26, SMS received 2026-07-30, parse_method=template.
+import { describe, it, expect } from 'vitest'
+import { parseSmsDay } from '@/lib/sms/parseSmsDay'
+
+describe('DBL parseSmsDay yy/mm/dd', () => {
+  it('26/07/30 received 2026-07-30 should be 2026-07-30, not a 2030 date', () => {
+    expect(parseSmsDay('26/07/30', '2026-07-30T10:00:00Z')).toBe('2026-07-30')
+  })
+  it('a printed date years after the receive time is accepted as-is (no future guard)', () => {
+    const got = parseSmsDay('26/07/30', '2026-07-30T10:00:00Z')
+    expect(new Date(got!).getTime()).toBeLessThanOrEqual(Date.parse('2026-08-01'))
+  })
+})

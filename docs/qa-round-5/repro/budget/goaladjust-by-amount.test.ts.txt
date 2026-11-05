@@ -1,0 +1,20 @@
+import { describe, it, expect } from 'vitest'
+import { answeredGoals } from '@/lib/budget/flow/toFacts'
+import { createFlow, answer, nextQuestion } from '@/lib/budget/flow/flow'
+import { goalMonthlyNeed } from '@/lib/budget/flow/derive'
+
+describe('goalAdjust on a "set how much to save" goal', () => {
+  it('extend / lower answers change nothing when goalTiming is by_amount', () => {
+    const base = { goalTarget: 120000, goalTiming: 'by_amount', goalMonthly: 6000 } as const
+    const before = answeredGoals({ ...base })[0].monthly
+    const extended = answeredGoals({ ...base, goalAdjust: 'extend', goalMonthsNew: 48 })[0].monthly
+    const lowered = answeredGoals({ ...base, goalAdjust: 'lower', goalTargetNew: 30000 })[0]
+    expect(extended).toBeLessThan(before) // expected: later date lowers monthly. observed: unchanged
+    expect(lowered.monthly).toBeLessThan(before)
+  })
+  it('the flow still offers the adjust question for a by_amount goal', () => {
+    let s = createFlow('goal', { income: 10000 })
+    for (const [k, v] of Object.entries({ income: 10000, incomeType: 'salary', incomeStability: 'fixed', goalTarget: 120000, goalTiming: 'by_amount', goalMonthly: 6000, housing: 'rent', rent: 3000, household: 'solo', savingsOnHand: 1000 })) s = answer(s, k, v as never)
+    expect(goalMonthlyNeed(s)).toBe(6000)
+  })
+})

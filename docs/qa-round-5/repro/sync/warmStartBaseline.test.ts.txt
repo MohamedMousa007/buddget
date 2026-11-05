@@ -1,0 +1,51 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+const h = vi.hoisted(() => ({
+  upserts: [] as Array<{ table: string; rows: unknown[] }>,
+  cleanups: [] as Array<() => void>,
+  // Cached store from the previous session: an expense created offline that never reached the server.
+  offlineExpense: { id: '00000000-0000-4000-8000-0000000000aa', description: 'x', category: 'Food', amount: 5, currency: 'EGP', date: '2026-11-04', paymentMethodId: '', createdAt: '2026-11-04T10:00:00.000Z', updatedAt: '2026-11-04T10:00:00.000Z' },
+}))
+
+vi.mock('react', () => ({
+  useRef: <T,>(init: T) => ({ current: init }),
+  useEffect: (fn: () => void | (() => void)) => { const c = fn(); if (c) h.cleanups.push(c) },
+}))
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: () => ({
+    auth: {},
+    rpc: async () => ({ data: null, error: null }),
+    from: (table: string) => ({
+      upsert: async (rows: unknown[]) => { h.upserts.push({ table, rows }); return { error: null } },
+      update: () => ({ in: async () => ({ error: null }) }),
+    }),
+  }),
+}))
+vi.mock('@/lib/store/useFinanceStore', async () => {
+  const { emptySnapshot } = await vi.importActual<typeof import('@/lib/supabase/remote/snapshot')>('@/lib/supabase/remote/snapshot')
+  const state = { ...emptySnapshot(), profile: { id: 'u1', name: 'n', createdAt: '2026-01-01T00:00:00.000Z' }, expenses: [h.offlineExpense], setDataReady: () => {} }
+  return { useFinanceStore: { getState: () => state, setState: () => {}, subscribe: () => () => {}, persist: { getOptions: () => ({ version: 22 }) } } }
+})
+vi.mock('@/lib/store/useSettingsStore', () => ({ useSettingsStore: { getState: () => ({ serverSyncedFor: 'u1', markServerSynced: () => {}, reset: () => {} }) } }))
+vi.mock('@/lib/store/useSyncFailures', () => ({ useSyncFailures: { getState: () => ({ recordFailures: () => {} }) } }))
+vi.mock('@/lib/auth/clearBudgetData', () => ({ clearBudgetData: () => {} }))
+vi.mock('@/hooks/useNetworkStatus', () => ({ isOnline: () => true, networkReady: Promise.resolve(), subscribeNetwork: () => () => {} }))
+vi.mock('@/hooks/remote/hydrateGuard', () => ({ markHydrated: () => {}, resetHydrationGuard: () => {} }))
+vi.mock('@/lib/market/marketData', () => ({ ensureMarketDataFresh: async () => {} }))
+vi.mock('@/lib/theme/applyTheme', () => ({ applyTheme: () => {} }))
+
+import { SupabaseFinanceSync, syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+
+afterEach(() => { h.cleanups.splice(0).forEach((c) => c()); vi.unstubAllGlobals() })
+
+describe('SYN1 warm start baselines the flush on the cache', () => {
+  it('an expense created offline in the previous session is pushed after restart', async () => {
+    vi.stubGlobal('window', { addEventListener: () => {}, removeEventListener: () => {}, localStorage: { getItem: () => null, setItem: () => {} } })
+    vi.stubGlobal('document', { addEventListener: () => {}, removeEventListener: () => {}, visibilityState: 'visible' })
+    SupabaseFinanceSync({ userId: 'u1' })
+    await new Promise((r) => setTimeout(r, 20))
+    await syncFinanceNow()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(h.upserts.filter((u) => u.table === 'expenses').length).toBe(1)
+  })
+})

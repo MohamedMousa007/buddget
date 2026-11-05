@@ -1,0 +1,62 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+vi.mock('react', async (orig) => {
+  const o = await orig<typeof import('react')>()
+  const { hooks } = await import('./liteReact')
+  return { ...o, ...hooks, default: { ...o, ...hooks } }
+})
+vi.mock('zustand/react/shallow', () => ({ useShallow: (f: unknown) => f }))
+vi.mock('@/lib/store/useFinanceStore', async (orig) => {
+  const o = await orig<typeof import('@/lib/store/useFinanceStore')>()
+  const { hooks } = await import('./liteReact')
+  const real = o.useFinanceStore
+  const hook = Object.assign(
+    (sel?: (s: unknown) => unknown) => hooks.useSyncExternalStore(real.subscribe, () => (sel ? sel(real.getState()) : real.getState())),
+    { getState: real.getState, setState: real.setState, subscribe: real.subscribe },
+  )
+  return { ...o, useFinanceStore: hook }
+})
+vi.mock('@/lib/i18n', () => ({ useT: () => ({ common: { tryAgain: 'Try again', toastExpenseLogged: 'ok' }, moneyFlows: {}, expenses: {} }) }))
+vi.mock('@/hooks/usePlanCategories', () => ({ usePlanCategories: () => ({ categoryChipOptions: [], defaultCategory: 'Food' }) }))
+vi.mock('@/components/ui/ActionToast', () => ({ useActionToast: () => vi.fn() }))
+
+import { renderLite } from './liteReact'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
+import type { Expense } from '@/lib/store/types'
+
+const exp = (o: Partial<Expense> = {}): Expense => ({ id: 'e1', date: '2026-10-01', description: 'Hotel', category: 'Food', amount: 20, currency: 'USD', amountInBaseCurrency: 1000, paymentMethodId: 'pm1', isRecurring: false, createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', ...o }) as Expense
+
+beforeEach(() => {
+  const s = useFinanceStore.getState()
+  useFinanceStore.setState({
+    expenses: [exp()],
+    settings: { ...s.settings, baseCurrency: 'EGP', showSecondaryCurrency: false, showAllCurrenciesInForms: false },
+  })
+})
+
+describe('HKS1: edit expense in a currency the picker does not offer', () => {
+  it('saving an untouched USD expense keeps 20 USD', () => {
+    const h = renderLite(() => useEditExpenseForm(exp(), vi.fn()))
+    expect(h.result.current.currency).toBe('USD')
+    h.act(() => h.result.current.setNotes('typo fix'))
+    h.act(() => h.result.current.handleSubmit())
+    const saved = useFinanceStore.getState().expenses[0]
+    expect({ amount: saved.amount, currency: saved.currency }).toEqual({ amount: 20, currency: 'USD' })
+  })
+})
+
+describe('HKS2: backup round trip', () => {
+  it('exportData includes every persisted ledger', () => {
+    const keys = Object.keys(JSON.parse(useFinanceStore.getState().exportData()))
+    for (const k of ['incomeEvents', 'receipts', 'investmentHoldings']) expect(keys, k).toContain(k)
+  })
+})
+
+describe('HKS4: safeNext predicate', () => {
+  it('accepts a backslash path that resolves to another host', () => {
+    const n = '/\\evil.com'
+    expect(n.startsWith('/') && !n.startsWith('//')).toBe(true)
+    expect(new URL(n, 'https://buddget.app').host).toBe('buddget.app')
+  })
+})

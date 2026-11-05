@@ -1,0 +1,52 @@
+import { describe, expect, it } from 'vitest'
+import { debtToRow, debtFromRow } from '@/lib/supabase/remote/mappers/debtMapper'
+import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
+import { applyDelta, type MappedDelta } from '@/lib/supabase/remote/delta'
+import { mergeList } from '@/lib/supabase/remote/merge'
+import { emptySnapshot } from '@/lib/supabase/remote/snapshot'
+import type { Debt } from '@/lib/store/types'
+
+const empty = { upserts: [], deletedIds: [] }
+const delta = (over: Partial<MappedDelta>): MappedDelta => ({
+  cursor: 'c', profile: null, settings: null, paymentMethods: empty, incomeSources: empty, incomeEvents: empty, expenses: empty,
+  receipts: empty, recurringExpenses: empty, subscriptions: empty, debts: empty, debtPayments: empty, recurringDebtPayments: empty,
+  savingsAccounts: empty, investmentHoldings: empty, savingsTransactions: empty, recurringSavingsDeposits: empty, goals: empty,
+  buddgyMemories: empty, accountAdjustments: empty, budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [], staleBefore: null, ...over,
+})
+
+describe('SYN4 Debt.goal does not survive a round trip', () => {
+  const debt = {
+    id: 'd1', name: 'Loan', person: 'x', startingBalance: 1000, currency: 'EGP', isGold: false, createdAt: '2026-11-01T10:00:00.000Z',
+    updatedAt: '2026-11-05T10:00:00.000Z', goal: { targetDate: '2027-01-01', paymentFrequency: 'monthly', calculatedAmount: 100 }, emoji: 'x',
+  } as unknown as Debt
+  it('goal is lost through toRow/fromRow', () => {
+    const back = debtFromRow({ ...debtToRow(debt, 'u'), deleted_at: null } as never)
+    expect(back.goal).toEqual(debt.goal)
+  })
+  it('goal is erased on the same device when the server echo is newer', () => {
+    const echo = debtFromRow({ ...debtToRow(debt, 'u'), updated_at: '2026-11-05T10:00:00.400000+00:00', deleted_at: null } as never)
+    const merged = applyDelta({ ...emptySnapshot(), debts: [debt] }, delta({ debts: { upserts: [echo], deletedIds: [] } }))
+    expect(merged.debts[0].goal).toEqual(debt.goal)
+  })
+})
+
+describe('SYN5 rows without updatedAt always lose to the server copy', () => {
+  it('a newer local goal edit is overwritten by an older server goal', () => {
+    const server = goalFromRow({ id: 'g1', name: 'old', category: 'other', target_amount: 1, currency: 'EGP', status: 'active', created_at: '2026-11-01T00:00:00.000Z', updated_at: '2026-11-01T00:00:00+00:00' } as never)
+    const out = mergeList([{ ...server, name: 'edited just now' } as never], [server as never]) as { name: string }[]
+    expect(out[0].name).toBe('edited just now')
+  })
+})
+
+describe('SYN7 clock skew / string compare', () => {
+  it('server edit made later in real time loses to a skewed local stamp', () => {
+    const local = { id: 'e1', v: 'A', updatedAt: '2026-11-06T10:00:00.000Z' }
+    const server = { id: 'e1', v: 'B', updatedAt: '2026-11-05T12:00:00.000000+00:00' }
+    expect(mergeList([local], [server])[0].v).toBe('B')
+  })
+  it('Z vs +00:00 lexical compare inside the same millisecond (P3)', () => {
+    const local = { id: 'e1', v: 'local', updatedAt: '2026-11-05T12:00:00.123Z' }
+    const server = { id: 'e1', v: 'server', updatedAt: '2026-11-05T12:00:00.123456+00:00' }
+    expect(mergeList([local], [server])[0].v).toBe('server')
+  })
+})

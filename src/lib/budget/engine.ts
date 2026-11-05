@@ -270,7 +270,7 @@ function sizeEveryday(
 function shave(amounts: number[], floors: number[], deficit: number): number {
   let left = deficit
   for (let i = 0; i < amounts.length && left > 0; i++) {
-    const cut = Math.min(left, amounts[i] - floors[i])
+    const cut = Math.min(left, Math.max(0, amounts[i] - floors[i]))
     amounts[i] -= cut
     left -= cut
   }

@@ -22,4 +22,17 @@ describe('debtPaymentForWithdrawal', () => {
     const r = debtPaymentForWithdrawal({ debt: gold, amount: 4000, currency: 'EGP', base: 'EGP', rates, goldPricePerGram: 4000, goldAvailable: true })
     expect(r.amountPaid).toBeCloseTo(1, 6)
   })
+
+  it('flags a payment larger than what is still owed', () => {
+    const r = debtPaymentForWithdrawal({ debt: money, amount: 5000, currency: 'EGP', base: 'EGP', rates, goldPricePerGram: 4000, goldAvailable: true, left: 10 })
+    expect(r.exceeds).toBe(true)
+    const ok = debtPaymentForWithdrawal({ debt: money, amount: 500, currency: 'EGP', base: 'EGP', rates, goldPricePerGram: 4000, goldAvailable: true, left: 10 })
+    expect(ok.exceeds).toBe(false)
+  })
+
+  it('prices a gold pocket (XAU grams) against a money debt instead of paying 0', () => {
+    const r = debtPaymentForWithdrawal({ debt: money, amount: 2, currency: 'XAU', base: 'EGP', rates, goldPricePerGram: 4000, goldAvailable: true })
+    expect(r.amountInBase).toBe(8000)
+    expect(r.amountPaid).toBeCloseTo(160, 6)
+  })
 })

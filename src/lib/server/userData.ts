@@ -39,6 +39,7 @@ export const USER_DATA_TABLES = [
   // Per-user SMS learning: which templates this user fed, their corrections, queued stats, and sender->currency answers.
   'sms_template_users',
   'sms_template_signals',
+  'sms_template_hard_signals',
   'sms_stats_outbox',
   'sms_sender_currency',
   'notifications',

@@ -16,6 +16,8 @@ export function reconcileAchievedGoals(
   const next = goals.map((g) => {
     if (g.status !== 'active') return g
     if (g.category === 'spending_control') return g
+    // A gold debt that cannot be priced is missing from the target but still owed: progress would read as done.
+    if (g.category === 'debt_freedom' && !ctx.goldPriceAvailable && ctx.debts.some((d) => d.isGold && g.linkedDebtIds.includes(d.id))) return g
     const target = withDebtDerived(g, ctx).targetAmount
     if (target === null || target <= 0) return g
     const progress = computeGoalProgress(g, ctx)

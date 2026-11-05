@@ -205,7 +205,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
 
   const submit = useCallback(() => {
     if (!canSubmit) return
-    const payload = draftToSubscription({ ...draft, currency: clampFiatToAllowed(settings, draft.currency) }, editing, today)
+    const payload = draftToSubscription({ ...draft, currency: editing && draft.currency === editing.currency ? draft.currency : clampFiatToAllowed(settings, draft.currency) }, editing, today)
     if (editing) updateSubscription(editing.id, payload)
     else addSubscription(payload)
     onClose()

@@ -1,0 +1,27 @@
+// Observed: amount 1e300 -> ok:true; second identical propose within 15s -> effect 'Looks like an expense you just added.'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('@/lib/navigation/navigate', () => ({ navigate: vi.fn() }))
+vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: vi.fn() }))
+import { resetAutoSlots } from '@/lib/buddgy/tools/autoApplyGuard'
+import { TOOLS } from '@/lib/buddgy/tools/exec'
+import { resetSameTurnMemory } from '@/lib/buddgy/tools/exec/expenses'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+
+const ctx = { now: new Date('2026-10-19T12:00:00'), locale: 'en' as const }
+const add = (a: Record<string, unknown>) => TOOLS.get('add_expense')!.write!.propose({ category: 'Food', ...a }, ctx)
+beforeEach(() => {
+  resetAutoSlots(); resetSameTurnMemory()
+  useFinanceStore.setState({
+    paymentMethods: [{ id: 'aaaaaaaa-0000-0000-0000-000000000001', name: 'Cash', type: 'cash', currency: 'EGP', isDefault: true } as never],
+    expenses: [], incomeSources: [], incomeEvents: [], budgetPlans: [], activeBudgetPlanId: null, exchangeRates: {},
+    settings: { ...useFinanceStore.getState().settings, baseCurrency: 'EGP' },
+  })
+})
+describe('add_expense bounds', () => {
+  it('rejects 1e300', () => { expect(add({ description: 'x', amount: 1e300 }).ok).toBe(false) })
+  it('editing a fresh card does not flag a duplicate against itself', () => {
+    add({ description: 'Tea', amount: 20 })
+    const second = add({ description: 'Tea', amount: 20 })
+    expect(second.ok && second.proposal.preview.effect).toBeFalsy()
+  })
+})

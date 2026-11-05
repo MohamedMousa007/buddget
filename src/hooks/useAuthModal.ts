@@ -8,7 +8,7 @@ import { isUnknownAccountOtpError, mapAuthError, mapOAuthCallbackReason, mapOAut
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
-import { navigateAfterAuth } from '@/lib/auth/postAuthRedirect'
+import { navigateAfterAuth, safeInternalPath } from '@/lib/auth/postAuthRedirect'
 import { lockScroll, unlockScroll } from '@/lib/ui/scrollLock'
 import { isNative } from '@/lib/native/isNative'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
@@ -74,8 +74,7 @@ export function useAuthModal() {
   }, [nextFromUrl, setPendingNext])
 
   const safeNext = useMemo(() => {
-    const n = pendingNext || nextFromUrl || '/'
-    return n.startsWith('/') && !n.startsWith('//') ? n : '/'
+    return safeInternalPath(pendingNext || nextFromUrl)
   }, [pendingNext, nextFromUrl])
 
   const [step, setStep] = useState<AuthStep>(

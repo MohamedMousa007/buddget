@@ -20,6 +20,17 @@ async function isUnregisteredDevice(service: ReturnType<typeof createServiceRole
   return !data && (await hasAnyDevice(service, userId))
 }
 
+/** A removed phone, or a client-chosen id the account never registered (once it has phones on record), gets no token. */
+async function deviceRefusal(service: ReturnType<typeof createServiceRoleClient>, userId: string, deviceId: string | null) {
+  if (await isRevokedDevice(service, userId, deviceId)) {
+    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
+  }
+  if (deviceId && (await isUnregisteredDevice(service, userId, deviceId))) {
+    return NextResponse.json({ error: 'device_not_registered' }, { status: 403 })
+  }
+  return null
+}
+
 export async function GET(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
@@ -33,13 +44,8 @@ export async function GET(request: Request) {
   // Native shell sends its device id; web sends none. Scope the token to the
   // device so per-device rotation/revocation never de-arms a user's other phone.
   const deviceId = request.headers.get(DEVICE_ID_HEADER)
-  if (await isRevokedDevice(serviceClient, userId, deviceId)) {
-    return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
-  }
-  // A client-chosen id the account never registered cannot mint a token once the account has phones on record.
-  if (deviceId && (await isUnregisteredDevice(serviceClient, userId, deviceId))) {
-    return NextResponse.json({ error: 'device_not_registered' }, { status: 403 })
-  }
+  const refusal = await deviceRefusal(serviceClient, userId, deviceId)
+  if (refusal) return refusal
 
   // Check for an existing active token for this scope.
   let existingQuery = serviceClient
@@ -84,18 +90,12 @@ export async function DELETE(request: Request) {
   const serviceClient = createServiceRoleClient()
   const deviceId = request.headers.get(DEVICE_ID_HEADER)
 
-  // Deactivate active tokens for this scope — only THIS device when the native
-  // shell identifies itself, so rotating on one phone never de-arms another.
-  // Web (no device id) rotates all of the user's tokens, as before.
-  let deactivate = serviceClient
-    .from('sms_ingest_tokens')
-    .update({ is_active: false })
-    .eq('user_id', userId)
-    .eq('is_active', true)
-  if (deviceId) deactivate = deactivate.eq('device_id', deviceId)
-  await deactivate
+  const refusal = await deviceRefusal(serviceClient, userId, deviceId)
+  if (refusal) return refusal
 
-  // Issue a new token bound to this device (null for web).
+  // Issue the new token first so a failed insert never leaves the user without one, then retire the others
+  // for this scope: only THIS device when the native shell identifies itself, so rotating on one phone never
+  // de-arms another. Web (no device id) rotates all of the user's tokens.
   const { data: newToken, error } = await serviceClient
     .from('sms_ingest_tokens')
     .insert({ user_id: userId, device_id: deviceId })
@@ -103,6 +103,19 @@ export async function DELETE(request: Request) {
     .single()
 
   if (error || !newToken) {
+    return NextResponse.json({ error: 'Failed to rotate token' }, { status: 500 })
+  }
+
+  let deactivate = serviceClient
+    .from('sms_ingest_tokens')
+    .update({ is_active: false })
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .neq('token', newToken.token)
+  if (deviceId) deactivate = deactivate.eq('device_id', deviceId)
+  const { error: deactivateError } = await deactivate
+  if (deactivateError) {
+    console.error('[sms/setup-token] deactivate error', deactivateError.message)
     return NextResponse.json({ error: 'Failed to rotate token' }, { status: 500 })
   }
 

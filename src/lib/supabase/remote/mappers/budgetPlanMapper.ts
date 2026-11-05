@@ -28,6 +28,8 @@ import { isSavingsPlanCategory } from '@/lib/budget/budgetPlans'
  * the orchestrator in `sync.ts` handles lifting nested arrays out into table-level writes.
  */
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function budgetPlanToRow(p: BudgetPlan, userId: string): BudgetPlanInsert {
   return {
     id: p.id,
@@ -66,7 +68,8 @@ export function budgetCategoryToRow(
     sort_order: sortOrder,
     block: c.block ?? 'everyday',
     link_type: c.linkType ?? 'none',
-    link_ids: c.linkIds ?? [],
+    // link_ids is uuid[]: ids of facts answered in the budget builder ("answered-car") are not rows and cannot be stored.
+    link_ids: (c.linkIds ?? []).filter((id) => UUID_RE.test(id)),
     due_day: c.dueDay ?? null,
     essential: c.essential ?? false,
     locked: c.locked ?? false,

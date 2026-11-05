@@ -16,7 +16,7 @@ const LIVE_USER_KEYED = [
   'merchant_category_overrides', 'merchant_category_votes', 'net_worth_snapshots', 'notifications', 'payment_methods',
   'push_tokens', 'receipts', 'recurring_debt_payments', 'recurring_expenses', 'recurring_savings_deposits', 'savings_accounts',
   'savings_holdings', 'savings_month_summary', 'savings_transactions', 'sms_ingest_tokens', 'sms_parse_log',
-  'sms_sender_currency', 'sms_stats_outbox', 'sms_template_signals', 'sms_template_users', 'sms_tracking_templates_ai',
+  'sms_sender_currency', 'sms_stats_outbox', 'sms_template_hard_signals', 'sms_template_signals', 'sms_template_users', 'sms_tracking_templates_ai',
   'subscriptions', 'support_tickets', 'trusted_devices', 'user_devices', 'user_entitlements', 'user_milestones', 'user_settings',
 ] as const
 

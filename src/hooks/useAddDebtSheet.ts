@@ -433,7 +433,7 @@ export function useAddDebtSheet() {
           emoji: '💳',
           creditLimit: ccCreditLimit.trim() ? parseFloat(ccCreditLimit) : undefined,
           paymentDueDay: parseCardDay(ccPaymentDueDay) ?? undefined,
-          gracePeriodDays: parseInt(ccGraceDays, 10) || 55,
+          gracePeriodDays: Number.isNaN(parseInt(ccGraceDays, 10)) ? 55 : parseInt(ccGraceDays, 10),
           minimumPaymentPercent: parseCardPercent(ccMinPercent) ?? 5,
         },
         { name: name.trim(), last4: ccLast4.trim() || undefined }

@@ -1,0 +1,49 @@
+import { describe, it, expect } from 'vitest'
+import { en } from '@/lib/site/content/en'
+import { ar } from '@/lib/site/content/ar'
+import { listRoutes } from '@/lib/site/routes'
+
+function walk(a: unknown, b: unknown, path: string, out: string[]) {
+  if (Array.isArray(a)) {
+    if (!Array.isArray(b)) return void out.push(`${path}: not array in ar`)
+    if (a.length !== b.length) out.push(`${path}: length en=${a.length} ar=${b.length}`)
+    for (let i = 0; i < Math.min(a.length, b.length); i++) walk(a[i], b[i], `${path}[${i}]`, out)
+  } else if (a && typeof a === 'object') {
+    for (const k of Object.keys(a as object)) {
+      if (!b || !(k in (b as object))) out.push(`${path}.${k}: missing in ar`)
+      else walk((a as any)[k], (b as any)[k], `${path}.${k}`, out)
+    }
+    for (const k of Object.keys((b ?? {}) as object)) if (!(k in (a as object))) out.push(`${path}.${k}: missing in en`)
+  } else if (typeof a === 'string') {
+    if (typeof b !== 'string') out.push(`${path}: type`)
+    else {
+      if (b === a && a.length > 3 && /[a-z]{4}/i.test(a)) out.push(`${path}: identical English text in ar: ${a.slice(0, 50)}`)
+      if (b.trim() === '') out.push(`${path}: empty ar`)
+    }
+  }
+}
+describe('parity', () => {
+  it('structure', () => {
+    const out: string[] = []
+    walk(en, ar, 'c', out)
+    console.log(out.join('\n'))
+    expect(out).toEqual([])
+  })
+  it('slugs equal', () => {
+    expect(listRoutes('en').map(r => r.slug)).toEqual(listRoutes('ar').map(r => r.slug))
+  })
+  it('meta lengths', () => {
+    const bad: string[] = []
+    for (const l of ['en','ar'] as const) for (const r of listRoutes(l)) {
+      if (r.title.length > 70) bad.push(`${l}/${r.slug} title ${r.title.length}`)
+      if (r.description.length < 50) bad.push(`${l}/${r.slug} desc short ${r.description.length}`)
+    }
+    console.log(bad.join('\n'))
+  })
+  it('duplicate titles', () => {
+    for (const l of ['en','ar'] as const) {
+      const seen = new Map<string,string>()
+      for (const r of listRoutes(l)) { if (seen.has(r.title)) console.log('DUP title', l, r.slug, seen.get(r.title)); seen.set(r.title, r.slug) }
+    }
+  })
+})

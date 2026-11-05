@@ -39,13 +39,13 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={t.youDidIt} className="fixed inset-0 z-[200] flex flex-col items-center overflow-y-auto bg-[var(--color-brand-primary)] px-6 pb-8 pt-12 text-center text-[var(--color-brand-on-primary)]">
+    <div role="dialog" aria-modal="true" aria-label={t.youDidIt} className="fixed inset-0 z-[200] flex flex-col items-center overflow-y-auto bg-[var(--color-brand-primary)] px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-[calc(3rem+env(safe-area-inset-top,0px))] text-center text-[var(--color-brand-on-primary)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         {CONFETTI.map((c, i) => (
           <span key={i} className="goal-confetti absolute top-0 h-2.5 w-1.5 rounded-sm" style={{ left: c.left, animationDelay: c.delay, background: c.color }} />
         ))}
       </div>
-      <IconButton aria-label={t.close} onClick={onClose} className="absolute end-3 top-3 text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-on-primary)]/15">
+      <IconButton aria-label={t.close} onClick={onClose} className="absolute end-3 top-[calc(0.75rem+env(safe-area-inset-top,0px))] text-[var(--color-brand-on-primary)] hover:bg-[var(--color-brand-on-primary)]/15">
         <X />
       </IconButton>
       <div className="relative mt-4 flex size-28 items-center justify-center">

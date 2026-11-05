@@ -38,6 +38,9 @@ export async function POST(request: Request) {
     if (verdict === 'wrong_password') return NextResponse.json({ error: 'Wrong password', code: 'wrong_password' }, { status: 403 })
     if (verdict === 'reauth_required') return NextResponse.json({ error: 'Confirm it is you first', code: 'reauth_required' }, { status: 403 })
 
+    // Refused before anything is cleared: a no-op change must not cost the user their biometric and 2-step trust.
+    if (parsed.data.currentPassword === parsed.data.newPassword) return NextResponse.json({ error: 'Same password', code: 'same_password' }, { status: 422 })
+
     const [bio, trusted] = await Promise.all([
       admin.from('biometric_devices').delete().eq('user_id', identity.id),
       admin.from('trusted_devices').delete().eq('user_id', identity.id),
@@ -49,7 +52,7 @@ export async function POST(request: Request) {
 
     const updated = await admin.auth.admin.updateUserById(identity.id, { password: parsed.data.newPassword })
     if (updated.error) {
-      const same = /same/i.test(updated.error.message) && /password/i.test(updated.error.message)
+      const same = (updated.error as { code?: string }).code === 'same_password' || /same|different from the old/i.test(updated.error.message)
       return NextResponse.json({ error: same ? 'Same password' : 'Could not change the password', code: same ? 'same_password' : undefined }, { status: same ? 422 : 500 })
     }
 

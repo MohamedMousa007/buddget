@@ -251,6 +251,8 @@ export const importDataSchema = z.object({
   budgetPlanActivations: z
     .array(z.object({ id: z.string(), planId: z.string(), effectiveFrom: dayString, createdAt: z.string() }))
     .optional(),
+  receipts: z.array(z.looseObject({ id: z.string() })).optional(),
+  investmentHoldings: z.array(z.looseObject({ id: z.string() })).optional(),
   accountAdjustments: z
     .array(
       z.object({

@@ -90,6 +90,8 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     gold_karat: toDbKarat(d.goldKarat),
     is_gold: d.isGold,
     notes: d.notes ?? null,
+    goal: d.goal ? { ...d.goal } : null,
+    emoji: d.emoji ?? null,
     created_at: d.createdAt,
     updated_at: d.updatedAt ?? d.createdAt,
   }
@@ -108,6 +110,8 @@ export function debtFromRow(row: DebtRow): Debt {
     receivedVia: (row.received_via as DebtReceivedVia | null) ?? undefined,
     goldKarat: fromDbKarat(row.gold_karat),
     notes: row.notes ?? undefined,
+    goal: (row.goal as unknown as Debt['goal']) ?? undefined,
+    emoji: row.emoji ?? undefined,
     createdAt: row.created_at,
     status: (row.status as 'active' | 'cleared' | null) ?? 'active',
     clearedAt: row.cleared_at ?? undefined,

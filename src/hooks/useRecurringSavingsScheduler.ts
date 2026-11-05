@@ -26,10 +26,12 @@ export function useRecurringSavingsScheduler() {
         if (amount <= 0) continue
 
         const { due, next } = dueDatesThrough(r.nextDueDate, todayStr, r.dayOfMonth)
-        state.depositToSavings(r.accountId, amount, r.currency, r.notes?.trim() || 'Recurring savings', {
+        const deposited = state.depositToSavings(r.accountId, amount, r.currency, r.notes?.trim() || 'Recurring savings', {
           source: 'recurring_savings',
           txId: recurringTxId(r.id, due),
         })
+        // A refused deposit (unpriced gold, no FX path) keeps its due date so the month is retried, not lost.
+        if (!deposited) continue
         state.updateRecurringSavingsDeposit(r.id, { nextDueDate: next })
       }
     }

@@ -12,7 +12,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
-import { upsertSelf } from '@/lib/server/devices/registry'
+import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
+import { isRevokedDevice, upsertSelf } from '@/lib/server/devices/registry'
 
 const bodySchema = z.object({
   token: z.string().min(10).max(2048),
@@ -52,6 +53,11 @@ export async function POST(request: Request) {
   try {
     const service = createServiceRoleClient()
     // The phone is registered before its token is, so a push never meets a phone it cannot place. A removed phone gets none.
+    // A body without a deviceId must not skip that: the header names the phone too.
+    const headerDeviceId = request.headers.get(DEVICE_ID_HEADER)
+    if (!deviceId && (await isRevokedDevice(service, userId, headerDeviceId))) {
+      return NextResponse.json({ error: 'This phone was removed from the account', revoked: true }, { status: 403 })
+    }
     if (deviceId) {
       const self = await upsertSelf(service, userId, deviceId, { platform, model: deviceModel ?? null, appVersion: appVersion ?? null, pushPermission: 'granted' })
       if (self.revoked) return NextResponse.json({ error: 'This phone was removed from the account', revoked: true }, { status: 403 })

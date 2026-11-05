@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest'
+import fs from 'fs'
+import { flushDiff } from '@/lib/supabase/remote/sync'
+import { emptySnapshot } from '@/lib/supabase/remote/snapshot'
+import type { Snapshot } from '@/lib/supabase/remote/snapshot'
+
+describe('SYN6 push is a blind upsert (no updated_at precondition)', () => {
+  it('a stale offline edit goes out as a plain upsert that overwrites the server row', async () => {
+    const seen: unknown[][] = []
+    const client = { from: () => ({ upsert: (...a: unknown[]) => { seen.push(a); return Promise.resolve({ error: null }) }, update: () => ({ in: () => Promise.resolve({ error: null }) }) }) }
+    const base = { id: '00000000-0000-4000-8000-000000000001', description: 'a', category: 'Food', amount: 1, currency: 'EGP', date: '2026-11-01', paymentMethodId: '', createdAt: '2026-11-01T00:00:00.000Z', updatedAt: '2026-11-01T00:00:00.000Z' }
+    const prev = { ...emptySnapshot(), expenses: [base] } as unknown as Snapshot
+    const next = { ...emptySnapshot(), expenses: [{ ...base, amount: 2, updatedAt: '2026-11-01T01:00:00.000Z' }] } as unknown as Snapshot
+    await flushDiff(client as never, 'u', prev, next)
+    const call = seen.find((a) => Array.isArray(a[0]) && (a[0] as { amount: number }[])[0]?.amount === 2)!
+    expect(call.length).toBe(1)
+    expect(Object.keys((call[0] as object[])[0])).not.toContain('updated_at')
+  })
+})
+
+describe('SYN3 TRACKED_SLICES', () => {
+  const src = fs.readFileSync('src/components/sync/SupabaseFinanceSync.ts', 'utf8')
+  const block = /const TRACKED_SLICES[^=]*=\s*\[([\s\S]*?)\]\n/.exec(src)![1]
+  it('includes investmentHoldings', () => expect(block).toContain("'investmentHoldings'"))
+  it('includes receipts', () => expect(block).toContain("'receipts'"))
+  it('does not name the legacy savingsHoldings slice that flushDiff ignores', () => expect(block).not.toContain("'savingsHoldings'"))
+})
+
+describe('SYN2 signOut suspends before it flushes', () => {
+  const auth = fs.readFileSync('src/components/auth/AuthProvider.tsx', 'utf8')
+  const body = auth.slice(auth.indexOf('const signOut = useCallback'))
+  it('flushFinanceNow runs before suspendFinanceSync', () => {
+    expect(body.indexOf('await flushFinanceNow()')).toBeLessThan(body.indexOf('suspendFinanceSync()'))
+  })
+})

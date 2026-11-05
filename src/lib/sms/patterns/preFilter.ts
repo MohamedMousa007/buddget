@@ -17,11 +17,14 @@ export type NonTransactionReason = 'otp' | 'marketing' | 'balance_only'
 const TXN_VERBS = TXN_KEYWORD_RE
 
 const OTP_RE =
-  /(\bOTP\b|one[\s-]?time\s+(?:pass(?:word|code)?|pin|code)|verification\s+code|activation\s+code|do\s+not\s+share|never\s+share|رمز\s*التحقق|رمز\s*التفعيل|كلمة\s*(?:السر|المرور)|لا\s*تشارك)/i
+  /(\bOTP\b|one[\s-]?time\s+(?:pass(?:word|code)?|pin|code)|verification\s+code|activation\s+code|do\s+not\s+share|never\s+share|\buse\s+code\b|رمز\s*التحقق|رمز\s*التفعيل|كود\s*(?:التحقق|التفعيل|الأمان)|كلمة\s*(?:السر|المرور)|لا\s*تشارك)/i
 
 /** An OTP keyword followed by a 4-8 digit code (not part of an amount): the message carries a secret, not a receipt. */
 const OTP_CODE_RE =
-  /(?:\bOTP\b|pass(?:word|code)|\bpin\b|\bcode\b|رمز|كلمة\s*(?:السر|المرور))\D{0,30}\b\d{4,8}\b(?![.,]\d)/i
+  /(?:\bOTP\b|pass(?:word|code)|\bpin\b|\bcode\b|رمز|كود|كلمة\s*(?:السر|المرور))\D{0,50}\b\d{4,8}\b(?![.,]\d)/i
+
+/** The code first: "482913 is your OTP for payment of EGP 500". Kept tight so a reference number ahead of a "never share your OTP" footer is not read as a code. */
+const CODE_FIRST_RE = /\b\d{4,8}\b(?![.,]\d)\s+(?:is|هو)\s+(?:your|the)\b[^.\d]{0,30}?(?:OTP|one[\s-]?time|pass(?:word|code)|\bcode\b|\bpin\b)/i
 
 /** A card-authorisation reference printed on a purchase receipt: a code, but not a secret. */
 const AUTH_REF_RE = /\b(?:auth(?:orization|orisation)?|approval)\s*(?:code|no\.?|number|#)?\s*:?\s*\d{4,8}\b/gi
@@ -31,7 +34,7 @@ function carriesOtpCode(text: string): boolean {
     .replace(AUTH_REF_RE, ' ')
     .replace(/(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\s*[\d,]+(?:\.\d+)?/gi, ' ')
     .replace(/[\d,]+(?:\.\d+)?\s*(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\b/gi, ' ')
-  return OTP_CODE_RE.test(withoutAmounts)
+  return OTP_CODE_RE.test(withoutAmounts) || CODE_FIRST_RE.test(withoutAmounts)
 }
 
 const MARKETING_RE =

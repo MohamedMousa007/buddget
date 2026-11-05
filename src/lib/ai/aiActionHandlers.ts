@@ -481,6 +481,11 @@ export function validateActionItem(
     ) {
       return 'update_income needs data.amount or data.currency.'
     }
+    const newAmount = getField(d, 'amount', 'newAmount')
+    if (newAmount !== undefined) {
+      const badAmount = checkAmount(Number(newAmount))
+      if (badAmount) return badAmount
+    }
     return targetProblem(ctx, action, d)
   }
   if (action === 'delete_income') {

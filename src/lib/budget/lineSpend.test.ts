@@ -46,7 +46,8 @@ describe('spendByLine', () => {
   it('a debt line linked to debts reads their payments, not the ledger', () => {
     const d = line('d', 'Tabby', 300, { block: 'debts', linkType: 'debts', linkIds: ['x', 'y'] })
     const extra = line('e', 'Extra', 100, { block: 'debts', expenseCategories: ['Debt'] })
-    const r = run(plan([d, extra]), { Debt: 40 }, { x: 300, y: 50, z: 999 })
+    // The 350 was paid from savings (no ledger expense), so the ledger's 40 of Debt is the Extra line's own.
+    const r = run(plan([d, extra]), { Debt: 40 }, { x: 300, y: 50, z: 999 }, {})
     expect(r.byLine).toEqual({ d: 350, e: 40 })
   })
 

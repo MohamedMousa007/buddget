@@ -1,0 +1,43 @@
+import { it } from 'vitest'
+import { writeFileSync } from 'node:fs'
+import { en } from '@/lib/i18n/dictionaries/en'
+import { ar } from '@/lib/i18n/dictionaries/ar'
+
+type Leaf = string | ((...a: unknown[]) => string)
+function leaves(node: unknown, path: string, out: Map<string, Leaf>) {
+  if (typeof node === 'string' || typeof node === 'function') { out.set(path, node as Leaf); return }
+  if (node && typeof node === 'object') for (const [k, v] of Object.entries(node)) leaves(v, path ? `${path}.${k}` : k, out)
+}
+const E = new Map<string, Leaf>(), A = new Map<string, Leaf>()
+leaves(en, '', E); leaves(ar, '', A)
+const arabic = /[؀-ۿ]/
+const ph = (s: string) => (s.match(/\{[^}]+\}|%[sd]|\$\{[^}]+\}/g) ?? []).sort().join('|')
+const lines: string[] = []
+lines.push(`leaves en=${E.size} ar=${A.size}`)
+for (const k of E.keys()) if (!A.has(k)) lines.push(`MISSING_AR ${k}`)
+for (const k of A.keys()) if (!E.has(k)) lines.push(`MISSING_EN ${k}`)
+for (const [k, v] of E) {
+  const a = A.get(k)
+  if (a === undefined) continue
+  if (typeof v === 'string' && typeof a === 'string') {
+    if (a.trim() === '') lines.push(`EMPTY_AR ${k}`)
+    else if (v.trim() === '') lines.push(`EMPTY_EN ${k}`)
+    else if (a === v && /[A-Za-z]{3,}/.test(v)) lines.push(`SAME ${k} = ${JSON.stringify(v).slice(0,60)}`)
+    else if (!arabic.test(a) && /[A-Za-z]{4,}/.test(a)) lines.push(`NOARABIC ${k} = ${JSON.stringify(a).slice(0,60)}`)
+    if (ph(v) !== ph(a)) lines.push(`PLACEHOLDER ${k} en=${ph(v)} ar=${ph(a)}`)
+    if (/\s{2,}|^\s|\s$/.test(a) && a.trim()) lines.push(`WS_AR ${k}`)
+  } else if (typeof v === 'function' && typeof a === 'function') {
+    const samples: unknown[][] = [[1, 2, 3], [5, 'x', 'y'], ['x', 'y', 'z'], [0,0,0], [2,2,2], [1234567, 'a', 'b']]
+    for (const args of samples) {
+      try {
+        const r = String(v(...args)); const t = String(a(...args))
+        if (t.trim() === '') { lines.push(`FN_EMPTY_AR ${k} args=${JSON.stringify(args)}`); break }
+        if (/undefined|NaN|\[object/.test(t) && !/undefined|NaN|\[object/.test(r)) { lines.push(`FN_BAD_AR ${k} args=${JSON.stringify(args)} -> ${t.slice(0,60)}`); break }
+        if (r === t && /[A-Za-z]{3,}/.test(r.replace(/x|y|z/g,''))) { lines.push(`FN_SAME ${k}`); break }
+        // args used mismatch: all string args appear
+        for (const arg of args) if (typeof arg === 'string' && r.includes(arg) && !t.includes(arg)) { lines.push(`FN_DROPARG ${k} arg=${arg} en=${r.slice(0,50)} ar=${t.slice(0,50)}`); break }
+      } catch (e) { /* ignore */ }
+    }
+  }
+}
+it('dump', () => { writeFileSync(process.env.OUT ?? '/tmp/i18n.txt', lines.join('\n')) })

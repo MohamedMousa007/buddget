@@ -85,14 +85,14 @@ type TrackedSliceKey =
   | 'profile' | 'settings' | 'financialGoalsNotes'
   | 'activeBudgetPlanId' | 'paymentMethods' | 'incomeSources' | 'incomeEvents' | 'expenses'
   | 'recurringExpenses' | 'subscriptions' | 'debts' | 'debtPayments'
-  | 'recurringDebtPayments' | 'savingsAccounts' | 'savingsHoldings'
+  | 'recurringDebtPayments' | 'savingsAccounts' | 'investmentHoldings' | 'receipts'
   | 'savingsTransactions' | 'recurringSavingsDeposits' | 'goals' | 'budgetPlans' | 'budgetPlanActivations' | 'buddgyMemories' | 'accountAdjustments'
 
 const TRACKED_SLICES: readonly TrackedSliceKey[] = [
   'profile', 'settings', 'financialGoalsNotes',
   'activeBudgetPlanId', 'paymentMethods', 'incomeSources', 'incomeEvents', 'expenses',
   'recurringExpenses', 'subscriptions', 'debts', 'debtPayments',
-  'recurringDebtPayments', 'savingsAccounts', 'savingsHoldings',
+  'recurringDebtPayments', 'savingsAccounts', 'investmentHoldings', 'receipts',
   'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'budgetPlans', 'budgetPlanActivations', 'buddgyMemories', 'accountAdjustments',
 ]
 

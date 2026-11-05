@@ -44,16 +44,16 @@ export function useSubscriptionDetector(): SubscriptionDetection {
     void sharedFetch('sms-charges', 60_000, async () => {
       const { data } = await createClient()
         .from('sms_parse_log')
-        .select('merchant, merchant_normalized, clean_title, amount, currency, day, raw_sms_summary')
+        .select('merchant, merchant_normalized, clean_title, amount, currency, received_at, created_at, raw_sms_summary')
         .eq('parsed_ok', true)
         .in('kind', ['purchase', 'online_purchase'])
         .gte('created_at', since)
         // Ascending so the last row is genuinely the LATEST sighting, not arbitrary DB order.
-        .order('day', { ascending: true })
+        .order('received_at', { ascending: true })
       return data
     }).then((data) => {
       if (!data) return
-      setRows(data as ChargeRow[])
+      setRows(data.map((r) => ({ ...r, day: (r.received_at ?? r.created_at)?.slice(0, 10) ?? null })) as ChargeRow[])
       setScanned(data.length)
     }).catch(() => undefined)
   }, [smsEnabled])

@@ -53,6 +53,19 @@ export function spendByLine({ plan, spendingByEnum, debtPaid, debtLedgerPaid }: 
   const remaining = new Map(Object.entries(spendingByEnum).map(([k, v]) => [k.toLowerCase(), { key: k, amount: v }]))
   const byLine: Record<string, number> = {}
 
+  // A debt payment is also a ledger expense: the debt line already reads it from the payments, so it
+  // must not resurface as uncovered spend (and from there in Other), nor on a line that claims the whole
+  // Debt category (Extra payoff). Taken out before any line claims categories.
+  const debtLinePaid = lines.reduce(
+    (s, l) => (l.linkType === 'debts' && l.linkIds?.length ? s + l.linkIds.reduce((t, id) => t + (debtLedgerPaid[id] ?? 0), 0) : s),
+    0,
+  )
+  const ledgerDebt = remaining.get(LEDGER_DEBT_CATEGORY)
+  if (ledgerDebt && debtLinePaid > 0) {
+    ledgerDebt.amount = Math.max(0, ledgerDebt.amount - debtLinePaid)
+    if (ledgerDebt.amount === 0) remaining.delete(LEDGER_DEBT_CATEGORY)
+  }
+
   for (const l of lines) {
     if (l.linkType === 'debts' && l.linkIds?.length) {
       byLine[l.id] = l.linkIds.reduce((s, id) => s + (debtPaid[id] ?? 0), 0)
@@ -65,18 +78,6 @@ export function spendByLine({ plan, spendingByEnum, debtPaid, debtLedgerPaid }: 
         remaining.delete(c.toLowerCase())
       }
     }
-  }
-
-  // A debt payment is also a ledger expense: the debt line already reads it from the payments, so it
-  // must not resurface as uncovered spend (and from there in Other).
-  const debtLinePaid = lines.reduce(
-    (s, l) => (l.linkType === 'debts' && l.linkIds?.length ? s + l.linkIds.reduce((t, id) => t + (debtLedgerPaid[id] ?? 0), 0) : s),
-    0,
-  )
-  const ledgerDebt = remaining.get(LEDGER_DEBT_CATEGORY)
-  if (ledgerDebt && debtLinePaid > 0) {
-    ledgerDebt.amount = Math.max(0, ledgerDebt.amount - debtLinePaid)
-    if (ledgerDebt.amount === 0) remaining.delete(LEDGER_DEBT_CATEGORY)
   }
 
   const byName = lines.filter((l) => !(l.id in byLine))
