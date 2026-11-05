@@ -104,8 +104,18 @@ Dark theme and Arabic, mobile 375px (and 320px on four routes). 14 routes and 13
 | Clean | no horizontal scroll on any route at 375 or 320; no unnamed controls or images; one visible h1 per route; Tab order is logical and every sampled stop shows a focus ring; real Escape closes a sheet and focus enters each sheet; sheets fit the viewport |
 | Fixed | **Seven sheets** (income, payment methods, debt, debt charges, cleared vault, installment provider, edit income event) opened a dialog with no accessible name. They read the title id in the component that renders the shell, where the context is empty. A `ModalHeading` helper reads it below the shell, and a guard test fails if the pattern returns. **Goals empty state** headings jumped h1 to h3 (now h2). **Arabic merchant names** were cut at their start, because the app keeps LTR layout and an Arabic string overflowed on the wrong side (`dir="auto"` on the row title and subtitle) |
 | Not a defect | the two contrast hits on Subscriptions are the YouTube and Apple Music logo tiles (exempt) |
-| Open, minor | amounts of about 100 million are cut with an ellipsis in the three-cell strip at 375px (the band already steps its size down, but not far enough); small tap targets remain on "Set budget", filter chips, the emergency-fund chip and the price refresh icon (design call); `region` best-practice notes for visually hidden text on two pages |
+| Open, minor | amounts of about 100 million are cut with an ellipsis in the three-cell strip at 375px (the band already steps its size down, but not far enough); `region` best-practice notes for visually hidden text on two pages. Tap targets: see the next section |
 | Not done | light theme and tablet and desktop widths were not repeated; double-submit and browser back inside nested sheets were not exercised in the live app |
+
+## Tap targets (follow-up, measured on a visible pane)
+Method: a 7x7 grid of probe points over the 44x44 square around every control under 44px, counting how many land on that control. The first sweep's "hit failures" were mostly false: it ran with the pane hidden, and it judged the element box, not the invisible 44px overlays (`HIT_AREA`) that almost every small control already carries. `scripts/qa/ui-sweep.js` now uses the grid method.
+
+| Result | Detail |
+|---|---|
+| Already fine | "Set budget", every filter and category chip, month arrows, tab bar items, switches, colour swatches and credit-card inputs all measure 100% (the swatches, inputs and two settings switches only looked uncovered while sitting under the sheet's sticky footer or the tab bar) |
+| Fixed | the price-refresh, hide and expand icons in the gold price strip shared about 14% of their tap areas with each other (8px gap, 44px areas): gap now 12px |
+| Open, minor | the emergency-fund pill loses about 14% of its tap area to the number row directly under it (a 6px strip at its bottom edge) |
+| Open, needs your call | the **payday day grid** (31 day cells, 26x32 each, 11 columns): no invisible overlay can fix it, because neighbouring cells are only 31px apart. Reaching 44px means a visible re-layout, for example 7 columns of 44px cells in five rows |
 
 ## Not covered (stated plainly)
 Dark and Arabic visual sweeps, keyboard-only sweep, narrow and wide widths, stress data in the live app (the sweep did not run); real-device native paths; Buddgy model behaviour with the live model; terms, cookies, admin UI; analytics, spending, history months, reports hooks; recurring-expense generation; `useDebtTabData` maths; most form-level validation (double submit, 1e21, Arabic digits, state reset); a New York time-zone run of the money area.

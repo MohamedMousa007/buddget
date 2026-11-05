@@ -99,7 +99,7 @@ export function GoldPriceStrip() {
           </div>
         </div>
       ) : null}
-      <div className="flex items-center gap-2 border-t border-[var(--color-brand-border)] px-3 py-1.5">
+      <div className="flex items-center gap-3 border-t border-[var(--color-brand-border)] px-3 py-1.5">
         <span className={cn('inline-flex h-[22px] items-center gap-1.5 rounded-full px-2 text-[11.5px] font-bold', pill.cls)}>
           {freshness === 'fresh' ? <span className="size-1.5 rounded-full bg-current" aria-hidden /> : null}
           {pill.text}

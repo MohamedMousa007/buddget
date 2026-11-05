@@ -12,7 +12,18 @@ window.__qaSweep = async function (opts) {
   res.interactive = inter.length;
   const small = inter.filter(el => { const r = el.getBoundingClientRect(); return r.width < 44 || r.height < 44 });
   const vh = w.innerHeight;
-  const hitFail = small.filter(el => { const r = el.getBoundingClientRect(); const cx = r.left + r.width / 2, cy = r.top + r.height / 2; if (cy < 0 || cy > vh) return false; const probes = [[cx - 21.5, cy], [cx + 21.5, cy], [cx, cy - 21.5], [cx, cy + 21.5]]; return probes.some(([x, y]) => { if (x < 0 || x > vw || y < 0 || y > vh) return false; const t = d.elementFromPoint(x, y); if (!t) return false; if (el.contains(t) || t.contains(el)) return false; const c = t.closest('a[href],button,[role=button],[role=tab],input,select,textarea,[role=switch],[role=checkbox]'); return !c ? 'dead' : 'other'; }); });
+  // Real tap area, not the element rect: many controls are under 44px on purpose and carry an invisible 44px overlay. Probe a 7x7 grid
+  // over the 44x44 square around each one; under 85% landing on the control itself means a neighbour or something on top takes the taps.
+  // Run with the browser pane VISIBLE: in a hidden pane animations and layout stall and this reports false failures.
+  const hitFail = small.filter(el => {
+    const r = el.getBoundingClientRect(); const cx = r.left + r.width / 2, cy = r.top + r.height / 2; if (cy < 0 || cy > vh) return false;
+    let hit = 0, total = 0;
+    for (let dx = -21; dx <= 21; dx += 7) for (let dy = -21; dy <= 21; dy += 7) {
+      const x = cx + dx, y = cy + dy; if (x < 0 || x > vw || y < 0 || y > vh) continue; total++;
+      const t = d.elementFromPoint(x, y); if (t && (el.contains(t) || (t.contains(el) && t !== d.body))) hit++;
+    }
+    return total > 0 && hit / total < 0.85;
+  });
   res.smallCount = small.length; res.hitFailCount = hitFail.length;
   res.hitFail = hitFail.slice(0, 12).map(el => { const r = el.getBoundingClientRect(); return (el.getAttribute('aria-label') || el.textContent.trim().slice(0, 16) || el.tagName) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) });
   res.unnamed = inter.filter(el => !(el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.textContent.trim() || el.getAttribute('title') || el.getAttribute('placeholder') || (el.labels && el.labels.length) || el.querySelector('img[alt]:not([alt=""])'))).slice(0, 4).map(el => el.outerHTML.slice(0, 100));
