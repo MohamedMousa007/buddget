@@ -103,7 +103,7 @@ Four fixer agents (`docs/qa-round-5/closing-*.md` and "Closing fix status" in th
 | WLT9, WLT1 | a savings-funded debt payment links to its withdrawal (0239); deleting it returns the money, Undo takes it out; Spend can optionally also log an expense (default off) |
 | HKS5, UIS8, PRF11, SIT10, MON-6 | import banner and confirm-before-replace; no hex/rgb literal left; selectors everywhere; export pages over 1,000 rows; hook-level test |
 | DBL-1 | 35 ledger rows backfilled (timestamp versions from first commit); duplicate-number pairs documented in `supabase/migrations/README.md` and grandfathered by the check |
-| DBL-3 | `qa2_backup` NOT dropped (destroys copies of user rows: 1, 59 and 54 rows). Owner decision |
+| DBL-3 | `qa2_backup` dropped on the owner's go-ahead (it held 1, 59 and 54 rows; confirmed gone) |
 
 Known leftovers outside the 114: ~100M amounts ellipsized in the 3-cell strip at 375px; emergency-fund pill 6px sliver; light theme, tablet and desktop not swept.
 
@@ -132,7 +132,7 @@ Method: a 7x7 grid of probe points over the 44x44 square around every control un
 Dark and Arabic visual sweeps, keyboard-only sweep, narrow and wide widths, stress data in the live app (the sweep did not run); real-device native paths; Buddgy model behaviour with the live model; terms, cookies, admin UI; analytics, spending, history months, reports hooks; recurring-expense generation; `useDebtTabData` maths; most form-level validation (double submit, 1e21, Arabic digits, state reset); a New York time-zone run of the money area.
 
 ## How far from bug-free
-- Known open: 0 P0, 0 P1, 0 P2, 1 P3 (DBL-3, awaiting the owner). 113 of 114 fixed.
+- Known open: 0 P0, 0 P1, 0 P2, 0 P3. 114 of 114 fixed.
 - Discovery is still not saturated: three of the four densest areas (sync, API, forms) had not been probed this deeply before and gave P1s; the live-UI layer produced nothing because it could not run.
 - Assurance score (judgement, 18 segments x depth 0-3): up from 34/54 (63%) to about 40/54 (74%), mostly from the API matrix, the English/Arabic diff (clean: 3,447 keys each), selector timings (linear, 91 ms at 40k transactions) and code-level sync review. A release gate would want 80%+ with native, AI, offline and live UI at 2.
 - Next, by yield: (1) live UI sweep on a production build, (3) render tests for the sheets and carousels (UIS1, forms), (4) real-device checklist, (5) Playwright smoke for the nine journeys.
