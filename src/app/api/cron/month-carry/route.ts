@@ -8,8 +8,9 @@
  * with no live FX rates, or a currency that cannot be converted, nothing is posted. Push-only
  * notification, no in-app card, no undo.
  *
- * ⚠️ WRITES LIVE MONEY. Deliberately absent from vercel.json — enable only after a preview-env dry
- * run and explicit sign-off. Auth: `Authorization: Bearer ${CRON_SECRET}`.
+ * ⚠️ WRITES LIVE MONEY. Deliberately absent from vercel.json — enable only after a dry run and explicit
+ * sign-off. `?dryRun=1` reads everything the real run reads, writes nothing, and answers with aggregate counts and
+ * totals only (no user ids). Auth: `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { depositToPocket, primaryTrackedAccountId } from '@/lib/server/pocketLedger'
 import { NextResponse } from 'next/server'
@@ -69,13 +70,24 @@ async function allRows<Row>(
   }
 }
 
+/** What a dry run reports: how many cycles would be swept and for how much, never who. */
+interface DryRun {
+  users: number
+  cycles: number
+  withCarry: number
+  empty: number
+  skippedFirstPartial: number
+  noFxPath: number
+  carryByCurrency: Record<string, number>
+}
+
 const must = <T extends { error: { message: string } | null }>(r: T, what: string): T => {
   if (r.error) throw new Error(`${what}: ${r.error.message}`)
   return r
 }
 
 /** Carries one closed cycle for one user. Returns true when money moved or the cycle was recorded as empty. */
-async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string, rates: Rates, now: Date): Promise<boolean> {
+async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string, rates: Rates, now: Date, dry?: DryRun): Promise<boolean> {
   const userId = s.user_id as string
   const monthStartDay = (s.month_start_day as number | null) ?? 1
   const { start, end } = cycleRange(monthKey, monthStartDay)
@@ -96,7 +108,10 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
 
   // First partial cycle: an account created after the cycle started shouldn't carry a full month.
   const createdAt = profileR.data?.created_at ? new Date(profileR.data.created_at as string) : null
-  if (createdAt && createdAt > start) return false
+  if (createdAt && createdAt > start) {
+    if (dry) dry.skippedFirstPartial++
+    return false
+  }
 
   const base = ((profileR.data?.base_currency as string | null) ?? 'EGP') as Currency
   const accounts: SavingsAccount[] = accountRows.map(savingsAccountFromRow)
@@ -117,11 +132,20 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
     extraCurrencies: [destCurrency],
   })
   if (!figures) {
-    console.error('[cron/month-carry] no FX path, skipped', userId, monthKey)
+    if (dry) dry.noFxPath++
+    else console.error('[cron/month-carry] no FX path, skipped', userId, monthKey)
     return false
   }
   const { income, spend, allocated } = figures
   const { carry, saved } = computeMonthCarry({ income, spend, allocated })
+  if (dry) {
+    dry.cycles++
+    if (carry >= 0.01) {
+      dry.withCarry++
+      dry.carryByCurrency[base] = Math.round(((dry.carryByCurrency[base] ?? 0) + carry) * 100) / 100
+    } else dry.empty++
+    return true
+  }
 
   const postDate = new Date(end.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
   // Funded goals draw first (priority order); the rest is unassigned and stays free.
@@ -184,14 +208,15 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   return true
 }
 
-async function carryUser(service: Service, s: UserSettingsRow, rates: Rates, now: Date): Promise<number> {
+async function carryUser(service: Service, s: UserSettingsRow, rates: Rates, now: Date, dry?: DryRun): Promise<number> {
   const userId = s.user_id as string
   const latest = must(await service
     .from('savings_month_summary').select('month_key').eq('user_id', userId).order('month_key', { ascending: false }).limit(1).maybeSingle(), 'latest summary').data
   const keys = pendingCarryKeys(now, (s.month_start_day as number | null) ?? 1, (latest?.month_key as string | undefined) ?? null, userZone(s.timezone))
   let carried = 0
+  if (dry && keys.length > 0) dry.users++
   for (const key of keys) {
-    if (await carryCycle(service, s, key, rates, now)) carried++
+    if (await carryCycle(service, s, key, rates, now, dry)) carried++
     else break // a skipped cycle blocks later ones, so they stay ordered
   }
   return carried
@@ -208,6 +233,9 @@ export async function GET(request: Request) {
 
   const now = new Date()
   const service = createServiceRoleClient()
+  const dry: DryRun | undefined = new URL(request.url).searchParams.get('dryRun') === '1'
+    ? { users: 0, cycles: 0, withCarry: 0, empty: 0, skippedFirstPartial: 0, noFxPath: 0, carryByCurrency: {} }
+    : undefined
   let carried = 0
   let scanned = 0
   let failed = 0
@@ -230,7 +258,7 @@ export async function GET(request: Request) {
     for (const s of settings) {
       scanned++
       try {
-        carried += await carryUser(service, s, rates, now)
+        carried += await carryUser(service, s, rates, now, dry)
       } catch (e) {
         failed++
         console.error('[cron/month-carry] user failed', s.user_id, e instanceof Error ? e.message : e)
@@ -240,5 +268,6 @@ export async function GET(request: Request) {
     if (settings.length < PAGE) break
   }
 
-  return NextResponse.json({ ok: failed === 0, scanned, carried, failed })
+  // A dry run evaluates cycles but carries nothing: `carried` stays 0 and the evaluated count is `cycles`.
+  return NextResponse.json({ ok: failed === 0, ...(dry ? { dryRun: true, ...dry } : {}), scanned, carried: dry ? 0 : carried, failed })
 }
