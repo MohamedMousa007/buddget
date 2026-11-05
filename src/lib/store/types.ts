@@ -203,6 +203,8 @@ export interface Expense {
   isDebtPayment?: boolean
   /** When set, this expense settles a credit-card debt via this debt payment (`debt_payments.id`). */
   linkedDebtPaymentId?: string
+  /** Logged by a "Spend" withdrawal from a savings pocket (`savings_transactions.id`): the pocket already lost the money, so it never also drains an account or counts as cash outflow. */
+  fundedFromSavingsTxId?: string
   /** When set, this expense is linked to a tracked subscription (`subscriptions.id`). */
   linkedSubscriptionId?: string
   /** When set, this expense was auto-created from a parsed bank SMS (`sms_parse_log.id`). */
@@ -455,6 +457,7 @@ export interface BudgetPlanActivation {
   /** First day of the cycle (`YYYY-MM-DD`) the plan took over. */
   effectiveFrom: string
   createdAt: string
+  updatedAt?: string
 }
 
 /** State to restore when the user undoes an activation. */
@@ -656,6 +659,8 @@ export interface SavingsAccount {
   accountLast4?: string
   maturityDate?: string
   yearlyReturn?: number
+  /** Server edit stamp (`updated_at`), or the device edit time of an unsynced change. */
+  updatedAt?: string
 }
 
 /** Per-user emergency-fund settings (stored as jsonb on profiles). */
@@ -704,6 +709,7 @@ export interface RecurringSavingsDeposit {
   isActive: boolean
   notes?: string
   createdAt: string
+  updatedAt?: string
 }
 
 /** Where a savings withdrawal goes. Only 'income' creates an IncomeEvent. */
@@ -832,8 +838,11 @@ export interface DebtPayment {
   notes?: string
   /** Paid from a savings pocket (balance-sheet move) — excluded from monthly cash outflow. */
   fundedFromSavings?: boolean
+  /** The pocket withdrawal that funded this payment (`savings_transactions.id`); deleting the payment returns it. Legacy rows have none. */
+  fundedFromSavingsTxId?: string
   sharedPlanId?: string | null
   createdAt: string
+  updatedAt?: string
 }
 
 export type DebtRecurringFrequency =
@@ -849,6 +858,8 @@ export interface DebtPaymentSnapshot {
   payment: DebtPayment
   expenses: Expense[]
   debtWasCleared: boolean
+  /** The pocket withdrawal returned with the payment, so Undo can take it out again. */
+  savingsTx?: SavingsTransaction
   /** The reminder that was switched back on, as it was before. */
   schedule?: RecurringDebtPayment
 }
@@ -867,6 +878,7 @@ export interface RecurringDebtPayment {
   isActive: boolean
   notes?: string
   createdAt: string
+  updatedAt?: string
 }
 
 export interface UserProfile {
@@ -1290,7 +1302,7 @@ export interface FinanceStore {
     notes?: string,
     purpose?: SavingsWithdrawalPurpose,
     /** Income withdrawals credit this account (undefined = primary tracked, null = none). Same-currency only. */
-    opts?: { toAccountId?: string | null }
+    opts?: { toAccountId?: string | null; /** Caller-chosen id, so a payment or expense funded by this withdrawal can link to it. */ txId?: string }
   ) => boolean
   /** Move money between two pockets: two ledger legs sharing a transferGroupId, both
    *  non-cash-flow (net worth and left-to-spend unaffected). FX-converts fiat↔fiat; rejects

@@ -29,6 +29,11 @@ export function PrivacyRightsSections() {
           without numbers, names or account details is kept to improve parsing.
         </p>
         <p>
+          <strong className="text-[var(--color-brand-text-primary)]">Website messages and waitlist
+          emails:</strong> Contact messages and waitlist sign-ups sent from our website are deleted
+          automatically after 180 days.
+        </p>
+        <p>
           <strong className="text-[var(--color-brand-text-primary)]">
             Buddgy conversation history:
           </strong>{' '}

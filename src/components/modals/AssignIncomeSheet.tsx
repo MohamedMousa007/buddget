@@ -13,6 +13,7 @@ import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { paydayCandidates } from '@/lib/income/paydayResolution'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
@@ -56,9 +57,10 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
       rates: s.exchangeRates,
     })),
   )
+  const weekendFirst = useWeekendFirstDay()
   const options = useMemo(
-    () => (open ? paydayCandidates(credit, incomeSources, incomeEvents, monthStartDay, rates, new Date()).slice(0, MAX_OPTIONS) : []),
-    [open, credit, incomeSources, incomeEvents, monthStartDay, rates],
+    () => (open ? paydayCandidates(credit, incomeSources, incomeEvents, monthStartDay, rates, new Date(), weekendFirst).slice(0, MAX_OPTIONS) : []),
+    [open, credit, incomeSources, incomeEvents, monthStartDay, rates, weekendFirst],
   )
   const [chosen, setChosen] = useState<string>(NONE)
   const prevOpen = useRef(false)

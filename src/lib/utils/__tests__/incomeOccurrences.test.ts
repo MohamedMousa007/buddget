@@ -87,11 +87,16 @@ describe('paydayDatesForWindow', () => {
     expect(paydayDatesForWindow(s, window.start, window.end).map(toISODate)).toEqual(['2026-07-03', '2026-07-05'])
   })
 
-  it('legacy weekly (no paydayDays) keeps the 7-day walk', () => {
+  it('legacy weekly (no paydayDays) walks 7 days and counts 4 paydays in a month, not 5', () => {
     const s = source({ recurringFrequency: 'weekly', dayOfMonth: 3 })
     const dates = paydayDatesForWindow(s, window.start, window.end).map(toISODate)
-    // Jul 3, 10, 17, 24, 31 — all Fridays in 2026, no shifts.
-    expect(dates).toEqual(['2026-07-03', '2026-07-10', '2026-07-17', '2026-07-24', '2026-07-31'])
+    // Jul 3, 10, 17, 24, (31 dropped by the 4-payday cap) — all Fridays in 2026, no shifts.
+    expect(dates).toEqual(['2026-07-03', '2026-07-10', '2026-07-17', '2026-07-24'])
+  })
+
+  it('legacy weekly keeps every date when the window is a wide matching window (cycle=false)', () => {
+    const s = source({ recurringFrequency: 'weekly', dayOfMonth: 3 })
+    expect(paydayDatesForWindow(s, window.start, window.end, false)).toHaveLength(5)
   })
 })
 

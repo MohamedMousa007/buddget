@@ -1,4 +1,5 @@
-import type { Currency, FinanceStore, GoalCategory, IncomeSourceType } from '@/lib/store/types'
+import type { Currency, FinanceStore, GoalCategory, IncomeRecurringFrequency, IncomeSourceType } from '@/lib/store/types'
+import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
 import type { FactDebt, FactGoal } from '@/lib/budget/facts'
 import { answeredDebts, answeredGoals } from '@/lib/budget/flow/toFacts'
@@ -45,9 +46,11 @@ export function commitFlowEntities(state: FlowState, store: Actions, base: Curre
   const income = amountOf(a.income)
   if (income > 0 && !done.income && store.incomeSources.length === 0) {
     const day = Math.min(31, Math.max(1, Math.round(Number(a.payday) || DEFAULT_PAYDAY)))
+    // The answer is a monthly take-home; weekly and biweekly sources store the amount per paycheck.
+    const frequency: IncomeRecurringFrequency = a.payFrequency === 'weekly' || a.payFrequency === 'biweekly' ? a.payFrequency : 'monthly'
     store.addIncomeSource({
-      name: names.income, amount: income, currency: base, isRecurring: true, recurringFrequency: 'monthly',
-      dayOfMonth: day, paydayDays: [day], sourceType: SOURCE_OF_TYPE[String(a.incomeType)] ?? 'salary',
+      name: names.income, amount: Math.round((income / paydaysPerMonth(frequency)) * 100) / 100, currency: base, isRecurring: true, recurringFrequency: frequency,
+      dayOfMonth: day, paydayDays: deriveDefaultPaydays(day, frequency), sourceType: SOURCE_OF_TYPE[String(a.incomeType)] ?? 'salary',
     })
     created.income = 'done'
   }

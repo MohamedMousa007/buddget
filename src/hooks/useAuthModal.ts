@@ -325,7 +325,12 @@ export function useAuthModal() {
     let required: boolean | null = null
     try {
       const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST' })
-      if (deviceRes.ok) required = ((await deviceRes.json()) as { required?: boolean }).required === true
+      if (deviceRes.ok) {
+        const body = (await deviceRes.json()) as { required?: boolean; deviceSecret?: string }
+        required = body.required === true
+        // A legacy trusted device is upgraded here: keep the secret the server just issued.
+        if (!required) await (await import('@/lib/native/deviceSecret')).rememberDeviceSecret(body)
+      }
     } catch {
       /* required stays null */
     }
@@ -512,7 +517,8 @@ export function useAuthModal() {
     if (verifyPurpose === 'signup') markSessionEphemeral(false)
     // Device-trust is a signup/2FA concept only.
     try {
-      await apiFetchAuth('/api/auth/device/trust', { method: 'POST' })
+      const trusted = await apiFetchAuth('/api/auth/device/trust', { method: 'POST' })
+      if (trusted.ok) await (await import('@/lib/native/deviceSecret')).rememberDeviceSecret((await trusted.json().catch(() => null)) as { deviceSecret?: string } | null)
     } catch {
       /* non-fatal */
     }

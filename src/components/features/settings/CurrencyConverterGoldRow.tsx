@@ -1,6 +1,6 @@
 'use client'
 
-import type { FinanceStore } from '@/lib/store/types'
+import type { CurrencyConverterStore } from '@/components/features/settings/CurrencyConverter'
 import type { Dictionary } from '@/lib/i18n/types'
 
 type SettingsCopy = Dictionary['settings']
@@ -10,7 +10,7 @@ export function CurrencyConverterGoldRow({
   store,
   t,
 }: {
-  store: FinanceStore
+  store: CurrencyConverterStore
   t: SettingsCopy
 }) {
   return (

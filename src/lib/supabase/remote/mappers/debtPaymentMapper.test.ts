@@ -53,3 +53,13 @@ describe('debt payment mapper units (D2)', () => {
     expect(p.amountPaid).toBe(5)
   })
 })
+
+describe('savings funding link (WLT9)', () => {
+  it('round-trips the withdrawal id that funded a payment, and reads NULL as none', () => {
+    const linked: DebtPayment = { ...crossCurrency, fundedFromSavings: true, fundedFromSavingsTxId: 'tx-1' }
+    const row = { ...debtPaymentToRow(linked, 'u1'), deleted_at: null, updated_at: 'x' } as DebtPaymentRow
+    expect(row.funded_from_savings_tx_id).toBe('tx-1')
+    expect(debtPaymentFromRow(row).fundedFromSavingsTxId).toBe('tx-1')
+    expect(debtPaymentFromRow({ ...row, funded_from_savings_tx_id: null }).fundedFromSavingsTxId).toBeUndefined()
+  })
+})

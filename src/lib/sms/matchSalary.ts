@@ -15,7 +15,8 @@
  */
 import type { ServiceClient } from '@/lib/supabase/service'
 import { addDays, parseISO } from 'date-fns'
-import { paydayDatesForWindow, toISODate } from '@/lib/utils/paydaySchedule'
+import { paydayDatesForWindow, toISODate, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
+import { weekendFirstDayFor } from '@/lib/time/weekStart'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { extractCounterparty, scoreSalaryEvidence } from './salaryEvidence'
 import type { Currency, IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
@@ -77,8 +78,8 @@ function toScheduleSource(row: SalaryRow): IncomeSource {
  * paydays are 7 days apart — it would reach every one of them and the "nearest payday"
  * would be a coin flip. Half the gap is the widest window that can never be ambiguous.
  */
-function minPaydayGapDays(source: IncomeSource, around: Date): number {
-  const dates = paydayDatesForWindow(source, addDays(around, -46), addDays(around, 46), false)
+function minPaydayGapDays(source: IncomeSource, around: Date, weekendFirst: WeekendFirstDay): number {
+  const dates = paydayDatesForWindow(source, addDays(around, -46), addDays(around, 46), false, weekendFirst)
   if (dates.length < 2) return FALLBACK_GAP_DAYS
   let min = Infinity
   for (let i = 1; i < dates.length; i++) {
@@ -92,12 +93,12 @@ function minPaydayGapDays(source: IncomeSource, around: Date): number {
  * sits from the credit. Spans month boundaries — a 30 Jul payday banked on 2 Aug is not in
  * August's schedule, so a "this month's paydays" search would never find it.
  */
-function candidatePaydays(row: SalaryRow, dayISO: string): { paydays: string[]; distanceDays: number } {
+function candidatePaydays(row: SalaryRow, dayISO: string, weekendFirst: WeekendFirstDay): { paydays: string[]; distanceDays: number } {
   const source = toScheduleSource(row)
   const day = parseISO(dayISO)
   const requested = row.payday_drift_days ?? DEFAULT_DRIFT_DAYS
-  const window = Math.max(1, Math.min(requested, Math.floor(minPaydayGapDays(source, day) / 2)))
-  const ranked = paydayDatesForWindow(source, addDays(day, -window), addDays(day, window), false)
+  const window = Math.max(1, Math.min(requested, Math.floor(minPaydayGapDays(source, day, weekendFirst) / 2)))
+  const ranked = paydayDatesForWindow(source, addDays(day, -window), addDays(day, window), false, weekendFirst)
     .map((d) => ({ iso: toISODate(d), dist: Math.abs(d.getTime() - day.getTime()) }))
     .sort((a, b) => a.dist - b.dist)
   return {
@@ -137,6 +138,13 @@ export async function matchSalary(
   const salaries = (sources ?? []) as unknown as SalaryRow[]
   if (salaries.length === 0) return { outcome: 'create' }
 
+  // The weekend decides which day a payday shifts to, and `occurrenceDate` must equal the date the app shows.
+  const { data: prefs } = await service.from('user_settings').select('week_start_day, timezone').eq('user_id', params.userId).maybeSingle()
+  const weekendFirst = weekendFirstDayFor({
+    weekStartDay: prefs?.week_start_day === 0 || prefs?.week_start_day === 1 || prefs?.week_start_day === 6 ? prefs.week_start_day : undefined,
+    timezone: prefs?.timezone ?? 'UTC', // a server has no device zone to fall back on
+  })
+
   const rates = params.exchangeRates ?? {}
   type Candidate = {
     row: SalaryRow
@@ -160,7 +168,7 @@ export async function matchSalary(
     const diff = Math.abs(inSourceCurrency - row.amount) / row.amount
     if (diff > CONFIRM_TOLERANCE) continue
 
-    const candidate: Candidate = { row, diff, sameCurrency, ...candidatePaydays(row, params.day) }
+    const candidate: Candidate = { row, diff, sameCurrency, ...candidatePaydays(row, params.day, weekendFirst) }
     // Closest amount wins. Two salaries of the same size are told apart only by WHEN they
     // land, so a tie goes to the one whose payday sits nearer the credit — array order
     // would otherwise decide it, which is no decision at all.

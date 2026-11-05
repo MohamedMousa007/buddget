@@ -5,6 +5,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
 import { resolveRouteUser, resolveVerifiedIdentity } from '@/lib/supabase/resolveRouteUser'
 import { accessTokenOf, verifyReauth } from '@/lib/server/reauth'
+import { deliverDeviceSecret, newDeviceSecret } from '@/lib/server/trustedDevice'
 
 const bodySchema = z.object({
   newPassword: z.string().min(8).max(256),
@@ -67,21 +68,23 @@ export async function POST(request: Request) {
     }
 
     const deviceId = await resolveDeviceId(request)
+    const { secret, hash } = newDeviceSecret()
     const trust = await admin.from('trusted_devices').upsert(
-      { user_id: identity.id, device_id: deviceId, user_agent: (request.headers.get('user-agent') || '').slice(0, 500) || null, last_used_at: new Date().toISOString() },
+      { user_id: identity.id, device_id: deviceId, secret_hash: hash, user_agent: (request.headers.get('user-agent') || '').slice(0, 500) || null, last_used_at: new Date().toISOString() },
       { onConflict: 'user_id,device_id' },
     )
     if (trust.error) console.error('[auth/password] re-trusting this device failed', trust.error.message)
+    const delivered = trust.error ? {} : await deliverDeviceSecret(request, secret)
 
     if (!revokedOthers) {
       return NextResponse.json(
-        { error: 'Password changed, but other devices could not be signed out. Try again.', code: 'sessions_not_revoked', passwordChanged: true },
+        { error: 'Password changed, but other devices could not be signed out. Try again.', code: 'sessions_not_revoked', passwordChanged: true, ...delivered },
         { status: 502 },
       )
     }
 
     if (parsed.data.announce) (await cookies()).set('buddget_password_updated', '1', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 60 })
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, ...delivered })
   } catch (e) {
     console.error('[auth/password] unexpected', e)
     return NextResponse.json({ error: 'Unexpected failure' }, { status: 500 })

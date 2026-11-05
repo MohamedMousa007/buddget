@@ -14,6 +14,7 @@ import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isNative } from '@/lib/native/isNative'
 import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
+import { mix } from '@/lib/utils/color'
 
 interface VoiceRecordSheetProps {
   open: boolean
@@ -124,9 +125,7 @@ function Visualizer({ amplitude, animTime }: { amplitude: number; animTime: numb
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const red = getComputedStyle(document.documentElement)
-      .getPropertyValue('--color-brand-red')
-      .trim() || '#e12424'
+    const red = getComputedStyle(document.documentElement).getPropertyValue('--color-brand-red').trim()
 
     const t = animTime / 400
     const barW = CANVAS_W / BARS
@@ -185,7 +184,7 @@ function RecordingView({
   const distance = useMotionValue(0)
   const trashScale = useTransform(distance, [0, 70], [1, 1.35])
   const trashOpacity = useTransform(distance, [0, 30], [0.5, 1])
-  const trashBg = useTransform(distance, [30, 70], ['rgba(255,255,255,0.08)', 'rgba(225,36,36,0.25)'])
+  const trashRedOpacity = useTransform(distance, [30, 70], [0, 1])
 
   const cancelledRef = useRef(false)
   const touchActiveRef = useRef(false)
@@ -220,11 +219,12 @@ function RecordingView({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.6, y: 8 }}
               transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-              style={{ opacity: trashOpacity, scale: trashScale, background: trashBg }}
-              className="flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-brand-border)] pointer-events-none"
+              style={{ opacity: trashOpacity, scale: trashScale, background: mix('var(--color-brand-text-primary)', 8) }}
+              className="relative flex items-center justify-center w-12 h-12 rounded-full border border-[var(--color-brand-border)] pointer-events-none"
               aria-hidden
             >
-              <Trash2 className="w-5 h-5 text-[var(--color-brand-text-muted)]" />
+              <motion.span className="absolute inset-0 rounded-full" style={{ opacity: trashRedOpacity, background: mix('var(--color-brand-red)', 25) }} />
+              <Trash2 className="relative w-5 h-5 text-[var(--color-brand-text-muted)]" />
             </motion.div>
           ) : null}
         </AnimatePresence>

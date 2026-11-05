@@ -10,6 +10,7 @@
  */
 import type { ServiceClient } from '@/lib/supabase/service'
 import type { SmsExpenseKind } from './createSmsExpense'
+import type { MoneyDirection } from './directionGuard'
 import {
   PAYMENT_BRANDS,
   decomposePaymentMethodName,
@@ -22,6 +23,14 @@ const PAIR_WINDOW_SECONDS = 300
 
 /** Legs arriving together both look for a sibling before either has persisted its `kind`. */
 const PAIR_RETRY_DELAY_MS = 400
+
+/**
+ * A claimed sibling still `processing` has not posted yet: the claimer waits for it to settle before reconciling,
+ * or it would see no row, post nothing, and the sibling would then post its own (income) row beside it.
+ * 150 ms x 70 is about 10 s, far above the few queries between a leg's claim and its log promotion.
+ */
+const SETTLE_POLL_MS = 150
+const SETTLE_MAX_POLLS = 70
 
 /**
  * True when a transfer is between the user's OWN accounts: the counterparty
@@ -229,6 +238,9 @@ export async function tryPairLeg(
     requireRegisteredSibling?: boolean
     /** This leg's own account tail; published with the amount so a concurrent sibling can match on it. */
     accountLast4?: string | null
+    /** This leg's currency and ledger direction; a currency exchange pairs only with an opposite direction in a different currency. */
+    currency?: string | null
+    direction?: MoneyDirection | null
   },
 ): Promise<PairSibling | null> {
   const requireEqual =
@@ -259,6 +271,9 @@ export async function tryPairLeg(
     p_self_kind: params.kind ?? undefined,
     p_reference: params.reference ?? undefined,
     p_require_registered_sibling: params.requireRegisteredSibling ?? false,
+    ...(params.kind === 'currency_exchange'
+      ? { p_direction: params.direction ?? undefined, p_currency: params.currency ?? undefined }
+      : {}),
   })
   // sms_try_pair only sees siblings that are parsed_ok with a kind, and compares their amount and account_last4,
   // all of which the parse route persists only at the end. Publish them now so two legs arriving together can find each other.
@@ -269,6 +284,8 @@ export async function tryPairLeg(
       parsed_ok: true,
       amount: params.amount,
       ...(params.accountLast4 ? { account_last4: params.accountLast4 } : {}),
+      ...(params.currency ? { currency: params.currency } : {}),
+      ...(params.direction ? { leg_direction: params.direction } : {}),
     })
     .eq('id', params.logId)
   if (publishErr) console.warn('[sms/pairing] publishing leg kind failed', publishErr)
@@ -283,12 +300,49 @@ export async function tryPairLeg(
   }
   const row = Array.isArray(data) ? data[0] : null
   if (!row) return null
-  return {
+  const sibling: PairSibling = {
     siblingId: row.sibling_id,
     siblingKind: row.sibling_kind,
     siblingExpenseId: row.sibling_expense_id ?? null,
     siblingIncomeId: row.sibling_income_id ?? null,
     siblingStatus: row.sibling_status ?? '',
+  }
+  return sibling.siblingStatus === 'processing' ? settleSibling(service, sibling) : sibling
+}
+
+/**
+ * Waits for a claimed sibling that was still `processing` to post and promote its log row, then returns it with the
+ * ledger ids it ended up with. The claim already stopped it from claiming anything else (sms_try_pair refuses a
+ * claimed leg), so it just posts its own row normally and this leg reconciles against that row: exactly one
+ * non-spend row survives, whichever leg was first. If it never settles (its function died), the ledger itself is
+ * the source of truth for what it posted.
+ */
+async function settleSibling(service: ServiceClient, sibling: PairSibling): Promise<PairSibling> {
+  for (let poll = 0; poll < SETTLE_MAX_POLLS; poll++) {
+    const { data } = await service
+      .from('sms_parse_log')
+      .select('status, expense_id, income_id')
+      .eq('id', sibling.siblingId)
+      .maybeSingle()
+    if (!data) break
+    if (data.status !== 'processing') {
+      return {
+        ...sibling,
+        siblingStatus: data.status,
+        siblingExpenseId: (data.expense_id as string | null) ?? null,
+        siblingIncomeId: (data.income_id as string | null) ?? null,
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, SETTLE_POLL_MS))
+  }
+  const [expense, income] = await Promise.all([
+    service.from('expenses').select('id').eq('sms_log_id', sibling.siblingId).is('deleted_at', null).limit(1),
+    service.from('income_events').select('id').eq('sms_log_id', sibling.siblingId).is('deleted_at', null).limit(1),
+  ])
+  return {
+    ...sibling,
+    siblingExpenseId: (expense.data?.[0]?.id as string | undefined) ?? null,
+    siblingIncomeId: (income.data?.[0]?.id as string | undefined) ?? null,
   }
 }
 

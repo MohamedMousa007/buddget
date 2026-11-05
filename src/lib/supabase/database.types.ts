@@ -1176,6 +1176,7 @@ export type Database = {
           effective_from: string
           id: string
           plan_id: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -1184,6 +1185,7 @@ export type Database = {
           effective_from: string
           id?: string
           plan_id: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -1192,6 +1194,7 @@ export type Database = {
           effective_from?: string
           id?: string
           plan_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1320,6 +1323,7 @@ export type Database = {
           debt_id: string
           deleted_at: string | null
           funded_from_savings: boolean
+          funded_from_savings_tx_id: string | null
           id: string
           notes: string | null
           payment_date: string
@@ -1341,6 +1345,7 @@ export type Database = {
           debt_id: string
           deleted_at?: string | null
           funded_from_savings?: boolean
+          funded_from_savings_tx_id?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -1362,6 +1367,7 @@ export type Database = {
           debt_id?: string
           deleted_at?: string | null
           funded_from_savings?: boolean
+          funded_from_savings_tx_id?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -1567,6 +1573,7 @@ export type Database = {
           is_debt_payment: boolean
           linked_debt_id: string | null
           linked_debt_payment_id: string | null
+          funded_from_savings_tx_id: string | null
           linked_subscription_id: string | null
           notes: string | null
           payment_method_id: string | null
@@ -1599,6 +1606,7 @@ export type Database = {
           is_debt_payment?: boolean
           linked_debt_id?: string | null
           linked_debt_payment_id?: string | null
+          funded_from_savings_tx_id?: string | null
           linked_subscription_id?: string | null
           notes?: string | null
           payment_method_id?: string | null
@@ -1631,6 +1639,7 @@ export type Database = {
           is_debt_payment?: boolean
           linked_debt_id?: string | null
           linked_debt_payment_id?: string | null
+          funded_from_savings_tx_id?: string | null
           linked_subscription_id?: string | null
           notes?: string | null
           payment_method_id?: string | null
@@ -3272,6 +3281,7 @@ export type Database = {
           is_duplicate: boolean
           kind: string | null
           learn_status: string | null
+          leg_direction: string | null
           learn_template_id: string | null
           skeleton_key: string | null
           matched_template_id: string | null
@@ -3324,6 +3334,7 @@ export type Database = {
           is_duplicate?: boolean
           kind?: string | null
           learn_status?: string | null
+          leg_direction?: string | null
           learn_template_id?: string | null
           skeleton_key?: string | null
           matched_template_id?: string | null
@@ -3376,6 +3387,7 @@ export type Database = {
           is_duplicate?: boolean
           kind?: string | null
           learn_status?: string | null
+          leg_direction?: string | null
           learn_template_id?: string | null
           skeleton_key?: string | null
           matched_template_id?: string | null
@@ -4115,6 +4127,7 @@ export type Database = {
           created_at: string
           device_id: string
           last_used_at: string
+          secret_hash: string | null
           user_agent: string | null
           user_id: string
         }
@@ -4122,6 +4135,7 @@ export type Database = {
           created_at?: string
           device_id: string
           last_used_at?: string
+          secret_hash?: string | null
           user_agent?: string | null
           user_id: string
         }
@@ -4129,6 +4143,7 @@ export type Database = {
           created_at?: string
           device_id?: string
           last_used_at?: string
+          secret_hash?: string | null
           user_agent?: string | null
           user_id?: string
         }
@@ -4584,6 +4599,8 @@ export type Database = {
         Args: {
           p_amount: number
           p_amount_tolerance?: number
+          p_currency?: string
+          p_direction?: string
           p_log_id: string
           p_match_kinds: string[]
           p_received_at: string

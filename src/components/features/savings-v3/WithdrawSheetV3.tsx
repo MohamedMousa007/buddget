@@ -6,7 +6,7 @@ import { ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, Coins, Bitcoin, 
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Card } from '@/components/ui/card'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
-import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { newClientId, useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { valueInvestmentHolding } from '@/lib/savings/holdingValuation'
@@ -24,6 +24,9 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency, InvestmentAssetType, SavingsWithdrawalPurpose } from '@/lib/store/types'
 import { Button } from '@/components/ui/button'
+import { SettingsSwitchRow } from '@/components/features/settings/SettingsSwitchRow'
+import { EXPENSE_CATEGORY_GRID } from '@/lib/constants/categoryGrid'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 import { FieldButton } from '@/components/ui/FieldButton'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -61,6 +64,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const showToast = useActionToast()
   const transfer = useFinanceStore((s) => s.transferBetweenPockets)
   const addDebtPayment = useFinanceStore((s) => s.addDebtPayment)
+  const addExpense = useFinanceStore((s) => s.addExpense)
+  const categoryLabels = useT().expenseForm.categoryLabels
   const updateHolding = useFinanceStore((s) => s.updateInvestmentHolding)
   const holdings = useFinanceStore((s) => s.investmentHoldings)
   const debts = useFinanceStore((s) => s.debts)
@@ -89,6 +94,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const [assetClass, setAssetClass] = useState<InvestmentAssetType | null>(null)
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
+  const [logExpense, setLogExpense] = useState(false)
+  const [expenseCategory, setExpenseCategory] = useState('Other')
 
   const moveOn = purpose === 'move'
   const reason: Reason | null = moveOn ? null : purpose
@@ -132,6 +139,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
   const submit = () => {
     if (!from || amountNum <= 0) return
+    const txId = newClientId()
     if (moveOn) {
       if (!moveToId) return
       if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined)) return showToast(t.moveFailed)
@@ -141,8 +149,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       const noteTrim = note.trim() || undefined
       const { amountPaid, amountInBase, exceeds } = debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left })
       if (!(amountPaid > 0) || exceeds) return showToast(t.moveFailed)
-      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt')) return showToast(t.moveFailed)
-      addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true })
+      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt', { txId })) return showToast(t.moveFailed)
+      addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true, fundedFromSavingsTxId: txId })
       reconcileDebtSchedule(debt.id, { amount: amountPaid, currency: debt.currency })
     } else if (reason === 'transfer') {
       if (!assetClass) return
@@ -156,7 +164,15 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')) return showToast(t.moveFailed)
       updateHolding(target.id, investTopUpPatch(existing, qtyAdd, amountEgp, 'EGP', exchangeRates))
     } else if (reason) {
-      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, reason === 'income' ? { toAccountId: leg.accountId } : undefined)) return showToast(t.moveFailed)
+      const spendAndLog = reason === 'spend' && logExpense
+      const opts = reason === 'income' ? { toAccountId: leg.accountId } : spendAndLog ? { txId } : undefined
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, opts)) return showToast(t.moveFailed)
+      if (spendAndLog) {
+        addExpense({
+          date: localTodayISO(), description: note.trim() || pocketDisplayName(from.account, sf.systemNames), category: expenseCategory,
+          amount: amountNum, currency, paymentMethodId: DEFAULT_CASH_ID, isRecurring: false, fundedFromSavingsTxId: txId,
+        })
+      }
     }
     onClose()
   }
@@ -281,6 +297,23 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                 ))}
               </div>
             </LabeledBlock>
+          )}
+
+          {!moveOn && reason === 'spend' && (
+            <>
+              <SettingsSwitchRow label={t.logExpense} hint={t.logExpenseHint} checked={logExpense} onChange={setLogExpense} />
+              {logExpense && (
+                <LabeledBlock label={t.expenseCategory}>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                    {EXPENSE_CATEGORY_GRID.filter((c) => !c.nonspend).map((c) => (
+                      <OptionChip key={c.id} selected={expenseCategory === c.id} onClick={() => setExpenseCategory(c.id)}>
+                        {categoryLabels[c.id] ?? c.id}
+                      </OptionChip>
+                    ))}
+                  </div>
+                </LabeledBlock>
+              )}
+            </>
           )}
 
           {!moveOn && reason === 'income' ? <AccountLegRow leg={leg} label={t.toAccount} /> : null}

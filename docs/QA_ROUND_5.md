@@ -85,16 +85,27 @@ Database changes applied live (migration 0231): the three positive-amount checks
 
 Also: the Android manifest lost a catch-all `app.buddget` link filter (nothing in the code uses that scheme except the auth callback, which keeps its own filter); `sharp` bumped to 0.35.5; `@types/next-pwa` removed (its nested Next 13 was the critical audit finding); all six other crons now accept POST like `notifications`.
 
-## Still open (22: 3 P2, 19 P3)
-| ID | P | What | Why |
-|---|---|---|---|
-| API-4 | P2 | biometric enrolment needs only a valid session | a recent-sign-in check needs a password prompt in the app and breaks enrolment on installed builds until they update |
-| SMS3 | P2 | pairing race (static) | needs a concurrent database test; changing the pairing function without one could split real transfers |
-| SYN6 | P2 | blind upsert, last pusher wins | needs a server-side `updated_at` precondition on every synced table |
-| MON-2, MON-3, BUD4, API-6, SIT8, SIT9, SMS6 | P3 | legacy weekly count, Egypt weekend, unused budget answers, and others | product decisions |
-| WLT9, SMS4, SYN9, DBL-1 | P3 | need a schema or database function change (payment-to-withdrawal link, FX pair direction, `sync_pull` deleted ids, migration ledger repair) | database writes beyond hygiene |
-| API-9, API-13, PRF8, DBL-3, HKS5 | P3 | design change, intentional unscheduled cron, FileProvider paths (needs a device), backup schema drop, confirm-before-replace | risk or decision |
-| LIV | - | the live sweep ran at the end of the day (below); light theme, tablet and desktop widths were not repeated | |
+## Closing pass: all remaining findings
+Four fixer agents (`docs/qa-round-5/closing-*.md` and "Closing fix status" in the area reports). Migrations 0232 to 0236 and 0238 to 0239 applied live.
+
+| ID | Result |
+|---|---|
+| SYN6, SYN5, SYN7 | one trigger (`private.reject_stale_write`, migration 0232) on 21 synced tables skips an update older than the stored row by more than a minute; the client sends its edit time (server-clock corrected), re-pulls when a write is skipped, and every list type now has `updatedAt`. Two-device test. Exception: `profiles` and `user_settings` are single whole-document rows and stay last-pusher-wins |
+| SYN9 | `sync_pull` returns deleted activation ids (0233) and `delta.ts` applies them |
+| SMS3, SMS4, SMS6 | pairing: a claimed leg claims nothing, claims serialised per user, the claimer waits for a processing sibling (0234, 0235); FX legs pair only with the opposite direction and a different currency; credits from an unknown sender are held for confirmation (side effect: banks with no known sender id hold until confirmed) |
+| API-4 | biometric enrolment needs a sign-in from the last 5 minutes or the password (typed 403 `reauth_required`, app prompts with the existing re-auth sheet); hash must be 64 hex. Older installed builds show a generic error until they update |
+| API-6 | suspended or deleted accounts are refused on `sms/*` and `push/*` within 60 s (cached check). Device removal revokes everything scoped to the device; sessions are not per device, so a global sign-out is deliberately not used |
+| API-9 | 2-step trust bound to a server-issued secret, only its hash stored (0236); legacy rows upgrade once |
+| API-13, PRF8 | cron comment current; FileProvider exposes only `Pictures/` under external files (test guards it) |
+| MON-2, MON-3 | one weekly count on every screen; weekend follows the week-start setting (Saturday-first = Fri+Sat) |
+| BUD4 | `payFrequency` sets the income source frequency and paydays; `save_more` removed; `houseScope` kept (drives the down-payment wording) |
+| SIT8, SIT9 | full Arabic Privacy and Terms; site leads deleted after 180 days (0238), policy line, read-only admin list |
+| WLT9, WLT1 | a savings-funded debt payment links to its withdrawal (0239); deleting it returns the money, Undo takes it out; Spend can optionally also log an expense (default off) |
+| HKS5, UIS8, PRF11, SIT10, MON-6 | import banner and confirm-before-replace; no hex/rgb literal left; selectors everywhere; export pages over 1,000 rows; hook-level test |
+| DBL-1 | 35 ledger rows backfilled (timestamp versions from first commit); duplicate-number pairs documented in `supabase/migrations/README.md` and grandfathered by the check |
+| DBL-3 | `qa2_backup` NOT dropped (destroys copies of user rows: 1, 59 and 54 rows). Owner decision |
+
+Known leftovers outside the 114: ~100M amounts ellipsized in the 3-cell strip at 375px; emergency-fund pill 6px sliver; light theme, tablet and desktop not swept.
 
 ## Live UI sweep (run last, machine quiet, pane visible)
 Dark theme and Arabic, mobile 375px (and 320px on four routes). 14 routes and 13 sheets. axe, overflow, tap-target and hit tests, plus real keyboard presses and a stress-data check.
@@ -121,7 +132,7 @@ Method: a 7x7 grid of probe points over the 44x44 square around every control un
 Dark and Arabic visual sweeps, keyboard-only sweep, narrow and wide widths, stress data in the live app (the sweep did not run); real-device native paths; Buddgy model behaviour with the live model; terms, cookies, admin UI; analytics, spending, history months, reports hooks; recurring-expense generation; `useDebtTabData` maths; most form-level validation (double submit, 1e21, Arabic digits, state reset); a New York time-zone run of the money area.
 
 ## How far from bug-free
-- Known open: 0 P0, 0 P1, 3 P2, 19 P3 (22 of 114). 92 findings fixed fully or partly.
+- Known open: 0 P0, 0 P1, 0 P2, 1 P3 (DBL-3, awaiting the owner). 113 of 114 fixed.
 - Discovery is still not saturated: three of the four densest areas (sync, API, forms) had not been probed this deeply before and gave P1s; the live-UI layer produced nothing because it could not run.
 - Assurance score (judgement, 18 segments x depth 0-3): up from 34/54 (63%) to about 40/54 (74%), mostly from the API matrix, the English/Arabic diff (clean: 3,447 keys each), selector timings (linear, 91 ms at 40k transactions) and code-level sync review. A release gate would want 80%+ with native, AI, offline and live UI at 2.
 - Next, by yield: (1) live UI sweep on a production build, (3) render tests for the sheets and carousels (UIS1, forms), (4) real-device checklist, (5) Playwright smoke for the nine journeys.

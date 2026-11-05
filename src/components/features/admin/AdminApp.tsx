@@ -20,6 +20,7 @@ const LOADERS: Record<string, () => Promise<{ default: ComponentType<{ status: A
   overview: () => import('./views/OverviewView'),
   analytics: () => import('./views/AnalyticsView'),
   users: () => import('./views/UsersView'),
+  leads: () => import('./views/LeadsView'),
   support: () => import('./views/SupportView'),
   sms: () => import('./views/SmsView'),
   crashes: () => import('./views/CrashesView'),

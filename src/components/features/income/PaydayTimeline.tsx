@@ -1,23 +1,24 @@
 'use client'
 
 import { Check, Clock, Contrast, AlertCircle, Hourglass, type LucideIcon } from 'lucide-react'
+import { mix } from '@/lib/utils/color'
 import { isRealizedOccurrence, type IncomeOccurrence, type IncomeOccurrenceStatus } from '@/lib/utils/incomeOccurrences'
 
 /**
  * Per-status palette. Each payday status owns a color that tints its dot and the
  * status icon inside it; selection brightens the same fill and adds a glow, so
- * the status color always stays legible. `rgb` drives the alpha tints.
+ * the status color always stays legible. `text` (a theme token) also drives the alpha tints.
  */
-export const STATUS_STYLE: Record<IncomeOccurrenceStatus, { rgb: string; text: string; Icon: LucideIcon }> = {
-  received: { rgb: '53,212,111', text: 'var(--color-status-ok-fg)', Icon: Check },
-  late: { rgb: '255,177,61', text: 'var(--color-status-warn-fg)', Icon: Clock },
-  partial: { rgb: '125,182,255', text: 'var(--cat-transport-fg)', Icon: Contrast },
-  missed: { rgb: '229,9,20', text: 'var(--color-status-danger-fg)', Icon: AlertCircle },
-  awaiting: { rgb: '138,138,150', text: 'var(--color-brand-text-secondary)', Icon: Hourglass },
+export const STATUS_STYLE: Record<IncomeOccurrenceStatus, { text: string; Icon: LucideIcon }> = {
+  received: { text: 'var(--color-status-ok-fg)', Icon: Check },
+  late: { text: 'var(--color-status-warn-fg)', Icon: Clock },
+  partial: { text: 'var(--cat-transport-fg)', Icon: Contrast },
+  missed: { text: 'var(--color-status-danger-fg)', Icon: AlertCircle },
+  awaiting: { text: 'var(--color-brand-text-secondary)', Icon: Hourglass },
 }
 
-const GREEN = '53,212,111'
-const RED = '229,9,20'
+const GREEN = STATUS_STYLE.received.text
+const RED = STATUS_STYLE.missed.text
 const FAINT = 'var(--color-brand-border-strong)'
 
 interface Props {
@@ -72,15 +73,15 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
         className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full"
         style={{
           background: FAINT,
-          maskImage: 'linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)',
-          WebkitMaskImage: 'linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)',
+          maskImage: 'linear-gradient(90deg, transparent, black 12%, black 88%, transparent)',
+          WebkitMaskImage: 'linear-gradient(90deg, transparent, black 12%, black 88%, transparent)',
         }}
       />
       {/* Green progress fill up to the last paid payday. */}
       {greenEnd !== null && greenEnd > fillStart ? (
         <div
           className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full"
-          style={{ left: `${fillStart}%`, width: `${greenEnd - fillStart}%`, background: `rgba(${GREEN},.45)` }}
+          style={{ left: `${fillStart}%`, width: `${greenEnd - fillStart}%`, background: mix(GREEN, 45) }}
         />
       ) : null}
       {/* Red glow bracketing each missed payday, faded into the surrounding rail. */}
@@ -89,7 +90,7 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
           <div
             key={`m-${o.key}`}
             className="pointer-events-none absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full"
-            style={{ left: `calc(${pos(i)}% - 7%)`, width: '14%', background: `linear-gradient(90deg, transparent, rgba(${RED},.7) 50%, transparent)` }}
+            style={{ left: `calc(${pos(i)}% - 7%)`, width: '14%', background: `linear-gradient(90deg, transparent, ${mix(RED, 70)} 50%, transparent)` }}
           />
         ) : null,
       )}
@@ -98,7 +99,7 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
         <div className="pointer-events-none absolute top-1/2 h-[6px] -translate-y-1/2" style={{ left: `${pulseFrom}%`, width: `${pulseTo - pulseFrom}%` }}>
           <span
             className="absolute top-1/2 h-[6px] w-[6px] -translate-y-1/2 rounded-full"
-            style={{ background: `rgba(${GREEN},.9)`, animation: 'incomeTimelinePulse 1.8s ease-in-out infinite' }}
+            style={{ background: mix(GREEN, 90), animation: 'incomeTimelinePulse 1.8s ease-in-out infinite' }}
           />
         </div>
       ) : null}
@@ -133,9 +134,9 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
             <span
               className="flex h-5 w-5 items-center justify-center rounded-full border"
               style={{
-                background: `rgba(${st.rgb},${selected ? 0.5 : 0.24})`,
-                borderColor: `rgba(${st.rgb},${selected ? 0.95 : 0.5})`,
-                boxShadow: selected ? `0 0 0 3px rgba(${st.rgb},.2), 0 0 10px rgba(${st.rgb},.5)` : undefined,
+                background: mix(st.text, selected ? 50 : 24),
+                borderColor: mix(st.text, selected ? 95 : 50),
+                boxShadow: selected ? `0 0 0 3px ${mix(st.text, 20)}, 0 0 10px ${mix(st.text, 50)}` : undefined,
               }}
             >
               <Icon className="h-3 w-3" strokeWidth={2.5} style={{ color: st.text }} />

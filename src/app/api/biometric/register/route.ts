@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
-import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { resolveRouteIdentity, resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
+import { signedInWithin } from '@/lib/auth/recentSignIn'
+import { verifyReauth } from '@/lib/server/reauth'
+
+const REAUTH_WINDOW_SECONDS = 300
+const SECRET_HASH_PATTERN = /^[0-9a-f]{64}$/
 
 /**
  * Bind this device to the signed-in account for biometric sign-in. Stores only a
@@ -9,20 +14,30 @@ import { resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
  * biometric prompt). One row per device, tied to a single account at a time: a
  * device already bound to another account is refused (409) until that account
  * disables biometric, so a guessed device id cannot take over someone's binding.
+ * A binding lets the device mint sessions for the account without password or 2-step, so creating one needs proof of
+ * the owner: a sign-in from the last five minutes, or the current password (typed `reauth_required` otherwise).
  */
 export async function POST(request: Request) {
   try {
-    const { user } = await resolveRouteUser(request)
-    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    const [identity, { user }] = await Promise.all([resolveRouteIdentity(request), resolveRouteUser(request)])
+    if (!user || !identity || identity.id !== user.id) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const body = (await request.json().catch(() => null)) as { secret_hash?: string } | null
-    const secretHash = body?.secret_hash?.trim()
-    if (!secretHash || secretHash.length < 32) {
+    const body = (await request.json().catch(() => null)) as { secret_hash?: string; currentPassword?: string } | null
+    const secretHash = body?.secret_hash?.trim().toLowerCase()
+    if (!secretHash || !SECRET_HASH_PATTERN.test(secretHash)) {
       return NextResponse.json({ error: 'Invalid secret_hash' }, { status: 400 })
     }
 
-    const deviceId = await resolveDeviceId(request)
     const admin = createServiceRoleClient()
+    const currentPassword = typeof body?.currentPassword === 'string' && body.currentPassword ? body.currentPassword.slice(0, 256) : undefined
+    if (currentPassword || !signedInWithin(identity.amr, ['password', 'otp', 'oauth', 'id_token', 'totp'], REAUTH_WINDOW_SECONDS)) {
+      const verdict = await verifyReauth(admin, identity, user, currentPassword)
+      if (verdict === 'rate_limited') return NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 })
+      if (verdict === 'wrong_password') return NextResponse.json({ error: 'Wrong password', code: 'wrong_password' }, { status: 403 })
+      if (verdict === 'reauth_required') return NextResponse.json({ error: 'Confirm it is you first', code: 'reauth_required' }, { status: 403 })
+    }
+
+    const deviceId = await resolveDeviceId(request)
     const now = new Date().toISOString()
     // Claim a free device, else refresh the secret only when this account already owns it.
     const claim = await admin

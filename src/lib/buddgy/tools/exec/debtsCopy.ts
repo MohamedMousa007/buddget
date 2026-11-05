@@ -45,6 +45,7 @@ interface DebtLabels {
   deleteEffect: (payments: number, schedules: number, expenses: number, plans: number) => string
   goalRemoved: (names: string) => string
   paymentExpenseStays: string
+  paymentReturnsToSavings: string
   reopens: string
   willClear: string
   noExpense: string
@@ -103,6 +104,7 @@ const EN: DebtLabels = {
       .join(' '),
   goalRemoved: (n) => `Debt-free goal removed: ${n}.`,
   paymentExpenseStays: 'The spending entry for this payment stays.',
+  paymentReturnsToSavings: 'The money goes back to the savings pocket it came from.',
   reopens: 'The debt becomes active again.',
   willClear: 'This payment clears the debt.',
   noExpense: 'Recorded as a repayment, not as spending.',
@@ -161,6 +163,7 @@ const AR: DebtLabels = {
       .join(' '),
   goalRemoved: (n) => `سيُحذف هدف التحرر من الدين: ${n}.`,
   paymentExpenseStays: 'يبقى المصروف المرتبط بهذه الدفعة كما هو.',
+  paymentReturnsToSavings: 'يعود المبلغ إلى حصّالة الادخار التي خرج منها.',
   reopens: 'يعود الدين نشطًا من جديد.',
   willClear: 'هذه الدفعة تسدد الدين بالكامل.',
   noExpense: 'تُسجَّل كسداد وليس كمصروف.',

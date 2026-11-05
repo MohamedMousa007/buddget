@@ -28,7 +28,7 @@ import {
 } from '@/lib/payment/paymentMethodDefaults'
 import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
-import { readable, rgba } from '@/lib/utils/color'
+import { mix, readable } from '@/lib/utils/color'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { FieldButton } from '@/components/ui/FieldButton'
@@ -239,7 +239,7 @@ export function PaymentMethodSetupSheet({
     : { shell: 'z-[110]', provider: 'z-[120]', card: 'z-[125]', currency: 'z-[130]' }
 
   // provider-field chip (empty = muted card glyph; selected = brand initials)
-  const fieldChipColor = brand ? brand.colors[0] : '#9898B0'
+  const fieldChipColor = brand ? brand.colors[0] : 'var(--color-brand-text-muted)'
   const fieldInitials = brand ? brand.short : providerInitials(providerName)
 
   const previewTail = idMode === 'label' && label.trim()
@@ -299,7 +299,7 @@ export function PaymentMethodSetupSheet({
                     <span
                       className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] text-[11px] font-extrabold"
                       style={hasProvider
-                        ? { background: rgba(fieldChipColor, 0.16), color: fieldChipColor }
+                        ? { background: mix(fieldChipColor, 16), color: fieldChipColor }
                         : { background: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
                     >
                       {hasProvider ? fieldInitials : <CreditCard className="h-4 w-4" />}
@@ -317,8 +317,8 @@ export function PaymentMethodSetupSheet({
                   <div
                     className="flex h-[38px] w-fit items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold"
                     style={{
-                      background: rgba(PAYMENT_TYPE_META[typeLock].color, 0.15),
-                      border: `1px solid ${rgba(PAYMENT_TYPE_META[typeLock].color, 0.5)}`,
+                      background: mix(PAYMENT_TYPE_META[typeLock].color, 15),
+                      border: `1px solid ${mix(PAYMENT_TYPE_META[typeLock].color, 50)}`,
                       color: readable(PAYMENT_TYPE_META[typeLock].color),
                     }}
                   >
@@ -336,8 +336,8 @@ export function PaymentMethodSetupSheet({
                           key={tp} selected={activeChip} onClick={() => pickType(tp)}
                           className="h-[38px]"
                           style={{
-                            background: activeChip ? rgba(meta.color, 0.15) : undefined,
-                            borderColor: activeChip ? rgba(meta.color, 0.5) : undefined,
+                            background: activeChip ? mix(meta.color, 15) : undefined,
+                            borderColor: activeChip ? mix(meta.color, 50) : undefined,
                             color: activeChip ? readable(meta.color) : undefined,
                           }}
                         >
@@ -466,7 +466,7 @@ function FloatingCardPreview({
 
   // Always a live, coloured card (reflects colour/type/digits/currency immediately).
   // Static 3D treatment — no motion after the one-time entrance.
-  const cardShadow = `0 36px 64px -16px rgba(0,0,0,.72), 0 16px 32px -12px ${rgba(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.2)`
+  const cardShadow = `0 36px 64px -16px ${mix('black', 72)}, 0 16px 32px -12px ${mix(color, 50)}, inset 0 1px 0 ${mix('white', 20)}`
 
   const preview = (
     <>
@@ -476,7 +476,7 @@ function FloatingCardPreview({
       className="pointer-events-none absolute"
       style={{
         inset: -34, borderRadius: 46,
-        background: `radial-gradient(circle, ${rgba(color, 0.72)}, transparent 68%)`,
+        background: `radial-gradient(circle, ${mix(color, 72)}, transparent 68%)`,
         filter: 'blur(36px)', zIndex: 0,
       }}
     />
@@ -486,7 +486,7 @@ function FloatingCardPreview({
       className="pointer-events-none absolute"
       style={{
         left: '50%', bottom: -20, transform: 'translateX(-50%)',
-        width: 224, height: 30, background: 'rgba(0,0,0,.55)',
+        width: 224, height: 30, background: mix('black', 55),
         borderRadius: '50%', filter: 'blur(20px)', zIndex: 0,
       }}
     />
@@ -502,7 +502,7 @@ function FloatingCardPreview({
     >
       <div
         className="pointer-events-none absolute inset-0 rounded-[20px]"
-        style={{ background: 'radial-gradient(120% 90% at 85% 8%, rgba(255,255,255,.16), transparent 60%)' }}
+        style={{ background: `radial-gradient(120% 90% at 85% 8%, ${mix('white', 16)}, transparent 60%)` }}
       />
       <div className="relative flex items-center justify-between">
         <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
@@ -513,7 +513,7 @@ function FloatingCardPreview({
       <div className="relative mt-auto text-start">
         <div
           className="truncate text-[23px] font-bold tracking-[-0.01em]"
-          style={{ color: hasProvider ? '#fff' : 'rgba(255,255,255,.55)' }}
+          style={{ color: hasProvider ? 'white' : mix('white', 55) }}
         >
           {name}
         </div>

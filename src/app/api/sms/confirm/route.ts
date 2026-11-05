@@ -16,7 +16,7 @@ import { smsDeviceGate } from '@/lib/sms/deviceGate'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { Constants } from '@/lib/supabase/database.types'
-import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { createSmsTransaction } from '@/lib/sms/dispatch'
 import { isIncomeKind } from '@/lib/sms/createSmsExpense'
@@ -39,7 +39,7 @@ const ROW_COLUMNS =
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const userId = await resolveApiUserId(request)
+  const userId = await resolveActiveApiUserId(request)
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

@@ -44,6 +44,18 @@ describe('commitFlowEntities', () => {
     expect(store.addGoal).toHaveBeenCalledWith(expect.objectContaining({ name: 'goal:car', category: 'car', targetAmount: 120000, monthlyContribution: 5000, targetDate: '2028-10-19' }))
   })
 
+  it('a weekly or biweekly payer gets a source of that frequency, per-paycheck amount and derived paydays (BUD4)', () => {
+    const weekly = fakeStore()
+    commitFlowEntities(answered({ income: 20000, incomeType: 'salary', payFrequency: 'weekly' }), weekly as never, 'EGP', names, NOW)
+    expect(weekly.addIncomeSource).toHaveBeenCalledWith(expect.objectContaining({ recurringFrequency: 'weekly', amount: 5000, paydayDays: [4, 11, 18, 25] }))
+    const biweekly = fakeStore()
+    commitFlowEntities(answered({ income: 20000, incomeType: 'salary', payFrequency: 'biweekly' }), biweekly as never, 'EGP', names, NOW)
+    expect(biweekly.addIncomeSource).toHaveBeenCalledWith(expect.objectContaining({ recurringFrequency: 'biweekly', amount: 10000, paydayDays: [10, 25] }))
+    const monthly = fakeStore()
+    commitFlowEntities(answered({ income: 20000, incomeType: 'salary', payFrequency: 'monthly', payday: 3 }), monthly as never, 'EGP', names, NOW)
+    expect(monthly.addIncomeSource).toHaveBeenCalledWith(expect.objectContaining({ recurringFrequency: 'monthly', amount: 20000, paydayDays: [3] }))
+  })
+
   it('never creates a record twice when the build is retried or resumed', () => {
     const store = fakeStore()
     const s = answered({ income: 20000, debtKinds: ['loan'], loanBalance: 900, loanMin: 100 })

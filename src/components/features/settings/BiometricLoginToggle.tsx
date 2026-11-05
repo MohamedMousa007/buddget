@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Fingerprint, ScanFace } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { Switch } from '@/components/ui/switch'
+import { TwoFactorOffSheet } from '@/components/features/settings/hub/TwoFactorOffSheet'
 import { useActionToast } from '@/components/ui/ActionToast'
 import {
   authenticate,
@@ -14,20 +15,24 @@ import {
   unregisterBiometric,
   type BiometryType,
 } from '@/lib/native/biometricAuth'
+import type { TwoFactorResult } from '@/lib/auth/twoFactor'
 
 interface BiometricLoginToggleProps {
   userEmail?: string
+  /** False for Google/Apple-only accounts: the re-auth prompt then relies on a fresh sign-in instead of a typed password. */
+  hasPassword?: boolean
   /** Drop the card chrome so the toggle sits as a row inside another card. */
   bare?: boolean
 }
 
-export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLoginToggleProps) {
+export function BiometricLoginToggle({ userEmail, hasPassword = true, bare = false }: BiometricLoginToggleProps) {
   const t = useT()
   const toast = useActionToast()
   const [available, setAvailable] = useState(false)
   const [type, setType] = useState<BiometryType>(null)
   const [enabled, setEnabledState] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [reauthOpen, setReauthOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -66,6 +71,7 @@ export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLogin
         const result = await registerBiometric(userEmail)
         setEnabledState(result === 'ok')
         if (result === 'conflict') toast(t.settings.biometricOwnedByOther)
+        if (result === 'reauth_required') setReauthOpen(true)
       } else {
         await unregisterBiometric()
         setEnabledState(false)
@@ -73,6 +79,12 @@ export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLogin
     } finally {
       setBusy(false)
     }
+  }
+
+  const enrolWithPassword = async (password: string | undefined): Promise<TwoFactorResult> => {
+    const result = await registerBiometric(userEmail, password)
+    if (result === 'conflict') toast(t.settings.biometricOwnedByOther)
+    return result === 'ok' || result === 'wrong_password' || result === 'reauth_required' || result === 'rate_limited' ? result : 'failed'
   }
 
   return (
@@ -95,6 +107,14 @@ export function BiometricLoginToggle({ userEmail, bare = false }: BiometricLogin
           onCheckedChange={() => void toggle()}
         />
       </div>
+      <TwoFactorOffSheet
+        open={reauthOpen}
+        purpose="biometricEnrol"
+        hasPassword={hasPassword}
+        onConfirm={enrolWithPassword}
+        onClose={() => setReauthOpen(false)}
+        onTurnedOff={() => { setEnabledState(true); setReauthOpen(false) }}
+      />
     </div>
   )
 }

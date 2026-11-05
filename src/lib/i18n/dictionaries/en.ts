@@ -1785,6 +1785,9 @@ export const en: Dictionary = {
 
     importSuccess: 'Your data is all set \u2014 import complete!',
     importError: 'Something went wrong with the import. Try again.',
+    importConfirmTitle: 'Replace your data with this backup?',
+    importConfirmBody: 'Everything on this device is replaced by the contents of the file. This cannot be undone, so export a backup first if you are unsure.',
+    importConfirmLabel: 'Replace my data',
 
     hub: {
       sectionAccount: 'Account',
@@ -3227,6 +3230,9 @@ export const en: Dictionary = {
       purpose: 'What is it for?',
       spend: 'Spending',
       spendSub: 'Leaves savings, not logged as an expense',
+      logExpense: 'Also log it as an expense',
+      logExpenseHint: 'It counts toward this month\u2019s spending. The pocket still drops only once.',
+      expenseCategory: 'Expense category',
       debt: 'Pay a debt',
       debtSub: 'Lowers what you owe',
       invest: 'Investment',
@@ -3318,6 +3324,8 @@ export const en: Dictionary = {
   moneyFlows: {
     deletePaymentTitle: 'Delete this payment?',
     deletePaymentBody: 'Its matching expense is deleted too, and the debt goes back up. You can undo for a few seconds.',
+    deletePaymentReturnsMoney: 'It was paid from savings, so the money goes back into that pocket.',
+    deletePaymentKeepsMoneyOut: 'It was paid from savings before payments were linked to their withdrawal, so the money does NOT go back into the pocket. Add it back by hand if you need to.',
     deletePaidExpenseTitle: 'Delete this debt payment?',
     deletePaidExpenseBody: 'This expense is a debt payment. The payment is deleted too, and the debt goes back up. You can undo for a few seconds.',
     paymentDeleted: 'Payment and expense deleted',

@@ -35,5 +35,6 @@ export function recurringSavingsDepositFromRow(
     isActive: row.is_active,
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
+    updatedAt: row.updated_at ?? undefined,
   }
 }

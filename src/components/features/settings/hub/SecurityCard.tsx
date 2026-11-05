@@ -80,7 +80,7 @@ export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['
         checked={p.store.settings.twoFactorEmailEnabled}
         onChange={(val) => void changeTwoFactor(val)}
       />
-      <div data-setting-id="biometric"><BiometricLoginToggle userEmail={user.email} bare /></div>
+      <div data-setting-id="biometric"><BiometricLoginToggle userEmail={user.email} hasPassword={hasPassword} bare /></div>
       <div data-setting-id="appLock"><AppLockToggle userEmail={user.email} bare /></div>
       <SettingsRow icon={SETTING_ICONS.shield} tone={tone} title={copy.devices.title} subtitle={copy.devices.hint} onClick={() => setDevicesOpen(true)} settingId="devices" />
       <DevicesSheet open={devicesOpen} onClose={() => setDevicesOpen(false)} />

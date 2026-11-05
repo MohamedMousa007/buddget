@@ -5,7 +5,7 @@ const CAPACITOR_ORIGINS = new Set(['https://localhost', 'capacitor://localhost']
 /** The local dev server may call the API with credentials, never in production. */
 const DEV_ORIGIN = 'http://localhost:3000'
 
-export const NATIVE_ALLOWED_HEADERS = 'Content-Type, Authorization, X-Buddget-Device-Id, X-Requested-With, X-App-Platform, X-App-Version'
+export const NATIVE_ALLOWED_HEADERS = 'Content-Type, Authorization, X-Buddget-Device-Id, X-Buddget-Device-Secret, X-Requested-With, X-App-Platform, X-App-Version'
 
 export function isCapacitorApiOrigin(origin: string | null): boolean {
   if (!origin) return false

@@ -43,7 +43,7 @@ import {
   type CcPayoffFundingLeg,
   type PairSibling,
 } from './pairing'
-import { guardDirection } from './directionGuard'
+import { detectLegDirection, guardDirection } from './directionGuard'
 import { normalizeDigits } from './normalizeDigits'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
@@ -351,6 +351,7 @@ export async function createSmsTransaction(
         amount: row.amount,
         accountLast4: row.last4 ?? null,
         kind,
+        ...(kind === 'currency_exchange' ? { currency: row.currency, direction: detectLegDirection(normalizeDigits(row.rawBody)) } : {}),
       })
       if (sibling) {
         // This leg funded a credit-card payoff that already posted. The payoff row is the

@@ -80,7 +80,7 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
   const settledByExpense = new Set<string>()
   for (const e of input.expenses) {
     if (e.linkedDebtPaymentId) settledByExpense.add(e.linkedDebtPaymentId)
-    if (e.refundedAt) continue
+    if (e.refundedAt || e.fundedFromSavingsTxId) continue // a pocket-funded expense leaves no account, the pocket already lost it
     // No funding source named: a CC payoff or an SMS the resolver could not place must not drain Cash.
     const unfunded = !e.paymentMethodId || e.paymentMethodId === DEFAULT_CASH_ID
     if (unfunded && (e.category === 'CC Payoff' || e.smsLogId)) continue

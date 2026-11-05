@@ -85,8 +85,15 @@ describe('POST /api/auth/password/change', () => {
 
   it('sets the one-minute announcement cookie only when asked', async () => {
     await call({ newPassword: 'newpass123', currentPassword: 'old' })
-    expect(h.cookieSet).not.toHaveBeenCalled()
+    const announced = () => h.cookieSet.mock.calls.filter(([name]) => name === 'buddget_password_updated').length
+    expect(announced()).toBe(0)
     await call({ newPassword: 'newpass123', currentPassword: 'old', announce: true })
-    expect(h.cookieSet).toHaveBeenCalledTimes(1)
+    expect(announced()).toBe(1)
+  })
+
+  it('re-trusts this device with a fresh secret: only its hash is stored, the web caller gets it as an HttpOnly cookie', async () => {
+    const res = await call({ newPassword: 'newpass123', currentPassword: 'old' })
+    expect(h.cookieSet).toHaveBeenCalledWith('buddget_device_secret', expect.stringMatching(/^[0-9a-f]{64}$/), expect.objectContaining({ httpOnly: true }))
+    expect(JSON.stringify(await res.json())).not.toContain('deviceSecret')
   })
 })

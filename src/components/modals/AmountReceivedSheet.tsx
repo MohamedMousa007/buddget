@@ -19,6 +19,7 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { sanitizeAmount } from '@/lib/ui/amountSanitize'
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 
 const MON_TITLE = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const fmtDay = (iso: string) => `${MON_TITLE[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
@@ -56,9 +57,10 @@ export function AmountReceivedSheet() {
   const isOpen = activeModal === 'amountReceived' && !!markingIncome
 
   const source = markingIncome ? incomeSources.find((s) => s.id === markingIncome.sourceId) : undefined
+  const weekendFirst = useWeekendFirstDay()
   const occ = useMemo(
-    () => (source ? buildOccurrences(source, incomeEvents, markingIncome?.month ?? monthFilter, monthStartDay) : []),
-    [source, incomeEvents, markingIncome?.month, monthFilter, monthStartDay],
+    () => (source ? buildOccurrences(source, incomeEvents, markingIncome?.month ?? monthFilter, monthStartDay, new Date(), weekendFirst) : []),
+    [source, incomeEvents, markingIncome?.month, monthFilter, monthStartDay, weekendFirst],
   )
   const current = markingIncome ? occ.find((o) => o.key === markingIncome.occKey) : undefined
   const expected = source ? expectedPerPayday(source) : 0

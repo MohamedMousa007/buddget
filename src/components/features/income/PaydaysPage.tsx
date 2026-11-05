@@ -24,8 +24,10 @@ import { buildOccurrences, isRealizedOccurrence } from '@/lib/utils/incomeOccurr
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatFlex, formatWhole } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { focusPayday, isLate, overdueDays } from '@/lib/income/paydaySummary'
 import { cadenceLine } from '@/lib/income/cadence'
+import type { WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import { cn } from '@/lib/utils'
 import { fillSlots } from '@/lib/ui/fillSlots'
 import { useLocale, useT } from '@/lib/i18n'
@@ -33,9 +35,9 @@ import type { Dictionary } from '@/lib/i18n'
 import type { IncomeEvent, IncomeSource, IncomeSourceType } from '@/lib/store/types'
 
 /** The one status a payday card carries for this month. */
-function cardStatus(source: IncomeSource, events: IncomeEvent[], month: string, monthStartDay: number, t: Dictionary, shortDate: (iso: string) => string): { variant: PaydayBadgeVariant; label: string } {
+function cardStatus(source: IncomeSource, events: IncomeEvent[], month: string, monthStartDay: number, weekendFirst: WeekendFirstDay, t: Dictionary, shortDate: (iso: string) => string): { variant: PaydayBadgeVariant; label: string } {
   const today = new Date()
-  const occ = buildOccurrences(source, events, month, monthStartDay, today)
+  const occ = buildOccurrences(source, events, month, monthStartDay, today, weekendFirst)
   const focus = focusPayday(occ, today)
   if (!focus) return { variant: 'muted', label: t.income.statusPending }
   if (!focus.eventId) {
@@ -89,6 +91,7 @@ export function PaydaysPage() {
   const [cycleOpen, setCycleOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const weekendFirst = useWeekendFirstDay()
 
   const streams = useMemo(() => {
     const { start, end } = getMonthRange(monthFilter, monthStartDay)
@@ -277,7 +280,7 @@ export function PaydaysPage() {
                   destination={pm ? `→ ${pm}` : t.paydays.paidIntoNotSet}
                   destinationMissing={!pm}
                   amount={formatFlex(s.amount)}
-                  status={cardStatus(s, incomeEvents, monthFilter, monthStartDay, t, shortDate)}
+                  status={cardStatus(s, incomeEvents, monthFilter, monthStartDay, weekendFirst, t, shortDate)}
                   onOpen={() => setOpenId(s.id)}
                   reorder={
                     reordering

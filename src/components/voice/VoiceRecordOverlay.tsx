@@ -135,9 +135,7 @@ function Waveform({ amplitude, animTime }: { amplitude: number; animTime: number
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const red =
-      getComputedStyle(document.documentElement).getPropertyValue('--color-brand-red').trim() ||
-      '#e12424'
+    const red = getComputedStyle(document.documentElement).getPropertyValue('--color-brand-red').trim()
     const t = animTime / 400
     const barW = W / BARS
     ctx.clearRect(0, 0, W, H)
@@ -213,7 +211,7 @@ function FloatingRecordingWidget({
             borderColor: nearTrash ? 'var(--color-brand-primary)' : 'var(--color-brand-border)',
           }}
         >
-          <Trash2 className="h-6 w-6" style={{ color: nearTrash ? '#fff' : 'var(--color-brand-text-muted)' }} />
+          <Trash2 className="h-6 w-6" style={{ color: nearTrash ? 'var(--color-brand-on-primary)' : 'var(--color-brand-text-muted)' }} />
         </motion.div>
       </div>
 

@@ -1,9 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
+import { DEVICE_ID_HEADER, DEVICE_ID_PATTERN } from '@/lib/auth/deviceIdConstants'
 import { readDeviceCookie, setDeviceCookie } from '@/lib/auth/deviceCookie'
 
-/** What a device id looks like: the same shape the cookie path enforces, capped so a client cannot mint unbounded rate-limit keys. */
-export const DEVICE_ID_PATTERN = /^[0-9a-f-]{10,64}$/i
+export { DEVICE_ID_PATTERN }
 
 /**
  * Device fingerprint for 2FA trusted-device checks.

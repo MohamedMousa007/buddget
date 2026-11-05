@@ -25,7 +25,7 @@ export const en: SiteContent = {
       privacy: 'Privacy policy', terms: 'Terms of service', cookies: 'Cookies', delete: 'Delete your account',
     },
     copy: '© 2026 Buddget. All rights reserved.',
-    legalNote: 'The privacy policy and terms are published in English.',
+    legalNote: 'The privacy policy and terms are available in English and Arabic.',
   },
   common: {
     tryBrowser: 'Try it in your browser', logIn: 'Log in', noInstall: 'No download needed. Works on any phone or computer.', haveAccount: 'Already have an account?',

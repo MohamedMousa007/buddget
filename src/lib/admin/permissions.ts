@@ -29,6 +29,7 @@ export const PERMISSIONS = {
   'crashes.manage': 'Acknowledge and resolve crash reports',
   'sms.view': 'See the SMS pipeline, tracked SMS and the error queue',
   'sms.manage': 'Manage SMS templates and promotion rules',
+  'leads.view': 'See website contact messages and waitlist sign-ups (retained 180 days)',
   'support.view': 'See the support queue',
   'support.reply': 'Reply to and update tickets',
   'support.manage': 'Assign, bulk-edit and delete tickets',

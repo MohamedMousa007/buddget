@@ -144,7 +144,17 @@ describe('N8/N12/N18/N3 ingest guards (masked fixtures)', () => {
     expect(checkCreditSender('CIB', 'instant_transfer_in', 'cib eg')).toBe('ok')
     expect(checkCreditSender('CIB', 'instant_transfer_in', 'CIBFAKE')).toBe('mismatch')
     expect(checkCreditSender('CIB', 'purchase', 'RANDOM-X')).toBe('ok')
-    expect(checkCreditSender('Bank', 'income', 'ANY')).toBe('ok')
+  })
+  it('credit sender: a bank with no sender ids of its own accepts any known bank sender and holds an unknown one', () => {
+    // generic sets (Bank / Credit Card / Transfer / Currency Exchange) and banks only a template or the AI knows
+    expect(checkCreditSender('Bank', 'income', 'ANY')).toBe('mismatch')
+    expect(checkCreditSender('Credit Card', 'income', 'SPOOF-X')).toBe('mismatch')
+    expect(checkCreditSender('Transfer', 'instant_transfer_in', 'FREE-GIFT')).toBe('mismatch')
+    expect(checkCreditSender(null, 'income', 'FREE-GIFT')).toBe('mismatch')
+    expect(checkCreditSender('Bank', 'income', 'CIB')).toBe('ok')
+    expect(checkCreditSender('Bank Misr', 'income', 'HSBC')).toBe('ok')
+    expect(checkCreditSender('Bank', 'income', '')).toBe('absent')
+    expect(checkCreditSender('Bank', 'purchase', 'SPOOF-X')).toBe('ok')
   })
   it('held credit posts nothing', () => {
     expect(heldForConfirmation('income')).toMatchObject({ outcome: 'awaiting_confirmation', expenseId: null, incomeId: null })

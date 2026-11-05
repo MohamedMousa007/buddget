@@ -59,6 +59,23 @@ export function detectLedgerSign(body: string): MoneyDirection | null {
   return signs.has('+') ? 'credit' : 'debit'
 }
 
+const LEG_CREDIT_WORDING = /\b(?:credited|received)\b|تم\s+إيداع|إلى\s+حسابك/i
+const LEG_DEBIT_WORDING = /\b(?:debited|deducted|withdrawn)\b|\bfrom\s+(?:your\s+)?account\b|من\s+حسابك/i
+
+/**
+ * Which way money moved on ONE leg of a two-leg movement, or null when the message does not say.
+ * The bank's ledger sign wins; otherwise unambiguous wording ("credited to", "from account"); a message
+ * carrying both readings is unreadable. Used to pair a currency exchange: its two legs must be opposite.
+ */
+export function detectLegDirection(body: string): MoneyDirection | null {
+  const sign = detectLedgerSign(body)
+  if (sign) return sign
+  const credit = LEG_CREDIT_WORDING.test(body)
+  const debit = LEG_DEBIT_WORDING.test(body)
+  if (credit === debit) return null
+  return credit ? 'credit' : 'debit'
+}
+
 /**
  * Returns the kind corrected against the ledger sign, or the kind unchanged when the message
  * carries no sign or the two already agree.

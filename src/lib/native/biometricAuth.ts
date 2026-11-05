@@ -220,14 +220,17 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+export type BiometricRegisterResult = 'ok' | 'conflict' | 'error' | 'reauth_required' | 'wrong_password' | 'rate_limited'
+
 /**
  * Enable biometric sign-in for the signed-in account on this device. Mints a
  * device secret, registers its hash with the backend, then persists the secret +
  * enabled state locally. The backend refuses (409) when another account still owns
  * this device's binding, which is reported as 'conflict'. Must be called while
- * authenticated.
+ * authenticated. A session older than the server's window answers 'reauth_required':
+ * call again with `currentPassword` (the re-auth prompt collects it).
  */
-export async function registerBiometric(email?: string): Promise<'ok' | 'conflict' | 'error'> {
+export async function registerBiometric(email?: string, currentPassword?: string): Promise<BiometricRegisterResult> {
   try {
     const secret = randomSecret()
     const secretHash = await sha256Hex(secret)
@@ -235,9 +238,14 @@ export async function registerBiometric(email?: string): Promise<'ok' | 'conflic
     const res = await apiFetchAuth('/api/biometric/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret_hash: secretHash }),
+      body: JSON.stringify({ secret_hash: secretHash, ...(currentPassword ? { currentPassword } : {}) }),
     })
     if (res.status === 409) return 'conflict'
+    if (res.status === 429) return 'rate_limited'
+    if (res.status === 403) {
+      const body = (await res.json().catch(() => null)) as { code?: string } | null
+      return body?.code === 'reauth_required' || body?.code === 'wrong_password' ? body.code : 'error'
+    }
     if (!res.ok) return 'error'
     await Preferences.set({ key: SECRET_KEY, value: secret })
     await setEnabled(true, email)

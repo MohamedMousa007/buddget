@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({ uid: vi.fn(), limited: vi.fn(), push: vi.fn() }))
 vi.mock('server-only', () => ({}))
-vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: h.uid }))
+vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: h.uid, resolveActiveApiUserId: h.uid }))
 vi.mock('@/lib/server/rateLimit', () => ({ isRateLimited: h.limited }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({}) }))
 vi.mock('@/lib/server/sendNativePush', () => ({ sendNativePush: h.push }))

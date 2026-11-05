@@ -11,6 +11,7 @@ import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { settlePrompt } from '@/lib/prompts/settle'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 
 /** The late-payday and income-match questions, with what answering them writes. */
 export function useIncomeResolution() {
@@ -23,16 +24,17 @@ export function useIncomeResolution() {
     })),
   )
   const dismissed = useSettingsStore((s) => s.dismissedBanners)
+  const weekendFirst = useWeekendFirstDay()
   return useMemo(() => {
     const today = new Date()
-    const matches = incomeMatches(incomeSources, incomeEvents, monthStartDay, rates, today, dismissed)
+    const matches = incomeMatches(incomeSources, incomeEvents, monthStartDay, rates, today, dismissed, weekendFirst)
     const matched = new Set(matches.map((m) => m.occ.key))
     // A payday with a match waiting is answered by the match, not asked about twice.
-    const late = latePaydays(incomeSources, incomeEvents, monthStartDay, today).filter(
+    const late = latePaydays(incomeSources, incomeEvents, monthStartDay, today, weekendFirst).filter(
       (l) => !matched.has(l.occ.key) && !dismissed.includes(`late:${l.occ.key}`),
     )
     return { matches, late }
-  }, [incomeSources, incomeEvents, monthStartDay, rates, dismissed])
+  }, [incomeSources, incomeEvents, monthStartDay, rates, dismissed, weekendFirst])
 }
 
 /**

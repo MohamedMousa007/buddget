@@ -674,6 +674,8 @@ export function calculateCashOutflow(params: {
     // debtPayments below, which is the only source that sees ALL payoffs. A spend-excluded
     // expense (for someone else, excluded method) still moved real cash, so it stays in.
     if (isNonSpendCategory(e.category)) continue
+    // Paid from a savings pocket: the pocket withdrawal is the money movement, so counting it again would drop net worth twice.
+    if (e.fundedFromSavingsTxId) continue
     if (e.paymentMethodId && deferredPmIds.has(e.paymentMethodId)) continue
     if (e.linkedDebtId && installmentDebtIds.has(e.linkedDebtId)) continue
     outflow += expenseAmountInBase(e, baseCurrency, exchangeRates)

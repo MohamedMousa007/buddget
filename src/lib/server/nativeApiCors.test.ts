@@ -16,6 +16,10 @@ describe('native API CORS', () => {
     expect(isCapacitorApiOrigin('http://localhost:3000')).toBe(false)
   })
 
+  it('lets the native shell send the trusted-device secret header', () => {
+    expect(NATIVE_ALLOWED_HEADERS).toContain('X-Buddget-Device-Secret')
+  })
+
   it('never lets a cross-origin caller send the admin session header', () => {
     expect(NATIVE_ALLOWED_HEADERS).not.toContain('X-Admin-Session')
   })

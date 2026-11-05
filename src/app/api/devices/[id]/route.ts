@@ -48,6 +48,13 @@ export async function PATCH(request: Request, { params }: Params) {
 /**
  * Removes a phone: it stops collecting and being notified at once, and signs itself out the next time it opens.
  * The phone you are holding cannot be removed here; sign out on it instead.
+ *
+ * Sessions are not recorded per device (user_devices has no session id), so the Auth session of the removed phone cannot
+ * be singled out: `auth.admin.signOut` revokes one JWT's session or ALL of the user's, and a global signOut would log
+ * out the phone in the user's hand too. Everything the phone holds that is scoped to its device id is revoked instead:
+ * SMS ingest tokens, push tokens, the biometric binding (no new session can be minted) and trusted-device 2-step skip.
+ * Its remaining access JWT only reaches routes that check `revoked_at` per device (SMS, push) or RLS-scoped own data, and
+ * expires within the hour; it signs itself out the next time it opens.
  */
 export async function DELETE(request: Request, { params }: Params) {
   const o = await owner(request)

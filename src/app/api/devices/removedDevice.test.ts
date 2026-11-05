@@ -38,7 +38,7 @@ function table(name: string) {
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({ from: table, rpc: () => Promise.resolve({ data: null, error: null }) }) }))
-vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: async () => 'u1' }))
+vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: async () => 'u1', resolveActiveApiUserId: async () => 'u1' }))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/server/emitNotification', () => ({ emitNotification: async () => undefined }))
 vi.mock('@/lib/server/userDictionary', () => ({ getUserDictionary: async () => ({}) }))

@@ -37,7 +37,7 @@ type Problem = 'perm' | 'big' | 'badType' | 'failed'
 interface AvatarPickerModalProps {
   open: boolean
   onClose: () => void
-  store: FinanceStore
+  store: Pick<FinanceStore, 'profile' | 'updateProfile'>
 }
 
 export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalProps) {

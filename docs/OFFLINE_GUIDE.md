@@ -34,7 +34,7 @@ flowchart LR
 
 - Every change is written to the device first — the app never waits for the network.
 - On reconnect, Buddget **pushes your offline changes first, then pulls** what's new from your other devices. This order guarantees an expense you deleted offline stays deleted, and a setting you changed offline sticks.
-- If the same item was edited on two devices, the newest edit wins.
+- If the same item was edited on two devices, the newest edit wins, by edit time and not by who syncs last. Every push carries the time of the edit (put on the server's clock); the server skips a write whose row is already newer, and the device then pulls that newer row and keeps it. A phone that was offline for days therefore cannot overwrite what you changed on your other device meanwhile. Two edits less than a minute apart are not told apart: the one that reaches the server last wins.
 - While offline you'll never see sync-error warnings for normal edits — the app knows it's offline and simply waits.
 
 ## How SMS tracking survives offline

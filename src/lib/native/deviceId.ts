@@ -1,5 +1,6 @@
 import { Preferences } from '@capacitor/preferences'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
+import { clearDeviceSecret } from '@/lib/native/deviceSecret'
 
 const DEVICE_ID_KEY = 'buddget_device_id'
 
@@ -10,6 +11,7 @@ export async function resetDeviceId(): Promise<void> {
   } catch {
     /* the next call creates a fresh id anyway on a clean install */
   }
+  await clearDeviceSecret()
 }
 
 /** The device-id header every JWT SMS call must carry; empty only when storage is unreadable. */

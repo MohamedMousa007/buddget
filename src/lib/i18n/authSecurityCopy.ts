@@ -16,6 +16,11 @@ export interface AuthSecurityCopy {
   twoFaOffCancel: string
   twoFaOffNeedsSignIn: string
   twoFaChangeFailed: string
+  biometricEnrolTitle: string
+  biometricEnrolBody: string
+  biometricEnrolConfirm: string
+  biometricEnrolNeedsSignIn: string
+  biometricEnrolFailed: string
   gateIntro: string
   gateFailed: string
   gateNotNow: string
@@ -38,6 +43,11 @@ const en: AuthSecurityCopy = {
   twoFaOffCancel: 'Keep it on',
   twoFaOffNeedsSignIn: 'Sign out and sign in again, then turn it off.',
   twoFaChangeFailed: 'Couldn\u2019t change two-factor authentication. Try again.',
+  biometricEnrolTitle: 'Confirm it is you',
+  biometricEnrolBody: 'Enter your password to turn on biometric sign-in. It lets this phone sign in to your account without a password.',
+  biometricEnrolConfirm: 'Turn on',
+  biometricEnrolNeedsSignIn: 'Sign out and sign in again, then turn on biometric sign-in.',
+  biometricEnrolFailed: 'Couldn\u2019t turn on biometric sign-in. Try again.',
   gateIntro: 'For your security, confirm it is you with the code we email you. Your data is safe and will sync right after.',
   gateFailed: 'We couldn\u2019t confirm that code. Your data is safe on this device. Try again, or sign out.',
   gateNotNow: 'Not now',
@@ -60,6 +70,11 @@ const ar: AuthSecurityCopy = {
   twoFaOffCancel: 'إبقاؤها مفعّلة',
   twoFaOffNeedsSignIn: 'سجّل الخروج ثم الدخول من جديد، ثم أوقفها.',
   twoFaChangeFailed: 'تعذّر تغيير المصادقة الثنائية. حاول مرة أخرى.',
+  biometricEnrolTitle: 'أكّد أنك أنت',
+  biometricEnrolBody: 'أدخل كلمة المرور لتفعيل الدخول بالبصمة. يتيح لهذا الهاتف الدخول إلى حسابك دون كلمة مرور.',
+  biometricEnrolConfirm: 'تفعيل',
+  biometricEnrolNeedsSignIn: 'سجّل الخروج ثم الدخول من جديد، ثم فعّل الدخول بالبصمة.',
+  biometricEnrolFailed: 'تعذّر تفعيل الدخول بالبصمة. حاول مرة أخرى.',
   gateIntro: 'لحمايتك، أكّد أنك أنت بالرمز الذي أرسلناه إلى بريدك. بياناتك بأمان وستتم مزامنتها فور التأكيد.',
   gateFailed: 'تعذّر تأكيد الرمز. بياناتك بأمان على هذا الجهاز. حاول مرة أخرى أو سجّل الخروج.',
   gateNotNow: 'ليس الآن',

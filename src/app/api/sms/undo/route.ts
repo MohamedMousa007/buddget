@@ -12,7 +12,7 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const hasBearer = (request.headers.get('authorization') ?? '').startsWith('Bearer ')
   const caller = hasBearer
     ? await resolveSmsCaller(request)
-    : { userId: await resolveApiUserId(request), deviceId: null, viaJwt: false }
+    : { userId: await resolveActiveApiUserId(request), deviceId: null, viaJwt: false }
   const { userId } = caller
 
   if (!userId) {

@@ -7,8 +7,14 @@ import { useT } from '@/lib/i18n'
 import { CurrencyConverterCore } from '@/components/features/settings/CurrencyConverterCore'
 import { CurrencyConverterGoldRow } from '@/components/features/settings/CurrencyConverterGoldRow'
 
+/** What the converter reads from the finance store: rates, the gold price and the two currencies. */
+export type CurrencyConverterStore = Pick<
+  FinanceStore,
+  'exchangeRates' | 'lastRatesFetch' | 'goldPriceAvailable' | 'goldPricePerGram' | 'goldPriceStale'
+> & { settings: Pick<FinanceStore['settings'], 'baseCurrency' | 'secondaryCurrency'> }
+
 export interface CurrencyConverterProps {
-  store: FinanceStore
+  store: CurrencyConverterStore
 }
 
 /**

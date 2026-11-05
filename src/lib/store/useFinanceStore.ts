@@ -899,21 +899,32 @@ export const useFinanceStore = create<FinanceStore>()(
           // already running, never has a reminder resurrected (it may have been paused by hand).
           const ownSchedules = reopens ? state.recurringDebtPayments.filter((r) => r.debtId === payment.debtId) : []
           const dormant = ownSchedules.length === 1 && !ownSchedules[0].isActive ? ownSchedules[0] : undefined
+          // A payment funded from a pocket returns the money with it: the withdrawal that paid it is reversed.
+          const fundingTx = payment.fundedFromSavingsTxId
+            ? state.savingsTransactions.find((t) => t.id === payment.fundedFromSavingsTxId && t.type === 'withdrawal')
+            : undefined
+          const savingsTransactions = fundingTx ? state.savingsTransactions.filter((t) => t.id !== fundingTx.id) : state.savingsTransactions
+          const savingsAccounts = fundingTx
+            ? state.savingsAccounts.map((a) => (a.id === fundingTx.accountId ? { ...a, currentBalance: settleBalance(a.currentBalance + fundingTx.amount) } : a))
+            : state.savingsAccounts
           snapshot = {
             payment,
             expenses: pairedExpenses,
             debtWasCleared: reopens,
             schedule: dormant,
+            savingsTx: fundingTx,
           }
           const recurringDebtPayments = dormant
             ? state.recurringDebtPayments.map((r) => (r.id === dormant.id ? { ...r, isActive: true } : r))
             : state.recurringDebtPayments
-          const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments, expenses }
+          const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments, expenses, savingsTransactions, savingsAccounts }
           return {
             debts,
             debtPayments: remainingPayments,
             expenses,
             recurringDebtPayments,
+            savingsTransactions,
+            savingsAccounts,
             goals: reconcileGoalsForState(nextState),
           }
         })
@@ -931,11 +942,19 @@ export const useFinanceStore = create<FinanceStore>()(
           const recurringDebtPayments = snapshot.schedule
             ? state.recurringDebtPayments.map((r) => (r.id === snapshot.schedule!.id ? snapshot.schedule! : r))
             : state.recurringDebtPayments
-          const nextState: FinanceStore = { ...state, debtPayments, expenses, recurringDebtPayments }
+          // Undo takes the returned money out of the pocket again, as the original withdrawal did.
+          const retake = snapshot.savingsTx && !state.savingsTransactions.some((t) => t.id === snapshot.savingsTx!.id) ? snapshot.savingsTx : undefined
+          const savingsTransactions = retake ? [...state.savingsTransactions, retake] : state.savingsTransactions
+          const savingsAccounts = retake
+            ? state.savingsAccounts.map((a) => (a.id === retake.accountId ? { ...a, currentBalance: settleBalance(Math.max(0, a.currentBalance - retake.amount)) } : a))
+            : state.savingsAccounts
+          const nextState: FinanceStore = { ...state, debtPayments, expenses, recurringDebtPayments, savingsTransactions, savingsAccounts }
           return {
             debtPayments,
             expenses,
             recurringDebtPayments,
+            savingsTransactions,
+            savingsAccounts,
             debts: settleDebt(nextState, snapshot.payment.debtId),
             goals: reconcileGoalsForState(nextState),
           }
@@ -1811,7 +1830,7 @@ export const useFinanceStore = create<FinanceStore>()(
               : tryConvertWithGold(raw, cIn, acc.currency, state.exchangeRates, state.settings.baseCurrency, goldQuoteOf(state))
           if (amt === null || amt <= 0 || acc.currentBalance + balanceEpsilon(acc.currency) < amt) return state
           const tx: SavingsTransaction = {
-            id: generateId(),
+            id: opts?.txId ?? generateId(),
             accountId,
             type: 'withdrawal',
             amount: amt,

@@ -21,3 +21,21 @@ export async function setDeviceCookie(id: string): Promise<void> {
     maxAge: MAX_AGE_SECONDS,
   })
 }
+
+export const DEVICE_SECRET_COOKIE_NAME = 'buddget_device_secret'
+
+/** Read the HttpOnly trusted-device secret cookie if present. */
+export async function readDeviceSecretCookie(): Promise<string | null> {
+  const v = (await cookies()).get(DEVICE_SECRET_COOKIE_NAME)?.value
+  return v && /^[0-9a-f]{64}$/.test(v) ? v : null
+}
+
+export async function setDeviceSecretCookie(secret: string): Promise<void> {
+  ;(await cookies()).set(DEVICE_SECRET_COOKIE_NAME, secret, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: MAX_AGE_SECONDS,
+  })
+}

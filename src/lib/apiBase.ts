@@ -87,6 +87,8 @@ export async function buildAuthHeaders(init?: HeadersInit): Promise<Headers> {
     const { DEVICE_ID_HEADER } = await import('@/lib/auth/deviceIdConstants')
     const deviceId = await getOrCreateDeviceId()
     if (deviceId) headers.set(DEVICE_ID_HEADER, deviceId)
+    const { deviceSecretHeader } = await import('@/lib/native/deviceSecret')
+    for (const [name, value] of Object.entries(await deviceSecretHeader())) headers.set(name, value)
   }
 
   return headers

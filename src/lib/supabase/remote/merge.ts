@@ -1,12 +1,13 @@
 import type { Snapshot } from './snapshot'
-
-/** One array slice keyed by id, plus an optional `updatedAt`/`createdAt` tiebreaker. */
-type WithId = { id: string; updatedAt?: string; createdAt?: string }
+import { serverInstant } from './serverClock'
 
 const instant = (iso: string | undefined): number | null => {
   const t = Date.parse(iso ?? '')
   return Number.isNaN(t) ? null : t
 }
+
+/** One array slice keyed by id, plus an optional `updatedAt`/`createdAt` tiebreaker. */
+type WithId = { id: string; updatedAt?: string; createdAt?: string }
 
 /**
  * Merge two lists of id'd items:
@@ -23,8 +24,9 @@ export function mergeList<T extends WithId>(local: T[], server: T[]): T[] {
       byId.set(l.id, l)
       continue
     }
-    // Compared as instants: the device writes `...Z`, the server `...+00:00`, and as text the two never tie.
-    const lt = instant(l.updatedAt || l.createdAt)
+    // Compared as instants on the server's clock: the device writes `...Z` (shifted by the learned clock offset), the
+    // server `...+00:00`, and as text the two never tie.
+    const lt = serverInstant(l.updatedAt || l.createdAt)
     const st = instant(s.updatedAt || s.createdAt)
     if (lt !== null && (st === null || lt > st)) byId.set(l.id, l)
     // else keep server

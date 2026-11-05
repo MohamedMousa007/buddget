@@ -12,6 +12,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import { ModalTitle } from '@/components/modals/ModalTitle'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { useT } from '@/lib/i18n'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import type { PendingConfirmation } from '@/hooks/useSmsConfirmations'
 import { formatFixed2 } from '@/lib/utils/formatters'
@@ -46,6 +47,7 @@ export interface ReviewMatch {
 export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: SmsReviewSheetProps) {
   const shortDate = useShortDate()
   const t = useT()
+  const weekendFirst = useWeekendFirstDay()
   const { incomeSources, incomeEvents, paymentMethods, monthStartDay, rates } = useFinanceStore(
     useShallow((s) => ({
       incomeSources: s.incomeSources,
@@ -63,13 +65,13 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem,
     for (const item of items) {
       if (!item.kind || !CREDIT_KINDS.has(item.kind) || item.amount == null || !item.currency) continue
       const receivedDate = format(new Date(item.received_at), 'yyyy-MM-dd')
-      const best = paydayCandidates({ amount: item.amount, currency: item.currency as Currency, receivedDate }, incomeSources, incomeEvents, monthStartDay, rates, today)[0]
+      const best = paydayCandidates({ amount: item.amount, currency: item.currency as Currency, receivedDate }, incomeSources, incomeEvents, monthStartDay, rates, today, weekendFirst)[0]
       if (!best?.plausible) continue
       const late = Math.round((Date.parse(receivedDate) - Date.parse(best.occ.dueDate)) / 86_400_000)
       out.set(item.id, { templateId: best.source.id, date: best.occ.dueDate, daysLate: Math.max(0, late) })
     }
     return out
-  }, [open, items, incomeSources, incomeEvents, monthStartDay, rates])
+  }, [open, items, incomeSources, incomeEvents, monthStartDay, rates, weekendFirst])
   const [busyId, setBusyId] = useState<string | null>(null)
   const [failedId, setFailedId] = useState<string | null>(null)
 

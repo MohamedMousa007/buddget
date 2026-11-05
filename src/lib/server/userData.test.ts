@@ -85,16 +85,52 @@ describe('exportUserData', () => {
   })
 })
 
-describe('exportUserData truncation', () => {
-  it('reports a table the database cut short as incomplete instead of exporting it silently short', async () => {
+describe('exportUserData paging (SIT10)', () => {
+  /** A fake PostgREST that answers at most 1000 rows per request, like the live project. */
+  const service = (all: Record<string, { id: number }[]>, opts: { noId?: string[] } = {}) => {
+    const ranges: string[] = []
     const admin = {
       from: (table: string) => {
-        const q = { select: () => q, eq: () => q, in: () => q, limit: async () => ({ data: table === 'expenses' ? [{ id: 'e1' }] : [], count: table === 'expenses' ? 5000 : 0, error: null }) }
+        const rows = all[table] ?? []
+        let ordered = false
+        const q = {
+          select: () => q, eq: () => q, in: () => q,
+          order: () => { ordered = true; return q },
+          limit: async () => ({ data: rows.slice(0, 1000), count: rows.length, error: null }),
+          range: async (from: number, to: number) => {
+            ranges.push(`${table}:${from}-${to}`)
+            if (opts.noId?.includes(table) || !ordered) return { data: null, error: { message: 'column id does not exist' } }
+            return { data: rows.slice(from, Math.min(to, from + 999) + 1), error: null }
+          },
+        }
         return q
       },
     } as unknown as ServiceClient
+    return { admin, ranges }
+  }
+  const make = (n: number) => Array.from({ length: n }, (_, i) => ({ id: i }))
+
+  it('pages a table longer than 1000 rows so the export is complete', async () => {
+    const { admin, ranges } = service({ expenses: make(2500), debts: make(3) })
+    const { tables, failed } = await exportUserData(admin, 'u1', 20000)
+    expect(failed).toEqual([])
+    expect(tables.expenses).toHaveLength(2500)
+    expect(new Set((tables.expenses as { id: number }[]).map((r) => r.id)).size).toBe(2500)
+    expect(ranges).toEqual(['expenses:0-999', 'expenses:1000-1999', 'expenses:2000-2499'])
+    expect(tables.debts).toHaveLength(3)
+  })
+
+  it('stops at the per-table cap and reports the table as incomplete', async () => {
+    const { admin } = service({ expenses: make(2500) })
+    const { tables, failed } = await exportUserData(admin, 'u1', 1500)
+    expect(tables.expenses).toHaveLength(1500)
+    expect(failed).toEqual(['expenses'])
+  })
+
+  it('reports a long table it cannot page instead of exporting it silently short', async () => {
+    const { admin } = service({ expenses: make(2500) }, { noId: ['expenses'] })
     const { tables, failed } = await exportUserData(admin, 'u1', 20000)
     expect(failed).toEqual(['expenses'])
-    expect(tables.expenses).toEqual([{ id: 'e1' }])
+    expect(tables.expenses).toHaveLength(1000)
   })
 })

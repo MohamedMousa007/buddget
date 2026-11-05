@@ -27,6 +27,7 @@ export const ADMIN_NAV: readonly AdminNavGroup[] = [
     label: 'People',
     items: [
       { section: 'users', label: 'Users', icon: 'Users', anyOf: ['users.view'], description: 'Directory, profiles and account controls' },
+      { section: 'leads', label: 'Website leads', icon: 'Inbox', anyOf: ['leads.view'], description: 'Contact messages and waitlist sign-ups from the website' },
       { section: 'support', label: 'Support desk', icon: 'LifeBuoy', anyOf: ['support.view'], description: 'Tickets and help for users' },
     ],
   },

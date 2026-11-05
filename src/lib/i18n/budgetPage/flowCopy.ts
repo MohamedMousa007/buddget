@@ -45,7 +45,7 @@ const OPTS: Record<string, Record<string, Pair>> = {
   houseScope: { full_price: ['Full price', 'السعر كاملًا'], down_payment: ['Down payment', 'الدفعة الأولى'] },
   educationFor: { me: ['Me', 'لي'], child: ['A child', 'لطفل'] },
   goalTiming: { by_date: ['By a date', 'بتاريخ'], by_amount: ['A monthly amount', 'بمبلغ شهري'] },
-  goalAdjust: { extend: ['Move the date later', 'تأجيل الموعد'], lower: ['Lower the target', 'خفض الهدف'], save_more: ['Find more to save', 'ادّخار أكثر'], keep: ['Keep it anyway', 'أبقِه كما هو'] },
+  goalAdjust: { extend: ['Move the date later', 'تأجيل الموعد'], lower: ['Lower the target', 'خفض الهدف'], keep: ['Keep it anyway', 'أبقِه كما هو'] },
   goalVsSafety: { goal_first: ['Goal first', 'الهدف أولًا'], balanced: ['Both together', 'الاثنان معًا'], safety_first: ['Safety first', 'الأمان أولًا'] },
   annualKinds: { car_yearly: ['Car insurance or renewal', 'تأمين السيارة أو تجديدها'], school_start: ['School start', 'بداية المدرسة'], travel: ['Travel', 'السفر'], festive: ['Festivals and gifts', 'الأعياد والهدايا'], home_repairs: ['Home repairs', 'إصلاحات المنزل'], medical: ['Medical', 'طبي'], renewals: ['Visas and renewals', 'تأشيرات وتجديدات'] },
   bigSoon: { baby: ['A baby', 'مولود'], wedding: ['A wedding', 'زفاف'], move: ['A move', 'انتقال'], car: ['A car', 'سيارة'], medical: ['Medical', 'علاج'] },

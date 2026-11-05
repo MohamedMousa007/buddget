@@ -124,16 +124,20 @@ const CREDIT_KINDS = new Set<string>(['income', 'instant_transfer_in', 'refund']
 export type SenderCheck = 'ok' | 'mismatch' | 'absent'
 
 /**
- * Credits are auto-booked from a spoofable alphanumeric sender. When a sender IS present and the matched
- * bank has known sender ids, a credit from any other sender is held for the user. An empty sender (iOS never
- * sends one) is reported as 'absent' so the caller only counts it: it never changes how the SMS is booked.
+ * Credits are auto-booked from a spoofable alphanumeric sender. When a sender IS present, a credit from a sender that is
+ * not a known sender id is held for the user (the existing awaiting_confirmation path). "Known" is the matched bank's own
+ * ids; a bank with none of its own (the generic Bank / Credit Card / Transfer / Currency Exchange sets, or a bank only
+ * a template or the AI knows) falls back to every known bank sender id, so a real bank's sender is never held but an
+ * arbitrary spoofed one is. An empty sender (iOS never sends one) is reported as 'absent' so the caller only counts it:
+ * it never changes how the SMS is booked.
  */
 export function checkCreditSender(bank: string | null | undefined, kind: string | null | undefined, sender: string | null | undefined): SenderCheck {
   if (!kind || !CREDIT_KINDS.has(kind)) return 'ok'
   const given = sender?.trim().toUpperCase()
   if (!given) return 'absent'
-  const known = ALL_PATTERN_SETS.filter((set) => set.bank === bank).flatMap((set) => set.senderIds.map((id) => id.toUpperCase()))
-  if (known.length === 0) return 'ok'
+  const idsOf = (sets: typeof ALL_PATTERN_SETS) => sets.flatMap((set) => set.senderIds.map((id) => id.toUpperCase()))
+  const own = idsOf(ALL_PATTERN_SETS.filter((set) => set.bank === bank))
+  const known = own.length > 0 ? own : idsOf(ALL_PATTERN_SETS)
   // A real sender id often carries a suffix or prefix ("CIB-EG", "HSBC EG"): match on whole tokens, never substrings.
   const tokens = given.split(/[\s\-_.:]+/).filter(Boolean)
   const squashed = given.replace(/[^A-Z0-9\u0600-\u06FF]/g, '')

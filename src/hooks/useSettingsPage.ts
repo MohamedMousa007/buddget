@@ -7,6 +7,8 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
+import { useConfirm } from '@/components/ui/dialog/DialogProvider'
+import { applyBackupImport } from '@/lib/backup/applyBackupImport'
 import { useT } from '@/lib/i18n'
 import { downloadOrShareFile } from '@/lib/utils/exportFile'
 import { escapeCsvField } from '@/lib/utils/formatters'
@@ -29,6 +31,7 @@ export function useSettingsPage() {
     useShallow((s) => ({ exportData: s.exportData, importData: s.importData, paymentMethods: s.paymentMethods, expenses: s.expenses })),
   )
   const toast = useActionToast()
+  const confirm = useConfirm()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const supabaseConfigured = useMemo(
@@ -92,20 +95,12 @@ export function useSettingsPage() {
 
     const reader = new FileReader()
     reader.onload = async (event) => {
-      const text = event.target?.result as string
-      if (!text) {
-        setImportBanner({ variant: 'error', text: t.settings.importError })
-        return
-      }
-      try {
-        await store.importData(text)
-        setImportBanner({ variant: 'success', text: t.settings.importSuccess })
-      } catch (err) {
-        setImportBanner({
-          variant: 'error',
-          text: err instanceof Error ? err.message : t.settings.importError,
-        })
-      }
+      const banner = await applyBackupImport(event.target?.result as string | null, {
+        confirm: () => confirm({ title: t.settings.importConfirmTitle, body: t.settings.importConfirmBody, confirmLabel: t.settings.importConfirmLabel, destructive: true }),
+        importData: store.importData,
+        copy: { error: t.settings.importError, success: t.settings.importSuccess },
+      })
+      if (banner) setImportBanner(banner)
     }
     reader.onerror = () => setImportBanner({ variant: 'error', text: t.settings.importError })
     reader.readAsText(file)

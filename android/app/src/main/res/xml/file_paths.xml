@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-files-path name="my_images" path="." />
-    <external-cache-path name="my_external_cache_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <!--
+        The only content:// URIs this provider hands out (authority ${applicationId}.fileprovider) are the capture targets
+        @capacitor/camera's getPhoto flow creates via CameraUtils.createImageFile: getExternalFilesDir(DIRECTORY_PICTURES).
+        The ioncamera library (ModalCamera/Gallery) ships its own provider, receipts use Filesystem Directory.Data (no URI),
+        and the document scanner returns Play services URIs, so none of them need this file.
+        Do not widen back to path=".": every file under the external-files, external-cache and cache roots would become
+        shareable. If Camera.getPhoto is ever called with allowEditing: true, its temp files live in the cache root and a
+        cache-path entry has to come back with it.
+    -->
+    <external-files-path name="camera_pictures" path="Pictures/" />
 </paths>

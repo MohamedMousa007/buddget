@@ -19,7 +19,7 @@
  */
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { sendNativePush } from '@/lib/server/sendNativePush'
@@ -37,7 +37,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const uid = await resolveApiUserId(request)
+  const uid = await resolveActiveApiUserId(request)
   if (!uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }

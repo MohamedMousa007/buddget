@@ -31,3 +31,16 @@ export function resolveWeekStart(settings: { weekStartDay?: WeekStartDay | null;
 export function weekColumn(jsDay: number, weekStart: WeekStartDay): number {
   return (jsDay - weekStart + 7) % 7
 }
+
+/** UAE moved its weekend to Sat+Sun in 2022 although its week still opens on Saturday here. */
+const SAT_SUN_WEEKEND_ZONES: ReadonlySet<string> = new Set(['Asia/Dubai'])
+
+/**
+ * First day of the employer weekend, derived from the week-start setting: a Saturday-first week
+ * (Egypt, KSA and most of the Gulf) has a Fri+Sat weekend, so Friday; any other week is Sat+Sun, so Saturday.
+ */
+export function weekendFirstDayFor(settings: { weekStartDay?: WeekStartDay | null; timezone?: string | null }): 5 | 6 {
+  const zone = settings.timezone ?? deviceTimeZone()
+  if (zone && SAT_SUN_WEEKEND_ZONES.has(zone)) return 6
+  return resolveWeekStart(settings) === 6 ? 5 : 6
+}

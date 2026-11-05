@@ -19,9 +19,11 @@ export function useLinkedDelete() {
   const removeDebtPayment = useCallback(
     async (paymentId: string, from: 'payment' | 'expense' = 'payment'): Promise<boolean> => {
       const copy = t.moneyFlows
+      const payment = useFinanceStore.getState().debtPayments.find((p) => p.id === paymentId)
+      const fundingNote = !payment?.fundedFromSavings ? '' : payment.fundedFromSavingsTxId ? copy.deletePaymentReturnsMoney : copy.deletePaymentKeepsMoneyOut
       const ok = await confirm({
         title: from === 'payment' ? copy.deletePaymentTitle : copy.deletePaidExpenseTitle,
-        body: from === 'payment' ? copy.deletePaymentBody : copy.deletePaidExpenseBody,
+        body: `${from === 'payment' ? copy.deletePaymentBody : copy.deletePaidExpenseBody}${fundingNote ? ` ${fundingNote}` : ''}`,
         confirmLabel: t.common.delete,
         destructive: true,
       })

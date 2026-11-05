@@ -18,6 +18,7 @@ import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency, formatFixed2, formatFlex } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { useT } from '@/lib/i18n'
 import type { IncomeSource } from '@/lib/store/types'
 import { cadenceLine } from '@/lib/income/cadence'
@@ -51,14 +52,15 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
           })),
   )
   const today = useMemo(() => new Date(), [])
+  const weekendFirst = useWeekendFirstDay()
   // An unanswered payday stays "late" until the user says Received or Missed — "missed"
   // on the timeline means someone marked it so.
   const all = useMemo(
     () =>
-      recentPaydays(source, incomeEvents, monthFilter, monthStartDay, HISTORY_LEN, today).map((o) =>
+      recentPaydays(source, incomeEvents, monthFilter, monthStartDay, HISTORY_LEN, today, weekendFirst).map((o) =>
         !o.eventId && o.status === 'missed' ? { ...o, status: 'late' as const } : o,
       ),
-    [source, incomeEvents, monthFilter, monthStartDay, today],
+    [source, incomeEvents, monthFilter, monthStartDay, today, weekendFirst],
   )
   const occ = all.slice(-TIMELINE_LEN)
   // Nothing is selected until a payday is tapped (timeline or history); tapping it again,

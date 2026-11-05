@@ -64,3 +64,17 @@ describe('mergeList compares times as instants', () => {
     expect(mergeList(local, server)[0].name).toBe('newer')
   })
 })
+
+describe('mergeList clock skew (SYN7)', () => {
+  it('orders a device stamp on the server clock: a clock running 2 h ahead no longer keeps a stale row', async () => {
+    const { noteServerTime, resetServerClock } = await import('./serverClock')
+    noteServerTime(new Date(Date.now() - 2 * 3_600_000).toISOString())
+    const nowLocal = new Date().toISOString()
+    const serverEdit = new Date(Date.now() - 3_600_000).toISOString().replace('Z', '+00:00')
+    const local = [{ id: 'a', updatedAt: nowLocal, v: 'local stale' }]
+    const server = [{ id: 'a', updatedAt: serverEdit, v: 'server newer' }]
+    expect(mergeList<Row>(local, server)[0].v).toBe('server newer')
+    resetServerClock()
+    expect(mergeList<Row>(local, server)[0].v).toBe('local stale')
+  })
+})

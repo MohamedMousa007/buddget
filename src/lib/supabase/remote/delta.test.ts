@@ -12,7 +12,7 @@ function noDelta(over: Partial<MappedDelta> = {}): MappedDelta {
     paymentMethods: none, incomeSources: none, incomeEvents: none, expenses: none, receipts: none, recurringExpenses: none,
     subscriptions: none, debts: none, debtPayments: none, recurringDebtPayments: none, savingsAccounts: none, investmentHoldings: none,
     savingsTransactions: none, recurringSavingsDeposits: none, goals: none, buddgyMemories: none, accountAdjustments: none,
-    budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [], staleBefore: null,
+    budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [], deletedBudgetPlanActivationIds: [], staleBefore: null,
     ...over,
   }
 }
@@ -52,6 +52,19 @@ describe('applyDelta', () => {
     const local = { ...emptySnapshot(), budgetPlanActivations: [act('a1', 'p1'), act('a2', 'p2')] as Snapshot['budgetPlanActivations'] }
     const out = applyDelta(local, noDelta({ deletedBudgetPlanIds: ['p1'] }))
     expect(out.budgetPlanActivations.map((a) => a.id)).toEqual(['a2'])
+  })
+
+  it('drops an activation another device tombstoned (SYN9) and keeps the others', () => {
+    const act = (id: string, planId: string) => ({ id, planId, effectiveFrom: '2026-10-01', createdAt: '2026-10-01T00:00:00Z' }) as never
+    const local = { ...emptySnapshot(), budgetPlanActivations: [act('a1', 'p1'), act('a2', 'p1')] as Snapshot['budgetPlanActivations'] }
+    const out = applyDelta(local, noDelta({ deletedBudgetPlanActivationIds: ['a1'] }))
+    expect(out.budgetPlanActivations.map((a) => a.id)).toEqual(['a2'])
+  })
+
+  it('pullDelta reads the deleted activation ids from sync_pull', async () => {
+    const payload = { cursor: 'c', has_profile: true, profile: null, settings: null, lists: {}, budget_plans: [], budget_plans_deleted: [], budget_categories: [], budget_subcategories: [], budget_plan_activations: [], budget_plan_activations_deleted: ['a1'] }
+    const out = await pullDelta({ rpc: vi.fn().mockResolvedValue({ data: payload, error: null }) } as never, 'c0')
+    expect(out?.deletedBudgetPlanActivationIds).toEqual(['a1'])
   })
 
   it('removes deleted budget plans and merges the live ones', () => {

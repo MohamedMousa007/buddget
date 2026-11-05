@@ -10,7 +10,7 @@ vi.mock('@/lib/native/isNative', () => ({ isNative: () => true }))
 import { registerBiometric } from './biometricAuth'
 
 describe('registerBiometric', () => {
-  beforeEach(() => apiFetchAuth.mockReset())
+  beforeEach(() => { apiFetchAuth.mockReset(); vi.mocked(Preferences.set).mockClear() })
 
   it('reports ok on success', async () => {
     apiFetchAuth.mockResolvedValue({ ok: true, status: 200 })
@@ -19,6 +19,27 @@ describe('registerBiometric', () => {
   it('reports a conflict when another account owns the device (409)', async () => {
     apiFetchAuth.mockResolvedValue({ ok: false, status: 409 })
     expect(await registerBiometric('a@b.c')).toBe('conflict')
+  })
+  it('reports reauth_required when the server wants a recent sign-in (typed 403)', async () => {
+    apiFetchAuth.mockResolvedValue({ ok: false, status: 403, json: async () => ({ code: 'reauth_required' }) })
+    expect(await registerBiometric('a@b.c')).toBe('reauth_required')
+    expect(Preferences.set).not.toHaveBeenCalled()
+  })
+  it('retries with the password as the reauth proof', async () => {
+    apiFetchAuth.mockResolvedValue({ ok: true, status: 200 })
+    expect(await registerBiometric('a@b.c', 'pw')).toBe('ok')
+    expect(JSON.parse(apiFetchAuth.mock.calls[0][1].body)).toMatchObject({ currentPassword: 'pw' })
+  })
+  it('does not send a password key when none was typed', async () => {
+    apiFetchAuth.mockResolvedValue({ ok: true, status: 200 })
+    await registerBiometric('a@b.c')
+    expect(JSON.parse(apiFetchAuth.mock.calls[0][1].body)).not.toHaveProperty('currentPassword')
+  })
+  it('maps wrong_password and 429', async () => {
+    apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({ code: 'wrong_password' }) })
+    expect(await registerBiometric('a@b.c', 'x')).toBe('wrong_password')
+    apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 429 })
+    expect(await registerBiometric('a@b.c', 'x')).toBe('rate_limited')
   })
   it('reports error on other failures', async () => {
     apiFetchAuth.mockResolvedValue({ ok: false, status: 500 })

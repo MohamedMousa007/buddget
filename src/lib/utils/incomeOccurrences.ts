@@ -1,6 +1,6 @@
 import { isWithinInterval, parseISO } from 'date-fns'
 import { getMonthRange, recurringActiveForWindow } from '@/lib/utils/calculations'
-import { paydayDatesForWindow, toISODate } from '@/lib/utils/paydaySchedule'
+import { paydayDatesForWindow, toISODate, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import type { Currency, IncomeEvent, IncomeSource } from '@/lib/store/types'
 
 /**
@@ -159,6 +159,7 @@ export function buildOccurrences(
   monthStr: string,
   monthStartDay = 1,
   today: Date = new Date(),
+  weekendFirst?: WeekendFirstDay,
 ): IncomeOccurrence[] {
   const { start, end } = getMonthRange(monthStr, monthStartDay)
   if (!recurringActiveForWindow(source, start, end)) return []
@@ -181,7 +182,7 @@ export function buildOccurrences(
   }
   const legacyMerged = mergeLegacyByDate(legacy, expected)
 
-  const paydays = paydayDatesForWindow(source, start, end)
+  const paydays = paydayDatesForWindow(source, start, end, true, weekendFirst)
   let li = 0
   const occ: IncomeOccurrence[] = paydays.map((d) => {
     const iso = toISODate(d)

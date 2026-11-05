@@ -951,7 +951,7 @@ const delete_debt_payment: WriteImpl = {
             { label: L.amount, value: shown },
             { label: L.date, value: payment.date.slice(0, 10) },
           ],
-          effect: [debt.status === 'cleared' ? L.reopens : '', payment.fundedFromSavings ? '' : L.paymentExpenseStays].filter(Boolean).join(' ') || undefined,
+          effect: [debt.status === 'cleared' ? L.reopens : '', payment.fundedFromSavings ? (payment.fundedFromSavingsTxId ? L.paymentReturnsToSavings : '') : L.paymentExpenseStays].filter(Boolean).join(' ') || undefined,
         },
       }),
     )

@@ -154,6 +154,35 @@ async function eraseSupportText(
   await run('support_tickets(text)', db.from('support_tickets').update({ subject: ERASED_TEXT }).in('id', ids))
 }
 
+/** PostgREST answers at most its max-rows (1000 by default) per request, so a longer table is read in pages of this size. */
+const PAGE_ROWS = 1000
+
+type Row = Record<string, unknown>
+type Filtered = (query: ReturnType<ReturnType<SupabaseClient['from']>['select']>) => ReturnType<ReturnType<SupabaseClient['from']>['select']>
+
+/**
+ * All rows of one table that match `filter`, up to `cap`. A table that fits in one answer is read in one request; a longer one
+ * is re-read in `.range()` pages ordered by `id` (a stable order, or pages would overlap) until a short page. `complete` is false
+ * when anything is missing: an error, a table with no `id` to page on, or more rows than `cap`.
+ */
+async function readTable(db: SupabaseClient, table: string, filter: Filtered, cap: number): Promise<{ rows: Row[]; complete: boolean }> {
+  const first = await filter(db.from(table).select('*', { count: 'exact' })).limit(cap)
+  if (first.error) return { rows: [], complete: false }
+  const firstRows = first.data as Row[]
+  const total = first.count ?? firstRows.length
+  if (total <= firstRows.length) return { rows: firstRows, complete: true }
+
+  const rows: Row[] = []
+  const wanted = Math.min(total, cap)
+  for (let from = 0; from < wanted; from += PAGE_ROWS) {
+    const page = await filter(db.from(table).select('*')).order('id').range(from, Math.min(from + PAGE_ROWS, wanted) - 1)
+    if (page.error) return { rows: firstRows, complete: false }
+    rows.push(...(page.data as Row[]))
+    if (page.data.length < PAGE_ROWS) break
+  }
+  return { rows, complete: total <= cap && rows.length >= total }
+}
+
 /** Every row held about one person, for a data-subject access request. Credentials are left out. */
 export async function exportUserData(admin: ServiceClient, uid: string, rowsPerTable: number): Promise<{ tables: Record<string, unknown[]>; failed: string[] }> {
   const tables: Record<string, unknown[]> = {}
@@ -161,20 +190,18 @@ export async function exportUserData(admin: ServiceClient, uid: string, rowsPerT
   const db = loose(admin)
   const owned: OwnedTable[] = [...USER_DATA_TABLES.map((table) => ({ table })), ...ACCOUNT_TABLES, ...SIGN_IN_TABLES, { table: 'email_log' }, { table: 'support_tickets' }]
   for (const { table, column = 'user_id' } of owned) {
-    // PostgREST answers at most its max-rows (1000 by default) whatever the limit says: a longer table is reported
-    // as incomplete rather than exported short without a word.
-    const { data, error, count } = await db.from(table).select('*', { count: 'exact' }).eq(column, uid).limit(rowsPerTable)
-    if (error || (count ?? 0) > (data?.length ?? 0)) failed.push(table)
-    if (!error && data.length) {
+    const { rows, complete } = await readTable(db, table, (q) => q.eq(column, uid), rowsPerTable)
+    if (!complete) failed.push(table)
+    if (rows.length) {
       const hidden = REDACTED_COLUMNS[table] ?? []
-      tables[table] = hidden.length ? data.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !hidden.includes(k)))) : data
+      tables[table] = hidden.length ? rows.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !hidden.includes(k)))) : rows
     }
   }
   const ticketIds = ((tables.support_tickets ?? []) as { id: string }[]).map((t) => t.id)
   if (ticketIds.length) {
-    const { data, error, count } = await db.from('support_ticket_messages').select('*', { count: 'exact' }).in('ticket_id', ticketIds).limit(rowsPerTable)
-    if (error || (count ?? 0) > (data?.length ?? 0)) failed.push('support_ticket_messages')
-    if (!error && data.length) tables.support_ticket_messages = data
+    const { rows, complete } = await readTable(db, 'support_ticket_messages', (q) => q.in('ticket_id', ticketIds), rowsPerTable)
+    if (!complete) failed.push('support_ticket_messages')
+    if (rows.length) tables.support_ticket_messages = rows
   }
   return { tables, failed }
 }

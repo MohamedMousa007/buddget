@@ -9,7 +9,7 @@ import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
  */
 type SalaryRow = Record<string, unknown>
 
-function fakeService(sources: SalaryRow[], filledOccurrences: string[] = []) {
+function fakeService(sources: SalaryRow[], filledOccurrences: string[] = [], prefs: SalaryRow | null = null) {
   const chain = (result: unknown) => {
     const self: Record<string, unknown> = {}
     for (const m of ['select', 'eq', 'is', 'in']) {
@@ -23,6 +23,7 @@ function fakeService(sources: SalaryRow[], filledOccurrences: string[] = []) {
   }
   return {
     from(table: string) {
+      if (table === 'user_settings') return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: prefs }) }) }) }
       return table === 'income_sources'
         ? chain({ data: sources })
         : chain({ data: filledOccurrences.map((d) => ({ occurrence_date: d })) })
@@ -50,8 +51,8 @@ const MONTHLY_30 = { ...BIWEEKLY, id: 'src-mo30', recurring_frequency: 'monthly'
 const MONTHLY_25 = { ...BIWEEKLY, id: 'src-mo25', recurring_frequency: 'monthly', payday_days: null, day_of_month: 25 }
 const WEEKLY = { ...BIWEEKLY, id: 'src-wk', recurring_frequency: 'weekly', payday_days: [4, 11, 18, 25], day_of_month: 4 }
 
-const call = (sources: SalaryRow[], day: string, over: Partial<{ amount: number; currency: string }> = {}, filled: string[] = []) =>
-  matchSalary(fakeService(sources, filled), {
+const call = (sources: SalaryRow[], day: string, over: Partial<{ amount: number; currency: string }> = {}, filled: string[] = [], prefs: SalaryRow | null = null) =>
+  matchSalary(fakeService(sources, filled, prefs), {
     userId: 'u1',
     amount: over.amount ?? 70000,
     currency: over.currency ?? 'EGP',
@@ -150,6 +151,14 @@ describe('matchSalary — amount and currency', () => {
     // first proves array order is not what decides it.
     const r = await call([MONTHLY_25, BIWEEKLY], '2026-07-21')
     expect(r).toMatchObject({ sourceId: 'src-bi', occurrenceDate: '2026-07-20' })
+  })
+
+  it('stamps the payday on the weekend the user lives by (MON-3)', async () => {
+    // 2026-07-24 is a Friday: a working day for Sat+Sun users, weekend for a Fri+Sat (Egypt) user.
+    const MONTHLY_24 = { ...MONTHLY_25, id: 'src-mo24', day_of_month: 24 }
+    await expect(call([MONTHLY_24], '2026-07-24')).resolves.toMatchObject({ occurrenceDate: '2026-07-24' })
+    const egypt = { week_start_day: 6, timezone: 'Africa/Cairo' }
+    await expect(call([MONTHLY_24], '2026-07-23', {}, [], egypt)).resolves.toMatchObject({ occurrenceDate: '2026-07-23' })
   })
 
   it('falls back to a source with no nearby payday over none at all', async () => {

@@ -11,7 +11,7 @@ const h = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/sms/resolveSmsUser', () => ({ resolveSmsCaller: h.caller }))
-vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: h.cookieUser }))
+vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: h.cookieUser, resolveActiveApiUserId: h.cookieUser }))
 vi.mock('@/lib/server/devices/registry', () => ({ isRevokedDevice: h.revoked, hasAnyDevice: async () => false }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({

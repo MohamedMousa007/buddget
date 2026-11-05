@@ -1665,6 +1665,9 @@ export interface Dictionary {
 
     importSuccess: string
     importError: string
+    importConfirmTitle: string
+    importConfirmBody: string
+    importConfirmLabel: string
 
     hub: {
       sectionAccount: string
@@ -3080,6 +3083,9 @@ export interface Dictionary {
       purpose: string
       spend: string
       spendSub: string
+      logExpense: string
+      logExpenseHint: string
+      expenseCategory: string
       debt: string
       debtSub: string
       invest: string
@@ -3171,6 +3177,8 @@ export interface Dictionary {
   moneyFlows: {
     deletePaymentTitle: string
     deletePaymentBody: string
+    deletePaymentReturnsMoney: string
+    deletePaymentKeepsMoneyOut: string
     deletePaidExpenseTitle: string
     deletePaidExpenseBody: string
     paymentDeleted: string

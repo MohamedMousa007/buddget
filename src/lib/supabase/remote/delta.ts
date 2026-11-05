@@ -3,6 +3,7 @@ import type { Database } from '@/lib/supabase/database.types'
 import type { AppSettings, BudgetPlan, BudgetPlanActivation } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import { mergeList } from './merge'
+import { noteServerTime } from './serverClock'
 import type { Snapshot } from './snapshot'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
 import { accountAdjustmentFromRow } from './mappers/accountAdjustmentMapper'
@@ -60,6 +61,7 @@ export interface MappedDelta {
   budgetPlans: BudgetPlan[]
   deletedBudgetPlanIds: string[]
   budgetPlanActivations: BudgetPlanActivation[]
+  deletedBudgetPlanActivationIds: string[]
   /**
    * Set when this was a full pull taken because the device's cursor was too old for tombstones to be kept (the cursor
    * it had). Local rows absent from the server and last touched before it were deleted long ago: drop them instead of
@@ -80,6 +82,7 @@ interface SyncPullPayload {
   budget_categories: Database['public']['Tables']['budget_categories']['Row'][]
   budget_subcategories: Database['public']['Tables']['budget_subcategories']['Row'][]
   budget_plan_activations: Database['public']['Tables']['budget_plan_activations']['Row'][]
+  budget_plan_activations_deleted?: string[]
 }
 
 function listDelta<T>(rows: Row[] | undefined, fromRow: (row: never) => T): ListDelta<T> {
@@ -96,6 +99,7 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
   const { data, error } = await client.rpc('sync_pull_v2', since ? { p_since: since } : {})
   if (error) throw new Error(error.message)
   const p = data as unknown as SyncPullPayload | null
+  if (p?.cursor) noteServerTime(p.cursor)
   if (p?.needs_full && since) {
     const full = await pullDelta(client, null)
     return full && { ...full, staleBefore: since }
@@ -128,6 +132,7 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
     budgetPlans: p.budget_plans.map((plan) => assembleBudgetPlan({ plan, categories: p.budget_categories, subcategories: p.budget_subcategories })),
     deletedBudgetPlanIds: p.budget_plans_deleted,
     budgetPlanActivations: p.budget_plan_activations.map(activationFromRow),
+    deletedBudgetPlanActivationIds: p.budget_plan_activations_deleted ?? [],
     staleBefore: null,
   }
 }
@@ -156,6 +161,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
       : local.settings
 
   const deadPlans = new Set(d.deletedBudgetPlanIds)
+  const deadActivations = new Set(d.deletedBudgetPlanActivationIds)
   const applyList = <T extends WithId>(local: T[], delta: ListDelta<T>): T[] => applyListWith(local, delta, d.staleBefore)
   return {
     profile: profileResult?.profile ?? local.profile,
@@ -182,6 +188,6 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
     buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>) as Snapshot['buddgyMemories'],
     accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>) as Snapshot['accountAdjustments'],
     budgetPlans: applyListWith(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }, null) as Snapshot['budgetPlans'],
-    budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId)),
+    budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId) && !deadActivations.has(a.id)),
   }
 }

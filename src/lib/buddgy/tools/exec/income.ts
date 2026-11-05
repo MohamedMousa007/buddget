@@ -12,6 +12,7 @@ import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import type { Currency, FinanceStore, IncomeEvent, IncomeRecurringFrequency, IncomeSource, IncomeSourceType } from '@/lib/store/types'
 import { getMonthRange } from '@/lib/utils/calculations'
 import { tryConvertCurrency } from '@/lib/utils/currency'
+import { weekendFirstDayFor } from '@/lib/time/weekStart'
 import { buildOccurrences, expectedPerPayday, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { deriveDefaultPaydays, sourcePaydayDays, toISODate } from '@/lib/utils/paydaySchedule'
@@ -81,7 +82,7 @@ const list_income: ReadImpl = (args, ctx) => {
     ...(i.isRecurring ? { days: sourceDays(i) } : {}),
     ...(i.isRecurring
       ? {
-          paydays: buildOccurrences(i, s.incomeEvents, month, s.settings.monthStartDay, ctx.now).map((o) => ({
+          paydays: buildOccurrences(i, s.incomeEvents, month, s.settings.monthStartDay, ctx.now, weekendFirstDayFor(s.settings)).map((o) => ({
             date: o.dueDate,
             status: o.status,
             amount: r2(o.amount),
@@ -454,7 +455,7 @@ const delete_income: WriteImpl = {
 }
 
 function occurrencesFor(s: FinanceStore, source: IncomeSource, month: string, now: Date): IncomeOccurrence[] {
-  return buildOccurrences(source, s.incomeEvents, month, s.settings.monthStartDay, now)
+  return buildOccurrences(source, s.incomeEvents, month, s.settings.monthStartDay, now, weekendFirstDayFor(s.settings))
 }
 
 type PaydayPlan =

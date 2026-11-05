@@ -154,6 +154,17 @@ export function QuickActions({ variant, onSearch }: { variant: 'hub' | 'menu'; o
 }
 
 function ConverterBody() {
-  const store = useFinanceStore()
+  const { exchangeRates, lastRatesFetch, goldPriceAvailable, goldPricePerGram, goldPriceStale, baseCurrency, secondaryCurrency } = useFinanceStore(
+    useShallow((s) => ({
+      exchangeRates: s.exchangeRates,
+      lastRatesFetch: s.lastRatesFetch,
+      goldPriceAvailable: s.goldPriceAvailable,
+      goldPricePerGram: s.goldPricePerGram,
+      goldPriceStale: s.goldPriceStale,
+      baseCurrency: s.settings.baseCurrency,
+      secondaryCurrency: s.settings.secondaryCurrency,
+    })),
+  )
+  const store = { exchangeRates, lastRatesFetch, goldPriceAvailable, goldPricePerGram, goldPriceStale, settings: { baseCurrency, secondaryCurrency } }
   return <CurrencyConverter store={store} />
 }

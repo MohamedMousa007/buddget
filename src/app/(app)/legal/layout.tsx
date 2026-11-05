@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { BuddgetWordmark } from '@/components/brand'
 import { HIT_AREA } from '@/lib/ui/hitArea'
+import { LegalLabel } from '@/components/legal/LegalLocale'
 
 /**
  * Shared layout for all /legal/* pages (Terms, Privacy Policy).
@@ -19,10 +20,10 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
           </Link>
           <nav className="flex items-center gap-4 text-xs text-[var(--color-brand-text-muted)]">
             <Link href="/legal/terms" className="hover:text-[var(--color-brand-text-primary)] transition-colors">
-              Terms
+              <LegalLabel en="Terms" ar="الشروط" />
             </Link>
             <Link href="/legal/privacy" className="hover:text-[var(--color-brand-text-primary)] transition-colors">
-              Privacy
+              <LegalLabel en="Privacy" ar="الخصوصية" />
             </Link>
           </nav>
         </div>
@@ -36,16 +37,16 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 mt-8">
         <div className="max-w-3xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--color-brand-text-muted)]">
-          <span>© {new Date().getFullYear()} Buddget. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} <LegalLabel en="Buddget. All rights reserved." ar="بادجت. جميع الحقوق محفوظة." /></span>
           <div className="flex gap-4">
             <Link href="/legal/terms" className="hover:text-[var(--color-brand-primary-ink)] transition-colors">
-              Terms of Service
+              <LegalLabel en="Terms of Service" ar="شروط الخدمة" />
             </Link>
             <Link href="/legal/privacy" className="hover:text-[var(--color-brand-primary-ink)] transition-colors">
-              Privacy Policy
+              <LegalLabel en="Privacy Policy" ar="سياسة الخصوصية" />
             </Link>
             <a href="mailto:support@buddget.app" className="hover:text-[var(--color-brand-primary-ink)] transition-colors">
-              Contact
+              <LegalLabel en="Contact" ar="اتصل بنا" />
             </a>
           </div>
         </div>

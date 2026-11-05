@@ -1,6 +1,6 @@
 import { format, parseISO, subMonths } from 'date-fns'
 import { buildOccurrences, isRealizedOccurrence, missedAfterDaysFor, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
-import { toISODate } from '@/lib/utils/paydaySchedule'
+import { toISODate, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import type { IncomeEvent, IncomeSource } from '@/lib/store/types'
 
 const DAY = 86_400_000
@@ -25,12 +25,13 @@ export function recentPaydays(
   monthStartDay: number,
   n: number,
   today: Date,
+  weekendFirst?: WeekendFirstDay,
 ): IncomeOccurrence[] {
   const out: IncomeOccurrence[] = []
   const anchor = parseISO(`${month}-01`)
   for (let back = 0; back < 12 && out.length < n; back++) {
     const m = format(subMonths(anchor, back), 'yyyy-MM')
-    out.unshift(...buildOccurrences(source, events, m, monthStartDay, today))
+    out.unshift(...buildOccurrences(source, events, m, monthStartDay, today, weekendFirst))
   }
   return out.slice(-n)
 }
@@ -48,8 +49,8 @@ export function focusPayday(occ: IncomeOccurrence[], today: Date): IncomeOccurre
 }
 
 /** This month's recorded vs expected, in each source's own currency. */
-export function monthProgress(source: IncomeSource, events: IncomeEvent[], month: string, monthStartDay: number) {
-  const occ = buildOccurrences(source, events, month, monthStartDay)
+export function monthProgress(source: IncomeSource, events: IncomeEvent[], month: string, monthStartDay: number, weekendFirst?: WeekendFirstDay) {
+  const occ = buildOccurrences(source, events, month, monthStartDay, new Date(), weekendFirst)
   return {
     expected: occ.length * source.amount,
     received: occ.reduce((s, o) => (isRealizedOccurrence(o) ? s + o.amount : s), 0),

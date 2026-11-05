@@ -22,6 +22,7 @@ import {
   emptySnapshot,
   mergeSnapshots,
 } from '@/lib/supabase/remote'
+import { stampEdits } from '@/lib/supabase/remote/stampEdits'
 import { cacheOwnerMismatch } from '@/lib/auth/cacheOwnerCheck'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
@@ -323,6 +324,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           prevSnap.current = adopted.size > 0 ? { ...next, incomeEvents: next.incomeEvents.filter((e) => !adopted.has(e.id)) } : next
           persistBaseline(userId, prevSnap.current)
           retryAttempt = 0
+          // The server skipped writes (its copy was newer): pull so this device converges on the newer edit.
+          if (result.skippedWrites) void pendingSync?.().catch((e) => console.error('[finance sync] stale-write re-pull failed', e))
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)
           scheduleRetry()
@@ -378,6 +381,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }
     }
 
+    // Edits to lists whose actions do not stamp `updatedAt` are stamped here, before the flush (a later subscriber) reads them.
+    const stopStamping = useFinanceStore.subscribe((state, prevState) => {
+      const patch = stampEdits(prevState, state, new Date().toISOString())
+      if (patch) useFinanceStore.setState(patch)
+    })
     const unsub = useFinanceStore.subscribe(() => {
       if (!hydrated.current) return
       // Sign-out in progress: the store is being reset to defaults. Ignore
@@ -494,6 +502,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     return () => {
       stopResume()
       unsub()
+      stopStamping()
       unsubNet()
       if (reconnectTimer) clearTimeout(reconnectTimer)
       window.removeEventListener('pagehide', onHide)

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { ArrowDownUp } from 'lucide-react'
-import type { FinanceStore } from '@/lib/store/types'
+import type { CurrencyConverterStore } from '@/components/features/settings/CurrencyConverter'
 import { useT } from '@/lib/i18n'
 import { CONVERTER_CODES } from '@/components/features/settings/currencyConverterConstants'
 import { CurrencyConverterAmountBlock } from '@/components/features/settings/CurrencyConverterAmountBlock'
@@ -14,7 +14,7 @@ type SettingsCopy = Dictionary['settings']
 /**
  * Amount in / swap / amount out + cross-rate lines (no header or gold row).
  */
-export function CurrencyConverterCore({ store, t }: { store: FinanceStore; t: SettingsCopy }) {
+export function CurrencyConverterCore({ store, t }: { store: CurrencyConverterStore; t: SettingsCopy }) {
   const tc = useT()
   const [fromCurrency, setFromCurrency] = useState<string>(store.settings.baseCurrency)
   const [toCurrency, setToCurrency] = useState<string>(() => {

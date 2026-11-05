@@ -4,6 +4,7 @@ import { activationFromRow, activationToRow } from '@/lib/supabase/remote/mapper
 import type { Database } from '@/lib/supabase/database.types'
 import type { Snapshot } from './snapshot'
 import type { HasId } from './types'
+import { toServerTime } from './serverClock'
 import { diffLists, diffSingleton } from './diff'
 import { profileToRow, profileFromRow } from './mappers/profileMapper'
 import { settingsToRow, settingsFromRow } from './mappers/settingsMapper'
@@ -41,6 +42,8 @@ export interface FlushResult {
   writes: number
   /** Local payday events dropped because another device's live row won; the store must drop them too. */
   adoptedPaydays?: string[]
+  /** Rows the server did not write (a newer server row, or no change): the caller re-pulls so the local copy converges. */
+  skippedWrites?: number
 }
 
 
@@ -81,6 +84,7 @@ class OpRunner {
   errors: string[] = []
   adopted: string[] = []
   writes = 0
+  skipped = 0
   private ops: Writes = []
   private removals: Writes = []
 
@@ -88,7 +92,7 @@ class OpRunner {
 
   private from(table: TableName) {
     return this.client.from(table) as never as {
-      upsert: (r: unknown) => Promise<{ error: PgError }>
+      upsert: (r: unknown, opts?: { count: 'exact' }) => Promise<{ error: PgError; count?: number | null }>
       update: (patch: unknown) => { eq: (col: string, v: string) => Promise<{ error: PgError }> }
       select: (cols: string) => {
         eq: (col: string, v: string) => {
@@ -113,9 +117,13 @@ class OpRunner {
   ) {
     if (rows.length === 0) return
     this.ops.push(async () => {
-      const res = await this.from(table).upsert(rows)
+      const res = await this.from(table).upsert(rows, { count: 'exact' })
       this.writes++
-      if (!res.error) return
+      if (!res.error) {
+        // The stale-write guard skips a row whose server copy is newer, without an error: the count tells.
+        if (typeof res.count === 'number' && res.count < rows.length) this.skipped += rows.length - res.count
+        return
+      }
       if (!PER_ROW_RETRY_CODES.has(res.error.code ?? '') && !(withRequired && res.error.code === '23502')) {
         this.errors.push(`${label}: ${res.error.message}`)
         return
@@ -142,7 +150,7 @@ class OpRunner {
     if (live.error || !live.data) return false
     if (live.data.id === row.id) return false
     this.adopted.push(String(row.id))
-    if (String(row.updated_at ?? '') > live.data.updated_at) {
+    if (Date.parse(String(row.updated_at ?? '')) > Date.parse(live.data.updated_at)) {
       const { id: _id, user_id: _user, created_at: _created, ...patch } = row
       const upd = await this.from('income_events').update(patch).eq('id', live.data.id)
       if (upd.error) return false
@@ -193,8 +201,17 @@ class OpRunner {
   async drain(): Promise<FlushResult> {
     await Promise.all(this.removals.map((run) => run()))
     await Promise.all(this.ops.map((run) => run()))
-    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes, adoptedPaydays: this.adopted }
+    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes, adoptedPaydays: this.adopted, skippedWrites: this.skipped }
   }
+}
+
+/**
+ * The edit time of the item travels as `updated_at`: the server skips the write when its copy is newer than the edit
+ * (a device that was offline for days must not overwrite a newer edit from another device). Device stamps are put on
+ * the server's clock first; an item without a stamp is written unconditionally.
+ */
+function withEditTime<R>(row: R, item: HasId, at: string | undefined = (item as { updatedAt?: string }).updatedAt): R {
+  return at ? ({ ...row, updated_at: toServerTime(at) } as R) : row
 }
 
 function emitList<T extends HasId, TN extends TableName>(
@@ -209,8 +226,8 @@ function emitList<T extends HasId, TN extends TableName>(
   // An insert clears any tombstone left by an earlier delete of the same id, so undoing a delete
   // (re-adding the row) comes back live. Plain updates leave `deleted_at` alone: an edit made
   // offline must not resurrect a row another device deleted.
-  const revived = diff.inserts.map((x) => ({ ...toRow(x, userId), deleted_at: null }) as Database['public']['Tables'][TN]['Insert'])
-  const writes = [...revived, ...diff.updates.map((x) => toRow(x, userId))]
+  const revived = diff.inserts.map((x) => withEditTime({ ...toRow(x, userId), deleted_at: null }, x) as Database['public']['Tables'][TN]['Insert'])
+  const writes = [...revived, ...diff.updates.map((x) => withEditTime(toRow(x, userId), x))]
   runner.upsert(table, writes, `${String(table)}.upsert`)
   // User-owned tables soft-delete: stamp `deleted_at = now()` so the
   // deletion is reconcilable across devices. Hydrate filters
@@ -232,11 +249,11 @@ function emitSavingsAccounts(
   const diff = diffLists(next, prev)
   const prevById = new Map(prev.map((a) => [a.id, a]))
   const balanceKept = (a: SavingsAccount) => prevById.get(a.id)?.currentBalance === a.currentBalance
-  const inserts = diff.inserts.map((x) => ({ ...savingsAccountToRow(x, userId), deleted_at: null }))
-  const full = diff.updates.filter((a) => !balanceKept(a)).map((x) => savingsAccountToRow(x, userId))
+  const inserts = diff.inserts.map((x) => withEditTime({ ...savingsAccountToRow(x, userId), deleted_at: null }, x))
+  const full = diff.updates.filter((a) => !balanceKept(a)).map((x) => withEditTime(savingsAccountToRow(x, userId), x))
   const metaOnly = diff.updates.filter(balanceKept).map((x) => {
     const { current_balance: _balance, ...row } = savingsAccountToRow(x, userId)
-    return row
+    return withEditTime(row, x)
   })
   runner.upsert('savings_accounts', [...inserts, ...full], 'savings_accounts.upsert')
   // A balance-less row whose server row was hard-deleted becomes an INSERT with a NULL balance (23502): resend it with its balance.
@@ -323,7 +340,7 @@ export async function flushDiff(
   const freshRunner = new OpRunner(client)
   freshRunner.upsert(
     'budget_plan_activations',
-    [...activationDiff.inserts, ...activationDiff.updates].map((a) => activationToRow(a, userId)),
+    [...activationDiff.inserts, ...activationDiff.updates].map((a) => withEditTime(activationToRow(a, userId), a)),
     'budget_plan_activations.upsert'
   )
   const freshResult = await freshRunner.drain()
@@ -336,12 +353,15 @@ function mergeResults(results: FlushResult[]): FlushResult {
     errors: results.flatMap((r) => r.errors),
     writes: results.reduce((n, r) => n + r.writes, 0),
     adoptedPaydays: results.flatMap((r) => r.adoptedPaydays ?? []),
+    skippedWrites: results.reduce((n, r) => n + (r.skippedWrites ?? 0), 0),
   }
 }
 
 function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunner, OpRunner], userId: string, prev: Snapshot, next: Snapshot, baseCurrency: Currency) {
   const planDiff = diffLists(next.budgetPlans, prev.budgetPlans)
-  const planRows = [...planDiff.inserts, ...planDiff.updates].map((p) => budgetPlanToRow(p, userId))
+  const planRows = [...planDiff.inserts, ...planDiff.updates].map((p) => withEditTime(budgetPlanToRow(p, userId), p))
+  // Categories and subcategories have no stamp of their own: they carry their plan's edit time (every edit of one stamps the plan).
+  const planStamp = new Map(next.budgetPlans.map((p) => [p.id, p.updatedAt]))
   plans.upsert('budget_plans', planRows, 'budget_plans.upsert')
   plans.tombstone('budget_plans', planDiff.deletes, 'budget_plans.tombstone')
 
@@ -353,7 +373,7 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
   )
   const catDiff = diffLists(nextCats, prevCats)
   const catRows = [...catDiff.inserts, ...catDiff.updates].map((c) =>
-    budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency)
+    withEditTime(budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency), c, planStamp.get(c._planId))
   )
   categories.upsert('budget_categories', catRows, 'budget_categories.upsert')
   categories.tombstone('budget_categories', catDiff.deletes, 'budget_categories.tombstone')
@@ -365,8 +385,9 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
     p.categories.flatMap((c) => c.subcategories.map((s, idx) => ({ ...s, _catId: c.id, _sortOrder: idx })))
   )
   const subDiff = diffLists(nextSubs, prevSubs)
+  const planOfCategory = new Map(next.budgetPlans.flatMap((p) => p.categories.map((c) => [c.id, p.id] as const)))
   const subRows = [...subDiff.inserts, ...subDiff.updates].map((s) =>
-    budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder)
+    withEditTime(budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder), s, planStamp.get(planOfCategory.get(s._catId) ?? ''))
   )
   subcategories.upsert('budget_subcategories', subRows, 'budget_subcategories.upsert')
   subcategories.tombstone('budget_subcategories', subDiff.deletes, 'budget_subcategories.tombstone')

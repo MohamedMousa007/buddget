@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { navigate } from '@/lib/navigation/navigate'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import type { FinanceStore } from '@/lib/store/types'
 import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
@@ -16,6 +18,11 @@ const INPUT_CLASS =
 
 type ProfileForm = { name: string; email: string; phone: string; country: string; city: string }
 
+/** The slice of the finance store the profile and security screens read and write. */
+export type ProfileStore = Pick<FinanceStore, 'profile' | 'updateProfile' | 'updateSettings'> & {
+  settings: Pick<FinanceStore['settings'], 'twoFactorEmailEnabled'>
+}
+
 /**
  * Profile route: identity edit form, avatar modal trigger, password reset, sign-out.
  */
@@ -23,7 +30,13 @@ export function useProfilePage() {
   const t = useT()
   const { locale } = useLocale()
   const { user, signOut } = useAuth()
-  const store = useFinanceStore()
+  const { profile, twoFactorEmailEnabled, updateProfile, updateSettings } = useFinanceStore(
+    useShallow((s) => ({ profile: s.profile, twoFactorEmailEnabled: s.settings.twoFactorEmailEnabled, updateProfile: s.updateProfile, updateSettings: s.updateSettings })),
+  )
+  const store = useMemo<ProfileStore>(
+    () => ({ profile, settings: { twoFactorEmailEnabled }, updateProfile, updateSettings }),
+    [profile, twoFactorEmailEnabled, updateProfile, updateSettings],
+  )
 
   useEffect(() => {
     if (user?.email) {

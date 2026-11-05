@@ -2,7 +2,7 @@ import { format, parseISO, subMonths } from 'date-fns'
 import { cycleKeyFor } from '@/lib/settings/payCycle'
 import { convertCurrency } from '@/lib/utils/currency'
 import { buildOccurrences, missedAfterDaysFor, type IncomeOccurrence } from '@/lib/utils/incomeOccurrences'
-import { toISODate } from '@/lib/utils/paydaySchedule'
+import { toISODate, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import type { IncomeEvent, IncomeSource } from '@/lib/store/types'
 
 /**
@@ -54,6 +54,7 @@ export function openPaydays(
   events: IncomeEvent[],
   monthStartDay: number,
   today: Date,
+  weekendFirst?: WeekendFirstDay,
 ): OpenPayday[] {
   const key = cycleKeyFor(today, monthStartDay)
   const months = [format(subMonths(parseISO(`${key}-01`), 1), 'yyyy-MM'), key]
@@ -62,7 +63,7 @@ export function openPaydays(
   for (const source of sources) {
     if (!source.isRecurring) continue
     for (const m of months) {
-      for (const occ of buildOccurrences(source, events, m, monthStartDay, today)) {
+      for (const occ of buildOccurrences(source, events, m, monthStartDay, today, weekendFirst)) {
         if (occ.eventId || seen.has(occ.key)) continue
         seen.add(occ.key)
         out.push({ source, occ })
@@ -78,9 +79,10 @@ export function latePaydays(
   events: IncomeEvent[],
   monthStartDay: number,
   today: Date,
+  weekendFirst?: WeekendFirstDay,
 ): LatePayday[] {
   const todayISO = toISODate(today)
-  return openPaydays(sources, events, monthStartDay, today)
+  return openPaydays(sources, events, monthStartDay, today, weekendFirst)
     .filter(({ occ }) => occ.dueDate < todayISO)
     .map((p) => ({ ...p, daysLate: daysBetween(todayISO, p.occ.dueDate) }))
     .filter((p) => p.daysLate > missedAfterDaysFor(p.source))
@@ -99,8 +101,9 @@ export function paydayCandidates(
   monthStartDay: number,
   rates: Record<string, number>,
   today: Date,
+  weekendFirst?: WeekendFirstDay,
 ): PaydayCandidate[] {
-  return openPaydays(sources, events, monthStartDay, today)
+  return openPaydays(sources, events, monthStartDay, today, weekendFirst)
     .map((p) => {
       const inSource = convertCurrency(credit.amount, credit.currency, p.source.currency, rates)
       const diff = p.occ.amount > 0 ? Math.abs(inSource - p.occ.amount) / p.occ.amount : Infinity
@@ -132,6 +135,7 @@ export function incomeMatches(
   rates: Record<string, number>,
   today: Date,
   dismissed: readonly string[],
+  weekendFirst?: WeekendFirstDay,
 ): IncomeMatch[] {
   const since = toISODate(new Date(today.getTime() - MATCH_LOOKBACK_DAYS * DAY))
   const credits = events
@@ -140,7 +144,7 @@ export function incomeMatches(
   const claimed = new Set<string>()
   const out: IncomeMatch[] = []
   for (const event of credits) {
-    const best = paydayCandidates(event, sources, events, monthStartDay, rates, today).find(
+    const best = paydayCandidates(event, sources, events, monthStartDay, rates, today, weekendFirst).find(
       (c) => c.plausible && !claimed.has(c.occ.key) && !dismissed.includes(matchKey(event.id, c.occ.key)),
     )
     if (!best) continue

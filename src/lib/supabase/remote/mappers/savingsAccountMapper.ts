@@ -72,5 +72,6 @@ export function savingsAccountFromRow(row: SavingsAccountRow): SavingsAccount {
     maturityDate: meta.maturityDate,
     yearlyReturn: meta.yearlyReturn,
     createdAt: row.created_at,
+    updatedAt: row.updated_at ?? undefined,
   }
 }

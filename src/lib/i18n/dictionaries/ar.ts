@@ -1794,6 +1794,9 @@ export const ar: Dictionary = {
 
     importSuccess: 'بياناتك جاهزة — اكتمل الاستيراد!',
     importError: 'حدث خطأ في الاستيراد. حاول مرة أخرى.',
+    importConfirmTitle: 'استبدال بياناتك بهذه النسخة الاحتياطية؟',
+    importConfirmBody: 'سيُستبدل كل ما على هذا الجهاز بمحتوى الملف. لا يمكن التراجع عن ذلك، لذا صدّر نسخة احتياطية أولاً إن لم تكن متأكداً.',
+    importConfirmLabel: 'استبدال بياناتي',
 
     hub: {
       sectionAccount: 'الحساب',
@@ -3237,6 +3240,9 @@ export const ar: Dictionary = {
       purpose: 'لأي غرض؟',
       spend: 'إنفاق',
       spendSub: 'يخرج من المدخرات ولا يُسجَّل كمصروف',
+      logExpense: 'سجّله أيضاً كمصروف',
+      logExpenseHint: 'يُحتسب ضمن إنفاق هذا الشهر. ويُخصم من الجيب مرة واحدة فقط.',
+      expenseCategory: 'فئة المصروف',
       debt: 'سداد دين',
       debtSub: 'يقلّل ما عليك',
       invest: 'استثمار',
@@ -3330,6 +3336,8 @@ export const ar: Dictionary = {
   moneyFlows: {
     deletePaymentTitle: 'حذف هذه الدفعة؟',
     deletePaymentBody: 'يُحذف المصروف المرتبط بها أيضاً ويرتفع الدين من جديد. يمكنك التراجع لثوانٍ.',
+    deletePaymentReturnsMoney: 'دُفعت من المدخرات، فيعود المبلغ إلى ذلك الجيب.',
+    deletePaymentKeepsMoneyOut: 'دُفعت من المدخرات قبل ربط الدفعات بسحبها، فلن يعود المبلغ إلى الجيب. أضِفه يدوياً إن لزم.',
     deletePaidExpenseTitle: 'حذف دفعة الدين هذه؟',
     deletePaidExpenseBody: 'هذا المصروف دفعة دين. تُحذف الدفعة أيضاً ويرتفع الدين من جديد. يمكنك التراجع لثوانٍ.',
     paymentDeleted: 'تم حذف الدفعة والمصروف',
