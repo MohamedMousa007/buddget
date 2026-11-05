@@ -26,6 +26,10 @@
     {
       "path": "/api/cron/data-retention",
       "schedule": "40 4 * * *"
+    },
+    {
+      "path": "/api/cron/month-carry",
+      "schedule": "0 5 * * *"
     }
   ]
 }

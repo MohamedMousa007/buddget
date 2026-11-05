@@ -64,12 +64,12 @@ Round 4 fixed 12 defects. This round reported 114, so the earlier "bug free" dis
 | AI-5, AI-6 | `update_expense` is rejected when the currency cannot be converted; `update_goal` resolves its target like the other actions (no first-substring guess) |
 | BUD3 | the "goal needs more than your plan can spare" question is no longer asked for goals set as a monthly amount |
 | UIS1 | the payment card carousel takes the arrow keys and Enter/Space (focusable group, labelled with the active card) |
+| PRF3 | `/api/cron/month-carry` scheduled daily at 05:00 UTC after a read-only dry run (`?dryRun=1`: 39 users, 34 cycles, 3 carries totalling EGP 44,247.68 and SAR 1,071.78, 0 failed) and your sign-off |
 | PRF9 | the old Linear bot LaunchAgent is unloaded and its plist renamed `com.buddget.linearbot.plist.disabled` |
 
 ## Open, needs a decision or a larger change
 | ID | P | What | Why not done |
 |---|---|---|---|
-| PRF3 | P2 | `/api/cron/month-carry` is unscheduled | it writes live money into savings; its own header requires a preview dry run and your explicit sign-off |
 | WLT1 | P2 | savings withdrawal "Spend" is labelled "Counts as an expense" but creates no expense | creating one touches the net-worth two-ledger model; product call (change the label, or book the expense) |
 | MON-6 | P2 | legacy-basis net worth follows the month being viewed | needs `useMonthlyStats` to take a month; touches every stats screen |
 | SYN5-7 | P2 | rows without `updatedAt` always lose; blind upsert (last pusher wins); device-clock comparison | needs a server `updated_at` precondition and mapper changes |

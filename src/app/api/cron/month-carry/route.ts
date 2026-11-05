@@ -1,5 +1,5 @@
 /**
- * GET /api/cron/month-carry  (daily — NOT YET SCHEDULED)
+ * GET /api/cron/month-carry  (daily 05:00 UTC, vercel.json; scheduled 2026-11-05 after a dry run)
  *
  * Sweeps each user's real month-end surplus into savings once their cycle has closed (F2).
  * income − spend − allocated, floored at 0, posted as a normal deposit dated to the closed month's
@@ -8,8 +8,7 @@
  * with no live FX rates, or a currency that cannot be converted, nothing is posted. Push-only
  * notification, no in-app card, no undo.
  *
- * ⚠️ WRITES LIVE MONEY. Deliberately absent from vercel.json — enable only after a dry run and explicit
- * sign-off. `?dryRun=1` reads everything the real run reads, writes nothing, and answers with aggregate counts and
+ * ⚠️ WRITES LIVE MONEY. Scheduled after a dry run and the owner's sign-off (2026-11-05). `?dryRun=1` reads everything the real run reads, writes nothing, and answers with aggregate counts and
  * totals only (no user ids). Auth: `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { depositToPocket, primaryTrackedAccountId } from '@/lib/server/pocketLedger'
