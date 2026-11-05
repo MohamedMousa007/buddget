@@ -14,7 +14,7 @@ interface Props {
 }
 
 /**
- * 3-row calendar grid, days 1–31. Tap the first payday; for biweekly/weekly the
+ * 7-column calendar grid, days 1–31, with 44px cells so every day is a full touch target. Tap the first payday; for biweekly/weekly the
  * remaining paydays auto-derive (5 → 20 semi-monthly, weekly +7). The Edit
  * toggle (in the spare cells after day 31) switches to manual mode where each
  * tap fills the next of the 2/4 slots; a tap past the last slot restarts.
@@ -50,7 +50,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
   const selected = new Set(days)
 
   return (
-    <div className="grid grid-cols-11 gap-1.5">
+    <div className="grid grid-cols-7 gap-1">
       {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
         const isSolid = solid.has(day)
         const isDerived = !isSolid && selected.has(day)
@@ -59,7 +59,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
             key={day}
             type="button"
             onClick={() => tap(day)}
-            className={`flex h-8 items-center justify-center rounded-md font-mono-numbers text-xs font-semibold transition-colors ${
+            className={`flex h-11 items-center justify-center rounded-md font-mono-numbers text-sm font-semibold transition-colors ${
               isSolid
                 ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]'
                 : isDerived
@@ -76,7 +76,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
           type="button"
           onClick={toggleManual}
           aria-pressed={manual}
-          className={`col-span-2 flex h-8 items-center justify-center gap-1 rounded-md text-[11px] font-semibold transition-colors ${
+          className={`col-span-2 flex h-11 items-center justify-center gap-1 rounded-md text-[11px] font-semibold transition-colors ${
             manual
               ? 'bg-[color-mix(in_oklab,var(--color-brand-primary)_18%,transparent)] text-[var(--color-brand-primary-ink)]'
               : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'

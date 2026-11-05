@@ -115,7 +115,7 @@ Method: a 7x7 grid of probe points over the 44x44 square around every control un
 | Already fine | "Set budget", every filter and category chip, month arrows, tab bar items, switches, colour swatches and credit-card inputs all measure 100% (the swatches, inputs and two settings switches only looked uncovered while sitting under the sheet's sticky footer or the tab bar) |
 | Fixed | the price-refresh, hide and expand icons in the gold price strip shared about 14% of their tap areas with each other (8px gap, 44px areas): gap now 12px |
 | Open, minor | the emergency-fund pill loses about 14% of its tap area to the number row directly under it (a 6px strip at its bottom edge) |
-| Open, needs your call | the **payday day grid** (31 day cells, 26x32 each, 11 columns): no invisible overlay can fix it, because neighbouring cells are only 31px apart. Reaching 44px means a visible re-layout, for example 7 columns of 44px cells in five rows |
+| Fixed (your call) | the **payday day grid** is now 7 columns of 44px-high cells (45.6x44 at 375px, 100% tap coverage, Edit button on the same row as day 31); at 320px the cells are 37.7px wide because seven 44px columns do not fit in 288px |
 
 ## Not covered (stated plainly)
 Dark and Arabic visual sweeps, keyboard-only sweep, narrow and wide widths, stress data in the live app (the sweep did not run); real-device native paths; Buddgy model behaviour with the live model; terms, cookies, admin UI; analytics, spending, history months, reports hooks; recurring-expense generation; `useDebtTabData` maths; most form-level validation (double submit, 1e21, Arabic digits, state reset); a New York time-zone run of the money area.
