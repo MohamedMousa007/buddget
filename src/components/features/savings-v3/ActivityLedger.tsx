@@ -21,12 +21,14 @@ import { formatCurrency } from '@/lib/utils/formatters'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
 
+type TagKind = 'carry' | 'moved' | 'saved' | 'withdrew'
+
 /** The coloured tag under each row's icon, derived from the transaction's kind/source. */
-function tagFor(tx: SavingsTransaction): { label: string; color: string; sign: 1 | -1 } {
-  if (tx.source === 'carry') return { label: 'Month end', color: 'var(--color-brand-gold)', sign: 1 }
-  if (tx.transferGroupId) return { label: 'Moved', color: 'var(--color-brand-primary-ink)', sign: tx.type === 'deposit' ? 1 : -1 }
-  if (tx.type === 'deposit') return { label: 'Saved', color: 'var(--color-brand-green)', sign: 1 }
-  return { label: 'Withdrew', color: 'var(--color-brand-red)', sign: -1 }
+function tagFor(tx: SavingsTransaction): { kind: TagKind; color: string; sign: 1 | -1 } {
+  if (tx.source === 'carry') return { kind: 'carry', color: 'var(--color-brand-gold)', sign: 1 }
+  if (tx.transferGroupId) return { kind: 'moved', color: 'var(--color-brand-primary-ink)', sign: tx.type === 'deposit' ? 1 : -1 }
+  if (tx.type === 'deposit') return { kind: 'saved', color: 'var(--color-brand-green)', sign: 1 }
+  return { kind: 'withdrew', color: 'var(--color-brand-red)', sign: -1 }
 }
 
 export interface ActivityLedgerProps {
@@ -43,6 +45,7 @@ export interface ActivityLedgerProps {
 
 export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll }: ActivityLedgerProps) {
   const t = useT().wealthPage
+  const tagLabel: Record<TagKind, string> = { carry: t.ledgerMonthEnd, moved: t.ledgerMoved, saved: t.ledgerSaved, withdrew: t.ledgerWithdrew }
   const { locale } = useLocale()
   const deleteTx = useFinanceStore((s) => s.deleteSavingsTransaction)
   const showToast = useActionToast()
@@ -114,10 +117,10 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
               <SwipeToDelete key={tx.id} onDelete={() => onDelete(tx.id)} openSide={openId === tx.id ? 'left' : null} onOpenChange={(side) => setOpenId(side ? tx.id : null)} deleteLabel="Delete">
                 <div className="border-t border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] lg:bg-transparent">
                   <TransactionRow
-                    icon={a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.label === 'Withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
+                    icon={a ? <SavingsAccountIcon account={a} className="h-5 w-5" /> : tag.kind === 'withdrew' ? <ShoppingCart size={18} /> : <TrendingUp size={18} />}
                     iconBg={a ? rgba(pocketColor(a), .14) : 'var(--color-brand-elevated)'}
                     iconFg={a ? pocketColor(a) : undefined}
-                    caption={tag.label}
+                    caption={tagLabel[tag.kind]}
                     captionColor={tag.color}
                     title={a?.name ?? 'Savings'}
                     subtitle={`${time} · ${tx.notes || tx.source || a?.institution || 'Savings'}`}

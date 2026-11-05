@@ -104,7 +104,9 @@ export function useRecurringDebtPaymentSheet() {
         setSelectedDebtId(payableDebts[0].id)
       }
     }
-    setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
+    setPaymentMethodId((current) =>
+      paymentMethods.some((m) => m.id === current) ? current : paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '',
+    )
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, payableDebts, debts, debtPayments, debtBalanceCtx, selectedDebtId, paymentMethods])
 

@@ -1326,7 +1326,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
       updateGoal: (id, updates) =>
         set((state) => {
-          const nextGoals = state.goals.map((g) => (g.id === id ? { ...g, ...updates } : g))
+          const nextGoals = state.goals.map((g) => (g.id === id ? { ...g, ...updates, updatedAt: new Date().toISOString() } : g))
           const nextState: FinanceStore = { ...state, goals: nextGoals }
           return { goals: reconcileGoalsForState(nextState) }
         }),

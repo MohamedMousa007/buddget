@@ -1,5 +1,20 @@
 import type { TurnEvent } from '@/lib/buddgy/protocol'
 
+/** The server gives up on a silent model after 25 s; a stream quiet for longer than this is dead. */
+export const STREAM_IDLE_MS = 30_000
+
+export class StreamIdleError extends Error {}
+
+function readWithin(reader: ReadableStreamDefaultReader<Uint8Array>, ms: number): Promise<ReadableStreamReadResult<Uint8Array>> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new StreamIdleError('stream_idle')), ms)
+    reader.read().then(
+      (r) => { clearTimeout(timer); resolve(r) },
+      (e) => { clearTimeout(timer); reject(e) },
+    )
+  })
+}
+
 /** Reads Buddgy's `data: {json}` frames from a fetch response, one event at a time. */
 export async function* readTurnEvents(response: Response): AsyncGenerator<TurnEvent> {
   if (!response.body) {
@@ -14,7 +29,14 @@ export async function* readTurnEvents(response: Response): AsyncGenerator<TurnEv
   const decoder = new TextDecoder()
   let buffer = ''
   for (;;) {
-    const { done, value } = await reader.read()
+    let chunk: ReadableStreamReadResult<Uint8Array>
+    try {
+      chunk = await readWithin(reader, STREAM_IDLE_MS)
+    } catch (e) {
+      if (e instanceof StreamIdleError) reader.cancel().catch(() => undefined)
+      throw e
+    }
+    const { done, value } = chunk
     if (done) break
     buffer += decoder.decode(value, { stream: true })
     const lines = buffer.split('\n')

@@ -55,3 +55,13 @@ describe('formatCompact', () => {
     expect(ar).toMatch(/[؀-ۿ]/)
   })
 })
+
+describe('half-amount rounding is symmetric', () => {
+  it('rounds the magnitude, so negatives mirror positives', () => {
+    expect(formatMoneyHero(-2.5, 'USD')).toBe('-' + formatMoneyHero(2.5, 'USD'))
+    expect(formatMoneyHero(-1234.5, 'USD', { compact: 'off' }).replace(/^-/, '')).toBe(formatMoneyHero(1234.5, 'USD', { compact: 'off' }))
+    expect(formatWhole(-2.5)).toBe('-3')
+    expect(formatWhole(2.5)).toBe('3')
+    expect(formatWhole(-0.4)).toBe('0')
+  })
+})

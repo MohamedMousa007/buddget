@@ -28,7 +28,7 @@ export type MoneyDirection = 'credit' | 'debit'
  * ("20-07-2026"), a masked account ("103-104***-110") or a hyphenated reference can
  * never be read as a debit marker.
  */
-const SIGNED_AMOUNT = /(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP)\s*[\d,]+(?:\.\d+)?([+-])(?=\s|$)/gi
+const SIGNED_AMOUNT = /(?<![A-Za-z\u0600-\u06FF])(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE|جم)\s*[\d,]+(?:\.\d+)?([+-])(?=[\s.,;)]|$)/gi
 
 /** Kinds that mean money arrived. */
 const CREDIT_KINDS = new Set<string>(['income', 'instant_transfer_in', 'refund'])

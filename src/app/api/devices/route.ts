@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
+import { DEVICE_ID_PATTERN } from '@/lib/auth/resolveDeviceId'
 import { upsertSelf } from '@/lib/server/devices/registry'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
 async function report(request: Request) {
   const c = await caller(request)
   if ('res' in c) return { res: c.res }
-  if (!c.deviceId) return { res: NextResponse.json({ error: 'Missing device id' }, { status: 400 }) }
+  if (!c.deviceId || !DEVICE_ID_PATTERN.test(c.deviceId)) return { res: NextResponse.json({ error: 'Missing device id' }, { status: 400 }) }
   const parsed = selfSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return { res: NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
   const { pushPermission, ...self } = parsed.data

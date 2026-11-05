@@ -4,11 +4,11 @@ import { createContext, useContext, useEffect, useId, useRef, useState, useSyncE
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useDragControls } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { inertBackground } from '@/lib/ui/inertBackground'
 import { useNumpadInset } from '@/lib/ui/numpadInset'
 import { useScrollLock } from '@/lib/ui/scrollLock'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { useT } from '@/lib/i18n'
 
 const OVERLAY_Z = 'z-[100]'
@@ -44,9 +44,6 @@ const mdStore = wideStore('(min-width: 768px)')
 const lgStore = wideStore('(min-width: 1024px)')
 const coarseStore = wideStore('(pointer: coarse)')
 const getWideServer = () => false
-
-const FOCUSABLE =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /** Input types that raise a soft keyboard (or a bottom-anchored picker) on mobile. */
 const TEXT_ENTRY_TYPES = new Set([
@@ -154,47 +151,7 @@ export function ModalShell({
   // only the topmost layer — a nested sheet no longer closes the parent behind it.
   useEscapeClose(open, () => onBackRef.current())
 
-  useEffect(() => {
-    if (!open) return
-    const el = panelRef.current
-    if (!el) return
-
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    const focusPanel = () => {
-      el.focus()
-    }
-    const id = requestAnimationFrame(focusPanel)
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return
-      const nodes = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (node) => node.offsetParent !== null || node.getClientRects().length > 0
-      )
-      if (nodes.length === 0) return
-      const first = nodes[0]
-      const last = nodes[nodes.length - 1]
-      const active = document.activeElement as HTMLElement | null
-      if (e.shiftKey) {
-        if (active === first || active === el) {
-          e.preventDefault()
-          last.focus()
-        }
-      } else if (active === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-
-    el.addEventListener('keydown', onKeyDown)
-    const restoreBackground = inertBackground(el)
-    return () => {
-      restoreBackground()
-      cancelAnimationFrame(id)
-      el.removeEventListener('keydown', onKeyDown)
-      const active = document.activeElement
-      if (opener?.isConnected && (active === document.body || el.contains(active) || active?.hasAttribute('data-modal-backdrop'))) opener.focus()
-    }
-  }, [open])
+  useDialogFocus(open, panelRef)
 
   const corner = anchor === 'corner'
   const panelStaticClasses = cn(

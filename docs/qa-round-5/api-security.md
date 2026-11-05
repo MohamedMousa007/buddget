@@ -78,3 +78,13 @@ Coverage:
 - Read fully: `account/delete`, `ai`, `analytics/onboarding`, `app-config`, `auth/{check-email,device/check,device/trust,email-hook,password-updated,password/change,second-factor,two-factor,welcome}`, `biometric/{register,signin}`, `buddgy/{turn,usage}`, all seven `cron/*` headers and auth (notifications and month-carry bodies skimmed), `devices`, `devices/[id]`, `entitlements/me`, `feedback`, `flags`, `gold`, `rates` (tail), `health`, `health/deep`, `notifications`, `prices/refresh`, `push/{register,send}`, `receipt/scan`, `site/{event,lead}`, `sms/{ack,confirm,health,setup-token,undo}`, `support/*` (5), `voice/transcribe`, `webhooks/*` (3), `admin/{access,staff,auth/{login,code,biometric,sso,password,status}}`, `admin/users/[id]` (GET and POST), `admin/users/[id]/export`, `admin/users/[id]/financial` (POST), the second half of `admin/emails` POST, `proxy.ts`, `guardAdmin`, `session.ts`, `sso.ts`, `stepUp.ts`, `credentials.ts`, `resolveRouteUser.ts`, `resolveSmsUser.ts`, `deviceGate.ts`, `registry.ts`, `clientGate.ts`, `nativeApiCors.ts`, `rateLimit.ts`, `publicApiRateLimit.ts`, `cronAuth.ts`.
 - Skimmed or via grep only: `sms/parse` (auth, schema, limits only), `budget/ai`, `admin/{platform,plans,flags,loyalty,crashes,ai/cost,sms/*,support/*,overview,analytics,audit,users,users/[id]/activity}` (guard call and permission confirmed by grep for all; bodies not read), `lib/server/email/*`, `lib/server/reauth.ts`, `lib/server/userData.ts`, `deleteAccount.ts`.
 - Not done: RLS policy review (database finder), live HTTP probing, `sms/parse` body, CORS preflight against the real proxy.
+
+## Fix status
+- API-6: skipped (product decision: verified path on every sms/push route costs a GoTrue round trip per call; removed-phone revocation already enforced by device checks API-1..3)
+- API-7: fixed (src/app/api/devices/route.ts device-id pattern, src/lib/server/devices/registry.ts MAX_LIVE_DEVICES=20 cap, registry.cap.test.ts)
+- API-8: fixed (src/app/api/sms/confirm/route.ts hash claim adds is_duplicate=false, test added)
+- API-9: skipped (needs a server-set trust secret and client change, larger design)
+- API-10: partly fixed (src/app/api/site/event/route.ts now uses the shared Postgres limiter, fail-open, route.test.ts); shared clientIp() unification skipped (harmless behind Vercel, touches proxy.ts and biometric routes)
+- API-11: fixed (src/app/api/admin/auth/password/route.ts lockout check, recordFailure, clearFailures, route.test.ts)
+- API-12: partly fixed (src/app/api/feedback/route.ts null email and Linear try/catch with 502, tests added); counting the quota hit only on success skipped (api_rate_hit counts atomically on check)
+- API-13: skipped (intentionally unscheduled until sign-off)

@@ -32,6 +32,17 @@ describe('POST /api/feedback', () => {
     expect(h.fetch).not.toHaveBeenCalled()
   })
 
+  it('answers 502 instead of throwing when the Linear call fails', async () => {
+    h.fetch.mockRejectedValue(new Error('timeout'))
+    expect((await post(valid)).status).toBe(502)
+  })
+
+  it('does not print "null" for a caller without an email', async () => {
+    h.identity.mockResolvedValue({ id: 'u1', email: null, amr: [] })
+    await post(valid)
+    expect(JSON.parse(h.fetch.mock.calls[0][1].body).variables.input.description).not.toContain('null')
+  })
+
   it('rejects an oversized body before parsing', async () => {
     expect((await post('x'.repeat(40_000))).status).toBe(413)
     expect(h.fetch).not.toHaveBeenCalled()

@@ -28,3 +28,16 @@ Covered so far (interrupted once, report appended as findings are confirmed): ve
 - Dependencies: no unused runtime dep found (all 40 have import or native/CSS reference; `tw-animate-css` is a CSS @import, `@capacitor-firebase/messaging` is native-linked). `@capacitor/cli` sits in dependencies (build tool, harmless). Prod audit gate: 18 advisories, none high/critical outside the allowlist. Packages behind latest minor: @supabase/supabase-js 2.99 vs 2.119, @base-ui/react 1.3 vs 1.9, next 16.4.3 vs 16.4.5 (no advisory attached).
 
 Coverage: read fully: vercel.json, next.config.ts, capacitor.config.ts, AndroidManifest.xml, Info.plist, entitlements, csp.ts, csp-check.mjs, docs/CSP.md, docs/ENV.md, cronAuth.ts, check-migrations.mjs, audit-gate.mjs, useMonthlyStats.ts, monthlyStatsShared.ts, useFlowLedger.tsx (sort/group parts), FlowLedger.tsx, dateRange.ts. Skimmed: proxy.ts, all 7 cron routes (export surface only), scripts/*.sh (hazard grep), 56 process.env reads (name inventory), 547 client files (import scan). Not covered: bundle size per route (no build allowed), Lighthouse, real CSP header on a running server, Gradle/Podfile, 16 other cron-adjacent routes' behaviour, `server-only` count: 55 of       58 modules without it.
+
+## Fix status
+- PRF1: fixed (npm uninstall @types/next-pwa; package-lock only lost the @types/next-pwa tree plus busboy/streamsearch/old swc entries, two peer flags added)
+- PRF2: skipped (needs npm install to bump sharp and relock; run `npm install -D sharp@^0.35.5`)
+- PRF4: skipped (src/app/api/** owned by another agent)
+- PRF5: fixed (src/lib/security/csp.ts + csp.test.ts; all those hosts are only called server-side)
+- PRF6: fixed (docs/ENV.md)
+- PRF7: fixed (AndroidManifest.xml catch-all app.buddget filter removed, auth/callback kept)
+- PRF8: skipped (narrowing FileProvider paths risks breaking camera/share plugins and cannot be device-verified here)
+- PRF10: fixed (features/flow/FlowLedger.tsx caps at 40 day groups with Show more, common.showMore en/ar, FlowLedger.test.ts)
+- PRF11: partly fixed (useEditExpenseForm, useSettingsPage now use useShallow selectors). Skipped QuickActions and useProfilePage: they pass/return the whole FinanceStore to consumers typed on it
+- PRF12: fixed (deleted 8 dead files and their tests); savingsHoldingMapper skipped (src/lib/supabase/remote/** owned elsewhere, still imported by mappers.test.ts)
+- PRF13: fixed (import 'server-only' added to cronAuth, reauth, deleteAccount, secondFactor, admin/crypto; vitest.config.ts aliases server-only to vitest.server-only-stub.ts); userData.ts skipped (owned elsewhere)

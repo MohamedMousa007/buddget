@@ -16,6 +16,7 @@ export interface SelfReport {
 }
 
 const UNIQUE_VIOLATION = '23505'
+export const MAX_LIVE_DEVICES = 20
 
 /**
  * Makes this phone the main one (notifications on) and clears the flag everywhere else first, so the one-main index holds.
@@ -61,6 +62,7 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
   const main = others.find((d) => d.is_main)
 
   if (!existing) {
+    if (others.length >= MAX_LIVE_DEVICES) return { revoked: false as const, device: null }
     const name = defaultDeviceName(report.platform, report.model)
     const row = {
       user_id: userId, device_id: deviceId, platform: report.platform, model: report.model ?? null,

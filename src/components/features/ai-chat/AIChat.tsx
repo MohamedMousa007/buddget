@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { WifiOff } from 'lucide-react'
 import { useBuddgyChat } from '@/hooks/useBuddgyChat'
@@ -13,6 +13,7 @@ import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageLi
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
 import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
 import { useDismissable } from '@/hooks/useDismissable'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { ORB_SIZE, EDGE_INSET as ORB_INSET } from '@/components/ai/AIChatBubble'
 
 const DESKTOP_BP = 1024
@@ -102,6 +103,8 @@ export function AIChat() {
   useScrollLock(isOpen)
   // Android back / Escape close the chat instead of the whole screen.
   useDismissable(isOpen, close)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(isOpen && !!panel, panelRef, true)
 
   return (
     <AnimatePresence>
@@ -116,6 +119,8 @@ export function AIChat() {
             aria-hidden
           />
           <motion.div
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="ai-chat-title"
@@ -130,7 +135,7 @@ export function AIChat() {
             animate={{ opacity: 1, scale: 1, borderRadius: 16 }}
             exit={{ opacity: 0, scale: 0.08, borderRadius: 48 }}
             transition={{ type: 'spring', stiffness: 380, damping: 32, opacity: { duration: 0.14 } }}
-            className="fixed z-50 flex flex-col overflow-hidden bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
+            className="fixed z-50 flex flex-col overflow-hidden outline-none bg-[var(--color-brand-card)] rounded-2xl border border-[var(--color-brand-border)] shadow-[0_24px_60px_-15px_rgba(0,0,0,0.7)]"
           >
             <AIChatHeader onClose={close} onNewChat={newChat} canReset={items.length > 0} beat={beat} isLoading={busy} streaming={busy && items.at(-1)?.role === 'buddgy' && (items.at(-1)?.text ?? '') !== ''} />
 

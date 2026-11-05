@@ -127,7 +127,7 @@ export function useBuddgyChat() {
         return
       }
       const write = TOOLS.get(state.proposal.tool)?.write
-      const result = write?.apply(state.proposal, { now: new Date(), locale })
+      const result = write?.apply(state.proposal, { now: new Date(), locale, revising: true })
       if (!result?.ok) {
         decide(itemId, proposalId, 'failed', result?.error)
         return

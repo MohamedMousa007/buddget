@@ -10,6 +10,7 @@ import { useAssetPrices } from '@/hooks/useAssetPrices'
 import { computeNetWorth } from '@/lib/savings/netWorth'
 import { useLedgerInput } from '@/lib/accounts/useAccounts'
 import { accountsBasisFor } from '@/lib/accounts/netWorthBasis'
+import { cycleKeyFor } from '@/lib/settings/payCycle'
 
 /**
  * Net worth snapshot: savings + investments (account balances) + this month's cash flow − debt.
@@ -23,7 +24,9 @@ import { accountsBasisFor } from '@/lib/accounts/netWorthBasis'
  */
 export function useNetWorth() {
   useRates()
-  const stats = useMonthlyStats()
+  // Net worth is a statement about now: browsing an earlier month on Flow must not change it.
+  const monthStartDay = useFinanceStore((s) => s.settings.monthStartDay)
+  const stats = useMonthlyStats(cycleKeyFor(new Date(), monthStartDay))
   const { lookup } = useAssetPrices()
   const {
     savingsAccounts,

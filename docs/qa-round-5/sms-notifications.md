@@ -16,3 +16,9 @@ Negative results (probed, no defect): ReDoS on all curated regexes, pre-filter r
 Coverage: read fully: patterns/*, preFilter, directionGuard, dispatch, pairing, ingestGuards, templateApply, safeRegex, boundedRegex, parseSmsDay, parse/route.ts lines 1-260 and 395-440 and 560-1100, cron/notifications/route.ts, deliveryWindow, evaluateAlerts, emitNotification, api/notifications/route.ts, useNotifications. Skimmed: sms_try_pair SQL. Not read: confirm/undo/ack/setup-token routes, learnGates, adjudicator, quarantine, push routes, native glue, SMS hooks.
 
 Repro note: the ReDoS timing and notification month_end/window/IPN-reference probes (redos, notif) were run and their numbers are quoted above, but their files were removed from the shared checkout before they could be archived. The otp and curated repros were re-created in `docs/qa-round-5/repro/sms/` from the same inputs.
+
+## Fix status
+- SMS2: fixed (src/lib/sms/patterns/index.ts, rejects a non-uppercase captured currency that is not a known code; test in patterns/__tests__/patterns.test.ts)
+- SMS4: skipped (src/lib/sms/pairing.ts is owned by another agent)
+- SMS5: fixed (src/lib/sms/directionGuard.ts, punctuation after the sign plus LE / جم tokens; tests in directionGuard.test.ts)
+- SMS6: skipped (needs a product decision on which generic-set senders to hold; no sender list exists for those sets)

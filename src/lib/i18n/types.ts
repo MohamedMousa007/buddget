@@ -119,6 +119,7 @@ export interface Dictionary {
     delete: string
     edit: string
     back: string
+    showMore: string
     close: string
     /** Accessible name for a card's ⋮ action-menu trigger. */
     moreActions: string
@@ -324,6 +325,10 @@ export interface Dictionary {
 
   wealthPage: {
     deleteBlocked: (pocket: string, shortBy: string) => string
+    ledgerMonthEnd: string
+    ledgerMoved: string
+    ledgerSaved: string
+    ledgerWithdrew: string
     holdLabel: string
     balances: string
     marketPriced: string
@@ -1697,6 +1702,7 @@ export interface Dictionary {
       placeholderDescription: string
       submit: string
       submitting: string
+      submitFailed: string
       successTitle: string
       successBody: string
     }
@@ -2768,6 +2774,8 @@ export interface Dictionary {
     tokenRotateConfirm: string
     tokenRotateSuccess: string
     guide: {
+      sceneSenderAny: string
+      sceneWholeMessage: string
       brand: string
       introBadge: string
       introTitle1: string
@@ -3086,6 +3094,9 @@ export interface Dictionary {
       verbIncome: string
       verbMove: string
       whichDebt: string
+      assetGold: string
+      assetCrypto: string
+      assetStocks: string
       pickDebt: string
       noDebts: string
       left: (n: string) => string

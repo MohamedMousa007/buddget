@@ -19,3 +19,8 @@ Checked and found consistent (no finding): credit-card outstanding excludes Top 
 Repro files: docs/qa-round-5/repro/wealth/wealth.test.ts.txt (WLT1-4, WLT7), goal.test.ts.txt (WLT8). `src/__qa5__/wealth` was deleted twice by another process during the run; the repro files were re-created and kept under docs.
 
 Coverage: read fully: useFinanceStore debt/savings/payment-method actions, calculations.ts (cash outflow, debt remaining, left-to-spend), computeCreditCardBalance, netWorth, accounts/balance, kinds, resolve, removePaymentMethod, WithdrawSheetV3 (submit path), useAddDebtSheet, useRecurringDebtPaymentSheet, recurringDebtDueHandlers, installmentPlan/Schedule, withdrawalPayment, monthCarry, carryDateLogic, cycleCarryFigures, allocateGoalFunding, month-carry route, goals computeGoalProgress/debtGoal/allocateMonth/fundingBasis/reconcile, scheduler, marketData. Skimmed: BNPL split in useAddExpenseSheet, useEnsureMonthlySavingsVault. Not read: prices/* providers, loyalty, entitlements, useGoalRows, useGoalAllocationRuns, useAssetPrices, zakat, payment brand matcher, live SQL (none run).
+
+## Fix status
+- WLT4: fixed (src/lib/debts/recurringDebtDueHandlers.ts uses isDebtFullyPaid; test in src/lib/debts/__tests__/autoClear.test.ts)
+- WLT5: fixed (src/hooks/useRecurringDebtPaymentSheet.ts keeps a still-valid chosen payment method; no test, hook has no React test setup)
+- WLT9: skipped (needs a payment-to-withdrawal link, i.e. a schema/type change, or UI copy in the linked-delete flow)

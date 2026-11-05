@@ -3,6 +3,7 @@ import { EXPENSE_ENTRY_CATEGORIES } from '@/lib/constants/finance'
 import { selectActivePlan } from '@/lib/budget/activePlan'
 import { planRowNames } from '@/lib/budget/budgetPlans'
 import { AUTO_DATE_WINDOW_DAYS, AUTO_MAX_AMOUNT_BASE, claimAutoSlot, withinDays } from '@/lib/buddgy/tools/autoApplyGuard'
+import { checkAmount } from '@/lib/ai/legacyGuards'
 import { categoryLabelFor } from '@/lib/i18n/categoryLabel'
 import { labels } from '@/lib/buddgy/tools/copy'
 import type { EditableField, Proposal, ProposeResult } from '@/lib/buddgy/tools/proposal'
@@ -101,7 +102,9 @@ function buildAddExpense(args: Record<string, unknown>, ctx: ToolContext, claimS
   const description = text(args.description, 80)
   const amount = num(args.amount)
   if (!description) return fail('An expense needs a description.')
-  if (amount === undefined || amount <= 0) return fail('The amount must be above zero.')
+  if (amount === undefined) return fail('The amount must be above zero.')
+  const amountError = checkAmount(amount)
+  if (amountError) return fail(amountError)
   const currency = (text(args.currency, 8)?.toUpperCase() ?? s.settings.baseCurrency) as Currency
   const inBase = tryConvertCurrency(amount, currency, s.settings.baseCurrency, s.exchangeRates)
   if (inBase === null) return fail(`No exchange rate from ${currency} to ${s.settings.baseCurrency}.`, 'Ask for the amount in the base currency.')
@@ -118,7 +121,7 @@ function buildAddExpense(args: Record<string, unknown>, ctx: ToolContext, claimS
   )
   const income = monthIncome(s)
   const small = income > 0 && inBase <= income * AUTO_APPLY_INCOME_SHARE
-  const twin = seenJustNow(`${description.toLowerCase()}|${amount}|${currency}|${date}`)
+  const twin = !ctx.revising && seenJustNow(`${description.toLowerCase()}|${amount}|${currency}|${date}`)
   const duplicate = Boolean(recent) || twin
   const eligible =
     small &&

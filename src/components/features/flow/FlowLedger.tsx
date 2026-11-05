@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { useT } from '@/lib/i18n'
 import { SwipeToDelete, type SwipeSide } from '@/components/expenses/SwipeToDelete'
 import { TransactionRow, type TransactionRowProps } from '@/components/transactions/TransactionRow'
 
@@ -37,8 +39,12 @@ export interface FlowLedgerGroup {
  * unchanged — late / refunded / declined / pending ride on its titleBadge, subtitle,
  * amountColor and dimmed. The ledger cross-fades (120 ms) when its content changes.
  */
+export const FLOW_LEDGER_PAGE_DAYS = 40
+
 export function FlowLedger({ groups, fadeKey }: { groups: FlowLedgerGroup[]; fadeKey?: string }) {
+  const t = useT()
   const [open, setOpen] = useState<{ key: string; side: SwipeSide } | null>(null)
+  const [limit, setLimit] = useState(FLOW_LEDGER_PAGE_DAYS)
   return (
     <motion.div
       key={fadeKey}
@@ -47,9 +53,14 @@ export function FlowLedger({ groups, fadeKey }: { groups: FlowLedgerGroup[]; fad
       animate={{ opacity: 1 }}
       transition={{ duration: 0.12, ease: 'easeOut' }}
     >
-      {groups.map((g) => (
+      {groups.slice(0, limit).map((g) => (
         <DayGroup key={g.key} group={g} open={open} setOpen={setOpen} />
       ))}
+      {groups.length > limit ? (
+        <Button variant="ghost" size="touch" onClick={() => setLimit((n) => n + FLOW_LEDGER_PAGE_DAYS)} className="mx-auto mt-3 flex font-semibold">
+          {t.common.showMore}
+        </Button>
+      ) : null}
     </motion.div>
   )
 }

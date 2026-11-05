@@ -1,3 +1,4 @@
+import 'server-only'
 import { createHash, timingSafeEqual } from 'node:crypto'
 
 const digest = (s: string) => createHash('sha256').update(s).digest()

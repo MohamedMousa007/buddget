@@ -8,6 +8,7 @@
  */
 
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { CURRENCY_CODES } from './currency'
 import type { BankPatternSet, CuratedMatch, CuratedPattern, SmsKind } from './types'
 import { HSBC_PATTERNS } from './hsbc'
 import { CIB_PATTERNS } from './cib'
@@ -63,8 +64,9 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
   const m = p.regex.exec(message)
   if (!m) return null
 
-  const currency = (p.groups.currency ? m[p.groups.currency] : null)?.toUpperCase()
-    ?? p.currencyLiteral ?? 'EGP'
+  const rawCurrency = p.groups.currency ? m[p.groups.currency] : null
+  if (rawCurrency && rawCurrency !== rawCurrency.toUpperCase() && !(CURRENCY_CODES as readonly string[]).includes(rawCurrency.toUpperCase())) return null
+  const currency = rawCurrency?.toUpperCase() ?? p.currencyLiteral ?? 'EGP'
   const amount = parseLocalizedAmount(m[p.groups.amount] ?? '', currency)
   if (!amount || !Number.isFinite(amount)) return null
   const counterparty = p.groups.counterparty ? (m[p.groups.counterparty]?.trim() ?? null) : null

@@ -67,22 +67,40 @@ Round 4 fixed 12 defects. This round reported 114, so the earlier "bug free" dis
 | PRF3 | `/api/cron/month-carry` scheduled daily at 05:00 UTC after a read-only dry run (`?dryRun=1`: 39 users, 34 cycles, 3 carries totalling EGP 44,247.68 and SAR 1,071.78, 0 failed) and your sign-off |
 | PRF9 | the old Linear bot LaunchAgent is unloaded and its plist renamed `com.buddget.linearbot.plist.disabled` |
 
-## Open, needs a decision or a larger change
-| ID | P | What | Why not done |
+## Third pass ("fix all"): remaining P2s and the 66 P3s
+Four fixer agents took the P3s by area (each appended a `## Fix status` section to its reports); I took the open P2s.
+
+| ID | Result |
+|---|---|
+| AI-7 | a receipt scan whose answer cannot be parsed is settled as an error and no longer uses a monthly scan |
+| SIT10 | an export table the database cut short (1,000-row response cap) is reported incomplete instead of exported silently short. Paging a longer table is not done (largest live user: 282 expenses) |
+| WLT1 | the Spend withdrawal copy now says what it does ("Leaves savings, not logged as an expense"). Booking an expense instead stays a product decision |
+| MON-6 | net worth on the legacy basis reads the current cycle, not the month being browsed (type-checked, no hook-level test) |
+| SYN5 | goal edits are stamped and the server `updated_at` is read back, so a pull in flight no longer overwrites a local goal edit. Other types unchanged |
+| SYN7 | merge compares times as instants (`Z` versus `+00:00`). Device clock skew is not fixable on the client |
+| P3, 44 fixed | MON-4, MON-5, WLT4, WLT5, BUD2, API-7, API-8, API-10, API-11, API-12, SIT7, SIT6, DBL-2, DBL-4, DBL-5, DBL-6, DBL-10, DBL-11, SMS2, SMS5, AI-8 to AI-12, HKS6, HKS7, UIS2, UIS4, UIS5, UIS6, UIS7, UIS9, PRF1, PRF2, PRF4, PRF5, PRF6, PRF7, PRF10, PRF12, PRF13, SYN8, MON-7 |
+| P3, 3 partial | HKS5 (error banner added, confirm-before-replace is a product call), UIS8 (three files moved to tokens; the rest feed `rgba()` or framer), PRF11 (two hooks use selectors) |
+
+Database changes applied live (migration 0231): the three positive-amount checks validated; 13 foreign-key indexes added; two redundant indexes dropped (`idx_expenses_user`, `push_tokens_user_idx`); write privileges revoked from `authenticated` on five tables whose only policy is SELECT; cron run details kept 7 days. Not applied: dropping `sms_parse_log_user_hash_idx` (its predicate differs from the unique index, so it is not redundant), dropping the `qa2_backup` schema (destroys backup copies of user rows), ledger repair.
+
+Also: the Android manifest lost a catch-all `app.buddget` link filter (nothing in the code uses that scheme except the auth callback, which keeps its own filter); `sharp` bumped to 0.35.5; `@types/next-pwa` removed (its nested Next 13 was the critical audit finding); all six other crons now accept POST like `notifications`.
+
+## Still open (22: 3 P2, 19 P3)
+| ID | P | What | Why |
 |---|---|---|---|
-| WLT1 | P2 | savings withdrawal "Spend" is labelled "Counts as an expense" but creates no expense | creating one touches the net-worth two-ledger model; product call (change the label, or book the expense) |
-| MON-6 | P2 | legacy-basis net worth follows the month being viewed | needs `useMonthlyStats` to take a month; touches every stats screen |
-| SYN5-7 | P2 | rows without `updatedAt` always lose; blind upsert (last pusher wins); device-clock comparison | needs a server `updated_at` precondition and mapper changes |
-| API-4 | P2 | biometric enrol needs only a valid session | adding a recent-sign-in requirement changes the enrolment flow |
-| SMS3 | P2 | pairing race (static) | reproduce first |
-| LIV | - | the live browser sweep did not run | repeat on a quiet machine or a production build |
-| All P3 | P3 | 66 listed in the area reports | triage later |
+| API-4 | P2 | biometric enrolment needs only a valid session | a recent-sign-in check needs a password prompt in the app and breaks enrolment on installed builds until they update |
+| SMS3 | P2 | pairing race (static) | needs a concurrent database test; changing the pairing function without one could split real transfers |
+| SYN6 | P2 | blind upsert, last pusher wins | needs a server-side `updated_at` precondition on every synced table |
+| MON-2, MON-3, BUD4, API-6, SIT8, SIT9, SMS6 | P3 | legacy weekly count, Egypt weekend, unused budget answers, and others | product decisions |
+| WLT9, SMS4, SYN9, DBL-1 | P3 | need a schema or database function change (payment-to-withdrawal link, FX pair direction, `sync_pull` deleted ids, migration ledger repair) | database writes beyond hygiene |
+| API-9, API-13, PRF8, DBL-3, HKS5 | P3 | design change, intentional unscheduled cron, FileProvider paths (needs a device), backup schema drop, confirm-before-replace | risk or decision |
+| LIV | - | the live browser sweep did not run | repeat on a quiet machine |
 
 ## Not covered (stated plainly)
 Dark and Arabic visual sweeps, keyboard-only sweep, narrow and wide widths, stress data in the live app (the sweep did not run); real-device native paths; Buddgy model behaviour with the live model; terms, cookies, admin UI; analytics, spending, history months, reports hooks; recurring-expense generation; `useDebtTabData` maths; most form-level validation (double submit, 1e21, Arabic digits, state reset); a New York time-zone run of the money area.
 
 ## How far from bug-free
-- Known open: 0 P0, 0 P1, about 12 P2 (most need a decision), 66 P3. 36 findings fixed in total.
+- Known open: 0 P0, 0 P1, 3 P2, 19 P3 (22 of 114). 92 findings fixed fully or partly.
 - Discovery is still not saturated: three of the four densest areas (sync, API, forms) had not been probed this deeply before and gave P1s; the live-UI layer produced nothing because it could not run.
 - Assurance score (judgement, 18 segments x depth 0-3): up from 34/54 (63%) to about 40/54 (74%), mostly from the API matrix, the English/Arabic diff (clean: 3,447 keys each), selector timings (linear, 91 ms at 40k transactions) and code-level sync review. A release gate would want 80%+ with native, AI, offline and live UI at 2.
 - Next, by yield: (1) live UI sweep on a production build, (3) render tests for the sheets and carousels (UIS1, forms), (4) real-device checklist, (5) Playwright smoke for the nine journeys.

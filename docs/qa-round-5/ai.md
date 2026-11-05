@@ -19,3 +19,11 @@ Covered: /api/buddgy/turn + validate/turn stream, /api/ai proxy, quota SQL (0224
 | AI-13 | P3 | lib/buddgy/tools/navConsent.ts | Navigation consent is module-global and never reset on sign-out or account switch; once given, an injected open_sheet/open_screen navigates without a card for the rest of the app session, for any account. | grep: resetNavConsent used only by tests. | Reset on SIGNED_OUT. | Static |
 
 Coverage: read fully: turn route, validate.ts, turn.ts, quota.ts, units, gemini server helpers, runTurn, history, context, useBuddgyChat, expenses/settings/memory/navigation executors, autoApplyGuard, aiActionHandlers, legacyGuards, voice hook, receipt and voice routes. Skimmed: gemini.ts client prompt builder, runAiCommand, buddgyLookup, ProposalCard, message list.
+
+## Fix status
+- AI-8: fixed (src/lib/buddgy/client/runTurn.ts, read results share the remaining request budget; test in client/__tests__/runTurn.test.ts)
+- AI-9: fixed (src/lib/buddgy/tools/exec/expenses.ts, uses checkAmount / LEGACY_MAX_AMOUNT; test tools/__tests__/expenseBounds.test.ts)
+- AI-10: fixed (ToolContext.revising set by useBuddgyChat reviseProposal, expenses.ts skips the twin check; test in expenseBounds.test.ts)
+- AI-11: fixed (src/lib/buddgy/client/sse.ts 30 s idle timeout surfaced as TurnFailure 'failed' in runTurn.ts; test client/__tests__/sse.test.ts)
+- AI-12: fixed (src/app/api/voice/transcribe/route.ts, typeof check on body.audio)
+- AI-13: skipped (already fixed: clearBudgetData, called on sign-out and account switch, calls resetNavConsent)

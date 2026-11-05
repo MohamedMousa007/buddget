@@ -18,3 +18,10 @@ Coverage:
 - Read fully: calculations.ts, currency.ts, localDate.ts, paydaySchedule.ts, monthlyStats.ts, monthlyStatsShared.ts, spendingPace.ts, payCycle.ts, formatters.ts, amountParse.ts, dateRange.ts, incomeOccurrences.ts, paydayResolution.ts, exclusion.ts, receivable.ts, subscriptionDates/Occurrence/Recurring, netWorth.ts, useMonthlyStats, useCycleAwareMonth, useMonthClose, useNetWorth, useNetWorthTrend.
 - Skimmed: useReportsPage, useFlowBand, budgetPlans.ts.
 - Not read: store slices and actions, recurring-expense generation, subscriptionForecast/detectRecurringCharges, DST/New York run (only Cairo executed), live-data SQL invariants beyond one income_sources count.
+
+## Fix status
+- MON-2: skipped (existing incomeOccurrences test pins the 5-payday legacy walk as intended "historical" behaviour; cap is a product rule, latent only: 0 live weekly rows)
+- MON-3: skipped (weekend setting is a product/type decision); dead doc comment removed from src/lib/store/types.ts
+- MON-4: fixed (src/lib/utils/formatters.ts, test in formatters.test.ts)
+- MON-5: fixed (src/lib/budget/budgetPlans.ts, test in budgetPlans.test.ts)
+- MON-7: skipped (the memo that needs the day key is in src/hooks/useMonthlyStats.ts, owned by another agent)

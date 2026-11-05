@@ -1,12 +1,12 @@
 # Environment contract
 
-Where each variable is set: **Vercel** (server + build), **.env.local** (native builds only, see `.env.example`), **CI** (dummy values for the build). `NEXT_PUBLIC_*` values are inlined into the client bundle at build time and are never secret.
+Where each variable is set: **Vercel** (server + build), **.env.local** (native builds only, see `.env.example`), **`npm run verify`** (dummy values for the build). `NEXT_PUBLIC_*` values are inlined into the client bundle at build time and are never secret.
 
 ## Required in production (Vercel)
 
 | Variable | Used for |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client. If missing in a Vercel production deploy the middleware answers 503 (it used to serve the app with no auth gate). `NEXT_PUBLIC_SUPABASE_ANON_KEY` is the legacy name for the publishable key. |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase client. If missing in a Vercel production deploy `src/proxy.ts` answers 503 when `VERCEL_ENV` is `production` (it used to serve the app with no auth gate). `NEXT_PUBLIC_SUPABASE_ANON_KEY` is the legacy name for the publishable key. |
 | `SUPABASE_SECRET_KEY` | Service-role key. Code reads this name first; `SUPABASE_SERVICE_ROLE_KEY` is the legacy fallback in some paths only (instrumentation-node.ts and ai/quota.ts check `SUPABASE_SECRET_KEY` alone). Set `SUPABASE_SECRET_KEY`. |
 | `CRON_SECRET` | Bearer secret for every `/api/cron/*` route. Unset means every cron answers 401 (fail closed). |
 | `GEMINI_API_KEY` | AI features. Optional model overrides: `GEMINI_MODEL_FAST`, `GEMINI_MODEL_SMART`, `GEMINI_MODEL_LEGACY`, `GEMINI_API_BASE`. |
@@ -36,10 +36,13 @@ Where each variable is set: **Vercel** (server + build), **.env.local** (native 
 |---|---|
 | `NEXT_PUBLIC_DEV_AUTH_BYPASS=1` | Skips the login gate; ignored when `NODE_ENV=production`. |
 | `NEXT_PUBLIC_PWA_DEV`, `NEXT_PUBLIC_SENTRY_DEV` | Enable the service worker / Sentry in `next dev`. |
+| `CAPACITOR=true` | Static-export mode for the Capacitor bundle (`next.config.ts`); set by `npm run cap:build`, never on Vercel. |
 | `QA_PG_URL` | Postgres URL for the `*.pg.test.ts` admin suites (`npm run test:pg`). Without it they skip. |
 | `RUN_AI_EVAL=1` + `GEMINI_API_KEY` | Live Gemini golden set (`npm run eval:ai`). Excluded from `npm test`. |
-| `TZ` | `npm test` defaults to `Africa/Cairo`; CI also runs `America/New_York`. |
+| `TZ` | `npm test` defaults to `Africa/Cairo`; `npm run verify` also runs `America/New_York`. |
 
-## CI
+## Verify
 
-The build job uses dummy Supabase values (see `.github/workflows/ci.yml`); no real secret is exposed to PR runs.
+`npm run verify` (`scripts/verify.sh`) builds with dummy Supabase values; GitHub Actions is not relied on.
+
+`VERCEL_ENV` is set by Vercel itself and read by `src/proxy.ts`.

@@ -131,6 +131,11 @@ export function categorySpendingForPlanRows(
   plan: BudgetPlan
 ): Record<string, number> {
   const out: Record<string, number> = {}
+  const spendByLowerName: Record<string, number> = {}
+  for (const [cat, amount] of Object.entries(spendingByCategory)) {
+    const k = cat.trim().toLowerCase()
+    spendByLowerName[k] = (spendByLowerName[k] ?? 0) + amount
+  }
   // Plan row names (lowercased) so an alias is only folded in when the plan has
   // no dedicated row for that newer category.
   const planNames = new Set(
@@ -140,7 +145,7 @@ export function categorySpendingForPlanRows(
     if (isSavingsPlanCategory(cat)) continue
     const name = cat.name.trim()
     if (!name) continue
-    const direct = spendingByCategory[name] ?? 0
+    const direct = spendByLowerName[name.toLowerCase()] ?? 0
     const enumCat = matchExpenseCategory(name)
     const legacy = enumCat != null && enumCat !== name ? spendingByCategory[enumCat] ?? 0 : 0
     // Fold newer spend categories (Groceries/Fuel/…) into their legacy bucket

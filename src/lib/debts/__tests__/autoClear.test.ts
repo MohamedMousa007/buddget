@@ -74,3 +74,21 @@ describe('paying a debt in full', () => {
     expect(useFinanceStore.getState().recurringDebtPayments[0].isActive).toBe(false)
   })
 })
+
+describe('reminder after a debt cleared with rounding dust', () => {
+  it('deactivates the reminder instead of advancing it', () => {
+    useFinanceStore.setState({
+      debts: [debt({ startingBalance: 100 })],
+      recurringDebtPayments: [{
+        id: 's1', debtId: 'd1', amount: 50, currency: base(), paymentMethodId: 'x',
+        frequency: 'monthly', nextDueDate: '2026-11-10', isActive: true, createdAt: '2026-07-01',
+      }],
+    })
+    useFinanceStore.getState().addDebtPayment(pay(99.996))
+    expect(status()).toBe('cleared')
+    reconcileDebtSchedule('d1')
+    const sched = useFinanceStore.getState().recurringDebtPayments[0]
+    expect(sched.isActive).toBe(false)
+    expect(sched.nextDueDate).toBe('2026-11-10')
+  })
+})

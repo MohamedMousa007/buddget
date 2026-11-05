@@ -52,7 +52,7 @@ export function FilterSheet({ open, onClose, children, footer }: { open: boolean
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-[rgba(4,4,8,0.66)]"
+            className="fixed inset-0 z-[60] bg-black/60"
             aria-hidden
           />
           <motion.div

@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   failTable: null as string | null,
   rpc: vi.fn(),
   gate: vi.fn(),
+  filters: [] as [string, unknown][],
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
@@ -24,7 +25,7 @@ vi.mock('@/lib/supabase/service', () => ({
         const rec: Rec = { table, values }
         h.updates.push(rec)
         const q = {
-          eq: () => q,
+          eq: (col: string, val: unknown) => { h.filters.push([col, val]); return q },
           select: () => ({ maybeSingle: async () => ({ data: h.claimRow }) }),
           then: (r: (v: unknown) => void) => r({ error: h.failTable === table ? { message: 'boom' } : null }),
         }
@@ -52,6 +53,7 @@ describe('POST /api/sms/confirm', () => {
     h.gate.mockReset().mockResolvedValue(null)
     h.rpc.mockReset().mockResolvedValue({ error: null })
     h.updates.length = 0
+    h.filters.length = 0
     h.failTable = null
     h.claimRow = pending()
   })
@@ -89,6 +91,12 @@ describe('POST /api/sms/confirm', () => {
     expect(res.status).toBe(200)
     expect(logUpdates()[0]).toEqual({ awaiting_confirmation: false })
     expect(h.create).toHaveBeenCalledTimes(1)
+  })
+
+  it('claiming by hash skips a duplicate-flagged twin', async () => {
+    await post({ hash: 'abc123' })
+    expect(h.filters).toContainEqual(['sms_hash', 'abc123'])
+    expect(h.filters).toContainEqual(['is_duplicate', false])
   })
 
   it('does not post when the claim lost the race', async () => {

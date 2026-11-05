@@ -21,3 +21,9 @@ Covered: public site content/SEO plumbing, privacy policy vs live DB, account de
 - Erasure coverage vs live schema: all other user_id tables are cascaded or listed.
 
 Coverage: read fully: robots.ts, sitemap.ts, routes.ts, seo.ts, entry.ts, site/lead and site/event routes, LeadForm, guard.ts, admin users/[id] route, deleteAccount.ts, userData.ts, account/delete route, privacy page and sections, en/ar delete-account content. Skimmed: other admin routes (guard calls and audit calls only), proxy.ts, DataCard. Not read: terms, cookies page, site components, admin UI, ADMIN docs.
+
+## Fix status
+- SIT6: skipped (src/lib/server/userData.ts is owned by another agent)
+- SIT7: fixed (src/lib/site/content/ar.ts monthsUnit 'أشهر')
+- SIT8: skipped (needs Arabic legal translation, product decision)
+- SIT9: skipped (product decision: admin view or email notification and retention policy for site_leads)

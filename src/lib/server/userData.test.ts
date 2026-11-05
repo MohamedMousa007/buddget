@@ -84,3 +84,17 @@ describe('exportUserData', () => {
     expect(tables.support_ticket_messages).toHaveLength(1)
   })
 })
+
+describe('exportUserData truncation', () => {
+  it('reports a table the database cut short as incomplete instead of exporting it silently short', async () => {
+    const admin = {
+      from: (table: string) => {
+        const q = { select: () => q, eq: () => q, in: () => q, limit: async () => ({ data: table === 'expenses' ? [{ id: 'e1' }] : [], count: table === 'expenses' ? 5000 : 0, error: null }) }
+        return q
+      },
+    } as unknown as ServiceClient
+    const { tables, failed } = await exportUserData(admin, 'u1', 20000)
+    expect(failed).toEqual(['expenses'])
+    expect(tables.expenses).toEqual([{ id: 'e1' }])
+  })
+})

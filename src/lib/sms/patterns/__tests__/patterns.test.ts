@@ -435,3 +435,13 @@ describe('account-level instant transfer (Arabic) and promo ads, masked fixtures
     expect(isNonTransaction(IN)).toBeNull()
   })
 })
+
+describe('currency group', () => {
+  it('rejects a lowercase word captured as the currency', () => {
+    expect(matchCuratedPattern('Your HSBC Account ********0001 was debited for 250 for purchase at Carrefour on 09-06-2026', null)?.currency).not.toBe('FOR')
+  })
+
+  it('keeps a real purchase', () => {
+    expect(matchCuratedPattern(HSBC_PURCHASE, null)?.currency).toBe('EGP')
+  })
+})

@@ -15,3 +15,7 @@ Covered: remote sync push/pull (`sync.ts`, `delta.ts`, `merge.ts`, `diff.ts`, `c
 | SYN9 | P3 | src/lib/supabase/remote/delta.ts (budget_plan_activations) | `sync_pull` returns only live activations and no deleted ids, and `applyDelta` unions them with local. An activation tombstoned on another device (re-switch in the same cycle) lingers locally, so two activations for one cycle can coexist. | live `sync_pull` definition read via SQL; static | Return deleted activation ids like `budget_plans_deleted` | Static |
 
 Coverage: read fully: sync.ts, delta.ts, merge.ts, diff.ts, cursor.ts, resetEpoch.ts, snapshot.ts, SupabaseFinanceSync.ts, flushBaseline.ts, debouncedPersistStorage.ts, safeLocalStorage.ts, clearBudgetData.ts, cacheOwner.ts, mappers: expense, debt, debtPayment, incomeEvent, incomeSource, paymentMethod, recurringExpense, recurringSavingsDeposit, subscription, goal, savingsAccount, savingsTransaction, investmentHolding; the `persist` migrate/merge block of useFinanceStore.ts; live SQL for sync_pull, sync_pull_v2, sync_table_delta, set_updated_at. Skimmed: AuthProvider.signOut, OFFLINE_GUIDE. Not read: see top.
+
+## Fix status
+- SYN8: skipped (src/lib/supabase/remote/** owned by another agent)
+- SYN9: skipped (src/lib/supabase/remote/delta.ts owned by another agent; also needs sync_pull SQL change)

@@ -15,3 +15,7 @@ Coverage:
 - Probed: 20,000-case fuzz of `buildPlan` with integer inputs (income 0 to 5e8, variable income, debts, goals, tax, arrears, saving target): no negative or non-integer lines, lines always sum to income, no unassigned surplus, no throw. (Fuzz file not kept; it found nothing.)
 - Skimmed only / not covered: `lib/analytics`, `lib/spending`, `lib/onboarding` (steps, eligibility, push policy), `historyResults`, `planView.ts`, hooks `useBudgetPageActions`, `usePlanActions`, `usePlanCategories`, `useSetupProgress`, report chart components, `situationAi`/`budgetAi`, all Arabic rendering of plan strings (engine rationale strings are English-only literals in `engine.ts`; not verified whether they are translated downstream), onboarding resume/gating, history-month boundaries in Cairo vs New York.
 - Reports: `useReportsPage` totals reuse the Flow hero rule (`reportSpendRows`) and the cycle windows from `getMonthRange`; no defect found in the code read. CSV `baseAmount` is unrounded float (static, P3, not listed as a finding because no repro).
+
+## Fix status
+- BUD2: fixed (src/lib/budget/engine.ts floors investMonthly cap and debt balance cap; test src/lib/budget/fractionalAmounts.test.ts)
+- BUD4: skipped (product decision: wire or stop asking payFrequency/houseScope/save_more, same as BF3)

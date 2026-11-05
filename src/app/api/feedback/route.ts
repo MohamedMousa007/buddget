@@ -27,7 +27,8 @@ export async function POST(request: Request) {
   const apiKey = process.env.LINEAR_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'Feedback unavailable' }, { status: 503 })
 
-  if (await isRateLimited(createServiceRoleClient(), `feedback:${user.id}`, 3600, PER_HOUR)) {
+  const service = createServiceRoleClient()
+  if (await isRateLimited(service, `feedback:${user.id}`, 3600, PER_HOUR)) {
     return NextResponse.json({ error: 'Too many reports, try again later' }, { status: 429 })
   }
 
@@ -41,29 +42,32 @@ export async function POST(request: Request) {
 
   const { type, title, description } = parsed.data
   const labelIds = [LABEL_USER_FEEDBACK, type === 'bug' ? LABEL_BUG : LABEL_FEATURE]
-  const fullDescription = description
-    ? `${description}\n\n---\n*Submitted by: ${user.email}*`
-    : `*Submitted by: ${user.email}*`
-
-  const res = await fetch(LINEAR_GRAPHQL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: apiKey },
-    body: JSON.stringify({
-      query: `mutation CreateIssue($input: IssueCreateInput!) {
-        issueCreate(input: $input) { success issue { id identifier url } }
-      }`,
-      variables: { input: { teamId: TEAM_ID, title, description: fullDescription, labelIds } },
-    }),
-    signal: AbortSignal.timeout(LINEAR_TIMEOUT_MS),
-  })
-
-  if (!res.ok) {
-    console.error('[feedback] Linear API error', res.status)
-    return NextResponse.json({ error: 'Failed to create issue' }, { status: 502 })
-  }
+  const byline = `*Submitted by: ${user.email ?? 'unknown'}*`
+  const fullDescription = description ? `${description}\n\n---\n${byline}` : byline
 
   type LinearRes = { data?: { issueCreate?: { success: boolean; issue?: { url: string; identifier: string } } } }
-  const data = await res.json() as LinearRes
+  let data: LinearRes
+  try {
+    const res = await fetch(LINEAR_GRAPHQL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: apiKey },
+      body: JSON.stringify({
+        query: `mutation CreateIssue($input: IssueCreateInput!) {
+          issueCreate(input: $input) { success issue { id identifier url } }
+        }`,
+        variables: { input: { teamId: TEAM_ID, title, description: fullDescription, labelIds } },
+      }),
+      signal: AbortSignal.timeout(LINEAR_TIMEOUT_MS),
+    })
+    if (!res.ok) {
+      console.error('[feedback] Linear API error', res.status)
+      return NextResponse.json({ error: 'Failed to create issue' }, { status: 502 })
+    }
+    data = await res.json() as LinearRes
+  } catch (e) {
+    console.error('[feedback] Linear request failed', e instanceof Error ? e.name : 'unknown')
+    return NextResponse.json({ error: 'Failed to create issue' }, { status: 502 })
+  }
   const issue = data.data?.issueCreate
 
   if (!issue?.success || !issue.issue) {

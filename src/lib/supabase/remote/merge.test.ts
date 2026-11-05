@@ -51,3 +51,16 @@ describe('mergeList', () => {
     expect(mergeList<Row>(local, server)[0].v).toBe('local')
   })
 })
+
+describe('mergeList compares times as instants', () => {
+  it('a local edit stamped later than the server copy wins, whatever the offset notation', () => {
+    const local = [{ id: 'g', name: 'edited', updatedAt: '2026-11-05T10:00:01.000Z' }]
+    const server = [{ id: 'g', name: 'old', updatedAt: '2026-11-05T10:00:00.500000+00:00' }]
+    expect(mergeList(local, server)[0].name).toBe('edited')
+  })
+  it('a server copy stamped later wins', () => {
+    const local = [{ id: 'g', name: 'edited', updatedAt: '2026-11-05T10:00:00.000Z' }]
+    const server = [{ id: 'g', name: 'newer', updatedAt: '2026-11-05T10:00:00.900000+00:00' }]
+    expect(mergeList(local, server)[0].name).toBe('newer')
+  })
+})

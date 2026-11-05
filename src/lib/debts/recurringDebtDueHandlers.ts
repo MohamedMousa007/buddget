@@ -27,12 +27,12 @@ export function reconcileDebtSchedule(debtId: string, manual?: { amount: number;
   if (!sched) return
   const debt = state.debts.find((d) => d.id === debtId)
   if (!debt) return
-  const stillOwed = calculateDebtRemainingRaw(debt, state.debtPayments, {
+  const settled = isDebtFullyPaid(debt, state.debtPayments, {
     expenses: state.expenses,
     exchangeRates: state.exchangeRates,
     allDebts: state.debts,
   })
-  if (stillOwed <= 1e-6 && debt.debtType !== 'credit_card') {
+  if (settled && debt.debtType !== 'credit_card') {
     state.updateRecurringDebtPayment(sched.id, { isActive: false })
     if (debt.status !== 'cleared') state.clearDebt(debtId)
     return

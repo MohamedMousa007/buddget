@@ -71,3 +71,19 @@ describe('guardDirection', () => {
     expect(guardDirection('instant_transfer_in', IPN_IN)).toBe('instant_transfer_in')
   })
 })
+
+describe('ledger sign followed by punctuation or an LE / جم token', () => {
+  it('reads the sign before , . ; )', () => {
+    expect(detectLedgerSign('EGP 715.00-. balance')).toBe('debit')
+    expect(detectLedgerSign('EGP 715.00+, bal EGP 10.00')).toBe('credit')
+  })
+
+  it('reads LE and جم amounts', () => {
+    expect(detectLedgerSign('LE 715.00- at X')).toBe('debit')
+    expect(detectLedgerSign('جم 715.00+ رصيد')).toBe('credit')
+  })
+
+  it('still ignores dates and masked accounts', () => {
+    expect(detectLedgerSign('on 20-07-2026 acct 103-104***-110 PLE 5-x')).toBeNull()
+  })
+})

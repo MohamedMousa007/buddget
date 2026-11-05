@@ -2,6 +2,7 @@
 
 import { reconcileExclusion } from '@/lib/spending/exclusion'
 import { useState, useCallback } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
@@ -10,7 +11,9 @@ import { usePlanCategories } from '@/hooks/usePlanCategories'
 import type { Expense, Currency, SpendExclusion } from '@/lib/store/types'
 
 export function useEditExpenseForm(expense: Expense, onClose: () => void) {
-  const { updateExpense, paymentMethods, settings, exchangeRates } = useFinanceStore()
+  const { updateExpense, paymentMethods, settings, exchangeRates } = useFinanceStore(
+    useShallow((s) => ({ updateExpense: s.updateExpense, paymentMethods: s.paymentMethods, settings: s.settings, exchangeRates: s.exchangeRates })),
+  )
   const t = useT()
   const { categoryChipOptions } = usePlanCategories()
 

@@ -11,6 +11,7 @@ import { useSecondFactorGate } from '@/lib/auth/secondFactorGate'
 import { AuthVerifyStep } from '@/components/features/auth-modal/AuthVerifyStep'
 import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { Scrim } from '@/components/ui/Scrim'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -33,6 +34,8 @@ function Challenge() {
   const [error, setError] = useState('')
   const [cooldown, setCooldown] = useState(0)
   const sent = useRef(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(true, panelRef, true)
 
   const send = useCallback(async () => {
     if (!email) return
@@ -87,7 +90,9 @@ function Challenge() {
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" role="presentation">
       <Scrim label={sec.gateNotNow} onClick={() => useSecondFactorGate.getState().dismiss()} tone="light" />
       <div
-        className="relative z-10 w-full border p-5 sm:p-6 shadow-2xl space-y-4"
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative z-10 w-full border p-5 sm:p-6 shadow-2xl space-y-4 outline-none"
         style={cardStyle}
         role="dialog"
         aria-modal="true"

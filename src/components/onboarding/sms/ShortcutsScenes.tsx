@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Check, ChevronRight, Plus, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/i18n'
 
 /**
  * Illustrated stand-ins for the iOS Shortcuts screens, drawn in Buddget's own tokens. Apple's labels are kept in English on
@@ -45,7 +46,9 @@ const BuddgetIcon = () => (
   <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-brand-primary)] text-[14px] font-extrabold leading-none text-[var(--color-brand-on-primary)]" aria-hidden>B</span>
 )
 
-const SCENES: Record<SceneId, () => ReactNode> = {
+type Captions = { senderAny: string; wholeMessage: string }
+
+const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
   automationTab: () => (
     <Phone>
       <div className="mb-2 flex items-center justify-between px-1">
@@ -72,7 +75,7 @@ const SCENES: Record<SceneId, () => ReactNode> = {
       </Group>
     </Phone>
   ),
-  messageContains: () => (
+  messageContains: (c) => (
     <Phone>
       <Title>When I Get a Message</Title>
       <Group>
@@ -84,7 +87,7 @@ const SCENES: Record<SceneId, () => ReactNode> = {
           </div>
         </Focus>
       </Group>
-      <p className="mt-2.5 px-1 text-xs text-[var(--color-brand-text-muted)]">Leave Sender on Any.</p>
+      <p className="mt-2.5 px-1 text-xs text-[var(--color-brand-text-muted)]">{c.senderAny}</p>
     </Phone>
   ),
   runImmediately: () => (
@@ -115,7 +118,7 @@ const SCENES: Record<SceneId, () => ReactNode> = {
       </Focus>
     </Phone>
   ),
-  shortcutInput: () => (
+  shortcutInput: (c) => (
     <Phone>
       <Group>
         <Row label="Receive messages as input" chevron={false} />
@@ -125,11 +128,12 @@ const SCENES: Record<SceneId, () => ReactNode> = {
           <Focus className="inline-block"><span className="rounded-md bg-[var(--color-brand-primary-soft)] px-2 py-0.5 font-semibold text-[var(--color-brand-primary-ink)]">Shortcut Input</span></Focus>
         </div>
       </Group>
-      <p className="mt-2.5 px-1 text-xs text-[var(--color-brand-text-muted)]">Bank Message → Shortcut Input. That is the whole message.</p>
+      <p className="mt-2.5 px-1 text-xs text-[var(--color-brand-text-muted)]">{c.wholeMessage}</p>
     </Phone>
   ),
 }
 
 export function ShortcutsScene({ id }: { id: SceneId }) {
-  return <>{SCENES[id]()}</>
+  const g = useT().smsTracking.guide
+  return <>{SCENES[id]({ senderAny: g.sceneSenderAny, wholeMessage: g.sceneWholeMessage })}</>
 }

@@ -4,7 +4,9 @@ import type { TurnEvent } from '@/lib/buddgy/protocol'
 const apiFetchAuth = vi.fn()
 vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: (...a: unknown[]) => apiFetchAuth(...a) }))
 
+import { TURN_LIMITS } from '@/lib/buddgy/protocol'
 import { executeCalls, runTurn, TurnFailure } from '@/lib/buddgy/client/runTurn'
+import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 const sse = (events: TurnEvent[]) =>
@@ -113,5 +115,16 @@ describe('executeCalls', () => {
     const r = executeCalls([{ name: 'add_expense', args: { description: 'Coffee', amount: 45, category: 'Food' } }], ctx)
     expect(r.needsModel).toBe(false)
     expect(r.results[0].response).toMatchObject({ status: 'pending_user_approval' })
+  })
+
+  it('shrinks each read result so several large ones stay under the request cap', () => {
+    const big = { rows: 'x'.repeat(9000) }
+    const read = TOOLS.get('search_expenses')!
+    const spy = vi.spyOn(read, 'read').mockReturnValue(big)
+    const calls = Array.from({ length: 5 }, () => ({ name: 'search_expenses', args: {} }))
+    const r = executeCalls(calls, ctx, 2000)
+    spy.mockRestore()
+    const total = r.results.reduce((n, x) => n + JSON.stringify(x.response).length, 0)
+    expect(total).toBeLessThan(TURN_LIMITS.maxTotalChars / 2)
   })
 })

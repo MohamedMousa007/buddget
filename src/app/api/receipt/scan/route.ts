@@ -293,8 +293,6 @@ export async function POST(request: NextRequest) {
     await settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - startedAt, usage: spent.usage, status: 'error' })
     return NextResponse.json({ error: err.status === 502 ? 'The AI service is unavailable, try again' : err.message }, { status: err.status })
   }
-  await settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - startedAt, usage: spent.usage, status: 'ok' })
-
   const jsonStr = extractJson(raw)
   let candidate: unknown = null
   try {
@@ -303,6 +301,8 @@ export async function POST(request: NextRequest) {
     /* falls through to the validation failure */
   }
   const parsed = receiptSchema.safeParse(candidate)
+  // An unreadable answer is a failed scan: it must not use up one of the monthly scans.
+  await settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - startedAt, usage: spent.usage, status: parsed.success ? 'ok' : 'error' })
   if (!parsed.success) {
     console.error('[receipt/scan] unreadable model output, length', raw.length)
     return NextResponse.json(

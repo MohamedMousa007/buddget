@@ -1,3 +1,4 @@
+import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'

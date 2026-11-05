@@ -115,7 +115,7 @@ export function formatMoneyHero(
 
   const symbol = CURRENCY_SYMBOLS[currency] || currency
   const loc = numberLocale()
-  const rounded = Math.abs(Math.round(amount))
+  const rounded = Math.round(Math.abs(amount))
   const negative = amount < 0 && rounded !== 0
 
   const fullNumber = rounded.toLocaleString(loc, {
@@ -165,7 +165,7 @@ export function formatPercent(value: number): string {
 
 /** Round to the nearest whole unit, grouped ("1,234"). No currency symbol — pair with one at the call site. */
 export function formatWhole(n: number): string {
-  return (Math.round(n) + 0).toLocaleString(numberLocale())
+  return (Math.sign(n) * Math.round(Math.abs(n)) + 0).toLocaleString(numberLocale())
 }
 
 const QUANTITY_MAX_DECIMALS: Record<string, number> = { crypto: 8, gold: 3, stock: 4, property: 2 }

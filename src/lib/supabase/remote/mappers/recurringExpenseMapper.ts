@@ -36,7 +36,7 @@ export function recurringExpenseFromRow(row: RecurringExpenseRow): RecurringExpe
     category: row.category as string,
     amount: row.amount,
     currency: row.currency as Currency,
-    paymentMethodId: row.payment_method_id ?? '',
+    paymentMethodId: row.payment_method_id ?? DEFAULT_CASH_ID,
     dayOfMonth: row.day_of_month ?? 1,
     isActive: row.is_active,
     notes: row.notes ?? undefined,

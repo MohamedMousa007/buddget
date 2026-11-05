@@ -7,6 +7,8 @@ export interface ToolContext {
   locale: 'en' | 'ar'
   /** True when the model is answering after a read tool ran, so its next call may be shaped by tool output. */
   afterRead?: boolean
+  /** True when the user is editing a card already shown, so the same entry is not a second copy of itself. */
+  revising?: boolean
 }
 
 export type ReadImpl = (args: Record<string, unknown>, ctx: ToolContext) => unknown

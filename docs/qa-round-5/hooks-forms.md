@@ -13,3 +13,8 @@ Covered: src/hooks (add/edit expense, add subscription, new goal, add debt, link
 | HKS7 | P3 | src/hooks/useAuthModal.ts:445 | `signUp` for an already-registered email returns an obfuscated user (no error, no code sent) when check-email was inconclusive; flow moves to the code step and no email arrives | Supabase obfuscated-user behaviour, code reading | detect `identities.length===0` | Static |
 
 Coverage: read fully: useAddExpenseSheet, useEditExpenseForm, useAddSubscriptionForm, useNewGoalForm, useLinkedDelete, useBaseCurrencySwitch, useAuthModal, useOAuthSignIn, usePwaUpdate, useProfilePage, useSettingsPage, useSubscriptionDetector, small hooks. Skimmed: useAddDebtSheet (submit paths only), useDebtTabData (not read).
+
+## Fix status
+- HKS5: fixed in part (src/hooks/useSettingsPage.ts, error banner for an empty file and for FileReader onerror); confirm-before-replace skipped (needs product decision and new copy)
+- HKS6: fixed (src/hooks/useOAuthSignIn.ts, listener removed in the .then when cleanup already ran; no unit test, hook needs Capacitor mocks)
+- HKS7: fixed (src/hooks/useAuthModal.ts, identities.length === 0 returns to email step with the account-exists error; no unit test, hook needs a Supabase mock)

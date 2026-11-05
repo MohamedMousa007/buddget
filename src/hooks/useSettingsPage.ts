@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
 
+import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useActionToast } from '@/components/ui/ActionToast'
@@ -24,7 +25,9 @@ export function useSettingsPage() {
   const t = useT()
 
   const { user, signOut, openAuthModal } = useAuth()
-  const store = useFinanceStore()
+  const store = useFinanceStore(
+    useShallow((s) => ({ exportData: s.exportData, importData: s.importData, paymentMethods: s.paymentMethods, expenses: s.expenses })),
+  )
   const toast = useActionToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -90,7 +93,10 @@ export function useSettingsPage() {
     const reader = new FileReader()
     reader.onload = async (event) => {
       const text = event.target?.result as string
-      if (!text) return
+      if (!text) {
+        setImportBanner({ variant: 'error', text: t.settings.importError })
+        return
+      }
       try {
         await store.importData(text)
         setImportBanner({ variant: 'success', text: t.settings.importSuccess })
@@ -101,6 +107,7 @@ export function useSettingsPage() {
         })
       }
     }
+    reader.onerror = () => setImportBanner({ variant: 'error', text: t.settings.importError })
     reader.readAsText(file)
     e.target.value = ''
   }

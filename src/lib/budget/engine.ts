@@ -377,7 +377,7 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
   const targetCostly = payoffTarget !== null && aprOf(payoffTarget) >= COSTLY_APR
   const paceCap = payoffTarget
     ? f.debtExtra && f.debtExtra > 0
-      ? Math.min(Math.round(f.debtExtra), payoffTarget.balance)
+      ? Math.min(Math.round(f.debtExtra), Math.floor(payoffTarget.balance))
       : Math.ceil(payoffTarget.balance / (wantsDebt || targetCostly ? PAYOFF_PACE_PRIORITY_MONTHS : PAYOFF_PACE_MONTHS))
     : 0
   const extraPayoff = payoffTarget ? takeSlack(targetCostly ? 0.7 : wantsDebt ? 0.6 : 0.4, paceCap) : 0
@@ -405,7 +405,7 @@ export function buildPlan(f: BudgetFacts): PlanDraft {
   }
 
   const canInvest = f.investInterest && !hasCardDebt && !costlyDebt && monthsHeld >= 1
-  const invest = canInvest ? takeSlack(f.priorities.includes('invest') ? 0.6 : 0.35, f.investMonthly && f.investMonthly > 0 ? f.investMonthly : Infinity) : 0
+  const invest = canInvest ? takeSlack(f.priorities.includes('invest') ? 0.6 : 0.35, f.investMonthly && f.investMonthly > 0 ? Math.floor(f.investMonthly) : Infinity) : 0
   // No retirement saving at all, and the basics are in place: start a small line rather than leave it at zero.
   const startRetirement = f.retirement === 'none' && !costlyDebt && monthsHeld >= 1 ? takeSlack(0.25, Math.round(income * RETIREMENT_TARGET)) : 0
 

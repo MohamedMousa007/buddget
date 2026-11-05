@@ -23,3 +23,12 @@ Coverage:
 - Read fully: ModalShell, Scrim, Switch/buttonVariants/hitArea, TransactionRow, PaymentCardCarousel, SelectPaymentMethodSheet, AuthModal, inertBackground, i18n dictionaries (via script).
 - Skimmed via grep/scan script: all src/components/** (excluding site/ and features/admin) for onClick-on-div (11 hits, 1 real: UIS1), unlabeled icon buttons (no real hits), img alt (0), fixed overlays, hex/rgb, English literals, Button/IconButton small sizes (hit area is 44px via HIT_AREA pseudo-element).
 - Not covered: overflow checks beyond TransactionRow, near-duplicate components, variant counts, input-label audit (scan flagged 26 inputs, mostly wrappers, not individually verified).
+
+## Fix status
+- UIS2: fixed (new src/hooks/useDialogFocus.ts extracted from ModalShell, applied to AuthModal, DeleteAccountDialog, SecondFactorGate, GoalAchievedScreen, AIChat; ModalShell behaviour unchanged; no DOM test env available so no hook test)
+- UIS4: fixed (savings-v3/ActivityLedger.tsx, wealthPage.ledger* dictionary keys en/ar, icon keyed on kind)
+- UIS5: skipped (WithdrawSheetV3.tsx owned by another agent)
+- UIS6: fixed (settings/hub/HelpCard.tsx, settings.feedback.submitFailed en/ar)
+- UIS7: fixed (onboarding/sms/ShortcutsScenes.tsx, smsTracking.guide.sceneSenderAny/sceneWholeMessage en/ar)
+- UIS8: partly fixed (StepAccounts share colours to tokens, IncomePaydayGrid color-mix of primary, ExpenseFilters scrim bg-black/60 as ModalShell). Left: PaymentMethodSetupSheet, VoiceRecordSheet/Overlay, PaydayTimeline (values feed rgba()/inkOn()/framer interpolation that need literal colours, token swap would break them)
+- UIS9: fixed (legal/LegalSection.tsx, teal border, border-s-2 ps-3)

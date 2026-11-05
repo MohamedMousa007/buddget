@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
     }
-    if (!body.audio) return NextResponse.json({ error: 'Missing audio field' }, { status: 400 })
+    if (typeof body?.audio !== 'string' || !body.audio) return NextResponse.json({ error: 'Missing audio field' }, { status: 400 })
     const buffer = Buffer.from(body.audio, 'base64')
     if (buffer.byteLength > MAX_AUDIO_BYTES) {
       return NextResponse.json({ error: 'Audio too large', stage: 'transcribe' }, { status: 413 })

@@ -111,6 +111,7 @@ export type Database = {
           ok_count: number
           first_seen: string
           last_seen: string
+          masked_version: number | null
         }
         Insert: {
           skeleton_key: string
@@ -124,9 +125,11 @@ export type Database = {
           ok_count?: number
           first_seen?: string
           last_seen?: string
+          masked_version?: number | null
         }
         Update: {
           seen_count?: number
+          masked_version?: number | null
         }
         Relationships: []
       }
@@ -3270,6 +3273,7 @@ export type Database = {
           kind: string | null
           learn_status: string | null
           learn_template_id: string | null
+          skeleton_key: string | null
           matched_template_id: string | null
           merchant: string | null
           merchant_normalized: string | null
@@ -3321,6 +3325,7 @@ export type Database = {
           kind?: string | null
           learn_status?: string | null
           learn_template_id?: string | null
+          skeleton_key?: string | null
           matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
@@ -3372,6 +3377,7 @@ export type Database = {
           kind?: string | null
           learn_status?: string | null
           learn_template_id?: string | null
+          skeleton_key?: string | null
           matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null

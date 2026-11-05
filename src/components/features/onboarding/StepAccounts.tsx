@@ -19,7 +19,7 @@ import { useOnboardingCopy } from './useOnboardingCopy'
 
 type Kind = 'bank_account' | 'wallet' | 'cash'
 
-const SHARE_COLORS = ['#8FD3FF', '#FFB4A5', '#E8D18A', '#B7A6FF']
+const SHARE_COLORS = ['var(--color-brand-primary-bright)', 'var(--color-brand-gold)', 'var(--color-brand-amber)', 'var(--color-brand-text-muted)']
 const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
 
 /** Step 3: where the money lives. Reuses the Accounts add sheet, then reveals the first real number. */

@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
   claim = parsed.data.logId
     ? claim.eq('id', parsed.data.logId)
-    : claim.eq('sms_hash', parsed.data.hash as string)
+    : claim.eq('sms_hash', parsed.data.hash as string).eq('is_duplicate', false)
 
   const { data: row } = await claim.select(ROW_COLUMNS).maybeSingle()
 

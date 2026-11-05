@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useAuthModal } from '@/hooks/useAuthModal'
@@ -7,6 +8,7 @@ import { useT } from '@/lib/i18n'
 import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { AuthModalBody } from '@/components/features/auth-modal/AuthModalBody'
 import { useDismissable } from '@/hooks/useDismissable'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { Scrim } from '@/components/ui/Scrim'
 import { IconButton } from '@/components/ui/IconButton'
 
@@ -23,6 +25,8 @@ export function AuthModal() {
   // scroll lock plus bottom-sheet drag would fight the tall sign-up form on a
   // short viewport. It still needs Android back and Escape.
   useDismissable(true, () => a.closeAuthModal())
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(true, panelRef, true)
 
   return (
     <div
@@ -39,7 +43,9 @@ export function AuthModal() {
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="relative z-10 w-full my-4 sm:my-0 border p-5 sm:p-6 shadow-2xl"
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative z-10 w-full my-4 sm:my-0 border p-5 sm:p-6 shadow-2xl outline-none"
         style={cardStyle}
         role="dialog"
         aria-modal="true"

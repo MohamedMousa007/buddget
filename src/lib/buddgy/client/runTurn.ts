@@ -15,7 +15,7 @@ import {
 import type { ChatError, ReadNote, TurnOutcome } from '@/lib/buddgy/client/chatTypes'
 import { buildContext } from '@/lib/buddgy/client/context'
 import { readLabel } from '@/lib/buddgy/client/readLabels'
-import { readTurnEvents } from '@/lib/buddgy/client/sse'
+import { readTurnEvents, StreamIdleError } from '@/lib/buddgy/client/sse'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { hasNavConsent } from '@/lib/buddgy/tools/navConsent'
 import type { Proposal } from '@/lib/buddgy/tools/proposal'
@@ -71,13 +71,21 @@ interface CallsResult {
 
 /** Keeps one tool result from blowing the request-size cap on the next hop. */
 const MAX_RESULT_CHARS = 5000
+const MIN_RESULT_CHARS = 300
+const REQUEST_SLACK_CHARS = 2000
 
-function clampResult(response: unknown): unknown {
+function clampResult(response: unknown, limit: number): unknown {
   const json = JSON.stringify(response)
-  return json !== undefined && json.length > MAX_RESULT_CHARS ? { truncated: true, partial: json.slice(0, MAX_RESULT_CHARS) } : response
+  return json !== undefined && json.length > limit ? { truncated: true, partial: json.slice(0, limit) } : response
 }
 
-export function executeCalls(calls: WireToolCall[], ctx: ToolContext): CallsResult {
+/** Splits what is left of the request cap evenly across the read results about to be added. */
+function resultLimit(messages: WireMessage[], reads: number): number {
+  const left = TURN_LIMITS.maxTotalChars - JSON.stringify(messages).length - REQUEST_SLACK_CHARS
+  return Math.max(MIN_RESULT_CHARS, Math.min(MAX_RESULT_CHARS, Math.floor(left / Math.max(1, reads))))
+}
+
+export function executeCalls(calls: WireToolCall[], ctx: ToolContext, limit = MAX_RESULT_CHARS): CallsResult {
   const results: WireToolResult[] = []
   const proposals: Proposal[] = []
   const reads: ReadNote[] = []
@@ -94,7 +102,7 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext): CallsResu
       if (entry.read) {
         const raw = entry.read(call.args, ctx)
         const hide = isMasked(useFinanceStore.getState().settings.privacy, 'buddgy')
-        results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw) : raw) })
+        results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw) : raw, limit) })
         reads.push({ tool: call.name, label: readLabel(call.name, ctx.locale) })
         needsModel = true
       } else if (entry.nav && (hasNavConsent() || !entry.write)) {
@@ -161,30 +169,36 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
       let calls: WireToolCall[] | null = null
       let parts: unknown[] = []
       let finished = false
-      for await (const ev of readTurnEvents(res)) {
-        if (ev.t === 'meta') {
-          chatId = ev.chatId ?? chatId
-          if (ev.chatId) args.onChat?.(ev.chatId)
-          rolled ||= ev.rolled
-          soft ||= ev.soft
-        } else if (ev.t === 'text') {
-          text += ev.d
-          args.onText(text)
-        } else if (ev.t === 'calls') {
-          calls = ev.calls
-          parts = ev.parts
-        } else if (ev.t === 'done') {
-          finished = true
-          truncated ||= ev.truncated
-        } else if (ev.t === 'error') {
-          throw toFailure(ev)
+      try {
+        for await (const ev of readTurnEvents(res)) {
+          if (ev.t === 'meta') {
+            chatId = ev.chatId ?? chatId
+            if (ev.chatId) args.onChat?.(ev.chatId)
+            rolled ||= ev.rolled
+            soft ||= ev.soft
+          } else if (ev.t === 'text') {
+            text += ev.d
+            args.onText(text)
+          } else if (ev.t === 'calls') {
+            calls = ev.calls
+            parts = ev.parts
+          } else if (ev.t === 'done') {
+            finished = true
+            truncated ||= ev.truncated
+          } else if (ev.t === 'error') {
+            throw toFailure(ev)
+          }
         }
+      } catch (e) {
+        if (e instanceof StreamIdleError) throw new TurnFailure({ kind: 'failed' })
+        throw e
       }
       // A stream that ends with neither a result nor a done frame was cut off mid-reply.
       if (!calls && !finished) throw new TurnFailure({ kind: 'failed' })
       if (!calls) break
 
-      const ran = executeCalls(calls, { ...ctx, afterRead: reads.length > 0 })
+      const readCount = calls.filter((c) => TOOLS.get(c.name)?.read).length
+      const ran = executeCalls(calls, { ...ctx, afterRead: reads.length > 0 }, resultLimit(messages, readCount))
       proposals.push(...ran.proposals)
       reads.push(...ran.reads)
       if (!ran.needsModel) break

@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Share2, Trophy, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { useGoalAllocationRuns } from '@/hooks/useGoalAllocationRuns'
 import { useT } from '@/lib/i18n'
 import { useDismissable } from '@/hooks/useDismissable'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { navigate } from '@/lib/navigation/navigate'
 import { getGoalStatus } from '@/lib/goals/goalStatus'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -23,6 +24,8 @@ const CONFETTI = Array.from({ length: 16 }, (_, i) => ({
 export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; current: number; onClose: () => void }) {
   const t = useT().goals.celebrate
   useDismissable(true, onClose)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(true, panelRef)
   const runs = useGoalAllocationRuns()[goal.id] ?? []
   const deposits = useFinanceStore((s) =>
     s.savingsTransactions.filter((x) => goal.linkedSavingsAccountIds.includes(x.accountId) && x.type === 'deposit').length,
@@ -39,7 +42,7 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={t.youDidIt} className="fixed inset-0 z-[200] flex flex-col items-center overflow-y-auto bg-[var(--color-brand-primary)] px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-[calc(3rem+env(safe-area-inset-top,0px))] text-center text-[var(--color-brand-on-primary)]">
+    <div ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={t.youDidIt} className="outline-none fixed inset-0 z-[200] flex flex-col items-center overflow-y-auto bg-[var(--color-brand-primary)] px-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] pt-[calc(3rem+env(safe-area-inset-top,0px))] text-center text-[var(--color-brand-on-primary)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         {CONFETTI.map((c, i) => (
           <span key={i} className="goal-confetti absolute top-0 h-2.5 w-1.5 rounded-sm" style={{ left: c.left, animationDelay: c.delay, background: c.color }} />

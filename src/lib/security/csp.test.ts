@@ -22,6 +22,12 @@ describe('buildCsp', () => {
     expect(directive(csp, 'default-src')).toBe("default-src 'self'")
   })
 
+  it('connect-src lists only hosts the browser calls (price, rate and AI calls go through own routes)', () => {
+    const connect = directive(csp, 'connect-src')
+    for (const host of ['generativelanguage.googleapis.com', 'open.er-api.com', 'frankfurter', 'metals.live', 'gold-api.com']) expect(connect).not.toContain(host)
+    expect(connect).toContain('https://*.supabase.co')
+  })
+
   it('embeds a fresh nonce per call', () => {
     expect(buildCsp('x')).not.toBe(buildCsp('y'))
   })

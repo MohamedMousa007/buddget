@@ -1,3 +1,4 @@
+import 'server-only'
 import type { ServiceClient } from '@/lib/supabase/service'
 import { removeAvatarObject, scrubPersonalText, stampDataReset, wipeAccountData, wipeUserData } from '@/lib/server/userData'
 
@@ -36,7 +37,7 @@ export async function deleteUserCompletely(admin: ServiceClient, uid: string, op
       ...(await wipeAccountData(admin, uid, { keepSignIn: true })),
       ...(await scrubPersonalText(admin, uid, email)),
       ...(await removeAvatarObject(admin, uid)),
-      ...(await stampDataReset(admin, uid)),
+      ...(await stampDataReset(admin, uid, { blankIdentity: true })),
     ]
     return { ok: true, partialErrors: errors, keptStaffAccess: true }
   }

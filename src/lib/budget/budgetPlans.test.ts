@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { BudgetPlan } from '@/lib/store/types'
 import {
+  categorySpendingForPlanRows,
+  planRowNames,
+  unassignedSpend,
   isSavingsPlanCategory,
   uniquePlanCategoryName,
   totalPlannedExpensesForPlan,
@@ -88,5 +91,16 @@ describe('uniquePlanCategoryName', () => {
   it('keeps a free name and numbers a taken one, ignoring case', () => {
     expect(uniquePlanCategoryName(rows, 'Food')).toBe('Food')
     expect(uniquePlanCategoryName(rows, ' CATEGORY ')).toBe('CATEGORY 3')
+  })
+})
+
+describe('categorySpendingForPlanRows case-insensitive rows', () => {
+  it('counts a differently-cased expense category in its plan row, not dropped', () => {
+    const plan = basePlan([{ id: 'c', name: 'Coffee', icon: '', amount: 100, subcategories: [] }] as BudgetPlan['categories'])
+    const spend = { coffee: 30, Coffee: 20 }
+    const rows = categorySpendingForPlanRows(spend, plan)
+    const counted = Object.values(rows).reduce((a, b) => a + b, 0) + Object.values(unassignedSpend(spend, planRowNames(plan))).reduce((a, b) => a + b, 0)
+    expect(rows.Coffee).toBe(50)
+    expect(counted).toBe(50)
   })
 })

@@ -77,7 +77,9 @@ export function useOAuthSignIn(nextPath: string) {
       let fallbackTimer: ReturnType<typeof setTimeout> | undefined
       let backstopTimer: ReturnType<typeof setTimeout> | undefined
       let appListener: { remove(): Promise<void> } | undefined
+      let cleanedUp = false
       const cleanup = () => {
+        cleanedUp = true
         if (fallbackTimer) clearTimeout(fallbackTimer)
         if (backstopTimer) clearTimeout(backstopTimer)
         void appListener?.remove().catch(() => {})
@@ -99,7 +101,8 @@ export function useOAuthSignIn(nextPath: string) {
             }),
           )
           .then((h) => {
-            appListener = h
+            if (cleanedUp) void h.remove().catch(() => {})
+            else appListener = h
           })
           .catch(() => {})
       }

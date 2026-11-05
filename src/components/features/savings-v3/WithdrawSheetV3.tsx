@@ -28,10 +28,10 @@ import { FieldButton } from '@/components/ui/FieldButton'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { OptionChip } from '@/components/ui/OptionChip'
 
-const INVEST_CLASSES: Array<{ type: InvestmentAssetType; label: string; icon: React.ReactNode }> = [
-  { type: 'gold', label: 'Gold', icon: <Coins size={15} /> },
-  { type: 'crypto', label: 'Crypto', icon: <Bitcoin size={15} /> },
-  { type: 'stock', label: 'Stocks & funds', icon: <LineChart size={15} /> },
+const INVEST_CLASSES: Array<{ type: InvestmentAssetType; label: 'assetGold' | 'assetCrypto' | 'assetStocks'; icon: React.ReactNode }> = [
+  { type: 'gold', label: 'assetGold', icon: <Coins size={15} /> },
+  { type: 'crypto', label: 'assetCrypto', icon: <Bitcoin size={15} /> },
+  { type: 'stock', label: 'assetStocks', icon: <LineChart size={15} /> },
 ]
 
 type Reason = SavingsWithdrawalPurpose // 'income' | 'transfer' | 'debt' | 'spend'
@@ -261,7 +261,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                       className="w-auto shrink-0 gap-2 px-3 py-2">
                       <span className="text-[var(--color-brand-gold)]">{c.icon}</span>
                       <span>
-                        <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.label}</span>
+                        <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{t[c.label]}</span>
                         <span className="block text-[10px] text-[var(--color-brand-text-muted)]">{target ? t.addToAsset(target.name) : t.addOneFirst}</span>
                       </span>
                     </SelectableCard>

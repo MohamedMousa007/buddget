@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Trash2, X, AlertTriangle } from 'lucide-react'
 import { useT } from '@/lib/i18n'
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Scrim } from '@/components/ui/Scrim'
 import { useDismissable } from '@/hooks/useDismissable'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { IconButton } from '@/components/ui/IconButton'
 
 export interface DeleteAccountDialogProps {
@@ -30,6 +31,8 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
   useDismissable(open, onClose)
   const t = useT()
   useScrollLock(open)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(open, panelRef, true)
   const [typed, setTyped] = useState('')
   const [password, setPassword] = useState('')
   const expected = t.profile.deleteAccountConfirmWord
@@ -52,7 +55,9 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-6 shadow-2xl"
+            ref={panelRef}
+            tabIndex={-1}
+            className="relative z-10 w-full max-w-md rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-6 shadow-2xl outline-none"
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-account-title"

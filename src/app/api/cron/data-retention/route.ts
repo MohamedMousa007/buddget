@@ -33,3 +33,6 @@ export async function GET(request: Request) {
   }
   return NextResponse.json({ ok: true, emailLogErased: data?.length ?? 0 })
 }
+
+// pg_cron + pg_net calls with POST; Vercel crons call GET. Same handler, same auth.
+export const POST = GET

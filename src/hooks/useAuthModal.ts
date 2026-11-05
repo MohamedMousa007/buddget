@@ -389,6 +389,19 @@ export function useAuthModal() {
     setLoading(true)
     track(AUTH_EVENTS.passwordSubmitted, { intent: 'signup' })
 
+    // Supabase disagreed with our check-email result. Push the user back
+    // to email collection so they can try signing in instead.
+    const rejectExistingEmail = () => {
+      setEmailStep('collect')
+      setError(t.auth.errorAccountExists)
+      // Cache the correction so they don't loop.
+      emailCacheRef.current.set(email.trim().toLowerCase(), {
+        exists: true,
+        verified: true,
+        at: Date.now(),
+      })
+    }
+
     const { data, error: e } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -413,19 +426,15 @@ export function useAuthModal() {
 
       const mapped = mapAuthError(e, 'signup', t)
       if (mapped === 'EMAIL_EXISTS') {
-        // Supabase disagreed with our check-email result. Push the user back
-        // to email collection so they can try signing in instead.
-        setEmailStep('collect')
-        setError(t.auth.errorAccountExists)
-        // Cache the correction so they don't loop.
-        emailCacheRef.current.set(email.trim().toLowerCase(), {
-          exists: true,
-          verified: true,
-          at: Date.now(),
-        })
+        rejectExistingEmail()
         return
       }
       setError(mapped)
+      return
+    }
+    // Supabase hides an already-registered email behind an identity-less user: no error, no code sent.
+    if (!data.session && data.user?.identities?.length === 0) {
+      rejectExistingEmail()
       return
     }
     if (data.session) {

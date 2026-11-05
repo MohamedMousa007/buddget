@@ -161,18 +161,20 @@ export async function exportUserData(admin: ServiceClient, uid: string, rowsPerT
   const db = loose(admin)
   const owned: OwnedTable[] = [...USER_DATA_TABLES.map((table) => ({ table })), ...ACCOUNT_TABLES, ...SIGN_IN_TABLES, { table: 'email_log' }, { table: 'support_tickets' }]
   for (const { table, column = 'user_id' } of owned) {
-    const { data, error } = await db.from(table).select('*').eq(column, uid).limit(rowsPerTable)
-    if (error) failed.push(table)
-    else if (data.length) {
+    // PostgREST answers at most its max-rows (1000 by default) whatever the limit says: a longer table is reported
+    // as incomplete rather than exported short without a word.
+    const { data, error, count } = await db.from(table).select('*', { count: 'exact' }).eq(column, uid).limit(rowsPerTable)
+    if (error || (count ?? 0) > (data?.length ?? 0)) failed.push(table)
+    if (!error && data.length) {
       const hidden = REDACTED_COLUMNS[table] ?? []
       tables[table] = hidden.length ? data.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !hidden.includes(k)))) : data
     }
   }
   const ticketIds = ((tables.support_tickets ?? []) as { id: string }[]).map((t) => t.id)
   if (ticketIds.length) {
-    const { data, error } = await db.from('support_ticket_messages').select('*').in('ticket_id', ticketIds).limit(rowsPerTable)
-    if (error) failed.push('support_ticket_messages')
-    else if (data.length) tables.support_ticket_messages = data
+    const { data, error, count } = await db.from('support_ticket_messages').select('*', { count: 'exact' }).in('ticket_id', ticketIds).limit(rowsPerTable)
+    if (error || (count ?? 0) > (data?.length ?? 0)) failed.push('support_ticket_messages')
+    if (!error && data.length) tables.support_ticket_messages = data
   }
   return { tables, failed }
 }
@@ -204,13 +206,15 @@ export async function removeAvatarObject(admin: ServiceClient, uid: string): Pro
  * Stamps the reset so every other device of the account drops its local copy instead of pushing it back up.
  * Also blanks what the profile learned from the data (household, rent, budget answers, active plan).
  */
-export async function stampDataReset(admin: ServiceClient, uid: string): Promise<string[]> {
+export async function stampDataReset(admin: ServiceClient, uid: string, opts: { blankIdentity?: boolean } = {}): Promise<string[]> {
     const cleared = {
       active_budget_plan_id: null, active_shared_budget_id: null, default_carry_pocket_id: null, default_shared_budget_plan_id: null,
       avatar_emoji: null, avatar_image_path: null, city: null, country: null, gender: null, phone: null,
       household: null, lifestyle_tier: null, food_frequency: null, transport_mode: null, monthly_rent: null, rent_includes_utilities: false,
         emergency_fund_config: {}, zakat_config: {}, financial_profile: null, financial_goals_notes: '', secondary_currency: null,
   }
-  const { error } = await admin.from('profiles').update({ ...cleared, data_reset_at: new Date().toISOString() }).eq('id', uid)
+  // The staff path keeps the profile row for sign-in; the personal text on it goes like the rest.
+  const identity = opts.blankIdentity ? { name: '', display_name: null, email: null } : {}
+  const { error } = await admin.from('profiles').update({ ...cleared, ...identity, data_reset_at: new Date().toISOString() }).eq('id', uid)
   return error ? [`profiles: ${error.message}`] : []
 }

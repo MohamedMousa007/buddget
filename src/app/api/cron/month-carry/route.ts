@@ -270,3 +270,6 @@ export async function GET(request: Request) {
   // A dry run evaluates cycles but carries nothing: `carried` stays 0 and the evaluated count is `cycles`.
   return NextResponse.json({ ok: failed === 0, ...(dry ? { dryRun: true, ...dry } : {}), scanned, carried: dry ? 0 : carried, failed })
 }
+
+// pg_cron + pg_net calls with POST; Vercel crons call GET. Same handler, same auth.
+export const POST = GET

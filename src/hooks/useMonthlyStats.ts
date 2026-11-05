@@ -15,7 +15,8 @@ function supabaseAuthConfigured(): boolean {
   )
 }
 
-export function useMonthlyStats() {
+/** `monthKey` pins the stats to one cycle regardless of the month being browsed (the default follows the month filter). */
+export function useMonthlyStats(monthKey?: string) {
   const { session } = useAuth()
   const trustLocalFinance = !supabaseAuthConfigured() || session != null
 
@@ -57,7 +58,10 @@ export function useMonthlyStats() {
     }))
   )
 
-  const { monthFilter } = useSettingsStore()
+  const { monthFilter: browsedMonth } = useSettingsStore()
+  const monthFilter = monthKey ?? browsedMonth
+  // The stats read today's date (days left, pace): a new day must recompute them even when no store value changed.
+  const today = new Date().toDateString()
 
   return useMemo(
     () =>
@@ -81,7 +85,7 @@ export function useMonthlyStats() {
         monthFilter,
         trustLocalFinance,
       }),
-    [expenses, incomeSources, incomeEvents, budgetCategories, budgetPlans, budgetPlanActivations, activeBudgetPlanId, savingsHoldings, savingsAccounts, savingsTransactions, debts, debtPayments, settings, exchangeRates, goldPricePerGram, goldPriceAvailable, monthFilter, trustLocalFinance],
+    [expenses, incomeSources, incomeEvents, budgetCategories, budgetPlans, budgetPlanActivations, activeBudgetPlanId, savingsHoldings, savingsAccounts, savingsTransactions, debts, debtPayments, settings, exchangeRates, goldPricePerGram, goldPriceAvailable, monthFilter, trustLocalFinance, today],
   )
 }
 

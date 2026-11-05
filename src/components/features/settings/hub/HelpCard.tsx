@@ -49,11 +49,11 @@ function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }
     setError(null)
     try {
       const res = await apiFetchAuth('/api/support/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chosen: type, title, description }) })
-      const data = (await res.json()) as { error?: string; number?: number }
-      if (!res.ok) throw new Error(data.error ?? 'Failed')
+      if (!res.ok) throw new Error('submit failed')
+      const data = (await res.json()) as { number?: number }
       setDone(data.number ? `#${data.number}` : '✓')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } catch {
+      setError(t.settings.feedback.submitFailed)
     } finally {
       setLoading(false)
     }

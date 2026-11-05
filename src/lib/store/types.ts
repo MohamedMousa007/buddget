@@ -123,7 +123,6 @@ export interface IncomeSource {
    * Undefined/null = app default (7 matching, {@link MISSED_AFTER_DAYS} before missed).
    */
   paydayDriftDays?: number | null
-  /** Employer weekend for payday shifting: Sat+Sun (default; US/remote) or Fri+Sat (Egypt). */
   /** `YYYY-MM-DD` the source starts counting for a month (defaults to creation date). */
   effectiveStart: string
   /** `YYYY-MM-DD` the source stops counting (inclusive); null/undefined = ongoing. */
@@ -1018,6 +1017,8 @@ export type GoalFrequency = 'monthly' | 'quarterly'
 export interface Goal {
   id: string
   name: string
+  /** Set on a local edit so a pull in flight cannot overwrite it; read back from the server's `updated_at`. */
+  updatedAt?: string
   emoji: string
   category: GoalCategory
   /** Target amount to save/accumulate (null for non-monetary goals like spending_control). */
