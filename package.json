@@ -79,6 +79,6 @@
     "sharp": "^0.35.5",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.0"
+    "vitest": "^5.0.5"
   }
 }
