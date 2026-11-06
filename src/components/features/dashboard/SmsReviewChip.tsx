@@ -6,6 +6,7 @@ import { useT } from '@/lib/i18n'
 import { useSmsConfirmations } from '@/hooks/useSmsConfirmations'
 import { SmsReviewSheet } from '@/components/features/dashboard/SmsReviewSheet'
 import { PROMPT_PRIORITY, useRegisterPrompts } from '@/lib/store/usePromptStore'
+import { subscribeSmsReviewRequests } from '@/lib/sms/reviewRequest'
 
 /**
  * SMS transactions awaiting review (add-failed rescues, provisional-currency confirms).
@@ -21,6 +22,12 @@ export function SmsReviewChip() {
   const [toLink, setToLink] = useState<Record<string, { templateId: string; date: string }>>({})
   const incomeEvents = useFinanceStore((s) => s.incomeEvents)
   const updateIncomeEvent = useFinanceStore((s) => s.updateIncomeEvent)
+
+  // A push tap on a held SMS opens the review sheet; it never confirms by itself.
+  useEffect(() => subscribeSmsReviewRequests(() => {
+    setOpen(true)
+    void refetch()
+  }), [refetch])
 
   // §8.0: link by payday (occurrenceDate); the event keeps the day the money arrived.
   useEffect(() => {

@@ -1,0 +1,17 @@
+rules:
+  - id: sst-navigation-dynamic-url
+    languages: [typescript]
+    severity: WARNING
+    message: "window.open or location navigation with a non-literal URL: open redirect or javascript URL if any part is attacker-controlled"
+    patterns:
+      - pattern-either:
+          - pattern: window.open($U, ...)
+          - pattern: window.location.href = $U
+          - pattern: window.location.assign($U)
+          - pattern: window.location.replace($U)
+          - pattern: location.href = $U
+      - pattern-not: window.open("...", ...)
+      - pattern-not: window.location.href = "..."
+      - pattern-not: location.href = "..."
+      - pattern-not: window.location.assign("...")
+      - pattern-not: window.location.replace("...")

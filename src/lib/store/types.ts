@@ -1115,7 +1115,8 @@ export interface FinanceStore {
   setDataReady: (v: boolean) => void
 
   /** `amountInBaseCurrency` is computed in the store from rates + base currency. */
-  addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'>) => void
+  /** `id` is only for charges that must be the same row on every device (a log-mode subscription cycle). */
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'amountInBaseCurrency'> & { id?: string }) => void
   updateExpense: (id: string, updates: Partial<Expense>) => void
   deleteExpense: (id: string) => void
   /** Re-inserts a just-deleted expense VERBATIM (same id/timestamps) — powers Undo. */
@@ -1155,7 +1156,8 @@ export interface FinanceStore {
   deleteIncomeSource: (id: string) => void
   /** Undo of a delete: puts back the original row (same id and fields). */
   restoreIncomeSource: (source: IncomeSource) => void
-  restoreIncomeEvent: (event: IncomeEvent) => void
+  /** Returns false when the Undo is refused because the returned money was already spent. */
+  restoreIncomeEvent: (event: IncomeEvent) => boolean
   addIncomeEvent: (event: Omit<IncomeEvent, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateIncomeEvent: (id: string, updates: Partial<IncomeEvent>) => void
   deleteIncomeEvent: (id: string, deleteLinkedDebt?: boolean) => void
@@ -1187,7 +1189,8 @@ export interface FinanceStore {
   deleteDebt: (id: string) => void
   /** Removes the payment together with its paired expense; returns what is needed to undo it. */
   deleteDebtPayment: (id: string) => DebtPaymentSnapshot | null
-  restoreDebtPayment: (snapshot: DebtPaymentSnapshot) => void
+  /** Returns false when the Undo is refused because the pocket that funded it can no longer cover it. */
+  restoreDebtPayment: (snapshot: DebtPaymentSnapshot) => boolean
   addRecurringDebtPayment: (r: Omit<RecurringDebtPayment, 'id' | 'createdAt'>) => void
   updateRecurringDebtPayment: (id: string, updates: Partial<RecurringDebtPayment>) => void
   deleteRecurringDebtPayment: (id: string) => void
@@ -1209,7 +1212,7 @@ export interface FinanceStore {
   /** Trial -> active: it now bills from the day after the trial. */
   convertTrial: (id: string) => void
   /** Record the current cycle as paid by writing a linked expense. Idempotent per cycle. */
-  markSubscriptionPaid: (id: string, charge?: { amount?: number; date?: string }) => void
+  markSubscriptionPaid: (id: string, charge?: { amount?: number; date?: string; expenseId?: string }) => void
   /** Attach existing expenses to a subscription (they become its matched charges). */
   linkSubscriptionCharges: (subId: string, expenseIds: string[]) => void
   /** Detach a charge from its subscription (the expense stays in Flow). */

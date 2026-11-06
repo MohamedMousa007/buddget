@@ -20,11 +20,11 @@ export function UnderstoodStep({ rows, onContinue }: { rows: KnownRow[]; onConti
               <Check className="size-4" aria-hidden />
             </span>
             <span className="min-w-0 flex-1 text-sm text-[var(--color-brand-text-secondary)]">{r.label}</span>
-            <span className="max-w-[55%] text-end text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{r.value}</span>
+            <span className="max-w-[55%] text-end text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{r.value}</span>
           </div>
         ))}
       </Card>
-      <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{c.change}</p>
+      <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.change}</p>
       <Button size="cta" className="w-full" onClick={onContinue}>
         {c.cont}
       </Button>

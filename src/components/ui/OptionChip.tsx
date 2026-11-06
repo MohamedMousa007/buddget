@@ -14,11 +14,11 @@ const optionChipVariants = cva(
     variants: {
       size: {
         /** 36px — a dense filter row. The tap area is still 44px (invisible overlay). */
-        sm: HIT_AREA + ' h-9 rounded-full px-3 text-[13px]',
+        sm: HIT_AREA + ' h-9 rounded-full px-3 text-[0.8125rem]',
         /** 40px — the usual chip, with a 44px invisible tap area. */
-        md: HIT_AREA + ' h-10 rounded-full px-3.5 text-[13px]',
+        md: HIT_AREA + ' h-10 rounded-full px-3.5 text-[0.8125rem]',
         /** 44px, squared — reads as a segment in a row of equal choices. */
-        segment: 'h-11 flex-1 rounded-xl px-3 text-[13px]',
+        segment: 'h-11 flex-1 rounded-xl px-3 text-[0.8125rem]',
       },
       selected: {
         true: 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]',

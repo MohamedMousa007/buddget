@@ -1,0 +1,116 @@
+import { describe, it, expect } from 'vitest'
+import { paydayDatesForWindow, toISODate, shiftToBusinessDay, sourcePaydayDays, expectedForWindow, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
+import { getMonthRange, budgetMonthKeyFor } from '@/lib/utils/calculations'
+import { shiftMonth } from '@/lib/budget/lineSpend'
+import { rng, ymd } from './prng'
+import type { IncomeSource, IncomeRecurringFrequency } from '@/lib/store/types'
+
+const SEED = 20261105
+const mk = (r: ReturnType<typeof rng>, i: number): IncomeSource => {
+  const freq = r.pick<IncomeRecurringFrequency>(['monthly', 'biweekly', 'weekly'])
+  const legacyWeekly = freq === 'weekly' && r.chance(0.3)
+  const n = freq === 'monthly' ? 1 : freq === 'biweekly' ? 2 : 4
+  const mode = r.int(0, 2)
+  const days = mode === 0 ? undefined : Array.from({ length: r.int(1, n + (mode === 2 ? 1 : 0)) }, () => r.pick([1, 2, 3, 15, 27, 28, 29, 30, 31, r.int(1, 31)]))
+  return {
+    id: `s${i}`, name: 'x', amount: 100, currency: 'EGP', isRecurring: true, recurringFrequency: freq,
+    dayOfMonth: r.int(1, 31), paydayDays: legacyWeekly ? undefined : days && days.length ? [...new Set(days)] : undefined,
+    effectiveStart: '2020-01-01', createdAt: '2020-01-01T00:00:00Z', updatedAt: '2020-01-01T00:00:00Z',
+  } as IncomeSource
+}
+
+describe('payday schedule fuzz', () => {
+  for (const wf of [6, 5] as WeekendFirstDay[]) {
+    it(`dates stay in window, sorted, no duplicate CALENDAR date (weekendFirst=${wf}, seed ${SEED})`, () => {
+      const r = rng(SEED + wf)
+      const bad: string[] = []
+      let cases = 0, weekendLeaks = 0
+      for (let i = 0; i < 4000; i++) {
+        const src = mk(r, i)
+        const sd = r.pick([1, 1, 2, 5, 15, 25, 28, 29, 31])
+        const key = `${r.int(2023, 2028)}-${String(r.int(1, 12)).padStart(2, '0')}`
+        const { start, end } = getMonthRange(key, sd)
+        const out = paydayDatesForWindow(src, start, end, true, wf)
+        cases++
+        const iso = out.map(toISODate)
+        if (new Set(iso).size !== iso.length) bad.push(`DUP seed=${SEED + wf} i=${i} days=${JSON.stringify(src.paydayDays)} freq=${src.recurringFrequency} dom=${src.dayOfMonth} key=${key} sd=${sd} -> ${iso}`)
+        for (const d of out) {
+          if (d < start || d > end) bad.push(`OUT i=${i} ${toISODate(d)} ${key} sd=${sd}`)
+          const dow = d.getDay()
+          if (dow === wf || dow === (wf + 1) % 7) weekendLeaks++
+          if (d.getHours() !== 0) bad.push(`non-midnight ${toISODate(d)} h=${d.getHours()}`)
+        }
+        for (let k = 1; k < out.length; k++) if (out[k - 1] > out[k]) bad.push('unsorted')
+      }
+      console.log(`payday wf=${wf} cases=${cases} weekendLeaks=${weekendLeaks} bad=${bad.length}`, bad.slice(0, 6))
+      expect(bad).toEqual([])
+    })
+
+    it(`count conservation over 12 consecutive cycles == distinct raw clamped dates (wf=${wf})`, () => {
+      const r = rng(SEED * 3 + wf)
+      const bad: string[] = []
+      let cases = 0
+      for (let i = 0; i < 800; i++) {
+        const src = mk(r, i)
+        if (!sourcePaydayDays(src)) continue // legacy weekly: capped walk, separate property
+        const sd = r.pick([1, 5, 15, 28])
+        const y = r.int(2023, 2027)
+        let total = 0
+        const seen = new Set<string>()
+        for (let m = 1; m <= 12; m++) {
+          const key = `${y}-${String(m).padStart(2, '0')}`
+          const { start, end } = getMonthRange(key, sd)
+          const out = paydayDatesForWindow(src, start, end, true, wf)
+          total += out.length
+          for (const d of out) { const k = toISODate(d); if (seen.has(k)) bad.push(`date in two cycles ${k}`); seen.add(k) }
+        }
+        // reference: raw unique dates (clamped day-of-month) falling inside the union of the 12 windows
+        const first = getMonthRange(`${y}-01`, sd).start
+        const last = getMonthRange(`${y}-12`, sd).end
+        const raw = new Set<string>()
+        for (let yy = y - 1; yy <= y + 1; yy++) for (let m = 0; m < 12; m++) {
+          const dim = new Date(yy, m + 1, 0).getDate()
+          for (const day of sourcePaydayDays(src)!) {
+            const d = new Date(yy, m, Math.min(day, dim))
+            if (d >= first && d <= last) raw.add(toISODate(d))
+          }
+        }
+        cases++
+        if (raw.size !== total) bad.push(`COUNT i=${i} days=${JSON.stringify(sourcePaydayDays(src))} y=${y} sd=${sd} wf=${wf} raw=${raw.size} got=${total}`)
+      }
+      console.log(`payday-count wf=${wf} cases=${cases} bad=${bad.length}`, bad.slice(0, 6))
+      expect(bad).toEqual([])
+    })
+  }
+
+  it('shiftToBusinessDay: result never leaves the month and is a calendar-date function (DST-safe), all days 2023-2029, both weekend rules', () => {
+    const bad: string[] = []
+    let cases = 0
+    for (const wf of [6, 5] as WeekendFirstDay[]) {
+      for (let d = new Date(2023, 0, 1); d.getFullYear() <= 2029; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+        const out = shiftToBusinessDay(d, wf)
+        cases++
+        if (out.getMonth() !== d.getMonth()) bad.push(`left month ${ymd(d)} wf=${wf}`)
+        // a result built from calendar fields must equal midnight of that date
+        const canon = new Date(out.getFullYear(), out.getMonth(), out.getDate())
+        if (canon.getTime() !== out.getTime()) bad.push(`non-canonical instant ${ymd(d)} -> ${ymd(out)} ${out.toString()} wf=${wf}`)
+      }
+    }
+    console.log('shift cases', cases, bad.length, bad.slice(0, 4))
+    expect(bad).toEqual([])
+  })
+
+  it('expectedForWindow = count * amount, monthly sources pay once per cycle (all start days)', () => {
+    const bad: string[] = []
+    for (let sd = 1; sd <= 28; sd++) for (let day = 1; day <= 31; day++) {
+      const src = { id: 'm', name: 'm', amount: 10, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: day, effectiveStart: '2020-01-01', createdAt: '2020-01-01', updatedAt: '' } as IncomeSource
+      for (let y = 2024; y <= 2028; y++) for (let m = 1; m <= 12; m++) {
+        const { start, end } = getMonthRange(`${y}-${String(m).padStart(2, '0')}`, sd)
+        const e = expectedForWindow(src, start, end)
+        if (e !== 10) bad.push(`monthly day=${day} sd=${sd} ${y}-${m} expected=${e}`)
+      }
+    }
+    console.log('monthly-once bad', bad.length, bad.slice(0, 6))
+    expect(bad).toEqual([])
+  })
+})

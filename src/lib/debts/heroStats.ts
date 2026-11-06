@@ -1,4 +1,4 @@
-import { addMonths, addWeeks, addYears } from 'date-fns'
+import { addCalendarMonths, addCalendarWeeks, addCalendarYears } from '@/lib/time/calendarDays'
 import type { DebtRecurringFrequency } from '@/lib/store/types'
 
 type Cadence = DebtRecurringFrequency
@@ -6,15 +6,15 @@ type Cadence = DebtRecurringFrequency
 function addCycles(start: Date, cadence: Cadence, cycles: number): Date {
   switch (cadence) {
     case 'weekly':
-      return addWeeks(start, cycles)
+      return addCalendarWeeks(start, cycles)
     case 'biweekly':
-      return addWeeks(start, cycles * 2)
+      return addCalendarWeeks(start, cycles * 2)
     case 'quarterly':
-      return addMonths(start, cycles * 3)
+      return addCalendarMonths(start, cycles * 3)
     case 'annually':
-      return addYears(start, cycles)
+      return addCalendarYears(start, cycles)
     default:
-      return addMonths(start, cycles)
+      return addCalendarMonths(start, cycles)
   }
 }
 

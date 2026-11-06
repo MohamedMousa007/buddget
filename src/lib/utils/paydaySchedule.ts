@@ -1,4 +1,5 @@
-import { addDays, subDays, isWithinInterval } from 'date-fns'
+import { isWithinInterval } from 'date-fns'
+import { addCalendarDays } from '@/lib/time/calendarDays'
 import type { IncomeRecurringFrequency, IncomeSource } from '@/lib/store/types'
 
 /**
@@ -83,9 +84,9 @@ export function shiftToBusinessDay(d: Date, weekendFirst: WeekendFirstDay = DEFA
   const second = (weekendFirst + 1) % 7
   if (dow !== weekendFirst && dow !== second) return d
   const first = dow === weekendFirst
-  const back = subDays(d, first ? 1 : 2)
+  const back = addCalendarDays(d, first ? -1 : -2)
   if (back.getMonth() === d.getMonth()) return back
-  return addDays(d, first ? 2 : 1)
+  return addCalendarDays(d, first ? 2 : 1)
 }
 
 /** The weekend shift, except a payday on a window edge moves the other way instead of out of its cycle. */
@@ -93,10 +94,24 @@ function shiftIntoWindow(d: Date, start: Date, end: Date, weekendFirst: WeekendF
   const shifted = shiftToBusinessDay(d, weekendFirst)
   if (shifted >= start && shifted <= end) return shifted
   const first = d.getDay() === weekendFirst
-  const forward = addDays(d, first ? 2 : 1)
+  const forward = addCalendarDays(d, first ? 2 : 1)
   if (forward >= start && forward <= end) return forward
-  const back = subDays(d, first ? 1 : 2)
+  const back = addCalendarDays(d, first ? -1 : -2)
   return back >= start && back <= end ? back : d
+}
+
+/** Both the shifted and the raw date are held by another payday: the closest free day of the same month in the window, a working day before a weekend one, later before earlier. */
+function nearestFreeDay(d: Date, start: Date, end: Date, weekendFirst: WeekendFirstDay, taken: ReadonlySet<string>): Date | null {
+  const weekend = (c: Date) => c.getDay() === weekendFirst || c.getDay() === (weekendFirst + 1) % 7
+  for (const businessOnly of [true, false]) {
+    for (let step = 1; step <= 31; step++) {
+      for (const c of [addCalendarDays(d, step), addCalendarDays(d, -step)]) {
+        if (c < start || c > end || c.getMonth() !== d.getMonth() || taken.has(toISODate(c))) continue
+        if (!businessOnly || !weekend(c)) return c
+      }
+    }
+  }
+  return null
 }
 
 /** Legacy weekly: anchor on dayOfMonth, walk ±7 days across the window (SMS matching keeps every date; budget windows cap at 4). */
@@ -105,11 +120,11 @@ function legacyWeeklyWalk(source: IncomeSource, start: Date, end: Date): Date[] 
   const anchor = new Date(start.getFullYear(), start.getMonth(), Math.min(source.dayOfMonth ?? 1, daysInMonth))
   const dates: Date[] = []
   let cursor = anchor
-  while (cursor >= start) cursor = addDays(cursor, -7)
-  cursor = addDays(cursor, 7)
+  while (cursor >= start) cursor = addCalendarDays(cursor, -7)
+  cursor = addCalendarDays(cursor, 7)
   while (cursor <= end) {
     if (cursor >= start) dates.push(cursor)
-    cursor = addDays(cursor, 7)
+    cursor = addCalendarDays(cursor, 7)
   }
   return dates
 }
@@ -134,27 +149,27 @@ export function paydayDatesForWindow(
   // In a budget cycle a payday belongs to the window holding its calendar date, so a shifted one is never in two cycles.
   const raw = cycle ? walked.filter((d) => isWithinInterval(d, { start, end })) : walked
 
-  const taken = new Set<number>()
+  const taken = new Set<string>()
   const out: Date[] = []
   for (const d of raw) {
     const shifted = cycle ? shiftIntoWindow(d, start, end, weekendFirst) : shiftToBusinessDay(d, weekendFirst)
-    const pick = taken.has(shifted.getTime()) ? d : shifted
-    if (taken.has(pick.getTime())) continue
-    taken.add(pick.getTime())
+    const pick = [shifted, d].find((c) => !taken.has(toISODate(c))) ?? nearestFreeDay(d, start, end, weekendFirst, taken)
+    if (!pick) continue
+    taken.add(toISODate(pick))
     out.push(pick)
   }
   return out.filter((d) => isWithinInterval(d, { start, end })).sort((a, b) => a.getTime() - b.getTime())
 }
 
 function datesFromDays(days: number[], start: Date, end: Date): Date[] {
-  const uniq = new Map<number, Date>()
+  const uniq = new Map<string, Date>()
   let y = start.getFullYear()
   let m = start.getMonth()
   while (new Date(y, m, 1) <= end) {
     const daysInMonth = new Date(y, m + 1, 0).getDate()
     for (const day of days) {
       const d = new Date(y, m, Math.min(day, daysInMonth))
-      uniq.set(d.getTime(), d)
+      uniq.set(toISODate(d), d)
     }
     m += 1
     if (m > 11) {

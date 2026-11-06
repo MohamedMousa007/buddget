@@ -20,14 +20,14 @@ export const buttonVariants = cva(
         /** Solid red fill for a committing destructive action (delete confirmations).
          *  `destructive` above is the softer tinted style for lower-stakes removes. */
         "destructive-solid":
-          "bg-[var(--color-brand-red)] text-white hover:bg-[var(--color-brand-red-hover)]",
+          "bg-[var(--color-brand-red)] text-[var(--color-brand-on-red)] hover:bg-[var(--color-brand-red-hover)]",
         /**
          * Solid green fill. Reserved for confirming that MONEY CAME IN — "Received",
          * "Assign", "Full". Green is the income semantic, so this is not a general
          * affirmative: the ordinary confirm is `default` (teal).
          */
         success:
-          "bg-[var(--color-brand-green)] text-white hover:bg-[var(--color-brand-green-hover)]",
+          "bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] hover:bg-[var(--color-brand-green-hover)]",
         /** A control sitting on Flow's teal band: translucent fill in the band's text colour. */
         onBand:
           "border-[var(--flow-band-mix)] bg-[var(--flow-band-mix)] text-[var(--flow-band-fg)] hover:bg-[color-mix(in_oklab,var(--flow-band-fg)_30%,transparent)]",
@@ -52,12 +52,12 @@ export const buttonVariants = cva(
            These three are the real app sizes; prefer them on touch surfaces. */
 
         /** 44px — the minimum tap target. Compact rows, inline actions. */
-        touch: "h-11 gap-2 rounded-xl px-4 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        touch: "h-11 gap-2 rounded-xl px-4 text-[0.9375rem] [&_svg:not([class*='size-'])]:size-[18px]",
         /** 48px — the standard form control height, matching inputs. */
-        cta: "h-12 gap-2 rounded-xl px-5 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        cta: "h-12 gap-2 rounded-xl px-5 text-[0.9375rem] [&_svg:not([class*='size-'])]:size-[18px]",
         /** 48px, full width — the committing action at the foot of a sheet. */
         "cta-block":
-          "h-12 w-full gap-2 rounded-xl px-5 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+          "h-12 w-full gap-2 rounded-xl px-5 text-[0.9375rem] [&_svg:not([class*='size-'])]:size-[18px]",
         /** 44×44 icon-only — the minimum square tap target. */
         "icon-touch": "size-11 rounded-xl [&_svg:not([class*='size-'])]:size-5",
       },

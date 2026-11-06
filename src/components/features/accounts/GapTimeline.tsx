@@ -24,10 +24,10 @@ export function GapTimeline({ steps }: { steps: TimelineStep[] }) {
             </span>
             <div className={cn('min-w-0 flex-1', !last && 'pb-3.5')}>
               <div className="flex items-baseline justify-between gap-3">
-                <span className={cn('text-[15px] font-semibold', s.tone === 'gap' ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-primary)]')}>{s.title}</span>
+                <span className={cn('text-[0.9375rem] font-semibold', s.tone === 'gap' ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-primary)]')}>{s.title}</span>
                 <span className={cn('font-mono-numbers text-sm', s.tone === 'gap' ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-primary)]')}>{s.amount}</span>
               </div>
-              <p className="mt-0.5 text-[13px] text-[var(--color-brand-text-muted)]">{s.sub}</p>
+              <p className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-muted)]">{s.sub}</p>
             </div>
           </li>
         )

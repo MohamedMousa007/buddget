@@ -1,5 +1,6 @@
-import { addMonths, addWeeks, addYears, format, getDaysInMonth, parseISO, startOfDay } from 'date-fns'
+import { addMonths, addYears, format, getDaysInMonth, parseISO, startOfDay } from 'date-fns'
 import type { SubscriptionBillingCycle } from '@/lib/store/types'
+import { addCalendarWeeks } from '@/lib/time/calendarDays'
 
 function clampDay(year: number, monthIndex: number, day: number): number {
   const dim = getDaysInMonth(new Date(year, monthIndex))
@@ -23,7 +24,7 @@ export function firstBillingOnOrAfter(start: Date, billingDay: number): Date {
 export function advanceCycle(from: Date, billingDay: number, cycle: SubscriptionBillingCycle): Date {
   switch (cycle) {
     case 'weekly':
-      return addWeeks(from, 1)
+      return addCalendarWeeks(from, 1)
     case 'monthly':
       return withBillingDay(addMonths(from, 1), billingDay)
     case 'quarterly':
@@ -52,7 +53,7 @@ export function computeNextBillingDate(
   if (cycle === 'weekly') {
     let d = start
     while (d < today) {
-      d = addWeeks(d, 1)
+      d = addCalendarWeeks(d, 1)
     }
     return format(d, 'yyyy-MM-dd')
   }

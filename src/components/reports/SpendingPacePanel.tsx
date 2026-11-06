@@ -90,7 +90,7 @@ export function SpendingPacePanel({
       {/* Projected vs budget bar */}
       {totalExpenseBudget > 0 && (
         <div className="space-y-1">
-          <div className="flex justify-between text-[10px] text-[var(--color-brand-text-muted)]">
+          <div className="flex justify-between text-[0.625rem] text-[var(--color-brand-text-muted)]">
             <span>{t.reports.projectedTotal}</span>
             <span>{formatCurrency(totalExpenseBudget, currency)}</span>
           </div>

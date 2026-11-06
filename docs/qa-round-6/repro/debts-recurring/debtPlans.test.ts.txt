@@ -1,0 +1,162 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { confirmRecurringDebtPayment, reconcileDebtSchedule, snoozeRecurringDebtPayment } from '@/lib/debts/recurringDebtDueHandlers'
+import { advanceRecurringDebtDueDate, recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
+import { installmentPaymentsCompleted, nextInstallmentDueDate } from '@/lib/debts/installmentSchedule'
+import { calculateDebtRemaining, computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
+import { format } from 'date-fns'
+import type { Debt, PaymentMethod } from '@/lib/store/types'
+
+const st = () => useFinanceStore.getState()
+const bank = { id: 'bank', name: 'Bank', type: 'bank_account', currency: 'EGP', isDefault: true, openingBalance: 100000, openingAt: '2026-01-01T00:00:00.000Z', createdAt: '' } as PaymentMethod
+
+function reset() {
+  useFinanceStore.setState({
+    debts: [], debtPayments: [], recurringDebtPayments: [], expenses: [], goals: [],
+    paymentMethods: [bank], accountAdjustments: [], incomeEvents: [], exchangeRates: { USD_EGP: 50, USD_SAR: 3.75 } as never,
+  })
+}
+beforeEach(reset)
+afterEach(() => vi.useRealTimers())
+
+const inst = (over: Partial<Debt> = {}): Omit<Debt, 'id' | 'createdAt'> => ({
+  name: 'Phone', person: '', startingBalance: 100, currency: 'EGP', isGold: false, debtType: 'installment',
+  direction: 'i_owe', status: 'active', installmentCount: 48, installmentFrequency: 'monthly',
+  installmentAmount: 2.08, startDate: '2026-01-31', interestFree: true, ...over,
+})
+
+describe('advanceRecurringDebtDueDate over 24 months', () => {
+  it.each([29, 30, 31])('monthly anchored on %i never drifts', (anchor) => {
+    let d = `2026-01-${String(anchor)}`
+    const out: string[] = []
+    for (let i = 0; i < 24; i++) {
+      out.push(d)
+      d = advanceRecurringDebtDueDate(d, 'monthly', anchor)
+    }
+    out.forEach((s, i) => {
+      const y = 2026 + Math.floor(i / 12)
+      const m = i % 12
+      const dim = new Date(y, m + 1, 0).getDate()
+      expect(s).toBe(`${y}-${String(m + 1).padStart(2, '0')}-${String(Math.min(anchor, dim)).padStart(2, '0')}`)
+    })
+  })
+  it('weekly 104 steps = exactly 728 days; biweekly 52 steps = 728 days (DST safe)', () => {
+    let w = '2026-01-01'
+    for (let i = 0; i < 104; i++) w = advanceRecurringDebtDueDate(w, 'weekly')
+    let b = '2026-01-01'
+    for (let i = 0; i < 52; i++) b = advanceRecurringDebtDueDate(b, 'biweekly')
+    expect(w).toBe('2027-12-30')
+    expect(b).toBe(w)
+  })
+  it('annually from Feb 29 returns to Feb 29 in the next leap year', () => {
+    let d = '2024-02-29'
+    const seen: string[] = []
+    for (let i = 0; i < 5; i++) { seen.push(d); d = advanceRecurringDebtDueDate(d, 'annually', 29) }
+    expect(seen).toEqual(['2024-02-29', '2025-02-28', '2026-02-28', '2027-02-28', '2028-02-29'])
+  })
+})
+
+describe('installment stranded cents (per rounded to 2dp, 48 payments)', () => {
+  it('total 100 / 48 = 2.08: 48 confirmations clear the debt', () => {
+    const id = st().addDebt(inst())
+    st().addRecurringDebtPayment({ debtId: id, amount: 2.08, currency: 'EGP', paymentMethodId: 'bank', frequency: 'monthly', nextDueDate: '2026-01-31', dueDay: 31, isActive: true })
+    let confirms = 0
+    for (let i = 0; i < 60; i++) {
+      const sch = st().recurringDebtPayments[0]
+      if (!sch.isActive) break
+      confirmRecurringDebtPayment(sch.id)
+      confirms++
+    }
+    const d = st().debts[0]
+    console.log('confirms', confirms, 'status', d.status, 'remaining', calculateDebtRemaining(d, st().debtPayments), 'payments', st().debtPayments.length)
+    expect(d.status).toBe('cleared')
+    expect(confirms).toBe(48)
+  })
+  it('a cleared 36x debt reports 35 of 36 completed (floor on summed cents)', () => {
+    const id = st().addDebt(inst({ startingBalance: 1000, installmentCount: 36, installmentAmount: 27.78 }))
+    st().addRecurringDebtPayment({ debtId: id, amount: 27.78, currency: 'EGP', paymentMethodId: 'bank', frequency: 'monthly', nextDueDate: '2026-01-31', dueDay: 31, isActive: true })
+    for (let i = 0; i < 40; i++) { const s = st().recurringDebtPayments[0]; if (!s.isActive) break; confirmRecurringDebtPayment(s.id) }
+    const d = st().debts[0]
+    expect(d.status).toBe('cleared')
+    const done = installmentPaymentsCompleted(d, st().debtPayments)
+    console.log('done', done, 'of', d.installmentCount)
+    expect(done).toBe(36)
+  })
+})
+
+describe('payments on cleared / over-remaining', () => {
+  it('payment on a cleared debt is refused; overpay is refused; exact remaining clears', () => {
+    const id = st().addDebt(inst({ startingBalance: 100, installmentCount: 2, installmentAmount: 50 }))
+    const debt = st().debts.find((x) => x.id === id)!
+    const rates = st().exchangeRates
+    const bc = { expenses: [], exchangeRates: rates, allDebts: st().debts }
+    expect(computeDebtPaymentRecord(debt, 100.01, 'EGP', 'EGP' as never, rates, 0, [], bc).ok).toBe(false)
+    const r = computeDebtPaymentRecord(debt, 100, 'EGP', 'EGP' as never, rates, 0, [], bc)
+    expect(r.ok).toBe(true)
+    st().addDebtPayment({ debtId: id, date: '2026-01-01', amountPaid: 100, paymentCurrency: 'EGP' })
+    const after = st().debts[0]
+    expect(after.status).toBe('cleared')
+    expect(computeDebtPaymentRecord(after, 1, 'EGP', 'EGP' as never, rates, 0, st().debtPayments, bc).ok).toBe(false)
+  })
+  it('foreign-currency debt: pay in EGP converts into USD units; 3 payments of 1/3 leave dust below eps', () => {
+    const id = st().addDebt(inst({ startingBalance: 100, currency: 'USD', debtType: 'personal', installmentCount: undefined, installmentAmount: undefined }))
+    const rates = st().exchangeRates
+    for (let i = 0; i < 3; i++) {
+      const debt = st().debts.find((x) => x.id === id)!
+      const bc = { expenses: [], exchangeRates: rates, allDebts: st().debts }
+      const rem = calculateDebtRemaining(debt, st().debtPayments, bc)
+      const payEgp = i === 2 ? rem * 50 : (100 / 3) * 50
+      const r = computeDebtPaymentRecord(debt, payEgp, 'EGP', 'EGP' as never, rates, 0, st().debtPayments, bc)
+      expect(r.ok).toBe(true)
+      if (r.ok) st().addDebtPayment({ debtId: id, date: '2026-01-01', amountPaid: r.amountInDebtUnit, paymentCurrency: 'EGP', originalAmount: payEgp })
+    }
+    expect(st().debts[0].status).toBe('cleared')
+  })
+})
+
+describe('delete payment / reopen / schedule', () => {
+  it('deleting the confirmed payment does not roll the reminder back (next due stays advanced)', () => {
+    const id = st().addDebt(inst({ debtType: 'personal', installmentCount: undefined, installmentAmount: undefined, startingBalance: 1000 }))
+    st().addRecurringDebtPayment({ debtId: id, amount: 100, currency: 'EGP', paymentMethodId: 'bank', frequency: 'monthly', nextDueDate: '2026-03-05', dueDay: 5, isActive: true })
+    const sid = st().recurringDebtPayments[0].id
+    expect(confirmRecurringDebtPayment(sid)).toBe(true)
+    expect(st().recurringDebtPayments[0].nextDueDate).toBe('2026-04-05')
+    st().deleteDebtPayment(st().debtPayments[0].id)
+    console.log('after delete next due', st().recurringDebtPayments[0].nextDueDate, 'payments', st().debtPayments.length)
+    expect(st().recurringDebtPayments[0].nextDueDate).toBe('2026-03-05')
+  })
+  it('delete last payment of cleared debt reopens it and re-activates schedule', () => {
+    const id = st().addDebt(inst({ debtType: 'personal', installmentCount: undefined, installmentAmount: undefined, startingBalance: 100 }))
+    st().addRecurringDebtPayment({ debtId: id, amount: 100, currency: 'EGP', paymentMethodId: 'bank', frequency: 'monthly', nextDueDate: '2026-03-05', dueDay: 5, isActive: true })
+    confirmRecurringDebtPayment(st().recurringDebtPayments[0].id)
+    expect(st().debts[0].status).toBe('cleared')
+    expect(st().recurringDebtPayments[0].isActive).toBe(false)
+    st().deleteDebtPayment(st().debtPayments[0].id)
+    expect(st().debts[0].status).toBe('active')
+    expect(st().recurringDebtPayments[0].isActive).toBe(true)
+    expect(st().expenses.length).toBe(0)
+  })
+})
+
+describe('snooze', () => {
+  it('a one-day snooze permanently moves the monthly due day', () => {
+    const id = st().addDebt(inst({ debtType: 'personal', installmentCount: undefined, installmentAmount: undefined, startingBalance: 1000 }))
+    st().addRecurringDebtPayment({ debtId: id, amount: 100, currency: 'EGP', paymentMethodId: 'bank', frequency: 'monthly', nextDueDate: '2026-03-05', dueDay: 5, isActive: true })
+    const sid = st().recurringDebtPayments[0].id
+    snoozeRecurringDebtPayment(sid)
+    confirmRecurringDebtPayment(sid)
+    console.log('after snooze+confirm next=', st().recurringDebtPayments[0].nextDueDate, 'dueDay', st().recurringDebtPayments[0].dueDay)
+    expect(st().recurringDebtPayments[0].nextDueDate).toBe('2026-04-05')
+  })
+})
+
+describe('BNPL split plan next-due vs reminder', () => {
+  it('debt.startDate is the purchase date; reminder starts first of next month; list "next" disagrees', () => {
+    const purchase = '2026-11-05'
+    const id = st().addDebt(inst({ startDate: purchase, startingBalance: 400, installmentCount: 4, installmentAmount: 100 }))
+    st().addRecurringDebtPayment({ debtId: id, amount: 100, currency: 'EGP', paymentMethodId: 'bank', frequency: 'monthly', nextDueDate: '2026-12-01', dueDay: 1, isActive: true })
+    const next = nextInstallmentDueDate(st().debts[0], 0)!
+    console.log('list next', format(next, 'yyyy-MM-dd'), 'reminder', st().recurringDebtPayments[0].nextDueDate)
+    expect(format(next, 'yyyy-MM-dd')).toBe(st().recurringDebtPayments[0].nextDueDate)
+  })
+})

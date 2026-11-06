@@ -4,8 +4,11 @@ Complete checklist for shipping the Capacitor Android build to Google Play.
 **Buddget is Egypt-first** — the marketing copy below targets Egyptian users
 first and treats UAE / GCC as expansion markets.
 
-> Privacy Policy + Terms already live at `/privacy` and `/terms`. Reference
-> them, don't recreate them.
+> Privacy Policy + Terms already live at `https://buddget.app/legal/privacy` and
+> `https://buddget.app/legal/terms` (Arabic: `/ar/legal/privacy`, `/ar/legal/terms`;
+> `/privacy` and `/terms` redirect). Reference them, don't recreate them.
+> Data safety answers live in **`docs/STORE_PRIVACY.md`** (the single source);
+> section 4 below only maps them onto the Play form.
 
 ---
 
@@ -47,37 +50,36 @@ After `npx cap add android`, merge the following into
 `android/app/src/main/AndroidManifest.xml`. Capacitor scaffolds the rest.
 
 ```xml
-<!-- ── PERMISSIONS ─────────────────────────────────────────── -->
+<!-- ── PERMISSIONS (exactly what android/app/src/main/AndroidManifest.xml declares) ── -->
 <uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
 <!-- Push (FCM) -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-<uses-permission android:name="android.permission.WAKE_LOCK" />
-<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-<!-- Voice -->
+<!-- SMS forwarding runs as a data-sync foreground service on API 24-30 (Android 14+ needs the type) -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+<!-- Voice expense -->
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
-<!-- Camera (receipt scan) -->
+<!-- Receipt scan -->
 <uses-permission android:name="android.permission.CAMERA" />
-<uses-feature android:name="android.hardware.camera" android:required="false" />
 
 <!-- Biometrics -->
 <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
-<!-- SMS auto-tracking — sensitive, requires Play Console justification -->
+<!-- SMS auto-tracking: restricted, needs the Play Console declaration (section 3).
+     RECEIVE_SMS only. The app never reads the inbox, so there is no READ_SMS. -->
 <uses-permission android:name="android.permission.RECEIVE_SMS" />
-<uses-permission android:name="android.permission.READ_SMS" />
-
-<!-- Notification Listener fallback -->
-<!-- (the BIND_NOTIFICATION_LISTENER_SERVICE permission lives on the
-     <service> declaration — see docs/NOTIFICATION_LISTENER.md) -->
-
-<!-- App Group / shared keystore for the Glance widget -->
-<!-- No <uses-permission> needed; SharedPreferences are intra-app. -->
 ```
+
+There is no Notification Listener service and no location, contacts, advertising-ID
+or storage permission anywhere in the app. If the manifest changes, update this
+block and `docs/STORE_PRIVACY.md` in the same commit.
 
 Make sure Capacitor's `<application>` block carries `android:usesCleartextTraffic="false"`,
 `android:requestLegacyExternalStorage="false"`, and a `tools:replace` line if
@@ -85,21 +87,24 @@ you need to override the FCM service icon.
 
 ## 3. Play Console — sensitive permissions form (SMS)
 
-Google forbids `READ_SMS` / `RECEIVE_SMS` outside narrow categories
-(default-SMS app, anti-fraud, banking). Buddget's justification:
+Google restricts `RECEIVE_SMS` to a short list of approved use cases. Buddget
+declares only `RECEIVE_SMS` (no `READ_SMS`, no default-SMS-handler role). Its
+justification:
 
 ```
-Buddget reads incoming SMS messages from a user-curated list of bank senders
-in order to automatically log financial transactions to the user's own
-budget. Messages are processed locally where possible and forwarded to
-the user's account on Buddget's secure backend (HTTPS, per-user bearer
-tokens). Buddget is NOT a default SMS handler. The feature is opt-in:
+Buddget receives incoming SMS messages (RECEIVE_SMS only; it never reads the
+inbox) and, on the device, keeps only messages from business senders or that
+match transaction keywords. Those messages are forwarded to the user's own
+account on Buddget's backend (HTTPS, per-user token), parsed there into an
+expense, and the raw text is masked and deleted on a schedule. Buddget is NOT
+a default SMS handler. The feature is opt-in:
 disabled by default, requires explicit user action in Settings, and can
 be revoked at any time. Egypt is our primary market — Egyptian banks send
 transaction notifications via SMS more often than push, which makes this
 permission essential for the core "automatic expense logging" feature.
-Alternative path: users on iOS / Android with notification access disabled
-use the iOS Shortcut bridge (manual-relay, no SMS permission required).
+Alternative path: iOS users, and Android users who do not grant the permission,
+enter transactions manually or by voice/receipt; iOS also has a Shortcuts
+automation that relays bank messages without any SMS permission.
 ```
 
 Attach a 30-second screen-recording showing:
@@ -110,21 +115,43 @@ Attach a 30-second screen-recording showing:
 
 ## 4. Data safety form
 
-Declare the following data collection:
+The authoritative list is the table in **`docs/STORE_PRIVACY.md`** ("Data the apps
+collect"); declare exactly those rows and keep the two stores' answers identical.
+Mapping onto the Play form:
 
-| Data type | Collected | Optional | Purpose |
-| --------- | --------- | -------- | ------- |
-| Email address | Yes | No | Account creation, sign-in |
-| Name | Yes | Yes | Personalisation |
-| Financial info — purchase history | Yes | Yes | Core feature (budget tracking) |
-| Photos | Yes | Yes | Receipt scanning (sent to AI, not stored) |
-| Audio | Yes | Yes | Voice expense (sent to AI, not stored) |
-| SMS | Yes | Yes | Bank transaction parsing (opt-in) |
-| Device identifiers | No | — | We use FCM tokens, not advertising IDs |
+| Play category / type | Collected | Shared | Optional | Purpose |
+| --- | --- | --- | --- | --- |
+| Personal info: Email address | Yes | No | No | Account management |
+| Personal info: Name | Yes | No | Yes | Account management |
+| Personal info: Phone number | Yes | No | Yes | Account management (optional profile field) |
+| Personal info: User IDs | Yes | No | No | Account management |
+| Financial info: Other financial info | Yes | No | No | App functionality (expenses, income, debts, savings, balances) |
+| Messages: SMS or MMS | Yes | No | Yes (opt-in) | App functionality: bank message text is filtered on the device, forwarded to the backend and parsed there; the raw text is masked and deleted on a schedule |
+| Photos and videos: Photos | Yes | No | Yes | App functionality (receipt scan; the image goes to the AI reader, the picture itself stays on the device) |
+| Audio: Voice or sound recordings | Yes | No | Yes | App functionality (voice expense; sent for transcription, not kept) |
+| App activity: App interactions | Yes | No | No | Analytics (first-run funnel events, `app_analytics_events`) |
+| App info and performance: Crash logs, Diagnostics | Yes | No | No | Analytics (Sentry; a short one-way hash of the device id is the only device tag) |
+| Device or other IDs | Yes | No | No | App functionality (FCM push token, app-generated device id for biometric sign-in and trusted devices). Not the advertising ID |
+
+"Shared" is No for every row: hosting, AI and crash-reporting providers act as
+service providers processing the data for Buddget, which Play does not count as
+sharing. No data is used for advertising, tracking or sold.
 
 State that **all** data is encrypted in transit (HTTPS) and at rest
 (Supabase + Postgres-encrypted disks), and that users can delete their
-account from Settings at any time.
+account from Settings at any time (and by request at support@buddget.app).
+
+Open questions for the owner (could not be settled from the code):
+
+1. **Sender numbers.** The forwarded SMS carries the sender address. Bank senders are
+   alphanumeric IDs, but the on-device gate (`SmsGate`) also forwards a personal
+   number when the text matches a transaction keyword. Decide whether to also tick
+   "Phone number" as SMS-derived data (the table above already declares phone number
+   as collected).
+2. **Receipt images.** `/api/receipt/scan` sends the image to Gemini; confirm the
+   AI provider's retention terms still support "not kept" before submitting.
+3. **Play RECEIVE_SMS approval.** Without the Permissions Declaration Form approval
+   the Android build is rejected (see `docs/STORE_PRIVACY.md`).
 
 ## 5. Store assets
 
@@ -167,7 +194,7 @@ to avoid sending tokens for the test devices).
 
 - Bumped `versionCode` and `versionName` in `android/app/build.gradle`.
 - Re-ran `npm run cap:build` against the deployed API.
-- Privacy Policy URL still resolves: `https://buddget.app/privacy`.
+- Privacy Policy URL still resolves: `https://buddget.app/legal/privacy` (and the Arabic page `https://buddget.app/ar/legal/privacy`).
 - Terms URL still resolves: `https://buddget.app/terms`.
 - Tested on a real Egyptian SIM with bank SMS auto-tracking.
 - Verified the Glance widget renders EGP + جنيه correctly.

@@ -1,7 +1,13 @@
 package app.buddget
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ServiceInfo
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,6 +27,31 @@ import java.net.URL
  * PendingSmsQueue instead of being dropped; the app drains it on next open.
  */
 class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
+
+    /**
+     * Expedited work runs as a foreground service on API 24-30 and WorkManager asks for this notification there;
+     * CoroutineWorker's default throws, which silently failed every background forward on Android 7-11. On newer
+     * APIs expedited work uses a job and this is not shown.
+     */
+    override suspend fun getForegroundInfo(): ForegroundInfo {
+        val ctx = applicationContext
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(CHANNEL_ID, "Bank SMS sync", NotificationManager.IMPORTANCE_LOW)
+            (ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        }
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_buddget)
+            .setContentTitle("Syncing a bank SMS")
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setSilent(true)
+            .build()
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            ForegroundInfo(NOTIFICATION_ID, notification)
+        }
+    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val message    = inputData.getString(KEY_MESSAGE) ?: return@withContext Result.failure()
@@ -43,6 +74,12 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         // The SMS stays queued under its own account and is delivered when that user is signed in again.
         if (!SmsGate.belongsToCurrentAccount(owner, prefs.getString("token_user_id", "") ?: "")) {
             recordRun(prefs, "other_account")
+            return@withContext Result.failure()
+        }
+
+        // Defence in depth: a value stored by an older build, or written some other way, is never trusted.
+        if (!SmsApiUrl.isAllowed(apiUrl, SmsStore.isDebuggable(applicationContext))) {
+            recordRun(prefs, "bad_api_url")
             return@withContext Result.failure()
         }
 
@@ -132,5 +169,7 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         const val KEY_USER_ID     = "user_id"
         const val MAX_CHARS = 2000
         const val MAX_ATTEMPTS = 8
+        const val CHANNEL_ID = "sms_forward_sync"
+        const val NOTIFICATION_ID = 7421
     }
 }

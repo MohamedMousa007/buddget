@@ -13,7 +13,7 @@ export interface WealthHeroBadgesProps {
   onOpenZakat: () => void
 }
 
-const PILL = 'h-7 gap-1.5 rounded-full border-0 bg-[var(--flow-band-fg)] px-2.5 font-mono-numbers text-[12.5px] font-bold text-[var(--flow-band-b)] hover:bg-[var(--flow-band-fg)]/90 after:absolute after:inset-x-0 after:-inset-y-2 after:content-[""] relative'
+const PILL = 'h-7 gap-1.5 rounded-full border-0 bg-[var(--flow-band-fg)] px-2.5 font-mono-numbers text-[0.78125rem] font-bold text-[var(--flow-band-b)] hover:bg-[var(--flow-band-fg)]/90 after:absolute after:inset-x-0 after:-inset-y-2 after:content-[""] relative'
 
 /** Emergency fund and zakat as status pills in the hero's top row; each opens its sheet. */
 export function WealthHeroBadges({ emergency, zakat, onOpenEmergency, onOpenZakat }: WealthHeroBadgesProps) {

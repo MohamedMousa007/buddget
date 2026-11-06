@@ -68,7 +68,7 @@ export function SubscriptionsBlockBody({ view, block, mode, onOpenLine, onLineAc
                     {i === 0 ? t.subscriptions.nextCharge(formatDayMonth(c.date)) : t.subscriptions.thenCharge(formatDayMonth(c.date))}
                   </p>
                 </div>
-                <span className="font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
+                <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
                   {formatCurrency(c.amount, view.base, false)}
                 </span>
               </div>

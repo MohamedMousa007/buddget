@@ -13,6 +13,7 @@ import { SelectField } from '@/components/ui/SelectField'
 import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
 import { useT, type Dictionary } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
+import { useTypedAmount } from '@/hooks/useTypedAmount'
 
 export interface VoiceRecapEditorProps {
   actions: AIActionItem[]
@@ -57,6 +58,23 @@ function primaryField(action: AIAction): { key: string; label: VoiceFieldLabelKe
 const FIELD_CLS =
   'w-full rounded-lg border border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] px-2.5 py-2 text-sm text-[var(--color-brand-text-primary)] focus:outline-none focus:border-[var(--color-brand-focus)]'
 
+/** The recognised amount, kept as typed ("12.") while the stored value is a number or ''. */
+function RecapAmount({ value, currency, onChange }: { value: unknown; currency: string; onChange: (v: number | '') => void }) {
+  const [text, setText] = useTypedAmount(Number(value) || 0)
+  return (
+    <AmountField
+      bare
+      className={FIELD_CLS}
+      value={text}
+      decimalsFor={currency}
+      onChange={(v) => {
+        setText(v)
+        onChange(v === '' ? '' : Number(v))
+      }}
+    />
+  )
+}
+
 /**
  * Editable recap shown after voice extraction: one card per detected transaction
  * with the common fields editable, per-item validation errors, and remove. Shared
@@ -86,7 +104,7 @@ export function VoiceRecapEditor({
           {actions.length === 0 ? r.nothingToSave : multiple ? r.transactionsCount(actions.length) : r.confirmToSave}
         </h3>
         {transcript && !compact ? (
-          <span className="text-[10px] text-[var(--color-brand-text-muted)] truncate max-w-[45%]">&ldquo;{transcript}&rdquo;</span>
+          <span className="text-[0.625rem] text-[var(--color-brand-text-muted)] truncate max-w-[45%]">&ldquo;{transcript}&rdquo;</span>
         ) : null}
       </div>
 
@@ -122,7 +140,7 @@ export function VoiceRecapEditor({
 
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <label className="col-span-2 block">
-                  <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.fieldLabels[pf.label]}</span>
+                  <span className="mb-0.5 block text-[0.625rem] text-[var(--color-brand-text-muted)]">{r.fieldLabels[pf.label]}</span>
                   <input
                     className={FIELD_CLS}
                     value={String(getField(item.data, pf.key) ?? '')}
@@ -132,19 +150,18 @@ export function VoiceRecapEditor({
 
                 {showAmount ? (
                   <label className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.amount}</span>
-                    <AmountField
-                      bare
-                      className={FIELD_CLS}
-                      value={String(getField(item.data, 'amount') ?? '')}
-                      onChange={(v) => onUpdateField(idx, 'amount', v === '' ? '' : Number(v))}
+                    <span className="mb-0.5 block text-[0.625rem] text-[var(--color-brand-text-muted)]">{r.amount}</span>
+                    <RecapAmount
+                      value={getField(item.data, 'amount')}
+                      currency={String(getField(item.data, 'currency') ?? baseCurrency)}
+                      onChange={(v) => onUpdateField(idx, 'amount', v)}
                     />
                   </label>
                 ) : null}
 
                 {showCurrency ? (
                   <label className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.currency}</span>
+                    <span className="mb-0.5 block text-[0.625rem] text-[var(--color-brand-text-muted)]">{r.currency}</span>
                     <CurrencyField
                       value={String(getField(item.data, 'currency') ?? baseCurrency)}
                       onChange={(c) => onUpdateField(idx, 'currency', c)}
@@ -155,7 +172,7 @@ export function VoiceRecapEditor({
 
                 {showCategory ? (
                   <div className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.category}</span>
+                    <span className="mb-0.5 block text-[0.625rem] text-[var(--color-brand-text-muted)]">{r.category}</span>
                     <SelectField
                       aria-label={t.a11y.category}
                       value={String(getField(item.data, 'category') ?? 'Other')}
@@ -171,7 +188,7 @@ export function VoiceRecapEditor({
 
                 {showPayment ? (
                   <label className="block">
-                    <span className="mb-0.5 block text-[10px] text-[var(--color-brand-text-muted)]">{r.paymentMethod}</span>
+                    <span className="mb-0.5 block text-[0.625rem] text-[var(--color-brand-text-muted)]">{r.paymentMethod}</span>
                     <select
                       className={FIELD_CLS}
                       value={pmValue}

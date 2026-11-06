@@ -39,7 +39,7 @@ export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers |
           <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">
             {blank ? dash : formatFixed2(hero.due30)}
           </span>
-          <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{base}</span>
+          <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{base}</span>
         </p>
       }
       bar={

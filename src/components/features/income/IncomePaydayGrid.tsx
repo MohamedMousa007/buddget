@@ -76,7 +76,7 @@ export function IncomePaydayGrid({ frequency, days, onChange }: Props) {
           type="button"
           onClick={toggleManual}
           aria-pressed={manual}
-          className={`col-span-2 flex h-11 items-center justify-center gap-1 rounded-md text-[11px] font-semibold transition-colors ${
+          className={`col-span-2 flex h-11 items-center justify-center gap-1 rounded-md text-[0.6875rem] font-semibold transition-colors ${
             manual
               ? 'bg-[color-mix(in_oklab,var(--color-brand-primary)_18%,transparent)] text-[var(--color-brand-primary-ink)]'
               : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)] hover:bg-[var(--color-brand-border)]'

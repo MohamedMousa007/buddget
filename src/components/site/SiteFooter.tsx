@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { BuddgetWordmark } from '@/components/brand'
 import type { SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
+import { legalPath } from '@/lib/legal/paths'
 import { SocialLinks } from './SocialLinks'
 
 export function SiteFooter({ locale }: { locale: SiteLocale }) {
@@ -40,8 +41,8 @@ export function SiteFooter({ locale }: { locale: SiteLocale }) {
     {
       title: f.legal,
       items: [
-        { label: l.privacy, href: '/legal/privacy' },
-        { label: l.terms, href: '/legal/terms' },
+        { label: l.privacy, href: legalPath('privacy', locale) },
+        { label: l.terms, href: legalPath('terms', locale) },
         { label: l.cookies, href: pathFor(locale, 'cookies') },
         { label: l.delete, href: pathFor(locale, 'delete-account') },
       ],

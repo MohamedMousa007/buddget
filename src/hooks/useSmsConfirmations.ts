@@ -22,6 +22,8 @@ export interface PendingConfirmation {
   raw_body: string | null
   category: string | null
   payment_instrument: string | null
+  /** The transport sender id; shown when the credit came from an unrecognised one. */
+  sender: string | null
 }
 
 /** How far back a message waiting on the user is still shown. */
@@ -32,7 +34,7 @@ function fetchPending() {
   const since = new Date(Date.now() - PENDING_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
   return createClient()
     .from('sms_parse_log')
-    .select('id, kind, clean_title, merchant, amount, currency, bank_name, account_last4, received_at, failure_code, expense_id, income_id, raw_body, category, payment_instrument')
+    .select('id, kind, clean_title, merchant, amount, currency, bank_name, account_last4, received_at, failure_code, expense_id, income_id, raw_body, category, payment_instrument, sender')
     .eq('parsed_ok', true)
     .eq('awaiting_confirmation', true)
     .gte('created_at', since)

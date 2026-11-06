@@ -2,12 +2,13 @@
 
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
-import { apiFetchAuth } from '@/lib/apiBase'
-import { deviceIdHeader } from '@/lib/native/deviceId'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { AppViewRouter } from './AppViewRouter'
 import { PullToRefresh } from './PullToRefresh'
+import { RouteAnnouncer } from './RouteAnnouncer'
+import { SkipLink } from './SkipLink'
+import { MAIN_ID } from './routeAnnounce'
 import { navigate } from '@/lib/navigation/navigate'
 import { useNavPath, bindPopState } from '@/lib/navigation/navStore'
 import { ModalProvider } from '@/components/modals/ModalProvider'
@@ -27,6 +28,8 @@ import { useRates } from '@/hooks/useRates'
 import { useCycleAwareMonth } from '@/hooks/useCycleAwareMonth'
 import { useGoldPrice } from '@/hooks/useGoldPrice'
 import { subscribePushActions } from '@/lib/native/pushActionQueue'
+import { SMS_REVIEW_PUSH_KINDS } from '@/lib/sms/pushKinds'
+import { requestSmsReview } from '@/lib/sms/reviewRequest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
@@ -106,7 +109,7 @@ function SmsStartupSync() {
       //    makes on/off follow the ACCOUNT across sign-out/in: A stays armed, B
       //    starts off, A auto-resumes on return. Online-only (both reads need the
       //    network); offline leaves current device state as-is.
-      if ((refreshToken || status?.needsResync) && isOnline()) {
+      if ((refreshToken || status?.needsResync || !status?.tokenSaved) && isOnline()) {
         // This phone's own role first (another phone turning tracking off must not disarm it); the account setting only
         // decides for a phone the server has not met yet.
         const { fetchDeviceCollectsSms } = await import('@/lib/devices/client')
@@ -303,10 +306,14 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-[100dvh] bg-[var(--color-brand-bg)] no-tap-highlight">
       <MarketRatesSync />
+      <SkipLink />
+      <RouteAnnouncer />
       <Sidebar />
       <DesktopHeaderBar />
       <main
-        className={`native-scroll ${ownsHeader(navPath) ? 'pt-[env(safe-area-inset-top,0px)]' : 'pt-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))]'} lg:pt-[var(--app-header-h-lg)] lg:ms-[var(--sidebar-w)] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-24 min-h-[100dvh] safe-area-x`}
+        id={MAIN_ID}
+        tabIndex={-1}
+        className={`outline-none native-scroll ${ownsHeader(navPath) ? 'pt-[env(safe-area-inset-top,0px)]' : 'pt-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))]'} lg:pt-[var(--app-header-h-lg)] lg:ms-[var(--sidebar-w)] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-24 min-h-[100dvh] safe-area-x`}
       >
         <PullToRefresh>
           <PendingCapturesChip />
@@ -349,22 +356,10 @@ function SmsPushActionHandler() {
           ?.notification?.data ?? {}
       )
       const kind = data.kind
-      if (kind === 'sms_confirm' && data.hash) {
-        void deviceIdHeader()
-          .then((deviceHeaders) => apiFetchAuth('/api/sms/confirm', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json', ...deviceHeaders },
-            body: JSON.stringify({ hash: data.hash }),
-          }))
-          .then((r) => {
-            if (!r.ok) throw new Error(`sms_confirm ${r.status}`)
-            return r.json()
-          })
-          .then((res: { expenseId?: string }) => {
-            navigate(res.expenseId ? '/flow' : '/')
-          })
-          .catch(() => navigate('/'))
+      if (kind && SMS_REVIEW_PUSH_KINDS.has(kind)) {
+        // Held or failed adds are reviewed in the sheet; a body tap must never book a transaction.
+        requestSmsReview()
+        navigate('/')
       } else if (
         (kind === 'sms_auto_added' ||
           kind === 'sms_transfer' ||

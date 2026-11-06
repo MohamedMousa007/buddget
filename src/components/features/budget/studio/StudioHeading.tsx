@@ -10,7 +10,7 @@ export function StudioHeading({ mood, label, title, hint }: { mood: BuddgyMood; 
         <p className={`${microClassName} pb-1`}>{label}</p>
       </div>
       <h2 className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{title}</h2>
-      {hint ? <p className="text-[13.5px] text-[var(--color-brand-text-secondary)]">{hint}</p> : null}
+      {hint ? <p className="text-[0.84375rem] text-[var(--color-brand-text-secondary)]">{hint}</p> : null}
     </>
   )
 }

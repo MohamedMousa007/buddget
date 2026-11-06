@@ -93,7 +93,7 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
     goal: d.goal ? { ...d.goal } : null,
     emoji: d.emoji ?? null,
     created_at: d.createdAt,
-    updated_at: d.updatedAt ?? d.createdAt,
+    edited_at: d.updatedAt ?? d.createdAt,
   }
 }
 
@@ -136,6 +136,6 @@ export function debtFromRow(row: DebtRow): Debt {
       : undefined,
     installmentProviderName: row.installment_provider_name ?? undefined,
     linkedCreditCardDebtId: row.linked_credit_card_debt_id ?? undefined,
-    updatedAt: row.updated_at ?? undefined,
+    updatedAt: row.edited_at,
   }
 }

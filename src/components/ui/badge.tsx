@@ -52,9 +52,9 @@ const badgeVariants = cva(
         default: "h-5 px-2 py-0.5 text-xs font-medium",
         /** Matches the ledger chips exactly. Deliberately smaller than `default`
          *  so adopting Badge in a TransactionRow does not grow its 60px rhythm. */
-        xs: "px-2 py-[2.5px] text-[9.5px] font-extrabold uppercase tracking-[0.05em]",
+        xs: "px-2 py-[2.5px] text-[0.59375rem] font-extrabold uppercase tracking-[0.05em]",
         /** Page pills: counts, "last 3", step labels. */
-        sm: "px-2.5 py-1 text-[11px] font-bold",
+        sm: "px-2.5 py-1 text-[0.6875rem] font-bold",
         /** Fact chips with an icon. */
         md: "px-3 py-1.5 text-xs font-semibold",
       },

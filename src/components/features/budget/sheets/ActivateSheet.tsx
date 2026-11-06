@@ -77,7 +77,7 @@ export function ActivateSheet({ open, plan, current, next, now, base, monthLabel
         <div className="flex flex-col gap-4">
           <V3SheetHeader title={c.title(plan.name)} onClose={onClose} />
           <Card variant="elevated" padding="none" divide className="overflow-hidden">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 text-[0.625rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
               <span className="truncate">{current ? c.activeNow : ''}</span>
               <span />
               <span className="truncate text-end">{plan.name}</span>

@@ -119,16 +119,21 @@ export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem,
               className="flex flex-col gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3"
             >
               {item.raw_body ? (
-                <p className="font-mono-numbers text-[11px] leading-[1.45] text-[var(--color-brand-text-muted)]">{item.raw_body}</p>
+                <p className="font-mono-numbers text-[0.6875rem] leading-[1.45] text-[var(--color-brand-text-muted)]">{item.raw_body}</p>
+              ) : null}
+              {item.failure_code === 'sender_mismatch' ? (
+                <p className="text-xs text-[var(--color-brand-red)]" role="note">
+                  {t.smsReview.unverifiedSender(item.sender ?? '?')}
+                </p>
               ) : null}
               <div className="flex items-center justify-between gap-2.5">
                 <span className="min-w-0">
-                  <span className="block text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{title}</span>
-                  {sub ? <span className="block text-[12.5px] text-[var(--color-brand-text-secondary)]">{sub}</span> : null}
+                  <span className="block text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">{title}</span>
+                  {sub ? <span className="block text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{sub}</span> : null}
                 </span>
                 {item.amount != null ? (
                   <span
-                    className="whitespace-nowrap font-mono-numbers text-[15px] font-semibold"
+                    className="whitespace-nowrap font-mono-numbers text-[0.9375rem] font-semibold"
                     style={{ color: credit ? 'var(--color-brand-green)' : 'var(--color-brand-text-primary)' }}
                   >
                     {credit ? '+' : '−'}

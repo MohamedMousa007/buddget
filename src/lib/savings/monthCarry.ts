@@ -47,9 +47,21 @@ export function computeMonthCarry(input: MonthCarryInput): MonthCarryResult {
 
 const INVESTMENT = new Set<string>(INVESTMENT_PRODUCT_TYPES)
 
+/** Currencies the server has no quote for (gold grams, crypto): a carry into one of these cannot be priced. */
+const UNPRICED_CURRENCIES = new Set<string>(['XAU', 'BTC', 'ETH'])
+
 /** A pocket that may receive the carry: fiat, savings-category, never an investment/market asset. */
 export function isEligibleCarryPocket(p: SavingsAccount): boolean {
-  return p.category === 'savings' && !INVESTMENT.has(p.type)
+  return p.category === 'savings' && !INVESTMENT.has(p.type) && !UNPRICED_CURRENCIES.has(p.currency)
+}
+
+/**
+ * A pocket an earlier run created for `goalName` but never got to link (crash between the insert and the
+ * goal update): reuse it instead of minting a duplicate. Only an unowned base-currency vault matches.
+ */
+export function findUnlinkedGoalPocket(pockets: SavingsAccount[], goals: Goal[], goalName: string, currency: string): SavingsAccount | undefined {
+  const owned = new Set(goals.flatMap((g) => g.linkedSavingsAccountIds))
+  return pockets.find((p) => isEligibleCarryPocket(p) && p.type === 'vault' && p.name === goalName && p.currency === currency && !owned.has(p.id))
 }
 
 export type CarryDestination =
@@ -58,7 +70,7 @@ export type CarryDestination =
   | { kind: 'create-vault' }
 
 /**
- * Resolve where the carry lands: the user's default pocket → the top-priority (lowest number) active savings
+ * Resolve where the carry lands: the user's default pocket → the top-priority (lowest number) active MANUAL savings
  * goal's linked pocket (or a new pocket named after that goal) → the auto-created "Monthly Savings"
  * vault. The vault is the floor; the goal branch is re-evaluated every cycle and never becomes the
  * stored default, so a completed goal releases the carry automatically.
@@ -66,8 +78,9 @@ export type CarryDestination =
 export function resolveCarryDestination(
   defaultPocketId: string | null | undefined,
   pockets: SavingsAccount[],
-  activeGoals: Goal[],
+  goals: Goal[],
 ): CarryDestination {
+  // Funded (share/fixed) goals draw their own money before the carry; they only count as pocket owners below.
   const eligible = pockets.filter(isEligibleCarryPocket)
 
   if (defaultPocketId) {
@@ -76,8 +89,8 @@ export function resolveCarryDestination(
   }
 
   // Priority 1 is the top goal (lowest number first), then soonest target date, then oldest.
-  const savingsGoals = activeGoals
-    .filter((g) => g.status === 'active' && g.category !== 'debt_freedom' && g.category !== 'spending_control')
+  const savingsGoals = goals
+    .filter((g) => g.fundingMode === 'manual' && g.status === 'active' && g.category !== 'debt_freedom' && g.category !== 'spending_control')
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority
       if (a.targetDate && b.targetDate && a.targetDate !== b.targetDate) return a.targetDate < b.targetDate ? -1 : 1
@@ -94,7 +107,7 @@ export function resolveCarryDestination(
   }
 
   // Per-goal pockets are also type 'vault': the shared vault is one no goal owns.
-  const goalPocketIds = new Set(activeGoals.flatMap((g) => g.linkedSavingsAccountIds))
+  const goalPocketIds = new Set(goals.flatMap((g) => g.linkedSavingsAccountIds))
   const existingVault = eligible.find((p) => p.type === 'vault' && !goalPocketIds.has(p.id))
   if (existingVault) return { kind: 'pocket', pocketId: existingVault.id }
   return { kind: 'create-vault' }

@@ -34,7 +34,7 @@ export function BalancePrivacyCard() {
       </div>
       {preset === 'custom' ? SURFACES.map((s) => (
         <label key={s} className="flex min-h-14 cursor-pointer items-center gap-3 px-4 py-2">
-          <span className="min-w-0 flex-1 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{label[s]}</span>
+          <span className="min-w-0 flex-1 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{label[s]}</span>
           <Switch size="touch" aria-label={label[s]} checked={isMasked(privacy, s)} onCheckedChange={(on) => toggle(s, on)} />
         </label>
       )) : null}

@@ -1,0 +1,20 @@
+rules:
+  - id: sst-service-query-no-user-filter
+    languages: [typescript]
+    severity: WARNING
+    message: "Query on a per-user table without a user_id or id scoping filter. With the service-role client (RLS bypassed) a missing eq(user_id) is a cross-tenant read or write."
+    patterns:
+      - pattern-either:
+          - pattern: $S.from("$T"). ... .select(...)
+          - pattern: $S.from("$T"). ... .update(...)
+          - pattern: $S.from("$T"). ... .delete(...)
+      - metavariable-regex:
+          metavariable: $T
+          regex: ^(sms_parse_log|user_devices|biometric_devices|trusted_devices|user_entitlements|push_tokens|sms_ingest_tokens|user_settings|notifications|savings_accounts|savings_transactions|savings_month_summary|goals|income_events|expenses|payment_methods|recurring_debt_payments|loyalty_ledger|email_log|support_tickets|support_ticket_messages)$
+      - pattern-not-inside: $S.from("$T"). ... .eq("user_id", ...)
+      - pattern-not-inside: $S.from("$T"). ... .in("user_id", ...)
+      - pattern-not-inside: '$S.from("$T"). ... .match({user_id: ...})'
+      - pattern-not-inside: $S.from("$T"). ... .eq("id", ...)
+      - pattern-not-inside: $S.from("$T"). ... .eq("ticket_id", ...)
+    paths:
+      include: ["src/app/api/**", "src/lib/server/**", "src/lib/sms/**"]

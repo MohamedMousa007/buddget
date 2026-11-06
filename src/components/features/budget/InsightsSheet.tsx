@@ -44,9 +44,9 @@ export function InsightsSheet({ open, insights, base, onClose, onInsightAction, 
                   <BuddgyIcon mood={i.mood} size={24} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14.5px] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{c.finding[i.kind](text(i))}</p>
+                  <p className="text-[0.90625rem] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{c.finding[i.kind](text(i))}</p>
                   <p className={`${microClassName} mt-2`}>{c.why}</p>
-                  <p className="mt-0.5 text-[13px] leading-snug text-[var(--color-brand-text-secondary)]">{c.reason[i.kind](text(i))}</p>
+                  <p className="mt-0.5 text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{c.reason[i.kind](text(i))}</p>
                 </div>
               </div>
               <div className="flex gap-2">

@@ -1,0 +1,5 @@
+declare const t: string
+// ruleid: sst-localstorage-token
+localStorage.setItem('access_token', t)
+// ok: sst-localstorage-token
+localStorage.setItem('theme', 'dark')

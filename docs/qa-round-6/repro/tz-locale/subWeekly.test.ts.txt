@@ -1,0 +1,28 @@
+import { describe, it, expect } from 'vitest'
+import { scheduledDates, forecastCharges } from '@/lib/subscriptions/subscriptionForecast'
+import { computeNextBillingDate } from '@/lib/subscriptions/subscriptionDates'
+import { format } from 'date-fns'
+
+const sub = { id: 's', startDate: '2026-01-02', billingDay: 2, billingCycle: 'weekly' as const, name: 'x', status: 'active' as const, amount: 10, currency: 'EGP' as const, myShare: null, trialEnd: null, endsOn: null, createdAt: '2026-01-01T00:00:00Z' }
+const at = (s: string) => new Date(`${s}T00:00:00`)
+
+describe('weekly Friday sub, scheduledDates/forecast after the Cairo DST-start Friday', () => {
+  it('scheduledDates includes the last day of the window (inclusive)', () => {
+    // 2026-05-15 is a Friday; window [from, 2026-05-15] must include it
+    const out = scheduledDates(sub as never, at('2026-05-01'), at('2026-05-15')).map((d) => format(d, 'yyyy-MM-dd'))
+    expect(out).toEqual(['2026-05-01', '2026-05-08', '2026-05-15'])
+  })
+  it('forecast on a Friday labels today charge as today', () => {
+    const today = at('2026-05-15')
+    const f = forecastCharges([sub as never], [], today, 14, 'EGP', {})
+    const d = f.find((x) => format(x.due, 'yyyy-MM-dd') === '2026-05-15')
+    expect(d?.kind).toBe('today')
+  })
+  it('hours of all generated dates are 0', () => {
+    const hours = new Set(scheduledDates(sub as never, at('2026-01-01'), at('2026-12-31')).map((d) => d.getHours()))
+    expect([...hours]).toEqual([0])
+  })
+  it('computeNextBillingDate stable', () => {
+    expect(computeNextBillingDate('2026-01-02', 2, 'weekly', at('2026-05-15'))).toBe('2026-05-15')
+  })
+})

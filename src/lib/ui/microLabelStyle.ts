@@ -6,4 +6,4 @@ export const micro: CSSProperties = {
 }
 
 /** Same token as `micro`, as a Tailwind className string for call sites that don't use inline style. */
-export const microClassName = 'font-semibold text-[10px] tracking-[.08em] uppercase text-[var(--color-brand-text-muted)]'
+export const microClassName = 'font-semibold text-[0.625rem] tracking-[.08em] uppercase text-[var(--color-brand-text-muted)]'

@@ -75,7 +75,7 @@ export function CreateChooser(p: CreateChooserProps) {
               <h2 className="text-xl font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.title}</h2>
             </div>
           </div>
-          <p className="text-[13.5px] text-[var(--color-brand-text-secondary)]">{c.sub}</p>
+          <p className="text-[0.84375rem] text-[var(--color-brand-text-secondary)]">{c.sub}</p>
           {dataMonths > 0 ? (
             <Badge tone="brand" className="self-start">
               <Check aria-hidden />
@@ -89,7 +89,7 @@ export function CreateChooser(p: CreateChooserProps) {
                 <Hammer />
               </TintedTile>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[15px] font-semibold">{c.continueDraft(d.name)}</span>
+                <span className="truncate text-[0.9375rem] font-semibold">{c.continueDraft(d.name)}</span>
                 <span className="text-xs font-normal text-[var(--color-brand-text-secondary)]">{c.draftSub}</span>
               </span>
               <ChevronRight className="rtl:rotate-180" aria-hidden />
@@ -106,7 +106,7 @@ export function CreateChooser(p: CreateChooserProps) {
                   </TintedTile>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="text-[17px] font-semibold">{c.intents[i].name}</span>
-                    <span className="whitespace-normal text-[13px] font-normal text-[var(--color-brand-text-secondary)]">{c.intents[i].sub}</span>
+                    <span className="whitespace-normal text-[0.8125rem] font-normal text-[var(--color-brand-text-secondary)]">{c.intents[i].sub}</span>
                   </span>
                   <ChevronRight className="rtl:rotate-180" aria-hidden />
                 </Button>

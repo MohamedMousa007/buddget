@@ -1,3 +1,4 @@
+import { clearAuthCaches } from '@/lib/pwa/clearAuthCaches'
 import { clearSyncCursors } from '@/lib/supabase/remote/cursor'
 import { useFinanceStore, cancelPendingFinancePersist } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -53,6 +54,8 @@ export function clearBudgetData(): void {
     }
   }
 
+  // Service-worker caches may hold this user's pages and API JSON; the next person must not be served them.
+  void clearAuthCaches()
   clearSyncCursors()
   resetFeatureFlags()
   resetNavConsent()

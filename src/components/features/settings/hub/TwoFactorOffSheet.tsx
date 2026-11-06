@@ -65,7 +65,7 @@ export function TwoFactorOffSheet({ open, hasPassword, onClose, onTurnedOff, pur
     <ModalShell open={open} onBackdropClick={close} padContent>
       <form className="flex flex-col gap-3 pt-1" onSubmit={(e) => { e.preventDefault(); void confirm() }}>
         <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{copy.title}</ModalTitle>
-        <p className="text-[14.5px] leading-snug text-[var(--color-brand-text-secondary)]">{copy.body}</p>
+        <p className="text-[0.90625rem] leading-snug text-[var(--color-brand-text-secondary)]">{copy.body}</p>
         {hasPassword ? (
           <AuthPasswordField
             value={password}

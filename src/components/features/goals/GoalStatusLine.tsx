@@ -21,7 +21,7 @@ export function GoalStatusLine({ view, text }: { view: GoalStatusView; text: str
       <Icon className="size-4 shrink-0" style={{ color: COLOR[view.tone] }} aria-hidden />
       <span
         className={cn(
-          'truncate text-[13px]',
+          'truncate text-[0.8125rem]',
           strong ? 'font-semibold text-[var(--color-brand-text-primary)]' : 'font-medium text-[var(--color-brand-text-secondary)]',
         )}
       >

@@ -40,7 +40,7 @@ export function DebtsBlockBody({ view, block, mode, onOpenLine, onLineAction, on
                   <LineIcon name={DEBT_ICON[d.kind]} />
                 </TintedTile>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{d.name}</span>
+                  <span className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{d.name}</span>
                   {month ? (
                     d.paidThisCycle ? (
                       <StatusLine tone="ok" icon={lineStatusIcon('check')}>{t.debts.paidThisCycle}</StatusLine>
@@ -53,7 +53,7 @@ export function DebtsBlockBody({ view, block, mode, onOpenLine, onLineAction, on
                     </span>
                   )}
                 </span>
-                <span className="min-w-14 text-end font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
+                <span className="min-w-14 text-end font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
                   {money(d.minimum)}
                 </span>
               </span>
@@ -106,7 +106,7 @@ export function DebtsBlockBody({ view, block, mode, onOpenLine, onLineAction, on
 
         {debtFreeMonth ? (
           <div className="px-3.5 py-2.5">
-            <StatusLine tone="pri" icon={Flag} className="text-[13px]">{t.debts.debtFree(formatMonth(debtFreeMonth))}</StatusLine>
+            <StatusLine tone="pri" icon={Flag} className="text-[0.8125rem]">{t.debts.debtFree(formatMonth(debtFreeMonth))}</StatusLine>
           </div>
         ) : null}
 

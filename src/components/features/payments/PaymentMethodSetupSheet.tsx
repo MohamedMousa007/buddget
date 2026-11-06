@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { PmPrefill } from '@/lib/store/useSettingsStore'
 import { mix, readable } from '@/lib/utils/color'
+import { cardFace } from '@/lib/ui/contrast'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { FieldButton } from '@/components/ui/FieldButton'
@@ -292,12 +293,12 @@ export function PaymentMethodSetupSheet({
                   onClick={() => setProviderSheetOpen(true)}
                   size="lg"
                   className="bg-[var(--color-brand-elevated)] px-3"
-                  valueClassName="text-[14.5px] font-semibold"
+                  valueClassName="text-[0.90625rem] font-semibold"
                   value={hasProvider ? providerName : undefined}
                   placeholder={t.paymentMethods.providerPlaceholder}
                   icon={
                     <span
-                      className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] text-[11px] font-extrabold"
+                      className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] text-[0.6875rem] font-extrabold"
                       style={hasProvider
                         ? { background: mix(fieldChipColor, 16), color: fieldChipColor }
                         : { background: 'var(--color-brand-border)', color: 'var(--color-brand-text-muted)' }}
@@ -315,7 +316,7 @@ export function PaymentMethodSetupSheet({
                 </div>
                 {typeLock ? (
                   <div
-                    className="flex h-[38px] w-fit items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold"
+                    className="flex h-[38px] w-fit items-center gap-[7px] rounded-full px-3.5 text-[0.8125rem] font-semibold"
                     style={{
                       background: mix(PAYMENT_TYPE_META[typeLock].color, 15),
                       border: `1px solid ${mix(PAYMENT_TYPE_META[typeLock].color, 50)}`,
@@ -370,21 +371,21 @@ export function PaymentMethodSetupSheet({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccLimit}</span>
-                    <AmountField value={ccLimit} onChange={setCcLimit} mode="decimal" currency={curCode} placeholder="30,000" />
+                    <AmountField value={ccLimit} onChange={setCcLimit} mode="decimal" currency={curCode} aria-label={t.paymentMethods.ccLimit} placeholder="30,000" />
                   </div>
                   <div>
                     <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.moneyFlows.ccOpeningBalance}</span>
-                    <AmountField value={ccOutstanding} onChange={setCcOutstanding} mode="decimal" currency={curCode} placeholder="8,420" />
-                    <p className="mx-0.5 mt-1.5 text-[11.5px] text-[var(--color-brand-text-muted)]">{t.moneyFlows.ccOpeningHint}</p>
+                    <AmountField value={ccOutstanding} onChange={setCcOutstanding} mode="decimal" currency={curCode} aria-label={t.moneyFlows.ccOpeningBalance} placeholder="8,420" />
+                    <p className="mx-0.5 mt-1.5 text-[0.71875rem] text-[var(--color-brand-text-muted)]">{t.moneyFlows.ccOpeningHint}</p>
                   </div>
                   <div>
                     <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.moneyFlows.ccDueDay}</span>
-                    <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" placeholder="15" />
-                    {dayInvalid ? <p role="alert" className="mx-0.5 mt-1.5 text-[12px] text-[var(--color-brand-red)]">{t.moneyFlows.dayRange}</p> : null}
+                    <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" aria-label={t.moneyFlows.ccDueDay} placeholder="15" />
+                    {dayInvalid ? <p role="alert" className="mx-0.5 mt-1.5 text-[0.75rem] text-[var(--color-brand-red)]">{t.moneyFlows.dayRange}</p> : null}
                   </div>
                   <div>
                     <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccGraceDays}</span>
-                    <AmountField value={ccGrace} onChange={(v) => setCcGrace(v.slice(0, 3))} mode="integer" placeholder="55" />
+                    <AmountField value={ccGrace} onChange={(v) => setCcGrace(v.slice(0, 3))} mode="integer" aria-label={t.paymentMethods.ccGraceDays} placeholder="55" />
                   </div>
                 </div>
               )}
@@ -403,7 +404,7 @@ export function PaymentMethodSetupSheet({
                   <span className="block text-sm font-semibold text-[var(--color-brand-text-secondary)]">
                     {t.paymentMethods.setDefault}
                   </span>
-                  <span className="mt-0.5 block text-[11.5px] text-[var(--color-brand-text-muted)]">
+                  <span className="mt-0.5 block text-[0.71875rem] text-[var(--color-brand-text-muted)]">
                     {t.paymentMethods.setDefaultSub}
                   </span>
                 </span>
@@ -466,6 +467,7 @@ function FloatingCardPreview({
 
   // Always a live, coloured card (reflects colour/type/digits/currency immediately).
   // Static 3D treatment — no motion after the one-time entrance.
+  const { ink } = cardFace(color)
   const cardShadow = `0 36px 64px -16px ${mix('black', 72)}, 0 16px 32px -12px ${mix(color, 50)}, inset 0 1px 0 ${mix('white', 20)}`
 
   const preview = (
@@ -495,6 +497,7 @@ function FloatingCardPreview({
       className="relative flex h-[176px] w-[280px] flex-col overflow-hidden rounded-[20px]"
       style={{
         padding: '19px 21px',
+        color: ink,
         background: cardGradient(color),
         boxShadow: cardShadow,
         transform: 'translateY(-2px)',
@@ -505,21 +508,21 @@ function FloatingCardPreview({
         style={{ background: `radial-gradient(120% 90% at 85% 8%, ${mix('white', 16)}, transparent 60%)` }}
       />
       <div className="relative flex items-center justify-between">
-        <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
+        <span className="flex h-8 w-[44px] shrink-0 items-center justify-center rounded-lg p-[7px]" style={{ background: mix(ink, 20) }}>
           <TypeGlyph type={type} className="h-full w-full" />
         </span>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">{typeLabel}</span>
+        <span className="text-[0.5625rem] font-semibold uppercase tracking-[0.14em]">{typeLabel}</span>
       </div>
       <div className="relative mt-auto text-start">
         <div
           className="truncate text-[23px] font-bold tracking-[-0.01em]"
-          style={{ color: hasProvider ? 'white' : mix('white', 55) }}
+          style={{ opacity: hasProvider ? 1 : 0.7 }}
         >
           {name}
         </div>
         <div className="mt-3 flex items-end justify-between">
-          <span className="font-mono-numbers text-[15px] font-semibold tracking-[0.16em] text-white/90">{tail}</span>
-          <span className="font-mono-numbers text-[13px] font-bold text-white/85">{curCode}</span>
+          <span className="font-mono-numbers text-[0.9375rem] font-semibold tracking-[0.16em]">{tail}</span>
+          <span className="font-mono-numbers text-[0.8125rem] font-bold">{curCode}</span>
         </div>
       </div>
     </div>

@@ -105,7 +105,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
                               <SavingsAccountIcon account={{ type: kindDef.savingsType as SavingsType, icon: kindDef.icon }} className="h-5 w-5" />
                             </span>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
+                              <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
                                 {pm.name}{pm.last4 ? <span className="font-mono-numbers"> ••{pm.last4}</span> : null}
                               </p>
                               <p className="truncate text-xs text-[var(--color-brand-text-muted)]">
@@ -129,7 +129,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
                           <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: tint(def.color, 16), color: def.color }}>
                             <SavingsAccountIcon account={{ type: def.savingsType, icon: def.icon }} className="h-5 w-5" />
                           </span>
-                          <p className="mt-1 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{sf.pocketKinds[k].label}</p>
+                          <p className="mt-1 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{sf.pocketKinds[k].label}</p>
                           <p className="text-xs text-[var(--color-brand-text-muted)]">{sf.pocketKinds[k].sub}</p>
                         </SelectableCard>
                       )
@@ -147,7 +147,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
                   {ASSETS.map((a) => (
                     <SelectableCard key={a.key} as="action" layout="stack" onClick={() => setAsset(a.key)} className="p-3.5">
                       <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ background: tint(a.color, 16), color: a.color }}>{a.icon}</span>
-                      <p className="mt-1 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t[a.name]}</p>
+                      <p className="mt-1 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t[a.name]}</p>
                       <p className="text-xs text-[var(--color-brand-text-muted)]">{t[a.sub]}</p>
                     </SelectableCard>
                   ))}
@@ -155,7 +155,7 @@ function AddHoldingBody({ onClose, initialTab, presetAssetType }: Omit<AddHoldin
 
                 <div className="flex min-h-[60px] items-center justify-between gap-3 rounded-2xl bg-[var(--color-brand-elevated)] px-4 py-3">
                   <div className="min-w-0">
-                    <p id="gold-strip-label" className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.goldStripTitle}</p>
+                    <p id="gold-strip-label" className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.goldStripTitle}</p>
                     <p className="text-xs text-[var(--color-brand-text-muted)]">{t.goldStripSub}</p>
                   </div>
                   <Switch

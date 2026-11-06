@@ -1,6 +1,8 @@
 'use client'
 
+import { useRef } from 'react'
 import { HIT_AREA } from '@/lib/ui/hitArea'
+import { nextSegmentIndex } from './segmentedNav'
 import { cn } from '@/lib/utils'
 
 export interface SegmentedOption<T extends string> {
@@ -34,8 +36,8 @@ export interface SegmentedControlProps<T extends string> {
  *
  * Built as a **radiogroup**, not tabs: it filters the content below rather than
  * swapping panels, so `role="tablist"` would promise a relationship to screen
- * readers that does not exist. Arrow keys move between options, matching native
- * radio-group behaviour.
+ * readers that does not exist. Arrow keys move selection AND focus together,
+ * matching native radio-group behaviour.
  *
  * The selected pill is a sibling element rather than a background on the button,
  * so it can animate between positions later without touching the markup.
@@ -49,20 +51,19 @@ export function SegmentedControl<T extends string>({
   size = 'default',
   className,
 }: SegmentedControlProps<T>) {
-  const move = (dir: 1 | -1) => {
-    const i = options.findIndex((o) => o.value === value)
-    if (i === -1) return
-    // Wrap, like a native radio group.
-    onChange(options[(i + dir + options.length) % options.length].value)
-  }
+  const group = useRef<HTMLDivElement>(null)
 
   return (
     <div
+      ref={group}
       role="radiogroup"
       aria-label={ariaLabel}
       onKeyDown={(e) => {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); move(1) }
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); move(-1) }
+        const next = nextSegmentIndex(e.key, options.findIndex((o) => o.value === value), options.length)
+        if (next === null) return
+        e.preventDefault()
+        onChange(options[next].value)
+        group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus()
       }}
       className={cn(
         'inline-flex gap-0.5 border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-[3px]',
@@ -86,7 +87,7 @@ export function SegmentedControl<T extends string>({
               // h-9 inside a 3px-padded 44px-tall track keeps the whole control
               // on the 44px tap minimum without each segment looking oversized.
               HIT_AREA,
-              'inline-flex min-w-0 items-center justify-center gap-1.5 px-4 text-[13.5px] font-semibold transition-colors outline-none',
+              'inline-flex min-w-0 items-center justify-center gap-1.5 px-4 text-[0.84375rem] font-semibold transition-colors outline-none',
               size === 'field' ? 'h-full rounded-[11px]' : 'h-9 rounded-[9px]',
               'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
               fill && 'flex-1',
@@ -104,7 +105,7 @@ export function SegmentedControl<T extends string>({
             {o.count !== undefined ? (
               <span
                 className={cn(
-                  'font-mono-numbers text-[11px] font-semibold tabular-nums',
+                  'font-mono-numbers text-[0.6875rem] font-semibold tabular-nums',
                   selected
                     ? 'text-[var(--color-brand-text-muted)]'
                     : 'text-[var(--color-brand-text-muted)]',

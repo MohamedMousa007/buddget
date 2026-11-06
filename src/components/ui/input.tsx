@@ -4,6 +4,9 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 import { cn } from "@/lib/utils"
 import { isAndroid } from "@/lib/native/isNative"
 
+/** A pasted wall of text is synced as is and the database has no length check: cap every text box unless a site sets its own. */
+export const DEFAULT_MAX_LENGTH = 500
+
 /**
  * `size="brand"` is the app's real control height (48px, rounded-xl, elevated
  * fill) and satisfies the design-system rule that every input is h-12. The
@@ -40,6 +43,7 @@ function Input({ className, type, inputMode, onClick, size = "default", ...props
         className
       )}
       onClick={handleClick}
+      maxLength={DEFAULT_MAX_LENGTH}
       {...props}
     />
   )

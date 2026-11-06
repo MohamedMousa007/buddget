@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ComponentProps, type MutableRefObject, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion, useDragControls } from 'framer-motion'
+import { AnimatePresence, motion, useDragControls, useIsPresent } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useNumpadInset } from '@/lib/ui/numpadInset'
 import { useScrollLock } from '@/lib/ui/scrollLock'
@@ -28,6 +28,43 @@ const OPEN_GRACE_MS = 400
 const ModalTitleIdContext = createContext<string | undefined>(undefined)
 export function useModalTitleId() {
   return useContext(ModalTitleIdContext)
+}
+
+type DismissGuard = () => boolean
+export const DismissGuardContext = createContext<MutableRefObject<DismissGuard | null> | null>(null)
+
+/**
+ * Lets a sheet's content intercept every dismissal ModalShell routes (backdrop tap, swipe down,
+ * Escape, Android back), not only its own close button. The guard returns true when it handled the
+ * request (e.g. opened an unsaved-changes confirm) so the sheet stays open.
+ */
+export function useDismissGuard(guard: DismissGuard) {
+  const slotRef = useContext(DismissGuardContext)
+  const latest = useRef(guard)
+  useEffect(() => {
+    latest.current = guard
+  })
+  useEffect(() => {
+    if (!slotRef) return
+    slotRef.current = () => latest.current()
+    return () => {
+      slotRef.current = null
+    }
+  }, [slotRef])
+}
+
+/**
+ * While AnimatePresence plays the exit animation the panel is still mounted with the handlers of its last
+ * render. Inert + no pointer events stop a second tap on Save from re-running that stale submit.
+ */
+export function ExitInertPanel({ style, ...rest }: ComponentProps<typeof motion.div>) {
+  const present = useIsPresent()
+  return <motion.div {...rest} inert={!present} style={present ? style : { ...style, pointerEvents: 'none' }} />
+}
+
+export function ExitInertBackdrop({ style, ...rest }: ComponentProps<typeof motion.button>) {
+  const present = useIsPresent()
+  return <motion.button {...rest} inert={!present} style={present ? style : { ...style, pointerEvents: 'none' }} />
 }
 
 function wideStore(query: string) {
@@ -132,24 +169,29 @@ export function ModalShell({
   useEffect(() => {
     if (open) openedAtRef.current = performance.now()
   }, [open])
+  const dismissGuard = useRef<DismissGuard | null>(null)
+  const onBackRef = useRef(onBackdropClick)
+  useEffect(() => { onBackRef.current = onBackdropClick })
+  const requestDismiss = useCallback(() => {
+    if (dismissGuard.current?.()) return
+    onBackRef.current()
+  }, [])
   const guardedDismiss = () => {
     if (performance.now() - openedAtRef.current < OPEN_GRACE_MS) return
-    onBackdropClick()
+    requestDismiss()
   }
 
   // Android hardware-back: the topmost open sheet consumes the press and closes
   // itself (LIFO), so back steps out one layer at a time instead of dismissing a
   // whole modal stack at once. Registered once per open using a ref for the cb.
-  const onBackRef = useRef(onBackdropClick)
-  useEffect(() => { onBackRef.current = onBackdropClick })
   useEffect(() => {
     if (!open) return
-    return registerBackGuard(() => { onBackRef.current(); return true })
-  }, [open])
+    return registerBackGuard(() => { requestDismiss(); return true })
+  }, [open, requestDismiss])
 
   // Keyboard Escape shares the same LIFO stack as Android back, so both dismiss
   // only the topmost layer — a nested sheet no longer closes the parent behind it.
-  useEscapeClose(open, () => onBackRef.current())
+  useEscapeClose(open, requestDismiss)
 
   useDialogFocus(open, panelRef)
 
@@ -232,7 +274,7 @@ export function ModalShell({
     <AnimatePresence>
       {open && (
         <>
-          <motion.button
+          <ExitInertBackdrop
             type="button"
             tabIndex={-1}
             aria-label={t.common.close}
@@ -246,7 +288,7 @@ export function ModalShell({
             onClick={guardedDismiss}
             className={cn('fixed inset-0', corner ? 'bg-black/60 backdrop-blur-sm lg:bg-black/20 lg:backdrop-blur-none' : 'bg-black/60 backdrop-blur-sm', zStack)}
           />
-          <motion.div
+          <ExitInertPanel
             ref={panelRef}
             data-modal-layer
             key="modal-panel"
@@ -289,6 +331,7 @@ export function ModalShell({
             }
           >
             <ModalTitleIdContext.Provider value={titleId}>
+             <DismissGuardContext.Provider value={dismissGuard}>
               {dragToClose ? (
                 <>
                   {/* Generous, misclick-safe grab strip (≥44px). Sole drag
@@ -320,8 +363,9 @@ export function ModalShell({
               ) : (
                 children
               )}
+             </DismissGuardContext.Provider>
             </ModalTitleIdContext.Provider>
-          </motion.div>
+          </ExitInertPanel>
         </>
       )}
     </AnimatePresence>,

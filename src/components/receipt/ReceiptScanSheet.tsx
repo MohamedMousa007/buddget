@@ -467,7 +467,7 @@ function ResultView({
                 className="h-12 w-9 rounded-lg border border-[var(--color-brand-border)] object-cover"
               />
               {pageCount > 1 ? (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-brand-primary)] px-1 text-[9px] font-semibold text-[var(--color-brand-on-primary)]">
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-brand-primary)] px-1 text-[0.5625rem] font-semibold text-[var(--color-brand-on-primary)]">
                   {pageCount}
                 </span>
               ) : null}
@@ -491,6 +491,8 @@ function ResultView({
           <AmountField
             bare
             value={reconcileTyped(amountDraft, result.amount)}
+            decimalsFor={result.currency}
+            aria-label={rc.amount}
             onChange={(v) => {
               setAmountDraft(v)
               onChange({ amount: parseLocalizedAmount(v, result.currency) || 0 })

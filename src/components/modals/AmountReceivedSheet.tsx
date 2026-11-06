@@ -165,7 +165,7 @@ export function AmountReceivedSheet() {
           {t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}
         </p>
 
-        <label className="mt-4 block text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+        <label className="mt-4 block text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
           {t.income.receivedOnLabel}
         </label>
         <OptionChip
@@ -179,7 +179,7 @@ export function AmountReceivedSheet() {
           {formatDatePillLabel(receivedDate, locale, t.common.today)}
         </OptionChip>
 
-        <label className="mt-4 block text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+        <label className="mt-4 block text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
           {t.income.amountReceivedLabel}
         </label>
         <Card
@@ -191,6 +191,7 @@ export function AmountReceivedSheet() {
           <span className="font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">{currency}</span>
           <input
             autoFocus
+            aria-label={t.income.amountReceivedLabel}
             inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(sanitizeAmount(e.target.value, 'decimal', currency))}
@@ -218,7 +219,7 @@ export function AmountReceivedSheet() {
           onClick={save}
           disabled={!valid || unchanged || blocked}
           size="cta-block"
-          className="mt-4 rounded-[14px] bg-[var(--color-brand-green)] text-sm font-bold text-white hover:bg-[var(--color-brand-green-hover)]"
+          className="mt-4 rounded-[14px] bg-[var(--color-brand-green)] text-sm font-bold text-[var(--color-brand-on-green)] hover:bg-[var(--color-brand-green-hover)]"
         >
           {isEdit ? t.income.saveChangesBtn : meetsExpected ? t.income.markReceivedBtn : t.income.saveAsPartialBtn}
         </Button>

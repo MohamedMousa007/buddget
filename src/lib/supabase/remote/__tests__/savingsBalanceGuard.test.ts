@@ -82,7 +82,7 @@ describe('savings balance write guard (W7)', () => {
       { ...emptySnapshot(), savingsAccounts: [pocket({ name: 'Renamed' })] }
     )
     expect(res.anyError).toBe(false)
-    expect(writes).toHaveLength(3)
-    expect(writes[2][0]).toMatchObject({ id: 'p1', name: 'Renamed', current_balance: 100 })
+    expect(writes).toHaveLength(2)
+    expect(writes[1][0]).toMatchObject({ id: 'p1', name: 'Renamed', current_balance: 100 })
   })
 })

@@ -26,7 +26,7 @@ export function SubscriptionsRail({ strip, insights }: { strip: StripDay[]; insi
               d.isToday && 'bg-[var(--color-brand-primary-soft)] font-bold',
             )}
           >
-            <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-primary)]">{d.date.getDate()}</span>
+            <span className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-primary)]">{d.date.getDate()}</span>
             <span
               className={cn('size-[5px] rounded-full', d.due ? 'bg-[var(--color-brand-primary-bright)]' : 'bg-transparent')}
             />

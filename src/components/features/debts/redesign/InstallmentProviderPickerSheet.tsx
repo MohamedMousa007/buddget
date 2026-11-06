@@ -115,8 +115,8 @@ export function InstallmentProviderPickerSheet({
                     >
                       <ProviderBadge slug={b.slug} name={b.name} color={b.color} size={40} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-bold text-[var(--color-brand-text-primary)]">{b.name}</span>
-                        <span className="block text-[11px] font-medium capitalize text-[var(--color-brand-text-muted)]">{b.category.replace('_', ' ')}</span>
+                        <span className="block truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{b.name}</span>
+                        <span className="block text-[0.6875rem] font-medium capitalize text-[var(--color-brand-text-muted)]">{b.category.replace('_', ' ')}</span>
                       </span>
                       {sel ? <Check className="h-4 w-4 shrink-0" style={{ color: readable(b.color) }} /> : null}
                     </SelectableCard>
@@ -129,7 +129,7 @@ export function InstallmentProviderPickerSheet({
                   className="gap-3 p-3.5"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-cat-6)]/20 text-[var(--color-cat-6)]"><CreditCard className="h-5 w-5" /></span>
-                  <span className="block truncate text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.debtTypeCreditCard}</span>
+                  <span className="block truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{t.debtTypeCreditCard}</span>
                 </SelectableCard>
                 <SelectableCard
                   as="action"
@@ -137,7 +137,7 @@ export function InstallmentProviderPickerSheet({
                   className="gap-3 p-3.5"
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-brand-sunken)] text-[var(--color-brand-text-secondary)]"><Plus className="h-5 w-5" /></span>
-                  <span className="block truncate text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.customLabel}</span>
+                  <span className="block truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{t.customLabel}</span>
                 </SelectableCard>
               </div>
             </div>

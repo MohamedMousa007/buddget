@@ -110,6 +110,8 @@ export function RecurringDebtPaymentForm({
             placeholder={t.recurringDebt.placeholderAmount}
             value={amount}
             onChange={onAmountChange}
+            decimalsFor={paymentCurrency}
+            aria-label={t.recurringDebt.labelAmount}
             className="bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] font-mono-numbers"
           />
           <CurrencyField

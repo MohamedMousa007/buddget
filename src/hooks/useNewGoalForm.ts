@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
 import { fundingBasis } from '@/lib/goals/fundingBasis'
 import { defaultGoalName } from '@/lib/goals/defaultGoalCopy'
@@ -75,6 +76,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
   const [linkedDebtIds, setLinkedDebtIds] = useState<string[]>(draft?.linkedDebtIds ?? [])
   const [saveError, setSaveError] = useState(false)
   const submitted = useRef(false)
+  const submitOnce = useSubmitOnce()
 
   const activeDebts = useMemo(() => s.debts.filter((d) => d.status !== 'cleared'), [s.debts])
   const kind = goalKind(category)
@@ -176,6 +178,7 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
     kind === 'limit' ? num(limit) > 0 : kind === 'debt' ? linkedDebtIds.length > 0 && debtsOwed > 0 : target > 0 && name.trim().length > 0
 
   const submit = useCallback(() => {
+    if (!submitOnce.claim()) return
     const st = useFinanceStore.getState()
     const goalName = name.trim() || defaultGoalName(category, cat.goalNames)
     // A debt goal's target is the debts' base-currency total, so it is always saved in the base currency.
@@ -218,13 +221,14 @@ export function useNewGoalForm(seed: FlowSeed | null, onDone: () => void) {
         }
       }
     } catch {
+      submitOnce.release()
       setSaveError(true)
       return
     }
     submitted.current = true
     clearDraft()
     onDone()
-  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone, cat])
+  }, [name, category, currency, nextPriority, kind, limit, spendingCategory, target, debtsOwed, linkedDebtIds, alreadySaved, targetDate, fundingMode, sharePct, fixedAmount, frequency, onDone, cat, submitOnce])
 
   return {
     now, step, setStep, category, pickCategory, kind, name, setName, targetAmount, setTargetAmount,

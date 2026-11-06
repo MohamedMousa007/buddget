@@ -1,0 +1,140 @@
+import { describe, it, expect } from 'vitest'
+import { applyDelta, type MappedDelta } from '@/lib/supabase/remote/delta'
+import { diffLists } from '@/lib/supabase/remote/diff'
+import type { Snapshot } from '@/lib/supabase/remote/snapshot'
+
+type Exp = { id: string; v: number; updatedAt: string; createdAt: string }
+type SRow = { v: number; updatedAt: number; deleted: boolean }
+const MIN = 60_000
+
+function rng(seed: number) {
+  let s = seed >>> 0
+  return () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 2 ** 32)
+}
+const emptyList = { upserts: [], deletedIds: [] }
+
+class Server {
+  rows = new Map<string, SRow>()
+  upsert(id: string, v: number, editAt: number, now: number, revive: boolean) {
+    const o = this.rows.get(id)
+    if (!o) return void this.rows.set(id, { v, updatedAt: now, deleted: false })
+    const isRevive = o.deleted && revive
+    if (editAt < o.updatedAt - MIN && !isRevive) return // 0232 reject_stale_write
+    this.rows.set(id, { v, updatedAt: now, deleted: revive ? false : o.deleted })
+  }
+  tombstone(id: string, now: number) {
+    const o = this.rows.get(id)
+    if (o) this.rows.set(id, { ...o, deleted: true, updatedAt: now })
+  }
+}
+
+class Device {
+  rows: Exp[] = []
+  prev: Exp[] = []
+  cursor: number | null = null
+  constructor(public name: string, public server: Server) {}
+  flush(now: number) {
+    const d = diffLists(this.rows, this.prev)
+    for (const x of d.inserts) this.server.upsert(x.id, x.v, Date.parse(x.updatedAt), now, true)
+    for (const x of d.updates) this.server.upsert(x.id, x.v, Date.parse(x.updatedAt), now, false)
+    for (const id of d.deletes) this.server.tombstone(id, now)
+    this.prev = this.rows
+  }
+  pull(now: number) {
+    this.flush(now)
+    const win = this.cursor === null ? null : this.cursor - 2 * MIN
+    const delta = { upserts: [] as Exp[], deletedIds: [] as string[] }
+    for (const [id, r] of this.server.rows) {
+      if (win !== null && r.updatedAt <= win) continue
+      if (r.deleted) delta.deletedIds.push(id)
+      else delta.upserts.push({ id, v: r.v, updatedAt: new Date(r.updatedAt).toISOString().replace('Z', '+00:00'), createdAt: new Date(0).toISOString() })
+    }
+    const local = { expenses: this.rows } as unknown as Snapshot
+    const base = Object.fromEntries(
+      ['paymentMethods', 'incomeSources', 'incomeEvents', 'receipts', 'recurringExpenses', 'subscriptions', 'debts', 'debtPayments', 'recurringDebtPayments', 'savingsAccounts', 'investmentHoldings', 'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'buddgyMemories', 'accountAdjustments', 'budgetPlans', 'budgetPlanActivations'].map((k) => [k, []]),
+    )
+    const out = applyDelta({ ...base, ...local, settings: { baseCurrency: 'EGP', weekStartDay: 0 }, profile: null } as unknown as Snapshot, {
+      cursor: new Date(now).toISOString(), profile: null, settings: null, expenses: delta,
+      ...Object.fromEntries(['paymentMethods', 'incomeSources', 'incomeEvents', 'receipts', 'recurringExpenses', 'subscriptions', 'debts', 'debtPayments', 'recurringDebtPayments', 'savingsAccounts', 'investmentHoldings', 'savingsTransactions', 'recurringSavingsDeposits', 'goals', 'buddgyMemories', 'accountAdjustments'].map((k) => [k, emptyList])),
+      budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [], deletedBudgetPlanActivationIds: [], staleBefore: null,
+    } as unknown as MappedDelta)
+    this.rows = out.expenses as unknown as Exp[]
+    this.prev = this.rows
+    this.cursor = now
+  }
+}
+
+function run(seed: number, steps: number) {
+  const rand = rng(seed)
+  const server = new Server()
+  const devs = [new Device('A', server), new Device('B', server), new Device('C', server)]
+  let t = Date.UTC(2026, 0, 1)
+  let nextId = 0
+  let nextV = 1
+  const lastEdit = new Map<string, { v: number; at: number }>() // newest edit op by edit time (global)
+  const deleted = new Set<string>()
+  for (let i = 0; i < steps; i++) {
+    t += 3 * MIN * (1 + Math.floor(rand() * 4))
+    const d = devs[Math.floor(rand() * devs.length)]
+    const r = rand()
+    const iso = new Date(t).toISOString()
+    if (r < 0.2) {
+      const id = `x${nextId++}`
+      d.rows = [...d.rows, { id, v: nextV, updatedAt: iso, createdAt: iso }]
+      lastEdit.set(id, { v: nextV++, at: t })
+    } else if (r < 0.5 && d.rows.length) {
+      const row = d.rows[Math.floor(rand() * d.rows.length)]
+      d.rows = d.rows.map((x) => (x.id === row.id ? { ...x, v: nextV, updatedAt: iso } : x))
+      lastEdit.set(row.id, { v: nextV++, at: t })
+    } else if (r < 0.6 && d.rows.length) {
+      const row = d.rows[Math.floor(rand() * d.rows.length)]
+      d.rows = d.rows.filter((x) => x.id !== row.id)
+      deleted.add(row.id)
+    } else if (r < 0.8) d.flush(t)
+    else d.pull(t)
+  }
+  for (let k = 0; k < 2; k++) for (const d of devs) { t += 3 * MIN; d.pull(t) }
+  return { devs, server, lastEdit, deleted }
+}
+
+describe('sync convergence property (3 devices, seeded)', () => {
+  const seeds = Array.from({ length: 400 }, (_, i) => i + 1)
+  it('converges, never resurrects deleted rows', () => {
+    let divergent = 0, resurrected = 0
+    for (const s of seeds) {
+      const { devs, server, deleted } = run(s, 60)
+      const live = [...server.rows].filter(([, r]) => !r.deleted).map(([id, r]) => `${id}:${r.v}`).sort()
+      for (const d of devs) if (JSON.stringify(d.rows.map((x) => `${x.id}:${x.v}`).sort()) !== JSON.stringify(live)) divergent++
+      for (const id of deleted) if (server.rows.get(id) && !server.rows.get(id)!.deleted) resurrected++
+    }
+    expect({ divergent, resurrected }).toEqual({ divergent: 0, resurrected: 0 })
+  })
+  it('newest edit (by edit time) survives for rows never deleted', () => {
+    const lost: number[] = []
+    for (const s of seeds) {
+      const { server, lastEdit, deleted } = run(s, 60)
+      for (const [id, e] of lastEdit) {
+        if (deleted.has(id)) continue
+        const r = server.rows.get(id)
+        if (r && !r.deleted && r.v !== e.v) { lost.push(s); break }
+      }
+    }
+    expect(lost.length).toBe(0)
+  })
+})
+
+describe('SLG-3 deterministic: two devices edit offline, newest edit loses', () => {
+  it('device B edited later but reconnected later: its edit must win', () => {
+    const server = new Server()
+    const A = new Device('A', server), B = new Device('B', server)
+    const t0 = Date.UTC(2026, 0, 1)
+    const iso = (t: number) => new Date(t).toISOString()
+    A.rows = [{ id: 'x', v: 0, updatedAt: iso(t0), createdAt: iso(t0) }]; A.flush(t0)
+    A.pull(t0 + MIN * 5); B.pull(t0 + MIN * 5)
+    A.rows = [{ ...A.rows[0], v: 1, updatedAt: iso(t0 + 10 * MIN) }]   // A edits at +10m (offline)
+    B.rows = [{ ...B.rows[0], v: 2, updatedAt: iso(t0 + 20 * MIN) }]   // B edits at +20m (offline) = NEWEST
+    A.pull(t0 + 100 * MIN)                                              // A reconnects first
+    B.pull(t0 + 200 * MIN)                                              // B reconnects later
+    expect(server.rows.get('x')!.v).toBe(2)
+  })
+})

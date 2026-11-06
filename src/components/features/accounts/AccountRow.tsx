@@ -45,7 +45,7 @@ export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: A
             <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
             <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>
           </span>
-          <span className={`mt-0.5 block truncate text-[13px] ${hasGap ? 'font-semibold text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>{sub}</span>
+          <span className={`mt-0.5 block truncate text-[0.8125rem] ${hasGap ? 'font-semibold text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>{sub}</span>
         </span>
         <span className="shrink-0 text-end">
           {money ? (
@@ -54,7 +54,7 @@ export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: A
                 {masked ? MASK : <>{money.int}<span className="opacity-45">{money.dec}</span></>}
               </span>
               {!masked && balance && balance.held > 0 ? (
-                <span className="mt-0.5 block font-mono-numbers text-[11.5px] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(splitMoney(balance.free, cur).int)}</span>
+                <span className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(splitMoney(balance.free, cur).int)}</span>
               ) : null}
             </>
           ) : (

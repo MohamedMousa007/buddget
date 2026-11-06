@@ -92,7 +92,7 @@ function OverlayPromptBanner({
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-px">
           <span className="text-sm font-bold leading-[1.3] text-[var(--color-brand-text-primary)] [overflow-wrap:anywhere] [text-wrap:pretty]">{title}</span>
           {description ? (
-            <span className="text-[12.5px] leading-[1.4] text-[var(--color-brand-text-secondary)]">{description}</span>
+            <span className="text-[0.78125rem] leading-[1.4] text-[var(--color-brand-text-secondary)]">{description}</span>
           ) : null}
         </span>
         <span className="-mt-1.5">
@@ -122,7 +122,7 @@ function OverlayPromptBanner({
               )}
             />
           ))}
-          <span className="ms-1.5 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{counterLabel}</span>
+          <span className="ms-1.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{counterLabel}</span>
         </div>
       ) : null}
       <div className="mx-auto mt-1.5 h-1 w-9 rounded-full bg-[var(--color-brand-border-strong)]" aria-hidden />
@@ -138,12 +138,12 @@ const TONE = {
   },
   warning: {
     surface: 'border-transparent bg-[var(--color-brand-amber-soft)]',
-    icon: 'bg-[var(--color-brand-amber)] text-white',
+    icon: 'bg-[var(--color-brand-amber)] text-[var(--color-brand-on-amber)]',
     title: 'text-[var(--color-brand-text-primary)]',
   },
   negative: {
     surface: 'border-transparent bg-[var(--color-brand-red-soft)]',
-    icon: 'bg-[var(--color-brand-red)] text-white',
+    icon: 'bg-[var(--color-brand-red)] text-[var(--color-brand-on-red)]',
     title: 'text-[var(--color-brand-text-primary)]',
   },
 } as const
@@ -187,7 +187,7 @@ function InlinePromptBanner({
           </span>
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className={cn('text-[13.5px] font-semibold leading-snug', t.title)}>{title}</p>
+          <p className={cn('text-[0.84375rem] font-semibold leading-snug', t.title)}>{title}</p>
           {description ? (
             <p className="mt-1 text-xs leading-snug text-[var(--color-brand-text-secondary)]">
               {description}

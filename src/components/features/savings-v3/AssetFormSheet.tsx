@@ -151,7 +151,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
 
           {type === 'property' && (
             <>
-              <Field label={t.propertyWorth}><UnitField value={propValue} onChange={setPropValue} suffix={baseCurrency} label={t.propertyWorth} /></Field>
+              <Field label={t.propertyWorth}><UnitField value={propValue} onChange={setPropValue} suffix={baseCurrency} label={t.propertyWorth} decimalsFor={baseCurrency} /></Field>
               <div className="grid gap-2.5" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)' }}>
                 <Field label={a.size}><UnitField value={size} onChange={setSize} suffix="m²" label={a.size} compact /></Field>
                 <Field label={a.yourShare}><UnitField value={share} onChange={setShare} suffix="%" label={a.yourShare} compact /></Field>
@@ -167,7 +167,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
               >
                 <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{type === 'gold' ? a.shopWouldPay : a.worthToday}</p>
                 <p className="mt-1 font-mono-numbers text-2xl font-bold" style={{ color: accent }}>{liveValue != null ? `${fmtNum(liveValue)} EGP` : '—'}</p>
-                <p className="mt-1 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{liveValue != null ? a.liveValuation : a.priceRefreshing}</p>
+                <p className="mt-1 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{liveValue != null ? a.liveValuation : a.priceRefreshing}</p>
               </div>
             </div>
           )}
@@ -192,7 +192,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
           )}
           {type !== 'property' && (
             <Field label={source === 'had' ? `${t.whatYouPaid} · ${t.optional}` : t.whatYouPaid}>
-              <UnitField value={paid} onChange={setPaid} suffix={type === 'stock' ? 'USD' : 'EGP'} label={t.whatYouPaid} placeholder={a.total} />
+              <UnitField value={paid} onChange={setPaid} suffix={type === 'stock' ? 'USD' : 'EGP'} label={t.whatYouPaid} placeholder={a.total} decimalsFor={type === 'stock' ? 'USD' : 'EGP'} />
               {source === 'had' && <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{t.paidHint}</p>}
             </Field>
           )}
@@ -215,17 +215,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function PriceCard({ on, onClick, title, sub }: { on: boolean; onClick: () => void; title: string; sub: string }) {
   return (
     <SelectableCard layout="stack" selected={on} onClick={onClick} className="w-auto shrink-0 gap-0 px-3 py-2.5" style={{ minWidth: 88 }}>
-      <p className="font-mono-numbers text-[15px] font-bold" style={{ color: 'var(--color-brand-gold)' }}>{title}</p>
-      <p className="font-mono-numbers text-[10px] text-[var(--color-brand-text-muted)]">{sub}</p>
+      <p className="font-mono-numbers text-[0.9375rem] font-bold" style={{ color: 'var(--color-brand-gold)' }}>{title}</p>
+      <p className="font-mono-numbers text-[0.625rem] text-[var(--color-brand-text-muted)]">{sub}</p>
     </SelectableCard>
   )
 }
 
 /** AmountField has no unit slot, so the unit rides over the field's inline-end edge. */
-function UnitField({ value, onChange, suffix, label, placeholder, compact }: { value: string; onChange: (v: string) => void; suffix: string; label: string; placeholder?: string; compact?: boolean }) {
+function UnitField({ value, onChange, suffix, label, placeholder, compact, decimalsFor }: { value: string; onChange: (v: string) => void; suffix: string; label: string; placeholder?: string; compact?: boolean; decimalsFor?: string }) {
   return (
     <div className="relative">
-      <AmountField value={value} onChange={onChange} label={label} placeholder={placeholder ?? '0'} size={compact ? 'compact' : 'default'} />
+      <AmountField value={value} onChange={onChange} label={label} decimalsFor={decimalsFor} placeholder={placeholder ?? '0'} size={compact ? 'compact' : 'default'} />
       <span className="pointer-events-none absolute end-4 top-1/2 -translate-y-1/2 font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">{suffix}</span>
     </div>
   )
@@ -238,7 +238,7 @@ function SourceIcon({ children }: { children: React.ReactNode }) {
 function SourceText({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="min-w-0 flex-1">
-      <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
+      <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
       <p className="text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
     </div>
   )

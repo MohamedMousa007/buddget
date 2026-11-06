@@ -53,7 +53,7 @@ export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-
         style={{ top, left, width: WIDTH, boxShadow: 'var(--shadow-lg)' }}
       >
         {title && (
-          <div className="truncate border-b border-[var(--color-brand-border)] px-3.5 py-2 text-[11.5px] font-semibold text-[var(--color-brand-text-muted)]">
+          <div className="truncate border-b border-[var(--color-brand-border)] px-3.5 py-2 text-[0.71875rem] font-semibold text-[var(--color-brand-text-muted)]">
             {title}
           </div>
         )}
@@ -72,7 +72,7 @@ export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-
             <span className="flex min-w-0 flex-col">
               <span className="truncate">{it.label}</span>
               {it.hint && (
-                <span className="truncate text-[11.5px] font-normal text-[var(--color-brand-text-muted)]">{it.hint}</span>
+                <span className="truncate text-[0.71875rem] font-normal text-[var(--color-brand-text-muted)]">{it.hint}</span>
               )}
             </span>
           </button>

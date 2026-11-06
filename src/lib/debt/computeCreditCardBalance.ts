@@ -1,5 +1,6 @@
-import { addDays, differenceInCalendarDays, format, getDaysInMonth, parseISO, startOfDay } from 'date-fns'
+import { differenceInCalendarDays, format, getDaysInMonth, parseISO, startOfDay } from 'date-fns'
 import type { Currency, Debt, DebtPayment, Expense } from '@/lib/store/types'
+import { addCalendarDays } from '@/lib/time/calendarDays'
 import { isNonSpendCategory } from '@/lib/constants/categoryMeta'
 import { sumConverted, tryConvertCurrency, type PartialSum } from '@/lib/utils/currency'
 
@@ -104,7 +105,7 @@ export function getCurrentBillingCycleExpenses(
   let cycleEnd = dueDateInMonth(today.getFullYear(), today.getMonth(), rawDay)
   if (today > cycleEnd) cycleEnd = dueDateInMonth(today.getFullYear(), today.getMonth() + 1, rawDay)
   const previousEnd = dueDateInMonth(cycleEnd.getFullYear(), cycleEnd.getMonth() - 1, rawDay)
-  const cycleStart = addDays(previousEnd, 1)
+  const cycleStart = addCalendarDays(previousEnd, 1)
 
   const linked = debt.linkedPaymentMethodId
   const list = expenses.filter((e) => {

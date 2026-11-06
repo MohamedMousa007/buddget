@@ -75,7 +75,7 @@ export function StatTile({
       <p
         className={cn(
           'truncate font-semibold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]',
-          compact ? 'text-[10.5px]' : 'text-[11px]',
+          compact ? 'text-[0.65625rem]' : 'text-[0.6875rem]',
         )}
       >
         {label}
@@ -85,7 +85,7 @@ export function StatTile({
         <span
           className={cn(
             'font-mono-numbers font-bold leading-none tracking-[-0.01em] tabular-nums',
-            compact ? 'text-[15px]' : 'text-[22px]',
+            compact ? 'text-[0.9375rem]' : 'text-[22px]',
           )}
         >
           {value}
@@ -96,7 +96,7 @@ export function StatTile({
       </p>
 
       {sub ? (
-        <p className="mt-1 truncate text-[11px] text-[var(--color-brand-text-muted)]">{sub}</p>
+        <p className="mt-1 truncate text-[0.6875rem] text-[var(--color-brand-text-muted)]">{sub}</p>
       ) : null}
     </Card>
   )

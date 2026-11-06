@@ -28,7 +28,7 @@ export function ReportsNetWorthPanel() {
             {hidden ? MASK : formatCurrency(nw.netWorth, nw.baseCurrency, true)}
           </span>
           {nw.netWorthSecondary != null && secondary ? (
-            <span className="shrink-0 font-mono-numbers text-[13px] text-[var(--flow-band-fg-2)]">
+            <span className="shrink-0 font-mono-numbers text-[0.8125rem] text-[var(--flow-band-fg-2)]">
               {hidden ? MASK : `(${formatCurrency(nw.netWorthSecondary, secondary, true)})`}
             </span>
           ) : null}

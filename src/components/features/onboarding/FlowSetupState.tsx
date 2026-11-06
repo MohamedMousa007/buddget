@@ -65,8 +65,8 @@ export function FlowSetupState({ className }: { className?: string }) {
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]"><Icon className="size-5" aria-hidden /></span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{rowCopy[s.id].title}</span>
-              <span className="block text-[12.5px] text-[var(--color-brand-text-muted)]">{rowCopy[s.id].sub}</span>
+              <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{rowCopy[s.id].title}</span>
+              <span className="block text-[0.78125rem] text-[var(--color-brand-text-muted)]">{rowCopy[s.id].sub}</span>
             </span>
             <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
           </button>
@@ -94,12 +94,12 @@ export function FlowSetupState({ className }: { className?: string }) {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1 rounded-2xl bg-[var(--color-brand-primary)] p-4 text-[var(--color-brand-on-primary)]">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">{c.flow.allSet(name)}</span>
+              <span className="text-[0.6875rem] font-bold uppercase tracking-[0.08em] opacity-90">{c.flow.allSet(name)}</span>
               <Badge tone="onBrand" size="sm" bordered={false}>{c.flow.daysToPayday(allowance.days)}</Badge>
             </div>
             <p className="mt-1 flex items-baseline gap-1.5">
               <span className="font-mono-numbers text-4xl font-semibold leading-none tracking-[-0.03em]">{fmt(allowance.perDay ?? model.totalInBase)}</span>
-              <span className="text-[13px] opacity-90">{allowance.perDay !== null ? c.flow.perDay(base) : base}</span>
+              <span className="text-[0.8125rem] opacity-90">{allowance.perDay !== null ? c.flow.perDay(base) : base}</span>
             </p>
           </div>
           {todo.length > 0 ? (
@@ -112,7 +112,7 @@ export function FlowSetupState({ className }: { className?: string }) {
                 className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3.5 text-start shadow-sm"
               >
                 <Badge variant="brand" className="px-2.5 font-bold">{c.flow.finishLeft(doneCount, steps.length)}</Badge>
-                <span className="flex-1 text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.flow.finish}</span>
+                <span className="flex-1 text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{c.flow.finish}</span>
                 <ChevronRight className={cn('size-4 text-[var(--color-brand-text-muted)] transition-transform', open && 'rotate-90')} aria-hidden />
               </button>
               {open ? rows(todo) : null}
@@ -146,7 +146,7 @@ export function FlowSetupState({ className }: { className?: string }) {
           <div className="flex items-center gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] px-3.5 py-3">
             <Badge tone="card" size="sm" bordered={false} className="text-[var(--color-brand-primary-ink)]">{c.flow.stepLabel(stepNo, steps.length)}</Badge>
             <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{rowCopy[next.id].title}</p>
+              <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{rowCopy[next.id].title}</p>
               <p className="text-xs text-[var(--color-brand-text-secondary)]">{MINUTES[next.id] === 1 ? c.flow.minute : c.flow.minutes(MINUTES[next.id])}</p>
             </div>
           </div>
@@ -155,7 +155,7 @@ export function FlowSetupState({ className }: { className?: string }) {
         )}
         {rest.length > 0 ? (
           <div>
-            <span className="mb-2 block px-1 text-[13px] font-semibold text-[var(--color-brand-text-secondary)]">{c.flow.more}</span>
+            <span className="mb-2 block px-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{c.flow.more}</span>
             {rows(rest)}
           </div>
         ) : null}

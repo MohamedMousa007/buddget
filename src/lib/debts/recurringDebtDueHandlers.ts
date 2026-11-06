@@ -4,6 +4,7 @@ import type { Currency } from '@/lib/store/types'
 import { calculateDebtRemainingRaw, computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
 import { advanceRecurringDebtDueDate } from '@/lib/utils/recurringDebtPayments'
 import { settleInstallmentAmount } from '@/lib/debts/installmentPlan'
+import { installmentPaymentsCompleted } from '@/lib/debts/installmentSchedule'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { paymentExpenseMoney } from '@/lib/debts/paymentAmounts'
 import { isBnplPlan } from '@/lib/debt/bnpl'
@@ -72,7 +73,13 @@ export function confirmRecurringDebtPayment(scheduleId: string): boolean {
   const remaining = calculateDebtRemainingRaw(debt, state.debtPayments, balanceCtx)
   const payAmount =
     due.currency === debt.currency
-      ? settleInstallmentAmount(due.amount, remaining, debt.installmentCount ?? 1)
+      ? settleInstallmentAmount(
+          due.amount,
+          remaining,
+          debt.debtType === 'installment' && debt.installmentCount
+            ? { count: debt.installmentCount, completed: installmentPaymentsCompleted(debt, state.debtPayments.filter((p) => p.debtId === debt.id)) }
+            : undefined,
+        )
       : due.amount
 
   const result = computeDebtPaymentRecord(

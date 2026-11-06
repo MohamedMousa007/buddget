@@ -88,7 +88,8 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
     else next[id] = edit.value
     setOverrides(next); save({ lineOverrides: next })
   }
-  const lineInput = (id: LineId, live: number) => ({
+  const lineInput = (id: LineId, live: number, label: string) => ({
+    'aria-label': label,
     inputMode: 'decimal' as const,
     value: drafts[id] ?? fmtNum(live),
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDrafts((d) => ({ ...d, [id]: e.target.value })),
@@ -142,7 +143,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
             <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">{unit}</span></p>
             <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? z.zakatableLine('2.5%', fmtNum(result.zakatable), unit) : z.underLine(fmtNum(result.gap), unit)}</p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--color-brand-sunken)' }}><div style={{ width: `${Math.min(100, result.nisab > 0 ? (result.zakatable / result.nisab) * 100 : 0)}%`, height: '100%', background: accent }} /></div>
-            <div className="mt-2 flex justify-between font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]"><span>{z.nisab(fmtNum(result.nisab), unit)}</span><span>{z.hawlEnds(hawlDate)}</span></div>
+            <div className="mt-2 flex justify-between font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]"><span>{z.nisab(fmtNum(result.nisab), unit)}</span><span>{z.hawlEnds(hawlDate)}</span></div>
           </div>
 
           {/* what counts */}
@@ -152,9 +153,9 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               {rows.map((r, i) => (
                 <div key={r.id} className="flex items-center gap-3 p-3" style={{ borderTop: i ? '1px solid var(--color-brand-border)' : undefined }}>
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint(r.color, 14), color: r.color }}>{r.icon}</span>
-                  <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
+                  <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{r.name}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{r.sub}</p></div>
                   {/* Standard 48px field. */}
-                  <input {...lineInput(r.id, r.value)}
+                  <input {...lineInput(r.id, r.value, r.name)}
                     className={cn(
                       'h-12 w-[84px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-text-primary)] outline-none focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
                       overrides[r.id] != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
@@ -164,15 +165,15 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               {/* property */}
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-cat-1)', 14), color: 'var(--color-cat-1)' }}><Home size={18} /></span>
-                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.property}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{z.propertySub}</p></div>
-                <Badge tone="dashed" size="md" className="text-[11px] font-normal">{z.notCounted}</Badge>
+                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.property}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{z.propertySub}</p></div>
+                <Badge tone="dashed" size="md" className="text-[0.6875rem] font-normal">{z.notCounted}</Badge>
               </div>
               {/* debts (negative) */}
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-brand-red)', 14), color: 'var(--color-brand-red)' }}><CreditCard size={18} /></span>
-                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.debts}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{z.debtsSub}</p></div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.debts}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{z.debtsSub}</p></div>
                 <span className="mr-1 text-sm text-[var(--color-brand-red)]">−</span>
-                <input {...lineInput('debts', debts)}
+                <input {...lineInput('debts', debts, z.debts)}
                   className={cn(
                     'h-12 w-[76px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-red)] outline-none focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
                     overrides.debts != null ? 'border-[var(--color-brand-primary)]/50' : 'border-transparent',
@@ -180,7 +181,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               </div>
               <div className="flex items-center justify-between bg-[var(--color-brand-elevated)] p-3">
                 <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.zakatableWealth}</span>
-                <span className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(result.zakatable)} {unit}</span>
+                <span className="font-mono-numbers text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{fmtNum(result.zakatable)} {unit}</span>
               </div>
             </Card>
           </div>
@@ -200,7 +201,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
             />
             <div className="mt-2 flex items-start gap-2 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5">
               <BookOpen size={14} className="mt-0.5 shrink-0 text-[var(--color-brand-green)]" />
-              <p className="font-mono-numbers text-[11.5px] leading-relaxed text-[var(--color-brand-text-secondary)]">
+              <p className="font-mono-numbers text-[0.71875rem] leading-relaxed text-[var(--color-brand-text-secondary)]">
                 {t.silver} ≈ {fmtNum(silverNisab)} · {t.gold} {fmtNum(goldNisab)} {unit}. {t.silverEstimate}
               </p>
             </div>
@@ -219,7 +220,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               account's creation, which is when they installed the app and means nothing
               religiously. See lib/savings/hawl.ts. */}
           <Card variant="elevated" padding="none" className="p-3.5">
-            <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.yearStart}</p>
+            <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.yearStart}</p>
             <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{yearStart ? t.yearSet : t.yearNotSet}</p>
             <FieldButton
               className="mt-3"
@@ -239,7 +240,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
           {/* override */}
           <Card variant="elevated" padding="none" className="p-3.5">
             <div className="flex w-full items-center justify-between text-left">
-              <div><p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.override}</p><p className="text-xs text-[var(--color-brand-text-muted)]">{t.overrideHint}</p></div>
+              <div><p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.override}</p><p className="text-xs text-[var(--color-brand-text-muted)]">{t.overrideHint}</p></div>
               <Switch
                 size="touch"
                 aria-label={t.override}

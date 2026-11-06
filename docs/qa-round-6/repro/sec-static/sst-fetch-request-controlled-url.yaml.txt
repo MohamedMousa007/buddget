@@ -1,0 +1,20 @@
+rules:
+  - id: sst-fetch-request-controlled-url
+    languages: [typescript]
+    severity: ERROR
+    mode: taint
+    message: A request-controlled value reaches the URL of a server-side fetch (SSRF).
+    pattern-sources:
+      - pattern: $REQ.nextUrl.searchParams.get(...)
+      - pattern: new URL($REQ.url).searchParams.get(...)
+      - pattern: $REQ.headers.get(...)
+      - pattern: await $REQ.json()
+      - pattern: await $REQ.text()
+    pattern-sinks:
+      - pattern: fetch($URL, ...)
+        focus-metavariable: $URL
+    pattern-sanitizers:
+      - pattern: encodeURIComponent(...)
+      - pattern: $SCHEMA.parse(...)
+    paths:
+      include: ["src/app/api/**", "src/lib/server/**"]

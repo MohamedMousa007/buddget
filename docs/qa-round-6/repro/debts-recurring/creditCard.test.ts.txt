@@ -1,0 +1,87 @@
+import { describe, expect, it } from 'vitest'
+import { addDays, format, startOfDay } from 'date-fns'
+import {
+  computeCreditCardOutstanding, getCurrentBillingCycleExpenses, getNextCreditCardDueDate, sumExpensesInDebtCurrency,
+} from '@/lib/debt/computeCreditCardBalance'
+import { computeDebtPaymentRecord } from '@/lib/utils/calculations'
+import type { Debt, DebtPayment, Expense } from '@/lib/store/types'
+
+const rates = { USD_EGP: 50 }
+const card = (over: Partial<Debt> = {}): Debt => ({
+  id: 'cc', name: 'Card', person: '', startingBalance: 0, currency: 'EGP', isGold: false, debtType: 'credit_card',
+  direction: 'i_owe', status: 'active', createdAt: '2026-01-01', paymentDueDay: 31, linkedPaymentMethodId: 'pm', creditLimit: 10000, ...over,
+})
+const exp = (id: string, date: string, amount: number, over: Partial<Expense> = {}): Expense => ({
+  id, date, description: id, category: 'Shopping', amount, currency: 'EGP', paymentMethodId: 'pm', isRecurring: false, createdAt: '', ...over,
+} as Expense)
+
+describe('billing cycle partition (due day 29/30/31, 26 months, every day)', () => {
+  it.each([1, 15, 28, 29, 30, 31])('day %i: cycles tile the calendar with no gap and no overlap; next due == cycle end', (day) => {
+    const d = card({ paymentDueDay: day })
+    let ref = new Date(2026, 0, 1)
+    const end = new Date(2028, 2, 1)
+    let prevEnd: Date | null = null
+    while (ref < end) {
+      const c = getCurrentBillingCycleExpenses(d, [], rates, ref)
+      expect(c.cycleStart <= startOfDay(ref) && startOfDay(ref) <= c.cycleEnd).toBe(true)
+      expect(format(c.cycleEnd, 'yyyy-MM-dd')).toBe(getNextCreditCardDueDate(d, ref))
+      if (prevEnd && c.cycleEnd.getTime() !== prevEnd.getTime()) {
+        expect(c.cycleStart.getTime()).toBe(addDays(prevEnd, 1).getTime())
+      }
+      prevEnd = c.cycleEnd
+      ref = addDays(ref, 1)
+    }
+  })
+})
+
+describe('what counts toward the card', () => {
+  const d = card()
+  it('top up / ATM / FX / CC Payoff / refunded are not charges; plain spend and foreign spend are', () => {
+    const ex = [
+      exp('a', '2026-10-05', 100),
+      exp('b', '2026-10-06', 500, { category: 'Top up' }),
+      exp('c', '2026-10-07', 700, { category: 'ATM Cash Withdrawal' }),
+      exp('d', '2026-10-08', 300, { category: 'CC Payoff' }),
+      exp('e', '2026-10-09', 40, { refundKind: 'refunded' }),
+      exp('f', '2026-10-10', 2, { currency: 'USD' }),
+      exp('g', '2026-10-10', 50, { paymentMethodId: 'other' }),
+    ]
+    expect(computeCreditCardOutstanding(d, ex, [], rates)).toBe(200)
+  })
+  it('FX category on the card', () => {
+    const ex = [exp('x', '2026-10-05', 900, { category: 'Currency Exchange' }), exp('y', '2026-10-05', 10)]
+    const out = computeCreditCardOutstanding(d, ex, [], rates)
+    console.log('FX-ish category outstanding', out)
+  })
+  it('a payment bigger than outstanding is refused; paying exact clears to 0; outstanding never negative', () => {
+    const ex = [exp('a', '2026-10-05', 1000)]
+    const bc = { expenses: ex, exchangeRates: rates, allDebts: [d] }
+    expect(computeDebtPaymentRecord(d, 1000.01, 'EGP', 'EGP', rates, 0, [], bc).ok).toBe(false)
+    expect(computeDebtPaymentRecord(d, 1000, 'EGP', 'EGP', rates, 0, [], bc).ok).toBe(true)
+    const pays: DebtPayment[] = [{ id: 'p', debtId: 'cc', date: '2026-10-20', amountPaid: 1000, createdAt: '' }]
+    expect(computeCreditCardOutstanding(d, ex, pays, rates)).toBe(0)
+  })
+  it('after paying the whole cycle the "regularDue" (cycle charges) does not fall', () => {
+    const ex = [exp('a', '2026-10-05', 1000)]
+    const pays: DebtPayment[] = [{ id: 'p', debtId: 'cc', date: '2026-10-20', amountPaid: 1000, createdAt: '' }]
+    const cycle = getCurrentBillingCycleExpenses(d, ex, rates, new Date(2026, 9, 21))
+    const regularDue = sumExpensesInDebtCurrency(cycle.expenses, 'EGP', rates)
+    const outstanding = computeCreditCardOutstanding(d, ex, pays, rates)
+    console.log('outstanding', outstanding, 'regularDue', regularDue)
+    expect(regularDue).toBe(0)
+  })
+  it('a charge made on the due day belongs to the cycle that ends that day; next day opens a new cycle', () => {
+    const dd = card({ paymentDueDay: 15 })
+    const ex = [exp('a', '2026-10-15', 10), exp('b', '2026-10-16', 20)]
+    const c1 = getCurrentBillingCycleExpenses(dd, ex, rates, new Date(2026, 9, 15))
+    const c2 = getCurrentBillingCycleExpenses(dd, ex, rates, new Date(2026, 9, 16))
+    expect(c1.expenses.map((e) => e.id)).toEqual(['a'])
+    expect(c2.expenses.map((e) => e.id)).toEqual(['b'])
+  })
+  it('a charge timestamped with a time and Z suffix is bucketed by its date part only', () => {
+    const dd = card({ paymentDueDay: 15 })
+    const ex = [exp('a', '2026-10-15T23:30:00.000Z', 10)]
+    const c1 = getCurrentBillingCycleExpenses(dd, ex, rates, new Date(2026, 9, 15))
+    expect(c1.expenses.length).toBe(1)
+  })
+})

@@ -1,4 +1,5 @@
-import { addDays, differenceInCalendarDays, endOfMonth, format, parseISO, startOfDay, startOfMonth } from 'date-fns'
+import { differenceInCalendarDays, endOfMonth, format, isSameDay, parseISO, startOfDay, startOfMonth } from 'date-fns'
+import { addCalendarDays } from '@/lib/time/calendarDays'
 import type { Currency, Expense, Subscription } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
@@ -48,7 +49,7 @@ export const isCharging = (sub: Pick<Subscription, 'status' | 'trialEnd' | 'ends
  * First day a charge can be expected. Cycles that opened before the user added the
  * subscription were never tracked, so nothing about them is "missing".
  */
-function trackedFrom(sub: Pick<Subscription, 'startDate' | 'createdAt'>): Date {
+export function trackedFrom(sub: Pick<Subscription, 'startDate' | 'createdAt'>): Date {
   const start = day(sub.startDate)
   const created = startOfDay(parseISO(sub.createdAt))
   return created > start ? created : start
@@ -145,7 +146,7 @@ export function forecastCharges(
   rates: Record<string, number>
 ): Forecast[] {
   const now = startOfDay(today)
-  const limit = addDays(now, horizonDays)
+  const limit = addCalendarDays(now, horizonDays)
   const out: Forecast[] = []
   for (const sub of subs) {
     if (!isCharging(sub, now)) continue
@@ -153,9 +154,9 @@ export function forecastCharges(
     const amountBase = convertCurrency(amount, sub.currency, baseCurrency, rates)
     const state = cycleState(sub, expenses, now)
     if (state.kind !== 'upcoming') out.push({ sub, due: state.due, amount, amountBase, kind: state.kind })
-    for (const d of scheduledDates(sub, state.kind === 'upcoming' ? state.due : addDays(now, 1), limit)) {
+    for (const d of scheduledDates(sub, state.kind === 'upcoming' ? state.due : addCalendarDays(now, 1), limit)) {
       if (d > now && isCyclePaid(sub, expenses, d)) continue
-      out.push({ sub, due: d, amount, amountBase, kind: d.getTime() === now.getTime() ? 'today' : 'upcoming' })
+      out.push({ sub, due: d, amount, amountBase, kind: isSameDay(d, now) ? 'today' : 'upcoming' })
     }
   }
   return out.sort((a, b) => a.due.getTime() - b.due.getTime())

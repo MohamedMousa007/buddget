@@ -67,24 +67,24 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
               return (
                 <div key={c.id} className={`flex flex-col p-3.5 ${VAULT_CARD}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-[10px] font-bold uppercase leading-tight tracking-[0.05em] text-[var(--color-brand-green)]">
+                    <p className="text-[0.625rem] font-bold uppercase leading-tight tracking-[0.05em] text-[var(--color-brand-green)]">
                       {t.clearedTag(familyTag[c.family])}
                     </p>
                     <Seal size="lg" />
                   </div>
                   <p className="mt-1 truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{c.name}</p>
-                  <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{t.originalLabel}</p>
+                  <p className="mt-2 text-[0.625rem] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{t.originalLabel}</p>
                   <p className="font-mono-numbers text-xl font-bold text-[var(--color-brand-text-primary)]">
                     {fmtWhole(c.original)} <span className="text-sm text-[var(--color-brand-text-muted)]">{c.currency}</span>
                   </p>
                   <div className="mt-3 flex items-center justify-between border-t border-[var(--color-brand-border)] pt-2.5">
-                    <span className="font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">{t.clearedMonth(c.clearedMonth)}</span>
+                    <span className="font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.clearedMonth(c.clearedMonth)}</span>
                     {c.history.length > 0 ? (
                       <Button
                         variant="ghost"
                         size="touch"
                         onClick={() => setSelected(on ? null : c.id)}
-                        className="text-[12px] font-semibold text-[var(--color-brand-green)]"
+                        className="text-[0.75rem] font-semibold text-[var(--color-brand-green)]"
                       >
                         {on ? t.hide : t.historyLabel}
                         {on ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -103,7 +103,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
               <Seal size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{detail.name}</p>
-                <p className="font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">
+                <p className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-muted)]">
                   {t.vaultOriginalLine(fmtWhole(detail.original), detail.currency, detail.clearedMonth)}
                 </p>
               </div>
@@ -115,14 +115,14 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
               <div key={i} className="flex items-center gap-3 border-t border-[var(--color-brand-border)] px-4 py-3">
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--color-brand-green)]" />
                 <span className="font-mono-numbers text-sm text-[var(--color-brand-text-secondary)]">{format(parseISO(h.date), 'MMM d')}</span>
-                <span className="ms-auto font-mono-numbers text-[13px] text-[var(--color-brand-text-muted)]">{h.method ?? '—'}</span>
+                <span className="ms-auto font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-muted)]">{h.method ?? '—'}</span>
                 <span className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">−{fmtWhole(h.amount)}</span>
               </div>
             ))}
           </div>
         ) : null}
 
-        <p className="mt-6 text-center text-[13px] leading-relaxed text-[var(--color-brand-text-muted)]">{t.vaultFooter}</p>
+        <p className="mt-6 text-center text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-muted)]">{t.vaultFooter}</p>
       </div>
     </ModalShell>
   )

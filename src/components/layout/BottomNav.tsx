@@ -92,7 +92,7 @@ export function BottomNav() {
             <div key={item.href} className="flex justify-center">
               <Link href={item.href} aria-current={isActive ? 'page' : undefined} className={cn(TAB, isActive ? TAB_ON : TAB_OFF)}>
                 <item.icon className={cn('size-6', isActive && 'text-[var(--color-brand-primary)]')} strokeWidth={1.75} />
-                <span className="text-[10.5px]">{t.nav[item.label as keyof Dictionary['nav']]}</span>
+                <span className="text-[0.65625rem]">{t.nav[item.label as keyof Dictionary['nav']]}</span>
               </Link>
             </div>
           )

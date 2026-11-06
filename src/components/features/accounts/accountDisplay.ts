@@ -1,4 +1,5 @@
 import type { PaymentMethod } from '@/lib/store/types'
+import { inkFor } from '@/lib/ui/contrast'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 
 /** "CIB" stays "CIB"; "Vodafone Cash" becomes "VC". */
@@ -9,13 +10,9 @@ export function monogram(name: string): string {
   return (letters || '?').slice(0, 2)
 }
 
-/** Text colour that stays readable on a brand fill. */
+/** Text colour that reaches WCAG contrast on a brand fill, in both themes. */
 export function inkOn(hex: string): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
-  if (!m) return 'var(--color-brand-on-primary)'
-  const n = parseInt(m[1], 16)
-  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255
-  return lum > 0.62 ? 'var(--color-brand-text-primary)' : 'white'
+  return inkFor(hex, 'var(--color-brand-on-primary)')
 }
 
 const NETWORKS: Array<[RegExp, string]> = [

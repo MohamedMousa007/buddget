@@ -89,6 +89,7 @@ export interface Dictionary {
   syncFailures: {
     oneDidntSync: string
     manyDidntSync: (count: number) => string
+    setAside: (count: number) => string
     autoRetryNote: string
     expand: string
     collapse: string
@@ -116,6 +117,8 @@ export interface Dictionary {
     /** Pull-to-refresh success message */
     refreshed: string
     cancel: string
+    /** Accessible name for a money amount box that has no visible caption of its own. */
+    amountLabel: string
     delete: string
     edit: string
     back: string
@@ -2031,6 +2034,9 @@ export interface Dictionary {
       smsIncomeBody: (bank: string) => string
       smsConfirmTitle: string
       smsConfirmBody: (amount: string, label: string | null) => string
+      /** A credit from a sender that is not a known bank id: held, never booked from a tap. */
+      smsSenderHeldTitle: (amount: string) => string
+      smsSenderHeldBody: string
       /** Auto-added but the currency was assumed — tap to confirm/correct. */
       smsCurrencyConfirmTitle: (amount: string) => string
       smsCurrencyConfirmBody: (label: string | null) => string
@@ -2727,6 +2733,7 @@ export interface Dictionary {
     matchedTo: (date: string) => string
     arrivedLate: (n: number) => string
     newInstrument: (kind: 'card' | 'account' | 'wallet', last4: string) => string
+    unverifiedSender: (sender: string) => string
   }
 
   smsTracking: {
@@ -3183,6 +3190,7 @@ export interface Dictionary {
     deletePaidExpenseBody: string
     paymentDeleted: string
     incomeDeleted: string
+    undoPocketSpent: string
     markedPaid: string
     paidFailed: string
     currency: string
@@ -3203,6 +3211,10 @@ export interface Dictionary {
     padCardLast4: string
     dismissUpdate: string
     colour: (name: string) => string
+    colourGroup: string
+    otpCode: string
+    otpDigit: (n: number, total: number) => string
+    skipToContent: string
     goToSlide: (n: number) => string
     filters: string
     manage: string

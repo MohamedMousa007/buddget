@@ -68,6 +68,11 @@
   --color-brand-green: var(--color-brand-green);
   --color-brand-green-hover: var(--color-brand-green-hover);
   --color-brand-amber: var(--color-brand-amber);
+  --color-brand-on-red: var(--color-brand-on-red);
+  --color-brand-on-green: var(--color-brand-on-green);
+  --color-brand-on-amber: var(--color-brand-on-amber);
+  --color-brand-ink-light: var(--color-brand-ink-light);
+  --color-brand-ink-dark: var(--color-brand-ink-dark);
   --color-brand-bg: var(--color-brand-bg);
   --color-brand-card: var(--color-brand-card);
   --color-brand-elevated: var(--color-brand-elevated);
@@ -132,6 +137,14 @@
   --color-brand-green: #107E38;              /* positive / income — 5.44:1 white, 4.80:1 soft */
   --color-brand-green-hover: #0D6B2F;
   --color-brand-amber: #93630B;              /* warning / due soon — 5.19:1 on warn-soft */
+  /* Label colour ON the solid semantic fills above (and their hovers). The fills
+     are dark in light mode and light in dark mode, so the label flips with them. */
+  --color-brand-on-red: #FFFFFF;
+  --color-brand-on-green: #FFFFFF;
+  --color-brand-on-amber: #FFFFFF;
+  /* Theme-independent inks for text over a USER-CHOSEN colour (card faces, avatars). */
+  --color-brand-ink-light: #FFFFFF;
+  --color-brand-ink-dark: #04201C;
   --color-brand-gold: #977019;               /* investment — 4.54:1 on white */
   --color-brand-red-soft: #FBE7E7;
   --color-brand-green-soft: #E3F5EA;
@@ -291,6 +304,9 @@
   --color-brand-green: #37C368;              /* 7.80:1 on card */
   --color-brand-green-hover: #4DD47B;
   --color-brand-amber: #EDB24A;              /* 9.42:1 on card */
+  --color-brand-on-red: #04201C;             /* fills are light in dark mode: dark label, 5.5-9.0:1 */
+  --color-brand-on-green: #04201C;
+  --color-brand-on-amber: #04201C;
   --color-brand-gold: #EDC463;               /* 10.79:1 on card */
   --color-brand-red-soft: #3A1B1D;
   --color-brand-green-soft: #123021;

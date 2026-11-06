@@ -12,6 +12,11 @@ export function __resetSafeStorageForTests(): void {
   quotaAnnounced = false
 }
 
+/** True while a write the device refused is only held in memory: what is on disk is older than what the app shows. */
+export function hasUnpersistedWrites(): boolean {
+  return memory.size > 0
+}
+
 function announceQuota() {
   if (quotaAnnounced) return
   quotaAnnounced = true

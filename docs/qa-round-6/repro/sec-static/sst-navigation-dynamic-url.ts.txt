@@ -1,0 +1,10 @@
+function f(u: string) {
+  // ruleid: sst-navigation-dynamic-url
+  window.open(u, '_blank')
+  // ruleid: sst-navigation-dynamic-url
+  window.location.href = u
+  // ok: sst-navigation-dynamic-url
+  window.open('https://buddget.app', '_blank')
+  // ok: sst-navigation-dynamic-url
+  window.location.href = '/login'
+}

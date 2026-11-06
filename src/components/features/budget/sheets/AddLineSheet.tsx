@@ -1,6 +1,8 @@
 'use client'
 
+import { toLatinDigits } from '@/lib/utils/formatters'
 import { useState } from 'react'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -51,6 +53,7 @@ export function AddLineSheet(props: AddLineSheetProps) {
 }
 
 function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) {
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const c = useBudgetSheetsCopy()
   const icons = BLOCK_ICONS[block]
   const meta = BLOCK_META[block]
@@ -111,7 +114,7 @@ function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) 
 
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">{c.add.amount}</span>
-        <AmountField value={amount} onChange={setAmount} label={c.add.amount} />
+        <AmountField value={amount} onChange={setAmount} decimalsFor={baseCurrency} label={c.add.amount} />
       </div>
 
       {block === 'bills' ? (
@@ -121,7 +124,7 @@ function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) 
             size="brand"
             inputMode="numeric"
             value={dueDay}
-            onChange={(e) => setDueDay(e.target.value.replace(/\D/g, '').slice(0, 2))}
+            onChange={(e) => setDueDay(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 2))}
             placeholder="1-31"
           />
         </label>
@@ -129,7 +132,7 @@ function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) 
 
       {block === 'bills' || block === 'everyday' ? (
         <div className="flex min-h-[52px] items-center gap-3">
-          <span className="flex-1 text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.add.essential}</span>
+          <span className="flex-1 text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{c.add.essential}</span>
           <Switch size="touch" checked={essential} onCheckedChange={setEssential} aria-label={c.add.essential} />
         </div>
       ) : null}

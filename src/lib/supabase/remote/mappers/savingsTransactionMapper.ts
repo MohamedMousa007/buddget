@@ -43,6 +43,6 @@ export function savingsTransactionFromRow(row: SavingsTransactionRow): SavingsTr
     occurredAt: row.occurred_at ?? undefined,
     paymentMethodId: row.payment_method_id ?? undefined,
     createdAt: row.created_at ?? undefined,
-    updatedAt: row.updated_at ?? undefined,
+    updatedAt: row.edited_at,
   }
 }

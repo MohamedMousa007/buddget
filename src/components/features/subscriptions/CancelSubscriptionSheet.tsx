@@ -70,7 +70,7 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
             {sub.name}
             {sub.planName ? ` · ${sub.planName}` : ''}
           </div>
-          <div className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
+          <div className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
             {formatFixed2(chargeAmount(sub))} {currencyLabel(sub.currency, locale)} {cycleWord(sub.billingCycle, ui)}
           </div>
         </div>
@@ -89,14 +89,14 @@ export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | nu
               href={hint.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-11 items-center text-[13px] font-semibold text-[var(--color-brand-primary-ink)]"
+              className="flex min-h-11 items-center text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)]"
             >
               {ui.cancel.open(hint.text)}
             </a>
           ) : null}
         </div>
       ) : null}
-      <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{ui.cancel.effect}</p>
+      <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{ui.cancel.effect}</p>
     </SheetFrame>
   )
 }

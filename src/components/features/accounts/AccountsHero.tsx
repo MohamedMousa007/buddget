@@ -43,14 +43,14 @@ export function AccountsHero({ model, currency, netWorth, creditOwed, hidden, on
       numbers={
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
-            {model.approx ? <span className={`shrink-0 text-[15px] ${BAND_FG2}`}>≈</span> : null}
+            {model.approx ? <span className={`shrink-0 text-[0.9375rem] ${BAND_FG2}`}>≈</span> : null}
             <span className={`shrink-0 font-mono-numbers font-semibold leading-none tracking-[-0.03em] ${hidden ? 'text-[32px]' : fitBigNumber(big.int + big.dec)}`}>
               {hidden ? MASK : <>{big.int}<span className="opacity-45">{big.dec}</span></>}
             </span>
-            <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{currency}</span>
+            <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{currency}</span>
           </p>
-          <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${BAND_FG2}`}>
-            <b className="block font-mono-numbers text-[15px] text-[var(--flow-band-fg)]">{fmt(netWorth)}</b>
+          <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
+            <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{fmt(netWorth)}</b>
             {t.netWorth}
           </p>
         </>

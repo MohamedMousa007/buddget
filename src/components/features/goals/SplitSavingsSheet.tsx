@@ -37,7 +37,7 @@ function Row({
           <GripVertical />
         </IconButton>
         <span
-          className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] font-mono-numbers text-[11px] font-bold text-[var(--color-brand-on-primary)]"
+          className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-primary)] font-mono-numbers text-[0.6875rem] font-bold text-[var(--color-brand-on-primary)]"
           aria-label={t.priority(index + 1)}
         >
           {index + 1}
@@ -142,7 +142,7 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
       <p className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.total(total)}</p>
       <div className="flex items-start gap-2.5 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3.5">
         <BuddgyIcon size={24} />
-        <p className="text-[13px] leading-[1.45] text-[var(--color-brand-text-primary)]">{total > 100 ? t.noteOver : t.noteFit}</p>
+        <p className="text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-primary)]">{total > 100 ? t.noteOver : t.noteFit}</p>
       </div>
     </SheetFrame>
   )

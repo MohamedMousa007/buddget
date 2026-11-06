@@ -6,6 +6,8 @@ import { ShoppingCart, CreditCard, Gem, TrendingUp, ArrowRight, Coins, Bitcoin, 
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Card } from '@/components/ui/card'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
+import { overpaysDebt } from '@/lib/debts/overpaysDebt'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { newClientId, useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useDebtTabData } from '@/hooks/useDebtTabData'
 import { useAssetPrices } from '@/hooks/useAssetPrices'
@@ -75,6 +77,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const { lookup } = useAssetPrices()
   const debtData = useDebtTabData()
+  const submitOnce = useSubmitOnce(open)
 
   const [amount, setAmount] = useState('')
   const [fromId, setFromId] = useState<string | null>(defaultAccountId ?? pockets[0]?.account.id ?? null)
@@ -137,36 +140,36 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
     return out
   }, [holdings, lookup])
 
-  const submit = () => {
-    if (!from || amountNum <= 0) return
+  // True once the money moved; false when a check refused it, so the guard can re-arm.
+  const commit = (from: PocketVM): boolean => {
     const txId = newClientId()
     if (moveOn) {
-      if (!moveToId) return
-      if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined)) return showToast(t.moveFailed)
+      if (!moveToId) return false
+      if (!transfer(from.account.id, moveToId, amountInPocket, note.trim() || undefined)) { showToast(t.moveFailed); return false }
     } else if (reason === 'debt') {
       const debt = debts.find((d) => d.id === debtId)
-      if (!debt) return
+      if (!debt) return false
       const noteTrim = note.trim() || undefined
       const { amountPaid, amountInBase, exceeds } = debtPaymentForWithdrawal({ debt, amount: amountNum, currency, base: baseCurrency, rates: exchangeRates, goldPricePerGram, goldAvailable: goldPriceAvailable !== false, left: debtChips.find((d) => d.id === debt.id)?.left })
-      if (!(amountPaid > 0) || exceeds) return showToast(t.moveFailed)
-      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt', { txId })) return showToast(t.moveFailed)
+      if (!(amountPaid > 0) || exceeds || overpaysDebt(useFinanceStore.getState(), { debtId: debt.id, amountPaid })) { showToast(t.moveFailed); return false }
+      if (!withdraw(from.account.id, amountNum, currency, noteTrim, 'debt', { txId })) { showToast(t.moveFailed); return false }
       addDebtPayment({ debtId: debt.id, date: localTodayISO(), amountPaid, paymentCurrency: debt.currency, amountInPrimary: amountInBase, notes: noteTrim, fundedFromSavings: true, fundedFromSavingsTxId: txId })
       reconcileDebtSchedule(debt.id, { amount: amountPaid, currency: debt.currency })
     } else if (reason === 'transfer') {
-      if (!assetClass) return
+      if (!assetClass) return false
       const target = topupByClass.get(assetClass)
-      if (!target) return
+      if (!target) return false
       // Holdings are EGP-denominated regardless of base currency — pivot on EGP.
       const amountEgp = convertCurrency(amountNum, currency, 'EGP', exchangeRates)
       const qtyAdd = amountEgp / target.unitEgp
       const existing = useFinanceStore.getState().investmentHoldings.find((h) => h.id === target.id)
-      if (!existing || qtyAdd <= 0) return
-      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')) return showToast(t.moveFailed)
+      if (!existing || qtyAdd <= 0) return false
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, 'transfer')) { showToast(t.moveFailed); return false }
       updateHolding(target.id, investTopUpPatch(existing, qtyAdd, amountEgp, 'EGP', exchangeRates))
     } else if (reason) {
       const spendAndLog = reason === 'spend' && logExpense
       const opts = reason === 'income' ? { toAccountId: leg.accountId } : spendAndLog ? { txId } : undefined
-      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, opts)) return showToast(t.moveFailed)
+      if (!withdraw(from.account.id, amountNum, currency, note.trim() || undefined, reason, opts)) { showToast(t.moveFailed); return false }
       if (spendAndLog) {
         addExpense({
           date: localTodayISO(), description: note.trim() || pocketDisplayName(from.account, sf.systemNames), category: expenseCategory,
@@ -175,6 +178,12 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
       }
     }
     onClose()
+    return true
+  }
+
+  const submit = () => {
+    if (!from || amountNum <= 0 || !submitOnce.claim()) return
+    if (!commit(from)) submitOnce.release()
   }
 
   const ctaLabel = (() => {
@@ -266,7 +275,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           {/* Which asset? (screen 08) */}
           {!moveOn && reason === 'transfer' && (
             <Card padding="sm">
-              <p className="mb-2 text-[13px] font-bold text-[var(--color-brand-text-primary)]">{t.whichAsset}</p>
+              <p className="mb-2 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{t.whichAsset}</p>
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {INVEST_CLASSES.map((c) => {
                   const target = topupByClass.get(c.type)
@@ -277,8 +286,8 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                       className="w-auto shrink-0 gap-2 px-3 py-2">
                       <span className="text-[var(--color-brand-gold)]">{c.icon}</span>
                       <span>
-                        <span className="block text-[12.5px] font-semibold text-[var(--color-brand-text-primary)]">{t[c.label]}</span>
-                        <span className="block text-[10px] text-[var(--color-brand-text-muted)]">{target ? t.addToAsset(target.name) : t.addOneFirst}</span>
+                        <span className="block text-[0.78125rem] font-semibold text-[var(--color-brand-text-primary)]">{t[c.label]}</span>
+                        <span className="block text-[0.625rem] text-[var(--color-brand-text-muted)]">{target ? t.addToAsset(target.name) : t.addOneFirst}</span>
                       </span>
                     </SelectableCard>
                   )

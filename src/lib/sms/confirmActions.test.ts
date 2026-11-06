@@ -8,19 +8,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   apiFetchAuth: vi.fn(),
-  update: vi.fn(),
 }))
 
 vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: mocks.apiFetchAuth }))
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    from: () => ({
-      update: (values: unknown) => ({
-        eq: (col: string, val: string) => mocks.update(values, col, val),
-      }),
-    }),
-  }),
-}))
 
 import { confirmSmsLog, dismissSmsLog } from '@/lib/sms/confirmActions'
 
@@ -55,20 +45,22 @@ describe('confirmSmsLog', () => {
   })
 })
 
-describe('dismissSmsLog', () => {
-  it('resolves true when the update succeeds', async () => {
-    mocks.update.mockResolvedValueOnce({ error: null })
+describe('dismissSmsLog (REG-3: clients cannot write sms_parse_log after 0231, so it goes through the server)', () => {
+  it('posts the logId to /api/sms/dismiss and resolves true on 200', async () => {
+    mocks.apiFetchAuth.mockResolvedValueOnce({ ok: true })
     await expect(dismissSmsLog('log-2')).resolves.toBe(true)
-    expect(mocks.update).toHaveBeenCalledWith({ awaiting_confirmation: false }, 'id', 'log-2')
+    const [url, init] = mocks.apiFetchAuth.mock.calls[0]
+    expect(url).toBe('/api/sms/dismiss')
+    expect(JSON.parse(init.body)).toEqual({ logId: 'log-2' })
   })
 
-  it('resolves false when supabase returns an error (never throws)', async () => {
-    mocks.update.mockResolvedValueOnce({ error: { message: 'RLS denied' } })
+  it('resolves false on a non-ok response (never throws)', async () => {
+    mocks.apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 404 })
     await expect(dismissSmsLog('log-2')).resolves.toBe(false)
   })
 
-  it('resolves false when the client throws', async () => {
-    mocks.update.mockRejectedValueOnce(new Error('network'))
+  it('resolves false when the request throws', async () => {
+    mocks.apiFetchAuth.mockRejectedValueOnce(new Error('network'))
     await expect(dismissSmsLog('log-2')).resolves.toBe(false)
   })
 })

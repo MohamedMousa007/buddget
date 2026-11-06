@@ -37,8 +37,8 @@ vi.mock('@capacitor/core', () => ({
 }))
 
 vi.mock('@/lib/apiBase', () => ({
-  apiUrl: (path: string) => `https://app.test${path}`,
-  apiFetchAuth: (path: string, init?: RequestInit) => globalThis.fetch(`https://app.test${path}`, init),
+  apiUrl: (path: string) => `https://buddget.app${path}`,
+  apiFetchAuth: (path: string, init?: RequestInit) => globalThis.fetch(`https://buddget.app${path}`, init),
 }))
 
 type SmsTrackerModule = typeof import('@/lib/native/smsTracker')
@@ -282,6 +282,18 @@ describe('token-write surface', () => {
     expect('startSMSTracking' in sms).toBe(false)
     expect('resumeSmsTrackingIfEnabled' in sms).toBe(false)
     expect('refreshSmsToken' in sms).toBe(false)
+  })
+})
+
+describe('SST-2 saveSmsToken base URL', () => {
+  it('does not hand the token to the plugin when the API base is outside the allow-list', async () => {
+    vi.doMock('@/lib/apiBase', () => ({ apiUrl: (path: string) => `https://evil.example${path}` }))
+    vi.resetModules()
+    const fresh = await import('@/lib/native/smsTracker')
+    await fresh.saveSmsToken('ingest-xyz', 'user-1')
+    expect(mocks.saveToken).not.toHaveBeenCalled()
+    expect(fresh.getSmsNativeError()).toMatch(/not allowed/)
+    vi.doUnmock('@/lib/apiBase')
   })
 })
 

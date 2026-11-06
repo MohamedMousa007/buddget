@@ -1,0 +1,140 @@
+import { describe, it, expect } from 'vitest'
+import { formatCurrency, formatMoneyHero, formatWhole, formatQuantity, formatFixed2, formatFlex, formatSigned, formatCompact, formatPercent } from '@/lib/utils/formatters'
+import { fmtCompact } from '@/lib/utils/currency'
+import { parseLocalizedAmount, canonicalAmount, currencyDecimals } from '@/lib/ui/amountParse'
+import { sanitizeAmount } from '@/lib/ui/amountSanitize'
+import { rng } from './prng'
+
+const EXTREMES = [0, -0, 0.005, -0.005, 0.0049999999, 0.004, 1e-7, -1e-7, 1e-10, 0.5, -0.5, 0.49999, 1e6, 1e12, 1e15, 1e21, 1e22, -1e21, Number.MAX_SAFE_INTEGER, Number.MIN_VALUE, 123456789.987654321, 0.1 + 0.2, 1.005, 2.675, 8.345, 0.0005, -0.0005, 0.00049, 1.0005]
+const NONFINITE = [NaN, Infinity, -Infinity]
+const CURRENCIES = ['EGP', 'USD', 'EUR', 'AED', 'SAR', 'JPY', 'KWD', 'BHD', 'OMR', 'JOD', 'TND', 'XAU', 'BTC', 'ETH', 'USDT', 'XXX']
+const JUNK = /NaN|Infinity|∞|-0(?![.,\d]*[1-9])|[0-9]e[+-]?\d|e\+|undefined|null/
+
+type Fn = [string, (n: number, c: string) => string]
+const FNS: Fn[] = [
+  ['formatCurrency', (n, c) => formatCurrency(n, c)],
+  ['formatCurrency(noCents)', (n, c) => formatCurrency(n, c, false)],
+  ['formatMoneyHero', (n, c) => formatMoneyHero(n, c)],
+  ['formatMoneyHero(on)', (n, c) => formatMoneyHero(n, c, { compact: 'on' })],
+  ['formatMoneyHero(ar)', (n, c) => formatMoneyHero(n, c, { compact: 'on', locale: 'ar' })],
+  ['formatWhole', (n) => formatWhole(n)],
+  ['formatQuantity', (n) => formatQuantity(n)],
+  ['formatQuantity(crypto)', (n) => formatQuantity(n, 'crypto')],
+  ['formatQuantity(gold)', (n) => formatQuantity(n, 'gold')],
+  ['formatFixed2', (n) => formatFixed2(n)],
+  ['formatFlex', (n) => formatFlex(n)],
+  ['formatSigned0', (n) => formatSigned(n, 0)],
+  ['formatSigned2', (n) => formatSigned(n, 2)],
+  ['formatCompact', (n) => formatCompact(n)],
+  ['fmtCompact', (n) => fmtCompact(n)],
+  ['formatPercent', (n) => formatPercent(n)],
+]
+
+describe('formatters: numeric extremes', () => {
+  it('finite extremes never render NaN/Infinity/-0/scientific', () => {
+    const bad = new Map<string, string[]>()
+    let cases = 0
+    for (const [name, f] of FNS) for (const c of CURRENCIES) for (const n of EXTREMES) {
+      cases++
+      const s = f(n, c)
+      if (JUNK.test(s) || /^-?[^\d]*0(\.0+)?$/.test(s) && s.includes('-')) {
+        const k = name
+        bad.set(k, [...(bad.get(k) ?? []), `${c} ${Object.is(n, -0) ? '-0' : n} -> ${s}`])
+      }
+    }
+    console.log('format finite cases', cases)
+    for (const [k, v] of bad) console.log('BAD', k, v.length, v.slice(0, 5).join(' | '))
+    expect([...bad.keys()]).toEqual([])
+  })
+  it('non-finite inputs: which formatters leak NaN/Infinity', () => {
+    const leaks = new Map<string, string[]>()
+    let cases = 0
+    for (const [name, f] of FNS) for (const c of ['EGP', 'XAU', 'BTC']) for (const n of NONFINITE) {
+      cases++
+      const s = f(n, c)
+      if (/NaN|Infinity|∞/.test(s)) leaks.set(name, [...(leaks.get(name) ?? []), `${c} ${n} -> ${s}`])
+    }
+    console.log('format nonfinite cases', cases)
+    for (const [k, v] of leaks) console.log('LEAK', k, v.length, v.slice(0, 3).join(' | '))
+  })
+  it('random magnitudes x decimals: formatCurrency parses back to the rounded value (round trip)', () => {
+    const r = rng(777)
+    const bad: string[] = []
+    for (let i = 0; i < 20000; i++) {
+      const c = r.pick(CURRENCIES.filter((x) => !['XAU', 'XXX', 'BTC', 'ETH'].includes(x)))
+      const dec = currencyDecimals(c)
+      const mag = 10 ** r.int(-3, 11)
+      const n = (r.next() - 0.5) * mag * (r.chance(0.5) ? 1 : 10)
+      const s = formatCurrency(n, c)
+      const digits = s.replace(/[^\d.\-,]/g, '').replace(/,/g, '')
+      const back = Number(digits.replace(/^-/, ''))
+      const f = 10 ** dec
+      const expect = Math.abs(Math.round(Number((Math.abs(n) * f).toPrecision(15)))) / f
+      // toLocaleString rounding is half-expand on the decimal repr of the double; compare within 1 ulp-of-unit
+      if (Math.abs(n) < 1e9 && Math.abs(back - expect) > 1 / f + 1e-9) bad.push(`${c} ${n} -> ${s} back=${back} exp=${expect}`)
+    }
+    console.log("format roundtrip bad", bad.length, JSON.stringify(bad.slice(0, 13)))
+    expect(bad).toEqual([])
+  })
+})
+
+describe('parseLocalizedAmount fuzz', () => {
+  const AR = '٠١٢٣٤٥٦٧٨٩', FA = '۰۱۲۳۴۵۶۷۸۹'
+  const toAr = (s: string) => s.replace(/\d/g, (d) => AR[+d]).replace(/\./g, '٫').replace(/,/g, '٬')
+  const toFa = (s: string) => s.replace(/\d/g, (d) => FA[+d])
+  it('result is NaN or a finite non-negative, non -0 number rounded to currency decimals; Arabic digit twin parses identically', () => {
+    const r = rng(4242)
+    const bad: string[] = []
+    const alphabet = ['0', '1', '2', '5', '9', '.', ',', ' ', '٫', '٬', '٣', '-', '+', 'e', 'E', '$', 'ج', ' ', "'", '۷']
+    let cases = 0
+    for (let i = 0; i < 60000; i++) {
+      const len = r.int(0, 14)
+      let s = ''
+      for (let k = 0; k < len; k++) s += r.pick(alphabet)
+      const c = r.pick([undefined, 'EGP', 'KWD', 'BHD', 'OMR', 'JPY', 'BTC', 'XAU', 'USD'])
+      cases++
+      let n: number
+      try { n = parseLocalizedAmount(s, c) } catch (e) { bad.push(`THROW ${JSON.stringify(s)} ${c} ${e}`); continue }
+      if (Number.isNaN(n)) continue
+      if (!Number.isFinite(n) || n < 0 || Object.is(n, -0)) bad.push(`BAD value ${JSON.stringify(s)} ${c} -> ${n}`)
+      const dec = currencyDecimals(c)
+      if (Math.abs(n * 10 ** dec - Math.round(n * 10 ** dec)) > 1e-9 * Math.max(1, n * 10 ** dec)) bad.push(`UNROUNDED ${JSON.stringify(s)} ${c} -> ${n}`)
+      if (n > 1e13) bad.push(`HUGE ${JSON.stringify(s)} -> ${n}`)
+      // canonical text must be re-parseable and idempotent
+      const can = canonicalAmount(s, dec)
+      if (canonicalAmount(can, dec) !== can) bad.push(`NONIDEMPOTENT ${JSON.stringify(s)} -> ${can} -> ${canonicalAmount(can, dec)}`)
+      if (/e/i.test(can)) bad.push(`EXP canonical ${JSON.stringify(s)} -> ${can}`)
+    }
+    console.log('parse random cases', cases, 'bad', bad.length, bad.slice(0, 8))
+    expect(bad).toEqual([])
+  })
+  it('well-formed amounts: parse(format(x)) === rounded x, and Arabic-Indic/Persian rendering parses identically (all currencies)', () => {
+    const r = rng(99)
+    const bad: string[] = []
+    let cases = 0
+    for (let i = 0; i < 30000; i++) {
+      const c = r.pick(['EGP', 'USD', 'KWD', 'BHD', 'OMR', 'JPY', 'AED'])
+      const dec = currencyDecimals(c)
+      const intPart = String(r.int(0, 10 ** r.int(0, 11)))
+      const frac = r.chance(0.6) ? String(r.int(0, 10 ** dec - 1)).padStart(dec, '0') : ''
+      const grouped = r.chance(0.5) ? intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : intPart
+      const s = frac ? `${grouped}.${frac}` : grouped
+      const exp = Number(frac ? `${intPart}.${frac}` : intPart)
+      cases++
+      const got = parseLocalizedAmount(s, c)
+      // The documented 3-decimal rule: a lone ',' + 3 digits is a DECIMAL for KWD
+      const ambiguous = dec === 3 && !frac && grouped.includes(',') && grouped.split(',').length === 2 // lone ',' + 3 digits: decimal for 3-dp currencies (documented); U+066C is always thousands
+      if (!ambiguous && Math.abs(got - exp) > 1e-9) bad.push(`ASCII ${s} ${c} -> ${got} exp ${exp}`)
+      const ar = ambiguous ? got : parseLocalizedAmount(toAr(s), c), fa = parseLocalizedAmount(toFa(s), c)
+      if (!(Object.is(ar, got) || (Number.isNaN(ar) && Number.isNaN(got)))) bad.push(`AR ${toAr(s)} ${c} -> ${ar} vs ${got}`)
+      if (!(Object.is(fa, got) || (Number.isNaN(fa) && Number.isNaN(got)))) bad.push(`FA ${toFa(s)} ${c} -> ${fa} vs ${got}`)
+    }
+    console.log('parse wellformed cases', cases, 'bad', bad.length, bad.slice(0, 8))
+    expect(bad).toEqual([])
+  })
+  it('specific hostile inputs', () => {
+    const cases: [string, string | undefined][] = [['1e21', 'EGP'], ['Infinity', 'EGP'], ['NaN', 'EGP'], ['-0', 'EGP'], ['0.005', 'EGP'], ['0.0049', 'EGP'], ['1e-7', 'EGP'], ['٠٫٠٠٥', 'EGP'], ['999999999999.999', 'EGP'], ['9999999999999999999', 'EGP'], ['0.0005', 'KWD'], ['1,000', 'KWD'], ['0.00000001', 'BTC'], ['٫٥', 'EGP'], ['.5', 'EGP'], ['5.', 'EGP'], ['', 'EGP'], ['   ', 'EGP']]
+    const out = cases.map(([s, c]) => `${JSON.stringify(s)} ${c} -> ${Object.is(parseLocalizedAmount(s, c), -0) ? '-0' : parseLocalizedAmount(s, c)} | sanitize=${JSON.stringify(sanitizeAmount(s, 'decimal', c))}`)
+    console.log('HOSTILE\n' + out.join('\n'))
+  })
+})

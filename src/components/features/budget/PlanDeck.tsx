@@ -157,7 +157,7 @@ export function PlanDeck(p: PlanDeckProps) {
                 <IconButton variant={it.destructive ? 'danger' : 'outlined'} size="lg" aria-label={it.label} onClick={it.onSelect}>
                   {it.icon}
                 </IconButton>
-                <span className="text-[11.5px] font-medium text-[var(--color-brand-text-secondary)]">{it.label}</span>
+                <span className="text-[0.71875rem] font-medium text-[var(--color-brand-text-secondary)]">{it.label}</span>
               </div>
             ))}
           </div>

@@ -46,7 +46,7 @@ function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count
   return (
     <div className="mb-2 flex items-center gap-2 px-1">
       <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
-      <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[11px] font-semibold">{count}</Badge>
+      <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[0.6875rem] font-semibold">{count}</Badge>
       {onAdd ? <Button variant="secondary" size="touch" className="ms-auto" onClick={onAdd}><Plus aria-hidden />{addLabel}</Button> : null}
     </div>
   )
@@ -107,8 +107,8 @@ export default function AccountsPage() {
         {unplaced.length > 0 ? (
           <Card className="flex items-center gap-3 rounded-2xl">
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.unplacedTitle(unplaced.length)}</span>
-              <span className="block text-[13px] text-[var(--color-brand-text-muted)]">{t.unplacedSub}</span>
+              <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.unplacedTitle(unplaced.length)}</span>
+              <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.unplacedSub}</span>
             </span>
             <Button variant="secondary" size="touch" onClick={() => setSheet({ kind: 'unplaced' })}>{t.unplacedReview}</Button>
           </Card>
@@ -129,7 +129,7 @@ export default function AccountsPage() {
             <BrandMark name="Cash" color="var(--color-brand-sunken)" icon={createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true })} />
             <span className="min-w-0 flex-1">
               <span className="block text-base font-semibold text-[var(--color-brand-text-primary)]">{t.typeCash}</span>
-              <span className="block text-[13px] text-[var(--color-brand-text-muted)]">{t.addBalanceToInclude}</span>
+              <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.addBalanceToInclude}</span>
             </span>
             <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
           </button>

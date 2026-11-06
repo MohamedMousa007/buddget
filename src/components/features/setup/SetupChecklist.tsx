@@ -37,7 +37,7 @@ export function SetupChecklist({ onNavigate, className }: { onNavigate?: () => v
     <Card className={cn('flex flex-col gap-3', className)}>
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-[var(--color-brand-text-primary)]">{t.setup.title}</h2>
-        <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
+        <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
           {t.setup.progress(doneCount, steps.length)}
         </span>
       </div>

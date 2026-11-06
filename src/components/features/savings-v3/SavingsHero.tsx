@@ -57,15 +57,15 @@ export function SavingsHero({
       numbers={
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
-            {totalPrefix ? <span className={`shrink-0 text-[15px] ${BAND_FG2}`} title={totalPrefix === 'At least' ? t.atLeast : undefined}>{prefix(totalPrefix).trim()}</span> : null}
+            {totalPrefix ? <span className={`shrink-0 text-[0.9375rem] ${BAND_FG2}`} title={totalPrefix === 'At least' ? t.atLeast : undefined}>{prefix(totalPrefix).trim()}</span> : null}
             <span className={`shrink-0 font-mono-numbers font-semibold leading-none tracking-[-0.03em] ${hidden ? 'text-[32px]' : fitBigNumber(total)}`}>{hidden ? MASK : total}</span>
-            <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{currency}</span>
+            <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{currency}</span>
           </p>
-          <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${BAND_FG2}`}>
-            <b className="block font-mono-numbers text-[15px] text-[var(--flow-band-fg)]">{hidden ? MASK : `${prefix(netWorthPrefix)}${netWorth}`}</b>
+          <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
+            <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{hidden ? MASK : `${prefix(netWorthPrefix)}${netWorth}`}</b>
             {t.netWorth}
             {netWorthTrend ? (
-              <span className={`ms-1.5 inline-flex h-[15px] items-center gap-0.5 rounded-full bg-[var(--flow-band-fg)] px-1.5 align-top font-mono-numbers text-[10.5px] font-bold leading-none ${netWorthTrend.dir === 'up' ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}`}>
+              <span className={`ms-1.5 inline-flex h-[15px] items-center gap-0.5 rounded-full bg-[var(--flow-band-fg)] px-1.5 align-top font-mono-numbers text-[0.65625rem] font-bold leading-none ${netWorthTrend.dir === 'up' ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-red)]'}`}>
                 {netWorthTrend.dir === 'up' ? <ArrowUp className="size-2.5" strokeWidth={3} aria-hidden /> : <ArrowDown className="size-2.5" strokeWidth={3} aria-hidden />}
                 {netWorthTrend.pct}
               </span>

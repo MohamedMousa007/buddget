@@ -1,0 +1,161 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+import { createElement as h } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { readFileSync } from 'node:fs'
+import { DOMParser } from '@xmldom/xmldom'
+import { IconButton } from '@/components/ui/IconButton'
+import { Button } from '@/components/ui/button'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { SelectableCard } from '@/components/ui/SelectableCard'
+import { Switch } from '@/components/ui/switch'
+import { Scrim } from '@/components/ui/Scrim'
+import { FieldButton } from '@/components/ui/FieldButton'
+import { AmountField } from '@/components/ui/AmountField'
+import { TransactionRow } from '@/components/transactions/TransactionRow'
+import { HeroBand } from '@/components/features/hero/HeroBand'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { StatTile } from '@/components/ui/StatTile'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { Badge } from '@/components/ui/badge'
+import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
+import { AuthOtpRow } from '@/components/features/auth-modal/AuthOtpRow'
+
+const parse = (html: string) => new DOMParser({ onError: () => {} }).parseFromString(`<root>${html}</root>`, 'text/html').documentElement
+const all = (el: Element, tag: string) => Array.from(el.getElementsByTagName(tag)) as Element[]
+const text = (el: Element): string => (el.textContent ?? '').replace(/\s+/g, ' ').trim()
+/** Simplified accessible-name computation: aria-label, aria-labelledby, text content, alt, title, then placeholder (axe's last resort). */
+function name(root: Element, el: Element): string {
+  const al = el.getAttribute('aria-label')
+  if (al) return al
+  const lb = el.getAttribute('aria-labelledby')
+  if (lb) {
+    const t = lb.split(/\s+/).map((id) => all(root, '*').find((n) => n.getAttribute('id') === id)).filter(Boolean).map((n) => text(n!)).join(' ')
+    if (t) return t
+  }
+  const tag = el.tagName.toLowerCase()
+  if (tag === 'input' || tag === 'select' || tag === 'textarea') return el.getAttribute('title') ?? el.getAttribute('placeholder') ?? ''
+  return text(el) || el.getAttribute('title') || ''
+}
+const render = (el: React.ReactElement) => parse(renderToStaticMarkup(el))
+
+describe('primitives: accessible name, role, native keyboard activation', () => {
+  it('IconButton: native <button type=button> with its aria-label', () => {
+    const r = render(h(IconButton, { 'aria-label': 'Close' }, h('i')))
+    const b = all(r, 'button')[0]
+    expect(b.getAttribute('type')).toBe('button')
+    expect(name(r, b)).toBe('Close')
+  })
+  it('Button: native button, name from text', () => {
+    const r = render(h(Button, null, 'Save'))
+    expect(name(r, all(r, 'button')[0])).toBe('Save')
+  })
+  it('OptionChip toggle exposes aria-pressed both ways', () => {
+    const r = render(h('div', null, h(OptionChip, { selected: true }, 'A'), h(OptionChip, { selected: false }, 'B')))
+    const [a, b] = all(r, 'button')
+    expect(a.getAttribute('aria-pressed')).toBe('true')
+    expect(b.getAttribute('aria-pressed')).toBe('false')
+  })
+  it('SegmentedControl: labelled radiogroup, aria-checked, roving tabindex', () => {
+    const r = render(h(SegmentedControl, { ariaLabel: 'Period', value: 'a', onChange: () => {}, options: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }] } as never))
+    expect(all(r, 'div')[0].getAttribute('role')).toBe('radiogroup')
+    expect(all(r, 'div')[0].getAttribute('aria-label')).toBe('Period')
+    const radios = all(r, 'button')
+    expect(radios.map((x) => x.getAttribute('aria-checked'))).toEqual(['true', 'false'])
+    expect(radios.map((x) => x.getAttribute('tabindex'))).toEqual(['0', '-1'])
+  })
+  it('SegmentedControl: arrow keys must move focus with the selection (APG radio group)', () => {
+    const src = readFileSync('src/components/ui/SegmentedControl.tsx', 'utf8')
+    expect(src).toMatch(/\.focus\(/)
+  })
+  it('SelectableCard radio / checkbox roles carry aria-checked', () => {
+    const r = render(h('div', null, h(SelectableCard, { as: 'radio', selected: true }, 'x'), h(SelectableCard, { as: 'checkbox', selected: false }, 'y')))
+    const [a, b] = all(r, 'button')
+    expect([a.getAttribute('role'), a.getAttribute('aria-checked')]).toEqual(['radio', 'true'])
+    expect([b.getAttribute('role'), b.getAttribute('aria-checked')]).toEqual(['checkbox', 'false'])
+  })
+  it('Switch: role=switch with aria-checked and a name when aria-label is given', () => {
+    const r = render(h(Switch, { checked: true, 'aria-label': 'Notifications' } as never))
+    const s = all(r, '*').find((n) => n.getAttribute('role') === 'switch')!
+    expect(s).toBeTruthy()
+    expect(s.getAttribute('aria-checked')).toBe('true')
+    expect(name(r, s)).toBe('Notifications')
+  })
+  it('Scrim: a real, named button (keyboard reachable)', () => {
+    const r = render(h(Scrim, { label: 'Close', onClick: () => {} }))
+    const b = all(r, 'button')[0]
+    expect(name(r, b)).toBe('Close')
+  })
+  it('FieldButton renders a native button with its visible value as name', () => {
+    const r = render(h(FieldButton as never, { value: 'EGP', placeholder: 'Currency' }))
+    expect(all(r, 'button').length).toBe(1)
+  })
+  it('AmountField: named only when label/aria-label is passed (FRM-7 control)', () => {
+    const bare = render(h(AmountField, { value: '', onChange: () => {}, currency: 'EGP', placeholder: '0' }))
+    const el = all(bare, 'input')[0] ?? all(bare, 'button')[0]
+    expect(name(bare, el), 'bare AmountField name is the placeholder "0"').toMatch(/[A-Za-z؀-ۿ]/)
+    const labelled = render(h(AmountField, { value: '', onChange: () => {}, currency: 'EGP', placeholder: '0', label: 'Amount' }))
+    expect(name(labelled, all(labelled, 'input')[0] ?? all(labelled, 'button')[0])).toBe('Amount')
+  })
+  it('TransactionRow: clickable -> native button; static -> plain div', () => {
+    const c = render(h(TransactionRow, { icon: null, title: 'Cafe', amount: '-10', onClick: () => {} }))
+    expect(all(c, 'button').length).toBe(1)
+    expect(name(c, all(c, 'button')[0])).toContain('Cafe')
+    const s = render(h(TransactionRow, { icon: null, title: 'Cafe', amount: '-10' }))
+    expect(all(s, 'button').length).toBe(0)
+  })
+  it('HeroBand renders a labelled band', () => {
+    const r = render(h(HeroBand, { label: 'Spent', numbers: h('span', null, '100') } as never))
+    expect(text(r)).toContain('Spent')
+  })
+  it('EmptyState: status role when no actions, title present', () => {
+    const r = render(h(EmptyState, { title: 'Nothing here', description: 'x' } as never))
+    expect(text(r)).toContain('Nothing here')
+  })
+  it('StatTile: clickable tile is a button whose name carries label and value', () => {
+    const r = render(h(StatTile, { label: 'Income', value: '1,000', onClick: () => {} } as never))
+    const b = all(r, 'button')[0]
+    expect(b).toBeTruthy()
+    expect(name(r, b)).toContain('Income')
+    expect(name(r, b)).toContain('1,000')
+  })
+  it('StatusPill: status role with aria-label', () => {
+    const r = render(h(StatusPill, { icon: h('i'), label: 'Offline', visible: true } as never))
+    const s = all(r, '*').find((n) => n.getAttribute('role') === 'status')
+    expect(s?.getAttribute('aria-label')).toBe('Offline')
+  })
+  it('Badge: state carried by text, not colour alone', () => {
+    const r = render(h(Badge, { variant: 'negative' } as never, 'Overdue'))
+    expect(text(r)).toBe('Overdue')
+  })
+  it('ColorSwatchRow: every swatch is a named button AND the selected one is exposed to AT (aria-pressed/checked)', () => {
+    const r = render(h(ColorSwatchRow, { value: '#0D8578', onChange: () => {}, colors: ['#0D8578', '#C2353B'] }))
+    const bs = all(r, 'button')
+    expect(bs.every((b) => name(r, b).length > 0)).toBe(true)
+    const exposed = bs.some((b) => b.getAttribute('aria-pressed') === 'true' || b.getAttribute('aria-checked') === 'true')
+    expect(exposed, 'selected swatch is only a white border').toBe(true)
+  })
+  it('AuthOtpRow: each of the 6 digit inputs has an accessible name', () => {
+    const r = render(h(AuthOtpRow, { value: '', onChange: () => {} } as never))
+    const inputs = all(r, 'input')
+    expect(inputs.length).toBe(6)
+    expect(inputs.every((i) => (i.getAttribute('aria-label') ?? '').length > 0), 'OTP digit inputs unnamed').toBe(true)
+  })
+})
+
+describe('ModalShell dialog contract (source-level: no DOM available in this repo, SSR renders nothing for the portal)', () => {
+  const shell = readFileSync('src/components/modals/ModalShell.tsx', 'utf8')
+  it('panel is role=dialog aria-modal with aria-labelledby/aria-label and runs the focus contract', () => {
+    expect(shell).toMatch(/role="dialog"/)
+    expect(shell).toMatch(/aria-modal="true"/)
+    expect(shell).toMatch(/aria-labelledby/)
+    expect(shell).toMatch(/useDialogFocus\(open, panelRef\)/)
+    expect(shell).toMatch(/useEscapeClose\(open/)
+  })
+  it('every aria-modal overlay outside ModalShell also manages focus (useDialogFocus) - FAILS for the hand-rolled ones', () => {
+    const files = ['src/components/ui/NumberPad.tsx', 'src/components/ui/UnifiedDatePicker.tsx', 'src/components/expenses/ExpenseFilters.tsx', 'src/components/features/settings/hub/SettingsSearch.tsx', 'src/components/auth/SecondFactorGate.tsx', 'src/components/features/goals/celebrate/GoalAchievedScreen.tsx', 'src/components/features/ai-chat/AIChat.tsx', 'src/components/features/profile/DeleteAccountDialog.tsx', 'src/components/features/auth-modal/AuthModal.tsx']
+    const without = files.filter((f) => !/useDialogFocus|\.focus\(/.test(readFileSync(f, 'utf8')))
+    expect(without).toEqual([])
+  })
+})

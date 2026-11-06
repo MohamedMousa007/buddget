@@ -1,4 +1,4 @@
-import { AppLink } from '@/components/ui/AppLink'
+import { LegalDocLink } from '@/components/legal/LegalDocLink'
 import { LegalSection } from '@/components/legal/LegalSection'
 
 /** Sections 1–3: Acceptance, Service Description, User Accounts. */
@@ -9,9 +9,9 @@ export function TermsIntroSections() {
         <p>
           By accessing or using Buddget (&ldquo;Service,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), you confirm that you have read,
           understood, and agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;) and our{' '}
-          <AppLink href="/legal/privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
+          <LegalDocLink doc="privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
             Privacy Policy
-          </AppLink>
+          </LegalDocLink>
           . If you do not agree to these Terms, do not access or use the Service.
         </p>
         <p>

@@ -47,7 +47,7 @@ export function ReportsSummaryPanel({
           <p className="text-lg font-bold font-mono-numbers whitespace-nowrap text-[var(--color-brand-green)]">
             {formatCurrency(periodRecurringIncome, baseCurrency)}
           </p>
-          <p className="text-[10px] text-[var(--color-brand-text-muted)] mt-0.5 max-w-[14rem]">
+          <p className="text-[0.625rem] text-[var(--color-brand-text-muted)] mt-0.5 max-w-[14rem]">
             {t.reports.kpiReceivedSoFar(formatCurrency(periodReceivedIncome, baseCurrency))}
           </p>
         </div>

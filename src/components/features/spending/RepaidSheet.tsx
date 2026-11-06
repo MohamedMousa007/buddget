@@ -53,7 +53,7 @@ export function RepaidSheet({ open, onClose, expense, onDone }: RepaidSheetProps
           {accounts.length > 0 ? <AccountPicker accounts={accounts} value={account?.method.id ?? ''} onChange={(id) => { setAccountId(id); setFromIncomeId(undefined) }} /> : null}
           {candidates.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-[13px] font-semibold text-[var(--color-brand-text-secondary)]">{t.linkPayment}</p>
+              <p className="text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{t.linkPayment}</p>
               {candidates.map((i) => (
                 <Button key={i.id} variant={fromIncomeId === i.id ? 'secondary' : 'outline'} size="cta-block" className="justify-between" onClick={() => setFromIncomeId(fromIncomeId === i.id ? undefined : i.id)}>
                   <span className="truncate">{i.name} · {i.receivedDate.slice(0, 10)}</span>
@@ -64,7 +64,7 @@ export function RepaidSheet({ open, onClose, expense, onDone }: RepaidSheetProps
           ) : null}
           {fromIncomeId === undefined ? (
             <div className="space-y-2">
-              <p className="text-[13px] font-semibold text-[var(--color-brand-text-secondary)]">{t.noLink}</p>
+              <p className="text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{t.noLink}</p>
               <AmountField value={amount} onChange={setAmount} currency={String(account?.method.currency ?? expense.currency)} placeholder="0" />
             </div>
           ) : null}

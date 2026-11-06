@@ -90,7 +90,7 @@ export function BuilderBlockStep(p: BuilderBlockStepProps) {
                 <LineIcon name={l.line.icon} />
               </TintedTile>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{l.line.name}</p>
+                <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{l.line.name}</p>
                 {linked ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{c.linkedFromPage}</p> : null}
               </div>
               <IconButton variant="danger" aria-label={c.remove(l.line.name)} onClick={() => p.onRemove(l)}>

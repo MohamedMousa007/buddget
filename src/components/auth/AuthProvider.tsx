@@ -462,12 +462,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Remaining best-effort cleanup — non-blocking, session is already gone.
     void (async () => {
-      // NOTE: clearSmsNative() intentionally NOT called here. Native SMS bridge
-      // state (enabled/token) must survive sign-out so tracking resumes
-      // automatically on the next sign-in without user intervention.
-      // SmsStartupSync re-arms the ingest token on SIGNED_IN for the new session.
+      // Explicit sign-out disarms forwarding and drops the non-expiring ingest token + owner stamp, so a signed-out
+      // device neither feeds the old account nor leaves a live credential behind. clearSmsCredentials (not
+      // clearSmsNative) keeps the device capability and the owner-stamped queue: SmsStartupSync re-arms from the
+      // account's remembered intent on the next SIGNED_IN, exactly like an account switch.
+      try {
+        const { clearSmsCredentials } = await import('@/lib/native/smsTracker')
+        await clearSmsCredentials()
+      } catch (e) { console.error('[auth] sms credential clear failed', e) }
       if (accessToken) {
         try { await unregisterPushToken(accessToken) } catch (e) { console.error('[auth] push unregister failed', e) }
+        try { await (await import('@/lib/native/smsTracker')).revokeIngestToken(accessToken) } catch (e) { console.error('[auth] sms token revoke failed', e) }
       }
     })()
   }, [configured, session])

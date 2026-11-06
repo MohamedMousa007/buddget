@@ -16,7 +16,7 @@ import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { micro } from '@/lib/ui/microLabelStyle'
 import type { PocketVM } from '@/components/features/savings-v3/types'
 import type { Currency } from '@/lib/store/types'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
 
 /** A translucent wash of a (CSS-variable or hex) colour. */
 export const tint = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, transparent)`
@@ -29,6 +29,7 @@ export function PocketRadioList({ pockets, value, onChange, label }: {
   label: string
 }) {
   const sf = useT().savingsForms
+  const { locale } = useLocale()
   return (
     <div role="radiogroup" aria-label={label} className="space-y-2">
       {pockets.map(({ account }) => {
@@ -39,10 +40,10 @@ export function PocketRadioList({ pockets, value, onChange, label }: {
               <SavingsAccountIcon account={account} className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{pocketDisplayName(account, sf.systemNames)}</p>
-              <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{pocketIdentity(account, sf.identity)}</p>
+              <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{pocketDisplayName(account, sf.systemNames)}</p>
+              <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{pocketIdentity(account, sf.identity, locale)}</p>
             </div>
-            <span className="font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(account.currentBalance)}</span>
+            <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{fmtNum(account.currentBalance)}</span>
           </SelectableCard>
         )
       })}

@@ -70,7 +70,7 @@ export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit }:
         <div className="flex flex-col gap-3">
           {nodes.map((x) => (
             <Card key={x.id} padding="md" className="flex flex-col gap-2.5">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{textOf(x)}</p>
+              <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{textOf(x)}</p>
               <SegmentedControl
                 ariaLabel={textOf(x)}
                 value={valueOf(x) === false ? 'change' : 'right'}
@@ -87,7 +87,7 @@ export function ScreenStep({ state, head, reopen, base, saved, fill, onSubmit }:
         <>
           {nodes.map((x, i) => (
             <div key={x.id} className="flex flex-col gap-3">
-              {i > 0 ? <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{textOf(x)}</p> : null}
+              {i > 0 ? <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{textOf(x)}</p> : null}
               {skips.includes(x.id) ? null : (
                 <QuestionControl
                   node={x}

@@ -1,0 +1,41 @@
+-- Rolled-back probe (ends in RAISE EXCEPTION). DBS-4: a global merchant category needs >= 5 distinct accounts older than 7 days.
+-- Expected: A rows=0,0,0,0,1 (flips on the 5th old voter, sample = key); B (5 fresh sybils) rows=0; anon read = permission denied.
+DO $$
+declare
+  u uuid; i int; e uuid; l uuid; res text := ''; n int; samp text; cat text; anonres text;
+  old_users uuid[] := '{}'; new_users uuid[] := '{}';
+begin
+  for i in 1..5 loop
+    u := gen_random_uuid(); old_users := old_users || u;
+    insert into auth.users(id,instance_id,aud,role,email,created_at) values (u,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','qa6o'||i||'@example.invalid', now()-interval '10 days');
+    u := gen_random_uuid(); new_users := new_users || u;
+    insert into auth.users(id,instance_id,aud,role,email,created_at) values (u,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','qa6n'||i||'@example.invalid', now());
+  end loop;
+  for i in 1..5 loop
+    u := old_users[i]; l := gen_random_uuid(); e := gen_random_uuid();
+    insert into sms_parse_log(id,user_id,source) values (l,u,'sms');
+    insert into expenses(id,user_id,amount,description,category,sms_log_id) values (e,u,5,'ZZQA6 Shop A','Food',l);
+    perform set_config('request.jwt.claims', json_build_object('sub',u,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    update expenses set category='Shopping' where id=e;
+    execute 'reset role';
+    select count(*) into n from merchant_categories where merchant_key='zzqa6shopa';
+    res := res || 'A after '||i||' old voters: rows='||n||'; ';
+  end loop;
+  select category::text, sample_merchant into cat, samp from merchant_categories where merchant_key='zzqa6shopa';
+  res := res || 'A final cat='||coalesce(cat,'-')||' sample='||coalesce(samp,'-')||'; ';
+  for i in 1..5 loop
+    u := new_users[i]; l := gen_random_uuid(); e := gen_random_uuid();
+    insert into sms_parse_log(id,user_id,source) values (l,u,'sms');
+    insert into expenses(id,user_id,amount,description,category,sms_log_id) values (e,u,5,'ZZQA6 Shop B','Food',l);
+    perform set_config('request.jwt.claims', json_build_object('sub',u,'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    update expenses set category='Shopping' where id=e;
+    execute 'reset role';
+  end loop;
+  select count(*) into n from merchant_categories where merchant_key='zzqa6shopb';
+  res := res || 'B (5 fresh sybils) rows='||n||'; ';
+  begin execute 'set local role anon'; perform 1 from merchant_categories limit 1; anonres:='anon read ALLOWED'; exception when others then anonres := sqlerrm; end;
+  execute 'reset role';
+  raise exception 'QA6RESULT % anon=[%]', res, anonres;
+end $$;

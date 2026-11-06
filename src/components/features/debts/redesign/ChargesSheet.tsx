@@ -51,7 +51,7 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
       {target ? (
         <div className="px-5 pt-3">
           <span
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-semibold text-[var(--color-cat-6)]"
+            className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[0.8125rem] font-semibold text-[var(--color-cat-6)]"
             style={{ borderColor: soft('var(--color-cat-6)', 45), background: soft('var(--color-cat-6)', 12) }}
           >
             <CreditCard className="h-3.5 w-3.5" />

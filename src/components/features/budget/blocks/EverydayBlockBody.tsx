@@ -98,7 +98,7 @@ export function EverydayBlockBody({ view, block, mode, onOpenLine, onLineAction,
       </div>
 
       {month ? (
-        <div className="mt-3 flex flex-wrap items-center gap-3.5 text-[11px] text-[var(--color-brand-text-secondary)]">
+        <div className="mt-3 flex flex-wrap items-center gap-3.5 text-[0.6875rem] text-[var(--color-brand-text-secondary)]">
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-3 w-0.5 rounded-sm bg-[var(--color-brand-text-primary)] opacity-55" aria-hidden />
             {t.everyday.legendAvg}

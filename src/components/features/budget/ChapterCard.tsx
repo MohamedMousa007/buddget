@@ -90,7 +90,7 @@ export function ChapterCard({ chapter, index, chapterCount = 3, mode, base, expa
           </span>
           <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
             {chapter.blocks.map((b) => (
-              <span key={b.block} className="inline-flex items-center gap-1.5 text-[11.5px] text-[var(--color-brand-text-secondary)]">
+              <span key={b.block} className="inline-flex items-center gap-1.5 text-[0.71875rem] text-[var(--color-brand-text-secondary)]">
                 <span className="size-2 rounded-full" style={{ background: blockColor(b.block) }} aria-hidden />
                 {c.blocks[b.block].short}
                 <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">{money(month ? b.spent : b.total)}</span>

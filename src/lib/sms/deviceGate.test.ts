@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const h = vi.hoisted(() => ({ revoked: vi.fn(), registered: vi.fn() }))
-vi.mock('@/lib/server/devices/registry', () => ({ isRevokedDevice: h.revoked, hasAnyDevice: h.registered }))
+const h = vi.hoisted(() => ({ revoked: vi.fn(), registered: vi.fn(), removedAny: vi.fn() }))
+vi.mock('@/lib/server/devices/registry', () => ({ isRevokedDevice: h.revoked, hasAnyDevice: h.registered, hasRevokedDevice: h.removedAny }))
 
 import { smsDeviceGate } from './deviceGate'
 
@@ -12,6 +12,7 @@ describe('smsDeviceGate', () => {
   beforeEach(() => {
     h.revoked.mockReset().mockResolvedValue(false)
     h.registered.mockReset().mockResolvedValue(true)
+    h.removedAny.mockReset().mockResolvedValue(false)
     vi.stubEnv('SMS_REQUIRE_DEVICE_HEADER', '1')
   })
 
@@ -20,6 +21,15 @@ describe('smsDeviceGate', () => {
   it('only logs a missing header while enforcement is off', async () => {
     vi.stubEnv('SMS_REQUIRE_DEVICE_HEADER', '')
     expect(await smsDeviceGate(svc, jwt(null))).toBeNull()
+  })
+
+  it('SST-5: refuses a header-less JWT call even with the flag off once the account has removed a phone', async () => {
+    vi.stubEnv('SMS_REQUIRE_DEVICE_HEADER', '')
+    h.removedAny.mockResolvedValue(true)
+    const res = await smsDeviceGate(svc, jwt(null))
+    expect(res?.status).toBe(403)
+    expect(await res?.json()).toMatchObject({ error: 'device_required' })
+    expect(await smsDeviceGate(svc, jwt('d1'))).toBeNull()
   })
 
   it('rejects a JWT call with no device header when the user has registered devices', async () => {

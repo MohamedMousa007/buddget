@@ -14,7 +14,9 @@
  * make that the normal case, not the edge case.
  */
 import type { ServiceClient } from '@/lib/supabase/service'
-import { addDays, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { addCalendarDays } from '@/lib/time/calendarDays'
+import { resolveUserTimeZone } from '@/lib/server/userTimeZone'
 import { paydayDatesForWindow, toISODate, type WeekendFirstDay } from '@/lib/utils/paydaySchedule'
 import { weekendFirstDayFor } from '@/lib/time/weekStart'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -79,7 +81,7 @@ function toScheduleSource(row: SalaryRow): IncomeSource {
  * would be a coin flip. Half the gap is the widest window that can never be ambiguous.
  */
 function minPaydayGapDays(source: IncomeSource, around: Date, weekendFirst: WeekendFirstDay): number {
-  const dates = paydayDatesForWindow(source, addDays(around, -46), addDays(around, 46), false, weekendFirst)
+  const dates = paydayDatesForWindow(source, addCalendarDays(around, -46), addCalendarDays(around, 46), false, weekendFirst)
   if (dates.length < 2) return FALLBACK_GAP_DAYS
   let min = Infinity
   for (let i = 1; i < dates.length; i++) {
@@ -98,7 +100,7 @@ function candidatePaydays(row: SalaryRow, dayISO: string, weekendFirst: WeekendF
   const day = parseISO(dayISO)
   const requested = row.payday_drift_days ?? DEFAULT_DRIFT_DAYS
   const window = Math.max(1, Math.min(requested, Math.floor(minPaydayGapDays(source, day, weekendFirst) / 2)))
-  const ranked = paydayDatesForWindow(source, addDays(day, -window), addDays(day, window), false, weekendFirst)
+  const ranked = paydayDatesForWindow(source, addCalendarDays(day, -window), addCalendarDays(day, window), false, weekendFirst)
     .map((d) => ({ iso: toISODate(d), dist: Math.abs(d.getTime() - day.getTime()) }))
     .sort((a, b) => a.dist - b.dist)
   return {
@@ -142,7 +144,7 @@ export async function matchSalary(
   const { data: prefs } = await service.from('user_settings').select('week_start_day, timezone').eq('user_id', params.userId).maybeSingle()
   const weekendFirst = weekendFirstDayFor({
     weekStartDay: prefs?.week_start_day === 0 || prefs?.week_start_day === 1 || prefs?.week_start_day === 6 ? prefs.week_start_day : undefined,
-    timezone: prefs?.timezone ?? 'UTC', // a server has no device zone to fall back on
+    timezone: resolveUserTimeZone(prefs?.timezone), // the server's one default; the device's own zone is the client's
   })
 
   const rates = params.exchangeRates ?? {}

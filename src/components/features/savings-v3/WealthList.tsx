@@ -38,7 +38,7 @@ export interface WealthListProps {
 }
 
 function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], identity: ReturnType<typeof useT>['savingsForms']['identity'], locale: AppLocale, goal?: string): string {
-  if (row.account) return [pocketIdentity(row.account, identity), goal].filter(Boolean).join(' · ')
+  if (row.account) return [pocketIdentity(row.account, identity, locale), goal].filter(Boolean).join(' · ')
   const h = row.holding!
   const unit = h.assetType === 'gold' ? ' g' : h.assetType === 'property' ? ' m²' : ''
   if (row.unitPrice == null) {
@@ -67,7 +67,7 @@ export function WealthList({ rows, categories, filter, onFilter, onRowPress, onA
     <section>
       <div className="flex items-center gap-2 px-4 lg:px-0">
         <h2 className="text-[17px] font-bold text-[var(--color-brand-text-primary)]">{t.whereItIs}</h2>
-        <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[11px] font-semibold">{rows.length}</Badge>
+        <Badge variant="muted" className="min-w-[21px] px-1.5 font-mono-numbers text-[0.6875rem] font-semibold">{rows.length}</Badge>
         <Button variant="secondary" size="touch" className="ms-auto" onClick={onAdd}>
           <Plus /> {t.addPocketOrAsset}
         </Button>
@@ -98,7 +98,7 @@ export function WealthList({ rows, categories, filter, onFilter, onRowPress, onA
         groups.map((g) => (
           <div key={g.key} className="mt-3">
             {showHeaders ? (
-              <div className="flex items-center justify-between px-4 pb-2 text-[11px] lg:px-0 font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+              <div className="flex items-center justify-between px-4 pb-2 text-[0.6875rem] lg:px-0 font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
                 <span>{g.title}</span>
                 <span className="font-mono-numbers">{formatWhole(g.rows.reduce((s, r) => s + (r.amount ?? 0), 0))}</span>
               </div>

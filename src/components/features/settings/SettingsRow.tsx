@@ -59,7 +59,7 @@ export function SettingsRow({
     <>
       {icon ? <SettingsChip icon={icon} tone={tone} destructive={destructive} /> : null}
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[15px] font-semibold leading-tight', destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]')}>
+        <span className={cn('block text-[0.9375rem] font-semibold leading-tight', destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]')}>
           {title}
         </span>
         {subtitle ? (

@@ -25,3 +25,16 @@ describe('redactBalances', () => {
     expect(redactBalances({ name: 'Netflix', paid: true, left: 'soon', value: 'n/a', limit: 500 })).toEqual({ name: 'Netflix', paid: true, left: 'soon', value: 'n/a', limit: HIDDEN })
   })
 })
+
+describe('redactBalances withFlow (BAI-3: the Buddgy mask also hides what the NOW context hides)', () => {
+  const summary = { income: 1, spent: 2, budget: 3, net_cash_flow: 4, safe_daily: 5, projected_spend: 6, days_left: 7, top_categories: [{ name: 'Food', spent: 8, cap: 9 }] }
+  it('hides income, spent, budget, net cash flow, safe daily and projected spend, nested too', () => {
+    const out = redactBalances(summary, true) as typeof summary
+    for (const k of ['income', 'spent', 'budget', 'net_cash_flow', 'safe_daily', 'projected_spend'] as const) expect(out[k]).toBe(HIDDEN)
+    expect(out.top_categories[0]).toEqual({ name: 'Food', spent: HIDDEN, cap: HIDDEN })
+    expect(out.days_left).toBe(7)
+  })
+  it('leaves them readable without the flag (other masks)', () => {
+    expect(redactBalances(summary)).toEqual(summary)
+  })
+})

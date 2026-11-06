@@ -39,6 +39,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { buildGoalProgressContext, computeGoalProgress } from '@/lib/goals/computeGoalProgress'
 import { computeEmergencyFund } from '@/lib/savings/emergencyFund'
+import { parseDateOnly } from '@/lib/time/calendarDays'
 import { deriveHawl } from '@/lib/savings/hawl'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
@@ -161,7 +162,7 @@ export default function WealthPage() {
     () => deriveHawl({ yearStartDate: profile.zakatConfig?.yearStartDate, lastPaidDate: profile.zakatConfig?.lastPaidDate, createdAt: profile.createdAt }),
     [profile.zakatConfig?.yearStartDate, profile.zakatConfig?.lastPaidDate, profile.createdAt],
   )
-  const hawlDate = useMemo(() => formatLocalized(new Date(hawl.dueDate), 'd MMM yyyy', locale), [hawl.dueDate, locale])
+  const hawlDate = useMemo(() => formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM yyyy', locale), [hawl.dueDate, locale])
   const silverNisab = 595 * zakatBase.silverPerGram
   const goldNisab = 85 * zakatBase.gold24kSellPerGram
   const prompt = {
@@ -276,7 +277,7 @@ export default function WealthPage() {
         badges={
           <WealthHeroBadges
             emergency={{ state: efState, months: emergency.monthsCovered.toFixed(1), target: targetMonths }}
-            zakat={hasZakat ? { amount: formatWhole(zakatResult.zakat), due: hawl.isPlaceholder ? '—' : formatLocalized(new Date(hawl.dueDate), 'd MMM', locale) } : undefined}
+            zakat={hasZakat ? { amount: formatWhole(zakatResult.zakat), due: hawl.isPlaceholder ? '—' : formatLocalized(parseDateOnly(hawl.dueDate), 'd MMM', locale) } : undefined}
             onOpenEmergency={() => guard(() => setEmergencyOpen(true))}
             onOpenZakat={() => guard(() => setZakatOpen(true))}
           />

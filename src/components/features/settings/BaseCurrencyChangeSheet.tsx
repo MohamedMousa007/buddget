@@ -45,7 +45,7 @@ export function BaseCurrencyChangeSheet({ from, to, rates, noRate, onConfirm, on
           <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-brand-text-muted)]">{copy.body(target)}</p>
         </div>
         {noRate ? (
-          <p role="alert" className="rounded-xl bg-[var(--color-brand-primary-soft)] p-3 text-[13px] font-medium text-[var(--color-brand-text-primary)]">
+          <p role="alert" className="rounded-xl bg-[var(--color-brand-primary-soft)] p-3 text-[0.8125rem] font-medium text-[var(--color-brand-text-primary)]">
             {copy.noRate}
           </p>
         ) : (
@@ -53,7 +53,7 @@ export function BaseCurrencyChangeSheet({ from, to, rates, noRate, onConfirm, on
             <p className="font-mono-numbers rounded-xl bg-[var(--color-brand-elevated)] px-4 py-3 text-center text-sm font-semibold text-[var(--color-brand-text-primary)]">
               {sample}
             </p>
-            <p className="flex gap-2.5 rounded-xl bg-[var(--color-brand-primary-soft)] p-3 text-[13px] leading-snug text-[var(--color-brand-primary-ink)]">
+            <p className="flex gap-2.5 rounded-xl bg-[var(--color-brand-primary-soft)] p-3 text-[0.8125rem] leading-snug text-[var(--color-brand-primary-ink)]">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
               <span>{copy.note(from)}</span>
             </p>

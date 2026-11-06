@@ -1,4 +1,4 @@
-import { AppLink } from '@/components/ui/AppLink'
+import { LegalDocLink } from '@/components/legal/LegalDocLink'
 import { LegalSection } from '@/components/legal/LegalSection'
 
 /** Sections 13–17: Termination, Changes, Dispute Resolution, Severability, Contact. */
@@ -14,9 +14,9 @@ export function TermsLegalSections() {
         <p>
           You may stop using the Service and delete your account at any time via the Profile or Settings
           page. Upon account deletion, your personal data will be removed in accordance with our{' '}
-          <AppLink href="/legal/privacy" className="text-[var(--color-brand-red)] hover:underline">
+          <LegalDocLink doc="privacy" className="text-[var(--color-brand-red)] hover:underline">
             Privacy Policy
-          </AppLink>
+          </LegalDocLink>
           .
         </p>
         <p>Sections 8, 9, 11, 12, and 15 will survive termination of your account.</p>

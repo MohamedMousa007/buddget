@@ -40,7 +40,7 @@ export function OpenerStep({ base, onDone }: OpenerStepProps) {
         placeholder={c.placeholder}
         maxLength={400}
         disabled={busy}
-        className="min-h-36 text-[15px]"
+        className="min-h-36 text-[0.9375rem]"
         aria-label={c.title}
       />
       <div className="flex flex-wrap gap-2">

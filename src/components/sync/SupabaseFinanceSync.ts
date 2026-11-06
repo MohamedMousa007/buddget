@@ -23,6 +23,8 @@ import {
   mergeSnapshots,
 } from '@/lib/supabase/remote'
 import { stampEdits } from '@/lib/supabase/remote/stampEdits'
+import { holdParkedBack } from '@/lib/supabase/remote/parkedRows'
+import { hasUnpersistedWrites, STORAGE_QUOTA_EVENT } from '@/lib/store/safeLocalStorage'
 import { cacheOwnerMismatch } from '@/lib/auth/cacheOwnerCheck'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
 import { markHydrated } from '@/hooks/remote/hydrateGuard'
@@ -230,7 +232,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       try {
         // Pull before flipping dataReady, even on a warm start: lifting the splash on cached numbers and then
         // merging server rows visibly changes the dashboard totals. The pull is one small delta request.
-        await runFullSync(supabase, userId)
+        await runFullSync(supabase, userId, null)
         pulled = true
       } catch (e) {
         console.error('[finance sync] pull failed', e)
@@ -315,13 +317,16 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         // error) into the failures store — a successful flush
         // clears any previously-displayed banner.
         useSyncFailures.getState().recordFailures(result.anyError ? result.errors : [])
+        useSyncFailures.getState().recordSetAside(result.parked ?? [])
         const adopted = new Set(result.adoptedPaydays ?? [])
         if (adopted.size > 0) {
           // Another device's row won the payday: drop our duplicate; the next pull brings the live one.
           useFinanceStore.setState((s) => ({ incomeEvents: s.incomeEvents.filter((e) => !adopted.has(e.id)) }))
         }
         if (!result.anyError) {
-          prevSnap.current = adopted.size > 0 ? { ...next, incomeEvents: next.incomeEvents.filter((e) => !adopted.has(e.id)) } : next
+          // Rows the server refused on their own merit stay "unsent" in the baseline; everything else is delivered.
+          const delivered = adopted.size > 0 ? { ...next, incomeEvents: next.incomeEvents.filter((e) => !adopted.has(e.id)) } : next
+          prevSnap.current = holdParkedBack(delivered, prev, result.parked ?? [])
           persistBaseline(userId, prevSnap.current)
           retryAttempt = 0
           // The server skipped writes (its copy was newer): pull so this device converges on the newer edit.
@@ -341,6 +346,13 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         return false
       }
     }
+
+    // The device refused a save: push what is unsent now, so the server holds it if the app is closed before space frees up.
+    const onQuota = () => {
+      clearSyncCursors()
+      void flush()
+    }
+    window.addEventListener(STORAGE_QUOTA_EVENT, onQuota)
 
     // Expose for imperative callers (signOut).
     pendingFlush = flush
@@ -370,7 +382,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         for (let pass = 0; pass < 3; pass++) {
           runAgain.current = false
           const flushed = await flush()
-          await runFullSync(supabase, userId)
+          await runFullSync(supabase, userId, prevSnap.current)
           prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed)
           persistBaseline(userId, prevSnap.current)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
@@ -506,6 +518,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       unsubNet()
       if (reconnectTimer) clearTimeout(reconnectTimer)
       window.removeEventListener('pagehide', onHide)
+      window.removeEventListener(STORAGE_QUOTA_EVENT, onQuota)
       document.removeEventListener('visibilitychange', onVisibility)
       cancelledListeners = true
       removeAppStateListener?.()
@@ -536,6 +549,7 @@ function ownedByAnother(userId: string): boolean {
 async function runFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
+  delivered: Snapshot | null,
 ): Promise<void> {
   // A cursor only means something next to a store that holds this account's data.
   const hasLocalCopy = useFinanceStore.getState().profile.id === userId
@@ -552,13 +566,15 @@ async function runFullSync(
         useFinanceStore.getState().reset()
         useSettingsStore.getState().reset()
         clearSyncCursors()
-        return runFullSync(supabase, userId)
+        return runFullSync(supabase, userId, null)
       }
     }
     // Re-snapshot right before the merge so edits made during the round-trip aren't clobbered.
-    const merged = applyDelta(snapshot(useFinanceStore.getState()), delta)
+    const merged = applyDelta(snapshot(useFinanceStore.getState()), delta, delivered)
     applyMerged(merged, userId)
-    writeSyncCursor(userId, storeVersion(), delta.cursor)
+    // A cursor ahead of the stored copy would skip rows after a restart: while saves are being refused, the next pull stays a full one.
+    if (hasUnpersistedWrites()) clearSyncCursors()
+    else writeSyncCursor(userId, storeVersion(), delta.cursor)
     useSettingsStore.getState().markServerSynced(userId)
   } catch (e) {
     console.warn('[finance sync] delta pull failed, using the full pull', e)

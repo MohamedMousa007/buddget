@@ -1,0 +1,12 @@
+rules:
+  - id: sst-eval-new-function
+    languages: [typescript]
+    severity: ERROR
+    message: eval / new Function / string-argument timers execute strings as code.
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: new Function(...)
+          - pattern: setTimeout("...", ...)
+          - pattern: setInterval("...", ...)
+          - pattern: setTimeout($S + ..., ...)

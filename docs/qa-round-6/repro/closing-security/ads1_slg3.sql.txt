@@ -1,0 +1,28 @@
+-- Rolled-back probe. ADS-1: staff without users.pii (p_match_email=false) cannot match the unmasked address, can match the masked one,
+-- and % / _ are literal. SLG-3: a template with 4 users / 3 days is NOT eligible, with 5 users / 8 days it IS; config floors cannot be lowered.
+DO $$
+declare
+  u uuid := gen_random_uuid(); res text := ''; n int; t1 uuid := gen_random_uuid(); t2 uuid := gen_random_uuid(); t3 uuid := gen_random_uuid();
+  cfg_users int; cfg_age int;
+begin
+  insert into auth.users(id,instance_id,aud,role,email) values (u,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','qa6zebra.owner@qa6mail.invalid');
+  -- masked form is "qa***@qa***.invalid"
+  select (admin_user_directory('zebra.owner', 10, 0, 'created_desc', null, null, false)->>'total')::int into n; res := res||'unmasked-substring/no-pii='||n||'; ';
+  select (admin_user_directory('qa6zebra.owner@qa6mail.invalid', 10, 0, 'created_desc', null, null, false)->>'total')::int into n; res := res||'full-address/no-pii='||n||'; ';
+  select (admin_user_directory('qa***@qa***', 10, 0, 'created_desc', null, null, false)->>'total')::int into n; res := res||'masked-form(escape *)/no-pii='||n||'; ';
+  select (admin_user_directory('zebra.owner', 10, 0, 'created_desc', null, null, true)->>'total')::int into n; res := res||'unmasked-substring/pii='||n||'; ';
+  select (admin_user_directory('%', 10, 0, 'created_desc', null, null, true)->>'total')::int into n; res := res||'percent/pii='||n||'; ';
+  select (admin_user_directory('_', 10, 0, 'created_desc', null, null, true)->>'total')::int into n; res := res||'underscore/pii='||n||'; ';
+  select min_unique_users, min_age_days into cfg_users, cfg_age from sms_promotion_config where id=1;
+  res := res||'cfg users='||cfg_users||' age='||cfg_age||'; ';
+  update sms_promotion_config set min_unique_users=1, min_age_days=0 where id=1;   -- try to lower the config: floors must still hold
+  insert into sms_tracking_templates_ai(id, sender, regex_pattern, template_sample, mapping_rules, tier, status, ai_enabled, match_count, unique_user_count, created_at, avg_ai_confidence)
+    values (t1,'QA6SENDER','x','s','{}'::jsonb,'template','active',true,10,4, now()-interval '30 days', 0.99),
+           (t2,'QA6SENDER','y','s','{}'::jsonb,'template','active',true,10,5, now()-interval '3 days', 0.99),
+           (t3,'QA6SENDER','z','s','{}'::jsonb,'template','active',true,10,5, now()-interval '8 days', 0.99);
+  select count(*) into n from check_sms_promotion_eligibility() where template_id = t1; res := res||'4 users/30d eligible='||n||'; ';
+  select count(*) into n from check_sms_promotion_eligibility() where template_id = t2; res := res||'5 users/3d eligible='||n||'; ';
+  select count(*) into n from check_sms_promotion_eligibility() where template_id = t3; res := res||'5 users/8d eligible='||n||'; ';
+  raise exception 'QA6RESULT %', res;
+end $$;
+-- Observed 2026-11-06 after migration 0246 (see closing-security.md).

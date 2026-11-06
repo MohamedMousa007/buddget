@@ -85,8 +85,8 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
         lead={today ? c.reveal.todayLead : c.reveal.lead}
         extra={
           <div className="mt-[18px] rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 shadow-sm">
-            <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{c.reveal.nextTitle}</p>
-            <p className="mt-0.5 text-[13px] text-[var(--color-brand-text-secondary)]">{c.reveal.nextBody}</p>
+            <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.reveal.nextTitle}</p>
+            <p className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.reveal.nextBody}</p>
           </div>
         }
         onContinue={chrome.next}
@@ -155,7 +155,7 @@ export function StepIncome({ chrome }: { chrome: StepChrome }) {
         </div>
       </div>
 
-      <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-snug text-[var(--color-brand-text-muted)]">
+      <p className="mt-3.5 flex items-start gap-2 text-[0.78125rem] leading-snug text-[var(--color-brand-text-muted)]">
         <Info className="mt-px size-4 shrink-0" aria-hidden />
         {c.income.why}
       </p>

@@ -196,7 +196,7 @@ export function NumberPad({
 
         {showDisplay && (
           <div className="px-1.5 pb-3.5 pt-1">
-            <div className="mb-2 text-center text-[10px] font-semibold uppercase tracking-[.09em] text-[var(--color-brand-text-muted)]">{caption}</div>
+            <div className="mb-2 text-center text-[0.625rem] font-semibold uppercase tracking-[.09em] text-[var(--color-brand-text-muted)]">{caption}</div>
             {isPin ? (
               <div className="flex items-center justify-center gap-4">
                 {[0, 1, 2, 3].map((i) => (

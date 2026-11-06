@@ -82,7 +82,7 @@ export function Sidebar() {
 
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
         {PRIMARY.map(renderItem)}
-        <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
+        <p className="px-3 pt-4 pb-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
           {t.nav.more}
         </p>
         {MORE.map(renderItem)}

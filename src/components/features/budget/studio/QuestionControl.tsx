@@ -57,7 +57,7 @@ export function QuestionControl({ node: q, copy, ui, base, value, onChange }: Qu
                     <Icon className="size-[18px]" aria-hidden />
                   </span>
                 ) : null}
-                <span className="min-w-0 flex-1 text-[14.5px] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{label}</span>
+                <span className="min-w-0 flex-1 text-[0.90625rem] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{label}</span>
                 <span
                   aria-hidden
                   className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${on ? 'border-[var(--color-brand-primary)] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'border-[var(--color-brand-border)]'}`}

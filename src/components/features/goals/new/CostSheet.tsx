@@ -68,7 +68,7 @@ export function CostSheet({
         <BuddgyIcon mood="thinking" size={28} />
         <div className="min-w-0 flex-1">
           <ModalTitle>{t.title}</ModalTitle>
-          <p className="text-[11px] text-[var(--color-brand-text-secondary)]">{t.sub(categoryLabel)}</p>
+          <p className="text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{t.sub(categoryLabel)}</p>
         </div>
         <IconButton aria-label={tc.close} onClick={onClose}>
           <X />

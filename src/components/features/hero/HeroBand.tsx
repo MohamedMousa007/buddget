@@ -59,7 +59,7 @@ export function HeroBand({ label, aside, numbers, bar, note, extra, cells, fitCe
       <PageContainer wide className="px-0 lg:px-0">
         <div className="px-[18px] pb-3 pt-2.5">
           <div className="flex h-[22px] items-center justify-between gap-2">
-            <span className={`min-w-0 flex-1 truncate whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] ${BAND_FG2}`}>{label}</span>
+            <span className={`min-w-0 flex-1 truncate whitespace-nowrap text-[0.6875rem] font-bold uppercase tracking-[0.08em] ${BAND_FG2}`}>{label}</span>
             {aside}
           </div>
           <div className="mt-1.5 flex h-[34.5px] items-end justify-between gap-3">{numbers}</div>
@@ -73,7 +73,7 @@ export function HeroBand({ label, aside, numbers, bar, note, extra, cells, fitCe
         <PageContainer wide className="grid h-[66px] grid-cols-3 px-0 lg:px-0">
           {cells.map((c, i) => (
             <div key={i} className={cn('min-w-0 pb-[11px] pe-2.5 ps-[18px] pt-2.5', i > 0 && 'border-s')} style={i > 0 ? { borderColor: BAND_MIX } : undefined}>
-              <p className={`flex h-4 items-center gap-1.5 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-[0.06em] ${BAND_FG2}`}>
+              <p className={`flex h-4 items-center gap-1.5 whitespace-nowrap text-[0.65625rem] font-bold uppercase tracking-[0.06em] ${BAND_FG2}`}>
                 {c.dir ? <DirChip dir={c.dir} /> : null}
                 <span className="min-w-0 truncate">{c.label}</span>
               </p>
@@ -90,7 +90,7 @@ export function HeroBand({ label, aside, numbers, bar, note, extra, cells, fitCe
 /** Scale-row wrapper matching Flow's 15.75px mono caption line under the bar. */
 export function BandScale({ children }: { children: ReactNode }) {
   return (
-    <div className={`mt-[5px] flex h-[15.75px] items-center justify-between gap-2 overflow-hidden font-mono-numbers text-[10.5px] font-semibold leading-[15.75px] ${BAND_FG2}`}>
+    <div className={`mt-[5px] flex h-[15.75px] items-center justify-between gap-2 overflow-hidden font-mono-numbers text-[0.65625rem] font-semibold leading-[15.75px] ${BAND_FG2}`}>
       {children}
     </div>
   )

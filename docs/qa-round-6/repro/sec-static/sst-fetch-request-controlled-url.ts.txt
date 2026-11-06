@@ -1,0 +1,9 @@
+export async function POST(request: Request) {
+  const body = await request.json()
+  // ruleid: sst-fetch-request-controlled-url
+  await fetch(body.url)
+  // ok: sst-fetch-request-controlled-url
+  await fetch('https://api.example.com/x?q=' + encodeURIComponent(body.q))
+  // ok: sst-fetch-request-controlled-url
+  await fetch('https://api.example.com')
+}

@@ -68,8 +68,8 @@ export function GoldPriceStrip() {
           const p = vm?.prices.find((x) => x.k === k)
           return (
             <div key={k} className="px-3 py-2.5">
-              <span className="text-[11px] font-bold text-[var(--color-brand-gold)]">{k}k</span>
-              <p className="mt-0.5 font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
+              <span className="text-[0.6875rem] font-bold text-[var(--color-brand-gold)]">{k}k</span>
+              <p className="mt-0.5 font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
                 {p ? `${approx}${formatWhole(p.egp)}` : '—'}
               </p>
             </div>
@@ -79,19 +79,19 @@ export function GoldPriceStrip() {
       {expanded && vm ? (
         <div className="grid grid-cols-3 divide-x divide-[var(--color-brand-border)] border-t border-[var(--color-brand-border)] rtl:divide-x-reverse">
           <div className="px-3 py-2.5">
-            <span className="text-[11px] font-bold text-[var(--color-brand-gold)]">{t.worldOz}</span>
-            <p className="mt-0.5 font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">${formatWhole(vm.ounce)}</p>
+            <span className="text-[0.6875rem] font-bold text-[var(--color-brand-gold)]">{t.worldOz}</span>
+            <p className="mt-0.5 font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${formatWhole(vm.ounce)}</p>
           </div>
           <div className="px-3 py-2.5">
-            <span className="text-[11px] font-bold text-[var(--color-brand-gold)]">{t.worldG}</span>
-            <p className="mt-0.5 font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">${vm.gram.toFixed(2)}</p>
+            <span className="text-[0.6875rem] font-bold text-[var(--color-brand-gold)]">{t.worldG}</span>
+            <p className="mt-0.5 font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">${vm.gram.toFixed(2)}</p>
           </div>
           <div className="px-3 py-2.5">
-            <span className="text-[11px] font-bold text-[var(--color-brand-gold)]">{t.saghaDollar}</span>
-            <p className="mt-0.5 font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
+            <span className="text-[0.6875rem] font-bold text-[var(--color-brand-gold)]">{t.saghaDollar}</span>
+            <p className="mt-0.5 font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
               {vm.sagha.toFixed(2)}
               {vm.gapPct != null ? (
-                <span className="ms-1 text-[10.5px] font-bold text-[var(--color-brand-green)]">
+                <span className="ms-1 text-[0.65625rem] font-bold text-[var(--color-brand-green)]">
                   {vm.gapPct >= 0 ? '+' : ''}{vm.gapPct.toFixed(1)}%
                 </span>
               ) : null}
@@ -100,7 +100,7 @@ export function GoldPriceStrip() {
         </div>
       ) : null}
       <div className="flex items-center gap-3 border-t border-[var(--color-brand-border)] px-3 py-1.5">
-        <span className={cn('inline-flex h-[22px] items-center gap-1.5 rounded-full px-2 text-[11.5px] font-bold', pill.cls)}>
+        <span className={cn('inline-flex h-[22px] items-center gap-1.5 rounded-full px-2 text-[0.71875rem] font-bold', pill.cls)}>
           {freshness === 'fresh' ? <span className="size-1.5 rounded-full bg-current" aria-hidden /> : null}
           {pill.text}
         </span>

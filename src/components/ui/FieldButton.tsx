@@ -73,7 +73,7 @@ export function FieldButton({
       // beside the field, associated via aria-describedby.
       data-invalid={invalid || undefined}
       className={cn(
-        'flex w-full items-center gap-2.5 rounded-xl border bg-[var(--color-brand-card)] px-3.5 text-start text-[15px] transition-colors outline-none',
+        'flex w-full items-center gap-2.5 rounded-xl border bg-[var(--color-brand-card)] px-3.5 text-start text-[0.9375rem] transition-colors outline-none',
         'focus-visible:ring-3 focus-visible:ring-[var(--color-brand-focus)] focus-visible:border-[var(--color-brand-focus)]',
         'disabled:pointer-events-none disabled:opacity-50',
         size === 'lg' ? 'h-[52px]' : 'h-12',

@@ -37,6 +37,13 @@ export interface SyncFailure {
 interface SyncFailuresState {
   failures: SyncFailure[]
   /**
+   * Rows the server refused for a reason of their own (bad value, constraint). The rest of the table still syncs;
+   * these are set aside and offered again on the next flush. Holds where they are, never what they contain.
+   */
+  setAside: Array<{ table: string; id: string; code: string }>
+  /** Replace the set-aside list with the latest flush's. */
+  recordSetAside: (rows: ReadonlyArray<{ table: string; id: string; code: string }>) => void
+  /**
    * Replace the current set of failures with the latest flush result.
    * Deduplicates by (label + message) and bumps `attemptCount` for
    * repeats. Empty array = no active failures (sync succeeded).
@@ -57,6 +64,8 @@ function parseLabel(raw: string): { label: string; message: string } {
 
 export const useSyncFailures = create<SyncFailuresState>((set) => ({
   failures: [],
+  setAside: [],
+  recordSetAside: (rows) => set((state) => (rows.length === 0 && state.setAside.length === 0 ? state : { setAside: rows.map(({ table, id, code }) => ({ table, id, code })) })),
   recordFailures: (errors) => {
     set((state) => {
       if (errors.length === 0) {
@@ -75,5 +84,5 @@ export const useSyncFailures = create<SyncFailuresState>((set) => ({
       return { failures: next }
     })
   },
-  clear: () => set({ failures: [] }),
+  clear: () => set({ failures: [], setAside: [] }),
 }))

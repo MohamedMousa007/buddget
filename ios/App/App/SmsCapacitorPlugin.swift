@@ -19,6 +19,9 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setForwardMode", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearCredentials", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "clearState", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setDeviceSecret", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getDeviceSecret", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "removeDeviceSecret", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "healthCheck", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "peekPendingQueue", returnType: CAPPluginReturnPromise),
@@ -31,6 +34,10 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
     @objc func saveToken(_ call: CAPPluginCall) {
         guard let token = call.getString("token"), let apiUrl = call.getString("apiUrl") else {
             call.reject("token and apiUrl are required")
+            return
+        }
+        guard SmsApiUrl.isAllowed(apiUrl) else {
+            call.reject("apiUrl not allowed")
             return
         }
         SmsCredentialStore.save(token: token, apiUrl: apiUrl, userId: call.getString("userId") ?? "")
@@ -65,6 +72,26 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
     /// capability + queue so the next user starts from the setup CTA.
     @objc func clearState(_ call: CAPPluginCall) {
         SmsCredentialStore.clear()
+        call.resolve()
+    }
+
+    /// Trusted-device secret, in the same Keychain service as the ingest token (AfterFirstUnlockThisDeviceOnly: no backup, no transfer).
+    /// clearCredentials and clearState leave it alone.
+    @objc func setDeviceSecret(_ call: CAPPluginCall) {
+        guard let secret = call.getString("secret"), SmsKeychain.write("device_secret", Data(secret.utf8)) else {
+            call.reject("secret could not be stored")
+            return
+        }
+        call.resolve()
+    }
+
+    @objc func getDeviceSecret(_ call: CAPPluginCall) {
+        let secret = SmsKeychain.read("device_secret").flatMap { String(data: $0, encoding: .utf8) }
+        if let secret { call.resolve(["secret": secret]) } else { call.resolve(["secret": NSNull()]) }
+    }
+
+    @objc func removeDeviceSecret(_ call: CAPPluginCall) {
+        SmsKeychain.delete("device_secret")
         call.resolve()
     }
 
@@ -110,6 +137,32 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
             let status = (response as? HTTPURLResponse)?.statusCode ?? 0
             call.resolve(["ok": status == 200, "status": status, "tokenSaved": true])
         }.resume()
+    }
+}
+
+/// The only origins the SMS bridge may send a bank SMS and its ingest token to. The URL arrives from JS, so script
+/// running in the WebView must not be able to repoint it: https on buddget.app (or a subdomain), mirroring
+/// capacitor.config.ts `allowNavigation`; http://localhost only in DEBUG builds.
+enum SmsApiUrl {
+    private static let host = "buddget.app"
+
+    static func isAllowed(_ raw: String?) -> Bool {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty,
+              let c = URLComponents(string: raw), let h = c.host?.lowercased(), !h.isEmpty,
+              c.user == nil, c.password == nil, c.query == nil, c.fragment == nil,
+              c.path.isEmpty || c.path == "/" else { return false }
+        switch c.scheme?.lowercased() {
+        case "https":
+            return (c.port == nil || c.port == 443) && (h == host || h.hasSuffix("." + host))
+        case "http":
+            #if DEBUG
+            return h == "localhost" || h == "127.0.0.1"
+            #else
+            return false
+            #endif
+        default:
+            return false
+        }
     }
 }
 
@@ -344,7 +397,8 @@ enum SmsCredentialStore {
         return SmsKeychain.read(tokenAccount).flatMap { String(data: $0, encoding: .utf8) }
     }
     static var tokenUserId: String? { UserDefaults.standard.string(forKey: tokenUserIdKey) }
-    static var apiUrl: String? { UserDefaults.standard.string(forKey: apiUrlKey) }
+    /// Only an allow-listed origin is ever returned, so a value written by an older build is never posted to.
+    static var apiUrl: String? { UserDefaults.standard.string(forKey: apiUrlKey).flatMap { SmsApiUrl.isAllowed($0) ? $0 : nil } }
     static var isEnabled: Bool { UserDefaults.standard.bool(forKey: enabledKey) }
     static var isSetupCompleted: Bool { UserDefaults.standard.bool(forKey: setupCompletedKey) }
     /// The device capability: a Shortcut physically exists here. True once setup

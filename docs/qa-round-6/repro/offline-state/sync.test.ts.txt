@@ -1,0 +1,116 @@
+import { describe, expect, it } from 'vitest'
+import { flushDiff } from '@/lib/supabase/remote/sync'
+import { emptySnapshot, type Snapshot } from '@/lib/supabase/remote/snapshot'
+import { applyDelta, type MappedDelta } from '@/lib/supabase/remote/delta'
+import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
+import type { Expense } from '@/lib/store/types'
+
+type Row = Record<string, unknown> & { id: string; amount: number; updated_at: string; deleted_at?: string | null }
+const iso = (ms: number) => new Date(ms).toISOString()
+
+/** Server: INSERT keeps client updated_at (as live, REG-1) unless stampInsert; UPDATE stale-check then now(); tombstone sets now(). */
+function server(clock: { t: number }, opts: { poison?: (r: Row) => boolean; stampInsert?: boolean } = {}) {
+  const rows = new Map<string, Row>()
+  const client = {
+    from: (table: string) => ({
+      upsert: (batch: Row[]) => {
+        if (table !== 'expenses') return Promise.resolve({ error: null, count: batch.length })
+        if (opts.poison && batch.some(opts.poison)) return Promise.resolve({ error: { code: '22003', message: 'numeric field overflow' }, count: null })
+        let written = 0
+        for (const row of batch) {
+          const old = rows.get(row.id)
+          if (!old) { rows.set(row.id, opts.stampInsert ? { ...row, updated_at: iso(clock.t) } : { ...row }); written++; continue }
+          if (Date.parse(row.updated_at) < Date.parse(old.updated_at) - 60_000 && !(old.deleted_at && row.deleted_at === null)) continue
+          rows.set(row.id, { ...old, ...row, updated_at: iso(clock.t) }); written++
+        }
+        return Promise.resolve({ error: null, count: written })
+      },
+      update: (patch: { deleted_at: string }) => ({
+        in: (_c: string, ids: string[]) => {
+          for (const id of ids) { const r = rows.get(id); if (r) rows.set(id, { ...r, deleted_at: patch.deleted_at, updated_at: iso(clock.t) }) }
+          return Promise.resolve({ error: null })
+        },
+      }),
+    }),
+  }
+  const delta = (since: number | null): MappedDelta => {
+    const win = since === null ? null : since - 120_000
+    const live: Expense[] = []; const dead: string[] = []
+    for (const r of rows.values()) {
+      if (win === null) { if (!r.deleted_at) live.push(expenseFromRow(r as never)); continue }
+      if (Date.parse(r.updated_at) > win) (r.deleted_at ? dead.push(r.id) : live.push(expenseFromRow(r as never)))
+    }
+    const none = { upserts: [], deletedIds: [] }
+    return {
+      cursor: iso(clock.t), profile: null, settings: null, paymentMethods: none, incomeSources: none, incomeEvents: none, expenses: { upserts: live, deletedIds: dead },
+      receipts: none, recurringExpenses: none, subscriptions: none, debts: none, debtPayments: none, recurringDebtPayments: none, savingsAccounts: none,
+      investmentHoldings: none, savingsTransactions: none, recurringSavingsDeposits: none, goals: none, buddgyMemories: none, accountAdjustments: none,
+      budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [], deletedBudgetPlanActivationIds: [], staleBefore: null,
+    } as MappedDelta
+  }
+  return { client, rows, delta }
+}
+
+const mk = (id: string, amount: number, at: number): Expense => ({
+  id, date: '2026-10-10', description: 'x', category: 'Food', amount, currency: 'EGP', amountInBaseCurrency: amount,
+  paymentMethodId: '', isRecurring: false, createdAt: iso(at), updatedAt: iso(at),
+})
+const snap = (expenses: Expense[]): Snapshot => ({ ...emptySnapshot(), expenses })
+
+describe('OFS-3 poison row', () => {
+  it('one overflowing row must not block every other new row in the table', async () => {
+    const clock = { t: Date.parse('2026-11-05T10:00:00Z') }
+    const s = server(clock, { poison: (r) => r.amount > 1e12 })
+    const res = await flushDiff(s.client as never, 'u1', emptySnapshot(), snap([mk('g1', 5, clock.t), mk('g2', 6, clock.t), mk('bad', 1e15, clock.t)]))
+    expect(res.anyError).toBe(true)
+    expect(s.rows.has('g1'), 'good rows reach the server').toBe(true) // fails today: serverRows = []
+  })
+})
+
+class Device {
+  prev: Snapshot = emptySnapshot(); exp: Expense[] = []; cursor: number | null = null; online = true
+  constructor(public name: string) {}
+  async sync(srv: ReturnType<typeof server>) {
+    await flushDiff(srv.client as never, 'u1', this.prev, snap(this.exp))
+    const d = srv.delta(this.cursor)
+    this.exp = applyDelta(snap(this.exp), d).expenses
+    this.cursor = Date.parse(d.cursor)
+    this.prev = snap(this.exp)
+  }
+}
+
+function rng(seed: number) { let x = seed >>> 0; return () => { x = (Math.imul(x, 1664525) + 1013904223) >>> 0; return x / 2 ** 32 } }
+
+async function run(seed: number, stampInsert: boolean) {
+  const r = rng(seed)
+  const clock = { t: Date.parse('2026-11-01T00:00:00Z') }
+  const srv = server(clock, { stampInsert })
+  const devs = [new Device('A'), new Device('B'), new Device('C')]
+  let n = 0
+  for (let i = 0; i < 60; i++) {
+    clock.t += Math.floor(r() * 3_600_000)
+    const d = devs[Math.floor(r() * 3)]
+    const p = r()
+    if (p < 0.25) d.exp = [...d.exp, mk(`${d.name}${n++}`, Math.floor(r() * 100), clock.t)]
+    else if (p < 0.45 && d.exp.length) { const k = Math.floor(r() * d.exp.length); d.exp = d.exp.map((e, j) => (j === k ? { ...e, amount: e.amount + 1, updatedAt: iso(clock.t) } : e)) }
+    else if (p < 0.55 && d.exp.length) { const k = Math.floor(r() * d.exp.length); d.exp = d.exp.filter((_, j) => j !== k) }
+    else if (p < 0.65) d.online = !d.online
+    else if (d.online) await d.sync(srv)
+  }
+  for (let k = 0; k < 3; k++) for (const d of devs) { clock.t += 1000; await d.sync(srv) }
+  const live = [...srv.rows.values()].filter((x) => !x.deleted_at).map((x) => `${x.id}:${x.amount}`).sort().join('|')
+  return devs.every((d) => d.exp.map((x) => `${x.id}:${x.amount}`).sort().join('|') === live)
+}
+
+describe('3 devices, randomized interleavings (add / edit / delete / offline toggle / sync), 200 seeds', () => {
+  it('converges when the server stamps inserts with now() (the fix)', async () => {
+    let bad = 0
+    for (let s = 1; s <= 200; s++) if (!(await run(s, true))) bad++
+    expect(bad).toBe(0)
+  }, 60000)
+  it('converges with the live server (insert keeps client updated_at, REG-1)', async () => {
+    let bad = 0
+    for (let s = 1; s <= 200; s++) if (!(await run(s, false))) bad++
+    expect(`${bad} of 200 seeds diverge`).toBe('0 of 200 seeds diverge')
+  }, 60000)
+})

@@ -124,7 +124,7 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
               amount: (
                 <>
                   {open ? '' : '+'}
-                  {formatFixed2(amountBase)} <span className="text-[11px] text-[var(--color-brand-text-muted)]">{base}</span>
+                  {formatFixed2(amountBase)} <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{base}</span>
                 </>
               ),
               amountColor: missed || open ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
@@ -141,7 +141,7 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
           <ChevronLeft className="size-5" strokeWidth={2} />
         </IconButton>
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{t.paydays.detailEyebrow}</span>
+          <span className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{t.paydays.detailEyebrow}</span>
           <span className="truncate text-xl font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{source.name}</span>
         </span>
         <IconButton
@@ -160,16 +160,16 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
       <section className="mt-1.5 border-y border-[var(--flow-band-line)] text-[var(--flow-band-fg)]" style={{ background: FLOW_BAND_BG }}>
         <div className="px-[18px] pb-1.5 pt-3.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.08em]">
+            <span className="text-[0.6875rem] font-bold uppercase tracking-[0.08em]">
               {typeLabel} · {cadenceLine(source, t)}
             </span>
             {pm ? <span className="text-xs font-semibold">→ {pm}</span> : null}
           </div>
           <p className="mt-1.5 flex items-baseline gap-1.5">
             <span className="font-mono-numbers text-[30px] font-semibold leading-none tracking-[-0.03em]">{formatFixed2(source.amount)}</span>
-            <span className="text-[13px]">{monthly ? t.paydays.expectedEachMonth(source.currency) : t.paydays.expectedEachPayday(source.currency)}</span>
+            <span className="text-[0.8125rem]">{monthly ? t.paydays.expectedEachMonth(source.currency) : t.paydays.expectedEachPayday(source.currency)}</span>
           </p>
-          <p className="mb-0.5 mt-2.5 text-[11px] font-bold uppercase tracking-[0.08em]">{t.paydays.lastPaydays(occ.length)}</p>
+          <p className="mb-0.5 mt-2.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em]">{t.paydays.lastPaydays(occ.length)}</p>
           <div className="-mx-1.5" onClick={(e) => e.stopPropagation()}>
             <PaydayTimeline
               occurrences={occ}
@@ -191,7 +191,7 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
 
       {history.length ? (
         <>
-          <p className="mx-[18px] mb-1.5 mt-[18px] text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+          <p className="mx-[18px] mb-1.5 mt-[18px] text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
             {t.paydays.history}
           </p>
           <div onClick={(e) => e.stopPropagation()}>

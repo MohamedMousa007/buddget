@@ -1,0 +1,13 @@
+rules:
+  - id: sst-localstorage-token
+    languages: [typescript]
+    severity: WARNING
+    message: Credential-like value written to web storage (readable by any XSS); native builds should use secure storage.
+    patterns:
+      - pattern-either:
+          - pattern: localStorage.setItem($K, ...)
+          - pattern: window.localStorage.setItem($K, ...)
+          - pattern: sessionStorage.setItem($K, ...)
+      - metavariable-regex:
+          metavariable: $K
+          regex: (?i).*(token|secret|jwt|refresh|password|passwd|credential|api[-_]?key|otp).*

@@ -37,8 +37,8 @@ export function DebtsEmptyDesktop({ title, description, onAdd }: DebtsEmptyDeskt
             <span className="flex size-11 items-center justify-center rounded-2xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]">
               <Icon className="size-5" strokeWidth={1.8} aria-hidden />
             </span>
-            <h3 className="mt-3 text-[15px] font-bold text-[var(--color-brand-text-primary)]">{name}</h3>
-            <p className="mt-1 mb-4 text-[13px] text-[var(--color-brand-text-secondary)]">{line}</p>
+            <h3 className="mt-3 text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{name}</h3>
+            <p className="mt-1 mb-4 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{line}</p>
             <Button variant="outline" size="touch" className="mt-auto" onClick={() => onAdd(family)}>
               {add}
             </Button>

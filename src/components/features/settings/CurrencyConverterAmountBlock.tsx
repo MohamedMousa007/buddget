@@ -29,6 +29,7 @@ export function CurrencyConverterAmountBlock({
         <AmountField
           value={amount}
           onChange={(v) => onAmountChange?.(v)}
+          decimalsFor={currency}
           placeholder="0.00"
           className="w-full h-12 px-4 pr-28 rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)] text-lg font-mono-numbers"
         />

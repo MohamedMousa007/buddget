@@ -13,7 +13,7 @@
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
 import Groq from 'groq-sdk'
-import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { audioMimeToExt } from '@/lib/voice/audioMime'
 import { isPhantomTranscript } from '@/lib/voice/whisperEcho'
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
   const started = Date.now()
-  const user = await resolveRouteIdentity(request)
+  const user = await resolveActiveApiIdentity(request)
   if (!user) {
     console.error('[VOICE:transcribe] fail status=401 reason=unauthorized')
     return NextResponse.json({ error: 'Unauthorized', stage: 'transcribe' }, { status: 401 })

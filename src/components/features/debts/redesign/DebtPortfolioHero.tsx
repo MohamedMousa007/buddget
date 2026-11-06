@@ -84,11 +84,11 @@ export function DebtPortfolioHero({
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
             <span className={`shrink-0 font-mono-numbers font-semibold leading-none tracking-[-0.03em] ${fitBigNumber(fmtWhole(owed))}`}>{fmtWhole(owed)}</span>
-            <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${BAND_FG2}`}>{base}</span>
+            <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${BAND_FG2}`}>{base}</span>
           </p>
           {progressing ? (
-            <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${BAND_FG2}`}>
-              <b className="block font-mono-numbers text-[15px] text-[var(--flow-band-fg)]">{t.heroClearedPct(clearedPct)}</b>
+            <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
+              <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{t.heroClearedPct(clearedPct)}</b>
               {t.heroPaidOfTotal(fmtWhole(paidOff), fmtWhole(borrowedTotal))}
             </p>
           ) : null}

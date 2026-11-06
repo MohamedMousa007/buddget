@@ -59,7 +59,7 @@ function buildCleanTitle(kind: SmsKind, bank: string, counterparty: string | nul
   }
 }
 
-function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): CuratedMatch | null {
+function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern, receivedAt: string | null): CuratedMatch | null {
   if (!p.verified) return null
   const m = p.regex.exec(message)
   if (!m) return null
@@ -74,7 +74,7 @@ function tryPattern(message: string, set: BankPatternSet, p: CuratedPattern): Cu
   const last4 = last4Raw ? last4Raw.replace(/\D/g, '').slice(-4) || null : null
   const cpLast4Raw = p.groups.counterpartyLast4 ? (m[p.groups.counterpartyLast4] ?? null) : null
   const counterpartyLast4 = cpLast4Raw ? cpLast4Raw.replace(/\D/g, '').slice(-4) || null : null
-  const txDay = parseSmsDay(p.groups.datetime ? (m[p.groups.datetime] ?? null) : null)
+  const txDay = parseSmsDay(p.groups.datetime ? (m[p.groups.datetime] ?? null) : null, receivedAt)
 
   return {
     patternId: p.id,
@@ -95,7 +95,7 @@ export function normalizeSender(sender: string): string {
   return sender.trim().toUpperCase()
 }
 
-export function matchCuratedPattern(message: string, sender: string | null): CuratedMatch | null {
+export function matchCuratedPattern(message: string, sender: string | null, receivedAt: string | null = null): CuratedMatch | null {
   const normalized = sender ? normalizeSender(sender) : null
 
   // Sender-matched institution first — the strongest routing signal.
@@ -109,7 +109,7 @@ export function matchCuratedPattern(message: string, sender: string | null): Cur
 
   for (const set of ordered) {
     for (const pattern of set.patterns) {
-      const match = tryPattern(message, set, pattern)
+      const match = tryPattern(message, set, pattern, receivedAt)
       if (match) return match
     }
   }

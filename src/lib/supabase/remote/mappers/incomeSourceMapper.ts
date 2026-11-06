@@ -56,7 +56,7 @@ export function incomeSourceToRow(i: IncomeSource, userId: string): IncomeSource
     shared_plan_id: i.sharedPlanId ?? null,
     sort_order: i.sortOrder ?? null,
     created_at: i.createdAt,
-    updated_at: i.updatedAt,
+    edited_at: i.updatedAt,
   }
 }
 
@@ -83,6 +83,6 @@ export function incomeSourceFromRow(row: IncomeSourceRow): IncomeSource {
     sharedPlanId: row.shared_plan_id ?? undefined,
     sourceType: fromDbSourceType(row.source_type),
     createdAt: row.created_at,
-    updatedAt: row.updated_at ?? row.created_at,
+    updatedAt: row.edited_at ?? row.created_at,
   }
 }

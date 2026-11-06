@@ -38,8 +38,8 @@ export function AssignPaymentBanner({
         <Link2 className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.assignTitle}</p>
-        <p className="mt-0.5 truncate font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
+        <p className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{t.assignTitle}</p>
+        <p className="mt-0.5 truncate font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
           {t.assignSub(`${fmtWhole(candidate.amount)} ${candidate.currency}`, candidate.method, candidate.date)}
         </p>
       </div>

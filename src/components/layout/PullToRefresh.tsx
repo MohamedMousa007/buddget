@@ -179,7 +179,7 @@ function Indicator({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: -6 }}
             transition={{ type: 'spring', stiffness: 520, damping: 22 }}
-            className="rounded-full bg-[var(--color-brand-green)] px-4 py-1.5 text-sm font-semibold text-white shadow-lg"
+            className="rounded-full bg-[var(--color-brand-green)] px-4 py-1.5 text-sm font-semibold text-[var(--color-brand-on-green)] shadow-lg"
           >
             {label}
           </motion.div>

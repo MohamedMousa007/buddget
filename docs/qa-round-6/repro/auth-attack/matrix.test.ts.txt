@@ -1,0 +1,78 @@
+import { describe, expect, it, vi, beforeAll } from 'vitest'
+import { writeFileSync } from 'node:fs'
+
+const { touched, recorder, noSession } = await vi.hoisted(async () => await import('./stubs'))
+
+vi.mock('server-only', () => ({}))
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ get: () => undefined, getAll: () => [], set: () => undefined, delete: () => undefined }),
+  headers: async () => new Headers(),
+}))
+vi.mock('@/lib/supabase/server', () => ({ createClient: async () => noSession }))
+vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => recorder() }))
+vi.mock('@supabase/supabase-js', () => ({ createClient: () => ({ ...noSession, from: () => recorder() }) }))
+
+const modules = import.meta.glob('/src/app/api/**/route.ts')
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
+const UUID = '11111111-1111-4111-8111-111111111111'
+
+/** Routes that are public or secret/signature-gated by design: they must not answer 2xx WITH side effects for a forged request, but are not session-gated. */
+const PUBLIC_OK = new Set([
+  'app-config GET', 'auth/check-email POST', 'auth/password-updated GET', 'gold GET', 'rates GET', 'health GET', 'health/deep GET',
+  'prices/refresh POST', 'site/event POST', 'site/lead POST', 'biometric/signin POST', 'admin/auth/status GET', 'ai GET',
+])
+
+const rows: Array<{ route: string; method: string; status: number; touched: string[] }> = []
+
+describe('A. no session: every route x method refuses an anonymous caller and writes nothing', () => {
+  beforeAll(() => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://dummy.supabase.co'
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'dummy'
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'dummy'
+    process.env.CRON_SECRET = 'cron-secret'
+    delete process.env.LINEAR_WEBHOOK_SECRET
+    delete process.env.RESEND_WEBHOOK_SECRET
+    delete process.env.SENTRY_WEBHOOK_SECRET
+    delete process.env.SEND_EMAIL_HOOK_SECRET
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'info').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  const entries = Object.entries(modules).sort(([a], [b]) => a.localeCompare(b))
+  it('finds the whole route tree', () => { expect(entries.length).toBe(97) })
+
+  for (const [file, load] of entries) {
+    const route = file.replace('/src/app/api/', '').replace('/route.ts', '')
+    it(route, async () => {
+      const mod = (await load()) as Record<string, (req: Request, ctx?: unknown) => Promise<Response>>
+      for (const method of METHODS) {
+        const handler = mod[method]
+        if (typeof handler !== 'function') continue
+        touched.length = 0
+        const init: RequestInit = { method, headers: { 'content-type': 'application/json' } }
+        if (method !== 'GET') init.body = '{}'
+        let status = 0
+        try {
+          const res = await handler(new Request(`http://localhost/api/${route}`, init), { params: Promise.resolve({ id: UUID, number: '1' }) })
+          status = res.status
+        } catch (e) {
+          status = -1
+          rows.push({ route, method, status, touched: [`THROW ${(e as Error).message.slice(0, 80)}`] })
+          continue
+        }
+        const key = `${route} ${method}`
+        const writes = touched.filter((t) => !t.startsWith('rpc(api_rate_hit)'))
+        rows.push({ route, method, status, touched: writes })
+        if (!PUBLIC_OK.has(key)) {
+          expect(status, `${key} answered ${status}`).toBeGreaterThanOrEqual(400)
+          expect(writes, `${key} wrote ${writes.join(',')}`).toEqual([])
+        }
+      }
+    })
+  }
+
+  it('dump', () => { writeFileSync(process.env.QA6_OUT ?? '/tmp/qa6-matrix.json', JSON.stringify(rows, null, 1)) })
+})

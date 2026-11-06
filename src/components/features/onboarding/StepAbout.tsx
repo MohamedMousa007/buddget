@@ -92,12 +92,12 @@ export function StepAbout({ chrome }: { chrome: StepChrome }) {
           />
         </div>
 
-        <p className="px-1 text-[15px] text-[var(--color-brand-text-secondary)]">
+        <p className="px-1 text-[0.9375rem] text-[var(--color-brand-text-secondary)]">
           {c.about.currencyLine(currency, country === 'OTHER' ? currency : COUNTRIES[country].name)}
         </p>
       </div>
 
-      <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-snug text-[var(--color-brand-text-muted)]">
+      <p className="mt-3.5 flex items-start gap-2 text-[0.78125rem] leading-snug text-[var(--color-brand-text-muted)]">
         <Info className="mt-px size-4 shrink-0" aria-hidden />
         {c.about.why}
       </p>

@@ -145,7 +145,7 @@ export function PlanHistoryPage() {
                         <span key={f.block} className="block h-full rounded" style={{ width: `${f.percent}%`, background: blockColor(f.block) }} />
                       ))}
                     </div>
-                    <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+                    <p className="mt-3 text-[0.625rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">
                       {current ? c.monthsCovers : c.monthsCovered}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">

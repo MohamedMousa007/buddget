@@ -79,13 +79,13 @@ export function DayGroup({
       {group.label ? (
       <div className="flex items-baseline justify-between px-4 pb-1.5 pt-3">
         <span className="flex items-baseline gap-2">
-          <span className="text-[13px] font-bold text-[var(--color-brand-text-primary)]">{group.label}</span>
+          <span className="text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{group.label}</span>
           {group.date ? (
             <span className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{group.date}</span>
           ) : null}
         </span>
         {group.net ? (
-          <span className="font-mono-numbers text-[12.5px] font-semibold tabular-nums text-[var(--color-brand-text-secondary)]">
+          <span className="font-mono-numbers text-[0.78125rem] font-semibold tabular-nums text-[var(--color-brand-text-secondary)]">
             {group.net}
           </span>
         ) : null}

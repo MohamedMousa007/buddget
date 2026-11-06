@@ -1,115 +1,117 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { flushDiff } from '@/lib/supabase/remote/sync'
-import { emptySnapshot } from '@/lib/supabase/remote/snapshot'
-import { applyDelta, type MappedDelta } from '@/lib/supabase/remote/delta'
-import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
+import { emptySnapshot, type Snapshot } from '@/lib/supabase/remote/snapshot'
+import { applyDelta } from '@/lib/supabase/remote/delta'
 import { noteServerTime, resetServerClock } from '@/lib/supabase/remote/serverClock'
 import type { Expense } from '@/lib/store/types'
+import { expenseAt, fakeEditTimeServer, pgTime } from './fakeEditTimeServer'
 
-const expense = (amount: number, updatedAt: string): Expense => ({
-  id: 'e1', date: '2026-10-10', description: 'Lunch', category: 'Food', amount, currency: 'EGP', amountInBaseCurrency: amount,
-  paymentMethodId: '', isRecurring: false, createdAt: '2026-10-01T00:00:00Z', updatedAt,
-})
-
-type Row = Record<string, unknown> & { id: string; amount: number; updated_at: string }
-
-/** The server side of `a0_reject_stale_write` + `set_updated_at`, one `expenses` table. */
-function fakeServer(clock: { now: string }) {
-  const rows = new Map<string, Row>()
-  const client = {
-    from: (table: string) => ({
-      upsert: (batch: Row[]) => {
-        let written = 0
-        if (table === 'expenses') {
-          for (const row of batch) {
-            const old = rows.get(row.id)
-            if (old && Date.parse(row.updated_at) < Date.parse(old.updated_at) - 60_000) continue
-            rows.set(row.id, { ...old, ...row, updated_at: clock.now })
-            written++
-          }
-        }
-        return Promise.resolve({ error: null, count: written })
-      },
-      update: () => ({ in: () => Promise.resolve({ error: null }) }),
-    }),
-  }
-  return { client, rows }
-}
-
-const noDelta = (expenses: Expense[]): MappedDelta => {
-  const none = { upserts: [], deletedIds: [] }
-  return {
-    cursor: '', profile: null, settings: null, paymentMethods: none, incomeSources: none, incomeEvents: none, expenses: { upserts: expenses, deletedIds: [] },
-    receipts: none, recurringExpenses: none, subscriptions: none, debts: none, debtPayments: none, recurringDebtPayments: none, savingsAccounts: none,
-    investmentHoldings: none, savingsTransactions: none, recurringSavingsDeposits: none, goals: none, buddgyMemories: none, accountAdjustments: none,
-    budgetPlans: [], deletedBudgetPlanIds: [], budgetPlanActivations: [], deletedBudgetPlanActivationIds: [], staleBefore: null,
-  }
-}
-
-const withExpense = (e: Expense) => ({ ...emptySnapshot(), expenses: [e] })
+const T0 = Date.UTC(2026, 0, 1)
+const H = 3_600_000
+const MIN = 60_000
+const withExpenses = (...e: Expense[]): Snapshot => ({ ...emptySnapshot(), expenses: e })
 
 afterEach(() => resetServerClock())
 
-describe('SYN6: a stale offline edit does not overwrite a newer edit from another device', () => {
-  it('B (offline since the 3rd, edit of the 4th) pushes after A (edit of the 10th): A stays, B is told to re-pull and converges on A', async () => {
-    const clock = { now: '2026-10-10T10:00:00.000+00:00' }
-    const { client, rows } = fakeServer(clock)
-    const base = expense(10, '2026-10-03T00:00:00Z')
-    await flushDiff(client as never, 'u1', emptySnapshot(), withExpense(base))
+describe('newest edit wins (edited_at), not first to reconnect', () => {
+  it('B (edit +20 min) reconnects after A (edit +10 min): B wins; the other order leaves B too', async () => {
+    for (const order of ['AB', 'BA'] as const) {
+      const clock = { now: T0 + H }
+      const s = fakeEditTimeServer(clock)
+      const base = expenseAt('e1', 0, T0)
+      await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(base))
+      const a = expenseAt('e1', 1, T0 + 10 * MIN)
+      const b = expenseAt('e1', 2, T0 + 20 * MIN)
+      const push = async (e: Expense, at: number) => { clock.now = at; return flushDiff(s.client as never, 'u', withExpenses(base), withExpenses(e)) }
+      const results = order === 'AB' ? [await push(a, T0 + 100 * MIN), await push(b, T0 + 200 * MIN)] : [await push(b, T0 + 100 * MIN), await push(a, T0 + 200 * MIN)]
+      expect(s.rows.get('e1')?.amount).toBe(2)
+      expect(results[1].skippedWrites).toBe(order === 'AB' ? 0 : 1)
+    }
+  })
 
-    // A edits on the 10th and pushes.
-    await flushDiff(client as never, 'u1', withExpense(base), withExpense(expense(99, '2026-10-10T09:59:00Z')))
-    expect(rows.get('e1')?.amount).toBe(99)
-
-    // B was offline with the 3rd's copy, edited it on the 4th, reconnects on the 12th.
-    clock.now = '2026-10-12T08:00:00.000+00:00'
-    const bEdit = expense(55, '2026-10-04T12:00:00Z')
-    const result = await flushDiff(client as never, 'u1', withExpense(base), withExpense(bEdit))
-    expect(rows.get('e1')?.amount).toBe(99)
-    expect(result.skippedWrites).toBe(1)
-
-    // The re-pull brings A's row; B's older edit loses on the merge too.
-    const server = expenseFromRow(rows.get('e1') as never)
-    const merged = applyDelta(withExpense(bEdit), noDelta([server]))
+  it('the skipped device re-pulls and converges on the newer edit', async () => {
+    const clock = { now: T0 + H }
+    const s = fakeEditTimeServer(clock)
+    const base = expenseAt('e1', 0, T0)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(base))
+    await flushDiff(s.client as never, 'u', withExpenses(base), withExpenses(expenseAt('e1', 99, T0 + 30 * MIN)))
+    clock.now = T0 + 5 * H
+    const stale = expenseAt('e1', 55, T0 + 10 * MIN)
+    const res = await flushDiff(s.client as never, 'u', withExpenses(base), withExpenses(stale))
+    expect(res.skippedWrites).toBe(1)
+    const merged = applyDelta(withExpenses(stale), s.delta(null), withExpenses(stale))
     expect(merged.expenses[0].amount).toBe(99)
   })
 
-  it('a newer edit from the offline device still wins, and nothing is skipped', async () => {
-    const clock = { now: '2026-10-10T10:00:00.000+00:00' }
-    const { client, rows } = fakeServer(clock)
-    const base = expense(10, '2026-10-03T00:00:00Z')
-    await flushDiff(client as never, 'u1', emptySnapshot(), withExpense(base))
-    clock.now = '2026-10-12T08:00:00.000+00:00'
-    const result = await flushDiff(client as never, 'u1', withExpense(base), withExpense(expense(77, '2026-10-11T00:00:00Z')))
-    expect(rows.get('e1')?.amount).toBe(77)
-    expect(result.skippedWrites).toBe(0)
+  it('never sends updated_at: it is the server write time', async () => {
+    const s = fakeEditTimeServer({ now: T0 + H })
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(expenseAt('e1', 1, T0)))
+    expect(s.written[0][0]).not.toHaveProperty('updated_at')
+    expect(s.written[0][0].edited_at).toBe(new Date(T0).toISOString())
   })
+})
 
-  it('two quick edits on one device, the second made before the first reached the server, both land', async () => {
-    const clock = { now: '2026-10-10T10:00:05.000+00:00' }
-    const { client, rows } = fakeServer(clock)
-    const base = expense(10, '2026-10-03T00:00:00Z')
-    await flushDiff(client as never, 'u1', emptySnapshot(), withExpense(base))
-    const first = expense(20, '2026-10-10T10:00:00Z')
-    clock.now = '2026-10-10T10:00:05.000+00:00' // server receipt 5 s after the edit
-    await flushDiff(client as never, 'u1', withExpense(base), withExpense(first))
-    const second = expense(30, '2026-10-10T10:00:02Z') // made while the first was in flight
-    await flushDiff(client as never, 'u1', withExpense(first), withExpense(second))
-    expect(rows.get('e1')?.amount).toBe(30)
+describe('REG-4: a server-side writer does not make a later user edit stale', () => {
+  it('an SMS pairing bumps the row after the offline edit; the edit still lands', async () => {
+    const clock = { now: T0 + H }
+    const s = fakeEditTimeServer(clock)
+    const base = expenseAt('e1', 10, T0)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(base))
+    clock.now = T0 + 2 * H
+    s.serverWrite('e1', { description: 'paired' }) // arrives after the user's offline edit, before its sync
+    clock.now = T0 + 3 * H
+    const res = await flushDiff(s.client as never, 'u', withExpenses(base), withExpenses(expenseAt('e1', 77, T0 + 90 * MIN)))
+    expect(s.rows.get('e1')?.amount).toBe(77)
+    expect(res.skippedWrites).toBe(0)
   })
+})
 
-  it('sends the edit time on the server clock: a device 2 h behind is not mistaken for stale', async () => {
-    // Device clock is 2 h behind the server; the last pull told it so.
+describe('REG-1: a row created offline reaches other devices', () => {
+  it('an insert carrying a 3 h old edit time is stored with updated_at = arrival, so a delta pull returns it', async () => {
+    const clock = { now: T0 + 10 * H }
+    const s = fakeEditTimeServer(clock)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(expenseAt('late', 5, T0 + 7 * H)))
+    expect(Date.parse(s.rows.get('late')!.updated_at)).toBe(clock.now)
+    const otherDeviceCursor = T0 + 9 * H
+    expect(s.delta(otherDeviceCursor).expenses.upserts.map((e) => e.id)).toEqual(['late'])
+  })
+})
+
+describe('OFS-1: a future-dated client time cannot be exploited', () => {
+  it('an insert stamped a day ahead is clamped to now and does not block a later correct edit', async () => {
+    const clock = { now: T0 + H }
+    const s = fakeEditTimeServer(clock)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses({ ...expenseAt('e1', 1, T0), updatedAt: new Date(T0 + 25 * H).toISOString() }))
+    // The offset was unknown, so the device sent its (ahead) clock; the server clamps.
+    expect(Date.parse(s.rows.get('e1')!.edited_at)).toBeLessThanOrEqual(clock.now)
+    clock.now = T0 + 2 * H
+    const res = await flushDiff(s.client as never, 'u', withExpenses(expenseAt('e1', 1, T0)), withExpenses(expenseAt('e1', 9, T0 + 90 * MIN + H)))
+    expect(s.rows.get('e1')?.amount).toBe(9)
+    expect(res.skippedWrites).toBe(0)
+  })
+})
+
+describe('edit time on the server clock', () => {
+  it('a device 2 h behind is not mistaken for stale once the offset is learned', async () => {
     const realNow = Date.now()
-    noteServerTime(new Date(realNow + 2 * 3_600_000).toISOString())
-    const clock = { now: new Date(realNow + 2 * 3_600_000 - 600_000).toISOString() } // server stamp 10 min ago
-    const { client, rows } = fakeServer(clock)
-    rows.set('e1', { id: 'e1', amount: 10, updated_at: clock.now })
-    const base = expense(10, clock.now)
-    const editedNow = new Date(realNow).toISOString() // 2 h behind on the wall, but later than the server stamp once corrected
-    clock.now = new Date(realNow + 2 * 3_600_000).toISOString()
-    const result = await flushDiff(client as never, 'u1', withExpense(base), withExpense(expense(42, editedNow)))
-    expect(rows.get('e1')?.amount).toBe(42)
-    expect(result.skippedWrites).toBe(0)
+    noteServerTime(new Date(realNow + 2 * H).toISOString())
+    const clock = { now: realNow + 2 * H }
+    const s = fakeEditTimeServer(clock)
+    s.rows.set('e1', { id: 'e1', amount: 10, edited_at: pgTime(realNow + 2 * H - 10 * MIN), updated_at: pgTime(realNow + 2 * H - 10 * MIN), deleted_at: null })
+    const res = await flushDiff(s.client as never, 'u', withExpenses(expenseAt('e1', 10, realNow - 3 * H)), withExpenses(expenseAt('e1', 42, realNow - 1000)))
+    expect(s.rows.get('e1')?.amount).toBe(42)
+    expect(res.skippedWrites).toBe(0)
+  })
+
+  it('two quick edits on one device both land (offset noise below the tolerance)', async () => {
+    const clock = { now: T0 + H }
+    const s = fakeEditTimeServer(clock)
+    const base = expenseAt('e1', 10, T0)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(base))
+    const first = expenseAt('e1', 20, T0 + 30 * MIN)
+    await flushDiff(s.client as never, 'u', withExpenses(base), withExpenses(first))
+    const second = expenseAt('e1', 30, T0 + 30 * MIN - 1500)
+    await flushDiff(s.client as never, 'u', withExpenses(first), withExpenses(second))
+    expect(s.rows.get('e1')?.amount).toBe(30)
   })
 })

@@ -74,7 +74,7 @@ export function subscriptionFromRow(row: SubscriptionRow): Subscription {
     notes: row.notes,
     createdAt: row.created_at,
     cancelledAt: row.cancelled_at,
-    updatedAt: row.updated_at,
+    updatedAt: row.edited_at,
     tracking: row.tracking as SubscriptionTracking,
     reminder: row.reminder,
     trialEnd: row.trial_end,

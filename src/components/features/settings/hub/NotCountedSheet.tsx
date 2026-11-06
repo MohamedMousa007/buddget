@@ -41,8 +41,8 @@ export function NotCountedSheet({ open, onClose }: { open: boolean; onClose: () 
         <p className="text-sm leading-relaxed text-[var(--color-brand-text-secondary)]">{c.intro}</p>
         {list.length === 0 ? <p className="py-6 text-center text-sm text-[var(--color-brand-text-muted)]">{c.empty}</p> : null}
         <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
-          {accounts.length > 0 ? <section className="space-y-2"><h3 className="text-[13px] font-bold text-[var(--color-brand-text-secondary)]">{c.accounts}</h3><div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">{accounts.map(row)}</div></section> : null}
-          {cards.length > 0 ? <section className="space-y-2"><h3 className="text-[13px] font-bold text-[var(--color-brand-text-secondary)]">{c.cards}</h3><div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">{cards.map(row)}</div></section> : null}
+          {accounts.length > 0 ? <section className="space-y-2"><h3 className="text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{c.accounts}</h3><div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">{accounts.map(row)}</div></section> : null}
+          {cards.length > 0 ? <section className="space-y-2"><h3 className="text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{c.cards}</h3><div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">{cards.map(row)}</div></section> : null}
         </div>
       </div>
     </ModalShell>

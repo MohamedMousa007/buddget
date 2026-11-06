@@ -45,7 +45,7 @@ export function budgetPlanToRow(p: BudgetPlan, userId: string): BudgetPlanInsert
     rationale: (p.rationale ?? null) as Json,
     engine_version: p.engineVersion ?? null,
     created_at: p.createdAt,
-    ...(p.updatedAt ? { updated_at: p.updatedAt } : {}),
+    ...(p.updatedAt ? { edited_at: p.updatedAt } : {}),
   }
 }
 
@@ -144,7 +144,7 @@ export function assembleBudgetPlan({ plan, categories, subcategories }: Assemble
     name: plan.name,
     categories: planCategories,
     createdAt: plan.created_at,
-    updatedAt: plan.updated_at,
+    updatedAt: plan.edited_at,
     household: (plan.household as BudgetHousehold | null) ?? null,
     buddgyFlow: (plan.buddgy_flow as BudgetPlan['buddgyFlow']) ?? null,
     buddgyGuidedComplete: plan.buddgy_guided_complete ?? false,

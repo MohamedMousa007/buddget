@@ -81,14 +81,14 @@ export function ProviderPickerSheet({
           <Input
             value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={t.paymentMethods.searchProviderPlaceholder}
-            className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] ps-10 pe-3 text-[15px] text-[var(--color-brand-text-primary)] text-start"
+            className="h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-bg)] ps-10 pe-3 text-[0.9375rem] text-[var(--color-brand-text-primary)] text-start"
           />
         </div>
         <div className="native-scroll -mx-1 flex max-h-[52dvh] min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1">
           {rows.map((r, i) => {
             if (r.kind === 'header') {
               return (
-                <div key={`h-${r.label}-${i}`} className="px-1.5 pb-1 pt-2.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-brand-text-muted)]">
+                <div key={`h-${r.label}-${i}`} className="px-1.5 pb-1 pt-2.5 text-[0.5625rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-brand-text-muted)]">
                   {r.label}
                 </div>
               )
@@ -104,14 +104,14 @@ export function ProviderPickerSheet({
                 className="min-h-14 gap-3 rounded-[14px] px-3 py-2"
               >
                 <span
-                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] text-[12px] font-extrabold"
+                  className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] text-[0.75rem] font-extrabold"
                   style={{ background: rgba(col, 0.18), color: col }}
                 >
                   {b.short}
                 </span>
                 <span className="min-w-0 flex-1 text-start">
-                  <span className="block truncate text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{b.name}</span>
-                  <span className="block text-[11px] font-medium text-[var(--color-brand-text-muted)]">
+                  <span className="block truncate text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{b.name}</span>
+                  <span className="block text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">
                     {PAYMENT_TYPE_META[issuesType ?? b.type].label}{b.full ? ` · ${b.full}` : ''}
                   </span>
                 </span>

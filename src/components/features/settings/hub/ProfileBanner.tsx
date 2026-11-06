@@ -46,7 +46,7 @@ export function ProfileBanner() {
           </span>
           {pct < 100 ? (
             <ProgressRing pct={pct} size={36} stroke={4} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)">
-              <span className="font-mono-numbers text-[9px] font-bold text-[var(--color-brand-primary-ink)]">{pct}%</span>
+              <span className="font-mono-numbers text-[0.5625rem] font-bold text-[var(--color-brand-primary-ink)]">{pct}%</span>
             </ProgressRing>
           ) : null}
           <Chevron className="size-5 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />

@@ -115,7 +115,7 @@ export function AddAccountSheet({ open, onClose, initialKind = 'bank_account', p
               <div>
                 <div className="mx-0.5 mb-2 flex items-center gap-2">
                   <span className={microClassName}>{tp.currency}</span>
-                  <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{tp.optional}</span>
+                  <span className="text-[0.625rem] font-medium text-[var(--color-brand-text-muted)]">{tp.optional}</span>
                 </div>
                 <CurrencyField value={currency} onChange={(c) => { setCurrency(c as unknown as Currency); setCurrencyChosen(true) }} className={ACCOUNT_CURRENCY_FIELD_CLASS} />
               </div>

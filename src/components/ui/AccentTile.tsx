@@ -86,7 +86,7 @@ export function AccentTile({
         {icon}
       </span>
       <span
-        className="whitespace-nowrap text-[10px] font-semibold"
+        className="whitespace-nowrap text-[0.625rem] font-semibold"
         style={{
           color: selected
             ? 'var(--color-brand-text-primary)'

@@ -65,7 +65,7 @@ export function StepMakeItReal({ form }: { form: Form }) {
         <>
           {DEBT_LIKE.has(form.category) && form.linkable.length > 0 ? (
             <div className="flex flex-col gap-2 rounded-2xl border border-[var(--color-brand-border)] p-3">
-              <p className="text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{f.linkLead}</p>
+              <p className="text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{f.linkLead}</p>
               <p className="text-xs text-[var(--color-brand-text-secondary)]">{f.linkSub}</p>
               <div className="flex flex-wrap gap-2">
                 {form.linkable.slice(0, 4).map((d) => (
@@ -84,14 +84,14 @@ export function StepMakeItReal({ form }: { form: Form }) {
             <Label>{f.target}</Label>
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <AmountField value={form.targetAmount} onChange={form.setTargetAmount} className={FIELD} aria-label={f.target} />
+                <AmountField value={form.targetAmount} onChange={form.setTargetAmount} decimalsFor={form.currency} className={FIELD} aria-label={f.target} />
               </div>
               <div className="shrink-0">
                 <FiatCurrencyField value={form.currency} onChange={form.setCurrency} compact className={FIELD} />
               </div>
             </div>
             {form.advice ? (
-              <p className="flex items-center gap-2 rounded-xl bg-[var(--color-brand-primary-soft)] px-3 py-2 text-[13px] text-[var(--color-brand-text-primary)]">
+              <p className="flex items-center gap-2 rounded-xl bg-[var(--color-brand-primary-soft)] px-3 py-2 text-[0.8125rem] text-[var(--color-brand-text-primary)]">
                 <BuddgyIcon size={20} className="shrink-0" />
                 <span className="min-w-0 flex-1">
                   {form.advice.kind === 'covered' ? adv.covered : adv.emergency(formatCurrency(form.advice.amount, form.currency, false))}
@@ -104,7 +104,7 @@ export function StepMakeItReal({ form }: { form: Form }) {
               </p>
             ) : null}
             {online ? (
-              <Button variant="link" size="touch" onClick={() => setCostOpen(true)} className="justify-start px-0 text-[13px]">
+              <Button variant="link" size="touch" onClick={() => setCostOpen(true)} className="justify-start px-0 text-[0.8125rem]">
                 <BuddgyIcon size={20} />
                 {f.askBuddgy}
               </Button>
@@ -153,7 +153,7 @@ export function StepMakeItReal({ form }: { form: Form }) {
             <Label>{f.limit}</Label>
             <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <AmountField value={form.limit} onChange={form.setLimit} className={FIELD} aria-label={f.limit} />
+                <AmountField value={form.limit} onChange={form.setLimit} decimalsFor={form.currency} className={FIELD} aria-label={f.limit} />
               </div>
               <div className="shrink-0">
                 <FiatCurrencyField value={form.currency} onChange={form.setCurrency} compact className={FIELD} />

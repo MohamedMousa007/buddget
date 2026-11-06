@@ -86,11 +86,11 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
               ))}
 
               {item.status === 'error' && item.error ? (
-                <div className="flex w-full items-start gap-2 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-[13px] text-[var(--color-brand-text-secondary)]">
+                <div className="flex w-full items-start gap-2 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
                   <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--color-brand-amber)]" aria-hidden />
                   <span className="min-w-0 flex-1">{copy.error(item.error)}</span>
                   {last && item.error.kind !== 'quota' ? (
-                    <Button variant="ghost" size="touch" onClick={onRetry} className="-my-1.5 shrink-0 px-3 text-[13px]">
+                    <Button variant="ghost" size="touch" onClick={onRetry} className="-my-1.5 shrink-0 px-3 text-[0.8125rem]">
                       <RotateCw aria-hidden />
                       {copy.retry}
                     </Button>
@@ -99,13 +99,13 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
               ) : null}
 
               {item.status === 'done' && item.truncated && last ? (
-                <Button variant="outline" size="touch" onClick={onContinue} className="text-[13px]">
+                <Button variant="outline" size="touch" onClick={onContinue} className="text-[0.8125rem]">
                   {copy.keepGoing}
                 </Button>
               ) : null}
 
               {item.status === 'done' && (item.reads.length > 0 || item.local) ? (
-                <p className="flex items-center gap-1 px-1 text-[11px] text-[var(--color-brand-text-muted)]">
+                <p className="flex items-center gap-1 px-1 text-[0.6875rem] text-[var(--color-brand-text-muted)]">
                   {item.local ? <Zap className="size-3" aria-hidden /> : null}
                   {item.local ? copy.localTag : `${copy.checked}: ${[...new Set(item.reads.map((r) => r.label))].join(' · ')}`}
                 </p>

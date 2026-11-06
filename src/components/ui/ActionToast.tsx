@@ -63,7 +63,7 @@ function ToastCard({ item, onDone }: { item: ToastItem; onDone: (id: number) => 
       className={`flex items-center gap-3 rounded-full shadow-lg pointer-events-auto text-sm font-medium ${
         hasUndo
           ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] pl-4 pr-1.5 py-1.5'
-          : 'bg-[var(--color-brand-green)] text-white px-4 py-2'
+          : 'bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] px-4 py-2'
       }`}
     >
       {hasUndo ? <span>{item.message}</span> : <span>✓ {item.message}</span>}

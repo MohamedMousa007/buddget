@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
 import { X, ChevronDown, Link2, Trash2 } from 'lucide-react'
@@ -106,6 +107,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const [notesOpen, setNotesOpen] = useState(Boolean(source?.notes))
 
   const typeLocked = typeIsLocked(source)
+  const submitOnce = useSubmitOnce(open)
 
   // Add mode reuses one instance, so reset defaults each time it opens. Edit mode
   // is keyed on the source id (remounts), so its useState seeds are enough.
@@ -145,7 +147,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const assignedSource = assigned ? incomeSources.find((s) => s.id === assigned.templateId) : undefined
 
   const handleSubmit = () => {
-    if (!name.trim() || !amtValid) return
+    if (!name.trim() || !amtValid || !submitOnce.claim()) return
     const cur = clampFiatToAllowed(settings, currency)
     if (edit && source) {
       updateIncomeSource(source.id, {
@@ -248,6 +250,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
                 placeholder={t.addIncome.placeholderAmount}
                 value={amount}
                 onChange={setAmount}
+                decimalsFor={currency}
                 className={`mt-1.5 ${MODAL_CONTROL_CLASS} font-mono-numbers text-xl font-semibold`}
               />
             </div>
@@ -317,7 +320,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
                 <div className="flex items-baseline gap-2">
                   <span className={MODAL_LABEL_CLASS}>{t.addIncome.paydayLabel}</span>
                   {frequency !== 'monthly' ? (
-                    <span className="text-[10px] text-[var(--color-brand-text-muted)]">{t.addIncome.paydayHelper(frequency === 'biweekly' ? 2 : 4)}</span>
+                    <span className="text-[0.625rem] text-[var(--color-brand-text-muted)]">{t.addIncome.paydayHelper(frequency === 'biweekly' ? 2 : 4)}</span>
                   ) : null}
                 </div>
                 <div className="mt-1.5">

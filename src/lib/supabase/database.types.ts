@@ -308,9 +308,9 @@ export type Database = {
         Relationships: []
       }
       account_adjustments: {
-        Row: { id: string; user_id: string; payment_method_id: string; delta: number; reason: string; occurred_at: string; note: string | null; created_at: string; updated_at: string; deleted_at: string | null }
-        Insert: { id?: string; user_id: string; payment_method_id: string; delta: number; reason: string; occurred_at?: string; note?: string | null; created_at?: string; updated_at?: string; deleted_at?: string | null }
-        Update: { id?: string; user_id?: string; payment_method_id?: string; delta?: number; reason?: string; occurred_at?: string; note?: string | null; created_at?: string; updated_at?: string; deleted_at?: string | null }
+        Row: { id: string; user_id: string; payment_method_id: string; delta: number; reason: string; occurred_at: string; note: string | null; created_at: string; updated_at: string; edited_at: string; deleted_at: string | null }
+        Insert: { id?: string; user_id: string; payment_method_id: string; delta: number; reason: string; occurred_at?: string; note?: string | null; created_at?: string; updated_at?: string; edited_at?: string; deleted_at?: string | null }
+        Update: { id?: string; user_id?: string; payment_method_id?: string; delta?: number; reason?: string; occurred_at?: string; note?: string | null; created_at?: string; updated_at?: string; edited_at?: string; deleted_at?: string | null }
         Relationships: []
       }
       account_balance_reports: {
@@ -1017,6 +1017,7 @@ export type Database = {
           status: string
           text: string
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1029,6 +1030,7 @@ export type Database = {
           status?: string
           text: string
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1041,6 +1043,7 @@ export type Database = {
           status?: string
           text?: string
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1067,6 +1070,7 @@ export type Database = {
           rationale: string | null
           sort_order: number
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1090,6 +1094,7 @@ export type Database = {
           rationale?: string | null
           sort_order?: number
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1113,6 +1118,7 @@ export type Database = {
           rationale?: string | null
           sort_order?: number
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1177,6 +1183,7 @@ export type Database = {
           id: string
           plan_id: string
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1186,6 +1193,7 @@ export type Database = {
           id?: string
           plan_id: string
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1195,6 +1203,7 @@ export type Database = {
           id?: string
           plan_id?: string
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1223,6 +1232,7 @@ export type Database = {
           rationale: Json | null
           status: string
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1240,6 +1250,7 @@ export type Database = {
           rationale?: Json | null
           status?: string
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1257,6 +1268,7 @@ export type Database = {
           rationale?: Json | null
           status?: string
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1272,6 +1284,7 @@ export type Database = {
           name: string
           sort_order: number
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1284,6 +1297,7 @@ export type Database = {
           name: string
           sort_order?: number
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1296,6 +1310,7 @@ export type Database = {
           name?: string
           sort_order?: number
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1329,6 +1344,7 @@ export type Database = {
           payment_date: string
           payment_method_id: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1351,6 +1367,7 @@ export type Database = {
           payment_date?: string
           payment_method_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1373,6 +1390,7 @@ export type Database = {
           payment_date?: string
           payment_method_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1438,6 +1456,7 @@ export type Database = {
           starting_balance: number | null
           status: string
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1485,6 +1504,7 @@ export type Database = {
           starting_balance?: number | null
           status?: string
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1532,6 +1552,7 @@ export type Database = {
           starting_balance?: number | null
           status?: string
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1583,6 +1604,7 @@ export type Database = {
           refunded_at: string | null
           sms_log_id: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1616,6 +1638,7 @@ export type Database = {
           refunded_at?: string | null
           sms_log_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1649,6 +1672,7 @@ export type Database = {
           refunded_at?: string | null
           sms_log_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1846,6 +1870,7 @@ export type Database = {
           target_amount: number | null
           target_date: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1873,6 +1898,7 @@ export type Database = {
           target_amount?: number | null
           target_date?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1900,6 +1926,7 @@ export type Database = {
           target_amount?: number | null
           target_date?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1925,6 +1952,7 @@ export type Database = {
           status: Database["public"]["Enums"]["income_event_status"]
           template_id: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -1947,6 +1975,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["income_event_status"]
           template_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -1969,6 +1998,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["income_event_status"]
           template_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1998,6 +2028,7 @@ export type Database = {
           sort_order: number | null
           source_type: Database["public"]["Enums"]["income_source_type"]
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2024,6 +2055,7 @@ export type Database = {
           sort_order?: number | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -2050,6 +2082,7 @@ export type Database = {
           sort_order?: number | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -2351,6 +2384,7 @@ export type Database = {
           notes: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2373,6 +2407,7 @@ export type Database = {
           notes?: string | null
           type: Database["public"]["Enums"]["payment_method_type"]
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -2395,6 +2430,7 @@ export type Database = {
           notes?: string | null
           type?: Database["public"]["Enums"]["payment_method_type"]
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: []
@@ -2636,6 +2672,7 @@ export type Database = {
           payment_method_id: string | null
           receipt_date: string
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2653,6 +2690,7 @@ export type Database = {
           payment_method_id?: string | null
           receipt_date: string
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -2670,6 +2708,7 @@ export type Database = {
           payment_method_id?: string | null
           receipt_date?: string
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -2698,6 +2737,7 @@ export type Database = {
           notes: string | null
           payment_method_id: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2715,6 +2755,7 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -2732,6 +2773,7 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -2768,6 +2810,7 @@ export type Database = {
           notes: string | null
           payment_method_id: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2786,6 +2829,7 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -2804,6 +2848,7 @@ export type Database = {
           notes?: string | null
           payment_method_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -2837,6 +2882,7 @@ export type Database = {
           next_due_date: string | null
           notes: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2852,6 +2898,7 @@ export type Database = {
           next_due_date?: string | null
           notes?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -2867,6 +2914,7 @@ export type Database = {
           next_due_date?: string | null
           notes?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -2900,6 +2948,7 @@ export type Database = {
           opening_balance: number
           type: Database["public"]["Enums"]["savings_type"]
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2922,6 +2971,7 @@ export type Database = {
           opening_balance?: number
           type?: Database["public"]["Enums"]["savings_type"]
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -2944,6 +2994,7 @@ export type Database = {
           opening_balance?: number
           type?: Database["public"]["Enums"]["savings_type"]
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: []
@@ -2972,6 +3023,7 @@ export type Database = {
           quantity: number
           unit_cost: number | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -2997,6 +3049,7 @@ export type Database = {
           quantity?: number
           unit_cost?: number | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -3022,6 +3075,7 @@ export type Database = {
           quantity?: number
           unit_cost?: number | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -3101,6 +3155,7 @@ export type Database = {
           transaction_date: string
           transfer_group_id: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -3121,6 +3176,7 @@ export type Database = {
           transaction_date?: string
           transfer_group_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -3141,6 +3197,7 @@ export type Database = {
           transaction_date?: string
           transfer_group_id?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -3843,6 +3900,7 @@ export type Database = {
           tracking: string
           trial_end: string | null
           updated_at: string
+          edited_at: string
           user_id: string
         }
         Insert: {
@@ -3878,6 +3936,7 @@ export type Database = {
           tracking?: string
           trial_end?: string | null
           updated_at?: string
+          edited_at?: string
           user_id: string
         }
         Update: {
@@ -3913,6 +3972,7 @@ export type Database = {
           tracking?: string
           trial_end?: string | null
           updated_at?: string
+          edited_at?: string
           user_id?: string
         }
         Relationships: [
@@ -3998,9 +4058,9 @@ export type Database = {
         Relationships: []
       }
       user_devices: {
-        Row: { app_version: string | null; collects_sms: boolean; created_at: string; device_id: string; is_main: boolean; last_seen_at: string; last_sms_at: string | null; model: string | null; name: string | null; notify: boolean | null; notify_on_sms: boolean | null; platform: string; push_permission: string | null; revoked_at: string | null; user_id: string }
-        Insert: { app_version?: string | null; collects_sms?: boolean; created_at?: string; device_id: string; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform: string; push_permission?: string | null; revoked_at?: string | null; user_id: string }
-        Update: { app_version?: string | null; collects_sms?: boolean; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform?: string; push_permission?: string | null; revoked_at?: string | null }
+        Row: { app_version: string | null; collects_sms: boolean; created_at: string; device_id: string; is_main: boolean; last_seen_at: string; last_sms_at: string | null; model: string | null; name: string | null; notify: boolean | null; notify_on_sms: boolean | null; platform: string; push_permission: string | null; revoked_at: string | null; session_id: string | null; user_id: string }
+        Insert: { app_version?: string | null; collects_sms?: boolean; created_at?: string; device_id: string; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform: string; push_permission?: string | null; revoked_at?: string | null; session_id?: string | null; user_id: string }
+        Update: { app_version?: string | null; collects_sms?: boolean; is_main?: boolean; last_seen_at?: string; last_sms_at?: string | null; model?: string | null; name?: string | null; notify?: boolean | null; notify_on_sms?: boolean | null; platform?: string; push_permission?: string | null; revoked_at?: string | null; session_id?: string | null }
         Relationships: []
       }
       feedback_votes: {
@@ -4436,6 +4496,7 @@ export type Database = {
       admin_user_directory: {
         Args: {
           p_limit?: number
+          p_match_email?: boolean
           p_offset?: number
           p_order?: string
           p_plan?: string
@@ -4445,6 +4506,7 @@ export type Database = {
         Returns: Json
       }
       admin_user_overview: { Args: { p_user: string }; Returns: Json }
+      revoke_auth_session: { Args: { p_session: string; p_user: string }; Returns: number }
       ai_default_limits: { Args: never; Returns: Json }
       ai_effective_limits: { Args: { p_user: string }; Returns: Json }
       housekeeping: { Args: { p_analytics_days?: number }; Returns: Json }

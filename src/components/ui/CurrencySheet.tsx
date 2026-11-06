@@ -112,7 +112,7 @@ function CurrencyDualBody({ open, onClose, base, second, rates, onPickMain, onPi
 
         {tab === 'second' && second === null ? (
           <div className="shrink-0 space-y-2 rounded-2xl bg-[var(--color-brand-elevated)] px-4 py-3" aria-live="polite">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.previewTitle}</p>
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.previewTitle}</p>
             <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-brand-card)] px-3 py-2">
               <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.sampleTxn}</span>
               <span className="text-end">
@@ -147,7 +147,7 @@ function CurrencyDualBody({ open, onClose, base, second, rates, onPickMain, onPi
               >
                 <CurrencyBadge code="" selected={second === null}><Ban className="size-5" aria-hidden /></CurrencyBadge>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{c.off}</span>
+                  <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.off}</span>
                   <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{c.offHint}</span>
                 </span>
                 {second === null ? <Check className="size-5 shrink-0 text-[var(--color-brand-primary-ink)]" aria-hidden /> : null}

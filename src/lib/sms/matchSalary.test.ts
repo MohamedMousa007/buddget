@@ -102,10 +102,11 @@ describe('matchSalary — payday snapping', () => {
   it('halves the window for weekly paydays so the nearest one is never a coin flip', async () => {
     // Weekly paydays sit 7 days apart, so a ±7 window would reach two of them at once and
     // "nearest" would be decided by a day. The cap is 3.
-    // 15 Jul → the 18th is a Saturday, paid Fri the 17th, 2 days away.
-    await expect(call([WEEKLY], '2026-07-15')).resolves.toMatchObject({ occurrenceDate: '2026-07-17' })
+    // 15 Jul → the 18th is a Saturday, paid Fri the 17th, 2 days away (Sat+Sun weekend).
+    const satSun = { week_start_day: 0, timezone: 'UTC' }
+    await expect(call([WEEKLY], '2026-07-15', {}, [], satSun)).resolves.toMatchObject({ occurrenceDate: '2026-07-17' })
     // 28 Jul sits 4 days from the 24th and 7 from Aug 4 — a ±7 window would claim both.
-    await expect(call([WEEKLY], '2026-07-28')).resolves.toEqual({
+    await expect(call([WEEKLY], '2026-07-28', {}, [], satSun)).resolves.toEqual({
       outcome: 'confirm',
       sourceId: 'src-wk',
       occurrenceDate: null,
@@ -156,9 +157,20 @@ describe('matchSalary — amount and currency', () => {
   it('stamps the payday on the weekend the user lives by (MON-3)', async () => {
     // 2026-07-24 is a Friday: a working day for Sat+Sun users, weekend for a Fri+Sat (Egypt) user.
     const MONTHLY_24 = { ...MONTHLY_25, id: 'src-mo24', day_of_month: 24 }
-    await expect(call([MONTHLY_24], '2026-07-24')).resolves.toMatchObject({ occurrenceDate: '2026-07-24' })
+    const satSun = { week_start_day: 0, timezone: 'UTC' }
+    await expect(call([MONTHLY_24], '2026-07-24', {}, [], satSun)).resolves.toMatchObject({ occurrenceDate: '2026-07-24' })
     const egypt = { week_start_day: 6, timezone: 'Africa/Cairo' }
     await expect(call([MONTHLY_24], '2026-07-23', {}, [], egypt)).resolves.toMatchObject({ occurrenceDate: '2026-07-23' })
+  })
+
+  it('a user with no stored timezone or week start gets the Cairo weekend, the same as the app (REG-2 / TZL-1)', async () => {
+    const MONTHLY_24 = { ...MONTHLY_25, id: 'src-mo24', day_of_month: 24 }
+    const egypt = { week_start_day: 6, timezone: 'Africa/Cairo' }
+    const noPrefs = [null, { week_start_day: null, timezone: null }, { week_start_day: null, timezone: 'not/a-zone' }]
+    for (const prefs of noPrefs) {
+      await expect(call([MONTHLY_24], '2026-07-23', {}, [], prefs)).resolves.toEqual(await call([MONTHLY_24], '2026-07-23', {}, [], egypt))
+      await expect(call([MONTHLY_24], '2026-07-23', {}, [], prefs)).resolves.toMatchObject({ occurrenceDate: '2026-07-23' })
+    }
   })
 
   it('falls back to a source with no nearby payday over none at all', async () => {

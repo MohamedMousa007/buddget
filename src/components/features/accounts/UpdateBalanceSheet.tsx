@@ -45,10 +45,10 @@ export function UpdateBalanceSheet({ open, onClose, account, onDone }: UpdateBal
         </V3SheetHeader>
         <SheetBody className="space-y-3 pt-3">
           <AmountField value={value} onChange={setValue} currency={cur} placeholder="0" />
-          <p className={`text-[13px] font-semibold ${diff === 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-amber)]'}`}>
+          <p className={`text-[0.8125rem] font-semibold ${diff === 0 ? 'text-[var(--color-brand-green)]' : 'text-[var(--color-brand-amber)]'}`}>
             {diff === 0 ? t.matchesBuddget : t.vsBuddget(`${diff > 0 ? '+' : '−'}${fmt(Math.abs(diff))}`)}
           </p>
-          <p className="text-[13px] text-[var(--color-brand-text-muted)]">{t.buddgetHas(fmt(current))}</p>
+          <p className="text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.buddgetHas(fmt(current))}</p>
         </SheetBody>
         <SheetFooter>
           <Button size="cta-block" onClick={submit} disabled={!has} className="font-semibold">

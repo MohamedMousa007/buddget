@@ -201,6 +201,7 @@ export const ar: Dictionary = {
   syncFailures: {
     oneDidntSync: 'تغيير واحد لم يُحفظ سحابياً',
     manyDidntSync: (count) => `${count} تغييرات لم تُحفظ سحابياً`,
+    setAside: (count) => (count === 1 ? 'عنصر واحد تعذّر حفظه سحابياً وتم تجاوزه' : `${count} عناصر تعذّر حفظها سحابياً وتم تجاوزها`),
     autoRetryNote: 'سنتابع المحاولة تلقائياً في الخلفية.',
     expand: 'عرض التفاصيل',
     collapse: 'إخفاء التفاصيل',
@@ -215,6 +216,7 @@ export const ar: Dictionary = {
     saved: 'تم الحفظ',
     refreshed: 'تم التحديث!',
     cancel: 'إلغاء',
+    amountLabel: 'المبلغ',
     delete: 'حذف',
     edit: 'تعديل',
     back: 'رجوع',
@@ -2160,6 +2162,8 @@ export const ar: Dictionary = {
       smsIncomeBody: (bank) => `تم الاستلام عبر ${bank}. اضغط للعرض.`,
       smsConfirmTitle: 'تعذّرت الإضافة تلقائيًا — اضغط للإضافة',
       smsConfirmBody: (amount, label) => (label ? `${amount} — ${label}` : amount),
+      smsSenderHeldTitle: (amount) => `مُرسِل غير موثّق — لم تُضَف ${amount}`,
+      smsSenderHeldBody: 'اضغط لمراجعة الرسالة قبل إضافتها.',
       smsCurrencyConfirmTitle: (amount) => `تم التتبع ${amount} (مبدئيًا)`,
       smsCurrencyConfirmBody: (label) => (label ? `${label} — اضغط لتأكيد العملة.` : 'اضغط لتأكيد العملة.'),
       smsMovementTitle: (amount, label) => (label ? `${amount} — ${label}` : amount),
@@ -2870,6 +2874,7 @@ export const ar: Dictionary = {
     arrivedLate: (n: number) => `وصل متأخراً ${arCount(n, 'day')}`,
     newInstrument: (kind: 'card' | 'account' | 'wallet', last4: string) =>
       `${kind === 'card' ? 'بطاقة' : kind === 'wallet' ? 'محفظة' : 'حساب'} •• ${last4} جديد`,
+    unverifiedSender: (sender: string) => `مُرسِل غير موثّق: ${sender}. أكّد فقط إن كنت تعرف هذا الإيداع.`,
   },
 
   smsTracking: {
@@ -3342,6 +3347,7 @@ export const ar: Dictionary = {
     deletePaidExpenseBody: 'هذا المصروف دفعة دين. تُحذف الدفعة أيضاً ويرتفع الدين من جديد. يمكنك التراجع لثوانٍ.',
     paymentDeleted: 'تم حذف الدفعة والمصروف',
     incomeDeleted: 'تم حذف الدخل',
+    undoPocketSpent: 'لا يمكن التراجع: تم إنفاق المبلغ بالفعل',
     markedPaid: 'تم تسجيل الدفع',
     paidFailed: 'تعذّر تسجيل هذه الدفعة. حاول مرة أخرى.',
     currency: 'العملة',
@@ -3361,6 +3367,10 @@ export const ar: Dictionary = {
     padCardLast4: 'آخر 4 أرقام من البطاقة',
     dismissUpdate: 'إغلاق إشعار التحديث',
     colour: (name) => `اللون ${name}`,
+    colourGroup: 'اللون',
+    otpCode: 'رمز التحقق',
+    otpDigit: (n, total) => `الرقم ${n} من ${total}`,
+    skipToContent: 'تخطّي إلى المحتوى الرئيسي',
     goToSlide: (n) => `الانتقال إلى ${n}`,
     filters: 'التصفية',
     manage: 'إدارة',

@@ -41,6 +41,6 @@ export function recurringExpenseFromRow(row: RecurringExpenseRow): RecurringExpe
     isActive: row.is_active,
     notes: row.notes ?? undefined,
     createdAt: row.created_at ?? undefined,
-    updatedAt: row.updated_at ?? undefined,
+    updatedAt: row.edited_at,
   }
 }

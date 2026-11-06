@@ -1,4 +1,4 @@
-import { AppLink } from '@/components/ui/AppLink'
+import { LegalDocLink } from '@/components/legal/LegalDocLink'
 import { LegalSection } from '@/components/legal/LegalSection'
 import { ExternalLink, Strong, SupportMail } from '@/components/legal/LegalInline'
 
@@ -14,9 +14,9 @@ export function TermsLegalSectionsAr() {
         <p>
           يمكنك التوقف عن استخدام الخدمة وحذف حسابك في أي وقت من صفحة الملف الشخصي أو الإعدادات. وعند حذف الحساب، تُزال
           بياناتك الشخصية وفقًا{' '}
-          <AppLink href="/legal/privacy" className="text-[var(--color-brand-red)] hover:underline">
+          <LegalDocLink doc="privacy" className="text-[var(--color-brand-red)] hover:underline">
             لسياسة الخصوصية
-          </AppLink>{' '}
+          </LegalDocLink>{' '}
           الخاصة بنا.
         </p>
         <p>تبقى الأقسام 8 و9 و11 و12 و15 سارية بعد إنهاء حسابك.</p>

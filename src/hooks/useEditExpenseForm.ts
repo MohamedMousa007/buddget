@@ -8,6 +8,8 @@ import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
+import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
 import type { Expense, Currency, SpendExclusion } from '@/lib/store/types'
 
 export function useEditExpenseForm(expense: Expense, onClose: () => void) {
@@ -16,6 +18,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   )
   const t = useT()
   const { categoryChipOptions } = usePlanCategories()
+  const submit = useSubmitOnce()
 
   const [date, setDate] = useState(expense.date)
   const [description, setDescription] = useState(expense.description)
@@ -30,11 +33,18 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
   const [owedBy, setOwedBy] = useState(expense.owedBy ?? '')
   const [submitError, setSubmitError] = useState('')
 
-  const handleSubmit = useCallback(() => {
-    if (!description || !amount || parseFloat(amount) <= 0) return
+  // A 3-decimal amount (KWD 1.234) must not outlive a switch to a 2-decimal currency.
+  const changeCurrency = useCallback((next: Currency) => {
+    setCurrency(next)
+    setAmount((a) => canonicalAmount(a, currencyDecimals(next)))
+  }, [])
 
-    const parsedAmount = parseFloat(amount)
+  const handleSubmit = useCallback(() => {
     const cur = currency === expense.currency ? currency : clampFiatToAllowed(settings, currency)
+    const parsedAmount = parseLocalizedAmount(amount, cur)
+    const title = description.trim()
+    if (!title || !(parsedAmount > 0)) return
+
     const amountInBase = tryConvertCurrency(parsedAmount, cur, settings.baseCurrency, exchangeRates)
     if (amountInBase === null) {
       setSubmitError(
@@ -42,12 +52,13 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
       )
       return
     }
+    if (!submit.claim()) return
     setSubmitError('')
 
     const exclusion = paymentMethodId === expense.paymentMethodId ? spendExclusion : reconcileExclusion(spendExclusion, paymentMethods, paymentMethodId)
     updateExpense(expense.id, {
       date,
-      description,
+      description: title,
       category,
       subcategory,
       amount: parsedAmount,
@@ -84,6 +95,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     settings,
     t.common.tryAgain,
     updateExpense,
+    submit,
   ])
 
   return {
@@ -94,7 +106,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     amount,
     setAmount,
     currency,
-    setCurrency,
+    setCurrency: changeCurrency,
     category,
     setCategory,
     subcategory,

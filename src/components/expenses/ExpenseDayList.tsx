@@ -126,14 +126,14 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
         <div key={g.key}>
           <div className={`flex items-baseline justify-between px-[18px] pb-2 ${gIdx === 0 ? 'pt-[22px]' : 'pt-5'}`}>
             <span className="flex items-baseline gap-2">
-              <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
+              <span className="text-[0.9375rem] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">
                 {g.rel ?? g.abs}
               </span>
               {g.rel ? (
                 <span className="font-mono-numbers text-xs font-medium text-[var(--color-brand-text-muted)]">{g.abs}</span>
               ) : null}
             </span>
-            <span className="font-mono-numbers whitespace-nowrap text-[11px] font-medium tabular-nums text-[var(--color-brand-text-muted)]">
+            <span className="font-mono-numbers whitespace-nowrap text-[0.6875rem] font-medium tabular-nums text-[var(--color-brand-text-muted)]">
               {g.incomplete ? '≥ ' : ''}−{fmtNum(g.total)} {base}
             </span>
           </div>

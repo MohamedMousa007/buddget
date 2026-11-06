@@ -13,7 +13,7 @@
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
-import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { SUPPORTED_CATEGORIES, SUPPORTED_CURRENCIES } from '@/lib/receipt/normaliseReceipt'
@@ -216,7 +216,7 @@ function extractJson(text: string): string | null {
 export async function POST(request: NextRequest) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const user = await resolveRouteIdentity(request)
+  const user = await resolveActiveApiIdentity(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.GEMINI_API_KEY?.trim()

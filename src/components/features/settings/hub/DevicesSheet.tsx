@@ -141,7 +141,7 @@ export function DevicesSheet({ open, onClose }: { open: boolean; onClose: () => 
                 <div className="flex items-center gap-3">
                   <Smartphone className="size-5 shrink-0 text-[var(--color-brand-text-secondary)]" aria-hidden />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{device.name}</p>
+                    <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{device.name}</p>
                     <p className={stale ? 'text-xs text-[var(--color-brand-amber)]' : 'text-xs text-[var(--color-brand-text-muted)]'}>
                       {mine ? d.thisDevice : stale ? d.stale(relative(device.lastSeenAt)) : d.activeAgo(relative(device.lastSeenAt))}
                     </p>
@@ -152,7 +152,7 @@ export function DevicesSheet({ open, onClose }: { open: boolean; onClose: () => 
                   </div>
                 </div>
                 {device.collectsSms ? (
-                  <p className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-brand-primary-ink)]">
+                  <p className="flex items-center gap-1.5 text-[0.8125rem] font-medium text-[var(--color-brand-primary-ink)]">
                     <MessageSquareText className="size-4" aria-hidden />
                     {d.collecting} · {device.lastSmsAt ? d.lastText(relative(device.lastSmsAt)) : d.noTextYet}
                   </p>

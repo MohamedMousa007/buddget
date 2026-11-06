@@ -1,0 +1,129 @@
+import { describe, it, expect } from 'vitest'
+import { cycleKeyFor, currentCycle } from '@/lib/settings/payCycle'
+import { getMonthRange, budgetMonthKeyFor } from '@/lib/utils/calculations'
+import { cycleKeyOf } from '@/lib/budget/activations'
+import { cycleRange, closedCycleKeys, pendingCarryKeys } from '@/lib/savings/carryDateLogic'
+import { shiftMonth } from '@/lib/budget/lineSpend'
+import { filterExpensesByMonth } from '@/lib/utils/calculations'
+import { ymd } from './prng'
+import { format, addDays } from 'date-fns'
+import type { Expense } from '@/lib/store/types'
+
+const days: Date[] = []
+for (let d = new Date(2024, 0, 1); d.getFullYear() <= 2028; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) days.push(d)
+
+describe('cycle math', () => {
+  it('every date maps to exactly one cycle whose range contains it; three key fns agree (start 1..31)', () => {
+    let cases = 0
+    const bad: string[] = []
+    for (let sd = 1; sd <= 31; sd++) {
+      for (const d of days) {
+        cases++
+        const k1 = cycleKeyFor(d, sd)
+        const k2 = budgetMonthKeyFor(d, Math.min(28, sd))
+        const k3 = cycleKeyOf(d, sd)
+        if (k1 !== k2 || k1 !== k3) bad.push(`keys disagree sd=${sd} ${ymd(d)} ${k1} ${k2} ${k3}`)
+        const { start, end } = getMonthRange(k1, sd)
+        const dk = ymd(d)
+        if (!(ymd(start) <= dk && dk <= ymd(end))) bad.push(`not in range sd=${sd} ${dk} key=${k1} ${ymd(start)}..${ymd(end)}`)
+        // neighbours: prev/next key must NOT contain d
+        for (const delta of [-1, 1]) {
+          const nk = shiftMonth(k1, delta)
+          const r = getMonthRange(nk, sd)
+          if (ymd(r.start) <= dk && dk <= ymd(r.end)) bad.push(`in two cycles sd=${sd} ${dk} ${k1}&${nk}`)
+        }
+        // cycleRange (carry) must agree with getMonthRange: [start,end) in UTC dates
+        const cr = cycleRange(k1, sd)
+        const crS = cr.start.toISOString().slice(0, 10)
+        const crEx = cr.end.toISOString().slice(0, 10)
+        if (crS !== ymd(start) || ymd(addDays(end, 1)) !== crEx) bad.push(`cycleRange mismatch sd=${sd} ${k1} ${crS}/${crEx} vs ${ymd(start)}/${ymd(end)}`)
+      }
+    }
+    console.log('cycle cases', cases, 'bad', bad.length, bad.slice(0, 5))
+    expect(bad).toEqual([])
+  })
+
+  it('cycles tile: end(k)+1 day == start(k+1), for every start day and every month 2023..2029', () => {
+    const bad: string[] = []
+    let cases = 0
+    for (let sd = 1; sd <= 31; sd++) {
+      for (let y = 2023; y <= 2029; y++) for (let m = 1; m <= 12; m++) {
+        const k = `${y}-${String(m).padStart(2, '0')}`
+        const nk = shiftMonth(k, 1)
+        const a = getMonthRange(k, sd)
+        const b = getMonthRange(nk, sd)
+        cases++
+        if (ymd(addDays(a.end, 1)) !== ymd(b.start)) bad.push(`gap sd=${sd} ${k}: end ${ymd(a.end)} next start ${ymd(b.start)}`)
+        if (shiftMonth(nk, -1) !== k) bad.push(`shift inverse ${k}`)
+        // end is end-of-day
+        if (a.end.getHours() !== 23 || a.end.getMinutes() !== 59) bad.push(`end not EOD ${k} sd=${sd} ${a.end.toString()}`)
+      }
+    }
+    console.log('tile cases', cases, bad.slice(0, 5))
+    expect(bad).toEqual([])
+  })
+
+  it('currentCycle elapsed/total consistent with day counts (DST-safe)', () => {
+    const bad: string[] = []
+    let cases = 0
+    for (let sd = 1; sd <= 28; sd += 1) {
+      for (const d of days) {
+        const noon = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 13, 7)
+        const c = currentCycle(noon, sd)
+        cases++
+        if (c.elapsedDays < 1 || c.elapsedDays > c.totalDays) bad.push(`elapsed out of range sd=${sd} ${ymd(d)} ${c.elapsedDays}/${c.totalDays}`)
+        const dim = new Date(Number(c.key.slice(0, 4)), Number(c.key.slice(5, 7)), 0).getDate()
+        if (sd === 1 && c.totalDays !== dim) bad.push(`total!=dim ${c.key} ${c.totalDays}`)
+      }
+    }
+    console.log('currentCycle cases', cases, bad.slice(0, 5))
+    expect(bad).toEqual([])
+  })
+
+  it('filterExpensesByMonth partitions: each date-only expense lands in exactly one cycle', () => {
+    const bad: string[] = []
+    let cases = 0
+    for (const sd of [1, 2, 15, 25, 28, 29, 30, 31]) {
+      const exps: Expense[] = days.filter((_, i) => i % 3 === 0).map((d, i) => ({ id: String(i), date: ymd(d), amount: 1, currency: 'EGP', category: 'Food' }) as unknown as Expense)
+      const counts = new Map<string, number>()
+      for (let y = 2023; y <= 2029; y++) for (let m = 1; m <= 12; m++) {
+        const k = `${y}-${String(m).padStart(2, '0')}`
+        for (const e of filterExpensesByMonth(exps, k, sd)) counts.set(e.id, (counts.get(e.id) ?? 0) + 1)
+      }
+      for (const e of exps) { cases++; if (counts.get(e.id) !== 1) bad.push(`sd=${sd} ${e.date} in ${counts.get(e.id)} cycles`) }
+    }
+    console.log('partition cases', cases, bad.slice(0, 5))
+    expect(bad).toEqual([])
+  })
+
+  it('closedCycleKeys / pendingCarryKeys across zones: closed cycles are consecutive, newest closed a full day ago', () => {
+    const bad: string[] = []
+    let cases = 0
+    for (const tz of ['Africa/Cairo', 'America/New_York', 'Asia/Riyadh']) {
+      for (let sd = 1; sd <= 31; sd++) {
+        for (let i = 0; i < days.length; i += 7) {
+          const now = new Date(Date.UTC(days[i].getFullYear(), days[i].getMonth(), days[i].getDate(), 22, 30)) // 22:30Z: next calendar day in Cairo/Riyadh, same in NY
+          const keys = closedCycleKeys(now, sd, 3, tz)
+          cases++
+          if (keys.length !== 3) { bad.push('len'); continue }
+          if (shiftMonth(keys[0], -1) !== keys[1] || shiftMonth(keys[1], -1) !== keys[2]) bad.push(`non-consecutive ${tz} sd=${sd} ${keys}`)
+          const pend = pendingCarryKeys(now, sd, keys[0], tz)
+          if (pend.length !== 0) bad.push(`pending not empty after latest done ${tz} sd=${sd}`)
+          const pend2 = pendingCarryKeys(now, sd, null, tz)
+          if (pend2.length !== 1 || pend2[0] !== keys[0]) bad.push(`null-latest pending ${tz} sd=${sd} ${pend2}`)
+          // the latest closed cycle: its end boundary (start day of next month) must be strictly before local today
+          const [y, m] = keys[0].split('-').map(Number)
+          const endBoundary = Date.UTC(y, m, Math.min(28, sd))
+          const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+          const today = Date.parse(parts + 'T00:00:00Z')
+          if (!(today >= endBoundary + 86400000)) bad.push(`closed too early ${tz} sd=${sd}`)
+          // and the cycle after it must not be closed
+          const nextEnd = Date.UTC(y, m + 1, Math.min(28, sd))
+          if (today >= nextEnd + 86400000) bad.push(`missed a closed cycle ${tz} sd=${sd}`)
+        }
+      }
+    }
+    console.log('carry cases', cases, bad.slice(0, 5))
+    expect(bad).toEqual([])
+  })
+})

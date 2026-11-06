@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronDown, ChevronLeft, ChevronRight, X, Search } from 'lucide-react'
 import { useLocale, useT } from '@/lib/i18n'
-import { buildMonthGrid, pickerYears, weekdayColumns } from '@/lib/time/monthGrid'
+import { buildMonthGrid, pickerBounds, pickerYears, weekdayColumns } from '@/lib/time/monthGrid'
 import { monthNames, weekdayNames } from '@/lib/i18n/dateFormat'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { toLatinDigits } from '@/lib/utils/formatters'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { Scrim } from '@/components/ui/Scrim'
@@ -56,6 +57,9 @@ export interface UnifiedDatePickerProps {
   value: string
   onConfirm: (iso: string) => void
   onClose: () => void
+  /** Earliest / latest selectable day (ISO). Default: the year list's span, 1970 to 50 years ahead. */
+  min?: string
+  max?: string
 }
 
 /**
@@ -64,7 +68,7 @@ export interface UnifiedDatePickerProps {
  * searchable year dropdown. Day-only — timestamps are set server-side. Tapping a
  * day confirms and closes instantly.
  */
-export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDatePickerProps) {
+export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max }: UnifiedDatePickerProps) {
   const { locale } = useLocale()
   const t = useT()
   const ar = locale === 'ar'
@@ -72,6 +76,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
   const today = useMemo(() => todayYMD(), [])
   const weekStart = useWeekStart()
   const years = useMemo(() => pickerYears(), [])
+  const bounds = useMemo(() => ({ ...pickerBounds(), ...(min ? { min } : {}), ...(max ? { max } : {}) }), [min, max])
   const [mode, setMode] = useState<'days' | 'months' | 'years'>('days')
   const [view, setView] = useState({ y: sel.y, m: sel.m })
   const [yearQuery, setYearQuery] = useState('')
@@ -244,7 +249,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 {weekdayColumns(weekStart).map((dow, i) => (
                   <div
                     key={i}
-                    className="text-center text-[10px] font-bold tracking-[.04em] text-[var(--color-brand-text-muted)] py-px"
+                    className="text-center text-[0.625rem] font-bold tracking-[.04em] text-[var(--color-brand-text-muted)] py-px"
                   >
                     {weekdayLabels[dow]}
                   </div>
@@ -252,6 +257,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
               </div>
               <div className="grid grid-cols-7 grid-rows-6 gap-0.5 h-48">
                 {raw.map((c, i) => {
+                  const outOfRange = toISO(c) < bounds.min || toISO(c) > bounds.max
                   const isSel = sel.y === c.y && sel.m === c.m && sel.d === c.d
                   const isToday = today.y === c.y && today.m === c.m && today.d === c.d
                   const bg = isSel
@@ -265,8 +271,9 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                     <button
                       key={i}
                       type="button"
+                      disabled={outOfRange}
                       onClick={() => pick(c)}
-                      className={`relative flex items-center justify-center rounded-md cursor-pointer text-sm font-semibold border-none transition-colors ${bg}`}
+                      className={`relative flex items-center justify-center rounded-md cursor-pointer text-sm font-semibold border-none transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${bg}`}
                       style={isSel ? { boxShadow: '0 4px 12px color-mix(in oklab, var(--color-brand-primary) 40%, transparent)' } : undefined}
                     >
                       {c.d}
@@ -315,7 +322,8 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose }: UnifiedDa
                 </span>
                 <input
                   value={yearQuery}
-                  onChange={(e) => setYearQuery(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  aria-label={t.inlineCopy.yearPicker.typeYear}
+                  onChange={(e) => setYearQuery(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))}
                   inputMode="numeric"
                   dir="ltr"
                   placeholder={t.inlineCopy.yearPicker.typeYear}

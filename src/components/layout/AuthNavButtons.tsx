@@ -70,7 +70,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
         {setupActive ? (
           <span
             aria-hidden
-            className="pointer-events-none absolute -bottom-1 -end-1.5 rounded-full bg-[var(--color-brand-primary)] px-1 text-[9px] font-bold leading-[14px] text-[var(--color-brand-bg)] font-mono-numbers"
+            className="pointer-events-none absolute -bottom-1 -end-1.5 rounded-full bg-[var(--color-brand-primary)] px-1 text-[0.5625rem] font-bold leading-[14px] text-[var(--color-brand-bg)] font-mono-numbers"
           >
             {pct}%
           </span>

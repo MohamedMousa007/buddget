@@ -1,0 +1,82 @@
+import { describe, it, expect } from 'vitest'
+import { computeMonthlyStats, type MonthlyStatsInput } from '@/lib/utils/monthlyStats'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
+import { NON_SPEND_CATEGORIES } from '@/lib/constants/categoryMeta'
+import { rng } from './prng'
+import type { Expense, Debt, DebtPayment, SavingsTransaction } from '@/lib/store/types'
+
+const RATES: Record<string, number> = { USD_EGP: 50, EGP_USD: 0.02, KWD_EGP: 160.5, EGP_KWD: 1 / 160.5, EUR_EGP: 60, EGP_EUR: 1 / 60 }
+const CATS = ['Food', 'Rent', 'Transport', 'Enjoyment', 'Groceries', 'Health', 'Savings', 'Transfer', 'Top up', 'ATM Cash Withdrawal', 'CC Payoff', 'Installment', 'Currency Exchange', 'Debt']
+const pad = (n: number) => String(n).padStart(2, '0')
+
+function window(key: string, sd: number) { // independent of getMonthRange
+  const [y, m] = key.split('-').map(Number); const d = Math.min(28, sd)
+  if (sd <= 1) { const last = new Date(Date.UTC(y, m, 0)).getUTCDate(); return [`${y}-${pad(m)}-01`, `${y}-${pad(m)}-${pad(last)}`] as const }
+  const e = new Date(Date.UTC(y, m, d - 1)) // day before next cycle start
+  return [`${y}-${pad(m)}-${pad(d)}`, `${e.getUTCFullYear()}-${pad(e.getUTCMonth() + 1)}-${pad(e.getUTCDate())}`] as const
+}
+
+function build(n: number, seedN: number) {
+  const r = rng(seedN)
+  const debts: Debt[] = [
+    { id: 'cc', name: 'cc', startingBalance: 0, currency: 'EGP', isGold: false, status: 'active', debtType: 'credit_card', direction: 'i_owe', linkedPaymentMethodId: 'pmcc', person: '' } as Debt,
+    { id: 'inst', name: 'inst', startingBalance: 5000, currency: 'EGP', isGold: false, status: 'active', debtType: 'installment', direction: 'i_owe', person: '' } as Debt,
+    { id: 'pers', name: 'pers', startingBalance: 5000, currency: 'EGP', isGold: false, status: 'active', debtType: 'personal', direction: 'i_owe', person: '' } as Debt,
+  ]
+  const expenses: Expense[] = []
+  for (let i = 0; i < n; i++) {
+    const y = r.int(2025, 2026), m = r.int(1, 12), d = r.int(1, 28)
+    const cur = r.pick(['EGP', 'EGP', 'USD', 'KWD', 'EUR'])
+    expenses.push({
+      id: `e${i}`, date: `${y}-${pad(m)}-${pad(d)}`, description: 'x', category: r.pick(CATS), amount: Math.round(r.next() * 1e5) / 100, currency: cur,
+      amountInBaseCurrency: 1, paymentMethodId: r.chance(0.1) ? 'pmcc' : '', isRecurring: false,
+      ...(r.chance(0.03) ? { refundKind: 'refund' } : {}), ...(r.chance(0.03) ? { spendExclusion: 'manual' } : {}),
+      ...(r.chance(0.02) ? { fundedFromSavingsTxId: 't' } : {}), ...(r.chance(0.02) ? { linkedDebtId: 'inst' } : {}),
+    } as unknown as Expense)
+  }
+  const debtPayments: DebtPayment[] = Array.from({ length: Math.floor(n / 20) }, (_, i) => ({ id: `p${i}`, debtId: r.pick(['cc', 'inst', 'pers']), date: `${r.int(2025, 2026)}-${pad(r.int(1, 12))}-${pad(r.int(1, 28))}`, amountPaid: Math.round(r.next() * 1e4) / 100, ...(r.chance(0.2) ? { fundedFromSavings: true } : {}) }) as DebtPayment)
+  const savingsTransactions: SavingsTransaction[] = Array.from({ length: Math.floor(n / 20) }, (_, i) => ({ id: `s${i}`, accountId: 'a', type: r.pick(['deposit', 'withdrawal']), amount: Math.round(r.next() * 1e4) / 100, currency: r.pick(['EGP', 'USD']), date: `${r.int(2025, 2026)}-${pad(r.int(1, 12))}-${pad(r.int(1, 28))}`, ...(r.chance(0.3) ? { isCashFlow: false } : {}) }) as SavingsTransaction)
+  return { expenses, debts, debtPayments, savingsTransactions }
+}
+const input = (b: ReturnType<typeof build>, key: string, sd: number): MonthlyStatsInput => ({
+  expenses: b.expenses, incomeSources: [], incomeEvents: [], budgetCategories: [], budgetPlans: [], budgetPlanActivations: [], activeBudgetPlanId: null, savingsHoldings: [],
+  savingsAccounts: [], savingsTransactions: b.savingsTransactions, debts: b.debts, debtPayments: b.debtPayments, settings: { ...DEFAULT_SETTINGS, baseCurrency: 'EGP', monthStartDay: sd, noIncomeDeclared: false },
+  exchangeRates: RATES, goldPricePerGram: 4000, goldPriceAvailable: true, monthFilter: key, trustLocalFinance: true,
+} as MonthlyStatsInput)
+const conv = (x: number, c: string) => (c === 'EGP' ? x : c === 'USD' ? x * 50 : c === 'KWD' ? x * 160.5 : x * 60)
+
+describe('selectors vs naive reference (differential)', () => {
+  it('40k rows: totalSpent, totalSpentExcludingSavings, categorySpending, month count, cashOutflow equal the inline reference for random cycles/start days', () => {
+    const b = build(40000, 424242); const r = rng(1); const bad: string[] = []; let cases = 0
+    for (let t = 0; t < 40; t++) {
+      const sd = r.pick([1, 1, 5, 15, 25, 28, 29]); const key = `${r.int(2025, 2026)}-${pad(r.int(1, 12))}`
+      const [lo, hi] = window(key, sd)
+      const s = computeMonthlyStats(input(b, key, sd)); cases++
+      const inWin = b.expenses.filter((e) => e.date >= lo && e.date <= hi)
+      const base = (e: Expense) => (e.refundKind ? 0 : (conv(e.amount, e.currency) ?? e.amountInBaseCurrency))
+      const spend = (e: Expense) => !NON_SPEND_CATEGORIES.has(e.category) && !e.spendExclusion
+      const refTotal = inWin.reduce((a, e) => a + base(e), 0)
+      const refExcl = inWin.filter(spend).reduce((a, e) => a + base(e), 0)
+      const refCat: Record<string, number> = {}; for (const e of inWin.filter(spend)) refCat[e.category] = (refCat[e.category] ?? 0) + base(e)
+      // cash outflow reference (docs two-ledger model)
+      let out = 0
+      for (const e of inWin) { if (NON_SPEND_CATEGORIES.has(e.category) || e.fundedFromSavingsTxId || e.paymentMethodId === 'pmcc' || e.linkedDebtId === 'inst') continue; out += base(e) }
+      for (const p of b.debtPayments) { if (p.date < lo || p.date > hi || p.debtId === 'pers' || p.fundedFromSavings) continue; out += p.amountPaid }
+      for (const x of b.savingsTransactions) { if (x.date < lo || x.date > hi || x.type !== 'deposit' || x.isCashFlow === false) continue; out += conv(x.amount, x.currency)! }
+      const close = (a: number, c: number) => Math.abs(a - c) <= 1e-9 * Math.max(1, Math.abs(c))
+      if (s.monthlyExpenses.length !== inWin.length) bad.push(`COUNT ${key} sd=${sd} ${s.monthlyExpenses.length} vs ${inWin.length}`)
+      if (!close(s.totalSpent, refTotal)) bad.push(`TOTAL ${key} sd=${sd} ${s.totalSpent} vs ${refTotal}`)
+      if (!close(s.totalSpentExcludingSavings, refExcl)) bad.push(`EXCL ${key} sd=${sd} ${s.totalSpentExcludingSavings} vs ${refExcl}`)
+      for (const k of new Set([...Object.keys(refCat), ...Object.keys(s.spendingByEnum)])) if (!close(s.spendingByEnum[k] ?? 0, refCat[k] ?? 0)) bad.push(`CAT ${k} ${key} sd=${sd}`)
+      if (!close(s.cashOutflow, out)) bad.push(`OUTFLOW ${key} sd=${sd} ${s.cashOutflow} vs ${out}`)
+    }
+    console.log('diff cases', cases, 'bad', bad.length, JSON.stringify(bad.slice(0, 8)))
+    expect(bad).toEqual([])
+  })
+  it('linearity: 10k -> 40k rows scales ~4x, not quadratic (median of 5)', () => {
+    const med = (n: number) => { const b = build(n, 9); const key = '2026-06'; const ts: number[] = []; for (let i = 0; i < 5; i++) { const t0 = performance.now(); computeMonthlyStats(input(b, key, 1)); ts.push(performance.now() - t0) } return ts.sort((a, c) => a - c)[2] }
+    med(2000); const t10 = med(10000), t40 = med(40000), t160 = med(160000)
+    console.log(`PERF computeMonthlyStats 10k=${t10.toFixed(1)}ms 40k=${t40.toFixed(1)}ms 160k=${t160.toFixed(1)}ms ratio40/10=${(t40 / t10).toFixed(2)} ratio160/40=${(t160 / t40).toFixed(2)}`)
+    expect(t160 / t40).toBeLessThan(8)
+  })
+})

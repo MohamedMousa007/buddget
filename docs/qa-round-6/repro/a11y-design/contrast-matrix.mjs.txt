@@ -1,0 +1,46 @@
+import {readFileSync} from 'node:fs'
+const css=readFileSync('src/app/globals.css','utf8')
+const d=css.indexOf('\n.dark {')
+const th={light:css.slice(0,d),dark:css.slice(d)}
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16))
+const lin=v=>((v/=255)<=0.03928?v/12.92:((v+0.055)/1.055)**2.4)
+const lum=c=>0.2126*lin(c[0])+0.7152*lin(c[1])+0.0722*lin(c[2])
+const ratio=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05)}
+const tok=(t,n)=>{const m=th[t].match(new RegExp(`${n}: (#[0-9A-Fa-f]{6})`));return m?hex(m[1]):null}
+const tokA=(t,n)=>{const m=th[t].match(new RegExp(`${n}: rgba\\((\\d+), (\\d+), (\\d+), ([\\d.]+)\\)`));return m?[+m[1],+m[2],+m[3],+m[4]]:null}
+const over=(fg,bg)=>fg.length==4?[0,1,2].map(i=>fg[i]*fg[3]+bg[i]*(1-fg[3])):fg
+const surf=['bg','card','elevated','sunken']
+for(const t of ['light','dark']){
+ console.log('==',t)
+ const S=Object.fromEntries(surf.map(s=>[s,tok(t,'--color-brand-'+s)]))
+ const text=['text-primary','text-secondary','text-muted','primary-ink','red','red-text','green','amber','gold','primary','focus']
+ for(const x of text){const f=tok(t,'--color-brand-'+x);if(!f){console.log('missing',x);continue}
+  const r=surf.map(s=>`${s}:${ratio(f,S[s]).toFixed(2)}`)
+  const thr=x==='focus'?3:4.5
+  const bad=surf.filter(s=>ratio(f,S[s])<thr)
+  console.log(x.padEnd(15),r.join(' '), bad.length?'  <<< UNDER '+thr+' on '+bad.join(','):'')}
+ // semantic on soft
+ for(const k of ['red','green','amber']){const soft=tok(t,`--color-brand-${k}-soft`);const f=tok(t,`--color-brand-${k}`);console.log(k,'on soft',ratio(f,soft).toFixed(2), k==='red'?'red-text on soft '+ratio(tok(t,'--color-brand-red-text'),soft).toFixed(2):'')}
+ console.log('primary-ink on primary-soft',ratio(tok(t,'--color-brand-primary-ink'),tok(t,'--color-brand-primary-soft')).toFixed(2))
+ console.log('on-primary on primary',ratio(tok(t,'--color-brand-on-primary'),tok(t,'--color-brand-primary')).toFixed(2),'on hover',ratio(tok(t,'--color-brand-on-primary'),tok(t,'--color-brand-primary-hover')).toFixed(2))
+ console.log('white on red',ratio([255,255,255],tok(t,'--color-brand-red')).toFixed(2),'white on red-hover',ratio([255,255,255],tok(t,'--color-brand-red-hover')).toFixed(2), 'white on green',ratio([255,255,255],tok(t,'--color-brand-green')).toFixed(2),'on-primary on green', ratio(tok(t,'--color-brand-on-primary'),tok(t,'--color-brand-green')).toFixed(2))
+ // text-muted on soft / well tints
+ for(const k of ['primary-soft','red-soft','green-soft','amber-soft']){const soft=tok(t,'--color-brand-'+k);console.log('muted on',k,ratio(tok(t,'--color-brand-text-muted'),soft).toFixed(2),'secondary',ratio(tok(t,'--color-brand-text-secondary'),soft).toFixed(2))}
+ // status
+ for(const k of ['ok','warn','danger']){const fg=tok(t,`--color-status-${k}-fg`);let bg=tokA(t,`--color-status-${k}-bg`)||tok(t,`--color-status-${k}-bg`);const out=surf.map(s=>{const b=over(bg,S[s]);return `${s}:${ratio(fg,b).toFixed(2)}`});console.log('status',k,out.join(' '))}
+ // borders (UI component 3:1)
+ for(const b of ['border','border-strong']){console.log(b,surf.map(s=>`${s}:${ratio(tok(t,'--color-brand-'+b),S[s]).toFixed(2)}`).join(' '))}
+ // chart ramp vs card (graphical 3:1)
+ console.log('cat ramp on card',[1,2,3,4,5,6].map(i=>ratio(tok(t,'--color-cat-'+i),S.card).toFixed(2)).join(' '),'on bg',[1,2,3,4,5,6].map(i=>ratio(tok(t,'--color-cat-'+i),S.bg).toFixed(2)).join(' '))
+ console.log('primary-bright on card',ratio(tok(t,'--color-brand-primary-bright'),S.card).toFixed(2),'primary fill on card (UI)',ratio(tok(t,'--color-brand-primary'),S.card).toFixed(2))
+ console.log('ring-track on card',ratio(tok(t,'--color-ring-track'),S.card).toFixed(2))
+ // hero
+ const hf=tok(t,'--color-hero-from'),ht=tok(t,'--color-hero-to')
+ for(const k of ['income','spend','savings']){const f=tok('light','--color-hero-stat-'+k);console.log('hero stat',k,'on from',ratio(f,hf).toFixed(2),'to',ratio(f,ht).toFixed(2))}
+ console.log('white on hero-from',ratio([255,255,255],hf).toFixed(2),'to',ratio([255,255,255],ht).toFixed(2))
+ // category chips on card/ elevated shown by existing test; skip
+}
+// auth dark floor text
+const f=[10,16,15]
+for(const a of [0.60,0.75,0.78]){const bl=[0,1,2].map(i=>255*a+f[i]*(1-a));console.log('white',a,'on floor',ratio(bl,f).toFixed(2))}
+console.log('#12B0A0 on floor',ratio(hex('#12B0A0'),f).toFixed(2))

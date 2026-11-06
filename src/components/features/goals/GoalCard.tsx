@@ -83,7 +83,7 @@ export function GoalCard({
           {hidden ? MASK : formatCurrency(current, goal.currency, false)}
         </span>
         {basis ? (
-          <span className="text-[13px] text-[var(--color-brand-text-secondary)]">
+          <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
             {t.ofTarget(hidden ? MASK : formatCurrency(basis, goal.currency, false))}
           </span>
         ) : null}

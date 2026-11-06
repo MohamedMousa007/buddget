@@ -142,7 +142,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
                   <Shield size={20} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{status}</p>
+                  <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{status}</p>
                   <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
                     {state === 'secured' && fund.monthsCovered > targetMonths
                       ? t.aboveTarget((fund.monthsCovered - targetMonths).toFixed(1))
@@ -185,7 +185,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 pb-4 pt-3">
           <Card variant="elevated" padding="md" className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.monthsToCover}</p>
+              <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.monthsToCover}</p>
               <p className="text-xs text-[var(--color-brand-text-muted)]">{t.monthsHint}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
 
           <Card variant="elevated" padding="md" className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.simpleMonth}</p>
+              <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.simpleMonth}</p>
               <p className="text-xs text-[var(--color-brand-text-muted)]">{t.simpleMonthSub}</p>
             </div>
             <span className="font-mono-numbers text-lg font-bold text-[var(--color-brand-text-primary)]">{fmtNum(chipSum)}</span>
@@ -238,7 +238,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
 
           <Card padding="md" className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.needed(targetMonths)}</p>
+              <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.needed(targetMonths)}</p>
               <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.neededSub(fmtNum(essentials), targetMonths)}</p>
             </div>
             <span className="font-mono-numbers text-lg font-bold text-[var(--color-brand-text-primary)]">{fmtNum(needed)}</span>

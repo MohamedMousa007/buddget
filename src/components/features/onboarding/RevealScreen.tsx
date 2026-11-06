@@ -32,11 +32,11 @@ export function RevealScreen({ chrome, label, chip, big, unit, bar, cells, title
       bleed={
         <HeroBand
           label={label}
-          aside={<span className="inline-flex h-[22px] items-center rounded-full bg-[var(--flow-band-mix)] px-2.5 text-[11px] font-bold">{chip}</span>}
+          aside={<span className="inline-flex h-[22px] items-center rounded-full bg-[var(--flow-band-mix)] px-2.5 text-[0.6875rem] font-bold">{chip}</span>}
           numbers={
             <p className="flex items-baseline gap-1.5">
               <span className="font-mono-numbers text-[32px] font-semibold leading-none tracking-[-0.03em]">{big}</span>
-              <span className="text-[13px] text-[var(--flow-band-fg-2)]">{unit}</span>
+              <span className="text-[0.8125rem] text-[var(--flow-band-fg-2)]">{unit}</span>
             </p>
           }
           bar={bar}

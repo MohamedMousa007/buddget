@@ -42,6 +42,6 @@ export function savingsHoldingFromRow(row: SavingsHoldingRow): SavingsHolding {
     asOfDate: row.purchase_date ?? undefined,
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    updatedAt: row.edited_at,
   }
 }

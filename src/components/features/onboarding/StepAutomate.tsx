@@ -75,19 +75,19 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]"><MessageSquare className="size-5" aria-hidden /></span>
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">{c.automate.smsTitle}</p>
-            <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{c.automate.smsSub}</p>
+            <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.automate.smsSub}</p>
           </div>
         </div>
         <div className="flex flex-col gap-2" aria-label={c.automate.smsTitle}>
-          <p className="rounded-2xl rounded-es-sm bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[12.5px] leading-snug text-[var(--color-brand-text-secondary)]" dir="ltr">{c.automate.smsExample}</p>
+          <p className="rounded-2xl rounded-es-sm bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[0.78125rem] leading-snug text-[var(--color-brand-text-secondary)]" dir="ltr">{c.automate.smsExample}</p>
           <p className="flex items-center gap-2 text-xs text-[var(--color-brand-text-muted)]"><ArrowDown className="size-4" aria-hidden />{c.automate.becomes}</p>
           <div className="flex min-h-14 items-center gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-2">
             <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--color-cat-3)] text-white"><ShoppingCart className="size-5" aria-hidden /></span>
             <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{c.automate.merchant}</p>
+              <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.automate.merchant}</p>
               <p className="text-xs text-[var(--color-brand-text-muted)]">{c.automate.category}</p>
             </div>
-            <span className="font-mono-numbers text-[15px]" dir="ltr">−245.00</span>
+            <span className="font-mono-numbers text-[0.9375rem]" dir="ltr">−245.00</span>
           </div>
         </div>
         {sms.isEnabled ? (
@@ -105,7 +105,7 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-cat-4)] text-white"><Bell className="size-5" aria-hidden /></span>
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">{c.automate.pushTitle}</p>
-            <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{c.automate.pushSub}</p>
+            <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.automate.pushSub}</p>
           </div>
         </div>
         {record?.push === 'allowed' ? (
@@ -123,7 +123,7 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
           <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.android.title}</ModalTitle>
           <ul className="flex flex-col gap-3">
             {c.android.bullets.map((b) => (
-              <li key={b} className="flex gap-3 text-[14.5px] text-[var(--color-brand-text-secondary)]">
+              <li key={b} className="flex gap-3 text-[0.90625rem] text-[var(--color-brand-text-secondary)]">
                 <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]"><Check className="size-3.5" strokeWidth={3} aria-hidden /></span>
                 {b}
               </li>
@@ -138,7 +138,7 @@ export function StepAutomate({ chrome }: { chrome: StepChrome }) {
       <ModalShell open={sheet === 'ios'} onBackdropClick={() => setSheet(null)} padContent>
         <div className="flex flex-col gap-3 pt-1">
           <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.ios.title}</ModalTitle>
-          <p className="text-[14.5px] leading-snug text-[var(--color-brand-text-secondary)]">{c.ios.lead}</p>
+          <p className="text-[0.90625rem] leading-snug text-[var(--color-brand-text-secondary)]">{c.ios.lead}</p>
           <div className="flex items-start gap-1.5 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5">
             {[MessageSquare, Zap, Check].map((Icon, i) => (
               <div key={i} className="flex flex-1 flex-col items-center gap-1.5 text-center">

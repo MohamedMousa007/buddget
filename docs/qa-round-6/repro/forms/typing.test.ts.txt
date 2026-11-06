@@ -1,0 +1,49 @@
+import { describe, it, expect, vi } from 'vitest'
+vi.mock('react', async (orig) => { const o = await orig<typeof import('react')>(); const { hooks } = await import('./liteReact'); return { ...o, ...hooks, default: { ...o, ...hooks } } })
+vi.mock('zustand/react/shallow', () => ({ useShallow: (f: unknown) => f }))
+vi.mock('@/lib/store/useFinanceStore', async (orig) => {
+  const o = await orig<typeof import('@/lib/store/useFinanceStore')>(); const { hooks } = await import('./liteReact'); const real = o.useFinanceStore
+  const hook = Object.assign((sel?: (s: unknown) => unknown) => hooks.useSyncExternalStore(real.subscribe, () => (sel ? sel(real.getState()) : real.getState())), { getState: real.getState, setState: real.setState, subscribe: real.subscribe })
+  return { ...o, useFinanceStore: hook }
+})
+import { renderLite } from './liteReact'
+import { useAddSubscriptionForm } from '@/hooks/useAddSubscriptionForm'
+import { sanitizeAmount } from '@/lib/ui/amountSanitize'
+import { nextValue } from '@/components/ui/NumberPad'
+import { reconcileTyped } from '@/lib/ui/typedAmount'
+
+describe('typing a decimal into a field whose number is stored as a Number', () => {
+  it('FRM-typing-sub (web): 9.99 in the subscription amount box', () => {
+    const h = renderLite(() => useAddSubscriptionForm(null, () => {}, null))
+    let shown = () => (h.result.current.draft.amount ? String(h.result.current.draft.amount) : '')
+    for (const ch of '9.99') {
+      const typed = sanitizeAmount(shown() + ch)
+      h.act(() => h.result.current.patch({ amount: Number.parseFloat(typed.replace(',', '.')) || 0 }))
+    }
+    expect(h.result.current.draft.amount).toBe(9.99)
+  })
+  it('FRM-typing-sub (native pad): 0.5', () => {
+    const h = renderLite(() => useAddSubscriptionForm(null, () => {}, null))
+    const shown = () => (h.result.current.draft.amount ? String(h.result.current.draft.amount) : '')
+    for (const k of ['0', '.', '5']) {
+      const typed = nextValue(shown(), k, 'decimal')
+      h.act(() => h.result.current.patch({ amount: Number.parseFloat(typed.replace(',', '.')) || 0 }))
+    }
+    expect(h.result.current.draft.amount).toBe(0.5)
+  })
+  it('control: the same sequence with reconcileTyped (the app helper) works', () => {
+    let typed = ''; let stored = 0
+    for (const ch of '9.99') { typed = sanitizeAmount((reconcileTyped(typed, stored)) + ch); stored = Number.parseFloat(typed) || 0 }
+    expect(stored).toBe(9.99)
+  })
+  it('FRM-typing-voice: VoiceRecapEditor amount 12.5', () => {
+    let data: number | '' = ''
+    for (const ch of '12.5') { const v = sanitizeAmount(String(data ?? '') + ch); data = v === '' ? '' : Number(v) }
+    expect(data).toBe(12.5)
+  })
+  it('FRM-typing-filter: ExpenseFilters min box 2.5', () => {
+    let value = 0
+    for (const ch of '2.5') { const v = sanitizeAmount(String(value) + ch); value = +v || 0 }
+    expect(value).toBe(2.5)
+  })
+})

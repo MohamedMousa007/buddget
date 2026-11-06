@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
-import { SITE_URL, SITE_LOCALES } from '@/lib/site/config'
+import { SITE_LOCALES } from '@/lib/site/config'
+import { LEGAL_DOCS, LEGAL_MODIFIED, legalUrl } from '@/lib/legal/paths'
 import { listRoutes, urlFor } from '@/lib/site/routes'
 
 /**
@@ -21,11 +22,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       },
     })),
   )
-  const legal: MetadataRoute.Sitemap = ['privacy', 'terms'].map((p) => ({
-    url: `${SITE_URL}/legal/${p}`,
-    lastModified: '2026-10-28',
-    changeFrequency: 'monthly' as const,
-    priority: 0.3,
-  }))
+  const legal: MetadataRoute.Sitemap = LEGAL_DOCS.flatMap((doc) =>
+    SITE_LOCALES.map((locale) => ({
+      url: legalUrl(doc, locale),
+      lastModified: LEGAL_MODIFIED,
+      changeFrequency: 'monthly' as const,
+      priority: 0.3,
+      alternates: { languages: { en: legalUrl(doc, 'en'), 'ar-EG': legalUrl(doc, 'ar') } },
+    })),
+  )
   return [...pages, ...legal]
 }

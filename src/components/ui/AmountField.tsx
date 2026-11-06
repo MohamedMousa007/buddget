@@ -18,6 +18,7 @@ import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
 import { AmountTextInput } from '@/components/ui/AmountTextInput'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import type { NumberPadMode } from '@/components/ui/NumberPad'
+import { useT } from '@/lib/i18n'
 
 interface AmountFieldProps {
   value: string
@@ -62,12 +63,15 @@ export function AmountField({
   'aria-label': ariaLabel,
 }: AmountFieldProps) {
   const native = useIsNativeClient()
+  const t = useT()
   const [focused, setFocused] = useState(false)
   const { isOpen, openPad, pad } = useNumberPad({ value, onChange, mode, currency: currency ?? decimalsFor, label, dir })
   const ph = placeholder ?? (mode === 'pin' ? '0000' : '0.00')
   const showPrefix = mode === 'decimal' && !!currency
   const glass = !className
   const compactSize = size === 'compact'
+  // A money box with no caption wired to it would be announced as just "0": fall back to a generic name.
+  const accessibleName = ariaLabel ?? label ?? (id || mode !== 'decimal' ? undefined : t.common.amountLabel)
 
   const unit = (
     <span
@@ -124,7 +128,7 @@ export function AmountField({
         {showPrefix && !glass && unit}
         <AmountTextInput
           id={id}
-          aria-label={ariaLabel ?? label}
+          aria-label={accessibleName}
           disabled={disabled}
           value={value}
           onChange={onChange}
@@ -157,7 +161,7 @@ export function AmountField({
       <button
         id={id}
         type="button"
-        aria-label={ariaLabel}
+        aria-label={accessibleName ? (value ? `${accessibleName}: ${value}` : accessibleName) : undefined}
         disabled={disabled}
         onClick={openPad}
         className={glass ? undefined : bare ? className : cn(BASE, className)}

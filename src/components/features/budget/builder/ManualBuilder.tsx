@@ -103,7 +103,7 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
           {BUILD_TEMPLATES.map((t) => (
             <Button key={t} variant="outline" className="h-auto w-full justify-start py-3 text-start" onClick={() => apply(t)}>
               <span className="flex min-w-0 flex-col">
-                <span className="text-[15px] font-semibold">{c.start.templates[t].name}</span>
+                <span className="text-[0.9375rem] font-semibold">{c.start.templates[t].name}</span>
                 <span className="whitespace-normal text-xs font-normal text-[var(--color-brand-text-secondary)]">{c.start.templates[t].sub}</span>
               </span>
             </Button>

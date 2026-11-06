@@ -1,0 +1,5 @@
+declare const window: any
+// ruleid: sst-postmessage-origin
+window.addEventListener('message', (e: any) => { console.log(e.data) })
+// ok: sst-postmessage-origin
+window.addEventListener('message', (e: any) => { if (e.origin !== 'https://a') return; console.log(e.data) })

@@ -51,7 +51,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
           <IconButton aria-label={t.back} onClick={() => setChat(null)}>
             <ChevronLeft className="rtl:rotate-180" />
           </IconButton>
-          <p className="flex-1 text-center text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.chat.title}</p>
+          <p className="flex-1 text-center text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.chat.title}</p>
           <IconButton aria-label={t.close} onClick={onClose}>
             <X />
           </IconButton>
@@ -93,7 +93,7 @@ function Flow({ seed, onClose }: { seed: FlowSeed | null; onClose: () => void })
       {step > 1 ? (
         <div className="sheet-cta flex shrink-0 flex-col gap-2.5 border-t border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-5 pb-6 pt-3 md:px-6">
           {form.saveError ? <p role="alert" className="text-xs text-[var(--color-brand-red-text)]">{t.saveError}</p> : null}
-          {summary ? <p className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">{summary}</p> : null}
+          {summary ? <p className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{summary}</p> : null}
           <Button size="cta-block" disabled={step === 2 && !form.canNext2} onClick={next}>
             {nextLabel}
           </Button>

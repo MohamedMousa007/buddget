@@ -52,7 +52,7 @@ export function TransactionRow({
           {icon}
         </span>
         {caption ? (
-          <span className="max-w-[54px] truncate text-center text-[9.5px] font-semibold leading-none" style={{ color: captionColor ? readable(captionColor) : 'var(--color-brand-text-muted)' }}>
+          <span className="max-w-[54px] truncate text-center text-[0.59375rem] font-semibold leading-none" style={{ color: captionColor ? readable(captionColor) : 'var(--color-brand-text-muted)' }}>
             {caption}
           </span>
         ) : null}
@@ -61,7 +61,7 @@ export function TransactionRow({
       {/* B. Middle column */}
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 overflow-hidden">
-          <span dir="auto" className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
+          <span dir="auto" className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
           {titleBadge}
         </span>
         {subtitle ? (
@@ -73,10 +73,10 @@ export function TransactionRow({
 
       {/* C. Amount column */}
       <span className="shrink-0 text-end">
-        <span className="font-mono-numbers block text-[15px] font-medium tabular-nums" style={{ color: amountColor ?? 'var(--color-brand-text-primary)' }}>
+        <span className="font-mono-numbers block text-[0.9375rem] font-medium tabular-nums" style={{ color: amountColor ?? 'var(--color-brand-text-primary)' }}>
           {amount}
         </span>
-        {sub ? <span className="font-mono-numbers mt-[3px] block text-[11.5px] font-medium text-[var(--color-brand-text-muted)]">{sub}</span> : null}
+        {sub ? <span className="font-mono-numbers mt-[3px] block text-[0.71875rem] font-medium text-[var(--color-brand-text-muted)]">{sub}</span> : null}
       </span>
     </Tag>
   )

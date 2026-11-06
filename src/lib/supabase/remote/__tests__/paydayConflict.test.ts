@@ -25,7 +25,7 @@ function mockClient(opts: { liveId?: string; liveUpdatedAt?: string }) {
         eq: (_c: string, v: string) => { log.push(`update:${v}`); patches.push(patch); return Promise.resolve({ error: null }) },
       }),
       select: () => ({ eq: () => ({ eq: () => ({ is: () => ({
-        maybeSingle: () => Promise.resolve({ data: opts.liveId ? { id: opts.liveId, updated_at: opts.liveUpdatedAt ?? '2026-10-05T00:00:00Z' } : null, error: null }),
+        maybeSingle: () => Promise.resolve({ data: opts.liveId ? { id: opts.liveId, edited_at: opts.liveUpdatedAt ?? '2026-10-05T00:00:00Z' } : null, error: null }),
       }) }) }) }),
     }),
   }
@@ -57,7 +57,8 @@ describe('L3 duplicate payday event', () => {
     const dupClient = { from: (t: string) => ({ ...client.from(t), upsert: () => Promise.resolve({ error: { message: 'dup', code: '23505' } }) }) }
     const next = { ...emptySnapshot(), incomeEvents: [ev('a', '2026-10-01')] }
     const res = await flushDiff(dupClient as never, 'u1', emptySnapshot(), next)
-    expect(res.anyError).toBe(true)
+    expect(res.anyError).toBe(false)
+    expect(res.parked).toEqual([{ table: 'income_events', id: 'a', rootId: 'a', code: '23505' }])
   })
 
   it('tombstones the replaced event before the upsert of its replacement', async () => {

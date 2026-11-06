@@ -1,5 +1,6 @@
 'use client'
 
+import { toLatinDigits } from '@/lib/utils/formatters'
 import { X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { OptionChip } from '@/components/ui/OptionChip'
@@ -38,7 +39,7 @@ export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4,
     <div>
       <div className="mx-0.5 mb-2 flex items-center gap-2">
         <span className={microClassName}>{t.identifier}</span>
-        <span className="text-[10px] font-medium text-[var(--color-brand-text-muted)]">{t.optional}</span>
+        <span className="text-[0.625rem] font-medium text-[var(--color-brand-text-muted)]">{t.optional}</span>
       </div>
       <div className="flex gap-2">
         {modes.map((m) => (
@@ -49,11 +50,11 @@ export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4,
         <>
           <Input
             value={last4}
-            onChange={(e) => onLast4Change(e.target.value.replace(/\D/g, '').slice(0, MAX_ACCOUNT_DIGITS))}
+            onChange={(e) => onLast4Change(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, MAX_ACCOUNT_DIGITS))}
             dir="ltr" inputMode="numeric" pattern="[0-9]*" maxLength={MAX_ACCOUNT_DIGITS} placeholder="e.g. 1234" aria-label={t.fourDigits}
-            size="brand" className="mt-2.5 font-mono-numbers text-[15px] tracking-[0.1em] text-[var(--color-brand-text-primary)] text-start"
+            size="brand" className="mt-2.5 font-mono-numbers text-[0.9375rem] tracking-[0.1em] text-[var(--color-brand-text-primary)] text-start"
           />
-          <div className="mt-2 px-0.5 text-[11.5px] text-[var(--color-brand-text-muted)]">{t.last4Help}</div>
+          <div className="mt-2 px-0.5 text-[0.71875rem] text-[var(--color-brand-text-muted)]">{t.last4Help}</div>
         </>
       ) : null}
       {mode === 'label' ? (
@@ -62,9 +63,9 @@ export function AccountIdentifierField({ mode, onModeChange, allowsLast4, last4,
             value={label}
             onChange={(e) => onLabelChange(e.target.value)}
             maxLength={24} placeholder={t.tagPlaceholder} aria-label={t.label}
-            size="brand" className="mt-2.5 text-[15px] text-[var(--color-brand-text-primary)] text-start"
+            size="brand" className="mt-2.5 text-[0.9375rem] text-[var(--color-brand-text-primary)] text-start"
           />
-          {last4 ? <div className="mt-2 px-0.5 text-[11.5px] text-[var(--color-brand-text-muted)]">{t.labelKeepsDigits}</div> : null}
+          {last4 ? <div className="mt-2 px-0.5 text-[0.71875rem] text-[var(--color-brand-text-muted)]">{t.labelKeepsDigits}</div> : null}
         </>
       ) : null}
     </div>

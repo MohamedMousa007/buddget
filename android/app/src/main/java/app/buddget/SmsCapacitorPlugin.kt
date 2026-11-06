@@ -52,6 +52,7 @@ class SmsCapacitorPlugin : Plugin() {
         val token  = call.getString("token")  ?: run { call.reject("token required"); return }
         val apiUrl = call.getString("apiUrl") ?: ""
         val userId = call.getString("userId") ?: ""
+        if (!SmsApiUrl.isAllowed(apiUrl, SmsStore.isDebuggable(activity))) { call.reject("apiUrl not allowed"); return }
         SmsStore.prefs(activity)
             .edit()
             .putString("access_token", token)
@@ -59,6 +60,8 @@ class SmsCapacitorPlugin : Plugin() {
             // Owner-stamp the token so an account switch can detect + drop a token
             // that belongs to the previous user before SmsReceiver forwards with it.
             .putString("token_user_id", userId)
+            // Device capability marker: once armed, the device stays "wired" across sign-out / account switches.
+            .putBoolean("armed_once", true)
             .apply()
         SmsStore.clearNeedsResync(activity)
         call.resolve()
@@ -94,7 +97,7 @@ class SmsCapacitorPlugin : Plugin() {
             put("setupCompleted", tokenSaved)
             // Device capability: a receiver is armed here (token saved) or has fired.
             // Survives account switches (clearCredentials keeps last_run_at).
-            put("wired", tokenSaved || lastRunAt.isNotEmpty())
+            put("wired", tokenSaved || lastRunAt.isNotEmpty() || prefs.getBoolean("armed_once", false))
             put("tokenUserId", prefs.getString("token_user_id", "") ?: "")
             put("permission", permission)
             put("lastRunAt", lastRunAt)
@@ -153,6 +156,26 @@ class SmsCapacitorPlugin : Plugin() {
         call.resolve()
     }
 
+    /** Trusted-device secret, kept in the same encrypted store as the ingest token. clearCredentials and clearState leave it alone. */
+    @PluginMethod
+    fun setDeviceSecret(call: PluginCall) {
+        val secret = call.getString("secret") ?: run { call.reject("secret required"); return }
+        SmsStore.prefs(activity).edit().putString("device_secret", secret).apply()
+        call.resolve()
+    }
+
+    @PluginMethod
+    fun getDeviceSecret(call: PluginCall) {
+        val secret = SmsStore.prefs(activity).getString("device_secret", null)
+        call.resolve(JSObject().apply { put("secret", secret ?: org.json.JSONObject.NULL) })
+    }
+
+    @PluginMethod
+    fun removeDeviceSecret(call: PluginCall) {
+        SmsStore.prefs(activity).edit().remove("device_secret").apply()
+        call.resolve()
+    }
+
     /** Full device wipe (forget device): also clears the queue + owner. */
     @PluginMethod
     fun clearState(call: PluginCall) {
@@ -161,6 +184,7 @@ class SmsCapacitorPlugin : Plugin() {
             .remove("access_token")
             .remove("api_url")
             .remove("token_user_id")
+            .remove("armed_once")
             .remove("pending_queue")
             .putBoolean("sms_enabled", false)
             .apply()

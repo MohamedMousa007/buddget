@@ -1,0 +1,30 @@
+import { it, beforeEach } from 'vitest'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import type { Debt, SavingsAccount } from '@/lib/store/types'
+const S = () => useFinanceStore.getState()
+const led = (id: string) => S().savingsTransactions.filter((t) => t.accountId === id).reduce((v, t) => v + (t.type === 'deposit' ? t.amount : -t.amount), 0)
+beforeEach(() => useFinanceStore.setState({
+  savingsAccounts: [{ id: 'p', name: 'p', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 0, createdAt: '2026-01-01' } as SavingsAccount],
+  savingsTransactions: [], incomeEvents: [], expenses: [], goals: [], debtPayments: [], recurringDebtPayments: [],
+  debts: [{ id: 'd', name: 'd', person: 'x', startingBalance: 1000, currency: 'EGP', isGold: false, status: 'active', debtType: 'personal', direction: 'i_owe', createdAt: '2026-01-01' } as Debt],
+  exchangeRates: { USD_EGP: 50, EGP_USD: 0.02 },
+}))
+it('STALE-1: Undo of a savings-funded payment delete after the pocket was spent', () => {
+  S().depositToSavings('p', 100, 'EGP')
+  const txId = crypto.randomUUID()
+  S().withdrawFromSavings('p', 100, 'EGP', undefined, 'debt', { txId })
+  S().addDebtPayment({ debtId: 'd', date: '2026-11-05', amountPaid: 100, paymentCurrency: 'EGP', originalAmount: 100, amountInPrimary: 100, fundedFromSavings: true, fundedFromSavingsTxId: txId } as never)
+  const snap = S().deleteDebtPayment(S().debtPayments[0].id)!       // pocket back to 100
+  S().depositToSavings('p', 0.01, 'EGP'); S().withdrawFromSavings('p', 100, 'EGP', undefined, 'spend') // user spends it before tapping Undo
+  S().restoreDebtPayment(snap)                                       // Undo
+  console.log(`STALE-1 balance=${S().savingsAccounts[0].currentBalance} ledger=${led('p')} paymentRestored=${S().debtPayments.length}`)
+})
+it('STALE-2: Undo of a withdrawal-linked income delete after the reversal deposit was spent', () => {
+  S().depositToSavings('p', 100, 'EGP')
+  S().withdrawFromSavings('p', 100, 'EGP')
+  const ev = S().incomeEvents[0]
+  S().deleteIncomeEvent(ev.id)                                      // reversal deposit +100
+  S().withdrawFromSavings('p', 100, 'EGP', undefined, 'spend')      // spent before Undo
+  S().restoreIncomeEvent(ev)
+  console.log(`STALE-2 balance=${S().savingsAccounts[0].currentBalance} ledger=${led('p')}`)
+})

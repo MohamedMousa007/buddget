@@ -127,4 +127,13 @@ describe('executeCalls', () => {
     const total = r.results.reduce((n, x) => n + JSON.stringify(x.response).length, 0)
     expect(total).toBeLessThan(TURN_LIMITS.maxTotalChars / 2)
   })
+
+  it('BAI-3: with Hide balances: Buddgy on, get_summary leaves no income, spent or left-to-spend figure', () => {
+    const hidden = useFinanceStore.getState().settings
+    useFinanceStore.setState({ settings: { ...hidden, privacy: { preset: 'custom', buddgy: true } as never } })
+    const r = executeCalls([{ name: 'get_summary', args: {} }], ctx)
+    useFinanceStore.setState({ settings: hidden })
+    const res = r.results[0].response as Record<string, unknown>
+    for (const k of ['income', 'spent', 'budget', 'net_cash_flow', 'safe_daily', 'projected_spend']) expect(typeof res[k]).not.toBe('number')
+  })
 })

@@ -69,7 +69,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo }: Pr
   if (status !== 'pending') {
     const done = status === 'applied'
     return (
-      <div className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-[13px]">
+      <div className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--color-brand-border)] px-3 py-2 text-[0.8125rem]">
         <span className={cn('flex size-6 shrink-0 items-center justify-center rounded-full', done ? 'bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-muted)]')}>
           {done ? <Check className="size-3.5" aria-hidden /> : <Icon className="size-3.5" aria-hidden />}
         </span>
@@ -78,7 +78,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo }: Pr
           {state.message ? ` · ${state.message}` : ''}
         </span>
         {done && state.undo ? (
-          <Button variant="ghost" size="touch" onClick={onUndo} className="shrink-0 px-3 text-[13px]">
+          <Button variant="ghost" size="touch" onClick={onUndo} className="shrink-0 px-3 text-[0.8125rem]">
             <Undo2 aria-hidden />
             {copy.undo}
           </Button>
@@ -93,7 +93,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo }: Pr
 
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
-      <div className={cn('flex items-center gap-2 px-3.5 py-2.5 text-[13px] font-bold', TONE_HEAD[preview.tone])}>
+      <div className={cn('flex items-center gap-2 px-3.5 py-2.5 text-[0.8125rem] font-bold', TONE_HEAD[preview.tone])}>
         <Icon className="size-4 shrink-0" aria-hidden />
         <span className="min-w-0 flex-1 truncate">{preview.title}</span>
       </div>
@@ -101,7 +101,7 @@ export function ProposalCard({ state, onApply, onDismiss, onRevise, onUndo }: Pr
         <div className="space-y-3 p-3.5">
           {preview.fields!.map((f) => (
             <div key={f.key} className="space-y-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{f.label}</span>
+              <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{f.label}</span>
               <FieldControl field={f} value={valueOf(f)} onChange={(v) => setDraft((d) => ({ ...d, [f.key]: v }))} />
             </div>
           ))}

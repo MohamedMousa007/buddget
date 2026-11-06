@@ -191,7 +191,7 @@ export function LineRow({
           <LineIcon name={lineIconKey(lv.line.icon)} />
         </TintedTile>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{lv.line.name}</span>
+          <span className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{lv.line.name}</span>
           {showStatus ? (
             <StatusLine tone={status.tone} icon={Icon}>{statusText(status)}</StatusLine>
           ) : subText ? (
@@ -199,7 +199,7 @@ export function LineRow({
           ) : null}
         </span>
         <span className="flex flex-col items-end">
-          <span className="font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
+          <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
             {formatCurrency(lv.amount, view.base, false)}
           </span>
           {mode === 'plan' ? (

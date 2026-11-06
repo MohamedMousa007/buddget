@@ -13,7 +13,7 @@ describe('TransactionRow subtitle', () => {
   })
   it('titles and text subtitles take their direction from their content, so a long Arabic name is cut at its end', () => {
     const html = renderToStaticMarkup(h(TransactionRow, { ...base, title: 'متجر', subtitle: 'نقدًا' }))
-    expect(html).toMatch(/<span dir="auto" class="truncate text-\[15px\]/)
+    expect(html).toMatch(/<span dir="auto" class="truncate text-\[0.9375rem\]/)
   })
   it('a node subtitle is left as given', () => {
     const html = renderToStaticMarkup(h(TransactionRow, { ...base, title: 't', subtitle: h('b', null, 'x') }))

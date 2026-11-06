@@ -16,4 +16,4 @@ export function BuddgyHead({ mood = 'happy', size = 60 }: { mood?: ComponentProp
 }
 
 export const stepTitle = 'text-[26px] font-bold leading-[1.15] tracking-[-0.025em] text-[var(--color-brand-text-primary)] text-balance'
-export const stepLead = 'mt-2.5 text-[15px] leading-[1.45] text-[var(--color-brand-text-secondary)] text-balance'
+export const stepLead = 'mt-2.5 text-[0.9375rem] leading-[1.45] text-[var(--color-brand-text-secondary)] text-balance'

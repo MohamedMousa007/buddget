@@ -13,6 +13,8 @@ export interface SelfReport {
   collectsSms?: boolean
   /** The OS notification permission, as the phone sees it. */
   pushPermission?: 'granted' | 'denied' | null
+  /** The Auth session this heartbeat arrived on; removing the phone ends exactly that session. */
+  sessionId?: string | null
 }
 
 const UNIQUE_VIOLATION = '23505'
@@ -69,6 +71,7 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
       name, app_version: report.appVersion ?? null,
       collects_sms: report.collectsSms ?? report.collects ?? false, last_seen_at: now,
       push_permission: report.pushPermission ?? null,
+      session_id: report.sessionId ?? null,
     }
     let { error } = await service.from('user_devices').insert({ ...row, is_main: !main })
     if (error?.code === UNIQUE_VIOLATION && !main) ({ error } = await service.from('user_devices').insert({ ...row, is_main: false }))
@@ -83,6 +86,7 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
       platform: report.platform, model: report.model ?? null, app_version: report.appVersion ?? null, last_seen_at: now,
       ...(report.collectsSms !== undefined ? { collects_sms: report.collectsSms } : {}),
       ...(report.pushPermission !== undefined ? { push_permission: report.pushPermission } : {}),
+      ...(report.sessionId ? { session_id: report.sessionId } : {}),
     }).eq('user_id', userId).eq('device_id', deviceId)
     const stale = main && Date.now() - Date.parse(main.last_seen_at) > STALE_MAIN_DAYS * 86_400_000
     if (!existing.is_main && stale && report.pushPermission !== 'denied') await promoteMain(service, userId, main.device_id, 'stale', deviceId)
@@ -97,6 +101,12 @@ export async function isRevokedDevice(service: ServiceClient, userId: string, de
   if (!deviceId) return false
   const { data } = await service.from('user_devices').select('revoked_at').eq('user_id', userId).eq('device_id', deviceId).maybeSingle()
   return Boolean(data?.revoked_at)
+}
+
+/** True when the owner has removed at least one phone. The trigger for refusing requests that name no phone at all (a removed phone can simply drop its id). */
+export async function hasRevokedDevice(service: ServiceClient, userId: string): Promise<boolean> {
+  const { count } = await service.from('user_devices').select('device_id', { count: 'exact', head: true }).eq('user_id', userId).not('revoked_at', 'is', null)
+  return (count ?? 0) > 0
 }
 
 /** True when the account has ever registered a phone (removed ones count: a removed phone must not escape by going anonymous). */

@@ -222,7 +222,7 @@ export function SubscriptionDetailSheet({
         <BrandTile brandKey={sub.brandKey} name={sub.name} size={56} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-lg font-semibold text-[var(--color-brand-text-primary)]">{sub.name}</div>
-          <div className="truncate text-[13px] text-[var(--color-brand-text-secondary)]">{sub.planName ?? ui.chips.subscription}</div>
+          <div className="truncate text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{sub.planName ?? ui.chips.subscription}</div>
         </div>
         <StatusChip tone={row.chip.tone} icon={row.chip.icon}>
           {chipLabel(row.chip, ui, shortDate)}
@@ -231,7 +231,7 @@ export function SubscriptionDetailSheet({
 
       <div className="flex items-baseline gap-2">
         <span className="font-mono-numbers text-[28px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{fmt(charge)}</span>
-        <span className="text-[13px] text-[var(--color-brand-text-secondary)]">
+        <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
           {currencyLabel(sub.currency, locale)} {cycleWord(sub.billingCycle, ui)}
         </span>
       </div>
@@ -241,7 +241,7 @@ export function SubscriptionDetailSheet({
           <BannerIcon className="mt-px size-[18px] shrink-0 text-[var(--color-brand-text-primary)]" strokeWidth={1.75} aria-hidden />
           <div className="flex-1">
             <div className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{banner.title}</div>
-            <div className="mt-0.5 text-[13px] text-[var(--color-brand-text-secondary)]">{banner.body}</div>
+            <div className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{banner.body}</div>
           </div>
         </div>
       ) : null}
@@ -258,7 +258,7 @@ export function SubscriptionDetailSheet({
             ))}
           </Group>
         ) : (
-          <p className="py-1 text-[13px] text-[var(--color-brand-text-secondary)]">
+          <p className="py-1 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
             {life === 'paused' ? ui.detail.noChargesPaused : ui.detail.noCharges}
           </p>
         )}
@@ -271,7 +271,7 @@ export function SubscriptionDetailSheet({
             <div className="text-xs text-[var(--color-brand-text-secondary)]">{ui.detail.tracking}</div>
             <div className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{ui.tracking[sub.tracking ?? 'sms'].name}</div>
           </div>
-          <Button variant="link" size="touch" className="px-2 text-[13px] font-semibold text-[var(--color-brand-primary-ink)] no-underline" onClick={() => setPickTracking(!pickTracking)}>
+          <Button variant="link" size="touch" className="px-2 text-[0.8125rem] font-semibold text-[var(--color-brand-primary-ink)] no-underline" onClick={() => setPickTracking(!pickTracking)}>
             {ui.detail.change}
           </Button>
         </div>
@@ -309,7 +309,7 @@ export function SubscriptionDetailSheet({
           <SectionLabel>{ui.detail.matched}</SectionLabel>
           <Group>
             {matched.map((e) => (
-              <div key={e.id} className="flex min-h-12 items-center gap-2.5 ps-3.5 pe-1.5 text-[13px]">
+              <div key={e.id} className="flex min-h-12 items-center gap-2.5 ps-3.5 pe-1.5 text-[0.8125rem]">
                 <LinkIcon className="size-3.5 text-[var(--color-brand-text-muted)]" strokeWidth={1.75} aria-hidden />
                 <span className="flex-1">{e.smsLogId ? ui.detail.smsCharge(shortDate(e.date)) : ui.detail.manualCharge(shortDate(e.date))}</span>
                 <span className="font-mono-numbers font-semibold">{fmt(e.amount)}</span>
@@ -327,7 +327,7 @@ export function SubscriptionDetailSheet({
           <SectionLabel>{ui.detail.priceHistory}</SectionLabel>
           <Group>
             {history.map((h, i) => (
-              <div key={h.from + h.amount} className="flex min-h-11 items-center justify-between px-3.5 text-[13px]">
+              <div key={h.from + h.amount} className="flex min-h-11 items-center justify-between px-3.5 text-[0.8125rem]">
                 <span className="text-[var(--color-brand-text-secondary)]">
                   {i === 0 ? ui.detail.since(monthYear(h.from)) : ui.detail.before}
                 </span>

@@ -95,7 +95,7 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
       <div className="flex flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
         <div>
           <ModalTitle>{t.income.linkSheetTitle}</ModalTitle>
-          <p className="mt-1 text-[13px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
+          <p className="mt-1 text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
         </div>
         <div role="radiogroup" aria-label={t.income.linkSheetTitle} className="flex flex-col gap-3">
           {options.map((o) => (
@@ -105,8 +105,8 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
                   <IncomeTypeIcon type={o.source.sourceType} className="h-4 w-4" />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{o.source.name}</span>
-                  <span className="text-[12.5px] text-[var(--color-brand-text-secondary)]">
+                  <span className="text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">{o.source.name}</span>
+                  <span className="text-[0.78125rem] text-[var(--color-brand-text-secondary)]">
                     {t.income.linkOptionSub(shortDate(o.occ.dueDate), formatFlex(o.occ.amount))}
                     {o.plausible ? ` · ${t.income.offPct(Math.round(o.diff * 100))}` : ''}
                   </span>
@@ -125,8 +125,8 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
                 <IncomeTypeIcon type="other" className="h-4 w-4" />
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{t.income.linkNone}</span>
-                <span className="text-[12.5px] text-[var(--color-brand-text-secondary)]">{t.income.linkNoneSub}</span>
+                <span className="text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">{t.income.linkNone}</span>
+                <span className="text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{t.income.linkNoneSub}</span>
               </span>
             </span>
           </SelectableCard>

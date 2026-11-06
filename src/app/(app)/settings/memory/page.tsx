@@ -89,7 +89,7 @@ export default function SettingsMemoryPage() {
 
       <SettingsSection title={m.budget}>
         <div data-setting-id="budgetEntryMode" className="space-y-2.5 px-4 py-3">
-          <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{m.entry}</span>
+          <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{m.entry}</span>
           <SegmentedControl<EntryMode>
             ariaLabel={m.entry}
             value={settings.budgetEntryMode}
@@ -101,7 +101,7 @@ export default function SettingsMemoryPage() {
           />
         </div>
         <div data-setting-id="weekStart" className="space-y-2.5 px-4 py-3">
-          <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{m.weekStart}</span>
+          <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{m.weekStart}</span>
           <SegmentedControl<`${WeekStartDay}`>
             ariaLabel={m.weekStart}
             value={`${weekStart}`}
@@ -118,7 +118,7 @@ export default function SettingsMemoryPage() {
       </SettingsSection>
 
       <section className="space-y-2">
-        <p className="px-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{m.learned}</p>
+        <p className="px-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{m.learned}</p>
         {learned.length === 0 ? (
           <Card padding="md" className="text-sm text-[var(--color-brand-text-muted)]">{m.learnedEmpty}</Card>
         ) : (

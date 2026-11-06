@@ -1,0 +1,8 @@
+rules:
+  - id: sst-postmessage-origin
+    languages: [typescript]
+    severity: WARNING
+    message: "message listener never reads event.origin or event.source"
+    patterns:
+      - pattern: $W.addEventListener("message", $FN)
+      - pattern-not-regex: '(?s)\.(origin|source)\b'

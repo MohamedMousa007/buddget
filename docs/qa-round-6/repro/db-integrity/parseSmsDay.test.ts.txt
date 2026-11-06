@@ -1,0 +1,21 @@
+import { describe, it, expect } from 'vitest'
+import { parseSmsDay } from '@/lib/sms/parseSmsDay'
+
+// Shapes inferred from live rows: bank prints yy/mm/dd ("26/10/24" = 2026-10-24); SMS received the same day.
+describe('DBI-1 year-first SMS date read as dd/mm/yy lands in the PAST', () => {
+  it('26/10/24 received 2026-10-24 -> 2026-10-24', () => {
+    expect(parseSmsDay('26/10/24', '2026-10-24T08:00:00Z')).toBe('2026-10-24')
+  })
+  it('26/10/25 received 2026-10-25 -> 2026-10-25', () => {
+    expect(parseSmsDay('26/10/25', '2026-10-25T18:00:00Z')).toBe('2026-10-25')
+  })
+  it('26/07/09 received 2026-07-09 -> 2026-07-09', () => {
+    expect(parseSmsDay('26/07/09', '2026-07-09T08:00:00Z')).toBe('2026-07-09')
+  })
+  it('control: 26/07/30 received 2026-07-30 (R5 guard) -> 2026-07-30', () => {
+    expect(parseSmsDay('26/07/30', '2026-07-30T08:00:00Z')).toBe('2026-07-30')
+  })
+  it('control: genuine dd/mm/yy 24/10/26 received 2026-10-24 -> 2026-10-24', () => {
+    expect(parseSmsDay('24/10/26', '2026-10-24T08:00:00Z')).toBe('2026-10-24')
+  })
+})

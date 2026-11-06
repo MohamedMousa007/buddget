@@ -58,7 +58,7 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
           <Trophy className="size-12 text-[var(--color-brand-primary)]" aria-hidden />
         </span>
       </div>
-      <p className="mt-6 text-[13px] font-bold tracking-[0.12em]">{t.kicker}</p>
+      <p className="mt-6 text-[0.8125rem] font-bold tracking-[0.12em]">{t.kicker}</p>
       <h2 className="mt-1 text-[38px] font-bold leading-tight">{t.youDidIt}</h2>
       <p className="mt-2 max-w-xs text-sm opacity-90">{t.summary(goal.name, months)}</p>
       <p className="mt-4 font-mono-numbers text-4xl font-bold">{formatCurrency(current, goal.currency, false)}</p>
@@ -66,7 +66,7 @@ export function GoalAchievedScreen({ goal, current, onClose }: { goal: Goal; cur
         {tiles.map(([label, v]) => (
           <div key={label} className="rounded-[14px] bg-[var(--color-brand-on-primary)]/15 px-2 py-3">
             <p className="font-mono-numbers text-xl font-bold">{v}</p>
-            <p className="text-[11px] font-semibold opacity-90">{label}</p>
+            <p className="text-[0.6875rem] font-semibold opacity-90">{label}</p>
           </div>
         ))}
       </div>

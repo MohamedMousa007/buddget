@@ -1,0 +1,32 @@
+import { describe, it, expect } from 'vitest'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
+import { pocketIdentity } from '@/lib/savings/pocketIdentity'
+import { differenceInCalendarWeeks } from 'date-fns'
+import { parseLocalizedAmount } from '@/lib/ui/amountParse'
+
+describe('date-only strings parsed as UTC then shown in local time', () => {
+  it('wealth page hawl due date (new Date(dateOnly) -> formatLocalized)', () => {
+    expect(formatLocalized(new Date('2027-01-01'), 'd MMM yyyy', 'en')).toBe('1 Jan 2027')
+  })
+  it('pocketIdentity maturity month/year', () => {
+    const a = { name: 'x', type: 'cd', maturityDate: '2027-01-01' } as never
+    const out = pocketIdentity(a, { types: {}, matures: (m: string, y: number) => `${m} ${y}` } as never)
+    expect(out).toBe('Jan 2027')
+  })
+})
+describe('weekly borrow goal elapsed periods use calendar weeks', () => {
+  it('created Saturday, one day later is not a full week', () => {
+    expect(differenceInCalendarWeeks(new Date(2026, 10, 8), new Date(2026, 10, 7))).toBe(0)
+  })
+})
+describe('Arabic-Indic digits in non-amount numeric fields', () => {
+  it('replace(/\\D/g) keeps Arabic-Indic digits (last4, OTP, year, due day)', () => {
+    expect('١٢٣٤'.replace(/\D/g, '')).toBe('١٢٣٤')
+  })
+  it('amount parser accepts them', () => {
+    expect(parseLocalizedAmount('١٬٢٥٠٫٥٠')).toBe(1250.5)
+    expect(parseLocalizedAmount('١٢،٥')).toBe(12.5)
+    expect(parseLocalizedAmount('۱۲٫۵')).toBe(12.5)
+    expect(parseLocalizedAmount('1.250,75')).toBe(1250.75)
+  })
+})

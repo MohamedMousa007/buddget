@@ -27,7 +27,7 @@ export function DebtFamilyStep({ onPick }: { onPick: (k: 'personal' | 'credit_ca
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[16px] font-bold text-[var(--color-brand-text-primary)]">{title}</span>
-            <span className="block text-[13px] text-[var(--color-brand-text-muted)]">{sub}</span>
+            <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{sub}</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 rtl:rotate-180 text-[var(--color-brand-text-muted)]" />
         </SelectableCard>

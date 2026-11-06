@@ -32,7 +32,9 @@ export function useLinkedDelete() {
       const snapshot = state.deleteDebtPayment(paymentId)
       if (!snapshot) return false
       toast(copy.paymentDeleted, {
-        undo: () => useFinanceStore.getState().restoreDebtPayment(snapshot),
+        undo: () => {
+          if (!useFinanceStore.getState().restoreDebtPayment(snapshot)) toast(copy.undoPocketSpent)
+        },
         undoLabel: t.common.undo,
       })
       return true

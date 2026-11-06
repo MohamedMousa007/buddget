@@ -86,7 +86,7 @@ export function FlowStrip({ view, onFix, onJump }: FlowStripProps) {
           />
         ) : null}
         {marker !== null ? (
-          <p className="mt-1.5 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">
+          <p className="mt-1.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">
             {f.dayOf(view.dayOfCycle, view.daysInCycle)}
           </p>
         ) : null}

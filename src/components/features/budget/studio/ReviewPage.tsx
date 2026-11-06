@@ -80,7 +80,7 @@ export function ReviewPage({ planId, aiNote, onClose, onActivate }: ReviewPagePr
           <Card padding="md" className="flex flex-col gap-3">
             <div className="flex items-start gap-3">
               <BuddgyIcon mood="happy" size={40} />
-              <p className="min-w-0 flex-1 text-[15px] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{reasons[0]}</p>
+              <p className="min-w-0 flex-1 text-[0.9375rem] font-semibold leading-snug text-[var(--color-brand-text-primary)]">{reasons[0]}</p>
             </div>
             {reasons.slice(1, 3).map((r, i) => (
               <p key={`${i}-${r}`} className="flex gap-2 text-sm text-[var(--color-brand-text-secondary)]">

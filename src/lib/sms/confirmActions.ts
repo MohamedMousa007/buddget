@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
 import { deviceIdHeader } from '@/lib/native/deviceId'
 
@@ -21,14 +20,16 @@ export async function confirmSmsLog(logId: string, currency?: string): Promise<b
   }
 }
 
-/** Clears awaiting_confirmation directly. Resolves false when the update failed. */
+/** Clears awaiting_confirmation via /api/sms/dismiss (clients cannot write sms_parse_log). Resolves false when it failed. */
 export async function dismissSmsLog(logId: string): Promise<boolean> {
   try {
-    const { error } = await createClient()
-      .from('sms_parse_log')
-      .update({ awaiting_confirmation: false })
-      .eq('id', logId)
-    return !error
+    const res = await apiFetchAuth('/api/sms/dismiss', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...(await deviceIdHeader()) },
+      body: JSON.stringify({ logId }),
+    })
+    return res.ok
   } catch {
     return false
   }

@@ -1,0 +1,69 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { addDays, addMonths, addYears, format, getDaysInMonth } from 'date-fns'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import type { PaymentMethod } from '@/lib/store/types'
+
+const st = () => useFinanceStore.getState()
+const pm = { id: 'pm1', name: 'Visa', type: 'credit_card', currency: 'EGP', isDefault: true } as PaymentMethod
+type Input = Parameters<ReturnType<typeof useFinanceStore.getState>['addSubscription']>[0]
+const input = (over: Partial<Input>): Input => ({
+  name: 'Svc', brandKey: null, planName: null, planId: null, catalogRegion: null, pendingPlanId: null, pendingAmount: null,
+  amount: 100, currency: 'EGP', billingCycle: 'monthly', billingDay: 10, startDate: '2026-01-10', nextBillingDate: null,
+  paymentMethodId: 'pm1', expenseCategory: 'Enjoyment', status: 'active', notes: null, tracking: 'log', ...over,
+}) as Input
+
+beforeEach(() => { useFinanceStore.setState({ subscriptions: [], recurringExpenses: [], expenses: [], paymentMethods: [pm] }) })
+afterEach(() => vi.useRealTimers())
+
+/** Visit the Subscriptions page once per day (09:00 local) for `days`, from the start date. */
+function simulate(inp: Input, days: number) {
+  const [y, m, d] = inp.startDate.split('-').map(Number)
+  vi.useFakeTimers().setSystemTime(new Date(y, m - 1, d, 9, 0, 0))
+  st().addSubscription(inp)
+  let day = new Date(y, m - 1, d, 9, 0, 0)
+  for (let i = 0; i <= days; i++) {
+    vi.setSystemTime(day)
+    st().logDueSubscriptions()
+    day = addDays(day, 1)
+  }
+  return st().expenses.filter((e) => e.linkedSubscriptionId).map((e) => e.date).sort()
+}
+const fmt = (d: Date) => format(d, 'yyyy-MM-dd')
+
+function monthly(startY: number, startM: number, anchor: number, months: number, step = 1) {
+  const out: string[] = []
+  for (let i = 0; i < months; i += step) {
+    const dt = new Date(startY, startM - 1 + i, 1)
+    out.push(fmt(new Date(dt.getFullYear(), dt.getMonth(), Math.min(anchor, getDaysInMonth(dt)))))
+  }
+  return out
+}
+
+describe('log-mode generator, visited daily for 24 months', () => {
+  it.each([29, 30, 31, 15])('monthly on %i: exactly one charge per month, on the clamped day', (day) => {
+    const start = `2026-01-${String(day)}`
+    const got = simulate(input({ billingDay: day, startDate: start }), 365 * 2 - 40)
+    const want = monthly(2026, 1, day, 24).filter((s) => s <= fmt(addDays(new Date(2026, 0, day), 365 * 2 - 40)))
+    expect(got).toEqual(want)
+  })
+  it('quarterly on 31 (Jan31, Apr30, Jul31, Oct31 ...)', () => {
+    const got = simulate(input({ billingCycle: 'quarterly', billingDay: 31, startDate: '2026-01-31' }), 365 * 2 - 10)
+    expect(got).toEqual(['2026-01-31', '2026-04-30', '2026-07-31', '2026-10-31', '2027-01-31', '2027-04-30', '2027-07-31', '2027-10-31'])
+  })
+  it('semiannual on 31', () => {
+    const got = simulate(input({ billingCycle: 'semiannual', billingDay: 31, startDate: '2026-01-31' }), 365 * 2 - 10)
+    expect(got).toEqual(['2026-01-31', '2026-07-31', '2027-01-31', '2027-07-31'])
+  })
+  it('yearly from Feb 29 2028', () => {
+    const got = simulate(input({ billingCycle: 'yearly', billingDay: 29, startDate: '2028-02-29' }), 365 * 3)
+    expect(got).toEqual(['2028-02-29', '2029-02-28', '2030-02-28', '2031-02-28'].filter((s) => s <= '2031-02-27' || true).slice(0, got.length))
+    expect(got.length).toBe(3)
+  })
+  it.each([['2026-01-02', 'Fri'], ['2026-01-04', 'Sun'], ['2026-01-07', 'Wed']])('weekly starting %s (%s): one charge every 7 days for 2 years', (start) => {
+    const got = simulate(input({ billingCycle: 'weekly', billingDay: 1, startDate: start }), 7 * 104)
+    const want: string[] = []
+    const [y, m, d] = start.split('-').map(Number)
+    for (let i = 0; i <= 104; i++) want.push(fmt(addDays(new Date(y, m - 1, d), 7 * i)))
+    expect(got).toEqual(want)
+  })
+})

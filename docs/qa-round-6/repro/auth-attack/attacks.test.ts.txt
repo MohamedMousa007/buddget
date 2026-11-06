@@ -1,0 +1,222 @@
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { createHmac } from 'node:crypto'
+
+type Row = Record<string, unknown>
+const db = vi.hoisted(() => ({ tables: {} as Record<string, Row[]>, rpcs: [] as string[], uid: 'userA' as string | null }))
+
+function table(name: string) {
+  let op: 'select' | 'update' | 'delete' | 'insert' | 'upsert' = 'select'
+  let patch: Row = {}
+  const filters: ((r: Row) => boolean)[] = []
+  const rows = () => (db.tables[name] ??= [])
+  const run = () => {
+    const hit = rows().filter((r) => filters.every((f) => f(r)))
+    if (op === 'update') hit.forEach((r) => Object.assign(r, patch))
+    if (op === 'delete') db.tables[name] = rows().filter((r) => !hit.includes(r))
+    if (op === 'insert') { rows().push({ ...patch }); return { data: [patch], error: null } }
+    return { data: hit, error: null }
+  }
+  const q: Record<string, unknown> = {
+    select: () => q,
+    update: (p: Row) => { op = 'update'; patch = p; return q },
+    delete: () => { op = 'delete'; return q },
+    insert: (p: Row) => { op = 'insert'; patch = p; return q },
+    upsert: (p: Row) => { op = 'upsert'; patch = p; return q },
+    eq: (k: string, v: unknown) => { filters.push((r) => r[k] === v); return q },
+    neq: (k: string, v: unknown) => { filters.push((r) => r[k] !== v); return q },
+    in: (k: string, v: unknown[]) => { filters.push((r) => v.includes(r[k])); return q },
+    is: (k: string, v: unknown) => { filters.push((r) => (r[k] ?? null) === v); return q },
+    order: () => q, limit: () => q,
+    maybeSingle: () => { const r = run(); return Promise.resolve({ data: (r.data as Row[])?.[0] ?? null, error: null }) },
+    single: () => { const r = run(); return Promise.resolve({ data: (r.data as Row[])?.[0] ?? null, error: null }) },
+    then: (res: (v: unknown) => unknown) => Promise.resolve(run()).then(res),
+  }
+  return q
+}
+
+vi.mock('server-only', () => ({}))
+vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => undefined, getAll: () => [], set: () => undefined, delete: () => undefined }) }))
+vi.mock('@/lib/supabase/service', () => ({
+  createServiceRoleClient: () => ({
+    from: table,
+    rpc: (fn: string) => { db.rpcs.push(fn); return Promise.resolve({ data: fn === 'api_rate_hit' ? true : null, error: null }) },
+    auth: { admin: { getUserById: async () => ({ data: { user: { email: 'a@example.test' } }, error: null }), signOut: async (...a: unknown[]) => { db.rpcs.push('signOut'); void a; return { error: null } } } },
+  }),
+}))
+vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: async () => db.uid, resolveActiveApiUserId: async () => db.uid }))
+vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
+vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ auth: { getClaims: async () => ({ data: null }), getUser: async () => ({ data: { user: null }, error: { message: 'none' } }), exchangeCodeForSession: async () => ({ error: null }) } }) }))
+
+const A = 'userA'
+const B = 'userB'
+const j = (body: unknown, headers: Record<string, string> = {}) => ({ method: 'POST', body: JSON.stringify(body), headers: { 'content-type': 'application/json', ...headers } })
+
+beforeAll(() => {
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+})
+afterEach(() => { db.tables = {}; db.rpcs = []; db.uid = A })
+
+describe('B. user A against user B', () => {
+  it('notifications PATCH with B\'s ids changes none of B\'s rows', async () => {
+    const { PATCH } = await import('@/app/api/notifications/route')
+    const idB = '22222222-2222-4222-8222-222222222222'
+    db.tables.notifications = [{ id: idB, user_id: B, is_read: false }]
+    const res = await PATCH(new Request('http://x/api/notifications', { ...j({ ids: [idB] }), method: 'PATCH' }))
+    expect(res.status).toBe(200)
+    expect(db.tables.notifications![0]!.is_read).toBe(false)
+    const all = await PATCH(new Request('http://x/api/notifications', { ...j({ markAllRead: true }), method: 'PATCH' }))
+    expect(all.status).toBe(200)
+    expect(db.tables.notifications![0]!.is_read).toBe(false)
+  })
+
+  it('support ticket by number: B\'s ticket is 404 for A (read and reply), reply writes nothing', async () => {
+    const { GET, POST } = await import('@/app/api/support/tickets/[number]/route')
+    db.tables.support_tickets = [{ id: 't1', number: 7, user_id: B, status: 'open', subject: 's', kind: 'bug' }]
+    db.tables.support_ticket_messages = []
+    const ctx = { params: Promise.resolve({ number: '7' }) }
+    expect((await GET(new Request('http://x'), ctx)).status).toBe(404)
+    expect((await POST(new Request('http://x', j({ message: 'hi' })), ctx)).status).toBe(404)
+    expect(db.tables.support_ticket_messages).toHaveLength(0)
+  })
+
+  it('support ticket list returns only A\'s rows', async () => {
+    const { GET } = await import('@/app/api/support/tickets/route')
+    db.tables.support_tickets = [{ id: 't1', number: 1, user_id: B }, { id: 't2', number: 2, user_id: A }]
+    const body = await (await GET(new Request('http://x'))).json()
+    expect(body.tickets.map((t: Row) => t.number)).toEqual([2])
+  })
+
+  it('push/send to B is 403 and sends nothing', async () => {
+    const { POST } = await import('@/app/api/push/send/route')
+    const res = await POST(new Request('http://x', j({ userId: '33333333-3333-4333-8333-333333333333', title: 't', body: 'b' })))
+    expect(res.status).toBe(403)
+  })
+
+  it('anonymous token on a user-bound route is 401 (db.uid null)', async () => {
+    db.uid = null
+    const { GET } = await import('@/app/api/support/tickets/route')
+    expect((await GET(new Request('http://x'))).status).toBe(401)
+  })
+})
+
+describe('C. forged / old tokens against the real resolver', () => {
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url')
+  const now = Math.floor(Date.now() / 1000)
+  const seen: string[] = []
+  beforeAll(() => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://dummy.supabase.co'
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'dummy'
+    vi.stubGlobal('fetch', async (url: string) => { seen.push(String(url)); return new Response(JSON.stringify({ message: 'invalid JWT', code: 401 }), { status: 401, headers: { 'content-type': 'application/json' } }) })
+  })
+  const tokens: Record<string, string> = {
+    'alg none, empty signature': `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ sub: A, role: 'authenticated', exp: now + 3600 })}.`,
+    'alg none, authenticated, no signature segment content': `${b64({ alg: 'none' })}.${b64({ sub: A, role: 'authenticated' })}.x`,
+    'HS256 signed with a guessed secret': (() => { const h = b64({ alg: 'HS256', typ: 'JWT' }); const p = b64({ sub: A, role: 'authenticated', exp: now + 3600 }); return `${h}.${p}.${createHmac('sha256', 'secret').update(`${h}.${p}`).digest('base64url')}` })(),
+    'expired': `${b64({ alg: 'HS256' })}.${b64({ sub: A, role: 'authenticated', exp: now - 10 })}.abc`,
+    'service_role claim forged': `${b64({ alg: 'HS256' })}.${b64({ sub: A, role: 'service_role', exp: now + 3600 })}.abc`,
+    'garbage': 'not-a-jwt',
+    'sms ingest style opaque token': 'a'.repeat(48),
+  }
+  for (const [name, tok] of Object.entries(tokens)) {
+    it(`${name} resolves to no identity`, async () => {
+      vi.resetModules()
+      vi.doUnmock('@/lib/auth/resolveApiUser')
+      const { resolveRouteIdentity } = await import('@/lib/supabase/resolveRouteUser')
+      const id = await resolveRouteIdentity(new Request('http://x', { headers: { authorization: `Bearer ${tok}` } }))
+      expect(id).toBeNull()
+    })
+  }
+})
+
+describe('D. redirects, CORS, cron, webhooks, limiters', () => {
+  it('auth/callback never leaves the origin for 14 open-redirect payloads', async () => {
+    const { GET } = await import('@/app/auth/callback/route')
+    const payloads = ['//evil.com', '/\\evil.com', '/\t/evil.com', 'https://evil.com', '/%09/evil.com', '/\\/evil.com', ' //evil.com', 'javascript:alert(1)', '/..//evil.com', '\\\\evil.com', '/%2f/evil.com', '/\n/evil.com', 'http:evil.com', '@evil.com', '/@evil.com']
+    for (const next of payloads) {
+      const res = await GET(new Request(`https://buddget.app/auth/callback?code=c&next=${encodeURIComponent(next)}`))
+      const loc = res.headers.get('location') ?? ''
+      expect(new URL(loc, 'https://buddget.app').origin, `next=${JSON.stringify(next)} -> ${loc}`).toBe('https://buddget.app')
+    }
+  })
+
+  it('CORS: only Capacitor origins get credentials; look-alike origins get nothing', async () => {
+    const { withNativeApiCors } = await import('@/lib/server/nativeApiCors')
+    const { NextResponse } = await import('next/server')
+    vi.stubEnv('NODE_ENV', 'production')
+    for (const origin of ['https://localhost.evil.com', 'null', 'https://evil.com', 'http://localhost:3000', 'capacitor://localhost.evil.com', 'https://localhost:8443', 'HTTPS://LOCALHOST']) {
+      const r = withNativeApiCors(new Request('http://x', { headers: { origin } }) as never, NextResponse.json({}))
+      expect(r.headers.get('access-control-allow-origin'), origin).toBeNull()
+    }
+    const ok = withNativeApiCors(new Request('http://x', { headers: { origin: 'capacitor://localhost' } }) as never, NextResponse.json({}))
+    expect(ok.headers.get('access-control-allow-origin')).toBe('capacitor://localhost')
+  })
+
+  it('cron: secret in the query string, lower-case scheme, padded header and "Bearer " are all refused', async () => {
+    process.env.CRON_SECRET = 's3cret'
+    const { isAuthorizedCron } = await import('@/lib/server/cronAuth')
+    expect(isAuthorizedCron(new Request('http://x/api/cron/prices?secret=s3cret'))).toBe(false)
+    expect(isAuthorizedCron(new Request('http://x/api/cron/prices?authorization=Bearer%20s3cret'))).toBe(false)
+    for (const h of ['bearer s3cret', 'Bearer', 'Bearer s3cre', 's3cret', 'Bearer s3cret2', 'Bearer undefined', 'Basic s3cret']) {
+      expect(isAuthorizedCron(new Request('http://x', { headers: { authorization: h } })), h).toBe(false)
+    }
+    expect(isAuthorizedCron(new Request('http://x', { headers: { authorization: 'Bearer s3cret' } }))).toBe(true)
+  })
+
+  it('webhook signatures: stale, future, tampered body, wrong-length and empty signatures fail', async () => {
+    const { verifySignedWebhook } = await import('@/lib/server/email/webhook')
+    const secret = 'whsec_' + Buffer.from('k'.repeat(24)).toString('base64')
+    const sign = (id: string, ts: number, body: string) => 'v1,' + createHmac('sha256', Buffer.from('k'.repeat(24))).update(`${id}.${ts}.${body}`).digest('base64')
+    const t = Math.floor(Date.now() / 1000)
+    const body = '{"a":1}'
+    expect(verifySignedWebhook({ id: 'i', timestamp: String(t), signature: sign('i', t, body) }, body, secret)).toBe(true)
+    expect(verifySignedWebhook({ id: 'i', timestamp: String(t - 301), signature: sign('i', t - 301, body) }, body, secret)).toBe(false)
+    expect(verifySignedWebhook({ id: 'i', timestamp: String(t + 301), signature: sign('i', t + 301, body) }, body, secret)).toBe(false)
+    expect(verifySignedWebhook({ id: 'i', timestamp: String(t), signature: sign('i', t, body) }, '{"a":2}', secret)).toBe(false)
+    expect(verifySignedWebhook({ id: 'i', timestamp: String(t), signature: 'v1,AAAA' }, body, secret)).toBe(false)
+    expect(verifySignedWebhook({ id: 'i', timestamp: String(t), signature: '' }, body, secret)).toBe(false)
+    expect(verifySignedWebhook({ id: 'i', timestamp: 'NaN', signature: sign('i', t, body) }, body, secret)).toBe(false)
+  })
+
+  it('AUT-4 sentry freshHook accepts a delivery with no timestamp header (replayable forever)', async () => {
+    const { freshHook } = await import('@/lib/integrations/sentryWebhook')
+    expect(freshHook(null, Date.now())).toBe(true)
+    expect(freshHook(String(Math.floor(Date.now() / 1000) - 3600), Date.now())).toBe(false)
+  })
+
+  it('AUT-7 public limiter keyed on x-forwarded-for: 300 requests with rotating header values never limit', async () => {
+    const { memoryRateLimitOk, resetMemoryRateLimit } = await import('@/lib/server/publicApiRateLimit')
+    resetMemoryRateLimit()
+    let blockedSpoof = 0
+    for (let i = 0; i < 300; i++) if (!memoryRateLimitOk(`10.0.0.${i}`)) blockedSpoof++
+    let blockedFixed = 0
+    for (let i = 0; i < 300; i++) if (!memoryRateLimitOk('10.9.9.9')) blockedFixed++
+    expect(blockedFixed).toBeGreaterThan(0)
+    expect(blockedSpoof).toBe(0)
+  })
+})
+
+describe('E. removed phone keeps its session', () => {
+  it('AUT-8 DELETE /api/devices/[id] revokes device-scoped rows but never the Auth session or refresh token of that phone', async () => {
+    vi.resetModules()
+    vi.doMock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: async () => db.uid }))
+    vi.doMock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
+    const { DELETE } = await import('@/app/api/devices/[id]/route')
+    const dev = 'aaaaaaaa-0000-4000-8000-0000000000aa'
+    db.tables.user_devices = [{ user_id: A, device_id: dev, revoked_at: null, is_main: false }]
+    db.tables.push_tokens = [{ user_id: A, device_id: dev }]
+    const res = await DELETE(new Request('http://x', { method: 'DELETE', headers: { 'x-buddget-device-id': 'bbbbbbbb-0000-4000-8000-0000000000bb' } }), { params: Promise.resolve({ id: dev }) })
+    expect(res.status).toBe(200)
+    expect(db.tables.user_devices![0]!.revoked_at).not.toBeNull()
+    expect(db.rpcs).not.toContain('signOut')
+  })
+  it('AUT-9 Supabase auth cookies are issued without Secure or HttpOnly (library default) and the shared-domain rewrite adds neither', async () => {
+    const { domainCookieOptions } = await import('@/lib/supabase/cookieDomain')
+    const opts = domainCookieOptions('.buddget.app') as Record<string, unknown>
+    expect(opts.secure).toBeUndefined()
+    expect(opts.httpOnly).toBeUndefined()
+    const { DEFAULT_COOKIE_OPTIONS } = await import('@supabase/ssr')
+    expect((DEFAULT_COOKIE_OPTIONS as Record<string, unknown>).secure).toBeUndefined()
+    expect(DEFAULT_COOKIE_OPTIONS.httpOnly).toBe(false)
+  })
+})

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
-import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 import { DEVICE_ID_PATTERN } from '@/lib/auth/resolveDeviceId'
 import { upsertSelf } from '@/lib/server/devices/registry'
@@ -19,10 +19,10 @@ const selfSchema = z.object({
 async function caller(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return { res: outdated }
-  const userId = await resolveApiUserId(request)
-  if (!userId) return { res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  const identity = await resolveRouteIdentity(request)
+  if (!identity) return { res: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   const deviceId = request.headers.get(DEVICE_ID_HEADER)?.trim().slice(0, 100) || null
-  return { userId, deviceId }
+  return { userId: identity.id, deviceId, sessionId: identity.sessionId }
 }
 
 /** The account's devices: who is main, who is told about things, and when each last captured a bank text. */
@@ -47,7 +47,7 @@ async function report(request: Request) {
   const parsed = selfSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return { res: NextResponse.json({ error: 'Invalid request' }, { status: 400 }) }
   const { pushPermission, ...self } = parsed.data
-  const result = await upsertSelf(createServiceRoleClient(), c.userId, c.deviceId, { ...self, ...(pushPermission !== undefined ? { pushPermission } : {}) })
+  const result = await upsertSelf(createServiceRoleClient(), c.userId, c.deviceId, { ...self, sessionId: c.sessionId, ...(pushPermission !== undefined ? { pushPermission } : {}) })
   return { result }
 }
 

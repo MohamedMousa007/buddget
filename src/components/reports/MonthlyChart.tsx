@@ -34,7 +34,7 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
       <h3 className="text-sm font-medium text-[var(--color-brand-text-secondary)] uppercase tracking-wider mb-1">
         {c.monthTitle}
       </h3>
-      <p className="text-[10px] text-[var(--color-brand-text-muted)] mb-4">
+      <p className="text-[0.625rem] text-[var(--color-brand-text-muted)] mb-4">
         {c.monthHint}
       </p>
       {data.length === 0 ? (

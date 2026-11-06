@@ -13,15 +13,21 @@ import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
-import { hasAnyDevice, isRevokedDevice } from '@/lib/server/devices/registry'
+import { hasAnyDevice, hasRevokedDevice, isRevokedDevice } from '@/lib/server/devices/registry'
 
 async function isUnregisteredDevice(service: ReturnType<typeof createServiceRoleClient>, userId: string, deviceId: string): Promise<boolean> {
   const { data } = await service.from('user_devices').select('device_id').eq('user_id', userId).eq('device_id', deviceId).maybeSingle()
   return !data && (await hasAnyDevice(service, userId))
 }
 
-/** A removed phone, or a client-chosen id the account never registered (once it has phones on record), gets no token. */
+/**
+ * A removed phone, a client-chosen id the account never registered (once it has phones on record), and, once the owner has
+ * removed any phone, a request that names no phone at all (a removed phone could otherwise just drop its id) get no token.
+ */
 async function deviceRefusal(service: ReturnType<typeof createServiceRoleClient>, userId: string, deviceId: string | null) {
+  if (!deviceId && (await hasRevokedDevice(service, userId))) {
+    return NextResponse.json({ error: 'device_required' }, { status: 403 })
+  }
   if (await isRevokedDevice(service, userId, deviceId)) {
     return NextResponse.json({ error: 'This phone was removed from the account' }, { status: 403 })
   }
@@ -94,8 +100,7 @@ export async function DELETE(request: Request) {
   if (refusal) return refusal
 
   // Issue the new token first so a failed insert never leaves the user without one, then retire the others
-  // for this scope: only THIS device when the native shell identifies itself, so rotating on one phone never
-  // de-arms another. Web (no device id) rotates all of the user's tokens.
+  // of the same scope only: this device's tokens, or (no device id) the device-less ones. Rotating never de-arms another phone.
   const { data: newToken, error } = await serviceClient
     .from('sms_ingest_tokens')
     .insert({ user_id: userId, device_id: deviceId })
@@ -112,7 +117,7 @@ export async function DELETE(request: Request) {
     .eq('user_id', userId)
     .eq('is_active', true)
     .neq('token', newToken.token)
-  if (deviceId) deactivate = deactivate.eq('device_id', deviceId)
+  deactivate = deviceId ? deactivate.eq('device_id', deviceId) : deactivate.is('device_id', null)
   const { error: deactivateError } = await deactivate
   if (deactivateError) {
     console.error('[sms/setup-token] deactivate error', deactivateError.message)

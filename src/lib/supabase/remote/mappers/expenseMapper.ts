@@ -72,6 +72,6 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     owedSettledAt: row.owed_settled_at ?? undefined,
     toPaymentMethodId: row.to_payment_method_id ?? undefined,
     createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    updatedAt: row.edited_at,
   }
 }

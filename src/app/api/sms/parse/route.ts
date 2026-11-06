@@ -44,6 +44,7 @@ import {
   extractionToObjective,
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
+import { SMS_SENDER_HELD_PUSH_KIND } from '@/lib/sms/pushKinds'
 import { MAX_SMS_BODY_CHARS, checkCreditSender, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, hasPostedTransaction, isClaimInFlight, isStaleClaim, maskOtpDigits, nonTransactionReason, smsLocalDay, smsPlausibilityIssue } from '@/lib/sms/ingestGuards'
 import { withSmsAiQuota } from '@/lib/sms/meteredAi'
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
@@ -639,7 +640,7 @@ export async function POST(request: Request) {
   // Idempotency: a WorkManager/Shortcut retry of an SMS we already hold hits the unique (user_id, sms_hash)
   // index in the insert below, which answers with the prior row. No separate lookup.
   // The pre-filter is pure: an OTP is masked BEFORE the claim row exists, so its digits are never persisted (N3).
-  const curated = matchCuratedPattern(message, sender ?? null)
+  const curated = matchCuratedPattern(message, sender ?? null, receivedAt ?? null)
   const rejectReason = nonTransactionReason(message, !!curated)
   const keptBody = rejectReason === 'otp' ? maskOtpDigits(message) : message
   const claimLog = () => service
@@ -1064,7 +1065,7 @@ export async function POST(request: Request) {
       status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : preAck ? 'confirmed' : 'logged',
       ...(preAck && tx.outcome !== 'transfer_paired' ? { acked_at: new Date().toISOString(), confirmed_at: new Date().toISOString() } : {}),
       harvested_at: new Date().toISOString(),
-      failure_code: addFailed ? (senderHeld ? 'sender_mismatch' : 'insert_failed') : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
+      failure_code: senderHeld ? 'sender_mismatch' : addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
@@ -1124,7 +1125,15 @@ export async function POST(request: Request) {
   // and the result is logged — a missing FIREBASE_SERVICE_ACCOUNT_JSON or an
   // all-stale token list shows up in the logs instead of failing silently.
   let pushArgs: SendNativePushArgs
-  if (addFailed || debtAwaitingUser) {
+  if (senderHeld) {
+    pushArgs = {
+      userId,
+      title: np.smsSenderHeldTitle(amountStr),
+      body: np.smsSenderHeldBody,
+      data: { kind: SMS_SENDER_HELD_PUSH_KIND, hash, logId, amount: String(parsed.amount), currency: parsed.currency },
+      collapseKey: `sms-held-${hash.slice(0, 12)}`,
+    }
+  } else if (addFailed || debtAwaitingUser) {
     pushArgs = {
       userId,
       title: np.smsConfirmTitle,

@@ -18,7 +18,7 @@ export function BillsBlockBody({ view, block, mode, onOpenLine, onLineAction, on
       <FlatCard divide>
         {dots.length > 0 || paydayDay != null ? (
           <div className="px-3.5 pt-3.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.bills.railTitle}</p>
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">{t.bills.railTitle}</p>
             <div role="img" aria-label={t.bills.railAria} className="relative mx-1.5 mt-1 mb-1.5 h-11">
               <div className="absolute inset-x-0 top-3 h-0.5 rounded-sm bg-[var(--color-brand-border-strong)]" />
               {dots.map((d) => {
@@ -30,7 +30,7 @@ export function BillsBlockBody({ view, block, mode, onOpenLine, onLineAction, on
                       style={{ insetInlineStart: `${d.left}%`, background: filled ? 'var(--color-cat-4)' : 'var(--color-brand-card)' }}
                     />
                     <span
-                      className="absolute top-[26px] -translate-x-1/2 font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-text-muted)] rtl:translate-x-1/2"
+                      className="absolute top-[26px] -translate-x-1/2 font-mono-numbers text-[0.65625rem] font-semibold text-[var(--color-brand-text-muted)] rtl:translate-x-1/2"
                       style={{ insetInlineStart: `${d.left}%` }}
                     >
                       {d.day}
@@ -45,7 +45,7 @@ export function BillsBlockBody({ view, block, mode, onOpenLine, onLineAction, on
                     style={{ insetInlineStart: `${railPosition(paydayDay, view.daysInCycle)}%` }}
                   />
                   <span
-                    className="absolute top-[26px] -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-primary-ink)] rtl:translate-x-1/2"
+                    className="absolute top-[26px] -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[0.65625rem] font-semibold text-[var(--color-brand-primary-ink)] rtl:translate-x-1/2"
                     style={{ insetInlineStart: `${railPosition(paydayDay, view.daysInCycle)}%` }}
                   >
                     {t.bills.payday(paydayDay)}

@@ -32,9 +32,9 @@ export function SettingsSwitchRow({ id, label, tone = 'neutral', hint, tag, chec
     >
       {Icon ? <SettingsChip icon={Icon} tone={tone} /> : null}
       <span className="min-w-0 flex-1">
-        <span className="block text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{label}</span>
+        <span className="block text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{label}</span>
         {hint ? <span className="mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]">{hint}</span> : null}
-        {tag ? <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{tag}</span> : null}
+        {tag ? <span className="mt-0.5 block text-[0.625rem] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{tag}</span> : null}
       </span>
       <Switch size="touch" aria-label={label} checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </label>

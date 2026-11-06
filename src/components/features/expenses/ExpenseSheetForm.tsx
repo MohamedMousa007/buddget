@@ -21,7 +21,7 @@ import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
 import { AmountTextInput } from '@/components/ui/AmountTextInput'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import { Scrim } from '@/components/ui/Scrim'
-import { useModalTitleId } from '@/components/modals/ModalShell'
+import { useDismissGuard, useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { FieldButton } from '@/components/ui/FieldButton'
@@ -167,8 +167,21 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     else onClose()
   }
 
+  // Escape, backdrop tap, swipe-down and Android back take the same unsaved-changes route as the X button.
+  useDismissGuard(() => {
+    if (confirmOpen) {
+      setConfirmOpen(false)
+      return true
+    }
+    if (mode === 'edit' && isDirty) {
+      setConfirmOpen(true)
+      return true
+    }
+    return false
+  })
+
   const IcClose = <X className="w-full h-full" strokeWidth={2} />
-  const microLabel = 'font-semibold text-[10px] tracking-[.08em] uppercase text-[var(--color-brand-text-muted)]'
+  const microLabel = 'font-semibold text-[0.625rem] tracking-[.08em] uppercase text-[var(--color-brand-text-muted)]'
 
   return (
     <>
@@ -258,6 +271,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               placeholder={t.expenseForm.descriptionPlaceholder}
               enterKeyHint="next"
               size="brand"
+              maxLength={120}
             />
           </div>
 

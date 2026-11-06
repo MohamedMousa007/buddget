@@ -45,8 +45,8 @@ import type {
   Subscription,
 } from './types'
 import { computeNextBillingDate } from '@/lib/subscriptions/subscriptionDates'
-import { chargeAmount, cycleState, isCharging, markPaidTarget } from '@/lib/subscriptions/subscriptionForecast'
-import { trackingAction } from '@/lib/subscriptions/subscriptionTracking'
+import { chargeAmount, isCharging, markPaidTarget } from '@/lib/subscriptions/subscriptionForecast'
+import { chargesToLog, subscriptionChargeId } from '@/lib/subscriptions/logDue'
 import { loggedChargesAdopted } from '@/lib/subscriptions/adoptLogged'
 import { priceHistoryWith } from '@/lib/subscriptions/subscriptionPricing'
 import {
@@ -60,10 +60,12 @@ import { SAVINGS_TYPE_ICONS } from '@/lib/constants/savingsIcons'
 import { normalizeSavingsAccountsList } from '@/lib/savings/normalizeSavingsAccount'
 import { defaultCategoryForSavingsType } from '@/lib/constants/savingsTypes'
 import { createSafeLocalStorage } from '@/lib/store/safeLocalStorage'
+import { watchForeignWrites } from '@/lib/store/crossTabSync'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
 import { clearIfFullyPaid, isDebtFullyPaid } from '@/lib/utils/calculations'
+import { overpaysDebt } from '@/lib/debts/overpaysDebt'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
@@ -273,7 +275,7 @@ export const useFinanceStore = create<FinanceStore>()(
               // Today's entries carry the exact time; back-dated ones stay day-level (read at noon).
               occurredAt: expense.occurredAt ?? (expense.date === localTodayISO() ? new Date().toISOString() : undefined),
               amountInBaseCurrency,
-              id: generateId(),
+              id: expense.id ?? generateId(),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },
@@ -456,16 +458,25 @@ export const useFinanceStore = create<FinanceStore>()(
               },
         ),
 
-      restoreIncomeEvent: (event) =>
+      restoreIncomeEvent: (event) => {
+        let restored = false
         set((state) => {
           if (state.incomeEvents.some((e) => e.id === event.id)) return state
           const incomeEvents = [...state.incomeEvents, event]
           const settings = { ...state.settings, noIncomeDeclared: false }
           // Deleting a withdrawal-linked event put the money back as a reversal deposit: take that back.
           const reversalId = reversalDepositByEvent.get(event.id)
-          reversalDepositByEvent.delete(event.id)
           const reversal = reversalId ? state.savingsTransactions.find((tx) => tx.id === reversalId) : undefined
-          if (!reversal) return { incomeEvents, settings }
+          if (!reversal) {
+            reversalDepositByEvent.delete(event.id)
+            restored = true
+            return { incomeEvents, settings }
+          }
+          // The returned money was spent before Undo: taking it back would drive the pocket negative.
+          const pocket = state.savingsAccounts.find((a) => a.id === reversal.accountId)
+          if (pocket && pocket.currentBalance + balanceEpsilon(pocket.currency) < reversal.amount) return state
+          reversalDepositByEvent.delete(event.id)
+          restored = true
           const nextState: FinanceStore = {
             ...state,
             incomeEvents,
@@ -481,7 +492,9 @@ export const useFinanceStore = create<FinanceStore>()(
             savingsAccounts: nextState.savingsAccounts,
             goals: reconcileGoalsForState(nextState),
           }
-        }),
+        })
+        return restored
+      },
 
       addIncomeEvent: (event) =>
         set((state) => {
@@ -806,6 +819,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
         const paymentId = generateId()
         set((state) => {
+          if (overpaysDebt(state, payment)) return state
           const nextState: FinanceStore = {
             ...state,
             debtPayments: [
@@ -835,6 +849,7 @@ export const useFinanceStore = create<FinanceStore>()(
 
       addDebtPayment: (payment) =>
         set((state) => {
+          if (overpaysDebt(state, payment)) return state
           const nextState: FinanceStore = {
             ...state,
             debtPayments: [
@@ -931,9 +946,16 @@ export const useFinanceStore = create<FinanceStore>()(
         return snapshot
       },
 
-      restoreDebtPayment: (snapshot) =>
+      restoreDebtPayment: (snapshot) => {
+        let restored = false
         set((state) => {
           if (state.debtPayments.some((p) => p.id === snapshot.payment.id)) return state
+          // Undo takes the returned money out of the pocket again, as the original withdrawal did.
+          const retake = snapshot.savingsTx && !state.savingsTransactions.some((t) => t.id === snapshot.savingsTx!.id) ? snapshot.savingsTx : undefined
+          // The returned money was spent before Undo: re-taking it would mint money, so the Undo is refused.
+          const pocket = retake ? state.savingsAccounts.find((a) => a.id === retake.accountId) : undefined
+          if (retake && (!pocket || pocket.currentBalance + balanceEpsilon(pocket.currency) < retake.amount)) return state
+          restored = true
           const debtPayments = [...state.debtPayments, snapshot.payment]
           const expenses = [
             ...state.expenses,
@@ -942,11 +964,9 @@ export const useFinanceStore = create<FinanceStore>()(
           const recurringDebtPayments = snapshot.schedule
             ? state.recurringDebtPayments.map((r) => (r.id === snapshot.schedule!.id ? snapshot.schedule! : r))
             : state.recurringDebtPayments
-          // Undo takes the returned money out of the pocket again, as the original withdrawal did.
-          const retake = snapshot.savingsTx && !state.savingsTransactions.some((t) => t.id === snapshot.savingsTx!.id) ? snapshot.savingsTx : undefined
           const savingsTransactions = retake ? [...state.savingsTransactions, retake] : state.savingsTransactions
           const savingsAccounts = retake
-            ? state.savingsAccounts.map((a) => (a.id === retake.accountId ? { ...a, currentBalance: settleBalance(Math.max(0, a.currentBalance - retake.amount)) } : a))
+            ? state.savingsAccounts.map((a) => (a.id === retake.accountId ? { ...a, currentBalance: settleBalance(a.currentBalance - retake.amount) } : a))
             : state.savingsAccounts
           const nextState: FinanceStore = { ...state, debtPayments, expenses, recurringDebtPayments, savingsTransactions, savingsAccounts }
           return {
@@ -958,7 +978,9 @@ export const useFinanceStore = create<FinanceStore>()(
             debts: settleDebt(nextState, snapshot.payment.debtId),
             goals: reconcileGoalsForState(nextState),
           }
-        }),
+        })
+        return restored
+      },
 
       addRecurringDebtPayment: (r) =>
         set((state) => ({
@@ -1138,7 +1160,9 @@ export const useFinanceStore = create<FinanceStore>()(
         const target = charge?.date ? null : markPaidTarget(sub, expenses)
         const date = charge?.date ?? (target ? format(target, 'yyyy-MM-dd') : null)
         if (!date) return
+        if (charge?.expenseId && expenses.some((e) => e.id === charge.expenseId)) return
         addExpense({
+          id: charge?.expenseId,
           date,
           description: sub.planName ? `${sub.name} ${sub.planName}` : sub.name,
           category: 'Subscription',
@@ -1175,7 +1199,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
 
       logDueSubscriptions: () => {
-        const { subscriptions, expenses } = get()
+        const { subscriptions } = get()
         const today = new Date()
         const todayIso = localTodayISO()
         const lapsed = new Set(
@@ -1191,12 +1215,10 @@ export const useFinanceStore = create<FinanceStore>()(
           }))
         }
         for (const sub of subscriptions) {
-          if (!isCharging(sub, today)) continue
-          const state = cycleState(sub, expenses, today)
-          if (trackingAction(sub.tracking, state) !== 'log') continue
-          // A converted trial starts billing at trialEnd; cycles inside the trial were free.
-          if (sub.trialEnd && format(state.due, 'yyyy-MM-dd') < sub.trialEnd.slice(0, 10)) continue
-          get().markSubscriptionPaid(sub.id, { date: format(state.due, 'yyyy-MM-dd') })
+          if (sub.tracking !== 'log' || !isCharging(sub, today)) continue
+          for (const date of chargesToLog(sub, get().expenses, today)) {
+            get().markSubscriptionPaid(sub.id, { date, expenseId: subscriptionChargeId(sub.id, date) })
+          }
         }
       },
 
@@ -2422,3 +2444,10 @@ export const useFinanceStore = create<FinanceStore>()(
     }
   )
 )
+
+// Another tab saved: take its copy instead of writing a stale whole-blob over it on our next change. Our own queued
+// write (at most one debounce window old) is dropped in favour of it; the sync layer re-sends anything undelivered.
+watchForeignWrites('buddget-storage', () => {
+  persistStorage.cancelPending()
+  void useFinanceStore.persist.rehydrate()
+})

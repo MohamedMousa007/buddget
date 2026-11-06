@@ -49,12 +49,13 @@ export async function PATCH(request: Request, { params }: Params) {
  * Removes a phone: it stops collecting and being notified at once, and signs itself out the next time it opens.
  * The phone you are holding cannot be removed here; sign out on it instead.
  *
- * Sessions are not recorded per device (user_devices has no session id), so the Auth session of the removed phone cannot
- * be singled out: `auth.admin.signOut` revokes one JWT's session or ALL of the user's, and a global signOut would log
- * out the phone in the user's hand too. Everything the phone holds that is scoped to its device id is revoked instead:
- * SMS ingest tokens, push tokens, the biometric binding (no new session can be minted) and trusted-device 2-step skip.
- * Its remaining access JWT only reaches routes that check `revoked_at` per device (SMS, push) or RLS-scoped own data, and
- * expires within the hour; it signs itself out the next time it opens.
+ * The phone's heartbeat records the Auth session it arrived on (`user_devices.session_id`, migration 0245). Removing the phone
+ * deletes exactly that `auth.sessions` row (its refresh tokens cascade), so it can no longer mint access JWTs; the access JWT
+ * it already holds keeps working until it expires (at most the project's JWT lifetime, one hour by default), and every route
+ * that checks `revoked_at` per device (SMS, push) refuses it at once. A phone registered before 0245 has no recorded session
+ * until its next heartbeat; removing such a phone cannot end its session, so the user should also change the password
+ * (which signs out every other session). Everything scoped to the device id is revoked in any case: SMS ingest tokens, push
+ * tokens, the biometric binding and trusted-device 2-step skip.
  */
 export async function DELETE(request: Request, { params }: Params) {
   const o = await owner(request)
@@ -63,13 +64,14 @@ export async function DELETE(request: Request, { params }: Params) {
   if (request.headers.get(DEVICE_ID_HEADER)?.trim() === id) return NextResponse.json({ error: 'Sign out on this phone instead' }, { status: 400 })
   const service = createServiceRoleClient()
   // An already-removed phone is looked up too: a retry after a failed cleanup must be able to finish it.
-  const { data: before } = await service.from('user_devices').select('is_main, revoked_at').eq('user_id', o.userId).eq('device_id', id).maybeSingle()
+  const { data: before } = await service.from('user_devices').select('is_main, revoked_at, session_id').eq('user_id', o.userId).eq('device_id', id).maybeSingle()
   if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!before.revoked_at) {
     const revoked = await service.from('user_devices').update({ revoked_at: new Date().toISOString(), collects_sms: false, is_main: false }).eq('user_id', o.userId).eq('device_id', id)
     if (revoked.error) return NextResponse.json({ error: 'Could not remove the phone' }, { status: 500 })
   }
   const cleanup = await Promise.all([
+    ...(before.session_id ? [service.rpc('revoke_auth_session', { p_user: o.userId, p_session: before.session_id })] : []),
     service.from('sms_ingest_tokens').update({ is_active: false }).eq('user_id', o.userId).eq('device_id', id),
     service.from('push_tokens').delete().eq('user_id', o.userId).eq('device_id', id),
     // The removed phone must not sign in again with its biometric secret or skip 2-step as a trusted device.

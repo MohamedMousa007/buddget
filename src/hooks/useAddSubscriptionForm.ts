@@ -15,6 +15,7 @@ import type { Currency, Subscription } from '@/lib/store/types'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { catalogGrid, catalogRegionOf, defaultPlan, type AddCategory } from '@/lib/subscriptions/catalogDisplay'
 import {
   committedImpact,
@@ -50,6 +51,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
   const region = useMemo(() => catalogRegionOf(profile), [profile])
   const regionCurrency = (region ? REGION_CURRENCY[region] : base) as Currency
   const today = localTodayISO()
+  const submitOnce = useSubmitOnce()
 
   const [step, setStep] = useState<1 | 2>(() => (editing || seedBrandKey ? 2 : 1))
   const [search, setSearch] = useState('')
@@ -204,12 +206,12 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
     (draft.sharedWith.length === 0 || (draft.myShare != null && draft.myShare > 0 && draft.myShare <= draft.amount))
 
   const submit = useCallback(() => {
-    if (!canSubmit) return
+    if (!canSubmit || !submitOnce.claim()) return
     const payload = draftToSubscription({ ...draft, currency: editing && draft.currency === editing.currency ? draft.currency : clampFiatToAllowed(settings, draft.currency) }, editing, today)
     if (editing) updateSubscription(editing.id, payload)
     else addSubscription(payload)
     onClose()
-  }, [addSubscription, canSubmit, draft, editing, onClose, settings, today, updateSubscription])
+  }, [addSubscription, canSubmit, draft, editing, onClose, settings, submitOnce, today, updateSubscription])
 
   return {
     base,

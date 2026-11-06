@@ -101,7 +101,7 @@ export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean;
                 onClick={() => setPicked((p) => { const q = new Set(p); if (on) q.delete(f.key); else q.add(f.key); return q })}>
                 <BrandMark name={f.bank} color={PAYMENT_BRANDS[resolvePaymentBrandKey(f.bank) ?? '']?.colors[0] ?? PAYMENT_TYPE_META.bank_account.color} size={40} />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{f.bank}</span>
+                  <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{f.bank}</span>
                   <span className="block text-xs text-[var(--color-brand-text-muted)]">•• {f.last4}</span>
                 </span>
                 <span className="font-mono-numbers text-sm font-medium">{m ? <>{m.int}<span className="opacity-45">{m.dec}</span></> : t.setBalance}</span>

@@ -96,7 +96,7 @@ export function QuickAddFAB() {
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-px">
               <span className="truncate text-sm font-bold leading-[1.25] text-[var(--color-brand-text-primary)]">{tile.label}</span>
-              <span className="line-clamp-2 text-[11.5px] leading-[1.3] text-[var(--color-brand-text-secondary)]">{tile.hint}</span>
+              <span className="line-clamp-2 text-[0.71875rem] leading-[1.3] text-[var(--color-brand-text-secondary)]">{tile.hint}</span>
             </span>
           </span>
         </SelectableCard>
@@ -146,7 +146,7 @@ export function QuickAddFAB() {
           <ModalTitle>{t.quickAdd.title}</ModalTitle>
           <div className="grid min-w-0 grid-cols-2 gap-2">{tiles.map(renderTile)}</div>
           {/* Plain centred text — not a button or a pill. */}
-          <p className="mt-0.5 flex items-center justify-center gap-[7px] text-center text-[12.5px] leading-[1.4] text-[var(--color-brand-text-secondary)]">
+          <p className="mt-0.5 flex items-center justify-center gap-[7px] text-center text-[0.78125rem] leading-[1.4] text-[var(--color-brand-text-secondary)]">
             <Mic className="size-[15px] shrink-0 text-[var(--color-brand-primary-ink)]" strokeWidth={2} aria-hidden />
             <span className="min-w-0">
               <b className="font-bold text-[var(--color-brand-primary-ink)]">{tipLead}</b>

@@ -1,0 +1,8 @@
+rules:
+  - id: sst-dangerously-set-inner-html
+    languages: [typescript]
+    severity: WARNING
+    message: "dangerouslySetInnerHTML with a non-literal value is an XSS sink"
+    patterns:
+      - pattern: '<$E ... dangerouslySetInnerHTML={{ __html: $V }} ... />'
+      - pattern-not: '<$E ... dangerouslySetInnerHTML={{ __html: "..." }} ... />'

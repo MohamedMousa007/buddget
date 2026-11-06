@@ -60,7 +60,7 @@ export function StepBudget({ chrome }: { chrome: StepChrome }) {
         </div>
       </Card>
 
-      <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-snug text-[var(--color-brand-text-muted)]">
+      <p className="mt-3.5 flex items-start gap-2 text-[0.78125rem] leading-snug text-[var(--color-brand-text-muted)]">
         <Info className="mt-px size-4 shrink-0" aria-hidden />
         {c.budget.why}
       </p>

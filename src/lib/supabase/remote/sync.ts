@@ -44,6 +44,19 @@ export interface FlushResult {
   adoptedPaydays?: string[]
   /** Rows the server did not write (a newer server row, or no change): the caller re-pulls so the local copy converges. */
   skippedWrites?: number
+  /** Rows the server refused for a reason only that row has (bad value, constraint). Set aside so the rest of the table still syncs. */
+  parked?: ParkedRow[]
+}
+
+/** A row the server rejected on its own merit. Never carries row content, only where it is. */
+export interface ParkedRow {
+  table: string
+  /** The row's own id. */
+  id: string
+  /** The id of the top-level row it belongs to in the store (a category belongs to its plan). */
+  rootId: string
+  /** Postgres error code. */
+  code: string
 }
 
 
@@ -75,7 +88,9 @@ export function defaultServerSettings(baseCurrency: Currency, secondaryCurrency:
   }
 }
 
-const PER_ROW_RETRY_CODES = new Set(['23505', '23514', '23503'])
+/** Data (22xxx) and constraint (23xxx) errors, and a row-level security refusal, belong to one row, not to the whole batch. */
+const isRowError = (code: string | undefined) => !!code && (code.startsWith('22') || code.startsWith('23') || code === '42501')
+const SINGLETON_TABLES: ReadonlySet<TableName> = new Set<TableName>(['profiles', 'user_settings'])
 
 type PgError = { message: string; code?: string } | null
 type Writes = Array<() => Promise<unknown>>
@@ -85,6 +100,7 @@ class OpRunner {
   adopted: string[] = []
   writes = 0
   skipped = 0
+  parked: ParkedRow[] = []
   private ops: Writes = []
   private removals: Writes = []
 
@@ -97,7 +113,7 @@ class OpRunner {
       select: (cols: string) => {
         eq: (col: string, v: string) => {
           eq: (col: string, v: string) => {
-            is: (col: string, v: null) => { maybeSingle: () => Promise<{ data: { id: string; updated_at: string } | null; error: PgError }> }
+            is: (col: string, v: null) => { maybeSingle: () => Promise<{ data: { id: string; edited_at: string } | null; error: PgError }> }
           }
         }
       }
@@ -105,44 +121,53 @@ class OpRunner {
   }
 
   /**
-   * Upsert a batch of rows to a table. A 23505 (unique), 23514 (check) or 23503 (foreign key) violation must
-   * not poison the whole batch: the rows are retried one by one, a duplicate payday event adopts the live row,
-   * and only the rows that still fail are reported.
+   * Upsert a batch of rows to a table. A row-level error (data, constraint, row security) must not poison the batch:
+   * the batch is split in halves until the offending row stands alone, a duplicate payday event adopts the live row,
+   * and a row that still fails is parked (reported, never retried inside this flush). Any other error is a failure of
+   * the whole table write.
    */
   upsert<T extends TableName>(
     table: T,
     rows: readonly Database['public']['Tables'][T]['Insert'][],
     label: string,
-    withRequired?: (row: Database['public']['Tables'][T]['Insert']) => Database['public']['Tables'][T]['Insert']
+    withRequired?: (row: Database['public']['Tables'][T]['Insert']) => Database['public']['Tables'][T]['Insert'],
+    rootOf?: (row: Database['public']['Tables'][T]['Insert']) => string
   ) {
     if (rows.length === 0) return
-    this.ops.push(async () => {
-      const res = await this.from(table).upsert(rows, { count: 'exact' })
+    const write = async (batch: readonly Database['public']['Tables'][T]['Insert'][]): Promise<void> => {
+      let res = await this.from(table).upsert(batch, { count: 'exact' })
       this.writes++
+      if (res.error?.code === '23502' && withRequired && batch.length === 1) {
+        res = await this.from(table).upsert([withRequired(batch[0])], { count: 'exact' })
+      }
       if (!res.error) {
-        // The stale-write guard skips a row whose server copy is newer, without an error: the count tells.
-        if (typeof res.count === 'number' && res.count < rows.length) this.skipped += rows.length - res.count
+        // The stale-write guard skips a row whose server copy has a newer edit, without an error: the count tells.
+        if (typeof res.count === 'number' && res.count < batch.length) this.skipped += batch.length - res.count
         return
       }
-      if (!PER_ROW_RETRY_CODES.has(res.error.code ?? '') && !(withRequired && res.error.code === '23502')) {
+      if (SINGLETON_TABLES.has(table) || !isRowError(res.error.code)) {
         this.errors.push(`${label}: ${res.error.message}`)
         return
       }
-      for (const row of rows) {
-        let one = await this.from(table).upsert([row])
-        if (one.error?.code === '23502' && withRequired) one = await this.from(table).upsert([withRequired(row)])
-        if (!one.error) continue
-        if (one.error.code === '23505' && table === 'income_events' && (await this.adoptLivePayday(row as Record<string, unknown>))) continue
-        this.errors.push(`${label}: ${one.error.message}`)
+      if (batch.length > 1) {
+        const mid = batch.length >> 1
+        await write(batch.slice(0, mid))
+        await write(batch.slice(mid))
+        return
       }
-    })
+      const row = batch[0]
+      if (res.error.code === '23505' && table === 'income_events' && (await this.adoptLivePayday(row as Record<string, unknown>))) return
+      const id = String((row as { id: string }).id)
+      this.parked.push({ table, id, rootId: rootOf ? rootOf(row) : id, code: res.error.code ?? '' })
+    }
+    this.ops.push(() => write(rows))
   }
 
   /** Another device already wrote this (template, payday): keep its row id, carry our newer edit onto it. */
   private async adoptLivePayday(row: Record<string, unknown>): Promise<boolean> {
     if (typeof row.template_id !== 'string' || typeof row.occurrence_date !== 'string') return false
     const live = await this.from('income_events')
-      .select('id, updated_at')
+      .select('id, edited_at')
       .eq('template_id', row.template_id)
       .eq('occurrence_date', row.occurrence_date)
       .is('deleted_at', null)
@@ -150,7 +175,7 @@ class OpRunner {
     if (live.error || !live.data) return false
     if (live.data.id === row.id) return false
     this.adopted.push(String(row.id))
-    if (Date.parse(String(row.updated_at ?? '')) > Date.parse(live.data.updated_at)) {
+    if (Date.parse(String(row.edited_at ?? '')) > Date.parse(live.data.edited_at)) {
       const { id: _id, user_id: _user, created_at: _created, ...patch } = row
       const upd = await this.from('income_events').update(patch).eq('id', live.data.id)
       if (upd.error) return false
@@ -201,17 +226,18 @@ class OpRunner {
   async drain(): Promise<FlushResult> {
     await Promise.all(this.removals.map((run) => run()))
     await Promise.all(this.ops.map((run) => run()))
-    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes, adoptedPaydays: this.adopted, skippedWrites: this.skipped }
+    return { anyError: this.errors.length > 0, errors: this.errors, writes: this.writes, adoptedPaydays: this.adopted, skippedWrites: this.skipped, parked: this.parked }
   }
 }
 
 /**
- * The edit time of the item travels as `updated_at`: the server skips the write when its copy is newer than the edit
+ * The edit time of the item travels as `edited_at`: the server skips the write when its stored edit time is newer
  * (a device that was offline for days must not overwrite a newer edit from another device). Device stamps are put on
- * the server's clock first; an item without a stamp is written unconditionally.
+ * the server's clock first; an item without a stamp is written unconditionally. `updated_at` is never sent: it is the
+ * server's own write time and the pull cursor.
  */
 function withEditTime<R>(row: R, item: HasId, at: string | undefined = (item as { updatedAt?: string }).updatedAt): R {
-  return at ? ({ ...row, updated_at: toServerTime(at) } as R) : row
+  return at ? ({ ...row, edited_at: toServerTime(at) } as R) : row
 }
 
 function emitList<T extends HasId, TN extends TableName>(
@@ -354,6 +380,7 @@ function mergeResults(results: FlushResult[]): FlushResult {
     writes: results.reduce((n, r) => n + r.writes, 0),
     adoptedPaydays: results.flatMap((r) => r.adoptedPaydays ?? []),
     skippedWrites: results.reduce((n, r) => n + (r.skippedWrites ?? 0), 0),
+    parked: results.flatMap((r) => r.parked ?? []),
   }
 }
 
@@ -375,7 +402,7 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
   const catRows = [...catDiff.inserts, ...catDiff.updates].map((c) =>
     withEditTime(budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency), c, planStamp.get(c._planId))
   )
-  categories.upsert('budget_categories', catRows, 'budget_categories.upsert')
+  categories.upsert('budget_categories', catRows, 'budget_categories.upsert', undefined, (row) => row.plan_id)
   categories.tombstone('budget_categories', catDiff.deletes, 'budget_categories.tombstone')
 
   const nextSubs = next.budgetPlans.flatMap((p) =>
@@ -389,7 +416,7 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
   const subRows = [...subDiff.inserts, ...subDiff.updates].map((s) =>
     withEditTime(budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder), s, planStamp.get(planOfCategory.get(s._catId) ?? ''))
   )
-  subcategories.upsert('budget_subcategories', subRows, 'budget_subcategories.upsert')
+  subcategories.upsert('budget_subcategories', subRows, 'budget_subcategories.upsert', undefined, (row) => planOfCategory.get(row.category_id) ?? row.category_id)
   subcategories.tombstone('budget_subcategories', subDiff.deletes, 'budget_subcategories.tombstone')
 }
 

@@ -40,7 +40,7 @@ export function FlowChipRail({ title, chips }: { title: string; chips: FlowChip[
   if (chips.length === 0) return null
   return (
     <section className="hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4 lg:me-4 lg:block">
-      <h2 className="mb-3 text-[13px] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
+      <h2 className="mb-3 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{title}</h2>
       <div className="flex flex-wrap gap-2">
         {chips.map((c) => (
           <FlowChipItem key={c.key} chip={c} />
@@ -82,7 +82,7 @@ export function FlowChipRow({
         {filterCount > 0 ? (
           <span
             aria-hidden
-            className="flex size-4 items-center justify-center rounded-full bg-[var(--color-brand-primary)] font-mono-numbers text-[10px] font-bold leading-none text-[var(--color-brand-on-primary)]"
+            className="flex size-4 items-center justify-center rounded-full bg-[var(--color-brand-primary)] font-mono-numbers text-[0.625rem] font-bold leading-none text-[var(--color-brand-on-primary)]"
           >
             {filterCount > 9 ? '9+' : filterCount}
           </span>
@@ -97,7 +97,7 @@ export function FlowChipRow({
         ))}
       </div>
       {results ? (
-        <div className="ms-auto flex h-9 shrink-0 items-center gap-1 ps-2 text-[13px] text-[var(--color-brand-text-secondary)]">
+        <div className="ms-auto flex h-9 shrink-0 items-center gap-1 ps-2 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
           <span className="whitespace-nowrap">
             <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{results.count}</b> {t.flow.resultsWord(results.count)} ·{' '}
             <span className="font-mono-numbers">{results.summary}</span>

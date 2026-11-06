@@ -90,7 +90,7 @@ export function StepFundIt({ form, existing = false, onOpenSplit }: { form: Form
         {c.pill}
       </Badge>
       {existing ? null : (
-        <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] px-3.5 py-3 text-[13px] text-[var(--color-brand-text-secondary)]">
+        <div className="flex items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] px-3.5 py-3 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
           <Coins className="size-5 shrink-0 text-[var(--color-brand-primary-bright)]" aria-hidden />
           <p>
             {t.pocketLead} <b className="text-[var(--color-brand-text-primary)]">{c.pocket}</b> {t.pocketTail}
@@ -120,7 +120,7 @@ export function StepFundIt({ form, existing = false, onOpenSplit }: { form: Form
                 aria-valuetext={aria}
                 className="h-11 w-full accent-[var(--color-brand-primary)]"
               />
-              <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{c.base}</p>
+              <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{c.base}</p>
               <p className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{c.resultLine}</p>
               <p className="text-xs text-[var(--color-brand-text-secondary)]">{c.totalLine}</p>
               {onOpenSplit && form.otherShare > 0 ? (
@@ -154,7 +154,7 @@ export function StepFundIt({ form, existing = false, onOpenSplit }: { form: Form
 
       <div className="flex items-start gap-2.5 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3.5">
         <BuddgyIcon size={24} />
-        <p className="text-[13px] leading-[1.45] text-[var(--color-brand-text-primary)]">{c.tip}</p>
+        <p className="text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-primary)]">{c.tip}</p>
       </div>
     </>
   )

@@ -77,7 +77,7 @@ describe('flushDiff holdings tier and per-row retry', () => {
     const next = { ...emptySnapshot(), expenses: [mk(1, 10), mk(2, 0), mk(3, 5)] } as unknown as Snapshot
     const res = await flushDiff(client as never, 'u', emptySnapshot(), next)
     expect(saved).toEqual([id(1), id(3)])
-    expect(res.anyError).toBe(true)
-    expect(res.errors).toHaveLength(1)
+    expect(res.anyError).toBe(false)
+    expect(res.parked).toEqual([{ table: 'expenses', id: id(2), rootId: id(2), code }])
   })
 })

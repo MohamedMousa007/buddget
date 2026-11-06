@@ -57,3 +57,23 @@ describe('safeLocalStorage quota fallback', () => {
     expect(seen).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('safeLocalStorage unpersisted state (OFS-8)', () => {
+  beforeEach(() => __resetSafeStorageForTests())
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('reports unpersisted writes while the device refuses saves, and clears once one fits', async () => {
+    const { hasUnpersistedWrites } = await import('./safeLocalStorage')
+    const s = quotaStorage()
+    const bus = new EventTarget()
+    vi.stubGlobal('window', { localStorage: s.api, addEventListener: bus.addEventListener.bind(bus), removeEventListener: bus.removeEventListener.bind(bus), dispatchEvent: bus.dispatchEvent.bind(bus) })
+    const store = createSafeLocalStorage()
+    expect(hasUnpersistedWrites()).toBe(false)
+    s.fill()
+    store.setItem('k', 'v')
+    expect(hasUnpersistedWrites()).toBe(true)
+    s.free()
+    store.setItem('k', 'v2')
+    expect(hasUnpersistedWrites()).toBe(false)
+  })
+})

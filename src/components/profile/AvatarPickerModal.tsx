@@ -225,7 +225,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
               </div>
 
               <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{t.profile.avatarBackground}</p>
+                <p className="mb-2 text-[0.625rem] font-medium uppercase tracking-wider text-[var(--color-brand-text-muted)]">{t.profile.avatarBackground}</p>
                 <ColorSwatchRow
                   value={bgHex}
                   colors={AVATAR_BACKGROUNDS.map((b) => b.main)}
@@ -240,7 +240,7 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
                   <TriangleAlert className="mt-0.5 size-5 shrink-0 text-[var(--color-brand-primary-ink)]" aria-hidden />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{problemCopy[problem].title}</p>
-                    <p className="mt-0.5 text-[13px] text-[var(--color-brand-text-secondary)]">{problemCopy[problem].body}</p>
+                    <p className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{problemCopy[problem].body}</p>
                   </div>
                 </div>
               ) : null}

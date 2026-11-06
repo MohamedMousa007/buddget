@@ -30,7 +30,7 @@ vi.mock('@/lib/store/useSettingsStore', () => ({
   useSettingsStore: { getState: vi.fn(() => ({ serverSyncedFor: 'u1', markServerSynced: vi.fn(), reset: vi.fn() })) },
 }))
 vi.mock('@/lib/store/useSyncFailures', () => ({
-  useSyncFailures: { getState: vi.fn(() => ({ recordFailures: h.recordFailures })) },
+  useSyncFailures: { getState: vi.fn(() => ({ recordFailures: h.recordFailures, recordSetAside: vi.fn() })) },
 }))
 vi.mock('@/lib/supabase/remote', () => ({
   pullAll: vi.fn(),

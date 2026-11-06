@@ -1,0 +1,17 @@
+import { describe, it, expect } from 'vitest'
+import { weekendFirstDayFor } from '@/lib/time/weekStart'
+import { paydayDatesForWindow } from '@/lib/utils/paydaySchedule'
+import { format } from 'date-fns'
+
+describe('server salary matching weekend for users with no stored timezone/week start', () => {
+  it('server (timezone ?? UTC) and a Cairo device agree on the weekend', () => {
+    const server = weekendFirstDayFor({ weekStartDay: undefined, timezone: 'UTC' })
+    const device = weekendFirstDayFor({ weekStartDay: undefined, timezone: 'Africa/Cairo' })
+    expect(server).toBe(device)
+  })
+  it('payday on Friday 2026-11-27 lands on the same date for both', () => {
+    const src = { id: 's', name: 'x', amount: 1, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', paydayDays: [27], effectiveStart: '2020-01-01', createdAt: '', updatedAt: '' } as never
+    const w = (wf: 5 | 6) => paydayDatesForWindow(src, new Date(2026, 10, 1), new Date(2026, 10, 30), true, wf).map((d) => format(d, 'yyyy-MM-dd'))
+    expect(w(6)).toEqual(w(5))
+  })
+})

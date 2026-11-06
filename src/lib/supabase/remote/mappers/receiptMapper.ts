@@ -50,7 +50,7 @@ export function receiptToRow(r: Receipt, userId: string): ReceiptInsert {
     charges: r.charges as unknown as Json,
     notes: r.notes ?? null,
     created_at: r.createdAt,
-    updated_at: r.updatedAt,
+    edited_at: r.updatedAt,
   }
 }
 
@@ -68,6 +68,6 @@ export function receiptFromRow(row: ReceiptRow): Receipt {
     charges: normaliseCharges(row.charges),
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    updatedAt: row.edited_at,
   }
 }

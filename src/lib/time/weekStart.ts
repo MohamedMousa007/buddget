@@ -1,4 +1,5 @@
 import { deviceTimeZone } from '@/lib/time/deviceTimeZone'
+import { DEFAULT_USER_TIME_ZONE } from '@/lib/server/userTimeZone'
 
 /** JS weekday index of the first day of the week: Sunday 0, Monday 1, Saturday 6. */
 export type WeekStartDay = 0 | 1 | 6
@@ -24,7 +25,7 @@ export function defaultWeekStart(timeZone: string | null | undefined): WeekStart
 
 /** The user's choice, else the default for their zone (stored zone, then the device's). */
 export function resolveWeekStart(settings: { weekStartDay?: WeekStartDay | null; timezone?: string | null }): WeekStartDay {
-  return settings.weekStartDay ?? defaultWeekStart(settings.timezone ?? deviceTimeZone())
+  return settings.weekStartDay ?? defaultWeekStart(settings.timezone ?? deviceTimeZone() ?? DEFAULT_USER_TIME_ZONE)
 }
 
 /** Column index (0 = first column) of a JS weekday in a grid that opens on `weekStart`. */
@@ -40,7 +41,7 @@ const SAT_SUN_WEEKEND_ZONES: ReadonlySet<string> = new Set(['Asia/Dubai'])
  * (Egypt, KSA and most of the Gulf) has a Fri+Sat weekend, so Friday; any other week is Sat+Sun, so Saturday.
  */
 export function weekendFirstDayFor(settings: { weekStartDay?: WeekStartDay | null; timezone?: string | null }): 5 | 6 {
-  const zone = settings.timezone ?? deviceTimeZone()
+  const zone = settings.timezone ?? deviceTimeZone() ?? DEFAULT_USER_TIME_ZONE
   if (zone && SAT_SUN_WEEKEND_ZONES.has(zone)) return 6
   return resolveWeekStart(settings) === 6 ? 5 : 6
 }

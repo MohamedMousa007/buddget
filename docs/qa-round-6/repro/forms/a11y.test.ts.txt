@@ -1,0 +1,24 @@
+import { describe, it, expect } from 'vitest'
+import { createElement as h } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { AmountField } from '@/components/ui/AmountField'
+import { sanitizeAmount } from '@/lib/ui/amountSanitize'
+
+describe('amount field accessible name', () => {
+  const noop = () => {}
+  it('FRM-a11y: a field rendered the way 24 call sites do has no accessible name', () => {
+    const html = renderToStaticMarkup(h(AmountField, { value: '', onChange: noop, currency: 'EGP', placeholder: '0' }))
+    expect(html).toMatch(/aria-label|aria-labelledby/)
+  })
+  it('control: with a label prop it is named', () => {
+    const html = renderToStaticMarkup(h(AmountField, { value: '', onChange: noop, label: 'Amount' }))
+    expect(html).toContain('aria-label="Amount"')
+  })
+})
+
+describe('3-decimal currencies', () => {
+  it('FRM-dec: a field given no currency cannot take the third KWD decimal', () => {
+    expect(sanitizeAmount('12.345', 'decimal', undefined)).toBe('12.34')
+    expect(sanitizeAmount('12.345', 'decimal', 'KWD')).toBe('12.345')
+  })
+})

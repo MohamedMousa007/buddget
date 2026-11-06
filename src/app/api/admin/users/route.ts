@@ -19,8 +19,11 @@ export async function GET(req: Request) {
   const order = url.searchParams.get('order') ?? 'created_desc'
   const state = url.searchParams.get('state')
 
+  const search = url.searchParams.get('q') || undefined
   const { data, error } = await ctx.service.rpc('admin_user_directory', {
-    p_search: url.searchParams.get('q') || undefined,
+    p_search: search,
+    // Without `users.pii` the email is matched in its masked form only, so a search cannot recover what the response hides.
+    p_match_email: ctx.canSeePii,
     p_limit: Math.min(Math.max(Math.floor(Number(url.searchParams.get('limit'))) || 25, 1), 100),
     p_offset: Math.max(Number(url.searchParams.get('offset')) || 0, 0),
     p_order: ORDERS.has(order) ? order : 'created_desc',
@@ -33,5 +36,6 @@ export async function GET(req: Request) {
   }
   const result = data as { total: number; rows: DirectoryRow[] }
   await auditPiiRead(ctx, 'user_list', 'user', null)
+  if (search) await auditPiiRead(ctx, 'user_search', 'user', null, { onlyWithPii: false })
   return json({ total: result.total, rows: result.rows.map((r) => ({ ...r, email: maskIf(ctx, r.email) })) })
 }

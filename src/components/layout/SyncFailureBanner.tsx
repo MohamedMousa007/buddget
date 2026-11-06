@@ -18,16 +18,24 @@ import { useT } from '@/lib/i18n'
  */
 export function SyncFailureBanner() {
   const failures = useSyncFailures((s) => s.failures)
+  const setAside = useSyncFailures((s) => s.setAside)
   const { online } = useNetworkStatus()
   const [hidden, hide] = useHiddenStatus('sync')
   const t = useT()
 
-  if (failures.length === 0 || !online) return null
+  if ((failures.length === 0 && setAside.length === 0) || !online) return null
+
+  const label =
+    failures.length === 0
+      ? t.syncFailures.setAside(setAside.length)
+      : failures.length === 1
+        ? t.syncFailures.oneDidntSync
+        : t.syncFailures.manyDidntSync(failures.length)
 
   return (
     <StatusPill
       icon={<AlertTriangle strokeWidth={2} />}
-      label={failures.length === 1 ? t.syncFailures.oneDidntSync : t.syncFailures.manyDidntSync(failures.length)}
+      label={label}
       visible={!hidden}
       onHide={hide}
     />

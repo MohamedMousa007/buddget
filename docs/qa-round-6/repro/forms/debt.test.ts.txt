@@ -1,0 +1,63 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+vi.mock('react', async (orig) => { const o = await orig<typeof import('react')>(); const { hooks } = await import('./liteReact'); return { ...o, ...hooks, default: { ...o, ...hooks } } })
+vi.mock('zustand/react/shallow', () => ({ useShallow: (f: unknown) => f }))
+const wrap = vi.hoisted(() => async (orig: any, key: string) => {
+  const o = await orig()
+  const { hooks } = await import('./liteReact')
+  const real = o[key]
+  const hook = Object.assign((sel?: (s: unknown) => unknown) => hooks.useSyncExternalStore(real.subscribe, () => (sel ? sel(real.getState()) : real.getState())), { getState: real.getState, setState: real.setState, subscribe: real.subscribe })
+  return { ...o, [key]: hook }
+})
+vi.mock('@/lib/store/useFinanceStore', (orig: any) => wrap(orig, 'useFinanceStore'))
+vi.mock('@/lib/store/useSettingsStore', (orig: any) => wrap(orig, 'useSettingsStore'))
+vi.mock('@/lib/i18n', () => ({ useT: () => new Proxy({}, { get: () => new Proxy({}, { get: () => 'x' }) }) }))
+vi.mock('@/components/ui/ActionToast', () => ({ useActionToast: () => vi.fn() }))
+import { renderLite } from './liteReact'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
+
+beforeEach(() => {
+  const s = useFinanceStore.getState()
+  useFinanceStore.setState({
+    expenses: [], debtPayments: [], recurringDebtPayments: [],
+    paymentMethods: [{ id: 'pm1', name: 'Cash', type: 'cash', isDefault: true }] as never,
+    debts: [{ id: 'd1', name: 'Loan', person: 'A', startingBalance: 100, currency: 'EGP', isGold: false, debtType: 'general', direction: 'i_owe', status: 'active', createdAt: '2026-01-01T00:00:00Z', receivedVia: 'cash' }] as never,
+    settings: { ...s.settings, baseCurrency: 'EGP', showAllCurrenciesInForms: true },
+  })
+  useSettingsStore.setState({ activeModal: 'payDebt', debtSheetPaymentOnly: true } as never)
+})
+
+describe('pay debt', () => {
+  it('FRM-pay-double: frozen handler pays a cleared 100 debt twice', () => {
+    const h = renderLite(() => useAddDebtSheet())
+    h.act(() => { h.result.current.selectDebtForPayFlow('d1'); h.result.current.setPaymentAmount('100') })
+    const frozen = h.result.current.handleAddPayment
+    h.act(() => frozen())
+    const afterFirst = useFinanceStore.getState().debtPayments.length
+    h.act(() => frozen())
+    const st = useFinanceStore.getState()
+    console.log('payments', afterFirst, '->', st.debtPayments.length, 'expenses', st.expenses.length, 'paid total', st.debtPayments.reduce((s, p) => s + p.amountPaid, 0))
+    expect(st.debtPayments.length).toBe(1)
+  })
+  it('FRM-pay-sequential: a fresh handler after the first payment refuses', () => {
+    const h = renderLite(() => useAddDebtSheet())
+    h.act(() => { h.result.current.selectDebtForPayFlow('d1'); h.result.current.setPaymentAmount('100') })
+    h.act(() => h.result.current.handleAddPayment())
+    h.act(() => { h.result.current.selectDebtForPayFlow('d1'); h.result.current.setPaymentAmount('100') })
+    h.act(() => h.result.current.handleAddPayment())
+    expect(useFinanceStore.getState().debtPayments.length).toBe(1)
+  })
+})
+
+describe('add installment', () => {
+  it('FRM-inst-count: absurd count 999999999999 is accepted, per-slice 0', () => {
+    useSettingsStore.setState({ activeModal: 'addDebt', debtSheetPaymentOnly: false } as never)
+    const h = renderLite(() => useAddDebtSheet())
+    h.act(() => { h.result.current.setMode('new'); h.result.current.setDebtType('installment'); h.result.current.setStartingBalance('100'); h.result.current.setInstallmentItemName('Phone'); h.result.current.setInstallmentCount('999999999999') })
+    console.log('can', h.result.current.canSubmitNewDebt)
+    h.act(() => h.result.current.handleAddDebt())
+    const d = useFinanceStore.getState().debts.find((x) => x.id !== 'd1')
+    expect({ n: d?.installmentCount, per: d?.installmentAmount, can: h.result.current.canSubmitNewDebt }).toEqual({ n: 12, per: 8.33, can: true })
+  })
+})

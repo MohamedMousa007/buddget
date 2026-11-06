@@ -206,7 +206,7 @@ export function PaydaysPage() {
               }
             />
           </div>
-          <p className="mx-[18px] my-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)] lg:mx-0 lg:mt-8 lg:text-center">
+          <p className="mx-[18px] my-2 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)] lg:mx-0 lg:mt-8 lg:text-center">
             {t.paydays.startWithOne}
           </p>
           <div className="mx-4 flex flex-col gap-2 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-4">
@@ -217,8 +217,8 @@ export function PaydaysPage() {
                     <s.icon className="h-5 w-5" strokeWidth={1.75} />
                   </span>
                   <span className="flex flex-1 flex-col gap-0.5">
-                    <span className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.paydays[s.name] as string}</span>
-                    <span className="text-[12.5px] text-[var(--color-brand-text-secondary)]">{t.paydays[s.sub] as string}</span>
+                    <span className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{t.paydays[s.name] as string}</span>
+                    <span className="text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{t.paydays[s.sub] as string}</span>
                   </span>
                   <ChevronRight className="size-[18px] text-[var(--color-brand-text-muted)]" strokeWidth={2} aria-hidden />
                 </span>
@@ -250,7 +250,7 @@ export function PaydaysPage() {
             ),
           )}
           <div className="mx-[18px] mt-1.5 flex flex-col gap-2 lg:mx-0">
-            <p className="text-[13px] text-[var(--color-brand-text-secondary)]">
+            <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
               {fillSlots(t.paydays.receivedLine, {
                 month: monthName,
                 received: <b className="font-mono-numbers text-[var(--color-brand-text-primary)]">{formatWhole(progress.received)}</b>,
@@ -266,7 +266,7 @@ export function PaydaysPage() {
             </div>
           </div>
           {reordering ? (
-            <p className="mx-[18px] mt-3.5 text-[12.5px] text-[var(--color-brand-text-secondary)] lg:mx-0">{t.paydays.reorderHelp}</p>
+            <p className="mx-[18px] mt-3.5 text-[0.78125rem] text-[var(--color-brand-text-secondary)] lg:mx-0">{t.paydays.reorderHelp}</p>
           ) : null}
           <div ref={listRef} className={cn('mx-4 mt-3.5 flex flex-col gap-2.5 lg:mx-0', !detail && !reordering && 'lg:grid lg:grid-cols-2 lg:gap-4 xl:grid-cols-3', reordering && !detail && 'lg:max-w-[var(--page-max)]')}>
             {shown.map((s, i) => {
@@ -300,7 +300,7 @@ export function PaydaysPage() {
             })}
           </div>
           {!reordering ? (
-            <p className="mx-[18px] mt-4 text-[12.5px] leading-[1.45] text-[var(--color-brand-text-muted)] lg:mx-0">{t.paydays.oneTimeNote}</p>
+            <p className="mx-[18px] mt-4 text-[0.78125rem] leading-[1.45] text-[var(--color-brand-text-muted)] lg:mx-0">{t.paydays.oneTimeNote}</p>
           ) : null}
         </div>
         {detail ? (

@@ -4,14 +4,12 @@ import { useState } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense } from '@/lib/store/types'
 import { RepaidSheet } from '@/components/features/spending/RepaidSheet'
-import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useEditExpenseForm } from '@/hooks/useEditExpenseForm'
 import { ReceiptDetailSheet } from '@/components/receipt/ReceiptDetailSheet'
 import { useLinkedDelete } from '@/hooks/useLinkedDelete'
 import { ExpenseSheetForm } from '@/components/features/expenses/ExpenseSheetForm'
 
 export function EditExpenseForm({ expense, onClose }: { expense: Expense; onClose: () => void }) {
-  useEscapeClose(true, onClose)
   const f = useEditExpenseForm(expense, onClose)
   const { removeExpense } = useLinkedDelete()
   const [repaidOpen, setRepaidOpen] = useState(false)

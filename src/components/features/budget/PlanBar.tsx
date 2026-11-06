@@ -36,7 +36,7 @@ export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expa
         >
           <span className={`size-2.5 shrink-0 rounded-full ${state === 'active' ? 'bg-[var(--color-brand-primary-bright)]' : 'bg-[var(--color-brand-text-muted)]'}`} aria-hidden />
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-[15px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{planName}</span>
+            <span className="truncate text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{planName}</span>
             <span className="truncate text-xs text-[var(--color-brand-text-secondary)]">{c[`${state}Sub`]}</span>
           </span>
           <ChevronDown className={`size-4 shrink-0 text-[var(--color-brand-text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden />

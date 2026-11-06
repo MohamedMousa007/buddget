@@ -1,0 +1,173 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
+import { computeMonthlyStats } from '@/lib/utils/monthlyStats'
+import { cycleKeyFor } from '@/lib/settings/payCycle'
+import { localTodayISO } from '@/lib/utils/localDate'
+import { balanceEpsilon } from '@/lib/savings/balanceMath'
+import { rng, type Rng } from './prng'
+import type { Debt, SavingsAccount, FinanceStore, Currency } from '@/lib/store/types'
+
+const S = () => useFinanceStore.getState()
+const RATES = { USD_EGP: 50, EGP_USD: 0.02, KWD_EGP: 160.5, EGP_KWD: 1 / 160.5 }
+const CUR: Currency[] = ['EGP', 'USD', 'KWD']
+const pocket = (id: string, currency: Currency): SavingsAccount =>
+  ({ id, name: id, category: 'savings', type: 'bank', currency, currentBalance: 0, createdAt: '2026-01-01' }) as SavingsAccount
+
+function seed() {
+  const debts: Debt[] = ['d1', 'd2'].map((id, i) => ({ id, name: id, person: 'x', startingBalance: 1000 * (i + 1), currency: 'EGP', isGold: false, status: 'active', debtType: 'personal', direction: 'i_owe', createdAt: '2026-01-01' }) as Debt)
+  useFinanceStore.setState({
+    settings: { ...DEFAULT_SETTINGS, baseCurrency: 'EGP', monthStartDay: 1, noIncomeDeclared: false, showSecondaryCurrency: false },
+    savingsAccounts: [pocket('pe', 'EGP'), pocket('pe2', 'EGP'), pocket('pu', 'USD'), pocket('pk', 'KWD')],
+    savingsTransactions: [], incomeEvents: [], incomeSources: [], expenses: [], goals: [], debts, debtPayments: [], recurringDebtPayments: [],
+    paymentMethods: [], budgetPlans: [], budgetPlanActivations: [], activeBudgetPlanId: null, savingsHoldings: [], investmentHoldings: [],
+    exchangeRates: RATES, goldPricePerGram: 4000, goldPriceAvailable: true, budgetCategories: [],
+  } as Partial<FinanceStore>)
+}
+
+function stats() {
+  const s = S()
+  return computeMonthlyStats({
+    expenses: s.expenses, incomeSources: s.incomeSources, incomeEvents: s.incomeEvents, budgetCategories: s.budgetCategories, budgetPlans: s.budgetPlans,
+    budgetPlanActivations: s.budgetPlanActivations, activeBudgetPlanId: s.activeBudgetPlanId, savingsHoldings: s.savingsHoldings, savingsAccounts: s.savingsAccounts,
+    savingsTransactions: s.savingsTransactions, debts: s.debts, debtPayments: s.debtPayments, settings: s.settings, exchangeRates: s.exchangeRates,
+    goldPricePerGram: s.goldPricePerGram, goldPriceAvailable: s.goldPriceAvailable, monthFilter: cycleKeyFor(new Date(), 1), trustLocalFinance: true,
+  })
+}
+/** Net worth exactly as useNetWorth composes it (no tracked accounts => flow basis). */
+const NW = () => { const t = stats(); return t.savingsAccountsTotal + t.receivedIncome - t.cashOutflow - t.debtRemainingTotal }
+
+const strip = (v: unknown): unknown => JSON.parse(JSON.stringify(v, (k, x) => (k === 'updatedAt' || k === 'createdAt' || k === 'occurredAt' ? undefined : x)))
+const byId = <T extends { id: string }>(xs: T[]) => [...xs].sort((a, b) => a.id.localeCompare(b.id))
+const slice = () => { const s = S(); return strip({ e: byId(s.expenses), i: byId(s.incomeEvents), a: byId(s.savingsAccounts), t: byId(s.savingsTransactions), d: byId(s.debts), p: byId(s.debtPayments), g: byId(s.goals), r: byId(s.recurringDebtPayments) }) }
+const amt = (r: Rng, c: Currency) => { const dec = c === 'KWD' ? 3 : 2; return Math.round((r.chance(0.2) ? r.next() * 5 : r.next() * 900 + 0.01) * 10 ** dec) / 10 ** dec || 0.01 }
+const toBase = (x: number, c: Currency) => x * (c === 'EGP' ? 1 : c === 'USD' ? 50 : 160.5)
+
+function ledgerSum(id: string) {
+  let v = 0
+  for (const t of S().savingsTransactions) if (t.accountId === id) v += t.type === 'deposit' ? t.amount : -t.amount
+  return v
+}
+
+type Step = { name: string; run: (r: Rng) => number | null /* expected NW delta, null = skip NW check */ }
+const pk = (r: Rng) => r.pick(S().savingsAccounts)
+const STEPS: Step[] = [
+  { name: 'depositAllocate', run: (r) => { const a = pk(r); const x = amt(r, a.currency); const ok = S().depositToSavings(a.id, x, a.currency); return ok ? 0 : null } },
+  { name: 'depositDeclare', run: (r) => { const a = pk(r); const x = amt(r, a.currency); const ok = S().depositToSavings(a.id, x, a.currency, undefined, { mode: 'declare' }); return ok ? toBase(x, a.currency) : null } },
+  { name: 'depositForeign', run: (r) => { const a = pk(r); const c = r.pick(CUR); const x = amt(r, c); const before = S().savingsAccounts.find((q) => q.id === a.id)!.currentBalance; const ok = S().depositToSavings(a.id, x, c); if (!ok) return null; const got = S().savingsAccounts.find((q) => q.id === a.id)!.currentBalance - before; return toBase(got, a.currency) - toBase(got, a.currency) } },
+  { name: 'withdrawIncome', run: (r) => { const a = pk(r); const x = amt(r, a.currency); return S().withdrawFromSavings(a.id, x, a.currency) ? 0 : null } },
+  { name: 'withdrawSpend', run: (r) => { const a = pk(r); const x = amt(r, a.currency); return S().withdrawFromSavings(a.id, x, a.currency, undefined, 'spend') ? -toBase(x, a.currency) : null } },
+  { name: 'transferPockets', run: (r) => { const a = pk(r), b = pk(r); const x = amt(r, a.currency); return S().transferBetweenPockets(a.id, b.id, x) ? 0 : null } },
+  { name: 'deleteSavingsTx', run: (r) => { const t = S().savingsTransactions; if (!t.length) return null; S().deleteSavingsTransaction(r.pick(t).id); return null } },
+  { name: 'correctBalance', run: (r) => { const a = pk(r); const nb = amt(r, a.currency); const before = a.currentBalance; S().correctSavingsBalance(a.id, nb, undefined); return toBase(nb - before, a.currency) } },
+  { name: 'addExpense', run: (r) => { const c = r.pick(CUR); const x = amt(r, c); S().addExpense({ date: localTodayISO(), description: 'e', category: 'Food', amount: x, currency: c, paymentMethodId: '', isRecurring: false } as never); return -toBase(x, c) } },
+  { name: 'addNonSpendExpense', run: (r) => { const x = amt(r, 'EGP'); S().addExpense({ date: localTodayISO(), description: 't', category: 'Transfer', amount: x, currency: 'EGP', paymentMethodId: '', isRecurring: false } as never); return 0 } },
+  { name: 'deleteExpense', run: (r) => { const e = S().expenses.filter((q) => !q.linkedDebtPaymentId); if (!e.length) return null; const x = r.pick(e); S().deleteExpense(x.id); return x.category === 'Transfer' ? 0 : toBase(x.amount, x.currency as Currency) } },
+  { name: 'addIncome', run: (r) => { const c = r.pick(CUR); const x = amt(r, c); S().addIncomeEvent({ name: 'i', amount: x, currency: c, sourceType: 'other', receivedDate: localTodayISO(), status: 'confirmed' } as never); return toBase(x, c) } },
+  { name: 'deleteIncome', run: (r) => { const e = S().incomeEvents.filter((q) => !q.linkedSavingsAccountId); if (!e.length) return null; const x = r.pick(e); S().deleteIncomeEvent(x.id); return -toBase(x.amount, x.currency as Currency) } },
+  { name: 'debtPayWithExpense', run: (r) => { const d = r.pick(S().debts); const x = Math.min(amt(r, 'EGP'), 50); S().addDebtPaymentWithExpense({ debtId: d.id, date: localTodayISO(), amountPaid: x, paymentCurrency: 'EGP', originalAmount: x, amountInPrimary: x } as never, { date: localTodayISO(), description: 'pay', category: 'Debt', amount: x, currency: 'EGP', paymentMethodId: '', isRecurring: false, isDebtPayment: true, linkedDebtId: d.id } as never); return 0 } },
+  { name: 'deleteDebtPayment', run: (r) => { const p = S().debtPayments; if (!p.length) return null; S().deleteDebtPayment(r.pick(p).id); return 0 } },
+]
+
+describe('store: random action sequences', () => {
+  beforeEach(seed)
+
+  it('pocket balance == ledger, no negatives / NaN / -0; NW delta per action matches the two-ledger model', () => {
+    const bad: string[] = []
+    let steps = 0, nwChecks = 0
+    for (let run = 0; run < 150; run++) {
+      seed()
+      const seedN = 1000 + run
+      const r = rng(seedN)
+      const log: string[] = []
+      for (let i = 0; i < 40; i++) {
+        const st = r.pick(STEPS)
+        const nw0 = NW()
+        let exp: number | null
+        try { exp = st.run(r) } catch (e) { bad.push(`THROW seed=${seedN} step=${i} ${st.name}: ${e}`); break }
+        log.push(st.name)
+        steps++
+        const nw1 = NW()
+        if (exp !== null) {
+          nwChecks++
+          if (Math.abs(nw1 - nw0 - exp) > 1e-6 * Math.max(1, Math.abs(exp), Math.abs(nw0))) bad.push(`NW seed=${seedN} step=${i} ${st.name} delta=${nw1 - nw0} expected=${exp}`)
+        }
+        for (const a of S().savingsAccounts) {
+          if (!Number.isFinite(a.currentBalance) || Object.is(a.currentBalance, -0)) bad.push(`BADNUM seed=${seedN} ${a.id} ${a.currentBalance}`)
+          if (a.currentBalance < -balanceEpsilon(a.currency)) bad.push(`NEG seed=${seedN} step=${i} ${st.name} ${a.id} ${a.currentBalance}`)
+          const d = a.currentBalance - ledgerSum(a.id)
+          if (Math.abs(d) > 1e-6) bad.push(`LEDGER seed=${seedN} step=${i} ${st.name} ${a.id} balance=${a.currentBalance} ledger=${ledgerSum(a.id)} (${log.slice(-4).join('>')})`)
+        }
+        if (bad.length > 12) break
+      }
+      if (bad.length > 12) break
+    }
+    console.log('store seq steps', steps, 'nwChecks', nwChecks, 'bad', bad.length, JSON.stringify(bad.slice(0, 10)))
+    expect(bad).toEqual([])
+  })
+
+  it('apply then undo = identity (state slice and net worth)', () => {
+    const bad: string[] = []
+    let pairs = 0
+    for (let run = 0; run < 120; run++) {
+      seed()
+      const seedN = 5000 + run
+      const r = rng(seedN)
+      for (let i = 0; i < r.int(0, 15); i++) r.pick(STEPS).run(r)
+      // make sure there is something to undo against
+      const kinds = ['expense', 'deposit', 'withdrawIncome', 'transfer', 'debtPay', 'income', 'withdrawSpendDebt', 'fundedDebtPay'] as const
+      const kind = r.pick(kinds)
+      const before = slice(); const nw0 = NW()
+      pairs++
+      try {
+        if (kind === 'expense') { S().addExpense({ date: localTodayISO(), description: 'e', category: 'Food', amount: amt(r, 'EGP'), currency: 'EGP', paymentMethodId: '', isRecurring: false } as never); S().deleteExpense(S().expenses.at(-1)!.id) }
+        else if (kind === 'deposit') { const a = pk(r); S().depositToSavings(a.id, amt(r, a.currency), a.currency); S().deleteSavingsTransaction(S().savingsTransactions.at(-1)!.id) }
+        else if (kind === 'withdrawIncome') { const a = pk(r); const n = S().savingsTransactions.length; if (!S().withdrawFromSavings(a.id, amt(r, a.currency), a.currency)) continue; if (S().savingsTransactions.length === n) continue; S().deleteSavingsTransaction(S().savingsTransactions.at(-1)!.id) }
+        else if (kind === 'transfer') { const a = pk(r), b = pk(r); const n = S().savingsTransactions.length; S().transferBetweenPockets(a.id, b.id, amt(r, a.currency)); if (S().savingsTransactions.length === n) continue; S().deleteSavingsTransaction(S().savingsTransactions.at(-1)!.id) }
+        else if (kind === 'income') { S().addIncomeEvent({ name: 'i', amount: amt(r, 'EGP'), currency: 'EGP', sourceType: 'other', receivedDate: localTodayISO(), status: 'confirmed' } as never); S().deleteIncomeEvent(S().incomeEvents.at(-1)!.id) }
+        else if (kind === 'debtPay') { const d = r.pick(S().debts); const x = Math.min(amt(r, 'EGP'), 50); const n = S().debtPayments.length; S().addDebtPaymentWithExpense({ debtId: d.id, date: localTodayISO(), amountPaid: x, paymentCurrency: 'EGP', originalAmount: x, amountInPrimary: x } as never, { date: localTodayISO(), description: 'pay', category: 'Debt', amount: x, currency: 'EGP', paymentMethodId: '', isRecurring: false, isDebtPayment: true, linkedDebtId: d.id } as never); if (S().debtPayments.length === n) continue; S().deleteDebtPayment(S().debtPayments.at(-1)!.id) }
+        else if (kind === 'withdrawSpendDebt' || kind === 'fundedDebtPay') {
+          // a savings-funded payoff, then delete the payment (must return the money), exactly as the withdraw sheet does it
+          const a = S().savingsAccounts.find((q) => q.currency === 'EGP' && q.currentBalance > 10); if (!a) { pairs--; continue }
+          const d = r.pick(S().debts); const x = Math.min(Math.round(a.currentBalance * 50) / 100, 40) || 1
+          const txId = crypto.randomUUID()
+          if (!S().withdrawFromSavings(a.id, x, 'EGP', undefined, 'debt', { txId })) { pairs--; continue }
+          S().addDebtPayment({ debtId: d.id, date: localTodayISO(), amountPaid: x, paymentCurrency: 'EGP', originalAmount: x, amountInPrimary: x, fundedFromSavings: true, fundedFromSavingsTxId: txId } as never)
+          S().deleteDebtPayment(S().debtPayments.at(-1)!.id)
+        }
+      } catch (e) { bad.push(`THROW seed=${seedN} ${kind}: ${e}`); continue }
+      const after = slice(); const nw1 = NW()
+      if (JSON.stringify(before) !== JSON.stringify(after)) bad.push(`IDENTITY seed=${seedN} kind=${kind}`)
+      if (Math.abs(nw1 - nw0) > 1e-6) bad.push(`NW-IDENTITY seed=${seedN} kind=${kind} ${nw1 - nw0}`)
+    }
+    console.log('add/undo pairs', pairs, 'bad', bad.length, JSON.stringify(bad.slice(0, 10)))
+    expect(bad).toEqual([])
+  })
+
+  it('delete -> restore round trip (expense, debt payment incl. savings-funded) is identity', () => {
+    const bad: string[] = []
+    let pairs = 0
+    for (let run = 0; run < 150; run++) {
+      seed()
+      const seedN = 9000 + run
+      const r = rng(seedN)
+      for (let i = 0; i < r.int(0, 20); i++) r.pick(STEPS).run(r)
+      const before = slice(); const nw0 = NW()
+      const ps = S().debtPayments
+      if (ps.length && r.chance(0.6)) {
+        const snap = S().deleteDebtPayment(r.pick(ps).id)
+        if (snap) { S().restoreDebtPayment(snap); pairs++ }
+      } else if (S().expenses.length) {
+        const e = r.pick(S().expenses); S().deleteExpense(e.id); S().restoreExpense(e); pairs++
+      } else continue
+      const same = JSON.stringify(slice()) === JSON.stringify(before)
+      if (!same || Math.abs(NW() - nw0) > 1e-6) {
+        const a = JSON.parse(JSON.stringify(before)) as Record<string, unknown[]>, b = JSON.parse(JSON.stringify(slice())) as Record<string, unknown[]>
+        const diffKeys = Object.keys(a).filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k]))
+        bad.push(`RESTORE seed=${seedN} same=${same} diff=${diffKeys} ${diffKeys.map((k) => JSON.stringify(a[k]).slice(0, 300) + ' => ' + JSON.stringify(b[k]).slice(0, 300)).join(' ## ')}`)
+      }
+    }
+    console.log('restore pairs', pairs, 'bad', bad.length, JSON.stringify(bad.slice(0, 8)))
+    expect(bad).toEqual([])
+  })
+})

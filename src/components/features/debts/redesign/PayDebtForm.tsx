@@ -14,7 +14,7 @@ import { fmtWhole, soft } from './heroCardShared'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { Switch } from '@/components/ui/switch'
 
-const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
+const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 
 /** "Make a payment" — handoff pay modal. */
 export function PayDebtForm({ d }: { d: AddDebtHook }) {
@@ -35,7 +35,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[16px] font-bold text-[var(--color-brand-text-primary)]">{debt.name || debt.person}</p>
-            <p className="mt-0.5 font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">
+            <p className="mt-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">
               {t.fPayLine(owedLabel, fmtWhole(d.selectedRemaining), debt.currency)}
             </p>
           </div>
@@ -53,8 +53,8 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
           currencyLabel={dict.moneyFlows.currency}
           includeGold={debt?.isGold}
         />
-        {d.paymentPreview() ? <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">{d.paymentPreview()}</p> : null}
-        {d.paymentRateError ? <p role="alert" className="mt-2 px-0.5 text-[12px] text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
+        {d.paymentPreview() ? <p className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">{d.paymentPreview()}</p> : null}
+        {d.paymentRateError ? <p role="alert" className="mt-2 px-0.5 text-[0.75rem] text-[var(--color-brand-red)]">{d.paymentRateError}</p> : null}
       </div>
 
       {/* Date */}
@@ -85,7 +85,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
                   <Icon className="h-3.5 w-3.5" />
                 </span>
                 {decomposePaymentMethodName(m.name, m.last4).provider}
-                {accountIdentifier(m) ? <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{accountIdentifier(m)}</span> : null}
+                {accountIdentifier(m) ? <span className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{accountIdentifier(m)}</span> : null}
               </OptionChip>
             )
           })}
@@ -99,7 +99,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{t.fRecurring}</span>
-          <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">{t.fRecurringHint}</span>
+          <span className="mt-0.5 block text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.fRecurringHint}</span>
         </span>
         <Switch
           size="touch"

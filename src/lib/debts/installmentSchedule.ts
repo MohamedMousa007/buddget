@@ -1,5 +1,6 @@
 import { formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
-import { addMonths, addQuarters, addWeeks, addYears, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { addCalendarMonths, addCalendarWeeks, addCalendarYears } from '@/lib/time/calendarDays'
 import type { Debt, DebtPayment } from '@/lib/store/types'
 
 /**
@@ -9,8 +10,11 @@ import type { Debt, DebtPayment } from '@/lib/store/types'
 export function installmentPaymentsCompleted(debt: Debt, payments: readonly DebtPayment[]): number {
   if (debt.debtType !== 'installment' || !debt.installmentCount) return 0
   const per = debt.installmentAmount ?? 0
+  const paid = payments.reduce((sum, p) => sum + p.amountPaid, 0)
+  // The last slice absorbs the rounding remainder, so a settled plan can sit a cent short of per x count.
+  if (debt.startingBalance > 0 && paid >= debt.startingBalance - 0.005) return debt.installmentCount
   const done = per > 0
-    ? Math.floor((payments.reduce((sum, p) => sum + p.amountPaid, 0) + 0.005) / per)
+    ? Math.floor((paid + 0.005) / per)
     : payments.length
   return Math.min(debt.installmentCount, Math.max(0, done))
 }
@@ -18,15 +22,15 @@ export function installmentPaymentsCompleted(debt: Debt, payments: readonly Debt
 export function addByFrequency(start: Date, freq: NonNullable<Debt['installmentFrequency']>, periods: number): Date {
   switch (freq) {
     case 'weekly':
-      return addWeeks(start, periods)
+      return addCalendarWeeks(start, periods)
     case 'monthly':
-      return addMonths(start, periods)
+      return addCalendarMonths(start, periods)
     case 'quarterly':
-      return addQuarters(start, periods)
+      return addCalendarMonths(start, periods * 3)
     case 'annually':
-      return addYears(start, periods)
+      return addCalendarYears(start, periods)
     default:
-      return addMonths(start, periods)
+      return addCalendarMonths(start, periods)
   }
 }
 

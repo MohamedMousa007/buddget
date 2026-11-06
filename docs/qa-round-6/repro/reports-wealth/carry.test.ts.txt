@@ -1,0 +1,29 @@
+import { describe, it, expect } from 'vitest'
+import { resolveCarryDestination, isEligibleCarryPocket } from '@/lib/savings/monthCarry'
+import { cycleCarryFigures } from '@/lib/savings/cycleCarryFigures'
+import { pendingCarryKeys } from '@/lib/savings/carryDateLogic'
+import type { Goal, SavingsAccount } from '@/lib/store/types'
+
+const pocket = (o: Partial<SavingsAccount>) => ({ id: 'p', name: 'p', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 0, createdAt: '2026-01-01', ...o }) as SavingsAccount
+const goal = (o: Partial<Goal>) => ({ id: 'g', status: 'active', category: 'savings', priority: 1, fundingMode: 'manual', linkedSavingsAccountIds: [], createdAt: '2026-01-01', ...o }) as Goal
+const RATES = { USD_EGP: 50, USD_SAR: 3.75 }
+
+describe('month-carry destination and gold', () => {
+  it('a gold or stablecoin pocket is an eligible carry destination', () => {
+    expect(isEligibleCarryPocket(pocket({ type: 'gold', currency: 'XAU' }))).toBe(true)
+  })
+  it('manual goal linked to a gold pocket -> destination XAU -> cycleCarryFigures null (cycle skipped, blocks later cycles)', () => {
+    const gp = pocket({ id: 'gold1', type: 'gold', currency: 'XAU' })
+    const dest = resolveCarryDestination(null, [gp], [goal({ linkedSavingsAccountIds: ['gold1'] })])
+    expect(dest).toEqual({ kind: 'pocket', pocketId: 'gold1' })
+    const figs = cycleCarryFigures({ monthKey: '2026-10', monthStartDay: 1, base: 'EGP', rates: RATES, expenses: [], incomeEvents: [], incomeSources: [], deposits: [], extraCurrencies: ['XAU'] })
+    expect(figs).not.toBeNull() // expected the cron to carry into a priceable pocket instead
+  })
+  it('unassigned carry lands in a FUNDED goal\'s auto-created pocket (cron passes only manual goals)', () => {
+    const goalPocket = pocket({ id: 'gp', name: 'Car pocket', type: 'vault' })
+    const funded = goal({ id: 'car', fundingMode: 'share', linkedSavingsAccountIds: ['gp'] })
+    // exactly what the cron calls: goals.filter(g => g.fundingMode === 'manual')
+    const dest = resolveCarryDestination(null, [goalPocket], [funded].filter((g) => g.fundingMode === 'manual'))
+    expect(dest.kind).toBe('create-vault') // expected: a shared vault no goal owns
+  })
+})

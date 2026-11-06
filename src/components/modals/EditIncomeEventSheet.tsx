@@ -57,7 +57,12 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
   )
   const deleteWithUndo = (deleteLinkedDebt?: boolean) => {
     deleteIncomeEvent(event.id, deleteLinkedDebt)
-    if (!deleteLinkedDebt) toast(t.moneyFlows.incomeDeleted, { undo: () => restoreIncomeEvent(event), undoLabel: t.common.undo })
+    if (!deleteLinkedDebt) toast(t.moneyFlows.incomeDeleted, {
+      undo: () => {
+        if (!restoreIncomeEvent(event)) toast(t.moneyFlows.undoPocketSpent)
+      },
+      undoLabel: t.common.undo,
+    })
   }
   const linkedDebt = event.linkedDebtId ? debts.find((d) => d.id === event.linkedDebtId) : undefined
   const [debtChoiceOpen, setDebtChoiceOpen] = useState(false)
@@ -81,7 +86,7 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
       <ModalShell open onBackdropClick={() => setDebtChoiceOpen(false)} zIndexClassName="z-[110]">
         <div className="flex flex-col gap-2 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
           <ModalTitle>{t.income.deleteWithDebtTitle}</ModalTitle>
-          <p className="mb-3 text-[13.5px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
+          <p className="mb-3 text-[0.84375rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
           <Button variant="destructive-solid" size="cta-block" onClick={() => finish(true)}>
             {t.income.deleteBoth}
           </Button>
@@ -164,7 +169,7 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
           <ModalHeading className="block text-[17px] font-bold text-[var(--color-brand-text-primary)]">
             {event.name}
           </ModalHeading>
-          <span className="block text-[12.5px] text-[var(--color-brand-text-secondary)]">
+          <span className="block text-[0.78125rem] text-[var(--color-brand-text-secondary)]">
             {recurring ? `${typeLabel}${source ? ` · ${cadenceLine(source, t)}` : ''}` : t.income.oneTimeIncome}
           </span>
         </span>
@@ -180,11 +185,11 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
         <span className="font-mono-numbers text-[32px] font-semibold tracking-[-0.02em] text-[var(--color-brand-green)]">
           +{formatFixed2(event.amount)}
         </span>
-        <span className="text-[13px] text-[var(--color-brand-text-secondary)]">{event.currency}</span>
+        <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{event.currency}</span>
       </p>
       <FactsTable label={t.income.detailsLabel} onEdit={onEdit} editLabel={t.income.editIncomeAria} rows={facts} />
       {recurring ? null : (
-        <p className="text-[12.5px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.makeRecurringNote}</p>
+        <p className="text-[0.78125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.makeRecurringNote}</p>
       )}
       <div className={`grid gap-2 ${recurring ? 'grid-cols-[1fr_1fr]' : 'grid-cols-[2fr_1fr]'}`}>
         {recurring ? (
@@ -313,6 +318,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
               id="ie-amt"
               value={amount}
               onChange={setAmount}
+              decimalsFor={currency}
               disabled={typeLocked}
               className={`mt-1.5 ${MODAL_CONTROL_CLASS} text-xl font-semibold font-mono-numbers`}
             />
@@ -330,7 +336,7 @@ function EditIncomeEventForm({ event, onClose }: { event: IncomeEvent; onClose: 
         </div>
 
         {typeLocked ? (
-          <p className="flex items-center gap-1.5 text-[12.5px] leading-[1.45] text-[var(--color-brand-text-secondary)]">
+          <p className="flex items-center gap-1.5 text-[0.78125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">
             <Lock className="size-3.5 shrink-0" aria-hidden />
             {t.moneyFlows.incomeLocked}
           </p>

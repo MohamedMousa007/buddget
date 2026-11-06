@@ -23,7 +23,7 @@ export function BrandMark({ name, color, size = 44, alert, icon, className }: Br
     >
       {icon ?? monogram(name)}
       {alert ? (
-        <span className="absolute -end-1 -top-1 flex size-[18px] items-center justify-center rounded-full border-2 border-[var(--color-brand-card)] bg-[var(--color-brand-amber)] text-[10px] font-extrabold text-[var(--color-brand-card)]">!</span>
+        <span className="absolute -end-1 -top-1 flex size-[18px] items-center justify-center rounded-full border-2 border-[var(--color-brand-card)] bg-[var(--color-brand-amber)] text-[0.625rem] font-extrabold text-[var(--color-brand-card)]">!</span>
       ) : null}
     </span>
   )

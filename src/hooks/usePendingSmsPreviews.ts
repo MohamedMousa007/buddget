@@ -41,7 +41,7 @@ export function usePendingSmsPreviews(): PendingSmsPreview[] {
     for (const [i, item] of items.entries()) {
       // Obvious non-transactions (OTPs, balance checks) never become cards.
       if (isNonTransaction(item.message)) continue
-      const m = matchCuratedPattern(item.message, item.sender || null)
+      const m = matchCuratedPattern(item.message, item.sender || null, item.receivedAt)
       next.push({
         key: `${item.receivedAt}-${i}`,
         receivedAt: item.receivedAt,

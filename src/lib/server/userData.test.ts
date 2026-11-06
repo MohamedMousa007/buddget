@@ -134,3 +134,19 @@ describe('exportUserData paging (SIT10)', () => {
     expect(tables.expenses).toHaveLength(1000)
   })
 })
+
+describe('ADS-7 website leads in the data-subject export', () => {
+  it('exports the leads sent from the account address, matched lower-case, and only when an address is known', async () => {
+    const eqs: string[] = []
+    const admin = {
+      from: (table: string) => {
+        const q = { select: () => q, eq: (c: string, v: string) => { if (table === 'site_leads') eqs.push(`${c}=${v}`); return q }, in: () => q, limit: async () => ({ data: table === 'site_leads' ? [{ id: 'l1', email: 'a@x.com' }] : [], error: null }) }
+        return q
+      },
+    } as unknown as ServiceClient
+    const withEmail = await exportUserData(admin, 'u1', 100, 'A@X.com')
+    expect(withEmail.tables.site_leads).toEqual([{ id: 'l1', email: 'a@x.com' }])
+    expect(eqs).toEqual(['email=a@x.com'])
+    expect((await exportUserData(admin, 'u1', 100)).tables.site_leads).toBeUndefined()
+  })
+})

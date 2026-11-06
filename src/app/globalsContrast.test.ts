@@ -43,3 +43,25 @@ describe.each(['light', 'dark'] as const)('%s theme contrast', (theme) => {
     }
   })
 })
+
+/** Label colour over the solid semantic fills (buttons, toasts, swipe panels, banner icons): A11-1. */
+describe.each(['light', 'dark'] as const)('%s theme: on-colour tokens over solid fills', (theme) => {
+  it.each(['red', 'green', 'amber'] as const)('on-%s is >= 4.5:1 on its fill and hover', (k) => {
+    const on = hex(token(theme, `--color-brand-on-${k}`))
+    expect(ratio(on, hex(token(theme, `--color-brand-${k}`))), `${k} fill`).toBeGreaterThanOrEqual(4.5)
+    if (k !== 'amber') expect(ratio(on, hex(token(theme, `--color-brand-${k}-hover`))), `${k} hover`).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('on-primary is >= 4.5:1 on the primary fill and hover', () => {
+    const on = hex(token(theme, '--color-brand-on-primary'))
+    for (const f of ['primary', 'primary-hover']) expect(ratio(on, hex(token(theme, `--color-brand-${f}`))), f).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
+describe('theme-independent inks over user colours', () => {
+  it('ink-light and ink-dark are defined once, in :root only', () => {
+    expect(themes.light).toMatch(/--color-brand-ink-light: #FFFFFF/)
+    expect(themes.light).toMatch(/--color-brand-ink-dark: #04201C/)
+    expect(themes.dark).not.toMatch(/--color-brand-ink-(light|dark):/)
+  })
+})

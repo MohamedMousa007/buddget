@@ -47,7 +47,7 @@ export function incomeEventToRow(e: IncomeEvent, userId: string): IncomeEventIns
     notes: e.notes ?? null,
     occurred_at: e.occurredAt ?? null,
     created_at: e.createdAt,
-    updated_at: e.updatedAt,
+    edited_at: e.updatedAt,
   }
 }
 
@@ -70,6 +70,6 @@ export function incomeEventFromRow(row: IncomeEventRow): IncomeEvent {
     notes: row.notes ?? undefined,
     occurredAt: row.occurred_at ?? undefined,
     createdAt: row.created_at,
-    updatedAt: row.updated_at ?? row.created_at,
+    updatedAt: row.edited_at ?? row.created_at,
   }
 }

@@ -46,7 +46,7 @@ export function StatusPill({ icon, label, visible = true, onHide, hiddenHint }: 
       <motion.div
         role="status"
         aria-label={label}
-        className="pointer-events-auto inline-flex h-9 touch-none items-center gap-2 whitespace-nowrap rounded-full border border-[color-mix(in_oklab,var(--color-brand-amber)_50%,transparent)] bg-[color-mix(in_oklab,var(--color-brand-amber)_18%,var(--color-brand-card))] pe-1.5 ps-3 text-[12.5px] font-semibold text-[var(--color-brand-text-primary)] shadow-[var(--shadow-md)]"
+        className="pointer-events-auto inline-flex h-9 touch-none items-center gap-2 whitespace-nowrap rounded-full border border-[color-mix(in_oklab,var(--color-brand-amber)_50%,transparent)] bg-[color-mix(in_oklab,var(--color-brand-amber)_18%,var(--color-brand-card))] pe-1.5 ps-3 text-[0.78125rem] font-semibold text-[var(--color-brand-text-primary)] shadow-[var(--shadow-md)]"
         style={{ y, opacity }}
         initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1, transition: { duration: 0.32, ease: [0.2, 0.8, 0.2, 1] } }}
@@ -78,7 +78,7 @@ export function PillHint({ children }: { children: ReactNode }) {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.16 }}
       role="status"
-      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--color-brand-text-primary)] shadow-[var(--shadow-md)]"
+      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-1.5 text-[0.78125rem] font-semibold text-[var(--color-brand-text-primary)] shadow-[var(--shadow-md)]"
     >
       <ArrowUp className="size-3.5" strokeWidth={2} aria-hidden />
       {children}

@@ -16,7 +16,7 @@ import { goalAmountPerPayment, goalPaymentCount, type GoalFrequency, type GoalUn
 import { useT } from '@/lib/i18n'
 import { soft } from './heroCardShared'
 
-const MICRO = 'font-semibold text-[10px] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
+const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
 
 // Demo gold prices (EGP/g) — wire to the live gold-price source in the store.
 const GOLD_PRICE: Record<GoldKarat, number> = { 24: 4600, 22: 4210, 21: 4025, 18: 3450 }
@@ -76,13 +76,13 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
         <Input size="brand" value={d.name} onChange={(e) => d.setName(e.target.value)} placeholder={t.fWhatForPh} />
       </div>
 
-      {d.currencyLocked ? <p className="px-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
+      {d.currencyLocked ? <p className="px-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
 
       {/* Gold-backed toggle */}
       <div className="flex items-center justify-between rounded-[16px] border border-[var(--color-brand-gold)]/20 bg-[var(--color-brand-gold)]/5 px-4 py-3.5">
         <div>
           <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{t.fGoldBacked}</span>
-          <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">{t.fGoldHint}</span>
+          <span className="mt-0.5 block text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.fGoldHint}</span>
         </div>
         <Switch
           size="touch"
@@ -118,9 +118,9 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           </div>
           <div>
             <div className={`${MICRO} mb-2`}>{t.fGrams}</div>
-            <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder={t.fGramsPh} />
+            <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor="XAU" aria-label={t.fGrams} placeholder={t.fGramsPh} />
             {goldValue != null ? (
-              <p className="mt-2 px-0.5 font-mono-numbers text-[12px] text-[var(--color-brand-gold)]">{t.fGoldValue(goldValue.toLocaleString(), GOLD_PRICE[d.goldKarat].toLocaleString())}</p>
+              <p className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-gold)]">{t.fGoldValue(goldValue.toLocaleString(), GOLD_PRICE[d.goldKarat].toLocaleString())}</p>
             ) : null}
           </div>
         </>
@@ -129,7 +129,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
           <div>
             <div className={`${MICRO} mb-2`}>{t.fAmount}</div>
             <div className="flex gap-2">
-              <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" /></div>
+              <div className="min-w-0 flex-1"><AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor={d.currency} aria-label={t.fAmount} placeholder="0" /></div>
               <CurrencyField
                 compact
                 value={d.currency}
@@ -149,7 +149,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <span className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{t.fPayoffGoal}</span>
-            <span className="mt-0.5 block text-[12px] text-[var(--color-brand-text-muted)]">{d.direction === 'i_owe' ? t.fPayoffGoalHint : t.fOwedGoalNote}</span>
+            <span className="mt-0.5 block text-[0.75rem] text-[var(--color-brand-text-muted)]">{d.direction === 'i_owe' ? t.fPayoffGoalHint : t.fOwedGoalNote}</span>
           </div>
           <Switch
             size="touch"
@@ -165,7 +165,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             <div>
               <div className={`${MICRO} mb-2`}>{t.fDuration}</div>
               <div className="grid grid-cols-2 gap-3">
-                <AmountField value={d.goalDuration} onChange={d.setGoalDuration} mode="integer" placeholder="12" />
+                <AmountField value={d.goalDuration} onChange={d.setGoalDuration} mode="integer" aria-label={t.fDuration} placeholder="12" />
                 <SegmentedControl<GoalUnit>
                   size="field"
                   ariaLabel={t.fDuration}
@@ -189,11 +189,11 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             </div>
             {goalPreview != null ? (
               <div className="rounded-[12px] bg-[var(--color-brand-gold)]/5 px-3.5 py-2.5">
-                <p className="font-mono-numbers text-[14px] font-bold text-[var(--color-brand-gold)]">
+                <p className="font-mono-numbers text-[0.875rem] font-bold text-[var(--color-brand-gold)]">
                   {t.fYoudPay(goalPreview.toLocaleString(), d.currency, FREQS.find((f) => f.v === d.goalCadence)!.per)} · {t.fPaymentsCount(goalCount)}
                 </p>
                 {strain != null ? (
-                  <p className={`mt-1 text-[12px] ${strain > 0.35 ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>
+                  <p className={`mt-1 text-[0.75rem] ${strain > 0.35 ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>
                     {strain > 0.35 ? t.fStrainHeavy(Math.round(strain * 100)) : t.fStrainOk}
                   </p>
                 ) : null}

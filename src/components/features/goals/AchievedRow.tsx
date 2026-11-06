@@ -39,9 +39,9 @@ export function AchievedRow({ goal }: { goal: Goal }) {
         </span>
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{goal.name}</p>
+        <p className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{goal.name}</p>
         {goal.targetAmount !== null ? (
-          <p className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
+          <p className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
             {hidden ? MASK : formatCurrency(goal.targetAmount, goal.currency, false)}
           </p>
         ) : null}
@@ -49,7 +49,7 @@ export function AchievedRow({ goal }: { goal: Goal }) {
           {early > 0 ? t.early(months, early) : t.onTime(months)}
         </p>
       </div>
-      <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-secondary)]">{finished}</span>
+      <span className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{finished}</span>
     </div>
   )
 }

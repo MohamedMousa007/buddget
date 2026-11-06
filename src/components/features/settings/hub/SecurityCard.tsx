@@ -70,7 +70,7 @@ export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['
         className="flex min-h-14 w-full items-center gap-3 px-4 py-2 text-start transition-colors hover:bg-[var(--color-brand-elevated)]"
       >
         <SettingsChip icon={KeyRound} tone={tone} />
-        <span className="min-w-0 flex-1 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{t.profile.changePassword}</span>
+        <span className="min-w-0 flex-1 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.profile.changePassword}</span>
       </button>
       <SettingsSwitchRow
         id="twoFactor"

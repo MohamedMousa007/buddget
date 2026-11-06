@@ -1,0 +1,34 @@
+import { describe, it, expect } from 'vitest'
+import { wallClockNow } from '@/lib/time/deviceTimeZone'
+import { isDeliveryWindow } from '@/lib/notifications/deliveryWindow'
+import { smsLocalDay } from '@/lib/sms/ingestGuards'
+import { closedCycleKeys, pendingCarryKeys } from '@/lib/savings/carryDateLogic'
+
+const ZONES = ['Africa/Cairo', 'America/New_York', 'Asia/Riyadh', 'Asia/Kolkata', 'Pacific/Auckland', 'Pacific/Kiritimati', 'UTC']
+const fmt = (z: string, d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: z, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d)
+describe('server helpers vs reference Intl', () => {
+  it('wallClockNow/smsLocalDay/isDeliveryWindow every 37 min for 2 years', () => {
+    const bad: string[] = []
+    for (const z of ZONES) {
+      for (let t = Date.UTC(2025, 0, 1); t < Date.UTC(2026, 6, 1); t += 23 * 3600_000 + 13 * 60_000) {
+        const d = new Date(t)
+        const ref = fmt(z, d) // "YYYY-MM-DD, HH:MM"
+        const w = wallClockNow(d, z)
+        const p = (n: number) => String(n).padStart(2, '0')
+        const got = `${w.getFullYear()}-${p(w.getMonth() + 1)}-${p(w.getDate())}, ${p(w.getHours())}:${p(w.getMinutes())}`
+        if (process.env.TZ === 'UTC' && got !== ref) { bad.push(`wall ${z} ${d.toISOString()} ${got} vs ${ref}`); if (bad.length > 5) break }
+        if (smsLocalDay(d.toISOString(), z) !== ref.slice(0, 10)) bad.push(`sms ${z} ${d.toISOString()}`)
+        const h = Number(ref.slice(12, 14))
+        if (isDeliveryWindow(d, z) !== (h >= 9 && h < 21)) bad.push(`win ${z} ${d.toISOString()}`)
+      }
+    }
+    expect(bad.slice(0, 10)).toEqual([])
+  })
+  it('closedCycleKeys day boundary for every zone', () => {
+    // start day 1, cycle 2026-10 closes after 2026-11-01 ends in the user zone => key 2026-10 closed once Nov 2 local
+    // Kiritimati is +14: 2026-11-01T10:30Z is already 2026-11-02 00:30 there
+    expect(closedCycleKeys(new Date('2026-11-01T10:30:00Z'), 1, 1, 'Pacific/Kiritimati')[0]).toBe('2026-10')
+    expect(closedCycleKeys(new Date('2026-11-01T10:30:00Z'), 1, 1, 'Africa/Cairo')[0]).toBe('2026-09')
+    expect(pendingCarryKeys(new Date('2026-11-05T05:00:00Z'), 5, '2026-09', 'America/New_York')).toEqual(['2026-10'])
+  })
+})

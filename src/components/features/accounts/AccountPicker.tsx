@@ -30,9 +30,9 @@ export function AccountPicker({ accounts, value, onChange, label }: AccountPicke
         <BrandMark name={accountTitle(current.method)} color={accountColor(current.method)} size={36} />
         <span className="min-w-0 flex-1">
           <span className="block text-xs text-[var(--color-brand-text-muted)]">{label ?? t.from}</span>
-          <span className="block truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(current.method)}</span>
+          <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(current.method)}</span>
         </span>
-        <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">{freeText(current)}</span>
+        <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{freeText(current)}</span>
         <ChevronDown className={cn('size-5 text-[var(--color-brand-text-muted)] transition-transform', open && 'rotate-180')} aria-hidden />
       </button>
       {open ? (
@@ -46,7 +46,7 @@ export function AccountPicker({ accounts, value, onChange, label }: AccountPicke
                 <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(a.method)}</span>
                 {a.method.last4 ? <span className="block text-xs text-[var(--color-brand-text-muted)]">•• {a.method.last4}</span> : null}
               </span>
-              <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">{freeText(a)}</span>
+              <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{freeText(a)}</span>
               {a.method.id === current.method.id ? <Check className="size-4 text-[var(--color-brand-primary-ink)]" aria-hidden /> : null}
             </button>
           ))}

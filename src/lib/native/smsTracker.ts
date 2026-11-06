@@ -2,6 +2,7 @@
 
 import { isNative } from '@/lib/native/isNative'
 import { withNativeFlow } from '@/lib/native/appLockPolicy'
+import { isAllowedSmsApiUrl } from '@/lib/native/smsApiUrl'
 
 export interface SmsBridgeStatus {
   tokenSaved: boolean
@@ -66,6 +67,10 @@ export interface SmsCapacitorPlugin {
   clearCredentials(): Promise<void>
   /** Full device wipe (fresh install / forget device): also clears setupCompleted + queue. */
   clearState(): Promise<void>
+  /** Trusted-device secret in the same secure store as the ingest token (Keychain / EncryptedSharedPreferences). Survives clearCredentials and clearState. */
+  setDeviceSecret(opts: { secret: string }): Promise<void>
+  getDeviceSecret(): Promise<{ secret: string | null }>
+  removeDeviceSecret(): Promise<void>
   /** Per-device bridge state — authoritative for the UI. */
   getStatus(): Promise<SmsBridgeStatus>
   /** iOS only: GET /api/sms/health through the same native path the intent uses. */
@@ -145,6 +150,20 @@ export async function requestSmsPermission(): Promise<boolean> {
 }
 
 /**
+ * Explicit sign-out: retires this phone's server-side ingest token so the non-expiring token left in native storage stops
+ * working (NAT-2). Best-effort and idempotent; the next sign-in re-arms through `ensureIngestToken`.
+ */
+export async function revokeIngestToken(accessToken: string): Promise<void> {
+  if (!isNative() || !accessToken) return
+  try {
+    const { apiFetchAuth } = await import('@/lib/apiBase')
+    await apiFetchAuth('/api/sms/revoke-token', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } })
+  } catch (e) {
+    console.error('[sms] token revoke failed', e)
+  }
+}
+
+/**
  * Fetches the permanent sms_ingest_token from the server and persists it
  * natively via saveSmsToken. The JWT is used ONLY as the Authorization header
  * for this fetch — it is NEVER written to native storage (a stored JWT expires
@@ -192,6 +211,8 @@ export async function stopSMSTracking(): Promise<void> {
 export async function saveSmsToken(ingestToken: string, userId: string): Promise<void> {
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')
   const base = buildUrl('').replace(/\/$/, '')
+  // The native plugins refuse the same URLs; failing here keeps a misconfigured build visible in the native-error banner.
+  if (!isAllowedSmsApiUrl(`${base}/`)) { setNativeError('saveToken: SMS API base URL is not allowed'); return }
   await callNative('saveToken', (p) => p.saveToken({ token: ingestToken, apiUrl: base, userId }), undefined)
 }
 
@@ -232,6 +253,19 @@ export async function setIosSetupCompleted(completed: boolean): Promise<void> {
 /** Switch the Android forwarding mode ("sender" Phase 1 / "keyword" Phase 2). */
 export async function setSmsForwardMode(mode: 'sender' | 'keyword'): Promise<void> {
   await callNative('setForwardMode', (p) => p.setForwardMode({ mode }), undefined)
+}
+
+/** Secure-store access for the trusted-device secret. False / null when the native store is unavailable. */
+export async function setSecureDeviceSecret(secret: string): Promise<boolean> {
+  return callNative('setDeviceSecret', async (p) => { await p.setDeviceSecret({ secret }); return true }, false)
+}
+
+export async function getSecureDeviceSecret(): Promise<string | null> {
+  return callNative('getDeviceSecret', async (p) => (await p.getDeviceSecret()).secret ?? null, null)
+}
+
+export async function removeSecureDeviceSecret(): Promise<boolean> {
+  return callNative('removeDeviceSecret', async (p) => { await p.removeDeviceSecret(); return true }, false)
 }
 
 /** Full device wipe (forget this device): clears token, queue, setupCompleted, enabled. */

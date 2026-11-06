@@ -10,7 +10,7 @@ export interface PasswordStrengthMeterProps {
 
 function Rule({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <li className="flex items-center gap-1 text-[10px] min-w-0">
+    <li className="flex items-center gap-1 text-[0.625rem] min-w-0">
       {ok ? (
         <CheckCircle2 className="w-3 h-3 text-[var(--color-brand-green)] shrink-0" aria-hidden />
       ) : (

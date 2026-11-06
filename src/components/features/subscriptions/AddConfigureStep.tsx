@@ -3,6 +3,7 @@
 import { Check, ChevronDown, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { AmountField } from '@/components/ui/AmountField'
+import { useTypedAmount } from '@/hooks/useTypedAmount'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
 import { DatePickerField } from '@/components/ui/DatePickerField'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,8 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
   const ui = t.subscriptions.ui
   const { draft, patch, brand, plans, planIndex } = form
   const [more, setMore] = useState(false)
+  const [amountText, setAmountText] = useTypedAmount(draft.amount)
+  const [shareText, setShareText] = useTypedAmount(draft.myShare ?? 0)
   const custom = brand === null
 
   const cycleItems = useMemo(() => CYCLES.map((c) => ({ value: c, label: ui.cycles[c] })), [ui.cycles])
@@ -93,7 +96,7 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
                   {p.name}
                   {selected ? <Check className="size-4 text-[var(--color-brand-primary-ink)]" strokeWidth={1.75} aria-hidden /> : null}
                 </span>
-                <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">
+                <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
                   {planPrice(p.amount, p.currency, p.cycle)}
                 </span>
               </SelectableCard>
@@ -106,8 +109,12 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
         <FieldLabel>{ui.add.amount}</FieldLabel>
         <div className="flex gap-2">
           <AmountField
-            value={draft.amount ? String(draft.amount) : ''}
-            onChange={(v) => patch({ amount: Number.parseFloat(v.replace(',', '.')) || 0 })}
+            value={amountText}
+            onChange={(v) => {
+              setAmountText(v)
+              patch({ amount: Number.parseFloat(v.replace(',', '.')) || 0 })
+            }}
+            decimalsFor={draft.currency}
             aria-label={ui.add.amount}
             className={cn(FIELD, 'flex-1 px-3.5')}
           />
@@ -231,8 +238,12 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
               <div className="flex flex-col gap-1.5">
                 <FieldLabel>{ui.add.myShare}</FieldLabel>
                 <AmountField
-                  value={draft.myShare ? String(draft.myShare) : ''}
-                  onChange={(v) => patch({ myShare: Number.parseFloat(v.replace(',', '.')) || null })}
+                  value={shareText}
+                  onChange={(v) => {
+                    setShareText(v)
+                    patch({ myShare: Number.parseFloat(v.replace(',', '.')) || null })
+                  }}
+                  decimalsFor={draft.currency}
                   aria-label={ui.add.myShare}
                   className={cn(FIELD, 'px-3.5')}
                 />

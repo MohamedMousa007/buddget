@@ -1,0 +1,20 @@
+rules:
+  - id: sst-unvalidated-body-to-db
+    languages: [typescript]
+    severity: WARNING
+    mode: taint
+    message: Request JSON reaches a database write or JSON.parse-style consumer without passing through a zod schema (parse / safeParse).
+    pattern-sources:
+      - pattern: await $REQ.json()
+      - pattern: JSON.parse(await $REQ.text())
+    pattern-sinks:
+      - pattern: $S.from(...). ... .insert($B)
+      - pattern: $S.from(...). ... .upsert($B)
+      - pattern: $S.from(...). ... .update($B)
+      - pattern: $S.rpc($F, $B)
+    pattern-sanitizers:
+      - pattern: $SCHEMA.parse(...)
+      - pattern: $SCHEMA.safeParse(...)
+      - pattern: $SCHEMA.parseAsync(...)
+    paths:
+      include: ["src/app/api/**"]

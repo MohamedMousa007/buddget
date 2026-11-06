@@ -190,7 +190,7 @@ export function SettingsSearch({ open, onClose }: { open: boolean; onClose: () =
                         >
                           <SettingsChip icon={Icon} tone={GROUP_TONE[entry.group]} destructive={entry.kind === 'danger'} />
                           <span className="min-w-0 flex-1">
-                            <span className={cn('block truncate text-[15px] font-semibold', entry.kind === 'danger' ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]')}>
+                            <span className={cn('block truncate text-[0.9375rem] font-semibold', entry.kind === 'danger' ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]')}>
                               <Highlight text={copy.items[id].label} query={query} />
                             </span>
                             <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{copy.groupName[entry.group]}</span>
@@ -217,7 +217,7 @@ export function SettingsSearch({ open, onClose }: { open: boolean; onClose: () =
               <p className="text-xs text-[var(--color-brand-text-muted)]">{copy.search.hint}</p>
               {recent.length ? (
                 <div>
-                  <p className="pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.recent}</p>
+                  <p className="pb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.recent}</p>
                   <div className="flex flex-wrap gap-2">
                     {recent.map((r) => (
                       <Button key={r} variant="outline" size="touch" onClick={() => { setQuery(r); inputRef.current?.focus() }}>
@@ -228,7 +228,7 @@ export function SettingsSearch({ open, onClose }: { open: boolean; onClose: () =
                 </div>
               ) : null}
               <div>
-                <p className="pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.suggestions}</p>
+                <p className="pb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{copy.suggestions}</p>
                 <div className="flex flex-wrap gap-2">
                   {copy.suggestionList.map((sug) => (
                     <Button key={sug} variant="secondary" size="touch" onClick={() => { setQuery(sug); inputRef.current?.focus() }}>

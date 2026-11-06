@@ -11,7 +11,7 @@ vi.mock('@/lib/server/reauth', () => ({ verifyReauth: async () => 'ok', accessTo
 vi.mock('@/lib/auth/resolveDeviceId', () => ({ resolveDeviceId: async () => 'dev-1234567890' }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
-    from: (t: string) => ({ delete: () => ({ eq: () => { h.deleted.push(t); return Promise.resolve({ error: null }) } }), upsert: () => Promise.resolve({ error: null }) }),
+    from: (t: string) => ({ delete: () => ({ eq: () => { h.deleted.push(t); return Promise.resolve({ error: null }) } }), upsert: () => Promise.resolve({ error: null }), update: () => ({ eq: () => ({ eq: () => Promise.resolve({ error: null }) }) }), insert: () => Promise.resolve({ error: null }) }),
     auth: { admin: { updateUserById: async () => ({ error: h.updateError }), signOut: async () => ({ error: null }) } },
   }),
 }))

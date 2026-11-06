@@ -1,0 +1,42 @@
+import { vi } from 'vitest'
+
+export const touched: string[] = []
+
+/** A recorder that stands in for the service-role client: records every table write / rpc, answers an error for every read. */
+export function recorder(): unknown {
+  const answer = { data: null, error: { message: 'stub', code: 'STUB', status: 500 } }
+  const chain = (path: string): unknown =>
+    new Proxy(function () {}, {
+      get(_t, prop: string) {
+        if (prop === 'then') return (res: (v: unknown) => unknown) => Promise.resolve(answer).then(res)
+        return chain(`${path}.${prop}`)
+      },
+      apply(_t, _this, args: unknown[]) {
+        const p = path
+        if (/\.(insert|update|delete|upsert)$/.test(p) || /^rpc$/.test(p) || /^auth\.admin\.(update|delete|create|sign|generate|invite)/.test(p)) touched.push(`${p}(${typeof args[0] === 'string' ? args[0] : ''})`)
+        if (p === 'auth.admin.getUser' || p === 'auth.getUser') return Promise.resolve({ data: { user: null }, error: { message: 'invalid JWT', status: 401 } })
+        if (p === 'auth.admin.getUserById') return Promise.resolve({ data: { user: null }, error: { message: 'not found', status: 404 } })
+        if (p === 'rpc' && args[0] === 'api_rate_hit') return Promise.resolve({ data: true, error: null })
+        return chain(p)
+      },
+    })
+  return chain('')
+}
+
+export const noSession = {
+  auth: {
+    getClaims: async () => ({ data: null, error: { message: 'no session' } }),
+    getUser: async () => ({ data: { user: null }, error: { message: 'Auth session missing!' } }),
+    getSession: async () => ({ data: { session: null }, error: null }),
+    signInWithPassword: async () => ({ data: { session: null }, error: { message: 'Invalid login credentials' } }),
+    resetPasswordForEmail: async () => ({ error: null }),
+  },
+}
+
+export function installBaseMocks() {
+  vi.mock('server-only', () => ({}))
+  vi.mock('next/headers', () => ({
+    cookies: async () => ({ get: () => undefined, getAll: () => [], set: () => undefined, delete: () => undefined }),
+    headers: async () => new Headers(),
+  }))
+}

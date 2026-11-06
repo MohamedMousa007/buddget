@@ -1,0 +1,20 @@
+-- Rolled-back probe. AUT-8: revoke_auth_session deletes exactly the named session (and its refresh tokens), only for that user,
+-- and is not callable by authenticated.
+DO $$
+declare
+  ua uuid := gen_random_uuid(); ub uuid := gen_random_uuid(); sa uuid := gen_random_uuid(); sa2 uuid := gen_random_uuid(); sb uuid := gen_random_uuid();
+  n_wrong int; n_ok int; left_a int; left_rt int; auth_res text;
+begin
+  insert into auth.users(id,instance_id,aud,role,email) values
+    (ua,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','qa6a@example.invalid'),
+    (ub,'00000000-0000-0000-0000-000000000000','authenticated','authenticated','qa6b@example.invalid');
+  insert into auth.sessions(id,user_id) values (sa,ua),(sa2,ua),(sb,ub);
+  insert into auth.refresh_tokens(instance_id,token,user_id,session_id) values ('00000000-0000-0000-0000-000000000000','qa6-rt-1',ua::text,sa);
+  n_wrong := public.revoke_auth_session(ub, sa);   -- wrong owner: must delete nothing
+  n_ok := public.revoke_auth_session(ua, sa);
+  select count(*) into left_a from auth.sessions where user_id = ua;           -- the user's OTHER session must survive
+  select count(*) into left_rt from auth.refresh_tokens where session_id = sa;  -- cascaded
+  begin execute 'set local role authenticated'; perform public.revoke_auth_session(ua, sa2); auth_res := 'authenticated CALLED'; exception when others then auth_res := sqlerrm; end;
+  execute 'reset role';
+  raise exception 'QA6RESULT wrongOwner=% ok=% otherSessionsLeft=% refreshTokensLeft=% authenticated=[%]', n_wrong, n_ok, left_a, left_rt, auth_res;
+end $$;

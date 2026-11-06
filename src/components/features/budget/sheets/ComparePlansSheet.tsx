@@ -65,7 +65,7 @@ export function ComparePlansSheet({ open, plans, aId, bId, base, rates, onChange
                 <p className="font-mono-numbers text-lg font-semibold text-[var(--color-brand-text-primary)]">{money(cmp.totalB)}</p>
               </div>
             </Card>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.blocks}</p>
+            <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.blocks}</p>
             <Card padding="none" divide>
               {cmp.blocks.map((row) => (
                 <div key={row.block} className="flex min-h-12 items-center gap-3 px-4 py-2">
@@ -84,7 +84,7 @@ export function ComparePlansSheet({ open, plans, aId, bId, base, rates, onChange
                 </div>
               ))}
             </Card>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.differs}</p>
+            <p className="text-[0.625rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.differs}</p>
             {cmp.lines.length === 0 ? (
               <p className="text-sm text-[var(--color-brand-text-secondary)]">{c.match}</p>
             ) : (

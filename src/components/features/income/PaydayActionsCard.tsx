@@ -99,7 +99,9 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
     if (!event || !(await confirm({ title: t.paydays.confirmDeleteEntry, destructive: true }))) return
     deleteIncomeEvent(event.id)
     toast(t.paydays.deleted, {
-      undo: () => restoreIncomeEvent(event),
+      undo: () => {
+        if (!restoreIncomeEvent(event)) toast(t.moneyFlows.undoPocketSpent)
+      },
       undoLabel: t.common.undo,
     })
   }
@@ -107,12 +109,12 @@ export function PaydayActionsCard({ source, occ }: { source: IncomeSource; occ: 
   return (
     <div className="mx-4 mt-3.5 flex flex-col gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 py-3.5 shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">{t.paydays.paydayTitle(shortDate(occ.dueDate))}</span>
+        <span className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{t.paydays.paydayTitle(shortDate(occ.dueDate))}</span>
         <Badge variant={badge.variant} size="xs">
           {badge.label}
         </Badge>
       </div>
-      <p className="text-[13px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
+      <p className="text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
       {state === 'untouched' ? (
         <>
           <div className="grid grid-cols-2 gap-2">
@@ -187,7 +189,7 @@ function LinkCreditSheet({ open, onClose, source, occ }: { open: boolean; onClos
       <div className="flex flex-col gap-3">
         <div>
           <ModalTitle>{t.paydays.pickCreditTitle}</ModalTitle>
-          <p className="mt-1 text-[13px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.paydays.pickCreditBody}</p>
+          <p className="mt-1 text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.paydays.pickCreditBody}</p>
         </div>
         {credits.length ? (
           <div role="radiogroup" aria-label={t.paydays.pickCreditTitle} className="flex flex-col gap-3">
@@ -197,8 +199,8 @@ function LinkCreditSheet({ open, onClose, source, occ }: { open: boolean; onClos
                   <IncomeTypeIcon type={e.sourceType} className="h-4 w-4" />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-start">
-                  <span className="truncate text-[14.5px] font-bold text-[var(--color-brand-text-primary)]">{e.name}</span>
-                  <span className="font-mono-numbers text-[12.5px] text-[var(--color-brand-text-secondary)]">
+                  <span className="truncate text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">{e.name}</span>
+                  <span className="font-mono-numbers text-[0.78125rem] text-[var(--color-brand-text-secondary)]">
                     {shortDate(e.receivedDate)} · {formatFlex(e.amount)} {e.currency}
                   </span>
                 </span>

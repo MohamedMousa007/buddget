@@ -1,0 +1,36 @@
+import { describe, it } from 'vitest'
+import { perFromTotal, totalFromPer, settleInstallmentAmount } from '@/lib/debts/installmentPlan'
+import { installmentPaymentsCompleted } from '@/lib/debts/installmentSchedule'
+import { rng } from './prng'
+import type { Debt, DebtPayment } from '@/lib/store/types'
+
+describe('installments', () => {
+  it('plan of n installments of perFromTotal(total,n), paid via settleInstallmentAmount, ends at exactly 0 after n payments', () => {
+    const r = rng(2024); const bad: string[] = []; let cases = 0; const classes = new Map<string, number>()
+    for (let i = 0; i < 60000; i++) {
+      const n = r.pick([2, 3, 4, 6, 7, 9, 10, 12, 18, 24, 36, 48, 60, 120]); const cents = r.int(1000, 50_000_000)
+      const total = cents / 100; const per = perFromTotal(total, n)
+      let remaining = total; let paid = 0
+      cases++
+      for (let k = 1; k <= n; k++) { const pay = k === n ? settleInstallmentAmount(per, remaining, n) : settleInstallmentAmount(per, remaining, n); remaining = Math.round((remaining - pay) * 100) / 100; paid++; if (remaining <= 0) break }
+      if (remaining !== 0 || paid !== n) { bad.push(`total=${total} n=${n} per=${per} leftAfterN=${remaining} paid=${paid}`); classes.set(`n=${n}`, (classes.get(`n=${n}`) ?? 0) + 1) }
+      // reverse entry mode: per typed, total = round2(per*n)
+      const per2 = Math.round(r.int(1, 200000)) / 100; const t2 = totalFromPer(per2, n); let rem2 = t2
+      for (let k = 1; k <= n && rem2 > 0; k++) rem2 = Math.round((rem2 - settleInstallmentAmount(per2, rem2, n)) * 100) / 100
+      if (rem2 !== 0) bad.push(`PER-MODE per=${per2} n=${n} left=${rem2}`)
+    }
+    console.log('installment cases', cases, 'bad', bad.length, JSON.stringify([...classes]), JSON.stringify(bad.slice(0, 6)))
+  })
+  it('installmentPaymentsCompleted agrees with number of payments made (sum of settle payments)', () => {
+    const r = rng(77); const bad: string[] = []
+    for (let i = 0; i < 20000; i++) {
+      const n = r.int(2, 36); const total = r.int(1000, 3_000_000) / 100; const per = perFromTotal(total, n)
+      const debt = { debtType: 'installment', installmentCount: n, installmentAmount: per } as Debt
+      const k = r.int(0, n); const pays: DebtPayment[] = []; let rem = total
+      for (let j = 0; j < k; j++) { const p = settleInstallmentAmount(per, rem, n); rem = Math.round((rem - p) * 100) / 100; pays.push({ amountPaid: p } as DebtPayment) }
+      const got = installmentPaymentsCompleted(debt, pays)
+      if (got !== k) bad.push(`n=${n} total=${total} per=${per} k=${k} got=${got}`)
+    }
+    console.log('completed bad', bad.length, JSON.stringify(bad.slice(0, 6)))
+  })
+})

@@ -1,0 +1,123 @@
+import { describe, it, expect } from 'vitest'
+import { lookupAssetPrice, lookupAssetPriceDisplay, buildAssetPriceMap } from '@/lib/prices/assetPriceLookup'
+import { isPriceFresh } from '@/lib/prices/freshness'
+import { priceConsensus } from '@/lib/prices/consensus'
+import { valueGold, valueCrypto, valueInvestmentHolding, totalInvestmentValue, goldToGrams } from '@/lib/savings/holdingValuation'
+import { computeNetWorth } from '@/lib/savings/netWorth'
+import { buildWealth } from '@/lib/savings/wealthModel'
+import { goldGramsToMoney, moneyToGoldGrams, totalSavingsAccountsBalanceInBase } from '@/lib/utils/calculations'
+import { tryConvertWithGold } from '@/lib/utils/currency'
+import { parseGoldpricezGram24k } from '@/lib/prices/goldpricez'
+import { buildNetWorthTrend } from '@/lib/savings/netWorthTrend'
+import { computeZakat } from '@/lib/savings/zakat'
+import type { SavingsAccount, InvestmentHolding } from '@/lib/store/types'
+
+const now = new Date('2026-11-05T12:00:00Z')
+const entry = (symbol: string, currency: string, price: number, asOf: string, assetClass = 'gold') => ({ symbol, currency, price, asOf, assetClass, confidence: 'high' })
+const RATES = { USD_EGP: 50, EGP_USD: 0.02, USD_AED: 3.6725, AED_USD: 1 / 3.6725 }
+const acct = (o: Partial<SavingsAccount>): SavingsAccount => ({ id: 'a', name: 'a', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 100, createdAt: '2026-01-01', ...o } as SavingsAccount)
+
+describe('price lookup failure modes', () => {
+  it('zero / negative / NaN price from the cache is served as live', () => {
+    const m = buildAssetPriceMap([entry('XAU_24K', 'EGP', 0, now.toISOString()), entry('XAU_21K', 'EGP', -5, now.toISOString()), entry('XAU_18K', 'EGP', NaN, now.toISOString())])
+    const out = ['XAU_24K', 'XAU_21K', 'XAU_18K'].map((s) => lookupAssetPrice(m, s, 'EGP', now))
+    console.log('lookup bad prices', JSON.stringify(out))
+    expect(out.every((p) => p === null)).toBe(true) // expected fail-closed
+  })
+  it('asOf a few seconds ahead of device clock = unavailable', () => {
+    const m = buildAssetPriceMap([entry('XAU_24K', 'EGP', 7000, new Date(now.getTime() + 5000).toISOString())])
+    expect(lookupAssetPrice(m, 'XAU_24K', 'EGP', now)).not.toBeNull()
+  })
+  it('window edges', () => {
+    expect(isPriceFresh(new Date(now.getTime() - 6 * 3600_000), 'gold', now)).toBe(true)
+    expect(isPriceFresh(new Date(now.getTime() - 6 * 3600_000 - 1), 'gold', now)).toBe(false)
+    expect(isPriceFresh('garbage', 'gold', now)).toBe(false)
+  })
+  it('display tier keeps stale', () => {
+    const m = buildAssetPriceMap([entry('XAU_24K', 'EGP', 7000, new Date(now.getTime() - 99 * 3600_000).toISOString())])
+    expect(lookupAssetPrice(m, 'XAU_24K', 'EGP', now)).toBeNull()
+    expect(lookupAssetPriceDisplay(m, 'XAU_24K', 'EGP', now)?.fresh).toBe(false)
+  })
+})
+
+describe('valuation', () => {
+  const lk = (sym: string, cur: string) => ({ XAU_21K_EGP: 6000, XAU_24K_EGP: 7000, BTC_EGP: 4e6, SAGHA_USD_EGP: 54, AAPL_USD: 200 } as Record<string, number>)[`${sym}_${cur}`] != null
+    ? { price: ({ XAU_21K_EGP: 6000, XAU_24K_EGP: 7000, BTC_EGP: 4e6, SAGHA_USD_EGP: 54, AAPL_USD: 200 } as Record<string, number>)[`${sym}_${cur}`], asOf: 'x', confidence: 'high' } : null
+  it('gold unit maths', () => {
+    expect(goldToGrams(2, 'pounds')).toBe(16)
+    expect(goldToGrams(1, 'ounces')).toBeCloseTo(31.1035)
+    expect(valueGold(10, 21, lk).value).toBe(60000)
+    expect(valueGold(10, 18, lk).priced).toBe(false)
+  })
+  it('karat conversion round trip', () => {
+    for (const k of [24, 22, 21, 18, 14] as const) expect(moneyToGoldGrams(goldGramsToMoney(7.3, 5000, k), 5000, k)).toBeCloseTo(7.3, 9)
+    expect(moneyToGoldGrams(100, 0, 24)).toBe(0)
+    expect(moneyToGoldGrams(100, -5, 24)).toBe(0)
+  })
+  it('stock without sagha / crypto fallback', () => {
+    expect(valueInvestmentHolding({ id: 'h', assetType: 'stock', name: 's', quantity: 3, currency: 'USD', symbol: 'AAPL' } as InvestmentHolding, lk).value).toBe(3 * 200 * 54)
+    expect(valueCrypto(1, 'ETH', lk, 54).priced).toBe(false)
+  })
+  it('negative / NaN quantity holding is valued negative', () => {
+    const h = { id: 'h', assetType: 'gold', name: 'g', quantity: -5, currency: 'EGP', karat: 21 } as InvestmentHolding
+    const t = totalInvestmentValue([h], lk)
+    console.log('neg qty total', t.total)
+    expect(t.total).toBeGreaterThanOrEqual(0)
+  })
+})
+
+describe('net worth vs naive reference', () => {
+  it('matches reference for mixed pockets, holdings, XAU, unpriced', () => {
+    const accounts = [acct({ id: '1', currentBalance: 1000 }), acct({ id: '2', currency: 'USD', currentBalance: 10 }), acct({ id: '3', currency: 'XAU', currentBalance: 5, type: 'gold', category: 'investment' }), acct({ id: '4', currency: 'BTC', currentBalance: 0.5, type: 'crypto', category: 'investment' }), acct({ id: '5', currency: 'KWD', currentBalance: 3 })]
+    const holdings = [{ id: 'h1', assetType: 'gold', name: 'g', quantity: 10, currency: 'EGP', karat: 21 }, { id: 'h2', assetType: 'property', name: 'p', quantity: 1, currency: 'EGP', propertyValue: 1e6 }] as InvestmentHolding[]
+    const lookup = (s: string, c: string) => (s === 'XAU_21K' && c === 'EGP' ? { price: 6000, asOf: 'x', confidence: 'h' } : s === 'BTC' && c === 'EGP' ? { price: 4e6, asOf: 'x', confidence: 'h' } : null)
+    const nw = computeNetWorth({ savingsAccounts: accounts, investmentHoldings: holdings, debts: [], settings: { baseCurrency: 'EGP' } as never, exchangeRates: RATES, goldPricePerGram: 7000, goldPriceAvailable: true, lookup, monthlyIncome: 500, cashOutflow: 200, debtRemaining: 50 })
+    const kwd = nw.totalSavings - 1000 - 500 - 0
+    const ref = 1000 + 500 + 5 * 7000 + 0.5 * 4e6 + 60000 + 1e6 + 300 - 50 + kwd
+    console.log('nw', nw.netWorth, 'ref(without KWD)', ref - kwd, 'kwd part', kwd)
+    expect(nw.netWorth).toBeCloseTo(ref, 6)
+    const w = buildWealth({ accounts, holdings, lookup, baseCurrency: 'EGP', rates: RATES, goldPricePerGram: 7000, goldOk: true })
+    expect(w.total).toBeCloseTo(nw.totalSavings + nw.totalInvestments, 6)
+  })
+  it('gold unavailable -> XAU skipped + flagged, never grams as money', () => {
+    const nw = computeNetWorth({ savingsAccounts: [acct({ currency: 'XAU', currentBalance: 5 })], investmentHoldings: [], debts: [], settings: { baseCurrency: 'EGP' } as never, exchangeRates: RATES, goldPricePerGram: 7000, goldPriceAvailable: false, lookup: () => null, monthlyIncome: 0, cashOutflow: 0, debtRemaining: 0 })
+    expect(nw.totalSavings).toBe(0)
+    expect(nw.netWorthGoldIncomplete).toBe(true)
+  })
+  it('totalSavingsAccountsBalanceInBase XAU absurd price', () => {
+    expect(totalSavingsAccountsBalanceInBase([acct({ currency: 'XAU', currentBalance: 2 })], 'EGP', RATES, 0, true)).toBe(0)
+  })
+  it('tryConvertWithGold zero/negative/NaN gold price returns null', () => {
+    for (const p of [0, -1, NaN, Infinity]) expect(tryConvertWithGold(5, 'XAU', 'EGP', RATES, 'EGP', { pricePerGram: p, available: true })).toBe(p === Infinity ? Infinity : null)
+  })
+})
+
+describe('provider parsing and consensus', () => {
+  it('goldpricez picks ounce price when gram key missing', () => {
+    expect(parseGoldpricezGram24k({ ounce_price_24k: 4100 })).toBe(4100) // 31x a gram price
+  })
+  it('consensus: absurd single sample accepted', () => {
+    expect(priceConsensus([{ value: 9999999, source: 's' }], 0.005).value).toBe(9999999)
+  })
+  it('consensus: 2 disagreeing -> low median', () => {
+    const c = priceConsensus([{ value: 100, source: 'a' }, { value: 200, source: 'b' }], 0.005)
+    expect(c.confidence).toBe('low'); expect(c.value).toBe(150)
+  })
+})
+
+describe('trend', () => {
+  it('null under two rows, pct with negative base', () => {
+    expect(buildNetWorthTrend([{ net_worth: 1 }])).toBeNull()
+    const t = buildNetWorthTrend([{ net_worth: '-100' }, { net_worth: '-50' }])!
+    expect(t.pct).toBe(50); expect(t.dir).toBe('up')
+    expect(buildNetWorthTrend([{ net_worth: 0 }, { net_worth: 50 }])!.pct).toBe(0)
+  })
+})
+
+describe('zakat', () => {
+  it('nisab unavailable -> nothing due; manual 0', () => {
+    const z = computeZakat({ cashAndSavings: 1e6, goldValue: 0, cryptoValue: 0, stocksValue: 0, holdsForTrading: false, debtsDueThisYear: 0, nisabBasis: 'silver', gold24kSellPerGram: 0, silverPerGram: 0 })
+    expect(z.due).toBe(false); expect(z.zakat).toBe(0)
+    expect(computeZakat({ cashAndSavings: 1e6, goldValue: 0, cryptoValue: 0, stocksValue: 0, holdsForTrading: false, debtsDueThisYear: 0, nisabBasis: 'gold', gold24kSellPerGram: 100, silverPerGram: 1, manualAmount: 0 }).zakat).toBe(0)
+  })
+})

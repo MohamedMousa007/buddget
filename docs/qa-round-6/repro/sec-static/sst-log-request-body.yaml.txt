@@ -1,0 +1,18 @@
+rules:
+  - id: sst-log-request-body
+    languages: [typescript]
+    severity: WARNING
+    mode: taint
+    message: A request body / headers (may hold SMS text, tokens, PII) is written to the log.
+    pattern-sources:
+      - pattern: await $REQ.json()
+      - pattern: await $REQ.text()
+      - pattern: $REQ.headers
+    pattern-sinks:
+      - pattern: console.$L(...)
+    pattern-sanitizers:
+      - pattern: $SCHEMA.parse(...)
+      - pattern: $SCHEMA.safeParse(...)
+      - pattern: $X.length
+    paths:
+      include: ["src/app/api/**", "src/lib/server/**", "src/lib/sms/**"]

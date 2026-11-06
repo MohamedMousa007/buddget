@@ -2,6 +2,8 @@
 
 import { useRef, type KeyboardEvent, type ClipboardEvent } from 'react'
 import { cn } from '@/lib/utils'
+import { toLatinDigits } from '@/lib/utils/formatters'
+import { useT } from '@/lib/i18n'
 import { useOtpAutofill } from '@/hooks/useOtpAutofill'
 import { inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
 
@@ -15,8 +17,9 @@ export interface AuthOtpRowProps {
  * Six single-digit inputs for email OTP verification.
  */
 export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
+  const a = useT().a11y
   const refs = useRef<(HTMLInputElement | null)[]>([])
-  const digitsOnly = value.replace(/\D/g, '').slice(0, 6)
+  const digitsOnly = toLatinDigits(value).replace(/\D/g, '').slice(0, 6)
   const chars = (digitsOnly + '      ').slice(0, 6).split('')
 
   // Android: pull a freshly-copied code from the clipboard on resume. iOS fills
@@ -24,7 +27,7 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
   useOtpAutofill((code) => onChange(code), digitsOnly.length < 6)
 
   const setDigit = (i: number, raw: string) => {
-    const cleaned = raw.replace(/\D/g, '')
+    const cleaned = toLatinDigits(raw).replace(/\D/g, '')
     // Autofill / QuickType inserts the whole code into one box — distribute it.
     if (cleaned.length > 1) {
       const code = cleaned.slice(0, 6)
@@ -53,13 +56,13 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
 
   const onPaste = (e: ClipboardEvent) => {
     e.preventDefault()
-    const t = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    const t = toLatinDigits(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, 6)
     onChange(t)
     refs.current[Math.min(t.length, 5)]?.focus()
   }
 
   return (
-    <div className="flex justify-center gap-2 sm:gap-2.5" onPaste={onPaste}>
+    <div role="group" aria-label={a.otpCode} className="flex justify-center gap-2 sm:gap-2.5" onPaste={onPaste}>
       {Array.from({ length: 6 }).map((_, i) => (
         <input
           key={i}
@@ -68,6 +71,7 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
           }}
           inputMode="numeric"
           autoComplete="one-time-code"
+          aria-label={a.otpDigit(i + 1, 6)}
           disabled={disabled}
           value={chars[i]?.trim() ? chars[i] : ''}
           onChange={(e) => setDigit(i, e.target.value)}

@@ -1,0 +1,43 @@
+import { describe, it, expect } from 'vitest'
+import { ar } from '@/lib/i18n/dictionaries/ar'
+import * as onboarding from '@/lib/i18n/onboardingCopy'
+import * as subs from '@/lib/i18n/subscriptionsCopy'
+import * as voice from '@/lib/i18n/voiceCopy'
+import * as blocks from '@/lib/i18n/budgetPage/blocksCopy'
+import * as chrome from '@/lib/i18n/budgetPage/chromeCopy'
+import * as studio from '@/lib/i18n/budgetPage/studioCopy'
+import * as deck from '@/lib/i18n/budgetPage/deckCopy'
+import * as sheets from '@/lib/i18n/budgetPage/sheetsCopy'
+import * as builder from '@/lib/i18n/budgetPage/builderCopy'
+import * as close from '@/lib/i18n/budgetPage/closeCopy'
+
+const roots: Record<string, unknown> = { ar, ...onboarding, ...subs, ...voice, ...blocks, ...chrome, ...studio, ...deck, ...sheets, ...builder, ...close }
+const AR = /[؀-ۿ]/
+// grammatically wrong: digit + noun in a form that does not fit the number
+const WRONG: Record<number, RegExp> = {
+  2: /(^|\s)2 [؀-ۿ]/,
+  3: /(^|\s)3 (يومًا|يوم|شهر|شهرًا|حسابًا|حساب|معاملة|معاملةً|بندًا|فاتورة|رسالة|بند)(\s|$)/,
+  11: /(^|\s)11 (أيام|أشهر|حسابات|معاملات|بنود|فواتير|رسائل|يوم|شهر)(\s|$)/,
+}
+function walk(node: unknown, path: string, out: [string, (...a: number[]) => unknown][], seen = new Set<unknown>()) {
+  if (!node || seen.has(node)) return
+  if (typeof node === 'function') { out.push([path, node as never]); return }
+  if (typeof node === 'object') { seen.add(node); for (const [k, v] of Object.entries(node)) walk(v, `${path}.${k}`, out, seen) }
+}
+describe('arabic plural forms (single numeric arg functions)', () => {
+  it('report grammatically wrong numeral+noun', () => {
+    const fns: [string, (...a: number[]) => unknown][] = []
+    for (const [k, v] of Object.entries(roots)) walk(v, k, fns)
+    const bad: string[] = []
+    for (const [p, f] of fns) {
+      if (f.length < 1 || f.length > 2) continue
+      for (const n of [2, 3, 11]) {
+        let s: unknown
+        try { s = f(n, n) } catch { continue }
+        if (typeof s === 'string' && AR.test(s) && WRONG[n].test(s)) bad.push(`${n} ${p}: ${s}`)
+      }
+    }
+    console.log(bad.length + '\n' + bad.join('\n'))
+    expect(bad).toEqual([])
+  })
+})

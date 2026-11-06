@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { STORE_LINKS, SUPPORT_EMAIL, WEB_APP_URL, type SiteLocale } from '@/lib/site/config'
 import { pathFor, siteContent } from '@/lib/site/routes'
+import { legalPath } from '@/lib/legal/paths'
 import type { ScreenKey } from '@/lib/site/screens'
 import { DailyNumberCalculator } from './DailyNumberCalculator'
 import { EmergencyCalculator } from './EmergencyCalculator'
@@ -217,7 +218,7 @@ export function SecurityPage({ locale }: P) {
           <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-[200px_1fr]">
             {s.data.map((d) => (<div key={d.k} className="contents"><dt className="font-semibold">{d.k}</dt><dd className="text-brand-text-secondary">{d.v}</dd></div>))}
           </dl>
-          <div className="mt-8"><ButtonLink href="/legal/privacy" variant="outline" external>{s.policyCta}</ButtonLink></div>
+          <div className="mt-8"><ButtonLink href={legalPath('privacy', locale)} variant="outline" external>{s.policyCta}</ButtonLink></div>
         </Container>
       </Section>
       <Section pad="md"><Container narrow><FaqList items={s.faq} /></Container></Section>

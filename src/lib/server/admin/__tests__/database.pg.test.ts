@@ -9,7 +9,7 @@ const ADMIN_TABLES = [
 ]
 const ADMIN_FUNCTIONS = [
   'admin_overview()', 'admin_signup_series(integer)', 'admin_activity_series(integer)', 'admin_feature_adoption()',
-  'admin_retention(integer)', 'admin_sms_health(integer)', 'admin_user_directory(text,integer,integer,text,text,text)',
+  'admin_retention(integer)', 'admin_sms_health(integer)', 'admin_user_directory(text,integer,integer,text,text,text,boolean)',
   'admin_user_overview(uuid)', 'admin_rate_hit(text,integer,integer)',
 ]
 
@@ -51,7 +51,7 @@ describe.skipIf(!pgEnabled)('admin database permissions (real Postgres)', () => 
   })
 
   it.each(ADMIN_FUNCTIONS)('%s cannot be executed through the public API', async (fn) => {
-    const call = fn.replace('(', '(').replace(/\(([^)]*)\)/, (_m, args: string) => '(' + args.split(',').filter(Boolean).map((a) => ({ integer: '1', text: "'x'", uuid: "'00000000-0000-4000-8000-000000000000'" } as Record<string, string>)[a]).join(',') + ')')
+    const call = fn.replace('(', '(').replace(/\(([^)]*)\)/, (_m, args: string) => '(' + args.split(',').filter(Boolean).map((a) => ({ integer: '1', text: "'x'", boolean: 'true', uuid: "'00000000-0000-4000-8000-000000000000'" } as Record<string, string>)[a]).join(',') + ')')
     for (const role of ['anon', 'authenticated'] as const) {
       const r = await as(role, `select public.${call}`)
       expect(r.ok, `${role} ${fn}`).toBe(false)
@@ -120,14 +120,14 @@ describe.skipIf(!pgEnabled)('admin database permissions (real Postgres)', () => 
       expect((await q<{ n: number }>(`select count(*)::int n from admin_activity_series(-5)`))[0]!.n).toBe(1)
       await expect(q(`select admin_sms_health(100000)`)).resolves.toBeTruthy()
       expect((await q<{ d: unknown[] }>(`select jsonb_array_length(admin_retention(1000)) d`))[0]!.d).toBe(26)
-      const dir = (await q<{ r: { total: number; rows: unknown[] } }>(`select admin_user_directory(null, 100000, -3, 'created_desc', null, null) r`))[0]!.r
+      const dir = (await q<{ r: { total: number; rows: unknown[] } }>(`select admin_user_directory(null, 100000, -3, 'created_desc', null, null, false) r`))[0]!.r
       expect(Array.isArray(dir.rows)).toBe(true)
     })
 
     it('user search treats wildcards literally enough not to match everyone', async () => {
       await makeUser('alpha@example.com')
       await makeUser('beta@example.com')
-      const r = await q<{ r: { total: number } }>(`select admin_user_directory('%', 25, 0, 'created_desc', null, null) r`)
+      const r = await q<{ r: { total: number } }>(`select admin_user_directory('%', 25, 0, 'created_desc', null, null, true) r`)
       // `%` is a LIKE wildcard; documenting current behaviour: it matches addresses containing a literal % — i.e. none
       expect(r[0]!.r.total === 2 || r[0]!.r.total === 0).toBe(true)
     })

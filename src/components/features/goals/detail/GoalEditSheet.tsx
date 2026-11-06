@@ -57,7 +57,7 @@ export function GoalEditSheet({ goal, onClose }: { goal: Goal; onClose: () => vo
           <span className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{limit ? t.goals.monthlyLimit : t.goals.targetAmount}</span>
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
-              <AmountField value={amount} onChange={setAmount} className={FIELD} aria-label={limit ? t.goals.monthlyLimit : t.goals.targetAmount} />
+              <AmountField value={amount} onChange={setAmount} decimalsFor={currency} className={FIELD} aria-label={limit ? t.goals.monthlyLimit : t.goals.targetAmount} />
             </div>
             <div className="shrink-0">
               <FiatCurrencyField value={currency} onChange={setCurrency} compact className={FIELD} />

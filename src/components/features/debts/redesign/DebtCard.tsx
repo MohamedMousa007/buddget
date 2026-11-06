@@ -28,14 +28,14 @@ function IdentityRow({ color, initials, title, subtitle, monoSubtitle }: {
   return (
     <div className="flex items-center gap-3 pe-9">
       <span
-        className="flex h-10 w-11 shrink-0 items-center justify-center rounded-[10px] text-[13px] font-extrabold tracking-tight"
+        className="flex h-10 w-11 shrink-0 items-center justify-center rounded-[10px] text-[0.8125rem] font-extrabold tracking-tight"
         style={{ background: soft(color, 16), color }}
       >
         {initials}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-lg font-bold leading-tight text-[var(--color-brand-text-primary)]">{title}</p>
-        {subtitle ? <p className={`truncate text-[13px] text-[var(--color-brand-text-muted)] ${monoSubtitle ? 'font-mono-numbers' : ''}`}>{subtitle}</p> : null}
+        {subtitle ? <p className={`truncate text-[0.8125rem] text-[var(--color-brand-text-muted)] ${monoSubtitle ? 'font-mono-numbers' : ''}`}>{subtitle}</p> : null}
       </div>
     </div>
   )
@@ -46,7 +46,7 @@ function Amount({ value, unit, large }: { value: number; unit: string; large?: b
   return (
     <p className={`flex items-baseline gap-2 ${large ? 'mt-1' : ''}`}>
       <span className={`font-mono-numbers font-bold leading-none text-[var(--color-brand-text-primary)] ${large ? 'text-[32px] tracking-[-1px]' : 'text-[26px] tracking-[-0.5px]'}`}>{fmtWhole(value)}</span>
-      <span className={`${large ? 'text-sm' : 'text-[13px]'} text-[var(--color-brand-text-muted)]`}>{unit}</span>
+      <span className={`${large ? 'text-sm' : 'text-[0.8125rem]'} text-[var(--color-brand-text-muted)]`}>{unit}</span>
     </p>
   )
 }
@@ -68,9 +68,9 @@ function BorrowBody({ vm, onEdit, onDelete, onPay }: { vm: BorrowVM } & Actions)
       <div className="mt-3 flex items-end justify-between gap-3">
         <Amount value={vm.remaining} unit={`${vm.currency} ${owe ? t.leftSuffix : t.owedToYouSuffix}`} />
         <div className="shrink-0 text-end">
-          <p className="text-[12px] font-bold" style={{ color: dirTone }}>{owe ? t.iOwe : t.owedToMe}</p>
+          <p className="text-[0.75rem] font-bold" style={{ color: dirTone }}>{owe ? t.iOwe : t.owedToMe}</p>
           {vm.gold ? (
-            <p className="mt-0.5 font-mono-numbers text-[11px] font-semibold text-[var(--color-brand-gold)]">
+            <p className="mt-0.5 font-mono-numbers text-[0.6875rem] font-semibold text-[var(--color-brand-gold)]">
               {vm.gold.grams.toFixed(1)}g · {vm.gold.karat}K
             </p>
           ) : null}
@@ -78,19 +78,19 @@ function BorrowBody({ vm, onEdit, onDelete, onPay }: { vm: BorrowVM } & Actions)
       </div>
 
       <DebtBar pct={pct} tone={accent} label={t.paidOfTotal(fmtWhole(vm.paid), fmtWhole(vm.total))} className="mt-2.5" />
-      <div className="mt-1.5 flex items-center justify-between gap-3 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">
+      <div className="mt-1.5 flex items-center justify-between gap-3 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">
         <span className="truncate">{t.paidOfTotal(fmtWhole(vm.paid), fmtWhole(vm.total))}</span>
-        <span className="shrink-0 text-[12px] font-bold" style={{ color: accent }}>{Math.round(pct)}%</span>
+        <span className="shrink-0 text-[0.75rem] font-bold" style={{ color: accent }}>{Math.round(pct)}%</span>
       </div>
 
       {vm.goal ? (
         <div className="mt-3 flex items-center gap-2 rounded-[11px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2.5 py-2">
           <Target className="h-4 w-4 shrink-0 text-[var(--color-brand-gold)]" aria-hidden />
-          <p className="min-w-0 flex-1 truncate font-mono-numbers text-[12px] font-semibold text-[var(--color-brand-text-secondary)]">
+          <p className="min-w-0 flex-1 truncate font-mono-numbers text-[0.75rem] font-semibold text-[var(--color-brand-text-secondary)]">
             {t.goalSummary(fmtWhole(vm.goal.per), vm.goal.cadence, vm.goal.by)}
           </p>
           <span
-            className="shrink-0 text-[11px] font-bold"
+            className="shrink-0 text-[0.6875rem] font-bold"
             style={{ color: vm.goal.onTrack ? 'var(--color-brand-green)' : 'var(--color-brand-amber)' }}
           >
             {vm.goal.onTrack ? t.onTrack : t.behind}
@@ -99,7 +99,7 @@ function BorrowBody({ vm, onEdit, onDelete, onPay }: { vm: BorrowVM } & Actions)
       ) : owe ? (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[11px] border border-dashed border-[var(--color-brand-border)] px-2.5 py-1.5">
           <Target className="h-4 w-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
-          <p className="min-w-[8rem] flex-1 text-[12px] text-[var(--color-brand-text-muted)]">{t.fPayoffGoalHint}</p>
+          <p className="min-w-[8rem] flex-1 text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.fPayoffGoalHint}</p>
           <Button onClick={() => openGoalEdit(vm.id)} variant="outline" size="touch" className="shrink-0">
             {t.fPayoffGoal}
           </Button>
@@ -122,9 +122,9 @@ function cardBarTone(utilPct: number | null): string {
   return 'var(--color-brand-red)'
 }
 
-const STAT_LABEL = 'truncate text-[9.5px] font-bold uppercase tracking-[0.04em] text-[var(--color-brand-text-muted)]'
+const STAT_LABEL = 'truncate text-[0.59375rem] font-bold uppercase tracking-[0.04em] text-[var(--color-brand-text-muted)]'
 const STAT_BOX = 'rounded-[11px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-2.5 py-2'
-const STAT_VALUE = 'mt-0.5 font-mono-numbers text-[14px] font-bold leading-tight text-[var(--color-brand-text-primary)]'
+const STAT_VALUE = 'mt-0.5 font-mono-numbers text-[0.875rem] font-bold leading-tight text-[var(--color-brand-text-primary)]'
 
 function CardBody({ vm, onEdit, onDelete, onPay, onCharges }: { vm: CreditCardVM; onCharges: () => void } & Actions) {
   const t = useT().debts
@@ -139,18 +139,18 @@ function CardBody({ vm, onEdit, onDelete, onPay, onCharges }: { vm: CreditCardVM
 
       <div className="mt-3 flex items-end justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{t.outstandingShort}</p>
+          <p className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{t.outstandingShort}</p>
           <div className="mt-0.5"><Amount value={vm.outstanding} unit={vm.currency} /></div>
         </div>
         {vm.utilPct != null ? (
           <div className="shrink-0 text-end">
-            <p className="font-mono-numbers text-[12px] font-bold" style={{ color: tone }}>
+            <p className="font-mono-numbers text-[0.75rem] font-bold" style={{ color: tone }}>
               {t.usedPct(vm.utilPct)}
             </p>
             {over ? (
-              <p className="mt-0.5 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{t.overByAmt(fmtWhole(vm.overBy))}</p>
+              <p className="mt-0.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{t.overByAmt(fmtWhole(vm.overBy))}</p>
             ) : vm.limit != null ? (
-              <p className="mt-0.5 font-mono-numbers text-[11px] text-[var(--color-brand-text-muted)]">{t.freeAmt(fmtWhole(Math.max(0, vm.limit - vm.outstanding)))}</p>
+              <p className="mt-0.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{t.freeAmt(fmtWhole(Math.max(0, vm.limit - vm.outstanding)))}</p>
             ) : null}
           </div>
         ) : null}
@@ -167,7 +167,7 @@ function CardBody({ vm, onEdit, onDelete, onPay, onCharges }: { vm: CreditCardVM
           <p className={STAT_LABEL}>{t.allDueLabel}</p>
           <p className={STAT_VALUE}>{fmtWhole(vm.allDue)}</p>
           {vm.installmentDue > 0 ? (
-            <p className="text-[9px] font-semibold text-[var(--color-brand-primary-ink)]">{t.inclAmt(fmtWhole(vm.installmentDue))}</p>
+            <p className="text-[0.5625rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.inclAmt(fmtWhole(vm.installmentDue))}</p>
           ) : null}
         </div>
         <div className={STAT_BOX}>
@@ -200,14 +200,14 @@ function InstallmentBody({ vm, onEdit, onDelete, onPay }: { vm: InstallmentVM } 
 
       <div className="flex items-center gap-2 pe-9">
         <span
-          className="flex h-9 items-center gap-1.5 rounded-[10px] px-1.5 pe-2.5 text-[13px] font-extrabold"
+          className="flex h-9 items-center gap-1.5 rounded-[10px] px-1.5 pe-2.5 text-[0.8125rem] font-extrabold"
           style={{ background: soft(vm.brandColor, 16), color: accent }}
         >
           <ProviderBadge slug={vm.logoSlug} name={vm.providerName} color={vm.brandColor} size={26} />
           {vm.providerName}
         </span>
         {vm.onCardLast4 ? (
-          <span className="flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--color-brand-border)] px-2.5 text-[11px] font-semibold text-[var(--color-brand-text-secondary)]">
+          <span className="flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--color-brand-border)] px-2.5 text-[0.6875rem] font-semibold text-[var(--color-brand-text-secondary)]">
             <CardIcon className="h-3.5 w-3.5" />
             <span className="font-mono-numbers">{t.cardTag(vm.onCardLast4)}</span>
           </span>
@@ -231,19 +231,19 @@ function InstallmentBody({ vm, onEdit, onDelete, onPay }: { vm: InstallmentVM } 
 
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
+          <p className="text-[0.625rem] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">
             {t.outstandingPaidOf(vm.paid, vm.count)}
           </p>
           <Amount value={vm.remaining} unit={vm.currency} large />
-          <p className="mt-1 font-mono-numbers text-[12px] text-[var(--color-brand-text-muted)]">
+          <p className="mt-1 font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">
             {t.installmentsLeft(Math.max(0, vm.count - vm.paid), fmtWhole(vm.per))}
           </p>
         </div>
         {vm.next ? (
           <div className="shrink-0 pb-1 text-end">
-            <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">{t.nextCycle}</p>
+            <p className="text-[0.625rem] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">{t.nextCycle}</p>
             <p className="mt-1 font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">{vm.next}</p>
-            {vm.method ? <p className="mt-0.5 truncate text-[11px] font-medium text-[var(--color-brand-text-muted)]">{vm.method}</p> : null}
+            {vm.method ? <p className="mt-0.5 truncate text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">{vm.method}</p> : null}
           </div>
         ) : null}
       </div>

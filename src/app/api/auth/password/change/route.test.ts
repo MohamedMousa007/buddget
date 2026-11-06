@@ -5,6 +5,7 @@ const h = vi.hoisted(() => ({
   order: [] as string[],
   cookieSet: vi.fn(),
   revokeFails: false,
+  tokensFail: false,
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('next/headers', () => ({ cookies: async () => ({ set: h.cookieSet }) }))
@@ -16,6 +17,8 @@ vi.mock('@/lib/supabase/service', () => ({
     from: (table: string) => ({
       delete: () => ({ eq: async () => { h.order.push(`delete:${table}`); return { error: null } } }),
       upsert: async () => { h.order.push(`upsert:${table}`); return { error: null } },
+      update: (patch: unknown) => ({ eq: () => ({ eq: async () => { h.order.push(`update:${table}:${JSON.stringify(patch)}`); return { error: h.tokensFail ? { message: 'boom' } : null } } }) }),
+      insert: async () => { h.order.push(`insert:${table}`); return { error: null } },
     }),
     auth: {
       admin: {
@@ -34,6 +37,7 @@ describe('POST /api/auth/password/change', () => {
   beforeEach(() => {
     h.order.length = 0
     h.revokeFails = false
+    h.tokensFail = false
     Object.values(h).forEach((m) => typeof m === 'function' && 'mockReset' in m && m.mockReset())
     h.identity.mockResolvedValue({ id: 'u1', email: 'a@x.com', sessionId: 's1', amr: [] })
     h.user.mockResolvedValue({ user: { id: 'u1' } })
@@ -50,6 +54,22 @@ describe('POST /api/auth/password/change', () => {
     expect(i('password')).toBeGreaterThan(i('delete:biometric_devices'))
     expect(i('signOut:others')).toBeGreaterThan(i('password'))
     expect(i('upsert:trusted_devices')).toBeGreaterThan(i('signOut:others'))
+  })
+
+  it('DBS-3: retires every SMS ingest token before the password changes, then mints a fresh one for this phone', async () => {
+    const res = await call({ newPassword: 'newpass123', currentPassword: 'old' })
+    expect(res.status).toBe(200)
+    const i = (s: string) => h.order.findIndex((x) => x.startsWith(s))
+    expect(h.order).toContain('update:sms_ingest_tokens:{"is_active":false}')
+    expect(i('update:sms_ingest_tokens')).toBeLessThan(i('password'))
+    expect(i('insert:sms_ingest_tokens')).toBeGreaterThan(i('password'))
+  })
+
+  it('DBS-3: changes nothing when the tokens cannot be retired', async () => {
+    h.tokensFail = true
+    const res = await call({ newPassword: 'newpass123', currentPassword: 'old' })
+    expect(res.status).toBe(500)
+    expect(h.order).not.toContain('password')
   })
 
   it('answers with an error, not ok, when the other sessions cannot be revoked', async () => {

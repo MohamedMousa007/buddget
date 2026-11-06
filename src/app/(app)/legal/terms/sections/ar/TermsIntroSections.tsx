@@ -1,4 +1,4 @@
-import { AppLink } from '@/components/ui/AppLink'
+import { LegalDocLink } from '@/components/legal/LegalDocLink'
 import { LegalSection } from '@/components/legal/LegalSection'
 import { SupportMail } from '@/components/legal/LegalInline'
 
@@ -10,9 +10,9 @@ export function TermsIntroSectionsAr() {
         <p>
           بوصولك إلى «بادجت» (Buddget) («الخدمة» أو «نحن» أو «لنا») أو استخدامك لها، فإنك تؤكد أنك قرأت شروط الخدمة هذه
           («الشروط») و
-          <AppLink href="/legal/privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
+          <LegalDocLink doc="privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
             سياسة الخصوصية
-          </AppLink>{' '}
+          </LegalDocLink>{' '}
           الخاصة بنا وفهمتها وتوافق على الالتزام بها. إذا لم توافق على هذه الشروط، فلا تصل إلى الخدمة ولا تستخدمها.
         </p>
         <p>

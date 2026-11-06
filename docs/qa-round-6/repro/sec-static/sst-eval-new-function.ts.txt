@@ -1,0 +1,7 @@
+declare const x: string
+// ruleid: sst-eval-new-function
+eval(x)
+// ruleid: sst-eval-new-function
+const f = new Function('a', x)
+// ok: sst-eval-new-function
+setTimeout(() => {}, 10)

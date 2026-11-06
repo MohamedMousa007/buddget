@@ -20,7 +20,7 @@ function MonthTitle({ month, year }: { month: string; year?: string }) {
   return (
     <span className="flex items-baseline justify-center gap-1.5 whitespace-nowrap">
       <span className="text-[22px] font-bold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{month}</span>
-      {year ? <span className="font-mono-numbers text-[13px] text-[var(--color-brand-text-secondary)]">{year}</span> : null}
+      {year ? <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{year}</span> : null}
     </span>
   )
 }

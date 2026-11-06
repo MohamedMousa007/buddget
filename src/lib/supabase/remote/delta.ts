@@ -2,8 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import type { AppSettings, BudgetPlan, BudgetPlanActivation } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
+import { diffLists } from './diff'
 import { mergeList } from './merge'
-import { noteServerTime } from './serverClock'
+import { noteServerTime, serverInstant } from './serverClock'
 import type { Snapshot } from './snapshot'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
 import { accountAdjustmentFromRow } from './mappers/accountAdjustmentMapper'
@@ -137,20 +138,29 @@ export async function pullDelta(client: SupabaseClient<Database>, since: string 
   }
 }
 
-function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefore: string | null): T[] {
+function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefore: string | null, pending?: ReadonlySet<string>): T[] {
   const dead = new Set(d.deletedIds)
   const live = new Set(d.upserts.map((r) => r.id))
   const cutoff = staleBefore === null ? NaN : Date.parse(staleBefore)
-  const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && !!r.updatedAt && Date.parse(r.updatedAt) <= cutoff
-  return mergeList(local, d.upserts).filter((r) => !dead.has(r.id) && !gone(r))
+  const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && !!r.updatedAt && (serverInstant(r.updatedAt) ?? Infinity) <= cutoff
+  return mergeList(local, d.upserts, pending).filter((r) => !dead.has(r.id) && !gone(r))
+}
+
+/** Ids of the rows this device holds that the server has not acknowledged: new, or different from the last delivered copy. Undefined when there is no baseline to tell. */
+function pendingIds<T extends WithId>(now: readonly T[], delivered: readonly T[] | undefined): ReadonlySet<string> | undefined {
+  if (!delivered) return undefined
+  const { inserts, updates } = diffLists(now, delivered)
+  return new Set([...inserts, ...updates].map((r) => r.id))
 }
 
 /**
- * Folds a pull into the local snapshot. Rows that changed on the server are merged in (the newer `updatedAt` wins, as in
- * the full merge), rows deleted on the server are removed, and everything else is left alone. Settings and profile are
- * taken from the server only when they changed (the caller has already flushed local edits).
+ * Folds a pull into the local snapshot. Rows that changed on the server are merged in, rows deleted on the server are
+ * removed, and everything else is left alone. Settings and profile are taken from the server only when they changed (the
+ * caller has already flushed local edits). `delivered` is the snapshot the server last acknowledged: when given, a
+ * local row beats the server copy only if it holds an edit that was not delivered (and then the newer edit time wins);
+ * without it the newer edit time decides for every row.
  */
-export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
+export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot | null): Snapshot {
   const profileResult = d.profile
   const baseCurrency = profileResult?.extras.baseCurrency ?? local.settings.baseCurrency
   const secondaryCurrency = profileResult ? (profileResult.extras.secondaryCurrency ?? null) : (local.settings.secondaryCurrency ?? null)
@@ -162,7 +172,8 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
 
   const deadPlans = new Set(d.deletedBudgetPlanIds)
   const deadActivations = new Set(d.deletedBudgetPlanActivationIds)
-  const applyList = <T extends WithId>(local: T[], delta: ListDelta<T>): T[] => applyListWith(local, delta, d.staleBefore)
+  const applyList = <T extends WithId>(rows: T[], delta: ListDelta<T>, base: readonly T[] | undefined): T[] =>
+    applyListWith(rows, delta, d.staleBefore, pendingIds(rows, base))
   return {
     profile: profileResult?.profile ?? local.profile,
     settings,
@@ -170,24 +181,24 @@ export function applyDelta(local: Snapshot, d: MappedDelta): Snapshot {
     // note or no active plan there is a deliberate clear on another device, not a missing value.
     financialGoalsNotes: profileResult ? profileResult.extras.financialGoalsNotes : local.financialGoalsNotes,
     activeBudgetPlanId: profileResult ? profileResult.extras.activeBudgetPlanId : local.activeBudgetPlanId,
-    paymentMethods: applyList(local.paymentMethods as WithId[], d.paymentMethods as ListDelta<WithId>) as Snapshot['paymentMethods'],
-    incomeSources: applyList(local.incomeSources, d.incomeSources),
-    incomeEvents: applyList(local.incomeEvents, d.incomeEvents),
-    expenses: applyList(local.expenses, d.expenses),
-    receipts: applyList(local.receipts, d.receipts),
-    recurringExpenses: applyList(local.recurringExpenses as WithId[], d.recurringExpenses as ListDelta<WithId>) as Snapshot['recurringExpenses'],
-    subscriptions: applyList(local.subscriptions as WithId[], d.subscriptions as ListDelta<WithId>) as Snapshot['subscriptions'],
-    debts: applyList(local.debts, d.debts),
-    debtPayments: applyList(local.debtPayments, d.debtPayments),
-    recurringDebtPayments: applyList(local.recurringDebtPayments, d.recurringDebtPayments),
-    savingsAccounts: applyList(local.savingsAccounts, d.savingsAccounts),
-    investmentHoldings: applyList(local.investmentHoldings, d.investmentHoldings),
-    savingsTransactions: applyList(local.savingsTransactions as WithId[], d.savingsTransactions as ListDelta<WithId>) as Snapshot['savingsTransactions'],
-    recurringSavingsDeposits: applyList(local.recurringSavingsDeposits, d.recurringSavingsDeposits),
-    goals: applyList(local.goals, d.goals),
-    buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>) as Snapshot['buddgyMemories'],
-    accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>) as Snapshot['accountAdjustments'],
-    budgetPlans: applyListWith(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }, null) as Snapshot['budgetPlans'],
-    budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[]) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId) && !deadActivations.has(a.id)),
+    paymentMethods: applyList(local.paymentMethods as WithId[], d.paymentMethods as ListDelta<WithId>, delivered?.paymentMethods as WithId[] | undefined) as Snapshot['paymentMethods'],
+    incomeSources: applyList(local.incomeSources, d.incomeSources, delivered?.incomeSources),
+    incomeEvents: applyList(local.incomeEvents, d.incomeEvents, delivered?.incomeEvents),
+    expenses: applyList(local.expenses, d.expenses, delivered?.expenses),
+    receipts: applyList(local.receipts, d.receipts, delivered?.receipts),
+    recurringExpenses: applyList(local.recurringExpenses as WithId[], d.recurringExpenses as ListDelta<WithId>, delivered?.recurringExpenses as WithId[] | undefined) as Snapshot['recurringExpenses'],
+    subscriptions: applyList(local.subscriptions as WithId[], d.subscriptions as ListDelta<WithId>, delivered?.subscriptions as WithId[] | undefined) as Snapshot['subscriptions'],
+    debts: applyList(local.debts, d.debts, delivered?.debts),
+    debtPayments: applyList(local.debtPayments, d.debtPayments, delivered?.debtPayments),
+    recurringDebtPayments: applyList(local.recurringDebtPayments, d.recurringDebtPayments, delivered?.recurringDebtPayments),
+    savingsAccounts: applyList(local.savingsAccounts, d.savingsAccounts, delivered?.savingsAccounts),
+    investmentHoldings: applyList(local.investmentHoldings, d.investmentHoldings, delivered?.investmentHoldings),
+    savingsTransactions: applyList(local.savingsTransactions as WithId[], d.savingsTransactions as ListDelta<WithId>, delivered?.savingsTransactions as WithId[] | undefined) as Snapshot['savingsTransactions'],
+    recurringSavingsDeposits: applyList(local.recurringSavingsDeposits, d.recurringSavingsDeposits, delivered?.recurringSavingsDeposits),
+    goals: applyList(local.goals, d.goals, delivered?.goals),
+    buddgyMemories: applyList(local.buddgyMemories as WithId[], d.buddgyMemories as ListDelta<WithId>, delivered?.buddgyMemories as WithId[] | undefined) as Snapshot['buddgyMemories'],
+    accountAdjustments: applyList(local.accountAdjustments as WithId[], d.accountAdjustments as ListDelta<WithId>, delivered?.accountAdjustments as WithId[] | undefined) as Snapshot['accountAdjustments'],
+    budgetPlans: applyListWith(local.budgetPlans as WithId[], { upserts: d.budgetPlans as WithId[], deletedIds: d.deletedBudgetPlanIds }, null, pendingIds(local.budgetPlans as WithId[], delivered?.budgetPlans as WithId[] | undefined)) as Snapshot['budgetPlans'],
+    budgetPlanActivations: (mergeList(local.budgetPlanActivations as WithId[], d.budgetPlanActivations as WithId[], pendingIds(local.budgetPlanActivations as WithId[], delivered?.budgetPlanActivations as WithId[] | undefined)) as Snapshot['budgetPlanActivations']).filter((a) => !deadPlans.has(a.planId) && !deadActivations.has(a.id)),
   }
 }

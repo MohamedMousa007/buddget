@@ -29,7 +29,7 @@ export function CurrencyConverterGoldRow({
               {store.settings.baseCurrency}
             </span>
             {store.goldPriceStale && (
-              <span className="text-[10px] text-[var(--color-brand-text-muted)] italic">
+              <span className="text-[0.625rem] text-[var(--color-brand-text-muted)] italic">
                 {t.goldPriceDelayed}
               </span>
             )}

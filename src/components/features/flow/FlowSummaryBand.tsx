@@ -54,13 +54,13 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
     <Button
       variant="onBand"
       onClick={setBudget.onPress}
-      className='relative h-[26px] shrink-0 rounded-full px-2.5 text-[12px] after:absolute after:left-1/2 after:top-1/2 after:min-h-[44px] after:min-w-[44px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-[""]'
+      className='relative h-[26px] shrink-0 rounded-full px-2.5 text-[0.75rem] after:absolute after:left-1/2 after:top-1/2 after:min-h-[44px] after:min-w-[44px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-[""]'
     >
       {setBudget.label}
     </Button>
   ) : status && StatusIcon ? (
     <span
-      className="inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[var(--flow-band-fg)] px-2 text-[11.5px] font-bold"
+      className="inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-[var(--flow-band-fg)] px-2 text-[0.71875rem] font-bold"
       style={{ color: STATUS_TONE[status.icon] }}
     >
       <StatusIcon className="size-[13px]" strokeWidth={2.5} aria-hidden />
@@ -80,11 +80,11 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
         <>
           <p className="flex min-w-0 items-baseline gap-1.5">
             <span className={cn('min-w-0 shrink font-mono-numbers font-semibold leading-none tracking-[-0.03em]', big ? fitBigNumber(big) : 'text-[32px]')}>{big}</span>
-            {of ? <span className={`min-w-0 truncate whitespace-nowrap text-[13px] ${FG2}`}>{of}</span> : null}
+            {of ? <span className={`min-w-0 truncate whitespace-nowrap text-[0.8125rem] ${FG2}`}>{of}</span> : null}
           </p>
           {side ? (
-            <p className={`shrink-0 text-end text-[11.5px] leading-[1.3] ${FG2}`}>
-              <b className="block font-mono-numbers text-[15px] text-[var(--flow-band-fg)]">{side}</b>
+            <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${FG2}`}>
+              <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{side}</b>
               {sideSub}
             </p>
           ) : null}

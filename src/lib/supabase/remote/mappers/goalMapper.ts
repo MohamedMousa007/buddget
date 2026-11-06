@@ -86,6 +86,6 @@ export function goalFromRow(row: GoalRow): Goal {
     notes: row.notes,
     achievedAt: row.achieved_at,
     createdAt: row.created_at,
-    updatedAt: row.updated_at ?? undefined,
+    updatedAt: row.edited_at,
   }
 }

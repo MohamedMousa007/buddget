@@ -10,12 +10,21 @@ const instant = (iso: string | undefined): number | null => {
 type WithId = { id: string; updatedAt?: string; createdAt?: string }
 
 /**
+ * A local row that holds no undelivered edit still beats the server copy when its edit time is this much newer: only a
+ * local edit the baseline never recorded (an upgrade boot) can be that far ahead, never clock-offset noise.
+ */
+const UNACKED_MARGIN_MS = 60_000
+
+/**
  * Merge two lists of id'd items:
  *  - Union by id
- *  - If the same id appears in both lists, keep the one with the newer `updatedAt`
- *    (falling back to `createdAt`, then to `server` as the safer default).
+ *  - If the same id appears in both lists, keep the one with the newer `updatedAt` (the edit time; falling back to
+ *    `createdAt`, then to `server` as the safer default).
+ *  - With `pending` (the ids this device has edited and not yet delivered), only those rows compete with the server
+ *    copy on equal terms; every other local row is a copy of what the server already had, so a tie or a hair's
+ *    difference (the offset used to convert the stamp is re-measured on every pull) goes to the server.
  */
-export function mergeList<T extends WithId>(local: T[], server: T[]): T[] {
+export function mergeList<T extends WithId>(local: T[], server: T[], pending?: ReadonlySet<string>): T[] {
   const byId = new Map<string, T>()
   for (const r of server) byId.set(r.id, r)
   for (const l of local) {
@@ -28,7 +37,8 @@ export function mergeList<T extends WithId>(local: T[], server: T[]): T[] {
     // server `...+00:00`, and as text the two never tie.
     const lt = serverInstant(l.updatedAt || l.createdAt)
     const st = instant(s.updatedAt || s.createdAt)
-    if (lt !== null && (st === null || lt > st)) byId.set(l.id, l)
+    const margin = pending && !pending.has(l.id) ? UNACKED_MARGIN_MS : 0
+    if (lt !== null && (st === null || lt > st + margin)) byId.set(l.id, l)
     // else keep server
   }
   return Array.from(byId.values())

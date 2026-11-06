@@ -43,6 +43,6 @@ export function paymentMethodFromRow(row: PaymentMethodRow): PaymentMethod {
     trackSms: true,
     excluded: row.excluded || undefined,
     createdAt: row.created_at ?? undefined,
-    updatedAt: row.updated_at ?? undefined,
+    updatedAt: row.edited_at,
   }
 }

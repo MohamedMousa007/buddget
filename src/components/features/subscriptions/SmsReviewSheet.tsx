@@ -100,7 +100,7 @@ function FindCard({ find, onAdd, onDismiss }: { find: SmsFind; onAdd: () => void
             <div className="font-mono-numbers text-[17px] font-semibold text-[var(--color-brand-text-primary)]">
               {foreign ? formatCurrency(find.amount, find.currency) : formatFixed2(find.amount)}
             </div>
-            <div className="font-mono-numbers text-[11px] text-[var(--color-brand-text-secondary)]">
+            <div className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-secondary)]">
               {foreign
                 ? `≈ ${currencyLabel(base, locale)} ${formatWhole(convertCurrency(find.amount, find.currency as Currency, base, rates))}`
                 : currencyLabel(find.currency, locale)}
@@ -114,7 +114,7 @@ function FindCard({ find, onAdd, onDismiss }: { find: SmsFind; onAdd: () => void
           </div>
           <div className="flex gap-1">
             {find.dates.map((d, i) => (
-              <Badge key={`${i}-${d}`} tone="soft" bordered={false} className="font-mono-numbers text-[11px] font-normal">
+              <Badge key={`${i}-${d}`} tone="soft" bordered={false} className="font-mono-numbers text-[0.6875rem] font-normal">
                 {formatDateShort(d)}
               </Badge>
             ))}

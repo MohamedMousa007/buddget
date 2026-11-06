@@ -6,7 +6,8 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { useShallow } from 'zustand/react/shallow'
 import { currentCycle } from '@/lib/settings/payCycle'
-import { parseISO, addMonths, addWeeks, differenceInCalendarMonths, differenceInCalendarWeeks, isWithinInterval } from 'date-fns'
+import { parseISO, addMonths, differenceInCalendarMonths, isWithinInterval } from 'date-fns'
+import { addCalendarWeeks, weeksElapsed } from '@/lib/time/calendarDays'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { debtFamily, type DebtFamily } from '@/lib/debts/debtFamily'
@@ -24,6 +25,7 @@ import {
   daysUntilDue,
   creditUtilizationRatio,
 } from '@/lib/debt/computeCreditCardBalance'
+import { cardDue } from '@/lib/debt/cardDue'
 import { debtFreeBy, lastPaymentDate, paymentsToClear } from '@/lib/debts/heroStats'
 import { paidAsEntered } from '@/lib/debts/paymentAmounts'
 import { installmentPaymentsCompleted, nextInstallmentDueDate, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
@@ -209,8 +211,8 @@ export function useDebtTabData() {
             let elapsed: number
             let nextDate: Date
             if (g.paymentFrequency === 'weekly') {
-              elapsed = Math.max(0, differenceInCalendarWeeks(now, start))
-              nextDate = addWeeks(start, elapsed + 1)
+              elapsed = weeksElapsed(now, start)
+              nextDate = addCalendarWeeks(start, elapsed + 1)
             } else {
               elapsed = Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / monthsPer)
               nextDate = addMonths(start, (elapsed + 1) * monthsPer)
@@ -236,9 +238,11 @@ export function useDebtTabData() {
         const pays = paymentsFor(d.id)
         const outstanding = computeCreditCardOutstanding(d, expenses, pays, exchangeRates)
         const cycle = getCurrentBillingCycleExpenses(d, expenses, exchangeRates)
-        const regularDue = sumExpensesInDebtCurrency(cycle.expenses, d.currency as Currency, exchangeRates)
-        const installmentDue = installmentPerByCard.get(d.id) ?? 0
-        const allDue = regularDue + installmentDue
+        const { regularDue, installmentDue, allDue, after } = cardDue({
+          outstanding,
+          cycleCharges: sumExpensesInDebtCurrency(cycle.expenses, d.currency as Currency, exchangeRates),
+          installmentDue: installmentPerByCard.get(d.id) ?? 0,
+        })
         const dueIso = getNextCreditCardDueDate(d, new Date())
         const pm = paymentMethods.find((m) => m.id === d.linkedPaymentMethodId)
         // The stored name already carries the `••1234` suffix (composePaymentMethodName),
@@ -258,7 +262,7 @@ export function useDebtTabData() {
           regularDue,
           installmentDue,
           allDue,
-          after: Math.max(0, outstanding - allDue),
+          after,
           due: dueIso ?? undefined,
           daysLeft: dueIso ? daysUntilDue(dueIso, new Date()) : undefined,
         }
@@ -391,7 +395,7 @@ export function useDebtTabData() {
         const monthsPer = g.paymentFrequency === 'quarterly' ? 3 : g.paymentFrequency === 'annually' ? 12 : 1
         const date =
           g.paymentFrequency === 'weekly'
-            ? addWeeks(start, Math.max(0, differenceInCalendarWeeks(now, start)) + 1)
+            ? addCalendarWeeks(start, weeksElapsed(now, start) + 1)
             : addMonths(start, (Math.floor(Math.max(0, differenceInCalendarMonths(now, start)) / monthsPer) + 1) * monthsPer)
         scheduled.push({ debtId: d.id, name: nameOf(d), date, amount: toBase(g.calculatedAmount, d.currency) })
       }

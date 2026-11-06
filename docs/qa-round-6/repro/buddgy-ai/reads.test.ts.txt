@@ -1,0 +1,141 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { writeFileSync } from 'fs'
+
+vi.mock('@/lib/navigation/navigate', () => ({ navigate: vi.fn() }))
+vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: vi.fn() }))
+
+import { TOOLS } from '@/lib/buddgy/tools/exec'
+import { resetAutoSlots } from '@/lib/buddgy/tools/autoApplyGuard'
+import { resetSameTurnMemory } from '@/lib/buddgy/tools/exec/expenses'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import type { ToolContext } from '@/lib/buddgy/tools/types'
+
+const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
+const PM = 'aaaaaaaa-0000-0000-0000-000000000001'
+const SALARY = { id: 'i1', name: 'Salary', amount: 100000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 1, paydayDays: [1], sourceType: 'salary', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' } as never
+
+const HOSTILE: unknown[] = [
+  '', ' ', '\u0000', '__proto__', 'constructor', 'x'.repeat(50000), '<img src=x onerror=alert(1)>', "'; DROP TABLE expenses;--", '٣٠٠', '1e21', '-5', 'NaN', 'Infinity', '‮evil', '00000000', 'toString',
+  -1, 0, -0, 1e21, 1e300, 9007199254740993, 1e-9, 123456789.123456789, NaN, Infinity, -Infinity, 2.5, 32, 0.1,
+  true, false, null, [], {}, [null], [{}], [1, 2, 3], Array.from({ length: 5000 }, (_, i) => i), { __proto__: { polluted: 1 } }, JSON.parse('{"__proto__":{"polluted":"yes"}}'),
+]
+
+const BASE: Record<string, Record<string, unknown>> = {
+  add_expense: { description: 'Coffee', amount: 45, category: 'Food' },
+  add_income: { name: 'Gig', amount: 500, frequency: 'monthly', paydayDays: [5], type: 'side_hustle' },
+  add_debt: { name: 'Loan', person: 'Sam', direction: 'i_owe', amount: 1000 },
+  add_installment_plan: { item: 'TV', total: 12000, count: 6, startDate: '2026-10-20', frequency: 'monthly', provider: 'other' },
+  add_credit_card: { name: 'Visa', last4: '1234', outstanding: 100, limit: 5000, dueDay: 5 },
+  add_subscription: { name: 'Netflix', amount: 200, cycle: 'monthly', firstCharge: '2026-10-25' },
+  add_goal: { name: 'Car', target: 100000, date: '2027-01-01', category: 'car' },
+  add_savings_account: { name: 'Bank', kind: 'bank', balance: 1000 },
+  add_investment_holding: { type: 'gold', quantity: 10, unit: 'grams', karat: '21' },
+  add_payment_method: { name: 'Wallet', type: 'wallet' },
+  remember: { text: 'I like tea', kind: 'fact' },
+  update_profile: { name: 'Sam', monthlyRent: 5000 },
+  change_setting: { setting: 'showCents', value: 'on' },
+}
+
+function walk(v: unknown, path: string, out: string[], seen = new WeakSet<object>(), depth = 0): void {
+  if (depth > 6) return
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v) || Math.abs(v) > 1e12) out.push(`${path}=${v}`)
+    return
+  }
+  if (v && typeof v === 'object') {
+    if (seen.has(v)) return
+    seen.add(v)
+    for (const [k, x] of Object.entries(v)) if (typeof x !== 'function') walk(x, `${path}.${k}`, out, seen, depth + 1)
+  }
+}
+const anomalies = (): string[] => {
+  const out: string[] = []
+  const s = useFinanceStore.getState() as unknown as Record<string, unknown>
+  for (const [k, v] of Object.entries(s)) if (typeof v !== 'function') walk(v, k, out)
+  return out
+}
+const snap = () => {
+  const s = useFinanceStore.getState() as unknown as Record<string, unknown>
+  return JSON.stringify(Object.fromEntries(Object.entries(s).filter(([, v]) => typeof v !== 'function')))
+}
+const label = (h: unknown) => (typeof h === 'string' ? JSON.stringify(h.slice(0, 20)) : Array.isArray(h) ? `array(${h.length})` : typeof h === 'object' && h ? 'obj' : String(h))
+
+const report: string[] = []
+
+beforeEach(() => {
+  resetAutoSlots()
+  resetSameTurnMemory()
+  useFinanceStore.setState({
+    paymentMethods: [{ id: PM, name: 'Cash', type: 'cash', currency: 'EGP', isDefault: true } as never],
+    expenses: [],
+    incomeSources: [SALARY],
+    incomeEvents: [],
+    debts: [],
+    debtPayments: [],
+    budgetPlans: [],
+    budgetPlanActivations: [],
+    activeBudgetPlanId: null,
+    exchangeRates: {},
+    settings: { ...useFinanceStore.getState().settings, baseCurrency: 'EGP' },
+  })
+})
+
+
+const REFKEYS = new Set(['ref', 'debt', 'sub', 'goal', 'pocket', 'asset', 'plan', 'payment', 'from', 'to'])
+const refOfId = (id: string) => id.replace(/-/g, '').slice(0, 6)
+
+function seed(): Record<string, string> {
+  const run = (tool: string, args: Record<string, unknown>) => {
+    const r = TOOLS.get(tool)!.write!.propose(args, ctx)
+    if (!r.ok) throw new Error(tool + ' seed propose failed: ' + r.error)
+    const a = TOOLS.get(tool)!.write!.apply(r.proposal, ctx)
+    if (!a.ok) throw new Error(tool + ' seed apply failed: ' + a.error)
+  }
+  run('add_expense', { description: 'Lunch', amount: 100, category: 'Food', date: '2026-10-18' })
+  run('add_income', BASE.add_income)
+  run('add_debt', BASE.add_debt)
+  run('add_subscription', BASE.add_subscription)
+  run('add_goal', BASE.add_goal)
+  run('add_savings_account', BASE.add_savings_account)
+  run('add_savings_account', { ...BASE.add_savings_account, name: 'Second' })
+  run('add_investment_holding', BASE.add_investment_holding)
+  const s = useFinanceStore.getState()
+  run('record_debt_payment', { debt: refOfId(s.debts[0].id), amount: 10 })
+  const t = useFinanceStore.getState()
+  return {
+    expense: refOfId(t.expenses[0].id),
+    income: refOfId(t.incomeSources[t.incomeSources.length - 1].id),
+    pm: refOfId(t.paymentMethods[0].id),
+    debt: refOfId(t.debts[0].id),
+    sub: refOfId(t.subscriptions[0].id),
+    goal: refOfId(t.goals[0].id),
+    pocket: refOfId(t.savingsAccounts[0].id),
+    pocket2: refOfId(t.savingsAccounts[1].id),
+    asset: refOfId(t.investmentHoldings[0].id),
+    payment: refOfId(t.debtPayments[0].id),
+  }
+}
+
+
+import { redactBalances } from '@/lib/privacy/redact'
+describe('read tools under balance privacy', () => {
+  it('lists numeric keys that survive redaction', () => {
+    useFinanceStore.setState({ paymentMethods: [{ id: PM, name: 'Cash', type: 'cash', currency: 'EGP', isDefault: true } as never], expenses: [], incomeSources: [SALARY], incomeEvents: [], debts: [], debtPayments: [], budgetPlans: [], budgetPlanActivations: [], activeBudgetPlanId: null, exchangeRates: {}, settings: { ...useFinanceStore.getState().settings, baseCurrency: 'EGP' } })
+    seed()
+    const out: string[] = []
+    const keys = (v: unknown, path: string, acc: Set<string>) => {
+      if (typeof v === 'number') acc.add(path)
+      else if (Array.isArray(v)) v.slice(0, 3).forEach((x) => keys(x, path, acc))
+      else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) keys(x, path ? path + '.' + k : k, acc)
+    }
+    for (const t of TOOLS.values()) {
+      if (!t.read) continue
+      let r: unknown
+      try { r = redactBalances(t.read({}, ctx)) } catch (e) { out.push(t.spec.name + ' THROW ' + (e as Error).message); continue }
+      const acc = new Set<string>()
+      keys(r, '', acc)
+      out.push(t.spec.name + ': ' + [...acc].join(', '))
+    }
+    writeFileSync('/private/tmp/claude-501/-Users-mohamedmousa-Desktop-Budget-Manager-buddget--claude-worktrees-app-qa-check-plan-e516fe/36154420-f3eb-42dd-95f4-d13552466269/scratchpad/reads.txt', out.join('\n'))
+  })
+})

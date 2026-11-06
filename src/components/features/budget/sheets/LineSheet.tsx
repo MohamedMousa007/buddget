@@ -135,16 +135,16 @@ function LineForm({
           <BuddgyIcon mood="happy" size={28} className="shrink-0 text-[var(--color-brand-primary-ink)]" />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-brand-primary-ink)]">
+              <span className="text-[0.6875rem] font-bold uppercase tracking-wide text-[var(--color-brand-primary-ink)]">
                 {c.line.whyTitle}
               </span>
               {line.confidence ? (
-                <span className="inline-flex h-5 items-center rounded-full bg-[var(--color-brand-card)] px-2 text-[11px] font-semibold text-[var(--color-brand-text-secondary)]">
+                <span className="inline-flex h-5 items-center rounded-full bg-[var(--color-brand-card)] px-2 text-[0.6875rem] font-semibold text-[var(--color-brand-text-secondary)]">
                   {line.confidence === 'high' ? c.line.confidenceHigh : c.line.confidenceEstimated}
                 </span>
               ) : null}
             </span>
-            <p className="text-[13px] leading-snug text-[var(--color-brand-text-primary)]">{line.rationale}</p>
+            <p className="text-[0.8125rem] leading-snug text-[var(--color-brand-text-primary)]">{line.rationale}</p>
           </div>
         </div>
       ) : null}
@@ -154,7 +154,7 @@ function LineForm({
         <ToggleRow title={c.line.lock} sub={c.line.lockSub} checked={locked} onChange={setLocked} />
         {lv.block === 'bills' ? (
           <div className="flex min-h-[52px] items-center gap-3">
-            <span className="flex-1 text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{c.line.dueDay}</span>
+            <span className="flex-1 text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{c.line.dueDay}</span>
             <IconButton
               variant="outlined"
               aria-label={`${c.line.dueDay} -`}
@@ -187,7 +187,7 @@ function LineForm({
             {categories.map((cat) => (
               <span
                 key={cat}
-                className="inline-flex h-9 items-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-[13px] font-semibold text-[var(--color-brand-text-secondary)]"
+                className="inline-flex h-9 items-center rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]"
               >
                 {cat}
               </span>
@@ -226,7 +226,7 @@ function ToggleRow({
   return (
     <div className="flex min-h-[52px] items-center gap-3">
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
+        <span className="text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</span>
         <span className="text-xs text-[var(--color-brand-text-muted)]">{sub}</span>
       </div>
       <Switch size="touch" checked={checked} onCheckedChange={onChange} aria-label={title} />

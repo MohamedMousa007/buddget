@@ -13,7 +13,7 @@ import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
-import { isRevokedDevice, upsertSelf } from '@/lib/server/devices/registry'
+import { hasRevokedDevice, isRevokedDevice, upsertSelf } from '@/lib/server/devices/registry'
 
 const bodySchema = z.object({
   token: z.string().min(10).max(2048),
@@ -57,6 +57,9 @@ export async function POST(request: Request) {
     const headerDeviceId = request.headers.get(DEVICE_ID_HEADER)
     if (!deviceId && (await isRevokedDevice(service, userId, headerDeviceId))) {
       return NextResponse.json({ error: 'This phone was removed from the account', revoked: true }, { status: 403 })
+    }
+    if (!deviceId && !headerDeviceId && (await hasRevokedDevice(service, userId))) {
+      return NextResponse.json({ error: 'device_required' }, { status: 403 })
     }
     if (deviceId) {
       const self = await upsertSelf(service, userId, deviceId, { platform, model: deviceModel ?? null, appVersion: appVersion ?? null, pushPermission: 'granted' })

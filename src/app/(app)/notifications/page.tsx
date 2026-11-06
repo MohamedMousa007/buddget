@@ -103,7 +103,7 @@ export default function NotificationsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-sm font-medium text-[var(--color-brand-text-primary)] truncate">{n.title}</p>
-                    <span className="shrink-0 text-[10px] text-[var(--color-brand-text-muted)]">
+                    <span className="shrink-0 text-[0.625rem] text-[var(--color-brand-text-muted)]">
                       {formatRelativeTime(n.createdAt)}
                     </span>
                   </div>

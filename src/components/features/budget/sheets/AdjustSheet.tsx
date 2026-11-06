@@ -162,7 +162,7 @@ function AdjustForm({ view, onClose }: { view: PlanView; onClose: () => void }) 
             onChange={(e) => setText(e.target.value)}
             placeholder={c.placeholder}
             maxLength={400}
-            className="min-h-24 text-[15px]"
+            className="min-h-24 text-[0.9375rem]"
             aria-label={c.title}
           />
           <div className="flex flex-wrap gap-2">

@@ -111,10 +111,10 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
               {tiles.map((x) => (
                 <SelectableCard key={x.id} layout="stack" selected={choice === x.id} onClick={() => setPicked(x.id)} role="radio" aria-checked={choice === x.id}>
                   <span className="flex w-full items-center justify-between gap-2">
-                    <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{x.name}</span>
+                    <span className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{x.name}</span>
                     {x.likely ? <Badge variant="positive">{t.likely}</Badge> : null}
                   </span>
-                  <span className="text-[12.5px] text-[var(--color-brand-text-muted)]">{x.sub}</span>
+                  <span className="text-[0.78125rem] text-[var(--color-brand-text-muted)]">{x.sub}</span>
                 </SelectableCard>
               ))}
             </div>

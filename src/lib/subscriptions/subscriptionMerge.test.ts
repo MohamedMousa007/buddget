@@ -24,8 +24,8 @@ describe('subscription offline-merge', () => {
     expect(mergeList([local], [server])[0].pendingPlanId).toBe('netflix_premium')
   })
 
-  it('round-trips updatedAt from the row but never writes it (server trigger owns it)', () => {
-    const row = { ...subscriptionToRow(base, 'u1'), updated_at: '2026-06-01T00:00:00.000Z' }
+  it('reads updatedAt from the row edit time (edited_at) and never writes updated_at (server owns it)', () => {
+    const row = { ...subscriptionToRow(base, 'u1'), edited_at: '2026-06-01T00:00:00.000Z' }
     expect(subscriptionFromRow(row as never).updatedAt).toBe('2026-06-01T00:00:00.000Z')
     expect('updated_at' in subscriptionToRow({ ...base, updatedAt: 'x' }, 'u1')).toBe(false)
   })

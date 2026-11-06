@@ -1,5 +1,6 @@
 'use client'
 
+import { toLatinDigits } from '@/lib/utils/formatters'
 import { useMemo, useState } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -98,7 +99,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
               <SavingsAccountIcon account={{ type: def.savingsType, icon: def.icon }} className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{name || kindLabel}</p>
+              <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{name || kindLabel}</p>
               <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{linkedMethod ? pf.linked : pf.newPocket}</p>
             </div>
           </div>
@@ -131,7 +132,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
           {has('last4') && !fromPM && (
             <div>
               <label style={micro}>{pf.last4}</label>
-              <Input value={last4} onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="2016" inputMode="numeric"
+              <Input value={last4} onChange={(e) => setLast4(toLatinDigits(e.target.value).replace(/\D/g, '').slice(0, 4))} placeholder="2016" inputMode="numeric"
                 size="brand" className="mt-2 font-mono-numbers" />
             </div>
           )}
@@ -189,7 +190,7 @@ function ToggleRow({ title, sub, on, onToggle }: { title: string; sub: string; o
     <Card variant="elevated" padding="none" role="button" tabIndex={0} onClick={() => onToggle(!on)}
       className="flex w-full cursor-pointer items-center justify-between p-3.5 text-left">
       <div>
-        <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
+        <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">{sub}</p>
       </div>
       {/* Canonical app switch; row handles the tap so the thumb is display-only. */}

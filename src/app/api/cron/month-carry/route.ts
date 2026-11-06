@@ -17,7 +17,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { isAuthorizedCron } from '@/lib/server/cronAuth'
 import { DEFAULT_USER_TIME_ZONE, isValidTimeZone } from '@/lib/server/userTimeZone'
 import { pendingCarryKeys, cycleRange } from '@/lib/savings/carryDateLogic'
-import { computeMonthCarry, resolveCarryDestination } from '@/lib/savings/monthCarry'
+import { computeMonthCarry, findUnlinkedGoalPocket, resolveCarryDestination } from '@/lib/savings/monthCarry'
 import { cycleCarryFigures } from '@/lib/savings/cycleCarryFigures'
 import { savingsAccountFromRow } from '@/lib/supabase/remote/mappers/savingsAccountMapper'
 import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
@@ -117,7 +117,7 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   const savingsPockets = accounts.filter((a) => a.category === 'savings')
   const goals = goalRows.map(goalFromRow)
   // Resolve destination (default fiat pocket → active goal's pocket → the vault).
-  const dest = resolveCarryDestination(profileR.data?.default_carry_pocket_id as string | null, savingsPockets, goals.filter((g) => g.fundingMode === 'manual'))
+  const dest = resolveCarryDestination(profileR.data?.default_carry_pocket_id as string | null, savingsPockets, goals)
   const destCurrency = dest.kind === 'pocket' ? (accounts.find((a) => a.id === dest.pocketId)?.currency ?? base) : base
 
   const figures = cycleCarryFigures({
@@ -132,7 +132,11 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   })
   if (!figures) {
     if (dry) dry.noFxPath++
-    else console.error('[cron/month-carry] no FX path, skipped', userId, monthKey)
+    else {
+      console.error('[cron/month-carry] no FX path, skipped', userId, monthKey)
+      // Recorded as an empty cycle so it neither blocks the newer cycles nor is retried forever.
+      must(await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated: 0, carry: 0, saved: 0, currency: base, closed_at: now.toISOString() }), 'skipped summary')
+    }
     return false
   }
   const { income, spend, allocated } = figures
@@ -174,12 +178,20 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   if (dest.kind === 'pocket') {
     pocketId = dest.pocketId
   } else {
-    const name = dest.kind === 'create-goal-pocket' ? dest.name : 'Monthly Savings'
-    const { data: created } = must(await service.from('savings_accounts').insert({
-      user_id: userId, name, category: 'savings', type: 'vault', currency: base, current_balance: 0, opening_balance: 0, is_emergency_cover: false, held_in_payment_method_id: primaryId,
-    }).select('id').single(), 'create pocket')
-    pocketId = created!.id as string
+    const goal = dest.kind === 'create-goal-pocket' ? goals.find((g) => g.id === dest.goalId) : undefined
+    const orphan = dest.kind === 'create-goal-pocket' ? findUnlinkedGoalPocket(savingsPockets, goals, dest.name, base) : undefined
+    if (orphan) {
+      pocketId = orphan.id
+    } else {
+      const name = dest.kind === 'create-goal-pocket' ? dest.name : 'Monthly Savings'
+      const { data: created } = must(await service.from('savings_accounts').insert({
+        user_id: userId, name, category: 'savings', type: 'vault', currency: base, current_balance: 0, opening_balance: 0, is_emergency_cover: false, held_in_payment_method_id: primaryId,
+      }).select('id').single(), 'create pocket')
+      pocketId = created!.id as string
+    }
     if (dest.kind === 'create-vault') must(await service.from('profiles').update({ default_carry_pocket_id: pocketId }).eq('id', userId), 'default pocket')
+    // The goal owns its pocket from now on, so the next cycle resolves to it instead of minting another.
+    else if (goal) must(await service.from('goals').update({ linked_savings_account_ids: [...goal.linkedSavingsAccountIds, pocketId] }).eq('id', goal.id), 'link goal pocket')
   }
 
   // Post the carry: a real deposit dated to the closed month's last day.
@@ -216,7 +228,6 @@ async function carryUser(service: Service, s: UserSettingsRow, rates: Rates, now
   if (dry && keys.length > 0) dry.users++
   for (const key of keys) {
     if (await carryCycle(service, s, key, rates, now, dry)) carried++
-    else break // a skipped cycle blocks later ones, so they stay ordered
   }
   return carried
 }

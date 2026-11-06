@@ -132,7 +132,7 @@ export function AuthSignInUpStep({
 
             <div className="relative flex items-center gap-3">
               <span className="flex-1 h-px bg-[var(--color-brand-border)]" />
-              <span className="text-[10px] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
+              <span className="text-[0.625rem] uppercase tracking-wider text-[var(--color-brand-text-muted)]">
                 {t.auth.orContinueWithEmail}
               </span>
               <span className="flex-1 h-px bg-[var(--color-brand-border)]" />

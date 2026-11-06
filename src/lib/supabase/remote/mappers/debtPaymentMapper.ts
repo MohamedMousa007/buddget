@@ -42,6 +42,6 @@ export function debtPaymentFromRow(row: DebtPaymentRow): DebtPayment {
     fundedFromSavingsTxId: row.funded_from_savings_tx_id ?? undefined,
     occurredAt: row.occurred_at ?? undefined,
     createdAt: row.created_at,
-    updatedAt: row.updated_at ?? undefined,
+    updatedAt: row.edited_at,
   }
 }

@@ -126,6 +126,8 @@ export async function scrubPersonalText(admin: ServiceClient, uid: string, email
     await eraseSupportText(db, null, email, run)
     await run('email_log(email)', db.from('email_log').update({ to_email: ERASED_ADDRESS }).eq('to_email', email))
     await run('support_tickets(email)', db.from('support_tickets').update({ requester_email: null, context: {} }).eq('requester_email', email))
+    // Website contact messages and waitlist sign-ups are keyed by the (lower-cased) address they were sent from.
+    await run('site_leads(email)', db.from('site_leads').delete().eq('email', email.toLowerCase()))
   }
   return errors
 }
@@ -184,7 +186,7 @@ async function readTable(db: SupabaseClient, table: string, filter: Filtered, ca
 }
 
 /** Every row held about one person, for a data-subject access request. Credentials are left out. */
-export async function exportUserData(admin: ServiceClient, uid: string, rowsPerTable: number): Promise<{ tables: Record<string, unknown[]>; failed: string[] }> {
+export async function exportUserData(admin: ServiceClient, uid: string, rowsPerTable: number, email: string | null = null): Promise<{ tables: Record<string, unknown[]>; failed: string[] }> {
   const tables: Record<string, unknown[]> = {}
   const failed: string[] = []
   const db = loose(admin)
@@ -196,6 +198,11 @@ export async function exportUserData(admin: ServiceClient, uid: string, rowsPerT
       const hidden = REDACTED_COLUMNS[table] ?? []
       tables[table] = hidden.length ? rows.map((row) => Object.fromEntries(Object.entries(row).filter(([k]) => !hidden.includes(k)))) : rows
     }
+  }
+  if (email) {
+    const { rows, complete } = await readTable(db, 'site_leads', (q) => q.eq('email', email.toLowerCase()), rowsPerTable)
+    if (!complete) failed.push('site_leads')
+    if (rows.length) tables.site_leads = rows
   }
   const ticketIds = ((tables.support_tickets ?? []) as { id: string }[]).map((t) => t.id)
   if (ticketIds.length) {

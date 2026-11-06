@@ -1,0 +1,24 @@
+# QA Round 6: closing status, forms and input (FRM-1..13, FUZ-4..6)
+
+All items Fixed. No migrations. Tests: 101 files / 471 tests green in Cairo for `src/hooks src/components src/lib/debts src/lib/store src/lib/i18n`; hook, debt and undo tests also green in New York. `tsc` clean for every file touched (remaining tsc errors are other agents' files: devices route, AuthProvider). Hook tests use the real hooks via `src/hooks/__tests__/liteReact.ts` (no DOM in the repo); 10 of the form-hook tests fail on the pre-fix hooks (checked by restoring HEAD versions).
+
+| ID | Status | What changed | Test |
+|---|---|---|---|
+| FRM-1 | Fixed | `AddConfigureStep` amount and my-share use new `useTypedAmount` (wraps existing `reconcileTyped`) | formsSubmit.test.ts "typing a decimal" |
+| FRM-2 | Fixed | `VoiceRecapEditor` `RecapAmount` uses `useTypedAmount` | same hook, covered by the typing test |
+| FRM-3 | Fixed | `ExpenseFilters` `AmountBound` uses `useTypedAmount` | same |
+| FRM-4 | Fixed | New `useSubmitOnce` (claim/release, re-arms on open) in useAddExpenseSheet, useEditExpenseForm, useAddDebtSheet (add debt, pay debt incl. recurring), useAddSubscriptionForm, useNewGoalForm, WithdrawSheetV3, IncomeSheetForm. `ModalShell` exiting panel + backdrop are `inert` / `pointer-events:none` (`ExitInertPanel`/`ExitInertBackdrop`, default look unchanged). Pay-debt reads live payments. Store `addDebtPayment` / `addDebtPaymentWithExpense` refuse a payment on a cleared debt or above the remainder (`lib/debts/overpaysDebt.ts`, cards exempt); WithdrawSheetV3 pre-checks it before withdrawing | formsSubmit.test.ts, payDebtSubmit.test.ts, undoStale.test.ts, ModalShell.exit.test.ts |
+| FRM-5 | Fixed | `useNewGoalForm.submit` claims first; released on write failure | formsSubmit.test.ts |
+| FRM-6 | Fixed | `decimalsFor`/`currency` passed at all 20 sites (income, edit income, installment, borrow, recurring debt payment, goal steps/edit, subscription, add line, asset form, household rent, converter, receipt) | amountFieldSites.test.ts scans every `<AmountField`; fails on any new money box without a currency |
+| FRM-7 | Fixed | `AmountField` falls back to `t.common.amountLabel` (EN "Amount" / AR "المبلغ") when it has no label/aria-label/id; native button name now includes the value; specific names added for integer boxes and multi-field forms | AmountField.render.test.ts, amountFieldSites.test.ts |
+| FRM-8 | Fixed | `ModalShell` routes Escape, backdrop, swipe, Android back through an optional `useDismissGuard`; `ExpenseSheetForm` registers the unsaved-changes confirm (second dismiss closes the confirm). Redundant escape hook removed from `EditExpenseForm` | ModalShell.exit.test.ts covers the guard mechanism; the ExpenseSheetForm wiring itself is not render-tested (no DOM) |
+| FRM-9 | Fixed | Prefill goes through `parseLocalizedAmount` (grouped digits, rounding, 1e+21 dropped) | formsSubmit.test.ts |
+| FRM-10 | Fixed | `setCurrency` re-caps the amount to the new currency decimals (add and edit expense); save parses with the currency | formsSubmit.test.ts |
+| FRM-11 | Fixed | Installment count max 600 (`MAX_INSTALLMENT_COUNT`) and slice >= 0.01; double add guarded | payDebtSubmit.test.ts |
+| FRM-12 | Fixed | `Input` default `maxLength` 500 (override per site), expense description 120, add/edit expense save the trimmed description and refuse blank | AmountField.render.test.ts, formsSubmit.test.ts |
+| FRM-13 | Fixed | `UnifiedDatePicker` optional `min`/`max`; default span = year list (1970 to +50 years), out-of-range days disabled | UnifiedDatePicker.bounds.test.ts (bounds helper only; the disabled-day render is not DOM-tested) |
+| FUZ-4 | Fixed | `settleInstallmentAmount(amount, remaining, {count, completed})`: the last installment pays exactly the remainder; recurring handler and manual pay prefill pass the plan | installmentPlan.test.ts (6000 random plans incl. 360 installments: sum equals total to the cent), installmentPlanClears.test.ts (store end to end, 24 x 328,264.39 clears) |
+| FUZ-5 | Fixed | `installmentPaymentsCompleted` returns the full count once payments cover `startingBalance` | installmentSchedule.test.ts (10.01 over 3 = 3/3) |
+| FUZ-6 | Fixed (decision: refuse) | `restoreDebtPayment` / `restoreIncomeEvent` now return boolean; Undo is refused when the pocket cannot cover the re-take (no minted money, no negative balance). 4 call sites toast `moneyFlows.undoPocketSpent` (EN+AR) | undoStale.test.ts |
+
+Notes: shared files edited additively (`types.ts`, `en.ts`, `ar.ts`, `useFinanceStore.ts`). New: `useSubmitOnce`, `useTypedAmount`, `overpaysDebt.ts`. Reused: `reconcileTyped`, `AmountField`, `ModalShell`, `UnifiedDatePicker`, `Input`. Live double-click on the desktop fade variant (DOM reach of the exiting Save button) was not exercised; the inert fix removes it by construction.

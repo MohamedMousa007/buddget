@@ -18,6 +18,9 @@ import { isBnplPlan } from '@/lib/debt/bnpl'
 import { settlesWithoutExpense } from '@/lib/debts/debtDirection'
 import { parseCardDay, parseCardPercent } from '@/lib/debts/cardTerms'
 import { reconcileDebtSchedule } from '@/lib/debts/recurringDebtDueHandlers'
+import { MAX_INSTALLMENT_COUNT, settleInstallmentAmount } from '@/lib/debts/installmentPlan'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
+import { installmentPaymentsCompleted } from '@/lib/debts/installmentSchedule'
 import { clampDebtFiatToAllowed, clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { findInstallmentProviderMeta, findProviderBrand } from '@/lib/constants/installmentProviders'
 import type {
@@ -96,6 +99,7 @@ export function useAddDebtSheet() {
   const isEditFlow = activeModal === 'editDebt'
   const isOpen = activeModal === 'addDebt' || activeModal === 'payDebt' || activeModal === 'editDebt'
   const editingDebt = isEditFlow ? debts.find((d) => d.id === editingDebtId) : undefined
+  const submit = useSubmitOnce(isOpen)
   const currencyLocked = !!editingDebt && debtPayments.some((p) => p.debtId === editingDebt.id)
 
   const [payDebtStep, setPayDebtStep] = useState<'select' | 'form'>('select')
@@ -331,11 +335,17 @@ export function useAddDebtSheet() {
     if (payAmountPrefilled.current === selectedDebt.id) return
     payAmountPrefilled.current = selectedDebt.id
     const def = selectedDebt.debtType === 'installment' && selectedDebt.installmentAmount
-      ? Math.min(selectedDebt.installmentAmount, selectedRemaining)
+      ? settleInstallmentAmount(
+          selectedDebt.installmentAmount,
+          selectedRemaining,
+          selectedDebt.installmentCount
+            ? { count: selectedDebt.installmentCount, completed: installmentPaymentsCompleted(selectedDebt, debtPayments.filter((p) => p.debtId === selectedDebt.id)) }
+            : undefined,
+        )
       : selectedRemaining
     if (def > 0) setPaymentAmount(String(Math.round(def * 100) / 100))
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [isOpen, isPayDebtFlow, payDebtStep, debtSheetPaymentOnly, selectedDebt, selectedRemaining])
+  }, [isOpen, isPayDebtFlow, payDebtStep, debtSheetPaymentOnly, selectedDebt, selectedRemaining, debtPayments])
 
   // Every pay flow starts in the debt's own unit (grams for gold); a manual pick sticks for that debt.
   const currencyDefaultedFor = useRef(new Set<string>())
@@ -398,7 +408,7 @@ export function useAddDebtSheet() {
     if (debtType === 'personal') return !!(name.trim() && person.trim())
     if (debtType === 'installment') {
       const n = parseInt(installmentCount, 10)
-      const baseOk = !!(installmentItemName.trim() && !Number.isNaN(n) && n > 0 && installmentStartDate)
+      const baseOk = !!(installmentItemName.trim() && !Number.isNaN(n) && n > 0 && n <= MAX_INSTALLMENT_COUNT && total / n >= 0.01 && installmentStartDate)
       if (!baseOk) return false
       if (installmentProvider === 'credit_card' && !linkedCreditCardDebtId) return false
       return true
@@ -417,7 +427,7 @@ export function useAddDebtSheet() {
   ])
 
   const handleAddDebt = useCallback(() => {
-    if (!canSubmitNewDebt) return
+    if (!canSubmitNewDebt || !submit.claim()) return
     const total = parseFloat(startingBalance)
     if (debtType === 'credit_card') {
       const out = Number.isNaN(total) ? 0 : Math.max(0, total)
@@ -552,6 +562,7 @@ export function useAddDebtSheet() {
     goldKarat,
     showToast,
     tI18n,
+    submit,
   ])
 
   const handleAddPayment = useCallback(() => {
@@ -566,6 +577,7 @@ export function useAddDebtSheet() {
         : clampFiatToAllowed(settings, paymentCurrency as Currency)
 
     if (paymentScheduleMode === 'recurring') {
+      if (!submit.claim()) return
       const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
       addRecurringDebtPayment({
         debtId: selectedDebtId,
@@ -584,6 +596,7 @@ export function useAddDebtSheet() {
       return
     }
 
+    // Live payments, not the render's closure: an exiting sheet's handler still holds the pre-payment list.
     const computed = computeDebtPaymentRecord(
       selectedDebt,
       amount,
@@ -591,13 +604,14 @@ export function useAddDebtSheet() {
       settings.baseCurrency,
       exchangeRates,
       goldPricePerGram,
-      debtPayments,
+      useFinanceStore.getState().debtPayments,
       debtBalanceCtx
     )
     if (!computed.ok) {
       setPaymentRateError(computed.error)
       return
     }
+    if (!submit.claim()) return
     const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
     const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault && !m.closedAt)?.id || paymentMethods.find((m) => !m.closedAt)?.id || ''
     if (settlesWithoutExpense(selectedDebt)) {
@@ -657,7 +671,6 @@ export function useAddDebtSheet() {
     addRecurringDebtPayment,
     closeSheet,
     debtBalanceCtx,
-    debtPayments,
     exchangeRates,
     goldPricePerGram,
     paymentAmount,
@@ -674,6 +687,7 @@ export function useAddDebtSheet() {
     settings,
     showToast,
     tI18n,
+    submit,
   ])
 
   const applyDebtReceivedVia = useCallback(

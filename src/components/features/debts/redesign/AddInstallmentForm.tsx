@@ -116,7 +116,7 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
           value={providerLabel}
           icon={
             d.installmentProvider === 'credit_card' ? (
-              <span className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-cat-6)]/20 text-[11px] font-extrabold text-[var(--color-cat-6)]">CC</span>
+              <span className="flex h-7 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-cat-6)]/20 text-[0.6875rem] font-extrabold text-[var(--color-cat-6)]">CC</span>
             ) : d.installmentProviderName ? (
               <ProviderBadge slug={d.installmentProviderSlug} name={d.installmentProviderName} size={28} />
             ) : null
@@ -154,9 +154,9 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
         <div className="flex gap-2">
           <div className="min-w-0 flex-1">
             {mode === 'total' ? (
-              <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" placeholder="0" />
+              <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor={d.currency} aria-label={t.fTotalAmount} placeholder="0" />
             ) : (
-              <AmountField value={perStr} onChange={changePer} mode="decimal" placeholder="0" />
+              <AmountField value={perStr} onChange={changePer} mode="decimal" decimalsFor={d.currency} aria-label={t.fPerPayment} placeholder="0" />
             )}
           </div>
           <CurrencyField
@@ -167,7 +167,7 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
             className="h-[52px] w-24 shrink-0 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3"
           />
         </div>
-        {d.currencyLocked ? <p className="mt-2 px-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
+        {d.currencyLocked ? <p className="mt-2 px-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{dict.moneyFlows.debtLocked}</p> : null}
       </div>
 
       <div>
@@ -178,14 +178,14 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
       {mode === 'total' ? (
         <div>
           <div className={`${MICRO} mb-2`}>{t.fCount}</div>
-          <AmountField value={d.installmentCount} onChange={d.setInstallmentCount} mode="integer" placeholder="12" />
+          <AmountField value={d.installmentCount} onChange={d.setInstallmentCount} mode="integer" aria-label={t.fCount} placeholder="12" />
         </div>
       ) : (
         <div>
           <div className={`${MICRO} mb-2`}>{t.fPlanLength}</div>
           <div className="flex gap-2">
             <div className="min-w-0 flex-1">
-              <AmountField value={lengthStr} onChange={(v) => changeLength(v, unit, frequency)} mode="decimal" placeholder="12" />
+              <AmountField value={lengthStr} onChange={(v) => changeLength(v, unit, frequency)} mode="decimal" aria-label={t.fPlanLength} placeholder="12" />
             </div>
             <SegmentedControl<PlanLengthUnit> fill={false} options={unitOptions} value={unit} onChange={changeUnit} ariaLabel={t.fPlanLength} size="field" className="shrink-0" />
           </div>
@@ -198,8 +198,8 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
       </div>
 
       <div className="min-h-[68px] rounded-[14px] bg-[var(--color-brand-primary-soft)] px-4 py-3">
-        <p className="font-mono-numbers text-[15px] font-bold text-[var(--color-brand-primary-ink)]">{summary}</p>
-        <p className="mt-0.5 text-[12px] text-[var(--color-brand-text-muted)]">{t.fNoInterest}</p>
+        <p className="font-mono-numbers text-[0.9375rem] font-bold text-[var(--color-brand-primary-ink)]">{summary}</p>
+        <p className="mt-0.5 text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.fNoInterest}</p>
       </div>
     </div>
   )

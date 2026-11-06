@@ -127,7 +127,7 @@ export function AddDebtSheet() {
                 />
               ) : (
                 <div className="flex flex-col gap-2 pt-1">
-                  <p className="pb-1 text-[13px] text-[var(--color-brand-text-secondary)]">{tp.subtitle}</p>
+                  <p className="pb-1 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{tp.subtitle}</p>
                   {d.payableRows.map(({ debt: pd, remaining }) => {
                     const fam = debtFamily(pd)
                     const { Icon, color, label } = FAMILY_ROW[fam]
@@ -141,14 +141,14 @@ export function AddDebtSheet() {
                           <Icon className="size-5" aria-hidden />
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[15px] font-bold text-[var(--color-brand-text-primary)]">{pd.name || pd.person}</span>
-                          <span className="block truncate text-[12px] text-[var(--color-brand-text-secondary)]">
+                          <span className="block truncate text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{pd.name || pd.person}</span>
+                          <span className="block truncate text-[0.75rem] text-[var(--color-brand-text-secondary)]">
                             {label}{due ? ` · ${tp.dueOn(shortDate(due))}` : ''}
                           </span>
                         </span>
                         <span className="shrink-0 text-end">
-                          <span className="block font-mono-numbers text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{formatWhole(remaining)}</span>
-                          <span className="block text-[11px] text-[var(--color-brand-text-secondary)]">{pd.currency} {fam === 'credit_card' ? tp.owed : tp.left}</span>
+                          <span className="block font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{formatWhole(remaining)}</span>
+                          <span className="block text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{pd.currency} {fam === 'credit_card' ? tp.owed : tp.left}</span>
                         </span>
                         <ChevronRight className="h-5 w-5 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" />
                       </SelectableCard>

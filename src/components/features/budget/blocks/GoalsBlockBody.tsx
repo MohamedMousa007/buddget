@@ -77,10 +77,10 @@ export function GoalsBlockBody({ view, mode, onOpenLinked }: BlockBodyProps) {
 
           <div className="flex items-baseline gap-1.5 font-mono-numbers">
             <span className="text-[22px] leading-6 font-semibold text-[var(--color-brand-text-primary)]">{money(g.current)}</span>
-            {g.target != null ? <span className="text-[13px] text-[var(--color-brand-text-secondary)]">{t.goals.ofTarget(money(g.target))}</span> : null}
-            <span className="ms-auto text-[13px] font-semibold">
+            {g.target != null ? <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.goals.ofTarget(money(g.target))}</span> : null}
+            <span className="ms-auto text-[0.8125rem] font-semibold">
               {month ? (
-                <StatusLine tone="pri" icon={Clock} className="font-mono-numbers text-[13px] font-semibold">{t.goals.atClose(money(g.monthly), close)}</StatusLine>
+                <StatusLine tone="pri" icon={Clock} className="font-mono-numbers text-[0.8125rem] font-semibold">{t.goals.atClose(money(g.monthly), close)}</StatusLine>
               ) : (
                 <span className="text-[var(--color-brand-text-primary)]">{t.goals.perMonth(money(g.monthly))}</span>
               )}

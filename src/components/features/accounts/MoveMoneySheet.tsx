@@ -82,7 +82,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
           )}
           <div>
             <AmountField value={amount} onChange={setAmount} currency={cur} placeholder="0" />
-            <p className={`mt-2 min-h-[19px] text-[13px] ${v > free ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-secondary)]'}`}>{info}</p>
+            <p className={`mt-2 min-h-[19px] text-[0.8125rem] ${v > free ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-secondary)]'}`}>{info}</p>
           </div>
         </SheetBody>
         <SheetFooter>

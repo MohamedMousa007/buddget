@@ -57,8 +57,8 @@ export function SafetyBlockBody({ view, block, mode, onOpenLine, onAdd }: BlockB
               key={tick.months}
               className={
                 tick.isTarget
-                  ? 'absolute top-3.5 -translate-x-1/2 text-[10.5px] font-bold whitespace-nowrap text-[var(--color-brand-primary-ink)] rtl:translate-x-1/2'
-                  : 'absolute top-3.5 -translate-x-1/2 font-mono-numbers text-[10.5px] font-semibold text-[var(--color-brand-text-muted)] rtl:translate-x-1/2'
+                  ? 'absolute top-3.5 -translate-x-1/2 text-[0.65625rem] font-bold whitespace-nowrap text-[var(--color-brand-primary-ink)] rtl:translate-x-1/2'
+                  : 'absolute top-3.5 -translate-x-1/2 font-mono-numbers text-[0.65625rem] font-semibold text-[var(--color-brand-text-muted)] rtl:translate-x-1/2'
               }
               style={{ insetInlineStart: `${tick.left}%` }}
             >

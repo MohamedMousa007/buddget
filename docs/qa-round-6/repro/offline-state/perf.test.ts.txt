@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest'
+import { snapshot } from '@/lib/supabase/remote/snapshot'
+import { diffLists } from '@/lib/supabase/remote/diff'
+import { fingerprintOf, baselineFromFingerprint } from '@/components/sync/flushedFingerprint'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { computeMonthlyStatsShared } from '@/lib/utils/monthlyStatsShared'
+import type { Expense } from '@/lib/store/types'
+
+const N = 20000
+const mk = (i: number): Expense => ({
+  id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, date: `2026-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`,
+  description: `Synthetic expense number ${i} with a typical note`, category: 'Food', amount: (i % 997) + 0.5, currency: 'EGP', amountInBaseCurrency: (i % 997) + 0.5,
+  paymentMethodId: 'pm-1', isRecurring: false, createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+})
+const t = <T,>(f: () => T): [T, number] => { const s = performance.now(); const r = f(); return [r, performance.now() - s] }
+
+describe('20k-expense timings', () => {
+  it('measures', () => {
+    useFinanceStore.setState({ expenses: Array.from({ length: N }, (_, i) => mk(i)) })
+    const state = useFinanceStore.getState()
+    const [json, tStr] = t(() => JSON.stringify({ state, version: 22 }))
+    const [, tParse] = t(() => JSON.parse(json))
+    const [snap, tSnap] = t(() => snapshot(state))
+    const [, tDiffSame] = t(() => diffLists(snap.expenses, snap.expenses))
+    const copy = snap.expenses.map((e) => ({ ...e }))
+    const [, tDiffCopy] = t(() => diffLists(copy, snap.expenses))
+    const [fp, tFp] = t(() => fingerprintOf(snap))
+    const fpBytes = JSON.stringify(fp).length
+    const [, tBase] = t(() => baselineFromFingerprint(snap, fp))
+    const st = useFinanceStore.getState()
+    const input = { expenses: st.expenses, incomeSources: st.incomeSources, incomeEvents: st.incomeEvents, budgetCategories: st.budgetCategories, budgetPlans: st.budgetPlans, budgetPlanActivations: st.budgetPlanActivations, activeBudgetPlanId: st.activeBudgetPlanId, savingsHoldings: st.savingsHoldings, savingsAccounts: st.savingsAccounts, savingsTransactions: st.savingsTransactions, debts: st.debts, debtPayments: st.debtPayments, settings: st.settings, exchangeRates: st.exchangeRates, goldPricePerGram: st.goldPricePerGram, goldPriceAvailable: st.goldPriceAvailable, monthFilter: '2026-10', trustLocalFinance: true }
+    const [, tStats1] = t(() => computeMonthlyStatsShared(input as never))
+    const [, tStats2] = t(() => computeMonthlyStatsShared({ ...input, exchangeRates: { ...st.exchangeRates } } as never))
+    const out = { tStats1, tStatsAfterRateTickMs: Math.round(tStats2), storeBytes: json.length, tStringifyMs: Math.round(tStr), tParseMs: Math.round(tParse), tSnapshotMs: Math.round(tSnap), tDiffSameRefMs: Math.round(tDiffSame), tDiffCopyMs: Math.round(tDiffCopy), tFingerprintMs: Math.round(tFp), fingerprintBytes: fpBytes, tBaselineMs: Math.round(tBase) }
+    expect(out.tStringifyMs).toBeLessThan(100); expect(out.tParseMs).toBeLessThan(100); expect(out.tStats1).toBeLessThan(100); expect(out.tFingerprintMs).toBeLessThan(250)
+    expect(out.storeBytes, 'localStorage quota (~5 MB on iOS WKWebView)').toBeLessThan(5 * 1024 * 1024)
+  })
+})

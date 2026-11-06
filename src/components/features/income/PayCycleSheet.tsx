@@ -33,7 +33,7 @@ export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () =>
         </div>
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{c.question}</p>
+            <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.question}</p>
             <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{c.hint}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
@@ -43,7 +43,7 @@ export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () =>
           </div>
         </div>
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.current}</p>
+          <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]">{c.current}</p>
           <Progress value={pct} aria-label={c.current}>
             <ProgressTrack className="h-2.5"><ProgressIndicator className="bg-[var(--color-brand-primary)]" /></ProgressTrack>
           </Progress>
@@ -53,7 +53,7 @@ export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () =>
             <span>{fmt(cycle.end)}</span>
           </div>
         </div>
-        <p className="rounded-xl bg-[var(--color-brand-primary-soft)] p-3 text-[13px] leading-snug text-[var(--color-brand-primary-ink)]">{c.note}</p>
+        <p className="rounded-xl bg-[var(--color-brand-primary-soft)] p-3 text-[0.8125rem] leading-snug text-[var(--color-brand-primary-ink)]">{c.note}</p>
       </div>
     </ModalShell>
   )

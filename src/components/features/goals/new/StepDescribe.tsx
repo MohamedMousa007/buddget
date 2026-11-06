@@ -31,7 +31,7 @@ function Tile({ category, label, onPick }: { category: GoalCategory; label: stri
       >
         <Icon className="size-5" />
       </span>
-      <span className="text-center text-[11px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{label}</span>
+      <span className="text-center text-[0.6875rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{label}</span>
     </SelectableCard>
   )
 }
@@ -71,7 +71,7 @@ export function StepDescribe({
             if (text.trim()) onDescribe(text.trim())
           }}
         >
-          <p className="flex items-center gap-2 text-[13px] font-semibold text-[var(--color-brand-text-primary)]">
+          <p className="flex items-center gap-2 text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">
             <BuddgyIcon size={24} />
             {f.buddgyLine}
           </p>

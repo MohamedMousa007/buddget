@@ -148,7 +148,7 @@ export function useFlowLedger() {
           {sign}
           {formatFixed2(v)}
         </span>{' '}
-        <span className="text-[11px] text-[var(--color-brand-text-muted)]">{base}</span>
+        <span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{base}</span>
       </>
     )
     const ink = (text: string) => <span className="font-semibold text-[var(--color-brand-primary-ink)]">{text}</span>
@@ -347,7 +347,11 @@ export function useFlowLedger() {
               if (event) deleteIncomeEvent(event.id)
               else deleteIncomeSource(legacySourceId!)
               toast(t.moneyFlows.incomeDeleted, {
-                undo: () => (event ? restoreIncomeEvent(event) : legacy && restoreIncomeSource(legacy)),
+                undo: () => {
+                  if (event) {
+                    if (!restoreIncomeEvent(event)) toast(t.moneyFlows.undoPocketSpent)
+                  } else if (legacy) restoreIncomeSource(legacy)
+                },
                 undoLabel: t.common.undo,
               })
             },

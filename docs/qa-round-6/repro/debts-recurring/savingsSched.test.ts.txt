@@ -1,0 +1,30 @@
+import { describe, expect, it } from 'vitest'
+import { addDays, addMonths, format, getDaysInMonth } from 'date-fns'
+import { dueDatesThrough, recurringTxId } from '@/lib/savings/recurringDue'
+
+describe('recurring savings dueDatesThrough, 24 months, daily ticks', () => {
+  it.each([29, 30, 31, 5])('anchor %i: one post per month, clamped day, ids unique and stable across two devices', (anchor) => {
+    const run = () => {
+      let next = `2026-01-${String(anchor).padStart(2, '0')}`
+      const ids: string[] = []; const dues: string[] = []
+      for (let d = new Date(2026, 0, anchor); d < new Date(2028, 0, 1); d = addDays(d, 1)) {
+        const today = format(d, 'yyyy-MM-dd')
+        if (next > today) continue
+        const r = dueDatesThrough(next, today, anchor)
+        dues.push(r.due); ids.push(recurringTxId('rid', r.due)); next = r.next
+      }
+      return { dues, ids }
+    }
+    const a = run(); const b = run()
+    const want: string[] = []
+    for (let i = 0; i < 24; i++) { const m = new Date(2026, i, 1); want.push(format(new Date(m.getFullYear(), m.getMonth(), Math.min(anchor, getDaysInMonth(m))), 'yyyy-MM-dd')) }
+    expect(a.dues).toEqual(want)
+    expect(new Set(a.ids).size).toBe(24)
+    expect(b.ids).toEqual(a.ids)
+  })
+  it('3 missed months collapse into ONE post (2 deposits never made); device that missed and device that did not agree on id', () => {
+    const r = dueDatesThrough('2026-01-05', '2026-04-10', 5)
+    expect(r.due).toBe('2026-04-05')
+    expect(r.next).toBe('2026-05-05')
+  })
+})

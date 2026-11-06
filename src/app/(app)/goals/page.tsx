@@ -140,7 +140,7 @@ export default function GoalsPage() {
                 </div>
 
                 {view === 'paused' ? (
-                  <p className="text-[13px] text-[var(--color-brand-text-secondary)]">{t.home.pausedHelper}</p>
+                  <p className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.home.pausedHelper}</p>
                 ) : null}
 
                 {view === 'achieved' ? (

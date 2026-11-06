@@ -50,11 +50,11 @@ export function PaydayCard({ type, name, cadence, destination, destinationMissin
         <IncomeTypeIcon type={type} className="h-5 w-5" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">{name}</span>
-        <span className="text-[12.5px] text-[var(--color-brand-text-secondary)]">{cadence}</span>
+        <span className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{name}</span>
+        <span className="text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{cadence}</span>
         <span
           className={cn(
-            'text-[12.5px]',
+            'text-[0.78125rem]',
             destinationMissing ? 'font-semibold text-[var(--color-brand-primary-ink)]' : 'text-[var(--color-brand-text-secondary)]',
           )}
         >
@@ -62,7 +62,7 @@ export function PaydayCard({ type, name, cadence, destination, destinationMissin
         </span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-[5px]">
-        <span className="font-mono-numbers text-[14.5px] font-semibold text-[var(--color-brand-text-primary)]">{amount}</span>
+        <span className="font-mono-numbers text-[0.90625rem] font-semibold text-[var(--color-brand-text-primary)]">{amount}</span>
         <Badge variant={status.variant} size="xs">
           {status.label}
         </Badge>

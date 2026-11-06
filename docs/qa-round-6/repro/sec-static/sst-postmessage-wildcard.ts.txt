@@ -1,0 +1,5 @@
+declare const window: any
+// ruleid: sst-postmessage-wildcard
+window.parent.postMessage({ a: 1 }, '*')
+// ok: sst-postmessage-wildcard
+window.parent.postMessage({ a: 1 }, 'https://buddget.app')

@@ -1,0 +1,8 @@
+function A({ x }: { x: string }) {
+  // ruleid: sst-dangerously-set-inner-html
+  return <div dangerouslySetInnerHTML={{ __html: x }} />
+}
+function B() {
+  // ok: sst-dangerously-set-inner-html
+  return <style dangerouslySetInnerHTML={{ __html: "a{b:c}" }} />
+}

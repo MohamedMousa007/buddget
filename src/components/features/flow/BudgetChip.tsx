@@ -40,7 +40,7 @@ export function BudgetChip({ label, icon, status, selected, onToggle, ariaLabel 
       {label}
       <span className="flex flex-col items-center gap-0.5">
         <span
-          className="font-mono-numbers text-[11px] leading-none font-bold"
+          className="font-mono-numbers text-[0.6875rem] leading-none font-bold"
           style={{ color: over ? 'var(--color-brand-red)' : 'var(--color-brand-text-secondary)' }}
         >
           {status.kind === 'unassigned' ? '?' : `${Math.round(status.pct * 100)}%`}

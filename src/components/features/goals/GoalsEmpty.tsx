@@ -95,8 +95,8 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
                   <Icon className="size-[18px]" />
                 </span>
                 <span className="flex min-w-0 flex-col text-start">
-                  <span className="truncate text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{t.moments[key].title}</span>
-                  <span className="truncate text-[11px] text-[var(--color-brand-text-secondary)]">{t.moments[key].sub}</span>
+                  <span className="truncate text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{t.moments[key].title}</span>
+                  <span className="truncate text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{t.moments[key].sub}</span>
                 </span>
               </SelectableCard>
             )
@@ -111,7 +111,7 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
             [Activity, t.includePace],
             [Coins, t.includePocket],
           ].map(([Icon, line]) => (
-            <p key={line as string} className="flex items-center gap-2.5 text-[13px] text-[var(--color-brand-text-secondary)]">
+            <p key={line as string} className="flex items-center gap-2.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
               <Icon className="size-4 shrink-0 text-[var(--color-brand-primary-bright)]" aria-hidden />
               {line as string}
             </p>

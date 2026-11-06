@@ -5,7 +5,8 @@ import { createElement, useRef, useState } from 'react'
 import { MoreVertical, Plus, Check } from 'lucide-react'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { PAYMENT_TYPE_META, decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
-import { shade } from '@/lib/utils/color'
+import { shade, mix } from '@/lib/utils/color'
+import { cardFace } from '@/lib/ui/contrast'
 import type { PaymentMethod, PaymentMethodType } from '@/lib/store/types'
 import { IconButton } from '@/components/ui/IconButton'
 
@@ -13,7 +14,8 @@ export { shade }
 
 // ── card gradient helper (shared with the setup preview) ───────────────────
 export function cardGradient(color: string): string {
-  return `linear-gradient(140deg, ${shade(color, 1.18)} 0%, ${color} 48%, ${shade(color, 0.6)} 100%)`
+  const [light, mid, dark] = cardFace(color).stops
+  return `linear-gradient(140deg, ${shade(color, light)} 0%, ${mid === 1 ? color : shade(color, mid)} 48%, ${shade(color, dark)} 100%)`
 }
 
 export function TypeGlyph({ type, className }: { type: PaymentMethodType; className?: string }) {
@@ -145,6 +147,7 @@ export function PaymentCardCarousel({
           const { provider, tag } = decomposePaymentMethodName(m.name, m.last4)
           const tail = m.label?.trim() || (m.last4 ? `•• ${m.last4}` : tag || '—')
           const isSelected = selectedId != null && m.id === selectedId
+          const { ink } = cardFace(color)
           return (
             <div
               key={m.id}
@@ -155,6 +158,7 @@ export function PaymentCardCarousel({
               <div
                 className="relative flex h-full w-full flex-col rounded-[20px] p-4 px-[18px] text-start"
                 style={{
+                  color: ink,
                   background: cardGradient(color),
                   boxShadow: `0 18px 40px -14px ${shade(color, 0.5)}, inset 0 1px 0 rgba(255,255,255,.16)`,
                 }}
@@ -165,17 +169,17 @@ export function PaymentCardCarousel({
                 />
                 {m.isDefault && (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <span className="font-sans text-[32px] font-extrabold uppercase tracking-[0.2em] text-white/15">
+                    <span className="font-sans text-[32px] font-extrabold uppercase tracking-[0.2em] opacity-15">
                       {defaultLabel}
                     </span>
                   </div>
                 )}
                 <div className="relative flex items-start justify-between gap-2">
-                  <span className="flex h-8 w-[42px] shrink-0 items-center justify-center rounded-lg bg-white/20 p-[7px] text-white">
+                  <span className="flex h-8 w-[42px] shrink-0 items-center justify-center rounded-lg p-[7px]" style={{ background: mix(ink, 20) }}>
                     <TypeGlyph type={m.type} className="h-full w-full" />
                   </span>
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="truncate text-[9px] font-semibold uppercase tracking-[0.14em] text-white/80">
+                    <span className="truncate text-[0.5625rem] font-semibold uppercase tracking-[0.14em]">
                       {PAYMENT_TYPE_META[m.type].label}
                     </span>
                     {onMenu ? (
@@ -184,22 +188,22 @@ export function PaymentCardCarousel({
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); onMenu(m.id, e.currentTarget.getBoundingClientRect()) }}
                         aria-label={t.a11y.manage}
-                        className="-mr-1.5 -mt-0.5 text-white/90 hover:bg-white/15 hover:text-white"
+                        className="-mr-1.5 -mt-0.5 text-inherit hover:bg-[color-mix(in_oklab,currentColor_15%,transparent)] hover:text-inherit"
                       >
                         <MoreVertical />
                       </IconButton>
                     ) : isSelected ? (
-                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green)] text-white shadow-[0_2px_6px_rgba(0,0,0,.25)]">
+                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] shadow-[0_2px_6px_rgba(0,0,0,.25)]">
                         <Check className="h-[14px] w-[14px]" strokeWidth={3} />
                       </span>
                     ) : null}
                   </div>
                 </div>
                 <div className="relative mt-auto text-start">
-                  <div className="truncate text-[21px] font-bold tracking-[-0.01em] text-white">{provider}</div>
+                  <div className="truncate text-[21px] font-bold tracking-[-0.01em]">{provider}</div>
                   <div className="mt-2.5 flex items-end justify-between">
-                    <span className="font-mono-numbers text-sm font-semibold tracking-[0.14em] text-white/90">{tail}</span>
-                    <span className="font-mono-numbers text-xs font-bold text-white/80">{m.currency}</span>
+                    <span className="font-mono-numbers text-sm font-semibold tracking-[0.14em]">{tail}</span>
+                    <span className="font-mono-numbers text-xs font-bold">{m.currency}</span>
                   </div>
                 </div>
               </div>
@@ -238,7 +242,7 @@ export function PaymentCardCarousel({
           />
         ))}
       </div>
-      <div className="mt-3 text-center text-[12.5px] font-medium text-[var(--color-brand-text-muted)]">{hint}</div>
+      <div className="mt-3 text-center text-[0.78125rem] font-medium text-[var(--color-brand-text-muted)]">{hint}</div>
     </>
   )
 }

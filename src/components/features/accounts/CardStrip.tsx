@@ -18,7 +18,7 @@ export function CardStrip({ cards, onOpen, onAddCard }: CardStripProps) {
         <span className="flex h-11 w-[70px] items-center justify-center rounded-[9px] border-[1.5px] border-dashed border-[var(--color-brand-border-strong)] text-[var(--color-brand-primary-ink)]">
           <Plus className="size-4" aria-hidden />
         </span>
-        <span className="text-[12.5px] font-semibold text-[var(--color-brand-primary-ink)]">{t.addACard}</span>
+        <span className="text-[0.78125rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.addACard}</span>
       </button>
     )
   }

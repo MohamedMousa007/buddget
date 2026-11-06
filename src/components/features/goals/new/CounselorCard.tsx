@@ -50,7 +50,7 @@ export function CounselorCard({
     <section className="flex flex-col gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3.5" aria-live="polite">
       <div className="flex items-center gap-2">
         <BuddgyIcon size={24} />
-        <p className="min-w-0 flex-1 text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
+        <p className="min-w-0 flex-1 text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
         {!unknown ? (
           <Badge tone="card" size="sm" bordered={false}>
             {stretch ? t.zoneStretch : t.zoneComfortable}
@@ -76,7 +76,7 @@ export function CounselorCard({
           </span>
         ) : null}
       </div>
-      <p className="text-[13px] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
+      <p className="text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
       {stretch && (pace.altDate || pace.altTarget) && keptKey !== `${targetDate}|${pace.altDate}|${pace.altTarget}` ? (
         <div className="grid grid-cols-2 gap-2">
           <Button

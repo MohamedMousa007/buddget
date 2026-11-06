@@ -1,0 +1,6 @@
+rules:
+  - id: sst-postmessage-wildcard
+    languages: [typescript]
+    severity: WARNING
+    message: "postMessage with targetOrigin * delivers the payload to any embedding origin"
+    pattern: $W.postMessage($M, "*")

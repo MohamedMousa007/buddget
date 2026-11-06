@@ -1,0 +1,13 @@
+declare const service: any
+async function f(uid: string) {
+  // ruleid: sst-service-query-no-user-filter
+  await service.from('expenses').select('*')
+  // ruleid: sst-service-query-no-user-filter
+  await service.from('push_tokens').delete().in('token', ['a'])
+  // ok: sst-service-query-no-user-filter
+  await service.from('expenses').select('*').eq('user_id', uid)
+  // ok: sst-service-query-no-user-filter
+  await service.from('push_tokens').delete().eq('user_id', uid).eq('token', 'a')
+  // ok: sst-service-query-no-user-filter
+  await service.from('plans').select('*')
+}

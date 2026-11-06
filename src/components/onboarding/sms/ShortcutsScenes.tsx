@@ -28,7 +28,7 @@ function Phone({ children }: { children: ReactNode }) {
 }
 
 const Row = ({ label, value, chevron = true }: { label: string; value?: string; chevron?: boolean }) => (
-  <div className="flex min-h-11 items-center gap-2 px-3.5 text-[15px] text-[var(--color-brand-text-primary)]">
+  <div className="flex min-h-11 items-center gap-2 px-3.5 text-[0.9375rem] text-[var(--color-brand-text-primary)]">
     <span className="min-w-0 flex-1 truncate">{label}</span>
     {value ? <span className="text-[var(--color-brand-text-muted)]">{value}</span> : null}
     {chevron ? <ChevronRight className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden /> : null}
@@ -43,7 +43,7 @@ const Title = ({ children }: { children: ReactNode }) => <p className="mb-2.5 px
 
 /** Buddget's mark as Shortcuts shows it next to the action. */
 const BuddgetIcon = () => (
-  <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-brand-primary)] text-[14px] font-extrabold leading-none text-[var(--color-brand-on-primary)]" aria-hidden>B</span>
+  <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-brand-primary)] text-[0.875rem] font-extrabold leading-none text-[var(--color-brand-on-primary)]" aria-hidden>B</span>
 )
 
 type Captions = { senderAny: string; wholeMessage: string }
@@ -56,7 +56,7 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
         <Focus className="-mt-2.5"><span className="flex size-9 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]"><Plus className="size-5" aria-hidden /></span></Focus>
       </div>
       <div className="rounded-2xl bg-[var(--color-brand-elevated)] px-4 py-8 text-center text-sm text-[var(--color-brand-text-muted)]">New Automation</div>
-      <div className="mt-3 grid grid-cols-3 gap-1 border-t border-[var(--color-brand-border)] pt-2 text-center text-[10.5px] font-medium text-[var(--color-brand-text-muted)]">
+      <div className="mt-3 grid grid-cols-3 gap-1 border-t border-[var(--color-brand-border)] pt-2 text-center text-[0.65625rem] font-medium text-[var(--color-brand-text-muted)]">
         <span className="py-1.5">Shortcuts</span>
         <Focus className="py-1.5 font-bold text-[var(--color-brand-primary-ink)]">Automation</Focus>
         <span className="py-1.5">Gallery</span>
@@ -81,7 +81,7 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
       <Group>
         <Row label="Sender" value="Any" />
         <Focus className="rounded-none">
-          <div className="flex min-h-11 items-center gap-2 px-3.5 text-[15px]">
+          <div className="flex min-h-11 items-center gap-2 px-3.5 text-[0.9375rem]">
             <span className="flex-1 text-[var(--color-brand-text-primary)]">Message Contains</span>
             <span className="rounded-md bg-[var(--color-brand-primary-soft)] px-2 py-0.5 font-mono-numbers text-sm font-bold text-[var(--color-brand-primary-ink)]">EGP</span>
           </div>
@@ -96,7 +96,7 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
       <Group>
         <Row label="Run After Confirmation" chevron={false} />
         <Focus className="rounded-none">
-          <div className="flex min-h-11 items-center gap-2 px-3.5 text-[15px] font-semibold text-[var(--color-brand-text-primary)]">
+          <div className="flex min-h-11 items-center gap-2 px-3.5 text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
             <span className="flex-1">Run Immediately</span>
             <Check className="size-4 text-[var(--color-brand-primary-ink)]" aria-hidden />
           </div>
@@ -107,13 +107,13 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
   ),
   searchAction: () => (
     <Phone>
-      <div className="mb-2.5 flex items-center gap-2 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[15px] text-[var(--color-brand-text-primary)]">
+      <div className="mb-2.5 flex items-center gap-2 rounded-xl bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[0.9375rem] text-[var(--color-brand-text-primary)]">
         <Search className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />Catch
       </div>
       <Focus>
         <div className="flex min-h-12 items-center gap-3 rounded-xl bg-[var(--color-brand-elevated)] px-3">
           <BuddgetIcon />
-          <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">Catch Bank SMS</span>
+          <span className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">Catch Bank SMS</span>
         </div>
       </Focus>
     </Phone>
@@ -122,7 +122,7 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
     <Phone>
       <Group>
         <Row label="Receive messages as input" chevron={false} />
-        <div className="flex min-h-14 flex-wrap items-center gap-2 px-3.5 py-2 text-[15px] text-[var(--color-brand-text-primary)]">
+        <div className="flex min-h-14 flex-wrap items-center gap-2 px-3.5 py-2 text-[0.9375rem] text-[var(--color-brand-text-primary)]">
           <BuddgetIcon />
           <span>Catch</span>
           <Focus className="inline-block"><span className="rounded-md bg-[var(--color-brand-primary-soft)] px-2 py-0.5 font-semibold text-[var(--color-brand-primary-ink)]">Shortcut Input</span></Focus>

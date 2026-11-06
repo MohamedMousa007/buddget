@@ -1,4 +1,4 @@
-import { addWeeks, isWithinInterval, parseISO, startOfDay, subMilliseconds } from 'date-fns'
+import { isWithinInterval, parseISO, startOfDay, subMilliseconds } from 'date-fns'
 import type { Expense, Subscription } from '@/lib/store/types'
 import { advanceCycle, firstBillingOnOrAfter } from './subscriptionDates'
 
@@ -26,8 +26,7 @@ export function cycleWindow(
   const today = startOfDay(ref)
   const billingDay = sub.billingDay || start.getDate()
 
-  const step = (from: Date): Date =>
-    sub.billingCycle === 'weekly' ? addWeeks(from, 1) : advanceCycle(from, billingDay, sub.billingCycle)
+  const step = (from: Date): Date => advanceCycle(from, billingDay, sub.billingCycle)
 
   let current = sub.billingCycle === 'weekly' ? start : firstBillingOnOrAfter(start, billingDay)
   // Before the first charge: the cycle runs from the start date up to it, and is unpaid.

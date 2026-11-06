@@ -78,3 +78,23 @@ describe('mergeList clock skew (SYN7)', () => {
     expect(mergeList<Row>(local, server)[0].v).toBe('local stale')
   })
 })
+
+describe('mergeList with the delivered-edit set', () => {
+  it('a row with nothing undelivered takes the server copy even when offset noise makes its stamp look newer', () => {
+    const server = [{ id: 'a', updatedAt: '2026-07-01T00:00:00.000+00:00', v: 'server (paired by SMS)' }]
+    const local = [{ id: 'a', updatedAt: '2026-07-01T00:00:00.400Z', v: 'local' }]
+    expect(mergeList<Row>(local, server, new Set())[0].v).toBe('server (paired by SMS)')
+    expect(mergeList<Row>(local, server)[0].v).toBe('local')
+  })
+
+  it('an undelivered edit still competes: newer wins, older loses', () => {
+    const server = [{ id: 'a', updatedAt: '2026-07-01T00:00:00.000+00:00', v: 'server' }]
+    expect(mergeList<Row>([{ id: 'a', updatedAt: '2026-07-01T00:05:00Z', v: 'newer local' }], server, new Set(['a']))[0].v).toBe('newer local')
+    expect(mergeList<Row>([{ id: 'a', updatedAt: '2026-06-30T23:00:00Z', v: 'older local' }], server, new Set(['a']))[0].v).toBe('server')
+  })
+
+  it('a local edit the baseline never recorded (far newer) is kept', () => {
+    const server = [{ id: 'a', updatedAt: '2026-07-01T00:00:00.000+00:00', v: 'server' }]
+    expect(mergeList<Row>([{ id: 'a', updatedAt: '2026-07-01T00:10:00Z', v: 'unrecorded local' }], server, new Set())[0].v).toBe('unrecorded local')
+  })
+})

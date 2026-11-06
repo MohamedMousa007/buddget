@@ -31,6 +31,11 @@ export function weekdayColumns(weekStart: WeekStartDay): number[] {
 const PICKER_FIRST_YEAR = 1970
 const PICKER_YEARS_AHEAD = 50
 
+/** Earliest and latest ISO day the picker accepts: the same span as its year list. */
+export function pickerBounds(now: Date = new Date()): { min: string; max: string } {
+  return { min: `${PICKER_FIRST_YEAR}-01-01`, max: `${now.getFullYear() + PICKER_YEARS_AHEAD}-12-31` }
+}
+
 /** Year choices for the picker: 1970 through 50 years from now (20-year loans, retirement goals). */
 export function pickerYears(now: Date = new Date()): number[] {
   const last = now.getFullYear() + PICKER_YEARS_AHEAD

@@ -1,0 +1,7 @@
+export async function POST(request: Request) {
+  const body = await request.json()
+  // ruleid: sst-log-request-body
+  console.error('bad', body)
+  // ok: sst-log-request-body
+  console.error('bad')
+}

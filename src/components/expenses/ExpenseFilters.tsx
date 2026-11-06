@@ -23,6 +23,7 @@ import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { formatWhole } from '@/lib/utils/formatters'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { useDismissable } from '@/hooks/useDismissable'
+import { useTypedAmount } from '@/hooks/useTypedAmount'
 import { useT } from '@/lib/i18n'
 import type { IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
@@ -93,7 +94,7 @@ export function FilterSheet({ open, onClose, children, footer }: { open: boolean
 export function SectionHead({ icon: Icon, label, end }: { icon: LucideIcon; label: string; end?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
+      <span className="flex items-center gap-1.5 text-[0.6875rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
         <Icon className="size-3.5" strokeWidth={2} aria-hidden />
         {label}
       </span>
@@ -197,6 +198,30 @@ function PeriodControl() {
   )
 }
 
+/** One bound box: shows what is being typed ("2.") while it still means the stored bound. */
+function AmountBound({ label, value, onChange, currency }: { label: string; value: number; onChange: (v: number) => void; currency: string }) {
+  const [text, setText] = useTypedAmount(value, true)
+  return (
+    <label className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <span className="text-[0.625rem] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{label}</span>
+      <span className="flex h-12 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 focus-within:border-[var(--color-brand-focus)] focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]">
+        <AmountField
+          bare
+          className="min-w-0 flex-1 border-none bg-transparent text-start font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
+          value={text}
+          decimalsFor={currency}
+          aria-label={label}
+          onChange={(v) => {
+            setText(v)
+            onChange(+v || 0)
+          }}
+        />
+        <span className="text-xs text-[var(--color-brand-text-muted)]">{currency}</span>
+      </span>
+    </label>
+  )
+}
+
 /** Two-thumb slider (step 50) over Minimum / Maximum boxes; both write the same store. */
 function AmountRangeControl({ currency }: { currency: string }) {
   const t = useT()
@@ -204,18 +229,7 @@ function AmountRangeControl({ currency }: { currency: string }) {
     useShallow((s) => ({ amtMin: s.amtMin, amtMax: s.amtMax, setAmtMin: s.setAmtMin, setAmtMax: s.setAmtMax })),
   )
   const box = (label: string, value: number, onChange: (v: number) => void) => (
-    <label className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <span className="text-[10px] font-bold uppercase tracking-[0.05em] text-[var(--color-brand-text-muted)]">{label}</span>
-      <span className="flex h-12 items-center gap-1.5 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 focus-within:border-[var(--color-brand-focus)] focus-within:ring-2 focus-within:ring-[var(--color-brand-focus)]">
-        <AmountField
-          bare
-          className="min-w-0 flex-1 border-none bg-transparent text-start font-mono-numbers text-base font-bold text-[var(--color-brand-text-primary)] outline-none"
-          value={String(value)}
-          onChange={(v) => onChange(+v || 0)}
-        />
-        <span className="text-xs text-[var(--color-brand-text-muted)]">{currency}</span>
-      </span>
-    </label>
+    <AmountBound label={label} value={value} onChange={onChange} currency={currency} />
   )
   return (
     <>
@@ -264,7 +278,7 @@ function CheckCard({ selected, onClick, chip, chipStyle, label }: { selected: bo
             <Check className="size-2.5" strokeWidth={4} />
           </span>
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
+        <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{label}</span>
       </SelectableCard>
     </div>
   )
@@ -339,12 +353,12 @@ export function ExpenseFilters({
             icon={DollarSign}
             label={t.expenses.amountRange}
             end={
-              <span className="font-mono-numbers text-[13px] font-bold text-[var(--color-brand-primary-ink)]">
+              <span className="font-mono-numbers text-[0.8125rem] font-bold text-[var(--color-brand-primary-ink)]">
                 {formatWhole(amtMin)} – {formatWhole(amtMax)} {currency}
               </span>
             }
           />
-          <p className="-mt-1 text-[12.5px] text-[var(--color-brand-text-secondary)]">{t.filters.amountHelp}</p>
+          <p className="-mt-1 text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{t.filters.amountHelp}</p>
           <AmountRangeControl currency={currency} />
         </div>
         <Divider />

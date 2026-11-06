@@ -29,10 +29,10 @@ function DeletePanel({ deleteLabel, onDelete }: { deleteLabel: string; onDelete:
         type="button"
         aria-label={deleteLabel}
         onClick={() => { void tapHaptic(); onDelete() }}
-        className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-red)] text-white active:bg-[var(--color-brand-red-hover)]"
+        className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-red)] text-[var(--color-brand-on-red)] active:bg-[var(--color-brand-red-hover)]"
       >
         <Trash2 className="h-5 w-5" />
-        <span className="text-[10px] font-semibold">{deleteLabel}</span>
+        <span className="text-[0.625rem] font-semibold">{deleteLabel}</span>
       </button>
     </div>
   )
@@ -45,10 +45,10 @@ function AssignPanel({ action }: { action: RightAction }) {
         type="button"
         aria-label={action.label}
         onClick={() => { void tapHaptic(); action.onAction() }}
-        className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-green)] text-white active:opacity-90"
+        className="flex w-full flex-col items-center justify-center gap-0.5 bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] active:opacity-90"
       >
         {action.icon}
-        <span className="text-[10px] font-semibold">{action.label}</span>
+        <span className="text-[0.625rem] font-semibold">{action.label}</span>
       </button>
     </div>
   )

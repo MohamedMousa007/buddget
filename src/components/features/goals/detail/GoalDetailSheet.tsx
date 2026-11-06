@@ -186,7 +186,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
                     {info.nodes.map((n) => (
                       <div key={n.pct} className="text-center">
                         <p className={`font-mono-numbers text-xs font-semibold ${n.reached ? 'text-[var(--color-brand-primary-ink)]' : 'text-[var(--color-brand-text-secondary)]'}`}>{n.pct}%</p>
-                        <p className="font-mono-numbers text-[11px] text-[var(--color-brand-text-secondary)]">{short(n.date)}</p>
+                        <p className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{short(n.date)}</p>
                       </div>
                     ))}
                   </div>

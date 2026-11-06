@@ -1,0 +1,9 @@
+declare const service: any, schema: any
+export async function POST(request: Request) {
+  const body = await request.json()
+  // ruleid: sst-unvalidated-body-to-db
+  await service.from('t').insert(body)
+  const ok = schema.parse(await request.json())
+  // ok: sst-unvalidated-body-to-db
+  await service.from('t').insert(ok)
+}

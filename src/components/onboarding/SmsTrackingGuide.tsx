@@ -56,23 +56,23 @@ function Hero() {
       <div className="flex w-full items-start gap-3 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 shadow-[var(--shadow-md)]">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-brand-green)] text-[var(--color-brand-card)]" aria-hidden><MessageSquare className="size-[18px]" /></span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between"><span className="text-[13px] font-bold text-[var(--color-brand-text-primary)]">{g.heroBankName}</span><span className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroNow}</span></div>
-          <p className="mt-0.5 text-[13px] leading-snug text-[var(--color-brand-text-secondary)]">{g.heroSmsPre}<span className="font-mono-numbers text-[var(--color-brand-text-primary)]">{g.heroSmsAmount}</span>{g.heroSmsPost}</p>
+          <div className="flex items-baseline justify-between"><span className="text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{g.heroBankName}</span><span className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{g.heroNow}</span></div>
+          <p className="mt-0.5 text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{g.heroSmsPre}<span className="font-mono-numbers text-[var(--color-brand-text-primary)]">{g.heroSmsAmount}</span>{g.heroSmsPost}</p>
         </div>
       </div>
       <span className="my-2 h-7 w-0.5 rounded-full bg-[var(--color-brand-border-strong)]" aria-hidden />
       <div className="w-full rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-3.5 shadow-[var(--shadow-md)]">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.heroLoggedLabel}</span>
+          <span className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.heroLoggedLabel}</span>
           <Badge variant="positive" className="gap-1"><Check className="size-3" aria-hidden />{g.heroAutoLogged}</Badge>
         </div>
         <div className="flex items-center gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-brand-amber-soft)] text-[var(--color-brand-amber)]" aria-hidden><Coffee className="size-5" /></span>
-          <div className="min-w-0 flex-1"><p className="text-sm font-bold text-[var(--color-brand-text-primary)]">{g.heroMerchant}</p><p className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroCategory}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-sm font-bold text-[var(--color-brand-text-primary)]">{g.heroMerchant}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{g.heroCategory}</p></div>
           <div className="shrink-0 text-end">
             <span className="font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">{formatCurrency(45, 'EGP')}</span>
-            {base !== 'EGP' && <span className="block text-[10px] text-[var(--color-brand-text-muted)]">{formatCurrency(convertCurrency(45, 'EGP', base, exchangeRates), base)}</span>}
-            <p className="text-[11px] text-[var(--color-brand-text-muted)]">{g.heroMethod}</p>
+            {base !== 'EGP' && <span className="block text-[0.625rem] text-[var(--color-brand-text-muted)]">{formatCurrency(convertCurrency(45, 'EGP', base, exchangeRates), base)}</span>}
+            <p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{g.heroMethod}</p>
           </div>
         </div>
       </div>
@@ -84,7 +84,7 @@ const Highlight = ({ children, ar }: { children: ReactNode; ar?: boolean }) => (
   <span className={cn('rounded-[5px] bg-[var(--color-brand-primary-soft)] px-1.5 py-px font-extrabold text-[var(--color-brand-primary-ink)]', !ar && 'font-mono-numbers')}>{children}</span>
 )
 const Bubble = ({ rtl, children }: { rtl?: boolean; children: ReactNode }) => (
-  <div dir={rtl ? 'rtl' : 'ltr'} className={cn('max-w-[270px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--color-brand-text-primary)]', rtl ? 'self-end rounded-[16px_16px_4px_16px]' : 'self-start rounded-[16px_16px_16px_4px]')}>{children}</div>
+  <div dir={rtl ? 'rtl' : 'ltr'} className={cn('max-w-[270px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-primary)]', rtl ? 'self-end rounded-[16px_16px_4px_16px]' : 'self-start rounded-[16px_16px_16px_4px]')}>{children}</div>
 )
 
 function KeywordScreen({ onCopy }: { onCopy: (k: string) => void }) {
@@ -96,15 +96,15 @@ function KeywordScreen({ onCopy }: { onCopy: (k: string) => void }) {
     <div className="mx-auto flex w-full max-w-[330px] flex-col gap-4">
       <div>
         <h2 className="text-[19px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{g.kwHeaderTitle}</h2>
-        <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-brand-text-secondary)]">{g.kwHeaderBody}</p>
+        <p className="mt-1 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]">{g.kwHeaderBody}</p>
       </div>
       <div className="flex flex-col gap-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwSentLabel}</p>
+        <p className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwSentLabel}</p>
         <Bubble>{g.kwEnPre}<Highlight>{g.kwEnHl}</Highlight>{g.kwEnPost}</Bubble>
         <Bubble rtl>{g.kwArPre}<Highlight ar>{g.kwArHl}</Highlight>{g.kwArPost}</Bubble>
       </div>
       <div className="flex flex-col gap-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwCommonLabel}</p>
+        <p className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwCommonLabel}</p>
         <div className="flex flex-wrap gap-2">{KW_EN.map((k) => chip(k))}</div>
         <div className="flex flex-wrap gap-2" dir="rtl">{KW_AR.map((k) => chip(k, true))}</div>
       </div>
@@ -117,7 +117,7 @@ function DoneScene() {
   return (
     <div className="flex flex-col items-center gap-3">
       <span className="flex size-[72px] items-center justify-center rounded-full bg-[var(--color-brand-green)] text-[var(--color-brand-card)] shadow-[var(--shadow-md)]"><Check className="size-9" strokeWidth={3} aria-hidden /></span>
-      <Badge variant="positive" className="px-3 py-1 text-[13px]">{g.automationActive}</Badge>
+      <Badge variant="positive" className="px-3 py-1 text-[0.8125rem]">{g.automationActive}</Badge>
     </div>
   )
 }
@@ -172,12 +172,12 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
           <section className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4" aria-label={g.setupTitle}>
             <div className="flex items-center gap-2 pe-12">
               <IconButton onClick={() => (index === 0 ? setPhase('intro') : setIndex((i) => i - 1))} aria-label={g.ariaBack} variant="outlined" size="sm" shape="round"><ChevronLeft /></IconButton>
-              <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.setupTitle}</span>
+              <span className="text-[0.9375rem] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.setupTitle}</span>
             </div>
             <div className="mt-3 flex gap-1" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={index + 1} aria-label={g.stepOf(index + 1, total)}>
               {STEPS.map((_, i) => <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors', i <= index ? 'bg-[var(--color-brand-primary)]' : 'bg-[var(--color-brand-sunken)]')} />)}
             </div>
-            <p className="mt-2 text-[11px] font-semibold tabular-nums text-[var(--color-brand-text-muted)]">{g.stepOf(index + 1, total)}</p>
+            <p className="mt-2 text-[0.6875rem] font-semibold tabular-nums text-[var(--color-brand-text-muted)]">{g.stepOf(index + 1, total)}</p>
 
             <div className="flex min-h-0 flex-1 items-center justify-center py-3" key={index}>
               {cur.keyword ? <KeywordScreen onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} />}
@@ -185,8 +185,8 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
 
             {!cur.keyword ? (
               <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
-                <p className="text-[15px] font-bold text-[var(--color-brand-text-primary)]">{copy.title}</p>
-                <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-brand-text-secondary)]"><Emphasis text={copy.desc} /></p>
+                <p className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{copy.title}</p>
+                <p className="mt-1 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]"><Emphasis text={copy.desc} /></p>
               </div>
             ) : null}
 
@@ -207,7 +207,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
         )}
 
         {copied ? (
-          <div role="status" className="absolute bottom-24 start-1/2 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-[var(--color-brand-text-primary)] px-4 py-2.5 text-[12.5px] font-semibold text-[var(--color-brand-card)] shadow-[var(--shadow-md)]">
+          <div role="status" className="absolute bottom-24 start-1/2 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-[var(--color-brand-text-primary)] px-4 py-2.5 text-[0.78125rem] font-semibold text-[var(--color-brand-card)] shadow-[var(--shadow-md)]">
             <Check className="size-3.5 text-[var(--color-brand-green)]" strokeWidth={3} aria-hidden />{g.copied(copied)}
           </div>
         ) : null}

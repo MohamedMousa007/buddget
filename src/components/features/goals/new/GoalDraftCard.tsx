@@ -52,14 +52,14 @@ export function GoalDraftCard({
       </div>
       <p className="flex h-6 items-baseline gap-1.5 font-mono-numbers leading-6">
         <span className="text-[26px] font-semibold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{money(saved)}</span>
-        <span className="text-[13px] text-[var(--color-brand-text-secondary)]">
+        <span className="text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
           {target > 0 ? t.chat.ofTarget(money(target)) : t.chat.amountMissing}
         </span>
       </p>
       <CheckpointBar percent={percent} />
       <div className="-mx-4 flex h-12 items-center gap-2 border-t border-[var(--color-brand-border)] px-4">
         <StatusIcon className={`size-4 shrink-0 ${stretch ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-primary-ink)]'}`} aria-hidden />
-        <span className="truncate text-[13px] font-medium text-[var(--color-brand-text-secondary)]">
+        <span className="truncate text-[0.8125rem] font-medium text-[var(--color-brand-text-secondary)]">
           {ready && pace ? `${t.chat.paceLine(money(pace.asked), quarterly)} · ${stretch ? t.counselor.zoneStretch : t.counselor.zoneComfortable}` : t.chat.amountMissing}
         </span>
       </div>

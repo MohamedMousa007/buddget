@@ -65,7 +65,7 @@ export function StepGoals({ chrome }: { chrome: StepChrome }) {
               <span className={cn('flex size-[38px] items-center justify-center rounded-xl', on ? 'bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]' : 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]')}>
                 <Icon className="size-5" aria-hidden />
               </span>
-              <span className="text-start text-[14.5px] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{c.goals.options[id]}</span>
+              <span className="text-start text-[0.90625rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{c.goals.options[id]}</span>
               {on ? (
                 <span className="absolute end-2.5 top-2.5 flex size-[22px] items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]">
                   <Check className="size-3.5" strokeWidth={3} aria-hidden />
@@ -76,7 +76,7 @@ export function StepGoals({ chrome }: { chrome: StepChrome }) {
         })}
       </div>
 
-      <p className="mt-3.5 flex items-start gap-2 text-[12.5px] leading-snug text-[var(--color-brand-text-muted)]">
+      <p className="mt-3.5 flex items-start gap-2 text-[0.78125rem] leading-snug text-[var(--color-brand-text-muted)]">
         <Info className="mt-px size-4 shrink-0" aria-hidden />
         {c.goals.why}
       </p>

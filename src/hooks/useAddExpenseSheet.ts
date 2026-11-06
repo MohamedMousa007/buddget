@@ -15,7 +15,9 @@ import { matchPaymentMethodForExpense } from '@/lib/modals/matchPaymentMethodFor
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
-import { bnplSplitIssue } from '@/lib/debts/bnplSplit'
+import { bnplPlanDebt, bnplSplitIssue } from '@/lib/debts/bnplSplit'
+import { useSubmitOnce } from '@/hooks/useSubmitOnce'
+import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
 
 /** Default BNPL first-installment due: same day next month. */
 function firstOfNextMonth(): string {
@@ -51,6 +53,7 @@ export function useAddExpenseSheet() {
   const { activeModal, setActiveModal, expensePrefill, setExpensePrefill } = useSettingsStore()
   const isOpen = activeModal === 'addExpense'
   const { categoryChipOptions, defaultCategory } = usePlanCategories()
+  const submit = useSubmitOnce(isOpen)
 
   const [date, setDate] = useState(localTodayISO())
   const [description, setDescription] = useState('')
@@ -93,10 +96,12 @@ export function useAddExpenseSheet() {
       skipNextDefaultCurrencySync.current = true
       if (expensePrefill.date) setDate(expensePrefill.date)
       if (expensePrefill.description) setDescription(expensePrefill.description)
-      if (expensePrefill.amount) setAmount(expensePrefill.amount)
-      if (expensePrefill.currency && FIAT_CURRENCIES.includes(expensePrefill.currency as Currency)) {
-        setCurrency(expensePrefill.currency as Currency)
-      }
+      const prefillFiat = expensePrefill.currency && FIAT_CURRENCIES.includes(expensePrefill.currency as Currency)
+        ? (expensePrefill.currency as Currency)
+        : undefined
+      const prefillAmount = parseLocalizedAmount(expensePrefill.amount ?? '', prefillFiat ?? settings.baseCurrency)
+      if (prefillAmount > 0) setAmount(String(prefillAmount))
+      if (prefillFiat) setCurrency(prefillFiat)
       if (expensePrefill.category) {
         setCategory(expensePrefill.category)
       }
@@ -139,6 +144,12 @@ export function useAddExpenseSheet() {
     setFundingMethodId(nonBnplDefaultId(paymentMethods))
   }, [paymentMethods, settings.baseCurrency, defaultCategory])
 
+  // A 3-decimal amount (KWD 1.234) must not outlive a switch to a 2-decimal currency.
+  const changeCurrency = useCallback((next: Currency) => {
+    setCurrency(next)
+    setAmount((a) => canonicalAmount(a, currencyDecimals(next)))
+  }, [])
+
   const handleClose = useCallback(() => {
     setSubmitError('')
     resetForm()
@@ -147,11 +158,13 @@ export function useAddExpenseSheet() {
   }, [resetForm, setActiveModal, setExpensePrefill])
 
   const handleSubmit = useCallback(() => {
-    if (!description || !amount || parseFloat(amount) <= 0) return
-    if (splitError) return
-    const parsedAmount = parseFloat(amount)
-    setSubmitError('')
     const cur = expensePrefill?.currency === currency ? currency : clampFiatToAllowed(settings, currency)
+    const parsedAmount = parseLocalizedAmount(amount, cur)
+    const title = description.trim()
+    if (!title || !(parsedAmount > 0)) return
+    if (splitError) return
+    if (!submit.claim()) return
+    setSubmitError('')
     // BNPL purchase split into a plan: an `installment` debt (remaining =
     // purchase − settlements) + a recurring template that drives the reminders.
     // The purchase counts as spend once; installment settlements are non-spend
@@ -167,24 +180,9 @@ export function useAddExpenseSheet() {
       const perInstallment = Math.round((parsedAmount / installmentCount) * 100) / 100
       const nm = selPm.name.toLowerCase()
       const provider = nm.includes('tabby') ? 'tabby' : nm.includes('tamara') ? 'tamara' : 'other'
-      const debtId = addDebt({
-        name: description,
-        person: '',
-        startingBalance: parsedAmount,
-        currency: cur,
-        isGold: false,
-        receivedVia: 'card',
-        debtType: 'installment',
-        direction: 'i_owe',
-        status: 'active',
-        installmentProvider: provider,
-        installmentCount,
-        installmentFrequency: 'monthly',
-        installmentAmount: perInstallment,
-        startDate: date,
-        interestFree: true,
-        linkedPaymentMethodId: paymentMethodId,
-      })
+      const debtId = addDebt(
+        bnplPlanDebt({ title, total: parsedAmount, currency: cur, provider, count: installmentCount, perInstallment, firstDue: installmentFirstDue, paymentMethodId }),
+      )
       addRecurringDebtPayment({
         debtId,
         amount: perInstallment,
@@ -200,7 +198,7 @@ export function useAddExpenseSheet() {
 
     addExpense({
       date,
-      description,
+      description: title,
       category,
       subcategory,
       amount: parsedAmount,
@@ -242,6 +240,7 @@ export function useAddExpenseSheet() {
     installmentCount,
     installmentFirstDue,
     fundingMethodId,
+    submit,
   ])
 
   return {
@@ -254,7 +253,7 @@ export function useAddExpenseSheet() {
     amount,
     setAmount,
     currency,
-    setCurrency,
+    setCurrency: changeCurrency,
     category,
     setCategory,
     subcategory,

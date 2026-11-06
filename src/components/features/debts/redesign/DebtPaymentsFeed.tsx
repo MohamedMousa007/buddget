@@ -176,9 +176,9 @@ export function DebtPaymentsFeed({
         {groups.map((g, gi) => (
           <div key={g.key}>
             <div className={`flex items-baseline justify-between px-[18px] pb-2 lg:px-0 ${gi === 0 ? 'pt-1' : 'pt-5'}`}>
-              <span className="text-[15px] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.label}</span>
+              <span className="text-[0.9375rem] font-bold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{g.label}</span>
               {g.total !== 0 ? (
-                <span className="font-mono-numbers text-[11px] font-medium tabular-nums text-[var(--color-brand-text-muted)]">−{fmtWhole(-g.total)}</span>
+                <span className="font-mono-numbers text-[0.6875rem] font-medium tabular-nums text-[var(--color-brand-text-muted)]">−{fmtWhole(-g.total)}</span>
               ) : null}
             </div>
             <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)] lg:overflow-hidden lg:rounded-2xl lg:border-x">

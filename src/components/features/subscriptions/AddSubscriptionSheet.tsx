@@ -39,7 +39,7 @@ function Inner({
     form.step === 2 ? (
       <>
         {!draft.trial ? (
-          <div className="flex justify-between gap-2 text-[13px]">
+          <div className="flex justify-between gap-2 text-[0.8125rem]">
             <span className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">
               {ui.add.impact(formatWhole(form.impact.monthly), currencyLabel(form.base, locale))}
             </span>

@@ -82,7 +82,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
       >
         <CurrencyBadge code={code} selected={selected} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{nameOf(code)}</span>
+          <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{nameOf(code)}</span>
           {hasCurrencySign(code) ? <span className="font-mono-numbers block text-xs font-medium text-[var(--color-brand-text-muted)]">{code}</span> : null}
         </span>
         {selected ? <Check className="size-5 shrink-0 text-[var(--color-brand-primary-ink)]" aria-hidden /> : null}
@@ -90,7 +90,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
     )
   }
 
-  const caption = 'px-1 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]'
+  const caption = 'px-1 pb-1 pt-3 text-[0.6875rem] font-semibold uppercase tracking-wider text-[var(--color-brand-text-muted)]'
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -138,7 +138,7 @@ export function CurrencyList({ value, onSelect, base, includeGold = false, codes
                     )}
                   >
                     <CurrencyBadge code={code} selected={selected} className="h-5 w-auto text-lg" />
-                    <span className="font-mono-numbers text-[10px] font-semibold text-[var(--color-brand-text-muted)]">{code}</span>
+                    <span className="font-mono-numbers text-[0.625rem] font-semibold text-[var(--color-brand-text-muted)]">{code}</span>
                   </button>
                 )
               })}

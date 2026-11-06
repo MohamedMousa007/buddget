@@ -6,9 +6,9 @@ import { logoAllowed } from '@/lib/constants/logoPolicy'
 import { cn } from '@/lib/utils'
 
 const SIZES = {
-  40: { box: 'size-10 rounded-xl', pad: 'p-[5px]', text: 'text-[13px]' },
+  40: { box: 'size-10 rounded-xl', pad: 'p-[5px]', text: 'text-[0.8125rem]' },
   44: { box: 'size-11 rounded-xl', pad: 'p-1.5', text: 'text-sm' },
-  48: { box: 'size-12 rounded-[14px]', pad: 'p-1.5', text: 'text-[15px]' },
+  48: { box: 'size-12 rounded-[14px]', pad: 'p-1.5', text: 'text-[0.9375rem]' },
   56: { box: 'size-14 rounded-2xl', pad: 'p-[7px]', text: 'text-base' },
 } as const
 

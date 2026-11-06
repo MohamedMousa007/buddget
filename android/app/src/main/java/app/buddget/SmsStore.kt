@@ -57,6 +57,9 @@ object SmsStore {
         return false
     }
 
+    fun isDebuggable(context: Context): Boolean =
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
     /** True when the secure store was recreated empty: the app must re-save the ingest token on next open. */
     fun needsResync(context: Context): Boolean =
         context.applicationContext.getSharedPreferences(META, Context.MODE_PRIVATE).getBoolean(NEEDS_RESYNC, false)

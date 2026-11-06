@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest'
+import { flushDiff } from '@/lib/supabase/remote/sync'
+import { emptySnapshot } from '@/lib/supabase/remote/snapshot'
+import { weekendFirstDayFor } from '@/lib/time/weekStart'
+import { paydayDatesForWindow, toISODate, DEFAULT_WEEKEND_FIRST_DAY } from '@/lib/utils/paydaySchedule'
+import { useWeekendFirstDay } from '@/hooks/useWeekStart'
+import type { Expense, IncomeSource } from '@/lib/store/types'
+
+describe('REG-1: an offline-created row is pushed with its (old) edit time as updated_at', () => {
+  it('insert row carries updated_at = creation time 3h ago; real DB keeps it on INSERT (probe A), so delta pulls past that time never return it', async () => {
+    const created = new Date(Date.now() - 3 * 3600_000).toISOString()
+    const e: Expense = { id: 'e1', date: '2026-11-05', description: 'x', category: 'Food', amount: 5, currency: 'EGP', amountInBaseCurrency: 5, paymentMethodId: '', isRecurring: false, createdAt: created, updatedAt: created }
+    const seen: Array<Record<string, unknown>> = []
+    const client = { from: () => ({ upsert: (b: Array<Record<string, unknown>>) => { seen.push(...b); return Promise.resolve({ error: null, count: b.length }) }, update: () => ({ in: () => Promise.resolve({ error: null }) }) }) }
+    await flushDiff(client as never, 'u1', emptySnapshot(), { ...emptySnapshot(), expenses: [e] })
+    const row = seen.find((r) => r.id === 'e1')!
+    const ageMs = Date.now() - Date.parse(String(row.updated_at))
+    expect(ageMs).toBeGreaterThan(2.9 * 3600_000) // would be ~0 if the server stamped now()
+    // another device pulled 1h ago: its next sync_pull window is cursor - 2min; this row is older than that
+    const otherCursor = Date.now() - 3600_000
+    expect(Date.parse(String(row.updated_at))).toBeLessThan(otherCursor - 120_000)
+  })
+})
+
+describe('REG-2: weekend rule differs between server fallback and the device for users with no stored timezone/week start', () => {
+  it('client (device zone Cairo) -> Fri+Sat weekend; matchSalary fallback timezone UTC -> Sat+Sun weekend', () => {
+    const client = weekendFirstDayFor({ weekStartDay: undefined, timezone: undefined }) // deviceTimeZone() fallback
+    const server = weekendFirstDayFor({ weekStartDay: undefined, timezone: 'UTC' })       // what matchSalary passes
+    const src = { id: 's', name: 'Salary', amount: 1000, currency: 'EGP', isRecurring: true, frequency: 'monthly', dayOfMonth: 6, paydayDays: [6], effectiveStart: '2026-01-01' } as unknown as IncomeSource
+    const start = new Date(2026, 10, 1); const end = new Date(2026, 10, 30) // 6 Nov 2026 is a Friday
+    const a = paydayDatesForWindow(src, start, end, true, client).map(toISODate)
+    const b = paydayDatesForWindow(src, start, end, true, server).map(toISODate)
+    console.log('TZ', process.env.TZ, 'client', client, a, 'server', server, b)
+    expect(DEFAULT_WEEKEND_FIRST_DAY).toBe(6)
+    if (process.env.TZ === 'Africa/Cairo') { expect(client).toBe(5); expect(server).toBe(6); expect(a).not.toEqual(b) }
+    void useWeekendFirstDay
+  })
+})

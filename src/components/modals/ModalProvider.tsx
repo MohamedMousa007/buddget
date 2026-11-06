@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useT } from '@/lib/i18n'
 import { useRequireAuthAction } from '@/hooks/useRequireAuthAction'
 import { useRecurringSavingsScheduler } from '@/hooks/useRecurringSavingsScheduler'
+import { useLogDueSubscriptions } from '@/hooks/useLogDueSubscriptions'
 import { useActionToast } from '@/components/ui/ActionToast'
 
 // While a chunk loads nothing renders (sheets mount closed); if it cannot load (offline, never cached) tell the user.
@@ -71,6 +72,7 @@ export function ModalProvider() {
   const t = useT()
   const requireAuth = useRequireAuthAction()
   useRecurringSavingsScheduler()
+  useLogDueSubscriptions()
   usePrefetchSheets()
 
   return (

@@ -24,6 +24,7 @@ type Household = NonNullable<UserProfile['household']>
 export function HouseholdRentSheet() {
   const profile = useFinanceStore((s) => s.profile)
   const updateProfile = useFinanceStore((s) => s.updateProfile)
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const { activeModal, setActiveModal } = useSettingsStore()
   const t = useT()
   const isOpen = activeModal === 'householdRent'
@@ -105,6 +106,8 @@ export function HouseholdRentSheet() {
           <AmountField
             value={rent}
             onChange={setRent}
+            decimalsFor={baseCurrency}
+            aria-label={t.onboarding.householdLabelRent}
             placeholder={t.onboarding.householdRentPlaceholder}
             className="mt-1 flex h-8 items-center rounded-xl bg-[var(--color-brand-elevated)] border border-[var(--color-brand-border)] px-2.5 text-base text-[var(--color-brand-text-primary)]"
           />

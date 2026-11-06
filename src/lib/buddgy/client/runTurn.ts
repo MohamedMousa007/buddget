@@ -102,7 +102,7 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext, limit = MA
       if (entry.read) {
         const raw = entry.read(call.args, ctx)
         const hide = isMasked(useFinanceStore.getState().settings.privacy, 'buddgy')
-        results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw) : raw, limit) })
+        results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw, true) : raw, limit) })
         reads.push({ tool: call.name, label: readLabel(call.name, ctx.locale) })
         needsModel = true
       } else if (entry.nav && (hasNavConsent() || !entry.write)) {

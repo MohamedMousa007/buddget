@@ -124,7 +124,7 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
             style={{ left: `${pos(i)}%` }}
           >
             <span
-              className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[9px] leading-none"
+              className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[0.5625rem] leading-none"
               style={{ [above ? 'bottom' : 'top']: 'calc(50% + 13px)', color: st.text, opacity: selected ? 1 : 0.82, fontWeight: selected ? 600 : 500 }}
               dir="ltr"
             >
@@ -143,7 +143,7 @@ export function PaydayTimeline({ occurrences, dateLabel, amountLabel, statusBrac
             </span>
             {showAmount && amountLabel ? (
               <span
-                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[9px] leading-none text-white/55"
+                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-mono-numbers text-[0.5625rem] leading-none text-white/55"
                 style={{ top: 'calc(50% + 13px)' }}
                 dir="ltr"
               >

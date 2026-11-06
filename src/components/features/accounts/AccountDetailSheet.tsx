@@ -97,7 +97,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             <div className="px-5">
               <div className="flex items-end justify-between gap-3">
                 <div>
-                  <p className="text-[13px] font-semibold text-[var(--color-brand-text-secondary)]">{t.balance}</p>
+                  <p className="text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{t.balance}</p>
                   <p className="font-mono-numbers text-[36px] font-semibold leading-[1.05] tracking-[-0.04em] text-[var(--color-brand-text-primary)]">{fmt(balance.balance)}</p>
                 </div>
                 {balance.balance < 0 ? <Badge variant="warning">{t.overdrawn}</Badge> : null}
@@ -107,7 +107,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
                   <div className="mt-3.5 flex h-1.5 overflow-hidden rounded-full bg-[var(--color-brand-sunken)]" aria-hidden>
                     <span className="h-full bg-[var(--color-brand-primary)]" style={{ width: `${100 - heldPct}%` }} />
                   </div>
-                  <div className="mt-2 flex justify-between text-[13px]">
+                  <div className="mt-2 flex justify-between text-[0.8125rem]">
                     <span><b className="font-mono-numbers">{fmt(balance.free)}</b> <span className="text-[var(--color-brand-text-secondary)]">{t.freeToSpend}</span></span>
                     <span><b className="font-mono-numbers">{fmt(balance.held)}</b> <span className="text-[var(--color-brand-text-secondary)]">{t.setAsideLabel}</span></span>
                   </div>
@@ -121,7 +121,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={onUpdate}><RefreshCw aria-hidden />{t.update}</Button>
           </div>
           <div>
-            <p className="mb-1 px-5 text-[13px] font-bold text-[var(--color-brand-text-secondary)]">{card ? t.spentWith(accountTitle(card)) : t.recent}</p>
+            <p className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{card ? t.spentWith(accountTitle(card)) : t.recent}</p>
             {activity.length === 0 ? (
               <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{t.noActivity}</p>
             ) : activity.map((e) => (

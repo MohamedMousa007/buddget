@@ -156,7 +156,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
               <>
                 <AlertDialog.Title className="text-lg font-bold">{opts.title}</AlertDialog.Title>
                 {opts.body ? (
-                  <AlertDialog.Description className="mt-1.5 whitespace-pre-line text-[13.5px] leading-[1.45] text-[var(--color-brand-text-secondary)]">
+                  <AlertDialog.Description className="mt-1.5 whitespace-pre-line text-[0.84375rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">
                     {opts.body}
                   </AlertDialog.Description>
                 ) : null}

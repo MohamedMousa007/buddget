@@ -44,8 +44,8 @@ export function DebtsEmptyFamilies({ title, description, onAdd }: DebtsEmptyFami
               <Icon className="size-5" strokeWidth={1.8} aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{name}</span>
-              <span className="block text-[13px] leading-snug text-[var(--color-brand-text-secondary)]">{line}</span>
+              <span className="block text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{name}</span>
+              <span className="block text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{line}</span>
             </span>
             <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)] rtl:rotate-180" aria-hidden />
           </button>

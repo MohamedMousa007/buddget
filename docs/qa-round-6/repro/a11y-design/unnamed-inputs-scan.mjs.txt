@@ -1,0 +1,16 @@
+import {readFileSync} from 'node:fs'
+import {execSync} from 'node:child_process'
+const files=execSync("grep -rlE '<(input|Input|textarea|Textarea|AmountField|AmountTextInput|select)\\b' src/components src/app --include='*.tsx'").toString().trim().split('\n').filter(f=>!/\.test\.|\/admin|\/site\/|features\/admin|\(site-|ui\/input|ui\/textarea|ui\/AmountField|useNumberPad/.test(f))
+const out=[];let total=0
+for(const f of files){const s=readFileSync(f,'utf8')
+ const re=/<(input|Input|textarea|Textarea|AmountField|AmountTextInput|select)\b((?:[^>{]|\{[^}]*(?:\{[^}]*(?:\{[^}]*\}[^}]*)*\}[^}]*)*\})*?)\/?>/g;let m
+ while((m=re.exec(s))){const a=m[2];if(/type=["'](hidden|checkbox|radio|file)/.test(a))continue
+  total++
+  if(/aria-label|aria-labelledby|\blabel=|\{\.\.\.[a-zA-Z]+\}|aria-hidden/.test(a))continue
+  const before=s.slice(0,m.index);const lo=before.lastIndexOf('<label'),lc=before.lastIndexOf('</label>')
+  if(lo>lc)continue
+  if(/<Label\b/.test(before.slice(-400))&&!/<\/Label>/.test(before.slice(-400).split(/<Label\b/).pop()))continue
+  const id=(a.match(/\bid=(?:"([^"]+)"|\{([^}]+)\})/)||[])
+  if(id[1]||id[2]){const k=id[1]||id[2];const esc=k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');if(new RegExp(`htmlFor=(?:"${esc}"|\\{${esc}\\})`).test(s))continue}
+  out.push(`${f}:${before.split('\n').length} <${m[1]}> ${a.replace(/\s+/g,' ').slice(0,80)}`)}}
+console.log('total',total,'unnamed',out.length);console.log(out.join('\n'))

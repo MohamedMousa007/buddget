@@ -1,7 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { AddSubscriptionSheet } from '@/components/features/subscriptions/AddSubscriptionSheet'
 import { CancelSubscriptionSheet } from '@/components/features/subscriptions/CancelSubscriptionSheet'
@@ -17,8 +17,6 @@ import { Plus } from 'lucide-react'
 import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SkeletonList } from '@/components/ui/SkeletonList'
-import { useAuth } from '@/components/auth/AuthProvider'
-import { hasHydrated } from '@/hooks/remote/hydrateGuard'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useSubscriptionsHome } from '@/hooks/useSubscriptionsHome'
 import { catalogRegionOf } from '@/lib/subscriptions/catalogDisplay'
@@ -30,17 +28,15 @@ import type { Subscription } from '@/lib/store/types'
 import type { Segment } from '@/lib/subscriptions/subscriptionRows'
 
 export default function SubscriptionsPage() {
-  const { user } = useAuth()
   const t = useT()
   const ui = t.subscriptions.ui
   const { periodLabel: formatMonth } = useSubscriptionDates()
-  const { dataReady, profile, smsEnabled, subscriptions, logDue } = useFinanceStore(
+  const { dataReady, profile, smsEnabled, subscriptions } = useFinanceStore(
     useShallow((s) => ({
       dataReady: s.dataReady,
       profile: s.profile,
       smsEnabled: s.settings.smsTrackingEnabled,
       subscriptions: s.subscriptions,
-      logDue: s.logDueSubscriptions,
     })),
   )
   const { addOpen, setAddOpen, reviewOpen, setReviewOpen } = useSettingsStore(
@@ -58,14 +54,6 @@ export default function SubscriptionsPage() {
   const [seedBrandKey, setSeedBrandKey] = useState<string | null>(null)
   const [instance, setInstance] = useState(0)
   const home = useSubscriptionsHome(segment)
-
-  // Log-mode subscriptions write their own expense once the charge is due.
-  // Only once expenses are hydrated: otherwise every cycle looks unpaid and gets logged twice.
-  const uid = user?.id
-  const expensesReady = !uid || hasHydrated(uid, 'expenses')
-  useEffect(() => {
-    if (dataReady && expensesReady) logDue()
-  }, [dataReady, expensesReady, logDue])
 
   const openAdd = (brandKey: string | null = null) => {
     setEditing(null)
@@ -111,7 +99,7 @@ export default function SubscriptionsPage() {
             ) : (
               <>
                 <div className="flex min-h-6 items-center justify-between">
-                  <span className="text-[15px] font-semibold text-[var(--color-brand-text-primary)]">{period}</span>
+                  <span className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{period}</span>
                   <span className="flex items-center gap-1 text-xs text-[var(--color-brand-text-secondary)]">
                     {ui.activeCount(activeCount)}
                     <IconButton variant="brand" aria-label={t.subscriptions.addSubscription} onClick={() => openAdd()}>

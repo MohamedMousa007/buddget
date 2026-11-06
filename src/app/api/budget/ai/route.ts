@@ -10,7 +10,7 @@
  */
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
-import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { retryOnOverload } from '@/lib/server/ai/gemini'
 import { getUserEntitlements } from '@/lib/entitlements/server'
@@ -111,7 +111,7 @@ async function askModel(apiKey: string, system: string, user: string, schema: ob
 export async function POST(req: NextRequest) {
   const outdated = await gateOutdatedClient(req)
   if (outdated) return outdated
-  const user = await resolveRouteIdentity(req)
+  const user = await resolveActiveApiIdentity(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.GEMINI_API_KEY?.trim()

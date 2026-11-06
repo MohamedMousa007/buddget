@@ -31,7 +31,7 @@ export function BrandPriceTile({
     >
       <BrandTile brandKey={brand.key} name={brand.name} size={quick ? 40 : 56} />
       <span className="text-center text-xs font-semibold text-[var(--color-brand-text-primary)]">{brand.name}</span>
-      <span className="font-mono-numbers text-[11px] text-[var(--color-brand-text-secondary)]">{price}</span>
+      <span className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{price}</span>
     </SelectableCard>
   )
 }

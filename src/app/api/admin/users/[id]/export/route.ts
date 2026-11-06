@@ -33,7 +33,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!auth.user) return bad('User not found.', 404)
 
   const profile = await ctx.service.from('profiles').select('*').eq('id', id).maybeSingle()
-  const { tables, failed } = await exportUserData(ctx.service, id, ROWS_PER_TABLE)
+  const { tables, failed } = await exportUserData(ctx.service, id, ROWS_PER_TABLE, auth.user.email ?? null)
   await ctx.audit('dsr.export', {
     targetType: 'user',
     targetId: id,
