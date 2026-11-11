@@ -39,6 +39,8 @@ const STASH_TARGETS = [
   { from: 'src/proxy.ts', to: '.cap-stash/proxy.ts' },
   // Integration tests import the API route handlers stashed above, so they can't type-check in this build.
   { from: 'src/lib/server/admin/__tests__', to: '.cap-stash/admin-tests' },
+  // Imports the web-only site pages and sitemap stashed below.
+  { from: 'src/lib/legal/legalRoutes.test.tsx', to: '.cap-stash/legal-routes-test.tsx' },
   { from: 'src/instrumentation.ts', to: '.cap-stash/instrumentation.ts' },
   { from: 'src/instrumentation-node.ts', to: '.cap-stash/instrumentation-node.ts' },
   { from: 'src/app/auth/callback', to: '.cap-stash/auth-callback' },
