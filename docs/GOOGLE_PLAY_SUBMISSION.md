@@ -141,17 +141,16 @@ State that **all** data is encrypted in transit (HTTPS) and at rest
 (Supabase + Postgres-encrypted disks), and that users can delete their
 account from Settings at any time (and by request at support@buddget.app).
 
-Open questions for the owner (could not be settled from the code):
+Decisions applied (conservative defaults; change only if the owner knows better):
 
-1. **Sender numbers.** The forwarded SMS carries the sender address. Bank senders are
-   alphanumeric IDs, but the on-device gate (`SmsGate`) also forwards a personal
-   number when the text matches a transaction keyword. Decide whether to also tick
-   "Phone number" as SMS-derived data (the table above already declares phone number
-   as collected).
-2. **Receipt images.** `/api/receipt/scan` sends the image to Gemini; confirm the
-   AI provider's retention terms still support "not kept" before submitting.
-3. **Play RECEIVE_SMS approval.** Without the Permissions Declaration Form approval
-   the Android build is rejected (see `docs/STORE_PRIVACY.md`).
+1. **Sender numbers.** Declare the sender address (including a personal phone number that
+   passes the `SmsGate` transaction-keyword check) as SMS-derived data: tick "Phone number"
+   under SMS, collected, not shared, optional, with the same purposes as the other SMS data.
+2. **Receipt images.** `/api/receipt/scan` sends the image to Gemini. Declare it as processed
+   by a service provider. The statement "not kept" must be re-confirmed against the AI
+   provider's current retention terms before every submission (owner check, cannot be done from code).
+3. **Play RECEIVE_SMS approval.** Without the Permissions Declaration Form approval the
+   Android build is rejected (see `docs/STORE_PRIVACY.md`). Submit the declaration first.
 
 ## 5. Store assets
 

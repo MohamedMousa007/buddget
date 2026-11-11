@@ -52,9 +52,16 @@ Closing reports: `docs/qa-round-6/closing-p3-{server,money,ui,supply}.md`. Gate:
 
 Closed: the large majority of the ~134 P3s (Fixed with tests; Already fixed; Won't fix with reasons recorded per ID in the closing reports).
 
-## Still open (owner decisions and actions)
+## Owner decisions taken ("go with recommended for all", 2026-11-11)
+- SUP-1: `scripts/linear-bot.sh` and `scripts/trigger-bot.sh` deleted (the bot used `--dangerously-skip-permissions`; the LaunchAgent was already disabled).
+- AUT-6: the one legacy trusted-device row deleted live.
+- ADS-8: Play Data safety doc now declares the sender address as SMS-derived data and lists the receipt-image and RECEIVE_SMS steps as submission checks.
+- DBI-5 NOT applied and the unique index NOT added: same-name payment methods are legitimately separate wallets (different currencies) and several were created this week by live users. DBI-4 NOT applied: the 4 legacy rows are already category Debt; clearing the flag changes nothing visible and the Buddgy edit guard reads it.
+- NAT-11 NOT changed: silently flipping the push-masking default would change every user's notifications; recommended instead is an onboarding choice (product work).
+- Release: iOS build 137 on TestFlight, Android vc171 debug-signed APK on Drive (private link by default since SUP-5; set `APK_PUBLIC_LINK=1` for a public one).
+
+## Still open (needs you or a device)
 - **P1 AUT-1** (email second factor client-only): report mode by the owner's decision.
-- **Data repairs not applied** (`supabase/migrations/0252_p3_data_repairs_NOT_APPLIED.sql`): DBI-4 (3 legacy debt-payment flags), DBI-5 (merge 5 duplicate payment methods + unique index, which would park an offline duplicate push), AUT-6 (delete 1 legacy trusted device).
-- **Console/env actions:** SST-9 leaked-password protection (Supabase Auth), SST-5 `SMS_REQUIRE_DEVICE_HEADER=1` on Vercel, SUP-1 Linear bot, SUP-2 `.claude/settings.json`, SUP-4 Firebase key restriction and rotation, ADS-8 questions.
-- **Product/native decisions:** NAT-11 push masking default, BAI-8 shared AI-category trust, A11-14 bar patterns, A11-20 per-fragment `lang`, AUT-12, REG-13 (needs a live call with a user session), DEB-9 weekly reminders, SST-4 R8, SUP-5 release signing, SUP-9 next-pwa replacement, SUP-11 dependency bumps, pre-GA native pins.
-- **Limits:** field builds send no `edited_at` until updated; legacy phones have no recorded session until next heartbeat; Kotlin/Swift unverified on device; live double-tap through the pay-debt sheet and light/tablet/desktop sweeps not run; `.design-sync/compiled.css` is stale after the A11-12 token shifts (recompile at the next design-system re-sync).
+- **Console/env actions:** SST-9 leaked-password protection (Supabase Auth dashboard), SST-5 `SMS_REQUIRE_DEVICE_HEADER=1` on Vercel, SUP-4 Firebase key restriction and rotation, SUP-2 `.claude/settings.json` allow-list, ADS-8 receipt-retention and RECEIVE_SMS submission checks.
+- **Product/native:** NAT-11 push masking, BAI-8 shared AI-category trust, A11-14 bar patterns, A11-20 per-fragment `lang`, AUT-12, REG-13, DEB-9 weekly reminders, SST-4 R8, SUP-5 release signing, SUP-9 next-pwa replacement, SUP-11 dependency bumps, pre-GA native pins.
+- **Limits:** field builds send no `edited_at` until updated; legacy phones have no recorded session until next heartbeat; Kotlin/Swift unverified on device; live double-tap through the pay-debt sheet and light/tablet/desktop sweeps not run; `.design-sync/compiled.css` stale after the A11-12 token shifts.
