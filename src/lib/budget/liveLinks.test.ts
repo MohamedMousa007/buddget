@@ -98,6 +98,15 @@ describe('debts', () => {
     expect(debtExtras(live, 0, c).paidThisCycle).toBe(false)
   })
 
+  it('counts instalments by amount paid, like the debt tab (DEB-10)', () => {
+    const p = (id: string, amountPaid: number) => ({ id, debtId: 'a', date: '2026-10-03', amountPaid, createdAt: '' })
+    const plan = debt({ id: 'a', debtType: 'installment', installmentAmount: 300, installmentCount: 4 })
+    const double = ctx([p('1', 600)])
+    expect(debtExtras(liveDebts([plan], double)[0], 0, double).installment).toEqual({ done: 2, total: 4 })
+    const halves = ctx([p('1', 150), p('2', 150)])
+    expect(debtExtras(liveDebts([plan], halves)[0], 0, halves).installment).toEqual({ done: 1, total: 4 })
+  })
+
   it('a credit card shows no progress bar', () => {
     const c = ctx()
     const [live] = liveDebts([debt({ debtType: 'credit_card', startingBalance: 2000 })], c)

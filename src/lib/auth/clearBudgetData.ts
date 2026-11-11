@@ -7,6 +7,7 @@ import { resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 import { SPLASH_DONE_KEY } from '@/lib/auth/splashLatch'
 import { resetNavConsent } from '@/lib/buddgy/tools/navConsent'
 import { resetFeatureFlags } from '@/lib/flags/useFeatureFlag'
+import { NET_WORTH_STAMP_PREFIX, removeKeysWithPrefix } from '@/lib/storage/removeByPrefix'
 
 /**
  * Persisted localStorage keys used by Zustand + misc client caches. Wiped on
@@ -23,7 +24,14 @@ const STORAGE_KEYS = [
   'buddget_guest_nickname',
   'buddget_guest_next',
   SPLASH_DONE_KEY,
+  'buddget-goal-draft',
+  'buddget-goal-checkpoints',
+  'buddget-debt-goal-dismissed',
+  'buddget.accountGapSnooze',
 ] as const
+
+/** Caches stored as `<prefix><userId>` or `<prefix>:<userId>:...`: the next account must not see them. */
+const USER_SCOPED_PREFIXES = ['buddget_devices_cache', NET_WORTH_STAMP_PREFIX, 'buddget:flushed:'] as const
 
 /**
  * Wipe persisted client data and reset in-memory Zustand state.
@@ -44,6 +52,7 @@ export function clearBudgetData(): void {
     // -code-verifier, etc.) so a stale SDK session can never survive a clear and
     // get restored on the next launch. signOut({scope:'local'}) normally does this;
     // this guards the path where it failed or was skipped.
+    removeKeysWithPrefix(USER_SCOPED_PREFIXES, window.localStorage)
     try {
       for (let i = window.localStorage.length - 1; i >= 0; i--) {
         const k = window.localStorage.key(i)

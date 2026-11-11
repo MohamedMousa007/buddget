@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { clientIp } from '@/lib/server/clientIp'
 import type { User } from '@supabase/supabase-js'
 import { can, canAny, type Permission } from '@/lib/admin/permissions'
 import { resolveRouteIdentity, resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
@@ -21,17 +22,14 @@ export interface AdminContext extends StaffContext {
   session: AdminSessionRow | null
   ip: string
   userAgent: string | null
-  audit: (action: string, detail?: { targetType?: string; targetId?: string; summary?: string; metadata?: Record<string, unknown> }) => Promise<void>
+  audit: (action: string, detail?: { targetType?: string; targetId?: string; summary?: string; metadata?: Record<string, unknown> }) => Promise<boolean>
   /** True when the actor may see unmasked email / phone. */
   canSeePii: boolean
 }
 
 export type GuardResult = { ok: true; ctx: AdminContext } | { ok: false; res: NextResponse }
 
-export function clientIp(req: Request): string {
-  const fwd = req.headers.get('x-forwarded-for')
-  return fwd?.split(',')[0]?.trim() || req.headers.get('x-real-ip')?.trim() || 'unknown'
-}
+export { clientIp }
 
 function deny(status: number, error: string, code: string): GuardResult {
   return { ok: false, res: NextResponse.json({ error, code }, { status, headers: { 'Cache-Control': 'no-store' } }) }

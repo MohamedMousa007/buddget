@@ -37,7 +37,7 @@ export function PrivacyTechSections() {
             own data
           </li>
           <li>
-            SMS and notification ingest endpoints are protected by per-user Bearer tokens you control
+            The SMS ingest endpoint is protected by per-user Bearer tokens you control
             and can rotate at any time
           </li>
           <li>Biometric data never leaves your device</li>
@@ -56,7 +56,7 @@ export function PrivacyTechSections() {
         </p>
         <p>
           If you believe a child has provided us with personal information, contact us at{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] underline underline-offset-2 hover:no-underline">
             support@buddget.app
           </a>{' '}
           and we will delete it promptly.

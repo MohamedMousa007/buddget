@@ -19,7 +19,7 @@ describe('POST /api/site/event rate limit (API-10)', () => {
 
   it('uses the shared database counter, failing open', async () => {
     expect((await post()).status).toBe(204)
-    expect(h.limited).toHaveBeenCalledWith(expect.anything(), 'site-event:1.2.3.4', 60, 120, true)
+    expect(h.limited).toHaveBeenCalledWith(expect.anything(), 'site-event:5.6.7.8', 60, 120, true)
   })
 
   it('answers 429 without bumping a counter when limited', async () => {

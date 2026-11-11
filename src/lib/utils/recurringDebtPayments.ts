@@ -11,6 +11,24 @@ function addMonthsAnchored(d: Date, months: number, anchorDay?: number): Date {
   return setDate(next, Math.min(anchorDay, getDaysInMonth(next)))
 }
 
+/**
+ * The scheduled date behind a due date that was snoozed forward: the latest anchor day (clamped to the month)
+ * on or before it, this month or the previous one. Month-based schedules only; a due date that already sits on
+ * its anchor, or has no anchor, comes back unchanged. Advancing from this keeps a snooze from moving the due day.
+ */
+export function scheduledDueDate(isoYmd: string, frequency: DebtRecurringFrequency, anchorDay?: number): string {
+  if (!anchorDay || (frequency !== 'monthly' && frequency !== 'quarterly' && frequency !== 'annually')) return isoYmd
+  const d = parseISO(isoYmd + 'T12:00:00')
+  const onAnchor = (monthOffset: number) => {
+    const m = addMonths(setDate(d, 1), monthOffset)
+    return format(setDate(m, Math.min(anchorDay, getDaysInMonth(m))), 'yyyy-MM-dd')
+  }
+  const thisMonth = onAnchor(0)
+  if (thisMonth <= isoYmd) return thisMonth
+  const lastMonth = onAnchor(-1)
+  return lastMonth <= isoYmd ? lastMonth : isoYmd
+}
+
 export function advanceRecurringDebtDueDate(
   isoYmd: string,
   frequency: DebtRecurringFrequency,

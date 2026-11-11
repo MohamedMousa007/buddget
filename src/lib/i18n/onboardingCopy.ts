@@ -1,4 +1,5 @@
 import type { OnboardingGoal } from '@/lib/store/types'
+import { arCount } from '@/lib/i18n/arPlural'
 
 /** Copy for the first-run journey and the Flow setup state. Money and dates arrive pre-formatted. */
 export interface OnboardingCopy {
@@ -306,7 +307,7 @@ export const onboardingCopyAr: OnboardingCopy = {
     empty: 'لم تُضف شيئًا بعد.',
     later: 'سأضيف الأرصدة لاحقًا',
     why: 'هذه الأرصدة هي نقطة البداية. رسائل البنك تُبقيها محدّثة لاحقًا.',
-    revealLabel: (n) => (n === 1 ? 'في حساب واحد' : `عبر ${n} حسابات`),
+    revealLabel: (n) => (n === 1 ? 'في حساب واحد' : `عبر ${arCount(n, 'account')}`),
     revealChip: 'نقطة البداية',
     revealTitle: (name) => `هذه نقطة بدايتك يا ${name}.`,
     revealLead: 'سأضيف الآن دخلك لأخبرك بما يمكنك إنفاقه بأمان كل يوم.',
@@ -327,7 +328,7 @@ export const onboardingCopyAr: OnboardingCopy = {
   },
   reveal: {
     label: 'يمكنك إنفاق نحو',
-    chip: (n) => (n === 1 ? 'يوم واحد حتى الراتب' : `${n} يومًا حتى الراتب`),
+    chip: (n) => `${arCount(n, 'day')} حتى الراتب`,
     unit: (code) => `${code} في اليوم`,
     balance: 'الرصيد',
     payday: 'الراتب',
@@ -380,7 +381,7 @@ export const onboardingCopyAr: OnboardingCopy = {
     lead: 'تستغرق نحو دقيقتين. أعرف الكثير مما أخبرتني به، فسأسألك عن القليل فقط.',
     startFrom: 'سأبدأ من',
     income: (a) => `الدخل ${a}`,
-    accounts: (n) => (n === 1 ? 'حساب واحد' : `${n} حسابات`),
+    accounts: (n) => arCount(n, 'account'),
     sample: 'نموذج لما ستبدو عليه خطتك',
     why: 'تراجع كل شيء قبل أن يبدأ. لا يتغير شيء حتى توافق.',
     build: 'ابنِ ميزانيتي',
@@ -389,7 +390,7 @@ export const onboardingCopyAr: OnboardingCopy = {
   flow: {
     allSet: (name) => `كل شيء جاهز يا ${name}`,
     perDay: (code) => `${code} في اليوم`,
-    daysToPayday: (n) => (n === 1 ? 'يوم واحد حتى الراتب' : `${n} يومًا حتى الراتب`),
+    daysToPayday: (n) => `${arCount(n, 'day')} حتى الراتب`,
     firstTitle: 'أول مصروف هو الخطوة التالية',
     firstBody: 'سجّل واحدًا الآن وشاهد هذا الرقم يتحرك.',
     addExpense: 'أضف مصروفًا',

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { clientIp } from '@/lib/server/clientIp'
 import { z } from 'zod'
 import { SITE_LOCALES } from '@/lib/site/config'
 import { listRoutes } from '@/lib/site/routes'
@@ -19,7 +20,7 @@ const bodySchema = z.object({
 
 /** Cookieless counter: stores a daily total per page and event, never anything about the visitor. */
 export async function POST(request: Request) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const ip = clientIp(request)
   const service = createServiceRoleClient()
   if (await isRateLimited(service, `site-event:${ip}`, WINDOW_SECONDS, MAX_PER_WINDOW, true)) return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
 

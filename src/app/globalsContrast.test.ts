@@ -38,9 +38,28 @@ describe.each(['light', 'dark'] as const)('%s theme contrast', (theme) => {
 
   it('status text tokens are >= 4.5:1 on card and bg', () => {
     for (const k of ['ok', 'warn', 'danger']) {
-      for (const s of ['bg', 'card'])
+      for (const s of ['bg', 'card', 'elevated', 'sunken'])
         expect(ratio(hex(token(theme, `--color-status-${k}-fg`)), surface(theme, s)), `${k} on ${s}`).toBeGreaterThanOrEqual(4.5)
     }
+  })
+})
+
+/** A11-12: muted and semantic text also lands on the sunken wells and the soft tints. */
+describe.each(['light', 'dark'] as const)('%s theme: text on wells and soft tints', (theme) => {
+  const SOFT = ['sunken', 'red-soft', 'green-soft', 'amber-soft', 'primary-soft'] as const
+  const hasToken = (name: string) => new RegExp(`${name}: #[0-9A-Fa-f]{6}`).test(themes[theme])
+  it('text-muted is >= 4.5:1 on every well and soft tint', () => {
+    for (const s of [...SURFACES, ...SOFT.filter((x) => hasToken(`--color-brand-${x}`))])
+      expect(ratio(hex(token(theme, '--color-brand-text-muted')), surface(theme, s)), `muted on ${s}`).toBeGreaterThanOrEqual(4.5)
+  })
+  it('red, green and amber text are >= 4.5:1 on bg, card, elevated and sunken (light theme: the deep inks)', () => {
+    if (theme === 'dark') return
+    for (const k of ['red', 'green', 'amber'])
+      for (const s of [...SURFACES, 'sunken'])
+        expect(ratio(hex(token(theme, `--color-brand-${k}`)), surface(theme, s)), `${k} on ${s}`).toBeGreaterThanOrEqual(4.5)
+  })
+  it('gold text is >= 4.5:1 on bg, card and elevated', () => {
+    for (const s of SURFACES) expect(ratio(hex(token(theme, '--color-brand-gold')), surface(theme, s)), `gold on ${s}`).toBeGreaterThanOrEqual(4.5)
   })
 })
 

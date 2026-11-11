@@ -33,6 +33,10 @@ const STORAGE_KEYS = [
   'buddget_guest_nickname',
   'buddget_guest_next',
   'buddget_splash_done',
+  'buddget-goal-draft',
+  'buddget-goal-checkpoints',
+  'buddget-debt-goal-dismissed',
+  'buddget.accountGapSnooze',
 ]
 
 describe('clearBudgetData', () => {
@@ -122,5 +126,26 @@ describe('clearBudgetData', () => {
       ).resolves.toBeDefined()
       expect(mocks.financeReset).toHaveBeenCalledTimes(3)
     })
+  })
+})
+
+describe('clearBudgetData per-user caches (OFS-2)', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('sweeps device-list cache, net-worth stamps and flush fingerprints of any user', () => {
+    const store = new Map<string, string>([
+      ['buddget_devices_cache:u1', '{}'],
+      ['bdg-nw:u1:2026-11-06:EGP:legacy', '1.00'],
+      ['buddget:flushed:u1', '{}'],
+      ['unrelated', 'keep'],
+    ])
+    const storage = {
+      get length() { return store.size },
+      key: (i: number) => [...store.keys()][i] ?? null,
+      removeItem: (k: string) => void store.delete(k),
+    }
+    vi.stubGlobal('window', { localStorage: storage })
+    clearBudgetData()
+    expect([...store.keys()]).toEqual(['unrelated'])
   })
 })

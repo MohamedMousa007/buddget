@@ -49,9 +49,11 @@ describe('parseCrashEvent', () => {
 
 describe('freshHook', () => {
   const now = Date.UTC(2026, 9, 1, 12, 0, 0)
-  it('accepts a recent or absent stamp and drops a replayed one', () => {
+  it('accepts a recent stamp (or a recent event when unstamped) and drops a replayed one', () => {
     expect(freshHook(String(now / 1000 - 30), now)).toBe(true)
-    expect(freshHook(null, now)).toBe(true)
+    expect(freshHook(null, now)).toBe(false)
+    expect(freshHook(null, now, new Date(now - 60_000).toISOString())).toBe(true)
+    expect(freshHook(null, now, new Date(now - 7200_000).toISOString())).toBe(false)
     expect(freshHook(String(now / 1000 - 3600), now)).toBe(false)
     expect(freshHook('abc', now)).toBe(false)
   })

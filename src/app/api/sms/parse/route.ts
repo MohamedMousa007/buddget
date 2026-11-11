@@ -24,6 +24,7 @@ import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
+import { isRateLimited } from '@/lib/server/rateLimit'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
 import { monthNameInZone } from '@/lib/time/zonedMonth'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
@@ -57,6 +58,7 @@ import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { fetchCorrectionExemplar } from '@/lib/sms/correctionExemplar'
 import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
 import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
+import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sms/merchantCategoryPrompt'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
@@ -600,6 +602,8 @@ Omit "merchant", "last4", "datetime" and "counterparty_last4" from mapping_rules
 // Route handler
 // ---------------------------------------------------------------------------
 
+const PARSE_PER_HOUR = 1200
+
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
@@ -610,6 +614,11 @@ export async function POST(request: Request) {
   }
   const blocked = await smsDeviceGate(createServiceRoleClient(), caller)
   if (blocked) return blocked
+  // Bounds what a token holder can write (each message becomes a parse-log row, ledger rows and pushes). Fails open: a
+  // database hiccup must never lose a real bank SMS.
+  if (await isRateLimited(createServiceRoleClient(), `sms-parse:${userId}`, 3600, PARSE_PER_HOUR, true)) {
+    return NextResponse.json({ error: 'Too many messages, try again later' }, { status: 429 })
+  }
 
   // Parse body first — sender is needed for the static template lookup.
   let json: unknown
@@ -1498,12 +1507,6 @@ async function askModelJson(apiKey: string, system: string, user: string): Promi
   }
 }
 
-/** Spend categories the merchant categoriser may return (money-movement kinds are handled by kind). */
-const MERCHANT_CATEGORY_CHOICES = [
-  'Rent', 'Transport', 'Food', 'Groceries', 'Fuel', 'Health', 'Shopping', 'Education',
-  'Utilities', 'Subscription', 'Enjoyment', 'Other',
-] as const
-
 /**
  * Ask the model for a merchant's spending category — used only when catalog + learned cache both
  * miss, so it runs at most once per never-seen merchant (the answer is then cached globally).
@@ -1512,12 +1515,7 @@ const MERCHANT_CATEGORY_CHOICES = [
 async function aiCategorizeMerchant(
   apiKey: string, merchant: string, rawBody: string,
 ): Promise<ExpenseCategory | null> {
-  const prompt =
-    `Classify this merchant into ONE spending category for a personal-finance app used in ` +
-    `Egypt and the Gulf. Reply as JSON {"category":"<one of the list>"}.\n` +
-    `Categories: ${MERCHANT_CATEGORY_CHOICES.join(', ')}.\n` +
-    `Use "Other" only if genuinely unclassifiable.\n` +
-    `Merchant: ${merchant}\nSMS (context): ${rawBody.slice(0, 300)}`
+  const prompt = buildMerchantCategoryPrompt(merchant, rawBody)
   try {
     const res = await fetch(GEMINI_URL, {
       method: 'POST',

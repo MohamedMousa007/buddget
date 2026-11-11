@@ -4,6 +4,7 @@ import { can } from '@/lib/admin/permissions'
 import { GRANT_MINUTES, checkReason, grantExpiry, grantState, isGrantMode, type GrantMode } from '@/lib/admin/grants'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
+import { AUDIT_REFUSAL } from '@/lib/server/admin/audit'
 import { blockedTarget, UUID_RE } from '@/lib/server/admin/targets'
 
 type Params = { params: Promise<{ id: string }> }
@@ -160,7 +161,8 @@ export async function POST(req: Request, { params }: Params) {
         .eq('staff_id', ctx.staff.id).eq('target_user_id', id).eq('scope', 'financial').is('revoked_at', null).is('denied_at', null).not('approved_at', 'is', null)
         .or(`expires_at.is.null,expires_at.gt.${new Date(now).toISOString()}`)
         .order('requested_at', { ascending: false }).limit(1).maybeSingle()
-      await ctx.audit('pii.financial.read', { targetType: 'user', targetId: id, summary: 'Read a user’s financial details', metadata: { grantId: live?.id } })
+      const audited = await ctx.audit('pii.financial.read', { targetType: 'user', targetId: id, summary: 'Read a user’s financial details', metadata: { grantId: live?.id } })
+      if (audited === false) return bad(AUDIT_REFUSAL, 503)
       // The user is told, in their own activity feed. One line per ten minutes, however often the screen refreshes.
       const ticket = live?.ticket_number ? ` for ticket #${live.ticket_number}` : ''
       await emitNotification(ctx.service, {

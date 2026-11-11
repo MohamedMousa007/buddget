@@ -18,7 +18,8 @@ export function reportCycles(preset: ReportRangePreset, now: Date, monthStartDay
   let back: number
   let count: number
   if (preset === 'thisYear') {
-    back = current.getMonth()
+    // Before this year's first cycle starts (e.g. Jan 10 with a 25th start day) the running cycle still began last year: show just that one, not a year of last year's.
+    back = current.getFullYear() < now.getFullYear() ? 0 : current.getMonth()
     count = back + 1
   } else {
     ;({ back, count } = CYCLES_BACK[preset])
@@ -38,7 +39,10 @@ export function reportRange(preset: ReportRangePreset, now: Date, monthStartDay:
   }
 }
 
-/** Rows that count as spending, same rule as the Flow hero: no transfers, ATM, card payoff, top-up, savings or excluded rows. */
+/** A row that counts as spending: no transfers, ATM, card payoff, top-up, savings, excluded, refunded or declined rows (their net effect is zero). */
+export const isReportSpendRow = (e: Expense): boolean => !isNonSpendExpense(e) && !e.refundKind
+
+/** Rows that count as spending, same rule as the Flow hero. */
 export function reportSpendRows(expenses: Expense[]): Expense[] {
-  return expenses.filter((e) => !isNonSpendExpense(e))
+  return expenses.filter(isReportSpendRow)
 }

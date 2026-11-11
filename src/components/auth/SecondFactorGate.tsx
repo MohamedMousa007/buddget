@@ -13,6 +13,7 @@ import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { Scrim } from '@/components/ui/Scrim'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { Button } from '@/components/ui/button'
+import { toLatinDigits } from '@/lib/utils/formatters'
 
 /**
  * Shown when the server refuses a signed-in session with second_factor_required. Reuses the email-OTP verify step:
@@ -57,7 +58,7 @@ function Challenge() {
   }, [cooldown])
 
   const verify = async () => {
-    const token = otp.replace(/\D/g, '').slice(0, 6)
+    const token = toLatinDigits(otp).replace(/\D/g, '').slice(0, 6)
     if (token.length !== 6) {
       setError(t.auth.errorOtpIncomplete)
       return

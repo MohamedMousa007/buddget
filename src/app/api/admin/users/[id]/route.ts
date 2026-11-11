@@ -114,6 +114,9 @@ export async function POST(req: Request, { params }: Params) {
 
   const log = (action: string, summary: string, metadata?: Record<string, unknown>) =>
     ctx.audit(action, { targetType: 'user', targetId: id, summary: `${summary} (${maskEmail(email)})`, metadata })
+  /** The membership row as it stands, so an audit entry can say what a change replaced (and a clear what it deleted). */
+  const entitlementBefore = async () => (await ctx.service.from('user_entitlements').select('*').eq('user_id', id).maybeSingle()).data ?? null
+  const bannedBefore = (target.user as { banned_until?: string | null }).banned_until ?? null
 
   switch (body.op) {
     case 'note': {
@@ -127,13 +130,13 @@ export async function POST(req: Request, { params }: Params) {
     case 'suspend': {
       const { error } = await ctx.service.auth.admin.updateUserById(id, { ban_duration: FAR_FUTURE_BAN })
       if (error) return bad('Could not suspend the account.', 500)
-      await log('user.suspend', 'Suspended user', { reason: body.reason?.slice(0, 300) })
+      await log('user.suspend', 'Suspended user', { reason: body.reason?.slice(0, 300), before: { bannedUntil: bannedBefore } })
       return json({ ok: true })
     }
     case 'restore': {
       const { error } = await ctx.service.auth.admin.updateUserById(id, { ban_duration: 'none' })
       if (error) return bad('Could not restore the account.', 500)
-      await log('user.restore', 'Restored user')
+      await log('user.restore', 'Restored user', { before: { bannedUntil: bannedBefore } })
       return json({ ok: true })
     }
     case 'set_entitlement': {
@@ -144,6 +147,7 @@ export async function POST(req: Request, { params }: Params) {
       const trialEnds = body.status === 'trialing' ? new Date(Date.now() + trialDays * 86_400_000).toISOString() : null
       const periodEnd = body.periodEnd ? new Date(body.periodEnd) : null
       if (periodEnd && Number.isNaN(periodEnd.getTime())) return bad('Invalid period end.')
+      const before = await entitlementBefore()
       const { error } = await ctx.service.from('user_entitlements').upsert({
         user_id: id,
         plan_key: plan.key,
@@ -156,13 +160,14 @@ export async function POST(req: Request, { params }: Params) {
         granted_by: ctx.staff.id,
       })
       if (error) return bad('Could not save the membership.', 500)
-      await log('billing.entitlement_set', `Set ${plan.key} / ${body.status}`, { plan: plan.key, status: body.status, trialDays: trialEnds ? trialDays : undefined })
+      await log('billing.entitlement_set', `Set ${plan.key} / ${body.status}`, { plan: plan.key, status: body.status, trialDays: trialEnds ? trialDays : undefined, before })
       return json({ ok: true })
     }
     case 'clear_entitlement': {
+      const before = await entitlementBefore()
       const { error } = await ctx.service.from('user_entitlements').delete().eq('user_id', id)
       if (error) return bad('Could not clear the membership.', 500)
-      await log('billing.entitlement_cleared', 'Returned user to the default plan')
+      await log('billing.entitlement_cleared', 'Returned user to the default plan', { before })
       return json({ ok: true })
     }
     case 'set_limits': {
@@ -174,7 +179,7 @@ export async function POST(req: Request, { params }: Params) {
       }
       const features: Record<string, boolean> = {}
       for (const [k, v] of Object.entries(body.features ?? {})) if (isFeatureOverrideKey(k) && typeof v === 'boolean') features[k] = v
-      const { data: existing } = await ctx.service.from('user_entitlements').select('user_id').eq('user_id', id).maybeSingle()
+      const existing = await entitlementBefore()
       let error: { message: string } | null
       if (existing) {
         // Only the overrides change: plan, status and source belong to whoever granted the membership.
@@ -184,7 +189,7 @@ export async function POST(req: Request, { params }: Params) {
         ;({ error } = await ctx.service.from('user_entitlements').insert({ user_id: id, plan_key: def?.key ?? 'free', status: 'active', source: 'admin', limit_overrides: limits as Json, feature_overrides: features as Json, granted_by: ctx.staff.id }))
       }
       if (error) return bad('Could not save the limits.', 500)
-      await log('user.limits_set', 'Changed user limits', { limits, features })
+      await log('user.limits_set', 'Changed user limits', { limits, features, before: existing ? { limits: existing.limit_overrides, features: existing.feature_overrides } : null })
       return json({ ok: true })
     }
     case 'notify': {

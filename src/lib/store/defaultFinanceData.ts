@@ -86,7 +86,7 @@ export function createFreshDefaultProfile(): UserProfile {
 export const DEFAULT_MARKET_RATES: Record<string, number> = {
   USD_AED: 3.6725,
   USD_EGP: 53.1,
-  EGP_AED: 0.0692,
+  // One key per pair: the reverse is derived, so a built-in conversion round-trips exactly.
   AED_EGP: 14.45,
   EUR_AED: 4.15,
   GBP_AED: 4.78,

@@ -172,7 +172,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               <div className="flex items-center gap-3 p-3" style={{ borderTop: '1px solid var(--color-brand-border)' }}>
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: tint('var(--color-brand-red)', 14), color: 'var(--color-brand-red)' }}><CreditCard size={18} /></span>
                 <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{z.debts}</p><p className="text-[0.6875rem] text-[var(--color-brand-text-muted)]">{z.debtsSub}</p></div>
-                <span className="mr-1 text-sm text-[var(--color-brand-red)]">−</span>
+                <span className="me-1 text-sm text-[var(--color-brand-red)]">−</span>
                 <input {...lineInput('debts', debts, z.debts)}
                   className={cn(
                     'h-12 w-[76px] rounded-[11px] border bg-[var(--color-brand-elevated)] px-2 text-right font-mono-numbers text-sm text-[var(--color-brand-red)] outline-none focus-visible:border-[var(--color-brand-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
@@ -239,7 +239,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
 
           {/* override */}
           <Card variant="elevated" padding="none" className="p-3.5">
-            <div className="flex w-full items-center justify-between text-left">
+            <div className="flex w-full items-center justify-between text-start">
               <div><p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.override}</p><p className="text-xs text-[var(--color-brand-text-muted)]">{t.overrideHint}</p></div>
               <Switch
                 size="touch"

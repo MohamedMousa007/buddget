@@ -1,4 +1,7 @@
-const KEY = 'bdg-server-clock-offset-v1'
+const KEY = 'bdg-server-clock-offset-v2'
+
+/** A stored offset older than this is not trusted: the device clock may have been corrected since it was learned. */
+const MAX_STORED_AGE_MS = 3 * 24 * 60 * 60 * 1000
 
 /** A pull only moves the offset by more than this: the measurement carries the round-trip latency, which must not shift stamps already sent. */
 const RELEARN_THRESHOLD_MS = 2000
@@ -12,8 +15,10 @@ function learned(): number | null {
     loaded = true
     try {
       const raw = window.localStorage.getItem(KEY)
-      const v = raw === null ? NaN : Number(raw)
-      if (Number.isFinite(v)) offsetMs = v
+      const stored = raw === null ? null : (JSON.parse(raw) as { o?: unknown; at?: unknown })
+      const age = typeof stored?.at === 'number' ? Date.now() - stored.at : NaN
+      // A clock that moved backwards since the offset was learned (age < 0) or a stale offset is dropped; the next pull re-learns it.
+      if (typeof stored?.o === 'number' && Number.isFinite(stored.o) && age >= 0 && age <= MAX_STORED_AGE_MS) offsetMs = stored.o
     } catch {
       /* restricted storage */
     }
@@ -38,7 +43,7 @@ export function noteServerTime(serverIso: string): void {
   if (current !== null && Math.abs(next - current) <= RELEARN_THRESHOLD_MS) return
   offsetMs = next
   try {
-    window.localStorage.setItem(KEY, String(next))
+    window.localStorage.setItem(KEY, JSON.stringify({ o: next, at: Date.now() }))
   } catch {
     /* restricted storage: the offset lives for this session only */
   }
@@ -68,6 +73,12 @@ export function serverInstant(iso: string | undefined): number | null {
 export function toServerTime(iso: string): string {
   const t = serverInstant(iso)
   return t === null ? iso : new Date(t).toISOString()
+}
+
+/** Test seam: behave like a fresh start, reading the offset back from storage. */
+export function reloadServerClock(): void {
+  offsetMs = null
+  loaded = false
 }
 
 /** Test seam: forget the learned offset. */

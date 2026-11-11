@@ -94,7 +94,6 @@ export function PaymentMethodSetupSheet({
   const [ccLimit, setCcLimit] = useState('')
   const [ccOutstanding, setCcOutstanding] = useState('')
   const [ccStatementDay, setCcStatementDay] = useState('')
-  const [ccGrace, setCcGrace] = useState('55')
 
   const prevOpen = useRef(false)
   useEscapeClose(open && !providerSheetOpen, onClose)
@@ -116,9 +115,8 @@ export function PaymentMethodSetupSheet({
         setCcLimit(linked?.creditLimit != null ? String(linked.creditLimit) : '')
         setCcOutstanding(linked?.startingBalance ? String(linked.startingBalance) : '')
         setCcStatementDay(linked?.paymentDueDay != null ? String(linked.paymentDueDay) : '')
-        setCcGrace(linked?.gracePeriodDays != null ? String(linked.gracePeriodDays) : '55')
       } else {
-        setCcLimit(''); setCcOutstanding(''); setCcStatementDay(''); setCcGrace('55')
+        setCcLimit(''); setCcOutstanding(''); setCcStatementDay('')
         const parent = parentAccountId ? useFinanceStore.getState().paymentMethods.find((m) => m.id === parentAccountId) : undefined
         if (parent) {
           // A card added under an account starts as that account's debit card: same bank, currency and colour.
@@ -218,7 +216,6 @@ export function PaymentMethodSetupSheet({
           creditLimit: num(ccLimit),
           startingBalance: num(ccOutstanding) ?? linked.startingBalance,
           paymentDueDay: parseCardDay(ccStatementDay) ?? undefined,
-          gracePeriodDays: ccGrace.trim() ? parseInt(ccGrace, 10) : undefined,
         })
       }
     }
@@ -267,7 +264,7 @@ export function PaymentMethodSetupSheet({
                 aria-label={t.common.back} onClick={onClose}
                 variant="tinted" size="sm" shape="round"
               >
-                <ArrowLeft />
+                <ArrowLeft className="rtl:rotate-180" />
               </IconButton>
             ) : null}
             <ModalTitle className="min-w-0 flex-1 font-semibold text-[var(--color-brand-text-primary)]">
@@ -382,10 +379,6 @@ export function PaymentMethodSetupSheet({
                     <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.moneyFlows.ccDueDay}</span>
                     <AmountField value={ccStatementDay} onChange={(v) => setCcStatementDay(v.slice(0, 2))} mode="integer" aria-label={t.moneyFlows.ccDueDay} placeholder="15" />
                     {dayInvalid ? <p role="alert" className="mx-0.5 mt-1.5 text-[0.75rem] text-[var(--color-brand-red)]">{t.moneyFlows.dayRange}</p> : null}
-                  </div>
-                  <div>
-                    <span className={`mx-0.5 mb-2 block ${microClassName}`}>{t.paymentMethods.ccGraceDays}</span>
-                    <AmountField value={ccGrace} onChange={(v) => setCcGrace(v.slice(0, 3))} mode="integer" aria-label={t.paymentMethods.ccGraceDays} placeholder="55" />
                   </div>
                 </div>
               )}

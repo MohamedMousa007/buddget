@@ -2,7 +2,7 @@ import { addDays, format, parseISO } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Currency } from '@/lib/store/types'
 import { calculateDebtRemainingRaw, computeDebtPaymentRecord, isDebtFullyPaid } from '@/lib/utils/calculations'
-import { advanceRecurringDebtDueDate } from '@/lib/utils/recurringDebtPayments'
+import { advanceRecurringDebtDueDate, scheduledDueDate } from '@/lib/utils/recurringDebtPayments'
 import { settleInstallmentAmount } from '@/lib/debts/installmentPlan'
 import { installmentPaymentsCompleted } from '@/lib/debts/installmentSchedule'
 import { tryConvertCurrency } from '@/lib/utils/currency'
@@ -44,7 +44,7 @@ export function reconcileDebtSchedule(debtId: string, manual?: { amount: number;
   }
   const anchorDay = sched.dueDay ?? parseISO(sched.nextDueDate).getDate()
   state.updateRecurringDebtPayment(sched.id, {
-    nextDueDate: advanceRecurringDebtDueDate(sched.nextDueDate, sched.frequency, anchorDay),
+    nextDueDate: advanceRecurringDebtDueDate(scheduledDueDate(sched.nextDueDate, sched.frequency, sched.dueDay), sched.frequency, anchorDay),
   })
 }
 

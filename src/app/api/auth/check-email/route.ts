@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { clientIp } from '@/lib/server/clientIp'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -49,10 +50,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
     }
 
-    const ip =
-      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      req.headers.get('x-real-ip') ||
-      'unknown'
+    const ip = clientIp(req)
 
     const admin = createServiceRoleClient()
     if (await isRateLimited(admin, `check-email:${ip}`, RATE_WINDOW_SECONDS, RATE_MAX_HITS, true)) {

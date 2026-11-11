@@ -1,5 +1,6 @@
 import type { BudgetBlock } from '@/lib/store/types'
 import type { BuildTemplate, CreateIntent } from '@/lib/budget/templates'
+import { arCount } from '@/lib/i18n/arPlural'
 
 /** Copy for the manual builder. Money arrives pre-formatted. */
 export interface BudgetBuilderCopy {
@@ -175,7 +176,7 @@ export const budgetBuilderCopyAr: BudgetBuilderCopy = {
     sub: 'اختر نقطة بداية. يسألك بادي بضعة أسئلة ثم يحوّل إجاباتك إلى خطة شهرية.',
     buddgyAsks: 'منشئ الميزانية',
     about: 'حوالي 3 دقائق',
-    usingData: (months) => `نستخدم بيانات ${months === 1 ? 'الشهر الماضي' : `آخر ${months} أشهر`}`,
+    usingData: (months) => `نستخدم بيانات ${months === 1 ? 'الشهر الماضي' : `آخر ${arCount(months, 'month')}`}`,
     intents: {
       save: { name: 'ادخار أكثر', sub: 'ابنِ عادة ادخار شهرية حول إنفاقك الفعلي.' },
       goal: { name: 'التخطيط لهدف كبير', sub: 'منزل أو سيارة أو زفاف أو رحلة، بتاريخ ومبلغ شهري مناسبين.' },

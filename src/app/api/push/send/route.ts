@@ -33,7 +33,7 @@ const bodySchema = z.object({
   title: z.string().min(1).max(200),
   body: z.string().min(1).max(1000),
   data: z.record(z.string(), z.string()).optional(),
-  collapseKey: z.string().max(120).optional(),
+  collapseKey: z.string().max(64).optional(),
 })
 
 export async function POST(request: Request) {

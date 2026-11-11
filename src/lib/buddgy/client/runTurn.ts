@@ -43,6 +43,8 @@ export interface RunTurnArgs {
   /** The server-issued chat id, as soon as it is known, so a failed turn still keeps its chat. */
   onChat?: (chatId: string) => void
   now?: Date
+  /** A read already ran earlier in this chat; what the model says now may be shaped by tool output it read then. */
+  tainted?: boolean
 }
 
 function toFailure(ev: Extract<TurnEvent, { t: 'error' }>): TurnFailure {
@@ -105,7 +107,7 @@ export function executeCalls(calls: WireToolCall[], ctx: ToolContext, limit = MA
         results.push({ name: call.name, response: clampResult(hide ? redactBalances(raw, true) : raw, limit) })
         reads.push({ tool: call.name, label: readLabel(call.name, ctx.locale) })
         needsModel = true
-      } else if (entry.nav && (hasNavConsent() || !entry.write)) {
+      } else if (entry.nav && ((hasNavConsent() && !ctx.afterRead) || !entry.write)) {
         const r = entry.nav(call.args, ctx)
         results.push({ name: call.name, response: r })
         if (!r.ok) needsModel = true
@@ -198,7 +200,7 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
       if (!calls) break
 
       const readCount = calls.filter((c) => TOOLS.get(c.name)?.read).length
-      const ran = executeCalls(calls, { ...ctx, afterRead: reads.length > 0 }, resultLimit(messages, readCount))
+      const ran = executeCalls(calls, { ...ctx, afterRead: args.tainted === true || reads.length > 0 }, resultLimit(messages, readCount))
       proposals.push(...ran.proposals)
       reads.push(...ran.reads)
       if (!ran.needsModel) break

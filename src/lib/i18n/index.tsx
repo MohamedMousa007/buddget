@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { en } from './dictionaries/en'
 import { ar } from './dictionaries/ar'
 import type { Dictionary, Locale } from './types'
+import { writeLocaleCookie } from './localeCookie'
 
 const dictionaries: Record<Locale, Dictionary> = { en, ar }
 
@@ -42,6 +43,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     html.setAttribute('dir', 'ltr')
     html.setAttribute('lang', locale === 'ar' ? 'ar' : 'en')
     html.setAttribute('data-locale', locale)
+    writeLocaleCookie(locale)
   }, [locale])
 
   const value = useMemo<LocaleContextValue>(

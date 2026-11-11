@@ -14,7 +14,7 @@ cd "$ROOT"
 TEAM=9PK34RL9DN
 PBX=ios/App/App.xcodeproj/project.pbxproj
 GRADLE=android/app/build.gradle
-WORK="$(mktemp -d /tmp/buddget-release.XXXXXX)"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/buddget-release.XXXXXX")"   # mode 700; holds the archive, IPA, APK and build logs
 
 export JAVA_HOME="${JAVA_HOME:-$(ls -d "$HOME"/Library/Java/jdk-21*/Contents/Home 2>/dev/null | head -1)}"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
@@ -40,7 +40,15 @@ AND_NEW=$((AND_CUR + 1))
 # A failure after the bump would leave the tree dirty and the next run would refuse to start: put the two files back.
 BUMPED=0
 restore_bump() { [ "$BUMPED" = 1 ] && git checkout -q -- "$PBX" "$GRADLE" && echo "Version bump reverted." >&2; return 0; }
-trap restore_bump EXIT
+# Success removes the whole work dir (archive, dSYMs, IPA, APK, logs). Failure keeps only the logs for diagnosis.
+cleanup() {
+  local rc=$?
+  restore_bump
+  if [ "$rc" -eq 0 ]; then rm -rf "$WORK"
+  else find "$WORK" -mindepth 1 -maxdepth 1 ! -name '*.log' -exec rm -rf {} + 2>/dev/null; echo "Build logs kept in $WORK" >&2; fi
+  return "$rc"
+}
+trap cleanup EXIT
 BUMPED=1
 sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${IOS_NEW};/g" "$PBX"
 sed -i '' -E "s/versionCode [0-9]+/versionCode ${AND_NEW}/" "$GRADLE"
@@ -52,7 +60,7 @@ npm run cap:build
 echo "== iOS archive"
 (cd ios/App && xcodebuild -scheme App -configuration Release -destination "generic/platform=iOS" \
   -archivePath "$WORK/App.xcarchive" -allowProvisioningUpdates \
-  CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=$TEAM SENTRY_DSN="$SENTRY_DSN" archive) > "$WORK/ios-archive.log" 2>&1 || { tail -30 "$WORK/ios-archive.log"; echo "iOS archive failed (log: $WORK/ios-archive.log)" >&2; exit 1; }
+  CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM="$TEAM" SENTRY_DSN="$SENTRY_DSN" archive) > "$WORK/ios-archive.log" 2>&1 || { tail -30 "$WORK/ios-archive.log"; echo "iOS archive failed (log: $WORK/ios-archive.log)" >&2; exit 1; }
 
 echo "== iOS dSYMs to Sentry"
 sentry-cli debug-files upload --include-sources "$WORK/App.xcarchive/dSYMs" > "$WORK/dsym.log" 2>&1 || echo "WARNING: dSYM upload failed (see $WORK/dsym.log); iOS native stacks will be unreadable." >&2
@@ -64,6 +72,7 @@ echo "== iOS upload to TestFlight"
 echo "== Android APK"
 (cd android && ./gradlew assembleDebug --no-daemon) > "$WORK/android.log" 2>&1 || { tail -40 "$WORK/android.log"; echo "Android build failed (log: $WORK/android.log)" >&2; exit 1; }
 label=$(printf %s "${LABEL:-$(git log -1 --format=%s)}" | sed 's/[^a-zA-Z0-9]/-/g' | cut -c1-40 | sed 's/-*$//')
+label="${label:-release}"
 APK="$WORK/buddget-android-vc${AND_NEW}-${label}.apk"
 cp android/app/build/outputs/apk/debug/app-debug.apk "$APK"
 
@@ -81,4 +90,4 @@ git push -q origin "HEAD:main"
 
 echo
 echo "iOS build ${IOS_NEW} uploaded to TestFlight (processing takes a few minutes in App Store Connect)."
-echo "Android vc${AND_NEW}: ${LINK}"
+echo "Android vc${AND_NEW} (debug-signed build): ${LINK}"

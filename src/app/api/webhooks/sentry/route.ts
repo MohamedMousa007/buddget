@@ -5,6 +5,12 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 // Native crash events carry every thread and the loaded-image list, well past 200 KB; Vercel's own cap is 4.5 MB.
 const MAX_BODY = 4_000_000
 
+async function attributedUserId(service: ReturnType<typeof createServiceRoleClient>, userId: string | null, deviceId: string | null) {
+  if (!userId || !deviceId) return null
+  const { data } = await service.from('user_devices').select('device_id').eq('user_id', userId).eq('device_id', deviceId).maybeSingle()
+  return data ? userId : null
+}
+
 /** Sentry tells us an issue fired; the crash lands in client_crashes for the admin portal. */
 export async function POST(request: Request) {
   const secret = process.env.SENTRY_WEBHOOK_SECRET
@@ -12,17 +18,21 @@ export async function POST(request: Request) {
   const raw = await request.text()
   if (raw.length > MAX_BODY) return NextResponse.json({ error: 'Too large' }, { status: 413 })
   if (!validSignature(raw, request.headers.get('sentry-hook-signature'), secret)) return NextResponse.json({ error: 'Bad signature' }, { status: 401 })
-  if (!freshHook(request.headers.get('sentry-hook-timestamp'), Date.now())) return NextResponse.json({ error: 'Stale' }, { status: 400 })
   let body: unknown
   try {
     body = JSON.parse(raw)
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
+  const eventTime = (body as { data?: { event?: { datetime?: string } } } | null)?.data?.event?.datetime ?? null
+  if (!freshHook(request.headers.get('sentry-hook-timestamp'), Date.now(), eventTime)) return NextResponse.json({ error: 'Stale' }, { status: 400 })
   const crash = parseCrashEvent(body)
   if (!crash) return NextResponse.json({ ok: true })
 
   const service = createServiceRoleClient()
+  // The client writes the Sentry event (the DSN is public), so its user id is only a hint: keep it when the device tag is
+  // registered to that same account, otherwise record the crash unattributed.
+  const userId = await attributedUserId(service, crash.userId, crash.deviceId)
   const args = {
     p_fingerprint: crash.fingerprint,
     p_release: crash.release,
@@ -33,7 +43,7 @@ export async function POST(request: Request) {
     p_platform: crash.platform,
     p_build: crash.build,
     p_device_id: crash.deviceId,
-    p_user_id: crash.userId,
+    p_user_id: userId,
     p_sentry_issue_id: crash.issueId,
     p_sentry_url: crash.url,
     p_seen: crash.seen,

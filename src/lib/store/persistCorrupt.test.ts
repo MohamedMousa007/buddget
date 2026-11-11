@@ -1,0 +1,60 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+function stubWindow() {
+  const data = new Map<string, string>()
+  const bus = new EventTarget()
+  vi.stubGlobal('window', {
+    localStorage: { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v), removeItem: (k: string) => void data.delete(k) },
+    addEventListener: bus.addEventListener.bind(bus), removeEventListener: bus.removeEventListener.bind(bus), dispatchEvent: bus.dispatchEvent.bind(bus),
+  })
+  vi.stubGlobal('document', Object.assign(new EventTarget(), { visibilityState: 'visible' }))
+  return data
+}
+const exp = { id: '11111111-1111-4111-8111-111111111111', date: '2026-10-03', amount: 50, category: 'Food', description: 'x', currency: 'EGP' }
+const ARRAYS = ['expenses','incomeEvents','incomeSources','debts','debtPayments','goals','subscriptions','savingsAccounts','savingsTransactions','paymentMethods','budgetPlans','recurringExpenses','accountAdjustments','buddgyMemories','budgetPlanActivations','recurringDebtPayments','recurringSavingsDeposits','investmentHoldings','receipts']
+
+describe('persist: every old version and corrupted shapes', () => {
+  beforeEach(() => { vi.resetModules() })
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  for (const v of [2, 3, 5, 6, 8, 10, 12, 13, 14, 15, 17, 18, 19, 20, 21]) {
+    it(`v${v} blob rehydrates to a usable store`, async () => {
+      const data = stubWindow()
+      data.set('buddget-storage', JSON.stringify({ version: v, state: { profile: { id: 'u1', name: 'A', baseCurrency: 'EGP' }, expenses: [exp], settings: { baseCurrency: 'EGP' } } }))
+      const { useFinanceStore } = await import('@/lib/store/useFinanceStore')
+      await useFinanceStore.persist.rehydrate()
+      const s = useFinanceStore.getState() as unknown as Record<string, unknown>
+      expect((s.expenses as unknown[]).length).toBe(1)
+      for (const k of ARRAYS) expect(Array.isArray(s[k]), `${k} must be an array after v${v} upgrade`).toBe(true)
+      expect(s.settings).toBeTruthy()
+    })
+  }
+
+  for (const [label, state] of [
+    ['expenses null', { profile: { id: 'u1' }, expenses: null }],
+    ['settings null', { profile: { id: 'u1' }, settings: null }],
+    ['profile null', { profile: null, expenses: [exp] }],
+    ['goals string', { profile: { id: 'u1' }, goals: 'x' }],
+    ['exchangeRates null', { profile: { id: 'u1' }, exchangeRates: null }],
+  ] as const) {
+    it(`corrupted current-version blob (${label}) does not leave a crashing store`, async () => {
+      const data = stubWindow()
+      data.set('buddget-storage', JSON.stringify({ version: 22, state }))
+      const { useFinanceStore } = await import('@/lib/store/useFinanceStore')
+      await useFinanceStore.persist.rehydrate()
+      const s = useFinanceStore.getState() as unknown as Record<string, unknown>
+      for (const k of ['expenses', 'goals', 'incomeEvents']) expect(Array.isArray(s[k]), `${k} array`).toBe(true)
+      expect(s.profile).toBeTruthy()
+      expect((s.settings as Record<string, unknown>)).toBeTruthy()
+      expect(s.exchangeRates).toBeTruthy()
+    })
+  }
+
+  it('garbage JSON leaves defaults and does not throw', async () => {
+    const data = stubWindow()
+    data.set('buddget-storage', '{not json')
+    const { useFinanceStore } = await import('@/lib/store/useFinanceStore')
+    await expect(useFinanceStore.persist.rehydrate()).resolves.not.toThrow()
+    expect(useFinanceStore.getState().expenses).toEqual([])
+  })
+})

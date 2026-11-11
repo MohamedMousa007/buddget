@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { format } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Apple, CalendarClock, Check, CreditCard, DollarSign, LayoutGrid, Smartphone, Wallet, type LucideIcon } from 'lucide-react'
@@ -23,6 +23,7 @@ import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { formatWhole } from '@/lib/utils/formatters'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { useDismissable } from '@/hooks/useDismissable'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { useTypedAmount } from '@/hooks/useTypedAmount'
 import { useT } from '@/lib/i18n'
 import type { IncomeSourceType, PaymentMethod } from '@/lib/store/types'
@@ -43,6 +44,8 @@ export function FilterSheet({ open, onClose, children, footer }: { open: boolean
   // It still has to honour Android back and Escape.
   useDismissable(open, onClose)
   useScrollLock(open)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(open, panelRef, true)
   return (
     <AnimatePresence>
       {open ? (
@@ -57,6 +60,8 @@ export function FilterSheet({ open, onClose, children, footer }: { open: boolean
             aria-hidden
           />
           <motion.div
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-label={t.a11y.filters}

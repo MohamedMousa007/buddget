@@ -7,6 +7,8 @@ vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: (...a: unknown[]) => apiFetchAut
 import { TURN_LIMITS } from '@/lib/buddgy/protocol'
 import { executeCalls, runTurn, TurnFailure } from '@/lib/buddgy/client/runTurn'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
+import { resetAutoSlots } from '@/lib/buddgy/tools/autoApplyGuard'
+import { resetSameTurnMemory } from '@/lib/buddgy/tools/exec/expenses'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 const sse = (events: TurnEvent[]) =>
@@ -135,5 +137,39 @@ describe('executeCalls', () => {
     useFinanceStore.setState({ settings: hidden })
     const res = r.results[0].response as Record<string, unknown>
     for (const k of ['income', 'spent', 'budget', 'net_cash_flow', 'safe_daily', 'projected_spend']) expect(typeof res[k]).not.toBe('number')
+  })
+})
+
+describe('BAI-7 / BAI-10 read taint', () => {
+  const addCall = (amount = 45): TurnEvent[] => [
+    meta,
+    { t: 'calls', parts: [{ functionCall: { name: 'add_expense', args: {} } }], calls: [{ name: 'add_expense', args: { description: 'Coffee', amount, category: 'Food' } }] },
+    done,
+  ]
+
+  it('a chat that already ran a read never auto-applies a later add', async () => {
+    useFinanceStore.setState({ incomeSources: [{ id: 'i1', name: 'Salary', amount: 1000000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 1, paydayDays: [1], sourceType: 'salary', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' } as never], incomeEvents: [], budgetPlans: [], activeBudgetPlanId: null, exchangeRates: {} })
+    resetAutoSlots()
+    resetSameTurnMemory()
+    apiFetchAuth.mockResolvedValueOnce(sse(addCall()))
+    const fresh = await runTurn({ ...base, text: 'coffee 45', intent: 'action', now: new Date('2026-10-19T12:00:00'), onText: () => undefined })
+    expect(fresh.proposals[0].risk).toBe('auto')
+    apiFetchAuth.mockResolvedValueOnce(sse(addCall(46)))
+    const tainted = await runTurn({ ...base, text: 'coffee 46', intent: 'action', tainted: true, now: new Date('2026-10-19T12:00:00'), onText: () => undefined })
+    expect(tainted.proposals[0].risk).toBe('approve')
+  })
+
+  it('navigation with a prefill does not auto-run after a read, even with consent', async () => {
+    const { grantNavConsent, resetNavConsent } = await import('@/lib/buddgy/tools/navConsent')
+    grantNavConsent()
+    try {
+      const call = [{ name: 'open_sheet', args: { sheet: 'add_expense', amount: 99 } }]
+      const afterRead = executeCalls(call, { now: new Date(), locale: 'en', afterRead: true })
+      expect(afterRead.proposals).toHaveLength(1)
+      const direct = executeCalls(call, { now: new Date(), locale: 'en' })
+      expect(direct.proposals).toHaveLength(0)
+    } finally {
+      resetNavConsent()
+    }
   })
 })

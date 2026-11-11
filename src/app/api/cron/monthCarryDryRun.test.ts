@@ -144,4 +144,17 @@ describe('month-carry live run', () => {
     expect(writesTo('savings_accounts', 'insert')).toEqual([])
     expect(writesTo('goals', 'update')).toEqual([])
   })
+
+  it('REG-11: stops starting users when the time budget is spent and says where to resume', async () => {
+    h.tables.user_settings = [
+      { user_id: 'u1', month_start_day: 1, language: 'en', goal_progress_alerts: true, timezone: 'Africa/Cairo' },
+      { user_id: 'u2', month_start_day: 1, language: 'en', goal_progress_alerts: true, timezone: 'Africa/Cairo' },
+    ]
+    const real = Date.now()
+    let calls = 0
+    const spy = vi.spyOn(Date, 'now').mockImplementation(() => (calls++ < 2 ? real : real + 120_000))
+    const body = await (await GET(req('?dryRun=1'))).json()
+    spy.mockRestore()
+    expect(body).toMatchObject({ ok: false, partial: true, scanned: 1, nextCursor: 'u1' })
+  })
 })

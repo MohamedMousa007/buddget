@@ -15,9 +15,10 @@ function table(name: string) {
     if (op === 'delete') db.tables[name] = rows().filter((r) => !hit.includes(r))
     if (op === 'insert') { const r = { ...patch, token: 'tok-' + (rows().length + 1), is_active: true }; rows().push(r); return { data: r, error: null, count: 1 } }
     if (op === 'upsert') { rows().push(patch); return { data: [patch], error: null } }
-    return { data: head ? null : hit, error: null, count: hit.length }
+    return { data: head ? null : ranged ? [...hit].reverse().slice(ranged[0], ranged[1] + 1) : hit, error: null, count: hit.length }
   }
   let head = false
+  let ranged: [number, number] | null = null
   const q: Record<string, unknown> = {
     select: (_c?: string, o?: { head?: boolean }) => { head = Boolean(o?.head); return q },
     update: (p: Row) => { op = 'update'; patch = p; return q },
@@ -29,6 +30,8 @@ function table(name: string) {
     is: (k: string, v: unknown) => { filters.push((r) => (r[k] ?? null) === v); return q },
     not: (k: string, _o: string, v: unknown) => { filters.push((r) => (r[k] ?? null) !== v); return q },
     order: () => q, limit: () => q,
+    range: (a: number, b: number) => { ranged = [a, b]; return q },
+    in: (k: string, vs: unknown[]) => { filters.push((r) => vs.includes(r[k])); return q },
     maybeSingle: () => { const r = run(); return Promise.resolve({ data: (r.data as Row[])?.[0] ?? null, error: r.error }) },
     single: () => { const r = run(); return Promise.resolve({ data: Array.isArray(r.data) ? r.data[0] : r.data, error: r.error }) },
     then: (res: (v: unknown) => unknown) => Promise.resolve(run(head)).then(res),

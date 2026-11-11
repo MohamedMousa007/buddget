@@ -171,7 +171,7 @@ export function PaydaysPage() {
   const header = (actions: React.ReactNode) => (
     <div className="flex min-h-14 items-center gap-1 pe-2.5 ps-1.5 pt-1">
       <IconButton variant="ghost" size="md" aria-label={t.paydays.backToFlow} onClick={() => navigate('/flow')}>
-        <ChevronLeft className="size-5" strokeWidth={2} />
+        <ChevronLeft className="size-5 rtl:rotate-180" strokeWidth={2} />
       </IconButton>
       <span className="flex-1 text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{t.nav.paydays}</span>
       {actions}
@@ -220,7 +220,7 @@ export function PaydaysPage() {
                     <span className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{t.paydays[s.name] as string}</span>
                     <span className="text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{t.paydays[s.sub] as string}</span>
                   </span>
-                  <ChevronRight className="size-[18px] text-[var(--color-brand-text-muted)]" strokeWidth={2} aria-hidden />
+                  <ChevronRight className="size-[18px] rtl:rotate-180 text-[var(--color-brand-text-muted)]" strokeWidth={2} aria-hidden />
                 </span>
               </SelectableCard>
             ))}

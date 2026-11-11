@@ -23,7 +23,7 @@ export function AccountDeletedScreen() {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[var(--color-brand-bg)] px-6 text-center"
+      className="fixed inset-0 z-[var(--z-dialog)] flex flex-col items-center justify-center bg-[var(--color-brand-bg)] px-6 text-center"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-brand-green-soft)] mb-6">

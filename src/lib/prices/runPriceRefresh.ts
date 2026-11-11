@@ -33,7 +33,8 @@ export async function runPriceRefresh(): Promise<PriceRefreshResult> {
   const rows: PriceUpsert[] = []
   const row = (o: Omit<PriceUpsert, 'as_of' | 'updated_at'>): PriceUpsert => ({ ...o, as_of: now, updated_at: now })
 
-  const [ounceUsd, officialUsdEgp] = await Promise.all([fetchSpotOunceUsd(), fetchOfficialUsdEgp()])
+  const [spot, officialUsdEgp] = await Promise.all([fetchSpotOunceUsd(), fetchOfficialUsdEgp()])
+  const ounceUsd = spot?.value ?? null
 
   // Official USD/EGP — the client computes the local-vs-global gold premium against the SAME
   // official rate the Sagha dollar was measured against (not its own display FX rate).
@@ -43,8 +44,8 @@ export async function runPriceRefresh(): Promise<PriceRefreshResult> {
 
   // Global gold spot (USD/oz and USD/g).
   if (ounceUsd) {
-    rows.push(row({ symbol: 'XAU', asset_class: 'gold', currency: 'USD', price: ounceUsd, source: 'spot-consensus', upstream: 'spot', confidence: 'high' }))
-    rows.push(row({ symbol: 'XAU_G', asset_class: 'gold', currency: 'USD', price: usdPerGram(ounceUsd), source: 'spot-consensus', upstream: 'spot', confidence: 'high' }))
+    rows.push(row({ symbol: 'XAU', asset_class: 'gold', currency: 'USD', price: ounceUsd, source: 'spot-consensus', upstream: 'spot', confidence: spot!.confidence }))
+    rows.push(row({ symbol: 'XAU_G', asset_class: 'gold', currency: 'USD', price: usdPerGram(ounceUsd), source: 'spot-consensus', upstream: 'spot', confidence: spot!.confidence }))
   } else {
     // Every keyless gold-spot provider failed this run — was silent before, which is exactly how
     // gold sat stale for weeks while crypto/FX kept the table's newest row looking fresh.
@@ -83,7 +84,7 @@ export async function runPriceRefresh(): Promise<PriceRefreshResult> {
   // prices with no crawling. EGP is deliberately excluded — its local price is the crawled Sagha.
   for (const cur of ['AED', 'SAR'] as const) {
     try {
-      for (const k of await fetchGulfGoldKarats(cur)) {
+      for (const k of await fetchGulfGoldKarats(cur, ounceUsd)) {
         rows.push(row({ symbol: `XAU_${k.karat}K`, asset_class: 'gold', currency: cur, price: k.pricePerGram, source: k.sources, upstream: 'gulf-gold', confidence: k.confidence }))
       }
     } catch (e) {

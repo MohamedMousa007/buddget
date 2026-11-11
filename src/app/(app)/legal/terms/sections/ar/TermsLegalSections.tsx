@@ -14,7 +14,7 @@ export function TermsLegalSectionsAr() {
         <p>
           يمكنك التوقف عن استخدام الخدمة وحذف حسابك في أي وقت من صفحة الملف الشخصي أو الإعدادات. وعند حذف الحساب، تُزال
           بياناتك الشخصية وفقًا{' '}
-          <LegalDocLink doc="privacy" className="text-[var(--color-brand-red)] hover:underline">
+          <LegalDocLink doc="privacy" className="text-[var(--color-brand-primary-ink)] underline underline-offset-2 hover:no-underline">
             لسياسة الخصوصية
           </LegalDocLink>{' '}
           الخاصة بنا.

@@ -29,12 +29,16 @@ describe('POST /api/account/delete', () => {
     h.del.mockResolvedValue({ ok: true, partialErrors: ['email_log: boom'] })
     const res = await call()
     expect(res.status).toBe(207)
-    expect(await res.json()).toMatchObject({ ok: false, deleted: true, partial: true, partialErrors: ['email_log: boom'] })
+    const json = await res.json()
+    expect(json).toMatchObject({ ok: false, deleted: true, partial: true, partialCount: 1 })
+    expect(JSON.stringify(json)).not.toContain('email_log')
   })
 
   it('fails (500) when the account could not be deleted', async () => {
-    h.del.mockResolvedValue({ ok: false, error: 'Failed to delete auth user', details: ['x'] })
-    expect((await call()).status).toBe(500)
+    h.del.mockResolvedValue({ ok: false, error: 'Failed to delete auth user', details: ['auth.users: secret db message'] })
+    const res = await call()
+    expect(res.status).toBe(500)
+    expect(JSON.stringify(await res.json())).not.toContain('secret db message')
   })
 
   it('asks for re-authentication when the session is older than 5 minutes', async () => {

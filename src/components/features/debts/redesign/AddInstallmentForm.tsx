@@ -95,8 +95,8 @@ export function AddInstallmentForm({ d, locked = false }: { d: AddDebtHook; lock
   const periodLabel = frequency === 'weekly' ? t.fPerWeek : frequency === 'quarterly' ? t.fPerQuarter : t.fPerMonth
   const summary =
     mode === 'total'
-      ? d.installmentPreview != null ? t.fApprox(d.installmentPreview.toLocaleString(), d.currency, periodLabel) : '—'
-      : total > 0 ? t.fTotalApprox(total.toLocaleString(), d.currency) : '—'
+      ? d.installmentPreview != null ? t.fApprox(d.installmentPreview.toLocaleString('en-US'), d.currency, periodLabel) : '—'
+      : total > 0 ? t.fTotalApprox(total.toLocaleString('en-US'), d.currency) : '—'
 
   const providerLabel =
     d.installmentProvider === 'credit_card'

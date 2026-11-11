@@ -1,9 +1,15 @@
 // CI gate: fail on high/critical advisories in production dependencies, except the allowlisted packages below.
 import { execSync } from 'node:child_process'
+import { blockingVulnerabilities } from './audit-gate-lib.mjs'
 
 // next-pwa -> workbox-build -> rollup-plugin-terser -> serialize-javascript: build-time tooling that only runs
-// during `next build` on our own sources, never in the shipped runtime. Remove once next-pwa is replaced.
-const ALLOW = new Set(['serialize-javascript', 'rollup-plugin-terser', 'workbox-build'])
+// during `next build` on our own sources, never in the shipped runtime. Allowed by advisory id with an expiry, so a new
+// advisory on the same packages blocks and a forgotten entry stops passing. Remove once next-pwa is replaced.
+const ALLOW = {
+  'GHSA-5c6j-r48x-rmvq': '2027-03-31',
+  'GHSA-m5mm-p8h7-m29v': '2027-03-31',
+  'GHSA-gcqx-w48m-w2h4': '2027-03-31', // deepmerge, reached through workbox-build's @rollup/plugin-node-resolve
+}
 
 let out
 try {
@@ -22,7 +28,7 @@ if (!report || report.error || typeof report.vulnerabilities !== 'object' || rep
   process.exit(1)
 }
 const vulns = Object.entries(report.vulnerabilities)
-const blocking = vulns.filter(([name, v]) => (v.severity === 'high' || v.severity === 'critical') && !ALLOW.has(name))
+const blocking = blockingVulnerabilities(report, ALLOW)
 if (blocking.length) {
   for (const [name, v] of blocking) console.error(`${v.severity.toUpperCase()}  ${name}  ${JSON.stringify(v.range)}  fix: ${JSON.stringify(v.fixAvailable)}`)
   process.exit(1)

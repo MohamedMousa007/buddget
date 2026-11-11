@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
 import { resolveRouteIdentity, resolveRouteUser } from '@/lib/supabase/resolveRouteUser'
 import { recordSecondFactor } from '@/lib/server/secondFactor'
-import { deliverDeviceSecret, newDeviceSecret, readDeviceSecret, secretMatches } from '@/lib/server/trustedDevice'
+import { readDeviceSecret, secretMatches } from '@/lib/server/trustedDevice'
 
 /**
  * Decides whether the current browser needs to complete the email-OTP second
@@ -54,23 +54,10 @@ export async function POST(request: Request) {
     }
 
     if (match) {
-      let issued: { deviceSecret?: string } = {}
-      if (match.secret_hash) {
-        if (!secretMatches(await readDeviceSecret(request), match.secret_hash)) {
-          return NextResponse.json({ trusted: false, deviceId, required: true })
-        }
-      } else {
-        // Legacy row: only the caller whose update lands (secret_hash still null) is upgraded and trusted.
-        const { secret, hash } = newDeviceSecret()
-        const upgraded = await admin
-          .from('trusted_devices')
-          .update({ secret_hash: hash })
-          .eq('user_id', user.id)
-          .eq('device_id', deviceId)
-          .is('secret_hash', null)
-          .select('device_id')
-        if (upgraded.error || !upgraded.data?.length) return NextResponse.json({ trusted: false, deviceId, required: true })
-        issued = await deliverDeviceSecret(request, secret)
+      // A legacy row (no secret hash) proves nothing about the caller, so it is never trusted by id: the user
+      // verifies once and /auth/device/trust re-issues the row with a secret.
+      if (!match.secret_hash || !secretMatches(await readDeviceSecret(request), match.secret_hash)) {
+        return NextResponse.json({ trusted: false, deviceId, required: true })
       }
       const identity = await resolveRouteIdentity(request)
       if (identity) await recordSecondFactor(admin, identity, 'trusted_device')
@@ -82,7 +69,7 @@ export async function POST(request: Request) {
         .then(({ error }) => {
           if (error) console.error('[auth/device/check] bump last_used_at failed', error.message)
         })
-      return NextResponse.json({ trusted: true, deviceId, required: false, ...issued })
+      return NextResponse.json({ trusted: true, deviceId, required: false })
     }
 
     return NextResponse.json({ trusted: false, deviceId, required: true })

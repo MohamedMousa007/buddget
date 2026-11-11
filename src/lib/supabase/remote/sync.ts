@@ -213,7 +213,7 @@ class OpRunner {
           in: (col: string, vals: readonly string[]) => Promise<{ error: { message: string } | null }>
         }
       })
-        .update({ deleted_at: new Date().toISOString() })
+        .update({ deleted_at: toServerTime(new Date().toISOString()) })
         .in('id', ids)
         .then((res) => {
         this.writes++

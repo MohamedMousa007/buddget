@@ -188,6 +188,7 @@ export function PaymentCardCarousel({
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); onMenu(m.id, e.currentTarget.getBoundingClientRect()) }}
                         aria-label={t.a11y.manage}
+                        aria-haspopup="menu"
                         className="-mr-1.5 -mt-0.5 text-inherit hover:bg-[color-mix(in_oklab,currentColor_15%,transparent)] hover:text-inherit"
                       >
                         <MoreVertical />

@@ -18,7 +18,7 @@ export default function Loading() {
   return (
     <div
       className="
-        fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-4 px-4
+        fixed inset-0 z-[var(--z-system)] flex flex-col items-center justify-center gap-4 px-4
         [--boot-bloom:rgba(13,133,120,0.16)]
         [--boot-from:#F4F7F6] [--boot-to:#E6EEEC]
         [--boot-track:rgba(13,26,24,0.12)] [--boot-spin:var(--color-brand-primary)]

@@ -47,6 +47,13 @@ describe('POST /api/receipt/scan', () => {
     expect((await call([file('image/jpeg')])).status).toBe(422)
   })
 
+  it('BAI-10 rejects an absurd total or item price', async () => {
+    h.fetch.mockResolvedValue(ok({ ...good, amount: 1e15 }))
+    expect((await call([file('image/jpeg')])).status).toBe(422)
+    h.fetch.mockResolvedValue(ok({ ...good, items: [{ name: 'Milk', price: 1e15 }] }))
+    expect((await call([file('image/jpeg')])).status).toBe(422)
+  })
+
   it('returns a valid receipt', async () => {
     h.fetch.mockResolvedValue(ok(good))
     const res = await call([file('image/jpeg')])

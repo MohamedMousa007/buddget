@@ -75,7 +75,7 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   const g = await guardAdmin(req, { permission: 'platform.manage' })
   if (!g.ok) return g.res
-  const body = await readJson<{ aiRuntime?: { rateLimitingEnabled?: unknown; rateLimitMaxRequests?: unknown; rateLimitWindowMs?: unknown } }>(req)
+  const body = await readJson<{ aiRuntime?: { rateLimitingEnabled?: unknown; rateLimitMaxRequests?: unknown; rateLimitWindowMs?: unknown }; code?: string; stepUpPassword?: string }>(req)
   const rt = body?.aiRuntime
   if (!rt || typeof rt !== 'object') return bad('Missing aiRuntime object.')
 
@@ -90,9 +90,13 @@ export async function PATCH(req: Request) {
   }
   if (Object.keys(patch).length === 0) return bad('No valid fields to update.')
 
+  // Switching the throttle off removes the abuse brake for every user: same proof as a minimum-version lock.
+  if (patch.rateLimitingEnabled === false && !(await stepUp(g.ctx, body ?? {}))) return bad(STEP_UP_ERROR, 401)
+
   try {
+    const before = await getStoredAiRuntimeConfig()
     const stored = await saveAiRuntimeConfig(patch, g.ctx.staff.id)
-    await g.ctx.audit('platform.ai_throttle', { summary: 'Changed AI throttling', metadata: patch })
+    await g.ctx.audit('platform.ai_throttle', { summary: 'Changed AI throttling', metadata: { ...patch, before } })
     return json({ ok: true, stored, effective: await getEffectiveAiRuntimeConfig() })
   } catch (err) {
     console.error('[admin/platform] failed to save the AI throttle', err)
@@ -109,6 +113,7 @@ export async function POST(req: Request) {
   if (body?.op !== 'set_setting' || !body.key || !(SETTING_KEYS as readonly string[]).includes(body.key) || !body.value) return bad('Unknown action.')
   const clean = sanitizeSetting(body.key as SettingKey, body.value)
   if (clean === null) return bad('Versions look like 1.2.3.')
+  if (body.key === 'maintenance' && (clean as { enabled?: boolean }).enabled === true && !(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
   if (body.key === 'min_app_version') {
     const { ios = '', android = '' } = clean as { ios?: string; android?: string }
     if (ios || android) {

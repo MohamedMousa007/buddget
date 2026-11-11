@@ -48,7 +48,7 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="presentation">
+        <div className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center p-4" role="presentation">
           <Scrim label={t.common.close} onClick={handleClose} />
           <motion.div
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -86,10 +86,11 @@ export function DeleteAccountDialog({ open, onClose, onConfirm, inProgress, erro
               </div>
             </div>
 
-            <label className="block text-xs font-medium text-[var(--color-brand-text-muted)] mb-2">
+            <label htmlFor="delete-account-confirm" className="block text-xs font-medium text-[var(--color-brand-text-muted)] mb-2">
               {t.profile.deleteAccountConfirmPrompt}
             </label>
             <Input
+              id="delete-account-confirm"
               type="text"
               value={typed}
               onChange={(e) => setTyped(e.target.value)}

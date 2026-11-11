@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useDismissable } from '@/hooks/useDismissable'
 
@@ -31,11 +32,35 @@ export interface CardActionMenuProps {
   zClassName?: string
 }
 
+/** Arrow keys, Home and End move between the enabled items (APG menu); other keys are left alone. */
+export function nextMenuIndex(count: number, current: number, key: string): number | null {
+  if (count === 0) return null
+  if (key === 'ArrowDown') return (current + 1) % count
+  if (key === 'ArrowUp') return (current - 1 + count) % count
+  if (key === 'Home') return 0
+  if (key === 'End') return count - 1
+  return null
+}
+
+function menuKeyTarget(menu: HTMLElement | null, key: string): HTMLElement | null {
+  const items = Array.from(menu?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [])
+  const next = nextMenuIndex(items.length, items.indexOf(document.activeElement as HTMLElement), key)
+  return next === null ? null : items[next]
+}
+
 const WIDTH = 216
 const ROW = 44
 
 export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-[60]' }: CardActionMenuProps) {
   useDismissable(anchor !== null, onClose)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const open = anchor !== null
+  useEffect(() => {
+    if (!open) return
+    const opener = document.activeElement as HTMLElement | null
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')?.focus()
+    return () => opener?.focus?.()
+  }, [open])
   // Only ever rendered from a client click (anchor is a live DOMRect), so no SSR guard needed
   // beyond confirming document exists for the portal target.
   if (!anchor || typeof document === 'undefined') return null
@@ -47,8 +72,15 @@ export function CardActionMenu({ anchor, items, onClose, title, zClassName = 'z-
   return createPortal(
     <div className={`fixed inset-0 ${zClassName}`} onClick={onClose} role="presentation">
       <div
+        ref={menuRef}
         role="menu"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          const target = menuKeyTarget(menuRef.current, e.key)
+          if (!target) return
+          e.preventDefault()
+          target.focus()
+        }}
         className="absolute overflow-hidden rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)]"
         style={{ top, left, width: WIDTH, boxShadow: 'var(--shadow-lg)' }}
       >

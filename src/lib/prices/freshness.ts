@@ -12,6 +12,9 @@ export const STALENESS_MS: Record<string, number> = {
 
 const DEFAULT_MS = 6 * 60 * 60 * 1000
 
+/** A device clock a few minutes behind the server stamps `as_of` slightly in its future: still fresh. */
+const CLOCK_SKEW_MS = 5 * 60 * 1000
+
 export function stalenessWindowMs(assetClass: string): number {
   return STALENESS_MS[assetClass] ?? DEFAULT_MS
 }
@@ -21,5 +24,5 @@ export function isPriceFresh(asOf: string | Date, assetClass: string, now: Date 
   const t = typeof asOf === 'string' ? Date.parse(asOf) : asOf.getTime()
   if (!Number.isFinite(t)) return false
   const age = now.getTime() - t
-  return age >= 0 && age <= stalenessWindowMs(assetClass)
+  return age >= -CLOCK_SKEW_MS && age <= stalenessWindowMs(assetClass)
 }

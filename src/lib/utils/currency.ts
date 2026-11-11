@@ -28,6 +28,7 @@ export function tryConvertCurrency(
 ): number | null {
   if (fromCurrency === toCurrency) return amount
   if (amount === 0) return 0
+  if (!Number.isFinite(amount)) return null
 
   const from = String(fromCurrency)
   const to = String(toCurrency)
@@ -43,8 +44,11 @@ export function tryConvertCurrency(
   }
 
   // Live rates get the first full attempt: a stale built-in pair must never outrank them on a bridge.
-  return convertVia(amount, from, to, rates) ?? convertVia(amount, from, to, { ...DEFAULT_RATES, ...rates })
+  return finiteOrNull(convertVia(amount, from, to, rates)) ?? finiteOrNull(convertVia(amount, from, to, { ...DEFAULT_RATES, ...rates }))
 }
+
+/** A product of usable rates can still overflow or underflow; that is no conversion at all. */
+const finiteOrNull = (n: number | null): number | null => (n !== null && Number.isFinite(n) ? n : null)
 
 /** A rate that can price money: finite and above zero. Anything else is treated as absent. */
 const usableRate = (r: number | undefined): r is number => typeof r === 'number' && Number.isFinite(r) && r > 0
@@ -164,7 +168,3 @@ export function getConversionRate(
   return r
 }
 
-/** Compact number for tight labels: 100000 → "100K", 1250000 → "1.3M". */
-export function fmtCompact(n: number): string {
-  return Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
-}

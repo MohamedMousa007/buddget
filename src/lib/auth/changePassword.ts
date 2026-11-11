@@ -13,14 +13,15 @@ export async function changePassword(input: { newPassword: string; currentPasswo
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     })
-    const body = (await res.clone().json().catch(() => null)) as { code?: string; deviceSecret?: string } | null
+    const body = (await res.clone().json().catch(() => null)) as { code?: string; deviceSecret?: string; passwordChanged?: boolean } | null
     // The server re-trusted this device with a fresh secret (it dropped every old trust row); passwordChanged covers the partial-success 502.
     if (res.ok || body?.deviceSecret) await (await import('@/lib/native/deviceSecret')).rememberDeviceSecret(body)
-    if (res.ok) {
+    // The server dropped every biometric binding as soon as the password changed, including on the partial-success 502.
+    if (res.ok || body?.passwordChanged) {
       const { clearLocalBiometric } = await import('@/lib/native/biometricAuth')
       await clearLocalBiometric()
-      return 'ok'
     }
+    if (res.ok) return 'ok'
     if (res.status === 401) return 'unauthenticated'
     if (res.status === 429) return 'rate_limited'
     if (body?.code === 'wrong_password' || body?.code === 'reauth_required' || body?.code === 'same_password') return body.code

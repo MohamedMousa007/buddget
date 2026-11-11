@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { reportCycles, reportRange, reportSpendRows } from './reportsPeriod'
+import { isReportSpendRow, reportCycles, reportRange, reportSpendRows } from './reportsPeriod'
 import type { Expense } from '@/lib/store/types'
 
 const NOW = new Date(2026, 9, 28)
@@ -44,5 +44,27 @@ describe('reportSpendRows', () => {
       e({ id: '7', spendExclusion: 'user' as never }),
     ]
     expect(reportSpendRows(rows).map((r) => r.id)).toEqual(['1'])
+  })
+
+  it('drops refunded and declined rows (RPW-3): they are neither purchases nor a biggest purchase', () => {
+    const rows = [e({ id: '1' }), e({ id: '2', refundKind: 'refunded' }), e({ id: '3', refundKind: 'declined' })]
+    expect(reportSpendRows(rows).map((r) => r.id)).toEqual(['1'])
+    expect(isReportSpendRow(rows[1])).toBe(false)
+  })
+})
+
+describe('thisYear with a late cycle start (RPW-9)', () => {
+  it('before the first cycle of the year begins, only the running cycle is shown', () => {
+    expect(reportCycles('thisYear', new Date(2026, 0, 10), 25)).toEqual(['2025-12'])
+    expect(reportCycles('thisYear', new Date(2026, 0, 24), 25)).toEqual(['2025-12'])
+  })
+
+  it('from the first cycle start on, it is the cycles starting this year', () => {
+    expect(reportCycles('thisYear', new Date(2026, 0, 25), 25)).toEqual(['2026-01'])
+    expect(reportCycles('thisYear', new Date(2026, 2, 3), 25)).toEqual(['2026-01', '2026-02'])
+  })
+
+  it('start day 1 is unchanged on Jan 1', () => {
+    expect(reportCycles('thisYear', new Date(2026, 0, 1), 1)).toEqual(['2026-01'])
   })
 })

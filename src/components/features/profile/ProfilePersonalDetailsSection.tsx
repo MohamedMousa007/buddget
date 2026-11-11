@@ -40,18 +40,18 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
       </h2>
       <div className="space-y-3">
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelName}</Label>
-          <Input
+          <Label htmlFor="profile-1" className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelName}</Label>
+          <Input id="profile-1"
             value={store.profile.name}
             onChange={(e) => store.updateProfile({ name: e.target.value })}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">
+          <Label htmlFor="profile-2" className="text-xs text-[var(--color-brand-text-secondary)]">
             {user ? t.profile.labelEmailAccount : t.profile.labelEmail}
           </Label>
-          <Input
+          <Input id="profile-2"
             value={store.profile.email || ''}
             onChange={(e) => {
               if (!user) store.updateProfile({ email: e.target.value })
@@ -61,16 +61,16 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelPhone}</Label>
-          <Input
+          <Label htmlFor="profile-3" className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelPhone}</Label>
+          <Input id="profile-3"
             value={store.profile.phone || ''}
             onChange={(e) => store.updateProfile({ phone: e.target.value })}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelCountry}</Label>
-          <CountrySelect
+          <Label htmlFor="profile-4" className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelCountry}</Label>
+          <CountrySelect id="profile-4"
             value={store.profile.country || ''}
             onChange={(nameEn) => store.updateProfile({ country: nameEn })}
             locale={locale}
@@ -79,16 +79,16 @@ export function ProfilePersonalDetailsSection({ store, user }: ProfilePersonalDe
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelCity}</Label>
-          <Input
+          <Label htmlFor="profile-5" className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelCity}</Label>
+          <Input id="profile-5"
             value={store.profile.city || ''}
             onChange={(e) => store.updateProfile({ city: e.target.value })}
             className="mt-1 bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]"
           />
         </div>
         <div>
-          <Label className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelGender}</Label>
-          <SelectField
+          <Label htmlFor="profile-6" className="text-xs text-[var(--color-brand-text-secondary)]">{t.profile.labelGender}</Label>
+          <SelectField id="profile-6"
             value={store.profile.gender ?? ''}
             onChange={(v) => {
               store.updateProfile({

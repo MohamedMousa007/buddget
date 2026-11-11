@@ -77,12 +77,15 @@ function AiThrottle({ data, canManage, onSaved }: { data: PlatformData; canManag
   const [max, setMax] = useState(String(data.ai.stored.rateLimitMaxRequests))
   const [windowSec, setWindowSec] = useState(String(Math.round(data.ai.stored.rateLimitWindowMs / 1000)))
   const [busy, setBusy] = useState(false)
+  const stepUp = useStepUp()
   const env = Object.entries(data.ai.envHints).filter(([, v]) => v !== null)
 
   const save = async () => {
+    const proof = enabled ? {} : await stepUp('Turning the AI throttle off removes the abuse limit for every user. Confirm it’s you.')
+    if (!proof) return
     setBusy(true)
     try {
-      await adminFetch('/api/admin/platform', { method: 'PATCH', json: { aiRuntime: { rateLimitingEnabled: enabled, rateLimitMaxRequests: Math.max(1, Number(max) || 15), rateLimitWindowMs: Math.min(3_600_000, Math.max(1000, (Number(windowSec) || 60) * 1000)) } } })
+      await adminFetch('/api/admin/platform', { method: 'PATCH', json: { ...proof, aiRuntime: { rateLimitingEnabled: enabled, rateLimitMaxRequests: Math.max(1, Number(max) || 15), rateLimitWindowMs: Math.min(3_600_000, Math.max(1000, (Number(windowSec) || 60) * 1000)) } } })
       toast('AI throttle saved')
       await onSaved()
     } catch (e) {
@@ -123,12 +126,18 @@ function Maintenance({ data, canManage, onSaved }: { data: PlatformData; canMana
   const s = useSetting(data, 'maintenance', onSaved)
   const [enabled, setEnabled] = useState(s.value.enabled === true)
   const [message, setMessage] = useState(String(s.value.message ?? ''))
+  const stepUp = useStepUp()
+  const save = async () => {
+    const proof = enabled ? await stepUp('Maintenance mode shows a notice to every user. Confirm it’s you.') : {}
+    if (!proof) return
+    await s.save({ enabled, message }, proof)
+  }
   return (
     <Panel title="Maintenance mode" description="Tell the app to show a maintenance notice" actions={<Pill tone={s.value.enabled ? 'bad' : 'good'}>{s.value.enabled ? 'On' : 'Off'}</Pill>}>
       <div className="space-y-4">
         <div className="flex items-center justify-between"><span className="text-sm">Maintenance in progress</span><Switch size="touch" checked={enabled} onCheckedChange={setEnabled} disabled={!canManage} aria-label="Maintenance mode" /></div>
         <Field label="Message shown to users"><Input size="brand" value={message} maxLength={300} onChange={(e) => setMessage(e.target.value)} disabled={!canManage} placeholder="We’re upgrading Buddget. Back in a few minutes." /></Field>
-        {canManage ? <Button size="touch" loading={s.busy} onClick={() => void s.save({ enabled, message })}>Save</Button> : null}
+        {canManage ? <Button size="touch" loading={s.busy} onClick={() => void save()}>Save</Button> : null}
         <p className="text-xs text-[var(--color-brand-text-muted)]">Stored now and served from the platform settings; the app begins honouring it when its client reads <code>platform_settings</code>.</p>
       </div>
     </Panel>

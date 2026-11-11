@@ -24,9 +24,13 @@ export function toLatinDigits(input: string): string {
   })
 }
 
-/** Compact number ("1.2K" / "1.2 ألف"): the suffix follows the app language, digits stay Latin. */
+/** NaN and the infinities have no honest rendering in a money or percent label: show zero rather than "NaN" or "∞". */
+const finite = (n: number): number => (Number.isFinite(n) ? n : 0)
+
+/** Compact number ("1.2K" / "1.2 ألف"): the suffix follows the app language, digits stay Latin. A value that rounds to zero carries no sign. */
 export function formatCompact(n: number, locale: 'en' | 'ar' = 'en'): string {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+  const v = finite(n)
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(Math.abs(v) < 0.05 ? 0 : v)
 }
 
 /**
@@ -76,7 +80,8 @@ function withSign(negative: boolean, body: string): string {
   return negative ? `-${body}` : body
 }
 
-export function formatCurrency(amount: number, currency: Currency | string, showCents = true): string {
+export function formatCurrency(rawAmount: number, currency: Currency | string, showCents = true): string {
+  const amount = finite(rawAmount)
   const loc = numberLocale()
   if (currency === 'XAU') {
     const grams = Math.abs(amount)
@@ -112,6 +117,7 @@ export function formatMoneyHero(
 ): string {
   const { compact = 'auto', fullMaxChars = 9, locale = 'en' } = options
   if (currency === 'XAU') return formatCurrency(amount, 'XAU')
+  amount = finite(amount)
 
   const symbol = CURRENCY_SYMBOLS[currency] || currency
   const loc = numberLocale()
@@ -160,12 +166,12 @@ export function formatMonthShort(dateStr: string): string {
 }
 
 export function formatPercent(value: number): string {
-  return `${Math.round(value)}%`
+  return `${Math.round(Math.max(-Number.MAX_SAFE_INTEGER, Math.min(Number.MAX_SAFE_INTEGER, finite(value))))}%`
 }
 
 /** Round to the nearest whole unit, grouped ("1,234"). No currency symbol — pair with one at the call site. */
 export function formatWhole(n: number): string {
-  return (Math.sign(n) * Math.round(Math.abs(n)) + 0).toLocaleString(numberLocale())
+  return (Math.sign(finite(n)) * Math.round(Math.abs(finite(n))) + 0).toLocaleString(numberLocale())
 }
 
 const QUANTITY_MAX_DECIMALS: Record<string, number> = { crypto: 8, gold: 3, stock: 4, property: 2 }
@@ -173,22 +179,23 @@ const QUANTITY_MAX_DECIMALS: Record<string, number> = { crypto: 8, gold: 3, stoc
 /** Unit-aware holding quantity: keeps the decimals that matter ("0.0123" BTC, "2.5" g), trims trailing zeros. */
 export function formatQuantity(n: number, assetType?: string): string {
   const max = (assetType && QUANTITY_MAX_DECIMALS[assetType]) || 4
-  return (Math.round(n * 10 ** max) / 10 ** max + 0).toLocaleString(numberLocale(), { maximumFractionDigits: max })
+  return (Math.round(finite(n) * 10 ** max) / 10 ** max + 0).toLocaleString(numberLocale(), { maximumFractionDigits: max })
 }
 
 /** Two decimals, grouped ("1,368.81"). Absolute value — callers place the sign. */
 export function formatFixed2(n: number): string {
-  return Math.abs(n).toLocaleString(numberLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return Math.abs(finite(n)).toLocaleString(numberLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 /** Whole when it is whole ("14,500"), else two decimals ("386.40"). Absolute value. */
 export function formatFlex(n: number): string {
-  const r = Math.round(Math.abs(n) * 100) / 100
+  const r = Math.round(Math.abs(finite(n)) * 100) / 100
   return Number.isInteger(r) ? formatWhole(r) : formatFixed2(r)
 }
 
 /** Signed with a true minus: "+21,436" / "−5,131" / "0". `digits` 0 or 2. */
-export function formatSigned(n: number, digits: 0 | 2 = 0): string {
+export function formatSigned(raw: number, digits: 0 | 2 = 0): string {
+  const n = finite(raw)
   const body = digits ? formatFixed2(n) : formatWhole(Math.abs(n))
   if (Math.abs(n) < (digits ? 0.005 : 0.5)) return digits ? formatFixed2(0) : '0'
   return `${n > 0 ? '+' : '\u2212'}${body}`

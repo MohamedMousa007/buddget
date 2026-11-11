@@ -6,6 +6,8 @@ import { emptySnapshot, type Snapshot } from '@/lib/supabase/remote'
  * reached it. Comparing the cache with these hashes finds exactly those rows, so the first flush sends them.
  */
 export interface Fingerprint {
+  /** Hash format: 2 = two independent 32-bit hashes plus the length. An older fingerprint is ignored (the first boot after the upgrade trusts the cache). */
+  v: 2
   lists: Record<string, Record<string, string>>
   singles: Record<string, string>
 }
@@ -21,24 +23,38 @@ function stable(value: unknown): string {
   return JSON.stringify(value) ?? 'null'
 }
 
+const rowHashes = new WeakMap<object, string>()
+
+/** Store rows are replaced, never mutated, so a row object seen before keeps its hash: only changed rows are re-serialised. */
+function rowHash(row: object): string {
+  const known = rowHashes.get(row)
+  if (known !== undefined) return known
+  const h = hash(row)
+  rowHashes.set(row, h)
+  return h
+}
+
 function hash(value: unknown): string {
   const s = stable(value)
-  let h = 0x811c9dc5
+  let h1 = 0x811c9dc5
+  let h2 = 0x9747b28c
   for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i)
-    h = Math.imul(h, 0x01000193)
+    const c = s.charCodeAt(i)
+    h1 = Math.imul(h1 ^ c, 0x01000193)
+    h2 = Math.imul(h2 ^ c, 0x5bd1e995)
+    h2 ^= h2 >>> 15
   }
-  return `${s.length.toString(36)}.${(h >>> 0).toString(36)}`
+  return `${s.length.toString(36)}.${(h1 >>> 0).toString(36)}.${(h2 >>> 0).toString(36)}`
 }
 
 export function fingerprintOf(snap: Snapshot): Fingerprint {
   const lists: Fingerprint['lists'] = {}
   const singles: Fingerprint['singles'] = {}
   for (const [key, value] of Object.entries(snap)) {
-    if (Array.isArray(value)) lists[key] = Object.fromEntries((value as Row[]).map((r) => [r.id, hash(r)]))
+    if (Array.isArray(value)) lists[key] = Object.fromEntries((value as Row[]).map((r) => [r.id, rowHash(r)]))
     else singles[key] = hash(value)
   }
-  return { lists, singles }
+  return { v: 2, lists, singles }
 }
 
 /**
@@ -57,7 +73,7 @@ export function baselineFromFingerprint(cache: Snapshot, fp: Fingerprint): Snaps
       for (const row of value as Row[]) {
         seen.add(row.id)
         if (!(row.id in known)) continue
-        prev.push(known[row.id] === hash(row) ? row : { ...row, __unsynced: true })
+        prev.push(known[row.id] === rowHash(row) ? row : { ...row, __unsynced: true })
       }
       for (const id of Object.keys(known)) if (!seen.has(id)) prev.push({ id })
       out[key] = prev
@@ -79,7 +95,8 @@ export function baselineForBoot(userId: string, cache: Snapshot): Snapshot {
   try {
     const raw = localStorage.getItem(KEY(userId))
     if (!raw) return cache
-    return baselineFromFingerprint(cache, JSON.parse(raw) as Fingerprint)
+    const fp = JSON.parse(raw) as Partial<Fingerprint>
+    return fp.v === 2 ? baselineFromFingerprint(cache, fp as Fingerprint) : cache
   } catch {
     return cache
   }

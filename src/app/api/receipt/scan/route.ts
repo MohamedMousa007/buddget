@@ -13,6 +13,7 @@
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
+import { LEGACY_MAX_AMOUNT } from '@/lib/ai/legacyGuards'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
@@ -101,17 +102,19 @@ const MIN_ATTEMPT_MS = 5_000
 const MAX_TOTAL_BYTES = 4_000_000
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
 
+const money = z.number().finite().min(-LEGACY_MAX_AMOUNT).max(LEGACY_MAX_AMOUNT)
+
 const receiptSchema = z.object({
   isReceipt: z.boolean(),
   merchant: z.string(),
-  amount: z.number().finite(),
+  amount: money,
   currency: z.enum(SUPPORTED_CURRENCIES as [string, ...string[]]),
   date: z.string().default(''),
   category: z.enum(SUPPORTED_CATEGORIES as [string, ...string[]]),
   taxIncluded: z.boolean(),
   confidence: z.number().finite(),
-  items: z.array(z.object({ name: z.string(), price: z.number().finite(), qty: z.number().finite().optional() })),
-  charges: z.array(z.object({ type: z.enum(['tax', 'service', 'tip', 'discount', 'other']), label: z.string(), amount: z.number().finite() })),
+  items: z.array(z.object({ name: z.string(), price: money, qty: z.number().finite().optional() })),
+  charges: z.array(z.object({ type: z.enum(['tax', 'service', 'tip', 'discount', 'other']), label: z.string(), amount: money })),
   notes: z.string().default(''),
 })
 

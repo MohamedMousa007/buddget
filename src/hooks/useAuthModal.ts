@@ -16,6 +16,7 @@ import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
 import { changePassword } from '@/lib/auth/changePassword'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
+import { toLatinDigits } from '@/lib/utils/formatters'
 
 export type AuthStep = 'form' | 'verify' | 'forgot' | 'reset-new-password'
 /**
@@ -485,7 +486,7 @@ export function useAuthModal() {
       return
     }
     setError('')
-    const token = otp.replace(/\D/g, '').slice(0, 6)
+    const token = toLatinDigits(otp).replace(/\D/g, '').slice(0, 6)
     if (token.length !== 6) {
       setError(t.auth.errorOtpIncomplete)
       return

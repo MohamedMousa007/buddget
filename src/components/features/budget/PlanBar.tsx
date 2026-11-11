@@ -41,7 +41,7 @@ export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expa
           </span>
           <ChevronDown className={`size-4 shrink-0 text-[var(--color-brand-text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden />
         </SelectableCard>
-        <IconButton variant="outlined" size="lg" aria-label={c.options} onClick={(e) => onOpenMenu(e.currentTarget.getBoundingClientRect())}>
+        <IconButton variant="outlined" size="lg" aria-label={c.options} aria-haspopup="menu" onClick={(e) => onOpenMenu(e.currentTarget.getBoundingClientRect())}>
           <Ellipsis />
         </IconButton>
       </div>

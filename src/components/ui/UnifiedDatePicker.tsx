@@ -8,6 +8,7 @@ import { buildMonthGrid, pickerBounds, pickerYears, weekdayColumns } from '@/lib
 import { monthNames, weekdayNames } from '@/lib/i18n/dateFormat'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { toLatinDigits } from '@/lib/utils/formatters'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -105,14 +106,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max }:
   }, [open])
 
   const dialogRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    dialogRef.current?.focus()
-    return () => {
-      if (opener?.isConnected) opener.focus()
-    }
-  }, [open])
+  useDialogFocus(open, dialogRef)
 
   if (!open || typeof document === 'undefined') return null
 
@@ -217,7 +211,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max }:
                   size="sm"
                   onClick={() => (isMonths ? shiftYear(-1) : shiftMonth(-1))}
                 >
-                  <ChevronLeft />
+                  <ChevronLeft className="rtl:rotate-180" />
                 </IconButton>
                 <IconButton
                   aria-label={t.common.next}
@@ -225,7 +219,7 @@ export function UnifiedDatePicker({ open, value, onConfirm, onClose, min, max }:
                   size="sm"
                   onClick={() => (isMonths ? shiftYear(1) : shiftMonth(1))}
                 >
-                  <ChevronRight />
+                  <ChevronRight className="rtl:rotate-180" />
                 </IconButton>
               </>
             ) : null}

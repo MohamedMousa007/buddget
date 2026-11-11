@@ -22,7 +22,8 @@ const withPWA = require('next-pwa')({
   disable:
     IS_CAPACITOR ||
     (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_PWA_DEV !== 'true'),
-  buildExcludes: [/middleware-manifest\.json$/],
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  buildExcludes: require('./config/pwaBuildExcludes'),
   /** Authenticated /api/ responses are never cached by the service worker (see config/pwaRuntimeCaching.js). */
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   runtimeCaching: require('./config/pwaRuntimeCaching'),

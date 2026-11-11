@@ -28,4 +28,4 @@ DROP INDEX IF EXISTS public.push_tokens_user_idx;
 REVOKE INSERT, UPDATE, DELETE ON public.site_leads, public.site_stats, public.asset_prices, public.merchant_categories, public.sms_parse_log FROM authenticated;
 
 -- DBL-6: keep a week of cron run details so a failing job can be audited.
-SELECT cron.alter_job(3, command := 'DELETE FROM cron.job_run_details WHERE end_time < now() - interval ''7 days''');
+SELECT cron.alter_job((SELECT jobid FROM cron.job WHERE jobname = 'cron-log-trim'), command := 'DELETE FROM cron.job_run_details WHERE end_time < now() - interval ''7 days''');

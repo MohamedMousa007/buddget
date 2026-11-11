@@ -42,7 +42,8 @@ export async function POST(request: Request) {
 
   const { type, title, description } = parsed.data
   const labelIds = [LABEL_USER_FEEDBACK, type === 'bug' ? LABEL_BUG : LABEL_FEATURE]
-  const byline = `*Submitted by: ${user.email ?? 'unknown'}*`
+  // The account id, not the address: Linear keeps its copy after the account is deleted.
+  const byline = `*Submitted by user id: ${user.id}*`
   const fullDescription = description ? `${description}\n\n---\n${byline}` : byline
 
   type LinearRes = { data?: { issueCreate?: { success: boolean; issue?: { url: string; identifier: string } } } }

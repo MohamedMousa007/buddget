@@ -34,8 +34,9 @@ export function IncomeTemplatePicker({
   if (templates.length === 0) return null
   return (
     <div>
-      <span className={MODAL_LABEL_CLASS}>{label}</span>
+      <label htmlFor="income-template-select" className={MODAL_LABEL_CLASS}>{label}</label>
       <select
+        id="income-template-select"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1.5 w-full h-12 rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 text-sm text-[var(--color-brand-text-primary)] focus:border-[var(--color-brand-focus)] focus:outline-none"
@@ -43,7 +44,7 @@ export function IncomeTemplatePicker({
         <option value="">{noneLabel}</option>
         {templates.map((s) => (
           <option key={s.id} value={s.id}>
-            {s.name} · {s.amount.toLocaleString()} {s.currency}
+            {s.name} · {s.amount.toLocaleString('en-US')} {s.currency}
           </option>
         ))}
       </select>

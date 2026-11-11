@@ -24,7 +24,8 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     minWebViewVersion: 111,
-    webContentsDebuggingEnabled: process.env.NODE_ENV !== 'production',
+    /** Off unless explicitly requested (`CAP_WEBVIEW_DEBUG=1 npx cap sync`): a bare sync must never ship a remotely inspectable WebView. */
+    webContentsDebuggingEnabled: process.env.CAP_WEBVIEW_DEBUG === '1',
   },
   ios: {
     /**

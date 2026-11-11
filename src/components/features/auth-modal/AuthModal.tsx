@@ -30,7 +30,7 @@ export function AuthModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto flex items-start sm:items-center justify-center p-4"
+      className="fixed inset-0 z-[var(--z-dialog)] overflow-y-auto flex items-start sm:items-center justify-center p-4"
       role="presentation"
     >
       <Scrim

@@ -151,7 +151,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
               const nonSpend = isNonSpendExpense(e)
               return (
                 <div key={e.id}>
-                  {idx > 0 ? <div className="ml-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
+                  {idx > 0 ? <div className="ms-[82px] h-px bg-[var(--color-brand-border)]" /> : null}
                   <SwipeToDelete
                     openSide={openId === e.id ? 'left' : null}
                     onOpenChange={(side) => setOpenId(side ? e.id : null)}
@@ -180,7 +180,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       }
                       subtitle={
                         method && accountIdentifier(method) ? (
-                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ml-1 shrink-0">{accountIdentifier(method)}</span></>
+                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ms-1 shrink-0">{accountIdentifier(method)}</span></>
                         ) : (method?.name || t.common.unknown)
                       }
                       amount={<span className={netZero ? 'line-through' : ''}>−{fmtNum(baseVal)}</span>}

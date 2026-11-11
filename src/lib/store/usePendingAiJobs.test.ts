@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 vi.mock('@/lib/native/isNative', () => ({ isNative: () => false }))
 
-import { usePendingAiJobs, isRetryableStatus, type PendingAiJob } from '@/lib/store/usePendingAiJobs'
+import { usePendingAiJobs, isRetryableStatus, MAX_SERVER_FAULT_ATTEMPTS, type PendingAiJob } from '@/lib/store/usePendingAiJobs'
 
 function job(id: string, kind: PendingAiJob['kind'] = 'voice'): PendingAiJob {
   return { id, kind, mimeType: 'audio/mp4', createdAt: new Date().toISOString() }
@@ -54,6 +54,16 @@ describe('usePendingAiJobs', () => {
       addJob(job('a'))
       for (let i = 0; i < 6; i++) expect(failJob('a', true)).toBe('requeued')
       expect(usePendingAiJobs.getState().jobs).toHaveLength(1)
+    })
+
+    it('OFS-4 gives up on a job that keeps hitting server faults, but never on offline/auth/quota', () => {
+      const { addJob, failJob } = usePendingAiJobs.getState()
+      addJob(job('a'))
+      addJob(job('b'))
+      for (let i = 0; i < 20; i++) expect(failJob('b', true, false)).toBe('requeued')
+      for (let i = 0; i < MAX_SERVER_FAULT_ATTEMPTS - 1; i++) expect(failJob('a', true, true)).toBe('requeued')
+      expect(failJob('a', true, true)).toBe('dropped')
+      expect(usePendingAiJobs.getState().jobs.map((j) => j.id)).toEqual(['b'])
     })
 
     it('keeps the media on auth, quota and server failures, drops only permanent 4xx', () => {

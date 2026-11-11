@@ -14,3 +14,6 @@ Project `ydihurtbcnoflhormgzi`. Files here are applied by hand (SQL editor / MCP
 These prefixes are used more than once: 0065, 0079, 0092, 0093, 0096, 0097, 0098, 0099, 0100, 0101, 0102, 0103 (twice each), 0198 (three times), 0209, 0210 (twice each).
 They were applied to production under those names and the ledger records them by name, and `scripts/check-migrations.mjs` grandfathers exactly these counts, so the files are left as they are (renaming would break the file-to-ledger name match). Any NEW reuse of a prefix, or a further file under a grandfathered one, fails `npm run verify`.
 Numbers 0237 and 0240+ had no file when this note was written; check `ls` before taking one.
+
+## New functions are private by default (migration 0250)
+Since 0250 a function created by `postgres` has no EXECUTE for `PUBLIC`, `anon` or `authenticated` (only `postgres` and `service_role`). A client RPC must say so in its own migration: `GRANT EXECUTE ON FUNCTION public.name(args) TO authenticated;` (and make it check `auth.uid()` when it is SECURITY DEFINER). Triggers and service-role-only functions need nothing.

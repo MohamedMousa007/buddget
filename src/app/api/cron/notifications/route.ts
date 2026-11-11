@@ -1,5 +1,5 @@
 /**
- * GET|POST /api/cron/notifications  (Supabase pg_cron hourly via net.http_post; Vercel Cron daily as backup)
+ * GET|POST /api/cron/notifications  (Supabase pg_cron hourly via net.http_post; the only scheduler: a second Vercel cron only produced duplicate-key errors)
  *
  * Evaluates the time-sensitive alerts (recurring debt due/tomorrow, month-end)
  * for every account and emits them as localized in-app notifications + OS push.

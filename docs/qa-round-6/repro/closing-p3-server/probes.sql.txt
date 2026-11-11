@@ -1,0 +1,10 @@
+-- Rolled-back probes run against ydihurtbcnoflhormgzi for 0250/0251 (each ends in RAISE EXCEPTION, so nothing persists).
+-- Scaffold: insert two auth.users (qa6p3a/qa6p3b@example.invalid) + profiles + budget_plans, then `set local role authenticated` with
+-- request.jwt.claims = {"sub":<uid>,"role":"authenticated"}.
+-- Observed after 0250: email pinned to the Auth address; profile/activation pointing at another user's plan = 23503 (own plan ok);
+--   select secret_hash on biometric_devices = 42501, device list + own DELETE ok; site_leads select = 42501; goal_allocation_runs insert = 42501,
+--   select ok; a function created by postgres has proacl {postgres=X, service_role=X} (no PUBLIC/anon/authenticated).
+-- Observed after 0251: deleting a plan tombstones its activation (1); housekeeping() keeps a tombstoned savings_transactions row referenced by a live
+--   expense (funded_from_savings_tx_id) and purges an unreferenced one; sms_retention() runs; with platform_settings enforce_2fa_gate set to
+--   {"mode":"enforce"} INSIDE the transaction, private.two_factor_gate() with claims sub='not-a-uuid' RAISES (before 0251 it returned silently),
+--   service_role claims and a user without 2FA pass. Live flag stays {"mode":"report", only_users:[...]}.

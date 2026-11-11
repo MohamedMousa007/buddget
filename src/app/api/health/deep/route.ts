@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { clientIp } from '@/lib/server/clientIp'
 import { STALE_CACHE_SECONDS, ageSeconds, buildInfo } from '@/lib/health/buildInfo'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { CRON_LAST_RUN_KEY, evaluateCronHealth } from '@/lib/server/cronHealth'
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   const started = Date.now()
   const service = createServiceRoleClient()
   // The platform sets x-real-ip itself; the first x-forwarded-for hop is client-supplied and would let a caller pick its own bucket.
-  const caller = (request.headers.get('x-real-ip') ?? (request.headers.get('x-forwarded-for') ?? 'unknown').split(',').pop() ?? 'unknown').trim().slice(0, 64)
+  const caller = clientIp(request)
 
   const { data: allowed, error: rateErr } = await service.rpc('api_rate_hit', { p_key: `health:${caller}`, p_window_seconds: 60, p_max_hits: PER_MINUTE })
   if (rateErr) return NextResponse.json({ ok: false, error: 'database_unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })

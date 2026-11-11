@@ -132,11 +132,11 @@
 
   /* Semantic. Each adjusted to clear 4.5:1 as text on BOTH the card surface and
      its own soft background (the badge pairing the kit shipped failed at 2.71–3.98). */
-  --color-brand-red: #C2353B;                /* negative / destructive — 4.71:1 on red-soft */
+  --color-brand-red: #BE343A;                /* negative / destructive; >= 4.5:1 on every surface incl. sunken */
   --color-brand-red-hover: #A82A31;
-  --color-brand-green: #107E38;              /* positive / income — 5.44:1 white, 4.80:1 soft */
+  --color-brand-green: #0F7635;              /* positive / income; >= 4.5:1 on every surface incl. sunken */
   --color-brand-green-hover: #0D6B2F;
-  --color-brand-amber: #93630B;              /* warning / due soon — 5.19:1 on warn-soft */
+  --color-brand-amber: #8C5E0A;              /* warning / due soon; >= 4.5:1 on every surface incl. sunken */
   /* Label colour ON the solid semantic fills above (and their hovers). The fills
      are dark in light mode and light in dark mode, so the label flips with them. */
   --color-brand-on-red: #FFFFFF;
@@ -145,7 +145,7 @@
   /* Theme-independent inks for text over a USER-CHOSEN colour (card faces, avatars). */
   --color-brand-ink-light: #FFFFFF;
   --color-brand-ink-dark: #04201C;
-  --color-brand-gold: #977019;               /* investment — 4.54:1 on white */
+  --color-brand-gold: #896617;               /* investment; >= 4.5:1 on bg, card and elevated */
   --color-brand-red-soft: #FBE7E7;
   --color-brand-green-soft: #E3F5EA;
   --color-brand-amber-soft: #FBF0DA;
@@ -164,7 +164,7 @@
   --color-brand-text-secondary: #566B68;     /* 5.68:1 */
   /* Kit shipped #8A9997 — 2.96:1 on white, the same AA failure this file had
      already fixed once before. Darkened to clear 4.5:1 on card AND page bg. */
-  --color-brand-text-muted: #646F6D;         /* 5.4:1 white, 4.56:1 on the sunken wells, 5.0:1 bg */
+  --color-brand-text-muted: #5F6968;         /* >= 4.5:1 on bg, card, elevated, sunken and the soft tints */
   --color-brand-red-text: #C0323A;
 
   /* Elevation — the kit replaces the old glass blur with a 3-step shadow scale. */
@@ -243,11 +243,11 @@
 
   /* Shared pace/status semantic tokens */
   --color-status-ok-bg: #E3F5EA;
-  --color-status-ok-fg: #0F7A36;
+  --color-status-ok-fg: #0F7634;
   --color-status-warn-bg: #FBF0DA;
   --color-status-warn-fg: #8A5B0A;
   --color-status-danger-bg: #FBE7E7;
-  --color-status-danger-fg: #C0323A;
+  --color-status-danger-fg: #BE3239;
 
   /* SVG category ring track */
   --color-ring-track: #E2E9E8;
@@ -323,7 +323,7 @@
   --color-brand-text-primary: #EAF2F0;       /* 15.71:1 */
   --color-brand-text-secondary: #9BABA8;     /* 7.47:1 */
   /* Kit shipped #6B7B78 — 4.02:1 on the card, below AA. Lightened to clear it. */
-  --color-brand-text-muted: #7B8A87;         /* 5.3:1 card, 4.57:1 on the tinted wells, 5.6:1 bg */
+  --color-brand-text-muted: #879592;         /* >= 4.5:1 on bg, card, elevated, sunken and the soft tints */
   --color-brand-red-text: #F2646A;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);

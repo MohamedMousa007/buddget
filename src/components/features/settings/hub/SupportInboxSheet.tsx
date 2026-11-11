@@ -67,7 +67,7 @@ export function SupportInboxSheet({ open, onClose }: { open: boolean; onClose: (
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <V3SheetHeader title={current ? `#${current.number} ${current.subject}` : h.inbox} onClose={onClose} leading={current ? <IconButton onClick={() => setCurrent(null)} aria-label={close} variant="tinted" size="sm" shape="round"><ArrowLeft className="h-full w-full" /></IconButton> : null} />
+        <V3SheetHeader title={current ? `#${current.number} ${current.subject}` : h.inbox} onClose={onClose} leading={current ? <IconButton onClick={() => setCurrent(null)} aria-label={close} variant="tinted" size="sm" shape="round"><ArrowLeft className="h-full w-full rtl:rotate-180" /></IconButton> : null} />
         {current ? (
           <>
             <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">

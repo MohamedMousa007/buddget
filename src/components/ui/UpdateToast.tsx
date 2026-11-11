@@ -19,21 +19,20 @@ export function UpdateToast() {
       data-inert-exempt
       className="pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-toast)] flex justify-center px-4 pb-4"
       style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
-      aria-hidden={!updateAvailable}
+      role="status"
+      aria-live="polite"
     >
       <AnimatePresence>
         {updateAvailable ? (
           <motion.div
             key="pwa-update"
-            role="status"
-            aria-live="polite"
             initial={{ y: 56, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 56, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
             className="pointer-events-auto w-full max-w-md"
           >
-            <div className="relative flex flex-col gap-3 rounded-2xl border border-[var(--color-brand-text-primary)]/[0.08] bg-[var(--color-brand-card)]/70 px-4 py-3.5 shadow-lg shadow-blue-500/20 backdrop-blur-xl ring-1 ring-blue-500/20 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="relative flex flex-col gap-3 rounded-2xl border border-[var(--color-brand-text-primary)]/[0.08] bg-[var(--color-brand-card)]/70 px-4 py-3.5 shadow-[var(--shadow-lg)] backdrop-blur-xl ring-1 ring-[var(--color-brand-primary)]/20 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <IconButton
                 onClick={dismiss}
                 aria-label={t.a11y.dismissUpdate}

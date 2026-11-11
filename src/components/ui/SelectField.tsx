@@ -96,7 +96,7 @@ export const SelectField = forwardRef<HTMLButtonElement, SelectFieldProps>(
             'group flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm transition-colors',
             'bg-[var(--color-brand-elevated)] border-[var(--color-brand-border)] text-[var(--color-brand-text-primary)]',
             'hover:border-[var(--color-brand-text-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
-            'data-[popup-open]:border-[var(--color-brand-red)]',
+            'data-[popup-open]:border-[var(--color-brand-focus)]',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             className,
           )}

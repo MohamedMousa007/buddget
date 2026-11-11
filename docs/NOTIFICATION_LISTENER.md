@@ -1,3 +1,5 @@
+> **Status: NOT IMPLEMENTED (design sketch only).** There is no `NotificationListenerService`, no `NotificationListener` Capacitor plugin and no `src/lib/native/notificationParser.ts` in this repository, and the Android manifest declares no listener service. Bank messages are captured only from SMS (Android `SmsReceiver`, iOS Shortcuts; see `IOS_SMS_TRACKING.md`). Everything below is an unbuilt proposal kept for reference; do not treat it as current behaviour. Last checked 2026-11-06.
+
 # Android Notification Listener fallback
 
 When SMS Retriever can't see bank messages (push-only banks, WhatsApp Pay,
@@ -5,8 +7,8 @@ Apple-Pay-on-Android relays), Buddget falls back to a custom Capacitor plugin
 that hooks into `NotificationListenerService` and forwards each whitelisted
 bank notification to `/api/sms/parse`.
 
-The web side (`src/lib/native/notificationParser.ts`) is already implemented;
-this doc covers the **Android Studio** plugin you need to paste into the
+The web side (`src/lib/native/notificationParser.ts`) would be needed as well (it does not exist yet);
+this doc would cover the **Android Studio** plugin you need to paste into the
 `android/` folder after `npx cap add android`. The folder is gitignored — the
 human running the bootstrap is responsible for committing the plugin to their
 fork or shipping it as part of the Play Store build.

@@ -19,7 +19,8 @@ import { resolveAccountId } from '@/lib/accounts/resolve'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MASK } from '@/lib/privacy/mask'
-import { useT } from '@/lib/i18n'
+import { useLocale, useT } from '@/lib/i18n'
+import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { accountIdentifier, accountTitle, splitMoney } from './accountDisplay'
 import type { MoveMode } from './MoveMoneySheet'
 
@@ -37,6 +38,7 @@ interface AccountDetailSheetProps {
 /** One account, card first: its own cards, the balance split into free and set aside, three actions, activity. */
 export function AccountDetailSheet({ open, onClose, account, masked, onMove, onUpdate, onAddCard, onEdit }: AccountDetailSheetProps) {
   const tAll = useT()
+  const { locale } = useLocale()
   const t = tAll.accountsPage
   const confirm = useConfirm()
   const updatePaymentMethod = useFinanceStore((s) => s.updatePaymentMethod)
@@ -77,7 +79,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
           <V3SheetHeader.Subtitle>{[accountIdentifier(method), String(method.currency)].filter(Boolean).join(' · ')}</V3SheetHeader.Subtitle>
           {manageItems.length > 0 ? (
             <V3SheetHeader.Extra>
-              <IconButton aria-label={tAll.common.moreActions} variant="tinted" onClick={(e) => setMenuAnchor(e.currentTarget.getBoundingClientRect())}>
+              <IconButton aria-label={tAll.common.moreActions} aria-haspopup="menu" aria-expanded={menuAnchor !== null} variant="tinted" onClick={(e) => setMenuAnchor(e.currentTarget.getBoundingClientRect())}>
                 <MoreVertical size={18} />
               </IconButton>
             </V3SheetHeader.Extra>
@@ -126,7 +128,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
               <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{t.noActivity}</p>
             ) : activity.map((e) => (
               <TransactionRow key={e.id} icon={<ShoppingBag className="size-5" aria-hidden />} title={e.description || categoryLabel(tAll, e.category)}
-                subtitle={new Date(instantOf(e.occurredAt, e.date)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                subtitle={formatLocalized(new Date(instantOf(e.occurredAt, e.date)), 'MMM d', locale)}
                 amount={masked ? MASK : `−${splitMoney(e.amount, String(e.currency)).int}`} />
             ))}
           </div>

@@ -29,4 +29,14 @@ describe('POST /api/site/lead', () => {
     insert.mockResolvedValue({ error: { code: '23505' } })
     expect((await POST(req(ok))).status).toBe(200)
   })
+
+  it('ADS-5 caps one address per hour and every sign-up per day', async () => {
+    limited.mockImplementation(async (_s: unknown, key: string) => key.startsWith('site-lead-email:'))
+    expect((await POST(req(ok))).status).toBe(429)
+    expect(limited).toHaveBeenCalledWith(expect.anything(), 'site-lead-email:a@b.co', 3600, 3, true)
+    expect(insert).not.toHaveBeenCalled()
+    limited.mockImplementation(async (_s: unknown, key: string) => key === 'site-lead-day')
+    expect((await POST(req(ok))).status).toBe(429)
+    expect(insert).not.toHaveBeenCalled()
+  })
 })

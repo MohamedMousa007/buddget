@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { plausibleRates } from '@/lib/utils/rateBands'
 
 // Currencies relevant to our target markets: UAE, Egypt, GCC, global
 const CURRENCIES = 'AED,EGP,EUR,GBP,SAR,KWD,QAR,BHD,OMR,MAD,TND,JOD,XAU'
@@ -79,10 +80,10 @@ const sources: RateSource[] = [
 
 const ERROR_CACHE = { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' }
 
-/** Keeps only finite, positive rates so one bad upstream value cannot poison every cross-rate. */
+/** Keeps only finite, positive, plausible rates so one bad upstream value cannot poison every cross-rate. */
 function validRates(rates: Record<string, number> | null): Record<string, number> | null {
   if (!rates) return null
-  const clean = Object.fromEntries(Object.entries(rates).filter(([, v]) => typeof v === 'number' && Number.isFinite(v) && v > 0))
+  const clean = plausibleRates(rates)
   return Object.keys(clean).length > 0 ? clean : null
 }
 

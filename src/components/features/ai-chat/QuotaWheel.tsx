@@ -10,6 +10,7 @@ import { useLocale } from '@/lib/i18n'
 import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/IconButton'
 import { ProgressRing } from '@/components/ui/ProgressRing'
+import { Scrim } from '@/components/ui/Scrim'
 
 const arcFor = (pct: number) => (pct >= 90 ? 'var(--color-brand-red)' : pct >= 70 ? 'var(--color-brand-amber)' : 'var(--color-brand-green)')
 
@@ -31,7 +32,7 @@ export function QuotaWheel({ refreshKey }: { refreshKey: string }) {
       </IconButton>
       {open ? (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
+          <Scrim tone="none" label={copy.title} onClick={() => setOpen(false)} className="fixed z-10" />
           <Card variant="elevated" padding="md" className="absolute bottom-full end-0 z-20 mb-2 flex w-64 flex-col gap-3">
             <p className="text-xs font-semibold text-[var(--color-brand-text-secondary)]">{copy.title}</p>
             {rows.map((r) => (

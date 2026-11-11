@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
+import { ChartDataTable } from '@/components/reports/ChartDataTable'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface MonthlyChartProps {
@@ -42,7 +43,8 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
           {c.monthEmpty}
         </p>
       ) : (
-        <div className="h-72 min-h-72 min-w-24">
+        <>
+        <div role="img" aria-label={c.monthSummary(data.length)} className="h-72 min-h-72 min-w-24">
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -76,6 +78,12 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
             </ResponsiveContainer>
           ) : null}
         </div>
+        <ChartDataTable
+          caption={c.monthTitle}
+          headers={[c.monthColumn, c.moneyIn, c.moneyOut, c.saved]}
+          rows={data.map((d) => [d.month, formatCurrency(d.income, currency), formatCurrency(d.expenses, currency), formatCurrency(d.savings, currency)])}
+        />
+        </>
       )}
     </div>
   )

@@ -135,7 +135,7 @@ export function useProfilePage() {
         }
         throw new Error(body?.error || t.profile.deleteAccountError)
       }
-      // Show the success overlay FIRST (z-[200], covers the authenticated dashboard).
+      // Show the success overlay FIRST (--z-dialog, covers the authenticated dashboard).
       // Calling signOut() here sets user=null → AuthProvider unmounts {children}
       // before AccountDeletedScreen ever renders. The screen's "Go Home" button
       // calls supabase.auth.signOut({ scope:'local' }) then window.location.assign('/')

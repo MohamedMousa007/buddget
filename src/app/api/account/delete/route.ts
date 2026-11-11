@@ -32,12 +32,13 @@ export async function POST(request: Request) {
 
     const result = await deleteUserCompletely(service, identity.id, { keepStaffAccess: true })
     if (!result.ok) {
-      return NextResponse.json({ error: result.error, details: result.details }, { status: 500 })
+      console.error('[account/delete] failed:', result.error, result.details)
+      return NextResponse.json({ error: result.error }, { status: 500 })
     }
     if (result.partialErrors.length > 0) {
       console.error('[account/delete] partial failures:', result.partialErrors)
       // 207: the account is gone and the app may move on, but this is not a clean success and must not read as one.
-      return NextResponse.json({ ok: false, deleted: true, partial: true, partialErrors: result.partialErrors }, { status: 207 })
+      return NextResponse.json({ ok: false, deleted: true, partial: true, partialCount: result.partialErrors.length }, { status: 207 })
     }
     return NextResponse.json({ ok: true })
   } catch (e) {

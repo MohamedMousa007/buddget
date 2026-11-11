@@ -188,7 +188,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
 function ToggleRow({ title, sub, on, onToggle }: { title: string; sub: string; on: boolean; onToggle: (v: boolean) => void }) {
   return (
     <Card variant="elevated" padding="none" role="button" tabIndex={0} onClick={() => onToggle(!on)}
-      className="flex w-full cursor-pointer items-center justify-between p-3.5 text-left">
+      className="flex w-full cursor-pointer items-center justify-between p-3.5 text-start">
       <div>
         <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{title}</p>
         <p className="text-xs text-[var(--color-brand-text-muted)]">{sub}</p>

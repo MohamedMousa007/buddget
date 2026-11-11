@@ -20,10 +20,14 @@ export interface PendingAiJob {
   mimeType: string
   createdAt: string
   attempts?: number
+  /** Consecutive-or-not 5xx failures; at MAX_SERVER_FAULT_ATTEMPTS the job is dropped. */
+  serverFaults?: number
 }
 
 const MAX_JOBS = 20
 const JOB_TTL_MS = 7 * 24 * 3600 * 1000
+/** A job that keeps hitting a server fault (5xx) is probably the payload; auth, quota and offline never count. */
+export const MAX_SERVER_FAULT_ATTEMPTS = 8
 
 interface PendingAiJobsState {
   jobs: PendingAiJob[]
@@ -31,7 +35,7 @@ interface PendingAiJobsState {
   addJob: (job: PendingAiJob) => boolean
   removeJob: (id: string) => void
   /** Records a failed attempt: a retryable job rotates to the back and stays until success, dismiss or TTL; a permanent failure is dropped. */
-  failJob: (id: string, retryable: boolean) => 'requeued' | 'dropped'
+  failJob: (id: string, retryable: boolean, serverFault?: boolean) => 'requeued' | 'dropped'
   /** Drops jobs older than the TTL; returns their ids so the caller can delete the media. */
   pruneExpired: () => string[]
 }
@@ -51,15 +55,16 @@ export const usePendingAiJobs = create<PendingAiJobsState>()(
         return true
       },
       removeJob: (id) => set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) })),
-      failJob: (id, retryable) => {
+      failJob: (id, retryable, serverFault = false) => {
         const job = get().jobs.find((j) => j.id === id)
         if (!job) return 'dropped'
         const attempts = (job.attempts ?? 0) + 1
-        if (!retryable) {
+        const exhausted = serverFault && (job.serverFaults ?? 0) + 1 >= MAX_SERVER_FAULT_ATTEMPTS
+        if (!retryable || exhausted) {
           set((s) => ({ jobs: s.jobs.filter((j) => j.id !== id) }))
           return 'dropped'
         }
-        set((s) => ({ jobs: [...s.jobs.filter((j) => j.id !== id), { ...job, attempts }] }))
+        set((s) => ({ jobs: [...s.jobs.filter((j) => j.id !== id), { ...job, attempts, serverFaults: serverFault ? (job.serverFaults ?? 0) + 1 : job.serverFaults }] }))
         return 'requeued'
       },
       pruneExpired: () => {

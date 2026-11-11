@@ -37,6 +37,13 @@ describe('POST /api/feedback', () => {
     expect((await post(valid)).status).toBe(502)
   })
 
+  it('ADS-11 sends the account id to Linear, never the email address', async () => {
+    await post(valid)
+    const description = JSON.parse(h.fetch.mock.calls[0][1].body).variables.input.description as string
+    expect(description).toContain('u1')
+    expect(description).not.toContain('a@x.com')
+  })
+
   it('does not print "null" for a caller without an email', async () => {
     h.identity.mockResolvedValue({ id: 'u1', email: null, amr: [] })
     await post(valid)

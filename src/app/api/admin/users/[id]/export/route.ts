@@ -1,5 +1,6 @@
 import { checkReason } from '@/lib/admin/grants'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
+import { AUDIT_REFUSAL } from '@/lib/server/admin/audit'
 import { STEP_UP_ERROR, stepUp, type StepUpProof } from '@/lib/server/admin/stepUp'
 import { UUID_RE } from '@/lib/server/admin/targets'
 import { hasFinancialGrant } from '@/lib/server/admin/financialAccess'
@@ -32,14 +33,17 @@ export async function POST(req: Request, { params }: Params) {
   const { data: auth } = await ctx.service.auth.admin.getUserById(id)
   if (!auth.user) return bad('User not found.', 404)
 
-  const profile = await ctx.service.from('profiles').select('*').eq('id', id).maybeSingle()
-  const { tables, failed } = await exportUserData(ctx.service, id, ROWS_PER_TABLE, auth.user.email ?? null)
-  await ctx.audit('dsr.export', {
+  // The trail comes first: if it cannot be written, nothing is released.
+  const audited = await ctx.audit('dsr.export', {
     targetType: 'user',
     targetId: id,
     summary: 'Exported all data held about a user',
-    metadata: { reason: why.reason, ticket: body?.ticket ?? null, tables: Object.keys(tables).length, failed },
+    metadata: { reason: why.reason, ticket: body?.ticket ?? null },
   })
+  if (audited === false) return bad(AUDIT_REFUSAL, 503)
+
+  const profile = await ctx.service.from('profiles').select('*').eq('id', id).maybeSingle()
+  const { tables, failed } = await exportUserData(ctx.service, id, ROWS_PER_TABLE, auth.user.email ?? null)
   return json({
     exportedAt: new Date().toISOString(),
     account: { id, email: auth.user.email ?? null, createdAt: auth.user.created_at },

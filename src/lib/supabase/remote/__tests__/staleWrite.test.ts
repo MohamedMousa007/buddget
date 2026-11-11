@@ -115,3 +115,16 @@ describe('edit time on the server clock', () => {
     expect(s.rows.get('e1')?.amount).toBe(30)
   })
 })
+
+describe('OFS-6 tombstone time', () => {
+  it('stamps deleted_at on the server clock, not the raw device clock', async () => {
+    const clock = { now: Date.now() }
+    const s = fakeEditTimeServer(clock)
+    const e = expenseAt('e1', 1, Date.now() - 1000)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(e))
+    noteServerTime(new Date(Date.now() + 3 * H).toISOString())
+    await flushDiff(s.client as never, 'u', withExpenses(e), withExpenses())
+    const at = Date.parse(s.rows.get('e1')?.deleted_at as string)
+    expect(Math.abs(at - (Date.now() + 3 * H))).toBeLessThan(5_000)
+  })
+})

@@ -52,8 +52,6 @@ function ToastCard({ item, onDone }: { item: ToastItem; onDone: (id: number) => 
 
   return (
     <div
-      role="status"
-      aria-live="polite"
       onPointerEnter={pause}
       onPointerLeave={resume}
       onFocus={pause}
@@ -62,11 +60,11 @@ function ToastCard({ item, onDone }: { item: ToastItem; onDone: (id: number) => 
       onTouchEnd={resume}
       className={`flex items-center gap-3 rounded-full shadow-lg pointer-events-auto text-sm font-medium ${
         hasUndo
-          ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] pl-4 pr-1.5 py-1.5'
+          ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] ps-4 pe-1.5 py-1.5'
           : 'bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] px-4 py-2'
       }`}
     >
-      {hasUndo ? <span>{item.message}</span> : <span>✓ {item.message}</span>}
+      {hasUndo ? <span>{item.message}</span> : <span><span aria-hidden>✓ </span>{item.message}</span>}
       {hasUndo ? (
         <button
           type="button"
@@ -95,13 +93,12 @@ export function ActionToastProvider({ children }: { children: React.ReactNode })
   return (
     <ToastContext.Provider value={show}>
       {children}
-      {toasts.length ? (
-        <div data-toast-region className="fixed top-[calc(env(safe-area-inset-top)+1rem)] inset-x-0 z-[var(--z-toast)] flex flex-col items-center gap-2 pointer-events-none px-4">
-          {toasts.map((item) => (
-            <ToastCard key={item.id} item={item} onDone={done} />
-          ))}
-        </div>
-      ) : null}
+      {/* One live region that is always mounted: screen readers only announce text added to a region that already exists. */}
+      <div data-toast-region role="status" aria-live="polite" className="fixed top-[calc(env(safe-area-inset-top)+1rem)] inset-x-0 z-[var(--z-toast)] flex flex-col items-center gap-2 pointer-events-none px-4">
+        {toasts.map((item) => (
+          <ToastCard key={item.id} item={item} onDone={done} />
+        ))}
+      </div>
     </ToastContext.Provider>
   )
 }

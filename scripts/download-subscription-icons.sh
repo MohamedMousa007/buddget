@@ -3,7 +3,7 @@
 # Run from repo root: bash scripts/download-subscription-icons.sh
 # For keys without a public favicon, the UI falls back to colored initials.
 
-set -e
+set -euo pipefail
 
 DEST="${1:-public/subscription-icons}"
 mkdir -p "$DEST"

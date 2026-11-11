@@ -7,6 +7,7 @@
  *
  * Auth: bearer Supabase JWT (mobile) OR signed-in cookie session (web).
  */
+import { trimPushTokens } from '@/lib/server/tokenCaps'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -66,10 +67,10 @@ export async function POST(request: Request) {
       if (self.revoked) return NextResponse.json({ error: 'This phone was removed from the account', revoked: true }, { status: 403 })
       if (notify !== undefined) await service.from('user_devices').update({ notify }).eq('user_id', userId).eq('device_id', deviceId)
     }
-    // Claim this device token for the current user. A token belongs to exactly
-    // one account at a time (push_tokens has a UNIQUE(token)); removing any prior
-    // owner's row first prevents the unique-violation that blocked account
-    // switches AND stops the previous account from receiving this device's pushes.
+    // Claim this device token for the current user. A token is delivered to one account at a time (the live unique
+    // index is (user_id, token), so this delete is what enforces it): removing any prior owner's row first stops the
+    // previous account from receiving this device's pushes. Knowing the token is the only proof of possession, which
+    // is acceptable because FCM tokens are 100+ bits and never leave the device and its owner's session.
     await service.from('push_tokens').delete().eq('token', token).neq('user_id', userId)
     const { error } = await service
       .from('push_tokens')
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
 
     // A rotated token replaces the phone's old one, so one phone never hears a push twice.
     if (!error && deviceId) await service.from('push_tokens').delete().eq('user_id', userId).eq('device_id', deviceId).neq('token', token)
+    if (!error) await trimPushTokens(service, userId)
 
     if (error) {
       console.error('[push/register] upsert failed', error)

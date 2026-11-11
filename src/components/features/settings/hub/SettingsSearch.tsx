@@ -25,6 +25,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { applyTheme } from '@/lib/theme/applyTheme'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { cn } from '@/lib/utils'
 
 function Highlight({ text, query }: { text: string; query: string }) {
@@ -107,6 +108,8 @@ export function SettingsSearch({ open, onClose }: { open: boolean; onClose: () =
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(open, panelRef, true)
 
   useScrollLock(open)
   useEscapeClose(open, onClose)
@@ -132,7 +135,7 @@ export function SettingsSearch({ open, onClose }: { open: boolean; onClose: () =
   const Chevron = locale === 'ar' ? ChevronLeft : ChevronRight
 
   return createPortal(
-    <div className="fixed inset-0 z-[140] flex justify-center px-4 pt-[max(env(safe-area-inset-top),1rem)] sm:pt-[12vh]" role="dialog" aria-modal="true" aria-label={copy.searchLabel}>
+    <div ref={panelRef} tabIndex={-1} className="fixed inset-0 z-[var(--z-picker)] flex justify-center px-4 pt-[max(env(safe-area-inset-top),1rem)] outline-none sm:pt-[12vh]" role="dialog" aria-modal="true" aria-label={copy.searchLabel}>
       <button
         type="button"
         aria-label={copy.close}

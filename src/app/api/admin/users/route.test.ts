@@ -41,3 +41,13 @@ describe('ADS-1 admin user search', () => {
     expect(h.audit).not.toHaveBeenCalledWith(expect.anything(), 'user_search', expect.anything(), expect.anything(), expect.anything())
   })
 })
+
+describe('ADS-6 offset clamp', () => {
+  it.each(['1e999', '-5', 'abc', '2.7'])('offset=%s reaches the RPC as a safe integer', async (v) => {
+    await get(`?offset=${v}`)
+    const arg = h.rpc.mock.calls.at(-1)![1] as { p_offset: number }
+    expect(Number.isSafeInteger(arg.p_offset)).toBe(true)
+    expect(arg.p_offset).toBeGreaterThanOrEqual(0)
+    expect(arg.p_offset).toBeLessThanOrEqual(1_000_000)
+  })
+})

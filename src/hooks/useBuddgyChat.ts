@@ -12,6 +12,7 @@ import { runTurn, TurnFailure } from '@/lib/buddgy/client/runTurn'
 import { classifyIntent } from '@/lib/buddgy/local/classifyIntent'
 import { PROPOSAL_TTL_MS, type Proposal } from '@/lib/buddgy/tools/proposal'
 import { TOOLS } from '@/lib/buddgy/tools/exec'
+import { reviseProposalArgs } from '@/lib/buddgy/tools/revise'
 import { buddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
 import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
@@ -44,6 +45,7 @@ export function useBuddgyChat() {
   const itemsRef = useRef<ChatItem[]>([])
   const chatIdRef = useRef<string | null>(null)
   const softRef = useRef(false)
+  const taintedRef = useRef(false)
   const abortRef = useRef<AbortController | null>(null)
   /** Read synchronously so two quick sends cannot both start; `busy` state lags a render. */
   const busyRef = useRef(false)
@@ -73,6 +75,7 @@ export function useBuddgyChat() {
     commit([])
     chatIdRef.current = null
     softRef.current = false
+    taintedRef.current = false
     turnSeqRef.current += 1
     busyRef.current = false
     setBusy(false)
@@ -145,8 +148,7 @@ export function useBuddgyChat() {
     (itemId: string, proposalId: string, patch: Record<string, string>) => {
       const state = findProposal(itemId, proposalId)
       if (!state) return
-      const write = TOOLS.get(state.proposal.tool)?.write
-      const result = write?.propose({ ...state.proposal.args, ...patch }, { now: new Date(), locale })
+      const result = reviseProposalArgs(state.proposal, patch, { now: new Date(), locale })
       if (!result?.ok) {
         setProposalState(itemId, proposalId, (s) => ({ ...s, message: result?.error }))
         return
@@ -175,6 +177,7 @@ export function useBuddgyChat() {
         commit([])
         chatIdRef.current = null
         softRef.current = false
+        taintedRef.current = false
       }
       lastActivityRef.current = Date.now()
 
@@ -222,6 +225,7 @@ export function useBuddgyChat() {
           route: pathname,
           signal: controller.signal,
           now,
+          tainted: taintedRef.current,
           onText: (partial) => patchBuddgy(replyId, (it) => ({ ...it, text: partial })),
           onStep: setStep,
           onChat: (id) => {
@@ -231,6 +235,7 @@ export function useBuddgyChat() {
         if (turnSeqRef.current !== seq) return
         chatIdRef.current = out.chatId
         softRef.current = out.soft
+        if (out.reads.length > 0) taintedRef.current = true
         patchBuddgy(replyId, (it) => ({ ...it, text: out.text, reads: out.reads, status: 'done', truncated: out.truncated }))
         finishWithProposals(replyId, out.proposals)
         setBeat({ mood: out.proposals.length > 0 ? 'awake' : 'happy', at: Date.now() })

@@ -33,6 +33,19 @@ export const AR_UNITS = {
   payment: { one: 'دفعة', two: 'دفعتين', few: 'دفعات', many: 'دفعة', fem: true },
   message: { one: 'رسالة', two: 'رسالتين', few: 'رسائل', many: 'رسالة', fem: true },
   time: { one: 'مرة', two: 'مرتين', few: 'مرات', many: 'مرة', fem: true },
+  week: { one: 'أسبوع', two: 'أسبوعين', few: 'أسابيع', many: 'أسبوعًا' },
+  account: { one: 'حساب', two: 'حسابين', few: 'حسابات', many: 'حسابًا' },
+  card: { one: 'بطاقة', two: 'بطاقتين', few: 'بطاقات', many: 'بطاقة', fem: true },
+  entry: { one: 'قيد', two: 'قيدين', few: 'قيود', many: 'قيدًا' },
+  transaction: { one: 'معاملة', two: 'معاملتين', few: 'معاملات', many: 'معاملة', fem: true },
+  expense: { one: 'مصروف', two: 'مصروفين', few: 'مصروفات', many: 'مصروفًا' },
+  change: { one: 'تغيير', two: 'تغييرين', few: 'تغييرات', many: 'تغييرًا' },
+  item: { one: 'عنصر', two: 'عنصرين', few: 'عناصر', many: 'عنصرًا' },
+  line: { one: 'بند', two: 'بندين', few: 'بنود', many: 'بندًا' },
+  recording: { one: 'تسجيل', two: 'تسجيلين', few: 'تسجيلات', many: 'تسجيلًا' },
+  milestone: { one: 'محطة', two: 'محطتين', few: 'محطات', many: 'محطة', fem: true },
+  result: { one: 'نتيجة', two: 'نتيجتين', few: 'نتائج', many: 'نتيجة', fem: true },
+  bankMessage: { one: 'رسالة بنكية', two: 'رسالتين بنكيتين', few: 'رسائل بنكية', many: 'رسالة بنكية', fem: true },
 } as const satisfies Record<string, ArForms>
 
 export type ArUnit = keyof typeof AR_UNITS

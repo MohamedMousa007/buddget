@@ -74,26 +74,11 @@ describe('POST /api/auth/device/check', () => {
     expect((await (await call({ 'X-Buddget-Device-Secret': 'cd'.repeat(32) })).json()).trusted).toBe(false)
   })
 
-  it('a legacy row (no hash) is accepted by id once and upgraded: native gets the new secret in the body', async () => {
+  it('AUT-6: a legacy row (no hash) is never trusted by device id alone and is not upgraded', async () => {
     h.row = { device_id: DEVICE, secret_hash: null }
     const body = await (await call({ 'X-Buddget-Device-Id': DEVICE })).json()
-    expect(body).toMatchObject({ trusted: true, required: false })
-    expect(body.deviceSecret).toMatch(/^[0-9a-f]{64}$/)
-    expect((h.upgraded[0] as { secret_hash: string }).secret_hash).toBe(createHash('sha256').update(body.deviceSecret).digest('hex'))
-  })
-
-  it('a legacy upgrade on web sets the HttpOnly cookie and keeps the secret out of the body', async () => {
-    h.row = { device_id: DEVICE, secret_hash: null }
-    const body = await (await call()).json()
-    expect(body.trusted).toBe(true)
-    expect(body.deviceSecret).toBeUndefined()
-    expect(h.cookieSet).toHaveBeenCalledWith('buddget_device_secret', expect.stringMatching(/^[0-9a-f]{64}$/), expect.objectContaining({ httpOnly: true }))
-  })
-
-  it('a legacy row lost to a concurrent upgrade is not trusted by id', async () => {
-    h.row = { device_id: DEVICE, secret_hash: null }
-    h.upgradeRows = []
-    expect(await (await call({ 'X-Buddget-Device-Id': DEVICE })).json()).toMatchObject({ trusted: false, required: true })
+    expect(body).toMatchObject({ trusted: false, required: true })
+    expect(h.upgraded).toHaveLength(0)
   })
 
   it('an unknown device is required to verify', async () => {

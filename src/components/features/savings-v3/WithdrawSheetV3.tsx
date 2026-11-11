@@ -47,7 +47,7 @@ const PURPOSES: Array<{ key: Purpose; color: string; icon: React.ReactNode }> = 
   { key: 'debt', color: 'var(--cat-debt-fg)', icon: <CreditCard size={18} /> },
   { key: 'transfer', color: 'var(--color-brand-gold)', icon: <Gem size={18} /> },
   { key: 'income', color: 'var(--color-brand-green)', icon: <TrendingUp size={18} /> },
-  { key: 'move', color: 'var(--color-cat-5)', icon: <ArrowRight size={18} /> },
+  { key: 'move', color: 'var(--color-cat-5)', icon: <ArrowRight size={18} className="rtl:rotate-180" /> },
 ]
 
 export interface WithdrawSheetV3Props {

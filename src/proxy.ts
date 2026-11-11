@@ -1,4 +1,5 @@
 import { createServerClient, serializeCookieHeader } from '@supabase/ssr'
+import { clientIp } from '@/lib/server/clientIp'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseCookieToSet } from '@/lib/supabase/cookieTypes'
 import {
@@ -13,6 +14,7 @@ import { SITE_CSP, decideSiteRoute, hasAuthCookie, isSitePath, splitHosts } from
 import { appHostForRedirects, configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
 import {
   COOKIE_DOMAIN_MARKER,
+  authCookieOptions,
   domainCookieOptions,
   hostOnlyExpiryOptions,
   markerCookieOptions,
@@ -73,11 +75,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api/gold') || pathname.startsWith('/api/rates')) {
-    const forwarded = request.headers.get('x-forwarded-for')
-    const ip =
-      forwarded?.split(',')[0]?.trim() ||
-      request.headers.get('x-real-ip')?.trim() ||
-      'unknown'
+    const ip = clientIp(request)
     if (!(await publicApiRateLimitOk(ip))) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }
@@ -102,7 +100,7 @@ export async function proxy(request: NextRequest) {
     requireSupabaseUrl(),
     requireSupabasePublishableKey(),
     {
-      cookieOptions: cookieDomain ? { domain: cookieDomain } : undefined,
+      cookieOptions: authCookieOptions(cookieDomain, process.env.NODE_ENV === 'production'),
       cookies: {
         getAll() {
           return cookieDomain ? parseCookiesPreferLast(request.headers.get('cookie')) : request.cookies.getAll()

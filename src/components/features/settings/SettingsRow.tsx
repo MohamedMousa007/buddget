@@ -53,7 +53,7 @@ export function SettingsRow({
   destructive = false,
   settingId,
 }: SettingsRowProps) {
-  const defaultTrailing = trailing ?? <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" />
+  const defaultTrailing = trailing ?? <ChevronRight className="size-4 shrink-0 rtl:rotate-180 text-[var(--color-brand-text-muted)]" />
 
   const content = (
     <>

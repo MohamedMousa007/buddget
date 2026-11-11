@@ -87,7 +87,7 @@ export function ActivateSheet({ open, plan, current, next, now, base, monthLabel
                 <p className="text-xs text-[var(--color-brand-text-secondary)]">{r.label}</p>
                 <div className="mt-1 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                   <span className="font-mono-numbers text-lg font-semibold text-[var(--color-brand-text-primary)]">{r.from}</span>
-                  <ArrowRight className="size-4 text-[var(--color-brand-text-muted)]" aria-hidden />
+                  <ArrowRight className="size-4 rtl:rotate-180 text-[var(--color-brand-text-muted)]" aria-hidden />
                   <span className={`text-end font-mono-numbers text-lg font-semibold ${toneClass[r.tone]}`}>{r.to}</span>
                 </div>
                 <p className={`mt-0.5 text-end text-xs ${toneClass[r.tone]}`}>{r.note}</p>

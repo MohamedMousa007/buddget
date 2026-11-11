@@ -22,6 +22,8 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
  * Native receipt scanner backed by ML Kit's document scanner (auto edge-detect,
@@ -32,6 +34,7 @@ import java.io.ByteArrayOutputStream
 class DocumentScannerPlugin : Plugin() {
 
     private var pendingCall: PluginCall? = null
+    private val decodeExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     private lateinit var scanLauncher: ActivityResultLauncher<IntentSenderRequest>
 
     override fun load() {
@@ -95,12 +98,24 @@ class DocumentScannerPlugin : Plugin() {
             return
         }
 
-        val images = JSArray()
-        for (page in pages) {
-            val bytes = context.contentResolver.openInputStream(page.imageUri)?.use { it.readBytes() }
-            if (bytes != null) images.put(uprightBase64(bytes))
+        // Reading, decoding, rotating and base64-ing up to 5 pages is seconds of work on a low-end phone: never on the main thread.
+        decodeExecutor.execute {
+            try {
+                val images = JSArray()
+                for (page in pages) {
+                    val bytes = context.contentResolver.openInputStream(page.imageUri)?.use { it.readBytes() }
+                    if (bytes != null) images.put(uprightBase64(bytes))
+                }
+                call.resolve(JSObject().apply { put("images", images) })
+            } catch (e: Exception) {
+                call.reject(e.message ?: "Could not read the scan")
+            }
         }
-        call.resolve(JSObject().apply { put("images", images) })
+    }
+
+    override fun handleOnDestroy() {
+        decodeExecutor.shutdown()
+        super.handleOnDestroy()
     }
 
     /**

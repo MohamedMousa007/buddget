@@ -1,3 +1,5 @@
+import { arCount } from '@/lib/i18n/arPlural'
+
 export interface VoiceCopy {
   listening: string
   holdMic: string
@@ -196,7 +198,7 @@ export const voiceCopyAr: VoiceCopy = {
   },
   recap: {
     nothingToSave: 'لا شيء للحفظ',
-    transactionsCount: (n) => `${n} معاملات`,
+    transactionsCount: (n) => arCount(n, 'transaction'),
     confirmToSave: 'أكّد للحفظ',
     saveAll: 'حفظ الكل',
     save: 'حفظ',

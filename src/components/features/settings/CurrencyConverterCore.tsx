@@ -50,7 +50,7 @@ export function CurrencyConverterCore({ store, t }: { store: CurrencyConverterSt
 
   const resultText =
     convertedAmount !== null
-      ? convertedAmount.toLocaleString(undefined, {
+      ? convertedAmount.toLocaleString('en-US', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 4,
         })

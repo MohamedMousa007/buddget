@@ -43,7 +43,7 @@ export function PrivacyRightsSections() {
         </p>
         <p>
           To request deletion, use Delete Account in Profile/Settings or contact{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] underline underline-offset-2 hover:no-underline">
             support@buddget.app
           </a>
           .
@@ -71,7 +71,7 @@ export function PrivacyRightsSections() {
             Right to data portability:
           </strong>{' '}
           Export your expenses as a CSV file at any time from Settings &rarr; Export Data. For a complete copy of everything we hold about you, write to{' '}
-          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-red)] hover:underline">
+          <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] underline underline-offset-2 hover:no-underline">
             support@buddget.app
           </a>{' '}
           and we will send it within 30 days.

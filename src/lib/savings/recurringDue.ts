@@ -23,3 +23,19 @@ export function dueDatesThrough(nextDueDate: string, today: string, anchor?: num
 }
 
 export const recurringTxId = (recurringId: string, dueDate: string) => deterministicId(`recurring:${recurringId}:${dueDate}`)
+
+/** Most missed months posted when a device comes back after a long gap; older ones are not back-filled. */
+export const MAX_BACKFILL_DEPOSITS = 3
+
+/** Every unposted due date up to `today` (newest `MAX_BACKFILL_DEPOSITS`), oldest first, and the date after the last. */
+export function backfillDueDates(nextDueDate: string, today: string, anchor?: number): { dues: string[]; next: string } {
+  const dues: string[] = []
+  let cur = nextDueDate
+  let next = nextDueDate
+  while (next <= today) {
+    const step = dueDatesThrough(cur, cur, anchor)
+    dues.push(step.due)
+    cur = next = step.next
+  }
+  return { dues: dues.slice(-MAX_BACKFILL_DEPOSITS), next }
+}

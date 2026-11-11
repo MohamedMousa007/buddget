@@ -47,9 +47,14 @@ Closing reports: `docs/qa-round-6/closing-*.md`. Gate: `npm run verify` passed (
 | Month-carry, native, PWA | RPW-1/2, SLG-1, SLG-4, NAT-1, NAT-3, SST-2, SUP-3 |
 | Accessibility, legal, docs | A11-1 to A11-8, ADS-8, ADS-9 |
 
-## Still open
-- **P1 AUT-1** (email second factor client-only): left in report mode by the owner's decision.
-- **Owner actions:** SUP-1 (disabled Linear bot with `--dangerously-skip-permissions`), SUP-2 (tracked `.claude/settings.json` auto-allows prod `execute_sql` and unpinned plugin marketplaces), SUP-4 (Firebase key restriction in the Google console), the three ADS-8 questions (sender number in the SMS row, Gemini retention for receipts, Play RECEIVE_SMS declaration).
-- **Limits of the fixes:** field builds send no `edited_at` until updated; legacy phones have no recorded session until their next heartbeat; Kotlin/Swift changes (including iOS Dynamic Type root font, A11-8) are uncompiled and not run on a device; FRM-4 double tap and FRM-8 not exercised live.
-- **P3s:** about 130 remain, one report per area.
-- **Not run:** the live browser sweep.
+## P3 pass ("Fix P3s")
+Closing reports: `docs/qa-round-6/closing-p3-{server,money,ui,supply}.md`. Gate: `npm run verify` passed (4,915 tests). Migrations applied live: 0250, 0251 (grants, link guards, profile email pin, purge guards, 2FA gate fails closed in enforce mode, default function privileges), 0254 (asset price > 0), 0256 (AI hop cap), 0257 (`ai_assistant=false` also disables proxy). DBI-2 and DBI-3 data hygiene applied live (3 rows).
+
+Closed: the large majority of the ~134 P3s (Fixed with tests; Already fixed; Won't fix with reasons recorded per ID in the closing reports).
+
+## Still open (owner decisions and actions)
+- **P1 AUT-1** (email second factor client-only): report mode by the owner's decision.
+- **Data repairs not applied** (`supabase/migrations/0252_p3_data_repairs_NOT_APPLIED.sql`): DBI-4 (3 legacy debt-payment flags), DBI-5 (merge 5 duplicate payment methods + unique index, which would park an offline duplicate push), AUT-6 (delete 1 legacy trusted device).
+- **Console/env actions:** SST-9 leaked-password protection (Supabase Auth), SST-5 `SMS_REQUIRE_DEVICE_HEADER=1` on Vercel, SUP-1 Linear bot, SUP-2 `.claude/settings.json`, SUP-4 Firebase key restriction and rotation, ADS-8 questions.
+- **Product/native decisions:** NAT-11 push masking default, BAI-8 shared AI-category trust, A11-14 bar patterns, A11-20 per-fragment `lang`, AUT-12, REG-13 (needs a live call with a user session), DEB-9 weekly reminders, SST-4 R8, SUP-5 release signing, SUP-9 next-pwa replacement, SUP-11 dependency bumps, pre-GA native pins.
+- **Limits:** field builds send no `edited_at` until updated; legacy phones have no recorded session until next heartbeat; Kotlin/Swift unverified on device; live double-tap through the pay-debt sheet and light/tablet/desktop sweeps not run; `.design-sync/compiled.css` is stale after the A11-12 token shifts (recompile at the next design-system re-sync).

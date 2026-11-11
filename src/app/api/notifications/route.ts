@@ -22,19 +22,23 @@ export async function GET(request: Request) {
   }
   const supabase = createServiceRoleClient()
 
-  const { data, error } = await supabase
-    .from('notifications')
-    .select('id, type, title, message, metadata, is_read, created_at')
-    .eq('user_id', uid)
-    .order('created_at', { ascending: false })
-    .limit(80)
+  const [{ data, error }, unreadRes] = await Promise.all([
+    supabase
+      .from('notifications')
+      .select('id, type, title, message, metadata, is_read, created_at')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false })
+      .limit(80),
+    // Counted in the database: the 80-row page undercounts once more than 80 notifications exist.
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', uid).eq('is_read', false),
+  ])
 
   if (error) {
     console.error('[notifications GET]', error.message)
     return NextResponse.json({ error: 'Could not load notifications' }, { status: 500 })
   }
 
-  const unread = (data ?? []).filter((n) => !n.is_read).length
+  const unread = unreadRes.error ? (data ?? []).filter((n) => !n.is_read).length : (unreadRes.count ?? 0)
 
   return NextResponse.json({ notifications: data ?? [], unreadCount: unread })
 }

@@ -47,14 +47,14 @@ export function ProfileBody({ p }: { p: ReturnType<typeof useProfilePage> }) {
             {p.editMode ? (
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelName}</label>
-                  <input value={p.form.name} onChange={(e) => p.updateField('name', e.target.value)} className={p.inputClass} placeholder={t.profile.placeholderName} />
+                  <label htmlFor="profile-edit-1" className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelName}</label>
+                  <input id="profile-edit-1" value={p.form.name} onChange={(e) => p.updateField('name', e.target.value)} className={p.inputClass} placeholder={t.profile.placeholderName} />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">
+                  <label htmlFor="profile-edit-2" className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">
                     {p.user ? t.profile.labelEmailAccount : t.profile.labelEmail}
                   </label>
-                  <input
+                  <input id="profile-edit-2"
                     value={p.form.email}
                     onChange={(e) => { if (!p.user) p.updateField('email', e.target.value) }}
                     readOnly={!!p.user}
@@ -62,16 +62,16 @@ export function ProfileBody({ p }: { p: ReturnType<typeof useProfilePage> }) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelPhone}</label>
-                  <input value={p.form.phone} onChange={(e) => p.updateField('phone', e.target.value)} className={p.inputClass} placeholder={t.profile.placeholderPhone} />
+                  <label htmlFor="profile-edit-3" className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelPhone}</label>
+                  <input id="profile-edit-3" value={p.form.phone} onChange={(e) => p.updateField('phone', e.target.value)} className={p.inputClass} placeholder={t.profile.placeholderPhone} />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelCountry}</label>
-                  <CountrySelect value={p.form.country} onChange={(v) => p.updateField('country', v)} locale={p.locale} placeholder={t.profile.placeholderCountrySelect} className={p.inputClass} />
+                  <label htmlFor="profile-edit-4" className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelCountry}</label>
+                  <CountrySelect id="profile-edit-4" value={p.form.country} onChange={(v) => p.updateField('country', v)} locale={p.locale} placeholder={t.profile.placeholderCountrySelect} className={p.inputClass} />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelCity}</label>
-                  <input value={p.form.city} onChange={(e) => p.updateField('city', e.target.value)} className={p.inputClass} placeholder={t.profile.placeholderCity} />
+                  <label htmlFor="profile-edit-5" className="text-xs uppercase tracking-wider text-[var(--color-brand-text-muted)] block mb-1">{t.profile.labelCity}</label>
+                  <input id="profile-edit-5" value={p.form.city} onChange={(e) => p.updateField('city', e.target.value)} className={p.inputClass} placeholder={t.profile.placeholderCity} />
                 </div>
               </div>
             ) : (

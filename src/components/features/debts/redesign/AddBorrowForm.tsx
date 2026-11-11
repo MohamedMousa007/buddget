@@ -120,7 +120,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             <div className={`${MICRO} mb-2`}>{t.fGrams}</div>
             <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor="XAU" aria-label={t.fGrams} placeholder={t.fGramsPh} />
             {goldValue != null ? (
-              <p className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-gold)]">{t.fGoldValue(goldValue.toLocaleString(), GOLD_PRICE[d.goldKarat].toLocaleString())}</p>
+              <p className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-gold)]">{t.fGoldValue(goldValue.toLocaleString('en-US'), GOLD_PRICE[d.goldKarat].toLocaleString('en-US'))}</p>
             ) : null}
           </div>
         </>
@@ -190,7 +190,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             {goalPreview != null ? (
               <div className="rounded-[12px] bg-[var(--color-brand-gold)]/5 px-3.5 py-2.5">
                 <p className="font-mono-numbers text-[0.875rem] font-bold text-[var(--color-brand-gold)]">
-                  {t.fYoudPay(goalPreview.toLocaleString(), d.currency, FREQS.find((f) => f.v === d.goalCadence)!.per)} · {t.fPaymentsCount(goalCount)}
+                  {t.fYoudPay(goalPreview.toLocaleString('en-US'), d.currency, FREQS.find((f) => f.v === d.goalCadence)!.per)} · {t.fPaymentsCount(goalCount)}
                 </p>
                 {strain != null ? (
                   <p className={`mt-1 text-[0.75rem] ${strain > 0.35 ? 'text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>

@@ -151,7 +151,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   const restart = () => setIndex(0)
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-brand-bg)]">
+    <div className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[var(--color-brand-bg)]">
       <div className="relative flex h-full max-h-[844px] w-full max-w-[390px] flex-col overflow-hidden bg-[var(--color-brand-bg)] safe-area-top safe-area-bottom">
         <IconButton onClick={close} aria-label={g.ariaClose} variant="outlined" size="sm" shape="round" className="absolute end-4 top-4 z-10"><X /></IconButton>
 

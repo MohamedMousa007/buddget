@@ -90,7 +90,7 @@ export function PlanHistoryPage() {
   const header = (
     <div className="flex min-h-14 items-center gap-1 pe-2.5 ps-1.5 pt-1">
       <IconButton variant="ghost" size="md" aria-label={c.back} onClick={() => navigate('/budget-setup')}>
-        <ChevronLeft className="size-5" strokeWidth={2} />
+        <ChevronLeft className="size-5 rtl:rotate-180" strokeWidth={2} />
       </IconButton>
       <span className="flex-1 text-2xl font-bold tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{c.title}</span>
       <Badge variant="muted">{c.readOnly}</Badge>

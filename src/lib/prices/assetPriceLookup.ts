@@ -32,6 +32,9 @@ export interface LivePrice {
   confidence: string | null
 }
 
+/** A cached price that can value something: finite and above zero. A 0, negative or NaN row is treated as missing, never as a live price. */
+const isUsablePrice = (e: AssetPriceEntry | undefined): e is AssetPriceEntry => !!e && Number.isFinite(e.price) && e.price > 0
+
 /** Fresh price for (symbol, currency), or null when missing/stale. Used by valuation/net worth. */
 export function lookupAssetPrice(
   map: AssetPriceMap,
@@ -40,7 +43,7 @@ export function lookupAssetPrice(
   now: Date = new Date(),
 ): LivePrice | null {
   const e = map[priceKey(symbol, currency)]
-  if (!e) return null
+  if (!isUsablePrice(e)) return null
   if (!isPriceFresh(e.asOf, e.assetClass, now)) return null
   return { price: e.price, asOf: e.asOf, confidence: e.confidence }
 }
@@ -62,6 +65,6 @@ export function lookupAssetPriceDisplay(
   now: Date = new Date(),
 ): DisplayPrice | null {
   const e = map[priceKey(symbol, currency)]
-  if (!e) return null
+  if (!isUsablePrice(e)) return null
   return { price: e.price, asOf: e.asOf, confidence: e.confidence, fresh: isPriceFresh(e.asOf, e.assetClass, now) }
 }

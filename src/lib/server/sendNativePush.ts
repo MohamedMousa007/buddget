@@ -3,7 +3,10 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { getFirebaseAdmin } from '@/lib/server/firebaseAdmin'
 import { maskPush } from '@/lib/privacy/pushMask'
 import type { PrivacySettings } from '@/lib/store/types'
+import { capCollapseKey, isDeadTokenCode, safeData } from '@/lib/server/pushPayload'
 import { pushTargets, type DevicePrefs } from '@/lib/devices/policy'
+
+export const PUSH_NOT_CONFIGURED = 'FIREBASE_SERVICE_ACCOUNT_JSON not configured'
 
 export interface SendNativePushArgs {
   userId: string
@@ -24,13 +27,13 @@ export interface SendNativePushResult {
 
 /**
  * Fans out a push notification to the phones that should hear it (see `pushTargets`: the main phone and any phone the
- * user switched on; never a removed phone or one that is switched off). Stale tokens (UNREGISTERED / INVALID_ARGUMENT) are deleted in the same pass
+ * user switched on; never a removed phone or one that is switched off). Dead tokens (UNREGISTERED / INVALID_REGISTRATION_TOKEN; never INVALID_ARGUMENT, which a bad payload also raises) are deleted in the same pass
  * so the table stays clean. Returns counts; never throws.
  */
 export async function sendNativePush(args: SendNativePushArgs): Promise<SendNativePushResult> {
   const fa = getFirebaseAdmin()
   if (!fa) {
-    return { ok: false, error: 'FIREBASE_SERVICE_ACCOUNT_JSON not configured' }
+    return { ok: false, error: PUSH_NOT_CONFIGURED }
   }
 
   const service = createServiceRoleClient()
@@ -64,6 +67,7 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
     prefs?.language,
   )
 
+  const collapseKey = capCollapseKey(args.collapseKey)
   let sent = 0
   let failed = 0
   const stale: string[] = []
@@ -75,16 +79,16 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
       const res = await fa.messaging.sendEachForMulticast({
         tokens: batch,
         notification: { title, body },
-        data,
+        data: safeData(data),
         android: {
           priority: 'high',
-          collapseKey: args.collapseKey,
+          collapseKey,
           notification: { sound: 'default', channelId: 'buddget-default' },
         },
         apns: {
-          headers: args.collapseKey ? { 'apns-collapse-id': args.collapseKey } : undefined,
+          headers: collapseKey ? { 'apns-collapse-id': collapseKey } : undefined,
           payload: {
-            aps: { sound: 'default', badge: 1 },
+            aps: { sound: 'default' },
           },
         },
       })
@@ -95,13 +99,7 @@ export async function sendNativePush(args: SendNativePushArgs): Promise<SendNati
       res.responses.forEach((r, idx) => {
         if (r.success) return
         const code = r.error?.code ?? ''
-        if (
-          code === 'messaging/registration-token-not-registered' ||
-          code === 'messaging/invalid-registration-token' ||
-          code === 'messaging/invalid-argument'
-        ) {
-          stale.push(batch[idx]!)
-        }
+        if (isDeadTokenCode(code)) stale.push(batch[idx]!)
       })
     } catch (e) {
       console.error('[sendNativePush] batch failed', e)

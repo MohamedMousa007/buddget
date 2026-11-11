@@ -57,10 +57,12 @@ export function PrivacyDataSections() {
           When you enable SMS auto-tracking, the text content of bank notification SMS messages you
           authorize is transmitted to our servers for parsing, and the expense data extracted from it
           (amount, merchant, date, category) is stored with your account. We keep the raw message for
-          at most 30 days (7 days for messages that are rejected or contain a one-time code), then
-          delete it. After that only a masked version, with numbers, names and account details
-          removed, is kept to improve how messages are parsed. The corpus of learned message patterns
-          is kept for 180 days, and no raw message is ever kept longer than 60 days.
+          at most 30 days (7 days for messages that are rejected or contain a one-time code; up to
+          60 days for a message still waiting for you to confirm it), then delete it. After that only a masked version, with numbers, names and account details
+          removed, is kept to improve how messages are parsed. Learned message patterns
+          that are seen rarely are deleted after 180 days; patterns that recur across many messages
+          and contain no personal details are kept so parsing keeps working. No raw message is ever
+          kept longer than 60 days.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">AI query data:</strong>{' '}
@@ -121,7 +123,7 @@ export function PrivacyDataSections() {
               Supabase (supabase.com):
             </strong>{' '}
             Authentication, database, and file storage. Processes your account and financial data on
-            our behalf. Data stored on Supabase servers in the United States.{' '}
+            our behalf. Data is stored on Supabase servers in Singapore (Southeast Asia region).{' '}
             <a
               href="https://supabase.com/privacy"
               className="text-[var(--color-brand-primary-ink)] hover:underline"
@@ -192,7 +194,7 @@ export function PrivacyDataSections() {
             <strong className="text-[var(--color-brand-text-primary)]">
               Linear (linear.app):
             </strong>{' '}
-            Your feedback and support requests are forwarded to our issue tracker so we can act on them. The subject and details you write are included.{' '}
+            Your feedback and support requests are forwarded to our issue tracker so we can act on them. The subject and details you write are included, together with your account ID (not your email address). Deleting your account cannot reach Linear, so a copy of what you sent stays there until you ask us to remove it.{' '}
             <a
               href="https://linear.app/privacy"
               className="text-[var(--color-brand-primary-ink)] hover:underline"
@@ -238,7 +240,7 @@ export function PrivacyDataSections() {
             Generate AI-powered budget recommendations and insights via Buddgy on your request
           </li>
           <li>
-            Detect and log bank transactions from SMS or notifications when you enable auto-tracking
+            Detect and log bank transactions from SMS messages when you enable auto-tracking
           </li>
           <li>Send push notifications you have opted in to receive</li>
           <li>Detect and prevent fraud, abuse, and security incidents</li>

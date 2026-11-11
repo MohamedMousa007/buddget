@@ -14,7 +14,7 @@ export function TermsLegalSections() {
         <p>
           You may stop using the Service and delete your account at any time via the Profile or Settings
           page. Upon account deletion, your personal data will be removed in accordance with our{' '}
-          <LegalDocLink doc="privacy" className="text-[var(--color-brand-red)] hover:underline">
+          <LegalDocLink doc="privacy" className="text-[var(--color-brand-primary-ink)] underline underline-offset-2 hover:no-underline">
             Privacy Policy
           </LegalDocLink>
           .

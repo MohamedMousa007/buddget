@@ -1,0 +1,5 @@
+-- BAI-5 (0256): DO block applies the patched ai_quota_reserve_v2 then calls it 8 times for a chat with turns=1 and ends in RAISE (rolled back).
+-- Result: PROBE true,true,true,true,true,true,false,false  (cap = (turns+1)*3 = 6 hops)
+-- BAI-6 (0257): scratch user_entitlements row with feature_overrides {"ai_assistant":false}, rolled back.
+-- Result: before=["chat"] after=["chat","proxy"]
+-- Both migrations then applied live with the same SQL (supabase/migrations/0256, 0257).

@@ -14,6 +14,7 @@ import type { FactDebt } from '@/lib/budget/facts'
 import type { DebtExtras, GoalExtras, SubscriptionItem, SubscriptionsExtras } from '@/lib/budget/planView.types'
 import type { GoalStatusView } from '@/lib/goals/goalStatus'
 import { minimumPaymentAmount } from '@/lib/debt/computeCreditCardBalance'
+import { installmentPaymentsCompleted } from '@/lib/debts/installmentSchedule'
 import { sourcePaydayDays } from '@/lib/utils/paydaySchedule'
 import { chargeAmount, chargesLeftThisMonth, forecastCharges, isCharging, yearlySetAside } from '@/lib/subscriptions/subscriptionForecast'
 import { subscriptionToMonthlyPlannerAmount } from '@/lib/subscriptions/subscriptionRecurring'
@@ -171,7 +172,7 @@ export function debtExtras(live: LiveDebt, paidThisCycle: number, c: DebtLiveCtx
     ? 0
     : Math.min(100, Math.max(0, ((startingBalance - balance) / startingBalance) * 100))
   const total = debt.installmentCount ?? 0
-  const done = c.debtPayments.filter((p) => p.debtId === debt.id).length
+  const done = installmentPaymentsCompleted(debt, c.debtPayments.filter((p) => p.debtId === debt.id))
   return {
     id: debt.id,
     name: debt.name,

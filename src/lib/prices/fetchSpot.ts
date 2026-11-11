@@ -10,8 +10,8 @@ async function getJson(url: string, ms = 6000): Promise<unknown> {
   return res.json()
 }
 
-/** Global spot gold, USD per troy ounce — keyless providers, clustered. Null if all fail. */
-export async function fetchSpotOunceUsd(): Promise<number | null> {
+/** Global spot gold, USD per troy ounce — keyless providers, clustered, with how well they agreed. Null if all fail. */
+export async function fetchSpotOunceUsd(): Promise<{ value: number; confidence: string } | null> {
   const providers: Array<{ source: string; upstream: string; fetch: () => Promise<number> }> = [
     {
       source: 'gold-api.com', upstream: 'gold-api',
@@ -81,7 +81,8 @@ export async function fetchSpotOunceUsd(): Promise<number | null> {
       /* provider down — skip */
     }
   }
-  return priceConsensus(samples, 0.005).value
+  const c = priceConsensus(samples, 0.005)
+  return c.value === null ? null : { value: c.value, confidence: c.confidence }
 }
 
 /** Official USD/EGP (the CBE-ish rate), used only as the Sagha-dollar sanity anchor. */

@@ -32,10 +32,11 @@ export function AuthForgotStep({
       <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)] text-center">{t.auth.forgotTitle}</h2>
       <p className="text-sm text-center text-[var(--color-brand-text-muted)]">{t.auth.forgotSubtitle}</p>
       <div>
-        <label className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.forgotLabelEmail}</label>
+        <label htmlFor="auth-forgot-email" className="text-xs text-[var(--color-brand-text-muted)] mb-1 block">{t.auth.forgotLabelEmail}</label>
         <div className="relative">
           <Mail className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-brand-text-muted)]" />
           <input
+            id="auth-forgot-email"
             type="email"
             dir="ltr"
             autoComplete="email"

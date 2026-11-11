@@ -8,6 +8,8 @@
  * Auth: session cookie (user must be signed in).
  */
 
+import { isRateLimited } from '@/lib/server/rateLimit'
+import { ROTATIONS_PER_HOUR, trimRetiredIngestTokens } from '@/lib/server/tokenCaps'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -99,6 +101,10 @@ export async function DELETE(request: Request) {
   const refusal = await deviceRefusal(serviceClient, userId, deviceId)
   if (refusal) return refusal
 
+  if (await isRateLimited(serviceClient, `sms-rotate:${userId}`, 3600, ROTATIONS_PER_HOUR)) {
+    return NextResponse.json({ error: 'Too many rotations, try again later' }, { status: 429 })
+  }
+
   // Issue the new token first so a failed insert never leaves the user without one, then retire the others
   // of the same scope only: this device's tokens, or (no device id) the device-less ones. Rotating never de-arms another phone.
   const { data: newToken, error } = await serviceClient
@@ -123,6 +129,7 @@ export async function DELETE(request: Request) {
     console.error('[sms/setup-token] deactivate error', deactivateError.message)
     return NextResponse.json({ error: 'Failed to rotate token' }, { status: 500 })
   }
+  await trimRetiredIngestTokens(serviceClient, userId)
 
   return NextResponse.json({ token: newToken.token, rotated: true })
 }

@@ -24,14 +24,6 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>app.buddget</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>app.buddget</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
 			<string>google-signin</string>
 			<key>CFBundleURLSchemes</key>
 			<array>

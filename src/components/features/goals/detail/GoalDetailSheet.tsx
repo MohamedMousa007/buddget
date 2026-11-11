@@ -145,7 +145,7 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
             <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--color-brand-text-secondary)]">
               {kindLabel} · {t.goals[goalCategoryLabelKey(goal.category)] as string}
             </span>
-            <IconButton aria-label={d.more} onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
+            <IconButton aria-label={d.more} aria-haspopup="menu" aria-expanded={menu !== null} onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
               <MoreHorizontal />
             </IconButton>
             <IconButton aria-label={t.common.close} onClick={onClose}>

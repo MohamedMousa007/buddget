@@ -18,6 +18,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             SentrySDK.start { options in
                 options.dsn = dsn
                 options.sendDefaultPii = false
+                // Native reports bypass the JS scrubber (src/lib/crash/scrub.ts): keep type, stack and thread, drop free text that could carry SMS content or amounts.
+                options.beforeSend = { event in
+                    event.exceptions?.forEach { $0.value = "" }
+                    event.message = nil
+                    return event
+                }
+                options.beforeBreadcrumb = { _ in nil }
                 options.releaseName = "buddget@\(info?["CFBundleShortVersionString"] as? String ?? "0")"
                 options.dist = info?["CFBundleVersion"] as? String
                 options.initialScope = { scope in

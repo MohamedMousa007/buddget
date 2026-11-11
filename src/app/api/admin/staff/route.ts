@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     const changes = (body.changes ?? []).filter((c) => c && typeof c.key === 'string' && Array.isArray(c.permissions))
     if (changes.length === 0 || changes.length > 40) return bad('Nothing to change.')
     if (changes.some((c) => c.key === OWNER_ROLE)) return bad('The owner role cannot be changed.', 403)
-    const { data: roles } = await ctx.service.from('admin_roles').select('key').in('key', changes.map((c) => c.key))
+    const { data: roles } = await ctx.service.from('admin_roles').select('key, permissions').in('key', changes.map((c) => c.key))
     if ((roles ?? []).length !== changes.length) return bad('Unknown role.', 404)
     if (!(await stepUp(ctx, body))) return bad(STEP_UP_ERROR, 401)
     for (const c of changes) {
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
       if (error) return bad('Could not save a role. Nothing after it was changed.', 500)
       const { data: holders } = await ctx.service.from('admin_staff').select('user_id').eq('role_key', c.key)
       for (const h of holders ?? []) if (h.user_id) await revokeAllAdminSessions(ctx.service, h.user_id)
-      await ctx.audit('staff.role_permissions', { targetType: 'role', targetId: c.key, summary: `Changed what ${c.key} can do`, metadata: { permissions: perms } })
+      await ctx.audit('staff.role_permissions', { targetType: 'role', targetId: c.key, summary: `Changed what ${c.key} can do`, metadata: { permissions: perms, before: { permissions: roles?.find((r) => r.key === c.key)?.permissions ?? null } } })
     }
     return json({ ok: true })
   }
@@ -177,7 +177,7 @@ export async function POST(req: Request) {
     if (patch.role_key || patch.extra_permissions) {
       if (member.user_id) await revokeAllAdminSessions(ctx.service, member.user_id)
     }
-    await ctx.audit('staff.update', { ...target, summary: `Updated ${member.email}`, metadata: patch })
+    await ctx.audit('staff.update', { ...target, summary: `Updated ${member.email}`, metadata: { ...patch, before: { role_key: member.role_key, extra_permissions: member.extra_permissions } } })
     return json({ ok: true })
   }
 
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
     const { error: statusError } = await ctx.service.from('admin_staff').update({ status }).eq('id', member.id)
     if (statusError) return bad(`Could not ${body.op} them.`, 500)
     if (status === 'suspended' && member.user_id) await revokeAllAdminSessions(ctx.service, member.user_id)
-    await ctx.audit(`staff.${body.op}`, { ...target, summary: `${body.op === 'suspend' ? 'Suspended' : 'Restored'} ${member.email}` })
+    await ctx.audit(`staff.${body.op}`, { ...target, summary: `${body.op === 'suspend' ? 'Suspended' : 'Restored'} ${member.email}`, metadata: { before: { status: member.status } } })
     return json({ ok: true })
   }
 

@@ -1,5 +1,6 @@
 import type { BudgetBlock } from '@/lib/store/types'
 import type { LineAction, LineStatusKind } from '@/lib/budget/lineStatus'
+import { arCount } from '@/lib/i18n/arPlural'
 
 /**
  * Copy for the seven Budget page block bodies and the line status lines.
@@ -319,7 +320,7 @@ export const budgetBlocksCopyAr: BudgetBlocksCopy = {
     add: 'إضافة فئة',
   },
   safety: {
-    ofTarget: (m) => `من ${m} أشهر`,
+    ofTarget: (m) => `من ${arCount(m, 'month')}`,
     reachedBy: (m) => `يتحقق الهدف بحلول ${m}`,
     targetReached: 'تحقق الهدف',
     noContribution: 'أضف مبلغًا شهريًا للوصول إليه',
@@ -329,7 +330,7 @@ export const budgetBlocksCopyAr: BudgetBlocksCopy = {
     topUp: 'إضافة رصيد',
     add: 'إضافة بند للأمان',
     atClose: (a, d) => `+${a} ${d}`,
-    reachesAtClose: (m) => `يبلغ ${m} أشهر عند الإغلاق`,
+    reachesAtClose: (m) => `يبلغ ${arCount(m, 'month')} عند الإغلاق`,
   },
   goals: {
     open: 'فتح',

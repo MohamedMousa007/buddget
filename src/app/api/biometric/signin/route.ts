@@ -1,4 +1,5 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
+import { clientIp } from '@/lib/server/clientIp'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     const deviceId = await resolveDeviceId(request)
     const admin = createServiceRoleClient()
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim().slice(0, 64) || 'unknown'
+    const ip = clientIp(request)
     if (
       (await isRateLimited(admin, `bio-signin-dev:${deviceId}`, ATTEMPT_WINDOW_SECONDS, PER_DEVICE)) ||
       (await isRateLimited(admin, `bio-signin-ip:${ip}`, ATTEMPT_WINDOW_SECONDS, PER_IP))

@@ -54,15 +54,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Could not change the password' }, { status: 500 })
     }
 
+    // The fresh token replaces the retired ones for this phone, so SMS keeps flowing here; the other phones re-arm on their next sign-in.
+    const mintSmsToken = async () => {
+      const fresh = await admin.from('sms_ingest_tokens').insert({ user_id: identity.id, device_id: request.headers.get(DEVICE_ID_HEADER)?.trim().slice(0, 100) || null })
+      if (fresh.error) console.error('[auth/password] minting a fresh SMS ingest token failed', fresh.error.message)
+    }
+
     const updated = await admin.auth.admin.updateUserById(identity.id, { password: parsed.data.newPassword })
     if (updated.error) {
+      // The tokens were already retired: without a new one this phone would stop sending SMS although the password never changed.
+      await mintSmsToken()
       const same = (updated.error as { code?: string }).code === 'same_password' || /same|different from the old/i.test(updated.error.message)
       return NextResponse.json({ error: same ? 'Same password' : 'Could not change the password', code: same ? 'same_password' : undefined }, { status: same ? 422 : 500 })
     }
 
-    // The fresh token replaces the retired ones for this phone, so SMS keeps flowing here; the other phones re-arm on their next sign-in.
-    const fresh = await admin.from('sms_ingest_tokens').insert({ user_id: identity.id, device_id: request.headers.get(DEVICE_ID_HEADER)?.trim().slice(0, 100) || null })
-    if (fresh.error) console.error('[auth/password] minting a fresh SMS ingest token failed', fresh.error.message)
+    await mintSmsToken()
 
     const token = await accessTokenOf(request)
     let revokedOthers = false

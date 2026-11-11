@@ -79,6 +79,12 @@ export function planCookieDomain(args: { domain: string | undefined; cookieHeade
   return { rewrite, expireHostOnly: [...expire], markDone: !migrated && expire.size > 0 }
 }
 
-export const domainCookieOptions = (domain: string) => ({ path: '/', domain, sameSite: 'lax' as const, maxAge: MAX_AGE_SECONDS })
+export const domainCookieOptions = (domain: string) => ({ path: '/', domain, sameSite: 'lax' as const, secure: true, maxAge: MAX_AGE_SECONDS })
+
+/**
+ * Options the Supabase clients mint the auth cookie with: `Secure` whenever the page is https (always in production),
+ * so the token never rides a plain-http request. HttpOnly is impossible here: the browser client reads the cookie.
+ */
+export const authCookieOptions = (domain: string | undefined, secure: boolean) => (domain ? { domain, secure } : { secure })
 export const hostOnlyExpiryOptions = { path: '/', maxAge: 0 } as const
-export const markerCookieOptions = { path: '/', sameSite: 'lax' as const, maxAge: MAX_AGE_SECONDS }
+export const markerCookieOptions = { path: '/', sameSite: 'lax' as const, secure: true, maxAge: MAX_AGE_SECONDS }

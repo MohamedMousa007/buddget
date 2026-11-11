@@ -8,6 +8,8 @@ interface DirectoryRow {
   [key: string]: unknown
 }
 
+/** `offset=1e999` parses to Infinity, which the RPC rejects with a 500. */
+const MAX_OFFSET = 1_000_000
 const ORDERS = new Set(['created_desc', 'created_asc', 'active_desc', 'expenses_desc', 'email_asc'])
 const STATES = new Set(['banned', 'unconfirmed', 'sms', 'inactive'])
 
@@ -25,7 +27,7 @@ export async function GET(req: Request) {
     // Without `users.pii` the email is matched in its masked form only, so a search cannot recover what the response hides.
     p_match_email: ctx.canSeePii,
     p_limit: Math.min(Math.max(Math.floor(Number(url.searchParams.get('limit'))) || 25, 1), 100),
-    p_offset: Math.max(Number(url.searchParams.get('offset')) || 0, 0),
+    p_offset: Math.min(Math.max(Math.floor(Number(url.searchParams.get('offset'))) || 0, 0), MAX_OFFSET),
     p_order: ORDERS.has(order) ? order : 'created_desc',
     p_plan: url.searchParams.get('plan') || undefined,
     p_state: state && STATES.has(state) ? state : undefined,

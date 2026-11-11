@@ -3,6 +3,7 @@ import type { GoldKarat } from '@/lib/store/types'
 import { priceConsensus, type PriceSample } from '@/lib/prices/consensus'
 import { goldPurityFactor } from '@/lib/utils/calculations'
 import { parseGoldApiKarats } from '@/lib/prices/goldApiIo'
+import { withinSpotBand } from '@/lib/prices/goldSanity'
 import { parseGoldpricezGram24k } from '@/lib/prices/goldpricez'
 import { parseFinnhubQuote, finnhubQuoteUrl, type StockQuote } from '@/lib/prices/finnhub'
 
@@ -21,7 +22,7 @@ export interface KaratRow {
  * cluster against it. NOT used for EGP — Egypt's local price comes from the crawled Sagha dollar,
  * a different price class that must never be averaged with spot-derived numbers.
  */
-export async function fetchGulfGoldKarats(currency: 'AED' | 'SAR'): Promise<KaratRow[]> {
+export async function fetchGulfGoldKarats(currency: 'AED' | 'SAR', ounceUsd: number | null = null): Promise<KaratRow[]> {
   const samples: PriceSample[] = []
 
   const goldApiKey = process.env.GOLDAPI_IO_KEY
@@ -56,7 +57,9 @@ export async function fetchGulfGoldKarats(currency: 'AED' | 'SAR'): Promise<Kara
     }
   }
 
-  const c = priceConsensus(samples, 0.005)
+  // With a spot reference, a provider gram price far from spot x peg (a unit mix-up, a bad payload) is dropped before it can win.
+  const plausible = ounceUsd ? samples.filter((s) => withinSpotBand(s.value, currency, ounceUsd)) : samples
+  const c = priceConsensus(plausible, 0.005)
   if (c.value === null) return []
   const g24 = c.value
   const meta = { confidence: c.confidence, sources: c.sources.join(',') }

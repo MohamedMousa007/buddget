@@ -17,6 +17,7 @@ import { Delete } from 'lucide-react'
 import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { setNumpadInset } from '@/lib/ui/numpadInset'
 import { useScrollLock } from '@/lib/ui/scrollLock'
+import { useDialogFocus } from '@/hooks/useDialogFocus'
 
 export type NumberPadMode = 'decimal' | 'integer' | 'pin'
 
@@ -108,6 +109,7 @@ export function NumberPad({
   // Publish the pad's height so an open ModalShell lifts its content above it,
   // reusing the keyboard-avoidance path (see numpadInset / ModalShell).
   const sheetRef = useRef<HTMLDivElement | null>(null)
+  useDialogFocus(true, sheetRef)
   useEffect(() => {
     const el = sheetRef.current
     if (!el) return
@@ -168,6 +170,7 @@ export function NumberPad({
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
         aria-label={caption}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}

@@ -14,8 +14,7 @@ import {
   getPaymentMethodBreakdown,
   expenseAmountInBase,
 } from '@/lib/utils/calculations'
-import { reportCycles, reportRange, reportSpendRows } from '@/lib/reports/reportsPeriod'
-import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
+import { isReportSpendRow, reportCycles, reportRange, reportSpendRows } from '@/lib/reports/reportsPeriod'
 import { downloadOrShareFile } from '@/lib/utils/exportFile'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useGoldQuote } from '@/hooks/useGoldQuote'
@@ -185,7 +184,7 @@ ${mostUsedMethod ? `${t.reports.kpiGoToPayment}: ${mostUsedMethod.name} ${t.repo
           escapeCsvField(e.amount),
           escapeCsvField(e.currency),
           escapeCsvField(expenseAmountInBase(e, baseCurrency, exchangeRates)),
-          escapeCsvField(isNonSpendExpense(e) ? c.no : c.yes),
+          escapeCsvField(isReportSpendRow(e) ? c.yes : c.no),
         ].join(',')
       )
       .join('\n')

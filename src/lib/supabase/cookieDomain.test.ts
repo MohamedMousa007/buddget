@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COOKIE_DOMAIN_MARKER, parseCookiesPreferLast, planCookieDomain, supabaseCookieDomain } from './cookieDomain'
+import { authCookieOptions, COOKIE_DOMAIN_MARKER, domainCookieOptions, markerCookieOptions, parseCookiesPreferLast, planCookieDomain, supabaseCookieDomain } from './cookieDomain'
 
 describe('supabaseCookieDomain', () => {
   it('shares the cookie across the app and admin hosts only', () => {
@@ -60,3 +60,17 @@ describe('planCookieDomain', () => {
     expect(plan.rewrite).toEqual([{ name: 'sb-x-auth-token', value: 'fresh' }])
   })
 })
+
+describe('AUT-9 / SST-7: auth cookie flags', () => {
+  it('the shared-domain and marker cookies are Secure', () => {
+    expect(domainCookieOptions('.buddget.app').secure).toBe(true)
+    expect(markerCookieOptions.secure).toBe(true)
+  })
+
+  it('the client options carry Secure with or without the shared domain and never HttpOnly (the browser client reads it)', () => {
+    expect(authCookieOptions('.buddget.app', true)).toEqual({ domain: '.buddget.app', secure: true })
+    expect(authCookieOptions(undefined, false)).toEqual({ secure: false })
+    expect(authCookieOptions(undefined, true)).not.toHaveProperty('httpOnly')
+  })
+})
+

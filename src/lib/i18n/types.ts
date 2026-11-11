@@ -1527,6 +1527,11 @@ export interface Dictionary {
       pieTitle: string
       pieEmpty: string
       other: string
+      monthColumn: string
+      categoryColumn: string
+      amountColumn: string
+      monthSummary: (months: number) => string
+      pieSummary: (slices: number, top: string) => string
     }
     csv: {
       date: string
@@ -2710,6 +2715,7 @@ export interface Dictionary {
     waitingOffline: (count: number) => string
     failed: string
     voiceEmpty: string
+    gaveUp: string
     dismiss: string
     buddgyOffline: string
   }

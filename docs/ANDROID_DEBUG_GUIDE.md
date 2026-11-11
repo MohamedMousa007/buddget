@@ -32,6 +32,7 @@ This opens the full Chrome DevTools (Console, Network, Elements) for the live We
 
 ### Setup (one-time)
 
+0. The WebView inspector is off in every build by default (a release or a bare `npx cap sync` must never be remotely inspectable). For a local debugging build run `CAP_WEBVIEW_DEBUG=1 npm run cap:build`; never use that build for TestFlight or Drive.
 1. On the S25 Ultra: `Settings → Developer Options → USB Debugging` must be ON.
 2. Connect the phone via USB.
 3. On the Mac, open a Chrome tab and navigate to:

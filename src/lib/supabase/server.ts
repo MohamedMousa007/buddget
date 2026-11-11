@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies, headers } from 'next/headers'
 import type { SupabaseCookieToSet } from '@/lib/supabase/cookieTypes'
-import { parseCookiesPreferLast, supabaseCookieDomain } from '@/lib/supabase/cookieDomain'
+import { authCookieOptions, parseCookiesPreferLast, supabaseCookieDomain } from '@/lib/supabase/cookieDomain'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 
 export async function createClient() {
@@ -10,7 +10,7 @@ export async function createClient() {
   const domain = supabaseCookieDomain(requestHeaders.get('host'))
 
   return createServerClient(requireSupabaseUrl(), requireSupabasePublishableKey(), {
-    cookieOptions: domain ? { domain } : undefined,
+    cookieOptions: authCookieOptions(domain, process.env.NODE_ENV === 'production'),
     cookies: {
       getAll() {
         return domain ? parseCookiesPreferLast(requestHeaders.get('cookie')) : cookieStore.getAll()

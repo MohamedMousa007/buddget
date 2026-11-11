@@ -63,6 +63,8 @@ export function EditPin({
     <>
       <IconButton
         onClick={(e) => setAnchor(e.currentTarget.getBoundingClientRect())}
+        aria-haspopup="menu"
+        aria-expanded={anchor !== null}
         aria-label={label}
         variant="tinted"
         size="sm"

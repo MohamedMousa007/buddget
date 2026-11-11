@@ -41,11 +41,9 @@ export function StatusPill({ icon, label, visible = true, onHide, hiddenHint }: 
   }
 
   return (
-    <div data-inert-exempt className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+7px)] lg:start-[var(--sidebar-w)] lg:top-[calc(var(--app-header-h-lg)+8px)] z-[58] flex flex-col items-center gap-2.5">
+    <div data-inert-exempt role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+7px)] lg:start-[var(--sidebar-w)] lg:top-[calc(var(--app-header-h-lg)+8px)] z-[58] flex flex-col items-center gap-2.5">
       {visible ? (
       <motion.div
-        role="status"
-        aria-label={label}
         className="pointer-events-auto inline-flex h-9 touch-none items-center gap-2 whitespace-nowrap rounded-full border border-[color-mix(in_oklab,var(--color-brand-amber)_50%,transparent)] bg-[color-mix(in_oklab,var(--color-brand-amber)_18%,var(--color-brand-card))] pe-1.5 ps-3 text-[0.78125rem] font-semibold text-[var(--color-brand-text-primary)] shadow-[var(--shadow-md)]"
         style={{ y, opacity }}
         initial={{ y: -60, opacity: 0 }}
@@ -77,7 +75,6 @@ export function PillHint({ children }: { children: ReactNode }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.16 }}
-      role="status"
       className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-3 py-1.5 text-[0.78125rem] font-semibold text-[var(--color-brand-text-primary)] shadow-[var(--shadow-md)]"
     >
       <ArrowUp className="size-3.5" strokeWidth={2} aria-hidden />

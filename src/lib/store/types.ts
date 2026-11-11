@@ -860,7 +860,7 @@ export interface DebtPaymentSnapshot {
   debtWasCleared: boolean
   /** The pocket withdrawal returned with the payment, so Undo can take it out again. */
   savingsTx?: SavingsTransaction
-  /** The reminder that was switched back on, as it was before. */
+  /** The reminder that was switched back on or rolled back to this payment's date, as it was before. */
   schedule?: RecurringDebtPayment
 }
 
@@ -1294,7 +1294,9 @@ export interface FinanceStore {
       /** Account the cash leaves. undefined = primary tracked account (cash deposits only), null = none. Same-currency only. */
       fromAccountId?: string | null
       /** Deterministic id: a second post with the same id is a no-op (cross-device idempotency). */
-      txId?: string }
+      txId?: string
+      /** Ledger date (YYYY-MM-DD) when the deposit belongs to an earlier day than today, e.g. a missed recurring due date. */
+      date?: string }
   ) => boolean
   /** Only 'income' returns the money to this month's spendable income; the rest do not,
    *  so a transfer/debt/spend withdrawal never inflates the income KPI. Defaults to 'income'. */

@@ -65,11 +65,13 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { buildGoalProgressContext } from '@/lib/goals/computeGoalProgress'
 import { reconcileAchievedGoals } from '@/lib/goals/reconcileAchievedGoals'
 import { clearIfFullyPaid, isDebtFullyPaid } from '@/lib/utils/calculations'
+import { advanceRecurringDebtDueDate, scheduledDueDate } from '@/lib/utils/recurringDebtPayments'
 import { overpaysDebt } from '@/lib/debts/overpaysDebt'
 import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
+import { dropMistypedFields } from '@/lib/store/persistShape'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 22
 const PERSIST_WRITE_DEBOUNCE_MS = 150
@@ -914,6 +916,13 @@ export const useFinanceStore = create<FinanceStore>()(
           // already running, never has a reminder resurrected (it may have been paused by hand).
           const ownSchedules = reopens ? state.recurringDebtPayments.filter((r) => r.debtId === payment.debtId) : []
           const dormant = ownSchedules.length === 1 && !ownSchedules[0].isActive ? ownSchedules[0] : undefined
+          // The payment that moved a single running reminder forward takes that step back with it, so the instalment is reminded again.
+          const running = state.recurringDebtPayments.filter((r) => r.debtId === payment.debtId)
+          const advanced =
+            !dormant && running.length === 1 && running[0].isActive && running[0].nextDueDate !== payment.date &&
+            advanceRecurringDebtDueDate(scheduledDueDate(payment.date, running[0].frequency, running[0].dueDay), running[0].frequency, running[0].dueDay ?? Number(payment.date.slice(8, 10))) === running[0].nextDueDate
+              ? running[0]
+              : undefined
           // A payment funded from a pocket returns the money with it: the withdrawal that paid it is reversed.
           const fundingTx = payment.fundedFromSavingsTxId
             ? state.savingsTransactions.find((t) => t.id === payment.fundedFromSavingsTxId && t.type === 'withdrawal')
@@ -926,12 +935,14 @@ export const useFinanceStore = create<FinanceStore>()(
             payment,
             expenses: pairedExpenses,
             debtWasCleared: reopens,
-            schedule: dormant,
+            schedule: dormant ?? advanced,
             savingsTx: fundingTx,
           }
           const recurringDebtPayments = dormant
             ? state.recurringDebtPayments.map((r) => (r.id === dormant.id ? { ...r, isActive: true } : r))
-            : state.recurringDebtPayments
+            : advanced
+              ? state.recurringDebtPayments.map((r) => (r.id === advanced.id ? { ...r, nextDueDate: payment.date } : r))
+              : state.recurringDebtPayments
           const nextState: FinanceStore = { ...state, debts, debtPayments: remainingPayments, expenses, savingsTransactions, savingsAccounts }
           return {
             debts,
@@ -1764,7 +1775,7 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'deposit',
             amount: amt,
             currency: acc.currency,
-            date: localTodayISO(),
+            date: opts?.date ?? localTodayISO(),
             notes,
             source: opts?.source,
             isAutoSave: opts?.isAutoSave,
@@ -1772,7 +1783,7 @@ export const useFinanceStore = create<FinanceStore>()(
             // this month's flow. 'allocate' (default) is real cash flow — left as undefined
             // so cashSavingsDepositsInBaseForMonth counts it against left-to-spend.
             ...(opts?.mode === 'declare' ? { isCashFlow: false } : {}),
-            occurredAt: new Date().toISOString(),
+            ...(!opts?.date || opts.date === localTodayISO() ? { occurredAt: new Date().toISOString() } : {}),
             ...(legId ? { paymentMethodId: legId } : {}),
           }
           const nextState: FinanceStore = {
@@ -2394,7 +2405,7 @@ export const useFinanceStore = create<FinanceStore>()(
         return rest as FinanceStore
       },
       merge: (persisted, current) => {
-        const p = persisted as Partial<typeof current>
+        const p = dropMistypedFields(persisted as Partial<typeof current>, current)
         return {
           ...current,
           ...p,

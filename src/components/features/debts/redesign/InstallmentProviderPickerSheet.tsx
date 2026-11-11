@@ -75,7 +75,7 @@ export function InstallmentProviderPickerSheet({
         <div className="flex shrink-0 items-center gap-2.5 pb-3 pt-1">
           {view !== 'grid' ? (
             <IconButton aria-label={t.backLabel} variant="tinted" size="sm" shape="round" onClick={() => setView('grid')}>
-              <ArrowLeft />
+              <ArrowLeft className="rtl:rotate-180" />
             </IconButton>
           ) : null}
           <ModalHeading as="span" className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">

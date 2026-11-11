@@ -1,5 +1,6 @@
 import type { FlowStage } from '@/lib/budget/flow/flow'
 import { flowCopyAr, flowCopyEn, type FlowQuestionCopy } from './flowCopy'
+import { arCount } from '@/lib/i18n/arPlural'
 
 export type StudioQuestionCopy = FlowQuestionCopy
 
@@ -209,7 +210,7 @@ const ar: BudgetStudioCopy = {
     title: 'خطتك',
     why: 'لماذا هذه الخطة',
     risks: 'يستحق المتابعة',
-    estimated: (n) => `${n} بنود مقدّرة`,
+    estimated: (n) => `${arCount(n, 'line')} مقدّرة`,
     adjust: 'اسأل بادي',
     start: 'راجعها',
     activate: 'تأكيد وتفعيل',

@@ -10,7 +10,7 @@
  * `metadata.category`.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { sendNativePush } from '@/lib/server/sendNativePush'
+import { PUSH_NOT_CONFIGURED, sendNativePush } from '@/lib/server/sendNativePush'
 import { pushBody } from '@/lib/server/notificationDedupe'
 
 export type NotificationSeverity = 'info' | 'warning' | 'success' | 'error'
@@ -56,16 +56,25 @@ export async function emitNotification(
   if (!data) return { created: false }
 
   if (args.push !== false) {
+    let delivered = true
     try {
-      await sendNativePush({
+      const res = await sendNativePush({
         userId: args.userId,
         title: args.title,
         body: pushBody(args.body),
         data: args.push?.data,
         collapseKey: args.push?.collapseKey,
       })
+      // A send that could not even start (token lookup failed) is retried by the next cron run; an unconfigured server never will be.
+      delivered = res.ok || res.error === PUSH_NOT_CONFIGURED
     } catch (e) {
       console.error('[emitNotification] push failed', e)
+      delivered = false
+    }
+    if (!delivered) {
+      // The dedupe key would otherwise stop every later run from sending this push: drop the row so it is re-created and re-sent.
+      const { error: undoError } = await service.from('notifications').delete().eq('id', data.id)
+      if (!undoError) return { created: false }
     }
   }
   return { created: true }

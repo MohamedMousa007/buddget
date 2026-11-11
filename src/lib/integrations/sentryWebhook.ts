@@ -9,9 +9,17 @@ export function validSignature(raw: string, signature: string | null, secret: st
 
 const MAX_HOOK_AGE_MS = 5 * 60_000
 
-/** Sentry stamps each delivery in unix seconds; a replayed old delivery is dropped. A missing stamp passes (older integrations). */
-export function freshHook(stamp: string | null, now: number): boolean {
-  if (stamp === null) return true
+const MAX_UNSTAMPED_EVENT_AGE_MS = 60 * 60_000
+
+/**
+ * Sentry stamps each delivery in unix seconds; a replayed old delivery is dropped. Without a stamp the HMAC (which
+ * covers the body only) cannot date the delivery, so the event's own datetime, inside the signed body, must be recent.
+ */
+export function freshHook(stamp: string | null, now: number, eventTime: string | null = null): boolean {
+  if (stamp === null) {
+    const at = eventTime ? Date.parse(eventTime) : Number.NaN
+    return Number.isFinite(at) && Math.abs(now - at) <= MAX_UNSTAMPED_EVENT_AGE_MS
+  }
   const ms = Number(stamp) * 1000
   return Number.isFinite(ms) && Math.abs(now - ms) <= MAX_HOOK_AGE_MS
 }

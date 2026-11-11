@@ -2,6 +2,7 @@
 
 import type { CurrencyConverterStore } from '@/components/features/settings/CurrencyConverter'
 import type { Dictionary } from '@/lib/i18n/types'
+import { formatFixed2 } from '@/lib/utils/formatters'
 
 type SettingsCopy = Dictionary['settings']
 
@@ -22,10 +23,7 @@ export function CurrencyConverterGoldRow({
         {store.goldPriceAvailable !== false ? (
           <span className="flex flex-col items-end">
             <span className="font-mono-numbers text-sm text-[var(--color-brand-gold)]">
-              {store.goldPricePerGram.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{' '}
+              {formatFixed2(store.goldPricePerGram)}{' '}
               {store.settings.baseCurrency}
             </span>
             {store.goldPriceStale && (

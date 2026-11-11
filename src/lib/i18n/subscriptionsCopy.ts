@@ -1,3 +1,5 @@
+import { arCount } from '@/lib/i18n/arPlural'
+
 /**
  * Copy for the redesigned Subscriptions surfaces (home, add, SMS review, detail, cancel,
  * Budget links, notifications). Strings are from the design handoff's SPEC section 9 and its
@@ -488,7 +490,7 @@ export const subscriptionsCopyAr: SubscriptionsCopy = {
     dismiss: 'تجاهل',
     price: (n, a) => `${n} يخصم الآن ${a}`,
     ask: (n) => `${n} مستحق. تم الدفع؟`,
-    trial: (n, d) => (d === 0 ? `تجربة ${n} تنتهي اليوم` : d === 1 ? `تجربة ${n} تنتهي بعد يوم` : d === 2 ? `تجربة ${n} تنتهي بعد يومين` : `تجربة ${n} تنتهي بعد ${d} أيام`),
+    trial: (n, d) => (d === 0 ? `تجربة ${n} تنتهي اليوم` : d === 1 ? `تجربة ${n} تنتهي بعد يوم` : d === 2 ? `تجربة ${n} تنتهي بعد يومين` : `تجربة ${n} تنتهي بعد ${arCount(d, 'day')}`),
     still: (n) => `هل ما زلت تستخدم ${n}؟`,
     keep: 'إبقاؤه',
     plan: (n, p) => `يبدو أن ${n} انتقل إلى ${p}`,
@@ -502,7 +504,7 @@ export const subscriptionsCopyAr: SubscriptionsCopy = {
   },
   sms: {
     found: (n) => (n === 1 ? 'وجدنا اشتراكًا محتملًا' : n === 2 ? 'وجدنا اشتراكين محتملين' : `وجدنا ${n} اشتراكات محتملة`),
-    scanned: (n) => `تم فحص ${n} رسالة · آخر 90 يومًا`,
+    scanned: (n) => `تم فحص ${arCount(n, 'message')} · آخر 90 يومًا`,
     nothingAdded: 'لا يُضاف شيء قبل تأكيدك.',
     notASub: 'ليس اشتراكًا',
     add: 'إضافة',
@@ -651,7 +653,7 @@ export const subscriptionsCopyAr: SubscriptionsCopy = {
     digestBody: (items) => items,
     digestItem: (name, amount, when) => `${name} ${amount} ${when}`,
     inDays: (n) => (n === 0 ? 'اليوم' : n === 1 ? 'بعد يوم' : n === 2 ? 'بعد يومين' : n <= 10 ? `بعد ${n} أيام` : `بعد ${n} يومًا`),
-    trialTitle: (n, d) => (d === 1 ? `تجربة ${n} تنتهي بعد يوم` : d === 2 ? `تجربة ${n} تنتهي بعد يومين` : `تجربة ${n} تنتهي بعد ${d} أيام`),
+    trialTitle: (n, d) => (d === 1 ? `تجربة ${n} تنتهي بعد يوم` : d === 2 ? `تجربة ${n} تنتهي بعد يومين` : `تجربة ${n} تنتهي بعد ${arCount(d, 'day')}`),
     trialBody: (a, d) => `${a} شهريًا بعد ${d}. استمرار أو إلغاء.`,
     priceTitle: (n, a) => `${n} أصبح ${a}`,
     priceBody: (a) => `كان ${a}. اضغط لتحديث الخطة.`,

@@ -38,6 +38,8 @@ interface UserSettingsRow { user_id: unknown; month_start_day: unknown; language
 
 export const maxDuration = 60
 const PAGE = 500
+/** Stop starting new users this long into the run so the function ends cleanly inside `maxDuration` instead of being killed mid-user. */
+const TIME_BUDGET_MS = 50_000
 
 async function fetchRates(): Promise<Record<string, number>> {
   try {
@@ -249,9 +251,12 @@ export async function GET(request: Request) {
   let carried = 0
   let scanned = 0
   let failed = 0
-  let cursor = ''
+  const startedAt = Date.now()
+  let cursor = new URL(request.url).searchParams.get('after') ?? ''
+  let partial = false
+  let lastScanned = cursor
 
-  for (;;) {
+  scan: for (;;) {
     let query = service
       .from('user_settings')
       .select('user_id, month_start_day, language, goal_progress_alerts, timezone')
@@ -266,6 +271,10 @@ export async function GET(request: Request) {
     if (!settings || settings.length === 0) break
 
     for (const s of settings) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS) {
+        partial = true
+        break scan
+      }
       scanned++
       try {
         carried += await carryUser(service, s, rates, now, dry)
@@ -273,13 +282,15 @@ export async function GET(request: Request) {
         failed++
         console.error('[cron/month-carry] user failed', s.user_id, e instanceof Error ? e.message : e)
       }
+      lastScanned = s.user_id as string
     }
     cursor = settings[settings.length - 1]!.user_id as string
     if (settings.length < PAGE) break
   }
+  if (partial) console.error('[cron/month-carry] time budget reached; resume with ?after=<last scanned user>', { scanned })
 
   // A dry run evaluates cycles but carries nothing: `carried` stays 0 and the evaluated count is `cycles`.
-  return NextResponse.json({ ok: failed === 0, ...(dry ? { dryRun: true, ...dry } : {}), scanned, carried: dry ? 0 : carried, failed })
+  return NextResponse.json({ ok: failed === 0 && !partial, ...(dry ? { dryRun: true, ...dry } : {}), ...(partial ? { partial: true, nextCursor: lastScanned } : {}), scanned, carried: dry ? 0 : carried, failed })
 }
 
 // pg_cron + pg_net calls with POST; Vercel crons call GET. Same handler, same auth.

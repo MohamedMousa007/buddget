@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { ChartDataTable } from '@/components/reports/ChartDataTable'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
@@ -45,7 +46,8 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
           {c.pieEmpty}
         </p>
       ) : (
-        <div className="h-72 min-h-72 min-w-24">
+        <>
+        <div role="img" aria-label={c.pieSummary(slices.length, slices[0]?.name ?? '')} className="h-72 min-h-72 min-w-24">
           {mounted ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -78,6 +80,12 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
             </ResponsiveContainer>
           ) : null}
         </div>
+        <ChartDataTable
+          caption={c.pieTitle}
+          headers={[c.categoryColumn, c.amountColumn]}
+          rows={slices.map((d) => [d.name, formatCurrency(d.value, currency)])}
+        />
+        </>
       )}
     </div>
   )

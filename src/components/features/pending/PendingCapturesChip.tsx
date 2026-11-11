@@ -101,8 +101,10 @@ export function PendingCapturesChip() {
     } catch (e) {
       // Only a permanent 4xx (bad audio, 413) can never succeed; auth and quota keep the job paused.
       const status = e instanceof TranscribeError ? e.status : 0
-      if (failJob(job.id, isRetryableStatus(status)) === 'dropped') void deletePendingMedia(job.id)
-      setNotice(t.pendingCaptures.failed)
+      const retryable = isRetryableStatus(status)
+      const dropped = failJob(job.id, retryable, status >= 500) === 'dropped'
+      if (dropped) void deletePendingMedia(job.id)
+      setNotice(dropped && retryable ? t.pendingCaptures.gaveUp : t.pendingCaptures.failed)
     } finally {
       setBusy(false)
     }

@@ -31,14 +31,14 @@ leftover, not a decision.)
 | **Primary ink** | `--color-brand-primary-ink` | `#0B7568` | `#7FE6DA` | Teal **text** and links — see the contrast warning below |
 | Primary soft | `--color-brand-primary-soft` | `#E3F6F3` | `#0F2723` | Teal tint backgrounds, icon chips |
 | **On primary** | `--color-brand-on-primary` | `#FFFFFF` | `#04201C` | Anything sitting **on** a teal fill |
-| Red (destructive) | `--color-brand-red` | `#C2353B` | `#F2646A` | Delete, destructive confirm, over budget |
+| Red (destructive) | `--color-brand-red` | `#BE343A` | `#F2646A` | Delete, destructive confirm, over budget |
 | Red hover | `--color-brand-red-hover` | `#A82A31` | `#F87C81` | Hover on destructive |
 | Red soft | `--color-brand-red-soft` | `#FBE7E7` | `#3A1B1D` | Destructive badge background |
-| Green | `--color-brand-green` | `#107E38` | `#37C368` | Income, received, success |
+| Green | `--color-brand-green` | `#0F7635` | `#37C368` | Income, received, success |
 | Green soft | `--color-brand-green-soft` | `#E3F5EA` | `#123021` | Positive badge background |
-| Amber | `--color-brand-amber` | `#93630B` | `#EDB24A` | Warning, due soon, late |
+| Amber | `--color-brand-amber` | `#8C5E0A` | `#EDB24A` | Warning, due soon, late |
 | Amber soft | `--color-brand-amber-soft` | `#FBF0DA` | `#33280F` | Warning badge background |
-| Gold | `--color-brand-gold` | `#977019` | `#EDC463` | Investment, gold holdings |
+| Gold | `--color-brand-gold` | `#896617` | `#EDC463` | Investment, gold holdings |
 | Focus ring | `--color-brand-focus` | `#12B0A0` | `#1FC3B2` | Focus rings (now brand teal) |
 
 > ⚠️ **`--color-brand-primary-bright` (`#12B0A0`) is the kit's identity teal but cannot carry

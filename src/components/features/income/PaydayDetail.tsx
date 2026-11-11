@@ -138,7 +138,7 @@ export function PaydayDetail({ source, onBack }: { source: IncomeSource; onBack:
     <div className="min-h-[calc(100dvh-10rem)] pb-6" onClick={() => setPicked(null)}>
       <div className="flex min-h-14 items-center gap-1 pe-2.5 ps-1.5 pt-1">
         <IconButton variant="ghost" size="md" aria-label={t.paydays.backToPaydays} onClick={onBack}>
-          <ChevronLeft className="size-5" strokeWidth={2} />
+          <ChevronLeft className="size-5 rtl:rotate-180" strokeWidth={2} />
         </IconButton>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{t.paydays.detailEyebrow}</span>

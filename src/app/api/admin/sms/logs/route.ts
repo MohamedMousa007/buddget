@@ -1,4 +1,5 @@
 import { guardAdmin, json, bad, maskIf, readJson } from '@/lib/server/admin/guard'
+import { AUDIT_REFUSAL } from '@/lib/server/admin/audit'
 import { UUID_RE } from '@/lib/server/admin/targets'
 import { grantedUsers, hasFinancialGrant } from '@/lib/server/admin/financialAccess'
 import { can } from '@/lib/admin/permissions'
@@ -98,7 +99,8 @@ export async function POST(req: Request) {
     const { data: log } = await ctx.service.from('sms_parse_log').select('id, user_id, raw_body').eq('id', body.id).maybeSingle()
     if (!log) return bad('SMS not found.', 404)
     if (!(await hasFinancialGrant(ctx, log.user_id))) return bad('Open financial access for this user first.', 403)
-    await ctx.audit('pii.sms.reveal', { targetType: 'sms_log', targetId: log.id, summary: 'Read the content of a bank message', metadata: { userId: log.user_id, reason: reason.slice(0, 300) } })
+    const audited = await ctx.audit('pii.sms.reveal', { targetType: 'sms_log', targetId: log.id, summary: 'Read the content of a bank message', metadata: { userId: log.user_id, reason: reason.slice(0, 300) } })
+    if (audited === false) return bad(AUDIT_REFUSAL, 503)
     return json({ ok: true, raw_body: log.raw_body })
   }
 

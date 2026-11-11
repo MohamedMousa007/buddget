@@ -33,6 +33,7 @@ import { isSecondFactorBlocked, onSecondFactorResolved, useSecondFactorGate } fr
 import { applyTheme } from '@/lib/theme/applyTheme'
 import { isOnline, networkReady, subscribeNetwork } from '@/hooks/useNetworkStatus'
 import type { Snapshot } from '@/lib/supabase/remote'
+import { clearNetWorthStamps } from '@/lib/storage/removeByPrefix'
 
 const DEBOUNCE_MS = 500
 
@@ -41,7 +42,11 @@ const fingerprintTimers = new Map<string, ReturnType<typeof setTimeout>>()
 function persistBaseline(userId: string, snap: Snapshot | null): void {
   if (!snap) return
   clearTimeout(fingerprintTimers.get(userId))
-  fingerprintTimers.set(userId, setTimeout(() => saveFingerprint(userId, snap), 300))
+  fingerprintTimers.set(userId, setTimeout(() => {
+    // Hashing a large store is main-thread work: do it when the UI is idle, but never later than the next burst.
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(() => saveFingerprint(userId, snap), { timeout: 1500 })
+    else saveFingerprint(userId, snap)
+  }, 300))
 }
 
 /** Imperative flush handle set by the mounted `SupabaseFinanceSync`. Other
@@ -566,6 +571,7 @@ async function runFullSync(
         useFinanceStore.getState().reset()
         useSettingsStore.getState().reset()
         clearSyncCursors()
+        clearNetWorthStamps()
         return runFullSync(supabase, userId, null)
       }
     }
@@ -601,6 +607,7 @@ async function runLegacyFullSync(
     useFinanceStore.getState().reset()
     useSettingsStore.getState().reset()
     clearSyncCursors()
+    clearNetWorthStamps()
   }
   const server = await pullAll(supabase, userId)
   if (!server) return

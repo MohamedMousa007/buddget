@@ -7,6 +7,7 @@ const h = vi.hoisted(() => ({
   ops: [] as Array<{ table: string; op: string; values?: Record<string, unknown>; filters: Array<[string, unknown]> }>,
   afters: [] as Array<() => unknown>,
   siblings: [] as Array<Record<string, unknown>>,
+  limited: false,
   neighbourRows: [] as Array<Record<string, unknown>>,
   geminiRegexOk: false,
   learnGates: vi.fn(),
@@ -33,7 +34,7 @@ vi.mock('@/lib/sms/runAdjudication', () => ({ runAdjudication: async () => ({ ad
 
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
-    rpc: async () => ({ data: [], error: null }),
+    rpc: async (name: string) => (name === 'api_rate_hit' && h.limited ? { data: false, error: null } : { data: [], error: null }),
     from: (table: string) => {
       const rec: Op = { table, op: 'select', filters: [] }
       const result = () => {
@@ -66,7 +67,7 @@ const geminiJson = (obj: unknown) => ({ ok: true, status: 200, text: async () =>
 const learnUpdates = () => h.ops.filter((o) => o.table === 'sms_parse_log' && o.op === 'update' && o.values && 'learn_status' in o.values).map((o) => o.values!.learn_status)
 
 beforeEach(() => {
-  h.ops.length = 0; h.afters.length = 0; h.siblings = []; h.neighbourRows = []
+  h.limited = false; h.ops.length = 0; h.afters.length = 0; h.siblings = []; h.neighbourRows = []
   h.learnGates.mockReset().mockReturnValue({ ok: false, status: 'gate_stub' })
   h.loadReplay.mockReset().mockResolvedValue([])
   process.env.GEMINI_API_KEY = 'test-key'
@@ -74,6 +75,15 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks() })
+
+describe('SLG-9 per-user parse cap', () => {
+  it('answers 429 and writes no parse-log row once the hourly cap is used', async () => {
+    h.limited = true
+    const res = await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: RECEIVED })
+    expect(res.status).toBe(429)
+    expect(h.ops.find((o) => o.table === 'sms_parse_log' && o.op === 'insert')).toBeUndefined()
+  })
+})
 
 describe('POST /api/sms/parse wiring', () => {
   it('claims the row under the hash of the RAW message and looks for neighbour and legacy hashes', async () => {

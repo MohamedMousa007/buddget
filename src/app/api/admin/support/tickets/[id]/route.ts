@@ -37,7 +37,7 @@ export async function POST(req: Request, { params }: Params) {
   const { ctx } = g
   const body = await readValidated(req, ticketUpdateBody)
 
-  const { data: ticket } = await ctx.service.from('support_tickets').select('id, number, user_id, subject, status, first_response_at').eq('id', id).maybeSingle()
+  const { data: ticket } = await ctx.service.from('support_tickets').select('id, number, user_id, subject, status, priority, category, created_at, first_response_at').eq('id', id).maybeSingle()
   if (!ticket) return bad('Ticket not found.', 404)
   const target = { targetType: 'ticket', targetId: id }
 
@@ -45,6 +45,8 @@ export async function POST(req: Request, { params }: Params) {
     const text = body.message?.trim()
     if (!text) return bad('Write a message first.')
     const internal = body.internal === true
+    // A reply only reaches the person through an in-app notification: with no app account it would be saved and audited but never sent.
+    if (!internal && !ticket.user_id) return bad('This ticket has no app account to notify. Save it as an internal note, or reply by email.', 409)
     await ctx.service.from('support_ticket_messages').insert({ ticket_id: id, author_type: 'staff', author_staff_id: ctx.staff.id, author_label: ctx.staff.display_name ?? ctx.staff.email, body: text.slice(0, 10000), internal })
     if (!internal) {
       const update: { first_response_at?: string; status?: Status } = {}
@@ -110,8 +112,14 @@ export async function POST(req: Request, { params }: Params) {
 
   if (body?.op === 'delete') {
     if (!can(ctx.permissions, 'support.manage')) return bad('Your role does not allow this.', 403)
+    // A hard delete leaves no copy: the audit row keeps what was lost (no body text, no address).
+    const { count } = await ctx.service.from('support_ticket_messages').select('id', { count: 'exact', head: true }).eq('ticket_id', id)
     await ctx.service.from('support_tickets').delete().eq('id', id)
-    await ctx.audit('support.ticket_delete', { ...target, summary: `Deleted ticket #${ticket.number}` })
+    await ctx.audit('support.ticket_delete', {
+      ...target,
+      summary: `Deleted ticket #${ticket.number}`,
+      metadata: { number: ticket.number, subject: ticket.subject, status: ticket.status, priority: ticket.priority, category: ticket.category, createdAt: ticket.created_at, hadUser: !!ticket.user_id, messages: count ?? 0 },
+    })
     return json({ ok: true })
   }
 

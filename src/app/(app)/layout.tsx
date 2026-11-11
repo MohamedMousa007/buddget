@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
+import { LOCALE_COOKIE, parseLocaleCookie } from '@/lib/i18n/localeCookie'
 import { DM_Sans, JetBrains_Mono, IBM_Plex_Sans_Arabic } from 'next/font/google'
 import '../globals.css'
 import { AppShell } from '@/components/layout/AppShell'
@@ -126,8 +127,10 @@ export default async function RootLayout({
   const nonce =
     process.env.CAPACITOR === 'true' ? undefined : ((await headers()).get('x-nonce') ?? undefined)
 
+  const locale = process.env.CAPACITOR === 'true' ? 'en' : parseLocaleCookie((await cookies()).get(LOCALE_COOKIE)?.value)
+
   return (
-    <html lang="en" dir="ltr" data-locale="en" translate="no" suppressHydrationWarning>
+    <html lang={locale} dir="ltr" data-locale={locale} translate="no" suppressHydrationWarning>
       <head>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />

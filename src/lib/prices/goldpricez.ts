@@ -18,7 +18,7 @@ export function parseGoldpricezGram24k(json: unknown): number | null {
     return Number.isFinite(n) && n > 0 ? n : null
   }
   const o = json as Record<string, unknown>
-  return pick(o, ['gram_in_24k', 'ounce_price_24k', 'gram_24k', 'price_gram_24k', 'rate'])
+  return pick(o, ['gram_in_24k', 'gram_24k', 'price_gram_24k', 'rate'])
 }
 
 export function goldpricezUrl(currency: string): string {
