@@ -19,3 +19,17 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# R8 (release): shrink third-party code, keep everything the WebView bridge, WorkManager and manifest reach by name.
+-keepattributes *Annotation*, Signature, InnerClasses, EnclosingMethod, SourceFile, LineNumberTable
+-keep class app.buddget.** { *; }
+-keep class com.getcapacitor.** { *; }
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+-keepclassmembers class * { @com.getcapacitor.PluginMethod <methods>; }
+-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+-keep class * extends androidx.work.ListenableWorker { <init>(...); }
+-keep class io.sentry.** { *; }
+-keep class com.google.firebase.** { *; }
+-keep class com.google.mlkit.** { *; }
+-dontwarn org.slf4j.**
+-dontwarn javax.annotation.**

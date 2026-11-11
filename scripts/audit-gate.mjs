@@ -2,14 +2,8 @@
 import { execSync } from 'node:child_process'
 import { blockingVulnerabilities } from './audit-gate-lib.mjs'
 
-// next-pwa -> workbox-build -> rollup-plugin-terser -> serialize-javascript: build-time tooling that only runs
-// during `next build` on our own sources, never in the shipped runtime. Allowed by advisory id with an expiry, so a new
-// advisory on the same packages blocks and a forgotten entry stops passing. Remove once next-pwa is replaced.
-const ALLOW = {
-  'GHSA-5c6j-r48x-rmvq': '2027-03-31',
-  'GHSA-m5mm-p8h7-m29v': '2027-03-31',
-  'GHSA-gcqx-w48m-w2h4': '2027-03-31', // deepmerge, reached through workbox-build's @rollup/plugin-node-resolve
-}
+// Allowlist by advisory id with an expiry (id -> ISO date), so a forgotten entry stops passing. Empty: nothing is waived.
+const ALLOW = {}
 
 let out
 try {

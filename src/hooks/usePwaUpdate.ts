@@ -1,22 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
-function getWorkbox() {
-  if (typeof window === 'undefined') return undefined
-  return window.workbox
-}
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { isNative } from '@/lib/native/isNative'
 
 /**
- * Detects a waiting Workbox service worker and exposes apply via `SKIP_WAITING` + reload.
- * Uses `workbox.messageSkipWaiting()` when present (posts to the waiting SW); otherwise
- * `waiting.postMessage({ type: 'SKIP_WAITING' })`. Reloads on `controllerchange` or after a short timeout.
- * No-ops in development (next-pwa disabled) or without service workers.
+ * Detects a waiting service worker and exposes apply via `SKIP_WAITING` + reload.
+ * Posts `{ type: 'SKIP_WAITING' }` to the waiting worker. Reloads on `controllerchange` or after a short timeout.
+ * No-ops in development (service worker disabled) or without service workers.
  */
 export function usePwaUpdate() {
   const [hasWaiting, setHasWaiting] = useState(false)
   const [dismissed, setDismissed] = useState(false)
-  const workboxRef = useRef<NonNullable<ReturnType<typeof getWorkbox>> | null>(null)
 
   const updateAvailable = useMemo(() => hasWaiting && !dismissed, [hasWaiting, dismissed])
 
@@ -25,9 +19,6 @@ export function usePwaUpdate() {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
 
     let cancelled = false
-    let raf = 0
-    let attempts = 0
-    const maxRafAttempts = 300
 
     const markIfWaiting = (reg: ServiceWorkerRegistration | undefined) => {
       if (!reg?.waiting || !reg.active) return
@@ -53,7 +44,8 @@ export function usePwaUpdate() {
       void registration?.update()
     }
 
-    void navigator.serviceWorker.getRegistration().then((reg) => {
+    const ready = isNative() ? navigator.serviceWorker.getRegistration() : navigator.serviceWorker.register('/sw.js').catch(() => undefined)
+    void ready.then((reg) => {
       if (cancelled || !reg) return
       registration = reg
       markIfWaiting(reg)
@@ -65,36 +57,9 @@ export function usePwaUpdate() {
       }
     })
 
-    const onWorkboxWaiting = () => {
-      if (!cancelled) setHasWaiting(true)
-    }
-
-    const attachWorkbox = () => {
-      if (cancelled) return
-      const wb = getWorkbox()
-      if (!wb) {
-        attempts += 1
-        if (attempts < maxRafAttempts) {
-          raf = window.requestAnimationFrame(attachWorkbox)
-        }
-        return
-      }
-      if (!cancelled) {
-        workboxRef.current = wb
-        wb.addEventListener('waiting', onWorkboxWaiting)
-      }
-    }
-
-    attachWorkbox()
-
     return () => {
       cancelled = true
-      window.cancelAnimationFrame(raf)
       window.removeEventListener('focus', onFocus)
-      const wb = workboxRef.current
-      if (wb) {
-        wb.removeEventListener('waiting', onWorkboxWaiting)
-      }
     }
   }, [])
 
@@ -103,14 +68,9 @@ export function usePwaUpdate() {
   }, [])
 
   const applyUpdate = useCallback(() => {
-    const wb = workboxRef.current ?? getWorkbox()
-    if (wb) {
-      wb.messageSkipWaiting()
-    } else {
-      void navigator.serviceWorker.getRegistration().then((reg) => {
-        reg?.waiting?.postMessage({ type: 'SKIP_WAITING' })
-      })
-    }
+    void navigator.serviceWorker.getRegistration().then((reg) => {
+      reg?.waiting?.postMessage({ type: 'SKIP_WAITING' })
+    })
 
     let reloaded = false
     const onControllerChange = () => {

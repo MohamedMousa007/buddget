@@ -361,6 +361,8 @@ export type Database = {
           expires_at?: string | null
           extended?: boolean
           id?: string
+          mode?: string
+          note?: string | null
           reason?: string
           requested_at?: string
           revoked_at?: string | null

@@ -31,9 +31,24 @@ android {
             }
         }
     }
+    signingConfigs {
+        if (System.getenv("ANDROID_RELEASE_KEYSTORE")) {
+            release {
+                storeFile file(System.getenv("ANDROID_RELEASE_KEYSTORE"))
+                storePassword System.getenv("ANDROID_RELEASE_KS_PASS")
+                keyAlias System.getenv("ANDROID_RELEASE_KEY_ALIAS") ?: "release"
+                keyPassword System.getenv("ANDROID_RELEASE_KEY_PASS") ?: System.getenv("ANDROID_RELEASE_KS_PASS")
+            }
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            // Release signing comes from the environment (never committed); without it the release build stays unsigned.
+            if (System.getenv("ANDROID_RELEASE_KEYSTORE")) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

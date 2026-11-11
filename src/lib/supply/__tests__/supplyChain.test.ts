@@ -79,23 +79,6 @@ describe('SUP-12 / SST-6 WebView debugging is opt-in', () => {
   })
 })
 
-describe('SUP-16 service worker does not precache the route-handler stub chunks', () => {
-  const excludes = require('../../../../config/pwaBuildExcludes.js') as RegExp[]
-  const hit = (name: string) => excludes.some((re) => re.test(name))
-  it('excludes chunks/app/api/** (and keeps the middleware manifest exclusion)', () => {
-    expect(hit('static/chunks/app/api/admin/access/route-dd3602d8a0aecee2.js')).toBe(true)
-    expect(hit('static/chunks/app/api/account/delete/route-1.js')).toBe(true)
-    expect(hit('server/middleware-manifest.json')).toBe(true)
-  })
-  it('still precaches ordinary app chunks', () => {
-    expect(hit('static/chunks/app/(app)/flow/page-abc.js')).toBe(false)
-    expect(hit('static/chunks/main-app-abc.js')).toBe(false)
-  })
-  it('next.config wires it in', () => {
-    expect(read('next.config.ts')).toContain("require('./config/pwaBuildExcludes')")
-  })
-})
-
 describe('SUP-7 / SUP-8 workflows', () => {
   const workflows = ['ci', 'ios-release', 'android-release'].map((n) => [n, read(`.github/workflows/${n}.yml`)] as const)
   it('ci.yml declares read-only token permissions at the top level', () => {

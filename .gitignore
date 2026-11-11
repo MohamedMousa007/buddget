@@ -19,13 +19,6 @@
 
 # Subscription catalog PNGs under public/subscription-icons/ are committed to the repo.
 
-# next-pwa build output (regenerated each build)
-public/sw.js
-public/sw.js.map
-public/workbox-*.js
-public/workbox-*.js.map
-public/worker-*.js
-public/fallback-*.js
 
 # production
 /build

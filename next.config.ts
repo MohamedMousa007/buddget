@@ -10,28 +10,6 @@ import path from 'path'
  */
 const IS_CAPACITOR = process.env.CAPACITOR === 'true'
 
-// next-pwa is CommonJS — require keeps Next’s config resolution stable.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  /** false = new SW can stay in `waiting` until the user refreshes (see UpdateToast + usePwaUpdate). */
-  skipWaiting: false,
-  /** Local dev disables SW by default; set `NEXT_PUBLIC_PWA_DEV=true` to test install prompts locally.
-   *  Capacitor static export disables next-pwa: the WebView already caches assets natively. */
-  disable:
-    IS_CAPACITOR ||
-    (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_PWA_DEV !== 'true'),
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  buildExcludes: require('./config/pwaBuildExcludes'),
-  /** Authenticated /api/ responses are never cached by the service worker (see config/pwaRuntimeCaching.js). */
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  runtimeCaching: require('./config/pwaRuntimeCaching'),
-  fallbacks: {
-    document: '/offline',
-  },
-})
-
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -75,4 +53,4 @@ const nextConfig: NextConfig = {
   ],
 }
 
-export default withPWA(nextConfig)
+export default nextConfig
