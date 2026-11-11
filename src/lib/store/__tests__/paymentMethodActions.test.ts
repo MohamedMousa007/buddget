@@ -69,3 +69,22 @@ describe('updatePaymentMethod single default', () => {
     expect(defaults[0].id).toBe('pm2')
   })
 })
+
+describe('addPaymentMethod duplicate guard', () => {
+  beforeEach(() => seed({ paymentMethods: [{ ...pm('pm1', true), name: 'HSBC', last4: '1234' }] }))
+
+  it('returns the existing method for the same name, type, currency and last four', () => {
+    const dup = { name: " hsbc ", type: "credit_card" as const, currency: "EGP" as const, isDefault: false, last4: "1234" }
+    expect(useFinanceStore.getState().addPaymentMethod(dup)).toBe('pm1')
+    expect(useFinanceStore.getState().paymentMethods).toHaveLength(1)
+  })
+
+  it('still adds a different currency or last four', () => {
+    const base = { name: 'HSBC', type: 'credit_card' as const, isDefault: false }
+    const other = { ...base, currency: 'EGP' as const, last4: '9999' }
+    const usd = { ...base, currency: 'USD' as const, last4: '1234' }
+    useFinanceStore.getState().addPaymentMethod(other)
+    useFinanceStore.getState().addPaymentMethod(usd)
+    expect(useFinanceStore.getState().paymentMethods).toHaveLength(3)
+  })
+})

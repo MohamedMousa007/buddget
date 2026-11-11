@@ -65,3 +65,10 @@ Closed: the large majority of the ~134 P3s (Fixed with tests; Already fixed; Won
 - **Console/env actions:** SST-9 leaked-password protection (Supabase Auth dashboard), SST-5 `SMS_REQUIRE_DEVICE_HEADER=1` on Vercel, SUP-4 Firebase key restriction and rotation, SUP-2 `.claude/settings.json` allow-list, ADS-8 receipt-retention and RECEIVE_SMS submission checks.
 - **Product/native:** NAT-11 push masking, BAI-8 shared AI-category trust, A11-14 bar patterns, A11-20 per-fragment `lang`, AUT-12, REG-13, DEB-9 weekly reminders, SST-4 R8, SUP-5 release signing, SUP-9 next-pwa replacement, SUP-11 dependency bumps, pre-GA native pins.
 - **Limits:** field builds send no `edited_at` until updated; legacy phones have no recorded session until next heartbeat; Kotlin/Swift unverified on device; live double-tap through the pay-debt sheet and light/tablet/desktop sweeps not run; `.design-sync/compiled.css` stale after the A11-12 token shifts.
+
+## Closing pass (2026-11-12)
+- DBI-5: `addPaymentMethod` returns the existing method for the same name, type, currency and last four (the cash sentinel is excluded). Existing duplicate rows are not merged. Test in `paymentMethodActions.test.ts`.
+- ADS-3: admin Leads view has a Load more button (offset paging).
+- `.design-sync/compiled.css` regenerated.
+- Dropped as not needed: SST-9 (no Pro plan), DBS-6, DBI-7, AUT-11, SLG-11, REG-5, REG-12, DBI-4, AUT-12, A11-15/18 remainder, DEB-9 weekly.
+- Tried `next` 16.4.5 + eslint-config-next 16.4.5: the newer React lint rules raise 34 errors in untouched files, so the bump was reverted; it needs its own pass. `@supabase/ssr` 0.12 and the next-pwa replacement are auth/service-worker changes that need a device test, so they wait.
