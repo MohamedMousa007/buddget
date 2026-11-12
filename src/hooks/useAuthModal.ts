@@ -8,6 +8,7 @@ import { isUnknownAccountOtpError, mapAuthError, mapOAuthCallbackReason, mapOAut
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
+import { useSecondFactorGate } from '@/lib/auth/secondFactorGate'
 import { navigateAfterAuth, safeInternalPath } from '@/lib/auth/postAuthRedirect'
 import { lockScroll, unlockScroll } from '@/lib/ui/scrollLock'
 import { isNative } from '@/lib/native/isNative'
@@ -330,7 +331,12 @@ export function useAuthModal() {
         const body = (await deviceRes.json()) as { required?: boolean; deviceSecret?: string }
         required = body.required === true
         // A legacy trusted device is upgraded here: keep the secret the server just issued.
-        if (!required) await (await import('@/lib/native/deviceSecret')).rememberDeviceSecret(body)
+        if (!required) {
+          await (await import('@/lib/native/deviceSecret')).rememberDeviceSecret(body)
+          // The server has now marked this trusted session. A sync call that raced ahead of the mark and was refused
+          // must not leave the challenge open: close it and resume the interrupted sync.
+          useSecondFactorGate.getState().resolve()
+        }
       }
     } catch {
       /* required stays null */
