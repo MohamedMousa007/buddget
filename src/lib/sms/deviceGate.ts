@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { hasAnyDevice, hasRevokedDevice, isRevokedDevice } from '@/lib/server/devices/registry'
 import type { ServiceClient } from '@/lib/supabase/service'
 import type { SmsCaller } from './resolveSmsUser'
+import { pauseSmsForLegacyBuild } from './pauseLegacySms'
 
 /**
  * Null when the caller may proceed. A removed phone is refused, and so is a JWT caller that
@@ -22,6 +23,7 @@ export async function smsDeviceGate(service: ServiceClient, caller: SmsCaller): 
       console.warn('[sms] JWT caller without device header (not enforced)', userId)
       return null
     }
+    await pauseSmsForLegacyBuild(service, userId).catch((e) => console.error('[sms] pause for legacy build failed', e))
     return NextResponse.json(
       { error: 'device_required', message: 'Update Buddget: this request did not identify the phone it came from' },
       { status: 403 },

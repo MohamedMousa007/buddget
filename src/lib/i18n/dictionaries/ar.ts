@@ -415,6 +415,7 @@ export const ar: Dictionary = {
     surfaceHero: 'اللافتات العلوية',
     surfaceLists: 'القوائم والحسابات',
     surfaceNotifications: 'الإشعارات',
+    hideAmountsInNotifications: 'إخفاء المبالغ في الإشعارات',
     surfaceWidgets: 'الودجات',
     surfaceBuddgy: 'Buddgy',
   },

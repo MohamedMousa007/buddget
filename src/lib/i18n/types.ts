@@ -322,6 +322,7 @@ export interface Dictionary {
     surfaceHero: string
     surfaceLists: string
     surfaceNotifications: string
+    hideAmountsInNotifications: string
     surfaceWidgets: string
     surfaceBuddgy: string
   }

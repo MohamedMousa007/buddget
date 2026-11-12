@@ -413,6 +413,7 @@ export const en: Dictionary = {
     surfaceHero: 'Top banners',
     surfaceLists: 'Lists and accounts',
     surfaceNotifications: 'Notifications',
+    hideAmountsInNotifications: 'Hide amounts in notifications',
     surfaceWidgets: 'Widgets',
     surfaceBuddgy: 'Buddgy',
   },

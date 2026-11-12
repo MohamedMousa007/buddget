@@ -62,10 +62,20 @@ function jwtVerifier(): SupabaseClient {
   return verifier
 }
 
-function identityOf(claims: { sub?: string; role?: string; email?: string; amr?: unknown[]; session_id?: string } | null | undefined): RouteIdentity | null {
+export function identityOf(claims: { sub?: string; role?: string; email?: string; amr?: unknown[]; session_id?: string } | null | undefined): RouteIdentity | null {
   return claims?.sub && claims.role === 'authenticated'
     ? { id: claims.sub, email: claims.email ?? null, amr: (claims.amr ?? []).filter((a): a is AuthMethodRef => typeof a === 'object' && a !== null), sessionId: claims.session_id ?? null }
     : null
+}
+
+/** The identity in a Bearer JWT, verified locally against the project's signing key; null when it does not verify. */
+export async function verifyBearerJwt(bearer: string): Promise<RouteIdentity | null> {
+  try {
+    const { data } = await jwtVerifier().auth.getClaims(bearer)
+    return identityOf(data?.claims)
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -78,13 +88,8 @@ export async function resolveRouteIdentity(request: Request): Promise<RouteIdent
   const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : null
   if (bearer) {
     if (!looksLikeJwt(bearer)) return null
-    try {
-      const { data } = await jwtVerifier().auth.getClaims(bearer)
-      const id = identityOf(data?.claims)
-      if (id) return id
-    } catch {
-      /* fall through to the session cookie */
-    }
+    const id = await verifyBearerJwt(bearer)
+    if (id) return id
   }
   try {
     const supabase = await createServerSupabase()

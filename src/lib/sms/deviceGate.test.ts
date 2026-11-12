@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({ revoked: vi.fn(), registered: vi.fn(), removedAny: vi.fn() }))
 vi.mock('@/lib/server/devices/registry', () => ({ isRevokedDevice: h.revoked, hasAnyDevice: h.registered, hasRevokedDevice: h.removedAny }))
 
+const pause = vi.hoisted(() => vi.fn())
+vi.mock('./pauseLegacySms', () => ({ pauseSmsForLegacyBuild: pause }))
+
 import { smsDeviceGate } from './deviceGate'
 
 const svc = {} as never
@@ -13,6 +16,7 @@ describe('smsDeviceGate', () => {
     h.revoked.mockReset().mockResolvedValue(false)
     h.registered.mockReset().mockResolvedValue(true)
     h.removedAny.mockReset().mockResolvedValue(false)
+    pause.mockReset().mockResolvedValue(undefined)
     vi.stubEnv('SMS_REQUIRE_DEVICE_HEADER', '1')
   })
 
@@ -32,8 +36,10 @@ describe('smsDeviceGate', () => {
     expect(await smsDeviceGate(svc, jwt('d1'))).toBeNull()
   })
 
-  it('rejects a JWT call with no device header when the user has registered devices', async () => {
+  it('rejects a JWT call with no device header when the user has registered devices, and pauses SMS for that account', async () => {
+    pause.mockReset().mockResolvedValue(undefined)
     const res = await smsDeviceGate(svc, jwt(null))
+    expect(pause).toHaveBeenCalledWith(svc, 'u1')
     expect(res?.status).toBe(403)
     expect(await res?.json()).toMatchObject({ error: 'device_required' })
   })

@@ -8,6 +8,7 @@ import {
   requireSupabaseUrl,
 } from '@/lib/supabase/env'
 import { buildCsp } from '@/lib/security/csp'
+import { apiSecondFactorRefusal } from '@/lib/server/apiSecondFactor'
 import { publicApiRateLimitOk } from '@/lib/server/publicApiRateLimit'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
 import { SITE_CSP, decideSiteRoute, hasAuthCookie, isSitePath, splitHosts } from '@/lib/site/entry'
@@ -142,7 +143,8 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api')) {
-    return withNativeApiCors(request, supabaseResponse)
+    const refusal = await apiSecondFactorRefusal(request, pathname, user)
+    return withNativeApiCors(request, refusal ?? supabaseResponse)
   }
 
   supabaseResponse.headers.set('Content-Security-Policy', csp)
