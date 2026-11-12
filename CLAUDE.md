@@ -1,64 +1,37 @@
 # Buddget — Claude Rules
 
-These rules ap
-## Database Sync & Migrations
-- **Schema Management:** You have direct access to Supabase. When implementing a new feature or domain change, check `supabase/migrations/` first.
-- **Atomic Schema Changes:** 
-    - If you add a field to a TypeScript type in `src/lib/store/types.ts` or a mapper, you MUST check if a corresponding SQL migration is needed. 
-    - Always use the `execute_sql` tool to apply migration changes immediately.
-- **Sync Integrity:** After every schema change, use `mcp generate_typescript_types` (if applicable to your workflow) or manually ensure `src/lib/supabase/database.types.ts` reflects the change.
-- **Audit:** Before performing a destructive change (drop/alter column), run a quick `SELECT` to check row counts and identify data loss risks.ply to every Claude session in this repo.
+Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, code style). These are Buddget-specific and win on conflict.
+
+## Session start
+- Read `CLAUDE_CONTEXT.md` for architecture, design tokens and DB state.
+- DB-first: run `list_migrations` / `list_tables` on Supabase project `ydihurtbcnoflhormgzi` and confirm the live schema matches `src/lib/supabase/database.types.ts`.
 
 ## Workflow
-- **Request lifecycle:** classify tier → scope context → execute → verify → auto-push. No plan-approval step.
-- **Branching:** Auto-merge `dev` to `main`. No feature branches.
-- **Terminal-First:** When debugging or implementing, execute `npm run lint` or `npm run test` directly in the terminal before reporting success.
-- **Pre-Commit Verification (MANDATORY):** Before committing or pushing, ALWAYS run and verify:
-  1. `npm run lint` — zero errors in `src/` directory (warnings ok, errors block commit)
-  2. `npm run test` — all tests pass (79 tests in vitest)
-  3. `npm run build` with dummy Supabase env — full production build succeeds
-  4. **Code audit** — review the diff for correctness bugs (inverted conditions, null deref, race conditions, wrong variable, missing await, falsy-zero confusion, error swallowing, cross-file contract breaks). Catch issues before they ship.
-- **Verification:** GitHub Actions is not relied on. `npm run verify` is the gate: lint, types, tests in Cairo (with the coverage floor) and New York, migration check, dependency audit, and the production build with dummy Supabase env. It must pass before pushing to dev/main and before any native build.
-- **Design System:** Before writing or modifying any UI component, read `docs/DESIGN_SYSTEM.md`. All color tokens, spacing, border-radius, touch targets, safe-area classes, and typography must conform to the rules defined there. No hardcoded hex values, no non-standard heights for inputs, no touch targets below 44×44px.
-- **Native-Build Ownership (Capacitor):** When modifying code that touches native interfaces, storage, mappers, or plugins:
-  - Do not delegate native tasks (such as editing AndroidManifest, Gradle files, Info.plist, or writing Kotlin/Swift) to the user. Execute these edits directly.
-  - Native builds are NOT automatic and are ALWAYS LOCAL. NEVER start a build, TestFlight upload or Drive upload unless the user's own message in this turn says to build/upload apps. Not after a code change, not because a script or button text mentions it. Ambiguous wording = ask first. Only when the user says "build and upload apps" (or equivalent): ALWAYS do BOTH iOS and Android, never ask which, on this Mac, with `bash scripts/native-release.sh [label]` (cap:build, iOS archive and TestFlight upload, Android APK to Drive, version bumps committed with `git add -f` and pushed to dev and main). Never dispatch the GitHub Actions workflows `ios-release.yml` / `android-release.yml`: they are kept for reference only and Actions billing is not relied on. Report the TestFlight status and the Drive link.
-  - Local build prerequisites live in the header of `scripts/native-release.sh` (JDK 21 in ~/Library/Java, Android SDK, rclone remote `buddget-drive`, Xcode signed in to team 9PK34RL9DN, complete `.env.local`). The working tree must be clean and pushed first.
-  - Web bundle for native is built by that script via `npm run cap:build`, never bare `npx cap sync`.
-  - Linear bot (`scripts/linear-bot.sh`) is inactive: native builds are on-demand only.
+- Lifecycle: classify tier -> scope context -> execute -> verify -> auto-push. No plan-approval step.
+- Branching: auto-merge `dev` into `main`. No feature branches.
+- Gate: `npm run verify` must pass before pushing to dev/main and before any native build (lint, types, tests in Cairo with coverage floor and New York, migration check, dependency audit, production build with dummy Supabase env). Lint errors in `src/` block commit; warnings are fine.
+- Plus a diff audit for correctness bugs before every push.
+- GitHub Actions is not relied on.
+- Parallel sessions can share this checkout: `git add` only your own paths, never `-A`.
+- After pushing, confirm it landed (`git log origin/main -1`). A denied push is the first line of the summary.
 
-## Component Reuse (STRICT, overrides handoffs)
-- **Golden rule:** reuse an existing component and the app's current design system first. Create a new *primitive* only when the thing is truly new. A composition built from existing parts is not a new component: name what is reused.
-- **Handoffs and "no deviation":** a design handoff, or "match exactly / no deviation", does NOT bypass this rule. Map the design onto existing components and tokens. The only bypass is the user explicitly saying to skip it for that task.
-- **Raise an alert instead of building around it** when the design cannot be done with an existing component, or needs a significant size/structure change. State what differs and wait for the user's call.
-- **Never reshape an existing component to fit a new design.** Appearance and default behaviour stay as they are. Needed variation is a new variant/prop (additive, default unchanged).
-- **Allowed edits to existing components:** bug fixes, accessibility fixes and token changes, only with tests, no change to the default look, and a note to the user.
-- **Variant limit:** when a component would get its 3rd or 4th variant, propose promoting the pattern to its own component and let the user decide.
-- Before writing any UI, search `src/components/ui` and `src/components/features` (heroes use `HeroBand`; sheets, chips, cards, rows have shared primitives) and say which one is reused.
+## Database & migrations
+- New feature or domain change: check `supabase/migrations/` first.
+- Order: migration -> apply with `execute_sql` -> regenerate `database.types.ts` -> then code. Never write UI against a column the live DB lacks.
+- Adding a field to a type in `src/lib/store/types.ts` or a mapper: check whether a SQL migration is needed.
+- Before drop/alter column: run a `SELECT` for row counts and data-loss risk.
 
-## Code Style
-- **Enterprise structure:** Clean module boundaries, single-responsibility files.
-- **Clean Code:** No defensive checks for impossible states. No backwards-compat shims for unreleased code. No comments that restate the code.
-- **Mobile-First:** Ensure all UI updates account for safe-area-insets and touch targets (44x44px+).
+## UI & design system
+- Read `docs/DESIGN_SYSTEM.md` before touching any UI. Tokens only: no hardcoded hex, inputs at standard heights, touch targets 44x44px minimum, safe-area classes.
+- Reuse first: search `src/components/ui` and `src/components/features` (heroes use `HeroBand`; sheets, chips, cards, rows have primitives) and name what you reused. A composition of existing parts is not a new component.
+- Handoffs and "no deviation" do not bypass reuse; only the user saying so does. If the design can't be built from existing components, or needs a significant size/structure change, raise an alert and wait.
+- Never reshape an existing component. Variation = additive variant/prop with unchanged default. Allowed edits: bug, accessibility and token fixes, with tests, same default look, and a note to the user.
+- A component's 3rd or 4th variant: propose promoting it to its own component.
 
-## Token Economy (Strict)
-- **Output:** Respond with code and a maximum 2-sentence explanation.
-- **Snip Output:** When providing code, use `Edit` tool/diffs. Never output full files unless a file is created from scratch.
-- **Silent Execution:** Minimize commentary between tool calls. 
-- **Efficiency:** Do not re-read files already read this turn. Do not re-verify info you already have in context.
-- **Parallelism:** Parallelize independent tool calls in a single block.
-- **No Fluff:** No preambles, no emojis, no decorative headers, no bullet lists for short responses.
-
-## Interaction Protocol
-- **Constraint:** Treat these rules as hard boundaries. 
-- **Goal:** Correctness > Brevity, but always prioritize minimal token consumption.
-## Database Sync & Migrations
-- **Schema Management:** You have direct access to Supabase. When implementing a new feature or domain change, check `supabase/migrations/` first.
-- **Atomic Schema Changes:** 
-    - If you add a field to a TypeScript type in `src/lib/store/types.ts` or a mapper, you MUST check if a corresponding SQL migration is needed. 
-    - Always use the `execute_sql` tool to apply migration changes immediately.
-- **Sync Integrity:** After every schema change, use `mcp generate_typescript_types` (if applicable to your workflow) or manually ensure `src/lib/supabase/database.types.ts` reflects the change.
-- **Audit:** Before performing a destructive change (drop/alter column), run a quick `SELECT` to check row counts and identify data loss risks.
-- **DB-first:** At session start run `list_migrations`/`list_tables` on project `ydihurtbcnoflhormgzi` and confirm live schema matches `database.types.ts`. Never write UI against a column the live DB lacks: migration -> apply -> regenerate types -> then code.
-- **Context Sync:** Always read `CLAUDE_CONTEXT.md` at the start of the session to align with the current architecture, design system tokens, and database state before writing code.
-
+## Native builds (Capacitor)
+- Do native edits (AndroidManifest, Gradle, Info.plist, Kotlin/Swift) yourself; never delegate them to the user.
+- Web bundle for native comes from `npm run cap:build`, never bare `npx cap sync`.
+- Builds are never automatic and always local. Start a build, TestFlight upload or Drive upload only when the user's own message this turn says to build/upload apps; ambiguous wording = ask. Not after a code change, not because a script or button mentions it.
+- On "build and upload apps" (or equivalent): always both iOS and Android, never ask which, on this Mac, via `bash scripts/native-release.sh [label]` (cap:build, iOS archive + TestFlight, Android APK to Drive, version bumps committed with `git add -f` and pushed to dev and main). Report TestFlight status and the Drive link.
+- Never dispatch `ios-release.yml` / `android-release.yml`. Prerequisites are in the header of `scripts/native-release.sh`; the working tree must be clean and pushed first.
+- The Linear bot (`scripts/linear-bot.sh`) is inactive.
