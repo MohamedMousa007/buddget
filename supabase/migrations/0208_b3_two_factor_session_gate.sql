@@ -1,4 +1,5 @@
--- 0208 B3 / C1: server-side email 2FA gate. NOT APPLIED. Ships OFF.
+-- 0208 B3 / C1: server-side email 2FA gate. APPLIED LIVE. ENFORCE armed 2026-11-12 for all users (grandfather_before stamped: sessions older than that keep working).
+-- Break glass: select private.set_2fa_gate('off', null);
 --
 -- Design (docs/qa-round-2/PLAN_REVIEW_A.md #7, PLAN_REVIEW_B.md #6):
 --  * A SEPARATE function, private.two_factor_gate(), never inside the fail-open private.app_client_gate().
@@ -19,7 +20,7 @@
 --  * Turning 2FA off over PostgREST (own-row RLS update) is reverted by trigger while the gate is not 'off';
 --    the /api/auth/two-factor route (service role, re-auth) is the only way.
 --
--- ENFORCE IS BLOCKED (F4/F6): nothing in src/ handles the 403 'second_factor_required' / X-Second-Factor-Required answer or calls
+-- (Historic note, resolved: the client now routes the 403 to SecondFactorGate, resumes sync, and closes the challenge once device/check marks a trusted session.) Was blocked (F4/F6): nothing in src/ handles the 403 'second_factor_required' / X-Second-Factor-Required answer or calls
 -- second_factor_status, and the trusted-device mark is written by /api/auth/device/check which the client calls after
 -- sign-in (a PostgREST call that races ahead is refused). Do not go past 'report' until a shipped build (a) routes that
 -- 403 to the OTP step, (b) awaits device/check before its first sync, and (c) surfaces record_second_factor recorded:false.
