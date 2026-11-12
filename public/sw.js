@@ -1,17 +1,24 @@
-/* Buddget service worker (hand-written, no build step). Offline page + static assets; never caches /api/. */
-const VERSION = 'v1'
+/* Buddget service worker (hand-written, no build step). Offline page + static assets only: never caches pages or /api/ (no account data on the device). Kill switch: docs/sw-kill.js. */
+const VERSION = 'v2'
 const STATIC = `static-${VERSION}`
-const PAGES = `pages-${VERSION}`
+const OFFLINE = `offline-${VERSION}`
 const OFFLINE_URL = '/offline'
+const MAX_STATIC = 150
 
+// A failed offline-page fetch fails the install: the browser keeps the old worker and retries on the next load.
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(PAGES).then((c) => c.add(OFFLINE_URL)).catch(() => {}))
+  event.waitUntil(caches.open(OFFLINE).then((c) => c.add(OFFLINE_URL)))
 })
+
+async function trim(cache) {
+  const keys = await cache.keys()
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_STATIC)).map((k) => cache.delete(k)))
+}
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== STATIC && k !== PAGES).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== STATIC && k !== OFFLINE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   )
 })
@@ -35,23 +42,16 @@ self.addEventListener('fetch', (event) => {
         const hit = await cache.match(request)
         if (hit) return hit
         const res = await fetch(request)
-        if (res.ok) cache.put(request, res.clone())
+        if (res.ok) event.waitUntil(cache.put(request, res.clone()).then(() => trim(cache)))
         return res
       }),
     )
     return
   }
 
-  // Pages: network first, last good copy when offline, then the offline page.
+  // Pages: always the network; the offline page only when it is unreachable. Pages are never stored.
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          if (res.ok) caches.open(PAGES).then((c) => c.put(request, res.clone()))
-          return res
-        })
-        .catch(async () => (await caches.match(request)) || (await caches.match(OFFLINE_URL)) || Response.error()),
-    )
+    event.respondWith(fetch(request).catch(async () => (await caches.match(OFFLINE_URL)) || Response.error()))
   }
 })
 

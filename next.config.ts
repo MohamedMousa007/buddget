@@ -34,6 +34,11 @@ const nextConfig: NextConfig = {
       headers: [{ key: 'Content-Type', value: 'application/json' }],
     },
     {
+      // The worker script must never be served stale, or a bad worker could outlive its fix.
+      source: '/sw.js',
+      headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }],
+    },
+    {
       source: '/(.*)',
       headers: [
         { key: 'X-Content-Type-Options', value: 'nosniff' },
