@@ -1,12 +1,11 @@
 'use client'
 
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useMemo, useState } from 'react'
-import { X, Search, Check, Plus } from 'lucide-react'
+import { Search, Check, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, brandIssuesType } from '@/lib/payment/paymentMethodDefaults'
 import { rgba } from '@/lib/utils/color'
@@ -68,14 +67,7 @@ export function ProviderPickerSheet({
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={zIndexClassName} panelClassName="h-[64dvh] md:w-[420px]">
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
-        <div className="flex shrink-0 items-center justify-between pb-3 pt-1">
-          <ModalTitle className="font-semibold text-[var(--color-brand-text-primary)]">
-            {t.paymentMethods.chooseProvider}
-          </ModalTitle>
-          <IconButton aria-label={t.common.close} onClick={onClose} variant="tinted" size="sm" shape="round">
-            <X />
-          </IconButton>
-        </div>
+        <V3SheetHeader title={t.paymentMethods.chooseProvider} onClose={onClose} />
         <div className="relative mb-2.5 shrink-0">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-brand-text-muted)]" />
           <Input

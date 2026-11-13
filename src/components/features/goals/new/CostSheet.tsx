@@ -1,12 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
-import { IconButton } from '@/components/ui/IconButton'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { BuddgyStatus } from '@/components/features/goals/new/BuddgyStatus'
 import { useT } from '@/lib/i18n'
@@ -31,7 +29,6 @@ export function CostSheet({
 }) {
   const ts = useT().goals.flow
   const t = ts.cost
-  const tc = useT().common
   const [res, setRes] = useState<{ key: string; est?: CostEstimate; failed?: boolean } | null>(null)
   const [picked, setPicked] = useState(1)
   const [attempt, setAttempt] = useState(0)
@@ -64,16 +61,7 @@ export function CostSheet({
   const chosen = est?.options[picked]
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" padContent>
-      <div className="flex items-center gap-2">
-        <BuddgyIcon mood="thinking" size={28} />
-        <div className="min-w-0 flex-1">
-          <ModalTitle>{t.title}</ModalTitle>
-          <p className="text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{t.sub(categoryLabel)}</p>
-        </div>
-        <IconButton aria-label={tc.close} onClick={onClose}>
-          <X />
-        </IconButton>
-      </div>
+      <V3SheetHeader title={t.title} subtitle={t.sub(categoryLabel)} onClose={onClose} leading={<BuddgyIcon mood="thinking" size={28} />} />
       <div className="mt-3 flex flex-col gap-3 pb-4">
         <p className="rounded-2xl rounded-es-[4px] bg-[var(--color-brand-elevated)] p-3 text-sm text-[var(--color-brand-text-primary)]">
           {failed ? t.retry : est ? t.bubble : null}

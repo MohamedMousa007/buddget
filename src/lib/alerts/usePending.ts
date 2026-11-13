@@ -4,13 +4,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { usePendingSmsStore } from '@/lib/store/usePendingSmsStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useDetectedAccounts } from '@/hooks/useDetectedAccounts'
 import { unplacedSmsExpenses } from '@/lib/accounts/unplacedSms'
 import { requestSmsReview } from '@/lib/sms/reviewRequest'
 import { navigate } from '@/lib/navigation/navigate'
 import { pendingCopy, pendingKinds, pendingSeverity, type PendingEntry, type PendingKind, type PendingLabels } from '@/lib/alerts/pendingSummary'
 
 /** Teal = a review of something, amber = a balance is off until it is answered. */
-export const PENDING_TONE: Record<PendingKind, 'teal' | 'amber'> = { heldMessages: 'teal', unplacedExpenses: 'amber' }
+export const PENDING_TONE: Record<PendingKind, 'teal' | 'amber'> = { heldMessages: 'teal', unplacedExpenses: 'amber', accountsFound: 'teal' }
 
 /** What is waiting on the user right now: the one list the Flow row and the Inbox both read. */
 export function usePendingEntries(): PendingEntry[] {
@@ -22,13 +24,16 @@ export function usePendingEntries(): PendingEntry[] {
     const oldest = list.reduce((min, e) => Math.min(min, Date.parse(e.date) || min), Infinity)
     return `${list.length}:${Number.isFinite(oldest) ? oldest : ''}`
   })
+  // The same list the Accounts row and the sheet use, so the count can never disagree with either.
+  const accounts = useDetectedAccounts().length
   return useMemo(() => {
     const [n, since] = unplaced.split(':')
     return pendingKinds([
       { kind: 'heldMessages', count: held, ...(heldSince != null ? { since: heldSince } : {}) },
       { kind: 'unplacedExpenses', count: Number(n), ...(since ? { since: Number(since) } : {}) },
+      { kind: 'accountsFound', count: accounts },
     ])
-  }, [held, heldSince, unplaced])
+  }, [held, heldSince, unplaced, accounts])
 }
 
 /** What the avatar dot shows: none, amber, or red after a week. The clock is re-read hourly, enough for a seven-day rule. */
@@ -47,18 +52,23 @@ export function usePendingLabels(): PendingLabels {
   return useMemo(
     () => ({
       mixedTitle: t.notifications.mixedTitle,
-      label: (kind, count) => (kind === 'heldMessages' ? t.notifications.heldLabel(count) : t.notifications.unplacedLabel(count)),
-      hint: (kind) => (kind === 'heldMessages' ? t.notifications.heldHint : t.accountsPage.unplacedSub),
+      label: (kind, count) =>
+        kind === 'heldMessages' ? t.notifications.heldLabel(count) : kind === 'unplacedExpenses' ? t.notifications.unplacedLabel(count) : t.notifications.accountsLabel(count),
+      hint: (kind) =>
+        kind === 'heldMessages' ? t.notifications.heldHint : kind === 'unplacedExpenses' ? t.accountsPage.unplacedSub : t.notifications.accountsHint,
       more: t.notifications.moreKinds,
     }),
     [t],
   )
 }
 
-/** One kind: held messages open their sheet in place; unplaced expenses go to Accounts, where their row sits. */
+/** One kind: held messages open their sheet in place; found accounts open theirs on Accounts; unplaced expenses go to Accounts, where their row sits. */
 export function openPending(kind: PendingKind): void {
   if (kind === 'heldMessages') requestSmsReview()
-  else navigate('/accounts')
+  else if (kind === 'accountsFound') {
+    useSettingsStore.getState().setAccountsFoundOpen(true)
+    navigate('/accounts')
+  } else navigate('/accounts')
 }
 
 /** Two or more kinds: the Inbox, Needs you. */

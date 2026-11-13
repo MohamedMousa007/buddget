@@ -14,7 +14,7 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { buildOccurrences, expectedPerPayday } from '@/lib/utils/incomeOccurrences'
 import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { Calendar } from 'lucide-react'
-import { useModalTitleId } from '@/components/modals/ModalShell'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { sanitizeAmount } from '@/lib/ui/amountSanitize'
@@ -153,17 +153,16 @@ export function AmountReceivedSheet() {
     if (isOpen) savingRef.current = false
   }, [isOpen])
 
-  const titleId = useModalTitleId()
-
   if (!isOpen || !source || !current) return null
 
   return (
     <ModalShell open={isOpen} onBackdropClick={close} padContent>
       <div className="pt-1">
-        <h2 id={titleId} className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.income.amountReceivedTitle}</h2>
-        <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">
-          {t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}
-        </p>
+        <V3SheetHeader
+          title={t.income.amountReceivedTitle}
+          subtitle={<span className="font-mono-numbers">{t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}</span>}
+          onClose={close}
+        />
 
         <label className="mt-4 block text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">
           {t.income.receivedOnLabel}

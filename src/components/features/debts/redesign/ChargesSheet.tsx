@@ -1,13 +1,12 @@
 'use client'
 
 import { useMemo } from 'react'
-import { CreditCard, X } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { ExpenseDayList } from '@/components/expenses/ExpenseDayList'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useShallow } from 'zustand/react/shallow'
-import { ModalHeading } from '@/components/modals/ModalTitle'
-import { IconButton } from '@/components/ui/IconButton'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useT } from '@/lib/i18n'
 import { soft } from './heroCardShared'
 
@@ -31,22 +30,10 @@ export function ChargesSheet({ open, onClose, target }: { open: boolean; onClose
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName="h-[82dvh]">
-      <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-5">
-        <div className="min-w-0">
-          <ModalHeading className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.chargesTitle}</ModalHeading>
-          <p className="mt-0.5 text-sm text-[var(--color-brand-text-muted)]">{t.chargesSub}</p>
-        </div>
-        <IconButton
-          onClick={onClose}
-          aria-label={t.closeLabel}
-          variant="tinted"
-          size="sm"
-          shape="round"
-          className="shrink-0"
-        >
-          <X className="h-4 w-4" />
-        </IconButton>
-      </div>
+      <V3SheetHeader onClose={onClose}>
+        <V3SheetHeader.Title>{t.chargesTitle}</V3SheetHeader.Title>
+        <V3SheetHeader.Subtitle>{t.chargesSub}</V3SheetHeader.Subtitle>
+      </V3SheetHeader>
 
       {target ? (
         <div className="px-5 pt-3">

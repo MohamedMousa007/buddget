@@ -1,10 +1,10 @@
 'use client'
 
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { X, ArrowLeft, CreditCard, Lock, Trash2 } from 'lucide-react'
+import { ArrowLeft, CreditCard, Lock, Trash2 } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { ACCOUNT_CURRENCY_FIELD_CLASS, AccountAliasChips, AccountIdentifierField, type Identifier } from '@/components/features/payments/accountFormParts'
@@ -257,26 +257,19 @@ export function PaymentMethodSetupSheet({
 
       <ModalShell open={open} onBackdropClick={onClose} scrollChild zIndexClassName={z.shell} panelClassName="h-[64dvh]">
         <div className="flex min-h-0 flex-1 flex-col outline-none">
-          <div className="flex shrink-0 items-center gap-2.5 px-4 pb-3 pt-1">
-            {/* Debt context (lockType) follows the debt-sheet rule: X + swipe only, no Back. */}
-            {!lockType ? (
-              <IconButton
-                aria-label={t.common.back} onClick={onClose}
-                variant="tinted" size="sm" shape="round"
-              >
-                <ArrowLeft className="rtl:rotate-180" />
-              </IconButton>
-            ) : null}
-            <ModalTitle className="min-w-0 flex-1 font-semibold text-[var(--color-brand-text-primary)]">
-              {editing ? t.paymentMethods.editTitle : (titleOverride ?? t.paymentMethods.addTitle)}
-            </ModalTitle>
-            <IconButton
-              aria-label={t.common.close} onClick={onClose}
-              variant="tinted" size="sm" shape="round"
-            >
-              <X />
-            </IconButton>
-          </div>
+          {/* Debt context (lockType) follows the debt-sheet rule: X + swipe only, no Back. */}
+          <V3SheetHeader
+            onClose={onClose}
+            leading={
+              !lockType ? (
+                <IconButton aria-label={t.common.back} onClick={onClose} variant="tinted" size="sm" shape="round">
+                  <ArrowLeft className="rtl:rotate-180" />
+                </IconButton>
+              ) : undefined
+            }
+          >
+            <V3SheetHeader.Title>{editing ? t.paymentMethods.editTitle : (titleOverride ?? t.paymentMethods.addTitle)}</V3SheetHeader.Title>
+          </V3SheetHeader>
 
           <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-4 pb-4">
             <div className="flex flex-col gap-[18px]">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Landmark, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -13,7 +13,9 @@ import { AccountDetailSheet } from '@/components/features/accounts/AccountDetail
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
 import { FixGapSheet } from '@/components/features/accounts/FixGapSheet'
-import { FoundAccountsSheet } from '@/components/features/accounts/FoundAccountsSheet'
+import { DetectedAccountsSheet } from '@/components/features/accounts/DetectedAccountsSheet'
+import { PendingRow } from '@/components/ui/PendingRow'
+import { useDetectedAccounts } from '@/hooks/useDetectedAccounts'
 import { MoveMoneySheet, type MoveMode } from '@/components/features/accounts/MoveMoneySheet'
 import { UnplacedSmsSheet } from '@/components/features/accounts/UnplacedSmsSheet'
 import { UpdateBalanceSheet } from '@/components/features/accounts/UpdateBalanceSheet'
@@ -53,8 +55,12 @@ function SectionHeader({ title, count, onAdd, addLabel }: { title: string; count
 }
 
 export default function AccountsPage() {
-  const t = useT().accountsPage
+  const all = useT()
+  const t = all.accountsPage
   const model = useAccounts()
+  const detected = useDetectedAccounts()
+  const foundOpen = useSettingsStore((s) => s.accountsFoundOpen)
+  const setFoundOpen = useSettingsStore((s) => s.setAccountsFoundOpen)
   const nw = useNetWorth()
   const { gaps, refresh } = useAccountGaps()
   const heroMasked = useMask('hero')
@@ -74,7 +80,8 @@ export default function AccountsPage() {
   const banks = model.accounts.filter((a) => a.method.type === 'bank_account' || a.method.type === 'prepaid_card')
   const wallets = model.accounts.filter((a) => a.method.type === 'wallet' || a.method.type === 'cash')
   const open = sheet && 'id' in sheet ? model.accounts.find((a) => a.method.id === sheet.id) : undefined
-  const close = () => { setSheet(null); clearAccountPrefill() }
+  const close = () => { setSheet(null); clearAccountPrefill(); setFoundOpen(false) }
+  const foundSheetOpen = sheet?.kind === 'found' || foundOpen
   const addOpen = sheet?.kind === 'add' || accountPrefill !== null
   const addKey = accountPrefill ? `p-${accountPrefill.last4}` : sheet?.kind === 'add' ? (sheet.cash ? 'c' : 'a') : 'x'
   const base = String(settings.baseCurrency)
@@ -94,7 +101,7 @@ export default function AccountsPage() {
             <Button size="cta-block" onClick={() => setSheet({ kind: 'found' })} className="font-semibold">{t.findMyAccounts}</Button>
             <Button variant="outline" size="cta-block" onClick={() => setSheet({ kind: 'add' })}>{t.addOneMyself}</Button>
           </div>} />
-        <FoundAccountsSheet open={sheet?.kind === 'found'} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
+        <DetectedAccountsSheet open={foundSheetOpen} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
         <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
       </PageContainer>
     )
@@ -104,6 +111,9 @@ export default function AccountsPage() {
     <div>
       <AccountsHero model={model} currency={base} netWorth={nw.netWorth} creditOwed={owed} hidden={heroMasked} onToggleHidden={toggle} />
       <PageContainer className="space-y-5 py-4">
+        {detected.length > 0 ? (
+          <PendingRow tone="teal" icon={Landmark} title={all.notifications.accountsLabel(detected.length)} subtitle={all.notifications.accountsHint} onPress={() => setSheet({ kind: 'found' })} />
+        ) : null}
         {unplaced.length > 0 ? (
           <Card className="flex items-center gap-3 rounded-2xl">
             <span className="min-w-0 flex-1">
@@ -155,7 +165,7 @@ export default function AccountsPage() {
         </>
       ) : null}
       <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} initialKind={sheet?.kind === 'add' && sheet.cash ? 'cash' : 'bank_account'} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
-      <FoundAccountsSheet open={sheet?.kind === 'found'} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
+      <DetectedAccountsSheet open={foundSheetOpen} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
       <UnplacedSmsSheet key={unplaced.length} open={sheet?.kind === 'unplaced'} onClose={close} items={unplaced} accounts={model.accounts} />
     </div>
   )

@@ -415,3 +415,11 @@ Money display on these screens: integer part normal, decimals at 45% opacity; ne
 | `ResolveRow` / `ResolveGroupLabel` / `ResolveTile` | One selectable row (`SelectableCard`, announced as a checkbox), a 10px group label, and the initial-letter tile. States: `idle`, `selected`, `failed` (stays selected, red border), `locked` (cannot be selected; the reason is the chip), `plain`. | Evidence (the original message) sits behind "See message", one tap away, never hidden. Held messages start unselected; only "Select all ready" picks, and only plain debits. |
 | `PendingRow` | The one quiet row for something that needs the user, on the page where it changes a number and in the Inbox "Needs you" tab. A button; never dismisses, never stacks over content. | Amber = a balance is off until it is answered; teal = a review. Two or more kinds say "N things need you" and name them; the tap goes to the Inbox. |
 | `V3SheetHeader.Title size="compact"` | The 20px title for sheets with long or user-typed names (the `SheetFrame` sheets): wraps to two lines, `dir="auto"`, full name on the element. | The default stays 22px. |
+
+### Sheet header (the rule)
+
+A sheet's header is `V3SheetHeader`: title 22px/700 (`Title size="compact"` 20px with a two-line clamp for long or user-typed titles), an optional one-line subtitle, an optional leading control (a back button), and one 44px tinted close that calls the same handler as the backdrop and Back. A sheet does not build its own title and close pair. Exempt: confirm dialogs that already carry an explicit Cancel, celebration and permission-prompt sheets, and sheets whose header is the content (a hero tile, an illustration). `src/components/ui/sheetHeaders.test.ts` lists the migrated sheets and fails if a hand-built title returns.
+
+| Component | What it is | Rules |
+|---|---|---|
+| `DetectedAccountsSheet` | Accounts, cards and wallets the bank messages mention that no payment method owns. One row each; a row opens that account's own answers: Add (the existing prefilled setup sheets), Link existing (stamps the number on a method you have and moves past transactions) and Not mine (permanent, synced, 8-second Undo). | Nothing is pre-selected and there is no bulk add. The count on the Accounts row, the avatar dot, the Inbox and this sheet all come from `useDetectedAccounts`. |

@@ -2,7 +2,7 @@
  * Things that need the user, as kinds with a count. One list feeds the Flow row, the Inbox "Needs you" tab and (later)
  * the avatar dot and the push, so they can never disagree about what is waiting or how many.
  */
-export type PendingKind = 'heldMessages' | 'unplacedExpenses'
+export type PendingKind = 'heldMessages' | 'unplacedExpenses' | 'accountsFound'
 
 export interface PendingEntry {
   kind: PendingKind
@@ -12,7 +12,7 @@ export interface PendingEntry {
 }
 
 /** The order kinds are named in: the ones that leave a balance wrong come first. */
-const ORDER: PendingKind[] = ['heldMessages', 'unplacedExpenses']
+const ORDER: PendingKind[] = ['heldMessages', 'unplacedExpenses', 'accountsFound']
 
 /** Drops empty kinds, merges duplicates and puts the rest in naming order. */
 export function pendingKinds(entries: PendingEntry[]): PendingEntry[] {

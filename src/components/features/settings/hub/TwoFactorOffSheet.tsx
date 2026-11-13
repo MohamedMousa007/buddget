@@ -6,7 +6,7 @@ import { AuthPasswordField } from '@/components/features/auth-modal/AuthPassword
 import { Button } from '@/components/ui/button'
 import { setTwoFactor, type TwoFactorResult } from '@/lib/auth/twoFactor'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 interface Props {
   open: boolean
@@ -64,7 +64,7 @@ export function TwoFactorOffSheet({ open, hasPassword, onClose, onTurnedOff, pur
   return (
     <ModalShell open={open} onBackdropClick={close} padContent>
       <form className="flex flex-col gap-3 pt-1" onSubmit={(e) => { e.preventDefault(); void confirm() }}>
-        <ModalTitle className="text-[21px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{copy.title}</ModalTitle>
+        <V3SheetHeader title={copy.title} onClose={close} />
         <p className="text-[0.90625rem] leading-snug text-[var(--color-brand-text-secondary)]">{copy.body}</p>
         {hasPassword ? (
           <AuthPasswordField

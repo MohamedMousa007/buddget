@@ -82,6 +82,9 @@ interface SettingsState {
   /** The SMS review sheet on the Subscriptions page (opened by the detection prompt). Not persisted. */
   subscriptionReviewOpen: boolean
   setSubscriptionReviewOpen: (open: boolean) => void
+  /** The detected-accounts sheet on the Accounts page (opened from the pending row, the Inbox or the menu). Not persisted. */
+  accountsFoundOpen: boolean
+  setAccountsFoundOpen: (open: boolean) => void
   /**
    * Banner keys the user has dismissed (persisted). Without this a detection banner
    * reappears on every visit to the dashboard, which trains people to ignore it.
@@ -225,6 +228,8 @@ export const useSettingsStore = create<SettingsState>()(
       setSubscriptionAddOpen: (open) => set({ subscriptionAddOpen: open }),
       subscriptionReviewOpen: false,
       setSubscriptionReviewOpen: (open) => set({ subscriptionReviewOpen: open }),
+      accountsFoundOpen: false,
+      setAccountsFoundOpen: (open) => set({ accountsFoundOpen: open }),
       dismissedBanners: [],
       snoozedBanners: {},
       hiddenStatusUntil: {},
@@ -355,6 +360,7 @@ export const useSettingsStore = create<SettingsState>()(
           accountPrefill: null,
           subscriptionAddOpen: false,
           subscriptionReviewOpen: false,
+          accountsFoundOpen: false,
           monthFilter: getCurrentMonth(),
           aiChatSeed: null,
           aiChatSeedSend: false,

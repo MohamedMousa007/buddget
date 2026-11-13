@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, ChevronRight, Trash2, Plus, CircleCheck, Landmark, CreditCard, CalendarClock } from 'lucide-react'
+import { ChevronRight, Trash2, Plus, CircleCheck, Landmark, CreditCard, CalendarClock } from 'lucide-react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useAddDebtSheet } from '@/hooks/useAddDebtSheet'
@@ -11,8 +11,7 @@ import { AddBorrowForm } from '@/components/features/debts/redesign/AddBorrowFor
 import { AddInstallmentForm } from '@/components/features/debts/redesign/AddInstallmentForm'
 import { PayDebtForm } from '@/components/features/debts/redesign/PayDebtForm'
 import { useT } from '@/lib/i18n'
-import { ModalHeading } from '@/components/modals/ModalTitle'
-import { IconButton } from '@/components/ui/IconButton'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -95,19 +94,9 @@ export function AddDebtSheet() {
       {open ? <HydrateDebtsWhileOpen /> : null}
       <div className="flex min-h-0 flex-1 flex-col">
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-2.5 px-5 pb-3 pt-4">
-          <ModalHeading as="span" className="min-w-0 flex-1 text-xl font-bold text-[var(--color-brand-text-primary)]">{title}</ModalHeading>
-          <IconButton
-            aria-label={t.common.close}
-            onClick={d.closeSheet}
-            variant="tinted"
-            size="sm"
-            shape="round"
-            className="shrink-0"
-          >
-            <X className="h-4 w-4" />
-          </IconButton>
-        </div>
+        <V3SheetHeader onClose={d.closeSheet}>
+          <V3SheetHeader.Title>{title}</V3SheetHeader.Title>
+        </V3SheetHeader>
 
         {/* Body */}
         <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-4">

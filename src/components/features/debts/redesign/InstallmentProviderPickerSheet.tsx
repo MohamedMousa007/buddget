@@ -1,14 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CreditCard, Plus, Search, X, ArrowLeft, Check } from 'lucide-react'
+import { CreditCard, Plus, Search, ArrowLeft, Check } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { INSTALLMENT_PROVIDER_CATALOGUE } from '@/lib/constants/installmentProviders'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import type { PaymentMethod } from '@/lib/store/types'
 import { ProviderBadge } from './ProviderBadge'
-import { ModalHeading } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -72,19 +72,17 @@ export function InstallmentProviderPickerSheet({
   return (
     <ModalShell open={open} onBackdropClick={close} scrollChild zIndexClassName="z-[120]" panelClassName={`${view === 'card' ? 'h-[50dvh]' : 'h-[72dvh]'} bg-[var(--color-brand-card)]`}>
       <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
-        <div className="flex shrink-0 items-center gap-2.5 pb-3 pt-1">
-          {view !== 'grid' ? (
-            <IconButton aria-label={t.backLabel} variant="tinted" size="sm" shape="round" onClick={() => setView('grid')}>
-              <ArrowLeft className="rtl:rotate-180" />
-            </IconButton>
-          ) : null}
-          <ModalHeading as="span" className="min-w-0 flex-1 text-lg font-semibold text-[var(--color-brand-text-primary)]">
-            {view === 'card' ? t.whichCardTitle : view === 'custom' ? t.customProviderTitle : t.chooseProvider}
-          </ModalHeading>
-<IconButton aria-label={t.closeLabel} variant="tinted" size="sm" shape="round" onClick={close}>
-            <X />
-          </IconButton>
-        </div>
+        <V3SheetHeader
+          title={view === 'card' ? t.whichCardTitle : view === 'custom' ? t.customProviderTitle : t.chooseProvider}
+          onClose={close}
+          leading={
+            view !== 'grid' ? (
+              <IconButton aria-label={t.backLabel} variant="tinted" size="sm" shape="round" onClick={() => setView('grid')}>
+                <ArrowLeft className="rtl:rotate-180" />
+              </IconButton>
+            ) : undefined
+          }
+        />
 
         {view === 'grid' ? (
           <>

@@ -214,6 +214,12 @@ export interface Dictionary {
     accountsCount: (n: number) => string
     unplacedTitle: (n: number) => string
     unplacedSub: string
+    detectedSub: string
+    detectedPick: string
+    linkNote: (last4: string) => string
+    notMineNote: string
+    hiddenToast: (label: string) => string
+    detectedNone: string
     unplacedReview: string
     unplacedAttach: (n: number) => string
     unplacedAccount: string
@@ -2026,6 +2032,8 @@ export interface Dictionary {
     unplacedLabel: (count: number) => string
     moreKinds: (count: number) => string
     heldHint: string
+    accountsLabel: (count: number) => string
+    accountsHint: string
     needsYouCount: (count: number) => string
     budgetAlertTitle: (category: string) => string
     budgetAlertBodyOver: (pct: number, category: string) => string

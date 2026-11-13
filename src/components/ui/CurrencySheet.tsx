@@ -1,11 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Ban, Check, X } from 'lucide-react'
+import { Ban, Check } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { CurrencyBadge, CurrencyList } from '@/components/ui/CurrencyList'
 import { CurrencyMark } from '@/components/ui/CurrencyMark'
-import { IconButton } from '@/components/ui/IconButton'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { defaultSecondCurrency } from '@/hooks/useSettingToggle'
@@ -14,7 +13,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import type { Currency } from '@/lib/store/types'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 interface CurrencySingleProps {
   dual?: false
@@ -39,12 +38,7 @@ function CurrencySingleBody({ open, value, onSelect, onClose, base, includeGold,
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName ?? 'z-[110]'} panelClassName="md:w-[440px]" padContent>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <div className="flex shrink-0 items-center justify-between">
-          <ModalTitle>{c.title}</ModalTitle>
-          <IconButton onClick={onClose} aria-label={c.close} variant="tinted" size="sm" shape="round">
-            <X className="h-full w-full" />
-          </IconButton>
-        </div>
+        <V3SheetHeader title={c.title} onClose={onClose} />
         <CurrencyList value={value} onSelect={onSelect} base={base} includeGold={includeGold} codes={codes} />
       </div>
     </ModalShell>
@@ -93,12 +87,7 @@ function CurrencyDualBody({ open, onClose, base, second, rates, onPickMain, onPi
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        <div className="flex shrink-0 items-center justify-between">
-          <ModalTitle>{c.title}</ModalTitle>
-          <IconButton onClick={onClose} aria-label={c.close} variant="tinted" size="sm" shape="round">
-            <X className="h-full w-full" />
-          </IconButton>
-        </div>
+        <V3SheetHeader title={c.title} onClose={onClose} />
 
         <SegmentedControl<Tab>
           ariaLabel={c.tabs}

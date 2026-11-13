@@ -1,12 +1,10 @@
 'use client'
 
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { pickablePaymentMethods } from '@/lib/accounts/kinds'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { X } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
-import { IconButton } from '@/components/ui/IconButton'
 import { PaymentCardCarousel } from '@/components/features/payments/PaymentCardCarousel'
 import { PaymentMethodSetupSheet } from '@/components/features/payments/PaymentMethodSetupSheet'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
@@ -55,14 +53,9 @@ export function SelectPaymentMethodSheet({ open, value, paymentMethods: allMetho
     <>
       <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]">
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center justify-between px-[18px] pb-2 pt-1">
-            <ModalTitle className="font-semibold text-[var(--color-brand-text-primary)]">
-              {t.paymentMethods.title}
-            </ModalTitle>
-            <IconButton aria-label={t.common.close} onClick={onClose} variant="tinted" size="sm" shape="round">
-              <X />
-            </IconButton>
-          </div>
+          <V3SheetHeader onClose={onClose}>
+            <V3SheetHeader.Title>{t.paymentMethods.title}</V3SheetHeader.Title>
+          </V3SheetHeader>
 
           {paymentMethods.length > 0 && (
             <PaymentCardCarousel

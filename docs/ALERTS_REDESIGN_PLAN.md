@@ -343,3 +343,14 @@ Not done, with reasons:
 - `SmsAccountDetectionBanner` stays: it also offers "Link existing" and adds cards and wallets (`FoundAccountsSheet` lists accounts only and cannot link). Moving those into the sheet is a product change, not a banner swap.
 - H3 (the other ~23 sheets with a `ModalTitle` title): each has its own layout (illustrations, steps, custom headers); changing 18px to 22px and adding a close button without per-sheet visual checks at 320px in English and Arabic would be guesswork.
 - Late payday, plan-change and the other overlay prompts, the state strip merge, `UpdateToast` removal, push at 7 days and the Needs-you entries for suggestions (accounts, subscriptions) remain.
+
+## 25. Build log (round 19, council 8): detected accounts and the header sweep
+
+Council 8 (final specs). Detected accounts: one sheet, tap a row to open its three answers, nothing pre-selected, Add through the existing prefilled setup sheets, one 30-day detector list for row, dot, Inbox and sheet; "accounts found" becomes a pending kind. Headers: the sweep uses the standard 22px header, compact 20px only for long or user-typed titles, a close on the two form sheets that lacked one (Amount received, Turn off 2FA), none on confirm dialogs, the celebration and the permission prompt.
+
+Built:
+- `DetectedAccountsSheet` replaces `SmsAccountDetectionBanner` and `FoundAccountsSheet` (both deleted). `useDetectedAccounts` / `unsettledAccounts` filter settled keys once. New pending kind `accountsFound` (Flow row, Inbox, avatar dot, menu count). The Accounts page gets a row; the settings flag `accountsFoundOpen` lets the Inbox and the dot open the sheet. "Not mine" is held for the 8-second Undo window and flushed on close or background. Accepted regression: the old accounts-only sheet set an opening balance from the SMS; Add now goes through the prefilled setup sheets, and the balance is set after.
+- Header sweep onto `V3SheetHeader`: SelectPaymentMethod, ProviderPicker, PaymentMethodSetup (back arrow kept via the leading slot; debt context still has no Back), CurrencySheet (both variants), PaymentMethods, AddDebt, InstallmentProviderPicker, Charges, Cost, AmountReceived (also fixes a dialog left unnamed because its title id was read outside the shell), TwoFactorOff (new close). Guard test `sheetHeaders.test.ts`.
+
+Not migrated, with reasons: ExpenseSheetForm, IncomeSheetForm, PayCycleSheet (controls sit beside the title), GoalDetailSheet and ClearedVaultSheet (hero tile or user-typed hero title), AvatarPickerModal and QuickAddFAB (own layouts), EditIncomeEventSheet (the title is the event card), BaseCurrencyChangeSheet (centred confirm with Cancel), PushPrePromptSheet and MilestoneCheerSheet (permission and celebration). Revisit when each is next edited.
+Not verified: no browser or device check of 320px and Arabic; the close buttons are 44px, the titles wrap rather than truncate.
