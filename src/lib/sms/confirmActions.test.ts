@@ -43,6 +43,18 @@ describe('confirmSmsLog', () => {
     mocks.apiFetchAuth.mockRejectedValueOnce(new Error('offline'))
     await expect(confirmSmsLog('log-1')).resolves.toBe(false)
   })
+
+  it('treats 404 not_found as already handled (double tap, retry after a lost response)', async () => {
+    mocks.apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({ ok: false, reason: 'not_found' }) })
+    await expect(confirmSmsLog('log-1')).resolves.toBe(true)
+  })
+
+  it('keeps a permanent 410 and any other 404 as a failure', async () => {
+    mocks.apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 410, json: async () => ({ ok: false, reason: 'raw_purged' }) })
+    await expect(confirmSmsLog('log-1')).resolves.toBe(false)
+    mocks.apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({ error: 'Not found' }) })
+    await expect(confirmSmsLog('log-1')).resolves.toBe(false)
+  })
 })
 
 describe('dismissSmsLog (REG-3: clients cannot write sms_parse_log after 0231, so it goes through the server)', () => {
@@ -62,5 +74,10 @@ describe('dismissSmsLog (REG-3: clients cannot write sms_parse_log after 0231, s
   it('resolves false when the request throws', async () => {
     mocks.apiFetchAuth.mockRejectedValueOnce(new Error('network'))
     await expect(dismissSmsLog('log-2')).resolves.toBe(false)
+  })
+
+  it('treats 404 not_found as already handled', async () => {
+    mocks.apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({ ok: false, reason: 'not_found' }) })
+    await expect(dismissSmsLog('log-2')).resolves.toBe(true)
   })
 })

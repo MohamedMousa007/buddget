@@ -146,7 +146,7 @@ function FindCard({ find, onAdd, onDismiss }: { find: SmsFind; onAdd: () => void
 }
 
 /** Review what the SMS scan found. Nothing is added until each find is confirmed. */
-export function SmsReviewSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function FoundSubscriptionsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT()
   const sms = t.subscriptions.ui.sms
   const { finds, scanned } = useSubscriptionDetector()

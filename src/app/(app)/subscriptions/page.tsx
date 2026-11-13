@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { AddSubscriptionSheet } from '@/components/features/subscriptions/AddSubscriptionSheet'
 import { CancelSubscriptionSheet } from '@/components/features/subscriptions/CancelSubscriptionSheet'
 import { HomeNudge } from '@/components/features/subscriptions/HomeNudge'
-import { SmsReviewSheet } from '@/components/features/subscriptions/SmsReviewSheet'
+import { FoundSubscriptionsSheet } from '@/components/features/subscriptions/FoundSubscriptionsSheet'
 import { SubscriptionDetailSheet } from '@/components/features/subscriptions/SubscriptionDetailSheet'
 import { SubscriptionGroups } from '@/components/features/subscriptions/SubscriptionGroups'
 import { SubscriptionsEmpty } from '@/components/features/subscriptions/SubscriptionsEmpty'
@@ -139,7 +139,7 @@ export default function SubscriptionsPage() {
       <AddSubscriptionSheet open={addOpen} onClose={closeAdd} editing={editing} seedBrandKey={seedBrandKey} instanceKey={instance} />
       <SubscriptionDetailSheet key={detailId ?? 'none'} subId={detailId} onClose={() => setDetailId(null)} onEdit={openEdit} onCancel={openCancel} />
       <CancelSubscriptionSheet key={`c-${cancelId ?? 'none'}`} subId={cancelId} onClose={() => setCancelId(null)} />
-      <SmsReviewSheet open={reviewOpen} onClose={() => setReviewOpen(false)} />
+      <FoundSubscriptionsSheet open={reviewOpen} onClose={() => setReviewOpen(false)} />
     </div>
   )
 }

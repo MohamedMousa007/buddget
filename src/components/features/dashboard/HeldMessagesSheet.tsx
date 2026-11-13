@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 /** Kinds that are money coming in: the amount reads +, green, and confirming is a `success`. */
 const CREDIT_KINDS = new Set(['income', 'instant_transfer_in', 'refund'])
 
-interface SmsReviewSheetProps {
+interface HeldMessagesSheetProps {
   open: boolean
   onClose: () => void
   items: PendingConfirmation[]
@@ -44,7 +44,7 @@ export interface ReviewMatch {
  *  - provisional currency (transaction exists) → confirming locks the currency
  *  - add-failed rescue (nothing created yet)   → confirming creates it
  */
-export function SmsReviewSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: SmsReviewSheetProps) {
+export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: HeldMessagesSheetProps) {
   const shortDate = useShortDate()
   const t = useT()
   const weekendFirst = useWeekendFirstDay()

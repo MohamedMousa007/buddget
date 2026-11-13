@@ -4,7 +4,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MessageSquareText } from 'lucide-react'
 import { useT } from '@/lib/i18n'
 import { useSmsConfirmations } from '@/hooks/useSmsConfirmations'
-import { SmsReviewSheet } from '@/components/features/dashboard/SmsReviewSheet'
+import { HeldMessagesSheet } from '@/components/features/dashboard/HeldMessagesSheet'
 import { PROMPT_PRIORITY, useRegisterPrompts } from '@/lib/store/usePromptStore'
 import { subscribeSmsReviewRequests } from '@/lib/sms/reviewRequest'
 
@@ -73,7 +73,7 @@ export function SmsReviewChip() {
   )
 
   return (
-    <SmsReviewSheet
+    <HeldMessagesSheet
       open={open && pending.length > 0}
       onClose={() => setOpen(false)}
       items={pending}
