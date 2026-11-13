@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { Card } from '@/components/ui/card'
 import { ProgressRing } from '@/components/ui/ProgressRing'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
+import { whereItWent } from '@/lib/budget/whereItWent'
 import { everydayPace } from '@/lib/budget/monthSummary'
 import type { PlanView } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
@@ -16,29 +17,15 @@ import { coverGauge, railDots, railPosition } from './blocks/geometry'
 import { useBudgetBlocksCopy } from './useBlocksCopy'
 import { useSegmentCopy } from './useSegmentCopy'
 
-const TOP_MERCHANTS = 3
-
 /** Top descriptions among this cycle's spend on the plan's everyday lines. */
-function useWhereItWent(view: PlanView): { name: string; amount: number }[] {
+function useWhereItWent(view: PlanView) {
   const expenses = useFinanceStore((s) => s.expenses)
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   const startDay = useFinanceStore((s) => s.settings.monthStartDay)
   return useMemo(() => {
     if (view.mode !== 'month') return []
     const { start, end } = getMonthRange(monthFilter, startDay)
-    const names = new Set(view.blocks.everyday.lines.map((l) => l.line.name))
-    const totals = new Map<string, { name: string; amount: number }>()
-    for (const e of expenses) {
-      if (!names.has(e.category) || e.isDebtPayment) continue
-      const d = new Date(e.date)
-      if (d < start || d > end) continue
-      const key = e.description.trim().toLowerCase()
-      if (!key) continue
-      const row = totals.get(key) ?? { name: e.description.trim(), amount: 0 }
-      row.amount += e.amountInBaseCurrency
-      totals.set(key, row)
-    }
-    return [...totals.values()].sort((a, b) => b.amount - a.amount).slice(0, TOP_MERCHANTS)
+    return whereItWent(expenses, new Set(view.blocks.everyday.lines.map((l) => l.line.name)), start, end)
   }, [expenses, monthFilter, startDay, view])
 }
 

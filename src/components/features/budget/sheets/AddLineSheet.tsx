@@ -29,6 +29,8 @@ export interface AddLineSheetProps {
   suggestions: AddLineSuggestion[]
   onClose: () => void
   onAdd: (line: Omit<BudgetPlanCategory, 'id' | 'subcategories'>) => void
+  /** When set, a second button saves the line and keeps the sheet open for the next one. */
+  addAnotherLabel?: string
 }
 
 const BLOCK_ICONS: Record<BudgetBlock, string[]> = {
@@ -52,7 +54,7 @@ export function AddLineSheet(props: AddLineSheetProps) {
   )
 }
 
-function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) {
+export function AddLineForm({ block, suggestions, onClose, onAdd, addAnotherLabel }: AddLineSheetProps) {
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const c = useBudgetSheetsCopy()
   const icons = BLOCK_ICONS[block]
@@ -72,7 +74,7 @@ function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) 
     setIcon(s.icon)
   }
 
-  const add = () => {
+  const add = (keepOpen = false) => {
     if (!canAdd) return
     const day = Number(dueDay)
     onAdd({
@@ -86,7 +88,11 @@ function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) 
       dueDay: block === 'bills' && day >= 1 && day <= 31 ? Math.floor(day) : null,
       expenseCategories: BLOCK_EXPENSE_CATEGORIES[block],
     })
-    onClose()
+    if (keepOpen) {
+      setName('')
+      setAmount('')
+      setDueDay('')
+    } else onClose()
   }
 
   return (
@@ -157,10 +163,15 @@ function AddLineForm({ block, suggestions, onClose, onAdd }: AddLineSheetProps) 
         </div>
       </div>
 
-      <Button type="button" size="cta-block" disabled={!canAdd} onClick={add}>
+      <Button type="button" size="cta-block" disabled={!canAdd} onClick={() => add()}>
         <Plus aria-hidden />
         {c.add.add}
       </Button>
+      {addAnotherLabel ? (
+        <Button type="button" size="touch" variant="outline" className="w-full" disabled={!canAdd} onClick={() => add(true)}>
+          {addAnotherLabel}
+        </Button>
+      ) : null}
     </div>
   )
 }

@@ -64,7 +64,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
   const [adjusting, setAdjusting] = useState(false)
   const [reviewed, setReviewed] = useState<ReadonlySet<BudgetBlock>>(new Set())
   const [skipped, setSkipped] = useState<ReadonlySet<BudgetBlock>>(new Set(initialSkipped))
-  const [started, setStarted] = useState(() => startEmpty || (view?.plan.categories.length ?? 0) > 0)
+  const [started, setStarted] = useState(startEmpty)
   const busy = useRef(false)
   const build = mode === 'build'
   const selected = useMemo(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
@@ -130,17 +130,15 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
         open={addBlock != null}
         block={addBlock ?? 'everyday'}
         suggestions={[]}
+        addAnotherLabel={build ? t.build.saveAndAdd : undefined}
         onClose={() => setAddBlock(null)}
-        onAdd={(line) => {
-          act.addLine({ ...line, currency: view.base })
-          setAddBlock(null)
-        }}
+        onAdd={(line) => act.addLine({ ...line, currency: view.base })}
       />
       <AdjustSheet open={adjusting} view={view} onClose={() => setAdjusting(false)} />
     </>
   )
 
-  if (build && !started) {
+  if (build && !started && view.plan.categories.length === 0) {
     return (
       <PageBody className="space-y-4 lg:pb-6">
         <div className="flex items-center gap-2">

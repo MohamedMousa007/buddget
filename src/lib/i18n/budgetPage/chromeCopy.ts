@@ -1,5 +1,4 @@
 import type { BudgetBlock } from '@/lib/store/types'
-import type { BudgetChapter } from '@/lib/budget/blocks'
 import type { InsightKind } from '@/lib/budget/insights'
 
 /** Pre-formatted values for an insight sentence: amounts as money, counts as plain numbers. */
@@ -29,14 +28,6 @@ export interface BudgetChromeCopy {
     legendLabel: string
   }
   blocks: Record<BudgetBlock, { name: string; short: string }>
-  chapters: Record<BudgetChapter, { name: string; sub: string }>
-  chapter: {
-    index: (n: number, total: number) => string
-    expand: (name: string) => string
-    collapse: (name: string) => string
-    spentOf: (spent: string, planned: string) => string
-    spent: string
-  }
   insights: {
     count: (n: number) => string
     sheetTitle: string
@@ -87,18 +78,6 @@ export const budgetChromeCopyEn: BudgetChromeCopy = {
     safety: { name: 'Safety net', short: 'Safety' },
     goals: { name: 'Goals', short: 'Goals' },
     grow: { name: 'Grow', short: 'Grow' },
-  },
-  chapters: {
-    mustPay: { name: 'Must pay', sub: 'Bills, subscriptions, debts' },
-    live: { name: 'Live', sub: 'Everyday spending' },
-    secure: { name: 'Secure', sub: 'Safety net, goals, growth' },
-  },
-  chapter: {
-    index: (n, t) => `Chapter ${n} of ${t}`,
-    expand: (name) => `${name}, expand`,
-    collapse: (name) => `${name}, collapse`,
-    spentOf: (s, p) => `${s} of ${p}`,
-    spent: 'spent',
   },
   insights: {
     count: (n) => (n === 1 ? '1 thing worth a look' : `${n} things worth a look`),
@@ -181,18 +160,6 @@ export const budgetChromeCopyAr: BudgetChromeCopy = {
     safety: { name: 'شبكة الأمان', short: 'الأمان' },
     goals: { name: 'الأهداف', short: 'الأهداف' },
     grow: { name: 'النمو', short: 'النمو' },
-  },
-  chapters: {
-    mustPay: { name: 'واجب السداد', sub: 'الفواتير والاشتراكات والديون' },
-    live: { name: 'المعيشة', sub: 'الإنفاق اليومي' },
-    secure: { name: 'الأمان', sub: 'شبكة الأمان والأهداف والنمو' },
-  },
-  chapter: {
-    index: (n, t) => `الفصل ${n} من ${t}`,
-    expand: (name) => `${name}، توسيع`,
-    collapse: (name) => `${name}، طي`,
-    spentOf: (s, p) => `${s} من ${p}`,
-    spent: 'مصروف',
   },
   insights: {
     count: (n) => (n === 1 ? 'أمر واحد يستحق النظر' : n === 2 ? 'أمران يستحقان النظر' : `${n} أمور تستحق النظر`),

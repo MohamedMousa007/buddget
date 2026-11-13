@@ -1,6 +1,5 @@
 /** Page-level copy for the Budget page: alerts, toasts, menu and the unplanned-spend card. Amounts arrive pre-formatted. */
 export interface BudgetPageCopy {
-  unassigned: { title: (amount: string) => string; body: string; cta: string }
   menu: { plans: string; newBudget: string }
   bufferMoved: (amount: string) => string
   bufferNoFree: string
@@ -10,11 +9,6 @@ export interface BudgetPageCopy {
 }
 
 export const budgetPageCopyEn: BudgetPageCopy = {
-  unassigned: {
-    title: (amount) => `${amount} spent outside your plan`,
-    body: 'These purchases have no line yet.',
-    cta: 'Add a line',
-  },
   menu: { plans: 'Your budgets', newBudget: 'New budget' },
   bufferMoved: (amount) => `${amount} moved to your buffer`,
   bufferNoFree: 'No free money to move this cycle',
@@ -24,11 +18,6 @@ export const budgetPageCopyEn: BudgetPageCopy = {
 }
 
 export const budgetPageCopyAr: BudgetPageCopy = {
-  unassigned: {
-    title: (amount) => `${amount} أُنفقت خارج خطتك`,
-    body: 'هذه المشتريات ليس لها بند بعد.',
-    cta: 'أضف بنداً',
-  },
   menu: { plans: 'ميزانياتك', newBudget: 'ميزانية جديدة' },
   bufferMoved: (amount) => `تم نقل ${amount} إلى الاحتياطي`,
   bufferNoFree: 'لا يوجد مبلغ حر لنقله في هذه الدورة',
