@@ -1,7 +1,7 @@
 'use client'
 
 import { PageBody } from '@/components/layout/PageContainer'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Bell, MessageSquare, ShieldCheck, CheckCheck } from 'lucide-react'
 import { useLocalizedFormatters } from '@/hooks/useLocalizedFormatters'
 import { useNotifications } from '@/hooks/useNotifications'
@@ -10,6 +10,9 @@ import { useT } from '@/lib/i18n'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatTile } from '@/components/ui/StatTile'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { NeedsYouList } from '@/components/notifications/NeedsYouList'
+import { usePendingEntries } from '@/lib/alerts/usePending'
 import { cn } from '@/lib/utils'
 
 const SEVERITY_DOT: Record<'warning' | 'info' | 'critical', string> = {
@@ -31,6 +34,10 @@ export default function NotificationsPage() {
     try { return localized.formatRelativeTime(iso) } catch { return '' }
   }, [localized])
   const { isEnabled, lastReceivedAt } = useSmsTracking()
+  // Opens on what needs the user when something does, otherwise on the feed; the user's own pick wins after that.
+  const pending = usePendingEntries()
+  const [picked, setPicked] = useState<'needs-you' | 'updates' | null>(null)
+  const tab = picked ?? (pending.length > 0 ? 'needs-you' : 'updates')
 
   const smsStatus = useMemo(() => {
     if (!isEnabled) return null
@@ -89,6 +96,20 @@ export default function NotificationsPage() {
           ) : null}
         </div>
 
+        <div className="flex min-w-0 flex-col gap-4">
+        <SegmentedControl
+          ariaLabel={t.notifications.tabsLabel}
+          value={tab}
+          onChange={setPicked}
+          options={[
+            { value: 'needs-you', label: t.notifications.needsYouTab, count: pending.length },
+            { value: 'updates', label: t.notifications.updatesTab },
+          ]}
+        />
+        {tab === 'needs-you' ? (
+          <NeedsYouList />
+        ) : (
+        <>
         {smsCard('lg:hidden')}
 
         {notifications.length > 0 ? (
@@ -118,6 +139,9 @@ export default function NotificationsPage() {
             <p className="mt-3 text-sm text-[var(--color-brand-text-secondary)]">{t.notifications.emptyState}</p>
           </Card>
         )}
+        </>
+        )}
+        </div>
         <aside className="hidden flex-col gap-4 lg:flex">
           <div className="grid grid-cols-2 gap-2">
             <StatTile compact label={t.notifications.unreadLabel} value={unreadCount} tone={unreadCount > 0 ? 'brand' : 'default'} />

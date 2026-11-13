@@ -406,3 +406,12 @@ New for the Accounts tab; everything else on those screens reuses existing primi
 | `GapTimeline` | Dot-and-line history; bank-confirmed points teal, the unexplained stretch dashed amber | Amber, never red: red is destructive only |
 
 Money display on these screens: integer part normal, decimals at 45% opacity; negative uses a real minus (`-`) and amber, never red.
+
+## Resolve sheets and pending rows (`src/components/modals/ResolveSheet.tsx`, `src/components/ui/PendingRow.tsx`)
+
+| Component | What it is | Rules |
+|---|---|---|
+| `ResolveSheet` | The frame for "here is a list, resolve it": `V3SheetHeader` (title + one line saying what happens), the rows, a pinned footer with a primary answer and an optional quiet secondary, an optional field slot (one answer for every row) and an optional note (why the primary is unavailable, or what failed). | Each job keeps its own decision logic and passes rows in. `busy` blocks closing while a request is in flight. `success` primary is reserved for confirming money that came in. A fifth job needing a new prop means stop and split, not add a flag. |
+| `ResolveRow` / `ResolveGroupLabel` / `ResolveTile` | One selectable row (`SelectableCard`, announced as a checkbox), a 10px group label, and the initial-letter tile. States: `idle`, `selected`, `failed` (stays selected, red border), `locked` (cannot be selected; the reason is the chip), `plain`. | Evidence (the original message) sits behind "See message", one tap away, never hidden. Held messages start unselected; only "Select all ready" picks, and only plain debits. |
+| `PendingRow` | The one quiet row for something that needs the user, on the page where it changes a number and in the Inbox "Needs you" tab. A button; never dismisses, never stacks over content. | Amber = a balance is off until it is answered; teal = a review. Two or more kinds say "N things need you" and name them; the tap goes to the Inbox. |
+| `V3SheetHeader.Title size="compact"` | The 20px title for sheets with long or user-typed names (the `SheetFrame` sheets): wraps to two lines, `dir="auto"`, full name on the element. | The default stays 22px. |

@@ -2144,6 +2144,15 @@ export const ar: Dictionary = {
     unreadLabel: 'غير مقروء',
     totalLabel: 'الإجمالي',
     emptyState: 'أنت على اطلاع بكل شيء 🎉',
+    needsYouTab: 'بحاجة إليك',
+    updatesTab: 'التحديثات',
+    tabsLabel: 'أقسام الإشعارات',
+    needsYouEmpty: 'لا شيء بحاجة إليك الآن.',
+    mixedTitle: (count) => `${count} أمور بحاجة إليك`,
+    heldLabel: (count) => arCount(count, 'bankMessage'),
+    unplacedLabel: (count) => `${arCount(count, 'expense')} بلا حساب`,
+    moreKinds: (count) => `${count} أخرى`,
+    heldHint: 'لا تُحتسب حتى تؤكدها',
     budgetAlertTitle: (category) => `تنبيه على ${category} 👀`,
     budgetAlertBodyOver: (pct, category) => `استخدمت ${Math.round(pct)}٪ من ميزانية ${category}. حان وقت التخفيف قليلاً!`,
     budgetAlertBodyUnder: (pct, category, remaining) => `استخدمت ${Math.round(pct)}٪ من ميزانية ${category}. ${remaining}٪ لا يزال متبقياً.`,
@@ -2882,7 +2891,7 @@ export const ar: Dictionary = {
     newInstrument: (kind: 'card' | 'account' | 'wallet', last4: string) =>
       `${kind === 'card' ? 'بطاقة' : kind === 'wallet' ? 'محفظة' : 'حساب'} •• ${last4} جديد`,
     unverifiedSender: (sender: string) => `مُرسِل غير موثّق: ${sender}. أكّد فقط إن كنت تعرف هذا الإيداع.`,
-    sheetTitle: (count: number) => `${arCount(count, 'message')} من البنك`,
+    sheetTitle: (count: number) => arCount(count, 'bankMessage'),
     sheetSubtitle: 'اختر ما يبدو صحيحاً.',
     selectAllReady: 'تحديد كل الجاهزة',
     groupReady: (count: number) => `جاهزة · ${count}`,
@@ -2901,6 +2910,7 @@ export const ar: Dictionary = {
     notAddedToast: (count: number) => (count === 1 ? 'لم تُضف رسالة واحدة' : `لم تُضف ${arCount(count, 'message')}`),
     offlineNote: 'لا يوجد اتصال. التأكيد يحتاج إلى اتصال.',
     unverifiedLocked: 'لم نحدّدها لك. أكّدها من هنا فقط إن كنت تعرفها.',
+    undoTooLate: 'فات وقت التراجع. تم تجاهل هذه الرسائل.',
   },
 
   smsTracking: {

@@ -2017,6 +2017,15 @@ export interface Dictionary {
     unreadLabel: string
     totalLabel: string
     emptyState: string
+    needsYouTab: string
+    updatesTab: string
+    tabsLabel: string
+    needsYouEmpty: string
+    mixedTitle: (count: number) => string
+    heldLabel: (count: number) => string
+    unplacedLabel: (count: number) => string
+    moreKinds: (count: number) => string
+    heldHint: string
     budgetAlertTitle: (category: string) => string
     budgetAlertBodyOver: (pct: number, category: string) => string
     budgetAlertBodyUnder: (pct: number, category: string, remaining: number) => string
@@ -2760,6 +2769,7 @@ export interface Dictionary {
     notAddedToast: (count: number) => string
     offlineNote: string
     unverifiedLocked: string
+    undoTooLate: string
   }
 
   smsTracking: {

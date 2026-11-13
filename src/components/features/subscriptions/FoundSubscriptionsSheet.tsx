@@ -105,23 +105,28 @@ export function FoundSubscriptionsSheet({ open, onClose }: { open: boolean; onCl
   const chosen = finds.filter((f) => !off.has(f.brandKey))
   const n = chosen.length
   const toggle = (key: string) => setOff((p) => { const q = new Set(p); if (q.has(key)) q.delete(key); else q.add(key); return q })
+  // A new visit starts with every find selected again.
+  const close = () => {
+    setOff(new Set())
+    onClose()
+  }
   const addChosen = () => {
     chosen.forEach(resolve)
-    onClose()
+    close()
   }
   const notSubscriptions = () => {
     // Permanent and synced: the same answer the per-card "Not a subscription" gave.
     chosen.forEach((f) => settlePrompt(notASubscriptionKey(f.brandKey)))
-    if (n === finds.length) onClose()
+    if (n === finds.length) close()
   }
 
   return (
     <ResolveSheet
       open
-      onClose={onClose}
+      onClose={close}
       title={sms.found(finds.length)}
       subtitle={`${sms.scanned(scanned)} · ${sms.nothingAdded}`}
-      primary={finds.length === 0 ? { label: t.common.close, onPress: onClose } : { label: sms.addN(n), onPress: addChosen, disabled: n === 0 }}
+      primary={finds.length === 0 ? { label: t.common.close, onPress: close } : { label: sms.addN(n), onPress: addChosen, disabled: n === 0 }}
       secondary={finds.length > 0 ? { label: sms.notASub, onPress: notSubscriptions, disabled: n === 0 } : undefined}
     >
       {finds.length === 0 ? <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{sms.none}</p> : null}

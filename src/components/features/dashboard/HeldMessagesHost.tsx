@@ -1,21 +1,20 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { MessageSquareText } from 'lucide-react'
-import { useT } from '@/lib/i18n'
 import { useSmsConfirmations } from '@/hooks/useSmsConfirmations'
 import { HeldMessagesSheet } from '@/components/features/dashboard/HeldMessagesSheet'
-import { PROMPT_PRIORITY, useRegisterPrompts } from '@/lib/store/usePromptStore'
+import { usePendingSmsStore } from '@/lib/store/usePendingSmsStore'
 import { subscribeSmsReviewRequests } from '@/lib/sms/reviewRequest'
 
 /**
- * SMS transactions awaiting review (add-failed rescues, provisional-currency confirms).
- * Registers the `sms-review` prompt with the drop-down stack; "Review" opens the sheet.
- * The prompt resolves when the last item is handled — the queue empties and it drops out.
+ * Owns the held-messages sheet for the whole app (mounted once in the shell): the fetch of messages awaiting review
+ * (add-failed rescues, provisional-currency confirms), the open state, a push tap that asks for the sheet, and linking
+ * a confirmed credit to its payday once its income event has synced. It shows nothing of its own: the Flow row and the
+ * Inbox open the sheet, and read the count it publishes.
  */
-export function SmsReviewChip() {
-  const t = useT()
+export function HeldMessagesHost() {
   const { pending, confirmItem, dismissItem, refetch } = useSmsConfirmations()
+  const setHeld = usePendingSmsStore((s) => s.setHeld)
   const [open, setOpen] = useState(false)
   // SMS credit log id → the payday it was confirmed into, until its income event exists.
   // ponytail: session-only; if the app restarts before the event syncs, Flow's match prompt asks instead.
@@ -46,31 +45,9 @@ export function SmsReviewChip() {
     }
   }, [incomeEvents, toLink, updateIncomeEvent])
 
-  useRegisterPrompts(
-    'sms-review',
-    pending.length
-      ? [
-          {
-            key: 'sms-review',
-            priority: PROMPT_PRIORITY.sms,
-            tone: 'brand',
-            icon: MessageSquareText,
-            title: t.smsReview.chip(pending.length),
-            description: t.smsReview.subtitle,
-            actions: [
-              {
-                label: t.prompts.review,
-                variant: 'default',
-                onPress: () => {
-                  setOpen(true)
-                  void refetch()
-                },
-              },
-            ],
-          },
-        ]
-      : [],
-  )
+  // The one count the Flow row and the Inbox read; zero again when the host goes away.
+  useEffect(() => setHeld(pending.length), [pending.length, setHeld])
+  useEffect(() => () => setHeld(0), [setHeld])
 
   return (
     <HeldMessagesSheet

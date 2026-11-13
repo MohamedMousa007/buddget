@@ -2137,6 +2137,15 @@ export const en: Dictionary = {
     unreadLabel: 'Unread',
     totalLabel: 'Total',
     emptyState: "You\u2019re all caught up \uD83C\uDF89",
+    needsYouTab: 'Needs you',
+    updatesTab: 'Updates',
+    tabsLabel: 'Notification sections',
+    needsYouEmpty: 'Nothing needs you right now.',
+    mixedTitle: (count) => `${count} things need you`,
+    heldLabel: (count) => (count === 1 ? '1 bank message' : `${count} bank messages`),
+    unplacedLabel: (count) => (count === 1 ? '1 expense on no account' : `${count} expenses on no account`),
+    moreKinds: (count) => `${count} more`,
+    heldHint: 'Not counted until you confirm',
     budgetAlertTitle: (category) => `Heads up on ${category} \uD83D\uDC40`,
     budgetAlertBodyOver: (pct, category) => `You\u2019ve used ${Math.round(pct)}% of your ${category} budget. Time to ease up a little!`,
     budgetAlertBodyUnder: (pct, category, remaining) => `You\u2019ve used ${Math.round(pct)}% of your ${category} budget. ${remaining}% still to go.`,
@@ -2896,6 +2905,7 @@ export const en: Dictionary = {
     notAddedToast: (count: number) => (count === 1 ? '1 message not added' : `${count} messages not added`),
     offlineNote: 'You are offline. Confirming needs a connection.',
     unverifiedLocked: 'Not selected for you. Confirm it from here only if you recognise it.',
+    undoTooLate: 'Too late to undo. These messages were dismissed.',
   },
 
   smsTracking: {

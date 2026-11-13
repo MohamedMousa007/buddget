@@ -15,9 +15,8 @@ import { ModalProvider } from '@/components/modals/ModalProvider'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { PendingCapturesChip } from '@/components/features/pending/PendingCapturesChip'
 import { BannerStack } from '@/components/features/dashboard/BannerStack'
-import { SmsReviewChip } from '@/components/features/dashboard/SmsReviewChip'
+import { HeldMessagesHost } from '@/components/features/dashboard/HeldMessagesHost'
 import { SmsAccountDetectionBanner } from '@/components/features/dashboard/SmsAccountDetectionBanner'
-import { UnplacedSmsPrompt } from '@/components/features/dashboard/UnplacedSmsPrompt'
 import { SmsSubscriptionDetectionBanner } from '@/components/features/dashboard/SmsSubscriptionDetectionBanner'
 import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
@@ -322,9 +321,8 @@ export function AppShell({ children }: AppShellProps) {
         </PullToRefresh>
       </main>
       {/* One drop-down stack for every question; the sources register into it. */}
-      <SmsReviewChip />
+      <HeldMessagesHost />
       <SmsAccountDetectionBanner />
-      <UnplacedSmsPrompt />
       <SmsSubscriptionDetectionBanner />
       <SubscriptionPlanChangeBanner />
       <BannerStack />

@@ -1,5 +1,5 @@
 /**
- * A push tap asks the review sheet to open. The sheet's owner (SmsReviewChip) may not be mounted yet when the
+ * A push tap asks the review sheet to open. The sheet's owner (HeldMessagesHost) may not be mounted yet when the
  * tap replays, so an unanswered request is remembered and delivered on subscribe.
  */
 let listener: (() => void) | null = null

@@ -159,7 +159,9 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
     toast(s.notAddedToast(ids.length), {
       undoLabel: t.common.undo,
       undo: () => {
+        // The toast can outlive the window (it pauses while held), so say so rather than do nothing.
         if (handle.cancel()) setHidden((h) => new Set([...h].filter((id) => !ids.includes(id))))
+        else toast(s.undoTooLate)
       },
     })
   }

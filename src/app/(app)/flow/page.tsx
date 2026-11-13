@@ -30,6 +30,7 @@ import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
 import { FlowChipRail, FlowChipRow, type FlowChip } from '@/components/features/flow/FlowChipRow'
 import { FlowLedger } from '@/components/features/flow/FlowLedger'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
+import { FlowPendingRow } from '@/components/features/flow/FlowPendingRow'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
 import { periodText, useFlowBand } from '@/components/features/flow/useFlowBand'
 import { PageGrid } from '@/components/layout/PageGrid'
@@ -263,6 +264,8 @@ export default function FlowPage() {
             : undefined
         }
       />
+
+      <FlowPendingRow />
 
       {!dataReady ? (
         <div className="mx-4 mt-3.5">
