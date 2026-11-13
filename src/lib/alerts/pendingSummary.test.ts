@@ -50,3 +50,25 @@ describe('pendingCopy', () => {
     expect(c && c.mode === 'mixed' ? c.spoken : '').toBe('2 things need you: 5 bank messages, 2 expenses on no account')
   })
 })
+
+import { pendingSeverity } from '@/lib/alerts/pendingSummary'
+
+describe('pendingSeverity (the avatar dot)', () => {
+  const now = Date.parse('2026-11-20T12:00:00Z')
+  const day = 86_400_000
+  it('is none when nothing waits', () => {
+    expect(pendingSeverity([], now)).toBe('none')
+    expect(pendingSeverity([{ kind: 'heldMessages', count: 0 }], now)).toBe('none')
+  })
+  it('is amber while something waits, including when its age is unknown', () => {
+    expect(pendingSeverity([{ kind: 'heldMessages', count: 2, since: now - 2 * day }], now)).toBe('amber')
+    expect(pendingSeverity([{ kind: 'unplacedExpenses', count: 1 }], now)).toBe('amber')
+  })
+  it('turns red once the oldest item has waited 7 days', () => {
+    expect(pendingSeverity([{ kind: 'heldMessages', count: 2, since: now - 7 * day }], now)).toBe('red')
+    expect(pendingSeverity([{ kind: 'heldMessages', count: 2, since: now - 7 * day + 1 }], now)).toBe('amber')
+  })
+  it('keeps the oldest when the same kind is listed twice', () => {
+    expect(pendingSeverity([{ kind: 'heldMessages', count: 1, since: now - day }, { kind: 'heldMessages', count: 1, since: now - 9 * day }], now)).toBe('red')
+  })
+})

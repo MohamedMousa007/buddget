@@ -2146,6 +2146,7 @@ export const en: Dictionary = {
     unplacedLabel: (count) => (count === 1 ? '1 expense on no account' : `${count} expenses on no account`),
     moreKinds: (count) => `${count} more`,
     heldHint: 'Not counted until you confirm',
+    needsYouCount: (count) => (count === 1 ? '1 thing needs you' : `${count} things need you`),
     budgetAlertTitle: (category) => `Heads up on ${category} \uD83D\uDC40`,
     budgetAlertBodyOver: (pct, category) => `You\u2019ve used ${Math.round(pct)}% of your ${category} budget. Time to ease up a little!`,
     budgetAlertBodyUnder: (pct, category, remaining) => `You\u2019ve used ${Math.round(pct)}% of your ${category} budget. ${remaining}% still to go.`,

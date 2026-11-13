@@ -6,10 +6,13 @@ import { create } from 'zustand'
  */
 interface PendingSmsState {
   held: number
-  setHeld: (held: number) => void
+  /** When the oldest held message arrived (ms), or null. */
+  heldSince: number | null
+  setHeld: (held: number, since?: number | null) => void
 }
 
 export const usePendingSmsStore = create<PendingSmsState>((set) => ({
   held: 0,
-  setHeld: (held) => set((s) => (s.held === held ? s : { held })),
+  heldSince: null,
+  setHeld: (held, since = null) => set((s) => (s.held === held && s.heldSince === since ? s : { held, heldSince: since })),
 }))

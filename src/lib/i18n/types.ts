@@ -2026,6 +2026,7 @@ export interface Dictionary {
     unplacedLabel: (count: number) => string
     moreKinds: (count: number) => string
     heldHint: string
+    needsYouCount: (count: number) => string
     budgetAlertTitle: (category: string) => string
     budgetAlertBodyOver: (pct: number, category: string) => string
     budgetAlertBodyUnder: (pct: number, category: string, remaining: number) => string

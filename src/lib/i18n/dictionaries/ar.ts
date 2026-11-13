@@ -2153,6 +2153,7 @@ export const ar: Dictionary = {
     unplacedLabel: (count) => `${arCount(count, 'expense')} بلا حساب`,
     moreKinds: (count) => `${count} أخرى`,
     heldHint: 'لا تُحتسب حتى تؤكدها',
+    needsYouCount: (count) => (count === 1 ? 'أمر واحد بحاجة إليك' : `${count} أمور بحاجة إليك`),
     budgetAlertTitle: (category) => `تنبيه على ${category} 👀`,
     budgetAlertBodyOver: (pct, category) => `استخدمت ${Math.round(pct)}٪ من ميزانية ${category}. حان وقت التخفيف قليلاً!`,
     budgetAlertBodyUnder: (pct, category, remaining) => `استخدمت ${Math.round(pct)}٪ من ميزانية ${category}. ${remaining}٪ لا يزال متبقياً.`,

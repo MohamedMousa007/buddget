@@ -7,6 +7,7 @@ import { AddSubscriptionSheet } from '@/components/features/subscriptions/AddSub
 import { CancelSubscriptionSheet } from '@/components/features/subscriptions/CancelSubscriptionSheet'
 import { HomeNudge } from '@/components/features/subscriptions/HomeNudge'
 import { FoundSubscriptionsSheet } from '@/components/features/subscriptions/FoundSubscriptionsSheet'
+import { SubscriptionsFoundRow } from '@/components/features/subscriptions/SubscriptionsFoundRow'
 import { SubscriptionDetailSheet } from '@/components/features/subscriptions/SubscriptionDetailSheet'
 import { SubscriptionGroups } from '@/components/features/subscriptions/SubscriptionGroups'
 import { SubscriptionsEmpty } from '@/components/features/subscriptions/SubscriptionsEmpty'
@@ -89,6 +90,7 @@ export default function SubscriptionsPage() {
         wide={empty}
         primary={
           <div className="flex min-w-0 flex-col gap-3.5 px-4 pb-4 pt-4 lg:px-0 lg:pb-0 lg:pt-0">
+            <SubscriptionsFoundRow />
             {empty ? (
               <SubscriptionsEmpty
                 region={catalogRegionOf(profile)}

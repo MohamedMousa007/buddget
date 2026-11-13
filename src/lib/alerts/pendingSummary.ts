@@ -7,6 +7,8 @@ export type PendingKind = 'heldMessages' | 'unplacedExpenses'
 export interface PendingEntry {
   kind: PendingKind
   count: number
+  /** When the oldest item of this kind started waiting (ms); drives the red escalation. */
+  since?: number
 }
 
 /** The order kinds are named in: the ones that leave a balance wrong come first. */
@@ -14,9 +16,25 @@ const ORDER: PendingKind[] = ['heldMessages', 'unplacedExpenses']
 
 /** Drops empty kinds, merges duplicates and puts the rest in naming order. */
 export function pendingKinds(entries: PendingEntry[]): PendingEntry[] {
-  const sums = new Map<PendingKind, number>()
-  for (const e of entries) if (e.count > 0) sums.set(e.kind, (sums.get(e.kind) ?? 0) + e.count)
-  return ORDER.filter((k) => sums.has(k)).map((kind) => ({ kind, count: sums.get(kind)! }))
+  const sums = new Map<PendingKind, PendingEntry>()
+  for (const e of entries) {
+    if (e.count <= 0) continue
+    const prev = sums.get(e.kind)
+    const since = prev?.since != null && e.since != null ? Math.min(prev.since, e.since) : (prev?.since ?? e.since)
+    sums.set(e.kind, { kind: e.kind, count: (prev?.count ?? 0) + e.count, ...(since != null ? { since } : {}) })
+  }
+  return ORDER.filter((k) => sums.has(k)).map((k) => sums.get(k)!)
+}
+
+/** Days an answer item may wait before the dot turns red. */
+export const RED_AFTER_DAYS = 7
+
+/** The avatar dot: nothing waits, something waits (amber), or something has waited a week (red). */
+export function pendingSeverity(entries: PendingEntry[], now: number): 'none' | 'amber' | 'red' {
+  const kinds = pendingKinds(entries)
+  if (kinds.length === 0) return 'none'
+  const limit = now - RED_AFTER_DAYS * 86_400_000
+  return kinds.some((e) => e.since != null && e.since <= limit) ? 'red' : 'amber'
 }
 
 export interface PendingLabels {

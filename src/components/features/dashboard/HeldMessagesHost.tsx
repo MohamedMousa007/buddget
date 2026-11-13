@@ -46,7 +46,9 @@ export function HeldMessagesHost() {
   }, [incomeEvents, toLink, updateIncomeEvent])
 
   // The one count the Flow row and the Inbox read; zero again when the host goes away.
-  useEffect(() => setHeld(pending.length), [pending.length, setHeld])
+  const oldest = pending.length ? Math.min(...pending.map((p) => Date.parse(p.received_at)).filter((n) => Number.isFinite(n))) : null
+  const since = oldest != null && Number.isFinite(oldest) ? oldest : null
+  useEffect(() => setHeld(pending.length, since), [pending.length, since, setHeld])
   useEffect(() => () => setHeld(0), [setHeld])
 
   return (

@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState, type ComponentType, type RefO
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import {
-  BarChart3, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Settings, ShieldCheck, Target, User,
+  BarChart3, Bell, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Settings, ShieldCheck, Target, User,
 } from 'lucide-react'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { ProgressRing } from '@/components/ui/ProgressRing'
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
 import { useStaffAccess } from '@/hooks/useStaffAccess'
+import { usePendingEntries } from '@/lib/alerts/usePending'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -51,6 +52,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const isStaff = useStaffAccess()
   const prevPathname = useRef(pathname)
   const { pct } = useSetupProgress()
+  const pendingCount = usePendingEntries().length
   const [setupOpen, setSetupOpen] = useState(false)
 
   // Hardware/gesture back closes the menu first instead of navigating the page.
@@ -197,6 +199,13 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             <span className={localeInlineLabelClass(locale)}>{t.paymentMethods.title}</span>
           </button>
           {link('/reports', BarChart3, t.nav.reports)}
+          <Link href="/notifications" onClick={delayedClose} className={itemClass} role="menuitem">
+            <Bell className="size-[18px] shrink-0" />
+            <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.notifications.title}</span>
+            {pendingCount > 0 ? (
+              <Badge tone="warn" size="xs" aria-label={t.notifications.needsYouCount(pendingCount)}>{pendingCount}</Badge>
+            ) : null}
+          </Link>
           <Divider />
 
           {link('/settings', Settings, copy.menu.openSettings)}

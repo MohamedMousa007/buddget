@@ -331,3 +331,15 @@ Not done, and why:
 - Unplaced expenses open the Accounts page (where the row sits), not the sheet directly.
 - Without the avatar dot, held messages are visible on Flow and in the Inbox only; a user who never opens Flow no longer sees an overlay prompt for them.
 - Visual check of the new sheets in a browser, Arabic at 320px, and a device contrast check were not run.
+
+## 24. Build log (round 18): avatar dot, menu entry, Subscriptions row
+
+Built:
+- Avatar dot on `ProfileAvatarWithMenu` (top-start of the avatar, beside the setup ring and percent pill): amber while a pending kind waits, red once the oldest item has waited 7 days (`pendingSeverity`, `RED_AFTER_DAYS`), hourly clock re-read in `usePendingSeverity`. Held messages report their oldest `received_at` (store `heldSince`); unplaced expenses report their oldest date. The avatar's accessible label adds "N things need you".
+- Profile menu: a Notifications entry (Bell, count badge) before Settings. The Inbox was previously reachable on the web desktop bell only; this is the mobile and native entry. No header bell was added.
+- Subscriptions page: `SubscriptionsFoundRow` ("N possible subscriptions", opens the review sheet). `SmsSubscriptionDetectionBanner` is deleted.
+
+Not done, with reasons:
+- `SmsAccountDetectionBanner` stays: it also offers "Link existing" and adds cards and wallets (`FoundAccountsSheet` lists accounts only and cannot link). Moving those into the sheet is a product change, not a banner swap.
+- H3 (the other ~23 sheets with a `ModalTitle` title): each has its own layout (illustrations, steps, custom headers); changing 18px to 22px and adding a close button without per-sheet visual checks at 320px in English and Arabic would be guesswork.
+- Late payday, plan-change and the other overlay prompts, the state strip merge, `UpdateToast` removal, push at 7 days and the Needs-you entries for suggestions (accounts, subscriptions) remain.

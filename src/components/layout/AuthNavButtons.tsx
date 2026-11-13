@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { ProgressRing } from '@/components/ui/ProgressRing'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
 import { BudgetHeaderButton } from '@/components/layout/BudgetHeaderButton'
+import { usePendingEntries, usePendingSeverity } from '@/lib/alerts/usePending'
 
 /** The avatar that opens ProfileDropdown — the mobile header's, and Flow's own header's. */
 function ProfileAvatarWithMenu({ className }: { className?: string }) {
@@ -32,6 +33,9 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
     configured && !user ? null : resolveProfileAvatarSrc(profile)
   const { pct } = useSetupProgress()
   const setupActive = pct < 100
+  // Something waits on the user: amber, red once it has waited a week. The Inbox lists it.
+  const waiting = usePendingEntries()
+  const severity = usePendingSeverity()
 
   return (
     <div ref={containerRef} className="relative">
@@ -56,7 +60,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
             'border-transparent',
             className
           )}
-          aria-label={t.nav.profileMenu}
+          aria-label={waiting.length > 0 ? `${t.nav.profileMenu}. ${t.notifications.needsYouCount(waiting.length)}` : t.nav.profileMenu}
           aria-expanded={open}
           aria-haspopup="menu"
         >
@@ -67,6 +71,15 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
             <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
           )}
         </IconButton>
+        {severity !== 'none' ? (
+          <span
+            aria-hidden
+            className={cn(
+              'pointer-events-none absolute start-0 top-0 size-2.5 rounded-full border-2 border-[var(--color-brand-bg)]',
+              severity === 'red' ? 'bg-[var(--color-brand-red)]' : 'bg-[var(--color-brand-amber)]',
+            )}
+          />
+        ) : null}
         {setupActive ? (
           <span
             aria-hidden
