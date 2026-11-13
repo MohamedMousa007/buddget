@@ -103,6 +103,18 @@ describe('POST /api/sms/parse wiring', () => {
     expect(claim.values!.sms_hash).toBe(computeSmsHash(NEUTRAL, RECEIVED))
   })
 
+  it('processes a real SMS whose optional timestamp is malformed instead of refusing it', async () => {
+    const res = await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: 'yesterday' })
+    expect(res.status).not.toBe(400)
+    expect(h.ops.find((o) => o.table === 'sms_parse_log' && o.op === 'insert')).toBeDefined()
+  })
+
+  it('acknowledges a body with no message (200) so the phone stops resending it', async () => {
+    const res = await post({ sender: 'TESTBANK' })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'invalid_body' })
+  })
+
   it('answers a pre-filter rejection with its reason and keeps the row out of the AI path', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)

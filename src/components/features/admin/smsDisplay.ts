@@ -6,6 +6,7 @@ export const UNDELIVERED_MS = 2 * 60 * 1000
 export const FAILURE_LABELS: Record<string, string> = {
   gemini_error: 'AI error', not_transaction: 'Not a transaction', null_amount: 'No amount', low_confidence: 'Low confidence',
   duplicate: 'Duplicate', log_insert_failed: 'Save failed', insert_failed: 'Save failed', parse_exception: 'Parse crash',
+  device_blocked: 'Refused: phone removed or unidentified', invalid_body: 'Refused: bad message format', invalid_json: 'Refused: unreadable request',
   processing: 'Processing', timed_out: 'Timed out', rate_limited: 'Rate limited', not_configured: 'AI not configured',
 }
 

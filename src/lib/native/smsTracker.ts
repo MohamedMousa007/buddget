@@ -3,6 +3,7 @@
 import { isNative } from '@/lib/native/isNative'
 import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { isAllowedSmsApiUrl } from '@/lib/native/smsApiUrl'
+import { isDue, loadRetryState, nextDelayMs, retryAfterMs, saveRetryState } from '@/lib/native/smsRetryState'
 
 export interface SmsBridgeStatus {
   tokenSaved: boolean
@@ -86,9 +87,6 @@ export const SMS_QUEUE_CHANGED_EVENT = 'buddget:sms-queue-changed'
 
 /** Fired when a native plugin call fails or recovers; read the message with getSmsNativeError(). */
 export const SMS_NATIVE_ERROR_EVENT = 'buddget:sms-native-error'
-
-/** Drain attempts after which a 400 that is not an explicit invalid-payload rejection is dropped. */
-export const MAX_DRAIN_ATTEMPTS = 5
 
 /** Longest SMS body the server accepts; longer bodies are cut client-side and flagged `truncated`. */
 export const MAX_SMS_CHARS = 2000
@@ -273,24 +271,7 @@ export async function clearSmsNative(): Promise<void> {
   await callNative('clearState', (p) => p.clearState(), undefined)
 }
 
-const attempts = new Map<string, number>()
-const itemKey = (i: PendingSmsItem) => i.eventId ?? `${i.receivedAt}|${i.sender}|${i.message}`
-
-/**
- * 422 and a zod "Invalid body" 400 mean the payload itself can never succeed. Any other 400
- * (e.g. "Invalid JSON" from a mangled body) may be transient or fixable, so it is retried up to
- * MAX_DRAIN_ATTEMPTS drains before the item is dropped.
- */
-async function isPermanentRejection(res: Response, item: PendingSmsItem): Promise<boolean> {
-  if (res.status === 422) return true
-  if (res.status !== 400) return false
-  const body = (await res.json().catch(() => null)) as { error?: string } | null
-  if (body?.error === 'Invalid body') return true
-  const key = itemKey(item)
-  const n = (attempts.get(key) ?? 0) + 1
-  attempts.set(key, n)
-  return n >= MAX_DRAIN_ATTEMPTS
-}
+const itemKey = (i: PendingSmsItem) => i.eventId ?? `${i.receivedAt}|${i.sender}|${i.message.length}`
 
 /** Server answered "another delivery of this SMS is being claimed right now": retry later, never delete. */
 async function isClaimInProgress(res: Response): Promise<boolean> {
@@ -307,22 +288,48 @@ export function buildSmsPayload(item: PendingSmsItem): PendingSmsItem {
 }
 
 let draining: Promise<void> | null = null
+let lastForceAt = 0
+let lastOutcome: string | null = null
+
+/** How the last delivery attempt ended (`delivered`, `http_403`, `network`...), reported to staff with the queue size. */
+export function getLastDrainOutcome(): string | null {
+  return lastOutcome
+}
+
+/** A tap on a waiting message may run at most this often. */
+const FORCE_COOLDOWN_MS = 5_000
 
 /**
- * Replays the native pending queue (SMS captured offline / undeliverable) to
- * /api/sms/parse SEQUENTIALLY. The queue stays authoritative the whole time:
- * items are only removed AFTER the server confirmed (2xx) or permanently
- * rejected (422 / invalid-body 400, or a persistent 400 after MAX_DRAIN_ATTEMPTS) them, so an app kill mid-replay never loses an SMS.
- * Auth (401/403), rate-limit (429), 5xx, "claim in progress" (202 / 409 {retry:true}) and network
- * errors leave the item queued for the next drain. Concurrent calls share one run (no overlapping drains).
+ * Replays the native pending queue (SMS captured offline / undeliverable) to /api/sms/parse SEQUENTIALLY.
+ * The queue stays authoritative: an item is removed ONLY after the server accepted it (2xx). A refusal of any kind
+ * (400/422, auth, rate limit, 5xx, network) leaves it queued on a jittered backoff schedule (see smsRetryState), so a
+ * message the server keeps refusing is parked and visible to staff, never deleted. A failure that would hit every
+ * remaining item the same way (network, auth, rate limit, 5xx) stops the run. `force` (the user tapped the message)
+ * ignores the schedule. Concurrent calls share one run.
  */
-export function drainAndSubmitPendingSms(accessToken: string, userId: string): Promise<void> {
+export function drainAndSubmitPendingSms(accessToken: string, userId: string, opts: { force?: boolean } = {}): Promise<void> {
   if (draining) return draining
-  draining = runDrain(accessToken, userId).finally(() => { draining = null })
+  if (opts.force) {
+    if (Date.now() - lastForceAt < FORCE_COOLDOWN_MS) return Promise.resolve()
+    lastForceAt = Date.now()
+  }
+  draining = runDrain(accessToken, userId, opts.force === true).finally(() => { draining = null })
   return draining
 }
 
-async function runDrain(accessToken: string, userId: string): Promise<void> {
+/** Tapped "Captured offline": retry every waiting message now, whatever the schedule says. */
+export async function retrySmsNow(): Promise<void> {
+  const { createClient } = await import('@/lib/supabase/client')
+  const { data } = await createClient().auth.getSession()
+  const token = data.session?.access_token
+  const uid = data.session?.user?.id
+  if (token && uid) await drainAndSubmitPendingSms(token, uid, { force: true })
+}
+
+/** 4xx that belongs to this one message (not the session, the clock or the rate limit): the rest of the queue may still go. */
+const isMessageSpecific = (status: number) => status >= 400 && status < 500 && ![401, 403, 408, 429].includes(status)
+
+async function runDrain(accessToken: string, userId: string, force: boolean): Promise<void> {
   if (!isNative() || !accessToken || !userId) return
   const peeked = await callNative<PendingSmsItem[] | null>('peekPendingQueue', async (p) => (await p.peekPendingQueue()).items ?? [], null)
   if (!peeked) return
@@ -335,34 +342,44 @@ async function runDrain(accessToken: string, userId: string): Promise<void> {
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')
   const { deviceIdHeader } = await import('@/lib/native/deviceId')
   const deviceHeaders = await deviceIdHeader()
+  const state = loadRetryState()
   const done: PendingSmsItem[] = []
+  const park = (key: string, lastError: string, delay: { poison?: boolean; retryAfterMs?: number } = {}) => {
+    const attempts = (state[key]?.attempts ?? 0) + 1
+    state[key] = { attempts, nextAt: Date.now() + nextDelayMs(attempts, delay), lastError }
+    lastOutcome = lastError
+  }
   for (const item of items) {
+    const key = itemKey(item)
+    if (!force && !isDue(state[key])) continue
     try {
+      // The eventId travels in the body. A custom request header would force a CORS preflight, and one the server does
+      // not list makes the browser refuse the request before it leaves the phone: every drain then failed silently.
       const res = await fetch(buildUrl('/api/sms/parse'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          ...(item.eventId ? { 'x-sms-event-id': item.eventId } : {}),
-          ...deviceHeaders,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, ...deviceHeaders },
         body: JSON.stringify(buildSmsPayload(item)),
       })
-      if (await isClaimInProgress(res)) continue
-      if (res.ok || (await isPermanentRejection(res, item))) {
+      if (await isClaimInProgress(res)) { park(key, 'claim_in_progress'); continue }
+      if (res.ok) {
         done.push(item)
-        attempts.delete(itemKey(item))
-      } else if (res.status === 401 || res.status === 403) {
-        break // token problem — every remaining item would fail identically
+        delete state[key]
+        lastOutcome = 'delivered'
+        continue
       }
-      // 429/5xx: leave queued, keep trying the rest (per-item quota may differ)
+      const poison = isMessageSpecific(res.status)
+      park(key, `http_${res.status}`, { poison, retryAfterMs: retryAfterMs(res.headers.get('Retry-After')) })
+      if (!poison) break
     } catch {
-      break // network dropped mid-drain — stop, everything left stays queued
+      park(key, 'network')
+      break // the rest would fail the same way; they stay queued
     }
   }
   if (done.length > 0) {
     await callNative('removePending', (p) => p.removePending({ items: done }), undefined)
   }
+  const doneKeys = new Set(done.map(itemKey))
+  saveRetryState(state, new Set(peeked.map(itemKey).filter((k) => !doneKeys.has(k))))
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(SMS_QUEUE_CHANGED_EVENT))
 }
 

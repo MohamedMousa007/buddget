@@ -28,7 +28,8 @@ export async function GET(req: Request) {
   let q = ctx.service.from('sms_parse_log').select(COLUMNS).order('received_at', { ascending: false }).limit(limit)
   if (queue === 'errors') {
     const stale = new Date(Date.now() - 2 * 60_000).toISOString()
-    q = q.or(`status.in.(${FAILURE_STATUSES.join(',')}),and(status.in.(logged,notified),received_at.lt.${stale})`)
+    const stuck = new Date(Date.now() - 10 * 60_000).toISOString()
+    q = q.or(`status.in.(${FAILURE_STATUSES.join(',')}),and(status.in.(logged,notified),received_at.lt.${stale}),and(status.eq.processing,received_at.lt.${stuck})`)
   } else if (queue === 'unparsed') {
     q = q.eq('parsed_ok', false).neq('status', 'rejected')
   }

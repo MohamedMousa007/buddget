@@ -24,6 +24,7 @@ import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
+import { recordIngestRefusal } from '@/lib/sms/ingestRefusal'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
 import { monthNameInZone } from '@/lib/time/zonedMonth'
@@ -102,6 +103,15 @@ const bodySchema = z.object({
   eventId: z.string().uuid().optional(),
   truncated: z.boolean().optional(),
 })
+
+function salvageBody(json: unknown): Record<string, unknown> {
+  const o = (json && typeof json === 'object' ? json : {}) as Record<string, unknown>
+  const out: Record<string, unknown> = { message: o.message }
+  for (const k of ['sender', 'source', 'receivedAt', 'eventId', 'truncated'] as const) {
+    if (bodySchema.shape[k].safeParse(o[k]).success) out[k] = o[k]
+  }
+  return out
+}
 
 interface ParsedTx {
   is_transaction: boolean
@@ -613,7 +623,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const blocked = await smsDeviceGate(createServiceRoleClient(), caller)
-  if (blocked) return blocked
+  if (blocked) {
+    await recordIngestRefusal(createServiceRoleClient(), { userId, deviceId }, request, 'device_blocked')
+    return blocked
+  }
   // Bounds what a token holder can write (each message becomes a parse-log row, ledger rows and pushes). Fails open: a
   // database hiccup must never lose a real bank SMS.
   if (await isRateLimited(createServiceRoleClient(), `sms-parse:${userId}`, 3600, PARSE_PER_HOUR, true)) {
@@ -625,15 +638,18 @@ export async function POST(request: Request) {
   try {
     json = await request.json()
   } catch {
+    await recordIngestRefusal(createServiceRoleClient(), { userId, deviceId }, request, 'invalid_json')
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const parsedBody = bodySchema.safeParse(json)
+  // A bank SMS with one malformed optional field (a bad timestamp, say) is still a bank SMS: keep what validates and
+  // process it. Only a body with no usable message is acknowledged without processing, so the phone can drop it
+  // (nothing is lost: there is no message in it) instead of resending it forever.
+  let parsedBody = bodySchema.safeParse(json)
+  if (!parsedBody.success) parsedBody = bodySchema.safeParse(salvageBody(json))
   if (!parsedBody.success) {
-    return NextResponse.json(
-      { error: 'Invalid body', details: parsedBody.error.flatten() },
-      { status: 400 },
-    )
+    await recordIngestRefusal(createServiceRoleClient(), { userId, deviceId }, request, 'invalid_body')
+    return NextResponse.json({ ok: false, reason: 'invalid_body' })
   }
 
   const { sender, source, receivedAt } = parsedBody.data

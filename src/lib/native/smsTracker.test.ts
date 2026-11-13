@@ -50,6 +50,10 @@ async function freshModule(): Promise<SmsTrackerModule> {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-02T00:00:00Z'))
+  const store = new Map<string, string>()
+  vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) })
   vi.stubGlobal('fetch', mocks.fetch)
 })
 
@@ -136,37 +140,44 @@ describe('drainAndSubmitPendingSms', () => {
     { message: 'txn 3', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms' },
   ]
 
-  it('removes only delivered/permanently-rejected items; transient failures stay queued', async () => {
+  it('removes only items the server accepted; every refusal stays queued', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items })
     mocks.fetch
       .mockResolvedValueOnce(new Response('{}', { status: 200 })) // txn 1 delivered
-      .mockResolvedValueOnce(new Response('{}', { status: 503 })) // txn 2 transient — stays
-      .mockResolvedValueOnce(new Response('{"error":"Invalid body"}', { status: 400 })) // txn 3 permanent reject — removed
+      .mockResolvedValueOnce(new Response('{"error":"Invalid body"}', { status: 400 })) // txn 2 refused: parked, run continues
+      .mockResolvedValueOnce(new Response('{}', { status: 503 })) // txn 3 transient: parked, run stops
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt', 'user-1')
     expect(mocks.fetch).toHaveBeenCalledTimes(3)
     expect(mocks.removePending).toHaveBeenCalledTimes(1)
-    expect(mocks.removePending.mock.calls[0][0]).toEqual({ items: [items[0], items[2]] })
+    expect(mocks.removePending.mock.calls[0][0]).toEqual({ items: [items[0]] })
+    expect(sms.getLastDrainOutcome()).toBe('http_503')
   })
 
-  it('keeps an item after a 400 that is not an invalid-body rejection, dropping it after the bounded retries', async () => {
+  it('never deletes a refused message, however often it is refused, and parks it on a schedule', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items: [items[0]] })
-    mocks.fetch.mockImplementation(async () => new Response('{"error":"Invalid JSON"}', { status: 400 }))
+    mocks.fetch.mockImplementation(async () => new Response('{}', { status: 422 }))
     const sms = await freshModule()
-    for (let i = 0; i < sms.MAX_DRAIN_ATTEMPTS - 1; i++) {
-      await sms.drainAndSubmitPendingSms('jwt', 'user-1')
-    }
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1') // not due yet: no second request
+    expect(mocks.fetch).toHaveBeenCalledTimes(1)
+    vi.setSystemTime(Date.now() + 7 * 3600_000)
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1') // due again
+    expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    for (let i = 0; i < 20; i++) await sms.drainAndSubmitPendingSms('jwt', 'user-1', { force: true })
     expect(mocks.removePending).not.toHaveBeenCalled()
-    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
-    expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[0]] })
   })
 
-  it('treats 422 as a permanent rejection', async () => {
+  it('a tap (force) retries immediately, ignoring the schedule, but not more than once per cooldown', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items: [items[0]] })
-    mocks.fetch.mockResolvedValue(new Response('{}', { status: 422 }))
+    mocks.fetch.mockResolvedValueOnce(new Response('{}', { status: 503 })).mockResolvedValueOnce(new Response('{}', { status: 200 }))
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1', { force: true })
+    expect(mocks.fetch).toHaveBeenCalledTimes(2)
     expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[0]] })
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1', { force: true }) // inside the cooldown
+    expect(mocks.fetch).toHaveBeenCalledTimes(2)
   })
 
   it('stops on auth failure without touching the queue (every item would 401)', async () => {
@@ -190,7 +201,7 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[0]] })
   })
 
-  it('sends the per-SMS eventId as header and body, and a claim-in-progress answer never deletes the item', async () => {
+  it('sends the per-SMS eventId in the body only (a custom header is refused by CORS preflight), and a claim-in-progress answer never deletes the item', async () => {
     const withId = { ...items[0], eventId: 'evt-1' }
     mocks.peekPendingQueue.mockResolvedValue({ items: [withId, { ...items[1], eventId: 'evt-2' }, { ...items[2], eventId: 'evt-3' }] })
     mocks.fetch
@@ -200,7 +211,7 @@ describe('drainAndSubmitPendingSms', () => {
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt', 'user-1')
     const init = mocks.fetch.mock.calls[0][1] as RequestInit
-    expect((init.headers as Record<string, string>)['x-sms-event-id']).toBe('evt-1')
+    expect(Object.keys(init.headers as Record<string, string>).map((h) => h.toLowerCase())).not.toContain('x-sms-event-id')
     expect(JSON.parse(init.body as string).eventId).toBe('evt-1')
     expect(mocks.removePending).toHaveBeenCalledTimes(1)
     expect(mocks.removePending.mock.calls[0][0].items.map((i) => i.eventId)).toEqual(['evt-3'])

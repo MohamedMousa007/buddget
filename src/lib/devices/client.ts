@@ -47,6 +47,30 @@ export async function sendDeviceHeartbeat(userId: string, collects: boolean | un
   }
 }
 
+let lastQueueReport = { pending: 0, at: 0 }
+const QUEUE_REPORT_EVERY_MS = 10 * 60_000
+
+/**
+ * Tells the server how many captured SMS this phone still holds and why the last forward ended, so a backlog that
+ * never clears is visible to staff. Sent when the count changes or every 10 minutes while a backlog exists.
+ */
+export async function reportSmsQueue(status: { pendingCount?: number; oldestPendingAt?: string; lastResult?: string } | null): Promise<void> {
+  if (!isNative() || !status) return
+  const pending = status.pendingCount ?? 0
+  const changed = pending !== lastQueueReport.pending
+  if (!changed && (pending === 0 || Date.now() - lastQueueReport.at < QUEUE_REPORT_EVERY_MS)) return
+  try {
+    const res = await apiFetchAuth('/api/devices', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...selfReport(), smsQueue: { pending, oldestAt: status.oldestPendingAt ?? null, lastResult: status.lastResult ?? null } }),
+    })
+    if (res.ok) lastQueueReport = { pending, at: Date.now() }
+  } catch {
+    /* the next drain reports again */
+  }
+}
+
 /** This phone's own SMS role, written when the user switches collecting on or off here. */
 export async function setDeviceCollectsSms(collectsSms: boolean): Promise<void> {
   try {

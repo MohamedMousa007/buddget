@@ -100,14 +100,15 @@ function SmsStartupSync() {
       const status = await getSmsBridgeStatus()
       // Every phone checks in (a phone that does not collect texts still belongs in the devices list).
       void import('@/lib/devices/client').then((m) => m.sendDeviceHeartbeat(userId, status?.enabled ?? false))
-      // No Shortcut/receiver physically on this device → nothing to arm or drain.
-      if (!status?.wired && !status?.needsResync) return
+      // No Shortcut/receiver on this device → nothing to arm. Queued SMS still drain below: a phone that was
+      // disarmed or reset keeps its backlog, and skipping the drain left those cards "waiting" forever.
+      const canArm = Boolean(status?.wired || status?.needsResync)
 
       // 2. Reconcile armed-state to the account's remembered intent — this is what
       //    makes on/off follow the ACCOUNT across sign-out/in: A stays armed, B
       //    starts off, A auto-resumes on return. Online-only (both reads need the
       //    network); offline leaves current device state as-is.
-      if ((refreshToken || status?.needsResync || !status?.tokenSaved) && isOnline()) {
+      if (canArm && (refreshToken || status?.needsResync || !status?.tokenSaved) && isOnline()) {
         // This phone's own role first (another phone turning tracking off must not disarm it); the account setting only
         // decides for a phone the server has not met yet.
         const { fetchDeviceCollectsSms } = await import('@/lib/devices/client')
@@ -126,6 +127,10 @@ function SmsStartupSync() {
       //    still reach the server. Skip while offline — items stay queued.
       if (!isOnline()) return
       await drainAndSubmitPendingSms(token, userId)
+      const { reportSmsQueue } = await import('@/lib/devices/client')
+      const { getLastDrainOutcome } = await import('@/lib/native/smsTracker')
+      const after = await getSmsBridgeStatus()
+      await reportSmsQueue(after && { ...after, lastResult: getLastDrainOutcome() ?? after.lastResult })
     }
 
     let cancelled = false
@@ -158,7 +163,16 @@ function SmsStartupSync() {
         })()
       })
       if (cancelled) { void handle.remove(); return }
-      removeResume = () => { void handle.remove() }
+      // The app stays open for long stretches: a transient refusal (rate limit, server hiccup, AI quota) must not wait for
+      // the next launch. The drain peeks first and returns at once when the queue is empty.
+      const retry = setInterval(() => {
+        if (document.visibilityState !== 'visible') return
+        void (async () => {
+          const { data: s } = await client.auth.getSession()
+          void tryStart(s.session?.access_token ?? '', s.session?.user?.id ?? '', false)
+        })()
+      }, 60_000)
+      removeResume = () => { void handle.remove(); clearInterval(retry) }
     })()
 
     return () => { cancelled = true; unsub?.(); removeResume?.() }

@@ -61,6 +61,8 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         val owner      = inputData.getString(KEY_USER_ID) ?: ""
 
         val prefs  = SmsStore.prefs(applicationContext)
+        // The app's drain may already have delivered this SMS: nothing left to send.
+        if (!PendingSmsQueue.contains(applicationContext, message, receivedAt, eventId)) return@withContext Result.success()
         val token  = prefs.getString("access_token", null)
         val apiUrl = prefs.getString("api_url", null)
 
@@ -68,13 +70,13 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         // terminal outcomes below just leave it there for the app-open drain.
         if (token == null || apiUrl == null) {
             recordRun(prefs, "no_token")
-            return@withContext Result.failure()
+            return@withContext Result.retry() // signing in later supplies the token; WorkManager's capped backoff checks again
         }
 
         // The SMS stays queued under its own account and is delivered when that user is signed in again.
         if (!SmsGate.belongsToCurrentAccount(owner, prefs.getString("token_user_id", "") ?: "")) {
             recordRun(prefs, "other_account")
-            return@withContext Result.failure()
+            return@withContext Result.retry() // delivered once that account signs in again
         }
 
         // Defence in depth: a value stored by an older build, or written some other way, is never trusted.
@@ -84,8 +86,9 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         }
 
         if (runAttemptCount >= MAX_ATTEMPTS) {
+            // Never give up on a captured SMS: it stays queued and WorkManager keeps checking on its capped backoff.
             recordRun(prefs, "retries_exhausted")
-            return@withContext Result.failure()
+            return@withContext Result.retry()
         }
 
         return@withContext try {
@@ -122,10 +125,10 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
                     Result.retry()
                 }
                 else -> {
-                    // 400/422/other 4xx: the payload will not succeed here. Stays in
-                    // the queue; the app-open drain decides.
+                    // 400/422/other 4xx: refused for now. The SMS stays queued and is tried again on the capped
+                    // backoff (a server fix lets it through); only a 2xx ever removes it.
                     recordRun(prefs, "http_$code")
-                    Result.failure()
+                    Result.retry()
                 }
             }
         } catch (e: Exception) {

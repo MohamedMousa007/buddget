@@ -10,6 +10,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { FEATURE_CATALOG, LIMIT_CATALOG, LIMIT_KEYS, type LimitKey } from '@/lib/entitlements/limits'
 import { adminNavigate } from '../adminRouter'
 import FinancialTab from './FinancialTab'
+import { SmsLogPanel } from './sms/SmsLogPanel'
 import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime, num, personLabel } from '../format'
 import { useAdminAction } from '../useAdminAction'
@@ -39,7 +40,7 @@ interface Overview {
 interface TimelineEvent { at: string; source: string; title: string; detail?: string; tone: 'neutral' | 'good' | 'warn' | 'bad' }
 
 const TABS = [
-  { value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity & logs' }, { value: 'billing', label: 'Plan & limits' },
+  { value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity & logs' }, { value: 'sms', label: 'SMS' }, { value: 'billing', label: 'Plan & limits' },
   { value: 'financial', label: 'Financial' }, { value: 'tools', label: 'Tools' }, { value: 'notes', label: 'Notes' },
 ] as const
 type Tab = (typeof TABS)[number]['value']
@@ -55,7 +56,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
 
   const banned = !!data.auth.banned_until && new Date(data.auth.banned_until) > new Date()
   const who = personLabel({ name: data.profile?.name, email: data.auth.email, id })
-  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'financial' ? can('financial.request') || can('financial.approve') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
+  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'sms' ? can('sms.view') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'financial' ? can('financial.request') || can('financial.approve') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
 
   return (
     <>
@@ -78,6 +79,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
 
       {tab === 'overview' ? <OverviewTab data={data} /> : null}
       {tab === 'activity' ? <ActivityTab id={id} /> : null}
+      {tab === 'sms' ? <SmsTab id={id} can={can} /> : null}
       {tab === 'billing' ? <BillingTab id={id} data={data} can={can} onChange={refresh} /> : null}
       {tab === 'financial' ? <FinancialTab id={id} /> : null}
       {tab === 'tools' ? <ToolsTab id={id} data={data} banned={banned} can={can} onChange={refresh} /> : null}
@@ -180,6 +182,51 @@ function OverviewTab({ data }: { data: Overview }) {
 
 const TONE_DOT: Record<TimelineEvent['tone'], string> = {
   neutral: 'bg-[var(--color-brand-border-strong)]', good: 'bg-[var(--color-brand-green)]', warn: 'bg-[var(--color-brand-amber)]', bad: 'bg-[var(--color-brand-red)]',
+}
+
+interface SmsHealth {
+  trackingEnabled: boolean; windowDays: number; total: number; lastReceivedAt: string | null; counts: Record<string, number>
+  devices: Array<{ device_id: string; name: string | null; platform: string; model: string | null; app_version: string | null; collects_sms: boolean; is_main: boolean; last_seen_at: string; last_sms_at: string | null; revoked_at: string | null; sms_queue_pending: number; sms_queue_oldest_at: string | null; sms_last_result: string | null; sms_queue_reported_at: string | null }>
+}
+
+const SMS_BAD = (k: string) => k.startsWith('failed') || k === 'add_failed'
+
+function SmsTab({ id, can }: { id: string; can: (p: string) => boolean }) {
+  const { data, error } = useAdminQuery<SmsHealth>(`/api/admin/users/${id}/sms`)
+  if (error) return <Notice tone="negative">{error}</Notice>
+  if (!data) return <Loading rows={6} />
+  const entries = Object.entries(data.counts).sort((a, b) => b[1] - a[1])
+  return (
+    <div className="space-y-4">
+      <Panel title="Phones" description={`SMS tracking is ${data.trackingEnabled ? 'on' : 'off'} for this account. Backlog = captured on the phone, not yet accepted by the server.`}>
+        {data.devices.length === 0 ? <p className="py-4 text-center text-sm text-[var(--color-brand-text-muted)]">No phones on record.</p> : (
+          <ul className="divide-y divide-[var(--color-brand-border)]">
+            {data.devices.map((d) => (
+              <li key={d.device_id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate text-[var(--color-brand-text-primary)]">{d.name ?? d.model ?? d.platform}{d.is_main ? ' · main' : ''}</p>
+                  <p className="text-xs text-[var(--color-brand-text-muted)]">{d.platform} · v{d.app_version ?? '?'} · seen {ago(d.last_seen_at)} · last SMS {d.last_sms_at ? ago(d.last_sms_at) : 'never'}{d.sms_last_result ? ` · last forward: ${d.sms_last_result}` : ''}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {d.revoked_at ? <Pill tone="bad">Removed</Pill> : null}
+                  <Pill tone={d.collects_sms ? 'good' : 'neutral'}>{d.collects_sms ? 'Collects SMS' : 'Not collecting'}</Pill>
+                  {d.sms_queue_pending > 0 ? <Pill tone="warn">{d.sms_queue_pending} stuck{d.sms_queue_oldest_at ? ` · oldest ${ago(d.sms_queue_oldest_at)}` : ''}</Pill> : <Pill tone="good">No backlog</Pill>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+      <Panel title={`Outcomes, last ${data.windowDays} days`} description={`${num(data.total)} messages${data.lastReceivedAt ? ` · latest ${ago(data.lastReceivedAt)}` : ''}`}>
+        {entries.length === 0 ? <p className="py-4 text-center text-sm text-[var(--color-brand-text-muted)]">No messages reached the server.</p> : (
+          <div className="flex flex-wrap gap-2">
+            {entries.map(([k, n]) => <Pill key={k} tone={SMS_BAD(k) ? 'bad' : 'neutral'}>{k.replace(':', ' · ').replace(/_/g, ' ')}: {num(n)}</Pill>)}
+          </div>
+        )}
+      </Panel>
+      <SmsLogPanel queue="all" userId={id} canTicket={can('support.reply')} />
+    </div>
+  )
 }
 
 function ActivityTab({ id }: { id: string }) {

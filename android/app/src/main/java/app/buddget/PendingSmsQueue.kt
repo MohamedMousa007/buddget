@@ -72,6 +72,19 @@ object PendingSmsQueue {
         if (removed) write(context, kept)
     }
 
+    /** True while the SMS is still waiting: a retried job whose message the app already delivered must not POST it again. */
+    @Synchronized
+    fun contains(context: Context, message: String, receivedAt: String, eventId: String = ""): Boolean {
+        val items = read(context)
+        for (i in 0 until items.length()) {
+            val item = items.getJSONObject(i)
+            val same = if (eventId.isNotEmpty() && item.has("eventId")) item.optString("eventId") == eventId
+            else item.optString("message") == message && item.optString("receivedAt") == receivedAt
+            if (same) return true
+        }
+        return false
+    }
+
     @Synchronized
     fun count(context: Context): Int = read(context).length()
 
@@ -83,7 +96,9 @@ object PendingSmsQueue {
 
     private fun write(context: Context, items: JSONArray) {
         SmsStore.prefs(context)
-            .edit().putString(KEY, items.toString()).apply()
+            // commit, not apply: a broadcast receiver's process can die right after onReceive, and an async write
+            // that has not reached disk loses the SMS before the worker even starts.
+            .edit().putString(KEY, items.toString()).commit()
     }
 
     @Synchronized

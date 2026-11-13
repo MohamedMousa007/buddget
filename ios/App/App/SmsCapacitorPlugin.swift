@@ -262,11 +262,36 @@ enum SmsCredentialStore {
             if moveToKeychain(tokenAccount, legacyToken.data(using: .utf8)) { d.removeObject(forKey: tokenKey) }
         }
         if let legacyQueue = d.array(forKey: pendingQueueKey) as? [[String: String]] {
-            if moveToKeychain(queueAccount, try? JSONSerialization.data(withJSONObject: legacyQueue)) {
-                d.removeObject(forKey: pendingQueueKey)
-            }
+            if mergeLegacyQueue(legacyQueue) { d.removeObject(forKey: pendingQueueKey) }
         }
     }()
+
+    private static func sameItem(_ a: [String: String], _ b: [String: String]) -> Bool {
+        if let x = a["eventId"], !x.isEmpty, let y = b["eventId"], !y.isEmpty { return x == y }
+        return a["message"] == b["message"] && a["receivedAt"] == b["receivedAt"]
+    }
+
+    /// Adds `extra` to `base`, skipping anything already there.
+    private static func merged(_ base: [[String: String]], _ extra: [[String: String]]) -> [[String: String]] {
+        var out = base
+        for item in extra where !out.contains(where: { sameItem($0, item) }) { out.append(item) }
+        return out
+    }
+
+    /// True when every legacy item is safely in the Keychain queue. A queue already there is merged with, never kept
+    /// instead of, the legacy one: an SMS enqueued before migration ran must not be deleted with the legacy key.
+    private static func mergeLegacyQueue(_ legacy: [[String: String]]) -> Bool {
+        switch SmsKeychain.readResult(queueAccount) {
+        case .unavailable: return false
+        case .missing:
+            guard let data = try? JSONSerialization.data(withJSONObject: legacy) else { return false }
+            return SmsKeychain.write(queueAccount, data)
+        case .found(let data):
+            let current = (try? JSONSerialization.jsonObject(with: data)) as? [[String: String]] ?? []
+            guard let out = try? JSONSerialization.data(withJSONObject: merged(current, legacy)) else { return false }
+            return SmsKeychain.write(queueAccount, out)
+        }
+    }
 
     /// True when the legacy value is safely in the Keychain (written now or already there) and may be removed.
     private static func moveToKeychain(_ account: String, _ data: Data?) -> Bool {
@@ -287,8 +312,24 @@ enum SmsCredentialStore {
         case .missing: return []
         case .unavailable: return nil
         case .found(let data):
-            return (try? JSONSerialization.jsonObject(with: data) as? [[String: String]]) ?? []
+            if let queue = (try? JSONSerialization.jsonObject(with: data)) as? [[String: String]] { return mergeSpill(into: queue) }
+            // Unreadable blob: keep it aside for recovery before the next write replaces it.
+            _ = SmsKeychain.write(queueAccount + "_unreadable", data)
+            return mergeSpill(into: [])
         }
+    }
+
+    /// SMS that arrived while the Keychain could not be read (before first unlock, for instance) wait here.
+    private static let spillKey = "buddget.sms.pending_spill"
+
+    private static func mergeSpill(into queue: [[String: String]]) -> [[String: String]] {
+        let d = UserDefaults.standard
+        guard let spill = d.array(forKey: spillKey) as? [[String: String]], !spill.isEmpty else { return queue }
+        let out = merged(queue, spill)
+        if let data = try? JSONSerialization.data(withJSONObject: out), SmsKeychain.write(queueAccount, data) {
+            d.removeObject(forKey: spillKey)
+        }
+        return out
     }
 
     /// Callers hold queueLock.
@@ -308,10 +349,15 @@ enum SmsCredentialStore {
     static func enqueuePending(message: String, sender: String, receivedAt: String, userId: String, eventId: String = "") {
         queueLock.lock(); defer { queueLock.unlock() }
         let d = UserDefaults.standard
-        guard var queue = readQueue() else { return }
+        let entry = ["message": message, "sender": sender, "receivedAt": receivedAt, "source": "sms", "userId": userId, "eventId": eventId]
+        guard var queue = readQueue() else {
+            // Keychain unreadable right now: park the SMS in the spill list instead of dropping it.
+            d.set(((d.array(forKey: spillKey) as? [[String: String]]) ?? []) + [entry], forKey: spillKey)
+            return
+        }
         // Stamp the owning account so an account switch can't drain this SMS into
         // the wrong user (the JS drain filters by userId before POSTing).
-        queue.append(["message": message, "sender": sender, "receivedAt": receivedAt, "source": "sms", "userId": userId, "eventId": eventId])
+        queue.append(entry)
         if queue.count > queueCap {
             let overflow = queue.count - queueCap
             queue = Array(queue.suffix(queueCap))

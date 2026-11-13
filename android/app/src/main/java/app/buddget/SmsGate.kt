@@ -7,7 +7,7 @@ package app.buddget
 object SmsGate {
     private const val DAY_MS = 24L * 60 * 60 * 1000
 
-    private val currencyCodes = listOf("egp", "aed", "sar", "qar", "kwd", "omr", "bhd")
+    private val currencyCodes = listOf("egp", "aed", "sar", "qar", "kwd", "omr", "bhd", "usd", "eur", "gbp")
     // A currency code only counts next to a digit ("SAR 50", "50EGP"); never inside a word ("Sarah", "disarm").
     private val currencyRegex = Regex(
         "(?i)(?:\\d[\\d.,]*\\s?(?:${currencyCodes.joinToString("|")})(?![a-z]))|(?:(?<![a-z])(?:${currencyCodes.joinToString("|")})\\s?\\d)"
@@ -25,9 +25,9 @@ object SmsGate {
 
     // Wider than strongTxn: wording a card/wallet alert uses for money that moved. Only counted next to an amount.
     private val moneyVerbRegex = Regex(
-        "(?i)(?<![a-z])(used (?:for|at)|paid|payment|received|refund(?:ed)?|debit(?:ed)?|credit(?:ed)?|purchase|spent|withdr(?:awn|awal)|transfer(?:red)?|deposit(?:ed)?|charged|sent)(?![a-z])"
+        "(?i)(?<![a-z])(used (?:for|at)|approved|authori[sz]ed|paid|payment|received|refund(?:ed)?|debit(?:ed)?|credit(?:ed)?|purchase|spent|withdr(?:awn|awal)|transfer(?:red)?|deposit(?:ed)?|charged|sent)(?![a-z])"
     )
-    private val moneyVerbArabic = listOf("تم الدفع", "دفع", "خصم", "تحويل", "شراء", "سحب", "إيداع", "استلام", "استرداد")
+    private val moneyVerbArabic = listOf("تمت عملية", "اعتماد", "تم الدفع", "دفع", "خصم", "تحويل", "شراء", "سحب", "إيداع", "استلام", "استرداد")
 
     private val otpRegex = Regex(
         "(?i)(?<![a-z])(otp|one[- ]time (?:password|code|pin)|verification code|security code|passcode|do not share|never share|don't share)(?![a-z])"

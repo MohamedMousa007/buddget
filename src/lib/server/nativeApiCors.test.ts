@@ -20,6 +20,10 @@ describe('native API CORS', () => {
     expect(NATIVE_ALLOWED_HEADERS).toContain('X-Buddget-Device-Secret')
   })
 
+  it('allows the SMS event-id header: builds that still send it were refused at preflight, so queued SMS never left the phone', () => {
+    expect(NATIVE_ALLOWED_HEADERS).toContain('X-Sms-Event-Id')
+  })
+
   it('never lets a cross-origin caller send the admin session header', () => {
     expect(NATIVE_ALLOWED_HEADERS).not.toContain('X-Admin-Session')
   })

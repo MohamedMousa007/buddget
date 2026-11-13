@@ -30,6 +30,10 @@ class SmsGateTest {
         assertTrue(SmsGate.shouldForward("sender", "CIB", "تم الدفع 150 جنيه لدى متجر. لا تشارك رمز التحقق"))
     }
 
+    @Test fun approvedForeignCurrencyCardAlertWithOtpFooterIsForwarded() {
+        assertTrue(SmsGate.shouldForward("sender", "BANK", "Card approved for USD 20 at Shop. Never share your OTP."))
+    }
+
     @Test fun otpWithoutAmountIsStillDropped() {
         assertFalse(SmsGate.shouldForward("sender", "CIB", "Never share your PIN or OTP with anyone. Code 482913"))
     }

@@ -394,6 +394,8 @@ export function useFlowLedger() {
             caption: category ?? undefined,
             captionColor: 'var(--color-brand-text-secondary)',
             dimmed: true,
+            // Tapping a waiting message retries every waiting message now instead of waiting for the schedule.
+            onClick: () => { void import('@/lib/native/smsTracker').then((m) => m.retrySmsNow()) },
             title: p.parsed ? p.parsed.counterparty || p.parsed.bank : t.pendingSms.generic,
             titleBadge: <Badge variant="muted" size="xs" className="shrink-0">{t.flow.pending}</Badge>,
             subtitle: <span className="truncate">{t.flow.capturedOffline}</span>,

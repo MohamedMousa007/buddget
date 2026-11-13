@@ -109,16 +109,16 @@ enum SmsOtpGate {
         pattern: "(?<![a-z])(debited|credited|spent at|purchase of|transaction of|withdrawn|inward transfer)(?![a-z])",
         options: .caseInsensitive)
     private static let currency = try! NSRegularExpression(
-        pattern: "(?:\\d[\\d.,]*\\s?(?:egp|aed|sar|qar|kwd|omr|bhd)(?![a-z]))|(?:(?<![a-z])(?:egp|aed|sar|qar|kwd|omr|bhd)\\s?\\d)",
+        pattern: "(?:\\d[\\d.,]*\\s?(?:egp|aed|sar|qar|kwd|omr|bhd|usd|eur|gbp|le|ج\\.?م)(?![a-z]))|(?:(?<![a-z])(?:egp|aed|sar|qar|kwd|omr|bhd|usd|eur|gbp|le|e£|ج\\.?م)\\s?\\d)",
         options: .caseInsensitive)
     private static let moneyVerb = try! NSRegularExpression(
-        pattern: "(?<![a-z])(used (for|at)|paid|payment|received|refund(ed)?|debit(ed)?|credit(ed)?|purchase|spent|withdr(awn|awal)|transfer(red)?|deposit(ed)?|charged|sent)(?![a-z])",
+        pattern: "(?<![a-z])(used (for|at)|approved|authori[sz]ed|paid|payment|received|refund(ed)?|debit(ed)?|credit(ed)?|purchase|spent|withdr(awn|awal)|transfer(red)?|deposit(ed)?|charged|sent)(?![a-z])",
         options: .caseInsensitive)
     private static let marketing = try! NSRegularExpression(
         pattern: "(?<![a-z])(promo(tion)?|promo code|coupon|discount|\\d+\\s?% ?off|limited offer|special offer|exclusive offer|unsubscribe|reply stop|win a|free gift|flash sale)(?![a-z])",
         options: .caseInsensitive)
     private static let marketingArabic = ["عرض خاص", "خصم حصري", "كوبون", "اشترك الآن", "للإلغاء أرسل"]
-    private static let moneyVerbArabic = ["تم الدفع", "دفع", "خصم", "تحويل", "شراء", "سحب", "إيداع", "استلام", "استرداد"]
+    private static let moneyVerbArabic = ["تمت عملية", "اعتماد", "تم الدفع", "دفع", "خصم", "تحويل", "شراء", "سحب", "إيداع", "استلام", "استرداد"]
     private static let otpArabic = ["رمز التحقق", "كلمة المرور المؤقتة", "رمز التفعيل", "لا تشارك"]
     private static let txnArabic = ["تم خصم", "تم سحب", "تم دفع", "عملية شراء", "تم إيداع", "تم إضافة"]
 
