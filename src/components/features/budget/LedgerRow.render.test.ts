@@ -78,7 +78,7 @@ describe('LedgerRow', () => {
     const v = view([line('debts', 'Visa', 2100, 0, {}, 'estimated')], { mode: 'plan' })
     const plain = renderToStaticMarkup(h(LedgerRow, { view: v, block: 'debts', today: 10, onOpen: () => {} }))
     expect(plain).toContain('aria-label="Open Debts"')
-    expect(plain).toContain('min-h-[60px]')
+    expect(plain).toContain('min-h-[52px]')
     expect(plain).not.toContain('lucide-flag')
     const review = renderToStaticMarkup(h(LedgerRow, { view: v, block: 'debts', today: 10, review: true, onOpen: () => {} }))
     expect(review).toContain('lucide-flag')

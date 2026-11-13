@@ -235,7 +235,7 @@ export function SegmentPage({ view, block, onBack, onSelect, onOpenLine, onAdd, 
       ) : null}
 
       {review?.flagged || build ? (
-        <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 -mx-4 bg-[var(--color-brand-bg)] px-4 pb-3 pt-2 lg:bottom-4">
+        <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 -mx-4 bg-[var(--color-brand-bg)] px-4 pb-3 pt-2 lg:bottom-4 lg:pe-24">
           {review?.flagged ? (
             <Button size="cta-block" onClick={review.onLooksRight}>
               {t.review.looksRight}

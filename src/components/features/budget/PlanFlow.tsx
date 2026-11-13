@@ -244,7 +244,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
         }
       />
 
-      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 -mx-4 bg-[var(--color-brand-bg)] px-4 pb-3 pt-2 lg:bottom-4">
+      <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-10 -mx-4 bg-[var(--color-brand-bg)] px-4 pb-3 pt-2 lg:bottom-4 lg:pe-24">
         {build ? (
           <Button size="cta-block" disabled={view.plan.categories.length === 0} onClick={() => onFinishBuild(planId, [...skipped])}>
             {t.build.finish}

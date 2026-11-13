@@ -121,23 +121,23 @@ export function LedgerRow({ view, block, today, review = false, statusOverride, 
         data-raw-button-ok="a full-width tappable ledger row, not a control with a shared shape"
         onClick={onOpen}
         aria-label={copy.ledger.open(blocks.blockName[block])}
-        className="flex min-h-[60px] w-full items-center gap-3 px-3.5 py-2.5 text-start"
+        className="flex min-h-[52px] w-full items-center gap-3 px-3.5 py-2 text-start"
       >
-        <TintedTile cat={meta.cat} size="md">
+        <TintedTile cat={meta.cat} size={36}>
           <LineIcon name={meta.icon} />
         </TintedTile>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex min-w-0 flex-1 flex-col">
           <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{blocks.blockName[block]}</span>
+            <span className="truncate text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{blocks.blockName[block]}</span>
             {tag ? <Badge tone="brand" size="sm" className="shrink-0">{tag}</Badge> : null}
           </span>
-          <span className="flex min-w-0 items-center gap-1 text-xs font-medium" style={{ color: TONE[t.tone] }}>
+          <span className="flex min-w-0 items-center gap-1 text-xs font-medium leading-snug" style={{ color: TONE[t.tone] }}>
             {flagged && !statusOverride ? <Flag className="size-3 shrink-0" aria-hidden /> : null}
             <span className="truncate">{statusOverride ?? t.status}</span>
           </span>
         </span>
-        <span className="flex shrink-0 flex-col items-end gap-0.5 text-end">
-          {t.amount ? <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.amount}</span> : null}
+        <span className="flex shrink-0 flex-col items-end text-end">
+          {t.amount ? <span className="font-mono-numbers text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{t.amount}</span> : null}
           {t.sub ? <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.sub}</span> : null}
         </span>
         <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />

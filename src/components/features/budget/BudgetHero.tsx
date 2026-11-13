@@ -53,7 +53,7 @@ export function MonthHero({ view }: { view: PlanView }) {
     const planned = view.blocks.everyday.total
     const daysLeft = Math.max(0, view.daysInCycle - view.dayOfCycle)
     return (
-      <Card padding="md" className="flex flex-col gap-3">
+      <Card padding="md" className="flex flex-col gap-2.5">
         {view.learning ? (
           <div className="flex items-start gap-2.5 rounded-xl bg-[var(--color-brand-elevated)] p-3" role="note">
             <Info className="mt-0.5 size-4 shrink-0 text-[var(--color-brand-text-secondary)]" aria-hidden />
@@ -77,11 +77,11 @@ export function MonthHero({ view }: { view: PlanView }) {
   const owed = stillToPay(view)
   const Icon = pace.state === 'ok' ? Check : TriangleAlert
   return (
-    <Card padding="md" className="flex flex-col gap-3">
+    <Card padding="md" className="flex flex-col gap-2.5">
       <div className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-xs text-[var(--color-brand-text-secondary)]">{c.leftLabel}</span>
-          <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
+          <span className="font-mono-numbers whitespace-nowrap text-[30px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
             {money(pace.left)}
           </span>
         </div>
@@ -148,11 +148,11 @@ export function PlanHero({ view }: { view: PlanView }) {
   const parts = (['spending', 'debt', 'saving'] as const).map((k) => ({ k, amount: s[k], pct: s[`${k}Pct` as 'spendingPct'] }))
   const month = view.extras.debtFreeMonth
   return (
-    <Card padding="md" className="flex flex-col gap-3">
+    <Card padding="md" className="flex flex-col gap-2.5">
       <div className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-xs text-[var(--color-brand-text-secondary)]">{c.income}</span>
-          <span className="font-mono-numbers whitespace-nowrap text-[32px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
+          <span className="font-mono-numbers whitespace-nowrap text-[30px] font-semibold leading-none tracking-[-0.02em] text-[var(--color-brand-text-primary)]">
             {money(view.income)}
           </span>
         </div>

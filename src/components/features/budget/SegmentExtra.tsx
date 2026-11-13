@@ -46,7 +46,7 @@ export function SegmentExtra({ view, block }: { view: PlanView; block: BudgetBlo
   if (block === 'bills') {
     const dots = railDots(b.lines.map((l) => ({ dueDay: l.dueDay, paid: l.paid })), view.daysInCycle)
     const { paydayDay } = view.extras
-    if (dots.length === 0 && paydayDay == null) return null
+    if (dots.length === 0) return null
     return (
       <Card padding="md" className="flex flex-col gap-1">
         <Title>{blocks.bills.railTitle}</Title>
@@ -80,7 +80,8 @@ export function SegmentExtra({ view, block }: { view: PlanView; block: BudgetBlo
   }
 
   if (block === 'subscriptions') {
-    const { next, left } = view.extras.subscriptions
+    const { next, left, items } = view.extras.subscriptions
+    if (items.length === 0 && b.lines.length === 0) return null
     return (
       <Card padding="md" className="flex flex-col gap-1">
         <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
