@@ -16,6 +16,10 @@
       "schedule": "10 4 * * *"
     },
     {
+      "path": "/api/cron/sms-canary",
+      "schedule": "50 6 * * *"
+    },
+    {
       "path": "/api/cron/ios-crashes",
       "schedule": "20 7 * * *"
     },

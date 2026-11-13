@@ -59,6 +59,7 @@ struct CatchBankSmsIntent: AppIntent {
               let base = SmsCredentialStore.apiUrl,
               let url = URL(string: base + "/api/sms/parse") else {
             SmsCredentialStore.recordRun(result: "no_token")
+            SmsBackgroundDrain.scheduleIfPending()
             return .result()
         }
 
@@ -88,6 +89,7 @@ struct CatchBankSmsIntent: AppIntent {
             SmsCredentialStore.recordRun(result: "delivered")
         } else {
             SmsCredentialStore.recordRun(result: "queued")
+            SmsBackgroundDrain.scheduleIfPending()
         }
         return .result()
     }

@@ -186,7 +186,7 @@ const TONE_DOT: Record<TimelineEvent['tone'], string> = {
 
 interface SmsHealth {
   trackingEnabled: boolean; windowDays: number; total: number; lastReceivedAt: string | null; counts: Record<string, number>
-  devices: Array<{ device_id: string; name: string | null; platform: string; model: string | null; app_version: string | null; collects_sms: boolean; is_main: boolean; last_seen_at: string; last_sms_at: string | null; revoked_at: string | null; sms_queue_pending: number; sms_queue_oldest_at: string | null; sms_last_result: string | null; sms_queue_reported_at: string | null }>
+  devices: Array<{ device_id: string; name: string | null; platform: string; model: string | null; app_version: string | null; collects_sms: boolean; is_main: boolean; last_seen_at: string; last_sms_at: string | null; revoked_at: string | null; sms_queue_pending: number; sms_queue_oldest_at: string | null; sms_last_result: string | null; sms_queue_reported_at: string | null; sms_evicted_count: number }>
 }
 
 const SMS_BAD = (k: string) => k.startsWith('failed') || k === 'add_failed'
@@ -210,6 +210,7 @@ function SmsTab({ id, can }: { id: string; can: (p: string) => boolean }) {
                 <div className="flex flex-wrap gap-1.5">
                   {d.revoked_at ? <Pill tone="bad">Removed</Pill> : null}
                   <Pill tone={d.collects_sms ? 'good' : 'neutral'}>{d.collects_sms ? 'Collects SMS' : 'Not collecting'}</Pill>
+                  {d.sms_evicted_count > 0 ? <Pill tone="bad">{d.sms_evicted_count} dropped</Pill> : null}
                   {d.sms_queue_pending > 0 ? <Pill tone="warn">{d.sms_queue_pending} stuck{d.sms_queue_oldest_at ? ` · oldest ${ago(d.sms_queue_oldest_at)}` : ''}</Pill> : <Pill tone="good">No backlog</Pill>}
                 </div>
               </li>

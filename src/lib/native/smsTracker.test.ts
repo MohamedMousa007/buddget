@@ -217,6 +217,17 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.removePending.mock.calls[0][0].items.map((i) => i.eventId)).toEqual(['evt-3'])
   })
 
+  it('only sends headers the server CORS allow-list permits (a browser blocks the request before it leaves the phone otherwise)', async () => {
+    const { NATIVE_ALLOWED_HEADERS } = await import('@/lib/server/nativeApiCors')
+    const allowed = NATIVE_ALLOWED_HEADERS.toLowerCase().split(',').map((h) => h.trim())
+    mocks.peekPendingQueue.mockResolvedValue({ items: [{ ...items[0], eventId: 'evt-1' }] })
+    mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    const sent = Object.keys((mocks.fetch.mock.calls[0][1] as RequestInit).headers as Record<string, string>).map((h) => h.toLowerCase())
+    for (const header of sent) expect(allowed, `header "${header}" would fail the CORS preflight`).toContain(header)
+  })
+
   it('does not overlap two drains', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items: [items[0]] })
     mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))

@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: Params) {
 
   const [devices, log, settings] = await Promise.all([
     service.from('user_devices')
-      .select('device_id, name, platform, model, app_version, collects_sms, is_main, last_seen_at, last_sms_at, revoked_at, sms_queue_pending, sms_queue_oldest_at, sms_last_result, sms_queue_reported_at')
+      .select('device_id, name, platform, model, app_version, collects_sms, is_main, last_seen_at, last_sms_at, revoked_at, sms_queue_pending, sms_queue_oldest_at, sms_last_result, sms_queue_reported_at, sms_evicted_count')
       .eq('user_id', id).order('last_seen_at', { ascending: false }),
     service.from('sms_parse_log').select('status, failure_code, received_at').eq('user_id', id).gte('received_at', since).order('received_at', { ascending: false }).limit(ROW_CAP),
     service.from('user_settings').select('sms_tracking_enabled').eq('user_id', id).maybeSingle(),

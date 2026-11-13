@@ -14,7 +14,7 @@ const selfSchema = z.object({
   collects: z.boolean().optional(),
   collectsSms: z.boolean().optional(),
   pushPermission: z.enum(['granted', 'denied']).nullish(),
-  smsQueue: z.object({ pending: z.number().int().min(0).max(100_000), oldestAt: z.string().max(40).nullable(), lastResult: z.string().max(60).nullable() }).optional(),
+  smsQueue: z.object({ pending: z.number().int().min(0).max(100_000), oldestAt: z.string().max(40).nullable(), lastResult: z.string().max(60).nullable(), evicted: z.number().int().min(0).max(1_000_000).optional() }).optional(),
 })
 
 async function caller(request: Request) {

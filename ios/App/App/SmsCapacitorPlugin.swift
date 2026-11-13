@@ -1,6 +1,7 @@
 import Foundation
 import Capacitor
 import Security
+import BackgroundTasks
 
 /// iOS twin of the Android SmsCapacitorPlugin. iOS cannot read SMS directly,
 /// so the permission methods are granted no-ops; saveToken/setEnabled persist
@@ -453,4 +454,73 @@ enum SmsCredentialStore {
     static var isWired: Bool { isSetupCompleted || lastRunAt != nil || token != nil }
     static var lastRunAt: String? { UserDefaults.standard.string(forKey: lastRunAtKey) }
     static var lastResult: String? { UserDefaults.standard.string(forKey: lastResultKey) }
+}
+
+/// Retries queued SMS while the app is closed. The Shortcut makes one 15 second attempt; without this a message that
+/// failed or was refused waited until the user next opened the app. iOS decides when the task runs (typically when the
+/// phone is idle on a network), so this is a safety net on top of the app-open drain, not a timer.
+enum SmsBackgroundDrain {
+    static let identifier = "app.buddget.sms-drain"
+    private static let earliestDelay: TimeInterval = 15 * 60
+
+    /// Must run before the app finishes launching (AppDelegate).
+    static func register() {
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: identifier, using: nil) { task in
+            guard let task = task as? BGProcessingTask else { task.setTaskCompleted(success: false); return }
+            handle(task)
+        }
+    }
+
+    /// Asks iOS for a drain slot while anything is still queued. Safe to call repeatedly.
+    static func scheduleIfPending() {
+        guard SmsCredentialStore.pendingCount > 0 else { return }
+        let request = BGProcessingTaskRequest(identifier: identifier)
+        request.requiresNetworkConnectivity = true
+        request.requiresExternalPower = false
+        request.earliestBeginDate = Date(timeIntervalSinceNow: earliestDelay)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
+    private static func handle(_ task: BGProcessingTask) {
+        let work = Task {
+            let finished = await drain()
+            scheduleIfPending() // anything still queued asks for the next slot
+            task.setTaskCompleted(success: finished)
+        }
+        task.expirationHandler = { work.cancel() }
+    }
+
+    /// Posts every queued SMS this account owns with the stored ingest token. An item leaves the queue only on a 2xx that is
+    /// not 202; the server de-duplicates by eventId, so a drain racing the app's own is harmless.
+    private static func drain() async -> Bool {
+        guard let token = SmsCredentialStore.token,
+              let userId = SmsCredentialStore.tokenUserId, !userId.isEmpty,
+              let base = SmsCredentialStore.apiUrl,
+              let url = URL(string: base + "/api/sms/parse") else { return false }
+        for item in SmsCredentialStore.peekPending() {
+            if Task.isCancelled { return false }
+            let owner = item["userId"] ?? ""
+            guard owner.isEmpty || owner == userId, let message = item["message"], let receivedAt = item["receivedAt"] else { continue }
+            var payload: [String: Any] = ["message": message, "sender": item["sender"] ?? "", "source": "sms", "receivedAt": receivedAt]
+            if let eventId = item["eventId"], !eventId.isEmpty { payload["eventId"] = eventId }
+            guard let body = try? JSONSerialization.data(withJSONObject: payload) else { continue }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            if let eventId = item["eventId"], !eventId.isEmpty { req.setValue(eventId, forHTTPHeaderField: "x-sms-event-id") }
+            req.timeoutInterval = 20
+            req.httpBody = body
+            guard let (_, response) = try? await URLSession.shared.data(for: req), let http = response as? HTTPURLResponse else { return false }
+            let code = http.statusCode
+            if (200..<300).contains(code) && code != 202 {
+                SmsCredentialStore.removePending([item])
+                SmsCredentialStore.recordRun(result: "delivered")
+            } else if code == 202 || code == 401 || code == 403 || code == 408 || code == 429 || code >= 500 {
+                return false // the rest would fail the same way; they stay queued
+            }
+            // any other 4xx belongs to this one message: it stays queued and the next one goes
+        }
+        return true
+    }
 }

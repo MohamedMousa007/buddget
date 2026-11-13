@@ -16,7 +16,7 @@ export interface SelfReport {
   /** The Auth session this heartbeat arrived on; removing the phone ends exactly that session. */
   sessionId?: string | null
   /** The on-device SMS queue: captured messages the server has not accepted yet. */
-  smsQueue?: { pending: number; oldestAt: string | null; lastResult: string | null }
+  smsQueue?: { pending: number; oldestAt: string | null; lastResult: string | null; evicted?: number }
 }
 
 const UNIQUE_VIOLATION = '23505'
@@ -89,7 +89,7 @@ export async function upsertSelf(service: ServiceClient, userId: string, deviceI
       ...(report.collectsSms !== undefined ? { collects_sms: report.collectsSms } : {}),
       ...(report.pushPermission !== undefined ? { push_permission: report.pushPermission } : {}),
       ...(report.sessionId ? { session_id: report.sessionId } : {}),
-      ...(report.smsQueue ? { sms_queue_pending: report.smsQueue.pending, sms_queue_oldest_at: report.smsQueue.oldestAt, sms_last_result: report.smsQueue.lastResult, sms_queue_reported_at: now } : {}),
+      ...(report.smsQueue ? { sms_queue_pending: report.smsQueue.pending, sms_queue_oldest_at: report.smsQueue.oldestAt, sms_last_result: report.smsQueue.lastResult, sms_queue_reported_at: now, ...(report.smsQueue.evicted !== undefined ? { sms_evicted_count: report.smsQueue.evicted } : {}) } : {}),
     }).eq('user_id', userId).eq('device_id', deviceId)
     const stale = main && Date.now() - Date.parse(main.last_seen_at) > STALE_MAIN_DAYS * 86_400_000
     if (!existing.is_main && stale && report.pushPermission !== 'denied') await promoteMain(service, userId, main.device_id, 'stale', deviceId)

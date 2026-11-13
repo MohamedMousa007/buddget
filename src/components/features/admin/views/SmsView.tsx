@@ -13,6 +13,7 @@ import { FAILURE_LABELS, METHOD } from '../smsDisplay'
 import { KeywordPoolPanel } from './sms/KeywordPoolPanel'
 import { SMS_TABS } from '@/lib/admin/smsTabs'
 import { CoveragePanel } from './sms/CoveragePanel'
+import { DeliveryWatchPanel } from './sms/DeliveryWatchPanel'
 import { PatternReviewPanel, PurgeBanner, REVIEW_PATH, type ReviewOverview } from './sms/PatternReviewPanel'
 import { PromotionPanel } from './sms/PromotionPanel'
 import { SmsLogPanel } from './sms/SmsLogPanel'
@@ -70,6 +71,7 @@ function HealthTab() {
       {push.data && !push.data.configured ? (
         <Notice tone="negative"><span className="flex items-start gap-2"><AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden /><span><strong>Push delivery is down.</strong> <code>FIREBASE_SERVICE_ACCOUNT_JSON</code> is not set in the deployed environment, so nobody is receiving SMS push notifications.</span></span></Notice>
       ) : null}
+      <DeliveryWatchPanel />
       <KpiGrid>
         <StatTile label="SMS received · 7d" value={num(h.total)} sub={`${num(h.users)} users`} />
         <StatTile label="Import rate" value={pct(h.parsed, h.total)} tone={h.total && h.parsed / h.total >= 0.9 ? 'positive' : 'default'} sub={`${num(h.parsed)} imported`} />
