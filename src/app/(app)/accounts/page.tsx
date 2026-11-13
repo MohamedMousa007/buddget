@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { PageContainer } from '@/components/layout/PageContainer'
 import { AccountsHero } from '@/components/features/accounts/AccountsHero'
 import { AccountRow } from '@/components/features/accounts/AccountRow'
+import { sharesProvider } from '@/components/features/accounts/accountDisplay'
 import { AccountDetailSheet } from '@/components/features/accounts/AccountDetailSheet'
 import { AddAccountSheet } from '@/components/features/accounts/AddAccountSheet'
 import { BrandMark } from '@/components/features/accounts/BrandMark'
@@ -87,7 +88,7 @@ export default function AccountsPage() {
   const base = String(settings.baseCurrency)
 
   const renderRow = (a: (typeof model.accounts)[number]) => (
-    <AccountRow key={a.method.id} account={a} masked={listMasked} gap={gaps[a.method.id]?.amount}
+    <AccountRow key={a.method.id} account={a} shared={sharesProvider(a.method, model.accounts.map((x) => x.method))} masked={listMasked} gap={gaps[a.method.id]?.amount}
       onOpen={() => setSheet(a.balance ? { kind: 'detail', id: a.method.id } : { kind: 'update', id: a.method.id })}
       onFix={() => setSheet({ kind: 'fix', id: a.method.id })}
       onAddCard={() => setSheet({ kind: 'card', id: a.method.id })} />

@@ -51,9 +51,12 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
   const card = cards[active]
   const fmt = (n: number) => (masked ? MASK : splitMoney(n, cur).int + splitMoney(n, cur).dec)
 
-  const activity = useMemo(() => {
-    const mine = expenses.filter((e) => (card ? e.paymentMethodId === card.id : resolveAccountId(e.paymentMethodId, methods) === method.id) && !e.refundedAt)
-    return mine.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date)).slice(0, 5)
+  // Bank messages attribute to a card only by its last four digits, so a card without digits owns nothing: fall back to the account's recent activity instead of an empty list.
+  const { activity, cardOwns } = useMemo(() => {
+    const live = expenses.filter((e) => !e.refundedAt)
+    const own = card ? live.filter((e) => e.paymentMethodId === card.id) : []
+    const mine = own.length > 0 ? own : live.filter((e) => resolveAccountId(e.paymentMethodId, methods) === method.id)
+    return { activity: mine.sort((a, b) => instantOf(b.occurredAt, b.date) - instantOf(a.occurredAt, a.date)).slice(0, 5), cardOwns: own.length > 0 }
   }, [expenses, methods, card, method.id])
 
   const isCash = method.type === 'cash'
@@ -72,7 +75,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
 
   const heldPct = balance && balance.balance > 0 ? Math.min(100, (balance.held / balance.balance) * 100) : 0
   return (
-    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
+    <ModalShell open={open} onBackdropClick={onClose} scrollChild panelClassName={canBeParent(method.type) ? 'h-[min(88dvh,760px)]' : ''}>
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
           <V3SheetHeader.Title>{accountTitle(method)}</V3SheetHeader.Title>
@@ -123,7 +126,7 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={onUpdate}><RefreshCw aria-hidden />{t.update}</Button>
           </div>
           <div>
-            <p className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{card ? t.spentWith(accountTitle(card)) : t.recent}</p>
+            <p className="mb-1 px-5 text-[0.8125rem] font-bold text-[var(--color-brand-text-secondary)]">{card && cardOwns ? t.spentWith(accountTitle(card)) : t.recent}</p>
             {activity.length === 0 ? (
               <p className="px-5 py-3 text-sm text-[var(--color-brand-text-muted)]">{t.noActivity}</p>
             ) : activity.map((e) => (

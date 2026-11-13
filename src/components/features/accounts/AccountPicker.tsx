@@ -6,7 +6,7 @@ import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { BrandMark } from './BrandMark'
-import { accountColor, accountTitle, splitMoney } from './accountDisplay'
+import { accountColor, accountSubtitle, accountTitle, sharesProvider, splitMoney } from './accountDisplay'
 
 interface AccountPickerProps {
   accounts: AccountView[]
@@ -22,7 +22,9 @@ export function AccountPicker({ accounts, value, onChange, label }: AccountPicke
   const [open, setOpen] = useState(false)
   const current = accounts.find((a) => a.method.id === value) ?? accounts[0]
   if (!current) return null
-  const freeText = (a: AccountView) => (a.balance ? t.freeLabel(splitMoney(a.balance.free, String(a.method.currency)).int) : t.setBalance)
+  const methods = accounts.map((a) => a.method)
+  const freeText = (a: AccountView) => (a.balance ? t.freeLabel(`${splitMoney(a.balance.free, String(a.method.currency)).int} ${String(a.method.currency)}`) : t.setBalance)
+  const subtitle = (a: AccountView) => accountSubtitle(a.method, sharesProvider(a.method, methods)) ?? String(a.method.currency)
   return (
     <div>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-raw-button-ok="the collapsed row of an inline picker"
@@ -44,7 +46,7 @@ export function AccountPicker({ accounts, value, onChange, label }: AccountPicke
               <BrandMark name={accountTitle(a.method)} color={accountColor(a.method)} size={32} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{accountTitle(a.method)}</span>
-                {a.method.last4 ? <span className="block text-xs text-[var(--color-brand-text-muted)]">•• {a.method.last4}</span> : null}
+                <span dir="ltr" className="block truncate text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{subtitle(a)}</span>
               </span>
               <span className="font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{freeText(a)}</span>
               {a.method.id === current.method.id ? <Check className="size-4 text-[var(--color-brand-primary-ink)]" aria-hidden /> : null}

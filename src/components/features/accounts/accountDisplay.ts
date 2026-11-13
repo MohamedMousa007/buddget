@@ -24,6 +24,12 @@ export function cardNetwork(m: PaymentMethod): string {
   return decomposePaymentMethodName(m.name, m.last4).provider.slice(0, 10).toUpperCase()
 }
 
+/** The card network when the name states one, else null (never the bank's own name). */
+export function cardNetworkIfKnown(m: PaymentMethod): string | null {
+  for (const [re, label] of NETWORKS) if (re.test(m.name)) return label
+  return null
+}
+
 export function cardTypeLabel(m: PaymentMethod): string {
   return m.type === 'credit_card' ? 'Credit' : m.type === 'prepaid_card' ? 'Prepaid' : m.type === 'debit_card' ? 'Debit' : PAYMENT_TYPE_META[m.type].label
 }
@@ -50,4 +56,21 @@ export function accountIdentifier(m: Pick<PaymentMethod, 'label' | 'last4'>): st
   const label = m.label?.trim()
   if (label) return label
   return m.last4 ? `\u2022\u2022 ${m.last4}` : null
+}
+
+/** True when another open account shares this one's provider ("HSBC" USD and "HSBC" EGP): the row then has to say which. */
+export function sharesProvider(m: PaymentMethod, all: readonly PaymentMethod[]): boolean {
+  const title = accountTitle(m).toLowerCase()
+  return all.some((o) => o.id !== m.id && !o.parentId && accountTitle(o).toLowerCase() === title)
+}
+
+/**
+ * The line under an account's name. Currency leads when the provider is shared ("USD · •• 1234"), and the last
+ * four digits stay beside a custom label so the two lines can never describe the same text twice.
+ */
+export function accountSubtitle(m: Pick<PaymentMethod, 'label' | 'last4' | 'currency'>, shared: boolean): string | null {
+  if (!shared) return accountIdentifier(m)
+  const label = m.label?.trim()
+  const digits = m.last4 ? `\u2022\u2022 ${m.last4}` : null
+  return [String(m.currency), label, digits].filter(Boolean).join(' \u00b7 ')
 }

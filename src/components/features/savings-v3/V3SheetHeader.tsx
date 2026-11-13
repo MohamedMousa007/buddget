@@ -15,12 +15,12 @@ function Title({ children, size = 'default' }: { children: ReactNode; size?: 'de
   const id = useModalTitleId()
   if (size === 'compact') {
     return (
-      <h2 id={id} dir="auto" title={typeof children === 'string' ? children : undefined} className="line-clamp-2 break-words text-[20px] font-bold leading-snug text-[var(--color-brand-text-primary)]">
+      <h2 id={id} dir="auto" title={typeof children === 'string' ? children : undefined} className="line-clamp-2 break-words text-lg font-bold leading-snug text-[var(--color-brand-text-primary)]">
         {children}
       </h2>
     )
   }
-  return <h2 id={id} className="break-words text-[22px] font-bold text-[var(--color-brand-text-primary)]">{children}</h2>
+  return <h2 id={id} className="break-words text-lg font-bold leading-snug text-[var(--color-brand-text-primary)]">{children}</h2>
 }
 
 /**
@@ -30,14 +30,14 @@ function Title({ children, size = 'default' }: { children: ReactNode; size?: 'de
  */
 function DialogTitle({ children, align = 'center' }: { children: ReactNode; align?: 'center' | 'start' }) {
   return (
-    <h2 id={useModalTitleId()} className={cn('break-words text-[22px] font-bold leading-tight text-[var(--color-brand-text-primary)]', align === 'center' && 'text-center')}>
+    <h2 id={useModalTitleId()} className={cn('break-words text-lg font-bold leading-snug text-[var(--color-brand-text-primary)]', align === 'center' && 'text-center')}>
       {children}
     </h2>
   )
 }
 
 function Subtitle({ children }: { children: ReactNode }) {
-  return <p className="mt-0.5 text-sm text-[var(--color-brand-text-secondary)]">{children}</p>
+  return <p className="mt-0.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{children}</p>
 }
 
 /** Slot rendered next to the close button (e.g. a "Today" date chip). */
@@ -75,18 +75,20 @@ function Header({ onClose, children, leading, flush }: { onClose: () => void; ch
   const rest = kids.filter((c) => c !== extra)
 
   return (
-    <div className={cn('flex justify-between gap-3 pb-2', hasSubtitle ? 'items-start' : 'items-center', !flush && 'px-5 pt-4', hasSubtitle && !flush && 'pb-1')}>
+    <div className={cn('flex justify-between gap-3 pb-2', hasSubtitle ? 'items-start' : 'items-center', !flush && 'px-5 pt-3', hasSubtitle && !flush && 'pb-1')}>
       {leading}
       <div className="min-w-0 flex-1">{rest}</div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-3">
         {extra}
         <IconButton
           onClick={onClose}
           aria-label={t.common.close}
           variant="tinted"
+          size="sm"
+          shape="round"
           className="shrink-0"
         >
-          <X size={18} />
+          <X size={16} />
         </IconButton>
       </div>
     </div>

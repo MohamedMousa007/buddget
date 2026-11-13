@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, GitCompare, Hammer, Pencil, Plus, Star, Trash2 } from 'lucide-react'
+import { Copy, GitCompare, Hammer, Pencil, Plus, Sparkles, Star, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { type CardMenuItem } from '@/components/ui/CardActionMenu'
@@ -35,6 +35,16 @@ export interface PlanDeckProps {
   onNew: () => void
   /** Resume the builder for a draft plan. */
   onContinue: (id: string) => void
+  /** Adds "Ask Buddgy" to the action row (before Delete) so the row is never short of an item. */
+  onAdjust?: () => void
+  adjustLabel?: string
+}
+
+/** The selected budget's actions in one row; Delete stays last, the Buddgy action sits just before it. */
+function actionRow(items: CardMenuItem[], onAdjust?: () => void, label?: string): Array<CardMenuItem & { brand?: boolean }> {
+  if (!onAdjust || !label) return items
+  const last = items[items.length - 1]
+  return [...items.slice(0, -1), { label, icon: <Sparkles className="size-5" />, onSelect: onAdjust, brand: true }, last]
 }
 
 type PlanActions = Pick<PlanDeckProps, 'plans' | 'onDuplicate' | 'onDelete' | 'onCompare'>
@@ -151,13 +161,13 @@ export function PlanDeck(p: PlanDeckProps) {
               {isActive ? c.active : c.setActive}
             </Button>
           )}
-          <div className="grid grid-cols-4 gap-2">
-            {planActionItems(selected.id, p, copy, () => setRenaming(selected.id)).map((it) => (
-              <div key={it.label} className="flex flex-col items-center gap-1.5">
-                <IconButton variant={it.destructive ? 'danger' : 'outlined'} size="lg" aria-label={it.label} onClick={it.onSelect}>
+          <div className="flex gap-1">
+            {actionRow(planActionItems(selected.id, p, copy, () => setRenaming(selected.id)), p.onAdjust, p.adjustLabel).map((it) => (
+              <div key={it.label} className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+                <IconButton variant={it.destructive ? 'danger' : it.brand ? 'brand' : 'outlined'} size="lg" aria-label={it.label} onClick={it.onSelect}>
                   {it.icon}
                 </IconButton>
-                <span className="text-[0.71875rem] font-medium text-[var(--color-brand-text-secondary)]">{it.label}</span>
+                <span className="w-full truncate text-center text-xs font-medium text-[var(--color-brand-text-secondary)]">{it.label}</span>
               </div>
             ))}
           </div>

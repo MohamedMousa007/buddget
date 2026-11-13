@@ -147,11 +147,12 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             </>
           ) : null}
           {user ? (
+            <div className="flex items-center pe-3">
             <Link
               href="/settings/profile"
               onClick={delayedClose}
               role="menuitem"
-              className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
+              className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
             >
               <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)]">
                 {avatarSrc ? (
@@ -169,6 +170,19 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
                 {displayEmail ? <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{displayEmail}</span> : null}
               </span>
             </Link>
+            <Link
+              href="/notifications"
+              onClick={delayedClose}
+              role="menuitem"
+              aria-label={pendingCount > 0 ? `${t.notifications.title}, ${t.notifications.needsYouCount(pendingCount)}` : t.notifications.title}
+              className="relative flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--color-brand-text-secondary)] transition-colors hover:bg-[var(--color-brand-elevated)]"
+            >
+              <Bell className="size-5" />
+              {pendingCount > 0 ? (
+                <Badge tone="warn" size="xs" className="absolute -end-0.5 -top-0.5">{pendingCount}</Badge>
+              ) : null}
+            </Link>
+            </div>
           ) : (
             <button
               type="button"
@@ -199,13 +213,6 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             <span className={localeInlineLabelClass(locale)}>{t.paymentMethods.title}</span>
           </button>
           {link('/reports', BarChart3, t.nav.reports)}
-          <Link href="/notifications" onClick={delayedClose} className={itemClass} role="menuitem">
-            <Bell className="size-[18px] shrink-0" />
-            <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.notifications.title}</span>
-            {pendingCount > 0 ? (
-              <Badge tone="warn" size="xs" aria-label={t.notifications.needsYouCount(pendingCount)}>{pendingCount}</Badge>
-            ) : null}
-          </Link>
           <Divider />
 
           {link('/settings', Settings, copy.menu.openSettings)}

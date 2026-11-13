@@ -4,7 +4,7 @@ import { useT } from '@/lib/i18n'
 import { BrandMark } from './BrandMark'
 import { CardStrip } from './CardStrip'
 import { Badge } from '@/components/ui/badge'
-import { accountColor, accountIdentifier, accountTitle, splitMoney } from './accountDisplay'
+import { accountColor, accountSubtitle, accountTitle, splitMoney } from './accountDisplay'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { createElement } from 'react'
 
@@ -13,13 +13,15 @@ interface AccountRowProps {
   masked: boolean
   /** Negative = money the ledger cannot explain; turns the row into an exception. */
   gap?: number
+  /** Another account has the same provider: the currency moves into the subtitle where it can be read. */
+  shared?: boolean
   onOpen: () => void
   onFix?: () => void
   onAddCard: () => void
 }
 
 /** One account: mark, name, balance and its cards. Only exceptions get colour. */
-export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: AccountRowProps) {
+export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix, onAddCard }: AccountRowProps) {
   const dict = useT()
   const t = dict.accountsPage
   const { method, balance, cards } = account
@@ -31,7 +33,7 @@ export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: A
     : hasGap
     ? t.missingFindIt(splitMoney(Math.abs(gap), cur).int)
     : balance
-      ? accountIdentifier(method) ?? (method.type === 'wallet' ? t.typeWallet : '')
+      ? accountSubtitle(method, shared) ?? (method.type === 'wallet' ? t.typeWallet : '')
       : t.addBalanceToInclude
   const isCash = method.type === 'cash'
   return (
@@ -43,7 +45,7 @@ export function AccountRow({ account, masked, gap, onOpen, onFix, onAddCard }: A
         <span className="min-w-0 flex-1">
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
-            <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>
+            {shared ? null : <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>}
           </span>
           <span className={`mt-0.5 block truncate text-[0.8125rem] ${hasGap ? 'font-semibold text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>{sub}</span>
         </span>

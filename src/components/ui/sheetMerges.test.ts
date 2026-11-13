@@ -9,7 +9,7 @@ describe('merged sheet header', () => {
     const html = renderToStaticMarkup(
       createElement(V3SheetHeader, { onClose: () => {} } as never, createElement(V3SheetHeader.Title, null, 'Hi')),
     )
-    expect(html).toContain('text-[22px]')
+    expect(html).toContain('text-lg')
     expect(html).toContain('aria-label="Close"')
   })
   it('title shorthand renders the v3 look flush, with subtitle and leading slots', () => {
@@ -17,7 +17,7 @@ describe('merged sheet header', () => {
       createElement(V3SheetHeader, { title: 'T', subtitle: 'Sub', leading: createElement('i', { id: 'lead' }), onClose: () => {} }),
     )
     expect(html).toContain('<h2')
-    expect(html).toContain('text-[22px]')
+    expect(html).toContain('text-lg')
     expect(html).toContain('Sub')
     expect(html).toContain('id="lead"')
     expect(html).not.toContain('px-5')
@@ -42,21 +42,21 @@ describe('SettingsSwitchRow tag', () => {
 })
 
 describe('compact sheet title (SheetFrame sheets)', () => {
-  it('is 20px, clamps to two lines, follows the text direction and keeps the full name', () => {
+  it('is 18px, clamps to two lines, follows the text direction and keeps the full name', () => {
     const html = renderToStaticMarkup(
       createElement(V3SheetHeader, { onClose: () => {} } as never, createElement(V3SheetHeader.Title, { size: 'compact' } as never, 'Amazon Prime Video Channels')),
     )
-    expect(html).toContain('text-[20px]')
+    expect(html).toContain('text-lg')
     expect(html).toContain('line-clamp-2')
     expect(html).toContain('dir="auto"')
     expect(html).toContain('title="Amazon Prime Video Channels"')
     expect(html).not.toContain('text-[22px]')
   })
-  it('the default title stays 22px with no clamp', () => {
+  it('the default title is 18px with no clamp', () => {
     const html = renderToStaticMarkup(
       createElement(V3SheetHeader, { onClose: () => {} } as never, createElement(V3SheetHeader.Title, null, 'Hi')),
     )
-    expect(html).toContain('text-[22px]')
+    expect(html).toContain('text-lg')
     expect(html).not.toContain('line-clamp-2')
   })
   it('the compound form renders a leading control before the title', () => {
@@ -69,10 +69,10 @@ describe('compact sheet title (SheetFrame sheets)', () => {
 })
 
 describe('dialog title (decision dialogs)', () => {
-  it('is centred 22px with no close button', () => {
+  it('is centred 18px with no close button', () => {
     const html = renderToStaticMarkup(createElement(V3SheetHeader.DialogTitle, null, 'Change base currency?'))
     expect(html).toContain('<h2')
-    expect(html).toContain('text-[22px]')
+    expect(html).toContain('text-lg')
     expect(html).toContain('text-center')
     expect(html).not.toContain('aria-label="Close"')
   })

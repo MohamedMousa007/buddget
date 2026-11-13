@@ -4,12 +4,12 @@ import { intlTag } from '@/lib/i18n/dateFormat'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageBody } from '@/components/layout/PageContainer'
-import { Button } from '@/components/ui/button'
+import { IconButton } from '@/components/ui/IconButton'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { usePlanActions } from '@/hooks/usePlanActions'
-import { History, Sparkles } from 'lucide-react'
+import { History } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
 import { fallbackPlanId, selectActivePlan } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
@@ -292,9 +292,19 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         }}
       />
       <ModalShell open={switcherOpen} onBackdropClick={() => setSwitcherOpen(false)} padContent>
-        <V3SheetHeader title={deckCopy.deck.title} onClose={() => setSwitcherOpen(false)} />
+        <V3SheetHeader
+          title={deckCopy.deck.title}
+          onClose={() => setSwitcherOpen(false)}
+          extra={
+            <IconButton variant="tinted" size="sm" shape="round" aria-label={deckCopy.deck.history} onClick={() => { setSwitcherOpen(false); navigate('/budget-history') }}>
+              <History />
+            </IconButton>
+          }
+        />
         <PlanDeck
           {...deckActions}
+          onAdjust={() => { setSwitcherOpen(false); setAdjusting(true) }}
+          adjustLabel={studioCopy.review.adjust}
           activeId={activeId}
           selectedId={selectedPlanId ?? view.plan.id}
           summaries={summaries}
@@ -321,16 +331,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
             openBuilder(id)
           }}
         />
-        <div className="flex flex-col pb-4">
-          <Button variant="ghost" size="touch" className="justify-start" onClick={() => { setSwitcherOpen(false); setAdjusting(true) }}>
-            <Sparkles aria-hidden />
-            {studioCopy.adjust.title}
-          </Button>
-          <Button variant="ghost" size="touch" className="justify-start" onClick={() => { setSwitcherOpen(false); navigate('/budget-history') }}>
-            <History aria-hidden />
-            {deckCopy.deck.history}
-          </Button>
-        </div>
       </ModalShell>
     </PageBody>
   )
