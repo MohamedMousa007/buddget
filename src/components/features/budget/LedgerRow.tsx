@@ -101,19 +101,21 @@ export interface LedgerRowProps {
   review?: boolean
   /** Replaces the status line (building by hand: "Empty · tap to add", "Skipped"). */
   statusOverride?: string
+  /** The shared review selector says this segment still needs a check; overrides the row's own guess. */
+  flagged?: boolean
   /** A small badge after the name, e.g. "Start here". */
   tag?: string
   onOpen: () => void
 }
 
 /** One of the seven segment rows: tile, name, status in words, and the figure that matters. No bars, no dots. */
-export function LedgerRow({ view, block, today, review = false, statusOverride, tag, onOpen }: LedgerRowProps) {
+export function LedgerRow({ view, block, today, review = false, statusOverride, flagged: flaggedProp, tag, onOpen }: LedgerRowProps) {
   const copy = useOverviewCopy()
   const blocks = useBudgetBlocksCopy()
   const { locale } = useLocale()
   const meta = BLOCK_META[block]
   const t = ledgerRowText(view, block, today, copy, (k) => monthKeyLabel(k, locale), review)
-  const flagged = review && t.tone === 'warn'
+  const flagged = flaggedProp ?? (review && t.tone === 'warn')
   return (
     <li>
       <button
@@ -131,14 +133,14 @@ export function LedgerRow({ view, block, today, review = false, statusOverride, 
             <span className="truncate text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{blocks.blockName[block]}</span>
             {tag ? <Badge tone="brand" size="sm" className="shrink-0">{tag}</Badge> : null}
           </span>
-          <span className="flex min-w-0 items-center gap-1 text-xs font-medium leading-snug" style={{ color: TONE[t.tone] }}>
-            {flagged && !statusOverride ? <Flag className="size-3 shrink-0" aria-hidden /> : null}
-            <span className="truncate">{statusOverride ?? t.status}</span>
+          <span className="flex min-w-0 items-center gap-1 text-xs font-medium leading-snug" style={{ color: TONE[flaggedProp === undefined ? t.tone : flagged ? 'warn' : 'mut'] }}>
+            {flagged ? <Flag className="size-3 shrink-0" aria-hidden /> : null}
+            <span dir="auto" className="line-clamp-2">{statusOverride ?? t.status}</span>
           </span>
         </span>
         <span className="flex shrink-0 flex-col items-end text-end">
-          {t.amount ? <span className="font-mono-numbers text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{t.amount}</span> : null}
-          {t.sub ? <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.sub}</span> : null}
+          {t.amount ? <span dir="auto" className="font-mono-numbers text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{t.amount}</span> : null}
+          {t.sub ? <span dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.sub}</span> : null}
         </span>
         <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-muted)]" aria-hidden />
       </button>

@@ -21,8 +21,7 @@ export interface PlanBarProps {
 export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expanded }: PlanBarProps) {
   const c = useBudgetChromeCopy().planBar
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2">
         <SelectableCard
           as="action"
           layout="row"
@@ -30,7 +29,7 @@ export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expa
           onClick={onOpenPlans}
           aria-label={`${c.switchPlan}: ${planName}`}
           aria-expanded={expanded}
-          className="h-14 min-w-0 flex-1 gap-3 px-3 py-0"
+          className="h-14 min-w-0 flex-1 gap-2.5 px-3 py-0"
         >
           <span className={`size-2.5 shrink-0 rounded-full ${state === 'active' ? 'bg-[var(--color-brand-primary-bright)]' : 'bg-[var(--color-brand-text-muted)]'}`} aria-hidden />
           <span className="flex min-w-0 flex-1 flex-col">
@@ -39,8 +38,8 @@ export function PlanBar({ planName, state, mode, onModeChange, onOpenPlans, expa
           </span>
           <ChevronDown className={`size-4 shrink-0 text-[var(--color-brand-text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`} aria-hidden />
         </SelectableCard>
-      </div>
       <SegmentedControl
+        fill={false}
         ariaLabel={c.modeLabel}
         value={mode}
         onChange={onModeChange}

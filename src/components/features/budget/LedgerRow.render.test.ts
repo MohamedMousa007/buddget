@@ -37,7 +37,7 @@ describe('ledgerRowText: month', () => {
   ])
   it('bills: progress in words with the next due day, left and planned on the right', () => {
     const t = ledgerRowText(v, 'bills', 10, en, month)
-    expect(t.status).toBe('1 of 2 done · next on the 20th')
+    expect(t.status).toBe('1 of 2 done · next 20th')
     expect(t.amount).toContain('left')
     expect(t.sub).toMatch(/^of /)
   })
@@ -82,5 +82,13 @@ describe('LedgerRow', () => {
     expect(plain).not.toContain('lucide-flag')
     const review = renderToStaticMarkup(h(LedgerRow, { view: v, block: 'debts', today: 10, review: true, onOpen: () => {} }))
     expect(review).toContain('lucide-flag')
+  })
+  it('the shared selector decides the flag: an empty segment can be flagged, an estimated one can be cleared', () => {
+    const empty = view([], { mode: 'plan' })
+    const flaggedEmpty = renderToStaticMarkup(h(LedgerRow, { view: empty, block: 'debts', today: 10, review: true, flagged: true, statusOverride: 'Empty', onOpen: () => {} }))
+    expect(flaggedEmpty).toContain('lucide-flag')
+    const est = view([line('debts', 'Visa', 2100, 0, {}, 'estimated')], { mode: 'plan' })
+    const cleared = renderToStaticMarkup(h(LedgerRow, { view: est, block: 'debts', today: 10, review: true, flagged: false, onOpen: () => {} }))
+    expect(cleared).not.toContain('lucide-flag')
   })
 })

@@ -86,15 +86,15 @@ export function MonthHero({ view }: { view: PlanView }) {
           </span>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-0.5 text-end">
-          <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.perDay(money(pace.perDay))}</span>
-          <span className="text-xs text-[var(--color-brand-text-secondary)]">{c.daysLeft(pace.daysLeft)}</span>
-        </div>
-      </div>
-      <PaceBar fill={(pace.spent / pace.planned) * 100} tick={tick} color={PACE_FILL[pace.state]} label={c.paceLabel} />
-      <Badge tone={pace.state === 'ok' ? 'positive' : pace.state === 'ahead' ? 'warn' : 'negative'} size="md" className="self-start">
+          <span dir="auto" className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.perDay(money(pace.perDay))}</span>
+          <span dir="auto" className="text-xs text-[var(--color-brand-text-secondary)]">{c.daysLeft(pace.daysLeft)}</span>
+          <Badge tone={pace.state === 'ok' ? 'positive' : pace.state === 'ahead' ? 'warn' : 'negative'} size="md" className="mt-1">
         <Icon aria-hidden />
         {c.pace[pace.state]}
       </Badge>
+        </div>
+      </div>
+      <PaceBar fill={(pace.spent / pace.planned) * 100} tick={tick} color={PACE_FILL[pace.state]} label={c.paceLabel} />
       <div className="grid grid-cols-3 gap-3">
         <Stat label={c.topCategory}>{top ? catLabel(top.name) : c.nothing}</Stat>
         <Stat label={c.overBudget} color={over > 0 ? 'var(--color-brand-amber)' : undefined}>

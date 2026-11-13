@@ -235,12 +235,15 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
         review={!build}
         onOpen={setSegment}
         rowExtras={
-          build
+          !build
             ? (blk) => ({
+                flagged: flagged.includes(blk),
+                statusOverride: flagged.includes(blk) && view.blocks[blk].lines.length === 0 ? t.build.emptyRow : undefined,
+              })
+            : (blk) => ({
                 tag: firstEmpty === blk ? t.build.startHere : undefined,
                 statusOverride: view.blocks[blk].lines.length === 0 ? (skipped.has(blk) ? t.build.skipped : t.build.emptyRow) : undefined,
               })
-            : undefined
         }
       />
 

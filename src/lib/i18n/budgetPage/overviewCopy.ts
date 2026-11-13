@@ -89,7 +89,7 @@ export const budgetOverviewCopyEn: BudgetOverviewCopy = {
     empty: 'Nothing planned',
     allPaid: (n) => `All ${n} paid`,
     progress: (d, t) => `${d} of ${t} done`,
-    next: (d) => `next on the ${ordinal(d)}`,
+    next: (d) => `next ${ordinal(d)}`,
     overLine: (name, a) => `${name} ${a} over`,
     ahead: 'ahead',
     moves: (d) => `Moves on the ${ordinal(d)}`,

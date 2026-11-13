@@ -225,7 +225,7 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
       {segment ? (
         <SegmentPage view={view} block={segment} onBack={() => setSegment(null)} onSelect={setSegment} onOpenLine={setLineId} onAdd={setAddBlock} />
       ) : (
-        <div className="flex flex-col gap-4">{hero}</div>
+        <div className="flex flex-col gap-3">{hero}</div>
       )}
 
       <LineSheet

@@ -36,6 +36,7 @@ export interface BudgetSegmentCopy {
     looksRight: string
     checked: string
     estimatedNote: string
+    emptyNote: string
     reopen: string
     checkFlagged: (n: number) => string
     activate: string
@@ -99,6 +100,7 @@ export const budgetSegmentCopyEn: BudgetSegmentCopy = {
     looksRight: 'Looks right',
     checked: 'Checked',
     estimatedNote: 'Some amounts here are estimates. Check them, then confirm.',
+    emptyNote: 'Nothing is planned here. Add a line, or confirm it stays empty.',
     reopen: 'Check again',
     checkFlagged: (n) => `Check ${n} flagged`,
     activate: 'Activate plan',
@@ -166,6 +168,7 @@ export const budgetSegmentCopyAr: BudgetSegmentCopy = {
     looksRight: 'يبدو صحيحًا',
     checked: 'تمت المراجعة',
     estimatedNote: 'بعض المبالغ هنا تقديرية. راجعها ثم أكّد.',
+    emptyNote: 'لا شيء مخطط هنا. أضف بندًا، أو أكّد أن القسم يبقى فارغًا.',
     reopen: 'راجع مجددًا',
     checkFlagged: (n) => (n === 1 ? 'راجع قسمًا واحدًا' : n === 2 ? 'راجع قسمين' : `راجع ${n} أقسام`),
     activate: 'فعّل الخطة',

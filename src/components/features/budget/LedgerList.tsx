@@ -11,7 +11,7 @@ export interface LedgerListProps {
   review?: boolean
   onOpen: (block: BudgetBlock) => void
   /** Per-row extras for the builder: a status override and a tag. */
-  rowExtras?: (block: BudgetBlock) => Pick<LedgerRowProps, 'statusOverride' | 'tag'>
+  rowExtras?: (block: BudgetBlock) => Pick<LedgerRowProps, 'statusOverride' | 'tag' | 'flagged'>
 }
 
 /** The seven segments as one list: the Budget page's whole overview below the hero. */
