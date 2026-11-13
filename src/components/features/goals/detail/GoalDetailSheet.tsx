@@ -2,7 +2,7 @@
 
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMemo, useState } from 'react'
-import { MoreHorizontal, Pause, Pencil, Play, Trash2, Trophy, X } from 'lucide-react'
+import { MoreHorizontal, Pause, Pencil, Play, Trash2, Trophy } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { goalCategoryLabelKey } from '@/components/features/goals/goalCategoryLabel'
 import { CheckpointBar, type CheckpointTone } from '@/components/features/goals/CheckpointBar'
@@ -27,7 +27,7 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { navigate } from '@/lib/navigation/navigate'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Badge } from '@/components/ui/badge'
 
 const CHIP: Record<string, { dot: string }> = {
@@ -141,36 +141,34 @@ export function GoalDetailSheet({ row, onClose, onAddMoney }: { row: GoalRow; on
         panelClassName="h-[calc(100dvh-40px)] max-h-[calc(100dvh-40px)] md:h-[min(46rem,calc(100dvh-4rem))] md:max-h-[calc(100dvh-4rem)] md:w-[min(28rem,calc(100vw-2rem))] md:rounded-3xl"
       >
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex min-h-12 shrink-0 items-center gap-1 ps-5 pe-3">
-            <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--color-brand-text-secondary)]">
-              {kindLabel} · {t.goals[goalCategoryLabelKey(goal.category)] as string}
-            </span>
-            <IconButton aria-label={d.more} aria-haspopup="menu" aria-expanded={menu !== null} onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
-              <MoreHorizontal />
-            </IconButton>
-            <IconButton aria-label={t.common.close} onClick={onClose}>
-              <X />
-            </IconButton>
-          </div>
-
-          <div className="native-scroll flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-5 pb-4 pt-1 md:px-6 [&>*]:shrink-0">
-            <div className="flex items-center gap-3">
+          <V3SheetHeader
+            onClose={onClose}
+            leading={
               <span
-                className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl"
+                className="flex size-11 shrink-0 items-center justify-center rounded-2xl"
                 style={{ color: `var(--color-cat-${cat})`, background: `color-mix(in srgb, var(--color-cat-${cat}) 16%, var(--color-brand-card))` }}
                 aria-hidden
               >
-                <Icon className="size-6" />
+                <Icon className="size-5" />
               </span>
-              <div className="min-w-0">
-                <ModalTitle className="truncate text-[22px] font-bold text-[var(--color-brand-text-primary)]">{goal.name}</ModalTitle>
-                <Badge tone="ink" size="sm" bordered={false} className="mt-1 gap-1.5 font-semibold">
-                  <span className="size-1.5 rounded-full" style={{ background: CHIP[chipTone].dot }} aria-hidden />
-                  {d[chipKind as 'chipOnTrack']}
-                </Badge>
-              </div>
-            </div>
+            }
+          >
+            <V3SheetHeader.Title size="compact">{goal.name}</V3SheetHeader.Title>
+            <V3SheetHeader.Subtitle>
+              <span className="mb-1 block text-xs font-semibold">{kindLabel} · {t.goals[goalCategoryLabelKey(goal.category)] as string}</span>
+              <Badge tone="ink" size="sm" bordered={false} className="gap-1.5 font-semibold">
+                <span className="size-1.5 rounded-full" style={{ background: CHIP[chipTone].dot }} aria-hidden />
+                {d[chipKind as 'chipOnTrack']}
+              </Badge>
+            </V3SheetHeader.Subtitle>
+            <V3SheetHeader.Extra>
+              <IconButton aria-label={d.more} aria-haspopup="menu" aria-expanded={menu !== null} onClick={(e) => setMenu(e.currentTarget.getBoundingClientRect())}>
+                <MoreHorizontal />
+              </IconButton>
+            </V3SheetHeader.Extra>
+          </V3SheetHeader>
 
+          <div className="native-scroll flex min-h-0 flex-1 flex-col gap-[22px] overflow-y-auto px-5 pb-4 pt-1 md:px-6 [&>*]:shrink-0">
             <div className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between gap-3 font-mono-numbers">
                 <p className="flex flex-wrap items-baseline gap-x-2">

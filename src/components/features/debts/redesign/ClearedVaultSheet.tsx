@@ -7,7 +7,7 @@ import { ModalShell } from '@/components/modals/ModalShell'
 import type { ClearedVM } from '@/hooks/useDebtTabData'
 import type { DebtFamily } from '@/lib/debts/debtFamily'
 import { fmtWhole, soft } from './heroCardShared'
-import { ModalHeading } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { IconButton } from '@/components/ui/IconButton'
 import { Button } from '@/components/ui/button'
 import { useT } from '@/lib/i18n'
@@ -39,23 +39,23 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
 
   return (
     <ModalShell open={open} onBackdropClick={onClose} panelClassName="bg-[var(--color-brand-card)]" scrollChild>
-      <div className="flex items-start gap-3 px-5 pt-5">
-        <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[var(--color-brand-green)]"
-          style={{ background: soft(GREEN, 16) }}
-        >
-          <Award className="h-6 w-6" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <ModalHeading className="text-2xl font-bold text-[var(--color-brand-text-primary)]">{t.vaultTitle}</ModalHeading>
-          <p className="mt-0.5 font-mono-numbers text-sm text-[var(--color-brand-text-muted)]">
-            {t.vaultSummary(cleared.length, fmtWhole(sum), base)}
-          </p>
-        </div>
-        <IconButton onClick={onClose} aria-label={t.closeLabel} variant="tinted" size="sm" shape="round">
-          <X className="h-4 w-4" />
-        </IconButton>
-      </div>
+      <V3SheetHeader
+        onClose={onClose}
+        leading={
+          <span
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[var(--color-brand-green)]"
+            style={{ background: soft(GREEN, 16) }}
+          >
+            <Award className="h-6 w-6" />
+          </span>
+        }
+      >
+        <V3SheetHeader.Title>{t.vaultTitle}</V3SheetHeader.Title>
+        <V3SheetHeader.Subtitle>
+          <span className="font-mono-numbers">{t.vaultSummary(cleared.length, fmtWhole(sum), base)}</span>
+        </V3SheetHeader.Subtitle>
+      </V3SheetHeader>
 
       <div className="px-5 pb-6 pt-4">
         {cleared.length === 0 ? (

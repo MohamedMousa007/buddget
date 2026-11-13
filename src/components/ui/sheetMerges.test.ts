@@ -67,3 +67,17 @@ describe('compact sheet title (SheetFrame sheets)', () => {
     expect(html.indexOf('id="back"')).toBeLessThan(html.indexOf('<h2'))
   })
 })
+
+describe('dialog title (decision dialogs)', () => {
+  it('is centred 22px with no close button', () => {
+    const html = renderToStaticMarkup(createElement(V3SheetHeader.DialogTitle, null, 'Change base currency?'))
+    expect(html).toContain('<h2')
+    expect(html).toContain('text-[22px]')
+    expect(html).toContain('text-center')
+    expect(html).not.toContain('aria-label="Close"')
+  })
+  it('can start-align for a card that opens with an icon', () => {
+    const html = renderToStaticMarkup(createElement(V3SheetHeader.DialogTitle, { align: 'start' } as never, 'Turn on notifications'))
+    expect(html).not.toContain('text-center')
+  })
+})

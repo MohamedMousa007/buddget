@@ -23,6 +23,19 @@ function Title({ children, size = 'default' }: { children: ReactNode; size?: 'de
   return <h2 id={id} className="break-words text-[22px] font-bold text-[var(--color-brand-text-primary)]">{children}</h2>
 }
 
+/**
+ * The title of a decision dialog (a confirm, a permission ask, a celebration, an instruction card): centred 22px/700,
+ * no close, because its explicit action (Cancel, Not now, Done) IS the dismissal and a second dismiss path would
+ * diverge from it. Wired to the dialog's name like `Title`, so it is never left unnamed.
+ */
+function DialogTitle({ children, align = 'center' }: { children: ReactNode; align?: 'center' | 'start' }) {
+  return (
+    <h2 id={useModalTitleId()} className={cn('break-words text-[22px] font-bold leading-tight text-[var(--color-brand-text-primary)]', align === 'center' && 'text-center')}>
+      {children}
+    </h2>
+  )
+}
+
 function Subtitle({ children }: { children: ReactNode }) {
   return <p className="mt-0.5 text-sm text-[var(--color-brand-text-secondary)]">{children}</p>
 }
@@ -46,6 +59,10 @@ interface TitledHeaderProps {
   onClose: () => void
   /** Control rendered before the title (e.g. a back button). */
   leading?: ReactNode
+  /** Rendered next to the close (a status badge, a date chip). */
+  extra?: ReactNode
+  /** `compact` for long or user-typed titles. */
+  titleSize?: 'default' | 'compact'
 }
 
 export type SheetHeaderProps = V3HeaderProps | TitledHeaderProps
@@ -81,12 +98,13 @@ function V3SheetHeaderBase(props: SheetHeaderProps) {
   if ('title' in props) {
     return (
       <Header onClose={props.onClose} leading={props.leading} flush>
-        <Title>{props.title}</Title>
+        <Title size={props.titleSize}>{props.title}</Title>
         {props.subtitle ? <Subtitle>{props.subtitle}</Subtitle> : null}
+        {props.extra ? <Extra>{props.extra}</Extra> : null}
       </Header>
     )
   }
   return <Header onClose={props.onClose} leading={props.leading}>{props.children}</Header>
 }
 
-export const V3SheetHeader = Object.assign(V3SheetHeaderBase, { Title, Subtitle, Extra })
+export const V3SheetHeader = Object.assign(V3SheetHeaderBase, { Title, DialogTitle, Subtitle, Extra })

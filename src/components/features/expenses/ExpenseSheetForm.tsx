@@ -21,7 +21,8 @@ import { useIsNativeClient } from '@/lib/native/useIsNativeClient'
 import { AmountTextInput } from '@/components/ui/AmountTextInput'
 import { useNumberPad } from '@/components/ui/useNumberPad'
 import { Scrim } from '@/components/ui/Scrim'
-import { useDismissGuard, useModalTitleId } from '@/components/modals/ModalShell'
+import { useDismissGuard } from '@/components/modals/ModalShell'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { IconButton } from '@/components/ui/IconButton'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { FieldButton } from '@/components/ui/FieldButton'
@@ -187,33 +188,21 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
     <>
       <div className="flex min-h-0 flex-1 flex-col outline-none">
         {/* header — ModalShell renders the drag handle above this. */}
-        <div className="shrink-0 px-5 pt-1">
-          <div className="flex items-center justify-between">
-            <div id={useModalTitleId()} className="font-heading text-lg font-bold text-[var(--color-brand-text-primary)]">
-              {mode === 'edit' ? t.expenseForm.titleEdit : t.expenseForm.titleAdd}
-            </div>
-            <div className="flex items-center gap-2">
-              <OptionChip
-                as="trigger"
-                size="sm"
-                onClick={() => setCalOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={calOpen}
-              >
-                <Calendar className="size-3.5 text-[var(--color-brand-text-muted)]" />
-                {formatDatePillLabel(date, locale, t.expenseForm.today)}
-              </OptionChip>
-              <IconButton
-                onClick={handleX}
-                aria-label={t.common.close}
-                variant="tinted"
-                shape="round"
-              >
-                <X strokeWidth={2} />
-              </IconButton>
-            </div>
-          </div>
-        </div>
+        <V3SheetHeader onClose={handleX}>
+          <V3SheetHeader.Title>{mode === 'edit' ? t.expenseForm.titleEdit : t.expenseForm.titleAdd}</V3SheetHeader.Title>
+          <V3SheetHeader.Extra>
+            <OptionChip
+              as="trigger"
+              size="sm"
+              onClick={() => setCalOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={calOpen}
+            >
+              <Calendar className="size-3.5 text-[var(--color-brand-text-muted)]" />
+              {formatDatePillLabel(date, locale, t.expenseForm.today)}
+            </OptionChip>
+          </V3SheetHeader.Extra>
+        </V3SheetHeader>
 
         {/* body */}
         <div className={`min-h-0 flex-1 overflow-y-auto px-5 pt-3.5 pb-1.5 flex flex-col gap-3.5 ${HIDE_SCROLL}`}>

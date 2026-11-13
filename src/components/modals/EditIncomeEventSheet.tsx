@@ -4,8 +4,6 @@ import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Lock, Trash2, Unlink } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalHeading } from '@/components/modals/ModalTitle'
-import { ModalTitle } from '@/components/modals/ModalTitle'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -85,7 +83,7 @@ function useDeleteIncomeEvent(event: IncomeEvent, onDone: () => void) {
     debtChoiceOpen && linkedDebt ? (
       <ModalShell open onBackdropClick={() => setDebtChoiceOpen(false)} zIndexClassName="z-[110]">
         <div className="flex flex-col gap-2 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
-          <ModalTitle>{t.income.deleteWithDebtTitle}</ModalTitle>
+          <V3SheetHeader.DialogTitle align="start">{t.income.deleteWithDebtTitle}</V3SheetHeader.DialogTitle>
           <p className="mb-3 text-[0.84375rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.income.deleteWithDebtBody(linkedDebt.name)}</p>
           <Button variant="destructive-solid" size="cta-block" onClick={() => finish(true)}>
             {t.income.deleteBoth}
@@ -161,26 +159,26 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
 
   return (
     <div className="flex flex-col gap-3.5 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
-          <IncomeTypeIcon type={event.sourceType} className="h-5 w-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <ModalHeading className="block text-[17px] font-bold text-[var(--color-brand-text-primary)]">
-            {event.name}
-          </ModalHeading>
-          <span className="block text-[0.78125rem] text-[var(--color-brand-text-secondary)]">
-            {recurring ? `${typeLabel}${source ? ` · ${cadenceLine(source, t)}` : ''}` : t.income.oneTimeIncome}
+      <V3SheetHeader
+        title={event.name}
+        titleSize="compact"
+        subtitle={recurring ? `${typeLabel}${source ? ` · ${cadenceLine(source, t)}` : ''}` : t.income.oneTimeIncome}
+        onClose={onClose}
+        leading={
+          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-green-soft)] text-[var(--color-brand-green)]">
+            <IncomeTypeIcon type={event.sourceType} className="h-5 w-5" />
           </span>
-        </span>
-        {daysLate ? (
-          <Badge variant="warning" size="xs">{t.income.daysLateChip(daysLate)}</Badge>
-        ) : recurring ? (
-          <Badge variant="brand" size="xs">{t.income.recurringLabel}</Badge>
-        ) : (
-          <Badge variant="muted" size="xs">{t.income.oneTimeLabel}</Badge>
-        )}
-      </div>
+        }
+        extra={
+          daysLate ? (
+            <Badge variant="warning" size="xs">{t.income.daysLateChip(daysLate)}</Badge>
+          ) : recurring ? (
+            <Badge variant="brand" size="xs">{t.income.recurringLabel}</Badge>
+          ) : (
+            <Badge variant="muted" size="xs">{t.income.oneTimeLabel}</Badge>
+          )
+        }
+      />
       <p className="flex items-baseline gap-1.5">
         <span className="font-mono-numbers text-[32px] font-semibold tracking-[-0.02em] text-[var(--color-brand-green)]">
           +{formatFixed2(event.amount)}

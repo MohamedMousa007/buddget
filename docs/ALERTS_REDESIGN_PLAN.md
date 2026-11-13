@@ -354,3 +354,13 @@ Built:
 
 Not migrated, with reasons: ExpenseSheetForm, IncomeSheetForm, PayCycleSheet (controls sit beside the title), GoalDetailSheet and ClearedVaultSheet (hero tile or user-typed hero title), AvatarPickerModal and QuickAddFAB (own layouts), EditIncomeEventSheet (the title is the event card), BaseCurrencyChangeSheet (centred confirm with Cancel), PushPrePromptSheet and MilestoneCheerSheet (permission and celebration). Revisit when each is next edited.
 Not verified: no browser or device check of 320px and Arabic; the close buttons are 44px, the titles wrap rather than truncate.
+
+## 26. Build log (round 20, council 9): no sheet left on a hand-built header
+
+Council 9 decided each remaining sheet; a scan found 21 files that open a `ModalShell` without the standard header (the 11 named plus ten more: convert, feedback and about, export, pick-credit, SMS setup instructions, two expense wrappers, the goal wizard, receipt scan and voice recording).
+
+Migrated to `V3SheetHeader`: ExpenseSheetForm (date chip in `Extra`; the close keeps its unsaved-changes route, and backdrop, Escape, swipe and Back already go through `useDismissGuard`), IncomeSheetForm (subtitle and date pill), PayCycleSheet, AvatarPickerModal (its title was not wired to the dialog's name; it is now), GoalDetailSheet (the hero row and its duplicate close became one header: category tile in `leading`, compact two-line title, kind line and badge as subtitle, the more menu in `Extra`), ClearedVaultSheet (award tile in `leading`, summary as subtitle), EditIncomeEventSheet (event name as compact title, tile in `leading`, status badge in `Extra`, and a close it never had), QuickActions convert sheet, HelpCard feedback and about, DataCard export, PaydayActionsCard pick-credit.
+New `V3SheetHeader.DialogTitle` (centred 22px, no close, wired to the dialog's name): BaseCurrencyChangeSheet, PushPrePromptSheet (its dismiss stays "Not now"), MilestoneCheerSheet, StepAutomate's two SMS setup cards, and the delete-with-debt confirm. The shorthand header also gained `extra` and `titleSize`.
+Exempt, four categories, seven files, all named in the guard test: QuickAddFAB (popover menu), AddExpenseSheet and EditExpenseSheet (wrappers), NewGoalFlow, ReceiptScanSheet and VoiceRecordSheet (flows with their own chrome), ModalTitle (the primitive).
+Guard: `sheetHeaders.test.ts` scans every file that opens a `ModalShell` and fails on a stray one, on a sheet that still builds its own title, on a stale exemption, or if the list grows past eight.
+Not verified: no browser, 320px, Arabic or device check; titles are 22px (compact 20px for user-typed names) and wrap rather than truncate.

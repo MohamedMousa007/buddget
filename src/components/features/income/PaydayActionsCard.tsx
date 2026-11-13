@@ -9,7 +9,7 @@ import { SelectableCard } from '@/components/ui/SelectableCard'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { IncomeTypeIcon } from '@/components/features/income/IncomeTypeIcon'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -187,10 +187,7 @@ function LinkCreditSheet({ open, onClose, source, occ }: { open: boolean; onClos
   return (
     <ModalShell open={open} onBackdropClick={close} padContent>
       <div className="flex flex-col gap-3">
-        <div>
-          <ModalTitle>{t.paydays.pickCreditTitle}</ModalTitle>
-          <p className="mt-1 text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{t.paydays.pickCreditBody}</p>
-        </div>
+        <V3SheetHeader title={t.paydays.pickCreditTitle} subtitle={t.paydays.pickCreditBody} onClose={close} />
         {credits.length ? (
           <div role="radiogroup" aria-label={t.paydays.pickCreditTitle} className="flex flex-col gap-3">
             {credits.map((e) => (

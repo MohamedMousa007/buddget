@@ -3,14 +3,14 @@
 import { useMemo } from 'react'
 import { format } from 'date-fns'
 import { arEG, enUS } from 'date-fns/locale'
-import { Minus, Plus, X } from 'lucide-react'
+import { Minus, Plus } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 import { Progress, ProgressIndicator, ProgressTrack } from '@/components/ui/progress'
 import { useLocale, useT } from '@/lib/i18n'
 import { PAY_CYCLE_MAX_DAY, PAY_CYCLE_MIN_DAY, currentCycle } from '@/lib/settings/payCycle'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 /** Where the budget month starts. It belongs with paydays: it is the day the salary lands. */
 export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -27,10 +27,7 @@ export function PayCycleSheet({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[440px]" padContent>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <ModalTitle>{c.title}</ModalTitle>
-          <IconButton onClick={onClose} aria-label={c.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
-        </div>
+        <V3SheetHeader title={c.title} onClose={onClose} />
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{c.question}</p>

@@ -1,18 +1,17 @@
 'use client'
 
 import { useRef } from 'react'
-import { FileSpreadsheet, FileUp, Save, X } from 'lucide-react'
+import { FileSpreadsheet, FileUp, Save } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { GROUP_TONE } from '@/components/features/settings/groupMeta'
-import { IconButton } from '@/components/ui/IconButton'
 import { useSettingsPage } from '@/hooks/useSettingsPage'
 import { NotCountedSheet, useNotCountedCount } from './NotCountedSheet'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 /**
  * Export and import. When the data lives in the account there is nothing to back up, so the only action is a CSV
@@ -52,10 +51,7 @@ export function DataCard() {
 
       <ModalShell open={sheet === 'export' && !synced} onBackdropClick={() => openSheet(null)} zIndexClassName="z-[110]" panelClassName="md:w-[420px]" padContent>
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <ModalTitle>{d.export}</ModalTitle>
-            <IconButton onClick={() => openSheet(null)} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
-          </div>
+          <V3SheetHeader title={d.export} onClose={() => openSheet(null)} />
           <div className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl border border-[var(--color-brand-border)]">
             <SettingsRow icon={FileSpreadsheet} tone={tone} title={d.csv} subtitle={d.csvHint} onClick={() => { void s.handleExportExpensesCsv(); openSheet(null) }} />
             <SettingsRow icon={Save} tone={tone} title={d.backup} subtitle={d.backupHint} onClick={() => { s.handleExport(); openSheet(null) }} />

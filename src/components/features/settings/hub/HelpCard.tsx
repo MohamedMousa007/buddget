@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bug, CheckCircle, Globe, Inbox, ListChecks, Lightbulb, Mail, MessageCircleQuestion, Send, X } from 'lucide-react'
+import { Bug, CheckCircle, Globe, Inbox, ListChecks, Lightbulb, Mail, MessageCircleQuestion, Send } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
@@ -9,7 +9,6 @@ import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
 import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { BuddgetWordmark } from '@/components/brand'
 import { Button } from '@/components/ui/button'
-import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,7 +18,7 @@ import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { SupportBoardSheet } from './SupportBoardSheet'
 import { SupportInboxSheet } from './SupportInboxSheet'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 
 const APP_VERSION = '1.0'
 
@@ -62,10 +61,7 @@ function FeedbackSheet({ open, onClose }: { open: boolean; onClose: () => void }
   return (
     <ModalShell open={open} onBackdropClick={close} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <ModalTitle>{copy.help.feedback}</ModalTitle>
-          <IconButton onClick={close} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
-        </div>
+        <V3SheetHeader title={copy.help.feedback} onClose={close} />
         {done ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <CheckCircle className="size-12 text-[var(--color-brand-green)]" aria-hidden />
@@ -112,10 +108,7 @@ function AboutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName="z-[110]" panelClassName="md:w-[460px]" padContent>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <ModalTitle>{h.about}</ModalTitle>
-          <IconButton onClick={onClose} aria-label={copy.close} variant="tinted" size="sm" shape="round"><X className="h-full w-full" /></IconButton>
-        </div>
+        <V3SheetHeader title={h.about} onClose={onClose} />
         <div className="flex flex-col items-center gap-2 py-2">
           <BuddgetWordmark className="h-auto w-44" />
           <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{h.version} {APP_VERSION}</p>

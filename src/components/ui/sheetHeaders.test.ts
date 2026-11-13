@@ -1,43 +1,69 @@
 /**
- * The standard sheet header is V3SheetHeader (title + one 44px close that calls the sheet's own close handler).
- * These sheets were moved onto it; this stops a hand-built title and close pair from creeping back in.
+ * Every file that opens a ModalShell either uses the standard header (V3SheetHeader: Title for sheets, DialogTitle for
+ * decision dialogs) or is on the short, named exemption list below, with the reason. A new sheet that does neither fails
+ * here, and so does an exemption that has since moved onto the header (it must leave the list).
+ *
+ * Header rule: docs/DESIGN_SYSTEM.md, "Sheet header (the rule)".
  */
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
 import { describe, it, expect } from 'vitest'
 
-const MIGRATED = [
-  'src/components/features/subscriptions/SheetFrame.tsx',
-  'src/components/modals/AssignIncomeSheet.tsx',
-  'src/components/modals/ResolveSheet.tsx',
-  'src/components/modals/AddDebtSheet.tsx',
-  'src/components/modals/PaymentMethodsSheet.tsx',
-  'src/components/modals/AmountReceivedSheet.tsx',
-  'src/components/ui/CurrencySheet.tsx',
-  'src/components/features/payments/SelectPaymentMethodSheet.tsx',
-  'src/components/features/payments/ProviderPickerSheet.tsx',
-  'src/components/features/payments/PaymentMethodSetupSheet.tsx',
-  'src/components/features/debts/redesign/InstallmentProviderPickerSheet.tsx',
-  'src/components/features/debts/redesign/ChargesSheet.tsx',
-  'src/components/features/goals/new/CostSheet.tsx',
-  'src/components/features/settings/hub/TwoFactorOffSheet.tsx',
-]
+const ROOT = process.cwd()
 
-const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
+type Category = 'popover-menu' | 'wrapper' | 'flow-chrome' | 'primitive'
 
-describe('migrated sheets use the standard header', () => {
-  for (const file of MIGRATED) {
-    it(file, () => {
-      const src = read(file)
-      expect(src).toContain('V3SheetHeader')
-      // A title wired by hand, or by ModalTitle/ModalHeading, would be a second header in the same sheet.
-      expect(src).not.toMatch(/import\s*\{[^}]*\b(ModalTitle|ModalHeading)\b[^}]*\}\s*from/)
-      expect(src).not.toContain('useModalTitleId()')
-    })
+/** The only sheets allowed to skip the header, and why. Adding one needs a decision, not just a line. */
+const EXEMPT: Record<string, { category: Category; reason: string }> = {
+  'src/components/modals/QuickAddFAB.tsx': { category: 'popover-menu', reason: 'content-height menu anchored to the add button; no close, tap-outside dismisses' },
+  'src/components/modals/AddExpenseSheet.tsx': { category: 'wrapper', reason: 'thin shell around ExpenseSheetForm, whose header is the standard one' },
+  'src/components/modals/EditExpenseSheet.tsx': { category: 'wrapper', reason: 'thin shell around ExpenseSheetForm, whose header is the standard one' },
+  'src/components/features/goals/new/NewGoalFlow.tsx': { category: 'flow-chrome', reason: 'a multi-step wizard with its own back, step dots and close' },
+  'src/components/receipt/ReceiptScanSheet.tsx': { category: 'flow-chrome', reason: 'a capture and review flow with its own camera and step chrome' },
+  'src/components/voice/VoiceRecordSheet.tsx': { category: 'flow-chrome', reason: 'a recording flow with its own record and cancel controls' },
+  'src/components/modals/ModalTitle.tsx': { category: 'primitive', reason: 'defines the dialog-name hook the standard header uses' },
+}
+
+function walk(dir: string, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name)
+    if (statSync(p).isDirectory()) walk(p, out)
+    else if (p.endsWith('.tsx') && !p.endsWith('.test.tsx')) out.push(p)
   }
-  it('no hand-built tinted close button sits next to the title in the plain-header sheets', () => {
-    for (const file of MIGRATED.filter((f) => !f.endsWith('PaymentMethodSetupSheet.tsx') && !f.endsWith('InstallmentProviderPickerSheet.tsx'))) {
-      expect(read(file), file).not.toMatch(/variant="tinted"\s+size="sm"\s+shape="round"[^>]*>\s*<X\b/)
+  return out
+}
+
+const shellUsers = walk(join(ROOT, 'src'))
+  .map((p) => relative(ROOT, p).split('\\').join('/'))
+  .filter((f) => f !== 'src/components/modals/ModalShell.tsx')
+  .filter((f) => readFileSync(join(ROOT, f), 'utf8').includes("from '@/components/modals/ModalShell'"))
+
+const read = (f: string) => readFileSync(join(ROOT, f), 'utf8')
+
+describe('every sheet and dialog has the standard header or a named exemption', () => {
+  it('finds the sheets', () => {
+    expect(shellUsers.length).toBeGreaterThan(30)
+  })
+
+  it('no ModalShell file is left on a hand-built header', () => {
+    const stray = shellUsers.filter((f) => !f.endsWith('ModalTitle.tsx') && !(f in EXEMPT) && !read(f).includes('V3SheetHeader'))
+    expect(stray, `these open a ModalShell without V3SheetHeader or an exemption:\n${stray.join('\n')}`).toEqual([])
+  })
+
+  it('a sheet on the standard header does not also build its own title', () => {
+    const doubled = shellUsers.filter((f) => !(f in EXEMPT) && /import\s*\{[^}]*\b(ModalTitle|ModalHeading)\b[^}]*\}\s*from/.test(read(f)))
+    expect(doubled, `these import ModalTitle or ModalHeading next to V3SheetHeader:\n${doubled.join('\n')}`).toEqual([])
+  })
+
+  it('every exemption is real: the file exists, is a ModalShell user, and has not moved onto the header', () => {
+    for (const [file, { reason }] of Object.entries(EXEMPT)) {
+      expect(reason.length, file).toBeGreaterThan(10)
+      expect(shellUsers, `${file} is not a ModalShell file any more; remove it from EXEMPT`).toContain(file)
+      if (!file.endsWith('ModalTitle.tsx')) expect(read(file), `${file} uses V3SheetHeader now; remove it from EXEMPT`).not.toContain('V3SheetHeader')
     }
+  })
+
+  it('the exemption list stays short', () => {
+    expect(Object.keys(EXEMPT).length).toBeLessThanOrEqual(8)
   })
 })

@@ -1,11 +1,11 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Camera, Check, Images, Trash2, X, TriangleAlert } from 'lucide-react'
+import { Camera, Check, Images, Trash2, TriangleAlert } from 'lucide-react'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { ColorSwatchRow } from '@/components/ui/ColorSwatchRow'
-import { IconButton } from '@/components/ui/IconButton'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -161,12 +161,9 @@ export function AvatarPickerModal({ open, onClose, store }: AvatarPickerModalPro
   return (
     <ModalShell open={open} onBackdropClick={close} scrollChild panelClassName="md:w-[440px] max-h-[92dvh]">
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex shrink-0 items-center justify-between px-5 pb-2 pt-1">
-          <h2 className="text-lg font-semibold text-[var(--color-brand-text-primary)]">{t.profile.avatarModalTitle}</h2>
-          <IconButton aria-label={t.common.close} variant="tinted" size="sm" shape="round" onClick={close}>
-            <X />
-          </IconButton>
-        </div>
+        <V3SheetHeader onClose={close}>
+          <V3SheetHeader.Title>{t.profile.avatarModalTitle}</V3SheetHeader.Title>
+        </V3SheetHeader>
 
         <div className="native-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-3">
           <div className="flex flex-col items-center gap-1.5 py-2">

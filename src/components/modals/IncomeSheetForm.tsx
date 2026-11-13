@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
-import { X, ChevronDown, Link2, Trash2 } from 'lucide-react'
+import { ChevronDown, Link2, Trash2 } from 'lucide-react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -27,8 +27,7 @@ import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChi
 import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
 import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
-import { ModalHeading } from '@/components/modals/ModalTitle'
-import { IconButton } from '@/components/ui/IconButton'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
@@ -216,27 +215,15 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
     <ModalShell open={open} onBackdropClick={handleClose} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col outline-none">
         {/* Header: title + subtitle, one-time date pill (add only), close */}
-        <div className="flex shrink-0 items-start gap-2.5 px-4 pb-4 pt-1">
-          <div className="min-w-0 flex-1">
-            <ModalHeading className="text-lg font-bold text-[var(--color-brand-text-primary)]">
-              {edit ? t.editIncome.title : isRecurring ? t.paydays.newTitle : t.addIncome.sheetTitle}
-            </ModalHeading>
-            {!isRecurring ? (
-              <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.addIncome.addSubtitleOneTime}</p>
-            ) : null}
-          </div>
+        <V3SheetHeader onClose={handleClose}>
+          <V3SheetHeader.Title>{edit ? t.editIncome.title : isRecurring ? t.paydays.newTitle : t.addIncome.sheetTitle}</V3SheetHeader.Title>
+          {!isRecurring ? <V3SheetHeader.Subtitle>{t.addIncome.addSubtitleOneTime}</V3SheetHeader.Subtitle> : null}
           {!isRecurring ? (
-            <DatePickerField value={receivedDate} onChange={setReceivedDate} className="!h-8 !w-auto shrink-0 rounded-full !px-3 text-xs" />
+            <V3SheetHeader.Extra>
+              <DatePickerField value={receivedDate} onChange={setReceivedDate} className="!h-8 !w-auto shrink-0 rounded-full !px-3 text-xs" />
+            </V3SheetHeader.Extra>
           ) : null}
-          <IconButton
-            onClick={handleClose}
-            aria-label={t.common.cancel}
-            size="sm"
-            shape="round"
-          >
-            <X className="size-[18px]" strokeWidth={2} />
-          </IconButton>
-        </div>
+        </V3SheetHeader>
 
         <div className={`${MODAL_BODY_SCROLL_CLASS.replace('gap-5', 'gap-4')} px-4 pb-6`}>
           {/* Amount + currency */}
