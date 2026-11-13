@@ -1,0 +1,273 @@
+<title>Budget Page Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: a tab per question (critique, heroes, four page layouts, comparison). Phones use the app's tokens from globals.css. */
+:root{
+  --bg:#F4F7F6;--card:#FFFFFF;--elev:#ECF1F0;--sunk:#E2E9E8;--line:#DDE6E4;--line2:#CBD6D3;
+  --ink:#0D1A18;--ink2:#566B68;--ink3:#646F6D;
+  --pri:#0D8578;--pri-ink:#0B7568;--pri-soft:#E3F6F3;--pri-bright:#12B0A0;
+  --red:#C2353B;--green:#107E38;--amber:#93630B;--amber-soft:#FBF0DA;--green-soft:#E3F5EA;--red-soft:#FBE7E7;
+  --c1:#11A596;--c2:#B68E30;--c3:#E5684D;--c4:#6E7BF2;--c5:#389BD9;--c6:#8B5CF6;--c0:#646F6D;
+  --on:#FFFFFF;--shadow:0 1px 2px rgba(13,26,24,.06),0 8px 24px rgba(13,26,24,.08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B1413;--card:#121D1B;--elev:#1A2826;--sunk:#212C2A;--line:#233432;--line2:#2F4441;
+  --ink:#EAF2F0;--ink2:#9DB2AF;--ink3:#8AA09D;
+  --pri:#12A394;--pri-ink:#4FD6C8;--pri-soft:#12302D;--pri-bright:#1FC3B2;
+  --red:#F0777C;--green:#4BC77A;--amber:#E7B552;--amber-soft:#33290F;--green-soft:#10301D;--red-soft:#3A1A1C;
+  --c1:#1FC3B2;--c2:#EDC463;--c3:#F27E66;--c4:#8A94F5;--c5:#57B2ED;--c6:#A17DF9;--c0:#8AA09D;
+  --on:#06201C;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1413;--card:#121D1B;--elev:#1A2826;--sunk:#212C2A;--line:#233432;--line2:#2F4441;
+  --ink:#EAF2F0;--ink2:#9DB2AF;--ink3:#8AA09D;
+  --pri:#12A394;--pri-ink:#4FD6C8;--pri-soft:#12302D;--pri-bright:#1FC3B2;
+  --red:#F0777C;--green:#4BC77A;--amber:#E7B552;--amber-soft:#33290F;--green-soft:#10301D;--red-soft:#3A1A1C;
+  --c1:#1FC3B2;--c2:#EDC463;--c3:#F27E66;--c4:#8A94F5;--c5:#57B2ED;--c6:#A17DF9;--c0:#8AA09D;
+  --on:#06201C;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;text-align:start}
+button:focus-visible{outline:2px solid var(--pri-bright);outline-offset:2px}
+a{color:var(--pri-ink)}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:26px;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font-size:15px;margin:0 0 8px}
+.lede{margin:6px 0 0;color:var(--ink2);font-size:14px;max-width:66ch;line-height:1.5}
+.bar-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;flex:1;min-width:0}
+.tab{height:44px;padding:0 16px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13.5px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--pri);border-color:var(--pri);color:var(--on)}
+.mode{display:inline-grid;grid-template-columns:1fr 1fr;background:var(--elev);border-radius:12px;padding:3px;gap:3px}
+.mode button{height:38px;padding:0 14px;border-radius:9px;font-weight:700;font-size:13px;color:var(--ink2);text-align:center}
+.mode button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.grid{display:grid;gap:28px;align-items:start}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){.g2,.g3{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.lab{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700}
+.lab span{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;background:var(--elev);color:var(--ink2)}
+.lab.rec span{background:var(--pri-soft);color:var(--pri-ink)}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:22px}
+@media(max-width:900px){.notes{grid-template-columns:minmax(0,1fr)}}
+.note{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--ink2);line-height:1.5;min-width:0}
+.note ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.note b{color:var(--ink)}
+.sev{font-size:10.5px;font-weight:700;border-radius:6px;padding:1px 6px;margin-right:4px;background:var(--elev);color:var(--ink2)}
+.sev.r{background:var(--red-soft);color:var(--red)}.sev.a{background:var(--amber-soft);color:var(--amber)}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:10px;border-top:1px solid var(--line);text-align:start;vertical-align:top}th{font-size:12px;color:var(--ink2);border-top:0}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.dotsc{letter-spacing:2px;color:var(--pri-ink);font-weight:700;white-space:nowrap}
+
+.phone{width:100%;max-width:372px;margin:0 auto;border-radius:36px;border:1px solid var(--line2);background:var(--bg);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:11px;font-weight:600;color:var(--ink2);flex:none}
+.scr{flex:1;padding:6px 16px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.sub{font-size:12.5px;color:var(--ink2);margin:0}
+.lbl{font-size:12px;color:var(--ink2);font-weight:500}
+.cap{font-size:12px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(13,26,24,.05)}
+.num{font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}.ico.s{width:14px;height:14px}
+.tile{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.ib{width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);background:var(--card);display:grid;place-items:center;flex:none;color:var(--ink2)}
+.chip{height:44px;padding:0 13px;border-radius:999px;border:1px solid var(--line2);background:var(--card);font-size:13px;font-weight:600;color:var(--ink2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.flow{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;background:var(--elev)}.flow i{display:block;height:100%;border-radius:3px}
+.pill{font-size:11px;font-weight:700;border-radius:99px;padding:3px 8px;background:var(--elev);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.pill.g{background:var(--green-soft);color:var(--green)}.pill.a{background:var(--amber-soft);color:var(--amber)}.pill.t{background:var(--pri-soft);color:var(--pri-ink)}
+.pbar{position:relative;height:10px;border-radius:5px;background:var(--elev)}.pbar>i{position:absolute;inset:0 auto 0 0;border-radius:5px;background:var(--pri-bright)}.pbar>i.a{background:var(--amber)}.pbar>u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:2px;opacity:.75}
+.mini{position:relative;height:4px;border-radius:3px;background:var(--elev)}.mini>i{position:absolute;inset:0 auto 0 0;border-radius:3px}.mini>u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.7;border-radius:2px}
+.lrow{display:flex;flex-direction:column;gap:7px;padding:11px 0;border-top:1px solid var(--line);min-height:64px;width:100%}.lrow:first-child{border-top:0}
+.lrow .tp{display:flex;align-items:center;gap:10px;min-width:0}
+.lrow .tx{flex:1;min-width:0}.lrow .tx b{display:block;font-size:14.5px}.lrow .tx span{font-size:12px;color:var(--ink2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lrow .tx span.a{color:var(--amber);font-weight:600}
+.lrow .rt{text-align:end;flex:none}.lrow .rt b{display:block;font-size:13.5px}.lrow .rt span{font-size:11.5px;color:var(--ink3)}
+.ln{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);min-height:52px;width:100%}.ln:first-child{border-top:0}
+.ln .t{flex:1;min-width:0}.ln .t b{display:block;font-size:14px;font-weight:600}.ln .t span{font-size:12px;color:var(--ink3)}.ln .t span.w{color:var(--amber)}
+.ln .amt{font-size:14px;font-weight:600;text-align:end}.ln .amt small{display:block;font-size:11px;color:var(--ink3);font-weight:500}
+.src{font-size:10.5px;font-weight:700;border-radius:6px;padding:1px 6px;background:var(--elev);color:var(--ink2)}.src.e{background:var(--amber-soft);color:var(--amber)}
+.tilec{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:16px;background:var(--card);border:1px solid var(--line);min-height:120px;box-shadow:0 1px 2px rgba(13,26,24,.05)}
+.lp{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:24px;border-radius:99px;padding:0 8px;font-size:11.5px;font-weight:700}
+.lp.ok{background:var(--green-soft);color:var(--green)}.lp.lo{background:var(--amber-soft);color:var(--amber)}.lp.ov{background:var(--red-soft);color:var(--red)}.lp.z{background:var(--elev);color:var(--ink3)}
+.tr{display:grid;grid-template-columns:minmax(0,1fr) 58px 58px 66px;gap:6px;align-items:center;min-height:48px;padding:4px 0;border-top:1px solid var(--line);font-size:12.5px;width:100%}.tr.h{min-height:30px;border-top:0;color:var(--ink2);font-size:11.5px;font-weight:600}.tr>*:not(:first-child){text-align:end;justify-self:end}
+.pin{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;font-size:10.5px;font-weight:700}
+.ev{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);min-height:52px}.ev:first-child{border-top:0}
+.date{width:40px;height:44px;border-radius:10px;background:var(--elev);display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;font-size:10.5px;color:var(--ink2);font-weight:700}.date b{font-size:15px;color:var(--ink);line-height:1}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Budget page options</h1>
+    <p class="lede">The v4 summary card and segment rail, criticised, then a stronger hero and four page layouts. Switch Plan and This month at the top right. Sample data in EGP, day 14 of 30. Layouts A to D reuse the existing line row, plan sheet and review.</p>
+  </header>
+  <div class="bar-top"><div class="tabs" role="tablist" aria-label="Screens" id="tabs"></div><div class="mode" role="tablist" aria-label="View" id="mode"></div></div>
+  <div id="stage" aria-live="polite"></div>
+</div>
+
+<script>
+const I={
+ home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+ repeat:'<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+ bank:'<path d="M10 18v-7"/><path d="M11.12 2.198a2 2 0 0 1 1.76.006l7.866 3.847c.476.233.31.949-.22.949H3.474c-.53 0-.695-.716-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/>',
+ basket:'<path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/>',
+ shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+ target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+ sprout:'<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>',
+ check:'<path d="M20 6 9 17l-5-5"/>', back:'<path d="m15 18-6-6 6-6"/>', next:'<path d="m9 18 6-6-6-6"/>', down:'<path d="m6 9 6 6 6-6"/>',
+ plus:'<path d="M5 12h14"/><path d="M12 5v14"/>', warn:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+};
+const ic=(n,c='')=>`<svg class="ico ${c}" viewBox="0 0 24 24" aria-hidden="true">${I[n]}</svg>`;
+const buddgy=(s=32)=>`<svg width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true" style="flex:none"><rect x="5" y="8" width="38" height="32" rx="14" fill="var(--pri)"/><rect x="10" y="14" width="28" height="19" rx="9" fill="var(--on)" opacity=".95"/><ellipse cx="19" cy="23" rx="2.4" ry="3.2" fill="var(--pri)"/><ellipse cx="29" cy="23" rx="2.4" ry="3.2" fill="var(--pri)"/><path d="M20 29q4 3 8 0" stroke="var(--pri)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+const status='<div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>';
+const fmt=n=>n.toLocaleString('en-US');
+const INCOME=18500,DAY=14,DAYS=30,LEFTD=DAYS-DAY,TIME=DAY/DAYS;
+const SEG=[
+ {n:'Home & bills',i:'home',c:'var(--c1)',amt:6950,spent:5900},
+ {n:'Subscriptions',i:'repeat',c:'var(--c4)',amt:410,spent:410},
+ {n:'Debts',i:'bank',c:'var(--c3)',amt:2100,spent:1050},
+ {n:'Everyday',i:'basket',c:'var(--c5)',amt:5200,spent:2980},
+ {n:'Safety net',i:'shield',c:'var(--c2)',amt:1850,spent:0},
+ {n:'Goals',i:'target',c:'var(--c6)',amt:1200,spent:600},
+ {n:'Grow & give',i:'sprout',c:'var(--c0)',amt:790,spent:0},
+];
+/* every row always carries a status line and a number: the point of the redesign */
+const FACT={
+ plan:[['4 bills · rent is 30% of income',''],['3 subscriptions · linked live',''],['2 debts · Visa cleared Sep 2027',''],['5 lines · 2 are estimates','a'],['0.8 of 3 months held','a'],['Umrah trip · Mar 2027',''],['Zakat and a 290 buffer','']],
+ month:[['2 of 4 paid · Internet due 20th',''],['All 3 charged',''],['1 of 2 paid · Visa due 25th',''],['Dining 170 over · 553 ahead of pace','a'],['Moves on the 25th',''],['On track · Mar 2027',''],['Zakat on the 25th','']],
+};
+const everyday=SEG[3],flexLeft=everyday.amt-everyday.spent,pace=Math.round(everyday.amt*TIME),ahead=everyday.spent-pace;
+const stillToPay=[0,1,2].reduce((a,i)=>a+SEG[i].amt-SEG[i].spent,0);
+const tile=(s,z=40)=>`<span class="tile" style="width:${z}px;height:${z}px;color:${s.c};background:color-mix(in srgb,${s.c} 16%,var(--card))">${ic(s.i)}</span>`;
+const pct=a=>Math.round(a/INCOME*100)+'%';
+const stats=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><div><div class="lbl">Saving</div><b class="num" style="font-size:14px">18%</b></div><div><div class="lbl">Debt-free</div><b class="num" style="font-size:14px">Sep 2027</b></div><div><div class="lbl">Safety net</div><b class="num" style="font-size:14px">0.8 / 3 mo</b></div></div>`;
+const phone=inner=>`<div class="phone">${status}<div class="scr">${inner}</div></div>`;
+const planChip=`<button class="card row" style="height:56px;padding:0 12px;gap:12px;width:100%" aria-label="Plans: Balanced plan"><i style="width:10px;height:10px;border-radius:50%;background:var(--pri-bright)"></i><span style="flex:1;min-width:0"><b style="font-size:15px;display:block">Balanced plan</b><span class="sub" style="font-size:12px">Active since Oct</span></span>${ic('down','s')}</button>`;
+const view=m=>`<div style="display:grid;grid-template-columns:1fr 1fr;background:var(--elev);border-radius:12px;padding:3px;gap:3px">${['plan','month'].map(k=>`<span style="height:40px;border-radius:9px;font-weight:700;font-size:13.5px;display:grid;place-items:center;${(m?'month':'plan')===k?'background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)':'color:var(--ink2)'}">${k==='plan'?'Plan':'This month'}</span>`).join('')}</div>`;
+const flowBar=()=>`<div class="flow">${SEG.map(x=>`<i style="width:${x.amt/INCOME*100}%;background:${x.c}"></i>`).join('')}</div>`;
+
+/* ---------- heroes ---------- */
+function arc(r,start,len,color,w=12){const c=2*Math.PI*r;return `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="${w}" stroke-dasharray="${Math.max(0,c*len-2)} ${c}" stroke-dashoffset="${-c*start}" transform="rotate(-90 70 70)"/>`}
+function heroDial(m){
+ let svg,center;
+ if(m){const f=everyday.spent/everyday.amt,r=54,a=-Math.PI/2+2*Math.PI*TIME;
+  svg=`<circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--elev)" stroke-width="12"/>${arc(r,0,f,'var(--amber)')}<line x1="${70+44*Math.cos(a)}" y1="${70+44*Math.sin(a)}" x2="${70+64*Math.cos(a)}" y2="${70+64*Math.sin(a)}" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>`;
+  center=`<div class="lbl">Left to spend</div><b class="num" style="font-size:24px;letter-spacing:-.02em">${fmt(flexLeft)}</b>`}
+ else{let s=0;svg=SEG.map(x=>{const l=x.amt/INCOME,o=arc(54,s,l,x.c);s+=l;return o}).join('');
+  center=`<div class="lbl">Income</div><b class="num" style="font-size:22px;letter-spacing:-.02em">${fmt(INCOME)}</b>`}
+ return `<div class="card" style="display:flex;flex-direction:column;align-items:center;gap:12px"><div style="position:relative;width:140px;height:140px"><svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="${m?'Everyday spending against the pace of the month':'How income is split across seven segments'}">${svg}</svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">${center}</div></div>
+ ${m?`<span class="pill a">${ic('warn','s')}${fmt(ahead)} ahead of pace</span><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;text-align:center"><div><div class="lbl">Per day</div><b class="num" style="font-size:14px">${fmt(Math.round(flexLeft/LEFTD))}</b></div><div><div class="lbl">Days left</div><b class="num" style="font-size:14px">${LEFTD}</b></div><div><div class="lbl">Still to pay</div><b class="num" style="font-size:14px">${fmt(stillToPay)}</b></div></div>`
+ :`<span class="pill g">${ic('check','s')}0 unassigned</span><div style="width:100%">${stats}</div>`}</div>`}
+function heroBar(m){
+ return `<div class="card" style="display:flex;flex-direction:column;gap:10px">${m
+ ?`<div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="lbl">Left to spend</div><b class="num" style="font-size:30px;letter-spacing:-.02em;line-height:1.1">${fmt(flexLeft)}</b></div><div style="text-align:end"><b class="num" style="font-size:14px">${fmt(Math.round(flexLeft/LEFTD))} a day</b><div class="lbl">${LEFTD} days left</div></div></div>
+ <div class="pbar" role="img" aria-label="Everyday: spent ${fmt(everyday.spent)} of ${fmt(everyday.amt)}, expected ${fmt(pace)} by today"><i class="a" style="width:${everyday.spent/everyday.amt*100}%"></i><u style="left:${TIME*100}%"></u></div>
+ <div class="row" style="justify-content:space-between"><span class="pill a">${ic('warn','s')}${fmt(ahead)} ahead of pace</span><span class="lbl num">${fmt(everyday.spent)} of ${fmt(everyday.amt)}</span></div>
+ <div class="lbl" style="border-top:1px solid var(--line);padding-top:8px">Still to pay <b class="num" style="color:var(--ink)">${fmt(stillToPay)}</b> · next: Internet 20th</div>`
+ :`<div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="lbl">Monthly income</div><b class="num" style="font-size:30px;letter-spacing:-.02em;line-height:1.1">${fmt(INCOME)}</b></div><span class="pill g">${ic('check','s')}0 unassigned</span></div>${flowBar()}${stats}`}</div>`}
+function heroTwo(m){
+ const col=(l,v,s)=>`<div style="flex:1;min-width:0"><div class="lbl">${l}</div><b class="num" style="font-size:24px;letter-spacing:-.02em;display:block;line-height:1.15">${v}</b><span class="lbl">${s}</span></div>`;
+ const cum=[0,.03,.08,.14,.2,.26,.31,.36,.4,.44,.48,.51,.54,.56,.573];
+ const pts=cum.map((v,d)=>`${(d/DAYS*100).toFixed(1)},${(40-v*40).toFixed(1)}`).join(' ');
+ const spark=`<svg viewBox="0 0 100 40" preserveAspectRatio="none" width="100%" height="44" role="img" aria-label="Everyday spend so far is above the dashed pace line"><line x1="0" y1="40" x2="100" y2="0" stroke="var(--ink3)" stroke-width="1.5" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/><polyline points="${pts}" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+ return `<div class="card" style="display:flex;flex-direction:column;gap:12px">${m
+ ?`<div class="row" style="gap:16px;align-items:flex-start">${col('Left to spend',fmt(flexLeft),fmt(Math.round(flexLeft/LEFTD))+' a day')}<span style="width:1px;align-self:stretch;background:var(--line)"></span>${col('Still to pay',fmt(stillToPay),'3 bills by the 25th')}</div>${spark}<div class="row" style="justify-content:space-between"><span class="pill a">${ic('warn','s')}${fmt(ahead)} ahead of pace</span><span class="lbl">Dashed line is the pace</span></div>`
+ :`<div class="row" style="gap:16px;align-items:flex-start">${col('Income',fmt(INCOME),'every month')}<span style="width:1px;align-self:stretch;background:var(--line)"></span>${col('Assigned',fmt(INCOME),'0 unassigned')}</div>${flowBar()}${stats}`}</div>`}
+
+/* ---------- row / layout parts ---------- */
+function ledgerRow(i,m){const s=SEG[i],f=FACT[m?'month':'plan'][i],left=s.amt-s.spent;
+ const right=m?(s.amt===s.spent?['Done','']:s.spent===0?[fmt(s.amt),'to move']:[fmt(left),'left']):[fmt(s.amt),pct(s.amt)];
+ const w=m?s.spent/s.amt*100:s.amt/6950*100,warn=m&&i===3;
+ return `<button class="lrow" aria-label="${s.n}: ${f[0]}. ${right.join(' ')}. Open"><span class="tp">${tile(s,36)}<span class="tx"><b>${s.n}</b><span class="${f[1]}">${f[0]}</span></span><span class="rt"><b class="num">${right[0]}</b><span>${right[1]}</span></span>${ic('next','s')}</span>
+ <span class="mini" aria-hidden="true"><i style="width:${w}%;background:${warn?'var(--amber)':s.c}"></i>${warn?`<u style="left:${TIME*100}%"></u>`:''}</span></button>`}
+const nudge=`<div class="card row" style="gap:10px;padding:10px 12px">${buddgy(32)}<div style="font-size:13px;min-width:0;flex:1"><b>Dining is 170 over.</b> <span style="color:var(--ink2)">Cover it from Groceries?</span></div><button class="chip" style="color:var(--pri-ink);border-color:var(--pri)">Do it</button></div>`;
+const EDLINES=[['Groceries',2400,'3-month average 2,350','y',1450],['Dining out',900,'Average 1,100','y',1070],['Transport',1100,'Average 1,050','y',380],['Health & personal',500,'Typical for Cairo','e',50],['Fun',300,'Typical for Cairo','e',30]];
+const lineSeg=m=>EDLINES.map(l=>{const sp=l[4],over=m&&sp>l[1];return `<button class="ln"><span class="t"><b>${l[0]}</b><span class="${over?'w':''}">${over?ic('warn','s')+' '+fmt(sp-l[1])+' over':l[2]}</span></span>${m?'':`<span class="src ${l[3]==='e'?'e':''}">${l[3]==='e'?'Estimated':'Your data'}</span>`}<span class="amt num">${m?fmt(sp)+`<small>of ${fmt(l[1])}</small>`:fmt(l[1])}</span></button>`}).join('');
+const detail=m=>phone(`<div class="row"><button class="ib" aria-label="Back to budget">${ic('back')}</button><b style="flex:1;font-size:17px;text-align:center">Everyday</b><span class="pill">4 of 7</span></div>
+ <div class="row" style="justify-content:space-between"><button class="ib" aria-label="Previous segment: Debts">${ic('back')}</button><div style="display:flex;gap:6px">${SEG.map((x,i)=>`<i style="width:${i===3?22:8}px;height:8px;border-radius:5px;background:${i===3?x.c:'var(--sunk)'}"></i>`).join('')}</div><button class="ib" aria-label="Next segment: Safety net">${ic('next')}</button></div>
+ <div class="card" style="padding:12px 14px 4px"><div class="row" style="gap:12px;padding-bottom:6px">${tile(everyday)}<div style="flex:1;min-width:0"><b style="font-size:16px;display:block">Everyday</b><span class="sub num" style="font-size:12px">${m?'2,980 of 5,200 · 57% used':'5,200 planned · 28% of income'}</span></div>${m?'':'<span class="pill a">2 estimated</span>'}</div>
+ <div class="row" style="gap:8px;padding:4px 0 8px;align-items:flex-start">${buddgy(22)}<span class="sub" style="font-size:12.5px;line-height:1.4">Caps sit at your 3-month average, trimmed 10% on dining.</span></div>${lineSeg(m)}</div>`);
+const lab=(k,t,rec)=>`<div class="lab ${rec?'rec':''}"><span>${k}</span>${t}</div>`;
+const notesHtml=n=>`<div class="notes">${n.map(x=>`<div class="note"><h2>${x[0]}</h2><ul>${x[1].map(y=>`<li>${y}</li>`).join('')}</ul></div>`).join('')}</div>`;
+
+/* ---------- screens ---------- */
+let tab=0,mode='month';
+function critique(){
+ const m=mode==='month',cap='font-size:10.5px;letter-spacing:.1em;font-weight:700;color:var(--ink3)';
+ const v4=phone(`${planChip}${view(m)}
+  <div class="card" style="display:flex;flex-direction:column;gap:10px;position:relative"><span class="pin" style="position:absolute;right:8px;top:8px">1</span>${m
+   ?`<div class="row" style="justify-content:space-between;align-items:flex-end"><div><div style="${cap}">LEFT TO SPEND</div><b class="num" style="font-size:28px">4,320</b></div><div style="text-align:end"><span class="pill g">On pace</span><div class="num sub" style="font-size:11.5px;margin-top:4px">270/day · 16 days left</div></div></div><div class="flow" style="height:8px">${SEG.map(x=>`<i style="width:${x.amt/INCOME*100}%;background:color-mix(in srgb,${x.c} 30%,var(--elev))"></i>`).join('')}</div><span class="num sub" style="font-size:11.5px">Day 14 of 30 · spent 10,940 of 18,500</span>`
+   :`<div class="row" style="justify-content:space-between;align-items:flex-end"><div><div style="${cap}">MONTHLY INCOME</div><b class="num" style="font-size:28px">18,500</b></div><span class="pill g">Every pound has a job</span></div><div class="flow" style="height:8px">${SEG.map(x=>`<i style="width:${x.amt/INCOME*100}%;background:${x.c}"></i>`).join('')}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><div><div style="${cap}">SAVING</div><b class="num" style="font-size:14px">18%</b></div><div><div style="${cap}">DEBT-FREE</div><b class="num" style="font-size:14px">Sep 2027</b></div><div><div style="${cap}">SAFETY</div><b class="num" style="font-size:14px">0.8 of 3 mo</b></div></div>`}</div>
+  <div style="position:relative"><span class="pin" style="position:absolute;right:0;top:-9px;z-index:2">2</span><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">${SEG.map((x,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-height:64px;padding:6px 0 4px;border-radius:14px;border:1.5px solid ${i===3?'var(--line2)':'transparent'};background:${i===3?'var(--card)':'none'}">${tile(x,34)}<b class="num" style="font-size:11px;color:var(--ink2)">${m?Math.round(x.spent/x.amt*100)+'%':pct(x.amt)}</b></div>`).join('')}</div></div>
+  <div class="card" style="min-height:130px"><div class="row">${tile(everyday)}<b>Everyday</b></div><p class="sub" style="margin-top:10px">Only this segment shows its lines and status. The other six show an icon and a percent.</p></div>`);
+ const f=[['r','Hero','Three numbers fight for the first glance','Income, a slogan pill and three stats have the same weight, so the card does not answer “am I okay?”. Industry apps lead with one number: YNAB’s Ready to Assign banner, Monzo’s left to spend.'],
+  ['a','Hero','“Every pound has a job” is a slogan, not a metric','It is YNAB’s Ready to Assign = 0 in disguise. Show the number (0 unassigned) so it can turn amber or red when it is not zero.'],
+  ['a','Hero','Seven-colour bar with no legend','v4 removed the legend chips, so the colours only match the rail icons below, which are a separate control.'],
+  ['a','Hero','The card changes meaning with the toggle','Plan shows income, This month shows left to spend: different numbers in the same place make the layout jump.'],
+  ['a','Hero','No pace','Month mode says spent and left, not ahead or behind. Monzo marks the expected spend for today on its ring.'],
+  ['r','Rail','The rail is a filter bar','Only the selected segment shows lines, status or amounts; six show an icon and a percent. A bill due tomorrow in a hidden segment is invisible until opened. This is the feeling you described.'],
+  ['a','Rail','Wrong stat on the rail','Plan mode shows share of income (6%, 2%), the least useful number. Month mode shows 0% for Safety and Grow, which reads as “nothing happened” when they simply move on the 25th.'],
+  ['a','Rail','Seven 44px targets across 340px','Icon-only, 11px captions, recognised by colour and glyph alone. Tappable, hard to learn, and harder in Arabic.'],
+  ['a','Rail','Two steps to read one fact','Scan the rail, pick, then read the card. A ledger reads in one step.']];
+ return {a:`${lab('v4','Hero (1) and rail (2) as proposed')}${v4}`,
+  b:`<div class="note"><h2>What is wrong, by severity</h2><ul>${f.map(p=>`<li><span class="sev ${p[0]}">${p[1]}</span><b>${p[2]}.</b> ${p[3]}</li>`).join('')}</ul></div>
+  <div class="note"><h2>What industry apps do</h2><ul><li><b>YNAB:</b> one banner, Ready to Assign, with a warning when it goes negative; categories show Assigned, Activity and Available. <a href="https://support.ynab.com/en_us/the-plan-header-BkmiuJ_C9.md">Plan header</a></li><li><b>Monzo:</b> Left to spend is balance minus upcoming bills and budgets, drawn as a circle with a dash for the expected spend today, as users describe it. <a href="https://monzo.com/help/budgeting-overdrafts-savings/what-is-left-to-spend/">Help page</a></li><li><b>Copilot:</b> per-category progress rings, from third-party reviews; I found no official design write-up.</li></ul></div>
+  <div class="note"><h2>Rules the new designs follow</h2><ul><li>One hero number answers “am I okay?”.</li><li>Every segment always shows a status line and a number, never only a percent.</li><li>Pace is drawn, not stated.</li><li>Tapping a segment opens it; it never hides the others.</li></ul></div>`};
+}
+function heroes(){
+ const m=mode==='month',hs=[['H1','Pace dial',heroDial(m),'A ring of everyday spend with a tick for today (Monzo-style). Plan mode turns the same ring into the income split.'],['H2','Pace bar',heroBar(m),'One number, one bar, one tick. The lightest and most scannable. Recommended.',1],['H3','Two numbers',heroTwo(m),'Left to spend beside Still to pay, with a spend-versus-pace line (YNAB and Monarch style). Most informative, densest.']];
+ return {cols:hs.map(h=>`<div class="col">${lab(h[0],h[1],h[4])}${phone(`${planChip}${view(m)}${h[2]}<div class="card" style="min-height:70px"><span class="sub">Below the hero: the layout you pick next.</span></div>`)}<p class="sub">${h[3]}</p></div>`),
+  notes:[['Critique of the heroes',['H1 is the most memorable but uses 140px of height for one number and needs a second row for “still to pay”.','H2 keeps the same bar in both modes, so the toggle changes data, not shape. Its pace tick is small and needs a label on first use.','H3 answers the most (left, still to pay, trend) but a line chart is decoration unless it has a caption, and it adds 44px.']],
+   ['Fixes applied to all three',['“Left to spend” is flexible money only (everyday), as Monzo defines it, so bills no longer inflate it. Committed money is its own number: still to pay.','“Every pound has a job” became “0 unassigned”, a number that can turn amber or red.','Stat labels are 12px sentence case, not 10.5px capitals, and “0.8 / 3 mo” fits at 360px.','Over pace is an icon, text and amber, never colour alone.']],
+   ['Components',['All three are FlowStrip variants (the bar and stats exist already). H1 adds one small SVG ring and H3 one line; only the winner is built.','The plan-mode hero is the same across H2 and H3 except the layout.','Nothing is built until you pick.']]]};
+}
+function layoutA(){const m=mode==='month';
+ return {a:`${lab('A','Ledger: every segment is a row',1)}${phone(`${planChip}${view(m)}${heroBar(m)}<div class="card" style="padding:2px 14px" role="list" aria-label="Segments">${SEG.map((_,i)=>ledgerRow(i,m)).join('')}</div>${m?nudge:''}`)}`,
+  b:`${lab('A','Tap a row: the segment page')}${detail(m)}`,
+  notes:[['What it fixes',['All seven segments always show a status line, a number and a bar. A bill due tomorrow or dining over budget is visible without opening anything.','Nothing is hidden behind a selected state, so it no longer behaves like a filter.','Hero and list are about 780px at 372px width, roughly one tall phone screen: hero 150, rows 7 × 64.']],
+  ['Borrowed from',['Monzo: left to spend with an expected-today mark (here on the Everyday bar and its row).','YNAB: category rows with status and available amount on one line.','Apple Wallet and Revolut: one list, tap to drill into a detail page with previous and next.']],
+  ['Trade-offs and reuse',['Lines are one tap away, so the page is an overview and the segment page is the detail. The review reuses both: the same list with a state dot, then the same detail with “Looks right”.','Reuses TintedTile, Card, FlowStrip, LineRow, ModalShell. New: LedgerRow and SegmentCard, both compositions, not primitives.','Swipe between segments on the detail page; the arrows stay for accessibility.']]]};}
+function layoutB(){const m=mode==='month';
+ const tiles=SEG.map((s,i)=>{const f=FACT[m?'month':'plan'][i],left=s.amt-s.spent,warn=m&&i===3;return `<button class="tilec" aria-label="${s.n}: ${f[0]}"><span class="row" style="justify-content:space-between">${tile(s,32)}${warn?`<span class="pill a">${ic('warn','s')}Over</span>`:''}</span><span><b style="font-size:13.5px;display:block">${s.n}</b><b class="num" style="font-size:17px">${m?fmt(left):fmt(s.amt)}</b> <span class="lbl">${m?'left':pct(s.amt)}</span></span><span class="mini" aria-hidden="true"><i style="width:${m?s.spent/s.amt*100:s.amt/6950*100}%;background:${warn?'var(--amber)':s.c}"></i></span><span class="lbl" style="font-size:11.5px;line-height:1.3">${f[0]}</span></button>`}).join('');
+ const free=`<div class="tilec" style="border-style:dashed;justify-content:center;align-items:center;text-align:center"><b class="num" style="font-size:22px">0</b><span class="lbl">unassigned</span><span class="pill g">${ic('check','s')}All assigned</span></div>`;
+ return {a:`${lab('B','Tiles: a two-column grid')}${phone(`${planChip}${view(m)}${heroDial(m)}<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${tiles}${free}</div>`)}`,b:`${lab('B','Tap a tile: the segment page')}${detail(m)}`,
+ notes:[['What it fixes',['Seven always-visible cards with a number, a bar and a status each, plus an eighth tile for the unassigned amount (YNAB’s Ready to Assign).','Strongest first impression: ring hero and coloured tiles, in the spirit of Copilot and Revolut.']],
+  ['Criticism',['Tallest option: ring about 220px plus four tile rows of about 130px is over 800px, so the page scrolls on every phone.','Status text wraps to two lines at 12px and clips in Arabic.','Tiles are slower to compare than rows: the eye scans a grid in a Z, so “which is worst” takes longer than reading down a list.']],
+  ['Reuse',['TintedTile, Card, mini bar and the same segment page as A. New: SegmentTile (a Card composition). It replaces the rail and the chapters.','Best if the page should feel like a dashboard; weakest if it should feel like a plan.']]]};}
+function layoutC(){const m=mode==='month';
+ const lp=(s,i)=>{if(!m)return `<span class="lp z">${pct(s.amt)}</span>`;const left=s.amt-s.spent;if(i===3)return `<span class="lp lo">${fmt(left)}</span>`;return left===0?`<span class="lp z">0</span>`:`<span class="lp ok">${fmt(left)}</span>`};
+ const rows=SEG.map((s,i)=>`<button class="tr" aria-label="${s.n}"><span class="row" style="gap:8px;min-width:0">${tile(s,28)}<b style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.n}</b></span><span class="num">${fmt(s.amt)}</span><span class="num">${m?fmt(s.spent):''}</span>${lp(s,i)}</button>`);
+ const exp=`<div style="background:var(--elev);border-radius:12px;padding:4px 10px;margin:2px 0 6px">${EDLINES.map(l=>`<div class="tr" style="min-height:40px"><span style="font-size:12.5px">${l[0]}</span><span class="num">${fmt(l[1])}</span><span class="num">${m?fmt(l[4]):''}</span><span class="lp ${l[4]>l[1]?'ov':'ok'}">${m?fmt(l[1]-l[4]):''}</span></div>`).join('')}</div>`;
+ return {a:`${lab('C','Table: Planned, Spent, Left')}${phone(`${planChip}${view(m)}<div class="card row" style="justify-content:space-between;padding:12px 14px"><div><div class="lbl">${m?'Left to spend':'Monthly income'}</div><b class="num" style="font-size:24px">${fmt(m?flexLeft:INCOME)}</b></div><div style="text-align:end">${m?`<span class="pill a">${ic('warn','s')}${fmt(ahead)} ahead of pace</span><div class="lbl" style="margin-top:4px">${fmt(Math.round(flexLeft/LEFTD))} a day · ${LEFTD} days left</div>`:`<span class="pill g">${ic('check','s')}0 unassigned</span>`}</div></div>
+  <div class="card" style="padding:6px 12px 10px"><div class="tr h"><span>Segment</span><span>Planned</span><span>${m?'Spent':''}</span><span>${m?'Left':'Share'}</span></div>${rows.slice(0,4).join('')}${exp}${rows.slice(4).join('')}</div>`)}`,b:'',
+ notes:[['What it fixes',['Planned, spent and left for all seven at a glance; colour-coded Left pills (green, amber, red only when over) give a risk read down the list. This is YNAB’s Assigned, Activity, Available model.','Expanding a row shows its lines inline, so there is no second page.']],
+  ['Criticism',['Densest and most spreadsheet-like: it serves power users and punishes the first-time user this redesign is for.','It is the accordion you disliked in the chapters, only smaller.','Four columns at 12.5px mono across 340px leave about 90px for the name: Arabic names clip.','Pill colour needs a rule (what counts as “low”?) or it becomes noise.']],
+  ['Reuse',['Card, TintedTile and Badge for the pill. New: a four-column row. The review would need its own variant, so it unifies least with the review.','Better as an optional Table toggle later than as the default.']]]};}
+function layoutD(){const m=mode==='month';
+ const need=[['warn','Dining is 170 over','Cover it from Groceries','Do it',1],['bank','Visa card is due on the 25th','700 · minimum plus extra','Mark paid',0],['shield','Safety net has not moved','1,850 moves on the 25th','Move now',0]];
+ const ev=[['20','Internet','380 · Home & bills'],['25','School transport','450 · Home & bills'],['25','Visa card','700 · Debts'],['25','Safety net','1,850 · transfer']];
+ const icon=(n,warn)=>`<span class="tile" style="width:36px;height:36px;color:${warn?'var(--amber)':'var(--pri-ink)'};background:${warn?'var(--amber-soft)':'var(--pri-soft)'}">${ic(n)}</span>`;
+ const body=m?`${heroBar(true)}<div class="cap">Needs you · 3</div><div class="card" style="padding:0 12px">${need.map(n=>`<div class="ev">${icon(n[0],n[4])}<span style="flex:1;min-width:0"><b style="font-size:14px;display:block">${n[1]}</b><span class="sub" style="font-size:12px">${n[2]}</span></span><button class="chip" style="color:var(--pri-ink);border-color:var(--pri)">${n[3]}</button></div>`).join('')}</div>
+  <div class="cap">Coming up</div><div class="card" style="padding:0 12px">${ev.map(e=>`<div class="ev"><span class="date"><b>${e[0]}</b>Nov</span><span style="flex:1;min-width:0"><b style="font-size:14px;display:block">${e[1]}</b><span class="sub" style="font-size:12px">${e[2]}</span></span></div>`).join('')}</div>
+  <div class="flow" style="height:30px;gap:3px">${SEG.map(x=>`<i style="width:${x.amt/INCOME*100}%;background:${x.c};display:grid;place-items:center;color:var(--on);border-radius:6px">${ic(x.i,'s')}</i>`).join('')}</div><span class="lbl" style="text-align:center">All segments · tap for the list</span>`
+  :`${heroBar(false)}<div class="cap">Plan checks</div><div class="card" style="padding:0 12px">${[['check','Rent is 30% of income','Under the 33% guide',0],['check','Visa card cleared by Sep 2027','Extra 300 a month',0],['warn','Safety net holds 0.8 of 3 months','Fills in about 2 months',1],['warn','2 segments have estimates','Everyday and Debts',1]].map(c=>`<div class="ev"><span class="tile" style="width:36px;height:36px;color:${c[3]?'var(--amber)':'var(--green)'};background:${c[3]?'var(--amber-soft)':'var(--green-soft)'}">${ic(c[0])}</span><span style="flex:1;min-width:0"><b style="font-size:14px;display:block">${c[1]}</b><span class="sub" style="font-size:12px">${c[2]}</span></span></div>`).join('')}</div><div class="card" style="padding:2px 14px">${[0,1,2,3].map(i=>ledgerRow(i,false)).join('')}</div>`;
+ return {a:`${lab('D','Action-first: what needs you')}${phone(`${planChip}${view(m)}${body}`)}`,b:'',
+ notes:[['What it fixes',['The page answers “what should I do now?” instead of “what is the plan?”. Overdue and over-budget items come first with the action on the row, in the spirit of Copilot’s review queue.','Upcoming bills as a dated list is how Monarch and Copilot make recurring costs feel manageable.']],
+  ['Criticism',['Turns the budget into an inbox: in a quiet month “Needs you” is empty and the page is half hollow.','The plan is no longer the object. Users who want to read or edit it go one level deeper, which the review and builder do not mirror.','Needs a reliable rule for what counts as “needs you” (a new engine concern) or it shows noise.']],
+  ['Reuse',['PromptBanner and the nudge become the list; event rows are a LineRow variant; the segment strip is the FlowStrip.','Best as a section inside A (the “Needs you” card replaces the nudge row), not a separate layout.']]]};}
+function compare(){
+ const rows=[['Every segment shows status and a number','●○○○','●●●●','●●●○','●●●●','●●○○'],['Fits about one screen','●●●○','●●●○','●○○○','●●●○','●●○○'],['Fast to find the worst segment','●○○○','●●●●','●●○○','●●●●','●●●●'],['Same pattern as the plan review','●●●●','●●●●','●●●○','●○○○','●○○○'],['Reuses existing components','●●●○','●●●●','●●●○','●●○○','●●○○'],['First-time user clarity','●●○○','●●●○','●●●●','●●○○','●●●○'],['Works in Arabic (RTL, longer names)','●●○○','●●●○','●●○○','●○○○','●●●○'],['Build effort (more dots = less)','●●●○','●●●○','●●○○','●●○○','●●○○']];
+ return {full:`<div class="col"><div class="tw"><table><thead><tr><th>Criterion (my judgement)</th><th>v4 rail</th><th>A Ledger</th><th>B Tiles</th><th>C Table</th><th>D Action-first</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td>${r.slice(1).map(c=>`<td class="dotsc">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+ <div class="note"><h2>Recommendation</h2><ul><li><b>Replace the rail with A (Ledger) and use H2 (pace bar) as its hero.</b> It fixes the filter feeling directly: all seven segments always carry a status and a number, in about one screen, and the plan review becomes the same list with state dots.</li><li><b>Borrow from D:</b> a “Needs you” card replaces the single nudge row, capped at three items and hidden when empty.</li><li><b>Leave B and C out:</b> B scrolls on every phone; C is the accordion in disguise and the hardest in Arabic. C could return as a Table toggle later.</li><li><b>Effect on the plan:</b> step 3 becomes “summary hero + ledger + segment page” instead of “rail + segment card”. The segment page, review and builder stay as planned. <code>BlockStepper</code> still becomes <code>SegmentRail</code> (your approved decision) but is used for the prev/next dots on the segment page and in the review, not as the page’s main control.</li></ul></div>
+ <div class="note"><h2>How far to trust these ratings</h2><ul><li>They are my judgement from the mockups, not user tests. The quickest check is to put A and D on a device and ask someone to find “what is due soon” in 5 seconds.</li><li>The phone is drawn tall; a small Android phone (640px) pushes the last one or two rows of A below the fold.</li></ul></div></div>`};
+}
+const SCREENS=[['Critique',critique],['Heroes',heroes],['A · Ledger',layoutA],['B · Tiles',layoutB],['C · Table',layoutC],['D · Action-first',layoutD],['Compare',compare]];
+function draw(){
+ document.getElementById('tabs').innerHTML=SCREENS.map((s,i)=>`<button class="tab" role="tab" aria-selected="${i===tab}" data-tab="${i}">${s[0]}</button>`).join('');
+ document.getElementById('mode').innerHTML=['plan','month'].map(k=>`<button role="tab" aria-selected="${mode===k}" data-mode="${k}">${k==='plan'?'Plan':'This month'}</button>`).join('');
+ const o=SCREENS[tab][1](),st=document.getElementById('stage');
+ if(o.full)st.innerHTML=o.full;
+ else if(o.cols)st.innerHTML=`<div class="grid g3">${o.cols.join('')}</div>${notesHtml(o.notes)}`;
+ else st.innerHTML=`<div class="grid g2"><div class="col">${o.a}</div><div class="col">${o.b||''}</div></div>${o.notes?notesHtml(o.notes):''}`;
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-tab]'),m=e.target.closest('[data-mode]');if(t){tab=+t.dataset.tab;draw()}else if(m){mode=m.dataset.mode;draw()}});
+draw();
+</script>
