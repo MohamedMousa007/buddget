@@ -7,8 +7,20 @@ import { useT } from '@/lib/i18n'
 import { useModalTitleId } from '@/components/modals/ModalShell'
 import { IconButton } from '@/components/ui/IconButton'
 
-function Title({ children }: { children: ReactNode }) {
-  return <h2 id={useModalTitleId()} className="break-words text-[22px] font-bold text-[var(--color-brand-text-primary)]">{children}</h2>
+/**
+ * `size="compact"` is the 20px title for sheets whose names are long or user-typed (a subscription, a goal): it wraps to
+ * two lines at most, keeps the full name on the element, and follows the text's own direction. The default is unchanged.
+ */
+function Title({ children, size = 'default' }: { children: ReactNode; size?: 'default' | 'compact' }) {
+  const id = useModalTitleId()
+  if (size === 'compact') {
+    return (
+      <h2 id={id} dir="auto" title={typeof children === 'string' ? children : undefined} className="line-clamp-2 break-words text-[20px] font-bold leading-snug text-[var(--color-brand-text-primary)]">
+        {children}
+      </h2>
+    )
+  }
+  return <h2 id={id} className="break-words text-[22px] font-bold text-[var(--color-brand-text-primary)]">{children}</h2>
 }
 
 function Subtitle({ children }: { children: ReactNode }) {
@@ -23,12 +35,14 @@ function Extra({ children }: { children: ReactNode }) {
 interface V3HeaderProps {
   onClose: () => void
   children: ReactNode
+  /** Control rendered before the title (e.g. a back button). */
+  leading?: ReactNode
 }
 
 interface TitledHeaderProps {
   /** Shorthand for a sheet inside an already padded container: same look, no horizontal inset. */
   title: string
-  subtitle?: string
+  subtitle?: ReactNode
   onClose: () => void
   /** Control rendered before the title (e.g. a back button). */
   leading?: ReactNode
@@ -72,7 +86,7 @@ function V3SheetHeaderBase(props: SheetHeaderProps) {
       </Header>
     )
   }
-  return <Header onClose={props.onClose}>{props.children}</Header>
+  return <Header onClose={props.onClose} leading={props.leading}>{props.children}</Header>
 }
 
 export const V3SheetHeader = Object.assign(V3SheetHeaderBase, { Title, Subtitle, Extra })

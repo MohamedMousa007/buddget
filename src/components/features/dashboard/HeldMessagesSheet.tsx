@@ -1,6 +1,6 @@
 'use client'
 import { answersTo } from '@/lib/accounts/identity/accountRef'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format } from 'date-fns'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -8,18 +8,17 @@ import { paydayCandidates } from '@/lib/income/paydayResolution'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { useShortDate } from '@/hooks/useShortDate'
 import type { Currency } from '@/lib/store/types'
-import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalTitle } from '@/components/modals/ModalTitle'
-import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
+import { ResolveGroupLabel, ResolveRow, ResolveSheet, ResolveTile } from '@/components/modals/ResolveSheet'
+import { Button } from '@/components/ui/button'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { TOAST_UNDO_MS } from '@/components/ui/toastQueue'
+import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useT } from '@/lib/i18n'
 import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import type { PendingConfirmation } from '@/hooks/useSmsConfirmations'
 import { formatFixed2 } from '@/lib/utils/formatters'
-import { Button } from '@/components/ui/button'
-
-/** Kinds that are money coming in: the amount reads +, green, and confirming is a `success`. */
-const CREDIT_KINDS = new Set(['income', 'instant_transfer_in', 'refund'])
+import { createDeferred, dismissKind, dismissNeedsUndo, groupHeld, isCredit, isCurrencyOnly, runBatch } from '@/lib/sms/heldReview'
 
 interface HeldMessagesSheetProps {
   open: boolean
@@ -39,31 +38,65 @@ export interface ReviewMatch {
 }
 
 /**
- * Review transactions (screen 09): one card per SMS awaiting action — the original text,
- * Buddgy's reading of it, and two terminal answers. Two flavours per row:
- *  - provisional currency (transaction exists) → confirming locks the currency
- *  - add-failed rescue (nothing created yet)   → confirming creates it
+ * Held bank messages: one selectable row per message, one footer. Nothing is chosen for the user (these were held for a
+ * reason); "Select all ready" picks plain debits only, credits and currency checks are chosen one by one, and an
+ * unverified sender can only be confirmed from its own detail. Two flavours per row:
+ *  - provisional currency (transaction exists) → confirming locks the currency; dismissing only stops the question
+ *  - add-failed rescue (nothing created yet)   → confirming creates it; dismissing means it is never added (Undo for 8 s)
  */
 export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: HeldMessagesSheetProps) {
   const shortDate = useShortDate()
   const t = useT()
+  const s = t.smsReview
+  const toast = useActionToast()
+  const { online } = useNetworkStatus()
   const weekendFirst = useWeekendFirstDay()
   const { incomeSources, incomeEvents, paymentMethods, monthStartDay, rates } = useFinanceStore(
-    useShallow((s) => ({
-      incomeSources: s.incomeSources,
-      incomeEvents: s.incomeEvents,
-      paymentMethods: s.paymentMethods,
-      monthStartDay: s.settings.monthStartDay,
-      rates: s.exchangeRates,
+    useShallow((st) => ({
+      incomeSources: st.incomeSources,
+      incomeEvents: st.incomeEvents,
+      paymentMethods: st.paymentMethods,
+      monthStartDay: st.settings.monthStartDay,
+      rates: st.exchangeRates,
     })),
   )
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [failed, setFailed] = useState<Set<string>>(new Set())
+  const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const [busy, setBusy] = useState(false)
+
+  // "Don't add" is held back for the Undo window, then sent; a failure puts the rows back with the red chip.
+  const [deferred] = useState(() =>
+    createDeferred(async (ids) => {
+      const res = await runBatch(ids, dismissItem)
+      if (res.failed.length) {
+        setHidden((h) => new Set([...h].filter((id) => !res.failed.includes(id))))
+        setFailed((f) => new Set([...f, ...res.failed]))
+      }
+    }, TOAST_UNDO_MS),
+  )
+  useEffect(() => {
+    const flush = () => { if (document.visibilityState === 'hidden') void deferred.flush() }
+    const flushNow = () => void deferred.flush()
+    document.addEventListener('visibilitychange', flush)
+    window.addEventListener('pagehide', flushNow)
+    return () => {
+      document.removeEventListener('visibilitychange', flush)
+      window.removeEventListener('pagehide', flushNow)
+      void deferred.flush()
+    }
+  }, [deferred])
+
+  const visible = useMemo(() => items.filter((i) => !hidden.has(i.id)), [items, hidden])
+  const groups = useMemo(() => groupHeld(visible), [visible])
+
   // Credits that plausibly fill an open payday are confirmed straight into it ("Confirm and link").
   const matches = useMemo(() => {
     const out = new Map<string, ReviewMatch>()
     if (!open) return out
     const today = new Date()
-    for (const item of items) {
-      if (!item.kind || !CREDIT_KINDS.has(item.kind) || item.amount == null || !item.currency) continue
+    for (const item of visible) {
+      if (!isCredit(item) || item.amount == null || !item.currency) continue
       const receivedDate = format(new Date(item.received_at), 'yyyy-MM-dd')
       const best = paydayCandidates({ amount: item.amount, currency: item.currency as Currency, receivedDate }, incomeSources, incomeEvents, monthStartDay, rates, today, weekendFirst)[0]
       if (!best?.plausible) continue
@@ -71,104 +104,157 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
       out.set(item.id, { templateId: best.source.id, date: best.occ.dueDate, daysLate: Math.max(0, late) })
     }
     return out
-  }, [open, items, incomeSources, incomeEvents, monthStartDay, rates, weekendFirst])
-  const [busyId, setBusyId] = useState<string | null>(null)
-  const [failedId, setFailedId] = useState<string | null>(null)
+  }, [open, visible, incomeSources, incomeEvents, monthStartDay, rates, weekendFirst])
 
-  const run = async (id: string, action: () => Promise<boolean>) => {
-    setBusyId(id)
-    setFailedId(null)
-    const ok = await action()
-    if (!ok) setFailedId(id)
-    // Handled the last item — the queue is done, close the sheet.
-    else if (items.length === 1) onClose()
-    setBusyId(null)
+  const chosen = visible.filter((i) => selected.has(i.id) && !(groups.locked as PendingConfirmation[]).includes(i))
+  const n = chosen.length
+  const close = () => {
+    setSelected(new Set())
+    setFailed(new Set())
+    onClose()
   }
 
-  return (
-    <ModalShell open={open} onBackdropClick={onClose} panelClassName="!max-h-[min(80dvh,640px)]">
-      <div className="flex flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <ModalTitle>{t.smsReview.title}</ModalTitle>
-            <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.smsReview.subtitle}</p>
-          </div>
-          <BuddgyIcon size={22} aria-hidden />
-        </div>
+  // Everything was handled (confirmed, or held back for Undo): nothing left to show.
+  useEffect(() => {
+    if (open && items.length > 0 && visible.length === 0) onClose()
+  }, [open, items.length, visible.length, onClose])
 
-        {items.map((item) => {
-          const title = item.clean_title ?? item.merchant ?? 'Bank transaction'
-          const provisional = Boolean(item.expense_id || item.income_id)
-          const credit = item.kind ? CREDIT_KINDS.has(item.kind) : false
-          const busy = busyId === item.id
-          const match = matches.get(item.id)
-          const pm = item.account_last4 ? paymentMethods.find((m) => answersTo(m, item.account_last4)) : undefined
-          const instrument = item.account_last4
-            ? pm
-              ? methodLabel(pm)
-              : t.smsReview.newInstrument((item.payment_instrument as 'card' | 'account' | 'wallet' | null) ?? 'card', item.account_last4)
-            : item.bank_name
-          const sub = match
-            ? [t.smsReview.matchedTo(shortDate(match.date)), match.daysLate ? t.smsReview.arrivedLate(match.daysLate) : null].filter(Boolean).join(' · ')
-            : provisional && !credit
-              ? t.smsReview.confirmCurrencyHelp
-              : [credit || !item.category ? null : categoryLabel(t, item.category), instrument].filter(Boolean).join(' · ')
-          return (
-            <div
-              key={item.id}
-              className="flex flex-col gap-2.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3"
-            >
-              {item.raw_body ? (
-                <p className="font-mono-numbers text-[0.6875rem] leading-[1.45] text-[var(--color-brand-text-muted)]">{item.raw_body}</p>
-              ) : null}
-              {item.failure_code === 'sender_mismatch' ? (
-                <p className="text-xs text-[var(--color-brand-red)]" role="note">
-                  {t.smsReview.unverifiedSender(item.sender ?? '?')}
-                </p>
-              ) : null}
-              <div className="flex items-center justify-between gap-2.5">
-                <span className="min-w-0">
-                  <span className="block text-[0.90625rem] font-bold text-[var(--color-brand-text-primary)]">{title}</span>
-                  {sub ? <span className="block text-[0.78125rem] text-[var(--color-brand-text-secondary)]">{sub}</span> : null}
-                </span>
-                {item.amount != null ? (
-                  <span
-                    className="whitespace-nowrap font-mono-numbers text-[0.9375rem] font-semibold"
-                    style={{ color: credit ? 'var(--color-brand-green)' : 'var(--color-brand-text-primary)' }}
-                  >
-                    {credit ? '+' : '−'}
-                    {formatFixed2(item.amount)}
-                  </span>
-                ) : null}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant={match ? 'success' : 'default'}
-                  size="touch"
-                  loading={busy}
-                  onClick={() =>
-                    void run(item.id, async () => {
-                      const ok = await confirmItem(item.id, provisional ? (item.currency ?? undefined) : undefined)
-                      if (ok && match) onConfirmedMatch(item, match)
-                      return ok
-                    })
-                  }
-                >
-                  {match ? t.smsReview.confirmAndLink : t.common.confirm}
-                </Button>
-                <Button variant="outline" size="touch" disabled={busy} onClick={() => void run(item.id, () => dismissItem(item.id))}>
-                  {t.smsReview.dismiss}
-                </Button>
-              </div>
-              {failedId === item.id ? (
-                <p className="text-xs text-[var(--color-brand-red)]" role="alert">
-                  {t.smsReview.actionFailed}
-                </p>
+  const toggle = (id: string) => setSelected((p) => { const q = new Set(p); if (q.has(id)) q.delete(id); else q.add(id); return q })
+  const selectAllReady = () => setSelected((p) => new Set([...p, ...groups.ready.map((i) => i.id)]))
+
+  const confirmMany = async (list: PendingConfirmation[]) => {
+    if (busy || !online || list.length === 0) return
+    setBusy(true)
+    setFailed(new Set())
+    const byId = new Map(list.map((i) => [i.id, i]))
+    const res = await runBatch(list.map((i) => i.id), async (id) => {
+      const item = byId.get(id)!
+      const done = await confirmItem(id, isCurrencyOnly(item) ? (item.currency ?? undefined) : undefined)
+      const match = matches.get(id)
+      if (done && match) onConfirmedMatch(item, match)
+      return done
+    })
+    setSelected((p) => new Set([...p].filter((id) => !res.ok.includes(id))))
+    setFailed(new Set(res.failed))
+    setBusy(false)
+    if (res.failed.length === 0 && res.ok.length === visible.length) close()
+  }
+
+  const dismissMany = async (list: PendingConfirmation[]) => {
+    if (busy || list.length === 0) return
+    const ids = list.map((i) => i.id)
+    setSelected((p) => new Set([...p].filter((id) => !ids.includes(id))))
+    setFailed(new Set())
+    if (!dismissNeedsUndo(list)) {
+      // Currency-only rows: the transaction stays as it is, so there is nothing to take back.
+      setBusy(true)
+      const res = await runBatch(ids, dismissItem)
+      setFailed(new Set(res.failed))
+      setSelected((p) => new Set([...p, ...res.failed]))
+      setBusy(false)
+      return
+    }
+    setHidden((h) => new Set([...h, ...ids]))
+    const handle = deferred.schedule(ids)
+    toast(s.notAddedToast(ids.length), {
+      undoLabel: t.common.undo,
+      undo: () => {
+        if (handle.cancel()) setHidden((h) => new Set([...h].filter((id) => !ids.includes(id))))
+      },
+    })
+  }
+
+  const row = (item: PendingConfirmation, locked: boolean) => {
+    const title = item.clean_title ?? item.merchant ?? 'Bank transaction'
+    const credit = isCredit(item)
+    const currencyOnly = isCurrencyOnly(item)
+    const match = matches.get(item.id)
+    const pm = item.account_last4 ? paymentMethods.find((m) => answersTo(m, item.account_last4)) : undefined
+    const instrument = item.account_last4
+      ? pm
+        ? methodLabel(pm)
+        : s.newInstrument((item.payment_instrument as 'card' | 'account' | 'wallet' | null) ?? 'card', item.account_last4)
+      : item.bank_name
+    const detail = currencyOnly && !credit ? s.confirmCurrencyHelp : [credit || !item.category ? null : categoryLabel(t, item.category), instrument].filter(Boolean).join(' · ')
+    const sub = [shortDate(item.received_at), detail].filter(Boolean).join(' · ')
+    const amountText = item.amount != null ? `${credit ? '+' : '−'}${formatFixed2(item.amount)}` : ''
+    const isFailed = failed.has(item.id)
+    const chip = isFailed
+      ? ({ tone: 'negative', text: s.couldntSave } as const)
+      : match
+        ? ({ tone: 'positive', text: [s.matchedTo(shortDate(match.date)), match.daysLate ? s.arrivedLate(match.daysLate) : null].filter(Boolean).join(' · ') } as const)
+        : undefined
+    return (
+      <ResolveRow
+        key={item.id}
+        state={locked ? 'locked' : isFailed ? 'failed' : selected.has(item.id) ? 'selected' : 'idle'}
+        onToggle={locked ? undefined : () => toggle(item.id)}
+        leading={<ResolveTile label={title} moneyIn={credit} />}
+        title={title}
+        sub={sub}
+        trailing={amountText ? <span className={credit ? 'text-[var(--color-brand-green)]' : undefined}>{amountText}</span> : undefined}
+        chip={chip}
+        label={[title, amountText, shortDate(item.received_at), chip?.text].filter(Boolean).join(', ')}
+        detailLabels={{ show: s.seeMessage, hide: s.hideMessage }}
+        detailDefaultOpen={locked}
+        detail={
+          item.raw_body || locked ? (
+            <div className="flex flex-col gap-2 px-1">
+              {item.raw_body ? <p dir="auto" className="font-mono-numbers text-[0.6875rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{item.raw_body}</p> : null}
+              {locked ? (
+                <>
+                  <p className="text-xs text-[var(--color-brand-red)]" role="note">{s.unverifiedSender(item.sender ?? '?')}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button size="touch" disabled={busy || !online} onClick={() => void confirmMany([item])}>{s.confirmThisCredit}</Button>
+                    <Button size="touch" variant="outline" disabled={busy} onClick={() => void dismissMany([item])}>{s.dismissN(1)}</Button>
+                  </div>
+                </>
               ) : null}
             </div>
-          )
-        })}
-      </div>
-    </ModalShell>
+          ) : undefined
+        }
+      />
+    )
+  }
+
+  const kind = dismissKind(chosen)
+  const secondaryLabel = kind === 'keepAsIs' ? s.keepAsIsN(n) : kind === 'dontAdd' ? s.dontAddN(n) : s.dismissN(n)
+  const allFailed = n > 0 && chosen.every((i) => failed.has(i.id))
+  const allCredits = n > 0 && chosen.every(isCredit)
+  const allMatched = allCredits && chosen.every((i) => matches.has(i.id))
+  const primaryLabel = allFailed ? s.retryN(n) : allMatched ? s.confirmLinkN(n) : s.confirmN(n)
+  const sections = [groups.ready, groups.check, groups.locked].filter((g) => g.length > 0).length
+
+  return (
+    <ResolveSheet
+      open={open}
+      onClose={close}
+      busy={busy}
+      title={s.sheetTitle(visible.length)}
+      subtitle={s.sheetSubtitle}
+      headerAction={groups.ready.length > 0 ? { label: s.selectAllReady, onPress: selectAllReady } : undefined}
+      note={!online ? { text: s.offlineNote, tone: 'warning' } : failed.size > 0 ? { text: s.actionFailed, tone: 'error' } : undefined}
+      primary={{ label: primaryLabel, onPress: () => void confirmMany(chosen), disabled: n === 0 || !online, loading: busy, variant: allCredits ? 'success' : 'default' }}
+      secondary={{ label: secondaryLabel, onPress: () => void dismissMany(chosen), disabled: n === 0 }}
+    >
+      {groups.ready.length > 0 ? (
+        <>
+          {sections > 1 ? <ResolveGroupLabel>{s.groupReady(groups.ready.length)}</ResolveGroupLabel> : null}
+          {groups.ready.map((i) => row(i, false))}
+        </>
+      ) : null}
+      {groups.check.length > 0 ? (
+        <>
+          {sections > 1 ? <ResolveGroupLabel>{s.groupCheck(groups.check.length)}</ResolveGroupLabel> : null}
+          {groups.check.map((i) => row(i, false))}
+        </>
+      ) : null}
+      {groups.locked.length > 0 ? (
+        <>
+          <ResolveGroupLabel>{s.groupUnverified(groups.locked.length)}</ResolveGroupLabel>
+          {groups.locked.map((i) => row(i, true))}
+        </>
+      ) : null}
+    </ResolveSheet>
   )
 }

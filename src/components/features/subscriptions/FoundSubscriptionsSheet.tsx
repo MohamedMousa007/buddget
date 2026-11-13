@@ -1,15 +1,14 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
-import { Link as LinkIcon, MessageSquare } from 'lucide-react'
+import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ResolveRow, ResolveSheet } from '@/components/modals/ResolveSheet'
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useSubscriptionDetector, type SmsFind } from '@/hooks/useSubscriptionDetector'
 import { findBrandByKey } from '@/lib/constants/subscriptionCatalog'
 import { useLocale, useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Currency } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
 import { localTodayISO } from '@/lib/utils/localDate'
@@ -20,8 +19,6 @@ import { chargesToLink, notASubscriptionKey } from '@/lib/subscriptions/smsFinds
 import { draftToSubscription } from '@/lib/subscriptions/subscriptionDraft'
 import { startDateFromBillingDay } from '@/lib/subscriptions/subscriptionStartDate'
 import { BrandTile } from './BrandTile'
-import { ConfidenceMeter } from './ConfidenceMeter'
-import { SheetFrame } from './SheetFrame'
 import { currencyLabel } from './subscriptionLabels'
 import { settlePrompt } from '@/lib/prompts/settle'
 
@@ -77,119 +74,77 @@ function useResolveFind() {
   }
 }
 
-function FindCard({ find, onAdd, onDismiss }: { find: SmsFind; onAdd: () => void; onDismiss: () => void }) {
-  const t = useT()
-  const { locale } = useLocale()
-  const { shortDate: formatDateShort } = useSubscriptionDates()
-  const { base, rates } = useFinanceStore(useShallow((s) => ({ base: s.settings.baseCurrency, rates: s.exchangeRates })))
-  const sms = t.subscriptions.ui.sms
-  const foreign = find.currency !== base
-
+/** The evidence behind a find, one tap away: the charge dates and the message excerpt. */
+function FindDetail({ find }: { find: SmsFind }) {
+  const { shortDate } = useSubscriptionDates()
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] shadow-[var(--shadow-sm)]">
-      <div className="flex flex-col gap-3 p-3.5">
-        <div className="flex items-center gap-3">
-          <BrandTile brandKey={find.brandKey} name={find.name} size={44} />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-base font-semibold text-[var(--color-brand-text-primary)]">{find.name}</div>
-            <div className="text-xs text-[var(--color-brand-text-secondary)]">
-              {sms.monthlyDay(find.billingDay)}
-            </div>
-          </div>
-          <div className="text-end">
-            <div className="font-mono-numbers text-[17px] font-semibold text-[var(--color-brand-text-primary)]">
-              {foreign ? formatCurrency(find.amount, find.currency) : formatFixed2(find.amount)}
-            </div>
-            <div className="font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-secondary)]">
-              {foreign
-                ? `≈ ${currencyLabel(base, locale)} ${formatWhole(convertCurrency(find.amount, find.currency as Currency, base, rates))}`
-                : currencyLabel(find.currency, locale)}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <ConfidenceMeter level={find.confidence} />
-            <span className="text-xs font-semibold text-[var(--color-brand-text-primary)]">{sms.confidence[find.confidence]}</span>
-          </div>
-          <div className="flex gap-1">
-            {find.dates.map((d, i) => (
-              <Badge key={`${i}-${d}`} tone="soft" bordered={false} className="font-mono-numbers text-[0.6875rem] font-normal">
-                {formatDateShort(d)}
-              </Badge>
-            ))}
-          </div>
-        </div>
-        {find.excerpt ? (
-          <div className="flex items-start gap-2 rounded-[10px] bg-[var(--color-brand-elevated)] px-2.5 py-2 text-xs leading-snug text-[var(--color-brand-text-secondary)]">
-            <MessageSquare className="mt-px size-[13px] shrink-0" strokeWidth={1.75} aria-hidden />
-            <span className="font-mono-numbers">{find.excerpt}</span>
-          </div>
-        ) : null}
-        {find.match ? (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-brand-primary-ink)]">
-            <LinkIcon className="size-3.5" strokeWidth={1.75} aria-hidden />
-            {sms.matches(find.match.name)}
-          </div>
-        ) : null}
+    <div className="flex flex-col gap-2 px-1">
+      <div className="flex flex-wrap gap-1">
+        {find.dates.map((d, i) => (
+          <Badge key={`${i}-${d}`} tone="soft" bordered={false} className="font-mono-numbers text-[0.6875rem] font-normal">
+            {shortDate(d)}
+          </Badge>
+        ))}
       </div>
-      <div className="flex gap-2 px-3.5 pb-3.5">
-        <Button variant="outline" size="cta" className="min-w-0 flex-1" onClick={onDismiss}>
-          {sms.notASub}
-        </Button>
-        <Button size="cta" className="min-w-0 flex-1" onClick={onAdd}>
-          {find.match ? sms.linkTo(find.match.name) : sms.add}
-        </Button>
-      </div>
+      {find.excerpt ? <p dir="auto" className="font-mono-numbers text-[0.6875rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{find.excerpt}</p> : null}
     </div>
   )
 }
 
-/** Review what the SMS scan found. Nothing is added until each find is confirmed. */
+/** Review what the SMS scan found. Nothing is added until the user confirms; every find starts selected (adding is reversible). */
 export function FoundSubscriptionsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT()
+  const { locale } = useLocale()
   const sms = t.subscriptions.ui.sms
   const { finds, scanned } = useSubscriptionDetector()
-  const dismiss = settlePrompt
+  const { base, rates } = useFinanceStore(useShallow((s) => ({ base: s.settings.baseCurrency, rates: s.exchangeRates })))
   const resolve = useResolveFind()
+  const [off, setOff] = useState<Set<string>>(new Set())
   if (!open) return null
 
-  const addAll = () => {
-    finds.forEach(resolve)
+  const chosen = finds.filter((f) => !off.has(f.brandKey))
+  const n = chosen.length
+  const toggle = (key: string) => setOff((p) => { const q = new Set(p); if (q.has(key)) q.delete(key); else q.add(key); return q })
+  const addChosen = () => {
+    chosen.forEach(resolve)
     onClose()
+  }
+  const notSubscriptions = () => {
+    // Permanent and synced: the same answer the per-card "Not a subscription" gave.
+    chosen.forEach((f) => settlePrompt(notASubscriptionKey(f.brandKey)))
+    if (n === finds.length) onClose()
   }
 
   return (
-    <SheetFrame
+    <ResolveSheet
       open
       onClose={onClose}
       title={sms.found(finds.length)}
-      footer={
-        finds.length > 0 ? (
-          <Button size="cta-block" onClick={addAll}>
-            {sms.addN(finds.length)}
-          </Button>
-        ) : undefined
-      }
+      subtitle={`${sms.scanned(scanned)} · ${sms.nothingAdded}`}
+      primary={finds.length === 0 ? { label: t.common.close, onPress: onClose } : { label: sms.addN(n), onPress: addChosen, disabled: n === 0 }}
+      secondary={finds.length > 0 ? { label: sms.notASub, onPress: notSubscriptions, disabled: n === 0 } : undefined}
     >
-      <div className="flex items-center gap-3 rounded-2xl bg-[var(--color-brand-primary-soft)] px-3.5 py-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-card)] text-[var(--color-brand-primary-ink)]">
-          <MessageSquare className="size-[18px]" strokeWidth={1.75} aria-hidden />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{sms.scanned(scanned)}</div>
-          <div className="text-xs text-[var(--color-brand-text-secondary)]">{sms.nothingAdded}</div>
-        </div>
-      </div>
       {finds.length === 0 ? <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{sms.none}</p> : null}
-      {finds.map((f) => (
-        <FindCard
-          key={f.brandKey}
-          find={f}
-          onAdd={() => resolve(f)}
-          onDismiss={() => dismiss(notASubscriptionKey(f.brandKey))}
-        />
-      ))}
-    </SheetFrame>
+      {finds.map((f) => {
+        const foreign = f.currency !== base
+        const amount = foreign ? formatCurrency(f.amount, f.currency) : formatFixed2(f.amount)
+        const approx = foreign ? `≈ ${currencyLabel(base, locale)} ${formatWhole(convertCurrency(f.amount, f.currency as Currency, base, rates))}` : null
+        return (
+          <ResolveRow
+            key={f.brandKey}
+            state={off.has(f.brandKey) ? 'idle' : 'selected'}
+            onToggle={() => toggle(f.brandKey)}
+            leading={<BrandTile brandKey={f.brandKey} name={f.name} size={40} />}
+            title={f.name}
+            sub={[sms.monthlyDay(f.billingDay), sms.confidence[f.confidence], approx].filter(Boolean).join(' · ')}
+            trailing={amount}
+            chip={f.match ? { tone: 'brand', text: sms.matches(f.match.name) } : undefined}
+            label={`${f.name}, ${amount}, ${sms.monthlyDay(f.billingDay)}`}
+            detail={<FindDetail find={f} />}
+            detailLabels={{ show: t.smsReview.seeMessage, hide: t.smsReview.hideMessage }}
+          />
+        )
+      })}
+    </ResolveSheet>
   )
 }

@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { useSmsCounterparty } from '@/hooks/useSmsCounterparty'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SelectableCard } from '@/components/ui/SelectableCard'
@@ -93,10 +93,7 @@ export function AssignIncomeSheet({ open, onClose, credit, onAssign, initialTemp
   return (
     <ModalShell open={open} onBackdropClick={onClose} zIndexClassName={zIndexClassName ?? 'z-[110]'}>
       <div className="flex flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
-        <div>
-          <ModalTitle>{t.income.linkSheetTitle}</ModalTitle>
-          <p className="mt-1 text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{body}</p>
-        </div>
+        <V3SheetHeader title={t.income.linkSheetTitle} subtitle={body} onClose={onClose} />
         <div role="radiogroup" aria-label={t.income.linkSheetTitle} className="flex flex-col gap-3">
           {options.map((o) => (
             <SelectableCard key={o.occ.key} surface="elevated" selected={chosen === o.occ.key} onClick={() => setChosen(o.occ.key)}>

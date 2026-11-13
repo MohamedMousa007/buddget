@@ -40,3 +40,30 @@ describe('SettingsSwitchRow tag', () => {
     expect(html).toContain('uppercase')
   })
 })
+
+describe('compact sheet title (SheetFrame sheets)', () => {
+  it('is 20px, clamps to two lines, follows the text direction and keeps the full name', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3SheetHeader, { onClose: () => {} } as never, createElement(V3SheetHeader.Title, { size: 'compact' } as never, 'Amazon Prime Video Channels')),
+    )
+    expect(html).toContain('text-[20px]')
+    expect(html).toContain('line-clamp-2')
+    expect(html).toContain('dir="auto"')
+    expect(html).toContain('title="Amazon Prime Video Channels"')
+    expect(html).not.toContain('text-[22px]')
+  })
+  it('the default title stays 22px with no clamp', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3SheetHeader, { onClose: () => {} } as never, createElement(V3SheetHeader.Title, null, 'Hi')),
+    )
+    expect(html).toContain('text-[22px]')
+    expect(html).not.toContain('line-clamp-2')
+  })
+  it('the compound form renders a leading control before the title', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3SheetHeader, { onClose: () => {}, leading: createElement('i', { id: 'back' }) } as never, createElement(V3SheetHeader.Title, null, 'Hi')),
+    )
+    expect(html.indexOf('id="back"')).toBeGreaterThan(-1)
+    expect(html.indexOf('id="back"')).toBeLessThan(html.indexOf('<h2'))
+  })
+})

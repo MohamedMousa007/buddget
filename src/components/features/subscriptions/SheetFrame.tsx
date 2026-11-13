@@ -1,9 +1,9 @@
 'use client'
 
-import { ChevronLeft, X } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ModalShell } from '@/components/modals/ModalShell'
-import { ModalTitle } from '@/components/modals/ModalTitle'
+import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
@@ -11,17 +11,18 @@ import { useT } from '@/lib/i18n'
 function Header({ title, onClose, onBack }: { title: string; onClose: () => void; onBack?: () => void }) {
   const t = useT()
   return (
-    <div className="flex min-h-12 shrink-0 items-center gap-2 ps-5 pe-3 md:ps-6">
-      {onBack ? (
-        <IconButton aria-label={t.common.back} onClick={onBack} className="-ms-3">
-          <ChevronLeft strokeWidth={1.75} className="text-[var(--color-brand-text-secondary)] rtl:rotate-180" />
-        </IconButton>
-      ) : null}
-      <ModalTitle className="min-w-0 flex-1 truncate">{title}</ModalTitle>
-      <IconButton aria-label={t.common.close} onClick={onClose}>
-        <X strokeWidth={1.75} className="text-[var(--color-brand-text-secondary)]" />
-      </IconButton>
-    </div>
+    <V3SheetHeader
+      onClose={onClose}
+      leading={
+        onBack ? (
+          <IconButton aria-label={t.common.back} onClick={onBack} className="-ms-3">
+            <ChevronLeft strokeWidth={1.75} className="text-[var(--color-brand-text-secondary)] rtl:rotate-180" />
+          </IconButton>
+        ) : undefined
+      }
+    >
+      <V3SheetHeader.Title size="compact">{title}</V3SheetHeader.Title>
+    </V3SheetHeader>
   )
 }
 

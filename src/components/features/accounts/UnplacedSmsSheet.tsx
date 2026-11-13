@@ -1,10 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ModalShell } from '@/components/modals/ModalShell'
-import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
-import { Button } from '@/components/ui/button'
+import { ResolveRow, ResolveSheet, ResolveTile } from '@/components/modals/ResolveSheet'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense } from '@/lib/store/types'
@@ -23,30 +20,18 @@ export function UnplacedSmsSheet({ open, onClose, items, accounts }: { open: boo
     onClose()
   }
   return (
-    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose}>
-          <V3SheetHeader.Title>{t.unplacedTitle(items.length)}</V3SheetHeader.Title>
-          <V3SheetHeader.Subtitle>{t.unplacedSub}</V3SheetHeader.Subtitle>
-        </V3SheetHeader>
-        <SheetBody className="space-y-3 pt-3">
-          <ul className="divide-y divide-[var(--color-brand-border)] rounded-2xl border border-[var(--color-brand-border)]">
-            {items.map((e) => (
-              <li key={e.id} className="flex min-h-12 items-center gap-3 px-3.5 py-2">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{e.description}</span>
-                  <span className="block text-xs text-[var(--color-brand-text-muted)]">{e.date}</span>
-                </span>
-                <span className="font-mono-numbers text-sm">{splitMoney(e.amount, String(e.currency)).int}{splitMoney(e.amount, String(e.currency)).dec} {String(e.currency)}</span>
-              </li>
-            ))}
-          </ul>
-          <AccountPicker accounts={accounts} value={accountId} onChange={setPicked} label={t.unplacedAccount} />
-        </SheetBody>
-        <SheetFooter>
-          <Button size="cta-block" onClick={attach} disabled={!accountId || items.length === 0} className="font-semibold">{t.unplacedAttach(items.length)}</Button>
-        </SheetFooter>
-      </div>
-    </ModalShell>
+    <ResolveSheet
+      open={open}
+      onClose={onClose}
+      title={t.unplacedTitle(items.length)}
+      subtitle={t.unplacedSub}
+      field={<AccountPicker accounts={accounts} value={accountId} onChange={setPicked} label={t.unplacedAccount} />}
+      primary={{ label: t.unplacedAttach(items.length), onPress: attach, disabled: !accountId || items.length === 0 }}
+    >
+      {items.map((e) => {
+        const m = splitMoney(e.amount, String(e.currency))
+        return <ResolveRow key={e.id} state="plain" leading={<ResolveTile label={e.description} />} title={e.description} sub={e.date} trailing={`${m.int}${m.dec} ${String(e.currency)}`} />
+      })}
+    </ResolveSheet>
   )
 }

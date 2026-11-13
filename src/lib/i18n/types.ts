@@ -2741,6 +2741,25 @@ export interface Dictionary {
     arrivedLate: (n: number) => string
     newInstrument: (kind: 'card' | 'account' | 'wallet', last4: string) => string
     unverifiedSender: (sender: string) => string
+    sheetTitle: (count: number) => string
+    sheetSubtitle: string
+    selectAllReady: string
+    groupReady: (count: number) => string
+    groupCheck: (count: number) => string
+    groupUnverified: (count: number) => string
+    seeMessage: string
+    hideMessage: string
+    confirmN: (count: number) => string
+    confirmLinkN: (count: number) => string
+    retryN: (count: number) => string
+    dontAddN: (count: number) => string
+    keepAsIsN: (count: number) => string
+    dismissN: (count: number) => string
+    couldntSave: string
+    confirmThisCredit: string
+    notAddedToast: (count: number) => string
+    offlineNote: string
+    unverifiedLocked: string
   }
 
   smsTracking: {

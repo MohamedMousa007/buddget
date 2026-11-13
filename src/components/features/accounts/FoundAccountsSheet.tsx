@@ -1,14 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check } from 'lucide-react'
-import { ModalShell } from '@/components/modals/ModalShell'
-import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { Button } from '@/components/ui/button'
-import { SelectableCard } from '@/components/ui/SelectableCard'
+import { ResolveRow, ResolveSheet } from '@/components/modals/ResolveSheet'
 import { setOpeningBalance } from '@/lib/accounts/actions'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { settlePrompt } from '@/lib/prompts/settle'
 import { useT } from '@/lib/i18n'
 import { PAYMENT_BRANDS, PAYMENT_TYPE_META, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { BrandMark } from './BrandMark'
@@ -30,9 +28,12 @@ interface Found {
 
 /** Accounts the bank messages already mention (one per bank and number). Nothing is read from the inbox here. */
 export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean; onClose: () => void; onManual: () => void }) {
-  const t = useT().accountsPage
+  const all = useT()
+  const t = all.accountsPage
   const methods = useFinanceStore((s) => s.paymentMethods)
   const base = useFinanceStore((s) => s.settings.baseCurrency)
+  const settled = useFinanceStore((s) => s.settings.promptState)
+  const dismissed = useSettingsStore((s) => s.dismissedBanners)
   const addPaymentMethod = useFinanceStore((s) => s.addPaymentMethod)
   const [found, setFound] = useState<Found[] | null>(null)
   const [picked, setPicked] = useState<Set<string>>(new Set())
@@ -64,9 +65,13 @@ export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // "Not mine" is a settled answer: it is hidden here too, on every phone, like the prompt it came from.
+  const visible = found ? found.filter((f) => !settled?.[f.key] && !dismissed.includes(f.key)) : null
+  const chosen = (visible ?? []).filter((f) => picked.has(f.key))
+  const n = chosen.length
+
   const add = () => {
-    for (const f of found ?? []) {
-      if (!picked.has(f.key)) continue
+    for (const f of chosen) {
       const brand = PAYMENT_BRANDS[resolvePaymentBrandKey(f.bank) ?? '']
       const type = brand?.type === 'wallet' || f.type === 'wallet' ? 'wallet' : 'bank_account'
       const accountCurrency = (f.currency ?? String(base)) as Currency
@@ -78,44 +83,41 @@ export function FoundAccountsSheet({ open, onClose, onManual }: { open: boolean;
     }
     onClose()
   }
+  const notMine = () => {
+    for (const f of chosen) settlePrompt(f.key)
+    if (chosen.length === (visible ?? []).length) onClose()
+  }
+  const toggle = (key: string) => setPicked((p) => { const q = new Set(p); if (q.has(key)) q.delete(key); else q.add(key); return q })
 
-  const n = picked.size
+  const empty = visible !== null && visible.length === 0
   return (
-    <ModalShell open={open} onBackdropClick={onClose} scrollChild>
-      <div className="flex min-h-0 flex-1 flex-col">
-        <V3SheetHeader onClose={onClose}>
-          <V3SheetHeader.Title>{found && found.length > 0 ? t.accountsCount(found.length) : t.findMyAccounts}</V3SheetHeader.Title>
-        </V3SheetHeader>
-        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-5 pb-3 pt-2">
-          {found && found.length === 0 ? (
-            <div className="space-y-3 py-6 text-center">
-              <p className="text-sm text-[var(--color-brand-text-secondary)]">{t.emptySub}</p>
-              <Button variant="outline" size="cta-block" onClick={() => { onClose(); onManual() }}>{t.addOneMyself}</Button>
-            </div>
-          ) : null}
-          {(found ?? []).map((f) => {
-            const on = picked.has(f.key)
-            const m = f.balance != null ? splitMoney(f.balance, f.currency ?? String(base)) : null
-            return (
-              <SelectableCard key={f.key} selected={on} role="checkbox" aria-checked={on}
-                onClick={() => setPicked((p) => { const q = new Set(p); if (on) q.delete(f.key); else q.add(f.key); return q })}>
-                <BrandMark name={f.bank} color={PAYMENT_BRANDS[resolvePaymentBrandKey(f.bank) ?? '']?.colors[0] ?? PAYMENT_TYPE_META.bank_account.color} size={40} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{f.bank}</span>
-                  <span className="block text-xs text-[var(--color-brand-text-muted)]">•• {f.last4}</span>
-                </span>
-                <span className="font-mono-numbers text-sm font-medium">{m ? <>{m.int}<span className="opacity-45">{m.dec}</span></> : t.setBalance}</span>
-                {on ? <Check className="size-4 text-[var(--color-brand-primary-ink)]" aria-hidden /> : null}
-              </SelectableCard>
-            )
-          })}
-        </div>
-        {found && found.length > 0 ? (
-          <div className="px-5 pb-5 pt-2">
-            <Button size="cta-block" onClick={add} disabled={n === 0} className="font-semibold">{t.addAccountCta}{n > 0 ? ` (${n})` : ''}</Button>
-          </div>
-        ) : null}
-      </div>
-    </ModalShell>
+    <ResolveSheet
+      open={open}
+      onClose={onClose}
+      title={visible && visible.length > 0 ? t.accountsCount(visible.length) : t.findMyAccounts}
+      primary={
+        empty
+          ? { label: t.addOneMyself, onPress: () => { onClose(); onManual() } }
+          : { label: `${t.addAccountCta}${n > 0 ? ` (${n})` : ''}`, onPress: add, disabled: n === 0 }
+      }
+      secondary={visible && visible.length > 0 ? { label: all.prompts.notMine, onPress: notMine, disabled: n === 0 } : undefined}
+    >
+      {empty ? <p className="py-6 text-center text-sm text-[var(--color-brand-text-secondary)]">{t.emptySub}</p> : null}
+      {(visible ?? []).map((f) => {
+        const m = f.balance != null ? splitMoney(f.balance, f.currency ?? String(base)) : null
+        return (
+          <ResolveRow
+            key={f.key}
+            state={picked.has(f.key) ? 'selected' : 'idle'}
+            onToggle={() => toggle(f.key)}
+            leading={<BrandMark name={f.bank} color={PAYMENT_BRANDS[resolvePaymentBrandKey(f.bank) ?? '']?.colors[0] ?? PAYMENT_TYPE_META.bank_account.color} size={40} />}
+            title={f.bank}
+            sub={`•• ${f.last4}`}
+            trailing={m ? <>{m.int}<span className="opacity-45">{m.dec}</span></> : t.setBalance}
+            label={`${f.bank} •• ${f.last4}`}
+          />
+        )
+      })}
+    </ResolveSheet>
   )
 }
