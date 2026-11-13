@@ -3,7 +3,7 @@ import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AddLineForm } from './AddLineSheet'
 
-const props = { block: 'bills' as const, suggestions: [], onClose: () => {}, onAdd: () => {} }
+const props = { open: true, block: 'bills' as const, suggestions: [], onClose: () => {}, onAdd: () => {} }
 
 describe('AddLineSheet', () => {
   it('has no "save and add another" button unless asked', () => {
