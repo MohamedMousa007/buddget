@@ -166,6 +166,8 @@ export function LineRow({
   onOpen,
   onAction,
   forceStatus,
+  figure,
+  showEstimate = true,
 }: {
   view: PlanView
   lv: LineView
@@ -176,6 +178,10 @@ export function LineRow({
   onAction?: (action: LineAction) => void
   /** Show the status line even when it is `ok`. */
   forceStatus?: boolean
+  /** Replaces the right-hand figure (amount over a small caption), e.g. spent over "of planned". */
+  figure?: { amount: string; sub?: string }
+  /** Plan mode tags estimated lines; the Budget page turns that off outside review. */
+  showEstimate?: boolean
 }) {
   const statusText = useLineStatusText(view)
   const copy = useBudgetBlocksCopy()
@@ -183,7 +189,7 @@ export function LineRow({
   const showStatus = forceStatus === true || status.kind !== 'ok'
   const Icon = lineStatusIcon(status.icon)
   const hasAction = showStatus && status.button.action !== 'none' && onAction
-  const subText = [sub, lv.line.confidence === 'estimated' && mode === 'plan' ? copy.estimate : null].filter(Boolean).join(' · ')
+  const subText = [sub, showEstimate && lv.line.confidence === 'estimated' && mode === 'plan' ? copy.estimate : null].filter(Boolean).join(' · ')
   return (
     <div>
       <button type="button" onClick={onOpen} className="flex w-full items-center gap-3 px-3.5 py-2 text-start">
@@ -200,9 +206,11 @@ export function LineRow({
         </span>
         <span className="flex flex-col items-end">
           <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">
-            {formatCurrency(lv.amount, view.base, false)}
+            {figure ? figure.amount : formatCurrency(lv.amount, view.base, false)}
           </span>
-          {mode === 'plan' ? (
+          {figure ? (
+            figure.sub ? <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{figure.sub}</span> : null
+          ) : mode === 'plan' ? (
             <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{formatShare(lv.percent)}</span>
           ) : null}
         </span>

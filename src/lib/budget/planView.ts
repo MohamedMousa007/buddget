@@ -53,6 +53,8 @@ export interface PlanViewInput {
   debts: DebtExtras[]
   goals: GoalExtras[]
   safety: { liquid: number; essentialsMonthly: number; targetMonths: number }
+  /** Segment totals of the plan that governed the previous cycle, when it was a different plan. */
+  previousTotals?: Record<BudgetBlock, number> | null
 }
 
 /** A bill, subscription or debt counts as paid once the cycle's spend covers 90% of the plan. */
@@ -263,5 +265,6 @@ export function buildPlanView(i: PlanViewInput): PlanView {
     unassignedSpend,
     needsUpgrade: plan.categories.length > 0 && plan.categories.every((c) => !c.block),
     learning: i.learning === true,
+    previousTotals: i.previousTotals ?? null,
   }
 }

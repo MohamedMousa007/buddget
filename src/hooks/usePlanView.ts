@@ -9,7 +9,8 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
 import { useGoalRows } from '@/hooks/useGoalRows'
 import { selectActivePlan } from '@/lib/budget/activePlan'
-import { planForMonth } from '@/lib/budget/activations'
+import { planForMonth, prevKey } from '@/lib/budget/activations'
+import { blockTotals } from '@/lib/budget/blocks'
 import { debtExtras, debtPaidByDebt, goalExtras, liquidSavings, liveDebts, paydayDayOf, subscriptionsExtras, subscriptionsLive } from '@/lib/budget/liveLinks'
 import { ledgerDebtPaidByDebt, lineHistory, spendByLine } from '@/lib/budget/lineSpend'
 import { buildPlanView } from '@/lib/budget/planView'
@@ -83,6 +84,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
     })
 
     const config = s.profile.emergencyFundConfig
+    const before = planForMonth(s.budgetPlans, s.budgetPlanActivations, prevKey(cycleKeyOf(now, startDay)), s.activeBudgetPlanId)
     const subs = subscriptionsLive(s.subscriptions, base, rates, now)
     return buildPlanView({
       plan,
@@ -96,6 +98,7 @@ export function usePlanView(mode: PlanMode, planId?: string): PlanView | null {
       spentByLine: spend.byLine,
       averageByLine: history.average,
       monthsOverCapByLine: history.monthsOverCap,
+      previousTotals: before && before.id !== plan.id ? blockTotals(before, base, rates) : null,
       learning: isLearning(plan, s.budgetPlanActivations, cycleKeyOf(now, startDay), base, rates),
       unassignedSpend: spend.unassigned,
       subscriptions: {

@@ -1,0 +1,310 @@
+<title>Budget Page Variations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta charset="utf-8">
+<style>
+/* Layout: a tab per question. Phones use the app's tokens from globals.css; each phone prints its measured height so "one screen" is a number, not a claim. */
+:root{
+  --bg:#F4F7F6;--card:#FFFFFF;--elev:#ECF1F0;--sunk:#E2E9E8;--line:#DDE6E4;--line2:#CBD6D3;
+  --ink:#0D1A18;--ink2:#566B68;--ink3:#646F6D;
+  --pri:#0D8578;--pri-ink:#0B7568;--pri-soft:#E3F6F3;--pri-bright:#12B0A0;
+  --red:#C2353B;--green:#107E38;--amber:#93630B;--amber-soft:#FBF0DA;--green-soft:#E3F5EA;--red-soft:#FBE7E7;
+  --c1:#11A596;--c2:#B68E30;--c3:#E5684D;--c4:#6E7BF2;--c5:#389BD9;--c6:#8B5CF6;--c0:#646F6D;
+  --on:#FFFFFF;--shadow:0 1px 2px rgba(13,26,24,.06),0 8px 24px rgba(13,26,24,.08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B1413;--card:#121D1B;--elev:#1A2826;--sunk:#212C2A;--line:#233432;--line2:#2F4441;
+  --ink:#EAF2F0;--ink2:#9DB2AF;--ink3:#8AA09D;
+  --pri:#12A394;--pri-ink:#4FD6C8;--pri-soft:#12302D;--pri-bright:#1FC3B2;
+  --red:#F0777C;--green:#4BC77A;--amber:#E7B552;--amber-soft:#33290F;--green-soft:#10301D;--red-soft:#3A1A1C;
+  --c1:#1FC3B2;--c2:#EDC463;--c3:#F27E66;--c4:#8A94F5;--c5:#57B2ED;--c6:#A17DF9;--c0:#8AA09D;
+  --on:#06201C;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1413;--card:#121D1B;--elev:#1A2826;--sunk:#212C2A;--line:#233432;--line2:#2F4441;
+  --ink:#EAF2F0;--ink2:#9DB2AF;--ink3:#8AA09D;
+  --pri:#12A394;--pri-ink:#4FD6C8;--pri-soft:#12302D;--pri-bright:#1FC3B2;
+  --red:#F0777C;--green:#4BC77A;--amber:#E7B552;--amber-soft:#33290F;--green-soft:#10301D;--red-soft:#3A1A1C;
+  --c1:#1FC3B2;--c2:#EDC463;--c3:#F27E66;--c4:#8A94F5;--c5:#57B2ED;--c6:#A17DF9;--c0:#8AA09D;
+  --on:#06201C;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;text-align:start}
+button:focus-visible{outline:2px solid var(--pri-bright);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:26px;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font-size:15px;margin:0 0 8px}
+.lede{margin:6px 0 0;color:var(--ink2);font-size:14px;max-width:68ch;line-height:1.5}
+.bar-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;flex:1;min-width:0}
+.tab{height:44px;padding:0 16px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13.5px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--pri);border-color:var(--pri);color:var(--on)}
+.mode{display:inline-grid;grid-template-columns:1fr 1fr;background:var(--elev);border-radius:12px;padding:3px;gap:3px}
+.mode button{height:38px;padding:0 14px;border-radius:9px;font-weight:700;font-size:13px;color:var(--ink2);text-align:center}
+.mode button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.grid{display:grid;gap:28px;align-items:start}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){.g2,.g3{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.lab{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700}
+.lab span{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;background:var(--elev);color:var(--ink2)}
+.lab.rec span{background:var(--pri-soft);color:var(--pri-ink)}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:22px}
+@media(max-width:900px){.notes{grid-template-columns:minmax(0,1fr)}}
+.note{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--ink2);line-height:1.5;min-width:0}
+.note ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.note b{color:var(--ink)}
+.meas{font-size:12px;color:var(--ink2);text-align:center}
+.meas b{color:var(--ink)}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:10px;border-top:1px solid var(--line);text-align:start;vertical-align:top}th{font-size:12px;color:var(--ink2);border-top:0}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.dotsc{letter-spacing:2px;color:var(--pri-ink);font-weight:700;white-space:nowrap}
+.voice{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.voice b.r{font-size:12px;color:var(--pri-ink)}
+.voice p{margin:0;font-size:13px;color:var(--ink2);line-height:1.5}.voice p.p{color:var(--ink);font-weight:600}
+
+.phone{width:100%;max-width:393px;margin:0 auto;border-radius:36px;border:1px solid var(--line2);background:var(--bg);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:11px;font-weight:600;color:var(--ink2);flex:none}
+.scr{flex:1;padding:6px 16px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.sub{font-size:12.5px;color:var(--ink2);margin:0}
+.lbl{font-size:12px;color:var(--ink2);font-weight:500}
+.cap{font-size:12px;font-weight:700;color:var(--ink2)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(13,26,24,.05)}
+.num{font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace}
+.btn{height:48px;border-radius:12px;background:var(--pri);color:var(--on);font-weight:700;font-size:15px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.o{background:var(--card);color:var(--ink);border:1px solid var(--line2);font-weight:600}
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}.ico.s{width:14px;height:14px}
+.tile{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;position:relative}
+.chip{height:44px;padding:0 13px;border-radius:999px;border:1px solid var(--line2);background:var(--card);font-size:13px;font-weight:600;color:var(--ink2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.flow{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;background:var(--elev)}.flow i{display:block;height:100%;border-radius:3px}
+.pill{font-size:11px;font-weight:700;border-radius:99px;padding:3px 8px;background:var(--elev);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.pill.g{background:var(--green-soft);color:var(--green)}.pill.a{background:var(--amber-soft);color:var(--amber)}.pill.t{background:var(--pri-soft);color:var(--pri-ink)}
+.pbar{position:relative;height:10px;border-radius:5px;background:var(--elev)}.pbar>i{position:absolute;inset:0 auto 0 0;border-radius:5px;background:var(--pri-bright)}.pbar>i.a{background:var(--amber)}.pbar>u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:2px;opacity:.75}
+.mini{position:relative;height:3px;border-radius:3px;background:var(--elev)}.mini>i{position:absolute;inset:0 auto 0 0;border-radius:3px}.mini>u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.7;border-radius:2px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.grid4 b{font-size:13px;display:block;white-space:nowrap}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.grid3 b{font-size:14px;display:block}
+.lrow{display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line);width:100%}.lrow:first-child{border-top:0}
+.lrow .tp{display:flex;align-items:center;gap:10px;min-width:0}
+.lrow .tx{flex:1;min-width:0}.lrow .tx b{display:block;font-size:14.5px;line-height:1.25}.lrow .tx span{font-size:12px;color:var(--ink2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}.lrow .tx span.a{color:var(--amber);font-weight:600}
+.lrow .rt{text-align:end;flex:none;white-space:nowrap}.lrow .rt b{display:block;font-size:13.5px;line-height:1.25}.lrow .rt span{font-size:11.5px;color:var(--ink3);line-height:1.3}
+.ln{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);min-height:52px;width:100%}.ln:first-child{border-top:0}
+.ln .t{flex:1;min-width:0}.ln .t b{display:block;font-size:14px;font-weight:600}.ln .t span{font-size:12px;color:var(--ink3)}.ln .t span.w{color:var(--amber)}
+.ln .amt{font-size:14px;font-weight:600;text-align:end}.ln .amt small{display:block;font-size:11px;color:var(--ink3);font-weight:500}
+.src{font-size:10.5px;font-weight:700;border-radius:6px;padding:1px 6px;background:var(--elev);color:var(--ink2)}.src.e{background:var(--amber-soft);color:var(--amber)}
+.badge{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;border:2px solid var(--bg);background:var(--amber);display:grid;place-items:center;color:#fff}.badge.ok{background:var(--green)}.badge .ico{width:9px;height:9px;stroke-width:3.5}
+.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.strip button{height:44px;display:grid;place-items:center;border-radius:12px;position:relative}
+.strip .tile{width:32px;height:32px;border-radius:10px;opacity:.55}.strip button[aria-selected="true"] .tile{opacity:1;width:38px;height:38px;box-shadow:0 0 0 2px var(--card),0 0 0 3.5px currentColor}
+.ev{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);min-height:48px}.ev:first-child{border-top:0}
+.bars{display:flex;align-items:flex-end;gap:10px;height:64px;position:relative}.bars>div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%}.bars i{display:block;width:100%;border-radius:5px 5px 2px 2px;background:var(--sunk)}.bars span{font-size:10.5px;color:var(--ink3)}
+.wf{display:flex;flex-direction:column;gap:6px;padding:12px}.wf i{display:block;border-radius:6px;background:var(--elev);height:14px}.wf i.h{height:34px}.wf i.p{background:var(--pri-soft)}.wf i.a{background:var(--amber-soft)}.wf i.x{height:56px}
+.sticky{position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 22%);padding-top:14px;display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.nl{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink2);line-height:1.5}
+.stat{min-width:0}.stat b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.tl{display:flex;gap:6px;align-items:center;background:var(--elev);border-radius:12px;padding:8px;min-width:0}.tl>div{min-width:0}.tl b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}.tlic{color:var(--pri-ink);flex:none}
+.dots{display:inline-flex;gap:4px;margin-top:3px}.dots i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--ink3)}.dots i.on{background:var(--ink2);border-color:var(--ink2)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-left:46px}.cols b{display:block;font-size:12.5px}
+.tile.dash{border:1.5px dashed var(--line2);color:var(--ink3);background:none}
+.rail{position:relative;height:46px;margin:10px 8px 0}.rail:before{content:"";position:absolute;left:0;right:0;top:12px;height:3px;border-radius:3px;background:var(--line2)}.rail i{position:absolute;top:6px;width:14px;height:14px;margin-left:-7px;border-radius:50%;border:3px solid var(--c1);background:var(--card)}.rail i.on{background:var(--c1)}.rail span{position:absolute;top:26px;transform:translateX(-50%);font-size:11px;color:var(--ink3)}.rail u{position:absolute;top:2px;width:2px;height:22px;margin-left:-1px;background:var(--ink);border-radius:2px}
+.gauge{height:12px;border-radius:6px;background:var(--elev);margin:8px 0}.gauge i{display:block;height:100%;border-radius:6px;background:var(--c2)}
+.field{flex:1;height:44px;border-radius:12px;border:1px solid var(--line2);display:flex;align-items:center;padding:0 12px;font-size:14px}
+.ctl{display:flex;gap:14px;flex-wrap:wrap}.ctl .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chipc{height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);background:var(--card);font-size:12.5px;font-weight:600;color:var(--ink2)}.chipc[aria-pressed="true"]{background:var(--pri-soft);border-color:var(--pri);color:var(--pri-ink)}
+</style>
+<meta charset="utf-8">
+<div class="wrap">
+  <header><h1>Budget page variations</h1>
+  <p class="lede">Every version explored for the Budget page: heroes (month and plan), four ledger designs, the segment page in two layouts for all seven segments, the manual builder as it is and matched to the overview, and edge states. Use the controls to switch month scenario, view and segment. Each phone prints its measured height. Sample data in EGP.</p></header>
+  <div class="tabs" role="tablist" aria-label="Screens" id="tabs"></div>
+  <div id="ctl"></div>
+  <div id="stage" aria-live="polite"></div>
+</div>
+<script>
+const P={
+ home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+ repeat:'<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+ bank:'<path d="M10 18v-7"/><path d="M11.12 2.198a2 2 0 0 1 1.76.006l7.866 3.847c.476.233.31.949-.22.949H3.474c-.53 0-.695-.716-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/>',
+ basket:'<path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/>',
+ shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+ target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+ sprout:'<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>',
+ check:'<path d="M20 6 9 17l-5-5"/>', back:'<path d="m15 18-6-6 6-6"/>', next:'<path d="m9 18 6-6-6-6"/>', down:'<path d="m6 9 6 6 6-6"/>', plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+ warn:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+ cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+ zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+ wifi:'<path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.859a10 10 0 0 1 14 0"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/>',
+ bus:'<path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/>',
+ tv:'<path d="m17 2-5 5-5-5"/><rect width="20" height="15" x="2" y="7" rx="2"/>',
+ music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+ cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+ car:'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+ card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+ utensils:'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>',
+ heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+ game:'<line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258A4 4 0 0 0 17.32 5z"/>',
+ plane:'<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>',
+ moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+ coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+ up:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+ dn:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+ flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+ cal:'<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+ clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+ spark:'<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>',
+ trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+ pie:'<path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"/><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>',
+};
+const ic=(n,c='')=>`<svg class="ico ${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+const buddgy=(s=30)=>`<svg width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true" style="flex:none"><rect x="5" y="8" width="38" height="32" rx="14" fill="var(--pri)"/><rect x="10" y="14" width="28" height="19" rx="9" fill="var(--on)" opacity=".95"/><ellipse cx="19" cy="23" rx="2.4" ry="3.2" fill="var(--pri)"/><ellipse cx="29" cy="23" rx="2.4" ry="3.2" fill="var(--pri)"/><path d="M20 29q4 3 8 0" stroke="var(--pri)" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`;
+const status='<div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>';
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const INCOME=18500,DAYS=30;
+const T=(s,z=36,c)=>`<span class="tile" style="width:${z}px;height:${z}px;color:${c};background:color-mix(in srgb,${c} 16%,var(--card))">${ic(s)}</span>`;
+
+/* ---------- data: payment schedules make every scenario consistent ---------- */
+const SC={onpace:{k:'On pace',day:14,ev:2250},ahead:{k:'Ahead of pace',day:14,ev:2980},over:{k:'Over budget',day:24,ev:5420},early:{k:'Day 3',day:3,ev:420},late:{k:'Day 28',day:28,ev:4650},newp:{k:'New plan',day:14,ev:2980,newPlan:true}};
+const SEG=[
+ {n:'Home & bills',i:'home',c:'var(--c1)',amt:6950,ev:[[1,5500],[12,620],[20,380],[25,450]],avg:6820,last:6820},
+ {n:'Subscriptions',i:'repeat',c:'var(--c4)',amt:410,ev:[[3,180],[8,90],[11,140]],avg:395,last:395},
+ {n:'Debts',i:'bank',c:'var(--c3)',amt:2100,ev:[[5,1400],[25,700]],avg:2100,last:2100},
+ {n:'Everyday',i:'basket',c:'var(--c5)',amt:5200,ev:[],avg:5380,last:5110},
+ {n:'Safety net',i:'shield',c:'var(--c2)',amt:1850,ev:[[25,1850]],avg:1500,last:1500},
+ {n:'Goals',i:'target',c:'var(--c6)',amt:1200,ev:[[1,600],[15,600]],avg:1200,last:1200},
+ {n:'Grow & give',i:'sprout',c:'var(--c0)',amt:790,ev:[[25,790]],avg:790,last:790},
+];
+const ELINES=[['Groceries','cart',2400,.487,'Carrefour, Spinneys'],['Dining out','utensils',900,.359,'Talabat, cafés'],['Transport','bus',1100,.128,'Uber, metro'],['Health & personal','heart',500,.017,'Pharmacy'],['Fun','game',300,.01,'Cinema']];
+function D(sc){const s=SC[sc],day=s.day,ev=s.ev,spent=SEG.map((g,i)=>i===3?ev:g.ev.filter(e=>e[0]<=day).reduce((a,e)=>a+e[1],0));
+ const amt=5200,left=amt-ev,pace=amt*day/DAYS,ahead=ev-pace,fc=ev/day*DAYS,fd=fc-amt,perDay=Math.max(0,left)/Math.max(1,DAYS-day);
+ const lines=ELINES.map(l=>({n:l[0],i:l[1],cap:l[2],sp:Math.round(ev*l[3]),m:l[4]})),over=lines.filter(l=>l.sp>l.cap),alerts=over.length;
+ const state=ev>amt?'over':fd>amt*.05?'ahead':'ok',top=lines.slice().sort((a,b)=>b.sp-a.sp)[0],lastSame=5110*day/DAYS,vs=Math.round((ev/lastSame-1)*100);
+ const saved=spent[4]+spent[5]+spent[6];
+ return {s,day,ev,spent,amt,left,pace,ahead,fc,fd,perDay,lines,over,alerts,state,top,vs,daysLeft:DAYS-day,saved};}
+const tone=st=>st==='over'?'var(--red)':st==='ahead'?'var(--amber)':'var(--green)';
+const pill=(t,k='')=>`<span class="pill ${k}">${t}</span>`;
+const statePill=d=>d.state==='over'?pill(ic('warn','s')+'Over plan','r'):d.state==='ahead'?pill(ic('warn','s')+fmt(d.ahead)+' ahead of pace','a'):pill(ic('check','s')+'On pace','g');
+const fcText=d=>d.state==='over'?`Everyday is ${fmt(d.ev-d.amt)} over its plan`:d.fd>0?`At this pace Everyday ends ${fmt(d.fd)} over`:`At this pace the month ends ${fmt(-d.fd)} under`;
+
+/* ---------- shared chrome ---------- */
+let tab=0,mode='month',sc='ahead',phase='active',seg=3;
+const phone=(inner,dir)=>`<div class="phone" ${dir?`dir="${dir}"`:''}>${status}<div class="scr">${inner}</div></div>`;
+const head=m=>`<div class="row"><button class="card row" style="height:44px;padding:0 12px;gap:8px;flex:1;min-width:0" aria-label="Plans: Balanced plan"><i style="width:9px;height:9px;border-radius:50%;background:var(--pri-bright);flex:none"></i><b style="font-size:14px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Balanced plan</b>${ic('down','s')}</button><div style="display:grid;grid-template-columns:1fr 1fr;background:var(--elev);border-radius:12px;padding:3px;gap:3px;flex:none">${['plan','month'].map(k=>`<span style="height:38px;padding:0 11px;border-radius:9px;font-weight:700;font-size:13px;display:grid;place-items:center;${(m?'month':'plan')===k?'background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)':'color:var(--ink2)'}">${k==='plan'?'Plan':'This month'}</span>`).join('')}</div></div>`;
+const lab=(k,t,rec)=>`<div class="lab ${rec?'rec':''}"><span>${k}</span>${t}</div>`;
+const notes=a=>`<ul class="nl">${a.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+const col=(label,body,n)=>`<div class="col">${label}${body}${n?`<div class="note">${notes(n)}</div>`:''}</div>`;
+const stat=(l,v,t)=>`<div class="stat"><div class="lbl">${l}</div><b class="num" ${t?`style="color:${t}"`:''}>${v}</b></div>`;
+const g3=a=>`<div class="grid3">${a.join('')}</div>`;
+const paceBar=d=>`<div class="pbar" role="img" aria-label="Everyday spent ${fmt(d.ev)} of ${fmt(d.amt)}, expected ${fmt(d.pace)} today"><i style="width:${Math.min(100,d.ev/d.amt*100)}%;background:${d.state==='over'?'var(--red)':d.state==='ahead'?'var(--amber)':'var(--pri-bright)'}"></i><u style="left:${d.day/DAYS*100}%"></u></div>`;
+const split=()=>{const G=[['Spending',12560,'var(--c5)'],['Debt',2100,'var(--c3)'],['Saving',3840,'var(--c2)']];return `<div class="flow">${G.map(g=>`<i style="width:${g[1]/INCOME*100}%;background:${g[2]}"></i>`).join('')}</div><div class="row" style="gap:14px;flex-wrap:wrap">${G.map(g=>`<span class="lbl" style="display:inline-flex;gap:5px;align-items:center"><i style="width:8px;height:8px;border-radius:50%;background:${g[2]}"></i>${g[0]} ${Math.round(g[1]/INCOME*100)}%</span>`).join('')}</div>`};
+const first=d=>d.over[0];
+
+/* ---------- month heroes (stats chosen to avoid the Flow hero: no money in / out / net worth) ---------- */
+function heroM(v,d){const st=d.state,tc=tone(st);
+ if(d.s.newPlan)return `<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px"><div class="row" style="gap:10px">${buddgy(30)}<div style="flex:1"><b style="font-size:14px;display:block">Buddgy is still learning this plan</b><span class="sub" style="font-size:12px">Forecast and pace appear after 2 weeks of your own spending. Until then these figures use typical amounts.</span></div></div>${g3([stat('Left to spend',fmt(d.left)),stat('Planned',fmt(d.amt)),stat('Days left',d.daysLeft)])}</div>`;
+ if(v==='A')return `<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px"><div class="row" style="justify-content:space-between"><span class="lbl">Month forecast</span>${statePill(d)}</div><div class="row" style="align-items:flex-end;gap:8px"><b class="num" style="font-size:28px;letter-spacing:-.02em;line-height:1.1;color:${tc}">${st==='over'?'+'+fmt(d.ev-d.amt):(d.fd>0?'+':'−')+fmt(Math.abs(d.fd))}</b><span class="lbl" style="padding-bottom:4px">${st==='over'?'over plan':d.fd>0?'over plan by month end':'under plan by month end'}</span></div>${paceBar(d)}<span class="lbl">${fcText(d)} · day ${d.day} of ${DAYS}</span>${g3([stat('Left to spend',fmt(d.left),d.left<0?'var(--red)':''),stat('Top spend',d.top.n),stat('Alerts',d.alerts?d.alerts+' over':'None',d.alerts?'var(--amber)':'')])}</div>`;
+ if(v==='B')return `<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px"><div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="lbl">Left to spend</div><b class="num" style="font-size:28px;letter-spacing:-.02em;line-height:1.1;color:${d.left<0?'var(--red)':'var(--ink)'}">${fmt(d.left)}</b></div><div style="text-align:end;white-space:nowrap"><b class="num" style="font-size:14px">${fmt(d.perDay)} a day</b><div class="lbl">${d.daysLeft} days left</div></div></div>${paceBar(d)}<div class="row" style="justify-content:space-between;white-space:nowrap">${statePill(d)}<span class="lbl">${d.fd>0?'Forecast +'+fmt(d.fd):'Forecast −'+fmt(-d.fd)}</span></div>${g3([stat('Top spend',d.top.n),stat('Alerts',d.alerts?d.alerts+' over':'None',d.alerts?'var(--amber)':''),stat('vs last month',(d.vs>0?'▲ ':'▼ ')+Math.abs(d.vs)+'%')])}</div>`;
+ if(v==='C'){const ring=(p,c,t,s)=>`<div style="text-align:center"><svg width="52" height="52" viewBox="0 0 52 52" role="img" aria-label="${t} ${s}"><circle cx="26" cy="26" r="21" fill="none" stroke="var(--elev)" stroke-width="6"/><circle cx="26" cy="26" r="21" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${Math.min(1,p)*132} 132" transform="rotate(-90 26 26)"/></svg><div class="num" style="font-size:12.5px;font-weight:700;margin-top:2px">${s}</div><div class="lbl" style="font-size:11px">${t}</div></div>`;
+  const paid=SEG[0].ev.filter(e=>e[0]<=d.day).length;
+  return `<div class="card" style="display:flex;flex-direction:column;gap:10px;padding:12px 14px"><div class="row" style="justify-content:space-between"><b style="font-size:14px">Plan check · day ${d.day}</b>${statePill(d)}</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${ring(d.ev/d.amt,tc,'Everyday',Math.round(d.ev/d.amt*100)+'%')}${ring(paid/4,'var(--c1)','Bills paid',paid+' of 4')}${ring(d.saved/3840,'var(--c2)','Saved',fmt(d.saved))}</div><span class="lbl">${fcText(d)}.${d.alerts?` ${d.alerts} over budget.`:''}</span></div>`}
+ const al=first(d);
+ return `<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px"><div class="row" style="justify-content:space-between"><b style="font-size:14px">${d.alerts?d.alerts+' need'+(d.alerts>1?'':'s')+' you':'Nothing needs you'}</b>${statePill(d)}</div>${al?`<div class="row" style="gap:10px;border-top:1px solid var(--line);padding-top:8px">${T(al.i,34,'var(--amber)')}<div style="flex:1;min-width:0"><b style="font-size:14px;display:block">${al.n} is ${fmt(al.sp-al.cap)} over</b><span class="lbl">Cover it from Groceries?</span></div><button class="chip" style="color:var(--pri-ink);border-color:var(--pri)">Do it</button></div>`:`<div class="row" style="gap:8px;border-top:1px solid var(--line);padding-top:8px;color:var(--green)">${ic('check')}<span class="lbl">${fcText(d)}</span></div>`}${paceBar(d)}${g3([stat('Left to spend',fmt(d.left)),stat('Forecast',(d.fd>0?'+':'−')+fmt(Math.abs(d.fd))),stat('Top spend',d.top.n)])}</div>`;}
+/* ---------- plan heroes ---------- */
+const PSC={bal:'Balanced',over:'Plan exceeds income',save:'Saving-heavy'};
+function heroP(v,ps){const o=ps==='over',sv=ps==='save'?5200:3840;
+ if(v==='A')return `<div class="card" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px"><div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="lbl">Monthly income</div><b class="num" style="font-size:28px;letter-spacing:-.02em;line-height:1.1">${fmt(INCOME)}</b></div><div style="text-align:end;white-space:nowrap"><b class="num" style="font-size:14px;color:${o?'var(--red)':'var(--ink)'}">${o?'900 over income':'Saving '+Math.round(sv/INCOME*100)+'%'}</b><div class="lbl">${o?'Plan 19,400':'Debt-free Sep 2027'}</div></div></div>${split()}${g3([stat('Spending',fmt(12560)),stat('Debt',fmt(2100)),stat('Saving',fmt(sv))])}</div>`;
+ const R=[['pie','Saving rate',Math.round(sv/INCOME*100)+'% · '+fmt(sv)+' a month',''],['coins','Covers income',o?'105% · 900 over':'100%',o?'var(--red)':''],[o?'up':'dn','Spending vs your usual',o?'▲ 2% above':'▼ 3% under',''],['shield','Safety net','0.8 of 3 months',''],['target','Debt-free','Sep 2027','']];
+ return `<div class="card" style="display:flex;flex-direction:column;gap:2px;padding:4px 14px"><div class="row" style="justify-content:space-between;padding:8px 0"><b style="font-size:14px">Plan health</b>${o?pill(ic('warn','s')+'Exceeds income','r'):pill(ic('check','s')+'Healthy','g')}</div>${R.map(r=>`<div class="ev"><span style="width:20px;color:var(--ink2)">${ic(r[0],'s')}</span><span style="flex:1;font-size:13px;color:var(--ink2)">${r[1]}</span><b class="num" style="font-size:12.5px;color:${r[3]||'var(--ink)'}">${r[2]}</b></div>`).join('')}</div>`;}
+
+/* ---------- ledger: more stats, no progress bar ---------- */
+const NAMEAR=['المنزل والفواتير','الاشتراكات','الديون','المعيشة اليومية','شبكة الأمان','الأهداف','النمو والعطاء'];
+function facts(i,m,d,rev){const g=SEG[i],paid=g.ev.filter(e=>e[0]<=d.day).length,n=g.ev.length,next=g.ev.find(e=>e[0]>d.day);
+ if(m){if(i===3){const o=first(d);return d.state==='over'?[`${fmt(d.ev-d.amt)} over plan`,'a']:o?[`${o.n.split(' ')[0]} ${fmt(o.sp-o.cap)} over · ahead`,'a']:[`On pace · ${fmt(d.perDay)} a day`,'']}
+  if(i===4||i===6)return [paid?'Moved on the 25th':'Moves on the 25th',''];if(i===5)return ['On track · Mar 2027',''];
+  return [paid===n?`All ${n} paid`:`${paid} of ${n} done · next on the ${next[0]}th`,'']}
+ const P2=['4 bills · due 1st to 25th','3 subscriptions · linked live','2 debts · Visa clear Sep 2027','5 categories · top Groceries','0.8 of 3 months held','Umrah trip · Mar 2027','Zakat and a 290 buffer'];
+ if(rev&&i===3)return ['5 lines · 2 estimated','a'];if(rev&&i===2)return ['2 debts · 1 estimated','a'];return [P2[i],''];}
+function right(i,m,d,rev){const g=SEG[i],sp=d.spent[i],left=g.amt-sp,delta=Math.round((g.amt/g.last-1)*100);
+ if(m)return left<=0?['Done','of '+fmt(g.amt)]:sp===0?[fmt(g.amt),'to move']:[fmt(left)+' left','of '+fmt(g.amt)];
+ return [fmt(g.amt),rev?Math.round(g.amt/INCOME*100)+'% of income':(delta===0?'same as last month':(delta>0?'▲ ':'▼ ')+Math.abs(delta)+'% vs last month')]}
+function ledger(v,m,d,rev,ar){return `<div class="card" style="padding:0 14px" role="list" aria-label="Segments">${SEG.map((g,i)=>{const f=facts(i,m,d,rev),r=right(i,m,d,rev),flag=rev&&f[1]==='a';
+ const sp=d.spent[i],left=g.amt-sp,dots=v==='L2'&&i<3?`<span class="dots" aria-hidden="true">${g.ev.map(e=>`<i class="${m&&e[0]<=d.day?'on':''}"></i>`).join('')}</span>`:'';
+ const cols=v==='L3'?`<span class="cols"><span><span class="lbl">Spent</span><b class="num">${fmt(sp)}</b></span><span><span class="lbl">Left</span><b class="num">${fmt(Math.max(0,left))}</b></span><span><span class="lbl">vs avg</span><b class="num">${(g.amt>=g.avg?'▲ ':'▼ ')+Math.abs(Math.round((g.amt/g.avg-1)*100))+'%'}</b></span></span>`:'';
+ return `<button class="lrow" aria-label="${g.n}"><span class="tp"><span style="position:relative;display:inline-flex">${T(g.i,36,g.c)}${flag?'<span class="badge" role="img" aria-label="needs a look"></span>':''}</span><span class="tx"><b>${ar?NAMEAR[i]:g.n}</b><span class="${f[1]}">${f[1]==='a'?ic('warn','s')+' ':''}${f[0]}</span>${dots}</span><span class="rt"><b class="num">${r[0]}</b>${v==='L1'||v==='L3'&&false?'':`<span class="num">${r[1]}</span>`}</span>${ic('next','s')}</span>${cols}</button>`}).join('')}</div>`}
+
+/* ---------- segment page ---------- */
+const lineR=l=>`<button class="ln">${T(l.i,34,l.c||'var(--c5)')}<span class="t"><b>${l.n}</b><span class="${l.w?'w':''}">${l.w?ic('warn','s')+' ':''}${l.sub}</span></span><span class="amt num">${l.a}${l.s?`<small>${l.s}</small>`:''}</span></button>`;
+function segData(i,m,d){const s=SEG[i],sp=d.spent[i],left=s.amt-sp;
+ const bl=[['Rent','home',5500,1],['Electricity & water','zap',620,12],['Internet','wifi',380,20],['School transport','bus',450,25]];
+ const A={
+ 0:{lines:bl.map(l=>({n:l[0],i:l[1],c:s.c,a:fmt(l[2]),sub:m?(d.day>=l[3]?`Paid on the ${l[3]}${l[3]===1?'st':'th'}`:`Due on the ${l[3]}th`):`Due on the ${l[3]}${l[3]===1?'st':'th'}`})),
+  stats:m?[['Paid',fmt(sp),''],['To pay',fmt(left),''],['Next due',d.day<20?'20th':d.day<25?'25th':'–','']]:[['Share of income','38%',''],['Vs last month','▲ 2%',''],['Due dates','1st–25th','']],
+  ico:m?['check','clock','cal']:['pie','up','cal'],
+  extra:`<div class="card"><b style="font-size:14px">Due this month</b><div class="rail" role="img" aria-label="Due on the 1st, 12th, 20th and 25th">${[1,12,20,25].map(x=>`<i style="left:${(x-1)/29*100}%" class="${m&&x<=d.day?'on':''}"></i><span style="left:${(x-1)/29*100}%">${x}</span>`).join('')}${m?`<u style="left:${(d.day-1)/29*100}%"></u>`:''}</div></div>`},
+ 1:{lines:[['Netflix','tv',180,'Charged on the 3rd'],['Spotify','music',90,'Charged on the 8th'],['iCloud','cloud',140,'Charged on the 11th']].map(l=>({n:l[0],i:l[1],c:s.c,a:fmt(l[2]),sub:l[3]})),
+  stats:[['Per year','4,920',''],['Per day','14',''],['Next renewal','Netflix 3 Dec','']],ico:['cal','clock','repeat'],extra:`<div class="card row" style="gap:10px"><span style="color:var(--green)">${ic('check')}</span><span class="sub">No price changes this month. All 3 are linked to your bank SMS.</span></div>`},
+ 2:{lines:[['Car loan','car',1400,'9.5% APR · 22 payments left'],['Visa card','card',700,'Minimum plus 300 extra']].map(l=>({n:l[0],i:l[1],c:s.c,a:fmt(l[2]),sub:l[3]})),
+  stats:[['Total owed','38,200',''],['Debt-free','Sep 2027',''],['Interest saved','3,100','']],ico:['bank','target','coins'],extra:`<div class="card" style="padding:4px 14px"><b style="font-size:14px;display:block;padding-top:8px">Payoff order</b><div class="ev">${T('card',30,'var(--c3)')}<span style="flex:1;font-size:13px">1. Visa card · 25% APR</span><b class="num" style="font-size:12.5px">12 months</b></div><div class="ev">${T('car',30,'var(--c3)')}<span style="flex:1;font-size:13px">2. Car loan · 9.5% APR</span><b class="num" style="font-size:12.5px">22 months</b></div></div>`},
+ 3:{lines:d.lines.map(l=>({n:l.n,i:l.i,c:'var(--c5)',a:m?fmt(l.sp):fmt(l.cap),sub:m?(l.sp>l.cap?fmt(l.sp-l.cap)+' over':fmt(l.cap-l.sp)+' left'):l.m,w:m&&l.sp>l.cap,s:m?'of '+fmt(l.cap):''})),
+  stats:m?[['Spent',fmt(d.ev),''],['Per day',fmt(d.perDay),''],['Forecast',(d.fd>0?'+':'−')+fmt(Math.abs(d.fd)),d.fd>0?'var(--amber)':'var(--green)']]:[['Per day',fmt(5200/30),''],['Top category','Groceries',''],['Vs last month','▲ 2%','']],ico:m?['coins','clock','up']:['clock','flame','up'],
+  extra:m?`<div class="card" style="padding:4px 14px"><b style="font-size:14px;display:block;padding-top:8px">Where it went</b>${[['Carrefour','cart',.31],['Talabat','utensils',.21],['Uber','bus',.13]].map(x=>`<div class="ev">${T(x[1],30,'var(--c5)')}<span style="flex:1;font-size:13.5px">${x[0]}</span><b class="num" style="font-size:13px">${fmt(d.ev*x[2])}</b></div>`).join('')}<div class="ev"><span style="flex:1;font-size:12.5px;color:var(--ink2)">Biggest purchase</span><b class="num" style="font-size:12.5px">420 · Carrefour, today</b></div></div>`:`<div class="card row" style="gap:10px;align-items:flex-start">${buddgy(26)}<span class="sub" style="line-height:1.4">Caps sit at your 3-month average, trimmed 10% on dining.</span></div>`},
+ 4:{lines:[{n:'Emergency fund',i:'shield',c:s.c,a:fmt(1850),sub:m?(d.day>=25?'Moved on the 25th':'Moves on the 25th'):'Monthly transfer'}],stats:[['Held','0.8 of 3 mo',''],['Balance','8,200',''],['Full by','Nov 2027','']],ico:['shield','coins','cal'],extra:`<div class="card"><b style="font-size:14px">Cover</b><div class="gauge" role="img" aria-label="0.8 of 3 months held"><i style="width:26%"></i></div><span class="lbl">3 months of essentials is 30,900. You hold 8,200.</span></div>`},
+ 5:{lines:[{n:'Umrah trip',i:'plane',c:s.c,a:fmt(1200),sub:'Mar 2027 · 1,200 a month',s:m?'600 sent':''}],stats:[['Saved','6,000',''],['Target','12,000',''],['Arrives','Mar 2027','']],ico:['target','coins','cal'],extra:`<div class="card row" style="gap:12px"><svg width="56" height="56" viewBox="0 0 52 52" role="img" aria-label="50% saved"><circle cx="26" cy="26" r="21" fill="none" stroke="var(--elev)" stroke-width="6"/><circle cx="26" cy="26" r="21" fill="none" stroke="var(--c6)" stroke-width="6" stroke-linecap="round" stroke-dasharray="66 132" transform="rotate(-90 26 26)"/></svg><span><b style="font-size:14px;display:block">Halfway there</b><span class="sub">5 more months at this rate.</span></span></div>`},
+ 6:{lines:[{n:'Zakat set-aside',i:'moon',c:s.c,a:fmt(500),sub:'Monthly'},{n:'Buffer',i:'coins',c:s.c,a:fmt(290),sub:'Room left in the plan'}],stats:[['Zakat saved','3,000',''],['Due','Ramadan',''],['Buffer','4,100','']],ico:['moon','cal','coins'],extra:`<div class="card row" style="gap:10px;align-items:flex-start">${buddgy(26)}<span class="sub" style="line-height:1.4">Your Zakat set-aside covers 2.5% of your savings balance.</span></div>`}};
+ return A[i];}
+const strip=(i,attr=true)=>`<div class="strip" role="tablist" aria-label="Segments, ${i+1} of 7">${SEG.map((g,k)=>`<button role="tab" ${attr?`data-seg="${k}"`:''} aria-selected="${k===i}" aria-label="${g.n}, ${k+1} of 7" style="color:${g.c}">${T(g.i,32,g.c)}</button>`).join('')}</div>`;
+function segPage(v,m,d,i,rev){const s=SEG[i],x=segData(i,m,d),sp=d.spent[i],left=s.amt-sp,big=m?(left<=0?'Done':fmt(left)):fmt(s.amt),bl=m?(left<=0?'Paid this month':'Left'):'Planned';
+ const st=i===3&&m?statePill(d):'';
+ const stats=v==='P1'?g3(x.stats.map(t=>stat(t[0],t[1],t[2]))):`<div class="tiles">${x.stats.map((t,k)=>`<div class="tl"><span class="tlic">${ic(x.ico[k])}</span><div><div class="lbl">${t[0]}</div><b class="num" style="font-size:13.5px;${t[2]?'color:'+t[2]:''}">${t[1]}</b></div></div>`).join('')}</div>`;
+ const sub=m?(i===3?fmt(d.perDay)+' a day to spend':facts(i,true,d,false)[0]):facts(i,false,d,rev)[0];
+ const o=first(d);
+ const hero=`<div class="card" style="display:flex;flex-direction:column;gap:10px;padding:12px 14px"><div class="row" style="gap:12px">${T(s.i,44,s.c)}<div style="flex:1;min-width:0"><b style="font-size:19px;letter-spacing:-.02em;display:block">${s.n}</b><span class="lbl">${sub}</span></div>${st}</div><div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="lbl">${bl}</div><b class="num" style="font-size:26px;letter-spacing:-.02em;line-height:1.1">${big}</b></div><span class="lbl num">${m?'of '+fmt(s.amt)+' planned':Math.round(s.amt/INCOME*100)+'% of income'}</span></div>${m&&i===3?paceBar(d):''}${v==='P2'&&i===3&&m?`<div class="row" style="gap:8px;align-items:flex-start;background:var(--elev);border-radius:12px;padding:8px 10px">${buddgy(22)}<span class="sub" style="font-size:12.5px;line-height:1.4">${fcText(d)}.${o?' '+o.n+' is the main reason.':''}</span></div>`:''}${stats}</div>`;
+ return phone(`<div class="row" style="justify-content:space-between"><button class="row" style="gap:2px;height:44px;color:var(--pri-ink);font-weight:700;font-size:14px">${ic('back')}${rev?'Review':'Budget'}</button><span class="cap num">${i+1} of 7</span></div>${strip(i)}${hero}
+ <div class="card" style="padding:2px 14px 0">${x.lines.map(lineR).join('')}<button class="ln" style="color:var(--pri-ink);font-weight:700;font-size:13.5px;min-height:44px">${ic('plus','s')}Add to ${s.n.toLowerCase()}</button></div>${x.extra}
+ ${m&&i===3&&o?`<div class="card row" style="gap:10px;padding:10px 12px">${buddgy(30)}<div style="font-size:13px;flex:1;min-width:0"><b>${o.n} is ${fmt(o.sp-o.cap)} over.</b> <span style="color:var(--ink2)">Cover it from Groceries?</span></div><button class="chip" style="color:var(--pri-ink);border-color:var(--pri)">Do it</button></div>`:''}
+ ${rev?`<div class="sticky"><button class="btn">Looks right</button></div>`:''}`);}
+
+/* ---------- builder ---------- */
+function bOld1(){return phone(`<div class="row"><span class="ib">${ic('back')}</span><div style="flex:1"><b style="font-size:18px;display:block">Build your plan</b><span class="sub" style="font-size:12px">Balanced plan</span></div><button class="lbl" style="color:var(--pri-ink);font-weight:700;min-height:44px">Save draft</button></div><div style="display:flex;justify-content:space-between">${SEG.map((g,i)=>`<span style="width:40px;height:40px;border-radius:12px;border:1.5px solid ${i===0?g.c:'var(--line2)'};display:grid;place-items:center;color:${g.c};background:${i===0?'color-mix(in srgb,'+g.c+' 16%,var(--card))':'var(--card)'}">${ic(g.i)}</span>`).join('')}</div><div class="row" style="justify-content:space-between"><span class="cap">BLOCK 1 OF 7</span></div>
+ <div class="card row" style="gap:10px;padding:10px 12px">${T('home',34,'var(--c1)')}<div style="flex:1"><b style="font-size:14px;display:block">Home & bills</b><span class="sub" style="font-size:12px">Rent, utilities, school</span></div><b class="num">6,120</b></div>
+ <div class="lbl">Found in your data</div><div class="row" style="gap:8px;overflow:hidden"><span class="chip" style="height:36px;color:var(--pri-ink);border-color:var(--pri)">Rent 5,500</span><span class="chip" style="height:36px">Power 620</span><span class="chip" style="height:36px">Internet 380</span></div>
+ ${[['Rent','home',5500],['Electricity & water','zap',620]].map(l=>`<div class="card" style="display:flex;flex-direction:column;gap:8px"><div class="row">${T(l[1],34,'var(--c1)')}<b style="flex:1;font-size:14.5px">${l[0]}</b><span style="color:var(--red)">${ic('trash')}</span></div><div class="row"><span class="field num">${fmt(l[2])} EGP</span><span class="lbl num" style="width:40px;text-align:end">${Math.round(l[2]/INCOME*100)}%</span></div></div>`).join('')}
+ <button class="btn o" style="height:44px">${ic('plus','s')}Add to home & bills</button><div class="row" style="gap:8px"><button class="btn o" style="width:auto;padding:0 14px;flex:none">${ic('back')}</button><button class="btn">Next ${ic('next')}</button></div>`);}
+function bStart(){return phone(`<div class="row"><span class="ib" style="border:0">${ic('back')}</span><span style="flex:1"></span>${pill('Draft')}</div><div><b style="font-size:21px;letter-spacing:-.02em;display:block">How do you want to start?</b><span class="sub">You can change anything later.</span></div>
+ ${[['Use my data','Buddgy fills what it already knows: rent, bills, subscriptions, debts.','spark',1],['Start from a template','Balanced, Saver or Tight month.','cart',0],['Blank','Add everything yourself.','plus',0]].map(r=>`<button class="card row" style="gap:12px;min-height:72px;width:100%;${r[3]?'border-color:var(--pri);background:var(--pri-soft)':''}">${T(r[2],40,'var(--pri-ink)')}<span style="flex:1;min-width:0"><b style="font-size:15px;display:block">${r[0]}</b><span class="sub" style="font-size:12px">${r[1]}</span></span>${ic('next','s')}</button>`).join('')}`);}
+function bOverview(stage){const T2=['4 lines · due 1st to 25th','3 subscriptions','2 debts','5 categories','1 transfer','1 goal','2 lines'];
+ const rows=SEG.map((g,i)=>{const filled=stage==='full'?true:stage==='part'?i<2:false;return `<button class="lrow" aria-label="${g.n}"><span class="tp">${filled?T(g.i,36,g.c):`<span class="tile dash" style="width:36px;height:36px">${ic('plus','s')}</span>`}<span class="tx"><b>${g.n}</b><span>${filled?T2[i]:'Empty · tap to add'}</span></span><span class="rt"><b class="num">${filled?fmt(g.amt):'–'}</b><span class="num">${filled?Math.round(g.amt/INCOME*100)+'% of income':''}</span></span>${ic('next','s')}</span></button>`}).join('');
+ const planned=stage==='full'?18500:stage==='part'?7360:0;
+ return phone(`<div class="row" style="justify-content:space-between"><button class="row" style="gap:2px;height:44px;color:var(--pri-ink);font-weight:700;font-size:14px">${ic('back')}Plans</button>${pill('Draft')}</div><div class="card" style="display:flex;flex-direction:column;gap:8px;padding:12px 14px"><div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="lbl">Planned so far</div><b class="num" style="font-size:28px;letter-spacing:-.02em;line-height:1.1">${fmt(planned)}</b></div><div style="text-align:end"><b class="num" style="font-size:14px">${fmt(INCOME)}</b><div class="lbl">monthly income</div></div></div>${stage==='full'?`<span class="pill g" style="align-self:flex-start">${ic('check','s')}Covers your income</span>`:`<span class="lbl">${stage==='empty'?'Start with any segment. Buddgy suggests lines from your data.':fmt(INCOME-planned)+' of your income is not in the plan yet.'}</span>`}</div>
+ <div class="card" style="padding:0 14px">${rows}</div><div class="sticky"><button class="btn" ${stage==='empty'?'style="opacity:.45" disabled':''}>Review plan</button></div>`);}
+function bSegment(){return phone(`<div class="row" style="justify-content:space-between"><button class="row" style="gap:2px;height:44px;color:var(--pri-ink);font-weight:700;font-size:14px">${ic('back')}Plan</button><span class="cap num">1 of 7</span></div>${strip(0,false)}
+ <div class="card" style="display:flex;flex-direction:column;gap:6px;padding:12px 14px"><div class="row" style="gap:12px">${T('home',44,'var(--c1)')}<div style="flex:1"><b style="font-size:19px;display:block">Home & bills</b><span class="lbl">2 lines · rent, power</span></div></div><div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="lbl">Planned</div><b class="num" style="font-size:26px;line-height:1.1">6,120</b></div><span class="lbl num">33% of income</span></div></div>
+ <div class="lbl">Found in your data</div><div class="row" style="gap:8px;overflow:hidden"><span class="chip" style="color:var(--pri-ink);border-color:var(--pri)">${ic('check','s')}Rent 5,500</span><span class="chip" style="color:var(--pri-ink);border-color:var(--pri)">${ic('check','s')}Power 620</span><span class="chip">+ Internet 380</span></div>
+ <div class="card" style="padding:2px 14px 0">${lineR({n:'Rent',i:'home',c:'var(--c1)',a:'5,500',sub:'Linked from Bills'})}${lineR({n:'Electricity & water',i:'zap',c:'var(--c1)',a:'620',sub:'Linked from Bills'})}<button class="ln" style="color:var(--pri-ink);font-weight:700;font-size:13.5px;min-height:44px">${ic('plus','s')}Add to home & bills</button></div>
+ <div class="sticky"><button class="btn">Done with this segment</button></div>`);}
+function monthClose(){return phone(`${head(false)}<div class="card row" style="gap:10px;padding:12px">${buddgy(36)}<div style="flex:1"><b style="font-size:14px;display:block">October is closed</b><span class="sub" style="font-size:12px">2 suggestions to improve this month’s plan.</span></div><button class="chip" style="background:var(--pri);color:var(--on);border-color:var(--pri)">Review</button></div>${heroP('A','bal')}${ledger('L4',false,D('ahead'),false)}`);}
+
+/* ---------- screens ---------- */
+function audit(){const row=(a,b,c)=>`<tr><td><b>${a}</b></td><td>${b}</td><td>${c}</td></tr>`;
+ return `<div class="grid g2"><div class="note"><h2>What other heroes already show</h2><div class="tw" style="border:0"><table><thead><tr><th>Page</th><th>Hero stats</th><th>Budget hero should</th></tr></thead><tbody>${row('Flow','Left to spend (total budget minus spent), pace tick, On track / Close / Over chip, Money in, Money out, Net worth','not repeat money in/out or net worth. Left to spend with a pace tick is the same idea, so Budget’s version must be plan-specific.')}${row('Accounts','Balances, held money','not show balances')}${row('Debts','Total owed, minimums, payoff date','show debt-free date only on the Debts segment page')}${row('Goals, Savings','Goal progress, vault total','show goal ETA only on the Goals segment page')}${row('Subscriptions','Monthly total, renewals','show totals only on its segment page')}${row('Income','Next payday, expected vs received','not show payday')}</tbody></table></div></div>
+ <div class="col"><div class="note"><h2>Stats only the Budget page can own</h2>${notes(['Month-end forecast against the plan','Pace against the plan, per segment','Most consuming category (top spend)','Over-budget alerts: count and the worst one','Plan health: saving rate, covers income, spending vs your usual','Plan check: bills paid, saved so far, everyday used'])}</div>
+ <div class="note"><h2>Your decisions applied</h2>${notes(['Pace bar and “Left to spend” kept as a lead option (hero B).','Flow already leads with its own Left to spend, so Budget’s is everyday money only and the forecast and top spend carry the page.','Hero A leads with the forecast to remove the overlap entirely.','No assigned or unassigned language anywhere.','Estimated flags only in review; after activation the ledger shows vs last month.','Segment page: no Next card, no source badges, no plan-against-history; icons on every line; richer stats.'])}</div></div></div>`;}
+function heroesM(){const d=D(sc),vs=[['A','Forecast-led',['Leads with the forecast, so it never reads like Flow.','Left to spend becomes the first of three stats.'],0],['B','Left to spend-led (your pick)',['Your chosen lead number.','Overlaps Flow’s hero (same label and pace tick); top spend, alerts and vs last month keep it Budget-specific.'],1],['C','Plan check rings',['Three rings: everyday used, bills paid, saved. Plan adherence, not cash.','Least overlap; hardest to read at a glance.'],0],['D','Alert-led',['Starts with what needs you and the action, then the facts.','Strongest in a bad month, hollow in a good one.'],0]];
+ return `<div class="grid g2">${vs.map(v=>col(lab('H'+v[0],v[1],v[3]),phone(`${head(true)}${heroM(v[0],d)}<div class="card"><span class="sub">Ledger below.</span></div>`),v[2])).join('')}</div>`;}
+function heroesP(){return `<div class="grid g2">${['bal','over','save'].flatMap(ps=>['A','B'].map(v=>col(lab(v==='A'?'PA':'PB',PSC[ps],ps==='bal'&&v==='A'),phone(`${head(false)}${heroP(v,ps)}<div class="card"><span class="sub">Ledger below.</span></div>`)))).join('')}</div>`;}
+function ledgerT(){const d=D(sc),m=mode==='month',rev=phase==='review',V=[['L1','Clean',['No bar. Left and planned, status in words.','Attention only when needed (amber and an icon).']],['L2','Dots',['Dots for events that happen (bills, subs, debts), not a progress bar.','Other rows stay text only.']],['L3','Stat columns',['Spent, Left and vs avg on every row.','Richest, the most crowded, and about 28px taller per row.']],['L4','Clean + delta',['L1 plus a second line under the number: after activation plan mode shows ▲▼ vs last month; in review it shows % of income.','Estimates appear only in review.'],1]];
+ return `<div class="grid g2">${V.map(v=>col(lab(v[0],v[1],v[3]),phone(`${head(m)}${m?heroM('B',d):heroP('A','bal')}${ledger(v[0],m,d,rev)}`),v[2])).join('')}</div>`;}
+function segT(){const d=D(sc),m=mode==='month',rev=phase==='review';return `<div class="grid g2">${col(lab('P1','Stat stack: three text stats',1),segPage('P1',m,d,seg,rev),['Three segment-specific stats in the hero; an icon on every line; one extra card per segment type.','The strip is the only navigation: no Next card, no source badges, no history chart.'])}${col(lab('P2','Insight tiles: icon stat tiles and a Buddgy line'),segPage('P2',m,d,seg,rev),['Three icon tiles instead of text columns; Everyday adds a one-line Buddgy explanation under the pace bar.','Richer, a little busier in the hero.'])}</div>`;}
+function builderT(){return `<div class="grid g2">${col(lab('B1','Today: stepper, 7 pages'),bOld1(),['Block stepper, total card, suggestion chips, line cards with inline amount fields, Back and Next.','Seven pages even when a segment is empty.'])}${col(lab('B2a','Matched: start'),bStart(),['Three starts replace the template picker: use my data, template, blank.'])}${col(lab('B2b','Matched: overview, part filled'),bOverview('part'),['The same overview as the budget. Rows are empty (dashed tile) or filled; “Planned so far” replaces the hero; sticky Review plan.'])}${col(lab('B2c','Matched: segment in build mode'),bSegment(),['The same segment page. Suggestions are chips in the page; Done returns to the overview. No Next: the strip moves between segments.'])}${col(lab('B2d','Matched: overview, complete'),bOverview('full'),['Covers income: Review plan opens the review (the same overview in review mode).'])}${col(lab('B2e','Matched: overview, empty'),bOverview('empty'),['Empty state with guidance; Review plan disabled.'])}</div>`;}
+function statesT(){const d=D('ahead');return `<div class="grid g2">${col(lab('S1','Month close pending'),monthClose(),['The close card sits above the hero in plan mode and leaves once the cycle is closed.'])}${col(lab('S2','Plan exceeds income (review)'),phone(`<div class="row" style="justify-content:space-between"><button class="row" style="gap:2px;height:44px;color:var(--pri-ink);font-weight:700;font-size:14px">${ic('back')}Plans</button>${pill('2 to check','a')}</div>${heroP('B','over')}${ledger('L4',false,d,true)}<div class="sticky"><button class="btn">Check 2 flagged</button></div>`),['The hero flips to Plan health with a red “Exceeds income”; Activate stays blocked until it is fixed.'])}${col(lab('S3','Arabic (RTL) overview'),phone(`${head(true)}${heroM('B',d)}${ledger('L4',true,d,false,true)}`,'rtl'),['Layout mirrors; numbers stay left-to-right; names are the longest strings, so the fact line truncates before the amount does.'])}${col(lab('S4','New plan, still learning'),phone(`${head(true)}${heroM('B',D('newp'))}${ledger('L4',true,D('newp'),false)}`),['Until 2 weeks of data, the hero explains itself and hides forecast and pace.'])}</div>`;}
+function critique(){const T2=(h,rows)=>`<div class="note"><h2>${h}</h2><div class="tw" style="border:0"><table><thead><tr><th>Finding</th><th>Severity</th><th>Fix proposed</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</tbody></table></div></div>`;
+ return `<div class="grid g2">${T2('Heroes',[['B overlaps Flow’s hero (same label, pace tick, status chip)','🔴 Critical','Keep Left to spend but make it everyday-only and lead the stats with forecast, top spend, alerts; or use A.'],['A has no “cash left” number up front; some users want it first','🟡 Moderate','Left to spend stays as the first of three stats.'],['C rings read as decoration; no actionable number','🟡 Moderate','Not the default; maybe a “Plan check” card lower on the page.'],['D is empty in a good month','🟡 Moderate','Use D’s alert row inside A or B, only when alerts exist.'],['Plan name truncates (“Balanced …”) beside the Plan / This month switch','🟡 Moderate','Shorten the switch to “Plan | Month”, or give the chip its own row (costs 44px).'],['Red only for over; amber for ahead','🟢 Minor','Matches the design system.']])}${T2('Ledger',[['L3 stat columns crowd the row at 393px and fail in Arabic','🔴 Critical','Reject.'],['A bar on every row reads as progress even when it is not','🔴 Critical','Removed. Words, dots (count-based only) or a delta instead.'],['L2 dots apply to 3 of 7 rows, so the list looks uneven','🟡 Moderate','Use dots only where there are dated events, or drop.'],['L4’s right column carries two lines of numbers; wraps in Arabic','🟡 Moderate','In Arabic move the second line into the fact line.'],['Estimated flags after activation are noise','🟡 Moderate','Review only; vs last month after activation.']])}${T2('Segment page',[['P1 hero has three stats but no insight','🟡 Moderate','Add one Buddgy line only when there is something to say (P2 does).'],['P2 hero is about 60px taller and busier','🟡 Moderate','Acceptable now that the page may scroll.'],['Custom lines fall back to a generic icon','🟡 Moderate','Use the app’s lineIcon map and suggest an icon when a line is added.'],['Safety and Goals pages are short (one line)','🟢 Minor','Their extra card (gauge, ring) fills the page.'],['The strip is the only navigation: 44px targets, ringed current','🟢 Minor','Works; swipe is a bonus.']])}${T2('Builder',[['B1 asks for 7 pages even when a segment is empty','🟡 Moderate','B2 skips from the overview.'],['B2’s “planned so far” must not read as assignment','🟡 Moderate','Wording: “Planned so far”, “monthly income”.'],['B2 hides the sequence: new users may not know what to do first','🟡 Moderate','Empty rows say “Empty · tap to add”; “Use my data” fills the first ones.'],['B2 needs a build mode on the segment page','🟡 Moderate','Chips, Done, no Next; same component as the live page.']])}</div>`;}
+const SCREENS=[['Hero audit',audit],['Month heroes',heroesM],['Plan heroes',heroesP],['Ledger',ledgerT],['Segment pages',segT],['Builder',builderT],['States',statesT],['Critique',critique]];
+const SCN=['onpace','ahead','over','early','late','newp'];
+function ctl(){const need={1:'sc',3:'sc m p',4:'sc m p seg'}[tab]||'';
+ const mk=(arr,cur,attr)=>arr.map(x=>`<button class="chipc" ${attr}="${x[0]}" aria-pressed="${cur===x[0]}">${x[1]}</button>`).join('');
+ return `<div class="ctl">${need.includes('m')?`<div class="grp"><span class="lbl">View</span>${mk([['plan','Plan'],['month','This month']],mode,'data-mode')}</div>`:''}${need.includes('sc')&&(mode==='month'||tab===1)?`<div class="grp"><span class="lbl">Month</span>${mk(SCN.map(k=>[k,SC[k].k]),sc,'data-sc')}</div>`:''}${need.includes('p')?`<div class="grp"><span class="lbl">Plan state</span>${mk([['review','Review'],['active','Active']],phase,'data-phase')}</div>`:''}${need.includes('seg')?`<div class="grp"><span class="lbl">Segment</span>${mk(SEG.map((g,k)=>[k,g.n]),seg,'data-seg')}</div>`:''}</div>`;}
+function measure(){document.querySelectorAll('.phone').forEach(p=>{if(p.getBoundingClientRect().width<380)return;const h=p.offsetHeight-28,d=document.createElement('div');d.className='meas';d.innerHTML=`Content height <b>${h}px</b> · ${h<=650?'one screen':(h/650).toFixed(1)+' screens'}`;p.after(d)})}
+function draw(){document.getElementById('tabs').innerHTML=SCREENS.map((s,i)=>`<button class="tab" role="tab" aria-selected="${i===tab}" data-tab="${i}">${s[0]}</button>`).join('');
+ document.getElementById('ctl').innerHTML=ctl();document.getElementById('stage').innerHTML=SCREENS[tab][1]();measure();}
+document.addEventListener('click',e=>{const q=a=>e.target.closest('['+a+']');let el;if(el=q('data-tab')){tab=+el.dataset.tab}else if(el=q('data-mode'))mode=el.dataset.mode;else if(el=q('data-sc'))sc=el.dataset.sc;else if(el=q('data-phase'))phase=el.dataset.phase;else if(el=q('data-seg'))seg=+el.dataset.seg;else return;draw()});
+draw();
+</script>

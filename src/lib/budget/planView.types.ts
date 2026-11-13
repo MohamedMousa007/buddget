@@ -132,4 +132,6 @@ export interface PlanView {
   needsUpgrade: boolean
   /** The plan is in its first cycle and mostly estimated: over-cap reads as a heads-up. */
   learning: boolean
+  /** Segment totals of the plan that governed the previous cycle, when that was a different plan; null otherwise. */
+  previousTotals?: Record<BudgetBlock, number> | null
 }

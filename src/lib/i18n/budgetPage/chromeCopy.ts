@@ -65,7 +65,7 @@ export const budgetChromeCopyEn: BudgetChromeCopy = {
     options: 'Plan options',
     modeLabel: 'Budget view',
     plan: 'Plan',
-    month: 'This month',
+    month: 'Month',
   },
   flow: {
     planLabel: 'Every paycheck, planned',
@@ -159,7 +159,7 @@ export const budgetChromeCopyAr: BudgetChromeCopy = {
     options: 'خيارات الخطة',
     modeLabel: 'عرض الميزانية',
     plan: 'الخطة',
-    month: 'هذا الشهر',
+    month: 'الشهر',
   },
   flow: {
     planLabel: 'كل راتب، مخطَّط له',

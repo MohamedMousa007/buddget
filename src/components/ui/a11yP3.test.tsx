@@ -26,7 +26,6 @@ describe('A11-9 card menu keyboard model', () => {
     'components/features/payments/PaymentCardCarousel.tsx',
     'components/features/goals/detail/GoalDetailSheet.tsx',
     'components/features/accounts/AccountDetailSheet.tsx',
-    'components/features/budget/PlanBar.tsx',
   ])('the %s trigger announces a menu', (f) => {
     expect(read(f)).toContain('aria-haspopup="menu"')
   })

@@ -5,49 +5,38 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { PageBody } from '@/components/layout/PageContainer'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useBudgetPageActions } from '@/hooks/useBudgetPageActions'
 import { usePlanActions } from '@/hooks/usePlanActions'
-import { CardActionMenu } from '@/components/ui/CardActionMenu'
-import { History, Plus, Sparkles } from 'lucide-react'
+import { History, Sparkles } from 'lucide-react'
 import { summarizePlan } from '@/lib/budget/planSummary'
 import { fallbackPlanId, selectActivePlan } from '@/lib/budget/activePlan'
 import { useLocale } from '@/lib/i18n'
 import { usePlanView } from '@/hooks/usePlanView'
-import type { CreateIntent } from '@/lib/budget/templates'
 import { navigate } from '@/lib/navigation/navigate'
-import { formatCurrency } from '@/lib/utils/formatters'
-import { BLOCK_CHAPTER } from '@/lib/budget/blocks'
 import { findLineView } from '@/lib/budget/planView'
-import type { LineAction } from '@/lib/budget/lineStatus'
-import type { Insight } from '@/lib/budget/insights'
 import type { LineView, PlanMode } from '@/lib/budget/planView.types'
 import type { BudgetBlock } from '@/lib/store/types'
 import { PlanBar } from './PlanBar'
+import { LedgerList } from './LedgerList'
+import { SegmentPage } from './SegmentPage'
+import { useBudgetTakeover } from './useBudgetTakeover'
 import { FlowStrip } from './FlowStrip'
-import { PlanChapters } from './PlanChapters'
-import { InsightsChip } from './InsightsChip'
-import { InsightsSheet } from './InsightsSheet'
-import { LearningNote } from './LearningNote'
 import { UpgradeBanner } from './UpgradeBanner'
 import { LineSheet } from './sheets/LineSheet'
 import { AddLineSheet } from './sheets/AddLineSheet'
 import { ActivateSheet } from './sheets/ActivateSheet'
 import { ComparePlansSheet } from './sheets/ComparePlansSheet'
-import { PlanDeck, planActionItems } from './PlanDeck'
+import { PlanDeck } from './PlanDeck'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { ManualBuilder } from './builder/ManualBuilder'
 import { CreateChooser } from './builder/CreateChooser'
 import { StudioPage } from './studio/StudioPage'
-import { ReviewPage } from './studio/ReviewPage'
+import { PlanFlow } from './PlanFlow'
 import { AdjustSheet } from './sheets/AdjustSheet'
 import { MonthCloseCard } from './MonthCloseCard'
-import { PlanRail } from './PlanRail'
-import { LINKED_ROUTE } from './chromeFormat'
-import { registerBackGuard } from '@/lib/navigation/backGuard'
 import { cycleKeyOf } from '@/lib/budget/activations'
 import { MonthCloseSheet } from './sheets/MonthCloseSheet'
 import { useMonthClose } from '@/hooks/useMonthClose'
@@ -56,12 +45,9 @@ import { learnFromClose, learnFromLineEdit } from '@/lib/budget/learnHooks'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBudgetDeckCopy } from './useDeckCopy'
 import { useBudgetStudioCopy } from './useStudioCopy'
-import { useBudgetPageCopy } from './usePageCopy'
-import type { ChapterView } from '@/lib/budget/planView.types'
 
 /** The Budget page: the active plan as chapters of blocks, with a This month overlay. */
 export function BudgetPlanPage({ ready }: { ready: boolean }) {
-  const t = useBudgetPageCopy()
   const planActions = usePlanActions()
   const store = useFinanceStore
   const deckCopy = useBudgetDeckCopy()
@@ -72,29 +58,14 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   const standInPlanId = useFinanceStore((s) => fallbackPlanId(s.budgetPlans, s.activeBudgetPlanId))
   const view = usePlanView(mode, standInPlanId)
   const act = useBudgetPageActions(view)
-  const [collapsed, setCollapsed] = useState<ReadonlySet<ChapterView['chapter']>>(new Set())
   const [lineId, setLineId] = useState<string | null>(null)
   const [addBlock, setAddBlock] = useState<BudgetBlock | null>(null)
-  const [insightsOpen, setInsightsOpen] = useState(false)
-  // With more than one plan the switcher starts open; the user's own toggle wins afterwards.
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const [renameId, setRenameId] = useState<string | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
-  const [menuAnchor, setMenuAnchor] = useState<DOMRect | null>(null)
   const [activateId, setActivateId] = useState<string | null>(null)
   const [compare, setCompare] = useState<{ a: string; b: string } | null>(null)
   const [upgradeLater, setUpgradeLater] = useState(false)
-  const [building, setBuilding] = useState<string | null>(null)
-  const [creating, setCreating] = useState(false)
-  const [studio, setStudio] = useState<{ intent: CreateIntent | null } | null>(null)
-  // Buddgy's chat can start the guided setup; the request is honoured once, here, and cleared.
-  const studioRequested = useSettingsStore((s) => s.budgetStudioRequested)
-  useEffect(() => {
-    if (!studioRequested) return
-    useSettingsStore.getState().clearBudgetStudioRequest()
-    setStudio({ intent: null })
-  }, [studioRequested])
-  const [review, setReview] = useState<{ id: string; aiNote: boolean } | null>(null)
   const [adjusting, setAdjusting] = useState(false)
   const accountClosedCycles = useFinanceStore((st) => st.profile.financialProfile?.closedCycles)
   useEffect(() => {
@@ -104,42 +75,15 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
   }, [accountClosedCycles])
   const monthClose = useMonthClose()
   const [closeOpen, setCloseOpen] = useState(false)
-  const [buildEmpty, setBuildEmpty] = useState(false)
-  const openBuilder = useCallback((id: string, empty = false) => {
-    setCreating(false)
-    setBuildEmpty(empty)
-    setBuilding(id)
-  }, [])
-  const startBuild = useCallback(() => setCreating(true), [])
-  // Leaving the builder with nothing in the draft removes it, so empty drafts do not pile up.
-  const exitBuilder = useCallback(() => {
-    const id = building
-    setBuilding(null)
-    const s = store.getState()
-    const draft = id ? s.budgetPlans.find((p) => p.id === id) : undefined
-    if (draft && draft.status === 'draft' && draft.categories.length === 0) s.deleteBudgetPlan(draft.id)
-  }, [building, store])
-  // The takeover screens are state, not routes: the hardware back steps out one level instead of leaving the tab.
-  useEffect(() => {
-    if (!building && !studio && !review && !creating) return
-    return registerBackGuard(() => {
-      if (building) exitBuilder()
-      else if (studio) {
-        setStudio(null)
-        setCreating(true)
-      } else if (review) setReview(null)
-      else setCreating(false)
-      return true
-    })
-  }, [building, studio, review, creating, exitBuilder])
-  const finishBuild = useCallback(
+  const onActivate = useCallback(
     (id: string) => {
-      setBuilding(null)
       if (store.getState().activeBudgetPlanId) setActivateId(id)
       else planActions.activate(id)
     },
     [planActions, store],
   )
+  const { segment, setSegment, building, setBuilding, buildEmpty, creating, setCreating, studio, setStudio, review, setReview, openBuilder, startBuild, exitBuilder, finishBuild } =
+    useBudgetTakeover(onActivate)
 
   const { plans, activeId, activations, rates } = useFinanceStore(
     useShallow((s) => ({
@@ -152,58 +96,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
 
   const selectedLine = useMemo<LineView | null>(() => (view && lineId ? findLineView(view, lineId) : null), [view, lineId])
 
-  const jump = useCallback(
-    (block: BudgetBlock) => {
-      setCollapsed((prev) => {
-        const next = new Set(prev)
-        next.delete(BLOCK_CHAPTER[block])
-        return next
-      })
-      requestAnimationFrame(() => document.getElementById(`block-${block}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
-    },
-    [],
-  )
-
-  const onLineAction = useCallback(
-    (line: LineView, action: LineAction) => {
-      if (action === 'update') act.syncLive(line)
-      else if (action === 'addLine') setAddBlock('everyday')
-      else if (action !== 'none') setLineId(line.line.id)
-    },
-    [act],
-  )
-
-  const onInsightAction = useCallback(
-    (insight: Insight) => {
-      setInsightsOpen(false)
-      switch (insight.action) {
-        case 'moveBuffer':
-          act.moveFreeToBuffer()
-          break
-        case 'update':
-          act.syncAllLive()
-          break
-        case 'addLine':
-          setAddBlock('everyday')
-          break
-        case 'raise': {
-          const avg = Number(insight.params.avg3)
-          if (insight.lineId && Number.isFinite(avg)) act.patchLine(insight.lineId, { amount: Math.round(avg) })
-          break
-        }
-        default:
-          if (insight.lineId) setLineId(insight.lineId)
-      }
-    },
-    [act],
-  )
-
-  const onFix = useCallback(() => {
-    if (!view) return
-    if (view.free > 0) act.moveFreeToBuffer()
-    else jump('everyday')
-  }, [act, jump, view])
-
   if (!ready) {
     return (
       <PageBody className="space-y-4">
@@ -212,7 +104,23 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     )
   }
 
-  if (building) return <ManualBuilder planId={building} startEmpty={buildEmpty} onExit={exitBuilder} onFinish={finishBuild} />
+  if (building) {
+    // The old stepper stays reachable behind a flag until the new builder has been verified on a device.
+    if (process.env.NEXT_PUBLIC_LEGACY_BUDGET_BUILDER === '1') return <ManualBuilder planId={building} startEmpty={buildEmpty} onExit={exitBuilder} onFinish={finishBuild} />
+    return (
+      <PlanFlow
+        planId={building}
+        mode="build"
+        startEmpty={buildEmpty}
+        onClose={exitBuilder}
+        onActivate={finishBuild}
+        onFinishBuild={(id, skipped) => {
+          setBuilding(null)
+          setReview({ id, aiNote: false, flagEmpty: true, skipped })
+        }}
+      />
+    )
+  }
 
   if (studio) {
     return (
@@ -229,15 +137,17 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
 
   if (review) {
     return (
-      <ReviewPage
+      <PlanFlow
         planId={review.id}
-        aiNote={review.aiNote}
+        mode="review"
+        flagEmpty={review.flagEmpty}
+        initialSkipped={review.skipped}
         onClose={() => setReview(null)}
         onActivate={(id) => {
           setReview(null)
-          store.getState().updateBudgetPlan(id, { status: 'ready' })
           finishBuild(id)
         }}
+        onFinishBuild={() => undefined}
       />
     )
   }
@@ -289,10 +199,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
     onDelete: planActions.remove,
     onCompare: (id: string) => setCompare({ a: view.plan.id, b: id === view.plan.id ? (plans.find((p) => p.id !== id)?.id ?? id) : id }),
   }
-  return (
-    <PageBody className="space-y-4 lg:pb-6">
-      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-6">
-      <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-1">
+  const hero = (
+    <>
       <PlanBar
         planName={view.plan.name}
         state={view.plan.id === selectActivePlan(plans, activeId)?.id ? 'active' : view.plan.status === 'draft' ? 'draft' : 'ready'}
@@ -303,76 +211,23 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           setSelectedPlanId(view.plan.id)
           setSwitcherOpen(true)
         }}
-        onOpenMenu={setMenuAnchor}
       />
       {mode === 'plan' && monthClose ? <MonthCloseCard month={closeMonth} onOpen={() => setCloseOpen(true)} /> : null}
-      </div>
-      <aside className="flex flex-col gap-4 lg:sticky lg:top-[calc(var(--app-header-h-lg)+1.25rem)] lg:col-start-2 lg:row-span-2 lg:row-start-1">
-        <FlowStrip view={view} onFix={onFix} onJump={jump} />
-        <InsightsChip insights={view.insights} onOpen={() => setInsightsOpen(true)} />
-        <PlanRail
-          plans={plans}
-          activeId={activeId}
-          onActivate={setActivateId}
-          onContinue={(id) => openBuilder(id)}
-          onCompare={() => setCompare({ a: view.plan.id, b: plans.find((p) => p.id !== view.plan.id)?.id ?? view.plan.id })}
-          onNew={startBuild}
-          onHistory={() => navigate('/budget-history')}
-        />
-      </aside>
-      <div className="flex flex-col gap-4 lg:col-start-1 lg:row-start-2">
-      {view.learning ? <LearningNote /> : null}
+      <FlowStrip view={view} variant="hero" />
       {view.needsUpgrade && view.plan.categories.length > 0 && !upgradeLater ? (
-        <UpgradeBanner
-          lineCount={view.plan.categories.length}
-          onReview={act.groupLegacyLines}
-          onLater={() => setUpgradeLater(true)}
-        />
+        <UpgradeBanner lineCount={view.plan.categories.length} onReview={act.groupLegacyLines} onLater={() => setUpgradeLater(true)} />
       ) : null}
+      <LedgerList view={view} onOpen={setSegment} />
+    </>
+  )
+  return (
+    <PageBody className="space-y-4 lg:pb-6">
+      {segment ? (
+        <SegmentPage view={view} block={segment} onBack={() => setSegment(null)} onSelect={setSegment} onOpenLine={setLineId} onAdd={setAddBlock} />
+      ) : (
+        <div className="flex flex-col gap-4">{hero}</div>
+      )}
 
-      <PlanChapters
-        view={view}
-        mode={mode}
-        collapsed={collapsed}
-        onToggle={(chapter) =>
-          setCollapsed((prev) => {
-            const next = new Set(prev)
-            if (!next.delete(chapter)) next.add(chapter)
-            return next
-          })
-        }
-        onOpenLine={setLineId}
-        onLineAction={onLineAction}
-        onAdd={setAddBlock}
-        onOpenLinked={(b) => {
-          const route = LINKED_ROUTE[b]
-          if (route) navigate(route)
-        }}
-      />
-
-      {mode === 'month' && view.unassignedSpend > 0 ? (
-        <Card className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-[var(--color-brand-text-primary)]">
-              {t.unassigned.title(formatCurrency(view.unassignedSpend, base, false))}
-            </p>
-            <p className="text-xs text-[var(--color-brand-text-secondary)]">{t.unassigned.body}</p>
-          </div>
-          <Button size="touch" onClick={() => setAddBlock('everyday')}>
-            {t.unassigned.cta}
-          </Button>
-        </Card>
-      ) : null}
-      </div>
-      </div>
-
-      <InsightsSheet
-        open={insightsOpen}
-        insights={view.insights}
-        base={base}
-        onClose={() => setInsightsOpen(false)}
-        onInsightAction={onInsightAction}
-      />
       <LineSheet
         open={selectedLine != null}
         line={selectedLine}
@@ -436,21 +291,6 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
           updateProfile({ financialProfile: { ...profile.financialProfile, closeMemory, closedCycles } })
         }}
       />
-      <CardActionMenu
-        anchor={menuAnchor}
-        onClose={() => setMenuAnchor(null)}
-        items={[
-          ...planActionItems(view.plan.id, deckActions, deckCopy, () => {
-            setMenuAnchor(null)
-            setSelectedPlanId(view.plan.id)
-            setRenameId(view.plan.id)
-            setSwitcherOpen(true)
-          }),
-          { label: studioCopy.adjust.title, icon: <Sparkles className="size-4" />, onSelect: () => setAdjusting(true) },
-          { label: deckCopy.deck.history, icon: <History className="size-4" />, onSelect: () => navigate('/budget-history') },
-          { label: deckCopy.deck.newPlan, icon: <Plus className="size-4" />, onSelect: startBuild },
-        ]}
-      />
       <ModalShell open={switcherOpen} onBackdropClick={() => setSwitcherOpen(false)} padContent>
         <V3SheetHeader title={deckCopy.deck.title} onClose={() => setSwitcherOpen(false)} />
         <PlanDeck
@@ -481,6 +321,16 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
             openBuilder(id)
           }}
         />
+        <div className="flex flex-col pb-4">
+          <Button variant="ghost" size="touch" className="justify-start" onClick={() => { setSwitcherOpen(false); setAdjusting(true) }}>
+            <Sparkles aria-hidden />
+            {studioCopy.adjust.title}
+          </Button>
+          <Button variant="ghost" size="touch" className="justify-start" onClick={() => { setSwitcherOpen(false); navigate('/budget-history') }}>
+            <History aria-hidden />
+            {deckCopy.deck.history}
+          </Button>
+        </div>
       </ModalShell>
     </PageBody>
   )

@@ -11,17 +11,20 @@ import type { BudgetBlock } from '@/lib/store/types'
 import { microClassName } from '@/lib/ui/microLabelStyle'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { blockColor, percentText } from './chromeFormat'
+import { MonthHero, PlanHero } from './BudgetHero'
 import { LineIcon } from './LineIcon'
 import { useBudgetChromeCopy } from './useBudgetCopy'
 
 export interface FlowStripProps {
   view: PlanView
-  onFix: () => void
-  onJump: (block: BudgetBlock) => void
+  /** `hero` is the Budget page's month or plan hero; the default strip stays for the builder's capsule screens. */
+  variant?: 'strip' | 'hero'
+  onFix?: () => void
+  onJump?: (block: BudgetBlock) => void
 }
 
 /** Income, balanced state, the proportional block strip and its legend. */
-export function FlowStrip({ view, onFix, onJump }: FlowStripProps) {
+export function FlowStrip({ view, variant = 'strip', onFix, onJump }: FlowStripProps) {
   const c = useBudgetChromeCopy()
   const { flow: f } = c
   const month = view.mode === 'month'
@@ -30,6 +33,8 @@ export function FlowStrip({ view, onFix, onJump }: FlowStripProps) {
   const denom = Math.max(view.income, assigned) || 1
   const marker = month && view.daysInCycle > 0 ? Math.min(100, (view.dayOfCycle / view.daysInCycle) * 100) : null
   const over = view.free < 0
+
+  if (variant === 'hero') return view.mode === 'month' ? <MonthHero view={view} /> : <PlanHero view={view} />
 
   return (
     <Card padding="md" className="flex flex-col gap-3">
@@ -110,7 +115,7 @@ export function FlowStrip({ view, onFix, onJump }: FlowStripProps) {
             size="sm"
             surface="card"
             aria-label={f.jumpTo(c.blocks[x.block].name)}
-            onClick={() => onJump(x.block)}
+            onClick={() => onJump?.(x.block)}
           >
             <span style={{ color: blockColor(x.block) }}>
               <LineIcon name={BLOCK_META[x.block].icon} className="size-4" />

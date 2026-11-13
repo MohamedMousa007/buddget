@@ -12,6 +12,8 @@ export interface BudgetBuilderCopy {
   blockOf: (n: number, total: number) => string
   linkedNote: string
   stepLabel: (block: string, state: 'done' | 'current' | 'todo') => string
+  position: (n: number, total: number) => string
+  mark: { checked: string; flag: string }
   blockHints: Record<BudgetBlock, string>
   capsule: { left: string; balanced: string; over: string; notPlanned: (pct: string) => string; overBy: (pct: string) => string; toBuffer: string }
   found: string
@@ -65,6 +67,8 @@ export const budgetBuilderCopyEn: BudgetBuilderCopy = {
   blockOf: (n, total) => `Block ${n} of ${total}`,
   linkedNote: 'Subscriptions, Debts and Goals are filled from your linked pages',
   stepLabel: (block, state) => `${block}, ${state === 'done' ? 'done' : state === 'current' ? 'current' : 'to do'}`,
+  position: (n, total) => `${n} of ${total}`,
+  mark: { checked: 'checked', flag: 'needs a check' },
   blockHints: hintsEn,
   capsule: {
     left: 'Left to assign',
@@ -129,6 +133,8 @@ export const budgetBuilderCopyAr: BudgetBuilderCopy = {
   blockOf: (n, total) => `القسم ${n} من ${total}`,
   linkedNote: 'الاشتراكات والديون والأهداف تُملأ من صفحاتها',
   stepLabel: (block, state) => `${block}، ${state === 'done' ? 'تم' : state === 'current' ? 'الحالي' : 'قادم'}`,
+  position: (n, total) => `${n} من ${total}`,
+  mark: { checked: 'تمت المراجعة', flag: 'تحتاج مراجعة' },
   blockHints: {
     bills: 'الإيجار والمرافق والهاتف والتأمين',
     subscriptions: 'تُملأ من اشتراكاتك',

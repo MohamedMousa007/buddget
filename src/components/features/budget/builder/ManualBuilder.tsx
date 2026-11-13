@@ -19,7 +19,7 @@ import type { LineView } from '@/lib/budget/planView.types'
 import { AddLineSheet } from '../sheets/AddLineSheet'
 import { LineSheet } from '../sheets/LineSheet'
 import { useBudgetBuilderCopy } from '../useBuilderCopy'
-import { BlockStepper } from './BlockStepper'
+import { SegmentRail } from '../SegmentRail'
 import { BuilderBlockStep } from './BuilderBlockStep'
 import { StepFooter } from './StepFooter'
 import { FreeCapsule } from './FreeCapsule'
@@ -114,7 +114,7 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
         </div>
       ) : (
         <>
-          <BlockStepper current={step} onSelect={setStep} note={c.linkedNote} />
+          <SegmentRail current={step} onSelect={setStep} note={c.linkedNote} />
 
           <FreeCapsule view={view} onToBuffer={act.moveFreeToBuffer} />
 
