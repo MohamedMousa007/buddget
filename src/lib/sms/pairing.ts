@@ -461,6 +461,12 @@ export async function tryPairLeg(
     amount: number
     kind: SmsExpenseKind
     /**
+     * The kind written to this leg's log row before the claim, when it differs from the `kind` sent to the RPC. A leg
+     * that claims as `own_transfer` only for the exact-amount rule must still read as what it is to a sibling being
+     * processed at the same moment, or that sibling skips the retag of a Remittance row.
+     */
+    publishKind?: SmsExpenseKind
+    /**
      * Narrows what this leg may pair with. The RPC CLAIMS the sibling it finds, so a caller
      * that would refuse a match must exclude it here rather than ignore the result —
      * ignoring it still consumes the sibling's one pairing slot and strands it forever.
@@ -532,7 +538,7 @@ export async function tryPairLeg(
   const { error: publishErr } = await service
     .from('sms_parse_log')
     .update({
-      kind: params.kind,
+      kind: params.publishKind ?? params.kind,
       parsed_ok: true,
       amount: params.amount,
       ...(params.accountLast4 ? { account_last4: params.accountLast4 } : {}),
@@ -751,6 +757,28 @@ export async function attributeFundingToPayoff(
   }
 
   return { payoffAmount: (log?.amount as number | null) ?? null }
+}
+
+/**
+ * Undoes what {@link reconcileSibling} did when the row this leg meant to post then failed to post: the sibling's income
+ * row that carries THIS message's retraction marker is live again (marker cleared with `deleted_at`, I4), its log row
+ * points at it again, and both legs are released so a retry can claim afresh. Without this the income stays retracted
+ * and the retry, unable to claim a pair that is still paired, books plain spending.
+ */
+export async function restoreRetractedSibling(service: ServiceClient, sibling: PairSibling, retractedByLogId: string): Promise<void> {
+  if (sibling.siblingIncomeId) {
+    const { data, error } = await service
+      .from('income_events')
+      .update({ deleted_at: null, retracted_by_sms_log_id: null })
+      .eq('id', sibling.siblingIncomeId)
+      .eq('retracted_by_sms_log_id', retractedByLogId)
+      .select('id')
+    if (error) console.warn('[sms/pairing] restoring the retracted income failed', error)
+    if (!error && (data?.length ?? 0) > 0) {
+      await service.from('sms_parse_log').update({ status: 'confirmed', income_id: sibling.siblingIncomeId }).eq('id', sibling.siblingId)
+    }
+  }
+  await unpairLegs(service, retractedByLogId, sibling.siblingId)
 }
 
 /**

@@ -27,17 +27,20 @@ export function isLaterCopy(self: Ordered, other: Ordered): boolean {
 }
 
 /**
- * The live rows `self` is a later copy of: same text (the query), a different capture time or an unknown one, received
- * within the window. Two rows with the same known capture time are one capture, which the unique index refuses, so
- * one is never listed here.
+ * The live rows that already stand for this text, so `self` is their second copy: same text (the query), a different
+ * capture time or an unknown one, received within the window. A row that has finished (any status but `processing`)
+ * stands whichever capture came first: the copy captured later can be delivered and booked before the one captured
+ * earlier, and the earlier one must not book again. Only when the other row is still `processing` too (two requests at
+ * once) does the `(received_at, id)` order decide, so exactly one of them stands down. Two rows with the same known
+ * capture time are one capture, which the unique index refuses, so one is never listed here.
  */
-export function earlierCopies(self: Pick<CopyRow, 'id' | 'received_at' | 'captured_at'>, rows: readonly CopyRow[]): CopyRow[] {
+export function standingCopies(self: Pick<CopyRow, 'id' | 'received_at' | 'captured_at'>, rows: readonly CopyRow[]): CopyRow[] {
   const at = Date.parse(self.received_at)
   return rows.filter((r) =>
     r.id !== self.id &&
     !(r.captured_at && self.captured_at && Date.parse(r.captured_at) === Date.parse(self.captured_at)) &&
     Math.abs(Date.parse(r.received_at) - at) <= SECOND_COPY_WINDOW_MS &&
-    isLaterCopy(self, r))
+    (r.status !== 'processing' || isLaterCopy(self, r)))
 }
 
 /**
@@ -50,12 +53,12 @@ export function secondCopyVerdict(i: { hasReference: boolean; hasBalance: boolea
 }
 
 /**
- * The earlier live copy of this message's text, when this message is the later one. Read AFTER this message's own
- * claim row exists, so two simultaneous requests see each other and exactly one of them is the later copy.
+ * The live copy that already stands for this message's text, when this message is its second copy. Read AFTER this
+ * message's own claim row exists, so two simultaneous requests see each other and exactly one of them stands down.
  * Rows that failed or were rejected never booked anything and are not copies. A claim still `processing` is returned
  * like any other: the caller must not answer success on it, since that run may still die.
  */
-export async function findEarlierCopy(
+export async function findStandingCopy(
   service: ServiceClient,
   i: { userId: string; logId: string; bodyHash: string; capturedAt: string | null; receivedAt: string },
 ): Promise<CopyRow | null> {
@@ -72,6 +75,6 @@ export async function findEarlierCopy(
     .gte('received_at', new Date(at - SECOND_COPY_WINDOW_MS).toISOString())
     .lte('received_at', new Date(at + SECOND_COPY_WINDOW_MS).toISOString())
   const mine = { id: i.logId, received_at: i.receivedAt, captured_at: i.capturedAt }
-  const earlier = earlierCopies(mine, (data ?? []) as CopyRow[])
-  return earlier.find((r) => r.status !== 'processing') ?? earlier[0] ?? null
+  const standing = standingCopies(mine, (data ?? []) as CopyRow[])
+  return standing.find((r) => r.status !== 'processing') ?? standing[0] ?? null
 }

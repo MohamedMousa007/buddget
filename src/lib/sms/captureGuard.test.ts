@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { earlierCopies, isLaterCopy, secondCopyVerdict, SECOND_COPY_WINDOW_MS, type CopyRow } from './captureGuard'
+import { standingCopies, isLaterCopy, secondCopyVerdict, SECOND_COPY_WINDOW_MS, type CopyRow } from './captureGuard'
 import { extractIpnReference } from './dispatch'
 import { extractBalance } from './balanceReport'
 
@@ -31,26 +31,33 @@ describe('isLaterCopy', () => {
   })
 })
 
-describe('earlierCopies', () => {
+describe('standingCopies (I5)', () => {
   const self = { id: 'me', received_at: '2026-10-01T10:00:40Z', captured_at: '2026-10-01T10:00:40.000Z' }
   it('lists an earlier capture of the text inside the window', () => {
-    expect(earlierCopies(self, [row('x', '2026-10-01T10:00:00Z')]).map((r) => r.id)).toEqual(['x'])
+    expect(standingCopies(self, [row('x', '2026-10-01T10:00:00Z')]).map((r) => r.id)).toEqual(['x'])
   })
   it('does not list a copy outside the window (four identical texts on four days)', () => {
     const days = [1, 2, 3, 4].map((d) => row(`d${d}`, `2026-09-0${d}T10:00:40Z`))
-    expect(earlierCopies(self, days)).toEqual([])
+    expect(standingCopies(self, days)).toEqual([])
     expect(SECOND_COPY_WINDOW_MS).toBe(180_000)
   })
-  it('does not list a later row: the earlier copy does nothing', () => {
-    expect(earlierCopies(self, [row('x', '2026-10-01T10:01:10Z')])).toEqual([])
+  it('lists a finished copy captured later: the earlier capture arriving second is the second copy', () => {
+    expect(standingCopies(self, [row('x', '2026-10-01T10:01:10Z')]).map((r) => r.id)).toEqual(['x'])
+  })
+  it('two simultaneous processing rows: exactly one of them is the copy', () => {
+    const a = { id: 'a', received_at: '2026-10-01T10:00:00Z', captured_at: '2026-10-01T10:00:00.000Z' }
+    const b = { id: 'b', received_at: '2026-10-01T10:00:05Z', captured_at: '2026-10-01T10:00:05.000Z' }
+    const inFlight = (r: typeof a): CopyRow => ({ ...r, status: 'processing', expense_id: null, income_id: null })
+    const standsDown = [standingCopies(a, [inFlight(b)]).length, standingCopies(b, [inFlight(a)]).length]
+    expect(standsDown.sort()).toEqual([0, 1])
   })
   it('does not list a row with the same known capture second', () => {
-    expect(earlierCopies(self, [row('x', '2026-10-01T10:00:00Z', '2026-10-01T10:00:40.000Z')])).toEqual([])
+    expect(standingCopies(self, [row('x', '2026-10-01T10:00:00Z', '2026-10-01T10:00:40.000Z')])).toEqual([])
   })
   it('lists a row with no known capture time', () => {
-    expect(earlierCopies(self, [row('x', '2026-10-01T10:00:00Z', null)]).map((r) => r.id)).toEqual(['x'])
+    expect(standingCopies(self, [row('x', '2026-10-01T10:00:00Z', null)]).map((r) => r.id)).toEqual(['x'])
   })
   it('never lists itself', () => {
-    expect(earlierCopies(self, [row('me', '2026-10-01T10:00:00Z')])).toEqual([])
+    expect(standingCopies(self, [row('me', '2026-10-01T10:00:00Z')])).toEqual([])
   })
 })

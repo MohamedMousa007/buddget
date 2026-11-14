@@ -247,6 +247,23 @@ describe('I1 exception 1: a refund stamps one earlier message row', () => {
     expect(tx).toMatchObject({ outcome: 'refund_matched', expenseId: second })
   })
 
+  it('I6: an unmatched refund\'s own placeholder does not answer a second genuine refund of the same amount the next day', async () => {
+    const first = await dispatch(refundMsg({ logId: 'r1', amount: 400, receivedAtIso: AT }))
+    expect(first.outcome).toBe('refund_unmatched')
+    const second = await dispatch(refundMsg({ logId: 'r2', amount: 400, day: '2026-10-28', receivedAtIso: plus(AT, DAY) }))
+    expect(second.outcome).toBe('refund_unmatched')
+    expect(ownRows('r2')).toHaveLength(1)
+    expect(ownRows('r2')[0]).toMatchObject({ refund_kind: 'refunded', refund_sms_log_id: 'r2', sms_flags: ['refund_unmatched'] })
+  })
+
+  it('I6: a refund re-sent against a purchase that a refund already stamped is still acknowledged', async () => {
+    const purchase = seed({ log: 'p1', kind: 'purchase', amount: 400, at: plus(AT, -2 * MIN) })
+    await dispatch(refundMsg({ logId: 'r1', amount: 400 }))
+    const again = await dispatch(refundMsg({ logId: 'r2', amount: 400, rawBody: 'The refunded amount was credited to your card', receivedAtIso: plus(AT, 2 * MIN) }))
+    expect(again).toMatchObject({ outcome: 'refund_matched', expenseId: purchase })
+    expect(ownRows('r2')).toHaveLength(0)
+  })
+
   it('a hand-entered expense of the same amount is never stamped', async () => {
     const hand = seed({ log: 'h1', kind: 'purchase', amount: 300, at: AT, handEntered: true })
     const tx = await dispatch(refundMsg({ logId: 'r1', amount: 300 }))

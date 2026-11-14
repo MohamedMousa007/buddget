@@ -45,6 +45,7 @@ import {
   isOwnTopUpTarget,
   namesOwnStoredValue,
   retagSiblingAsTransfer,
+  restoreRetractedSibling,
   tryPairLeg,
   claimSibling,
   unpairLegs,
@@ -203,6 +204,7 @@ async function finalizeOwnTransferPair(
   sibling: PairSibling,
   logId: string,
   legDirection: MoneyDirection | null,
+  destinationLeg = false,
 ): Promise<SmsTxResult> {
   const { needsPost } = await reconcileSibling(service, sibling, logId)
   if (!needsPost) {
@@ -218,7 +220,8 @@ async function finalizeOwnTransferPair(
   // Sibling was booked as income (now soft-deleted) — post one visible non-spend row. It is the debit leg, so the
   // retracted credit leg's account is the destination when its own digits name none.
   const creditLegLast4 = legDirection === 'credit' ? null : await siblingAccountTail(service, sibling)
-  const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer', creditLegLast4 })
+  const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer', creditLegLast4, destinationLeg })
+  if (posted.error) await restoreRetractedSibling(service, sibling, logId)
   return {
     ...base('transfer_paired', 'own_transfer'),
     expenseId: posted.expenseId,
@@ -306,7 +309,7 @@ export async function createSmsTransaction(
   // pairing guards compare are published with every claim (migration 0271).
   const legDirection = legDirectionOfKind(kind)
   const legFacts = {
-    currency: row.currency,
+    currency: row.currencyProvisional ? null : row.currency,
     counterpartyLast4: row.counterpartyLast4 ?? null,
     counterpartyHash: row.counterpartyHash ?? null,
     counterpartyIsSelf: row.counterpartyIsSelf ?? null,
@@ -353,8 +356,10 @@ export async function createSmsTransaction(
         accountLast4: row.last4 ?? null,
         ...legFacts,
         direction: legDirection,
-        // 'own_transfer' for the exact-amount rule; a wallet movement has no fee to absorb.
+        // 'own_transfer' for the exact-amount rule; a wallet movement has no fee to absorb. The row itself keeps the
+        // kind the leg really has, which a sibling processed at the same moment reads.
         kind: 'own_transfer',
+        publishKind: kind,
         // No cc_payoff: a payoff is settled by step 3, which needs its own funding leg. The
         // RPC claims whatever it matches, so merely ignoring a payoff here would still burn
         // its one pairing slot and leave it unable to ever find that leg — the double-count
@@ -396,6 +401,7 @@ export async function createSmsTransaction(
       direction: legDirection,
       matchKinds: ['cc_payoff'],
       kind: 'own_transfer',
+      publishKind: kind,
     })
     if (payoff) return pairFundingLegWithPayoff(service, row, payoff)
   }
@@ -457,6 +463,7 @@ export async function createSmsTransaction(
         direction: legDirection,
         // Only the leg that was read and decided on may be claimed.
         siblingId: candidate.id,
+        publishKind: kind,
         // By reference when both legs carry it (the amounts may differ by the fee); otherwise the exact amount.
         ...(candidate.sameReference && reference ? { kind, reference } : { kind: 'own_transfer' as const }),
       })
@@ -487,6 +494,8 @@ export async function createSmsTransaction(
           amount: row.amount,
           accountLast4: row.last4 ?? null,
           ...legFacts,
+          // The exchange needs its currency even when it was a guess, as before.
+          currency: row.currency,
           kind,
           direction,
         })
@@ -497,8 +506,9 @@ export async function createSmsTransaction(
       return base('transfer_paired', kind)
     }
     // A sibling that was booked as income is retracted; this leg then posts the one row.
-    if (sibling && row.logId) await reconcileSibling(service, sibling, row.logId)
+    const retracted = sibling && row.logId ? (await reconcileSibling(service, sibling, row.logId)).needsPost : false
     const posted = await createSmsExpense(service, { ...row, kind, destinationLeg: direction === 'credit' })
+    if (posted.error && retracted && sibling && row.logId) await restoreRetractedSibling(service, sibling, row.logId)
     return {
       ...base(sibling ? 'transfer_paired' : 'transfer_single', kind),
       expenseId: posted.expenseId,
@@ -530,16 +540,7 @@ export async function createSmsTransaction(
       if (sibling.siblingKind === 'cc_payoff') return pairFundingLegWithPayoff(service, row, sibling)
 
       if (!row.logId) return base('transfer_paired', kind)
-      const { needsPost } = await reconcileSibling(service, sibling, row.logId)
-      if (!needsPost) return base('transfer_paired', kind)
-      // Income sibling was removed — post a single visible non-spend row.
-      const posted = await createSmsExpense(service, { ...row, kind, destinationLeg })
-      return {
-        ...base('transfer_paired', kind),
-        expenseId: posted.expenseId,
-        category: 'Transfer',
-        error: posted.error,
-      }
+      return finalizeOwnTransferPair(service, row, sibling, row.logId, legDirection, destinationLeg)
     }
     if (!modelOwnTransfer) {
       const res = await createSmsExpense(service, { ...row, kind, destinationLeg })
@@ -612,11 +613,14 @@ export async function createSmsTransaction(
 
     // The fee the funding bank took on top. It is real spend and must count — only the
     // payoff itself is non-spend. Derivable only from the pair. Here `row` is the payoff.
-    await postTransferFee(service, row, {
-      fundingLast4: funding?.fundingLast4 ?? null,
-      fundingAmount: funding?.fundingAmount ?? null,
-      payoffAmount: row.amount,
-    })
+    // A repayment that failed to book posts no fee: the retry posts the fee with the repayment, once.
+    if (!res.error) {
+      await postTransferFee(service, row, {
+        fundingLast4: funding?.fundingLast4 ?? null,
+        fundingAmount: funding?.fundingAmount ?? null,
+        payoffAmount: row.amount,
+      })
+    }
 
     return {
       ...base('debt_payment', kind),

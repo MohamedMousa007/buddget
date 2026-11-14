@@ -67,8 +67,12 @@ export async function answerOneLegQuestion(
     const { error: logErr } = await service.from('sms_parse_log').update({ own_transfer_verdict: 'settle' }).eq('id', log.id)
     if (logErr) return { ok: false, status: 500, error: 'Failed to update logs' }
   } else {
-    // A transfer in: the money came from the registered account. The income row is retracted with its cause (I4) and
-    // one Transfer expense stands for the movement, debiting the account it left and crediting the one it reached.
+    // A transfer in: the money came from the registered account. The income row is retracted with its cause (I4) first
+    // and one Transfer expense then stands for the movement, debiting the account it left and crediting the one it
+    // reached. Retracting first means a failed retraction leaves no expense behind for a retry to mistake for a transfer
+    // out of an account into itself.
+    const { error: delErr } = await service.from('income_events').update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: log.id }).eq('id', income.id).eq('user_id', userId)
+    if (delErr) return { ok: false, status: 500, error: 'Failed to update income' }
     const { data: created, error: insErr } = await service
       .from('expenses')
       .insert({
@@ -87,9 +91,10 @@ export async function answerOneLegQuestion(
       .select('id')
       .single()
     const expenseId = (created as { id: string } | null)?.id
-    if (insErr || !expenseId) return { ok: false, status: 500, error: 'Failed to update expense' }
-    const { error: delErr } = await service.from('income_events').update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: log.id }).eq('id', income.id).eq('user_id', userId)
-    if (delErr) return { ok: false, status: 500, error: 'Failed to update income' }
+    if (insErr || !expenseId) {
+      await service.from('income_events').update({ deleted_at: null, retracted_by_sms_log_id: null }).eq('id', income.id).eq('user_id', userId).eq('retracted_by_sms_log_id', log.id)
+      return { ok: false, status: 500, error: 'Failed to update expense' }
+    }
     const { error: logErr } = await service
       .from('sms_parse_log')
       .update({ expense_id: expenseId, income_id: null, kind: 'own_transfer', own_transfer_verdict: 'settle' })

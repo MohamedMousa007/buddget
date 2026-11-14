@@ -78,7 +78,7 @@ import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
 import { extractBalance, recordBalanceReport } from '@/lib/sms/balanceReport'
-import { findEarlierCopy, secondCopyVerdict } from '@/lib/sms/captureGuard'
+import { findStandingCopy, secondCopyVerdict } from '@/lib/sms/captureGuard'
 import { appendSmsFlags } from '@/lib/sms/stampFlags'
 import type { SmsFlag } from '@/lib/sms/smsFlags'
 import { extractAccountTail } from '@/lib/accounts/identity/accountRef'
@@ -813,20 +813,20 @@ export async function POST(request: Request) {
 
   // ---- I5: the same text captured minutes ago under another capture time -------
   // Read after this message's own claim row exists, so two simultaneous requests see each other and exactly one of
-  // them is the later copy. A reference or a running balance proves the same movement; without either, both book.
+  // them stands down. A finished copy stands whichever capture came first. A reference or a running balance proves the same movement; without either, both book.
   let possibleDuplicate = false
-  const earlierCopy = await findEarlierCopy(service, { userId, logId, bodyHash, capturedAt, receivedAt: nowIso })
-  if (earlierCopy) {
+  const standingCopy = await findStandingCopy(service, { userId, logId, bodyHash, capturedAt, receivedAt: nowIso })
+  if (standingCopy) {
     const verdict = secondCopyVerdict({ hasReference: extractIpnReference(message) != null, hasBalance: extractBalance(message) != null })
     if (verdict === 'possible_duplicate') {
       possibleDuplicate = true
-    } else if (isClaimInFlight(earlierCopy.status)) {
+    } else if (isClaimInFlight(standingCopy.status)) {
       // The earlier run may still die: retire this claim so the phone's retry can claim again, and keep its copy.
       await service.from('sms_parse_log').update({ is_duplicate: true, status: 'failed', failure_code: 'duplicate_retry' }).eq('id', logId)
       return claimInProgressResponse()
     } else {
       await service.from('sms_parse_log').update({ is_duplicate: true, status: 'rejected', failure_code: 'duplicate_capture' }).eq('id', logId)
-      return NextResponse.json({ ok: true, duplicate: true, expenseId: earlierCopy.expense_id ?? null, incomeId: earlierCopy.income_id ?? null })
+      return NextResponse.json({ ok: true, duplicate: true, expenseId: standingCopy.expense_id ?? null, incomeId: standingCopy.income_id ?? null })
     }
   }
 
@@ -1101,6 +1101,7 @@ export async function POST(request: Request) {
     userId,
     amount: parsed.amount,
     currency: parsed.currency,
+    currencyProvisional,
     day,
     kind: parsed.kind,
     cleanTitle: parsed.cleanTitle,

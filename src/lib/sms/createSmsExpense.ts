@@ -90,6 +90,8 @@ export interface SmsRowData {
   userId: string
   amount: number
   currency: string
+  /** The currency was a fallback guess, not printed in the message: the pairing guards must treat it as unknown (I7). */
+  currencyProvisional?: boolean
   day: string            // YYYY-MM-DD
   kind: SmsExpenseKind
   cleanTitle: string | null
@@ -769,7 +771,7 @@ export async function findRefundedTwin(
 
   let q = service
     .from('expenses')
-    .select('id, category')
+    .select('id, category, sms_log_id, refund_sms_log_id')
     .eq('user_id', row.userId)
     .eq('currency', dbCurrency(row.currency))
     .eq('amount', row.amount)
@@ -779,11 +781,13 @@ export async function findRefundedTwin(
     .gte('refunded_at', lo.toISOString().slice(0, 10))
     .lte('refunded_at', hi.toISOString().slice(0, 10))
     .order('refunded_at', { ascending: false })
-    .limit(1)
+    .limit(20)
   if (pmId) q = q.eq('payment_method_id', pmId)
 
   const { data } = await q
-  const best = data?.[0]
+  // PostgREST cannot compare two columns, so a refund's own placeholder is dropped here: it stands for an unmatched
+  // refund, not for a purchase that one refund already reversed, and a second genuine refund must not be answered by it.
+  const best = (data ?? []).find((r) => !(r.sms_log_id && r.refund_sms_log_id === r.sms_log_id))
   return best ? { id: best.id, category: best.category as string } : null
 }
 

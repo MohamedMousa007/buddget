@@ -211,6 +211,22 @@ describe('I5 rule 3: a possible second copy', () => {
     expect(h.dispatch).not.toHaveBeenCalled()
   })
 
+  it('the copy captured later is booked first: the earlier capture arriving second is a duplicate when the text carries a reference', async () => {
+    const first = await (await post({ message: WITH_REF, receivedAt: at(40), eventId: EVT(1) })).json()
+    const second = await (await post({ message: WITH_REF, receivedAt: at(0), eventId: EVT(2) })).json()
+    expect(second).toMatchObject({ ok: true, duplicate: true, expenseId: first.expenseId })
+    expect(h.dispatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('the copy captured later is booked first: the earlier capture arriving second is booked and flagged, the first untouched', async () => {
+    await post({ message: PLAIN, receivedAt: at(40), eventId: EVT(1) })
+    await post({ message: PLAIN, receivedAt: at(0), eventId: EVT(2) })
+    expect(h.dispatch).toHaveBeenCalledTimes(2)
+    const [first, second] = claims()
+    expect(flagsOn(first.id)).toBeNull()
+    expect(flagsOn(second.id)).toEqual(['possible_duplicate'])
+  })
+
   it('two requests at the same instant with different ids: exactly one is the later copy', async () => {
     await Promise.all([post({ message: PLAIN, eventId: EVT(1) }), post({ message: PLAIN, eventId: EVT(2) })])
     const flagged = claims().filter((r) => flagsOn(r.id) !== null)

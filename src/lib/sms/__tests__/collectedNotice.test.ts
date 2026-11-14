@@ -8,7 +8,7 @@ describe('isCollectedNotice (S2c step 8a, I3)', () => {
     'Your transfer of EGP 1,500.00 to Sample Receiver has been collected by the beneficiary on 12/11.',
     'Dear customer, the remittance was picked up by the recipient today.',
     'The money transfer you sent has been collected. Thank you for using our service.',
-    'Transfer ref 55021 received by the beneficiary at branch 3.',
+    'Transfer ref 55021 was received by the beneficiary at branch 3.',
     'The recipient has picked up your transfer of USD 200.',
     'تم استلام الحوالة من قبل المستفيد بمبلغ 1500 جنيه',
     'تم صرف التحويل للمستلم بنجاح',
@@ -22,6 +22,10 @@ describe('isCollectedNotice (S2c step 8a, I3)', () => {
     'Debited EGP 300.00 for transfer to beneficiary, was received by the beneficiary',
     'Your parcel was collected from the locker',
     'Instant transfer of EGP 100 to a friend was successful',
+    'Your transfer of EGP 500.00 was sent. The funds will be received by the beneficiary within 24 hours.',
+    'You have sent EGP 500.00. The money is ready for collection at any branch by the recipient.',
+    'The remittance can be collected by the recipient at any branch.',
+    'سيتم استلام الحوالة من قبل المستفيد خلال 24 ساعة',
   ])('false: %s', (text) => expect(isCollectedNotice(text)).toBe(false))
 })
 

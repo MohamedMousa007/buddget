@@ -4,15 +4,21 @@ import type { ServiceClient } from '@/lib/supabase/service'
 const h = vi.hoisted(() => ({
   ensureProvisional: vi.fn(async () => null as string | null),
   debt: vi.fn(),
+  failExpense: false,
 }))
 vi.mock('./accountPlacement', async (orig) => ({
   ...(await orig<typeof import('./accountPlacement')>()),
   ensureProvisionalAccount: h.ensureProvisional,
 }))
-vi.mock('./createSmsExpense', async (orig) => ({
-  ...(await orig<typeof import('./createSmsExpense')>()),
-  createSmsDebtPayment: (...args: unknown[]) => h.debt(...args),
-}))
+vi.mock('./createSmsExpense', async (orig) => {
+  const real = await orig<typeof import('./createSmsExpense')>()
+  return {
+    ...real,
+    createSmsDebtPayment: (...args: unknown[]) => h.debt(...args),
+    createSmsExpense: (...args: Parameters<typeof real.createSmsExpense>) =>
+      h.failExpense ? Promise.resolve({ expenseId: null, incomeId: null, error: { message: 'down' } }) : real.createSmsExpense(...args),
+  }
+})
 
 import { createSmsTransaction, type SmsTxResult } from './dispatch'
 import type { SmsRowData } from './createSmsExpense'
@@ -93,9 +99,10 @@ function memService(tables: Record<string, Row[]>, rpcLog: Array<Record<string, 
   })
 
   const rpc = async (_fn: string, p: Record<string, unknown>) => {
-    rpcLog.push(p)
     const logs = tables.sms_parse_log
     const self = logs.find((l) => l.id === p.p_log_id)!
+    // What the leg's own log row says at the moment of the claim: this is what a sibling processed now would read.
+    rpcLog.push({ ...p, selfLogKind: self.kind })
     if (self.paired_log_id) return { data: [], error: null }
     const at = Date.parse(p.p_received_at as string)
     const window = (p.p_window_seconds as number) * 1000
@@ -138,6 +145,7 @@ beforeEach(() => {
   svc = memService(db, rpcLog)
   h.ensureProvisional.mockClear()
   h.debt.mockReset()
+  h.failExpense = false
 })
 afterEach(() => { vi.useRealTimers() })
 
@@ -160,7 +168,7 @@ async function run(row: SmsRowData, opts: { userConfirmed?: boolean } = {}): Pro
     db.sms_parse_log.push({
       id: row.logId, user_id: U, status: 'processing', parsed_ok: false, kind: null, raw_body: row.rawBody, received_at: row.receivedAtIso,
       device_id: row.deviceId ?? null, paired_log_id: null, is_duplicate: false, awaiting_confirmation: false, expense_id: null, income_id: null,
-      counterparty_last4: row.counterpartyLast4 ?? null, account_last4: row.last4 ?? null, currency: row.currency, amount: row.amount,
+      counterparty_last4: row.counterpartyLast4 ?? null, account_last4: row.last4 ?? null, currency: row.currencyProvisional ? null : row.currency, amount: row.amount,
     })
   }
   const p = createSmsTransaction(svc, row, { exchangeRates: {}, ...opts })
@@ -644,5 +652,200 @@ describe('P0-2/P0-3 order independence: a funding leg that arrives after the car
     expect(log('C').paired_log_id).toBe('F')
     expect(db.expenses.find((e) => e.id === 'eC')!.payment_method_id).toBe('pm-f')
     expect(db.expenses.filter((e) => e.description === 'Transfer fee')).toHaveLength(0)
+  })
+})
+
+describe('audit fix 1: a leg publishes the kind it really has, not the kind it claims with', () => {
+  it('tryPairLeg writes publishKind to the log row while the RPC still gets the claiming kind', async () => {
+    db.sms_parse_log.push({ id: 'L', user_id: U, status: 'processing', parsed_ok: false, paired_log_id: null })
+    const claim = tryPairLeg(svc, { userId: U, logId: 'L', receivedAtIso: T0, amount: 100, kind: 'own_transfer', publishKind: 'instant_transfer_out', matchKinds: ['cc_payoff'] })
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(await claim).toBeNull()
+    expect(log('L').kind).toBe('instant_transfer_out')
+    expect(rpcLog.every((r) => r.p_self_kind === 'own_transfer')).toBe(true)
+  })
+
+  it('the claim for a repayment sibling finds nothing: the transfer out never sits in the log as own_transfer', async () => {
+    await run(msg({ logId: 'O', kind: 'instant_transfer_out' }))
+    const claims = rpcLog.filter((r) => JSON.stringify(r.p_match_kinds) === JSON.stringify(['cc_payoff']))
+    expect(claims.length).toBeGreaterThan(0)
+    expect(claims.every((r) => r.selfLogKind === 'instant_transfer_out' && r.p_self_kind === 'own_transfer')).toBe(true)
+  })
+
+  it('the wallet-movement claim publishes the real kind too', async () => {
+    pm('pm-w', 'Barq', '', { type: 'wallet' })
+    await run(msg({ logId: 'O', kind: 'instant_transfer_out', rawBody: 'Withdrawal from your Barq wallet to your bank EGP 500' }))
+    const claims = rpcLog.filter((r) => (r.p_match_kinds as string[]).includes('own_transfer'))
+    expect(claims.length).toBeGreaterThan(0)
+    expect(claims.every((r) => r.selfLogKind === 'instant_transfer_out')).toBe(true)
+  })
+})
+
+describe('audit fix 3: a guessed currency is unknown to the pairing guards (I7)', () => {
+  it('a provisional currency is neither published nor sent with the claim', async () => {
+    await run(msg({ logId: 'P', currencyProvisional: true }))
+    expect(log('P').currency ?? null).toBeNull()
+    expect(rpcLog.length).toBeGreaterThan(0)
+    expect(rpcLog.every((r) => r.p_currency === undefined)).toBe(true)
+  })
+
+  it('a printed currency is published and sent', async () => {
+    await run(msg({ logId: 'P' }))
+    expect(log('P').currency).toBe('EGP')
+    expect(rpcLog.every((r) => r.p_currency === 'EGP')).toBe(true)
+  })
+})
+
+describe('audit fix 6: a retraction is undone when the row that replaces it fails to post', () => {
+  const sibling = (over: Row = {}) => {
+    db.sms_parse_log.push({
+      id: 'S', user_id: U, kind: 'instant_transfer_in', parsed_ok: true, status: 'confirmed', amount: 500, currency: 'EGP', account_last4: '5124', received_at: at(0),
+      expense_id: null, income_id: 'iS', paired_log_id: null, is_duplicate: false, awaiting_confirmation: false, raw_body: 'x', leg_direction: 'credit', ...over,
+    })
+    db.income_events.push({ id: 'iS', user_id: U, sms_log_id: 'S', amount: 500, deleted_at: null, retracted_by_sms_log_id: null })
+  }
+  const expectRestored = () => {
+    expect(liveIncomes()).toHaveLength(1)
+    expect(db.income_events[0]).toMatchObject({ id: 'iS', deleted_at: null, retracted_by_sms_log_id: null })
+    expect(log('S')).toMatchObject({ status: 'confirmed', income_id: 'iS', paired_log_id: null })
+    expect(log('O').paired_log_id).toBeNull()
+    expect(liveExpenses()).toHaveLength(0)
+  }
+
+  it('step 2: the income is live again without a marker and both logs are unpaired', async () => {
+    sibling()
+    h.failExpense = true
+    const tx = await run(msg({ logId: 'O', kind: 'own_transfer', last4: '0001', receivedAtIso: at(10) }))
+    expect(tx.error).toBeTruthy()
+    expectRestored()
+  })
+
+  it('the IPN pair: the same', async () => {
+    pm('pm-a', 'HSBC Egypt', '0001')
+    pm('pm-b', 'QNB', '5124')
+    const ref = referenceHash(U, 'ab12cd34')
+    sibling({ referenceHash: ref, reference_hash: ref, raw_body: 'IPN transfer received EGP 500.00 on 5124. Ref# ab12cd34.', device_id: 'dev-1' })
+    h.failExpense = true
+    const tx = await run(msg({ logId: 'O', amount: 500, rawBody: 'Account 0001 debited IPN outward transfer EGP 500.00 with reference ab12cd34', receivedAtIso: at(30), referenceHash: ref }))
+    expect(tx.error).toBeTruthy()
+    expectRestored()
+  })
+
+  it('a post that succeeds keeps the retraction and the pair', async () => {
+    sibling()
+    const tx = await run(msg({ logId: 'O', kind: 'own_transfer', last4: '0001', receivedAtIso: at(10) }))
+    expect(tx.error).toBeNull()
+    expect(liveIncomes()).toHaveLength(0)
+    expect(db.income_events[0]).toMatchObject({ retracted_by_sms_log_id: 'O' })
+    expect(log('S').paired_log_id).toBe('O')
+  })
+})
+
+describe('audit fix 7: a repayment that failed to book posts no transfer fee', () => {
+  beforeEach(() => {
+    pm('pm-f', 'Bank', '1234')
+    db.sms_parse_log.push({
+      id: 'F', user_id: U, kind: 'instant_transfer_out', parsed_ok: true, status: 'confirmed', amount: 1012, currency: 'EGP', account_last4: '1234', received_at: at(-20),
+      expense_id: 'eF', income_id: null, paired_log_id: null, is_duplicate: false, awaiting_confirmation: false, raw_body: 'x', leg_direction: 'debit', counterparty_last4: '4444',
+    })
+    db.expenses.push({ id: 'eF', user_id: U, sms_log_id: 'F', amount: 1012, category: 'Instapay', deleted_at: null })
+  })
+  const repayment = () => msg({ logId: 'C', kind: 'cc_payoff', amount: 1000, last4: '4444', rawBody: 'Payment of EGP 1000 received on your card' })
+  const fees = () => db.expenses.filter((e) => e.description === 'Transfer fee')
+
+  it('the debt booking returned an error: no fee row', async () => {
+    h.debt.mockResolvedValue({ expenseId: null, incomeId: null, debtPaymentId: null, error: { message: 'down' } })
+    await run(repayment())
+    expect(log('F').paired_log_id).toBeNull()
+    expect(fees()).toHaveLength(0)
+  })
+
+  it('a booked repayment posts the fee once', async () => {
+    h.debt.mockResolvedValue({ expenseId: 'dp-exp', incomeId: null, debtPaymentId: 'dp-1', error: null })
+    await run(repayment())
+    expect(fees().map((e) => e.amount)).toEqual([12])
+  })
+})
+
+describe('audit fix 8: confirm_account on an income row retracts first and restores when the insert fails', () => {
+  beforeEach(() => {
+    pm('pm-a', 'HSBC Egypt', '0001')
+    pm('pm-b', 'QNB', '5124')
+  })
+  const inbound = () => run(msg({ logId: 'L1', kind: 'instant_transfer_in', last4: '5124', counterpartyLast4: '0001', rawBody: 'Transfer received EGP 500' }))
+
+  it('a failing insert leaves the income live without a marker and no expense behind', async () => {
+    await inbound()
+    const failing = {
+      ...svc,
+      from: (name: string) => {
+        const b = (svc as unknown as { from: (n: string) => unknown }).from(name) as unknown as Record<string, unknown>
+        if (name === 'expenses') b.insert = () => ({ select: () => ({ single: async () => ({ data: null, error: { message: 'down' } }) }) })
+        return b
+      },
+    } as unknown as ServiceClient
+    const r = await answerOneLegQuestion(failing, U, log('L1') as never, 'confirm_account')
+    expect(r).toMatchObject({ ok: false })
+    expect(liveIncomes()).toHaveLength(1)
+    expect(db.income_events[0]).toMatchObject({ deleted_at: null, retracted_by_sms_log_id: null })
+    expect(db.expenses).toHaveLength(0)
+    expect(log('L1')).toMatchObject({ kind: 'instant_transfer_in', own_transfer_verdict: 'ask_account' })
+  })
+
+  it('a failing retraction inserts no Transfer, so a retry cannot mistake it for a transfer out', async () => {
+    await inbound()
+    const failing = {
+      ...svc,
+      from: (name: string) => {
+        const b = (svc as unknown as { from: (n: string) => unknown }).from(name) as unknown as Record<string, unknown>
+        if (name === 'income_events') {
+          b.update = () => {
+            const c: Record<string, unknown> = { eq: () => c, then: (res: (v: unknown) => unknown) => res({ data: null, error: { message: 'down' } }) }
+            return c
+          }
+        }
+        return b
+      },
+    } as unknown as ServiceClient
+    expect(await answerOneLegQuestion(failing, U, log('L1') as never, 'confirm_account')).toMatchObject({ ok: false })
+    expect(db.expenses).toHaveLength(0)
+    expect(liveIncomes()).toHaveLength(1)
+  })
+
+  it('normal path: the income is retracted before the Transfer is inserted', async () => {
+    await inbound()
+    const ops: string[] = []
+    const spy = {
+      ...svc,
+      from: (name: string) => {
+        const b = (svc as unknown as { from: (n: string) => unknown }).from(name) as unknown as Record<string, (...a: unknown[]) => unknown>
+        const update = b.update
+        const insert = b.insert
+        if (name === 'income_events') b.update = (p: unknown) => (ops.push('retract'), update(p))
+        if (name === 'expenses') b.insert = (p: unknown) => (ops.push('insert'), insert(p))
+        return b
+      },
+    } as unknown as ServiceClient
+    expect(await answerOneLegQuestion(spy, U, log('L1') as never, 'confirm_account')).toEqual({ ok: true })
+    expect(ops).toEqual(['retract', 'insert'])
+    expect(liveIncomes()).toHaveLength(0)
+    expect(liveExpenses()).toHaveLength(1)
+  })
+})
+
+describe('audit fix 9: step 2 retags an out-leg sibling that it keeps', () => {
+  it('a credit-side own transfer claims a Remittance out leg: the row becomes a Transfer and its destination is filled', async () => {
+    pm('pm-a', 'HSBC Egypt', '0001')
+    pm('pm-b', 'QNB', '5124')
+    db.sms_own_transfer_answers.push({ user_id: U, account_a: '0001', account_b: '5124', is_own: true })
+    db.sms_parse_log.push({
+      id: 'S', user_id: U, kind: 'instant_transfer_out', parsed_ok: true, status: 'confirmed', amount: 500, currency: 'EGP', account_last4: '0001', received_at: at(-20),
+      expense_id: 'eS', income_id: null, paired_log_id: null, is_duplicate: false, awaiting_confirmation: false, raw_body: 'x', leg_direction: 'debit',
+    })
+    db.expenses.push({ id: 'eS', user_id: U, sms_log_id: 'S', amount: 500, category: 'Remittance', deleted_at: null, payment_method_id: 'pm-a', to_payment_method_id: null })
+    const tx = await run(msg({ logId: 'I', kind: 'instant_transfer_in', last4: '5124', counterpartyLast4: '0001', rawBody: 'Transfer received EGP 500' }))
+    expect(tx).toMatchObject({ outcome: 'transfer_paired', kind: 'own_transfer' })
+    expect(db.expenses.find((e) => e.id === 'eS')).toMatchObject({ category: 'Transfer', to_payment_method_id: 'pm-b' })
+    expect(liveExpenses()).toHaveLength(1)
   })
 })

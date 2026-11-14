@@ -11,7 +11,7 @@
  * empty, so a dependency this harness does not model shows up as a failure and not as a silent pass.
  */
 import { computeBodyHash, captureSecond, smsLocalDay } from '@/lib/sms/ingestGuards'
-import { earlierCopies, secondCopyVerdict, SECOND_COPY_WINDOW_MS, type CopyRow } from '@/lib/sms/captureGuard'
+import { standingCopies, secondCopyVerdict, SECOND_COPY_WINDOW_MS, type CopyRow } from '@/lib/sms/captureGuard'
 import { createSmsTransaction, extractIpnReference, type SmsTxResult } from '@/lib/sms/dispatch'
 import type { SmsRowData } from '@/lib/sms/createSmsExpense'
 import { findRefundOriginal, isDeclineMessage, type RefundRule } from '@/lib/sms/refundMatch'
@@ -536,7 +536,7 @@ async function replayOne(run: ReplayRun, svc: ServiceClient, user: string, l: Lo
     const candidates = logs
       .filter((r) => r.user_id === user && r.body_hash === bodyHash && !r.is_duplicate && r.status !== 'failed' && r.status !== 'rejected')
       .filter((r) => Math.abs(Date.parse(r.received_at as string) - Date.parse(l.receivedAt)) <= SECOND_COPY_WINDOW_MS)
-    const copies = earlierCopies({ id: l.id, received_at: l.receivedAt, captured_at: capturedAt }, candidates.map((r) => ({
+    const copies = standingCopies({ id: l.id, received_at: l.receivedAt, captured_at: capturedAt }, candidates.map((r) => ({
       id: r.id as string, status: r.status as string | null, received_at: r.received_at as string, captured_at: r.captured_at as string | null,
       expense_id: (r.expense_id as string | null) ?? null, income_id: (r.income_id as string | null) ?? null,
     } satisfies CopyRow)))
