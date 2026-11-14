@@ -3351,6 +3351,9 @@ export type Database = {
           learn_template_id: string | null
           skeleton_key: string | null
           shape_key: string | null
+          bank_source: string | null
+          format_key: string | null
+          bank_suggestion: string | null
           template_revoked_at: string | null
           matched_template_id: string | null
           merchant: string | null
@@ -3407,6 +3410,9 @@ export type Database = {
           learn_template_id?: string | null
           skeleton_key?: string | null
           shape_key?: string | null
+          bank_source?: string | null
+          format_key?: string | null
+          bank_suggestion?: string | null
           template_revoked_at?: string | null
           matched_template_id?: string | null
           merchant?: string | null
@@ -3463,6 +3469,9 @@ export type Database = {
           learn_template_id?: string | null
           skeleton_key?: string | null
           shape_key?: string | null
+          bank_source?: string | null
+          format_key?: string | null
+          bank_suggestion?: string | null
           template_revoked_at?: string | null
           matched_template_id?: string | null
           merchant?: string | null

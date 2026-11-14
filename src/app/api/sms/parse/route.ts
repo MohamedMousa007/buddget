@@ -64,6 +64,8 @@ import { isGenericMerchant } from '@/lib/sms/merchantDictionary'
 import { hasPersonCounterparty, isOwnName, ownNames } from '@/lib/sms/ownName'
 import { KNOWN_NON_TRANSACTION, isKnownNonTransaction } from '@/lib/sms/negativeCache'
 import { coarseShapeKey, maskSkeletonText } from '@/lib/sms/skeleton'
+import { resolveProvider } from '@/lib/sms/providerCascade'
+import { PAYMENT_BRANDS } from '@/lib/payment/paymentMethodDefaults'
 import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sms/merchantCategoryPrompt'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
@@ -689,6 +691,8 @@ export async function POST(request: Request) {
       device_id: deviceId,
       // Groups every message of one bank template, whatever merchant or amount it carries.
       shape_key: coarseShapeKey(keptBody, effectiveSender(sender, message, null)),
+      // The same shape without the sender: one bank format reads the same from Android and from iPhone.
+      format_key: coarseShapeKey(keptBody, null),
     })
     .select('id')
     .single()
@@ -922,6 +926,8 @@ export async function POST(request: Request) {
     : quarantinedFallback ? 'template'
     : 'ai_new'
 
+  // What the parser itself said, before the body is consulted: on the AI and learned-template tiers this is a guess.
+  const aiBankName = parsed.bank_name
   // iOS sends no sender, so name the provider from what the message itself prints (deterministic, free, before any AI).
   if (!parsed.bank_name) parsed.bank_name = providerFromBody(message)?.name ?? null
   // Stable sender identity (hotline → sender → bank) for currency learning + pooling.
@@ -998,6 +1004,11 @@ export async function POST(request: Request) {
   const senderCheck = checkCreditSender(curated?.bank ?? parsed.bank_name, parsed.kind, sender)
   if (senderCheck === 'absent') console.info('[sms/parse] credit without sender (log only)', { bank: curated?.bank ?? parsed.bank_name, kind: parsed.kind })
   const senderHeld = senderCheck === 'mismatch'
+  // Which bank is this from? Sender, code pattern, the body, this user's history of the digits, then other users'
+  // format, in that order; the AI's bank name is only ever a suggestion. The stage is recorded with the row.
+  const provider = await resolveProvider(service, {
+    userId, sender, body: message, kind: parsed.kind, fromCodePattern: !!curated, parsedBankName: curated?.bank ?? aiBankName, tail: cleanLast4, formatKey: coarseShapeKey(message, null),
+  })
   // Is the other party of a transfer the user themself? Compared here, on the raw name, before anything is stored
   // or masked; only the boolean goes any further.
   const counterpartyIsSelf = hasPersonCounterparty(parsed.kind) && parsed.merchant
@@ -1023,6 +1034,7 @@ export async function POST(request: Request) {
     logId,
     matchedTemplateId,
     counterpartyIsSelf,
+    providerKey: provider.bankKey,
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
@@ -1128,7 +1140,11 @@ export async function POST(request: Request) {
       // copied into this log column (it was stored unmasked). The comparison result is all that is kept.
       merchant: hasPersonCounterparty(tx.kind ?? parsed.kind) ? null : parsed.merchant,
       counterparty_is_self: counterpartyIsSelf,
-      bank_name: parsed.bank_name,
+      // A bank a trusted stage named is stored as the bank; otherwise the parser's own (possibly guessed) name stays
+      // for display, with no source, so it can never be used as evidence.
+      bank_name: provider.bankKey ? PAYMENT_BRANDS[provider.bankKey].name : parsed.bank_name,
+      bank_source: provider.stage,
+      bank_suggestion: provider.suggestion,
       // Persist the APPLIED category (e.g. Transfer / CC Payoff / Subscription) when known.
       category: tx.category ?? parsed.category,
       account_last4: cleanLast4,

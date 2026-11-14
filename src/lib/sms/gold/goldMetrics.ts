@@ -23,6 +23,7 @@ import { fxLegAction } from '@/lib/sms/fxEvent'
 import { coarseShapeKey } from '@/lib/sms/skeleton'
 import { effectiveSender } from '@/lib/sms/routingKey'
 import { MIN_AI_REJECTIONS } from '@/lib/sms/negativeCache'
+import { MIN_FORMAT_USERS, MIN_HISTORY_DIGITS, bodyNameIsTheSender } from '@/lib/sms/providerCascade'
 import { PAYMENT_BRANDS, normalizeBrandToken } from '@/lib/payment/paymentMethodDefaults'
 
 export interface GoldLabel { s: 't' | 'h'; topup?: string; relay?: string; fx?: string }
@@ -37,19 +38,57 @@ export interface GoldInputs {
   methods: GoldMethod[]
   /** Masked bodies by log id, local only. Old rows stored no bank name; today's route names it from the body. */
   bodies?: Record<string, string>
+  /** Raw text by log id for the recent rows that still have it, local only. Bank names survive in it; masking can remove them. */
+  raw?: Record<string, string>
 }
 
-/** The bank a message is from, resolved the way the parse route does: sender, stored bank name, then the body. */
-export function bankKeyOf(inputs: GoldInputs, r: GoldRow): string | null {
-  return resolvePaymentBrandKey(r.s) ?? resolvePaymentBrandKey(r.b)
-    ?? resolvePaymentBrandKey(inputs.bodies?.[r.id] ? providerFromBody(inputs.bodies[r.id])?.name : null)
+/**
+ * The bank of every parsed row as the provider cascade names it (providerCascade.ts): sender, code pattern, the body,
+ * this user's history of the digits, then other users' format. A stored bank name with no sender and no code pattern
+ * behind it was the AI's guess and names nothing.
+ */
+export function replayBanks(inputs: GoldInputs): { bank: Map<string, string | null>; stage: Map<string, string> } {
+  const text = (r: GoldRow) => inputs.raw?.[r.id] ?? inputs.bodies?.[r.id] ?? ''
+  const all = inputs.rows.filter((r) => r.k && !r.dup)
+  const trusted = (r: GoldRow) => resolvePaymentBrandKey(r.s) ?? (r.pid ? resolvePaymentBrandKey(r.b) : null)
+  const inBody = (r: GoldRow) => {
+    const found = providerFromBody(text(r))
+    return found && bodyNameIsTheSender(found, r.k) ? found.brandId : null
+  }
+  const evidence = new Map(all.map((r) => [r.id, trusted(r) ?? inBody(r)]))
+  const byTail = new Map<string, Set<string>>()
+  const byFormat = new Map<string, Map<string, Set<string>>>()
+  const formatOf = new Map(all.map((r) => [r.id, inputs.bodies ? coarseShapeKey(text(r), null) : null]))
+  for (const r of all) {
+    const bank = evidence.get(r.id)
+    if (!bank) continue
+    if (r.t && r.t.length >= MIN_HISTORY_DIGITS) byTail.set(`${r.u}|${r.t}`, (byTail.get(`${r.u}|${r.t}`) ?? new Set()).add(bank))
+    const key = formatOf.get(r.id)
+    if (key) {
+      const banks = byFormat.get(key) ?? new Map<string, Set<string>>()
+      banks.set(bank, (banks.get(bank) ?? new Set()).add(r.u))
+      byFormat.set(key, banks)
+    }
+  }
+  const bank = new Map<string, string | null>()
+  const stage = new Map<string, string>()
+  for (const r of all) {
+    const direct = evidence.get(r.id)
+    if (direct) { bank.set(r.id, direct); stage.set(r.id, trusted(r) ? 'sender or pattern' : 'body'); continue }
+    const history = r.t ? byTail.get(`${r.u}|${r.t}`) : undefined
+    if (history?.size === 1) { bank.set(r.id, [...history][0]); stage.set(r.id, 'history'); continue }
+    const votes = [...(byFormat.get(formatOf.get(r.id) ?? '') ?? new Map<string, Set<string>>())].map(([b, users]) => [b, [...users].filter((u) => u !== r.u).length] as const).filter(([, n]) => n > 0)
+    if (votes.length === 1 && votes[0][1] >= MIN_FORMAT_USERS) { bank.set(r.id, votes[0][0]); stage.set(r.id, 'format'); continue }
+    bank.set(r.id, null)
+  }
+  return { bank, stage }
 }
 
 export interface Metric { name: string; now: string; replay: string; target: string }
 
 const PURCHASE = new Set(['purchase', 'online_purchase'])
 const pct = (n: number, d: number) => (d === 0 ? 'n/a' : `${Math.round((n / d) * 100)}% (${n}/${d})`)
-const foldName = (m: string | undefined) => (m ? m.toLowerCase().replace(/[^a-z0-9؀-ۿ]/g, '') || null : null)
+const foldName = (m: string | undefined) => (m ? m.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, '') || null : null)
 
 /**
  * Replays account placement in arrival order, so an account one message creates receives the next ones, as on the
@@ -76,17 +115,18 @@ export function replayAccounts(inputs: GoldInputs): { placement: Map<string, 'ex
     const bankKey = resolvePaymentBrandKey(decomposePaymentMethodName(m.name.trim(), m.t ?? undefined).provider) ?? resolvePaymentBrandKey(m.name)
     byUser.set(m.u, [...(byUser.get(m.u) ?? []), { id: m.id, last4: m.t, last4Aliases: m.al, bankKey }])
   }
+  const banks = replayBanks(inputs).bank
   const created = new Set<string>()
   const out = new Map<string, 'existing' | 'provisional' | 'unassigned'>()
   for (const r of [...inputs.rows].sort((a, b) => a.ts - b.ts)) {
     if (!r.k || r.dup) continue
     const methods = byUser.get(r.u) ?? []
-    const p = placeSmsAccount(methods, { tail: r.t ?? null, bankKey: bankKeyOf(inputs, r), currency: r.c ?? null })
+    const p = placeSmsAccount(methods, { tail: r.t ?? null, bankKey: banks.get(r.id) ?? null, currency: r.c ?? null })
     if (p.kind === 'provisional') {
       const id = `prov:${r.u}:${p.bankKey}:${p.tail}:${p.currency}`
       created.add(id)
       byUser.set(r.u, [...methods, { id, last4: p.tail, bankKey: p.bankKey }])
-      addWallet(r.u, p.bankKey, r.ts)
+      if (p.bankKey) addWallet(r.u, p.bankKey, r.ts)
       out.set(r.id, 'provisional')
     } else if (p.kind === 'existing') out.set(r.id, created.has(p.id) ? 'provisional' : 'existing')
     else out.set(r.id, 'unassigned')
@@ -122,7 +162,8 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
     target: '<10%',
   })
   // Why the rest stay unassigned under rule 6a.1: which of bank / digits the message lacks.
-  const noBank = stillUnplaced.filter((r) => !bankKeyOf(inputs, r)).length
+  const namedBanks = replayBanks(inputs).bank
+  const noBank = stillUnplaced.filter((r) => !namedBanks.get(r.id)).length
   const noDigits = stillUnplaced.filter((r) => !r.t).length
   out.push({ name: '  of those still unassigned: no bank / no digits', now: '-', replay: `${noBank} / ${noDigits} of ${stillUnplaced.length}`, target: '-' })
 
@@ -261,6 +302,54 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
   const inSplit = rows.filter((r) => bodies[r.id])
   out.push({ name: '  distinct shapes: fine skeleton vs coarse key', now: String(new Set(inSplit.map((r) => r.sk)).size), replay: String(new Set(inSplit.map((r) => coarse(r))).size), target: '-' })
   return out
+}
+
+/**
+ * Part 1 of the follow-up: how well each stage of the provider cascade names the bank. Measured on rows whose bank
+ * is KNOWN (the sender, or a code-shipped pattern, named it) with that knowledge hidden, so every stage has a truth
+ * to be scored against. A stage may act on its own only at 99% precision or better.
+ */
+export function providerStageMetrics(inputs: GoldInputs, labels: Record<string, GoldLabel>, split: 't' | 'h'): Metric[] {
+  if (!inputs.bodies) return []
+  const text = (r: GoldRow) => inputs.raw?.[r.id] ?? inputs.bodies?.[r.id] ?? ''
+  const truthOf = (r: GoldRow) => resolvePaymentBrandKey(r.s) ?? (r.pid ? resolvePaymentBrandKey(r.b) : null)
+  const bodyOf = (r: GoldRow) => {
+    const found = providerFromBody(text(r))
+    return found && bodyNameIsTheSender(found, r.k) ? found.brandId : null
+  }
+  const all = inputs.rows.filter((r) => r.k && !r.dup)
+  // What another row may vouch for: its sender or pattern, or a bank its own text prints.
+  const evidence = new Map(all.map((r) => [r.id, truthOf(r) ?? bodyOf(r)]))
+  const formatOf = (r: GoldRow) => coarseShapeKey(text(r), null)
+  const history = (r: GoldRow) => {
+    if (!r.t || r.t.length < MIN_HISTORY_DIGITS) return null
+    const banks = new Set(all.filter((x) => x.id !== r.id && x.u === r.u && x.t === r.t).map((x) => evidence.get(x.id)).filter(Boolean))
+    return banks.size === 1 ? ([...banks][0] as string) : null
+  }
+  const format = (r: GoldRow, minUsers: number) => {
+    const key = formatOf(r)
+    if (!key) return null
+    const users = new Map<string, Set<string>>()
+    for (const x of all) {
+      const bank = x.u !== r.u && formatOf(x) === key ? evidence.get(x.id) : null
+      if (bank) users.set(bank, (users.get(bank) ?? new Set()).add(x.u))
+    }
+    return users.size === 1 && [...users.values()][0].size >= minUsers ? [...users.keys()][0] : null
+  }
+  const scored = all.filter((r) => labels[r.id]?.s === split && truthOf(r))
+  const score = (name: string, predict: (r: GoldRow) => string | null): Metric => {
+    const said = scored.map((r) => [predict(r), truthOf(r)] as const).filter(([p]) => p)
+    return { name, now: '-', replay: `precision ${pct(said.filter(([p, t]) => p === t).length, said.length)}, coverage ${pct(said.length, scored.length)}`, target: 'precision >=99%' }
+  }
+  const senderless = all.filter((r) => labels[r.id]?.s === split && !truthOf(r))
+  const cascade = (r: GoldRow) => bodyOf(r) ?? history(r) ?? format(r, MIN_FORMAT_USERS)
+  return [
+    score('Bank from the body (name or hotline), sender hidden', bodyOf),
+    score('Bank from the same user\'s digits history, sender hidden', history),
+    score(`Bank from other users' format (${MIN_FORMAT_USERS}+ users), sender hidden`, (r) => format(r, MIN_FORMAT_USERS)),
+    score('  the same with 1+ user (what it would only suggest)', (r) => format(r, 1)),
+    { name: 'Sender-less messages given a bank by the cascade', now: pct(senderless.filter((r) => resolvePaymentBrandKey(r.b)).length, senderless.length), replay: `${pct(senderless.filter((r) => cascade(r)).length, senderless.length)} (body ${senderless.filter((r) => bodyOf(r)).length}, history ${senderless.filter((r) => !bodyOf(r) && history(r)).length}, format ${senderless.filter((r) => !bodyOf(r) && !history(r) && format(r, MIN_FORMAT_USERS)).length})`, target: '-' },
+  ]
 }
 
 export function formatMetrics(title: string, metrics: Metric[]): string {

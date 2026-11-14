@@ -2,13 +2,15 @@ import { existsSync, readFileSync } from 'fs'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
 import labelsJson from './goldSet.json'
-import { computeGoldMetrics, formatMetrics, type GoldInputs, type GoldLabel } from './goldMetrics'
+import { computeGoldMetrics, formatMetrics, providerStageMetrics, type GoldInputs, type GoldLabel } from './goldMetrics'
 
 const labels = labelsJson as Record<string, GoldLabel>
 /** Local export of scripts/qa/sms-gold-inputs.sql. Never committed: without it only the fixture checks run. */
 const INPUTS = process.env.SMS_GOLD_INPUTS ?? path.resolve(__dirname, '../../../../.claude/sms-gold-inputs.json')
 /** Optional: masked bodies by log id (`select id, masked_body from sms_parse_log`), for the checks that need wording. */
 const BODIES = process.env.SMS_GOLD_BODIES ?? path.resolve(__dirname, '../../../../.claude/sms-gold-bodies.json')
+/** Optional: the template replay export, whose recent rows still carry raw text. */
+const RAW = process.env.SMS_REPLAY_EXPORT ?? path.resolve(__dirname, '../../../../.claude/sms-replay-raw.json')
 
 describe('gold set fixture', () => {
   it('holds labels only, keyed by log id', () => {
@@ -35,8 +37,9 @@ describe.skipIf(!existsSync(INPUTS))('gold set metrics (needs the local inputs e
   it('prints the section 5 metrics for train and holdout', () => {
     const inputs = JSON.parse(readFileSync(INPUTS, 'utf8')) as GoldInputs
     if (existsSync(BODIES)) inputs.bodies = JSON.parse(readFileSync(BODIES, 'utf8'))
+    if (existsSync(RAW)) inputs.raw = Object.fromEntries((JSON.parse(readFileSync(RAW, 'utf8')) as { rows: { id: string; raw: string | null }[] }).rows.filter((r) => r.raw).map((r) => [r.id, r.raw as string]))
     for (const [split, title] of [['t', 'train'], ['h', 'holdout']] as const) {
-      const metrics = computeGoldMetrics(inputs, labels, split)
+      const metrics = [...computeGoldMetrics(inputs, labels, split), ...providerStageMetrics(inputs, labels, split)]
       console.log(formatMetrics(title, metrics))
       expect(metrics.length).toBeGreaterThan(0)
     }

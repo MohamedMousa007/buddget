@@ -29,6 +29,7 @@ import {
   isIncomeKind,
   resolveExactPaymentMethod,
   isConfirmedOwnAccount,
+  providerOf,
   completeFxEvent,
   type SmsRowData,
   type SmsExpenseKind,
@@ -292,7 +293,7 @@ export async function createSmsTransaction(
     (kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
     ((await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null)) ||
       (row.counterpartyIsSelf === true &&
-        (await isConfirmedOwnAccount(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))))
+        (await isConfirmedOwnAccount(service, row.userId, row.last4, providerOf(row)))))
   ) {
     destinationLeg = kind === 'instant_transfer_in'
     kind = 'own_transfer'
@@ -340,7 +341,7 @@ export async function createSmsTransaction(
     if (
       !sibling &&
       !(await hasOppositeLegOnSameAccount(service, { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, accountLast4: row.last4 ?? null, kind })) &&
-      (await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))
+      (await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row)))
     ) {
       sibling = await tryPairLeg(service, {
         userId: row.userId,
@@ -407,7 +408,7 @@ export async function createSmsTransaction(
         // otherwise the user sees the same money twice, which is the whole bug. Back-fill
         // the funding account the payoff could not know, and keep the fee it took on top.
         if (sibling.siblingKind === 'cc_payoff') {
-          const fundingPmId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
+          const fundingPmId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
           const { payoffAmount } = await attributeFundingToPayoff(service, sibling, fundingPmId)
           await postTransferFee(service, row, {
             fundingLast4: row.last4 ?? null,

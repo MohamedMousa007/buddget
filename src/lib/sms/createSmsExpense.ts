@@ -136,6 +136,11 @@ export interface SmsRowData {
   /** Force a specific category (overrides kind/hint mapping). */
   categoryOverride?: ExpenseCategory | null
   /**
+   * The bank the provider cascade named (providerCascade.ts), or null when no trusted stage could. Undefined on
+   * callers that did not run the cascade. An AI guess is never here.
+   */
+  providerKey?: string | null
+  /**
    * True when the transfer's counterparty matched one of the user's own names (ownName.ts). A supporting signal
    * only: dispatch also requires this message's own account to be a confirmed one before it acts on it.
    */
@@ -348,6 +353,22 @@ async function resolvePaymentMethodByProvider(
   return null
 }
 
+/**
+ * Who sent a message. `bankKey`, when present (even null), is the provider cascade's answer and is final: the bank a
+ * trusted stage named, or none. Without it (callers that predate the cascade) the bank is read from the sender and
+ * the parsed bank name as before.
+ */
+export interface SmsProvider { sender?: string | null; bankName?: string | null; bankKey?: string | null }
+
+export function bankKeyOf(p: SmsProvider | undefined): string | null {
+  if (p && p.bankKey !== undefined) return p.bankKey
+  return resolvePaymentBrandKey(p?.sender) ?? resolvePaymentBrandKey(p?.bankName)
+}
+
+export function providerOf(row: Pick<SmsRowData, 'sender' | 'bankName' | 'providerKey'>): SmsProvider {
+  return { sender: row.sender, bankName: row.bankName, ...(row.providerKey !== undefined ? { bankKey: row.providerKey } : {}) }
+}
+
 /** PostgREST code for "more than one row" on a single-row request. */
 const MULTIPLE_ROWS = 'PGRST116'
 
@@ -360,7 +381,7 @@ async function findUniqueByLast4(
   service: ServiceClient,
   userId: string,
   last4: string,
-  provider?: { sender?: string | null; bankName?: string | null },
+  provider?: SmsProvider,
 ): Promise<{ id: string | null; ambiguous: boolean }> {
   const { data, error } = await service
     .from('payment_methods')
@@ -382,7 +403,7 @@ async function findUniqueByLast4(
     last4Aliases: m.last4_aliases,
     bankKey: resolvePaymentBrandKey(decomposePaymentMethodName((m.name ?? '').trim(), m.last4 ?? undefined).provider) ?? resolvePaymentBrandKey(m.name),
   }))
-  const smsBankKey = resolvePaymentBrandKey(provider?.sender) ?? resolvePaymentBrandKey(provider?.bankName)
+  const smsBankKey = bankKeyOf(provider)
   return matchByTail(methods, last4, smsBankKey)
 }
 
@@ -400,7 +421,7 @@ export async function resolvePaymentMethodByLast4(
   service: ServiceClient,
   userId: string,
   last4: string | null | undefined,
-  provider?: { sender?: string | null; bankName?: string | null },
+  provider?: SmsProvider,
   create?: { currency: string; rawBody?: string | null },
 ): Promise<string | null> {
   if (last4) {
@@ -434,12 +455,12 @@ async function provisionalAccountFor(
   service: ServiceClient,
   userId: string,
   last4: string | null | undefined,
-  provider: { sender?: string | null; bankName?: string | null } | undefined,
+  provider: SmsProvider | undefined,
   create: { currency: string; rawBody?: string | null },
 ): Promise<string | null> {
   const spec = provisionalSpec({
     tail: last4,
-    bankKey: resolvePaymentBrandKey(provider?.sender) ?? resolvePaymentBrandKey(provider?.bankName),
+    bankKey: bankKeyOf(provider),
     currency: create.currency,
   })
   return spec ? ensureProvisionalAccount(service, userId, spec, { rawBody: create.rawBody }) : null
@@ -447,7 +468,7 @@ async function provisionalAccountFor(
 
 /** Where a credit lands: the exact account/card the message names, else the sending provider, else a provisional account. Never the default method. */
 async function resolveCreditAccount(service: ServiceClient, row: SmsRowData): Promise<string | null> {
-  const provider = { sender: row.sender, bankName: row.bankName }
+  const provider = providerOf(row)
   if (row.last4) {
     const byLast4 = await findUniqueByLast4(service, row.userId, row.last4, provider)
     if (byLast4.id) return byLast4.id
@@ -638,7 +659,7 @@ export async function createSmsInstallmentPayment(
   }
 
   // The SMS from an installment provider usually names the funding card directly.
-  const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
+  const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
 
   return postSmsDebtPayment(service, row, {
     debtId: plan.id as string,
@@ -658,7 +679,7 @@ export async function resolveExactPaymentMethod(
   service: ServiceClient,
   userId: string,
   last4: string | null | undefined,
-  provider?: { sender?: string | null; bankName?: string | null },
+  provider?: SmsProvider,
 ): Promise<string | null> {
   if (!last4) return null
   return (await findUniqueByLast4(service, userId, last4, provider)).id
@@ -689,7 +710,7 @@ export async function isConfirmedOwnAccount(
   service: ServiceClient,
   userId: string,
   last4: string | null | undefined,
-  provider?: { sender?: string | null; bankName?: string | null },
+  provider?: SmsProvider,
 ): Promise<boolean> {
   const id = await resolveExactPaymentMethod(service, userId, last4, provider)
   if (!id) return false
@@ -715,7 +736,7 @@ export async function findRefundedTwin(
   lo.setUTCDate(lo.getUTCDate() - REFUND_DEDUPE_DAYS)
   const hi = new Date(row.day)
   hi.setUTCDate(hi.getUTCDate() + REFUND_DEDUPE_DAYS + 1) // +1 so the far end includes its whole day
-  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
+  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
 
   let q = service
     .from('expenses')
@@ -751,7 +772,7 @@ export async function matchOriginalExpense(
   from.setUTCDate(from.getUTCDate() - 90)
   const fromDay = from.toISOString().slice(0, 10)
 
-  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName })
+  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
 
   let q = service
     .from('expenses')

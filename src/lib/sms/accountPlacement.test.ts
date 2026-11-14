@@ -15,14 +15,19 @@ describe('placeSmsAccount (6a.1 guardrails)', () => {
   })
 
   it.each([
-    ['no bank', { tail: '1234', bankKey: null, currency: 'EGP' }],
+    ['no bank and only three digits', { tail: '123', bankKey: null, currency: 'EGP' }],
     ['no digits', { tail: null, bankKey: 'nbe', currency: 'EGP' }],
     ['two digits', { tail: '12', bankKey: 'nbe', currency: 'EGP' }],
     ['no currency', { tail: '1234', bankKey: 'nbe', currency: null }],
     ['unsupported currency', { tail: '1234', bankKey: 'nbe', currency: 'ZZZ' }],
-    ['unknown brand key', { tail: '1234', bankKey: 'not-a-bank', currency: 'EGP' }],
+    ['an unknown brand key and three digits', { tail: '123', bankKey: 'not-a-bank', currency: 'EGP' }],
   ])('stays unassigned with %s', (_name, sms) => {
     expect(placeSmsAccount([cib], sms)).toEqual({ kind: 'unassigned' })
+  })
+
+  it('with no bank but four digits and a currency, proposes a bank-less account whose bank is asked later', () => {
+    expect(placeSmsAccount([cib], { tail: '1234', bankKey: null, currency: 'SAR' })).toEqual({ kind: 'provisional', bankKey: null, tail: '1234', currency: 'SAR' })
+    expect(provisionalName({ bankKey: null, tail: '1234', currency: 'SAR' })).toBe('Account ••1234')
   })
 
   it('never creates an account for a pass-through rail', () => {
@@ -103,11 +108,26 @@ describe('resolvePaymentMethodByLast4 with create (the server path)', () => {
     expect(inserted).toHaveLength(0)
   })
 
-  it('creates nothing without a bank, and nothing for callers that did not ask', async () => {
+  it('creates nothing for callers that did not ask', async () => {
     const a = svc([])
-    expect(await resolvePaymentMethodByLast4(a.service, 'u', '1234', { sender: null, bankName: null }, { currency: 'EGP' })).toBeNull()
     expect(await resolvePaymentMethodByLast4(a.service, 'u', '1234', CIB)).toBeNull()
     expect(a.inserted).toHaveLength(0)
+  })
+
+  it('with no bank creates the bank-less account, as a plain bank account with no brand colour', async () => {
+    const a = svc([])
+    expect(await resolvePaymentMethodByLast4(a.service, 'u', '1234', { sender: null, bankName: null }, { currency: 'EGP' })).toBe('prov-1')
+    expect(a.inserted[0]).toMatchObject({ name: 'Account ••1234', type: 'bank_account', provisional: true })
+    expect(a.inserted[0]).not.toHaveProperty('color')
+  })
+
+  it("uses the cascade's answer and never the parser's guessed bank name once the cascade has run", async () => {
+    const a = svc([])
+    await resolvePaymentMethodByLast4(a.service, 'u', '1234', { sender: null, bankName: 'CIB', bankKey: null }, { currency: 'EGP' })
+    expect(a.inserted[0]).toMatchObject({ name: 'Account ••1234' })
+    const b = svc([])
+    await resolvePaymentMethodByLast4(b.service, 'u', '1234', { sender: null, bankName: null, bankKey: 'nbe' }, { currency: 'EGP' })
+    expect(b.inserted[0]).toMatchObject({ name: 'NBE ••1234' })
   })
 })
 

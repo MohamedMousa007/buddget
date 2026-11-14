@@ -21,7 +21,8 @@ export interface SmsAccountRef {
 }
 
 export interface ProvisionalSpec {
-  bankKey: string
+  /** Null when no stage could name the bank: the account is "Account ••1234" and the bank is asked at confirmation. */
+  bankKey: string | null
   tail: string
   currency: Database['public']['Enums']['currency_code']
 }
@@ -33,11 +34,19 @@ export type Placement =
   | ({ kind: 'provisional' } & ProvisionalSpec)
   | { kind: 'unassigned' }
 
-/** The account to create, or null when any of bank, digits or currency is missing (digits: at least three, fewer is noise). */
+/** Digits a bank-less account needs: with no bank to tell two accounts apart, a shorter tail is not an identity. */
+export const MIN_BANKLESS_DIGITS = 4
+
+/**
+ * The account to create, or null. With a bank: digits (at least three) and currency. Without one (no stage could name
+ * it): at least four digits and currency, as a bank-less "Account ••1234" whose bank is asked when the user confirms it.
+ */
 export function provisionalSpec(sms: SmsAccountRef): ProvisionalSpec | null {
   const tail = digitsOf(sms.tail)
   const currency = toSupportedCurrency(sms.currency ?? '')
-  if (!sms.bankKey || !PAYMENT_BRANDS[sms.bankKey] || tail.length < MIN_PARTIAL_DIGITS || !currency) return null
+  if (!currency) return null
+  if (!sms.bankKey || !PAYMENT_BRANDS[sms.bankKey]) return tail.length >= MIN_BANKLESS_DIGITS ? { bankKey: null, tail, currency } : null
+  if (tail.length < MIN_PARTIAL_DIGITS) return null
   // A rail that only forwards money (Apple Pay, InstaPay) holds no balance: there is no account to create.
   if (PAYMENT_BRANDS[sms.bankKey].passThrough) return null
   return { bankKey: sms.bankKey, tail, currency }
@@ -53,8 +62,9 @@ export function placeSmsAccount(methods: readonly Identified[], sms: SmsAccountR
 }
 
 /** Display name, which is also the dedupe identity (bank + digits; currency is the third index column). */
+export const BANKLESS_PROVIDER = 'Account'
 export const provisionalName = (spec: ProvisionalSpec): string =>
-  composePaymentMethodName(PAYMENT_BRANDS[spec.bankKey].name, { last4: spec.tail })
+  composePaymentMethodName(spec.bankKey ? PAYMENT_BRANDS[spec.bankKey].name : BANKLESS_PROVIDER, { last4: spec.tail })
 
 const UNIQUE_VIOLATION = '23505'
 
@@ -80,7 +90,7 @@ export async function ensureProvisionalAccount(
     .limit(1)
     .maybeSingle()
   try {
-    const brand = PAYMENT_BRANDS[spec.bankKey]
+    const brand = spec.bankKey ? PAYMENT_BRANDS[spec.bankKey] : null
     const { data, error } = await service
       .from('payment_methods')
       .insert({
@@ -89,7 +99,7 @@ export async function ensureProvisionalAccount(
         type: prefillPaymentType(hint.rawBody ? paymentTypeFromSms(hint.rawBody, null) : null, brand),
         currency: spec.currency,
         last4: spec.tail,
-        color: brand.colors[0],
+        ...(brand ? { color: brand.colors[0] } : {}),
         is_default: false,
         provisional: true,
       })
