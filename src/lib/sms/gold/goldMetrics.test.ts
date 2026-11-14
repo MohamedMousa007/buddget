@@ -43,5 +43,6 @@ describe.skipIf(!existsSync(INPUTS))('gold set metrics (needs the local inputs e
       console.log(formatMetrics(title, metrics))
       expect(metrics.length).toBeGreaterThan(0)
     }
-  })
+    // A replay of every stored message; slower than a unit test, more so under coverage.
+  }, 120_000)
 })

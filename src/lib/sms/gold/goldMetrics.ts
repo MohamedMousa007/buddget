@@ -322,7 +322,9 @@ export function providerStageMetrics(inputs: GoldInputs, labels: Record<string, 
   const all = inputs.rows.filter((r) => r.k && !r.dup)
   // What another row may vouch for: its sender or pattern, or a bank its own text prints.
   const evidence = new Map(all.map((r) => [r.id, truthOf(r) ?? bodyOf(r)]))
-  const formatOf = (r: GoldRow) => coarseShapeKey(text(r), null)
+  // Computed once per row: the key hashes the masked text, and the stages below compare every row with every other.
+  const formatKeys = new Map(all.map((r) => [r.id, coarseShapeKey(text(r), null)]))
+  const formatOf = (r: GoldRow) => formatKeys.get(r.id) ?? null
   const history = (r: GoldRow) => {
     if (!r.t || r.t.length < MIN_HISTORY_DIGITS) return null
     const banks = new Set(all.filter((x) => x.id !== r.id && x.u === r.u && x.t === r.t).map((x) => evidence.get(x.id)).filter(Boolean))
