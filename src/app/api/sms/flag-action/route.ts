@@ -2,8 +2,8 @@
  * POST /api/sms/flag-action
  *
  * Answers on a flagged bank-message row that change columns only the server may write (S2c, I8):
- * `refund_match` points an unmatched refund at the purchase the user picked, and `own_cash` turns a cash-deposit
- * income into a transfer from the user's cash account. Auth and device gate match /api/sms/own-transfer.
+ * `refund_match` points an unmatched refund at the purchase the user picked, and `deposit_income` turns a cash-deposit
+ * transfer from the user's cash account into income. Auth and device gate match /api/sms/own-transfer.
  */
 
 import { gateOutdatedClient } from '@/lib/server/clientGate'
@@ -18,11 +18,10 @@ import { nudgeUser } from '@/lib/server/realtime/nudge'
 
 const bodySchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('refund_match'), expenseId: z.string().uuid(), targetExpenseId: z.string().uuid() }),
-  z.object({ action: z.literal('own_cash'), incomeId: z.string().uuid() }),
+  z.object({ action: z.literal('deposit_income'), expenseId: z.string().uuid() }),
 ])
 
 type Service = ReturnType<typeof createServiceRoleClient>
-type ExpenseCategory = Database['public']['Enums']['expense_category']
 
 interface ExpenseRow {
   id: string
@@ -33,14 +32,15 @@ interface ExpenseRow {
   refunded_at: string | null
   sms_flags: string[] | null
 }
-interface IncomeRow {
+interface DepositRow {
   id: string
   amount: number
   currency: Database['public']['Enums']['currency_code']
-  received_date: string
+  expense_date: string
   occurred_at: string | null
   sms_log_id: string | null
-  payment_method_id: string | null
+  category: string
+  to_payment_method_id: string | null
   sms_flags: string[] | null
 }
 
@@ -88,63 +88,52 @@ async function refundMatch(service: Service, userId: string, expenseId: string, 
   return null
 }
 
-async function ownCash(service: Service, userId: string, incomeId: string): Promise<NextResponse | null> {
-  const { data: i } = await service
-    .from('income_events')
-    .select('id, amount, currency, received_date, occurred_at, sms_log_id, payment_method_id, sms_flags')
-    .eq('id', incomeId)
+async function depositIncome(service: Service, userId: string, expenseId: string): Promise<NextResponse | null> {
+  const { data: x } = await service
+    .from('expenses')
+    .select('id, amount, currency, expense_date, occurred_at, sms_log_id, category, to_payment_method_id, sms_flags')
+    .eq('id', expenseId)
     .eq('user_id', userId)
     .is('deleted_at', null)
     .maybeSingle()
-  const income = i as IncomeRow | null
-  if (!income?.sms_log_id || !income.sms_flags?.includes('cash_deposit')) return conflict()
-
-  // The same account a cash withdrawal lands in: the oldest open cash method, which may not exist.
-  const { data: cash } = await service
-    .from('payment_methods')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('type', 'cash')
-    .is('deleted_at', null)
-    .is('closed_at', null)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
+  const expense = x as DepositRow | null
+  if (!expense?.sms_log_id || !expense.sms_flags?.includes('cash_deposit') || expense.category !== 'Transfer') return conflict()
 
   const retract = await service
-    .from('income_events')
-    .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: income.sms_log_id })
-    .eq('id', income.id)
+    .from('expenses')
+    .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: expense.sms_log_id })
+    .eq('id', expense.id)
     .eq('user_id', userId)
-  if (retract.error) return fail('Failed to update income')
+    .is('deleted_at', null)
+    .select('id')
+  if (retract.error) return fail('Failed to update transfer')
+  if (!retract.data?.length) return conflict()
 
   const { data: created, error: insErr } = await service
-    .from('expenses')
+    .from('income_events')
     .insert({
       user_id: userId,
-      amount: income.amount,
-      currency: income.currency,
-      expense_date: income.received_date,
-      occurred_at: income.occurred_at,
-      sms_log_id: income.sms_log_id,
-      description: 'Cash deposit',
-      category: 'Transfer' as ExpenseCategory,
-      payment_method_id: (cash as { id: string } | null)?.id ?? null,
-      to_payment_method_id: income.payment_method_id,
+      template_id: null,
+      name: 'Cash deposit',
+      amount: expense.amount,
+      currency: expense.currency,
+      source_type: 'other',
+      received_date: expense.expense_date,
+      occurrence_date: null,
+      status: 'confirmed',
+      sms_log_id: expense.sms_log_id,
+      payment_method_id: expense.to_payment_method_id,
+      occurred_at: expense.occurred_at,
       notes: null,
     })
     .select('id')
     .single()
-  const expenseId = (created as { id: string } | null)?.id
-  if (insErr || !expenseId) {
-    await service.from('income_events').update({ deleted_at: null, retracted_by_sms_log_id: null }).eq('id', income.id).eq('user_id', userId)
-    return fail('Failed to book transfer')
+  const incomeId = (created as { id: string } | null)?.id
+  if (insErr || !incomeId) {
+    await service.from('expenses').update({ deleted_at: null, retracted_by_sms_log_id: null }).eq('id', expense.id).eq('user_id', userId).eq('retracted_by_sms_log_id', expense.sms_log_id)
+    return fail('Failed to book income')
   }
-  const log = await service
-    .from('sms_parse_log')
-    .update({ expense_id: expenseId, income_id: null, kind: 'own_transfer' })
-    .eq('id', income.sms_log_id)
-    .eq('user_id', userId)
+  const log = await service.from('sms_parse_log').update({ income_id: incomeId, expense_id: null }).eq('id', expense.sms_log_id).eq('user_id', userId)
   if (log.error) console.error('[sms/flag-action] log update error', log.error.message)
   return null
 }
@@ -175,7 +164,7 @@ export async function POST(request: Request) {
   const refused =
     body.action === 'refund_match'
       ? await refundMatch(service, userId, body.expenseId, body.targetExpenseId)
-      : await ownCash(service, userId, body.incomeId)
+      : await depositIncome(service, userId, body.expenseId)
   if (refused) return refused
 
   try {

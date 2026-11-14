@@ -316,6 +316,18 @@ describe('createSmsExpense flags', () => {
     await createSmsExpense(svc, msg({ logId: 'i1', kind: 'income', smsFlags: ['cash_deposit'] }))
     expect(db.income_events[0]).toMatchObject({ sms_log_id: 'i1', sms_flags: ['cash_deposit'] })
   })
+  it('books a cash-machine deposit as a Transfer from the cash account to the message account, with no income row', async () => {
+    db.payment_methods.push({ id: 'cash-1', user_id: U, type: 'cash', deleted_at: null, closed_at: null, created_at: AT })
+    await createSmsExpense(svc, msg({ logId: 'd1', kind: 'own_transfer', destinationLeg: true, fromCash: true, smsFlags: ['cash_deposit'] }))
+    expect(db.income_events).toHaveLength(0)
+    expect(ownRows('d1')[0]).toMatchObject({ payment_method_id: 'cash-1', category: 'Transfer', sms_flags: ['cash_deposit'] })
+    expect(ownRows('d1')[0].to_payment_method_id).toBeTruthy()
+    expect(ownRows('d1')[0].to_payment_method_id).not.toBe('cash-1')
+  })
+  it('books the cash deposit with no source account when the user has no cash account', async () => {
+    await createSmsExpense(svc, msg({ logId: 'd1', kind: 'own_transfer', destinationLeg: true, fromCash: true, smsFlags: ['cash_deposit'] }))
+    expect(ownRows('d1')[0]).toMatchObject({ payment_method_id: null, category: 'Transfer' })
+  })
   it('writes null when there are no flags', async () => {
     await createSmsExpense(svc, msg({ logId: 'i1', kind: 'income' }))
     expect(db.income_events[0].sms_flags).toBeNull()

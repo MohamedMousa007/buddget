@@ -8,8 +8,8 @@ export const FLAG_PROMPT_ROW_CAP = 3
 
 /** Flags that have an answer on each kind of row; a flag outside its kind is stamped by a newer server and ignored. */
 const APPLICABLE: Record<FlagRowKind, readonly SmsFlag[]> = {
-  expense: ['possible_duplicate', 'date_unsure', 'refund_unmatched', 'model_kind_unproven'],
-  income: ['possible_duplicate', 'date_unsure', 'model_kind_unproven', 'cash_deposit'],
+  expense: ['possible_duplicate', 'date_unsure', 'refund_unmatched', 'model_kind_unproven', 'cash_deposit'],
+  income: ['possible_duplicate', 'date_unsure', 'model_kind_unproven'],
 }
 
 export interface FlagPromptTarget {

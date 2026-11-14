@@ -38,7 +38,7 @@ Every prompt or flag leaves totals in its stated default when the user never ans
 | "Is this your own account?" (one-leg transfer to own digits) | Row counted as its plain kind (spending or income) |
 | Transfer or repayment kind asserted only by the AI or a learned template | Row counted as spending, flagged |
 | "No" on file but the legs share a reference | Both rows counted as their plain kinds |
-| Cash deposit, "this was my own cash" | Row counted as income |
+| Cash-machine deposit, "this was income" | Row stays a transfer from cash: neither income nor spending (council, 2026-11-14; before that the default was income) |
 | Pass-through pair after the first "Yes" | Labelled only; both rows counted until the legs prove it or the user says so |
 
 ## Signals
@@ -72,6 +72,8 @@ A signal is a fact about one message or a pair of messages. The names are the on
 **Own transfer, one leg (the counterparty digits are the user's own).** `registered` plus one of: `answered_yes` for (own tail, counterparty tail), `counterparty_bank`, `reference` or `device` with a sibling. `registered` alone, the first time: the row is booked as its plain kind and the user is asked once. Yes settles this row and every later one-leg transfer on that pair of tails, with the destination credited. No never asks again for that pair.
 
 **Wallet top-up, funding leg.** `own_wallet_exact` settles alone. This is the one single-signal rule that stays: the rule is exact-string, set by code, and nobody buys goods from their own wallet. It is listed here so I3 has no unlisted exception.
+
+**Cash-machine deposit.** Deposit wording plus a cash-machine word, set by code, settles alone as a transfer from the user's Cash account, flagged `cash_deposit`, and asks "was this income?". The second single-signal rule, by council decision (2026-11-14, closing note section 10), listed here for the same reason. A deposit without a machine word is income.
 
 **Wallet's own message.** `own_wallet_named` plus `sibling_exact` (with the pairing guards of step 3). Without the sibling it stays income or a remittance.
 

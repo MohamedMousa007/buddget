@@ -153,6 +153,8 @@ export interface SmsRowData {
    * where the money landed, so it is the row's destination and the counterparty account (when known) is the source.
    */
   destinationLeg?: boolean
+  /** The debit side is the user's Cash account (a deposit at a cash machine). */
+  fromCash?: boolean
   /** When set, stamp the new expense as already reversed (standalone-declined case). */
   refundMark?: { refundKind: 'refunded' | 'declined'; day: string } | null
   /** Per-user salted hash of the message's payment reference (ownTransferDecision.ts). Never the reference. */
@@ -572,7 +574,9 @@ export async function createSmsExpense(
   // CC payoff is funded from bank/cash — never attach the CARD, or computeCreditCardOutstanding would re-add it and
   // cancel the payoff. Only an explicit funding account (the paired funding leg's) is attached.
   const paymentMethodId =
-    row.kind === 'cc_payoff'
+    row.fromCash
+      ? await cashAccountFor(service, row.userId)
+    : row.kind === 'cc_payoff'
       ? row.fundingPaymentMethodId ?? null
       : inboundOwn
         ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)

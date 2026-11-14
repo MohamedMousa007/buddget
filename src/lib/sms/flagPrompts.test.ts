@@ -18,11 +18,12 @@ describe('selectFlagPrompts (I8: a prompt is shown only for an open server flag)
   })
   it('caps at the 3 most recent rows across expenses and income', () => {
     const e = ['01', '02', '03'].map((d) => exp(`e${d}`, `2026-11-${d}`, { smsFlags: ['date_unsure'] }))
-    const i = inc('i04', '2026-11-04', { smsFlags: ['cash_deposit'] })
+    const i = inc('i04', '2026-11-04', { smsFlags: ['date_unsure'] })
     expect(selectFlagPrompts(e, [i]).map((t) => t.id)).toEqual(['i04', 'e03', 'e02'])
   })
   it('ignores a flag that has no answer on that kind of row', () => {
-    expect(selectFlagPrompts([exp('a', '2026-11-01', { smsFlags: ['cash_deposit'] })], [])).toEqual([])
+    expect(selectFlagPrompts([], [inc('i', '2026-11-01', { smsFlags: ['cash_deposit'] })])).toEqual([])
+    expect(selectFlagPrompts([exp('a', '2026-11-01', { smsFlags: ['cash_deposit'] })], []).map((t) => t.flag)).toEqual(['cash_deposit'])
     expect(selectFlagPrompts([], [inc('i', '2026-11-01', { smsFlags: ['refund_unmatched'] })])).toEqual([])
   })
   it('is pure: the rows are not changed', () => {

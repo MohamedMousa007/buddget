@@ -12,7 +12,7 @@ import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { formatFlex } from '@/lib/utils/formatters'
 import { selectFlagPrompts, type FlagPromptTarget } from '@/lib/sms/flagPrompts'
-import { markDepositOwnCash } from '@/lib/sms/flagActions'
+import { markDepositIncome } from '@/lib/sms/flagActions'
 import type { Expense, IncomeEvent } from '@/lib/store/types'
 import { RefundPickSheet } from './RefundPickSheet'
 
@@ -75,8 +75,8 @@ export function SmsFlagPrompts() {
     updateExpense(e.id, { category: 'Transfer', smsFlagsAck: [...new Set([...before.smsFlagsAck, 'model_kind_unproven'])] })
     toast(copy.kindMarkedTransfer, { undo: () => updateExpense(e.id, before), undoLabel: t.common.undo })
   }
-  const ownCash = async (e: IncomeEvent) => {
-    const ok = await markDepositOwnCash(e.id)
+  const depositIncome = async (e: Expense) => {
+    const ok = await markDepositIncome(e.id)
     toast(ok ? copy.cashDone : copy.failed)
   }
 
@@ -142,15 +142,15 @@ export function SmsFlagPrompts() {
           { label: copy.refundLeave, variant: 'secondary', onPress: dismiss },
         ],
       })
-    } else if (flag === 'cash_deposit' && inc) {
+    } else if (flag === 'cash_deposit' && e) {
       prompts.push({
         ...base,
         icon: Banknote,
         title: copy.cashTitle,
         description: copy.cashBody(detail),
         actions: [
-          { label: copy.cashOwn, variant: 'default', onPress: () => void ownCash(inc) },
-          { label: copy.cashIncome, variant: 'secondary', onPress: dismiss },
+          { label: copy.cashIncome, variant: 'default', onPress: () => void depositIncome(e) },
+          { label: copy.cashOwn, variant: 'secondary', onPress: dismiss },
         ],
       })
     }

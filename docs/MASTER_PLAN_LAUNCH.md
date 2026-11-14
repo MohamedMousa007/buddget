@@ -98,6 +98,7 @@ S1 only chased the four reported symptoms. S2b reviews the entire SMS logic end 
 
 ### S3. Data repair and curation — **Sonnet 5.5** (dry-run), **Fable 5.2** reviews the diff, W1 day 3
 - Replay all 952 logs through the new pipeline with `replayHarness` and produce a **dry-run diff report** (what would change, per user, per field). No writes yet.
+- The dry-run must be re-run after the last rule change (no repair is applied from an older one) and must list rows the user has edited separately; a repair never overwrites them.
 - You approve a sample, then apply as a migration (rows are real money data; every change reversible, old values kept in an audit column or table).
 - Promotion: run the promotion checker against the **held-out** set; promote to curated only the templates that pass. Keep quarantine shadow mode on. Never bulk-promote unreviewed.
 Exit: repaired data, promoted templates with a recorded holdout result, rollback note.

@@ -33,6 +33,7 @@ describe('isCashDeposit (S2c step 8b, N18)', () => {
     'Deposit of EGP 900.00 received from Sample Sender via IPN',
     'رسوم إيداع صراف 5 جنيه',
     'تم سحب 500 جنيه من الصراف',
+    'Cash deposit of EGP 900.00 to your account ending 4455',
   ])('false: %s', (t) => expect(isCashDeposit(t)).toBe(false))
 })
 
@@ -68,9 +69,9 @@ describe('dispatch applies it whatever the tier said', () => {
     bankName: null, categoryHint: null, source: 'sms', rawBody: 'Deposit: ATM 4411 Cairo, EGP 900.00, to: account 4455', ...over,
   })
 
-  it('books a deposit the tier read as a withdrawal as income with the cash_deposit flag', async () => {
+  it('books a deposit the tier read as a withdrawal as a transfer from cash with the cash_deposit flag', async () => {
     await createSmsTransaction(service, row({}), { exchangeRates: {} })
-    expect(created[0]).toMatchObject({ kind: 'income', smsFlags: ['cash_deposit'] })
+    expect(created[0]).toMatchObject({ kind: 'own_transfer', destinationLeg: true, fromCash: true, cleanTitle: 'Cash deposit', smsFlags: ['cash_deposit'] })
   })
   it('keeps the flag once and an existing flag', async () => {
     await createSmsTransaction(service, row({ kind: 'income', smsFlags: ['date_unsure'] }), { exchangeRates: {} })
@@ -81,9 +82,9 @@ describe('dispatch applies it whatever the tier said', () => {
     salary.mockClear()
     const tx = await createSmsTransaction(service, row({}), { exchangeRates: {} })
     expect(salary).not.toHaveBeenCalled()
-    expect(tx.outcome).toBe('income')
+    expect(tx).toMatchObject({ outcome: 'transfer_single', kind: 'income', category: 'Transfer', expenseId: 'e1', incomeId: null })
     expect(tx.confirmReason).toBeNull()
-    expect(created[0]).toMatchObject({ kind: 'income', smsFlags: ['cash_deposit'] })
+    expect(created[0]).toMatchObject({ kind: 'own_transfer', destinationLeg: true, fromCash: true, cleanTitle: 'Cash deposit', smsFlags: ['cash_deposit'] })
     expect(created[0]!.templateId).toBeUndefined()
   })
 })

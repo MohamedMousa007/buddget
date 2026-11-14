@@ -701,10 +701,10 @@ export async function createSmsTransaction(
   //    match (e.g. a raise) asks the user first; on confirm we post it linked too.
   //    Only a genuinely new credit is captured as unlinked one-time income.
   if (isIncomeKind(kind)) {
-    // Cash the user put in at a machine is not a paycheck: it never links to a salary schedule or asks about one.
+    // Cash the user put in at a machine is their own money moving: booked as a transfer from Cash, never matched to a salary.
     if (row.smsFlags?.includes('cash_deposit')) {
-      const res = await createSmsExpense(service, { ...row, kind })
-      return { ...base('income', kind), incomeId: res.incomeId, error: res.error }
+      const res = await createSmsExpense(service, { ...row, kind: 'own_transfer', destinationLeg: true, fromCash: true, cleanTitle: 'Cash deposit' })
+      return { ...base('transfer_single', kind), expenseId: res.expenseId, category: 'Transfer', error: res.error }
     }
     const decision = await matchSalary(service, {
       userId: row.userId,

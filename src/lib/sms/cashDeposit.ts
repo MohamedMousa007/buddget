@@ -1,14 +1,17 @@
 /**
- * A deposit made at a cash machine into the user's own account. It is a credit, never a withdrawal and never a transfer
- * in (S2b2 N18). The council's decision: it stays income, flagged `cash_deposit`, and the app offers "this was my own
- * cash" (cash the user already counted is not new income); unanswered, it stays income.
+ * A deposit made at a cash machine into the user's own account. The council's decision: it is booked as neither income
+ * nor spending but as a transfer from the user's Cash account, flagged `cash_deposit`; the app offers "it was income",
+ * which turns it into income, and unanswered it stays a transfer. Only a message naming a machine qualifies, so a deposit
+ * someone else made at a branch is untouched. The detector still reports `income`: the message travels the dispatcher
+ * and its log row as an income-kind message, so `sms_try_pair` (which matches on the persisted kind) can never claim it
+ * as the other leg of an unrelated transfer.
  */
 import { normalizeDigits } from '@/lib/sms/normalizeDigits'
 import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { detectLedgerSign } from '@/lib/sms/directionGuard'
 
 const EN_DEPOSIT = /\bdeposit(?:ed)?\b/i
-const EN_MACHINE = /\b(?:ATM|CDM|ITM|cash\s+deposit\s+machine|cash\s+machine|cash\s+deposit)\b/i
+const EN_MACHINE = /\b(?:ATM|CDM|ITM|cash\s+deposit\s+machine|cash\s+machine)\b/i
 const AR_DEPOSIT = /إيداع|ايداع/
 const AR_MACHINE = /صراف|ماكينة\s*(?:ال)?(?:إيداع|ايداع)/
 
@@ -32,7 +35,8 @@ export interface CashDepositVerdict {
 }
 
 /**
- * The kind a cash deposit is booked as: income, whatever the tier said. Left alone: a declined message (a decline books
+ * The kind a cash deposit travels as: income, whatever the tier said (it is booked as a transfer from cash, see the file
+ * header). Left alone: a declined message (a decline books
  * a net-zero row of its own and nothing else, I2) and a message whose own ledger sign says money left.
  */
 export function cashDepositVerdict(kind: SmsExpenseKind, rawText: string): CashDepositVerdict {
