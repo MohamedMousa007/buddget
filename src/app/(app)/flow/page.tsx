@@ -31,6 +31,7 @@ import { FlowChipRail, FlowChipRow, type FlowChip } from '@/components/features/
 import { FlowLedger } from '@/components/features/flow/FlowLedger'
 import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { OwnTransferPrompts } from '@/components/features/flow/OwnTransferPrompts'
+import { MerchantCategoryPrompt } from '@/components/features/flow/MerchantCategoryPrompt'
 import { FlowPendingRow } from '@/components/features/flow/FlowPendingRow'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
 import { periodText, useFlowBand } from '@/components/features/flow/useFlowBand'
@@ -227,6 +228,7 @@ export default function FlowPage() {
       <FlowStickyStrip visible={collapsed && dataReady} {...sticky} />
       {segment === 'in' ? <IncomePrompts /> : null}
       <OwnTransferPrompts />
+      <MerchantCategoryPrompt />
 
       <FlowSummaryBand {...band} />
 

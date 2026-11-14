@@ -680,6 +680,7 @@ export const ar: Dictionary = {
   },
 
   expenses: {
+    merchantAppliedToast: (n, category) => `تم أيضًا تصنيف ${n} عملية أخرى من هذا المتجر ضمن ${category}`,
     pageTitle: 'مصروفاتي',
     requireAuth: 'سجل دخولك لتتبع مصروفاتك والحفاظ على ميزانيتك.',
     emptyIcon: '💸',
@@ -3192,6 +3193,10 @@ export const ar: Dictionary = {
     passThroughBody: (n: number, total: string) => `نفس المبلغ وصل وخرج من نفس الحساب خلال دقائق (${total}، عدد المرات: ${n}). هل هذه أموال تمر عبرك فقط؟ إن كانت كذلك فلن تُحتسب في دخلك أو مصروفاتك، وتتبعها المرات القادمة. يمكنك احتساب أي واحدة من جديد.`,
     passThroughYes: 'نعم، لا تحتسبها',
     passThroughNo: 'لا، هي أموالي',
+    merchantCategoryTitle: (name: string) => `ما نوع ${name}؟`,
+    merchantCategoryBody: (n: number, total: string) => `عدد المشتريات غير المصنفة: ${n} (${total}). اختر فئة مرة واحدة فتُصنَّف كلها، وتتبعها المشتريات القادمة.`,
+    merchantCategoryChoose: 'اختر الفئة',
+    merchantCategoryLater: 'ليس الآن',
     passThroughApplied: (n: number) => `لم تعد تُحتسب في الدخل والمصروفات (عدد المرات: ${n})`,
     ownTransferAskTitle: 'هل هذا تحويل بين حساباتك؟',
     ownTransferAskBody: (detail: string) => `${detail}. إن كان كذلك فلن يُحتسب في المصروفات أو الدخل.`,

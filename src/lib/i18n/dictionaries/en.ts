@@ -676,6 +676,7 @@ export const en: Dictionary = {
   },
 
   expenses: {
+    merchantAppliedToast: (n, category) => `Also filed ${n} more from this merchant under ${category}`,
     pageTitle: 'My Expenses',
     requireAuth: 'Sign in to log your spending and keep your budget on track.',
     emptyIcon: '💸',
@@ -3180,6 +3181,10 @@ export const en: Dictionary = {
     passThroughBody: (n: number, total: string) => `The same amount arrived and left the same account within minutes (${total} in ${n === 1 ? '1 pair' : `${n} pairs`}). Is this money only passing through you? If so it leaves your income and spending, and later pairs follow. You can count any one again.`,
     passThroughYes: 'Yes, leave it out',
     passThroughNo: 'No, it is mine',
+    merchantCategoryTitle: (name: string) => `What kind of place is ${name}?`,
+    merchantCategoryBody: (n: number, total: string) => `${n} purchases (${total}) are uncategorised. Pick a category once and they are all filed, and later ones follow.`,
+    merchantCategoryChoose: 'Choose category',
+    merchantCategoryLater: 'Not now',
     passThroughApplied: (n: number) => `${n === 1 ? '1 pair' : `${n} pairs`} left out of income and spending`,
     ownTransferAskTitle: 'Was this a transfer between your own accounts?',
     ownTransferAskBody: (detail: string) => `${detail}. If yes, it is left out of spending and income.`,

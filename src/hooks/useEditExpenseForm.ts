@@ -7,6 +7,9 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useT } from '@/lib/i18n'
+import { categoryLabel } from '@/lib/i18n/categoryLabel'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { sameMerchantTargets } from '@/hooks/sameMerchantApply'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
@@ -17,6 +20,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     useShallow((s) => ({ updateExpense: s.updateExpense, paymentMethods: s.paymentMethods, settings: s.settings, exchangeRates: s.exchangeRates })),
   )
   const t = useT()
+  const toast = useActionToast()
   const { categoryChipOptions } = usePlanCategories()
   const submit = useSubmitOnce()
 
@@ -72,6 +76,18 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
       owedSettledAt: spendExclusion === 'for_someone' ? expense.owedSettledAt : undefined,
     })
 
+    if (category !== expense.category) {
+      const targets = sameMerchantTargets(useFinanceStore.getState().expenses, { id: expense.id, description: title, smsLogId: expense.smsLogId }, category)
+      if (targets.length > 0) {
+        const ids = targets.map((e) => e.id)
+        ids.forEach((id) => updateExpense(id, { category }))
+        toast(t.expenses.merchantAppliedToast(ids.length, categoryLabel(t, category)), {
+          undoLabel: t.common.undo,
+          undo: () => ids.forEach((id) => updateExpense(id, { category: 'Other' })),
+        })
+      }
+    }
+
     onClose()
   }, [
     amount,
@@ -82,6 +98,8 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     description,
     exchangeRates,
     expense.id,
+    expense.category,
+    expense.smsLogId,
     expense.currency,
     expense.owedSettledAt,
     expense.paymentMethodId,
@@ -93,7 +111,8 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     onClose,
     paymentMethodId,
     settings,
-    t.common.tryAgain,
+    t,
+    toast,
     updateExpense,
     submit,
   ])

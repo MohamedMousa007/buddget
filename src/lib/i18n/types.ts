@@ -584,6 +584,7 @@ export interface Dictionary {
   }
 
   expenses: {
+    merchantAppliedToast: (n: number, category: string) => string
     pageTitle: string
     requireAuth: string
     emptyIcon: string
@@ -3038,6 +3039,10 @@ export interface Dictionary {
     passThroughBody: (n: number, total: string) => string
     passThroughYes: string
     passThroughNo: string
+    merchantCategoryTitle: (name: string) => string
+    merchantCategoryBody: (n: number, total: string) => string
+    merchantCategoryChoose: string
+    merchantCategoryLater: string
     passThroughApplied: (n: number) => string
     ownTransferAskTitle: string
     ownTransferAskBody: (detail: string) => string
