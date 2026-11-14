@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Expense, IncomeEvent, PaymentMethod } from '@/lib/store/types'
-import { planMerge, provisionalAsDetected, provisionalIdOf, provisionalKey } from '@/lib/accounts/provisional'
+import { confirmProvisionalWithBank, isBankless, planMerge, provisionalAsDetected, provisionalIdOf, provisionalKey } from '@/lib/accounts/provisional'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { PAYMENT_BRANDS } from '@/lib/payment/paymentMethodDefaults'
 import { isOpenAccount, isTracked } from '@/lib/accounts/kinds'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
@@ -63,5 +65,46 @@ describe('smsAccountLabelKind', () => {
   it('leaves a manual cash expense and a placed message alone', () => {
     expect(smsAccountLabelKind({ smsLogId: undefined, paymentMethodId: DEFAULT_CASH_ID })).toBe('method')
     expect(smsAccountLabelKind({ smsLogId: 'log', paymentMethodId: 'mine' })).toBe('method')
+  })
+})
+
+describe('bank-less provisional accounts', () => {
+  it('isBankless: placeholder or unknown provider is bank-less, a catalogue brand is not', () => {
+    expect(isBankless({ name: 'Account ••4321', last4: '4321' })).toBe(true)
+    expect(isBankless({ name: 'Zzyzx Fake ••4321', last4: '4321' })).toBe(true)
+    expect(isBankless({ name: 'CIB ••1234', last4: '1234' })).toBe(false)
+  })
+
+  describe('confirmProvisionalWithBank', () => {
+    const seed = (over: Partial<PaymentMethod> = {}) => {
+      const base = pm({ id: 'bl', name: 'Account ••4321', last4: '4321', provisional: true, color: '#111111', ...over })
+      useFinanceStore.setState({ paymentMethods: [base] })
+    }
+    const get = () => useFinanceStore.getState().paymentMethods.find((m) => m.id === 'bl')!
+
+    it('names, colours and confirms the account, and Undo restores it', () => {
+      seed()
+      const undo = confirmProvisionalWithBank('bl', 'cib')
+      expect(undo).not.toBeNull()
+      expect(get()).toMatchObject({ name: `${PAYMENT_BRANDS.cib.name} ••4321`, color: PAYMENT_BRANDS.cib.colors[0], provisional: false, type: 'bank_account' })
+      undo!()
+      expect(get()).toMatchObject({ name: 'Account ••4321', color: '#111111', provisional: true, type: 'bank_account' })
+    })
+
+    it('turns the account into a wallet for a wallet brand and Undo restores the type', () => {
+      seed()
+      const undo = confirmProvisionalWithBank('bl', 'vodafone')
+      expect(get().type).toBe('wallet')
+      undo!()
+      expect(get().type).toBe('bank_account')
+    })
+
+    it('returns null for a missing, non-provisional or unknown-brand case', () => {
+      seed()
+      expect(confirmProvisionalWithBank('nope', 'cib')).toBeNull()
+      expect(confirmProvisionalWithBank('bl', 'not-a-brand')).toBeNull()
+      seed({ provisional: false })
+      expect(confirmProvisionalWithBank('bl', 'cib')).toBeNull()
+    })
   })
 })

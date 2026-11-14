@@ -16,12 +16,15 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { settlePrompt } from '@/lib/prompts/settle'
 import { navigate } from '@/lib/navigation/navigate'
 import { createDeferred } from '@/lib/sms/heldReview'
-import { PAYMENT_BRANDS, PAYMENT_TYPE_META, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
+import { PAYMENT_BRANDS, PAYMENT_TYPE_META, QUICK_ADD, composePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { parentAccountFor } from '@/lib/accounts/parentAccount'
 import { withAlias } from '@/lib/accounts/identity/accountRef'
 import { useReattribute } from '@/lib/accounts/useReattribute'
-import { confirmProvisional, mergeProvisional, provisionalIdOf, rejectProvisional } from '@/lib/accounts/provisional'
+import { ProviderPickerSheet } from '@/components/features/payments/ProviderPickerSheet'
+import { confirmProvisional, confirmProvisionalWithBank, isBankless, mergeProvisional, provisionalIdOf, rejectProvisional } from '@/lib/accounts/provisional'
 import { BrandMark } from './BrandMark'
+
+const BANK_FIRST = [...QUICK_ADD.EG, ...QUICK_ADD.SA]
 
 type Step = { key: string; mode: 'actions' | 'link' } | null
 
@@ -45,6 +48,7 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [step, setStep] = useState<Step>(null)
   const [choice, setChoice] = useState('')
+  const [bankPick, setBankPick] = useState<DetectedAccount | null>(null)
   const list = useDetectedAccounts(hidden)
 
   // "Not mine" is permanent and synced, so it is held back for the Undo window and sent then; leaving flushes it.
@@ -81,6 +85,10 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
   const add = (a: DetectedAccount) => {
     const provisionalId = provisionalIdOf(a.key)
     if (provisionalId) {
+      if (isBankless({ name: composePaymentMethodName(a.provider ?? '', { last4: a.last4 }), last4: a.last4 })) {
+        setBankPick(a)
+        return
+      }
       withUndo(t.keptToast(titleOf(a)), confirmProvisional(provisionalId))
       // Earlier messages that named these digits before the account existed move onto it too.
       void reattribute(provisionalId, a.last4)
@@ -96,6 +104,17 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
       const parentId = type === 'debit_card' || type === null ? parentAccountFor(paymentMethods, provider) : undefined
       openAddPaymentMethodWithPrefill({ name: provider ?? '', last4, ...(type ? { type } : {}), ...(parentId ? { parentId } : {}), ...(currency ? { currency } : {}) })
     }
+  }
+  const pickBank = (brandKey: string) => {
+    const a = bankPick
+    const provisionalId = a && provisionalIdOf(a.key)
+    setBankPick(null)
+    if (!a || !provisionalId) return
+    const undo = confirmProvisionalWithBank(provisionalId, brandKey)
+    if (!undo) return
+    withUndo(t.keptToast(`${PAYMENT_BRANDS[brandKey].name} ••${a.last4}`), undo)
+    void reattribute(provisionalId, a.last4)
+    done()
   }
   const link = (a: DetectedAccount) => {
     const target = paymentMethods.find((pm) => pm.id === choice)
@@ -193,6 +212,15 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
   return (
     <ResolveSheet open={open} onClose={step ? back : close} title={title} subtitle={subtitle} primary={primary} secondary={secondary}>
       {body}
+      <ProviderPickerSheet
+        open={bankPick !== null}
+        selectedId={null}
+        popularIds={BANK_FIRST}
+        issuesType={bankPick?.type === 'wallet' ? 'wallet' : 'bank_account'}
+        onPick={pickBank}
+        onCustom={() => setBankPick(null)}
+        onClose={() => setBankPick(null)}
+      />
     </ResolveSheet>
   )
 }

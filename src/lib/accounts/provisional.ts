@@ -1,6 +1,6 @@
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense, IncomeEvent, PaymentMethod } from '@/lib/store/types'
-import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { PAYMENT_BRANDS, composePaymentMethodName, decomposePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import { withAlias } from '@/lib/accounts/identity/accountRef'
 import type { DetectedAccount } from '@/hooks/usePaymentMethodDetector'
 
@@ -9,6 +9,9 @@ import type { DetectedAccount } from '@/hooks/usePaymentMethodDetector'
  * (src/lib/sms/accountPlacement.ts). They carry history at once but no balance, and wait here for one of three
  * answers: keep (confirm), merge into an account the user already has, or not mine.
  */
+
+/** Provider part of a bank-less provisional account's name. Same value as BANKLESS_PROVIDER in src/lib/sms/accountPlacement.ts (a server module this client file must not import). */
+const BANKLESS_PROVIDER = 'Account'
 
 type Ledger = { expenses: readonly Expense[]; incomeEvents: readonly IncomeEvent[] }
 
@@ -78,6 +81,27 @@ function repoint(rows: MergePlan['rows'], to: string): void {
 export function confirmProvisional(id: string): () => void {
   store().updatePaymentMethod(id, { provisional: false })
   return () => store().updatePaymentMethod(id, { provisional: true })
+}
+
+/** True when the account's provider is the bank-less placeholder or names no catalogue brand. */
+export function isBankless(method: Pick<PaymentMethod, 'name' | 'last4'>): boolean {
+  const provider = decomposePaymentMethodName(method.name, method.last4).provider.trim()
+  return provider === BANKLESS_PROVIDER || !resolvePaymentBrandKey(provider)
+}
+
+/** Keep, with the bank the user picked: renames and recolours the account, then confirms it. Returns Undo; null when it cannot be done. */
+export function confirmProvisionalWithBank(id: string, brandKey: string): (() => void) | null {
+  const account = store().paymentMethods.find((m) => m.id === id)
+  const brand = PAYMENT_BRANDS[brandKey]
+  if (!account?.provisional || !brand) return null
+  const before = { name: account.name, color: account.color, type: account.type }
+  store().updatePaymentMethod(id, {
+    name: composePaymentMethodName(brand.name, { last4: account.last4 }),
+    color: brand.colors[0],
+    provisional: false,
+    ...(brand.type === 'wallet' ? { type: 'wallet' as const } : {}),
+  })
+  return () => store().updatePaymentMethod(id, { ...before, provisional: true })
 }
 
 /** Not mine: it stays as an excluded account, so its messages stop counting and it is not re-created. Returns Undo. */
