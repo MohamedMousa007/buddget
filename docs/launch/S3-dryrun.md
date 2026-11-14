@@ -465,3 +465,15 @@ The owner delegated these decisions to the council (via the planning session). N
 4. **Day shifts (3 of 3).** Apply the 69 that stay within a month; skip the 2 that cross a month (user `4fce9265`, 2026-09 to 2026-10) and leave them for the closed-month notice to raise with the user.
 5. **Who approves (2 of 3).** Zero-risk types (decline marks removed T1, the refund mark move T2a/T2b, collected-notice incomes T3, own net-zero rows T7b, same-month day shifts T15) may be applied after the re-run without the owner, if the re-run reproduces the same rows, a Fable reviewer signs off the rolled-back test, and revert is proven. Every money-moving type (cash deposits T4, own-wallet T11/T9, unmatched refunds T8, lost-row inserts T6, the income retraction) needs the owner to approve a sample of those types before it is applied; the council declined to approve those itself.
 6. **Revert test (adopted from one voice).** Prove the revert with recomputed per-user per-month totals, not only row values, and prove it does not overwrite an edit the user made to a repaired row after the apply (the audit old-values restore must be skipped for a row whose `edited_at` is later than the repair).
+
+## 12. Owner statement and council vote that replace verdict 5 (2026-11-14)
+
+Recorded by the planning session, to which the owner said it directly: every current user is a member of the internal testing team, and the approval of the repair is delegated to the council. The council then voted 3 of 3 to drop the owner's sample approval and apply in two steps. This replaces verdict 5 of section 11 and the owner-approval precondition of part 7.
+
+- **Step 1, zero-risk types:** decline marks removed (T1), the refund mark move (T2a, T2b), collected-notice incomes (T3), own net-zero rows (T7b), same-month day shifts (T15).
+- **Step 2, a day later, money-moving types:** cash deposits (T4), own-wallet top-ups with their undo flag (T11, T9), unmatched refunds (T8), lost-row inserts (T6).
+- **Before step 1:** batch 2 has landed; the re-run on a fresh export reproduces the same repair types and rows (any new type or changed row is excluded and reported; a money-moving type with any deviation is excluded whole, never partly applied); the rolled-back test passes; the revert is rehearsed on the live database; the Fable reviewer signs off.
+- **Before step 2:** step 1's per-user per-month totals match the dry-run (one pre-written query); no unexpected audit rows; no user edit, delete or undo on a step 1 row points to a bad pattern; the reviewer signs off again.
+- Rows a user edited or deleted are never touched. The audit table is kept. The undo prompts stay live.
+- The testers are told beforehand that their numbers will shift.
+- **Limit of this approval:** it rests on all users being internal testers on 2026-11-14 and does not carry over once outside users exist.
