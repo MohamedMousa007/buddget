@@ -3124,6 +3124,7 @@ export const ar: Dictionary = {
     capturedOffline: 'التُقطت دون اتصال · تتم المزامنة لاحقاً',
     blockedNotCounted: '✕ رفضها البنك · غير محتسبة',
     possiblePassThrough: 'تحويل عابر محتمل',
+    suggestedCategory: 'مقترح',
     passThrough: 'تحويل عابر',
     returnedOn: (d: string) => `↩ أُعيدت ${d}`,
     oneTimeCaption: 'لمرة واحدة',

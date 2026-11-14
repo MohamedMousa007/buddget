@@ -58,3 +58,25 @@ export function unknownMerchants(expenses: readonly Expense[], asked: Record<str
   out.sort((a, b) => b.item.ids.length - a.item.ids.length || (b.latest.date > a.latest.date ? 1 : b.latest.date < a.latest.date ? -1 : 0))
   return out.map((o) => o.item)
 }
+
+/**
+ * What a save does to a category that was only the AI's suggestion: keeping it confirms it, picking another changes
+ * it. Either way the row stops being a suggestion, and the two outcomes are what the guesses are scored on. A row
+ * that was never a suggestion keeps whatever it had.
+ */
+export function categorySourceAfterSave(
+  before: Pick<Expense, 'category' | 'categorySource'>,
+  category: string,
+): Expense['categorySource'] {
+  if (before.categorySource !== 'ai_suggested') return before.categorySource
+  return category === before.category ? 'user_confirmed' : 'user_changed'
+}
+
+/** The prompt key recorded when the user chose to answer (as opposed to "Not now"), so the answer rate can be counted. */
+export const merchantAnsweredKey = (key: string): string => `merchantcatopen:${key}`
+
+/** Out of the unknown-merchant questions shown and closed, how many the user chose to answer. */
+export function merchantAnswerRate(asked: Record<string, string> | undefined): { asked: number; answered: number } {
+  const keys = Object.keys(asked ?? {})
+  return { asked: keys.filter((k) => k.startsWith('merchantcat:')).length, answered: keys.filter((k) => k.startsWith('merchantcatopen:')).length }
+}

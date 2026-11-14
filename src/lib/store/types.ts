@@ -224,6 +224,11 @@ export interface Expense {
   refundKind?: 'refunded' | 'declined'
   /** Why this expense is left out of spending (it is still logged and still moves the account balance). */
   spendExclusion?: SpendExclusion
+  /**
+   * Where the category came from when it matters: `ai_suggested` is the AI's guess for a merchant nobody knew (shown
+   * as a suggestion); `user_confirmed` / `user_changed` record what the user did with one. Absent otherwise.
+   */
+  categorySource?: 'ai_suggested' | 'user_confirmed' | 'user_changed'
   /** For `for_someone`: who owes this back, and when they paid it. */
   owedBy?: string
   owedSettledAt?: string

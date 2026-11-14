@@ -3112,6 +3112,7 @@ export const en: Dictionary = {
     capturedOffline: 'Captured offline · syncs later',
     blockedNotCounted: '✕ Blocked by bank · not counted',
     possiblePassThrough: 'Possible pass-through',
+    suggestedCategory: 'Suggested',
     passThrough: 'Pass-through',
     returnedOn: (d: string) => `↩ Returned ${d}`,
     oneTimeCaption: 'One-time',

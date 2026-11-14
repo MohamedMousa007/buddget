@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Expense } from '@/lib/store/types'
-import { isCompanyFormOnly, merchantKeyOf, sameMerchantUncategorised, unknownMerchants } from './merchantCategory'
+import { categorySourceAfterSave, isCompanyFormOnly, merchantAnswerRate, merchantKeyOf, sameMerchantUncategorised, unknownMerchants } from './merchantCategory'
 
 let n = 0
 function exp(p: Partial<Expense>): Expense {
@@ -90,5 +90,23 @@ describe('unknownMerchants', () => {
   it('drops mixed-currency groups', () => {
     const rows = [exp({ description: 'Acme Mart' }), exp({ description: 'Acme Mart', currency: 'USD' })]
     expect(unknownMerchants(rows, undefined)).toEqual([])
+  })
+})
+
+describe('categorySourceAfterSave', () => {
+  it('records what the user did with a suggestion', () => {
+    expect(categorySourceAfterSave({ category: 'Food', categorySource: 'ai_suggested' }, 'Food')).toBe('user_confirmed')
+    expect(categorySourceAfterSave({ category: 'Food', categorySource: 'ai_suggested' }, 'Groceries')).toBe('user_changed')
+  })
+  it('leaves a row that was never a suggestion as it was', () => {
+    expect(categorySourceAfterSave({ category: 'Food' }, 'Groceries')).toBeUndefined()
+    expect(categorySourceAfterSave({ category: 'Food', categorySource: 'user_confirmed' }, 'Groceries')).toBe('user_confirmed')
+  })
+})
+
+describe('merchantAnswerRate', () => {
+  it('counts questions closed and questions answered', () => {
+    expect(merchantAnswerRate({ 'merchantcat:a': 'x', 'merchantcat:b': 'x', 'merchantcatopen:a': 'x', 'late:1': 'x' })).toEqual({ asked: 2, answered: 1 })
+    expect(merchantAnswerRate(undefined)).toEqual({ asked: 0, answered: 0 })
   })
 })

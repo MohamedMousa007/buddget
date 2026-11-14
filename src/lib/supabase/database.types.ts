@@ -1581,6 +1581,7 @@ export type Database = {
           shared_plan_id: string | null
           is_recurring: boolean
           spend_exclusion: string | null
+          category_source: string | null
           owed_by: string | null
           owed_settled_at: string | null
           occurred_at: string | null
@@ -1615,6 +1616,7 @@ export type Database = {
           shared_plan_id?: string | null
           is_recurring?: boolean
           spend_exclusion?: string | null
+          category_source?: string | null
           owed_by?: string | null
           owed_settled_at?: string | null
           occurred_at?: string | null
@@ -1649,6 +1651,7 @@ export type Database = {
           shared_plan_id?: string | null
           is_recurring?: boolean
           spend_exclusion?: string | null
+          category_source?: string | null
           owed_by?: string | null
           owed_settled_at?: string | null
           occurred_at?: string | null

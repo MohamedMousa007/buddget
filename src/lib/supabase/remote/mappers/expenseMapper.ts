@@ -34,6 +34,7 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     refund_kind: e.refundKind ?? null,
     occurred_at: e.occurredAt ?? null,
     spend_exclusion: e.spendExclusion ?? null,
+    category_source: e.categorySource ?? null,
     owed_by: e.owedBy ?? null,
     owed_settled_at: e.owedSettledAt ?? null,
     to_payment_method_id:
@@ -68,6 +69,7 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     refundKind: (row.refund_kind as 'refunded' | 'declined' | null) ?? undefined,
     occurredAt: row.occurred_at ?? undefined,
     spendExclusion: (row.spend_exclusion as Expense['spendExclusion'] | null) ?? undefined,
+    categorySource: (row.category_source as Expense['categorySource'] | null) ?? undefined,
     owedBy: row.owed_by ?? undefined,
     owedSettledAt: row.owed_settled_at ?? undefined,
     toPaymentMethodId: row.to_payment_method_id ?? undefined,

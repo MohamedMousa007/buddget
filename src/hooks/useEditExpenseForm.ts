@@ -10,6 +10,7 @@ import { useT } from '@/lib/i18n'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { sameMerchantTargets } from '@/hooks/sameMerchantApply'
+import { categorySourceAfterSave } from '@/lib/spending/merchantCategory'
 import { usePlanCategories } from '@/hooks/usePlanCategories'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
@@ -64,6 +65,8 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
       date,
       description: title,
       category,
+      // Saving a row whose category was only the AI's suggestion settles it: kept = confirmed, replaced = changed.
+      categorySource: categorySourceAfterSave({ category: expense.category, categorySource: expense.categorySource }, category),
       subcategory,
       amount: parsedAmount,
       currency: cur,
@@ -99,6 +102,7 @@ export function useEditExpenseForm(expense: Expense, onClose: () => void) {
     exchangeRates,
     expense.id,
     expense.category,
+    expense.categorySource,
     expense.smsLogId,
     expense.currency,
     expense.owedSettledAt,

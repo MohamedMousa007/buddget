@@ -201,6 +201,7 @@ export const importDataSchema = z.object({
         occurredAt: stampString.optional(),
         toPaymentMethodId: z.string().optional(),
         spendExclusion: z.enum(['method', 'manual', 'for_someone']).optional(),
+        categorySource: z.enum(['ai_suggested', 'user_confirmed', 'user_changed']).optional(),
         owedBy: z.string().optional(),
         owedSettledAt: z.string().optional(),
         date: dayString,

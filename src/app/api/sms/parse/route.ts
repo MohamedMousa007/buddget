@@ -1066,10 +1066,11 @@ export async function POST(request: Request) {
         const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, () => aiCategorizeMerchant(geminiKey, merchant, message))
         if (metered.denied || !metered.value) return
         const cat = metered.value
-        await service.from('expenses').update({ category: cat }).eq('id', expenseId)
+        // The AI's answer is applied as a SUGGESTION: the row says so until the user confirms or changes it.
+        await service.from('expenses').update({ category: cat, category_source: 'ai_suggested' }).eq('id', expenseId)
         // One merchant, one category: this user's earlier uncategorised purchases at the same merchant follow
         // (never for a bare company-form word, which is many merchants).
-        if (!isGenericMerchant(merchant)) await service.from('expenses').update({ category: cat })
+        if (!isGenericMerchant(merchant)) await service.from('expenses').update({ category: cat, category_source: 'ai_suggested' })
           .eq('user_id', userId).eq('category', 'Other').ilike('description', merchant.replace(/[\\%_]/g, (c) => `\\${c}`))
           .not('sms_log_id', 'is', null).is('deleted_at', null).is('refunded_at', null)
         await rememberMerchantCategory(service, merchant, cat, 'ai')

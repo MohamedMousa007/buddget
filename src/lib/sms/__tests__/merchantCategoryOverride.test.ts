@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { resolveMerchantCategory, rememberMerchantCategory, uniquePrefixCategory } from '../merchantCategoryCache'
+import { resolveMerchantCategory, resolveMerchantCategoryInfo, rememberMerchantCategory, uniquePrefixCategory } from '../merchantCategoryCache'
 import type { ServiceClient } from '@/lib/supabase/service'
+import { createSmsExpense } from '../createSmsExpense'
 
 function fakeService(rows: Record<string, Record<string, unknown>>) {
   const queried: string[] = []
@@ -22,7 +23,7 @@ function fakeService(rows: Record<string, Record<string, unknown>>) {
         queried.push(table)
         const hit = rows[table]
         const matches = hit && Object.entries(filters).every(([k, v]) => k === '__prefix' || hit[k] === undefined || hit[k] === v)
-        return { data: matches ? { category: hit.category } : null }
+        return { data: matches ? { category: hit.category, category_source: hit.category_source ?? null } : null }
       },
     }
     return q
@@ -96,5 +97,52 @@ describe('uniquePrefixCategory (a cut-off name against the user\'s own history)'
   })
   it('never returns a money-movement category', () => {
     expect(uniquePrefixCategory('Some Corn', [{ description: 'Some Corner Bakery', category: 'Transfer' }])).toBeNull()
+  })
+})
+
+describe('a category that is only an AI suggestion', () => {
+  it('stays a suggestion when a later purchase inherits it from the earlier one', async () => {
+    const { service } = fakeService({ expenses: { user_id: 'u1', description: 'ZZ Shop', category: 'Food', category_source: 'ai_suggested' } })
+    expect(await resolveMerchantCategoryInfo(service, 'ZZ Shop', 'u1')).toEqual({ category: 'Food', suggested: true })
+  })
+
+  it('is a fact once the user confirmed or changed it, and when a rule names it', async () => {
+    const confirmed = fakeService({ expenses: { user_id: 'u1', description: 'ZZ Shop', category: 'Food', category_source: 'user_confirmed' } })
+    expect(await resolveMerchantCategoryInfo(confirmed.service, 'ZZ Shop', 'u1')).toEqual({ category: 'Food', suggested: false })
+    expect(await resolveMerchantCategoryInfo(fakeService({}).service, 'Kazyon', 'u1')).toEqual({ category: 'Groceries', suggested: false })
+  })
+})
+
+describe('createSmsExpense marks an AI category as a suggestion', () => {
+  function svc() {
+    const inserted: Record<string, unknown>[] = []
+    const chain: Record<string, unknown> = {}
+    for (const k of ['select', 'eq', 'neq', 'ilike', 'is', 'not', 'in', 'order', 'limit']) chain[k] = () => chain
+    chain.maybeSingle = () => Promise.resolve({ data: null, error: null })
+    chain.then = (r: (v: unknown) => unknown) => r({ data: [], error: null })
+    chain.insert = (row: Record<string, unknown>) => {
+      inserted.push(row)
+      return { select: () => ({ single: () => Promise.resolve({ data: { id: 'e1' }, error: null }) }) }
+    }
+    return { service: { from: () => chain, rpc: async () => ({ error: null }) } as unknown as ServiceClient, inserted }
+  }
+  const row = (over: Record<string, unknown>) => ({
+    userId: 'u1', amount: 50, currency: 'EGP', day: '2026-11-01', kind: 'purchase', cleanTitle: null, merchantNormalized: null,
+    merchant: 'ZZ Shop', bankName: null, categoryHint: null, source: 'sms', rawBody: 'Purchase of 50.00 at ZZ SHOP', ...over,
+  }) as never
+
+  it("the AI's category for an unknown merchant is applied and flagged", async () => {
+    const { service, inserted } = svc()
+    await createSmsExpense(service, row({ categoryHint: 'restaurant' }))
+    expect(inserted[0]).toMatchObject({ category: 'Food', category_source: 'ai_suggested' })
+  })
+
+  it('a dictionary category and an uncategorised row carry no flag', async () => {
+    const a = svc()
+    await createSmsExpense(a.service, row({ merchant: 'Kazyon', categoryHint: 'restaurant' }))
+    expect(a.inserted[0]).toMatchObject({ category: 'Groceries', category_source: null })
+    const b = svc()
+    await createSmsExpense(b.service, row({}))
+    expect(b.inserted[0]).toMatchObject({ category: 'Other', category_source: null })
   })
 })

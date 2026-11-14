@@ -2966,6 +2966,7 @@ export interface Dictionary {
     capturedOffline: string
     blockedNotCounted: string
     possiblePassThrough: string
+    suggestedCategory: string
     passThrough: string
     returnedOn: (d: string) => string
     oneTimeCaption: string

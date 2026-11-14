@@ -7,7 +7,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
 import { settlePrompt } from '@/lib/prompts/settle'
-import { merchantPromptKey, unknownMerchants } from '@/lib/spending/merchantCategory'
+import { merchantAnsweredKey, merchantPromptKey, unknownMerchants } from '@/lib/spending/merchantCategory'
 import { formatFlex } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 
@@ -43,6 +43,8 @@ export function MerchantCategoryPrompt() {
           variant: 'default',
           onPress: () => {
             settlePrompt(key)
+            // Counted apart from "Not now", so the share of questions that get answered is known.
+            settlePrompt(merchantAnsweredKey(merchant.key))
             setEditingExpenseId(merchant.ids[0])
             setActiveModal('editExpense')
           },

@@ -210,6 +210,8 @@ export function useFlowLedger() {
                 <Badge variant="muted" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
               ) : e.spendExclusion === 'for_someone' ? (
                 <Badge variant="muted" size="xs" className="shrink-0">{e.owedSettledAt ? t.exclusion.badgeRepaid : t.exclusion.badgeOwed(e.owedBy ?? t.exclusion.forSomeone)}</Badge>
+              ) : e.categorySource === 'ai_suggested' ? (
+                <Badge variant="muted" size="xs" className="shrink-0">{t.flow.suggestedCategory}</Badge>
               ) : possiblePassThrough.has(e.id) ? (
                 <Badge variant="muted" size="xs" className="shrink-0">{t.flow.possiblePassThrough}</Badge>
               ) : nonSpend ? (

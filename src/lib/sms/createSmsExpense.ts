@@ -17,7 +17,7 @@ import { ensureProvisionalAccount, provisionalSpec } from './accountPlacement'
 import { toSupportedCurrency } from './ingestGuards'
 import { normalizeMerchant } from './merchantNormalizer'
 import { isServiceBill } from './merchantDictionary'
-import { resolveMerchantCategory, rememberMerchantCategory } from './merchantCategoryCache'
+import { resolveMerchantCategoryInfo, rememberMerchantCategory } from './merchantCategoryCache'
 
 export type SmsExpenseKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
@@ -558,10 +558,17 @@ export async function createSmsExpense(
   // category guess, so one merchant keeps one category on every tier. Only when nothing knows the merchant is the
   // AI's category used, and fed back so the next curated/template hit is categorised for free. Keyed on `title`,
   // the same string the stored description (and the user-edit trigger) uses.
+  // A category that is only the AI's guess is stored as a suggestion: applied, shown as one, and never evidence.
+  let categorySource: 'ai_suggested' | null = null
   if (!row.categoryOverride && (row.kind === 'purchase' || row.kind === 'online_purchase')) {
-    const known = await resolveMerchantCategory(service, title, row.userId)
-    if (known) mappedCategory = known
-    else if (mappedCategory !== 'Other' && row.categoryHint) await rememberMerchantCategory(service, title, mappedCategory, 'ai')
+    const known = await resolveMerchantCategoryInfo(service, title, row.userId)
+    if (known) {
+      mappedCategory = known.category
+      if (known.suggested) categorySource = 'ai_suggested'
+    } else if (mappedCategory !== 'Other' && row.categoryHint) {
+      categorySource = 'ai_suggested'
+      await rememberMerchantCategory(service, title, mappedCategory, 'ai')
+    }
   }
 
   // Money that stays inside the user's own accounts credits the other side: cash out lands in Cash,
@@ -581,6 +588,7 @@ export async function createSmsExpense(
       to_payment_method_id: toPaymentMethodId,
       description: title ?? 'Bank transaction',
       category: mappedCategory,
+      category_source: categorySource,
       amount: row.amount,
       currency: dbCurrency(row.currency),
       payment_method_id: paymentMethodId,

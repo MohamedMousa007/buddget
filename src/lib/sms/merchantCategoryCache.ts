@@ -62,6 +62,26 @@ export async function resolveMerchantCategory(
   merchant: string | null | undefined,
   userId?: string,
 ): Promise<ExpenseCategory | null> {
+  return (await resolveMerchantCategoryInfo(service, merchant, userId))?.category ?? null
+}
+
+export interface MerchantCategoryInfo {
+  category: ExpenseCategory
+  /**
+   * True when the only thing behind the category is an AI guess the user has not confirmed (it was inherited from an
+   * earlier purchase that is itself still a suggestion). The new row is then a suggestion too, never a fact.
+   */
+  suggested: boolean
+}
+
+const SUGGESTED = 'ai_suggested'
+
+export async function resolveMerchantCategoryInfo(
+  service: ServiceClient,
+  merchant: string | null | undefined,
+  userId?: string,
+): Promise<MerchantCategoryInfo | null> {
+  const sure = (category: ExpenseCategory | null): MerchantCategoryInfo | null => (category ? { category, suggested: false } : null)
   // A bare company-form word ("Establish") is many merchants: nothing learned about one applies to the next.
   if (isGenericMerchant(merchant)) return null
   const key = merchantCategoryKey(merchant)
@@ -73,16 +93,16 @@ export async function resolveMerchantCategory(
       .eq('merchant_key', key)
       .maybeSingle()
     const mine = asCategory(own?.category as string | undefined)
-    if (mine) return mine
+    if (mine) return sure(mine)
   }
 
   const known = asCategory(resolveKnownMerchant(merchant)?.category) ?? catalogCategory(merchant)
-  if (known) return known
+  if (known) return sure(known)
 
   if (userId && merchant?.trim()) {
     const { data: earlier } = await service
       .from('expenses')
-      .select('category')
+      .select('category, category_source')
       .eq('user_id', userId)
       .ilike('description', likeLiteral(merchant.trim()))
       .not('sms_log_id', 'is', null)
@@ -92,7 +112,7 @@ export async function resolveMerchantCategory(
       .limit(1)
       .maybeSingle()
     const before = asCategory(earlier?.category as string | undefined)
-    if (before) return before
+    if (before) return { category: before, suggested: earlier?.category_source === SUGGESTED }
 
     // A name the bank cut off ("Carrefo") against this user's own earlier, longer or shorter spelling of it. Only
     // when 5+ characters are shared and exactly one earlier merchant fits: two candidates means ask, not guess.
@@ -100,15 +120,17 @@ export async function resolveMerchantCategory(
     if ([...stem].length >= MIN_PREFIX_CHARS) {
       const { data: near } = await service
         .from('expenses')
-        .select('description, category')
+        .select('description, category, category_source')
         .eq('user_id', userId)
         .ilike('description', `${likeLiteral(stem.slice(0, MIN_PREFIX_CHARS))}%`)
         .not('sms_log_id', 'is', null)
         .neq('category', 'Other')
         .is('deleted_at', null)
         .limit(50)
-      const fromPrefix = uniquePrefixCategory(stem, (near ?? []) as { description: string | null; category: string | null }[])
-      if (fromPrefix) return fromPrefix
+      const rows = (near ?? []) as { description: string | null; category: string | null; category_source?: string | null }[]
+      const fromPrefix = uniquePrefixCategory(stem, rows)
+      // A category that rests on any unconfirmed guess stays a suggestion.
+      if (fromPrefix) return { category: fromPrefix, suggested: rows.some((r) => r.category === fromPrefix && r.category_source === SUGGESTED) }
     }
   }
 
@@ -122,7 +144,7 @@ export async function resolveMerchantCategory(
     .eq('merchant_key', key)
     .in('source', SHARED_SOURCES)
     .maybeSingle()
-  return asCategory(data?.category as string | undefined)
+  return sure(asCategory(data?.category as string | undefined))
 }
 
 /** Sources of the shared table that may set another user's category. */
