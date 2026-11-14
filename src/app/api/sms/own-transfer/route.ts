@@ -97,6 +97,12 @@ export async function POST(request: Request) {
   }
 
   const partnerId = logRow.paired_log_id ?? logRow.own_transfer_candidate
+  if (!partnerId && logRow.own_transfer_verdict === 'ask') {
+    // A question recorded with no partner leg can never be answered: clear it and change nothing else.
+    if (!(await setLogs(service, [logRow.id], { own_transfer_verdict: 'none' }))) return fail('Failed to update logs')
+    await nudge(userId, logRow.id)
+    return NextResponse.json({ ok: true, stale: true, changed: false })
+  }
   const { data: p } = partnerId ? await service.from('sms_parse_log').select(LOG_COLUMNS).eq('id', partnerId).single() : { data: null }
   const partner = p as LogRow | null
   if (!partner || partner.user_id !== userId) return fail('No partner leg', 404)

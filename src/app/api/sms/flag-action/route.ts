@@ -65,22 +65,34 @@ async function refundMatch(service: Service, userId: string, expenseId: string, 
     .eq('user_id', userId)
     .is('deleted_at', null)
     .is('refunded_at', null)
+    .is('refunded_amount', null)
     .maybeSingle()
   const target = t as ExpenseRow | null
-  if (!target || target.id === placeholder.id || target.currency !== placeholder.currency || Math.abs(target.amount - placeholder.amount) >= 0.005) return conflict()
+  if (!target || target.id === placeholder.id || target.currency !== placeholder.currency || target.amount < placeholder.amount - 0.005) return conflict()
 
+  // A larger purchase is refunded in part: refunded_at and refund_kind stay null, so an older app build does not zero it.
+  const full = Math.abs(target.amount - placeholder.amount) < 0.005
   // None of these writes touch edited_at: only the app's own row push does.
   const stamp = await service
     .from('expenses')
-    .update({ refunded_at: placeholder.refunded_at, refund_kind: 'refunded', refund_sms_log_id: placeholder.sms_log_id })
+    .update(
+      full
+        ? { refunded_at: placeholder.refunded_at, refund_kind: 'refunded', refund_sms_log_id: placeholder.sms_log_id }
+        : { refunded_amount: placeholder.amount, refund_sms_log_id: placeholder.sms_log_id },
+    )
     .eq('id', target.id)
     .eq('user_id', userId)
     .is('refunded_at', null)
+    .is('refunded_amount', null)
   if (stamp.error) return fail('Failed to update purchase')
 
-  const retire = await service.from('expenses').update({ deleted_at: new Date().toISOString() }).eq('id', placeholder.id).eq('user_id', userId)
+  const retire = await service
+    .from('expenses')
+    .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: placeholder.sms_log_id })
+    .eq('id', placeholder.id)
+    .eq('user_id', userId)
   if (retire.error) {
-    await service.from('expenses').update({ refunded_at: null, refund_kind: null, refund_sms_log_id: null }).eq('id', target.id).eq('user_id', userId)
+    await service.from('expenses').update({ refunded_at: null, refund_kind: null, refund_sms_log_id: null, refunded_amount: null }).eq('id', target.id).eq('user_id', userId)
     return fail('Failed to update refund')
   }
   const log = await service.from('sms_parse_log').update({ expense_id: target.id }).eq('id', placeholder.sms_log_id).eq('user_id', userId)

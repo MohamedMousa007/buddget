@@ -41,11 +41,14 @@ describe('firstOpenFlag', () => {
   })
 })
 
-describe('refundCandidates (refund pick is exact-amount, same-currency, 180 days)', () => {
+describe('refundCandidates (refund pick is same-currency, amount at least the refund, 180 days)', () => {
   const refund = { id: 'r', amount: 250, currency: 'EGP' as const, date: '2026-11-10' }
   const ids = (list: Expense[]) => refundCandidates(list, refund).map((e) => e.id)
-  it('keeps only the exact amount in the same currency', () => {
+  it('keeps an amount at least the refund in the same currency', () => {
     expect(ids([exp('ok', '2026-11-05', { amount: 250 }), exp('amt', '2026-11-05', { amount: 249.99 }), exp('cur', '2026-11-05', { amount: 250, currency: 'USD' })])).toEqual(['ok'])
+  })
+  it('I1: a larger purchase is offered (partial refund), one already partly refunded is not', () => {
+    expect(ids([exp('big', '2026-11-05', { amount: 900 }), exp('part', '2026-11-05', { amount: 900, refundedAmount: 100 })])).toEqual(['big'])
   })
   it('windows to 180 days before and 2 days after the refund date', () => {
     const list = [

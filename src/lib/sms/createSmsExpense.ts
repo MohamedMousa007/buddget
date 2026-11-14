@@ -12,13 +12,13 @@ import {
   decomposePaymentMethodName,
   resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
-import { matchByTail } from '@/lib/accounts/identity/accountRef'
+import { matchByTail, tailsMatch } from '@/lib/accounts/identity/accountRef'
 import { ensureProvisionalAccount, provisionalSpec } from './accountPlacement'
 import { toSupportedCurrency } from './ingestGuards'
 import { normalizeMerchant } from './merchantNormalizer'
 import { isServiceBill } from './merchantDictionary'
 import { resolveMerchantCategoryInfo, rememberMerchantCategory } from './merchantCategoryCache'
-import type { SmsFlag } from './smsFlags'
+import type { StampedFlag } from './smsFlags'
 import type { KnownSmsKind } from './smsKinds'
 
 export type SmsExpenseKind = KnownSmsKind | null
@@ -114,6 +114,8 @@ export interface SmsRowData {
   counterpartyLast4?: string | null
   /** Transfer/FX pairing key — the SMS receive time (ISO). */
   receivedAtIso?: string | null
+  /** The instant stored as `occurred_at` when it must differ from `receivedAtIso` (the phone's capture time was not believable). */
+  occurredAtIso?: string | null
   /** sms_parse_log row id, stamped onto the expense for traceability/idempotency. */
   logId?: string | null
   /**
@@ -159,6 +161,10 @@ export interface SmsRowData {
   refundMark?: { refundKind: 'refunded' | 'declined'; day: string } | null
   /** Per-user salted hash of the message's payment reference (ownTransferDecision.ts). Never the reference. */
   referenceHash?: string | null
+  /** A cash withdrawal booked as ordinary spending (the user logs no cash): the Cash account is not credited. */
+  noCashCredit?: boolean
+  /** A repayment-wording payment that loaded the user's own prepaid card: the card is the destination, nothing is the source. */
+  cardLoad?: boolean
   /** A decline moves no money, so it never creates a provisional account for its card (I2). */
   noProvisionalAccount?: boolean
   /**
@@ -167,7 +173,7 @@ export interface SmsRowData {
    */
   unmatchedRefund?: boolean
   /** Server flags stamped on the row this call inserts. */
-  smsFlags?: SmsFlag[]
+  smsFlags?: StampedFlag[]
   /**
    * Where `kind` came from: 'code' (a code-tier pattern or rule, or the user confirmed it) or 'model' (asserted only by
    * the AI or a learned template). Missing means 'code', so a caller that does not say changes nothing.
@@ -547,7 +553,7 @@ export async function createSmsExpense(
         status: 'confirmed',
         sms_log_id: row.logId ?? null,
         payment_method_id: await resolveCreditAccount(service, row),
-        occurred_at: row.receivedAtIso ?? null,
+        occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
         notes: null,
         sms_flags: smsFlags,
       })
@@ -606,7 +612,8 @@ export async function createSmsExpense(
   // Money that stays inside the user's own accounts credits the other side: cash out lands in Cash,
   // an own transfer lands in the account named as counterparty (the posted row is always the debit leg).
   const toPaymentMethodId =
-    row.kind === 'atm_withdrawal' ? await cashAccountFor(service, row.userId)
+    row.cardLoad ? await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
+    : row.kind === 'atm_withdrawal' ? (row.noCashCredit ? null : await cashAccountFor(service, row.userId))
     : inboundOwn ? await resolveCreditAccount(service, row)
     : row.kind === 'own_transfer' || row.kind === 'currency_exchange'
       ? (await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)) ?? (await resolveExactPaymentMethod(service, row.userId, row.creditLegLast4))
@@ -619,7 +626,7 @@ export async function createSmsExpense(
     .insert({
       user_id: row.userId,
       expense_date: row.day,
-      occurred_at: row.receivedAtIso ?? null,
+      occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
       to_payment_method_id: toPaymentMethodId,
       description: title ?? 'Bank transaction',
       category: mappedCategory,
@@ -689,7 +696,7 @@ export async function createSmsInstallmentPayment(
   const providerAndAmount = byProvider.filter((p) => amountMatches(p.installment_amount as number | null))
   if (providerAndAmount.length === 1) plan = providerAndAmount[0]
   else if (byProvider.length === 1) plan = byProvider[0]
-  else if (list.length === 1) plan = list[0]
+  else if (list.length === 1 && (await singlePlanAgrees(service, row, list[0], byProvider.length === 1, amountMatches))) plan = list[0]
 
   if (!plan) return { ...emptyResult(), needsConfirm: true }
 
@@ -717,6 +724,25 @@ export async function createSmsInstallmentPayment(
     description: smsTitle(row) ?? 'Installment payment',
     category: isBnpl ? 'Installment' : 'Debt',
   })
+}
+
+/**
+ * The only instalment plan takes a message when the provider is named, the amount fits, or the digits name the plan's
+ * card; a plan with none of those to compare takes it too (I7). Otherwise the message asks.
+ */
+async function singlePlanAgrees(
+  service: ServiceClient,
+  row: SmsRowData,
+  plan: { installment_amount: unknown; installment_provider_name: unknown; linked_payment_method_id: unknown },
+  providerNamed: boolean,
+  amountMatches: (n: number | null) => boolean,
+): Promise<boolean> {
+  const amount = plan.installment_amount as number | null
+  const brand = ((plan.installment_provider_name as string | null) ?? '').trim()
+  const linked = plan.linked_payment_method_id as string | null
+  if (!(amount != null && amount > 0) && brand.length < 3 && !linked) return true
+  if (providerNamed || amountMatches(amount)) return true
+  return !!linked && (await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))) === linked
 }
 
 /**
@@ -755,13 +781,15 @@ export async function completeFxEvent(
 
 /** ± window (days) for treating a second refund SMS as a duplicate of the same event. */
 const REFUND_DEDUPE_DAYS = 3
+/** A refund stamped by a message that arrived this close to this one is the same event re-sent. */
+const REFUND_TWIN_MINUTES = 10
 
 /**
- * Duplicate guard: a bank may send the same refund as two differently-worded
- * SMS (distinct sms_hash, so the route dedupe misses them). If an expense with
- * the SAME amount + currency + card was ALREADY reversed within ±3 days, the new
- * SMS is that same refund — return the twin so it acks without reversing a second
- * unrelated charge. Only a row stamped by a refund counts: a decline's own row never stands for a refund (I2).
+ * Duplicate guard: a bank may send the same refund as two differently-worded SMS (distinct sms_hash, so the route
+ * dedupe misses them). A row of the SAME amount + currency + card already reversed within ±3 days is that refund's
+ * twin only when the message that stamped it carries the same known reference or arrived within 10 minutes of this
+ * one; otherwise this is a second genuine refund and matches its own purchase. Only a row stamped by a refund counts:
+ * a decline's own row never stands for a refund (I2).
  */
 export async function findRefundedTwin(
   service: ServiceClient,
@@ -791,7 +819,21 @@ export async function findRefundedTwin(
   const { data } = await q
   // PostgREST cannot compare two columns, so a refund's own placeholder is dropped here: it stands for an unmatched
   // refund, not for a purchase that one refund already reversed, and a second genuine refund must not be answered by it.
-  const best = (data ?? []).find((r) => !(r.sms_log_id && r.refund_sms_log_id === r.sms_log_id))
+  const stamped = (data ?? []).filter((r) => r.refund_sms_log_id && !(r.sms_log_id && r.refund_sms_log_id === r.sms_log_id))
+  if (stamped.length === 0) return null
+  const { data: logs } = await service
+    .from('sms_parse_log')
+    .select('id, received_at, reference_hash')
+    .eq('user_id', row.userId)
+    .in('id', stamped.map((r) => r.refund_sms_log_id as string))
+  const at = row.receivedAtIso ? Date.parse(row.receivedAtIso) : NaN
+  const sameEvent = (logId: string | null): boolean => {
+    const l = (logs ?? []).find((x) => x.id === logId)
+    if (!l) return false
+    if (row.referenceHash && l.reference_hash === row.referenceHash) return true
+    return Math.abs(Date.parse(l.received_at) - at) <= REFUND_TWIN_MINUTES * 60_000
+  }
+  const best = stamped.find((r) => sameEvent(r.refund_sms_log_id))
   return best ? { id: best.id, category: best.category as string } : null
 }
 
@@ -808,6 +850,55 @@ export async function markExpenseRefunded(
     .update({ refunded_at: day, refund_kind: refundKind, refund_sms_log_id: logId ?? null })
     .eq('id', expenseId)
   return { error }
+}
+
+/**
+ * Stamps part of an existing expense as refunded by one message. `refunded_at` and `refund_kind` stay null: an older
+ * build keys on `refund_kind` and would zero the whole purchase.
+ * ponytail: one partial refund per purchase; a second goes unmatched and asks. Upgrade path is a child table.
+ */
+export async function markExpensePartiallyRefunded(
+  service: ServiceClient,
+  expenseId: string,
+  amount: number,
+  logId: string | null | undefined,
+): Promise<{ error: PostgrestError | null }> {
+  const { error } = await service
+    .from('expenses')
+    .update({ refunded_amount: amount, refund_sms_log_id: logId ?? null })
+    .eq('id', expenseId)
+    .is('refunded_at', null)
+    .is('refunded_amount', null)
+  return { error }
+}
+
+/**
+ * With one card debt, a repayment is applied to it unless the message and the debt's card show two known, conflicting
+ * values (I7): digits that name another registered card, digits that fit nothing against a linked card with other
+ * digits, or, with no digits, two known and different banks. Unknown on either side agrees.
+ */
+async function singleDebtConflicts(
+  service: ServiceClient,
+  row: SmsRowData,
+  linkedId: string | null,
+  resolvedId: string | null,
+): Promise<boolean> {
+  if (!linkedId) return false
+  if (resolvedId) return resolvedId !== linkedId
+  const { data: m } = await service
+    .from('payment_methods')
+    .select('name, last4, last4_aliases')
+    .eq('id', linkedId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!m) return false
+  if (row.last4) {
+    const stored = [m.last4, ...(m.last4_aliases ?? [])].filter((d): d is string => !!d)
+    return stored.length > 0 && !stored.some((d) => tailsMatch(row.last4 as string, d))
+  }
+  const linkedBank = resolvePaymentBrandKey(decomposePaymentMethodName((m.name ?? '').trim(), m.last4 ?? undefined).provider) ?? resolvePaymentBrandKey(m.name)
+  const smsBank = bankKeyOf(providerOf(row))
+  return !!linkedBank && !!smsBank && linkedBank !== smsBank
 }
 
 /**
@@ -840,19 +931,11 @@ export async function createSmsDebtPayment(
 
   const debts = ccDebts ?? []
   let debt = debts[0]
-  if (row.last4 && debts.length > 0) {
-    const { data: pm } = await service
-      .from('payment_methods')
-      .select('id')
-      .eq('user_id', row.userId)
-      .eq('last4', row.last4)
-      .is('deleted_at', null)
-      .limit(1)
-      .maybeSingle()
-    const matched = pm?.id ? debts.find((d) => d.linked_payment_method_id === pm.id) : undefined
-    if (matched) debt = matched
-    else if (debts.length > 1) return { ...emptyResult(), needsConfirm: true }
-  } else if (debts.length > 1) {
+  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
+  const matched = pmId ? debts.find((d) => d.linked_payment_method_id === pmId) : undefined
+  if (matched) debt = matched
+  else if (debts.length > 1) return { ...emptyResult(), needsConfirm: true }
+  else if (debt && (await singleDebtConflicts(service, row, debt.linked_payment_method_id as string | null, pmId))) {
     return { ...emptyResult(), needsConfirm: true }
   }
 

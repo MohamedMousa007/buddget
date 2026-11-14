@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createSmsDebtPayment, type SmsRowData } from './createSmsExpense'
+import { createSmsDebtPayment, createSmsInstallmentPayment, type SmsRowData } from './createSmsExpense'
 
 const row: SmsRowData = {
   userId: 'u1', amount: 500, currency: 'EGP', day: '2026-10-01', kind: 'cc_payoff', cleanTitle: null,
@@ -74,5 +74,64 @@ describe('createSmsDebtPayment', () => {
     expect(res.needsConfirm).toBe(true)
     expect(rpc).not.toHaveBeenCalled()
     expect(inserts).toHaveLength(0)
+  })
+})
+
+describe('N7 (I7): the only debt or plan takes a message unless two known values conflict', () => {
+  const created = () => vi.fn(async () => ({ data: { outcome: 'created', debt_payment_id: 'p1', expense_id: 'e1' }, error: null }))
+  const pmA = { id: 'pmA', name: 'CIB Card', last4: '1111', last4_aliases: [] }
+  const pmB = { id: 'pmB', name: 'CIB Card', last4: '2222', last4_aliases: [] }
+  const linked = { ...card, linked_payment_method_id: 'pmA' }
+
+  it('one card debt and a repayment naming another registered card: needs confirmation, debt untouched', async () => {
+    const rpc = created()
+    const { service, inserts } = mockService({ debts: { list: [linked] }, payment_methods: { list: [pmA, pmB], one: pmA } }, rpc)
+    const res = await createSmsDebtPayment(service, { ...row, last4: '2222', bankName: 'CIB' })
+    expect(res.needsConfirm).toBe(true)
+    expect(rpc).not.toHaveBeenCalled()
+    expect(inserts).toHaveLength(0)
+  })
+
+  it('one card debt and digits that fit no registered card against a linked card with other digits: needs confirmation', async () => {
+    const rpc = created()
+    const { service } = mockService({ debts: { list: [linked] }, payment_methods: { list: [pmA], one: pmA } }, rpc)
+    expect((await createSmsDebtPayment(service, { ...row, last4: '9999', bankName: 'CIB' })).needsConfirm).toBe(true)
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('one card debt, no digits, the same bank: applied', async () => {
+    const rpc = created()
+    const { service } = mockService({ debts: { list: [linked] }, payment_methods: { list: [pmA], one: pmA } }, rpc)
+    expect(await createSmsDebtPayment(service, { ...row, last4: null, bankName: 'CIB' })).toMatchObject({ expenseId: 'e1' })
+  })
+
+  it('one card debt, no digits, two known and different banks: needs confirmation', async () => {
+    const rpc = created()
+    const { service } = mockService({ debts: { list: [linked] }, payment_methods: { list: [pmA], one: pmA } }, rpc)
+    expect((await createSmsDebtPayment(service, { ...row, last4: null, bankName: 'NBE' })).needsConfirm).toBe(true)
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  const plan = { id: 'pl1', currency: 'EGP', is_gold: false, installment_amount: 1000, installment_provider_name: 'Valu', linked_payment_method_id: null }
+  const instRow = { ...row, kind: 'installment_payment' as const, rawBody: 'Instalment received', last4: null }
+
+  it('one plan, another provider and another amount: needs confirmation', async () => {
+    const rpc = created()
+    const { service } = mockService({ debts: { list: [plan] } }, rpc)
+    expect((await createSmsInstallmentPayment(service, instRow)).needsConfirm).toBe(true)
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('one plan, the amount within tolerance: applied', async () => {
+    const rpc = created()
+    const { service } = mockService({ debts: { list: [plan] } }, rpc)
+    expect(await createSmsInstallmentPayment(service, { ...instRow, amount: 1010 })).toMatchObject({ expenseId: 'e1' })
+  })
+
+  it('one plan with nothing to compare: applied', async () => {
+    const rpc = created()
+    const bare = { ...plan, installment_amount: null, installment_provider_name: null }
+    const { service } = mockService({ debts: { list: [bare] } }, rpc)
+    expect(await createSmsInstallmentPayment(service, instRow)).toMatchObject({ expenseId: 'e1' })
   })
 })

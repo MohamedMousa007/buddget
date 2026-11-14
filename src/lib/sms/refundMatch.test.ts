@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   isDeclineMessage,
   pickDeclineTwin,
+  pickEarlierUnmatchedRefund,
   pickRefundOriginals,
+  type EarlierUnmatchedRefund,
   type DeclineTwinCandidate,
   type RefundCandidate,
   type RefundFacts,
@@ -40,7 +42,7 @@ describe('isDeclineMessage (I2)', () => {
 })
 
 describe('pickRefundOriginals', () => {
-  it('I1 (a): the same reference hash matches whatever the amount, account and age (inside 90 days)', () => {
+  it('I1 (a): the same reference hash matches whatever the account and age (inside 90 days), for an amount up to the purchase', () => {
     const h = referenceHash('u1', 'AB12CD34')
     const c = cand({ kind: 'instant_transfer_out', amount: 1000, account_last4: null, received_at: iso(-40 * HOUR), reference_hash: h })
     expect(rules([c], refund({ amount: 999, last4: null, referenceHash: h }))).toEqual(['c1:reference'])
@@ -132,13 +134,103 @@ describe('pickRefundOriginals', () => {
     const h = referenceHash('u1', 'ab12cd34')
     const byMerchant = cand({ id: 'm', received_at: iso(-20 * DAY), merchant_normalized: 'Spinneys' })
     const byWindow = cand({ id: 'w', received_at: iso(-MIN) })
-    const byRef = cand({ id: 'r', account_last4: null, amount: 5, received_at: iso(-3 * DAY), reference_hash: h })
+    const byRef = cand({ id: 'r', account_last4: null, amount: 500, received_at: iso(-3 * DAY), reference_hash: h })
     expect(rules([byMerchant, byWindow, byRef], refund({ referenceHash: h, merchant: 'Spinneys' }))).toEqual(['r:reference', 'w:window', 'm:merchant'])
   })
 })
 
 const own = (over: Partial<DeclineTwinCandidate> = {}): DeclineTwinCandidate => ({
   id: 'x1', category: 'Other', sms_log_id: 'l1', refund_sms_log_id: 'l1', refund_kind: 'declined', refunded_at: '2026-10-27', payment_method_id: 'pm1', ...over,
+})
+
+describe('pickRefundOriginals: partial and cross-currency refunds', () => {
+  const shop = (over: Partial<RefundCandidate> = {}) => cand({ amount: 100, merchant_normalized: 'ACME STORE', ...over })
+  const picked = (cs: RefundCandidate[], r: RefundFacts) => pickRefundOriginals(cs, r).map((p) => `${p.candidate.id}:${p.rule}:${p.refundedAmount}`)
+
+  it('I1 (d): 30 back on a 100 purchase at the same merchant and account is a partial pick of 30', () => {
+    expect(picked([shop()], refund({ amount: 30, merchant: 'ACME STORE' }))).toEqual(['c1:merchant_partial:30'])
+  })
+  it('I1 (d), I3: two purchases at the merchant that both fit give no pick (never guess)', () => {
+    expect(picked([shop({ id: 'a' }), shop({ id: 'b', amount: 250 })], refund({ amount: 30, merchant: 'ACME STORE' }))).toEqual([])
+  })
+  it('I1 (d): one purchase that fits and one that is too small for the refund still picks the one', () => {
+    expect(picked([shop({ id: 'a' }), shop({ id: 'b', amount: 20 })], refund({ amount: 30, merchant: 'ACME STORE' }))).toEqual(['a:merchant_partial:30'])
+  })
+  it('I1: a refund larger than the purchase never matches by (a) or (d)', () => {
+    const h = referenceHash('u1', 'ab12cd34')
+    expect(picked([shop({ reference_hash: h })], refund({ amount: 150, merchant: 'ACME STORE', referenceHash: h }))).toEqual([])
+  })
+  it('I7: no merchant, no tail or another tail never reaches (d)', () => {
+    expect(picked([shop()], refund({ amount: 30, merchant: null }))).toEqual([])
+    expect(picked([shop()], refund({ amount: 30, merchant: 'ACME STORE', last4: null }))).toEqual([])
+    expect(picked([shop({ account_last4: '9999' })], refund({ amount: 30, merchant: 'ACME STORE' }))).toEqual([])
+  })
+  it('I1 (d): an exact amount at the merchant is still the full rule (c), not (d)', () => {
+    expect(picked([shop()], refund({ amount: 100, merchant: 'ACME STORE' }))).toEqual(['c1:merchant:null'])
+  })
+  it('I1 (a): the same reference with a smaller amount is a partial pick', () => {
+    const h = referenceHash('u1', 'ab12cd34')
+    expect(picked([shop({ reference_hash: h })], refund({ amount: 40, merchant: null, last4: null, referenceHash: h }))).toEqual(['c1:reference:40'])
+  })
+  it('I1 (a): the same reference with the same amount is the full refund', () => {
+    const h = referenceHash('u1', 'ab12cd34')
+    expect(picked([shop({ reference_hash: h })], refund({ amount: 100, referenceHash: h }))).toEqual(['c1:reference:null'])
+  })
+
+  const usd = (over: Partial<RefundCandidate> = {}) => shop({ currency: 'USD', ...over })
+  const eur = { EGP_USD: 0.02 }
+  it('I1 (d): a refund in another currency within 5% of the purchase after conversion is the whole refund', () => {
+    expect(picked([usd()], refund({ amount: 4900, currency: 'EGP', merchant: 'ACME STORE', rates: eur }))).toEqual(['c1:merchant_partial:null'])
+  })
+  it('I1 (d): a much smaller refund in another currency is partial, converted and rounded to 2 decimals', () => {
+    expect(picked([usd()], refund({ amount: 1555, currency: 'EGP', merchant: 'ACME STORE', rates: eur }))).toEqual(['c1:merchant_partial:31.1'])
+  })
+  it('I1 (a): the same reference in another currency converts too, and a refund over 5% larger is no match', () => {
+    const h = referenceHash('u1', 'ab12cd34')
+    expect(picked([usd({ reference_hash: h })], refund({ amount: 1500, currency: 'EGP', referenceHash: h, rates: eur }))).toEqual(['c1:reference:30'])
+    expect(picked([usd({ reference_hash: h })], refund({ amount: 5400, currency: 'EGP', referenceHash: h, rates: eur }))).toEqual([])
+  })
+  it('I7: a missing rate or a missing currency is unknown, so no match', () => {
+    expect(picked([usd()], refund({ amount: 1500, currency: 'EGP', merchant: 'ACME STORE', rates: {} }))).toEqual([])
+    expect(picked([usd()], refund({ amount: 1500, currency: 'EGP', merchant: 'ACME STORE' }))).toEqual([])
+    expect(picked([usd({ currency: null })], refund({ amount: 30, merchant: 'ACME STORE' }))).toEqual([])
+  })
+})
+
+describe('pickEarlierUnmatchedRefund (I1, I7)', () => {
+  const early = (id: string, over: Partial<EarlierUnmatchedRefund['log']> = {}): EarlierUnmatchedRefund => ({
+    expenseId: `e-${id}`,
+    refundedAt: '2026-10-27',
+    log: { id, received_at: iso(0), reference_hash: null, account_last4: '4444', merchant_normalized: null, clean_title: null, ...over },
+  })
+  const purchase = (over: Partial<Parameters<typeof pickEarlierUnmatchedRefund>[1]> = {}) => ({
+    receivedAtMs: T0, referenceHash: null, last4: '4444', merchant: null, ...over,
+  })
+  const id = (r: EarlierUnmatchedRefund | null) => r?.log.id ?? null
+
+  it('by the same reference, whatever the account and time', () => {
+    const h = referenceHash('u1', 'ab12cd34')
+    expect(id(pickEarlierUnmatchedRefund([early('r', { reference_hash: h, account_last4: null, received_at: iso(-3 * DAY) })], purchase({ referenceHash: h, last4: null })))).toBe('r')
+  })
+  it('by the same account within 15 minutes, nearest first; 16 minutes is out', () => {
+    expect(id(pickEarlierUnmatchedRefund([early('far', { received_at: iso(-12 * MIN) }), early('near', { received_at: iso(-2 * MIN) })], purchase()))).toBe('near')
+    expect(pickEarlierUnmatchedRefund([early('out', { received_at: iso(-16 * MIN) })], purchase())).toBeNull()
+  })
+  it('by account and merchant when the refund was received later than the purchase', () => {
+    const later = early('r', { received_at: iso(2 * HOUR), merchant_normalized: 'ACME STORE' })
+    expect(id(pickEarlierUnmatchedRefund([later], purchase({ merchant: 'ACME STORE' })))).toBe('r')
+  })
+  it('an older refund at the same merchant (more than 15 minutes before, no reference) is untouched', () => {
+    const older = early('r', { received_at: iso(-2 * HOUR), merchant_normalized: 'ACME STORE' })
+    expect(pickEarlierUnmatchedRefund([older], purchase({ merchant: 'ACME STORE' }))).toBeNull()
+  })
+  it('I7: an unknown tail, merchant or reference never matches', () => {
+    const later = early('r', { received_at: iso(2 * HOUR), merchant_normalized: 'ACME STORE', account_last4: null })
+    expect(pickEarlierUnmatchedRefund([later], purchase({ merchant: 'ACME STORE' }))).toBeNull()
+    expect(pickEarlierUnmatchedRefund([early('x', { received_at: iso(2 * HOUR), merchant_normalized: 'ACME STORE' })], purchase({ merchant: null }))).toBeNull()
+    expect(pickEarlierUnmatchedRefund([early('y', { received_at: iso(-3 * DAY) })], purchase({ referenceHash: null }))).toBeNull()
+    expect(pickEarlierUnmatchedRefund([early('z', { reference_hash: null })], purchase({ last4: null }))).toBeNull()
+  })
 })
 
 describe('pickDeclineTwin (I2)', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { plainKindForModelOwnTransfer, plainKindForModelRepayment, repaymentWording } from './kindProvenance'
+import { loadedTheCard, plainKindForModelOwnTransfer, plainKindForModelRepayment, repaymentWording } from './kindProvenance'
 
 /** P1-7: wording, not registration, decides whether a model-asserted repayment is spending. Invented messages only. */
 
@@ -37,5 +37,19 @@ describe('plainKindForModelOwnTransfer', () => {
     expect(plainKindForModelOwnTransfer('EGP 300.00+ transfer')).toBe('instant_transfer_in')
     expect(plainKindForModelOwnTransfer('EGP 300.00- transfer')).toBe('instant_transfer_out')
     expect(plainKindForModelOwnTransfer('Transfer of EGP 300')).toBe('instant_transfer_out')
+  })
+})
+
+describe('loadedTheCard (I3, I7: a payment via card with a printed balance of at least the payment)', () => {
+  const body = (balance: string) => `Payment of EGP 200 via card ending 1234. Card balance is ${balance}`
+  it('balance at least the payment loaded the card', () => {
+    expect(loadedTheCard(body('EGP 500'), 200, 'EGP')).toBe(true)
+    expect(loadedTheCard(body('EGP 200'), 200, 'EGP')).toBe(true)
+  })
+  it('a smaller balance, no balance, another currency or other wording is not a load', () => {
+    expect(loadedTheCard(body('EGP 150'), 200, 'EGP')).toBe(false)
+    expect(loadedTheCard('Payment of EGP 200 via card ending 1234', 200, 'EGP')).toBe(false)
+    expect(loadedTheCard(body('USD 500'), 200, 'EGP')).toBe(false)
+    expect(loadedTheCard('Card balance is EGP 500. Salary credited', 200, 'EGP')).toBe(false)
   })
 })

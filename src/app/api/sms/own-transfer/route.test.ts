@@ -66,6 +66,22 @@ describe('POST /api/sms/own-transfer', () => {
     h.db = { sms_parse_log: logs('ask', false), expenses: [expense()], income_events: [{ id: 'i1', user_id: 'u1', sms_log_id: IN, deleted_at: null }] }
   })
 
+  it('I3: an ask with no partner id is cleared to none and answers 200 with nothing changed, not 404', async () => {
+    h.db.sms_parse_log = [{ ...logs('ask', false)[0], own_transfer_candidate: null }]
+    const res = await call(OUT, 'confirm')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ ok: true, changed: false })
+    expect(log(OUT).own_transfer_verdict).toBe('none')
+    expect(h.writes.filter((w) => w.table !== 'sms_parse_log')).toHaveLength(0)
+    expect(h.remember).not.toHaveBeenCalled()
+  })
+
+  it('a settle with no partner id is left alone (only an ask is cleared)', async () => {
+    h.db.sms_parse_log = [{ ...logs('settle', false)[0], own_transfer_candidate: null }]
+    expect((await call(OUT, 'undo')).status).toBe(404)
+    expect(log(OUT).own_transfer_verdict).toBe('settle')
+  })
+
   it('rejects an unauthenticated caller', async () => {
     h.caller.mockResolvedValue({ userId: null, deviceId: null })
     expect((await call(OUT, 'confirm')).status).toBe(401)

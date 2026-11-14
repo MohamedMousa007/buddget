@@ -1604,10 +1604,12 @@ export type Database = {
           receipt_id: string | null
           refund_kind: string | null
           refund_sms_log_id: string | null
+          refunded_amount: number | null
           refunded_at: string | null
           retracted_by_sms_log_id: string | null
           sms_flags: string[] | null
           sms_flags_ack: string[] | null
+          server_rev: number | null
           sms_log_id: string | null
           updated_at: string
           edited_at: string
@@ -1642,10 +1644,12 @@ export type Database = {
           receipt_id?: string | null
           refund_kind?: string | null
           refund_sms_log_id?: string | null
+          refunded_amount?: number | null
           refunded_at?: string | null
           retracted_by_sms_log_id?: string | null
           sms_flags?: string[] | null
           sms_flags_ack?: string[] | null
+          server_rev?: number | null
           sms_log_id?: string | null
           updated_at?: string
           edited_at?: string
@@ -1680,10 +1684,12 @@ export type Database = {
           receipt_id?: string | null
           refund_kind?: string | null
           refund_sms_log_id?: string | null
+          refunded_amount?: number | null
           refunded_at?: string | null
           retracted_by_sms_log_id?: string | null
           sms_flags?: string[] | null
           sms_flags_ack?: string[] | null
+          server_rev?: number | null
           sms_log_id?: string | null
           updated_at?: string
           edited_at?: string
@@ -1965,6 +1971,7 @@ export type Database = {
           shared_plan_id: string | null
           sms_flags: string[] | null
           sms_flags_ack: string[] | null
+          server_rev: number | null
           sms_log_id: string | null
           source_type: Database["public"]["Enums"]["income_source_type"]
           status: Database["public"]["Enums"]["income_event_status"]
@@ -1992,6 +1999,7 @@ export type Database = {
           shared_plan_id?: string | null
           sms_flags?: string[] | null
           sms_flags_ack?: string[] | null
+          server_rev?: number | null
           sms_log_id?: string | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           status?: Database["public"]["Enums"]["income_event_status"]
@@ -2019,6 +2027,7 @@ export type Database = {
           shared_plan_id?: string | null
           sms_flags?: string[] | null
           sms_flags_ack?: string[] | null
+          server_rev?: number | null
           sms_log_id?: string | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           status?: Database["public"]["Enums"]["income_event_status"]
@@ -3395,6 +3404,7 @@ export type Database = {
           income_id: string | null
           is_duplicate: boolean
           kind: string | null
+          kind_source: string | null
           learn_status: string | null
           leg_direction: string | null
           learn_template_id: string | null
@@ -3407,6 +3417,7 @@ export type Database = {
           bank_source: string | null
           format_key: string | null
           bank_suggestion: string | null
+          booked_day: string | null
           template_revoked_at: string | null
           matched_template_id: string | null
           merchant: string | null
@@ -3429,6 +3440,7 @@ export type Database = {
           reference_hash: string | null
           savings_transaction_id: string | null
           sender: string | null
+          sms_flags: string[] | null
           sms_hash: string | null
           source: string
           status: string
@@ -3463,6 +3475,7 @@ export type Database = {
           income_id?: string | null
           is_duplicate?: boolean
           kind?: string | null
+          kind_source?: string | null
           learn_status?: string | null
           leg_direction?: string | null
           learn_template_id?: string | null
@@ -3475,6 +3488,7 @@ export type Database = {
           bank_source?: string | null
           format_key?: string | null
           bank_suggestion?: string | null
+          booked_day?: string | null
           template_revoked_at?: string | null
           matched_template_id?: string | null
           merchant?: string | null
@@ -3497,6 +3511,7 @@ export type Database = {
           reference_hash?: string | null
           savings_transaction_id?: string | null
           sender?: string | null
+          sms_flags?: string[] | null
           sms_hash?: string | null
           source: string
           status?: string
@@ -3531,6 +3546,7 @@ export type Database = {
           income_id?: string | null
           is_duplicate?: boolean
           kind?: string | null
+          kind_source?: string | null
           learn_status?: string | null
           leg_direction?: string | null
           learn_template_id?: string | null
@@ -3543,6 +3559,7 @@ export type Database = {
           bank_source?: string | null
           format_key?: string | null
           bank_suggestion?: string | null
+          booked_day?: string | null
           template_revoked_at?: string | null
           matched_template_id?: string | null
           merchant?: string | null
@@ -3565,6 +3582,7 @@ export type Database = {
           reference_hash?: string | null
           savings_transaction_id?: string | null
           sender?: string | null
+          sms_flags?: string[] | null
           sms_hash?: string | null
           source?: string
           status?: string
@@ -4779,6 +4797,7 @@ export type Database = {
           p_amount_tolerance?: number
           p_currency?: string
           p_direction?: string
+          p_fee_proven?: boolean
           p_log_id: string
           p_match_kinds: string[]
           p_received_at: string

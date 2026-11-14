@@ -94,17 +94,31 @@ describe('POST /api/sms/flag-action', () => {
     expect((await call({ action: 'nope' })).status).toBe(400)
   })
 
-  it('refund_match stamps the purchase, retires the placeholder without a marker and repoints the log (I1)', async () => {
+  it('refund_match stamps the purchase, retires the placeholder with its message as the marker and repoints the log (I1, I4)', async () => {
     const res = await call(match())
     expect(res.status).toBe(200)
     expect(row(TARGET)).toMatchObject({ refunded_at: '2026-11-10T09:00:00Z', refund_kind: 'refunded', refund_sms_log_id: LOG })
     expect(row(PLACEHOLDER).deleted_at).toEqual(expect.any(String))
-    expect(row(PLACEHOLDER)).not.toHaveProperty('retracted_by_sms_log_id')
+    expect(row(PLACEHOLDER).retracted_by_sms_log_id).toBe(LOG)
     expect(h.db.sms_parse_log[0].expense_id).toBe(TARGET)
     expect(h.writes.every((w) => !('edited_at' in w.values))).toBe(true)
   })
 
-  it('refund_match refuses a purchase of another amount or currency (I1)', async () => {
+  it('I1, I8: refund_match on a larger purchase stamps it in part, with no refunded_at or refund_kind', async () => {
+    h.db.expenses = [placeholder(), target({ amount: 900 })]
+    expect((await call(match())).status).toBe(200)
+    expect(row(TARGET)).toMatchObject({ refunded_amount: 250, refund_sms_log_id: LOG, refunded_at: null, refund_kind: null })
+    expect(row(PLACEHOLDER)).toMatchObject({ deleted_at: expect.any(String), retracted_by_sms_log_id: LOG })
+    expect(h.db.sms_parse_log[0].expense_id).toBe(TARGET)
+  })
+
+  it('I1: refund_match refuses a larger purchase that already carries a partial refund', async () => {
+    h.db.expenses = [placeholder(), target({ amount: 900, refunded_amount: 100 })]
+    expect((await call(match())).status).toBe(409)
+    expect(h.writes).toHaveLength(0)
+  })
+
+  it('refund_match refuses a purchase of a smaller amount or another currency (I1)', async () => {
     h.db.expenses = [placeholder(), target({ amount: 249 })]
     expect((await call(match())).status).toBe(409)
     h.db.expenses = [placeholder(), target({ currency: 'USD' })]

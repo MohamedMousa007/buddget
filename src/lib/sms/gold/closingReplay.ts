@@ -161,7 +161,7 @@ function uniqueViolation(store: Store, name: string, row: Row): PgError | null {
 }
 
 const DEFAULTS: Record<string, () => Row> = {
-  expenses: () => ({ deleted_at: null, refunded_at: null, refund_kind: null, refund_sms_log_id: null, retracted_by_sms_log_id: null, sms_flags: null, to_payment_method_id: null, payment_method_id: null }),
+  expenses: () => ({ deleted_at: null, refunded_at: null, refunded_amount: null, refund_kind: null, refund_sms_log_id: null, retracted_by_sms_log_id: null, sms_flags: null, to_payment_method_id: null, payment_method_id: null }),
   income_events: () => ({ deleted_at: null, retracted_by_sms_log_id: null, sms_flags: null }),
   payment_methods: () => ({ deleted_at: null, closed_at: null, last4_aliases: [], provisional: false, is_default: false }),
   debt_payments: () => ({ deleted_at: null }),
@@ -332,7 +332,7 @@ function smsTryPair(store: Store, p: Record<string, unknown>): { data: unknown[]
     .filter((s) => {
       if (reference) return String(s.raw_body ?? '').toLowerCase().includes(reference.toLowerCase())
       if (!requireEqual) return true
-      const allow = requireRegistered || repaymentFeeProven(self, s, selfKind) ? tolerance : 0
+      const allow = requireRegistered || (p.p_fee_proven === true && !!p.p_sibling_id) || repaymentFeeProven(self, s, selfKind) ? tolerance : 0
       return Math.abs((s.amount as number) - (p.p_amount as number)) <= allow
     })
     .filter((s) => !requireRegistered || methods.filter((m) => m.user_id === p.p_user_id && m.deleted_at == null && tailMatch(m.last4, s.account_last4)).length === 1)

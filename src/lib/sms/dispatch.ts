@@ -23,6 +23,7 @@ import {
   createSmsDebtPayment,
   createSmsInstallmentPayment,
   markExpenseRefunded,
+  markExpensePartiallyRefunded,
   findRefundedTwin,
   mapKindToCategory,
   isIncomeKind,
@@ -42,8 +43,9 @@ import {
   pauseForSibling,
   rememberedOwnAnswer,
   recordOwnTransferEvidence,
-  isOwnTopUpTarget,
-  namesOwnStoredValue,
+  ownTopUpWallet,
+  walletsNamedIn,
+  findWalletFeeLeg,
   retagSiblingAsTransfer,
   restoreRetractedSibling,
   tryPairLeg,
@@ -58,12 +60,14 @@ import {
   type PairSibling,
 } from './pairing'
 import { NO_OWN_ACCOUNT, oneLegTails, readOwnAccount } from './ownAccounts'
-import { plainKindForModelOwnTransfer, plainKindForModelRepayment } from './kindProvenance'
+import { loadedTheCard, plainKindForModelOwnTransfer, plainKindForModelRepayment } from './kindProvenance'
 import { detectLegDirection, guardDirection, type MoneyDirection } from './directionGuard'
 import { cashDepositVerdict } from './cashDeposit'
 import { fxLegAction } from './fxEvent'
 import { decideOwnTransfer } from './ownTransferDecision'
-import { isDeclineMessage, findDeclineTwin, findRefundOriginal } from './refundMatch'
+import { namesUnregisteredWallet } from './walletBrand'
+import { cashWithdrawalsAreSpending } from './cashLogAnswer'
+import { isDeclineMessage, findDeclineTwin, findRefundOriginal, adoptEarlierUnmatchedRefund } from './refundMatch'
 import { normalizeDigits } from './normalizeDigits'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
@@ -299,7 +303,13 @@ export async function createSmsTransaction(
   // own. A repayment whose wording makes the card the instrument ("via card") is a purchase made with the card.
   const modelKind = row.kindSource === 'model'
   const plainRepayment = row.kind === 'cc_payoff' && modelKind ? plainKindForModelRepayment(row.rawBody) : null
-  if (plainRepayment) row = { ...row, kind: plainRepayment, smsFlags: [...(row.smsFlags ?? []), 'model_kind_unproven'] }
+  // "Via card" with a printed balance of at least the payment: the payment loaded the card (a transfer into it, flagged).
+  const cardLoad = !!plainRepayment && loadedTheCard(row.rawBody, row.amount, row.currency)
+  if (plainRepayment && !cardLoad) row = { ...row, kind: plainRepayment, smsFlags: [...(row.smsFlags ?? []), 'model_kind_unproven'] }
+  // A credit that names a wallet the user has not registered stays income (the safe default) and carries a flag.
+  if ((row.kind === 'income' || row.kind === 'instant_transfer_in') && (await namesUnregisteredWallet(service, row.userId, row.rawBody))) {
+    row = { ...row, smsFlags: [...(row.smsFlags ?? []), 'wallet_unregistered'] }
+  }
   // An own transfer the model asserted on arrival; one dispatch derives itself (own wallet, own digits) is not this.
   const modelOwnTransfer = modelKind && row.kind === 'own_transfer'
 
@@ -323,18 +333,14 @@ export async function createSmsTransaction(
   //      withdrawal: wallet "Withdrawal ... to your bank" + bank "... credited from Barq"
   //    A wallet may have no card, so step 1's counterparty-last4 join often cannot see
   //    either leg — the method's NAME is the only handle. See docs/MONEY_MOVEMENT.md.
-  if (
-    (kind === 'purchase' || kind === 'online_purchase') &&
-    (await isOwnTopUpTarget(service, row.userId, row.merchant, row.rawBody))
-  ) {
+  const topUpWallet = kind === 'purchase' || kind === 'online_purchase' ? await ownTopUpWallet(service, row.userId, row.merchant, row.rawBody) : null
+  const namedWallets = kind === 'income' || kind === 'instant_transfer_in' || kind === 'instant_transfer_out' ? await walletsNamedIn(service, row.userId, row.rawBody) : []
+  if (topUpWallet) {
     // Nobody buys goods from their own wallet, so this leg is unambiguous. It becomes a
     // transfer whether or not the wallet's own SMS ever arrives, and — because the caller
     // persists `kind` — becomes findable as a sibling by that SMS when it does.
     kind = 'own_transfer'
-  } else if (
-    (kind === 'income' || kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
-    (await namesOwnStoredValue(service, row.userId, row.rawBody))
-  ) {
+  } else if (namedWallets.length > 0) {
     // The stored-value method's OWN SMS. Not unambiguous in either direction: money added
     // to your wallet is real income when no card of yours funded it, and money leaving it
     // is a real remittance when it went to a person rather than to your own bank. So this
@@ -367,6 +373,22 @@ export async function createSmsTransaction(
         matchKinds: ['own_transfer', 'instant_transfer_in', 'instant_transfer_out'],
       })
       if (sibling) return finalizeOwnTransferPair(service, row, sibling, row.logId, legDirection)
+      // A top-up with a fee: the bank debit is larger than this credit, so the exact claim found nothing. Read the
+      // nearest own-wallet purchase of the same wallet and claim only that one, with the fee tolerance.
+      if (!outbound) {
+        for (const wallet of namedWallets) {
+          const leg = await findWalletFeeLeg(service, { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, wallet, side: 'credit' })
+          const feeSibling = leg && (await claimSibling(service, {
+            userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, accountLast4: row.last4 ?? null, ...legFacts,
+            direction: legDirection, kind: 'own_transfer', publishKind: kind, matchKinds: [leg.kind], siblingId: leg.id, feeProven: true,
+          }))
+          if (leg && feeSibling) {
+            const paired = await finalizeOwnTransferPair(service, row, feeSibling, row.logId, legDirection)
+            await postTransferFee(service, row, { fundingLast4: leg.accountLast4, fundingAmount: leg.amount, payoffAmount: row.amount })
+            return paired
+          }
+        }
+      }
     }
     // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
@@ -448,7 +470,8 @@ export async function createSmsTransaction(
       // With a sibling the answer is the one for the two legs' accounts; without one, the one for the one-leg pair.
       answered: candidate ? await rememberedOwnAnswer(service, row.userId, mine, theirs) : oneLegAnswer,
     })
-    await recordOwnTransferEvidence(service, row.logId, candidate?.id ?? null, decision)
+    // A question needs two legs: with no partner there is nothing for the user to confirm, so a lone leg never records one.
+    await recordOwnTransferEvidence(service, row.logId, candidate?.id ?? null, !candidate && decision.verdict === 'ask' ? { ...decision, verdict: 'none' } : decision)
 
     let sibling: PairSibling | null = null
     if (decision.verdict === 'settle' && candidate) {
@@ -520,17 +543,16 @@ export async function createSmsTransaction(
   // 2. Own transfer — pair the two legs, represent the pair once (non-spend).
   if (kind === 'own_transfer') {
     let sibling: PairSibling | null = null
+    let feeLeg: Awaited<ReturnType<typeof findWalletFeeLeg>> = null
     if (row.logId && row.receivedAtIso) {
-      sibling = await claimSibling(service, {
-        userId: row.userId,
-        logId: row.logId,
-        receivedAtIso: row.receivedAtIso,
-        amount: row.amount,
-        accountLast4: row.last4 ?? null,
-        ...legFacts,
-        direction: legDirection,
-        kind,
-      })
+      const claim = { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, accountLast4: row.last4 ?? null, ...legFacts, direction: legDirection, kind }
+      sibling = await claimSibling(service, claim)
+      // The bank leg of a top-up with a fee (it became an own transfer by being a purchase at the user's own wallet):
+      // the wallet's credit is smaller, so the exact claim found nothing. Claim only that credit, with the fee tolerance.
+      if (!sibling && topUpWallet) {
+        feeLeg = await findWalletFeeLeg(service, { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, wallet: topUpWallet, side: 'debit' })
+        if (feeLeg) sibling = await claimSibling(service, { ...claim, matchKinds: [feeLeg.kind], siblingId: feeLeg.id, feeProven: true })
+      }
     }
     if (sibling) {
       // This leg funded a credit-card payoff that already posted. The payoff row is the
@@ -540,7 +562,9 @@ export async function createSmsTransaction(
       if (sibling.siblingKind === 'cc_payoff') return pairFundingLegWithPayoff(service, row, sibling)
 
       if (!row.logId) return base('transfer_paired', kind)
-      return finalizeOwnTransferPair(service, row, sibling, row.logId, legDirection, destinationLeg)
+      const paired = await finalizeOwnTransferPair(service, row, sibling, row.logId, legDirection, destinationLeg)
+      if (feeLeg && !paired.error) await postTransferFee(service, row, { fundingLast4: row.last4 ?? null, fundingAmount: row.amount, payoffAmount: feeLeg.amount })
+      return paired
     }
     if (!modelOwnTransfer) {
       const res = await createSmsExpense(service, { ...row, kind, destinationLeg })
@@ -558,6 +582,12 @@ export async function createSmsTransaction(
   }
 
   // 3. CC payoff → debt payment, funded from the paired bank leg.
+  if (kind === 'cc_payoff' && cardLoad) {
+    // No debt is reduced: the row is a non-spend Top up into the card, with no source account. The log keeps kind
+    // cc_payoff so a funding transfer out can still pair with it under the repayment guards.
+    const res = await createSmsExpense(service, { ...row, kind, categoryOverride: 'Top up', cardLoad: true, smsFlags: [...(row.smsFlags ?? []), 'card_load'] })
+    return { ...base('expense', kind), expenseId: res.expenseId, category: 'Top up', error: res.error }
+  }
   if (kind === 'cc_payoff') {
     // Claim the funding leg. Paying a card by Instapay emits two SMS — the funding bank
     // ("12,012 sent to ••2016", which step 1 reclassifies to own_transfer because the
@@ -681,9 +711,11 @@ export async function createSmsTransaction(
     if (twin) {
       return { ...base('refund_matched', kind), expenseId: twin.id, category: twin.category }
     }
-    const original = await findRefundOriginal(service, row)
+    const original = await findRefundOriginal(service, row, opts.exchangeRates)
     if (original) {
-      const { error } = await markExpenseRefunded(service, original.id, 'refunded', row.day, row.logId)
+      const { error } = original.refundedAmount == null
+        ? await markExpenseRefunded(service, original.id, 'refunded', row.day, row.logId)
+        : await markExpensePartiallyRefunded(service, original.id, original.refundedAmount, row.logId)
       return { ...base('refund_matched', kind), expenseId: original.id, category: original.category, error }
     }
     const res = await createSmsExpense(service, { ...row, kind, unmatchedRefund: true, smsFlags: ['refund_unmatched'] })
@@ -736,6 +768,11 @@ export async function createSmsTransaction(
 
   // 5. ATM withdrawal → non-spend (category mapped in createSmsExpense).
   if (kind === 'atm_withdrawal') {
+    // The user said they log no cash spending: this new withdrawal is ordinary spending. Rows already booked never change.
+    if (await cashWithdrawalsAreSpending(service, row.userId)) {
+      const res = await createSmsExpense(service, { ...row, kind, categoryOverride: 'Other', cleanTitle: 'Cash withdrawal', noCashCredit: true })
+      return { ...base('atm', kind), expenseId: res.expenseId, category: 'Other', error: res.error }
+    }
     const res = await createSmsExpense(service, { ...row, kind })
     return { ...base('atm', kind), expenseId: res.expenseId, category: 'ATM Cash Withdrawal', error: res.error }
   }
@@ -777,6 +814,9 @@ export async function createSmsTransaction(
     linkedSubscriptionId,
     categoryOverride: linkedSubscriptionId ? 'Subscription' : null,
   })
+  if (res.expenseId && !res.error && !row.refundMark && (kind === 'purchase' || kind === 'online_purchase' || kind === 'instant_transfer_out')) {
+    await adoptEarlierUnmatchedRefund(service, row, res.expenseId)
+  }
   return {
     ...base(linkedSubscriptionId ? 'subscription' : 'expense', kind),
     expenseId: res.expenseId,

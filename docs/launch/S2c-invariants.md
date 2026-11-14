@@ -106,3 +106,33 @@ A candidate leg is refused only when: it is a duplicate, failed, rejected or hel
 | 9 masking | privacy (no invariant above) |
 | 10 category overwrite | I1 (a message does not overwrite the user's choice) |
 | 11 native repeat rule, worker retry, currency list | I5, I6 |
+
+## S2d additions
+
+Date 2026-11-14. Rest of N2: partial refunds, a refund in another currency, a refund that arrives before its purchase, and a narrower twin check.
+
+**I1 exception 1, extended.** After rules (a) to (c), a fourth rule (d) applies: the same account and merchant, where the refund is smaller than the purchase, or (another currency only) within 5% of it after conversion. It picks only when exactly one purchase at that merchant qualifies; two or more pick nothing and the refund asks (I3, I7). Rule (a) also allows a smaller refund and a refund in another currency, converted into the purchase's currency. A refund larger than the purchase never matches by (a) or (d). A missing rate is unknown and matches nothing.
+
+**A partial refund** sets `refunded_amount` (in the purchase's currency) and `refund_sms_log_id` on the purchase and leaves `refunded_at` and `refund_kind` null, so the purchase still counts for the remainder and an older app build does not zero it. One partial refund per purchase: a purchase that already carries `refunded_amount` or `refunded_at` is not a candidate, so a second partial refund goes unmatched and asks. Upgrade path is a child table. Discarding the refund message clears the stamp.
+
+**Arrival order reversed.** A purchase, online purchase or plain transfer out that has just been booked may complete an earlier unmatched refund of the same user: a live placeholder the user has not answered, same amount and currency, by the same reference; or the same account and messages 15 minutes apart or less; or the same account and merchant with the refund received no earlier than the purchase. The new purchase row takes the refund stamp, the placeholder is soft-deleted with `retracted_by_sms_log_id` naming the purchase's message (I4) in the same write, and the refund's log points at the purchase row. If the stamp fails nothing else changes.
+
+**I8.** `refunded_amount` is server-owned on `expenses`, enforced in the stale-write trigger like the other refund stamps (migration 0275).
+
+**The twin rule.** A refund of the same amount, currency and card as an already stamped row is its twin only when the message that placed that stamp has the same known reference, or was received within 10 minutes of this one. Otherwise it is a second genuine refund and matches its own purchase. A stamp whose message is no longer stored cannot be shown to be a twin.
+
+### S2d additions, second batch
+
+**N7, one debt or one plan (I7).** With exactly one card debt, a repayment is applied to it unless the message and the debt's card show two known, conflicting values: digits that resolve to another registered card; digits that resolve to nothing against a linked card whose stored digits do not tail-match; or, with no digits, two known and different banks. A debt with no linked card has nothing to conflict with. Unknown on either side agrees. With exactly one instalment plan, a message is applied only when the provider is named, the amount is within tolerance, or the digits resolve to the plan's linked card; a plan with none of those to compare takes it too. Otherwise the message asks.
+
+**Wallet top-up with a fee (I3, I7).** The bank debit, a purchase at the user's own wallet W (`own_wallet_exact`), and W's own credit (`own_wallet_named`, same wallet W) pair in both arrival orders even though the amounts differ by the fee: the credit is not larger than the debit, the difference is within the transfer fee tolerance, and the claim names the other leg by id (migration 0277, `p_fee_proven`). The fee, debit minus credit, is booked as its own spending row. A debit that names another wallet or is not an own-wallet purchase, a larger credit, or a difference beyond the tolerance pairs nothing, and the credit stays income. Default while unanswered: income, as before.
+
+**`wallet_unregistered` (default while unanswered: income).** A credit whose text names a catalogue wallet brand the user has no payment method of is booked as income exactly as before and carries the flag. A brand one can also buy from or phone through counts only under its full name; pass-through brands never count. The flag is server-only until its prompt exists.
+
+**Cash-withdrawal answer.** The app's answer lives in `user_settings.prompt_state` (`cashlog:yes`, `cashlog:no`, the later time wins). Unanswered, or "yes", a bank-message cash withdrawal stays non-spend as before. "No" books each new withdrawal as ordinary spending (category Other, Cash account not credited); rows already booked never change, there is no backfill. A failed read is unanswered.
+
+**Card load, a third single-signal settling rule (council 2026-11-14, 3 of 3).** A repayment kind asserted only by the model whose wording makes the card the instrument ("via card"), where the message prints the card's balance afterwards and that balance is at least the payment, settles alone as a non-spend Top up into the card (destination the card named by the message's own digits, no source account), flagged `card_load`. The log keeps kind `cc_payoff`. A smaller balance, no readable balance, or a balance in another currency is unknown and keeps the earlier behaviour (spending, flagged `model_kind_unproven`). A code-tier repayment is untouched. Default while unanswered: a transfer, neither income nor spending. Listed here so I3 has no unlisted exception.
+
+**A lone leg never records a two-leg question.** With no candidate leg, a verdict of `ask` is recorded as `none`; only the one-leg `ask_account` question stands. The own-transfer route clears a stuck `ask` that has no partner and answers 200 with nothing changed.
+
+**Safe when unanswered, additions.** `wallet_unregistered`: the credit counts as income. Cash-withdrawal question: unanswered counts as "yes", the withdrawal stays non-spend. `card_load`: the Top up stays a transfer, neither income nor spending. A wallet top-up whose second leg never arrives: each leg stays as booked today.

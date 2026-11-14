@@ -281,24 +281,33 @@ async function ownStoredValueMethods(
  * ADNOC vs reloading the ADNOC card), so those additionally require {@link TOP_UP_WORDING}.
  * For everything else the hit is unambiguous: nobody buys goods from their own wallet.
  */
+export async function ownTopUpWallet(
+  service: ServiceClient,
+  userId: string,
+  merchant: string | null,
+  body: string | null,
+): Promise<string | null> {
+  if (!merchant) return null
+  const norm = normalizeBrandToken(merchant)
+  if (!norm) return null
+  const hit = (await ownStoredValueMethods(service, userId)).find(
+    (m) => normalizeBrandToken(m.provider) === norm || brandSpellings(m.brandId).includes(norm),
+  )
+  if (!hit) return null
+  return !hit.alsoMerchant || TOP_UP_WORDING.test(body ?? '') ? normalizeBrandToken(hit.provider) : null
+}
+
 export async function isOwnTopUpTarget(
   service: ServiceClient,
   userId: string,
   merchant: string | null,
   body: string | null,
 ): Promise<boolean> {
-  if (!merchant) return false
-  const norm = normalizeBrandToken(merchant)
-  if (!norm) return false
-  const hit = (await ownStoredValueMethods(service, userId)).find(
-    (m) => normalizeBrandToken(m.provider) === norm || brandSpellings(m.brandId).includes(norm),
-  )
-  if (!hit) return false
-  return hit.alsoMerchant ? TOP_UP_WORDING.test(body ?? '') : true
+  return (await ownTopUpWallet(service, userId, merchant, body)) !== null
 }
 
 /**
- * True when `text` mentions one of the user's own stored-value methods — the wallet's own
+ * The user's own stored-value methods (folded provider names) that `text` mentions — the wallet's own
  * SMS ("Money Added to your Barq wallet", "Withdrawal from your Barq wallet").
  *
  * Word-boundary rather than exact, because here the name sits inside a sentence ("Barq"
@@ -306,17 +315,61 @@ export async function isOwnTopUpTarget(
  * the caller treats this leg as a transfer only once a sibling proves the pair, and
  * otherwise books it as income or a remittance exactly as before.
  */
+export async function walletsNamedIn(service: ServiceClient, userId: string, text: string | null): Promise<string[]> {
+  if (!text) return []
+  const methods = await ownStoredValueMethods(service, userId)
+  return methods
+    .filter((m) => {
+      const escaped = m.provider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      return new RegExp(`(^|\\W)${escaped}(\\W|$)`, 'i').test(text)
+    })
+    .map((m) => normalizeBrandToken(m.provider))
+}
+
 export async function namesOwnStoredValue(
   service: ServiceClient,
   userId: string,
   text: string | null,
 ): Promise<boolean> {
-  if (!text) return false
-  const methods = await ownStoredValueMethods(service, userId)
-  return methods.some((m) => {
-    const escaped = m.provider.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`(^|\\W)${escaped}(\\W|$)`, 'i').test(text)
-  })
+  return (await walletsNamedIn(service, userId, text)).length > 0
+}
+
+interface WalletFeeLeg { id: string; kind: string; amount: number; accountLast4: string | null }
+
+/**
+ * The other leg of a wallet top-up that carried a fee (finding N9, invariants I3, I7), read and verified but not
+ * claimed. A top-up is two messages: the bank debit, a purchase at the user's own wallet W (`ownTopUpWallet`), and
+ * W's own credit, which names W. The credit is never larger than the debit, and the two differ by at most the fee
+ * tolerance. `side` is this message's side: 'credit' (the wallet's message, looking for the bank debit) or 'debit'
+ * (the bank leg, looking for the wallet's credit). The nearest unpaired leg in the pairing window that passes wins.
+ */
+export async function findWalletFeeLeg(
+  service: ServiceClient,
+  p: { userId: string; logId: string; receivedAtIso: string; amount: number; wallet: string; side: 'credit' | 'debit' },
+): Promise<WalletFeeLeg | null> {
+  const at = Date.parse(p.receivedAtIso)
+  if (!Number.isFinite(at)) return null
+  const tolerance = transferFeeTolerance(p.amount)
+  const { data } = await service
+    .from('sms_parse_log')
+    .select('id, kind, amount, account_last4, merchant, raw_body, received_at, status, is_duplicate, awaiting_confirmation')
+    .eq('user_id', p.userId)
+    .eq('kind', p.side === 'credit' ? 'own_transfer' : 'instant_transfer_in')
+    .eq('parsed_ok', true)
+    .is('paired_log_id', null)
+    .gte('received_at', new Date(at - PAIR_WINDOW_SECONDS * 1000).toISOString())
+    .lte('received_at', new Date(at + PAIR_WINDOW_SECONDS * 1000).toISOString())
+    .gte('amount', p.side === 'credit' ? p.amount : p.amount - tolerance)
+    .lte('amount', p.side === 'credit' ? p.amount + tolerance : p.amount)
+  const candidates = (data ?? [])
+    .filter((c) => c.id !== p.logId && c.amount != null && !c.is_duplicate && !c.awaiting_confirmation && c.status !== 'failed' && c.status !== 'rejected')
+    .filter((c) => (p.side === 'credit' ? (c.amount as number) > p.amount : (c.amount as number) < p.amount))
+    .sort((x, y) => Math.abs(Date.parse(x.received_at as string) - at) - Math.abs(Date.parse(y.received_at as string) - at))
+  for (const c of candidates) {
+    const names = p.side === 'credit' ? await ownTopUpWallet(service, p.userId, c.merchant as string | null, c.raw_body as string | null) === p.wallet : (await walletsNamedIn(service, p.userId, c.raw_body as string | null)).includes(p.wallet)
+    if (names) return { id: c.id as string, kind: c.kind as string, amount: c.amount as number, accountLast4: (c.account_last4 as string | null) ?? null }
+  }
+  return null
 }
 
 /**
@@ -499,6 +552,8 @@ export async function tryPairLeg(
     referenceHash?: string | null
     /** Claim only this sibling: the one the caller read and decided on. */
     siblingId?: string
+    /** The fee tolerance applies to the amounts: set only with `siblingId`, for a wallet top-up whose two legs the caller proved (migration 0277). */
+    feeProven?: boolean
   },
 ): Promise<PairSibling | null> {
   const requireEqual =
@@ -532,6 +587,7 @@ export async function tryPairLeg(
     p_direction: params.direction ?? undefined,
     p_currency: params.currency ?? undefined,
     p_sibling_id: params.siblingId ?? undefined,
+    p_fee_proven: params.feeProven && params.siblingId ? true : undefined,
   })
   // sms_try_pair only sees siblings that are parsed_ok with a kind, and compares their amount and account_last4,
   // all of which the parse route persists only at the end. Publish them now so two legs arriving together can find each other.

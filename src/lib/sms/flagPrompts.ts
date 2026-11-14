@@ -42,15 +42,15 @@ export function selectFlagPrompts(expenses: Expense[], incomes: IncomeEvent[], c
     .flatMap((r) => r.flags.map((flag) => ({ kind: r.kind, id: r.row.id, flag })))
 }
 
-/** Expenses that could be the purchase a refund credit returned: same currency and exact amount, never refunded. */
+/** Expenses that could be the purchase a refund credit returned: same currency, an amount at least the refund's (a larger one is refunded in part), never refunded. */
 export function refundCandidates(expenses: Expense[], refund: Pick<Expense, 'id' | 'amount' | 'currency' | 'date'>): Expense[] {
   const day = (s: string) => Date.parse(`${s.slice(0, 10)}T00:00:00Z`)
   const refundDay = day(refund.date)
   const MS = 86_400_000
   return expenses
     .filter((e) => {
-      if (e.id === refund.id || e.refundedAt || e.refundKind) return false
-      if (e.currency !== refund.currency || Math.abs(e.amount - refund.amount) >= 0.005) return false
+      if (e.id === refund.id || e.refundedAt || e.refundKind || e.refundedAmount != null) return false
+      if (e.currency !== refund.currency || e.amount < refund.amount - 0.005) return false
       const age = (refundDay - day(e.date)) / MS
       return age >= -2 && age <= 180
     })

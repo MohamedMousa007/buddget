@@ -6,6 +6,7 @@
 import type { SmsExpenseKind } from './createSmsExpense'
 import { detectLegDirection } from './directionGuard'
 import { normalizeDigits } from './normalizeDigits'
+import { extractBalance } from './balanceReport'
 
 export type RepaymentWording = 'paid_into_card' | 'card_as_instrument'
 
@@ -41,6 +42,19 @@ export function repaymentWording(body: string): RepaymentWording | null {
  */
 export function plainKindForModelRepayment(body: string): SmsExpenseKind | null {
   return repaymentWording(body) === 'card_as_instrument' ? 'purchase' : null
+}
+
+/**
+ * A payment worded "via card" that prints the card's balance afterwards, at least the payment, loaded the card: that
+ * much money cannot have been spent from it (council decision 2026-11-14). A smaller balance, no readable balance, or a
+ * balance in another currency than the payment is unknown, and the payment stays spending (I7).
+ */
+export function loadedTheCard(body: string, amount: number, currency: string | null | undefined): boolean {
+  if (repaymentWording(body) !== 'card_as_instrument') return false
+  const printed = extractBalance(body)
+  if (!printed) return false
+  if (printed.currency && currency && printed.currency.toUpperCase() !== currency.toUpperCase()) return false
+  return printed.balance >= amount
 }
 
 /**
