@@ -1140,7 +1140,9 @@ export async function POST(request: Request) {
       clean_title: parsed.cleanTitle,
       // Every tier, not only the AI: the curated and template tiers capture a raw merchant and nothing else. Purchases
       // only, because on a transfer this field is a person, not a merchant.
-      merchant_normalized: parsed.merchantNormalized ?? (tx.kind === 'purchase' || tx.kind === 'online_purchase' ? normalizeMerchant(parsed.merchant, tx.kind) : null),
+      merchant_normalized: hasPersonCounterparty(tx.kind ?? parsed.kind)
+        ? null
+        : parsed.merchantNormalized ?? (tx.kind === 'purchase' || tx.kind === 'online_purchase' ? normalizeMerchant(parsed.merchant, tx.kind) : null),
       parse_method: parseMethod,
       pattern_id: patternId,
       // B1: without this a template-parsed row has no link to the template that produced it,

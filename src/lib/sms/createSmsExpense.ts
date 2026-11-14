@@ -364,14 +364,19 @@ async function findUniqueByLast4(
 ): Promise<{ id: string | null; ambiguous: boolean }> {
   const { data, error } = await service
     .from('payment_methods')
-    .select('id, name, last4, last4_aliases')
+    .select('id, name, last4, last4_aliases, provisional, closed_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
   if (error) {
     console.warn('[sms/account] method lookup failed', error.message)
     return { id: null, ambiguous: false }
   }
-  const methods = ((data ?? []) as { id: string; name: string | null; last4: string | null; last4_aliases?: string[] | null }[]).map((m) => ({
+  type MethodRow = { id: string; name: string | null; last4: string | null; last4_aliases?: string[] | null; provisional?: boolean | null; closed_at?: string | null }
+  const methods = ((data ?? []) as MethodRow[])
+    // A provisional account the user merged away or removed can survive as a closed row (the delete guard closes an
+    // account that still has history). It must not compete with the account that inherited its digits.
+    .filter((m) => !(m.provisional && m.closed_at))
+    .map((m) => ({
     id: m.id,
     last4: m.last4,
     last4Aliases: m.last4_aliases,

@@ -429,6 +429,7 @@ export const importDataSchema = z.object({
         closedAt: z.string().optional(),
         trackSms: z.boolean().optional(),
         excluded: z.boolean().optional(),
+        provisional: z.boolean().optional(),
         name: z.string(),
         type: paymentMethodTypeSchema,
         currency: fiatCurrencySchema,

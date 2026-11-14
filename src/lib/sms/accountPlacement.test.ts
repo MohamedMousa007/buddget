@@ -110,3 +110,18 @@ describe('resolvePaymentMethodByLast4 with create (the server path)', () => {
     expect(a.inserted).toHaveLength(0)
   })
 })
+
+describe('a merged-away provisional account', () => {
+  it('does not compete with the account that inherited its digits', async () => {
+    const rows = [
+      { id: 'target', name: 'CIB ••7887', last4: '7887', last4_aliases: ['1234'] },
+      { id: 'old', name: 'CIB ••1234', last4: '1234', last4_aliases: [], provisional: true, closed_at: '2026-11-14T00:00:00Z' },
+    ]
+    const chain: Record<string, unknown> = {}
+    for (const k of ['select', 'eq', 'is', 'limit']) chain[k] = () => chain
+    chain.maybeSingle = () => Promise.resolve({ data: null, error: null })
+    chain.then = (r: (v: unknown) => unknown) => r({ data: rows, error: null })
+    const service = { from: () => chain } as unknown as ServiceClient
+    expect(await resolvePaymentMethodByLast4(service, 'u', '1234', { sender: 'CIB', bankName: 'CIB' })).toBe('target')
+  })
+})
