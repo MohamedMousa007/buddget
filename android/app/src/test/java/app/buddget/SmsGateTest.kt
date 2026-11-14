@@ -17,6 +17,18 @@ class SmsGateTest {
         assertTrue(SmsGate.isBankishMessage("Paid 1,200.50EGP at Cafe"))
     }
 
+    @Test fun saudiRiyalAndGluedAmountsAreBankish() {
+        assertTrue(SmsGate.isBankishMessage("Paid SR 100.00 at Cafe"))
+        assertTrue(SmsGate.isBankishMessage("Paid 100SR at Cafe"))
+        assertTrue(SmsGate.isBankishMessage("Paid SAR100.50 at Cafe"))
+        assertFalse(SmsGate.isBankishMessage("SR manager approved the request"))
+    }
+
+    @Test fun arabicIndicDigitAmountsCountAsAnAmount() {
+        assertTrue(SmsGate.shouldForward("sender", "BANK", "You paid SAR \u0661\u0662\u0663 at Shop. Never share your OTP."))
+        assertTrue(SmsGate.shouldForward("sender", "BANK", "You paid \u06F1\u06F2\u06F3 EGP at Shop. Never share your OTP."))
+    }
+
     @Test fun otpIsDroppedButOtpFooterOnATransactionIsKept() {
         assertFalse(SmsGate.shouldForward("sender", "CIB", "Your OTP is 123456. Do not share it."))
         assertFalse(SmsGate.shouldForward("sender", "CIB", "رمز التحقق 123456"))

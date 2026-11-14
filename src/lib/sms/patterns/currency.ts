@@ -16,10 +16,13 @@ export const CURRENCY_CODES = [
  * Any currency token: ISO code (EGP/SAR/AED/…), the colloquial `LE`, or an
  * Arabic currency word/symbol — جنيه/جم (EGP), ريال/ر.س (SAR), درهم/د.إ (AED),
  * دينار/د.ك (KWD), ر.ق (QAR), ر.ع (OMR), د.ب (BHD).
+ *
+ * A code may sit directly against a digit ("SAR100", "100EGP") but never inside a word ("Sarah", "disarm"). The Saudi
+ * "SR" is only two letters, so it additionally needs a digit next to it. The phone gates keep their own copy of the
+ * code list: src/lib/sms/deviceOtpGate.ts, SmsGate.kt and SmsOtpGate in CatchBankSmsIntent.swift.
  */
 export const CURRENCY_TOKEN_RE =
-  /\b(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\b|جني[هة]|(?:^|[^\u0600-\u06FF])جم(?![\u0600-\u06FF])|ريال|درهم|دينار|ر\.?\s?س|د\.?\s?إ|د\.?\s?ك|ر\.?\s?ق|ر\.?\s?ع|د\.?\s?ب/i
-
+  /(?<![a-z])(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)(?![a-z])|(?<![a-z])SR(?=\s?\d)|(?<=\d\s?)SR(?![a-z])|جني[هة]|(?:^|[^\u0600-\u06FF])جم(?![\u0600-\u06FF])|ريال|درهم|دينار|ر\.?\s?س|د\.?\s?إ|د\.?\s?ك|ر\.?\s?ق|ر\.?\s?ع|د\.?\s?ب/i
 /**
  * Strong transaction-action keywords (EN + AR), Egypt + Gulf. "Strong" = the
  * presence of one means a real money movement, so the pre-filter treats these

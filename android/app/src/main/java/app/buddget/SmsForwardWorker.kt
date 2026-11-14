@@ -85,12 +85,6 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
             return@withContext Result.failure()
         }
 
-        if (runAttemptCount >= MAX_ATTEMPTS) {
-            // Never give up on a captured SMS: it stays queued and WorkManager keeps checking on its capped backoff.
-            recordRun(prefs, "retries_exhausted")
-            return@withContext Result.retry()
-        }
-
         return@withContext try {
             val json = buildBody(message, sender, receivedAt, eventId)
             val url  = URL("$apiUrl/api/sms/parse")
@@ -119,8 +113,8 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
                 }
                 SmsGate.isRetryableStatus(code) -> {
                     // 5xx / 408 / 429 / 401: transient, or a token the app-open
-                    // ensureIngestToken will refresh. Backoff retry; if attempts run
-                    // out the SMS is still in the queue for the app-open drain.
+                    // ensureIngestToken will refresh. Retried on WorkManager's capped
+                    // backoff for as long as the SMS stays queued.
                     recordRun(prefs, "http_$code")
                     Result.retry()
                 }
@@ -171,7 +165,6 @@ class SmsForwardWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker
         const val KEY_EVENT_ID    = "event_id"
         const val KEY_USER_ID     = "user_id"
         const val MAX_CHARS = 2000
-        const val MAX_ATTEMPTS = 8
         const val CHANNEL_ID = "sms_forward_sync"
         const val NOTIFICATION_ID = 7421
     }

@@ -35,3 +35,16 @@ red app icon and the Sender field). Apple's own labels ("Automation", "Message C
 English in the illustrations: they are what the reader has to match on the phone.
 
 Open: Arabic-iOS wording of those labels (the step text names them in English), and a real-device walkthrough of the new flow.
+
+## Two automations on one phone
+
+The setup guide still recommends a second automation (a second keyword) so more messages are caught. One SMS that matches both
+runs `CatchBankSmsIntent` twice within moments, and each run used to mint its own capture id and capture time, so the server saw
+two different captures of one message.
+
+The intent now keeps up to 8 recent runs (sha256 of the normalised text, capture time, capture id) for 15 seconds, in the same
+Keychain-backed storage and under the same lock as the pending queue (`SmsCredentialStore.captureIdentity`, rule in
+`SmsCaptureRepeat`). A run whose text matches a run younger than 15 seconds reuses that run's id and time, so the server sees one
+capture sent twice and collapses it. Text is normalised like the server's dedup hash (trim, collapse whitespace, lowercase). Two
+genuine identical messages more than 15 seconds apart still get separate captures. If the Keychain cannot be read the run mints
+a fresh identity, and the server's same-capture-time guard is the backstop.

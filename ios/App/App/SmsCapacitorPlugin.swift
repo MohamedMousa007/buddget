@@ -256,6 +256,7 @@ enum SmsCredentialStore {
 
     private static let tokenAccount = "ingest_token"
     private static let queueAccount = "pending_queue"
+    private static let recentRunsAccount = "recent_runs"
 
     private static let migrated: Void = {
         let d = UserDefaults.standard
@@ -367,6 +368,25 @@ enum SmsCredentialStore {
         writeQueue(queue)
     }
 
+    /// Capture id and time for this run. Reads, decides and writes the recent-runs list under the queue lock, so two
+    /// simultaneous runs for one SMS cannot both miss each other. Keychain unreadable: mint fresh (the server's
+    /// same-second guard is the backstop) rather than block capture.
+    static func captureIdentity(for message: String, now: Date = Date()) -> (eventId: String, receivedAt: String) {
+        queueLock.lock(); defer { queueLock.unlock() }
+        let mint: () -> (eventId: String, receivedAt: String) = {
+            (eventId: UUID().uuidString, receivedAt: ISO8601DateFormatter().string(from: now))
+        }
+        var runs: [SmsCaptureRepeat.Run] = []
+        switch SmsKeychain.readResult(recentRunsAccount) {
+        case .unavailable: return mint()
+        case .missing: break
+        case .found(let data): runs = (try? JSONDecoder().decode([SmsCaptureRepeat.Run].self, from: data)) ?? []
+        }
+        let out = SmsCaptureRepeat.resolve(runs: runs, hash: SmsCaptureRepeat.textHash(message), now: now, mint: mint)
+        if let data = try? JSONEncoder().encode(out.runs) { SmsKeychain.write(recentRunsAccount, data) }
+        return (out.eventId, out.receivedAt)
+    }
+
     static func peekPending() -> [[String: String]] {
         queueLock.lock(); defer { queueLock.unlock() }
         return readQueue() ?? []
@@ -430,6 +450,7 @@ enum SmsCredentialStore {
         d.set(false, forKey: setupCompletedKey)
         queueLock.lock(); defer { queueLock.unlock() }
         SmsKeychain.delete(queueAccount)
+        SmsKeychain.delete(recentRunsAccount)
         d.removeObject(forKey: pendingQueueKey)
     }
 

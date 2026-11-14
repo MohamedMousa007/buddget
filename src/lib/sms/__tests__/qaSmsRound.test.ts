@@ -41,6 +41,24 @@ describe('currency (S18)', () => {
     expect(CURRENCY_TOKEN_RE.test('مجمع التحرير')).toBe(false)
     expect(CURRENCY_TOKEN_RE.test('250 جم')).toBe(true)
   })
+  it('knows SR as the Saudi riyal, next to a digit only', () => {
+    expect(CURRENCY_TOKEN_RE.test('Paid SR 100.00 at Cafe')).toBe(true)
+    expect(CURRENCY_TOKEN_RE.test('Paid SR100 at Cafe')).toBe(true)
+    expect(CURRENCY_TOKEN_RE.test('Paid 100 SR at Cafe')).toBe(true)
+    expect(CURRENCY_TOKEN_RE.test('Paid 100SR at Cafe')).toBe(true)
+    expect(CURRENCY_TOKEN_RE.test('SR manager approved the request')).toBe(false)
+    expect(CURRENCY_TOKEN_RE.test('Please reserve a table, 4 guests')).toBe(false)
+    expect(CURRENCY_TOKEN_RE.test('DESR 100')).toBe(false)
+  })
+  it('reads a code glued to the number, but not inside a word', () => {
+    expect(CURRENCY_TOKEN_RE.test('Paid SAR100.50 at Cafe')).toBe(true)
+    expect(CURRENCY_TOKEN_RE.test('Paid 1,200EGP at Cafe')).toBe(true)
+    expect(CURRENCY_TOKEN_RE.test('Hi Sarah, room 100')).toBe(false)
+    expect(CURRENCY_TOKEN_RE.test('please disarm 100')).toBe(false)
+  })
+  it('lets an SR purchase with an OTP-style footer through the pre-filter', () => {
+    expect(isNonTransaction('Your card was used for SR 100.00 at Cafe. Never share your PIN or OTP.')).toBeNull()
+  })
 })
 
 describe('templateApply (S5, S12)', () => {

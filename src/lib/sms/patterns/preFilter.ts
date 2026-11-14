@@ -32,7 +32,7 @@ const AUTH_REF_RE = /\b(?:auth(?:orization|orisation)?|approval)\s*(?:code|no\.?
 function carriesOtpCode(text: string): boolean {
   const withoutAmounts = text
     .replace(AUTH_REF_RE, ' ')
-    .replace(/(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\s*[\d,]+(?:\.\d+)?/gi, ' ')
+    .replace(/(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE|(?<![a-z])SR)\s*[\d,]+(?:\.\d+)?/gi, ' ')
     .replace(/[\d,]+(?:\.\d+)?\s*(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\b/gi, ' ')
   return OTP_CODE_RE.test(withoutAmounts) || CODE_FIRST_RE.test(withoutAmounts)
 }
@@ -101,8 +101,8 @@ function hasNonBalanceAmount(text: string): boolean {
 
   // Any currency+amount remaining after stripping balance clauses → transaction amount present
   return (
-    /(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\s*[\d,]+(?:\.\d+)?/i.test(stripped) ||
-    /[\d,]+(?:\.\d+)?\s*(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)\b/i.test(stripped) ||
+    /(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE|(?<![a-z])SR)\s*[\d,]+(?:\.\d+)?/i.test(stripped) ||
+    /[\d,]+(?:\.\d+)?\s*(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE|SR)\b/i.test(stripped) ||
     /[\d,]+(?:\.\d+)?\s*جني[هة]/i.test(stripped)
   )
 }

@@ -7,10 +7,14 @@ package app.buddget
 object SmsGate {
     private const val DAY_MS = 24L * 60 * 60 * 1000
 
-    private val currencyCodes = listOf("egp", "aed", "sar", "qar", "kwd", "omr", "bhd", "usd", "eur", "gbp")
+    // Keep this list, the digit class and the Arabic-Indic digit ranges in step with src/lib/sms/deviceOtpGate.ts and
+    // SmsOtpGate in ios/App/App/CatchBankSmsIntent.swift; edit all three together.
+    private val currencyCodes = listOf("egp", "aed", "sar", "qar", "kwd", "omr", "bhd", "usd", "eur", "gbp", "l\\.?e", "sr")
+    // ASCII, Arabic-Indic and Eastern Arabic-Indic digits: \d alone is ASCII-only on the JVM.
+    private const val DIGITS = "0-9\\u0660-\\u0669\\u06F0-\\u06F9"
     // A currency code only counts next to a digit ("SAR 50", "50EGP"); never inside a word ("Sarah", "disarm").
     private val currencyRegex = Regex(
-        "(?i)(?:\\d[\\d.,]*\\s?(?:${currencyCodes.joinToString("|")})(?![a-z]))|(?:(?<![a-z])(?:${currencyCodes.joinToString("|")})\\s?\\d)"
+        "(?i)(?:[$DIGITS][$DIGITS.,]*\\s?(?:${currencyCodes.joinToString("|")}|ج\\.?م)(?![a-z]))|(?:(?<![a-z])(?:${currencyCodes.joinToString("|")}|e£|ج\\.?م)\\s?[$DIGITS])"
     )
     private val wordKeywordRegex = Regex(
         "(?i)(?<![a-z])(debited|credited|spent at|purchase of|transaction of|withdrawn|inward transfer|deposit|instapay|vodafone cash|fawry)(?![a-z])"

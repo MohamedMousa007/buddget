@@ -17,6 +17,20 @@ describe('device OTP gate (mirror of SmsGate.kt / SmsOtpGate)', () => {
     expect(shouldDropOtp('Never share your PIN or OTP with anyone. Code 482913')).toBe(true)
     expect(shouldDropOtp('رمز التحقق الخاص بك هو 4821')).toBe(true)
   })
+  it('forwards USD, EUR, GBP, SR and glued amounts next to a verb', () => {
+    expect(shouldDropOtp('Card approved for USD 20 at Shop. Never share your OTP.')).toBe(false)
+    expect(shouldDropOtp('You paid EUR 12.50 at Shop. Never share your OTP.')).toBe(false)
+    expect(shouldDropOtp('You paid GBP10 at Shop. Never share your OTP.')).toBe(false)
+    expect(shouldDropOtp('You paid SR 100.00 at Shop. Never share your OTP.')).toBe(false)
+    expect(shouldDropOtp('You paid 100SR at Shop. Never share your OTP.')).toBe(false)
+  })
+  it('reads Arabic-Indic and Eastern Arabic-Indic amounts', () => {
+    expect(shouldDropOtp('You paid SAR ١٢٣٫٥٠ at Shop. Never share your OTP.')).toBe(false)
+    expect(shouldDropOtp('You paid ۱۲۳ EGP at Shop. Never share your OTP.')).toBe(false)
+  })
+  it('does not read a code inside a word as an amount', () => {
+    expect(shouldDropOtp('Hi Sarah, your OTP is 123456. Never share it. Paid')).toBe(true)
+  })
   it('never drops text without OTP wording', () => {
     expect(shouldDropOtp('EGP 100 debited at Shop')).toBe(false)
   })

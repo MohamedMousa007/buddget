@@ -1,4 +1,5 @@
 import AppIntents
+import CryptoKit
 import Foundation
 
 /// "Catch Bank SMS" — the Buddget action a Shortcuts Message automation runs.
@@ -47,9 +48,10 @@ struct CatchBankSmsIntent: AppIntent {
         // between "SMS arrived" and "enqueue on failure", losing the transaction with
         // no trace on the device or the server. Enqueueing first turns that same kill
         // into a delay: the app-open drain replays whatever is still queued.
-        let receivedAt = ISO8601DateFormatter().string(from: Date())
-        // One id per received SMS, persisted in the queue: a retry reuses it, a genuine twin gets its own.
-        let eventId = UUID().uuidString
+        // One id and capture time per run, persisted in the queue: a retry reuses them, a genuine twin gets its own.
+        // A run with the same text as one from the last 15 seconds shares that run's id and time instead, because
+        // two automations on one phone fire for the same SMS and the server must see one capture sent twice.
+        let (eventId, receivedAt) = SmsCredentialStore.captureIdentity(for: message)
         let from = sender ?? ""
         SmsCredentialStore.enqueuePending(message: message, sender: from, receivedAt: receivedAt,
                                           userId: SmsCredentialStore.tokenUserId ?? "", eventId: eventId)
@@ -102,6 +104,40 @@ struct CatchBankSmsIntent: AppIntent {
     }
 }
 
+/// Repeat rule for two Shortcuts automations on one phone: runs with the same message text within `window` seconds
+/// reuse one capture id and capture time. Pure so the decision can be tested without Keychain or the clock.
+enum SmsCaptureRepeat {
+    static let window: TimeInterval = 15
+    static let maxRuns = 8
+
+    struct Run: Codable, Equatable {
+        let hash: String
+        let at: TimeInterval
+        let eventId: String
+        let receivedAt: String
+    }
+
+    /// Same normalisation as computeSmsHash on the server (src/lib/sms/ingestGuards.ts): trim, collapse whitespace, lowercase.
+    static func textHash(_ message: String) -> String {
+        let normalized = message.components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }.joined(separator: " ").lowercased()
+        return SHA256.hash(data: Data(normalized.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Returns the identity this run should use and the run list to store. Runs older than the window are dropped.
+    static func resolve(runs: [Run], hash: String, now: Date,
+                        mint: () -> (eventId: String, receivedAt: String)) -> (eventId: String, receivedAt: String, runs: [Run]) {
+        let t = now.timeIntervalSince1970
+        let fresh = runs.filter { t - $0.at >= 0 && t - $0.at < window }
+        if let same = fresh.first(where: { $0.hash == hash }) {
+            return (same.eventId, same.receivedAt, fresh)
+        }
+        let id = mint()
+        let kept = Array((fresh + [Run(hash: hash, at: t, eventId: id.eventId, receivedAt: id.receivedAt)]).suffix(maxRuns))
+        return (id.eventId, id.receivedAt, kept)
+    }
+}
+
 /// Mirror of Android SmsGate for the OTP and marketing rules (the Shortcut has no sender, so no sender gate).
 enum SmsOtpGate {
     private static let otp = try! NSRegularExpression(
@@ -110,8 +146,10 @@ enum SmsOtpGate {
     private static let txn = try! NSRegularExpression(
         pattern: "(?<![a-z])(debited|credited|spent at|purchase of|transaction of|withdrawn|inward transfer)(?![a-z])",
         options: .caseInsensitive)
+    // Keep this list in step with src/lib/sms/deviceOtpGate.ts and android/app/src/main/java/app/buddget/SmsGate.kt;
+    // edit all three together. NSRegularExpression's \\d already covers Arabic-Indic digits.
     private static let currency = try! NSRegularExpression(
-        pattern: "(?:\\d[\\d.,]*\\s?(?:egp|aed|sar|qar|kwd|omr|bhd|usd|eur|gbp|le|ج\\.?م)(?![a-z]))|(?:(?<![a-z])(?:egp|aed|sar|qar|kwd|omr|bhd|usd|eur|gbp|le|e£|ج\\.?م)\\s?\\d)",
+        pattern: "(?:\\d[\\d.,]*\\s?(?:egp|aed|sar|qar|kwd|omr|bhd|usd|eur|gbp|l\\.?e|sr|ج\\.?م)(?![a-z]))|(?:(?<![a-z])(?:egp|aed|sar|qar|kwd|omr|bhd|usd|eur|gbp|l\\.?e|sr|e£|ج\\.?م)\\s?\\d)",
         options: .caseInsensitive)
     private static let moneyVerb = try! NSRegularExpression(
         pattern: "(?<![a-z])(used (for|at)|approved|authori[sz]ed|paid|payment|received|refund(ed)?|debit(ed)?|credit(ed)?|purchase|spent|withdr(awn|awal)|transfer(red)?|deposit(ed)?|charged|sent)(?![a-z])",
