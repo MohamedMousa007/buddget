@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowDown, ArrowUp, Copy, FileCode2, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Copy, FileCode2, Power, RefreshCw, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Switch } from '@/components/ui/switch'
@@ -69,6 +69,11 @@ export function TemplatesPanel({ canManage }: { canManage: boolean }) {
   const remove = async (t: SmsTemplateRow) => {
     if (!(await confirm({ title: `Delete the template for ${t.sender}?`, body: 'This cannot be undone.', destructive: true, confirmLabel: 'Delete' }))) return
     if (await post({ op: 'delete', id: t.id })) setRows((prev) => prev.filter((x) => x.id !== t.id))
+  }
+
+  const kill = async (t: SmsTemplateRow) => {
+    if (!(await confirm({ title: `Switch off the template for ${t.sender}?`, body: 'It stops parsing for everyone and the transactions it created are flagged for review.', destructive: true, confirmLabel: 'Switch off' }))) return
+    if (await post({ op: 'kill', id: t.id })) patch(t.id, { ai_enabled: false, tier: 'template' })
   }
 
   const setTier = async (t: SmsTemplateRow, op: 'promote' | 'demote') => {
@@ -163,7 +168,7 @@ export function TemplatesPanel({ canManage }: { canManage: boolean }) {
                       </span>
                     </td>
                     <td className="px-3 py-3"><Switch checked={t.ai_enabled} disabled={!canManage} aria-label={`Bypass for ${t.sender}`} onCheckedChange={() => void toggle(t)} /></td>
-                    <td className="px-3 py-3">{canManage ? <IconButton aria-label={`Delete template for ${t.sender}`} variant="danger" size="sm" hitArea={false} onClick={() => void remove(t)}><Trash2 /></IconButton> : null}</td>
+                    <td className="px-3 py-3">{canManage ? <span className="inline-flex items-center gap-1.5">{t.ai_enabled ? <IconButton aria-label={`Switch off template for ${t.sender}`} title="Switch off for everyone and flag its transactions" variant="danger" size="sm" hitArea={false} onClick={() => void kill(t)}><Power /></IconButton> : null}<IconButton aria-label={`Delete template for ${t.sender}`} variant="danger" size="sm" hitArea={false} onClick={() => void remove(t)}><Trash2 /></IconButton></span> : null}</td>
                   </tr>
                 )
               })}

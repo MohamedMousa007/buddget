@@ -76,6 +76,14 @@ export interface EligibleTemplate {
   avg_ai_confidence: number
 }
 
+export interface PromotionCandidate {
+  template_id: string
+  sender: string
+  match_count: number
+  unique_user_count: number
+  age_days: number
+}
+
 export interface SmsTrackedRow {
   id: string
   /** Set when the message's balance was recorded against an account (value only with users.pii). */

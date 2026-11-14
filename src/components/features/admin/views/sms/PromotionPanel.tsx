@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { adminPost, errorMessage } from '../../adminClient'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { Loading, Notice, Panel } from '../../ui/Panel'
-import type { EligibleTemplate, SmsPromotionConfig } from '../../types'
+import type { EligibleTemplate, PromotionCandidate, SmsPromotionConfig } from '../../types'
 
 const DEFAULTS: Omit<SmsPromotionConfig, 'id' | 'updated_at'> = {
   min_match_count: 50, min_unique_users: 3, min_age_days: 7, max_failure_rate: 0.05, min_avg_confidence: 0.9,
@@ -34,6 +34,7 @@ export function PromotionPanel({ canManage }: { canManage: boolean }) {
   const confirm = useConfirm()
   const [draft, setDraft] = useState<SmsPromotionConfig | null>(null)
   const [eligible, setEligible] = useState<EligibleTemplate[]>([])
+  const [candidates, setCandidates] = useState<PromotionCandidate[]>([])
   const [message, setMessage] = useState<{ tone: 'positive' | 'negative' | 'info'; text: string } | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
 
@@ -52,6 +53,23 @@ export function PromotionPanel({ canManage }: { canManage: boolean }) {
   useEffect(() => {
     void call('get', { op: 'get' }).then((r) => r && setDraft(r.config as SmsPromotionConfig))
   }, [call])
+
+  useEffect(() => {
+    void adminPost<{ candidates: PromotionCandidate[] }>('/api/admin/sms/templates', { op: 'candidates' }).then((r) => setCandidates(r.candidates)).catch(() => null)
+  }, [])
+
+  const approve = async (c: PromotionCandidate) => {
+    setBusy(`approve-${c.template_id}`)
+    try {
+      await adminPost('/api/admin/sms/templates', { op: 'promote', id: c.template_id })
+      setCandidates((prev) => prev.filter((x) => x.template_id !== c.template_id))
+      setMessage({ tone: 'positive', text: `Promoted the template for ${c.sender}.` })
+    } catch (e) {
+      setMessage({ tone: 'negative', text: errorMessage(e) })
+    } finally {
+      setBusy(null)
+    }
+  }
 
   const set = (key: NumericKey, value: number) => setDraft((d) => (d ? { ...d, [key]: value } : d))
 
@@ -98,6 +116,21 @@ export function PromotionPanel({ canManage }: { canManage: boolean }) {
       <Panel title="Retirement & health" description="The other half of the funnel: how templates are quarantined and retired.">
         <div className="divide-y divide-[var(--color-brand-border)]">{RETIREMENT.map(field)}</div>
       </Panel>
+      {candidates.length > 0 ? (
+        <Panel title="Needs staff approval" description="Learned from a single user. Approving replays known shapes first and refuses on any regression." className="xl:col-span-2">
+          <div className="divide-y divide-[var(--color-brand-border)]">
+            {candidates.map((c) => (
+              <div key={c.template_id} className="flex items-center justify-between gap-4 py-3">
+                <div className="min-w-0">
+                  <p className="font-mono text-sm font-medium text-[var(--color-brand-text-primary)]">{c.sender}</p>
+                  <p className="text-xs text-[var(--color-brand-text-muted)]">{c.match_count} matches · {c.unique_user_count} user{c.unique_user_count === 1 ? '' : 's'} · {c.age_days} days old</p>
+                </div>
+                {canManage ? <Button variant="outline" size="touch" loading={busy === `approve-${c.template_id}`} onClick={() => void approve(c)}>Approve</Button> : null}
+              </div>
+            ))}
+          </div>
+        </Panel>
+      ) : null}
       <div className="space-y-4 xl:col-span-2">
         {eligible.length > 0 ? <Notice tone="warning">{eligible.length} template{eligible.length > 1 ? 's' : ''} currently eligible · senders: {[...new Set(eligible.map((t) => t.sender))].join(', ')}</Notice> : null}
         {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}

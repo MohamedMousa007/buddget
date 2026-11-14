@@ -1,5 +1,6 @@
-import { invalidateConfigCache } from '@/lib/sms/promotionChecker'
+import { checkAndAutoPromote, invalidateConfigCache } from '@/lib/sms/promotionChecker'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
+import { loadReplayCases } from '@/lib/sms/replayLoader'
 import { can } from '@/lib/admin/permissions'
 
 const DEFAULTS = {
@@ -67,11 +68,14 @@ export async function POST(req: Request) {
   if (body.op === 'run_auto_promote') {
     const { data: eligible, error } = await service.rpc('check_sms_promotion_eligibility')
     if (error) return bad('Eligibility check failed.', 500)
-    const rows = (eligible ?? []) as Array<{ template_id: string }>
+    const rows = (eligible ?? []) as Array<{ template_id: string; sender: string }>
+    for (const sender of new Set(rows.map((r) => r.sender))) {
+      await checkAndAutoPromote(sender, service, { loadReplayCases: (s) => loadReplayCases(service, s) })
+    }
     let promoted = 0
-    for (const row of rows) {
-      const { error: e } = await service.from('sms_tracking_templates_ai').update({ tier: 'curated_db', auto_promoted: true, promoted_at: now, updated_at: now }).eq('id', row.template_id)
-      if (!e) promoted++
+    if (rows.length) {
+      const { data } = await service.from('sms_tracking_templates_ai').select('id').in('id', rows.map((r) => r.template_id)).eq('tier', 'curated_db')
+      promoted = data?.length ?? 0
     }
     await ctx.audit('sms.auto_promote_run', { summary: `Promoted ${promoted} of ${rows.length} eligible templates` })
     return json({ ok: true, promoted, eligible: rows.length })

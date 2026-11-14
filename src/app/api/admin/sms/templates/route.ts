@@ -1,6 +1,11 @@
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import { isSafeRegexPattern } from '@/lib/sms/safeRegex'
 import { can } from '@/lib/admin/permissions'
+import { invalidateCuratedDbCache } from '@/lib/sms/curatedDbCache'
+import { loadReplayCases } from '@/lib/sms/replayLoader'
+import { replayCandidate } from '@/lib/sms/replayHarness'
+import type { MappingRules } from '@/lib/sms/templateApply'
+import type { AdminContext } from '@/lib/server/admin/guard'
 
 type Body = {
   op?: string
@@ -8,8 +13,20 @@ type Body = {
   patch?: { ai_enabled?: boolean; regex_pattern?: string }
 }
 
-const READ_OPS = new Set(['list', 'keyword_pool', 'check_eligibility'])
+const READ_OPS = new Set(['list', 'keyword_pool', 'check_eligibility', 'candidates'])
 const TABLE = 'sms_tracking_templates_ai'
+
+type Service = AdminContext['service']
+
+/** Marks the transactions a revoked template created so they get a second look. Returns how many were flagged. */
+async function flagTemplateRows(service: Service, templateId: string, nowIso: string): Promise<number> {
+  const { data, error } = await (service.from('sms_parse_log') as unknown as {
+    update: (row: Record<string, unknown>) => {
+      eq: (c: string, v: unknown) => { eq: (c: string, v: unknown) => { is: (c: string, v: null) => { select: (c: string) => Promise<{ data: unknown[] | null; error: unknown }> } } }
+    }
+  }).update({ template_revoked_at: nowIso }).eq('matched_template_id', templateId).eq('parsed_ok', true).is('template_revoked_at', null).select('id')
+  return error ? 0 : (data?.length ?? 0)
+}
 
 export async function POST(req: Request) {
   const g = await guardAdmin(req, { permission: 'sms.view' })
@@ -42,6 +59,11 @@ export async function POST(req: Request) {
     const { data, error } = await service.from(TABLE).update(safe).eq('id', id).select().single()
     if (error) return bad('Update failed.', 500)
     await ctx.audit('sms.template_update', { ...target, summary: 'Edited SMS template', metadata: { fields: Object.keys(safe).filter((k) => k !== 'updated_at') } })
+    if (safe.ai_enabled === false) {
+      invalidateCuratedDbCache()
+      const flagged = await flagTemplateRows(service, id, now)
+      return json({ ok: true, template: data, flagged })
+    }
     return json({ ok: true, template: data })
   }
 
@@ -59,14 +81,42 @@ export async function POST(req: Request) {
     return json({ ok: true })
   }
 
-  if ((op === 'promote' || op === 'demote') && typeof id === 'string') {
-    const update = op === 'promote'
-      ? { tier: 'curated_db', promoted_at: now, auto_promoted: false, updated_at: now }
-      : { tier: 'template', promoted_at: null, auto_promoted: false, updated_at: now }
-    const { error } = await service.from(TABLE).update(update).eq('id', id)
-    if (error) return bad(`${op === 'promote' ? 'Promote' : 'Demote'} failed.`, 500)
-    await ctx.audit(`sms.template_${op}`, { ...target, summary: `${op === 'promote' ? 'Promoted to Curated DB' : 'Demoted to supervised'}` })
-    return json({ ok: true })
+  if (op === 'kill' && typeof id === 'string') {
+    const { error } = await service.from(TABLE).update({ ai_enabled: false, tier: 'template', promoted_at: null, auto_promoted: false, updated_at: now }).eq('id', id)
+    if (error) return bad('Switch off failed.', 500)
+    invalidateCuratedDbCache()
+    const flagged = await flagTemplateRows(service, id, now)
+    await ctx.audit('sms.template_kill', { ...target, summary: 'Switched off SMS template', metadata: { flagged } })
+    return json({ ok: true, flagged })
+  }
+
+  if (op === 'promote' && typeof id === 'string') {
+    const { data: tpl } = await service.from(TABLE).select('sender, regex_pattern, mapping_rules, status, ai_enabled, failure_count, hard_fail').eq('id', id).single()
+    if (!tpl) return bad('Template not found.', 404)
+    if (tpl.status !== 'active' || !tpl.ai_enabled || tpl.failure_count || tpl.hard_fail) return bad('This template is not active or has recorded failures.')
+    const cases = await loadReplayCases(service, tpl.sender)
+    const report = replayCandidate({ regex: tpl.regex_pattern, rules: tpl.mapping_rules as unknown as MappingRules }, cases)
+    if (!report.ok) return bad(`Replay found ${report.regressions.length} regression(s); not promoted.`)
+    const { error } = await service.from(TABLE).update({ tier: 'curated_db', promoted_at: now, auto_promoted: false, updated_at: now }).eq('id', id)
+    if (error) return bad('Promote failed.', 500)
+    invalidateCuratedDbCache()
+    await ctx.audit('sms.template_promote', { ...target, summary: 'Promoted to Curated DB', metadata: { replayChecked: cases.length } })
+    return json({ ok: true, replayChecked: cases.length })
+  }
+
+  if (op === 'demote' && typeof id === 'string') {
+    const { error } = await service.from(TABLE).update({ tier: 'template', promoted_at: null, auto_promoted: false, updated_at: now }).eq('id', id)
+    if (error) return bad('Demote failed.', 500)
+    invalidateCuratedDbCache()
+    const flagged = await flagTemplateRows(service, id, now)
+    await ctx.audit('sms.template_demote', { ...target, summary: 'Demoted to supervised', metadata: { flagged } })
+    return json({ ok: true, flagged })
+  }
+
+  if (op === 'candidates') {
+    const { data, error } = await (service as unknown as { rpc: (fn: string) => Promise<{ data: unknown; error: unknown }> }).rpc('sms_promotion_candidates')
+    if (error) return bad('Candidate check failed.', 500)
+    return json({ candidates: data ?? [] })
   }
 
   if (op === 'keyword_pool') {

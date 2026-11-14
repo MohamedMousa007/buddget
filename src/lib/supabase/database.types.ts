@@ -3351,6 +3351,7 @@ export type Database = {
           learn_template_id: string | null
           skeleton_key: string | null
           shape_key: string | null
+          template_revoked_at: string | null
           matched_template_id: string | null
           merchant: string | null
           merchant_normalized: string | null
@@ -3406,6 +3407,7 @@ export type Database = {
           learn_template_id?: string | null
           skeleton_key?: string | null
           shape_key?: string | null
+          template_revoked_at?: string | null
           matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
@@ -3461,6 +3463,7 @@ export type Database = {
           learn_template_id?: string | null
           skeleton_key?: string | null
           shape_key?: string | null
+          template_revoked_at?: string | null
           matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
@@ -4591,6 +4594,16 @@ export type Database = {
           age_days: number
           avg_ai_confidence: number
           failure_rate: number
+          match_count: number
+          sender: string
+          template_id: string
+          unique_user_count: number
+        }[]
+      }
+      sms_promotion_candidates: {
+        Args: never
+        Returns: {
+          age_days: number
           match_count: number
           sender: string
           template_id: string
