@@ -97,3 +97,119 @@ To reprint: export `scripts/qa/sms-gold-inputs.sql` to `.claude/sms-gold-inputs.
 ## Gate
 
 `npm run verify` passed on the final tree (2026-11-14): lint 0 errors, types clean, 5173 tests in Cairo and New York, coverage 86.8% lines and 77.7% branches, migration check, dependency audit, production build. A first run failed on one test that was added while that run was in progress and executed before its fix was saved; it passes on the settled tree and the full gate was re-run from scratch.
+
+---
+
+# S2 follow-up: the four fixes for the missed targets
+
+Date 2026-11-14. Spec: `docs/launch/S1-sms-audit.md` 6b and 6c. Built in the order 3, 1, 4, 2. Design and diff review by Fable; the admin views, the bank picker, the test fakes, the own-transfer endpoint and prompts, and the category prompts were written by Sonnet subagents and reviewed. Migrations 0264 to 0267 are applied to the live project; all are additive except two function replacements (the promotion eligibility check and the category-edit trigger).
+
+## Metrics after the follow-up
+
+| Metric | Train: S2 → now | Holdout: S2 → now | Target |
+|---|---|---|---|
+| Unplaced SMS expenses, all users | 46% → 14% | 51% → 15% | under 10% |
+| Purchases in Other or uncategorised | 23% → 22% | 35% → 31% | under 25% (relaxed to 30% by the council) |
+| Parsed messages needing the AI | 57% → 57% | 59% → 59% | under 35% |
+
+Unplaced: every row still unassigned has no account digits at all (53 of 53 on train, 24 of 25 on holdout), so it cannot become an account. The AI share did not move: the two promotions give no new reach yet (see part 3).
+
+Provider cascade, scored on rows whose bank is known, with that knowledge hidden:
+
+| Stage | Train precision / coverage | Holdout precision / coverage | Acts on its own |
+|---|---|---|---|
+| Body (hotline, then name) | 100% (51 of 51) / 38% | 100% (24 of 24) / 39% | yes |
+| Same user's history of the digits | 100% (128 of 128) / 96% | 100% (61 of 61) / 98% | yes |
+| Other users' format, 3+ users | 100% (22 of 22) / 16% | 100% (8 of 8) / 13% | yes, at 3+ users with nothing contradicting |
+| Other users' format, 1 or 2 users | 100% (89 of 89) / 66% | 100% (40 of 40) / 65% | no: suggestion only |
+
+On the sender-less messages themselves the cascade names a bank for 46% (train) and 42% (holdout), up from 11% and 10%: about a third from the body and two thirds from history. The format stage names none of them today: the sender-less users' formats have not been seen from three other users.
+
+## Part 3: template promotion
+
+**Shipped**
+- Kill switch: "Switch off" in the admin Templates panel (new op `kill`). Switching off, demoting or disabling a template flags every transaction it created (`sms_parse_log.template_revoked_at`).
+- Manual promotion and the admin "run auto-promote" now go through the replay gate; before, both promoted without one.
+- Rule: the hard-coded 5-user floor is 2. A template with any recorded failure is never eligible. A single-user template (15+ matches, zero failures, 14+ days) is only listed under "Needs staff approval" in the Promotion panel; approving runs the replay gate.
+- `src/lib/sms/gold/templateReplay.ts`: replays a template over every stored message (952, all users, including the non-transactions), and compares its amount, direction (after the direction guard), currency and digits with the reading of the other tiers.
+
+**Promotions made (2 of 47 active learned templates)**
+
+Gate: zero false positives, zero disagreements on amount, direction, currency or digits, same kind as the other tier, 3+ independent readings, 3+ of them on raw text, 14+ days old, no recorded failure.
+
+| Template | Before → after | Evidence |
+|---|---|---|
+| `b0f41406-7b18-4525-9d5f-c8c7c03bfa44` (income) | template → curated_db | 2 users, 82 days old, 3 independent readings, all 3 compared exactly, 0 disagreements, 0 false positives |
+| `a7986fbd-a629-44f4-90f6-6afb15ade219` (purchase) | template → curated_db | 1 user, 24 days old, 56 independent readings, 6 compared exactly, 0 disagreements, 0 false positives |
+
+Neither template matched any message of a user who had not contributed to it, in either direction: no cross-user false positive, and no cross-user proof either. So the promotions change nothing for today's users; they only make these two formats parse without the AI for the next user of the same bank.
+
+Rollback (either or both):
+```sql
+update public.sms_tracking_templates_ai
+   set tier = 'template', promoted_at = null, auto_promoted = false, updated_at = now()
+ where id in ('b0f41406-7b18-4525-9d5f-c8c7c03bfa44', 'a7986fbd-a629-44f4-90f6-6afb15ade219');
+```
+or use Demote / Switch off in the admin Templates panel, which also flags the rows they parsed.
+
+Not promoted, and why: 6 more passed the first gate but failed the stricter one (too young, the other tier chose a different kind, or too few exact comparisons); 6 have recorded failures; 1 matched a non-transaction message; the rest have fewer than 3 independent readings.
+
+Config change: `sms_promotion_config.min_unique_users` 5 → 2. To restore: `update public.sms_promotion_config set min_unique_users = 5 where id = 1;` (the function floor would still be 2).
+
+## Part 1: bank for sender-less messages
+
+**Shipped and applied**
+- The cascade (`providerCascade.ts`), with the stage recorded on every row (`bank_source`): sender, code pattern, body, the user's confirmed account, the user's history of the digits, other users' format.
+- Body stage made safer: a hotline outranks a name, and a bank name inside a transfer or cash-machine message is not taken for the sender unless it opens the message. This removed the one wrong answer the stage had.
+- History: 4+ digits, exactly one bank; a second bank drops the mapping. A bank that was itself inferred is never evidence for the next message.
+- The AI's bank name no longer sets the bank anywhere. It is stored as a suggestion (`bank_suggestion`).
+- Fallback: with no bank but 4+ digits and a currency, a provisional "Account ••1234". Keeping it opens the existing provider picker (Egypt and Saudi first); the confirmed account then names the bank for later messages and counts as that user's one vote for the format.
+
+**Log-only, and why**
+- Format memory below 3 distinct users: it only fills `bank_suggestion`. At today's scale that is every sender-less case.
+- The suggestion is stored but not yet shown as the pre-selected bank in the picker (the picker has no pre-selection input and was not reshaped).
+
+**iPhone sender.** `docs/IOS_SMS_TRACKING.md` already records it: the Shortcuts Message automation hands over the text and nothing about the sender (0 of 824 forwarded messages carried one). One route exists without Apple changing anything: the automation is filtered per sender or per phrase, so each automation could pass a fixed "bank" value the user picks when setting it up. That changes the Shortcut and its setup steps, so it was not done.
+
+## Part 4: own-account transfers
+
+**Shipped and applied**
+- `ownTransferDecision.ts`. Settles only on: a debit and a credit on different accounts, captured by the same device, same amount (a fee difference only with a matching reference), plus one of: same reference, same counterparty name, counterparty digits of an own account, or the user's remembered answer.
+- Counterparty names are compared as a per-user salted hash (`counterparty_hash`); the name is not stored and hashes cannot be joined across users.
+- Every leg's signals, verdict and candidate are recorded.
+- This is stricter than before: a shared reference alone, or two registered accounts with a fee difference, used to settle; now they ask.
+- Middle evidence: the user is asked once in Flow; the answer is remembered per pair of accounts (`sms_own_transfer_answers`) and becomes a signal for later pairs.
+- Undo: a settled pair shows once in Flow with Undo; the income is restored and the expense counts as spending again (`POST /api/sms/own-transfer`).
+- The same account on both legs stays "possible pass-through". A provisional account alone no longer makes a transfer an own transfer. The profile-name signal can only raise a question.
+
+**Log-only, and why**
+- Self-name learned from confirmed pairs (signal d): nothing reads it. The hashes of confirmed pairs are stored, which is what a later rule needs; there are no user-confirmed pairs yet (the threshold is 3).
+
+**Measured.** In five months there are 54 candidate in/out pairs. 52 are on one account (pass-through; the rule calls none of them an own transfer, so zero false merges), 1 is a real cross-account pair on one device with a shared reference (settles under the new rule, as it did before), and 1 has an unknown account. Precision cannot be stated on one pair.
+
+**To know.** 24% of the last 30 days' messages carry no device id (older app builds). For those users a real own transfer is asked about instead of settled.
+
+## Part 2: categories for cut-off names
+
+**Shipped and applied**
+- A cut-off name is filed with the user's own earlier merchant it is a prefix of, or the reverse, only with 5+ shared characters and exactly one fit.
+- A manual category edit now also files the same merchant's other uncategorised purchases at once, with Undo (rows the user already categorised are never changed).
+- Ask once per unknown merchant with 2+ purchases, in Flow. There is no reusable category picker (the only one is inside the expense form), so the question opens the existing expense sheet on one of the purchases: choosing a category there files the rest. Either answer, including "Not now", is remembered.
+- The AI's guess is not shown as a pre-selection in that sheet.
+- Learning from an edit happens only on purchases: no key derived from a transfer, cash-machine or wallet description is stored.
+
+**Log-only, and why**
+- A category another user's purchases taught is applied only from a curated seed row or from 5+ distinct users agreeing. The 117 single-source AI rows in the shared table are no longer applied to other users; they remain as a log.
+
+**Measured.** Top-1 accuracy against edits and the revert rate cannot be stated: there is 1 manual category edit in the whole database.
+
+**Not changed, for the owner to decide.** The background AI categoriser still sets the category of a purchase nobody knows (it did before this work). Under the new guard it would only pre-fill the question. Switching it to suggestion-only would push "Other" back up until users answer.
+
+## Needs the owner
+
+1. The AI categoriser: keep applying its guess, or make it suggestion-only (above).
+2. Whether to add a "bank" value to the iPhone Shortcut setup (part 1).
+3. A reusable category picker does not exist. If the ask-once question should let the user pick in place, a `CategoryGrid` primitive would have to be extracted from the expense form (a new component, so it waits for your say).
+4. `useSmsCounterparty` reads the transfer counterparty from `sms_parse_log.merchant`, which S2 stopped writing for transfers; where that hook is shown the name now comes only from the transaction title.
+5. The two promotions and the 5 → 2 config change are live; the rollback SQL is above.
+6. The 15 relabels are still out of the gold set.
