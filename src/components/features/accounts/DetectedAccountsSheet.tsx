@@ -20,6 +20,7 @@ import { PAYMENT_BRANDS, PAYMENT_TYPE_META, resolvePaymentBrandKey } from '@/lib
 import { parentAccountFor } from '@/lib/accounts/parentAccount'
 import { withAlias } from '@/lib/accounts/identity/accountRef'
 import { useReattribute } from '@/lib/accounts/useReattribute'
+import { confirmProvisional, mergeProvisional, provisionalIdOf, rejectProvisional } from '@/lib/accounts/provisional'
 import { BrandMark } from './BrandMark'
 
 type Step = { key: string; mode: 'actions' | 'link' } | null
@@ -28,8 +29,9 @@ const titleOf = (a: DetectedAccount) => `${a.provider ? `${a.provider} ` : ''}â€
 
 /**
  * Every account, card and wallet the bank messages mention that no payment method owns yet, one row each. A row opens
- * its own three answers (Add, Link existing, Not mine), so nothing is ever added for the user and there is no bulk
- * path. The count here, on the Accounts row, on the avatar dot and in the Inbox all come from `useDetectedAccounts`.
+ * its own three answers (Add, Link existing, Not mine) and there is no bulk path. A provisional account (one the server
+ * created from a message that gave bank, digits and currency) is listed first with the same three answers: Keep it,
+ * Link existing (merge: its history moves over) or Not mine, each with Undo. The count here, on the Accounts row, on the avatar dot and in the Inbox all come from `useDetectedAccounts`.
  */
 export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boolean; onClose: () => void; onManual: () => void }) {
   const all = useT()
@@ -75,7 +77,16 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
     else back()
   }
 
+  const withUndo = (message: string, undo: () => void) => toast(message, { undoLabel: all.common.undo, undo })
   const add = (a: DetectedAccount) => {
+    const provisionalId = provisionalIdOf(a.key)
+    if (provisionalId) {
+      withUndo(t.keptToast(titleOf(a)), confirmProvisional(provisionalId))
+      // Earlier messages that named these digits before the account existed move onto it too.
+      void reattribute(provisionalId, a.last4)
+      done()
+      return
+    }
     const { provider, last4, type, currency } = a
     close()
     if (type === 'bank_account') {
@@ -89,12 +100,26 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
   const link = (a: DetectedAccount) => {
     const target = paymentMethods.find((pm) => pm.id === choice)
     if (!target) return
+    const provisionalId = provisionalIdOf(a.key)
+    if (provisionalId) {
+      const undo = mergeProvisional(provisionalId, choice)
+      if (!undo) return
+      withUndo(t.reattached(a.count), undo)
+      done()
+      return
+    }
     updatePaymentMethod(choice, withAlias(target, a.last4))
     void reattribute(choice, a.last4)
     settlePrompt(a.key)
     done()
   }
   const notMine = (a: DetectedAccount) => {
+    const provisionalId = provisionalIdOf(a.key)
+    if (provisionalId) {
+      withUndo(t.hiddenToast(titleOf(a)), rejectProvisional(provisionalId))
+      done()
+      return
+    }
     const handle = deferred.schedule([a.key])
     setHidden((h) => new Set([...h, a.key]))
     toast(t.hiddenToast(titleOf(a)), {
@@ -106,7 +131,7 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
     done()
   }
 
-  const addLabel = (a: DetectedAccount) => (a.type === 'bank_account' ? t.addAccount : a.type === 'wallet' ? all.prompts.addWallet : all.prompts.addCard)
+  const addLabel = (a: DetectedAccount) => provisionalIdOf(a.key) ? t.keepAccount : (a.type === 'bank_account' ? t.addAccount : a.type === 'wallet' ? all.prompts.addWallet : all.prompts.addCard)
   const empty = list.length === 0 && !step
 
   // The three views of one sheet: the list, one account's answers, and the "link toâ€¦" choice.
@@ -121,7 +146,7 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
   if (step && current) {
     if (step.mode === 'actions') {
       title = titleOf(current)
-      subtitle = t.detectedPick
+      subtitle = provisionalIdOf(current.key) ? t.provisionalPick : t.detectedPick
       primary = { label: addLabel(current), onPress: () => add(current) }
       secondary = { label: all.prompts.linkExisting, onPress: () => setStep({ key: current.key, mode: 'link' }), disabled: paymentMethods.length === 0 }
       body = (
@@ -129,7 +154,7 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
           <Button variant="ghost" size="touch" className="w-full justify-center font-semibold text-[var(--color-brand-red)]" onClick={() => notMine(current)}>
             {all.prompts.notMine}
           </Button>
-          <p className="text-center text-xs text-[var(--color-brand-text-secondary)]">{t.notMineNote}</p>
+          <p className="text-center text-xs text-[var(--color-brand-text-secondary)]">{provisionalIdOf(current.key) ? t.provisionalNotMineNote : t.notMineNote}</p>
         </>
       )
     } else {
@@ -143,7 +168,7 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
           onChange={setChoice}
           placeholder={all.settings.linkToExisting}
           aria-label={all.settings.linkToExisting}
-          items={paymentMethods.map((pm) => ({ value: pm.id, label: pm.name }))}
+          items={paymentMethods.filter((pm) => !pm.provisional).map((pm) => ({ value: pm.id, label: pm.name }))}
         />
       )
     }
@@ -151,11 +176,11 @@ export function DetectedAccountsSheet({ open, onClose, onManual }: { open: boole
     body = list.map((a) => {
       const color = PAYMENT_BRANDS[resolvePaymentBrandKey(a.provider ?? '') ?? '']?.colors[0] ?? PAYMENT_TYPE_META.bank_account.color
       return (
-        <SelectableCard key={a.key} as="action" layout="row" aria-label={`${titleOf(a)}. ${all.prompts.acctBody(a.count)}`} onClick={() => setStep({ key: a.key, mode: 'actions' })} className="h-auto min-h-[56px] py-2.5">
+        <SelectableCard key={a.key} as="action" layout="row" aria-label={`${titleOf(a)}. ${provisionalIdOf(a.key) ? t.provisionalBody(a.count) : all.prompts.acctBody(a.count)}`} onClick={() => setStep({ key: a.key, mode: 'actions' })} className="h-auto min-h-[56px] py-2.5">
           <BrandMark name={a.provider ?? 'Bank'} color={color} size={40} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]" dir="auto">{titleOf(a)}</span>
-            <span className="block text-xs text-[var(--color-brand-text-secondary)]">{all.prompts.acctBody(a.count)}</span>
+            <span className="block text-xs text-[var(--color-brand-text-secondary)]">{provisionalIdOf(a.key) ? t.provisionalBody(a.count) : all.prompts.acctBody(a.count)}</span>
           </span>
           <ChevronRight className="size-4 shrink-0 text-[var(--color-brand-text-secondary)] rtl:rotate-180" aria-hidden />
         </SelectableCard>

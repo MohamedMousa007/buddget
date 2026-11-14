@@ -2369,6 +2369,7 @@ export type Database = {
         Row: {
           excluded: boolean
           parent_id: string | null
+          provisional: boolean
           opening_balance: number | null
           opening_at: string | null
           closed_at: string | null
@@ -2392,6 +2393,7 @@ export type Database = {
         Insert: {
           excluded?: boolean
           parent_id?: string | null
+          provisional?: boolean
           opening_balance?: number | null
           opening_at?: string | null
           closed_at?: string | null
@@ -2415,6 +2417,7 @@ export type Database = {
         Update: {
           excluded?: boolean
           parent_id?: string | null
+          provisional?: boolean
           opening_balance?: number | null
           opening_at?: string | null
           closed_at?: string | null

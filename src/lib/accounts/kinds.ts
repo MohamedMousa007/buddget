@@ -23,12 +23,14 @@ export function pickablePaymentMethods(methods: readonly PaymentMethod[], keepId
   return methods.filter((m) => m.id === keepId || (!m.closedAt && !(realCash && m.id === DEFAULT_CASH_ID)))
 }
 
+/** A provisional account (created from a bank message, not yet confirmed) never carries a balance or reaches net worth. */
 export const isTracked = (pm: PaymentMethod): boolean =>
-  holdsBalance(pm.type) && pm.openingBalance != null && pm.openingAt != null
+  holdsBalance(pm.type) && pm.openingBalance != null && pm.openingAt != null && !pm.provisional
 
 /** Live (not closed) balance holders, the rows of the Accounts list. */
 /** The in-store cash sentinel is a stand-in for the Cash account, never an account row of its own. */
-export const isOpenAccount = (pm: PaymentMethod): boolean => holdsBalance(pm.type) && !pm.closedAt && pm.id !== DEFAULT_CASH_ID
+/** A provisional account waits in the detected-accounts sheet for the user's answer before it joins the list. */
+export const isOpenAccount = (pm: PaymentMethod): boolean => holdsBalance(pm.type) && !pm.closedAt && pm.id !== DEFAULT_CASH_ID && !pm.provisional
 
 /** Whether any ledger row points at this account. */
 export function hasAccountHistory(

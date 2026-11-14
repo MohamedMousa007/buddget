@@ -68,6 +68,8 @@ export interface PaymentMethod {
   trackSms?: boolean
   /** Not the user's money (a card someone else uses): its spending and balance stay out of totals. The ledger stays true. */
   excluded?: boolean
+  /** Created by the server from a bank message and not yet confirmed by the user: carries history, never a balance. */
+  provisional?: boolean
   id: string
   name: string
   type: PaymentMethodType

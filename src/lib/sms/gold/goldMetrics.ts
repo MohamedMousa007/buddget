@@ -10,6 +10,11 @@
  * slice shows up as movement here before any live row is repaired (repair is S3).
  */
 import { normalizeMerchant } from '@/lib/sms/merchantNormalizer'
+import { placeSmsAccount } from '@/lib/sms/accountPlacement'
+import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
+import { decomposePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
+import type { Identified } from '@/lib/accounts/identity/accountRef'
+import { providerFromBody } from '@/lib/sms/providerFromBody'
 
 export interface GoldLabel { s: 't' | 'h'; topup?: string; relay?: string; fx?: string }
 export interface GoldRow {
@@ -18,7 +23,18 @@ export interface GoldRow {
   ld?: string; pl?: string; dup?: 1; e?: 1; epm?: string; eto?: string; ecat?: string; i?: 1; ipm?: string
 }
 export interface GoldMethod { id: string; u: string; type: string; c: string; t: string | null; al: string[] | null; name: string; closed: boolean }
-export interface GoldInputs { rows: GoldRow[]; methods: GoldMethod[] }
+export interface GoldInputs {
+  rows: GoldRow[]
+  methods: GoldMethod[]
+  /** Masked bodies by log id, local only. Old rows stored no bank name; today's route names it from the body. */
+  bodies?: Record<string, string>
+}
+
+/** The bank a message is from, resolved the way the parse route does: sender, stored bank name, then the body. */
+export function bankKeyOf(inputs: GoldInputs, r: GoldRow): string | null {
+  return resolvePaymentBrandKey(r.s) ?? resolvePaymentBrandKey(r.b)
+    ?? resolvePaymentBrandKey(inputs.bodies?.[r.id] ? providerFromBody(inputs.bodies[r.id])?.name : null)
+}
 
 export interface Metric { name: string; now: string; replay: string; target: string }
 
@@ -27,6 +43,33 @@ const PENDING = 'pending (later slice)'
 const pct = (n: number, d: number) => (d === 0 ? 'n/a' : `${Math.round((n / d) * 100)}% (${n}/${d})`)
 const foldName = (m: string | undefined) => (m ? m.toLowerCase().replace(/[^a-z0-9؀-ۿ]/g, '') || null : null)
 
+/**
+ * Replays account placement in arrival order, so an account one message creates receives the next ones, as on the
+ * server. Returns, per log id, where the row lands: a registered account, a provisional one, or nowhere.
+ */
+export function replayPlacement(inputs: GoldInputs): Map<string, 'existing' | 'provisional' | 'unassigned'> {
+  const byUser = new Map<string, Identified[]>()
+  for (const m of inputs.methods) {
+    const bankKey = resolvePaymentBrandKey(decomposePaymentMethodName(m.name.trim(), m.t ?? undefined).provider) ?? resolvePaymentBrandKey(m.name)
+    byUser.set(m.u, [...(byUser.get(m.u) ?? []), { id: m.id, last4: m.t, last4Aliases: m.al, bankKey }])
+  }
+  const created = new Set<string>()
+  const out = new Map<string, 'existing' | 'provisional' | 'unassigned'>()
+  for (const r of [...inputs.rows].sort((a, b) => a.ts - b.ts)) {
+    if (!r.k || r.dup) continue
+    const methods = byUser.get(r.u) ?? []
+    const p = placeSmsAccount(methods, { tail: r.t ?? null, bankKey: bankKeyOf(inputs, r), currency: r.c ?? null })
+    if (p.kind === 'provisional') {
+      const id = `prov:${r.u}:${p.bankKey}:${p.tail}:${p.currency}`
+      created.add(id)
+      byUser.set(r.u, [...methods, { id, last4: p.tail, bankKey: p.bankKey }])
+      out.set(r.id, 'provisional')
+    } else if (p.kind === 'existing') out.set(r.id, created.has(p.id) ? 'provisional' : 'existing')
+    else out.set(r.id, 'unassigned')
+  }
+  return out
+}
+
 export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, GoldLabel>, split: 't' | 'h'): Metric[] {
   const rows = inputs.rows.filter((r) => labels[r.id]?.s === split && !r.dup)
   const out: Metric[] = []
@@ -34,10 +77,30 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
   // 1 + 2. Accounts.
   const expenseRows = rows.filter((r) => r.e && r.ecat !== 'CC Payoff')
   const unplacedNow = expenseRows.filter((r) => !r.epm)
-  out.push({ name: 'SMS expenses shown as Cash without being cash', now: String(unplacedNow.length), replay: PENDING, target: '0' })
+  // A row production already placed keeps its account; the rest go through today's placement.
+  const placement = replayPlacement(inputs)
+  const landsOn = (r: GoldRow) => (r.epm ? 'existing' : placement.get(r.id) ?? 'unassigned')
+  const stillUnplaced = expenseRows.filter((r) => landsOn(r) === 'unassigned')
+  const shownAsCash = stillUnplaced.filter((r) => smsAccountLabelKind({ smsLogId: r.id, paymentMethodId: '' }) !== 'unassigned')
+  out.push({ name: 'SMS expenses shown as Cash without being cash', now: String(unplacedNow.length), replay: String(shownAsCash.length), target: '0' })
   const withAccounts = new Set(inputs.methods.map((m) => m.u))
   const scoped = expenseRows.filter((r) => withAccounts.has(r.u))
-  out.push({ name: 'Unplaced SMS expenses (users with an account)', now: pct(scoped.filter((r) => !r.epm).length, scoped.length), replay: PENDING, target: '<10%' })
+  out.push({
+    name: 'Unplaced SMS expenses (users with an account)',
+    now: pct(scoped.filter((r) => !r.epm).length, scoped.length),
+    replay: `${pct(scoped.filter((r) => landsOn(r) === 'unassigned').length, scoped.length)}, ${scoped.filter((r) => landsOn(r) === 'provisional').length} on provisional accounts`,
+    target: '<10%',
+  })
+  out.push({
+    name: 'Unplaced SMS expenses (all users)',
+    now: pct(unplacedNow.length, expenseRows.length),
+    replay: `${pct(stillUnplaced.length, expenseRows.length)}, ${expenseRows.filter((r) => landsOn(r) === 'provisional').length} on provisional accounts`,
+    target: '<10%',
+  })
+  // Why the rest stay unassigned under rule 6a.1: which of bank / digits the message lacks.
+  const noBank = stillUnplaced.filter((r) => !bankKeyOf(inputs, r)).length
+  const noDigits = stillUnplaced.filter((r) => !r.t).length
+  out.push({ name: '  of those still unassigned: no bank / no digits', now: '-', replay: `${noBank} / ${noDigits} of ${stillUnplaced.length}`, target: '-' })
 
   // 3 to 5. Merchant and category.
   const purchases = rows.filter((r) => PURCHASE.has(r.k ?? '') && r.m)

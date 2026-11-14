@@ -32,6 +32,7 @@ import { useIncomeResolution } from '@/components/features/flow/IncomePrompts'
 import { compareFlowItems, instantOf } from '@/components/features/flow/flowOrder'
 import { useLocale, useT } from '@/lib/i18n'
 import { useWeekStart } from '@/hooks/useWeekStart'
+import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import type { Expense, IncomeEvent, IncomeSource, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 const REALIZED = new Set<IncomeEvent['status']>(['confirmed', 'late', 'partial'])
@@ -166,7 +167,7 @@ export function useFlowLedger() {
       const nonSpend = isNonSpendExpense(e)
       const dim = Boolean(e.refundKind)
       const statusDate = shortDate(e.refundedAt ?? e.date)
-      const pmLabel = methodLabel(pmById.get(e.paymentMethodId)) ?? t.common.unknown
+      const pmLabel = smsAccountLabelKind(e) === 'unassigned' ? t.common.unassigned : methodLabel(pmById.get(e.paymentMethodId)) ?? t.common.unknown
       return {
         id: e.id,
         dir: 'out',

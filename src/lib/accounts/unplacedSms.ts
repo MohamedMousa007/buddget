@@ -11,6 +11,15 @@ export function unplacedSmsExpenses(expenses: readonly Expense[]): Expense[] {
   )
 }
 
+/**
+ * How a ledger row names where its money came from. A bank-message expense the server could not place is stored with
+ * no account, which the store reads back as the cash sentinel: that is a storage default, not a fact, so it is shown as
+ * "Unassigned". A manual expense on the same sentinel really is cash.
+ */
+export function smsAccountLabelKind(e: Pick<Expense, 'smsLogId' | 'paymentMethodId'>): 'unassigned' | 'method' {
+  return e.smsLogId && (!e.paymentMethodId || e.paymentMethodId === DEFAULT_CASH_ID) ? 'unassigned' : 'method'
+}
+
 /** Totals per currency, so mixed-currency rows are never added together. */
 export function totalsByCurrency(rows: readonly Pick<Expense, 'amount' | 'currency'>[]): Record<string, number> {
   const out: Record<string, number> = {}

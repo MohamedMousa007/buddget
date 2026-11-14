@@ -138,6 +138,7 @@ export interface Dictionary {
     remove: string
     loading: string
     unknown: string
+    unassigned: string
     dismiss: string
     undo: string
     dash: string
@@ -224,6 +225,11 @@ export interface Dictionary {
     unplacedAttach: (n: number) => string
     unplacedAccount: string
     reattached: (n: number) => string
+    keepAccount: string
+    keptToast: (label: string) => string
+    provisionalPick: string
+    provisionalNotMineNote: string
+    provisionalBody: (n: number) => string
     attachMessagesName: string
     attachMessagesSub: (n: number, amount: string) => string
     attachMessagesCta: string

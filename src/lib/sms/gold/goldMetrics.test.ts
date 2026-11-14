@@ -7,6 +7,8 @@ import { computeGoldMetrics, formatMetrics, type GoldInputs, type GoldLabel } fr
 const labels = labelsJson as Record<string, GoldLabel>
 /** Local export of scripts/qa/sms-gold-inputs.sql. Never committed: without it only the fixture checks run. */
 const INPUTS = process.env.SMS_GOLD_INPUTS ?? path.resolve(__dirname, '../../../../.claude/sms-gold-inputs.json')
+/** Optional: masked bodies by log id (`select id, masked_body from sms_parse_log`), for the checks that need wording. */
+const BODIES = process.env.SMS_GOLD_BODIES ?? path.resolve(__dirname, '../../../../.claude/sms-gold-bodies.json')
 
 describe('gold set fixture', () => {
   it('holds labels only, keyed by log id', () => {
@@ -32,6 +34,7 @@ describe('gold set fixture', () => {
 describe.skipIf(!existsSync(INPUTS))('gold set metrics (needs the local inputs export)', () => {
   it('prints the section 5 metrics for train and holdout', () => {
     const inputs = JSON.parse(readFileSync(INPUTS, 'utf8')) as GoldInputs
+    if (existsSync(BODIES)) inputs.bodies = JSON.parse(readFileSync(BODIES, 'utf8'))
     for (const [split, title] of [['t', 'train'], ['h', 'holdout']] as const) {
       const metrics = computeGoldMetrics(inputs, labels, split)
       console.log(formatMetrics(title, metrics))

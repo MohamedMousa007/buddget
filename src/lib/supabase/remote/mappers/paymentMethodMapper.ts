@@ -22,6 +22,7 @@ export function paymentMethodToRow(pm: PaymentMethod, userId: string): PaymentMe
     // Every account is checked against its bank messages; the choice was retired (see docs/ARCHIVED_FEATURES.md).
     track_sms: true,
     excluded: pm.excluded ?? false,
+    provisional: pm.provisional ?? false,
   }
 }
 
@@ -42,6 +43,7 @@ export function paymentMethodFromRow(row: PaymentMethodRow): PaymentMethod {
     closedAt: row.closed_at ?? undefined,
     trackSms: true,
     excluded: row.excluded || undefined,
+    provisional: row.provisional || undefined,
     createdAt: row.created_at ?? undefined,
     updatedAt: row.edited_at,
   }

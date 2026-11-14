@@ -23,6 +23,7 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
 import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
+import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { Button } from '@/components/ui/button'
 
 function fmtNum(n: number): string {
@@ -140,7 +141,8 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
           <div className="border-y border-[var(--color-brand-border)] bg-[var(--color-brand-card)]">
             {g.items.map((e, idx) => {
               const colors = categoryChipColors(e.category)
-              const method = paymentMethods.find((m) => m.id === e.paymentMethodId)
+              const unassigned = smsAccountLabelKind(e) === 'unassigned'
+              const method = unassigned ? undefined : paymentMethods.find((m) => m.id === e.paymentMethodId)
               // Refunded/declined rows net to zero in totals; show the gross original here.
               const baseVal = expenseAmountInBase(e, base, exchangeRates, !!e.refundKind)
               const netZero = !!e.refundKind
@@ -181,7 +183,7 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       subtitle={
                         method && accountIdentifier(method) ? (
                           <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ms-1 shrink-0">{accountIdentifier(method)}</span></>
-                        ) : (method?.name || t.common.unknown)
+                        ) : (method?.name || (unassigned ? t.common.unassigned : t.common.unknown))
                       }
                       amount={<span className={netZero ? 'line-through' : ''}>−{fmtNum(baseVal)}</span>}
                       amountColor={netZero ? 'var(--color-brand-text-secondary)' : nonSpend ? 'var(--color-brand-text-muted)' : 'var(--color-brand-text-primary)'}

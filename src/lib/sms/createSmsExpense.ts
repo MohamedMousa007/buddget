@@ -13,6 +13,7 @@ import {
   resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
 import { matchByTail } from '@/lib/accounts/identity/accountRef'
+import { ensureProvisionalAccount, provisionalSpec } from './accountPlacement'
 import { toSupportedCurrency } from './ingestGuards'
 import { normalizeMerchant } from './merchantNormalizer'
 import { resolveMerchantCategory, rememberMerchantCategory } from './merchantCategoryCache'
@@ -371,7 +372,8 @@ async function findUniqueByLast4(
  * Resolves the user's payment method for an SMS, most specific signal first:
  *   1. the account/card last4 the SMS names — exact, when the user registered that card
  *   2. the provider that sent it — see {@link resolvePaymentMethodByProvider}
- *   3. the default method
+ *   3. with `create`: a provisional account, when the message gives bank + digits + currency (accountPlacement.ts)
+ *   4. the default method
  *
  * `sender` before `bankName` mirrors pickProvider: many banks omit their own name from the
  * body, so the sender ID is often the only institution signal.
@@ -381,6 +383,7 @@ export async function resolvePaymentMethodByLast4(
   userId: string,
   last4: string | null | undefined,
   provider?: { sender?: string | null; bankName?: string | null },
+  create?: { currency: string; rawBody?: string | null },
 ): Promise<string | null> {
   if (last4) {
     const byLast4 = await findUniqueByLast4(service, userId, last4, provider)
@@ -394,6 +397,10 @@ export async function resolvePaymentMethodByLast4(
     provider?.bankName,
   )
   if (byProvider) return byProvider
+  if (create) {
+    const provisional = await provisionalAccountFor(service, userId, last4, provider, create)
+    if (provisional) return provisional
+  }
   const { data: def } = await service
     .from('payment_methods')
     .select('id')
@@ -404,10 +411,33 @@ export async function resolvePaymentMethodByLast4(
   return def?.id ?? null
 }
 
-/** Where a credit lands: the exact account/card the message names, else the sending provider. Never the default method. */
+/** The provisional account for a message whose digits no registered account answers to, or null (stays unassigned). */
+async function provisionalAccountFor(
+  service: ServiceClient,
+  userId: string,
+  last4: string | null | undefined,
+  provider: { sender?: string | null; bankName?: string | null } | undefined,
+  create: { currency: string; rawBody?: string | null },
+): Promise<string | null> {
+  const spec = provisionalSpec({
+    tail: last4,
+    bankKey: resolvePaymentBrandKey(provider?.sender) ?? resolvePaymentBrandKey(provider?.bankName),
+    currency: create.currency,
+  })
+  return spec ? ensureProvisionalAccount(service, userId, spec, { rawBody: create.rawBody }) : null
+}
+
+/** Where a credit lands: the exact account/card the message names, else the sending provider, else a provisional account. Never the default method. */
 async function resolveCreditAccount(service: ServiceClient, row: SmsRowData): Promise<string | null> {
-  return (await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))
-    ?? (await resolvePaymentMethodByProvider(service, row.userId, row.sender, row.bankName))
+  const provider = { sender: row.sender, bankName: row.bankName }
+  if (row.last4) {
+    const byLast4 = await findUniqueByLast4(service, row.userId, row.last4, provider)
+    if (byLast4.id) return byLast4.id
+    // Several registered accounts fit: placing the credit is the user's call, and nothing new is created.
+    if (byLast4.ambiguous) return resolvePaymentMethodByProvider(service, row.userId, row.sender, row.bankName)
+  }
+  return (await resolvePaymentMethodByProvider(service, row.userId, row.sender, row.bankName))
+    ?? (await provisionalAccountFor(service, row.userId, row.last4, provider, { currency: row.currency, rawBody: row.rawBody }))
 }
 
 /** The user's Cash account (oldest cash method): the target of an ATM withdrawal. */
@@ -472,7 +502,7 @@ export async function createSmsExpense(
       : await resolvePaymentMethodByLast4(service, row.userId, row.last4, {
           sender: row.sender,
           bankName: row.bankName,
-        })
+        }, { currency: row.currency, rawBody: row.rawBody })
   let mappedCategory = row.categoryOverride ?? mapKindToCategory(row.kind, row.categoryHint, row.rawBody)
   // Purchases are the only merchant-bearing spend kind, and curated/template tiers hand them
   // over with no categoryHint → they default to 'Other'. Fill from the shared merchant memory
