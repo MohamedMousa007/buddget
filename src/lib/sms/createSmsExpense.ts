@@ -141,10 +141,10 @@ export interface SmsRowData {
    */
   counterpartyIsSelf?: boolean | null
   /**
-   * Set on an `own_transfer` posted from the RECEIVING side: the message's own account is where the money landed, so
-   * it is the transfer's destination and the counterparty account (when known) is the source.
+   * Set on an `own_transfer` or `currency_exchange` posted from the RECEIVING side: the message's own account is
+   * where the money landed, so it is the row's destination and the counterparty account (when known) is the source.
    */
-  ownTransferInbound?: boolean
+  destinationLeg?: boolean
   /** When set, stamp the new expense as already reversed (standalone-declined case). */
   refundMark?: { refundKind: 'refunded' | 'declined'; day: string } | null
 }
@@ -507,9 +507,10 @@ export async function createSmsExpense(
     return { ...emptyResult(), incomeId: data?.id ?? null, error }
   }
 
-  // An own transfer seen from the receiving account: the money LEFT the counterparty account (when the message names
-  // it) and landed on this one. Booking it the other way round would debit the account that was credited.
-  const inboundOwn = row.kind === 'own_transfer' && row.ownTransferInbound === true
+  // An own transfer or currency exchange seen from the receiving account: the money LEFT the counterparty account
+  // (when the message names it) and landed on this one. Booking it the other way round would debit the account
+  // that was credited.
+  const inboundOwn = (row.kind === 'own_transfer' || row.kind === 'currency_exchange') && row.destinationLeg === true
   // CC payoff is funded from bank/cash — never attach to a payment method, or
   // computeCreditCardOutstanding would re-add it and cancel the payoff.
   const paymentMethodId =
@@ -538,7 +539,7 @@ export async function createSmsExpense(
   const toPaymentMethodId =
     row.kind === 'atm_withdrawal' ? await cashAccountFor(service, row.userId)
     : inboundOwn ? await resolveCreditAccount(service, row)
-    : row.kind === 'own_transfer' ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
+    : row.kind === 'own_transfer' || row.kind === 'currency_exchange' ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
     : null
 
   const { data, error } = await service
@@ -656,6 +657,26 @@ export async function resolveExactPaymentMethod(
 ): Promise<string | null> {
   if (!last4) return null
   return (await findUniqueByLast4(service, userId, last4, provider)).id
+}
+
+/**
+ * The second leg of a currency exchange fills in its side of the row the first leg posted. The credit leg names the
+ * destination account. The debit leg names the source account and what actually left it, so the one row always reads
+ * "this much left the source".
+ */
+export async function completeFxEvent(
+  service: ServiceClient,
+  row: SmsRowData,
+  expenseId: string,
+  set: 'source' | 'destination',
+): Promise<void> {
+  // This message's own account: exact digits, else the sending wallet, else a provisional account. Never the default.
+  const account = await resolveCreditAccount(service, row)
+  const patch = set === 'destination'
+    ? { to_payment_method_id: account }
+    : { payment_method_id: account, amount: row.amount, currency: dbCurrency(row.currency) }
+  const { error } = await service.from('expenses').update(patch).eq('id', expenseId)
+  if (error) console.warn('[sms/fx] completing the exchange row failed', error.message)
 }
 
 /** True when the digits name one registered account the user has confirmed. A provisional account is not yet "known". */

@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSmsTransaction, type SmsTxResult } from './dispatch'
 import { detectLegDirection } from './directionGuard'
+import { fxLegAction } from './fxEvent'
 import type { SmsRowData } from './createSmsExpense'
 
 /**
@@ -19,6 +20,10 @@ interface Log {
 let logs: Log[]
 let expenses: number
 let rpcCalls: Array<Record<string, unknown>>
+/** Registered accounts the legs can resolve to, expense rows posted, and patches applied to posted rows. */
+let methods: Array<{ id: string; name: string; last4: string; last4_aliases: string[] }>
+let inserted: Array<Record<string, unknown>>
+let patched: Array<{ id: string; patch: Record<string, unknown> }>
 
 function makeService() {
   const rpc = vi.fn(async (_n: string, p: Record<string, unknown>) => {
@@ -41,14 +46,15 @@ function makeService() {
     const c: Record<string, unknown> = {
       select: () => c, eq: () => c, neq: () => c, in: () => c, is: () => c, not: () => c, gte: () => c, lte: () => c, order: () => c, limit: () => c,
       maybeSingle: () => Promise.resolve({ data: null, error: null }),
-      then: (r: (v: unknown) => unknown) => r({ data: [], error: null }),
-      insert: () => {
-        if (table === 'expenses') expenses++
+      then: (r: (v: unknown) => unknown) => r({ data: table === 'payment_methods' ? methods : [], error: null }),
+      insert: (row: Record<string, unknown>) => {
+        if (table === 'expenses') { expenses++; inserted.push(row) }
         return { select: () => ({ single: () => Promise.resolve({ data: { id: `e${expenses}` }, error: null }) }), then: (r: (v: unknown) => unknown) => r({ data: null, error: null }) }
       },
       update: (patch: Record<string, unknown>) => ({
         eq: (_c: string, id: string) => {
           if (table === 'sms_parse_log') Object.assign(logs.find((l) => l.id === id) ?? {}, patch)
+          if (table === 'expenses') patched.push({ id, patch })
           return Promise.resolve({ error: null, data: null })
         },
       }),
@@ -76,6 +82,9 @@ beforeEach(() => {
   logs = ['d1', 'd2', 'c1', 'c2'].map((id, i) => ({ id, kind: null, amount: 0, currency: null, leg_direction: null, parsed_ok: false, paired: false, received: i }))
   expenses = 0
   rpcCalls = []
+  methods = []
+  inserted = []
+  patched = []
 })
 afterEach(() => { vi.useRealTimers() })
 
@@ -115,6 +124,54 @@ describe('currency_exchange pairing (SMS4)', () => {
   })
 })
 
+describe('a currency exchange is one event (RC-D)', () => {
+  const USD = { id: 'usd', name: 'HSBC Egypt ••1234', last4: '1234', last4_aliases: [] }
+  const EGP = { id: 'egp', name: 'HSBC Egypt ••5678', last4: '5678', last4_aliases: [] }
+  const debit = () => ({ ...leg('d1', DEBIT_USD_1, 100, 'USD', 0), last4: '1234', bankName: 'HSBC Egypt' })
+  const credit = () => ({ ...leg('c1', CREDIT_EGP_1, 4800, 'EGP', 2), last4: '5678', bankName: 'HSBC Egypt' })
+  beforeEach(() => { methods = [USD, EGP] })
+
+  it('debit first: the debited account is the source, the credit leg only names the destination', async () => {
+    const svc = makeService()
+    await arrive(svc, debit())
+    expect(inserted).toHaveLength(1)
+    expect(inserted[0]).toMatchObject({ category: 'Currency Exchange', payment_method_id: 'usd', to_payment_method_id: null, amount: 100, currency: 'USD' })
+
+    const c = await arrive(svc, credit())
+    expect(c.outcome).toBe('transfer_paired')
+    expect(c.expenseId).toBeNull()
+    expect(inserted).toHaveLength(1)
+    expect(patched).toEqual([{ id: 'exp-d1', patch: { to_payment_method_id: 'egp' } }])
+  })
+
+  it('credit first: the credited account is never booked as the account the money left', async () => {
+    const svc = makeService()
+    const c = await arrive(svc, credit())
+    expect(c.outcome).toBe('transfer_single')
+    expect(inserted).toHaveLength(1)
+    expect(inserted[0]).toMatchObject({ category: 'Currency Exchange', payment_method_id: null, to_payment_method_id: 'egp' })
+
+    const d = await arrive(svc, debit())
+    expect(d.outcome).toBe('transfer_paired')
+    expect(inserted).toHaveLength(1)
+    // The debit leg makes itself the source and states what actually left it.
+    expect(patched).toEqual([{ id: 'exp-c1', patch: { payment_method_id: 'usd', amount: 100, currency: 'USD' } }])
+  })
+
+  it('either order ends with one row: source = debited account, destination = credited account', async () => {
+    for (const order of [[debit, credit], [credit, debit]]) {
+      logs.forEach((l) => Object.assign(l, { kind: null, paired: false, parsed_ok: false, leg_direction: null, currency: null }))
+      inserted = []
+      patched = []
+      const svc = makeService()
+      for (const next of order) await arrive(svc, next())
+      const row = { ...inserted[0], ...patched[0].patch }
+      expect(inserted).toHaveLength(1)
+      expect(row).toMatchObject({ payment_method_id: 'usd', to_payment_method_id: 'egp', amount: 100, currency: 'USD' })
+    }
+  })
+})
+
 describe('detectLegDirection', () => {
   it('reads the ledger sign first, then unambiguous wording', () => {
     expect(detectLegDirection('Phone Banking Transfer to 103-104***-001 EGP 9,968.00+ bal')).toBe('credit')
@@ -126,5 +183,17 @@ describe('detectLegDirection', () => {
   it('is null when the message says nothing or says both', () => {
     expect(detectLegDirection('EGP 4,800.00 conversion')).toBeNull()
     expect(detectLegDirection('USD 10 debited from account X, EGP 20 credited to account Y')).toBeNull()
+  })
+})
+
+describe('fxLegAction', () => {
+  it('posts with this account in its own role when no row exists yet', () => {
+    expect(fxLegAction('debit', false)).toEqual({ type: 'post', role: 'source' })
+    expect(fxLegAction('credit', false)).toEqual({ type: 'post', role: 'destination' })
+    expect(fxLegAction(null, false)).toEqual({ type: 'post', role: 'source' })
+  })
+  it('only completes the row the other leg posted', () => {
+    expect(fxLegAction('credit', true)).toEqual({ type: 'complete', set: 'destination' })
+    expect(fxLegAction('debit', true)).toEqual({ type: 'complete', set: 'source' })
   })
 })

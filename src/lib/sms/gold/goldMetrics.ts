@@ -19,6 +19,7 @@ import { isGenericMerchant, resolveKnownMerchant } from '@/lib/sms/merchantDicti
 import { catalogCategory } from '@/lib/sms/merchantCategoryCache'
 import { findPassThroughLegs } from '@/lib/sms/passThrough'
 import { brandSpellings } from '@/lib/sms/pairing'
+import { fxLegAction } from '@/lib/sms/fxEvent'
 import { PAYMENT_BRANDS, normalizeBrandToken } from '@/lib/payment/paymentMethodDefaults'
 
 export interface GoldLabel { s: 't' | 'h'; topup?: string; relay?: string; fx?: string }
@@ -197,9 +198,24 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
   })).filter((l, i, all) => l.dir === 'out' || ['instant_transfer_in', 'income'].includes(byId.get(all[i].id)?.k ?? '')))
   out.push({ name: 'Relay legs flagged "possible pass-through"', now: pct(0, relays.length), replay: pct(relays.filter((r) => flagged.has(r.id)).length, relays.length), target: '>=90%' })
 
-  // 8. FX: an expense on the credit leg, or a booked leg that never credits the destination.
+  // 8. FX: an expense on the credit leg, or a booked leg that never credits the destination. Replay of fxLegAction:
+  // the credited account must take the destination role and the debited one the source role, whichever arrives
+  // first. A leg whose direction the message does not state cannot be placed and is counted as wrong.
   const fx = rows.filter((r) => labels[r.id].fx)
-  out.push({ name: 'FX legs booked wrongly', now: pct(fx.filter((r) => r.e && (r.ld === 'credit' || !r.eto)).length, fx.length), replay: PENDING, target: '0' })
+  const fxWrongReplay = fx.filter((r) => {
+    const direction = labels[r.id].fx
+    if (direction !== 'debit' && direction !== 'credit') return true
+    const want = direction === 'credit' ? 'destination' : 'source'
+    const first = fxLegAction(direction, false)
+    const second = fxLegAction(direction, true)
+    return (first.type === 'post' ? first.role : null) !== want || (second.type === 'complete' ? second.set : null) !== want
+  })
+  out.push({
+    name: 'FX legs booked wrongly',
+    now: pct(fx.filter((r) => r.e && (r.ld === 'credit' || !r.eto)).length, fx.length),
+    replay: pct(fxWrongReplay.length, fx.length),
+    target: '0',
+  })
 
   // 9. AI share of parsed messages. A replay figure needs message bodies, which are never exported.
   const parsed = rows.filter((r) => r.k)

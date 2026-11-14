@@ -29,6 +29,7 @@ import {
   isIncomeKind,
   resolveExactPaymentMethod,
   isConfirmedOwnAccount,
+  completeFxEvent,
   type SmsRowData,
   type SmsExpenseKind,
 } from './createSmsExpense'
@@ -46,6 +47,7 @@ import {
   type PairSibling,
 } from './pairing'
 import { detectLegDirection, guardDirection } from './directionGuard'
+import { fxLegAction } from './fxEvent'
 import { normalizeDigits } from './normalizeDigits'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
@@ -285,14 +287,14 @@ export async function createSmsTransaction(
   //    The counterparty being the user by NAME is a supporting signal: it counts only together with this message's
   //    own account being one the user has confirmed (two people can share a name).
   /** The reclassified leg is the receiving side, so its own account is the transfer's destination. */
-  let ownTransferInbound = false
+  let destinationLeg = false
   if (
     (kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
     ((await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null)) ||
       (row.counterpartyIsSelf === true &&
         (await isConfirmedOwnAccount(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))))
   ) {
-    ownTransferInbound = kind === 'instant_transfer_in'
+    destinationLeg = kind === 'instant_transfer_in'
     kind = 'own_transfer'
   }
 
@@ -356,8 +358,40 @@ export async function createSmsTransaction(
     // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
 
-  // 2. Transfer / FX — pair the two legs, represent the pair once (non-spend).
-  if (kind === 'own_transfer' || kind === 'currency_exchange') {
+  // 2a. Currency exchange: one event, one row. The debited account is its source and the credited account its
+  //     destination, whichever message arrives first; the credit leg never books the account the money left.
+  if (kind === 'currency_exchange') {
+    const direction = detectLegDirection(normalizeDigits(row.rawBody))
+    const sibling = row.logId && row.receivedAtIso
+      ? await tryPairLeg(service, {
+          userId: row.userId,
+          logId: row.logId,
+          receivedAtIso: row.receivedAtIso,
+          amount: row.amount,
+          accountLast4: row.last4 ?? null,
+          kind,
+          currency: row.currency,
+          direction,
+        })
+      : null
+    const action = fxLegAction(direction, !!sibling?.siblingExpenseId)
+    if (sibling?.siblingExpenseId && action.type === 'complete') {
+      await completeFxEvent(service, row, sibling.siblingExpenseId, action.set)
+      return base('transfer_paired', kind)
+    }
+    // A sibling that was booked as income is retracted; this leg then posts the one row.
+    if (sibling) await reconcileSibling(service, sibling)
+    const posted = await createSmsExpense(service, { ...row, kind, destinationLeg: direction === 'credit' })
+    return {
+      ...base(sibling ? 'transfer_paired' : 'transfer_single', kind),
+      expenseId: posted.expenseId,
+      category: 'Currency Exchange',
+      error: posted.error,
+    }
+  }
+
+  // 2. Own transfer — pair the two legs, represent the pair once (non-spend).
+  if (kind === 'own_transfer') {
     if (row.logId && row.receivedAtIso) {
       const sibling = await tryPairLeg(service, {
         userId: row.userId,
@@ -366,7 +400,6 @@ export async function createSmsTransaction(
         amount: row.amount,
         accountLast4: row.last4 ?? null,
         kind,
-        ...(kind === 'currency_exchange' ? { currency: row.currency, direction: detectLegDirection(normalizeDigits(row.rawBody)) } : {}),
       })
       if (sibling) {
         // This leg funded a credit-card payoff that already posted. The payoff row is the
@@ -388,20 +421,20 @@ export async function createSmsTransaction(
         const { needsPost } = await reconcileSibling(service, sibling)
         if (!needsPost) return base('transfer_paired', kind)
         // Income sibling was removed — post a single visible non-spend row.
-        const posted = await createSmsExpense(service, { ...row, kind, ownTransferInbound })
+        const posted = await createSmsExpense(service, { ...row, kind, destinationLeg })
         return {
           ...base('transfer_paired', kind),
           expenseId: posted.expenseId,
-          category: kind === 'currency_exchange' ? 'Currency Exchange' : 'Transfer',
+          category: 'Transfer',
           error: posted.error,
         }
       }
     }
-    const res = await createSmsExpense(service, { ...row, kind, ownTransferInbound })
+    const res = await createSmsExpense(service, { ...row, kind, destinationLeg })
     return {
       ...base('transfer_single', kind),
       expenseId: res.expenseId,
-      category: kind === 'currency_exchange' ? 'Currency Exchange' : 'Transfer',
+      category: 'Transfer',
       error: res.error,
     }
   }
