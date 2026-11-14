@@ -3132,6 +3132,7 @@ export type Database = {
           carry: number
           carry_adjustment: number
           closed_at: string
+          carry_settled_at: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           id: string
@@ -3147,6 +3148,7 @@ export type Database = {
           carry?: number
           carry_adjustment?: number
           closed_at?: string
+          carry_settled_at?: string | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
           id?: string
@@ -3162,6 +3164,7 @@ export type Database = {
           carry?: number
           carry_adjustment?: number
           closed_at?: string
+          carry_settled_at?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           id?: string

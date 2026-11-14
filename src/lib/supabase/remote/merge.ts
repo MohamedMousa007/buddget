@@ -1,6 +1,5 @@
 import type { Snapshot } from './snapshot'
 import { serverInstant } from './serverClock'
-import { withoutAdoptedLogged } from '@/lib/subscriptions/adoptLogged'
 
 const instant = (iso: string | undefined): number | null => {
   const t = Date.parse(iso ?? '')
@@ -62,7 +61,7 @@ export function mergeSnapshots(local: Snapshot, server: Snapshot): Snapshot {
     paymentMethods: mergeList(local.paymentMethods as WithId[], server.paymentMethods as WithId[]) as Snapshot['paymentMethods'],
     incomeSources: mergeList(local.incomeSources, server.incomeSources),
     incomeEvents: mergeList(local.incomeEvents, server.incomeEvents),
-    expenses: withoutAdoptedLogged(mergeList(local.expenses, server.expenses), server.expenses),
+    expenses: mergeList(local.expenses, server.expenses),
     receipts: mergeList(local.receipts, server.receipts),
     recurringExpenses: mergeList(local.recurringExpenses as WithId[], server.recurringExpenses as WithId[]) as Snapshot['recurringExpenses'],
     subscriptions: mergeList(local.subscriptions as WithId[], server.subscriptions as WithId[]) as Snapshot['subscriptions'],

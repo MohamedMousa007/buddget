@@ -12,6 +12,7 @@ import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { formatFlex } from '@/lib/utils/formatters'
 import { selectFlagPrompts, type FlagPromptTarget } from '@/lib/sms/flagPrompts'
+import { syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { markDepositIncome, markWalletOwn, undoTopupRepair } from '@/lib/sms/flagActions'
 import type { Expense, IncomeEvent } from '@/lib/store/types'
 import { RefundPickSheet } from './RefundPickSheet'
@@ -87,10 +88,12 @@ export function SmsFlagPrompts() {
   }
   const walletOwn = async (inc: IncomeEvent) => {
     const ok = await markWalletOwn(inc.id)
+    if (ok) void syncFinanceNow().catch(() => undefined)
     toast(ok ? copy.walletDone : copy.failed)
   }
   const undoTopup = async (e: Expense) => {
     const ok = await undoTopupRepair(e.id)
+    if (ok) void syncFinanceNow().catch(() => undefined)
     toast(ok ? copy.topupUndone : copy.failed)
   }
   const depositIncome = async (e: Expense) => {

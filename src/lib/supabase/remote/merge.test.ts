@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergeList, mergeSnapshots } from './merge'
-import { emptySnapshot } from './snapshot'
+import { mergeList } from './merge'
 
 /**
  * Offline-edit merge: union by id, newer `updatedAt` (then `createdAt`) wins, server on a
@@ -97,14 +96,5 @@ describe('mergeList with the delivered-edit set', () => {
   it('a local edit the baseline never recorded (far newer) is kept', () => {
     const server = [{ id: 'a', updatedAt: '2026-07-01T00:00:00.000+00:00', v: 'server' }]
     expect(mergeList<Row>([{ id: 'a', updatedAt: '2026-07-01T00:10:00Z', v: 'unrecorded local' }], server, new Set())[0].v).toBe('unrecorded local')
-  })
-})
-
-describe('mergeSnapshots adopting an app-logged subscription charge', () => {
-  it('drops the local app-written charge when the server holds the SMS charge for the same subscription', () => {
-    const row = (id: string, date: string, extra: object = {}) => ({ id, date, createdAt: '2026-11-01T00:00:00Z', linkedSubscriptionId: 's1', isRecurring: true, ...extra })
-    const local = { ...emptySnapshot(), expenses: [row('app1', '2026-11-10')] } as never
-    const server = { ...emptySnapshot(), expenses: [row('sms1', '2026-11-12', { smsLogId: 'log1', isRecurring: false })] } as never
-    expect(mergeSnapshots(local, server).expenses.map((e) => e.id)).toEqual(['sms1'])
   })
 })

@@ -305,7 +305,7 @@ const FORCE_COOLDOWN_MS = 5_000
  * (400/422, auth, rate limit, 5xx, network) leaves it queued on a jittered backoff schedule (see smsRetryState), so a
  * message the server keeps refusing is parked and visible to staff, never deleted. A failure that would hit every
  * remaining item the same way (network, auth, per-minute rate limit) stops the run; one that only affects AI-needing messages
- * (daily AI quota, 5xx) parks that item and goes on. `force` (the user tapped the message)
+ * (daily AI quota, a single 5xx) parks that item and goes on; two 5xx/408 answers in a row are a general outage and stop the run. `force` (the user tapped the message)
  * ignores the schedule. Concurrent calls share one run.
  */
 export function drainAndSubmitPendingSms(accessToken: string, userId: string, opts: { force?: boolean } = {}): Promise<void> {
@@ -338,10 +338,19 @@ async function stopsRun(res: Response): Promise<boolean> {
   return body?.limit === undefined
 }
 
-/** Drops every queued message (data reset) without touching the token or the armed state. Never throws. */
-export async function clearPendingSmsQueue(): Promise<void> {
+/**
+ * Drops this account's queued messages captured at or before a data reset, without touching the token, the armed state,
+ * another account's messages or ones captured after the reset. A message with no readable time goes only if it carries
+ * this account's owner stamp. Never throws.
+ */
+export async function clearPendingSmsQueue(userId: string, resetAtIso: string | null): Promise<void> {
   if (!isNative()) return
-  const items = await peekPendingSms()
+  const resetAt = resetAtIso ? Date.parse(resetAtIso) : NaN
+  const items = (await peekPendingSms()).filter((i) => {
+    if (i.userId && i.userId !== userId) return false
+    const at = Date.parse(i.receivedAt)
+    return Number.isFinite(at) && Number.isFinite(resetAt) ? at <= resetAt : i.userId === userId
+  })
   if (items.length > 0) await callNative('removePending', (p) => p.removePending({ items }), undefined)
   if (typeof window !== 'undefined') window.dispatchEvent(new Event(SMS_QUEUE_CHANGED_EVENT))
 }
@@ -361,6 +370,7 @@ async function runDrain(accessToken: string, userId: string, force: boolean): Pr
   const deviceHeaders = await deviceIdHeader()
   const state = loadRetryState()
   const done: PendingSmsItem[] = []
+  let outage = 0
   const park = (key: string, lastError: string, delay: { poison?: boolean; retryAfterMs?: number } = {}) => {
     const attempts = (state[key]?.attempts ?? 0) + 1
     state[key] = { attempts, nextAt: Date.now() + nextDelayMs(attempts, delay), lastError }
@@ -382,11 +392,14 @@ async function runDrain(accessToken: string, userId: string, force: boolean): Pr
         done.push(item)
         delete state[key]
         lastOutcome = 'delivered'
+        outage = 0
         continue
       }
       const poison = isMessageSpecific(res.status)
       park(key, `http_${res.status}`, { poison, retryAfterMs: retryAfterMs(res.headers.get('Retry-After')) })
       if (await stopsRun(res)) break
+      outage = res.status >= 500 || res.status === 408 ? outage + 1 : 0
+      if (outage >= 2) break
     } catch {
       park(key, 'network')
       break // the rest would fail the same way; they stay queued

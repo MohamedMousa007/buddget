@@ -19,6 +19,7 @@ import { DEFAULT_USER_TIME_ZONE, isValidTimeZone } from '@/lib/server/userTimeZo
 import { pendingCarryKeys } from '@/lib/savings/carryDateLogic'
 import { computeMonthCarry, findUnlinkedGoalPocket } from '@/lib/savings/monthCarry'
 import { carryPostDate, closedCycleDrift, fetchRates, loadCycle, must } from '@/lib/server/carryCycle'
+import { claimCarryAdjustment, releaseCarryClaim, type CarryClaim } from '@/lib/server/carryAdjust'
 import { convertCurrency } from '@/lib/utils/currency'
 import { allocateGoalFunding } from '@/lib/server/allocateGoalFunding'
 import { emitNotification } from '@/lib/server/emitNotification'
@@ -49,7 +50,7 @@ interface DryRun {
 }
 
 /** Carries one closed cycle for one user. Returns true when money moved or the cycle was recorded as empty. */
-async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string, rates: Rates, now: Date, dry?: DryRun): Promise<boolean> {
+async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string, rates: Rates, now: Date, claims: CarryClaim[], dry?: DryRun): Promise<boolean> {
   const userId = s.user_id as string
   const monthStartDay = (s.month_start_day as number | null) ?? 1
   const { start, end, base, profileCreatedAt, accounts, savingsPockets, goals, dest, destCurrency, figures } = await loadCycle(service, userId, monthKey, monthStartDay, rates)
@@ -70,15 +71,29 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
     return false
   }
   const { income, spend, allocated } = figures
-  // Earlier closed months whose rows changed since they were swept: their shortfall or excess is settled in this carry.
-  const prior = (await closedCycleDrift(service, userId, monthStartDay, rates, { before: monthKey })).map((p) => p.item).filter((p) => p.stale)
-  const { carry, carryRaw, saved } = computeMonthCarry({ income, spend, allocated, priorAdjustment: prior.reduce((n, p) => n + p.delta, 0) })
-  const carryAdjustment = Math.round((carryRaw - carry) * 100) / 100
-  const settlePrior = async () => {
+  // Earlier closed months whose rows changed since they were swept: each is claimed (compare-and-set) before it is netted into this carry, so a tap or another run cannot settle it too.
+  let prior: Awaited<ReturnType<typeof closedCycleDrift>>[number]['item'][] = []
+  try {
+    prior = (await closedCycleDrift(service, userId, monthStartDay, rates, { before: monthKey })).map((p) => p.item).filter((p) => p.stale)
+  } catch (e) {
+    console.error('[cron/month-carry] prior drift unreadable, nothing netted', userId, e instanceof Error ? e.message : e)
+  }
+  let netted = prior
+  if (!dry) {
+    netted = []
     for (const p of prior) {
-      must(await service.from('savings_month_summary').update({ carry_adjustment: Math.round((p.adjustment + p.delta) * 100) / 100 }).eq('user_id', userId).eq('month_key', p.monthKey), 'prior adjustment')
+      const claim = await claimCarryAdjustment(service, userId, p, Math.round((p.adjustment + p.delta) * 100) / 100)
+      if (claim) { claims.push(claim); netted.push(p) }
     }
   }
+  let priorAdjustment = netted.reduce((n, p) => n + p.delta, 0)
+  // Netting that would push the carry below zero would drop the rest: net nothing, so those months stay stale for the user's tap.
+  if (computeMonthCarry({ income, spend, allocated }).carryRaw + priorAdjustment < 0) {
+    for (const c of claims.splice(0)) await releaseCarryClaim(service, userId, c)
+    priorAdjustment = 0
+  }
+  const { carry, carryRaw, saved } = computeMonthCarry({ income, spend, allocated, priorAdjustment })
+  const carryAdjustment = Math.round((carryRaw - carry) * 100) / 100
   if (dry) {
     dry.cycles++
     if (carry >= 0.01) {
@@ -108,7 +123,7 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   if (remainder < 0.01) {
     // Nothing to sweep, but record the closed cycle so it isn't reconsidered.
     must(await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry, carry_adjustment: carryAdjustment, saved, currency: base, closed_at: now.toISOString() }), 'summary')
-    await settlePrior()
+    claims.length = 0
     return true
   }
 
@@ -149,7 +164,7 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   must(await service.from('savings_month_summary').insert({
     user_id: userId, month_key: monthKey, target: 0, allocated, carry, carry_adjustment: carryAdjustment, saved, currency: base, pocket_id: pocketId, closed_at: now.toISOString(),
   }), 'summary')
-  await settlePrior()
+  claims.length = 0
 
   await emitNotification(service, {
     userId, category: 'savings_carry', severity: 'success', dedupeKey: `carry:${monthKey}`,
@@ -167,7 +182,13 @@ async function carryUser(service: Service, s: UserSettingsRow, rates: Rates, now
   let carried = 0
   if (dry && keys.length > 0) dry.users++
   for (const key of keys) {
-    if (await carryCycle(service, s, key, rates, now, dry)) carried++
+    const claims: CarryClaim[] = []
+    try {
+      if (await carryCycle(service, s, key, rates, now, claims, dry)) carried++
+    } catch (e) {
+      for (const c of claims) await releaseCarryClaim(service, userId, c).catch(() => undefined)
+      throw e
+    }
   }
   return carried
 }

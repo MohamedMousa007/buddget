@@ -15,19 +15,33 @@ beforeEach(() => {
 describe('setDeviceCollectsSms', () => {
   it('stores the intended value when both tries fail, and clears it on success', async () => {
     fetchMock.mockResolvedValue(new Response('{}', { status: 500 }))
-    expect(await setDeviceCollectsSms(false)).toBe(false)
+    expect(await setDeviceCollectsSms('a', false)).toBe(false)
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(readPendingSmsRole()).toBe(false)
+    expect(readPendingSmsRole('a')).toBe(false)
 
     fetchMock.mockResolvedValue(new Response('{}', { status: 200 }))
-    expect(await setDeviceCollectsSms(false)).toBe(true)
-    expect(readPendingSmsRole()).toBeNull()
+    expect(await setDeviceCollectsSms('a', false)).toBe(true)
+    expect(readPendingSmsRole('a')).toBeNull()
   })
 
   it('treats a thrown request like a failure and succeeds on the second try', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('offline')).mockResolvedValueOnce(new Response('{}', { status: 200 }))
-    expect(await setDeviceCollectsSms(true)).toBe(true)
-    expect(readPendingSmsRole()).toBeNull()
+    expect(await setDeviceCollectsSms('a', true)).toBe(true)
+    expect(readPendingSmsRole('a')).toBeNull()
+  })
+})
+
+describe('pending role ownership', () => {
+  it("one account's unconfirmed write is ignored and cleared for another account", async () => {
+    fetchMock.mockResolvedValue(new Response('{}', { status: 500 }))
+    await setDeviceCollectsSms('a', true)
+    expect(readPendingSmsRole('b')).toBeNull()
+    expect(readPendingSmsRole('a')).toBeNull()
+  })
+  it('an unparsable stored value counts as absent', () => {
+    localStorage.setItem('sms.rolePending', 'true')
+    expect(readPendingSmsRole('a')).toBeNull()
+    expect(localStorage.getItem('sms.rolePending')).toBeNull()
   })
 })
 

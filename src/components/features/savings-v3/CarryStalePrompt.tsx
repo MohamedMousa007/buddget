@@ -15,7 +15,8 @@ import { formatCurrency } from '@/lib/utils/formatters'
  * month only. "Later" is remembered for that month and figure, so it returns only if the figure changes again.
  */
 export function CarryStalePrompt() {
-  const t = useT().prompts
+  const dict = useT()
+  const t = dict.prompts
   const { locale } = useLocale()
   const showToast = useActionToast()
   const base = useFinanceStore((s) => s.settings.baseCurrency)
@@ -38,8 +39,8 @@ export function CarryStalePrompt() {
           label: t.carryStaleUpdate,
           variant: 'default',
           onPress: () => {
-            void apply(cycle.monthKey).then((ok) => {
-              if (ok) showToast(t.carryStaleUpdated)
+            void apply(cycle.monthKey).then((outcome) => {
+              showToast(outcome === 'applied' ? t.carryStaleUpdated : dict.smsReview.actionFailed)
               return refresh()
             })
           },

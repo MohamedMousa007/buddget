@@ -74,20 +74,24 @@ export async function reportSmsQueue(status: { pendingCount?: number; oldestPend
 
 const ROLE_PENDING_KEY = 'sms.rolePending'
 
-/** The role the user chose here that the server has not confirmed yet, or null. */
-export function readPendingSmsRole(): boolean | null {
+/** The role this account chose here that the server has not confirmed yet, or null. Another account's value (or an unreadable one) is dropped. */
+export function readPendingSmsRole(userId: string): boolean | null {
   try {
-    const v = localStorage.getItem(ROLE_PENDING_KEY)
-    return v === 'true' ? true : v === 'false' ? false : null
+    const raw = localStorage.getItem(ROLE_PENDING_KEY)
+    if (raw === null) return null
+    const v = JSON.parse(raw) as { userId?: unknown; value?: unknown }
+    if (v.userId === userId && typeof v.value === 'boolean') return v.value
+    localStorage.removeItem(ROLE_PENDING_KEY)
   } catch {
-    return null
+    try { localStorage.removeItem(ROLE_PENDING_KEY) } catch { /* storage unavailable */ }
   }
+  return null
 }
 
-function storePendingSmsRole(value: boolean | null): void {
+function storePendingSmsRole(userId: string, value: boolean | null): void {
   try {
     if (value === null) localStorage.removeItem(ROLE_PENDING_KEY)
-    else localStorage.setItem(ROLE_PENDING_KEY, String(value))
+    else localStorage.setItem(ROLE_PENDING_KEY, JSON.stringify({ userId, value }))
   } catch {
     /* storage unavailable: nothing to remember the choice with */
   }
@@ -102,19 +106,19 @@ export function resolveStartIntent(pending: boolean | null, device: boolean | nu
  * This phone's own SMS role, written when the user switches collecting on or off here. True only on a 2xx (two tries).
  * A failed write is remembered and replayed at the next start, so a lost write cannot flip the choice back.
  */
-export async function setDeviceCollectsSms(collectsSms: boolean): Promise<boolean> {
+export async function setDeviceCollectsSms(userId: string, collectsSms: boolean): Promise<boolean> {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await apiFetchAuth('/api/devices', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collectsSms }) })
       if (res.ok) {
-        storePendingSmsRole(null)
+        storePendingSmsRole(userId, null)
         return true
       }
     } catch {
       /* try again, then remember the choice */
     }
   }
-  storePendingSmsRole(collectsSms)
+  storePendingSmsRole(userId, collectsSms)
   return false
 }
 

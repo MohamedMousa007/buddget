@@ -181,7 +181,8 @@ export function useSmsTracking() {
           setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })
-        void setDeviceCollectsSms(value)
+        const owner = await currentUserId()
+        if (owner) void setDeviceCollectsSms(owner, value)
         return
       }
 
@@ -208,7 +209,8 @@ export function useSmsTracking() {
           setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })
-        void setDeviceCollectsSms(value)
+        const owner = await currentUserId()
+        if (owner) void setDeviceCollectsSms(owner, value)
         return
       }
 
@@ -219,7 +221,7 @@ export function useSmsTracking() {
       void refreshStatus()
       setLoading(false)
     }
-  }, [updateSettings, refreshStatus])
+  }, [updateSettings, refreshStatus, currentUserId, t])
 
   /**
    * Called when the user finishes the iOS Shortcut setup guide: arm the bridge
@@ -239,7 +241,7 @@ export function useSmsTracking() {
       await setIosSetupCompleted(true)
       await setSmsEnabled(true)
       updateSettings({ smsTrackingEnabled: true })
-      void setDeviceCollectsSms(true)
+      if (uid) void setDeviceCollectsSms(uid, true)
       await refreshStatus()
     } finally {
       setLoading(false)

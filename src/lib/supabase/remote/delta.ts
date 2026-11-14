@@ -4,7 +4,6 @@ import type { AppSettings, BudgetPlan, BudgetPlanActivation } from '@/lib/store/
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 import { diffLists } from './diff'
 import { mergeList } from './merge'
-import { withoutAdoptedLogged } from '@/lib/subscriptions/adoptLogged'
 import { noteServerTime, serverInstant } from './serverClock'
 import type { Snapshot } from './snapshot'
 import { memoryFromRow } from './mappers/buddgyMemoryMapper'
@@ -185,7 +184,7 @@ export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot
     paymentMethods: applyList(local.paymentMethods as WithId[], d.paymentMethods as ListDelta<WithId>, delivered?.paymentMethods as WithId[] | undefined) as Snapshot['paymentMethods'],
     incomeSources: applyList(local.incomeSources, d.incomeSources, delivered?.incomeSources),
     incomeEvents: applyList(local.incomeEvents, d.incomeEvents, delivered?.incomeEvents),
-    expenses: withoutAdoptedLogged(applyList(local.expenses, d.expenses, delivered?.expenses), d.expenses.upserts),
+    expenses: applyList(local.expenses, d.expenses, delivered?.expenses),
     receipts: applyList(local.receipts, d.receipts, delivered?.receipts),
     recurringExpenses: applyList(local.recurringExpenses as WithId[], d.recurringExpenses as ListDelta<WithId>, delivered?.recurringExpenses as WithId[] | undefined) as Snapshot['recurringExpenses'],
     subscriptions: applyList(local.subscriptions as WithId[], d.subscriptions as ListDelta<WithId>, delivered?.subscriptions as WithId[] | undefined) as Snapshot['subscriptions'],

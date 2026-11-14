@@ -46,9 +46,9 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return fail('Invalid body', 400)
   try {
-    const { cycle, unapplied } = await applyCarryDrift(c.service, c.userId, parsed.data.monthKey, c.monthStartDay, c.rates)
+    const { cycle, unapplied, outcome } = await applyCarryDrift(c.service, c.userId, parsed.data.monthKey, c.monthStartDay, c.rates)
     if (!cycle) return fail('Not found', 404)
-    return NextResponse.json({ cycle: view(cycle), unapplied })
+    return NextResponse.json({ cycle: view(cycle), unapplied, outcome })
   } catch (e) {
     console.error('[savings/carry] apply failed', e instanceof Error ? e.message : e)
     return fail('Failed to update carry', 500)

@@ -33,6 +33,8 @@ import { isSecondFactorBlocked, onSecondFactorResolved, useSecondFactorGate } fr
 import { applyTheme } from '@/lib/theme/applyTheme'
 import { isOnline, networkReady, subscribeNetwork } from '@/hooks/useNetworkStatus'
 import type { Snapshot } from '@/lib/supabase/remote'
+import type { Expense } from '@/lib/store/types'
+import { adoptedLoggedIds } from '@/lib/subscriptions/adoptLogged'
 import { clearNetWorthStamps } from '@/lib/storage/removeByPrefix'
 
 const DEBOUNCE_MS = 500
@@ -234,10 +236,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         new Promise<void>((r) => setTimeout(r, 3500)),
       ])
       let pulled = false
+      let incoming: Expense[] = []
       try {
         // Pull before flipping dataReady, even on a warm start: lifting the splash on cached numbers and then
         // merging server rows visibly changes the dashboard totals. The pull is one small delta request.
-        await runFullSync(supabase, userId, null)
+        incoming = await runFullSync(supabase, userId, null)
         pulled = true
       } catch (e) {
         console.error('[finance sync] pull failed', e)
@@ -250,6 +253,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         persistBaseline(userId, prevSnap.current)
         lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
         hydrated.current = true
+        dropAdoptedLogged(incoming)
         useFinanceStore.getState().setDataReady(true)
       }
     }
@@ -387,10 +391,11 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         for (let pass = 0; pass < 3; pass++) {
           runAgain.current = false
           const flushed = await flush()
-          await runFullSync(supabase, userId, prevSnap.current)
+          const incoming = await runFullSync(supabase, userId, prevSnap.current)
           prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed)
           persistBaseline(userId, prevSnap.current)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
+          dropAdoptedLogged(incoming)
           if (!runAgain.current) break
         }
       } finally {
@@ -555,13 +560,13 @@ async function runFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   delivered: Snapshot | null,
-): Promise<void> {
+): Promise<Expense[]> {
   // A cursor only means something next to a store that holds this account's data.
   const hasLocalCopy = useFinanceStore.getState().profile.id === userId
   const since = hasLocalCopy ? readSyncCursor(userId, storeVersion()) : null
   try {
     const delta = await pullDelta(supabase, since)
-    if (!delta) return
+    if (!delta) return []
     if (delta.profile) {
       const at = delta.profile.extras.dataResetAt ?? null
       const verdict = decideReset(readResetSeen(userId), at)
@@ -572,7 +577,7 @@ async function runFullSync(
         useSettingsStore.getState().reset()
         clearSyncCursors()
         clearNetWorthStamps()
-        void clearSmsQueueAfterReset()
+        void clearSmsQueueAfterReset(userId, at)
         return runFullSync(supabase, userId, null)
       }
     }
@@ -583,10 +588,11 @@ async function runFullSync(
     if (hasUnpersistedWrites()) clearSyncCursors()
     else writeSyncCursor(userId, storeVersion(), delta.cursor)
     useSettingsStore.getState().markServerSynced(userId)
+    return delta.expenses.upserts
   } catch (e) {
     console.warn('[finance sync] delta pull failed, using the full pull', e)
     clearSyncCursors()
-    await runLegacyFullSync(supabase, userId)
+    return runLegacyFullSync(supabase, userId)
   }
 }
 
@@ -595,14 +601,14 @@ function storeVersion(): number {
   return useFinanceStore.persist.getOptions().version ?? 0
 }
 
-function clearSmsQueueAfterReset(): Promise<void> {
-  return import('@/lib/native/smsTracker').then((m) => m.clearPendingSmsQueue()).catch(() => undefined)
+function clearSmsQueueAfterReset(userId: string, resetAt: string | null): Promise<void> {
+  return import('@/lib/native/smsTracker').then((m) => m.clearPendingSmsQueue(userId, resetAt)).catch(() => undefined)
 }
 
 async function runLegacyFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
-): Promise<void> {
+): Promise<Expense[]> {
   // The fallback path must honour a reset too, or it would merge the stale local copy back in.
   const { data: stamp } = await supabase.from('profiles').select('data_reset_at').eq('id', userId).maybeSingle()
   const at = stamp?.data_reset_at ?? null
@@ -613,12 +619,23 @@ async function runLegacyFullSync(
     useSettingsStore.getState().reset()
     clearSyncCursors()
     clearNetWorthStamps()
-    void clearSmsQueueAfterReset()
+    void clearSmsQueueAfterReset(userId, at)
   }
   const server = await pullAll(supabase, userId)
-  if (!server) return
+  if (!server) return []
   applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server), userId)
   useSettingsStore.getState().markServerSynced(userId)
+  return server.expenses
+}
+
+/**
+ * An app-logged subscription charge that a bank-message charge replaces is deleted through the store's normal action, after
+ * the baseline is set, so the next diff tombstones it on the server exactly like a user's delete.
+ */
+function dropAdoptedLogged(incoming: readonly Expense[]): void {
+  if (incoming.length === 0) return
+  const { expenses, deleteExpense } = useFinanceStore.getState()
+  for (const id of adoptedLoggedIds(expenses, incoming)) deleteExpense(id)
 }
 
 function applyMerged(merged: Snapshot, userId: string): void {

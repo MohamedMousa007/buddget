@@ -192,6 +192,27 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[1]] })
   })
 
+  it('two 5xx answers in a row are an outage and stop the run; one alone does not', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items })
+    mocks.fetch
+      .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 408 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    expect(mocks.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('a 5xx followed by a success keeps going', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items })
+    mocks.fetch
+      .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    expect(mocks.fetch).toHaveBeenCalledTimes(3)
+  })
+
   it('the per-minute rate limit (no quota body) still stops the run', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items })
     mocks.fetch.mockResolvedValue(new Response('{"error":"Too many messages"}', { status: 429 }))
@@ -352,20 +373,35 @@ describe('native error state', () => {
 })
 
 describe('clearPendingSmsQueue', () => {
-  it('removes every queued message and leaves the token and armed state alone', async () => {
-    const items = [{ message: 'a', sender: 'X', receivedAt: '2026-07-01T00:00:00Z', source: 'sms' }]
-    mocks.peekPendingQueue.mockResolvedValue({ items })
+  const at = (receivedAt: string, extra = {}) => ({ message: 'a', sender: 'X', receivedAt, source: 'sms', ...extra })
+  const resetAt = '2026-07-10T00:00:00Z'
+
+  it('removes only this account\'s (or unowned) messages captured by the reset, and leaves the token and armed state alone', async () => {
+    const mine = at('2026-07-01T00:00:00Z', { userId: 'u1' })
+    const legacy = at('2026-07-02T00:00:00Z')
+    const other = at('2026-07-01T00:00:00Z', { userId: 'u2' })
+    const later = at('2026-07-11T00:00:00Z', { userId: 'u1' })
+    mocks.peekPendingQueue.mockResolvedValue({ items: [mine, legacy, other, later] })
     const sms = await freshModule()
-    await sms.clearPendingSmsQueue()
-    expect(mocks.removePending).toHaveBeenCalledWith({ items })
+    await sms.clearPendingSmsQueue('u1', resetAt)
+    expect(mocks.removePending).toHaveBeenCalledWith({ items: [mine, legacy] })
     expect(mocks.clearCredentials).not.toHaveBeenCalled()
     expect(mocks.setEnabled).not.toHaveBeenCalled()
+  })
+
+  it('a message with no readable time goes only when it carries this account\'s stamp', async () => {
+    const stamped = at('garbage', { userId: 'u1' })
+    const unstamped = at('garbage')
+    mocks.peekPendingQueue.mockResolvedValue({ items: [stamped, unstamped] })
+    const sms = await freshModule()
+    await sms.clearPendingSmsQueue('u1', resetAt)
+    expect(mocks.removePending).toHaveBeenCalledWith({ items: [stamped] })
   })
 
   it('does not throw when the plugin fails', async () => {
     mocks.peekPendingQueue.mockRejectedValue(new Error('boom'))
     const sms = await freshModule()
-    await expect(sms.clearPendingSmsQueue()).resolves.toBeUndefined()
+    await expect(sms.clearPendingSmsQueue('u1', null)).resolves.toBeUndefined()
     expect(mocks.removePending).not.toHaveBeenCalled()
   })
 })

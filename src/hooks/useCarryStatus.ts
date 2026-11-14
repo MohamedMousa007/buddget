@@ -13,6 +13,9 @@ export interface CarryCycle {
   currency: string
 }
 
+/** What the server did with a tap: moved money, found nothing to do, or could not book it; 'failed' is a failed request. */
+export type CarryApplyOutcome = 'applied' | 'settled' | 'unapplied' | 'failed'
+
 const NONE: CarryCycle[] = []
 let owner: string | null = null
 let cycles: CarryCycle[] = NONE
@@ -59,12 +62,14 @@ export function useCarryStatus() {
     if (uid) await fetchOnce(uid, true)
   }, [uid])
 
-  const apply = useCallback(async (monthKey: string): Promise<boolean> => {
+  const apply = useCallback(async (monthKey: string): Promise<CarryApplyOutcome> => {
     try {
       const res = await apiFetchAuth('/api/savings/carry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ monthKey }) })
-      return res.ok
+      if (!res.ok) return 'failed'
+      const body = (await res.json().catch(() => null)) as { outcome?: CarryApplyOutcome } | null
+      return body?.outcome ?? 'failed'
     } catch {
-      return false
+      return 'failed'
     }
   }, [])
 

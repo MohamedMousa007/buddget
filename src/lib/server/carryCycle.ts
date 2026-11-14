@@ -108,14 +108,18 @@ export interface CycleDriftItem extends CarryDrift {
   carry: number
   adjustment: number
   pocketId: string | null
+  /** carry_settled_at as read (null = never settled since the close): the version a claim hangs on. */
+  carrySettledAt: string | null
+  /** When the carry was last brought up to date: carry_settled_at, else closed_at. Rows written after it make the month stale; the ledger key uses it. */
+  settledAt: string
 }
 
 /** Date a cycle's carry (and any later adjustment of it) is booked on: the cycle's last day. */
 export const carryPostDate = (end: Date) => new Date(end.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
 
 /**
- * Was any money row of the cycle written after the carry was last settled? Deleted rows count (a delete is a change); the
- * summary's own updated_at moves when an adjustment is applied, so a settled month reads as unchanged.
+ * Was any money row of the cycle (expense, income event, savings deposit) written after the carry was last settled? Deleted rows count (a delete is a change); the
+ * a tap or a later close stamps carry_settled_at, so a settled month reads as unchanged.
  * ponytail: a row moved out of the cycle by a date edit is not seen here; upgrade path is a change log.
  */
 async function rowsChangedSince(service: Service, userId: string, ctx: CycleContext, settledAt: string): Promise<boolean> {
@@ -125,7 +129,9 @@ async function rowsChangedSince(service: Service, userId: string, ctx: CycleCont
   const expenses = must(await service.from('expenses').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('expense_date', startISO).lt('expense_date', endISO).gt('updated_at', settledAt), 'changed expenses')
   if ((expenses.count ?? 0) > 0) return true
   const events = must(await service.from('income_events').select('id', { count: 'exact', head: true }).eq('user_id', userId).or(`${inWindow('received_date')},${inWindow('occurrence_date')}`).gt('updated_at', settledAt), 'changed income events')
-  return (events.count ?? 0) > 0
+  if ((events.count ?? 0) > 0) return true
+  const deposits = must(await service.from('savings_transactions').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('transaction_date', startISO).lt('transaction_date', endISO).or('source.is.null,source.neq.carry').gt('updated_at', settledAt), 'changed savings transactions')
+  return (deposits.count ?? 0) > 0
 }
 
 /**
@@ -136,7 +142,7 @@ async function rowsChangedSince(service: Service, userId: string, ctx: CycleCont
 export async function closedCycleDrift(
   service: Service, userId: string, monthStartDay: number, rates: Record<string, number>, opts: { before?: string; monthKey?: string } = {},
 ): Promise<{ item: CycleDriftItem; ctx: CycleContext }[]> {
-  let q = service.from('savings_month_summary').select('month_key, carry, carry_adjustment, pocket_id, currency, updated_at, closed_at').eq('user_id', userId)
+  let q = service.from('savings_month_summary').select('month_key, carry, carry_adjustment, pocket_id, currency, carry_settled_at, closed_at').eq('user_id', userId)
   if (opts.monthKey) q = q.eq('month_key', opts.monthKey)
   if (opts.before) q = q.lt('month_key', opts.before)
   const rows = must(await q.order('month_key', { ascending: false }).limit(DRIFT_CYCLES), 'summaries').data ?? []
@@ -147,10 +153,10 @@ export async function closedCycleDrift(
     const carry = Number(r.carry) || 0
     const adjustment = Number(r.carry_adjustment) || 0
     let drift = carryDrift({ carry, carry_adjustment: adjustment }, ctx.figures)
-    if (drift.stale && !(await rowsChangedSince(service, userId, ctx, (r.updated_at ?? r.closed_at) as string))) drift = carryDrift({ carry, carry_adjustment: adjustment }, ctx.figures, false)
+    if (drift.stale && !(await rowsChangedSince(service, userId, ctx, (r.carry_settled_at ?? r.closed_at) as string))) drift = carryDrift({ carry, carry_adjustment: adjustment }, ctx.figures, false)
     out.push({
       ctx,
-      item: { ...drift, monthKey: r.month_key as string, currency: ctx.base, carry, adjustment, pocketId: (r.pocket_id as string | null) ?? null },
+      item: { ...drift, monthKey: r.month_key as string, currency: ctx.base, carry, adjustment, pocketId: (r.pocket_id as string | null) ?? null, carrySettledAt: (r.carry_settled_at as string | null) ?? null, settledAt: (r.carry_settled_at ?? r.closed_at) as string },
     })
   }
   return out

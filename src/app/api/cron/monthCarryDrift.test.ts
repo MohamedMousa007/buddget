@@ -6,6 +6,7 @@ const h = vi.hoisted(() => ({
   rpcs: [] as Row[],
   figs: {} as Record<string, { income: number; spend: number; allocated: number } | null>,
   userId: 'u1' as string | null,
+  failRpc: false,
 }))
 
 vi.mock('server-only', () => ({}))
@@ -17,7 +18,7 @@ vi.mock('@/lib/savings/cycleCarryFigures', () => ({ cycleCarryFigures: (i: { mon
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({ from: fake, rpc }) }))
 
 function rpc(name: string, a: Row) {
-  if (name !== 'adjust_pocket_balance') return Promise.resolve({ data: null, error: { message: 'unknown rpc' } })
+  if (name !== 'adjust_pocket_balance' || h.failRpc) return Promise.resolve({ data: null, error: { message: 'unknown rpc' } })
   const txs = (h.db.savings_transactions ??= [])
   if (txs.some((t) => t.account_id === a.p_pocket && t.transfer_group_id === a.p_group)) return Promise.resolve({ data: null, error: null })
   const acc = h.db.savings_accounts!.find((r) => r.id === a.p_pocket)!
@@ -51,6 +52,7 @@ function fake(table: string) {
       if (prop === 'gt') return (c: string, v: string) => { filters.push((r) => String(r[c]) > v); return q }
       if (prop === 'lt') return (c: string, v: string) => { filters.push((r) => String(r[c]) < v); return q }
       if (prop === 'is') return (c: string, v: unknown) => { filters.push((r) => (r[c] ?? null) === v); return q }
+      if (prop === 'or') return (expr: string) => { if (expr.startsWith('source.is.null')) filters.push((r) => (r.source ?? null) !== 'carry'); return q }
       if (prop === 'order') return (c: string, o?: { ascending?: boolean }) => { if (c !== 'id') sort = { col: c, asc: o?.ascending !== false }; return q }
       if (prop === 'range') return (a: number, b: number) => { range = [a, b]; return q }
       if (prop === 'limit') return (n: number) => { limit = n; return q }
@@ -68,13 +70,13 @@ import { GET as carryGet, POST as carryPost } from '@/app/api/savings/carry/rout
 const cronReq = (qs = '') => new Request(`http://x/api/cron/month-carry${qs}`, { headers: { authorization: 'Bearer s3cret' } })
 const post = (monthKey: string) => carryPost(new Request('http://x/api/savings/carry', { method: 'POST', body: JSON.stringify({ monthKey }) }))
 const summary = (monthKey: string) => h.db.savings_month_summary!.find((r) => r.month_key === monthKey)!
-const summaryRow = (o: Row) => ({ user_id: 'u1', target: 0, allocated: 0, saved: 0, currency: 'EGP', pocket_id: 'p1', carry_adjustment: 0, closed_at: 'x', updated_at: '2026-10-01', ...o })
+const summaryRow = (o: Row) => ({ user_id: 'u1', target: 0, allocated: 0, saved: 0, currency: 'EGP', pocket_id: 'p1', carry_adjustment: 0, carry_settled_at: null, closed_at: '2026-10-01', updated_at: '2026-10-01', ...o })
 
 describe('month carry drift', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-14T10:00:00Z'))
-    h.rpcs = []; h.userId = 'u1'
+    h.rpcs = []; h.userId = 'u1'; h.failRpc = false
     h.figs = { '2026-09': { income: 1500, spend: 0, allocated: 0 }, '2026-10': { income: 3000, spend: 0, allocated: 0 } }
     h.db = {
       user_settings: [{ user_id: 'u1', month_start_day: 1, language: 'en', goal_progress_alerts: true, timezone: 'Africa/Cairo' }],
@@ -98,11 +100,21 @@ describe('month carry drift', () => {
     expect(Number(sep.carry) + Number(sep.carry_adjustment)).toBe(h.figs['2026-09']!.income)
   })
 
-  it('the next close nets a negative prior delta, and a remainder bigger than the new carry is dropped', async () => {
+  it('the next close nets a negative prior delta into the new carry', async () => {
     h.figs['2026-09'] = { income: 400, spend: 0, allocated: 0 }
     await cron(cronReq())
     expect(summary('2026-10')).toMatchObject({ carry: 2400, carry_adjustment: 600 })
     expect(summary('2026-09')).toMatchObject({ carry_adjustment: -600 })
+  })
+
+  it('a prior shortfall bigger than the new carry nets nothing: the claim is released and the month stays stale', async () => {
+    h.figs['2026-09'] = { income: 400, spend: 0, allocated: 0 }
+    h.figs['2026-10'] = { income: 100, spend: 0, allocated: 0 }
+    await cron(cronReq())
+    expect(summary('2026-10')).toMatchObject({ carry: 100, carry_adjustment: 0 })
+    expect(summary('2026-09')).toMatchObject({ carry_adjustment: 0, carry_settled_at: null })
+    const { cycles } = await (await carryGet(new Request('http://x/api/savings/carry'))).json()
+    expect(cycles.find((c: { monthKey: string }) => c.monthKey === '2026-09')).toMatchObject({ stale: true, delta: -600 })
   })
 
   it('rerunning the cron for already closed cycles changes nothing', async () => {
@@ -154,7 +166,7 @@ describe('month carry drift', () => {
       expect(first.cycle).toMatchObject({ posted: 1500, delta: 0, stale: false })
       expect(h.rpcs).toHaveLength(1)
       expect(h.rpcs[0]).toMatchObject({ p_pocket: 'p1', p_delta: 500, p_kind: 'deposit', p_source: 'carry', p_note: 'Carry adjustment · 2026-09', p_date: '2026-09-30' })
-      expect(summary('2026-09')).toMatchObject({ carry: 1000, carry_adjustment: 500, closed_at: 'x' })
+      expect(summary('2026-09')).toMatchObject({ carry: 1000, carry_adjustment: 500, closed_at: '2026-10-01' })
       await post('2026-09')
       expect(h.rpcs).toHaveLength(1)
       expect(h.db.savings_accounts![0]!.current_balance).toBe(5500)
@@ -184,6 +196,80 @@ describe('month carry drift', () => {
     it('POST on a month that is no longer stale books nothing', async () => {
       await post('2026-10')
       expect(h.rpcs).toEqual([])
+    })
+
+    it('a tap and the cron racing on one stale month apply it exactly once', async () => {
+      h.db.savings_month_summary = [summaryRow({ month_key: '2026-09', carry: 1000 })]
+      await Promise.all([post('2026-09'), cron(cronReq())])
+      const viaTap = h.rpcs.filter((r) => r.p_note === 'Carry adjustment · 2026-09').length
+      const viaCron = summary('2026-10')?.carry === 3500 ? 1 : 0
+      expect(summary('2026-09')).toMatchObject({ carry_adjustment: 500 })
+      expect(viaTap + viaCron).toBe(1)
+    })
+
+    it('a released claim leaves the month stale even though the trigger moved updated_at', async () => {
+      h.failRpc = true
+      await post('2026-09')
+      expect(summary('2026-09').updated_at).not.toBe('2026-10-01')
+      const { cycles } = await (await carryGet(new Request('http://x/api/savings/carry'))).json()
+      expect(cycles.find((c: { monthKey: string }) => c.monthKey === '2026-09')).toMatchObject({ stale: true, delta: 500 })
+    })
+
+    it('a settled month stamps carry_settled_at', async () => {
+      await post('2026-09')
+      expect(summary('2026-09').carry_settled_at).toBe('2026-11-14T10:00:00.000Z')
+    })
+
+    it('two taps apply once', async () => {
+      await Promise.all([post('2026-09'), post('2026-09')])
+      expect(h.rpcs).toHaveLength(1)
+      expect(summary('2026-09')).toMatchObject({ carry_adjustment: 500 })
+    })
+
+    it('a failed post gives the claim back and the month stays stale', async () => {
+      h.failRpc = true
+      expect((await post('2026-09')).status).toBe(500)
+      expect(summary('2026-09')).toMatchObject({ carry_adjustment: 0, carry_settled_at: null })
+      h.failRpc = false
+      await post('2026-09')
+      expect(h.rpcs).toHaveLength(1)
+    })
+
+    it('a figure returning to an earlier value still moves money (the ledger key is per application)', async () => {
+      h.db.savings_month_summary = [summaryRow({ month_key: '2026-09', carry: 1000 })]
+      for (const [income, day] of [[1500, 15], [1000, 16], [1500, 17]] as const) {
+        vi.setSystemTime(new Date(`2026-11-${day}T10:00:00Z`))
+        h.figs['2026-09'] = { income, spend: 0, allocated: 0 }
+        h.db.expenses = [{ id: 'late', user_id: 'u1', expense_date: '2026-09-10', updated_at: `2026-12-${day}` }]
+        await post('2026-09')
+      }
+      expect(h.rpcs.map((r) => r.p_delta)).toEqual([500, -500, 500])
+      expect(summary('2026-09')).toMatchObject({ carry_adjustment: 500 })
+    })
+
+    it('a pocket that no longer exists takes nothing and leaves the month stale', async () => {
+      ;(summary('2026-09') as Row).pocket_id = 'gone'
+      const body = await (await post('2026-09')).json()
+      expect(h.rpcs).toEqual([])
+      expect(body).toMatchObject({ unapplied: 500, outcome: 'unapplied' })
+      expect(summary('2026-09')).toMatchObject({ carry_adjustment: 0, carry_settled_at: null })
+    })
+
+    it('a pocket in a currency with no price takes nothing', async () => {
+      ;(h.db.savings_accounts![0] as Row).currency = 'XAU'
+      const body = await (await post('2026-09')).json()
+      expect(h.rpcs).toEqual([])
+      expect(body.outcome).toBe('unapplied')
+      expect(summary('2026-09')).toMatchObject({ carry_adjustment: 0 })
+    })
+
+    it('a savings deposit written after the settle makes the month stale; a carry posting does not', async () => {
+      h.db.expenses = []
+      h.db.savings_transactions = [{ user_id: 'u1', transaction_date: '2026-09-10', source: 'carry', updated_at: '2026-10-20' }]
+      const stale = async () => (await (await carryGet(new Request('http://x/api/savings/carry'))).json()).cycles.find((c: { monthKey: string }) => c.monthKey === '2026-09').stale
+      expect(await stale()).toBe(false)
+      h.db.savings_transactions = [{ user_id: 'u1', transaction_date: '2026-09-10', source: null, updated_at: '2026-10-20' }]
+      expect(await stale()).toBe(true)
     })
 
     it('POST with no pocket records the adjustment on the summary row only', async () => {
