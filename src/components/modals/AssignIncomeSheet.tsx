@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
-import { useSmsCounterparty } from '@/hooks/useSmsCounterparty'
+import { creditSenderFromTitle } from '@/lib/income/creditSender'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { Button } from '@/components/ui/button'
@@ -36,7 +36,7 @@ interface Props {
   initialTemplateId?: string
   /** Nested over the add sheet needs a higher layer; the page opens it at the default. */
   zIndexClassName?: string
-  /** Who sent it, when known (SMS credits): "… from AL RAJHI arrived on …". */
+  /** Who sent it, when the credit's own title says so: "… from AL RAJHI arrived on …". */
   from?: string | null
 }
 
@@ -153,7 +153,7 @@ export function GlobalAssignIncomeSheet() {
     useShallow((s) => ({ activeModal: s.activeModal, setActiveModal: s.setActiveModal, assignTarget: s.assignTarget })),
   )
   const event = assignTarget?.eventId ? incomeEvents.find((e) => e.id === assignTarget.eventId) : undefined
-  const from = useSmsCounterparty(event?.smsLogId)
+  const from = creditSenderFromTitle(event)
   if (!event) return null
   return (
     <AssignIncomeSheet
