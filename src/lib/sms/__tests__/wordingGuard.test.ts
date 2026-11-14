@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { GUARD_WORDS, WORDING_GUARD_ENFORCED, guardWordsIn, storedGuardWords, wordingGuardDiverts } from '../wordingGuard'
 
 describe('wording guard (S2c step 8e)', () => {
-  it('is count only', () => {
-    expect(WORDING_GUARD_ENFORCED).toBe(false)
+  it('is enforced', () => {
+    expect(WORDING_GUARD_ENFORCED).toBe(true)
   })
 
   it('finds the guard words in English and Arabic', () => {

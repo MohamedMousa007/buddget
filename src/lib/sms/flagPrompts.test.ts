@@ -26,6 +26,10 @@ describe('selectFlagPrompts (I8: a prompt is shown only for an open server flag)
     expect(selectFlagPrompts([exp('a', '2026-11-01', { smsFlags: ['cash_deposit'] })], []).map((t) => t.flag)).toEqual(['cash_deposit'])
     expect(selectFlagPrompts([], [inc('i', '2026-11-01', { smsFlags: ['refund_unmatched'] })])).toEqual([])
   })
+  it('card_load, wallet_unregistered and topup_repaired are asked on their own kind of row only; topup_prev is ignored', () => {
+    expect(selectFlagPrompts([exp('a', '2026-11-01', { smsFlags: ['card_load', 'topup_repaired', 'topup_prev:Food', 'wallet_unregistered'] })], []).map((t) => t.flag)).toEqual(['card_load', 'topup_repaired'])
+    expect(selectFlagPrompts([], [inc('i', '2026-11-01', { smsFlags: ['wallet_unregistered', 'card_load', 'topup_repaired'] })]).map((t) => t.flag)).toEqual(['wallet_unregistered'])
+  })
   it('is pure: the rows are not changed', () => {
     const e = exp('a', '2026-11-01', { smsFlags: ['date_unsure'] })
     const before = JSON.stringify(e)

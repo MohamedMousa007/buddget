@@ -39,7 +39,7 @@ vi.mock('@/lib/supabase/service', () => ({
       const rec: Op = { table, op: 'select', filters: [] }
       const result = () => {
         if (table === 'sms_parse_log' && rec.op === 'select' && rec.filters.some(([k]) => k === 'in:sms_hash')) return { data: h.neighbourRows, error: null }
-        if (table === 'sms_tracking_templates_ai' && rec.op === 'select' && rec.filters.some(([k, v]) => k === 'eq:sender' && v === 'TESTBANK')) return { data: h.siblings, error: null }
+        if (table === 'sms_tracking_templates_ai' && rec.op === 'select' && rec.filters.some(([k, v]) => (k === 'eq:sender' && v === 'TESTBANK') || (k === 'in:sender' && Array.isArray(v) && v.includes('TESTBANK')))) return { data: h.siblings, error: null }
         return { data: [], error: null }
       }
       const q: Record<string, unknown> = {}
@@ -126,6 +126,30 @@ describe('POST /api/sms/parse wiring', () => {
     expect(String(claimed.values!.raw_body)).not.toContain('123456')
     const reject = h.ops.find((o) => o.op === 'update' && o.values?.failure_code === 'not_transaction')!
     expect(String(reject.values!.raw_body)).not.toContain('123456')
+  })
+})
+
+describe('wording guard enforcement (I6)', () => {
+  const template = { id: 't1', status: 'active', tier: 'curated_db', match_count: 5, regex_pattern: 'Purchase\\s+of\\s+(\\d+\\.\\d+)\\s+EGP', template_sample: null, mapping_rules: { amount: { group: 1 }, kind: 'purchase', guardWords: [] } }
+  const aiParse = { is_transaction: true, amount: 120.5, currency: 'EGP', merchant: 'Test Shop', bank_name: 'Test Bank', category: null, confidence: 0.95, kind: 'purchase', cleanTitle: 'Test Shop', detectedAccountLast4: '1234', detectedCounterpartyLast4: null, merchantNormalized: null }
+  const run = async (message: string) => {
+    h.siblings = [template]
+    const fetchMock = vi.fn(async () => geminiJson(aiParse))
+    vi.stubGlobal('fetch', fetchMock)
+    const res = await post({ message, sender: 'TESTBANK', receivedAt: RECEIVED })
+    return { fetchMock, body: await res.json().catch(() => ({})) }
+  }
+
+  it('control: a message with no guard word is booked by the template without the AI', async () => {
+    const { fetchMock } = await run(NEUTRAL)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('I6: a guard word the template sample lacked sends the message to the next tier, never to rejection', async () => {
+    const { fetchMock, body } = await run(`${NEUTRAL}, points will be added`)
+    expect(fetchMock).toHaveBeenCalled()
+    expect(body).not.toMatchObject({ ok: false, reason: 'not_transaction' })
+    expect(h.ops.some((o) => o.op === 'update' && o.values?.failure_code === 'not_transaction')).toBe(false)
   })
 })
 

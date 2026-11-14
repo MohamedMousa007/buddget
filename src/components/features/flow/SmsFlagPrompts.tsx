@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ArrowLeftRight, Banknote, CalendarClock, Copy, Undo2 } from 'lucide-react'
+import { ArrowLeftRight, Banknote, CalendarClock, CreditCard, Copy, Undo2, Wallet } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -12,13 +12,13 @@ import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { formatFlex } from '@/lib/utils/formatters'
 import { selectFlagPrompts, type FlagPromptTarget } from '@/lib/sms/flagPrompts'
-import { markDepositIncome } from '@/lib/sms/flagActions'
+import { markDepositIncome, markWalletOwn, undoTopupRepair } from '@/lib/sms/flagActions'
 import type { Expense, IncomeEvent } from '@/lib/store/types'
 import { RefundPickSheet } from './RefundPickSheet'
 
 /**
  * Registers the questions the server raises about rows it created from bank messages: a possible repeat, an untrusted
- * date, a transfer reading only the AI asserted, a refund with no purchase, a cash deposit. Not tied to a Flow segment.
+ * date, a transfer reading only the AI asserted, a refund with no purchase, a cash deposit, a card top-up, money into an unregistered wallet, a repaired wallet top-up. Not tied to a Flow segment.
  * Nothing is written until the user answers, and every default leaves totals as the server booked them.
  */
 export function SmsFlagPrompts() {
@@ -75,6 +75,24 @@ export function SmsFlagPrompts() {
     updateExpense(e.id, { category: 'Transfer', smsFlagsAck: [...new Set([...before.smsFlagsAck, 'model_kind_unproven'])] })
     toast(copy.kindMarkedTransfer, { undo: () => updateExpense(e.id, before), undoLabel: t.common.undo })
   }
+  const markCardLoadSpending = (e: Expense) => {
+    const before = { category: e.category, paymentMethodId: e.paymentMethodId, toPaymentMethodId: e.toPaymentMethodId, smsFlagsAck: e.smsFlagsAck ?? [] }
+    updateExpense(e.id, {
+      category: 'Other',
+      toPaymentMethodId: undefined,
+      paymentMethodId: e.toPaymentMethodId ?? e.paymentMethodId,
+      smsFlagsAck: [...new Set([...before.smsFlagsAck, 'card_load'])],
+    })
+    toast(copy.cardLoadMarkedSpending, { undo: () => updateExpense(e.id, before), undoLabel: t.common.undo })
+  }
+  const walletOwn = async (inc: IncomeEvent) => {
+    const ok = await markWalletOwn(inc.id)
+    toast(ok ? copy.walletDone : copy.failed)
+  }
+  const undoTopup = async (e: Expense) => {
+    const ok = await undoTopupRepair(e.id)
+    toast(ok ? copy.topupUndone : copy.failed)
+  }
   const depositIncome = async (e: Expense) => {
     const ok = await markDepositIncome(e.id)
     toast(ok ? copy.cashDone : copy.failed)
@@ -87,6 +105,7 @@ export function SmsFlagPrompts() {
     const inc = kind === 'income' ? incomeEvents.find((x) => x.id === id) : undefined
     const row = e ?? inc
     if (!row) continue
+    const amountText = `${formatFlex((e ?? inc)!.amount)} ${(e ?? inc)!.currency}`
     const detail = e
       ? `${e.description} ${formatFlex(e.amount)} ${e.currency} · ${shortDate(e.date.slice(0, 10))}`
       : `${inc!.name} ${formatFlex(inc!.amount)} ${inc!.currency} · ${shortDate(inc!.receivedDate)}`
@@ -140,6 +159,39 @@ export function SmsFlagPrompts() {
         actions: [
           { label: copy.refundChoose, variant: 'default', onPress: () => setPickFor(e) },
           { label: copy.refundLeave, variant: 'secondary', onPress: dismiss },
+        ],
+      })
+    } else if (flag === 'card_load' && e) {
+      prompts.push({
+        ...base,
+        icon: CreditCard,
+        title: copy.cardLoadTitle,
+        description: copy.cardLoadBody(amountText),
+        actions: [
+          { label: copy.cardLoadSpending, variant: 'default', onPress: () => markCardLoadSpending(e) },
+          { label: copy.cardLoadKeep, variant: 'secondary', onPress: dismiss },
+        ],
+      })
+    } else if (flag === 'wallet_unregistered' && inc) {
+      prompts.push({
+        ...base,
+        icon: Wallet,
+        title: copy.walletTitle,
+        description: copy.walletBody(amountText),
+        actions: [
+          { label: copy.walletOwn, variant: 'default', onPress: () => void walletOwn(inc) },
+          { label: copy.walletIncome, variant: 'secondary', onPress: dismiss },
+        ],
+      })
+    } else if (flag === 'topup_repaired' && e) {
+      prompts.push({
+        ...base,
+        icon: Wallet,
+        title: copy.topupTitle,
+        description: copy.topupBody(amountText, e.description),
+        actions: [
+          { label: copy.topupUndo, variant: 'default', onPress: () => void undoTopup(e) },
+          { label: copy.topupKeep, variant: 'secondary', onPress: dismiss },
         ],
       })
     } else if (flag === 'cash_deposit' && e) {

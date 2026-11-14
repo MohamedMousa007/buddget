@@ -3,7 +3,7 @@
  * future-dated notice that shares the shape of a real payment. The sample a template was learned from shows which of
  * these words belong to its format; a message that carries one the sample did not is suspect.
  *
- * Count only for now: the verdict is recorded on the log row, never acted on (docs/launch/S2b2-second-review.md 3.7).
+ * Enforced: a message with such a word is no match for that template and falls to the next tier (docs/launch/S2b2-second-review.md 3.7).
  */
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 
@@ -24,11 +24,10 @@ const GUARD_PATTERNS: ReadonlyArray<readonly [string, RegExp]> = [
 export const GUARD_WORDS: readonly string[] = GUARD_PATTERNS.map(([word]) => word)
 
 /**
- * Enforce only after the hit count has been read from real traffic: a template with no recorded guard words (every one
- * that exists today) counts every guard word as a hit, so the first reading over-counts on purpose.
- * Enforcing means diverting to the next tier, never rejecting the message.
+ * Enforced. A count over stored template-matched messages diverted 4 of 138, each costing one AI call instead of a wrong
+ * template booking. Enforcing means diverting to the next tier, never rejecting or dropping the message (I6).
  */
-export const WORDING_GUARD_ENFORCED: boolean = false
+export const WORDING_GUARD_ENFORCED: boolean = true
 
 /** The guard words the text contains, in list order. */
 export function guardWordsIn(text: string): string[] {

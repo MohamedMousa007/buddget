@@ -3080,6 +3080,9 @@ export interface Dictionary {
       badgeRefund: string
       badgeKind: string
       badgeCash: string
+      badgeCardLoad: string
+      badgeWallet: string
+      badgeTopup: string
       duplicateTitle: string
       duplicateBody: (detail: string) => string
       duplicateRemove: string
@@ -3105,6 +3108,21 @@ export interface Dictionary {
       cashOwn: string
       cashIncome: string
       cashDone: string
+      cardLoadTitle: string
+      cardLoadBody: (amount: string) => string
+      cardLoadSpending: string
+      cardLoadKeep: string
+      cardLoadMarkedSpending: string
+      walletTitle: string
+      walletBody: (amount: string) => string
+      walletOwn: string
+      walletIncome: string
+      walletDone: string
+      topupTitle: string
+      topupBody: (amount: string, title: string) => string
+      topupUndo: string
+      topupKeep: string
+      topupUndone: string
       failed: string
       pickTitle: string
       pickSub: string

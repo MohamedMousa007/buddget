@@ -266,7 +266,7 @@ async function postSmsDebtPayment(
     amount: row.amount,
     currency: debtCurrency,
     payment_date: row.day,
-    occurred_at: row.receivedAtIso ?? null,
+    occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
     amount_in_debt_unit: units.amountInDebtUnit,
     original_amount: units.originalAmount,
     original_currency: units.originalCurrency,
@@ -283,7 +283,7 @@ async function postSmsDebtPayment(
         amount: row.amount,
         currency: dbCurrency(row.currency),
         expense_date: row.day,
-        occurred_at: row.receivedAtIso ?? null,
+        occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
         payment_method_id: a.fundingPaymentMethodId,
       },
     })

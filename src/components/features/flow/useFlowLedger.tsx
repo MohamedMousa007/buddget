@@ -179,6 +179,9 @@ export function useFlowLedger() {
       refund_unmatched: t.prompts.smsFlags.badgeRefund,
       model_kind_unproven: t.prompts.smsFlags.badgeKind,
       cash_deposit: t.prompts.smsFlags.badgeCash,
+      card_load: t.prompts.smsFlags.badgeCardLoad,
+      wallet_unregistered: t.prompts.smsFlags.badgeWallet,
+      topup_repaired: t.prompts.smsFlags.badgeTopup,
     }
     const openFlag = (row: { smsFlags?: string[]; smsFlagsAck?: string[] } | undefined, kind: FlagRowKind) => {
       const flag = row ? firstOpenFlag(row, kind) : null

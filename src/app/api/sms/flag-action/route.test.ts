@@ -45,7 +45,7 @@ vi.mock('@/lib/supabase/service', () => ({
           return { data: { id: 'new-income' }, error: null }
         },
         then: (resolve: (v: unknown) => void) => {
-          let hit: Row[] = []
+          let hit: Row[] = mode === 'select' ? matching() : []
           if (mode === 'update') {
             h.writes.push({ table, op: 'update', values })
             hit = matching()
@@ -188,5 +188,101 @@ describe('POST /api/sms/flag-action', () => {
     h.db.expenses = [deposit({ category: 'Food' })]
     expect((await call({ action: 'deposit_income', expenseId: DEPOSIT })).status).toBe(409)
     expect(h.writes).toHaveLength(0)
+  })
+  describe('wallet_unregistered, wallet_own (I4, I8)', () => {
+    const INCOME = '55555555-5555-4555-8555-555555555555'
+    const credit = (extra: Row = {}): Row => ({ id: INCOME, user_id: 'u1', amount: 300, currency: 'EGP', received_date: '2026-11-09', occurred_at: '2026-11-09T10:00:00Z', sms_log_id: LOG, payment_method_id: 'wallet-1', sms_flags: ['wallet_unregistered'], deleted_at: null, retracted_by_sms_log_id: null, ...extra })
+    const own = () => call({ action: 'wallet_own', incomeId: INCOME })
+
+    it('retracts the income with its own message as the marker and books one Transfer into the wallet', async () => {
+      h.db.income_events = [credit()]
+      expect((await own()).status).toBe(200)
+      expect(h.db.income_events[0]).toMatchObject({ deleted_at: expect.any(String), retracted_by_sms_log_id: LOG })
+      const insert = h.writes.find((w) => w.table === 'expenses' && w.op === 'insert')
+      expect(insert?.values).toMatchObject({
+        user_id: 'u1', description: 'Wallet top-up', category: 'Transfer', amount: 300, currency: 'EGP', expense_date: '2026-11-09',
+        occurred_at: '2026-11-09T10:00:00Z', sms_log_id: LOG, to_payment_method_id: 'wallet-1', payment_method_id: null,
+      })
+      expect(h.db.sms_parse_log[0]).toMatchObject({ expense_id: 'new-income', income_id: null })
+      expect(h.writes.every((w) => !('edited_at' in w.values))).toBe(true)
+    })
+
+    it('restores the income when the insert fails and answers 500', async () => {
+      h.db.income_events = [credit()]
+      h.failInsert = true
+      expect((await own()).status).toBe(500)
+      expect(h.db.income_events[0]).toMatchObject({ deleted_at: null, retracted_by_sms_log_id: null })
+    })
+
+    it('refuses a row without the flag, another user and a deleted row', async () => {
+      h.db.income_events = [credit({ sms_flags: [] })]
+      expect((await own()).status).toBe(409)
+      h.db.income_events = [credit({ user_id: 'u2' })]
+      expect((await own()).status).toBe(409)
+      h.db.income_events = [credit({ deleted_at: '2026-11-10T00:00:00Z' })]
+      expect((await own()).status).toBe(409)
+      expect(h.writes).toHaveLength(0)
+    })
+  })
+
+  describe('topup_repaired, topup_undo (I4, I8)', () => {
+    const REPAIRED = '66666666-6666-4666-8666-666666666666'
+    const CREDIT = '77777777-7777-4777-8777-777777777777'
+    const CREDIT_LOG = '88888888-8888-4888-8888-888888888888'
+    const repaired = (extra: Row = {}): Row => ({ id: REPAIRED, user_id: 'u1', category: 'Transfer', to_payment_method_id: 'wallet-1', sms_log_id: LOG, sms_flags: ['topup_repaired', 'topup_prev:Utilities'], deleted_at: null, ...extra })
+    const retracted = (): Row => ({ id: CREDIT, user_id: 'u1', sms_log_id: CREDIT_LOG, deleted_at: '2026-11-09T11:00:00Z', retracted_by_sms_log_id: LOG })
+    const undo = () => call({ action: 'topup_undo', expenseId: REPAIRED })
+    const logs = (): Row[] => [
+      { id: LOG, user_id: 'u1', paired_log_id: CREDIT_LOG, status: 'confirmed', expense_id: REPAIRED, income_id: null },
+      { id: CREDIT_LOG, user_id: 'u1', paired_log_id: LOG, status: 'paired', expense_id: null, income_id: null },
+    ]
+
+    it('puts the category back, clears the destination and both flag entries, restores the retracted income and unpairs the logs', async () => {
+      h.db.expenses = [repaired()]
+      h.db.income_events = [retracted()]
+      h.db.sms_parse_log = logs()
+      expect((await undo()).status).toBe(200)
+      expect(row(REPAIRED)).toMatchObject({ category: 'Utilities', to_payment_method_id: null, sms_flags: null })
+      expect(h.db.income_events[0]).toMatchObject({ deleted_at: null, retracted_by_sms_log_id: null })
+      expect(h.db.sms_parse_log[1]).toMatchObject({ status: 'confirmed', income_id: CREDIT, paired_log_id: null })
+      expect(h.db.sms_parse_log[0].paired_log_id).toBeNull()
+      expect(h.writes.every((w) => !('edited_at' in w.values))).toBe(true)
+    })
+
+    it('restores only the row when there is no income leg, and keeps unrelated flag entries', async () => {
+      h.db.expenses = [repaired({ sms_flags: ['topup_repaired', 'topup_prev:Food', 'date_unsure'] })]
+      h.db.income_events = []
+      h.db.sms_parse_log = [{ id: LOG, user_id: 'u1', paired_log_id: null }]
+      expect((await undo()).status).toBe(200)
+      expect(row(REPAIRED)).toMatchObject({ category: 'Food', to_payment_method_id: null, sms_flags: ['date_unsure'] })
+    })
+
+    it('does not restore an income the user deleted (no marker for this message)', async () => {
+      h.db.expenses = [repaired()]
+      h.db.income_events = [{ ...retracted(), retracted_by_sms_log_id: null }]
+      h.db.sms_parse_log = logs()
+      expect((await undo()).status).toBe(200)
+      expect(h.db.income_events[0].deleted_at).toEqual(expect.any(String))
+    })
+
+    it('answers 409 and writes nothing without the flag, and on a second call', async () => {
+      h.db.expenses = [repaired({ sms_flags: [] })]
+      expect((await undo()).status).toBe(409)
+      h.db.expenses = [repaired()]
+      h.db.income_events = []
+      h.db.sms_parse_log = [{ id: LOG, user_id: 'u1', paired_log_id: null }]
+      expect((await undo()).status).toBe(200)
+      h.writes.length = 0
+      expect((await undo()).status).toBe(409)
+      expect(h.writes).toHaveLength(0)
+    })
+
+    it('falls back to Other when topup_prev is not a valid category', async () => {
+      h.db.expenses = [repaired({ sms_flags: ['topup_repaired', 'topup_prev:Not A Category'] })]
+      h.db.income_events = []
+      h.db.sms_parse_log = [{ id: LOG, user_id: 'u1', paired_log_id: null }]
+      expect((await undo()).status).toBe(200)
+      expect(row(REPAIRED).category).toBe('Other')
+    })
   })
 })
