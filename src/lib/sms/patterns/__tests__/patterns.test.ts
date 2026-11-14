@@ -445,3 +445,43 @@ describe('currency group', () => {
     expect(matchCuratedPattern(HSBC_PURCHASE, null)?.currency).toBe('EGP')
   })
 })
+
+describe('compact Saudi Arabic formats, invented fixtures', () => {
+  const POS = 'شراء PoS\nعبر:1234;مدى-ابل باي\nبـSAR 12.50\nلـACME STORE\n\u061C26/11/14 10:05'
+  const POS_ATHIR = 'شراء PoS\nعبر:4321;مدى-أثير\nبـSAR 1,200\nلـDEMO CAFE\n26/11/14 09:30'
+  const ONLINE = 'شراء انترنت بطاقة:1234;مدى\nمن:5678\nمبلغ:SAR 99.99\nلدى:ACME.COM/BILL\nفي:26/11/14 10:05'
+  const IN = 'حوالة داخلية واردة بـSR 250\nلـ1234\nمن5678;ACME PERSON\n26/11/14 10:05'
+  const IN_LOCAL = 'حوالة محلية واردة بـSR 1,000.50\nلـ4321\nمن8765;DEMO PERSON\n26/11/14 10:05'
+  const INTERNET_ONLINE_WORDING = 'شراء انترنت بـSR 12.50\nعبر1234;مدى-ابل باي\nمن5678\nلـACME STORE\n26/11/14 10:05'
+  const PAYOFF = 'بطاقة فيزا:سداد بـSR 100\nعبر1234;فيزا\nرصيد:50 SR\n26/11/14 10:05'
+  const OUT = 'حوالة داخلية صادرة بـSR 100\nمن1234\nلـ5678;ACME PERSON\n26/11/14 10:05'
+
+  it('parses POS purchase through Apple Pay and mada Athir', () => {
+    const a = matchCuratedPattern(POS, null)
+    expect([a?.patternId, a?.kind, a?.amount, a?.currency, a?.last4, a?.counterparty, a?.paymentInstrument]).toEqual(['snb-compact-pos-purchase-ar', 'purchase', 12.5, 'SAR', '1234', 'ACME STORE', 'card'])
+    const b = matchCuratedPattern(POS_ATHIR, null)
+    expect([b?.patternId, b?.amount, b?.last4, b?.counterparty]).toEqual(['snb-compact-pos-purchase-ar', 1200, '4321', 'DEMO CAFE'])
+  })
+
+  it('parses online purchase', () => {
+    const m = matchCuratedPattern(ONLINE, null)
+    expect([m?.patternId, m?.kind, m?.amount, m?.currency, m?.last4, m?.counterparty]).toEqual(['snb-compact-online-purchase-ar', 'online_purchase', 99.99, 'SAR', '1234', 'ACME.COM/BILL'])
+  })
+
+  it('parses incoming transfer with both account digits', () => {
+    const m = matchCuratedPattern(IN, null)
+    expect([m?.patternId, m?.kind, m?.amount, m?.currency, m?.last4, m?.counterpartyLast4, m?.counterparty]).toEqual(['snb-compact-transfer-in-ar', 'instant_transfer_in', 250, 'SAR', '1234', '5678', 'ACME PERSON'])
+    const l = matchCuratedPattern(IN_LOCAL, null)
+    expect([l?.patternId, l?.amount]).toEqual(['snb-compact-transfer-in-ar', 1000.5])
+  })
+
+  it('leaves the shapes with disputed or other kinds to later tiers', () => {
+    for (const s of [INTERNET_ONLINE_WORDING, PAYOFF, OUT]) expect(matchCuratedPattern(s, null)?.patternId ?? '').not.toMatch(/^snb-compact/)
+  })
+
+  it('does not match near-miss wording', () => {
+    expect(matchCuratedPattern('شراء PoS\nعبر:1234;مدى-ابل باي\nمرفوضة', null)).toBeNull()
+    expect(matchCuratedPattern('شراء انترنت بطاقة:1234;مدى\nمن:5678\nرمز التحقق 123456', null)).toBeNull()
+    expect(matchCuratedPattern('حوالة داخلية واردة قيد المراجعة بـSR 250', null)).toBeNull()
+  })
+})
