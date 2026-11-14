@@ -28,7 +28,6 @@ import {
   mapKindToCategory,
   isIncomeKind,
   resolveExactPaymentMethod,
-  isConfirmedOwnAccount,
   providerOf,
   completeFxEvent,
   type SmsRowData,
@@ -292,15 +291,13 @@ export async function createSmsTransaction(
 
   // 1. Own-account reclassification — an inbound/outbound transfer whose
   //    counterparty is a registered own account is a Transfer, not income/spend.
-  //    The counterparty being the user by NAME is a supporting signal: it counts only together with this message's
-  //    own account being one the user has confirmed (two people can share a name).
+  //    Only an account the user confirmed counts here. The counterparty being the user by NAME never settles
+  //    anything: it is one supporting signal of the decision in 1b, where it can only raise a question.
   /** The reclassified leg is the receiving side, so its own account is the transfer's destination. */
   let destinationLeg = false
   if (
     (kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
-    ((await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null)) ||
-      (row.counterpartyIsSelf === true &&
-        (await isConfirmedOwnAccount(service, row.userId, row.last4, providerOf(row)))))
+    (await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null))
   ) {
     destinationLeg = kind === 'instant_transfer_in'
     kind = 'own_transfer'

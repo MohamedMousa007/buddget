@@ -363,29 +363,20 @@ describe('money passing through ONE account is never settled as an own transfer'
 })
 
 describe('the counterparty is the user by name (supporting signal)', () => {
-  // The receiving bank names the sender. When that is the user AND the receiving account is one they confirmed,
-  // the credit is a transfer from another of their accounts, not income.
+  // The profile name is one supporting signal: on its own, even with a confirmed own account, it settles nothing.
   const named = (over: Partial<SmsRowData> = {}) => inLeg({ rawBody: 'Transfer received 2000.00 on 5124.', amount: 2000, counterpartyIsSelf: true, ...over })
 
-  it('a name match plus a confirmed own account books one transfer INTO that account, no income', async () => {
-    const res = await createSmsTransaction(makeService(state), named(), opts)
-    expect(res.kind).toBe('own_transfer')
-    expect(state.incomes).toHaveLength(0)
-    expect(state.expenses).toHaveLength(1)
-    expect(state.expenses[0].category).toBe('Transfer')
-    // The message's own account received the money: it is the destination, and the unknown source is left empty.
-    expect(state.expenses[0].row).toMatchObject({ to_payment_method_id: 'pm5124', payment_method_id: null })
-  })
-
-  it('a name match alone never reclassifies: the account must be a known own account', async () => {
-    state.registeredLast4 = []
+  it('never reclassifies a credit on its own: it stays income', async () => {
     const res = await createSmsTransaction(makeService(state), named(), opts)
     expect(res.kind).toBe('instant_transfer_in')
     expect(res.outcome).toBe('income')
+    expect(state.expenses).toHaveLength(0)
+    expect(state.incomes).toHaveLength(1)
   })
 
-  it('a known own account alone never reclassifies either', async () => {
-    const res = await createSmsTransaction(makeService(state), named({ counterpartyIsSelf: false }), opts)
+  it('behaves the same with no registered account', async () => {
+    state.registeredLast4 = []
+    const res = await createSmsTransaction(makeService(state), named(), opts)
     expect(res.outcome).toBe('income')
   })
 })

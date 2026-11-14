@@ -709,19 +709,6 @@ export async function completeFxEvent(
   if (error) console.warn('[sms/fx] completing the exchange row failed', error.message)
 }
 
-/** True when the digits name one registered account the user has confirmed. A provisional account is not yet "known". */
-export async function isConfirmedOwnAccount(
-  service: ServiceClient,
-  userId: string,
-  last4: string | null | undefined,
-  provider?: SmsProvider,
-): Promise<boolean> {
-  const id = await resolveExactPaymentMethod(service, userId, last4, provider)
-  if (!id) return false
-  const { data } = await service.from('payment_methods').select('provisional').eq('id', id).maybeSingle()
-  return !!data && data.provisional !== true
-}
-
 /** ± window (days) for treating a second refund SMS as a duplicate of the same event. */
 const REFUND_DEDUPE_DAYS = 3
 
