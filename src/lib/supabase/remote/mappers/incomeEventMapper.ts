@@ -48,6 +48,7 @@ export function incomeEventToRow(e: IncomeEvent, userId: string): IncomeEventIns
     exclusion: e.exclusion ?? null,
     notes: e.notes ?? null,
     occurred_at: e.occurredAt ?? null,
+    ...(e.serverRev !== undefined ? { server_rev: e.serverRev } : {}),
     created_at: e.createdAt,
     edited_at: e.updatedAt,
   }
@@ -74,6 +75,7 @@ export function incomeEventFromRow(row: IncomeEventRow): IncomeEvent {
     exclusion: row.exclusion === 'pass_through' ? 'pass_through' : undefined,
     notes: row.notes ?? undefined,
     occurredAt: row.occurred_at ?? undefined,
+    serverRev: row.server_rev ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.edited_at ?? row.created_at,
   }

@@ -13,7 +13,7 @@ describe('whereItWent', () => {
   it('groups by description ignoring case and spacing, biggest first, top three', () => {
     const rows = whereItWent(
       [ex('Carrefour', 500), ex(' carrefour ', 424), ex('Talabat', 626, { category: 'Dining' }), ex('Uber', 387), ex('Cafe  Nero', 100)],
-      names, start, end,
+      names, start, end, 'EGP', {},
     )
     expect(rows).toEqual([{ name: 'Carrefour', amount: 924 }, { name: 'Talabat', amount: 626 }, { name: 'Uber', amount: 387 }])
   })
@@ -23,11 +23,11 @@ describe('whereItWent', () => {
         ex('Rent', 5500, { category: 'Rent' }), ex('Visa', 700, { isDebtPayment: true }), ex('Refund', -50),
         ex('Old shop', 90, { date: '2026-10-20' }), ex('   ', 10), ex('Kept', 30),
       ],
-      names, start, end,
+      names, start, end, 'EGP', {},
     )
     expect(rows).toEqual([{ name: 'Kept', amount: 30 }])
   })
   it('is empty with nothing to show', () => {
-    expect(whereItWent([], names, start, end)).toEqual([])
+    expect(whereItWent([], names, start, end, 'EGP', {})).toEqual([])
   })
 })

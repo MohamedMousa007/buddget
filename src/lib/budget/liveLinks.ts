@@ -27,6 +27,8 @@ import {
   filterDebtPaymentsByMonth,
 } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
+import { expenseAmountInBase } from '@/lib/utils/calculations'
+import { isReportSpendRow } from '@/lib/constants/categoryMeta'
 
 const WEEKS_PER_MONTH = 52 / 12
 
@@ -86,7 +88,7 @@ export function subscriptionsExtras(i: SubscriptionsExtrasInput): SubscriptionsE
     ? forecastCharges(i.subs, i.cycleExpenses, i.today, horizon, i.base, i.rates).find((f) => f.due >= i.cycleStart && f.due <= i.cycleEnd)
     : undefined
   const charged = i.cycleExpenses.reduce(
-    (sum, e) => (e.linkedSubscriptionId && !e.refundKind ? sum + convertCurrency(e.amount, e.currency, i.base, i.rates) : sum),
+    (sum, e) => (e.linkedSubscriptionId && isReportSpendRow(e) ? sum + expenseAmountInBase(e, i.base, i.rates) : sum),
     0
   )
   return {

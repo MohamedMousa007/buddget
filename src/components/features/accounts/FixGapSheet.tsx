@@ -73,7 +73,7 @@ export function FixGapSheet({ open, onClose, account, gap, onSetAside, onResolve
 
   const tiles: Array<{ id: Choice; name: string; sub: string; cta: string; likely?: boolean }> = [
     ...(unplaced.length > 0
-      ? [{ id: 'attach' as const, name: t.attachMessagesName, sub: t.attachMessagesSub(unplaced.length, money(unplaced.reduce((a, e) => a + e.amount, 0))), cta: t.attachMessagesCta, likely: true }]
+      ? [{ id: 'attach' as const, name: t.attachMessagesName, sub: t.attachMessagesSub(unplaced.length, money(unplaced.reduce((a, e) => a + Math.max(0, e.amount - (e.refundedAmount ?? 0)), 0))), cta: t.attachMessagesCta, likely: true }]
       : []),
     { id: 'cash', name: t.cashWithdrawal, sub: t.cashWithdrawalSub, cta: t.logCashWithdrawal, },
     { id: 'spent', name: t.iSpentIt, sub: t.iSpentItSub, cta: t.addTheExpense },

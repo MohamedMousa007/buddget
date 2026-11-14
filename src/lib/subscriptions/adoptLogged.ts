@@ -26,3 +26,19 @@ export function loggedChargesAdopted(
     )
     .map((e) => e.id)
 }
+
+/**
+ * `merged` without the app-written charges that an SMS-linked row among `incoming` replaces. The removal is a plain
+ * local delete, so the sync diff against the delivered snapshot tombstones the dropped rows on the server.
+ */
+export function withoutAdoptedLogged<T extends Pick<Expense, 'id' | 'linkedSubscriptionId' | 'isRecurring' | 'smsLogId' | 'date'>>(
+  merged: T[],
+  incoming: readonly Pick<Expense, 'id' | 'linkedSubscriptionId' | 'smsLogId' | 'date'>[]
+): T[] {
+  const present = new Set(merged.map((e) => e.id))
+  const adopted = new Set<string>()
+  for (const row of incoming) {
+    if (present.has(row.id)) for (const id of loggedChargesAdopted(merged, row)) adopted.add(id)
+  }
+  return adopted.size > 0 ? merged.filter((e) => !adopted.has(e.id)) : merged
+}

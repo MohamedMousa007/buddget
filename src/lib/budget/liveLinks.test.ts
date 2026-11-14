@@ -38,6 +38,7 @@ describe('subscriptions', () => {
     const paid = { id: 'e', date: '2026-10-05', amount: 60, currency: 'AED', linkedSubscriptionId: 's' } as Expense
     const x = subscriptionsExtras(extrasInput([paid]))
     expect(x.charged).toBe(60)
+    expect(subscriptionsExtras(extrasInput([{ ...paid, spendExclusion: 'manual' }])).charged).toBe(0)
     expect(x.left).toEqual([])
     expect(x.yearlySetAside).toBe(10)
     expect(x.total).toBe(60)

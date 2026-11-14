@@ -372,6 +372,15 @@ describe('expenseAmountInBase', () => {
     expect(expenseAmountInBase(refunded, 'AED', rates, true)).toBe(100)
   })
 
+  it('a partial refund counts the remainder; gross keeps the full amount; the cached fallback scales', () => {
+    const partial = { amount: 100, currency: 'AED' as const, amountInBaseCurrency: 100, refundedAmount: 30 }
+    expect(expenseAmountInBase(partial, 'AED', rates)).toBe(70)
+    expect(expenseAmountInBase(partial, 'AED', rates, true)).toBe(100)
+    expect(expenseAmountInBase({ ...partial, refundedAmount: 150 }, 'AED', rates)).toBe(0)
+    expect(expenseAmountInBase({ ...partial, currency: 'XYZ' as never, amountInBaseCurrency: 200 }, 'AED', {})).toBe(140)
+    expect(expenseAmountInBase({ ...partial, refundKind: 'refunded' as const }, 'AED', rates)).toBe(0)
+  })
+
   it('calculateTotalSpent uses live conversion not stale amountInBaseCurrency', () => {
     const expenses: Expense[] = [
       {

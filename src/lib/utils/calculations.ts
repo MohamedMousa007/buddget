@@ -43,7 +43,7 @@ export type DebtBalanceContext = {
  * was captured at entry time and becomes wrong after the user changes primary currency.
  */
 export function expenseAmountInBase(
-  expense: Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency' | 'refundKind'>,
+  expense: Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency' | 'refundKind' | 'refundedAmount'>,
   baseCurrency: Currency,
   rates: Record<string, number>,
   gross = false
@@ -51,9 +51,11 @@ export function expenseAmountInBase(
   // A refunded/declined expense nets to zero — excluded from every spend/budget
   // aggregation. `gross` bypasses this so the card can show the struck original.
   if (expense.refundKind && !gross) return 0
-  const converted = tryConvertCurrency(expense.amount, expense.currency, baseCurrency, rates)
+  const refunded = !gross && expense.refundedAmount && expense.refundedAmount > 0 ? expense.refundedAmount : 0
+  const net = Math.max(0, expense.amount - refunded)
+  const converted = tryConvertCurrency(net, expense.currency, baseCurrency, rates)
   if (converted !== null) return converted
-  return expense.amountInBaseCurrency
+  return expense.amount > 0 ? expense.amountInBaseCurrency * (net / expense.amount) : expense.amountInBaseCurrency
 }
 
 /** True when a foreign-currency expense has no rate path to base, so its base amount is unknown (counted as 0). */

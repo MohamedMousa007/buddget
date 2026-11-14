@@ -40,6 +40,7 @@ export function expenseToRow(e: Expense, userId: string): ExpenseInsert {
     owed_settled_at: e.owedSettledAt ?? null,
     to_payment_method_id:
       e.toPaymentMethodId && e.toPaymentMethodId !== DEFAULT_CASH_ID ? e.toPaymentMethodId : null,
+    ...(e.serverRev !== undefined ? { server_rev: e.serverRev } : {}),
     created_at: e.createdAt,
   }
 }
@@ -70,12 +71,14 @@ export function expenseFromRow(row: ExpenseRow): Expense {
     receiptId: row.receipt_id ?? undefined,
     refundedAt: row.refunded_at ?? undefined,
     refundKind: (row.refund_kind as 'refunded' | 'declined' | null) ?? undefined,
+    refundedAmount: row.refunded_amount ?? undefined,
     occurredAt: row.occurred_at ?? undefined,
     spendExclusion: (row.spend_exclusion as Expense['spendExclusion'] | null) ?? undefined,
     categorySource: (row.category_source as Expense['categorySource'] | null) ?? undefined,
     owedBy: row.owed_by ?? undefined,
     owedSettledAt: row.owed_settled_at ?? undefined,
     toPaymentMethodId: row.to_payment_method_id ?? undefined,
+    serverRev: row.server_rev ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.edited_at,
   }

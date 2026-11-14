@@ -12,6 +12,8 @@ import { applyBackupImport } from '@/lib/backup/applyBackupImport'
 import { useT } from '@/lib/i18n'
 import { downloadOrShareFile } from '@/lib/utils/exportFile'
 import { escapeCsvField } from '@/lib/utils/formatters'
+import { isReportSpendRow } from '@/lib/constants/categoryMeta'
+import type { Expense } from '@/lib/store/types'
 
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 
@@ -67,23 +69,11 @@ export function useSettingsPage() {
 
   const handleExportExpensesCsv = async () => {
     const methodName = (id: string) => store.paymentMethods.find((m) => m.id === id)?.name ?? id
-    const headers = 'Date,Description,Category,Amount,Currency,Payment Method\n'
-    const rows = store.expenses
-      .map((e) =>
-        [
-          escapeCsvField(e.date),
-          escapeCsvField(e.description),
-          escapeCsvField(e.category),
-          escapeCsvField(e.amount),
-          escapeCsvField(e.currency),
-          escapeCsvField(methodName(e.paymentMethodId)),
-        ].join(','),
-      )
-      .join('\n')
+    const { counted, yes, no } = t.reports.csv
 
     const result = await downloadOrShareFile(
       `buddget-expenses-${localTodayISO()}.csv`,
-      headers + rows,
+      expensesCsv(store.expenses, methodName, { counted, yes, no }),
       'text/csv',
     )
     if (result === 'saved') toast(t.expenses.fileSaved)
@@ -125,4 +115,26 @@ export function useSettingsPage() {
     handleExportExpensesCsv,
     handleImport,
   }
+}
+
+export function expensesCsv(
+  expenses: readonly Expense[],
+  methodName: (id: string) => string,
+  label: { counted: string; yes: string; no: string },
+): string {
+  const headers = `Date,Description,Category,Amount,Currency,Payment Method,${escapeCsvField(label.counted)}\n`
+  const rows = expenses
+    .map((e) =>
+      [
+        escapeCsvField(e.date),
+        escapeCsvField(e.description),
+        escapeCsvField(e.category),
+        escapeCsvField(e.amount),
+        escapeCsvField(e.currency),
+        escapeCsvField(methodName(e.paymentMethodId)),
+        escapeCsvField(isReportSpendRow(e) ? label.yes : label.no),
+      ].join(','),
+    )
+    .join('\n')
+  return headers + rows
 }

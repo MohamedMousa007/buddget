@@ -176,6 +176,8 @@ export interface IncomeEvent {
   smsFlags?: string[]
   /** The flags the user has dismissed. */
   smsFlagsAck?: string[]
+  /** The server's row version as pulled; echoed on push so a stale copy cannot undo a server change. */
+  serverRev?: number
   /**
    * Set when the user confirmed this credit only passed through them: it leaves income totals, the account balance
    * still counts it, and clearing it counts it again.
@@ -224,10 +226,14 @@ export interface Expense {
   smsFlags?: string[]
   /** The flags the user has dismissed. */
   smsFlagsAck?: string[]
+  /** The server's row version as pulled; echoed on push so a stale copy cannot undo a server change. */
+  serverRev?: number
   /** When set, this expense is the total of a scanned receipt (`receipts.id`); breakdown lives there. */
   receiptId?: string
   /** Set when a refund/decline SMS reversed this expense — excluded from spend, shown struck. */
   refundedAt?: string
+  /** Server-owned: the part of this purchase a bank message refunded (row currency); the row still counts for the rest. */
+  refundedAmount?: number
   /** `refunded` = money returned; `declined` = charge blocked/reversed. Drives the card badge. */
   refundKind?: 'refunded' | 'declined'
   /** Why this expense is left out of spending (it is still logged and still moves the account balance). */

@@ -6,6 +6,7 @@ import {
   otherRowName,
   unassignedSpend,
 } from '@/lib/budget/budgetPlans'
+import { isReportSpendRow } from '@/lib/constants/categoryMeta'
 import { calculateCategorySpending, expenseAmountInBase, filterExpensesByMonth } from '@/lib/utils/calculations'
 
 /** Category the ledger files a debt repayment under (lowercased, as `remaining` is keyed). */
@@ -21,7 +22,7 @@ export function ledgerDebtPaidByDebt(
 ): Record<string, number> {
   const out: Record<string, number> = {}
   for (const e of filterExpensesByMonth(expenses, monthKey, monthStartDay)) {
-    if (e.category !== 'Debt' || !e.linkedDebtId) continue
+    if (e.category !== 'Debt' || !e.linkedDebtId || !isReportSpendRow(e)) continue
     out[e.linkedDebtId] = (out[e.linkedDebtId] ?? 0) + expenseAmountInBase(e, base, rates)
   }
   return out

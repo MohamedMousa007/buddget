@@ -85,7 +85,7 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     const unfunded = !e.paymentMethodId || e.paymentMethodId === DEFAULT_CASH_ID
     if (unfunded && (e.category === 'CC Payoff' || e.smsLogId)) continue
     const at = instantOf(e.occurredAt, e.date)
-    apply(resolveAccountId(e.paymentMethodId, pms), -e.amount, e.currency, at)
+    apply(resolveAccountId(e.paymentMethodId, pms), -Math.max(0, e.amount - (e.refundedAmount ?? 0)), e.currency, at)
     if (e.toPaymentMethodId) apply(resolveAccountId(e.toPaymentMethodId, pms), e.amount, e.currency, at)
   }
 

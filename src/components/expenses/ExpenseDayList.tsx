@@ -174,6 +174,8 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                           <Badge variant="negative" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
                         ) : e.refundKind === 'refunded' ? (
                           <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgeRefunded}</Badge>
+                        ) : e.refundedAmount ? (
+                          <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgePartlyRefunded}</Badge>
                         ) : e.spendExclusion === 'for_someone' ? (
                           <Badge variant="muted" size="xs" className="shrink-0">{e.owedSettledAt ? t.exclusion.badgeRepaid : t.exclusion.badgeOwed(e.owedBy ?? t.exclusion.forSomeone)}</Badge>
                         ) : nonSpend ? (

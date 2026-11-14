@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { applyDelta, pullDelta, type MappedDelta } from './delta'
 import { emptySnapshot, type Snapshot } from './snapshot'
+import { diffLists } from './diff'
 import { readSyncCursor, writeSyncCursor, clearSyncCursors } from './cursor'
 
 const exp = (id: string, updatedAt: string, amount = 10) => ({ id, updatedAt, createdAt: updatedAt, amount }) as never
@@ -151,5 +152,25 @@ describe('sync cursor', () => {
     clearSyncCursors()
     expect(readSyncCursor('u1', 21)).toBeNull()
     expect(readSyncCursor('u2', 21)).toBeNull()
+  })
+})
+
+describe('applyDelta adopting an app-logged subscription charge', () => {
+  const charge = (id: string, date: string, extra: object = {}) => ({ id, date, updatedAt: '2026-10-01T00:00:00Z', createdAt: '2026-10-01T00:00:00Z', linkedSubscriptionId: 's1', isRecurring: true, ...extra }) as never
+  const sms = (date: string) => charge('sms1', date, { smsLogId: 'log1', isRecurring: false })
+
+  it('keeps one counted row and leaves the dropped row to the sync diff as a delete', () => {
+    const logged = charge('app1', '2026-11-10')
+    const delivered = withExpenses([logged])
+    const out = applyDelta(delivered, noDelta({ expenses: { upserts: [sms('2026-11-12')], deletedIds: [] } }), delivered)
+    expect(out.expenses.map((e) => e.id)).toEqual(['sms1'])
+    expect(diffLists(out.expenses, delivered.expenses).deletes).toEqual(['app1'])
+  })
+
+  it('leaves rows outside the window or already SMS-backed alone', () => {
+    const far = charge('far', '2026-11-01')
+    const backed = charge('backed', '2026-11-12', { smsLogId: 'other' })
+    const out = applyDelta(withExpenses([far, backed]), noDelta({ expenses: { upserts: [sms('2026-11-12')], deletedIds: [] } }))
+    expect(out.expenses.map((e) => e.id).sort()).toEqual(['backed', 'far', 'sms1'])
   })
 })

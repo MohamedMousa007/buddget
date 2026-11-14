@@ -22,11 +22,12 @@ function useWhereItWent(view: PlanView) {
   const expenses = useFinanceStore((s) => s.expenses)
   const monthFilter = useSettingsStore((s) => s.monthFilter)
   const startDay = useFinanceStore((s) => s.settings.monthStartDay)
+  const rates = useFinanceStore((s) => s.exchangeRates)
   return useMemo(() => {
     if (view.mode !== 'month') return []
     const { start, end } = getMonthRange(monthFilter, startDay)
-    return whereItWent(expenses, new Set(view.blocks.everyday.lines.map((l) => l.line.name)), start, end)
-  }, [expenses, monthFilter, startDay, view])
+    return whereItWent(expenses, new Set(view.blocks.everyday.lines.map((l) => l.line.name)), start, end, view.base, rates)
+  }, [expenses, monthFilter, startDay, rates, view])
 }
 
 function Title({ children }: { children: string }) {

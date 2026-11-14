@@ -40,6 +40,10 @@ export function isNonSpendExpense(e: { category: string | null | undefined; spen
   return isNonSpendCategory(e.category) || Boolean(e.spendExclusion)
 }
 
+/** A row that counts as spending: not a money movement or excluded row, and not refunded or declined (their net effect is zero). */
+export const isReportSpendRow = (e: { category: string | null | undefined; spendExclusion?: string | null; refundKind?: string | null }): boolean =>
+  !isNonSpendExpense(e) && !e.refundKind
+
 /**
  * Maps a legacy budget bucket → the newer spend categories that should roll up
  * into it for budget plans that predate those categories. Used by

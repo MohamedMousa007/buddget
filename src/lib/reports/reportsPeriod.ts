@@ -1,6 +1,6 @@
 import { addMonths, parseISO, subMonths } from 'date-fns'
 import { budgetMonthKeyFor, getMonthRange } from '@/lib/utils/calculations'
-import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
+import { isReportSpendRow } from '@/lib/constants/categoryMeta'
 import type { Expense } from '@/lib/store/types'
 
 export type ReportRangePreset = 'thisMonth' | 'lastMonth' | 'last3Months' | 'last6Months' | 'thisYear'
@@ -39,8 +39,7 @@ export function reportRange(preset: ReportRangePreset, now: Date, monthStartDay:
   }
 }
 
-/** A row that counts as spending: no transfers, ATM, card payoff, top-up, savings, excluded, refunded or declined rows (their net effect is zero). */
-export const isReportSpendRow = (e: Expense): boolean => !isNonSpendExpense(e) && !e.refundKind
+export { isReportSpendRow }
 
 /** Rows that count as spending, same rule as the Flow hero. */
 export function reportSpendRows(expenses: Expense[]): Expense[] {

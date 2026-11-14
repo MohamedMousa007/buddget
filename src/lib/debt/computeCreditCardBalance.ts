@@ -124,7 +124,7 @@ export function sumExpensesInDebtCurrencyDetail(
   debtCurrency: Currency,
   exchangeRates: Record<string, number>
 ): PartialSum {
-  return sumConverted(expenses, (e) => tryConvertCurrency(e.amount, e.currency, debtCurrency, exchangeRates))
+  return sumConverted(expenses, (e) => tryConvertCurrency(Math.max(0, e.amount - (e.refundedAmount ?? 0)), e.currency, debtCurrency, exchangeRates))
 }
 
 export function sumExpensesInDebtCurrency(

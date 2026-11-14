@@ -20,3 +20,12 @@ describe('server-stamped SMS flags (I8)', () => {
     expect(incomeEventFromRow({ ...row, sms_flags: null, sms_flags_ack: null } as unknown as IncomeEventRow).smsFlags).toBeUndefined()
   })
 })
+
+describe('server row version (I8 known limit)', () => {
+  it('echoes serverRev when pulled and leaves the key out when absent', () => {
+    const row = { ...incomeEventToRow({ ...base, serverRev: 2 }, 'u1'), deleted_at: null, updated_at: 'x' } as unknown as IncomeEventRow
+    expect(row.server_rev).toBe(2)
+    expect(incomeEventFromRow(row).serverRev).toBe(2)
+    expect('server_rev' in incomeEventToRow(base, 'u1')).toBe(false)
+  })
+})

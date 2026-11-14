@@ -18,6 +18,15 @@ describe('savings funding link on an expense (WLT1)', () => {
   })
 })
 
+describe('server-owned partial refund', () => {
+  it('reads refunded_amount and never writes it', () => {
+    const row = { ...expenseToRow(base, 'u1'), deleted_at: null, updated_at: 'x', refunded_amount: 30 } as unknown as ExpenseRow
+    expect('refunded_amount' in expenseToRow({ ...base, refundedAmount: 30 }, 'u1')).toBe(false)
+    expect(expenseFromRow(row).refundedAmount).toBe(30)
+    expect(expenseFromRow({ ...row, refunded_amount: null }).refundedAmount).toBeUndefined()
+  })
+})
+
 describe('server-stamped SMS flags (I8)', () => {
   it('never writes sms_flags, writes only the acknowledged list, and reads both', () => {
     const row = expenseToRow({ ...base, smsFlags: ['date_unsure'], smsFlagsAck: ['date_unsure'] }, 'u1')
@@ -28,5 +37,15 @@ describe('server-stamped SMS flags (I8)', () => {
     expect(read.smsFlags).toEqual(['date_unsure', 'cash_deposit'])
     expect(read.smsFlagsAck).toEqual(['date_unsure'])
     expect(expenseFromRow({ ...row, sms_flags: null, sms_flags_ack: null } as unknown as ExpenseRow).smsFlags).toBeUndefined()
+  })
+})
+
+describe('server row version (I8 known limit)', () => {
+  it('echoes serverRev when pulled and leaves the key out when absent', () => {
+    const row = { ...expenseToRow({ ...base, serverRev: 3 }, 'u1'), deleted_at: null, updated_at: 'x' } as unknown as ExpenseRow
+    expect(row.server_rev).toBe(3)
+    expect(expenseFromRow(row).serverRev).toBe(3)
+    expect('server_rev' in expenseToRow(base, 'u1')).toBe(false)
+    expect(expenseToRow({ ...base, serverRev: 0 }, 'u1').server_rev).toBe(0)
   })
 })

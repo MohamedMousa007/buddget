@@ -3,6 +3,7 @@ import { addCalendarDays } from '@/lib/time/calendarDays'
 import type { Currency, Expense, Subscription } from '@/lib/store/types'
 import { convertCurrency } from '@/lib/utils/currency'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
+import { isReportSpendRow } from '@/lib/constants/categoryMeta'
 import { advanceCycle, firstBillingOnOrAfter } from './subscriptionDates'
 import { cycleWindow, isCyclePaid } from './subscriptionOccurrence'
 import { subscriptionToMonthlyPlannerAmount } from './subscriptionRecurring'
@@ -228,7 +229,7 @@ export function yearlySetAside(
 
 /** Sum of everything recorded against a subscription this calendar month (base currency). */
 export function paidThisMonth(
-  expenses: Pick<Expense, 'linkedSubscriptionId' | 'date' | 'refundKind' | 'amount' | 'currency' | 'amountInBaseCurrency'>[],
+  expenses: Pick<Expense, 'linkedSubscriptionId' | 'date' | 'refundKind' | 'refundedAmount' | 'amount' | 'currency' | 'amountInBaseCurrency' | 'category' | 'spendExclusion'>[],
   today: Date,
   baseCurrency: Currency,
   rates: Record<string, number>
@@ -236,7 +237,7 @@ export function paidThisMonth(
   const key = format(today, 'yyyy-MM')
   return expenses.reduce(
     (sum, e) =>
-      e.linkedSubscriptionId && e.date.slice(0, 7) === key ? sum + expenseAmountInBase(e, baseCurrency, rates) : sum,
+      e.linkedSubscriptionId && isReportSpendRow(e) && e.date.slice(0, 7) === key ? sum + expenseAmountInBase(e, baseCurrency, rates) : sum,
     0
   )
 }
@@ -253,7 +254,7 @@ export interface HeroNumbers {
 /** Everything the Subscriptions hero band shows. */
 export function heroNumbers(
   subs: Billable[],
-  expenses: (PaidProbe & Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency'>)[],
+  expenses: (PaidProbe & Pick<Expense, 'amount' | 'currency' | 'amountInBaseCurrency' | 'refundedAmount' | 'category' | 'spendExclusion'>)[],
   today: Date,
   baseCurrency: Currency,
   rates: Record<string, number>

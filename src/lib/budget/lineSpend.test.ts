@@ -105,6 +105,10 @@ describe('ledgerDebtPaidByDebt', () => {
     const out = ledgerDebtPaidByDebt([e('2026-10-03', 'Debt', 'a'), e('2026-10-03', 'Installment', 'a'), e('2026-09-03', 'Debt', 'a'), e('2026-10-04', 'Debt')], '2026-10', 1, 'AED', {})
     expect(out).toEqual({ a: 40 })
   })
+  it('leaves out a manually excluded payment', () => {
+    const e = { id: 'e', date: '2026-10-03', category: 'Debt', amount: 40, currency: 'AED', amountInBaseCurrency: 40, linkedDebtId: 'a', spendExclusion: 'manual' } as Expense
+    expect(ledgerDebtPaidByDebt([e], '2026-10', 1, 'AED', {})).toEqual({})
+  })
 })
 
 describe('debt-linked line vs ledger debt expense (M15)', () => {
