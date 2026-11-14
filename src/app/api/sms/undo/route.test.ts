@@ -5,8 +5,7 @@ const h = vi.hoisted(() => ({
   cookieUser: vi.fn(),
   revoked: vi.fn(),
   log: vi.fn(),
-  updates: [] as { table: string; values: Record<string, unknown>; eqs: Record<string, unknown>; error?: unknown }[],
-  failWhen: null as null | ((table: string, values: Record<string, unknown>) => boolean),
+  rpc: vi.fn(),
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
@@ -15,18 +14,8 @@ vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: h.cookieUser, re
 vi.mock('@/lib/server/devices/registry', () => ({ isRevokedDevice: h.revoked, hasAnyDevice: async () => false }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
-    from: (table: string) => ({
-      select: () => ({ eq: () => ({ single: h.log }) }),
-      update: (values: Record<string, unknown>) => {
-        const rec = { table, values, eqs: {} as Record<string, unknown> }
-        h.updates.push(rec)
-        const q: { eq: (k: string, v: unknown) => typeof q; then: (r: (v: unknown) => void) => void } = {
-          eq: (k, v) => { rec.eqs[k] = v; return q },
-          then: (r) => r({ error: h.failWhen?.(table, values) ? { message: 'boom' } : null }),
-        }
-        return q
-      },
-    }),
+    from: () => ({ select: () => ({ eq: () => ({ single: h.log }) }) }),
+    rpc: h.rpc,
   }),
 }))
 
@@ -38,41 +27,46 @@ const req = (headers: Record<string, string> = { authorization: 'Bearer t' }) =>
 
 describe('POST /api/sms/undo', () => {
   beforeEach(() => {
-    Object.values(h).forEach((m) => typeof m === 'function' && 'mockReset' in m && m.mockReset())
-    h.updates.length = 0
-    h.failWhen = null
+    Object.values(h).forEach((m) => m.mockReset())
     h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1' })
     h.revoked.mockResolvedValue(false)
-    h.log.mockResolvedValue({ data: { user_id: 'u1', expense_id: 'e1', income_id: null, debt_payment_id: 'p1' }, error: null })
+    h.log.mockResolvedValue({ data: { user_id: 'u1' }, error: null })
+    h.rpc.mockResolvedValue({ data: { found: true, nothing_to_do: false }, error: null })
   })
 
-  it('retires only rows this log created and clears the refund mark it set (N10)', async () => {
-    await POST(req())
-    expect(h.updates.find((u) => u.table === 'expenses' && 'deleted_at' in u.values)?.eqs).toMatchObject({ id: 'e1', sms_log_id: LOG_ID })
-    const unmark = h.updates.find((u) => u.table === 'expenses' && 'refund_sms_log_id' in u.values)
-    expect(unmark?.values).toEqual({ refunded_at: null, refund_kind: null, refund_sms_log_id: null })
-    expect(unmark?.eqs).toMatchObject({ refund_sms_log_id: LOG_ID, user_id: 'u1' })
+  it('discards through the one database function with the user and log id', async () => {
+    const res = await POST(req())
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true, expired: false })
+    expect(h.rpc).toHaveBeenCalledWith('sms_discard_message', { p_user_id: 'u1', p_log_id: LOG_ID })
   })
 
-  it('accepts a JWT/ingest bearer through the shared resolver', async () => {
-    expect((await POST(req())).status).toBe(200)
-    expect(h.caller).toHaveBeenCalled()
+  it('maps "nothing left to do" to alreadyUndone', async () => {
+    h.rpc.mockResolvedValue({ data: { found: true, nothing_to_do: true }, error: null })
+    expect(await (await POST(req())).json()).toEqual({ ok: true, alreadyUndone: true })
   })
 
-  it('soft-deletes expense and debt payment, and unlinks the log and its paired sibling', async () => {
-    await POST(req())
-    expect(h.updates.find((u) => u.table === 'expenses')?.values).toEqual({ deleted_at: expect.any(String) })
-    expect(h.updates.find((u) => u.table === 'debt_payments')?.eqs).toMatchObject({ id: 'p1', user_id: 'u1' })
-    const logUpdates = h.updates.filter((u) => u.table === 'sms_parse_log')
-    expect(logUpdates[0].values).toEqual({ paired_log_id: null })
-    expect(logUpdates[0].eqs).toMatchObject({ paired_log_id: LOG_ID })
-    expect(logUpdates[1].values).toEqual({ expense_id: null, income_id: null, debt_payment_id: null, paired_log_id: null })
+  it("refuses another user's log without calling the function", async () => {
+    h.log.mockResolvedValue({ data: { user_id: 'someone-else' }, error: null })
+    expect((await POST(req())).status).toBe(403)
+    expect(h.rpc).not.toHaveBeenCalled()
+  })
+
+  it('answers 404 for a missing log', async () => {
+    h.log.mockResolvedValue({ data: null, error: { message: 'none' } })
+    expect((await POST(req())).status).toBe(404)
+    expect(h.rpc).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed function call instead of ok', async () => {
+    h.rpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
+    expect((await POST(req())).status).toBe(500)
   })
 
   it('refuses a revoked device', async () => {
     h.revoked.mockResolvedValue(true)
     expect((await POST(req())).status).toBe(403)
-    expect(h.updates).toHaveLength(0)
+    expect(h.rpc).not.toHaveBeenCalled()
   })
 
   it('falls back to the session cookie when there is no bearer', async () => {
@@ -84,11 +78,5 @@ describe('POST /api/sms/undo', () => {
   it('rejects an unauthenticated caller', async () => {
     h.caller.mockResolvedValue({ userId: null, deviceId: null })
     expect((await POST(req())).status).toBe(401)
-  })
-
-  it('reports a failed final log update instead of ok', async () => {
-    h.failWhen = (table, values) => table === 'sms_parse_log' && 'expense_id' in values
-    const res = await POST(req())
-    expect(res.status).toBe(500)
   })
 })

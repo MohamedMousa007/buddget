@@ -66,14 +66,14 @@ self.addEventListener('push', (event) => {
     icon: data.icon ?? '/icons/icon-192.png',
     badge: data.badge ?? '/icons/icon-32.png',
     data: {
-      parseLogId: data.parseLogId,
+      logId: data.logId ?? data.parseLogId,
       expenseId: data.expenseId,
     },
     actions: [
       { action: 'undo', title: 'Undo' },
       { action: 'view', title: 'View' },
     ],
-    tag: data.parseLogId ? `sms-${data.parseLogId}` : 'buddget',
+    tag: (data.logId ?? data.parseLogId) ? `sms-${data.logId ?? data.parseLogId}` : 'buddget',
     renotify: true,
     requireInteraction: false,
   }
@@ -86,7 +86,7 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   const { action, notification } = event
   const notifData = notification.data
-  const parseLogId = notifData?.parseLogId
+  const parseLogId = notifData?.logId ?? notifData?.parseLogId
   const expenseId = notifData?.expenseId
 
   notification.close()

@@ -34,7 +34,7 @@ const bodySchema = z
   .refine((d) => !!d.logId || !!d.hash, { message: 'Provide logId or hash' })
 
 const ROW_COLUMNS =
-  'id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code, matched_template_id, reference_hash'
+  'id, status, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code, matched_template_id, reference_hash'
 
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
@@ -78,6 +78,11 @@ export async function POST(request: Request) {
 
   if (!row) {
     return NextResponse.json({ ok: false, reason: 'not_found' }, { status: 404 })
+  }
+
+  // An undone message is never booked again, whatever its other columns say.
+  if (row.status === 'undone') {
+    return NextResponse.json({ ok: false, reason: 'undone' }, { status: 409 })
   }
 
   const release = (failure: { status: string; failure_code: string }) =>

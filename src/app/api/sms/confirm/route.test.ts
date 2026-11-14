@@ -58,6 +58,13 @@ describe('POST /api/sms/confirm', () => {
     h.claimRow = pending()
   })
 
+  it('refuses an undone message with 409 and books nothing', async () => {
+    h.claimRow = pending({ status: 'undone' })
+    const res = await post({ logId: LOG_ID })
+    expect(res.status).toBe(409)
+    expect(h.create).not.toHaveBeenCalled()
+  })
+
   it('releases the claim when posting throws', async () => {
     h.create.mockRejectedValueOnce(new Error('boom'))
     const res = await post({ logId: LOG_ID })

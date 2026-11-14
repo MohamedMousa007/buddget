@@ -17,8 +17,7 @@ import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
 import { rememberOwnAnswer } from '@/lib/sms/pairing'
 import { answerOneLegQuestion } from '@/lib/sms/ownAccountAnswer'
-import { mapKindToCategory } from '@/lib/sms/createSmsExpense'
-import type { Database } from '@/lib/supabase/database.types'
+import { unpairOwnTransfer } from '@/lib/sms/reverse'
 import { nudgeUser } from '@/lib/server/realtime/nudge'
 
 const bodySchema = z.object({
@@ -128,8 +127,6 @@ export async function POST(request: Request) {
   if (incErr) return fail('Failed to load ledger')
   const incomes = (inc ?? []) as { id: string; sms_log_id: string; deleted_at: string | null; retracted_by_sms_log_id: string | null }[]
   const liveIncome = incomes.find((i) => !i.deleted_at)
-  // Only a retraction caused by this pair is undone here; a deleted income with no marker is the user's own delete.
-  const deletedIncome = incomes.find((i) => i.deleted_at && i.retracted_by_sms_log_id && ids.includes(i.retracted_by_sms_log_id))
 
   if (action === 'confirm') {
     const { error } = await service.from('expenses').update({ category: 'Transfer' }).eq('id', expense.id).eq('user_id', userId)
@@ -146,35 +143,8 @@ export async function POST(request: Request) {
     if (!(await setLogs(service, ids, { own_transfer_verdict: 'declined' }))) return fail('Failed to update logs')
     await rememberOwnAnswer(service, userId, out.account_last4, inn.account_last4, false)
   } else {
-    const category = mapKindToCategory('instant_transfer_out', null, out.raw_body)
-    const { error } = await service.from('expenses').update({ category }).eq('id', expense.id).eq('user_id', userId)
-    if (error) return fail('Failed to update expense')
-    if (deletedIncome && !liveIncome) {
-      const { error: restoreErr } = await service.from('income_events').update({ deleted_at: null, retracted_by_sms_log_id: null }).eq('id', deletedIncome.id).eq('user_id', userId)
-      if (restoreErr) return fail('Failed to restore income')
-      // Settling cleared the link from the log to its income row; put it back with the row.
-      await service.from('sms_parse_log').update({ income_id: deletedIncome.id }).eq('id', inn.id)
-    } else if (incomes.length === 0 && inn.amount != null && inn.currency) {
-      const { data: created, error: insErr } = await service
-        .from('income_events')
-        .insert({
-          user_id: userId,
-          name: 'Bank credit',
-          amount: inn.amount,
-          currency: inn.currency as Database['public']['Enums']['currency_code'],
-          source_type: 'other',
-          received_date: new Date(inn.received_at).toISOString().slice(0, 10),
-          status: 'confirmed',
-          sms_log_id: inn.id,
-          occurred_at: inn.received_at,
-          notes: null,
-        })
-        .select('id')
-        .single()
-      if (insErr) return fail('Failed to restore income')
-      const createdId = (created as { id: string } | null)?.id
-      if (createdId) await service.from('sms_parse_log').update({ income_id: createdId }).eq('id', inn.id)
-    }
+    const failure = await unpairOwnTransfer(service, { userId, out, inn, expenseId: expense.id, incomes })
+    if (failure) return fail(failure)
     if (!(await setLogs(service, ids, { paired_log_id: null, own_transfer_verdict: 'undone' }))) return fail('Failed to update logs')
     await rememberOwnAnswer(service, userId, out.account_last4, inn.account_last4, false)
   }

@@ -3368,6 +3368,7 @@ export type Database = {
       sms_parse_log: {
         Row: {
           body_hash: string | null
+          discard_requested_at: string | null
           captured_at: string | null
           device_id: string | null
           payment_method_id: string | null
@@ -3434,6 +3435,7 @@ export type Database = {
         }
         Insert: {
           body_hash?: string | null
+          discard_requested_at?: string | null
           captured_at?: string | null
           device_id?: string | null
           payment_method_id?: string | null
@@ -3500,6 +3502,7 @@ export type Database = {
         }
         Update: {
           body_hash?: string | null
+          discard_requested_at?: string | null
           captured_at?: string | null
           device_id?: string | null
           payment_method_id?: string | null
@@ -4743,6 +4746,14 @@ export type Database = {
       record_sms_template_shadow: {
         Args: { p_agreed: boolean; p_template_id: string }
         Returns: string
+      }
+      sms_discard_message: {
+        Args: { p_log_id: string; p_user_id: string }
+        Returns: Json
+      }
+      sms_run_pending_discards: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       sms_mark_acked: {
         Args: { p_log_id: string; p_user_id: string }
