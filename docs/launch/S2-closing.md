@@ -213,3 +213,7 @@ Config change: `sms_promotion_config.min_unique_users` 5 → 2. To restore: `upd
 4. `useSmsCounterparty` reads the transfer counterparty from `sms_parse_log.merchant`, which S2 stopped writing for transfers; where that hook is shown the name now comes only from the transaction title.
 5. The two promotions and the 5 → 2 config change are live; the rollback SQL is above.
 6. The 15 relabels are still out of the gold set.
+
+## Gate (follow-up)
+
+`npm run verify` passed on the final tree (2026-11-14): lint 0 errors, types clean, 5253 tests in Cairo and New York, coverage 87.2% lines and 78.5% branches, migration check, dependency audit, production build.
