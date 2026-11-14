@@ -3693,6 +3693,84 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_repair_audit: {
+        Row: {
+          action: string
+          applied_at: string
+          batch: string
+          id: number
+          new_values: Json | null
+          old_values: Json | null
+          repair_type: string
+          revert_note: string | null
+          reverted_at: string | null
+          row_id: string
+          sms_log_id: string | null
+          table_name: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          applied_at?: string
+          batch: string
+          id?: number
+          new_values?: Json | null
+          old_values?: Json | null
+          repair_type: string
+          revert_note?: string | null
+          reverted_at?: string | null
+          row_id: string
+          sms_log_id?: string | null
+          table_name: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          applied_at?: string
+          batch?: string
+          id?: number
+          new_values?: Json | null
+          old_values?: Json | null
+          repair_type?: string
+          revert_note?: string | null
+          reverted_at?: string | null
+          row_id?: string
+          sms_log_id?: string | null
+          table_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sms_s3_input: {
+        Row: {
+          eff: Json | null
+          ex: Json | null
+          ins: Json | null
+          prefix: string
+          rtype: string
+          step: number
+          usr: string
+        }
+        Insert: {
+          eff?: Json | null
+          ex?: Json | null
+          ins?: Json | null
+          prefix: string
+          rtype: string
+          step: number
+          usr: string
+        }
+        Update: {
+          eff?: Json | null
+          ex?: Json | null
+          ins?: Json | null
+          prefix?: string
+          rtype?: string
+          step?: number
+          usr?: string
+        }
+        Relationships: []
+      }
       sms_retention_audit: {
         Row: {
           id: number
@@ -4786,6 +4864,18 @@ export type Database = {
       sms_mark_pushed: {
         Args: { p_delivered: boolean; p_log_id: string; p_result: Json }
         Returns: undefined
+      }
+      sms_s3_apply: {
+        Args: { p_batch: string; p_expected?: Json; p_log_ids: string[]; p_repair_type: string }
+        Returns: Json
+      }
+      sms_s3_record_insert: {
+        Args: { p_batch: string; p_log_id: string; p_repair_type: string; p_row_id: string; p_table: string }
+        Returns: number
+      }
+      sms_s3_revert: {
+        Args: { p_batch: string; p_repair_type?: string }
+        Returns: Json
       }
       sms_templates_awaiting_adjudication: {
         Args: { p_undo_grace_seconds?: number }

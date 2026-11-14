@@ -3,9 +3,9 @@ import { defineConfig } from 'vitest/config'
 
 process.env.TZ ??= 'Africa/Cairo'
 
-// Runs only the S3 dry-run dump (the main config includes src/ tests only).
+// Runs only the S3 dry-run dump and the S3b insert script (a no-op unless S3_INSERT=1) (the main config includes src/ tests only).
 export default defineConfig({
-  test: { environment: 'node', include: ['scripts/qa/s3-dryrun-dump.test.ts'] },
+  test: { environment: 'node', include: ['scripts/qa/s3-dryrun-dump.test.ts', 'scripts/qa/s3-insert.test.ts'] },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '../../src'),

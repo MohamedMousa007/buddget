@@ -1,0 +1,42 @@
+# S3b: SMS repair tooling and apply log
+
+Date 2026-11-15. **Nothing has been applied to money rows.** Phase A (tooling) is built and live; phase B (rolled-back rehearsal) is **not finished**: the SQL tool path to the database timed out from the fourth rehearsal run on, so the rehearsal has no result yet. Rows are cited by the first 8 characters of the log id, users by the first 8 of the user id.
+
+## 1. What exists (live and in the repo)
+
+Migration `supabase/migrations/0283_sms_s3_repair.sql`, applied live. Additive; nothing the deployed app or server calls.
+
+| Object | Purpose |
+|---|---|
+| `sms_repair_audit` | one row per change: batch, type, user, log, table, row, action (update, soft_delete, insert, relink), full old row, changed columns, `reverted_at`. RLS on, no policy, no grants to anon or authenticated. Unique per (batch, table, row, type): a run is idempotent. |
+| `sms_s3_apply(batch, type, log_ids, expected jsonb)` | per log: re-reads the live row, refuses on a user-touch signal (note, exclusion, answered flag, category source, answered held row, deleted row) or when amount, currency, day, category, refund stamp or flags no longer equal the report; writes the audit row, then the change; checks the write took. The fourth argument is the report's expected value per log (an addition to the part 7 signature: the report values have to come from somewhere). Types: T1, T2a, T2b, T3, T4, T5, T8, T9, T11, T15. |
+| `sms_s3_record_insert(...)` | audits a row inserted by the script and fills the log's pointer if empty. |
+| `sms_s3_revert(batch, type)` | newest first; per column compare-and-swap (a column a user changed after the apply is not restored; an inserted row a user edited is not deleted); notes every skip. |
+| `sms_s3_input` | the repair list (104 rows: log prefix, user prefix, amount, currency, day, category, flags, proposed row). RLS on, no policy, no grants. Holds no text, names or digits, only id prefixes and money facts already in the report. Proposed: drop it after step 2 (the audit table stays). |
+
+All four functions are executable by `service_role` only (checked: ACL is postgres and service_role).
+
+Facts found while building, which the design relies on:
+- Soft-deleting a row with no marker queues a discard of its message (`sms_discard_on_row_delete`). Every soft delete here sets the marker in the same write and the functions set `sms.discarding = 1` as well.
+- `edited_at` is never touched. `reject_stale_write` (0278) bumps `server_rev` for amount, currency, accounts, date, exclusion and non-spend category changes, so a stale phone cannot push those back; stamps, flags and retraction are server-owned (I8) and also protected. A stale push that carries `server_rev` null is treated as fresh (the known limit).
+- The template-signal trigger does nothing without `auth.uid()`, so service-role repairs record no signal.
+- Pushes and toasts are sent by the parse route after `createSmsTransaction` returns (`nudgeUser`, `sendNativePush`, `emitNotification`, `sms_mark_pushed`, AI categorisation in `after()`). `scripts/qa/s3-insert.test.ts` calls only `createSmsTransaction` and `appendSmsFlags`, so nothing is sent.
+
+Repo: `scripts/qa/s3-gen-apply-input.py` (builds `s3-apply-input.json`, `sql/0283_s3_load_input.sql`, `sql/0283_s3_apply_revert.test.sql`), `scripts/qa/s3-insert.test.ts` (insert script, vitest-run, off unless `S3_INSERT=1`; dry mode `S3_DRY=1`), `database.types.ts` updated.
+
+## 2. Decisions that need the reviewer
+
+1. **T5 flag name.** The report says `card_flag`; no such flag exists. The input uses `model_kind_unproven` (it has a prompt). Its default text may read as "counted as spending" while these rows stay non-spend: confirm, or choose another flag, before step 2.
+2. **`818b0736`** (cash deposit recorded as an ATM withdrawal): the tooling only adds the `cash_deposit` flag; it does not retype the row or move its cash and account effect (needs balance logic, not in the report's money effect). Confirm flag only, or exclude.
+3. **T11** sets category Transfer plus `topup_repaired` and `topup_prev:<old>`; the live rows have no payment method, so no destination is written (undo clears it anyway).
+4. The insert script checks that the booked row equals the report's proposed row and that no other row of the user changed; a mismatch stops the run with the row already audited. Side effects of the booking function on tables it could touch beyond those checked (payment methods, debts, debt payments, expenses, income) are the ones listed in the script.
+
+## 3. Rehearsal (phase B): what ran
+
+Four rolled-back runs of `0283_s3_apply_revert.test.sql` on the live database. The first three stopped on defects of the test or functions, all fixed: a variable named like a column, an invalid exclusion value (`manual` is valid), and a JSON null read from an empty array column (patched in the live function and the migration file). The fourth run never returned: the tool reports `Connection terminated due to connection timeout` for every call since, including `select 1`. The planning session reports the project healthy, crons and API normal, no lock waits or errors in the Postgres log. At the last successful call the audit table was empty and the input table held its 104 rows.
+
+**Not run, so not proven:** the totals check (after apply equals the prediction, after revert equals the start), the stale push and later edit checks, the refusal checks (the first ones ran), the no-notification check, the revert of an edited row, the prompt and stale-month count, the fresh export comparison, a dry run of the insert script.
+
+## 4. Step lists (from the re-run, unchanged)
+
+Step 1 (80): T15 69 same-month day shifts, T7b 2, T3 5, T1 2, T2a 1, T2b 1. Step 2 (24): T4 4, T11 5, T5 7, T6 5, T9 1, T8 2. The log ids are in `scripts/qa/s3-apply-input.json`. Excluded: none yet (the fresh comparison has not run).

@@ -1,0 +1,2003 @@
+{
+ "source": "S3-rerun.md (0087710d)",
+ "excluded": [],
+ "rows": [
+  {
+   "prefix": "009635ef",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "02370960",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 6.0,
+    "currency": "SAR",
+    "day": "2026-09-16",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-17"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "052776ad",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 220.0,
+    "currency": "EGP",
+    "day": "2026-08-05",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-08-06"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "0b411178",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 260.0,
+    "currency": "EGP",
+    "day": "2026-09-15",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-16"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "0e268220",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 815.0,
+    "currency": "SAR",
+    "day": "2026-10-21",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-10-22"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "0f303bf6",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "0fe8887c",
+   "usr": "f923c68b",
+   "rtype": "T7b",
+   "step": 1,
+   "ex": null,
+   "ins": {
+    "t": "E",
+    "cls": "netzero",
+    "cat": "Other",
+    "amt": 4000.0,
+    "ccy": "EGP",
+    "day": "2026-09-09",
+    "pm": "payment_methods-439",
+    "refund": [
+     "declined",
+     "0fe8887c"
+    ],
+    "flags": [],
+    "excl": null
+   },
+   "eff": {}
+  },
+  {
+   "prefix": "1271e1f5",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "15195109",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "1bc06eff",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 22.79,
+    "currency": "SAR",
+    "day": "2026-09-17",
+    "refund_by": null,
+    "flags": [],
+    "category": "Subscription",
+    "new_day": "2026-09-18"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "1d5deffc",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "1f227acd",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 182.46,
+    "currency": "SAR",
+    "day": "2026-10-21",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-10-22"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "223b708e",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "267addad",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "2696fffc",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 986.11,
+    "currency": "SAR",
+    "day": "2026-10-21",
+    "refund_by": null,
+    "flags": [],
+    "category": "Remittance",
+    "new_day": "2026-10-22"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "2d489411",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 490.0,
+    "currency": "SAR",
+    "day": "2026-09-06",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-07"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "37236069",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 95.0,
+    "currency": "EGP",
+    "day": "2026-10-03",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-10-04"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "38273fe0",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1.27,
+    "currency": "SAR",
+    "day": "2026-09-22",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-09-23"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "38960cf2",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "39420937",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "3a49147e",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 700.0,
+    "currency": "EGP",
+    "day": "2026-09-28",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-29"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "3c150811",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 2635.0,
+    "currency": "EGP",
+    "day": "2026-10-14",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-10-15"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "418baa26",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 11.0,
+    "currency": "SAR",
+    "day": "2026-10-24",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-10-25"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "43df3d24",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 84.99,
+    "currency": "SAR",
+    "day": "2026-07-27",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-07-28"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "4a7d7250",
+   "usr": "6090c8e7",
+   "rtype": "T7b",
+   "step": 1,
+   "ex": null,
+   "ins": {
+    "t": "E",
+    "cls": "netzero",
+    "cat": "Other",
+    "amt": 5.7,
+    "ccy": "USD",
+    "day": "2026-10-27",
+    "pm": "payment_methods-331",
+    "refund": [
+     "declined",
+     "4a7d7250"
+    ],
+    "flags": [],
+    "excl": null
+   },
+   "eff": {}
+  },
+  {
+   "prefix": "4b5d53d7",
+   "usr": "f923c68b",
+   "rtype": "T3",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1004.17,
+    "currency": "SAR",
+    "day": "2026-08-13",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-08|income": -1004.17
+   }
+  },
+  {
+   "prefix": "4cbd056b",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1000.0,
+    "currency": "EGP",
+    "day": "2026-08-20",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-08-21"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "51f55912",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "56dfbf6d",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "572aaf39",
+   "usr": "6090c8e7",
+   "rtype": "T1",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 5.7,
+    "currency": "USD",
+    "day": "2026-10-27",
+    "refund_by": "4a7d7250",
+    "flags": [],
+    "category": "Subscription"
+   },
+   "ins": null,
+   "eff": {
+    "USD|2026-10|spend": 5.7
+   }
+  },
+  {
+   "prefix": "5ab3bd01",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 150.0,
+    "currency": "EGP",
+    "day": "2026-09-25",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-26"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "5b82b8d1",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 500.0,
+    "currency": "SAR",
+    "day": "2026-09-23",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-24"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "5bdc7499",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "5d996a3d",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 16.99,
+    "currency": "SAR",
+    "day": "2026-07-27",
+    "refund_by": null,
+    "flags": [],
+    "category": "Other",
+    "new_day": "2026-07-28"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "5f30dca3",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 43.05,
+    "currency": "SAR",
+    "day": "2026-09-14",
+    "refund_by": null,
+    "flags": [],
+    "category": "Food",
+    "new_day": "2026-09-15"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "603fea1a",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 529.0,
+    "currency": "SAR",
+    "day": "2026-08-02",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-08-03"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "62f1ee29",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 70.0,
+    "currency": "SAR",
+    "day": "2026-09-21",
+    "refund_by": null,
+    "flags": [],
+    "category": "Food",
+    "new_day": "2026-09-22"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "6321e500",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "65921ad1",
+   "usr": "f923c68b",
+   "rtype": "T3",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1989.54,
+    "currency": "SAR",
+    "day": "2026-08-04",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-08|income": -1989.54
+   }
+  },
+  {
+   "prefix": "737c4e4c",
+   "usr": "0c1a609e",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 0.49,
+    "currency": "EGP",
+    "day": "2026-09-02",
+    "refund_by": null,
+    "flags": [],
+    "category": "Other",
+    "new_day": "2026-09-03"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "77ee02f0",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "7d938107",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1.27,
+    "currency": "SAR",
+    "day": "2026-09-22",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-23"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "8a94eede",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 225.1,
+    "currency": "SAR",
+    "day": "2026-07-27",
+    "refund_by": null,
+    "flags": [],
+    "category": "Transfer",
+    "new_day": "2026-07-28"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "8ad101f4",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "9006ea5e",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 527.0,
+    "currency": "EGP",
+    "day": "2026-09-21",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-09-22"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "91e00bb4",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 55.0,
+    "currency": "SAR",
+    "day": "2026-08-07",
+    "refund_by": null,
+    "flags": [],
+    "category": "Food",
+    "new_day": "2026-08-08"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "93e7ec95",
+   "usr": "f923c68b",
+   "rtype": "T3",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1989.76,
+    "currency": "SAR",
+    "day": "2026-09-15",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-09|income": -1989.76
+   }
+  },
+  {
+   "prefix": "964329e2",
+   "usr": "0c1a609e",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 0.66,
+    "currency": "EGP",
+    "day": "2026-08-04",
+    "refund_by": null,
+    "flags": [],
+    "category": "Other",
+    "new_day": "2026-08-05"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "9684468b",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 66.0,
+    "currency": "SAR",
+    "day": "2026-10-20",
+    "refund_by": null,
+    "flags": [],
+    "category": "Food",
+    "new_day": "2026-10-21"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "97fca7d5",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "9c9c11e5",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 138.0,
+    "currency": "SAR",
+    "day": "2026-09-16",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-09-17"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "9d4ba02e",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 500.0,
+    "currency": "SAR",
+    "day": "2026-09-23",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-09-24"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "9e75b537",
+   "usr": "f923c68b",
+   "rtype": "T1",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 4000.0,
+    "currency": "EGP",
+    "day": "2026-08-24",
+    "refund_by": "0fe8887c",
+    "flags": [],
+    "category": "ATM Cash Withdrawal"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "a16812c9",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1.49,
+    "currency": "SAR",
+    "day": "2026-08-05",
+    "refund_by": null,
+    "flags": [],
+    "category": "Subscription",
+    "new_day": "2026-08-06"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "ab14b78e",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 4396.0,
+    "currency": "EGP",
+    "day": "2026-09-16",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-17"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "ab5411e0",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "ad65a2d0",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 220.0,
+    "currency": "EGP",
+    "day": "2026-10-15",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-10-16"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "b45c86b1",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 600.0,
+    "currency": "EGP",
+    "day": "2026-09-16",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-17"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "bdc14d28",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1500.0,
+    "currency": "EGP",
+    "day": "2026-09-09",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-09-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "bed3bd49",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 1989.54,
+    "currency": "SAR",
+    "day": "2026-08-02",
+    "refund_by": null,
+    "flags": [],
+    "category": "Remittance",
+    "new_day": "2026-08-03"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "bfe884e3",
+   "usr": "4fce9265",
+   "rtype": "T2a",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 5000.0,
+    "currency": "EGP",
+    "day": "2026-10-06",
+    "refund_by": "baab5343",
+    "flags": [],
+    "category": "Instapay"
+   },
+   "ins": null,
+   "eff": {
+    "EGP|2026-10|spend": 5000.0
+   }
+  },
+  {
+   "prefix": "c4ff2489",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 29.1,
+    "currency": "SAR",
+    "day": "2026-08-02",
+    "refund_by": null,
+    "flags": [],
+    "category": "Food",
+    "new_day": "2026-08-03"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "c923b3eb",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 300.0,
+    "currency": "SAR",
+    "day": "2026-07-28",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-07-29"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "cb25279f",
+   "usr": "f923c68b",
+   "rtype": "T3",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1994.63,
+    "currency": "SAR",
+    "day": "2026-09-03",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-09|income": -1994.63
+   }
+  },
+  {
+   "prefix": "d35340ff",
+   "usr": "f923c68b",
+   "rtype": "T3",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 986.11,
+    "currency": "SAR",
+    "day": "2026-10-22",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-10|income": -986.11
+   }
+  },
+  {
+   "prefix": "d45ec5c8",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 130.0,
+    "currency": "SAR",
+    "day": "2026-09-11",
+    "refund_by": null,
+    "flags": [],
+    "category": "Other",
+    "new_day": "2026-09-12"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "d6a4de7d",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 27000.0,
+    "currency": "EGP",
+    "day": "2026-08-06",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-08-07"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "d88c2d29",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 250.0,
+    "currency": "SAR",
+    "day": "2026-10-24",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-10-25"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "ded7b224",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 5.0,
+    "currency": "SAR",
+    "day": "2026-10-21",
+    "refund_by": null,
+    "flags": [],
+    "category": "Shopping",
+    "new_day": "2026-10-22"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "e7d07863",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 1449.91,
+    "currency": "SAR",
+    "day": "2026-08-02",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-08-03"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "e8b0e3ed",
+   "usr": "4fce9265",
+   "rtype": "T2b",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 5000.0,
+    "currency": "EGP",
+    "day": "2026-10-07",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "stamp_from_log": "bfe884e3"
+   },
+   "ins": null,
+   "eff": {
+    "EGP|2026-10|spend": -5000.0
+   }
+  },
+  {
+   "prefix": "e97c0b1c",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 75.0,
+    "currency": "SAR",
+    "day": "2026-09-19",
+    "refund_by": null,
+    "flags": [],
+    "category": "Other",
+    "new_day": "2026-09-20"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "e9b96491",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 315.6,
+    "currency": "EGP",
+    "day": "2026-09-18",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-09-19"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "f2fd7bca",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 16.99,
+    "currency": "SAR",
+    "day": "2026-07-27",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-07-28"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "f41cd3f6",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 55.38,
+    "currency": "SAR",
+    "day": "2026-08-09",
+    "refund_by": null,
+    "flags": [],
+    "category": "Shopping",
+    "new_day": "2026-08-10"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "f53ec0e1",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 23.0,
+    "currency": "SAR",
+    "day": "2026-09-16",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-09-17"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "f725fe98",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 105.74,
+    "currency": "SAR",
+    "day": "2026-09-22",
+    "refund_by": null,
+    "flags": [],
+    "category": "Remittance",
+    "new_day": "2026-09-23"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "f7ca66eb",
+   "usr": "4fce9265",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 75.0,
+    "currency": "EGP",
+    "day": "2026-09-29",
+    "refund_by": null,
+    "flags": [],
+    "category": "Instapay",
+    "new_day": "2026-09-30"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "fe9b02c1",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "income_events",
+    "amount": 815.0,
+    "currency": "SAR",
+    "day": "2026-10-21",
+    "refund_by": null,
+    "flags": [],
+    "new_day": "2026-10-22"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "ff197921",
+   "usr": "f923c68b",
+   "rtype": "T15",
+   "step": 1,
+   "ex": {
+    "table": "expenses",
+    "amount": 490.0,
+    "currency": "SAR",
+    "day": "2026-09-06",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities",
+    "new_day": "2026-09-07"
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "0812aa55",
+   "usr": "f923c68b",
+   "rtype": "T4",
+   "step": 2,
+   "ex": {
+    "table": "income_events",
+    "amount": 50.0,
+    "currency": "SAR",
+    "day": "2026-09-21",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": {
+    "t": "E",
+    "cls": "nonspend",
+    "cat": "Transfer",
+    "amt": 50.0,
+    "ccy": "SAR",
+    "day": "2026-09-21",
+    "pm": null,
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [
+     "cash_deposit"
+    ],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-09|income": -50.0
+   }
+  },
+  {
+   "prefix": "08ca4f8f",
+   "usr": "f923c68b",
+   "rtype": "T11",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 1020.0,
+    "currency": "SAR",
+    "day": "2026-08-20",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities"
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-08|spend": -1020.0
+   }
+  },
+  {
+   "prefix": "101646f0",
+   "usr": "f923c68b",
+   "rtype": "T11",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 1500.0,
+    "currency": "SAR",
+    "day": "2026-09-01",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities"
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-09|spend": -1500.0
+   }
+  },
+  {
+   "prefix": "170910a1",
+   "usr": "f923c68b",
+   "rtype": "T11",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 560.0,
+    "currency": "SAR",
+    "day": "2026-09-02",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities"
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-09|spend": -560.0
+   }
+  },
+  {
+   "prefix": "42136093",
+   "usr": "f923c68b",
+   "rtype": "T11",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 740.0,
+    "currency": "SAR",
+    "day": "2026-09-02",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities"
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-09|spend": -740.0
+   }
+  },
+  {
+   "prefix": "51966294",
+   "usr": "f923c68b",
+   "rtype": "T5",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 225.1,
+    "currency": "SAR",
+    "day": "2026-07-22",
+    "refund_by": null,
+    "flags": [],
+    "category": "CC Payoff",
+    "flags_add": [
+     "model_kind_unproven"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "540077ff",
+   "usr": "f923c68b",
+   "rtype": "T6",
+   "step": 2,
+   "ex": null,
+   "ins": {
+    "t": "E",
+    "cls": "spend",
+    "cat": "Subscription",
+    "amt": 99.99,
+    "ccy": "SAR",
+    "day": "2026-08-10",
+    "pm": "payment_methods-470",
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-08|spend": 99.99
+   }
+  },
+  {
+   "prefix": "5fe0a498",
+   "usr": "f923c68b",
+   "rtype": "T5",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 950.0,
+    "currency": "SAR",
+    "day": "2026-08-10",
+    "refund_by": null,
+    "flags": [],
+    "category": "CC Payoff",
+    "flags_add": [
+     "model_kind_unproven"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "6cde6c02",
+   "usr": "f923c68b",
+   "rtype": "T5",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 450.0,
+    "currency": "SAR",
+    "day": "2026-08-23",
+    "refund_by": null,
+    "flags": [],
+    "category": "CC Payoff",
+    "flags_add": [
+     "model_kind_unproven"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "78e0b305",
+   "usr": "f923c68b",
+   "rtype": "T4",
+   "step": 2,
+   "ex": {
+    "table": "income_events",
+    "amount": 700.0,
+    "currency": "SAR",
+    "day": "2026-08-10",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": {
+    "t": "E",
+    "cls": "nonspend",
+    "cat": "Transfer",
+    "amt": 700.0,
+    "ccy": "SAR",
+    "day": "2026-08-10",
+    "pm": null,
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [
+     "possible_duplicate",
+     "cash_deposit"
+    ],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-08|income": -700.0
+   }
+  },
+  {
+   "prefix": "81144634",
+   "usr": "f923c68b",
+   "rtype": "T5",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 750.0,
+    "currency": "SAR",
+    "day": "2026-08-24",
+    "refund_by": null,
+    "flags": [],
+    "category": "CC Payoff",
+    "flags_add": [
+     "model_kind_unproven"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "818b0736",
+   "usr": "f923c68b",
+   "rtype": "T4",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 1150.0,
+    "currency": "SAR",
+    "day": "2026-09-21",
+    "refund_by": null,
+    "flags": [],
+    "category": "ATM Cash Withdrawal",
+    "flags_add": [
+     "cash_deposit"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "82133010",
+   "usr": "f923c68b",
+   "rtype": "T5",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 500.0,
+    "currency": "SAR",
+    "day": "2026-08-14",
+    "refund_by": null,
+    "flags": [],
+    "category": "CC Payoff",
+    "flags_add": [
+     "model_kind_unproven"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "858f6536",
+   "usr": "f923c68b",
+   "rtype": "T9",
+   "step": 2,
+   "ex": {
+    "table": "income_events",
+    "amount": 740.0,
+    "currency": "SAR",
+    "day": "2026-09-02",
+    "refund_by": null,
+    "flags": [],
+    "marker_log": "42136093",
+    "pair_log": "42136093"
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-09|income": -740.0
+   }
+  },
+  {
+   "prefix": "8eb8cbf1",
+   "usr": "f923c68b",
+   "rtype": "T11",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 462.0,
+    "currency": "SAR",
+    "day": "2026-08-03",
+    "refund_by": null,
+    "flags": [],
+    "category": "Utilities"
+   },
+   "ins": null,
+   "eff": {
+    "SAR|2026-08|spend": -462.0
+   }
+  },
+  {
+   "prefix": "916e58d4",
+   "usr": "f923c68b",
+   "rtype": "T6",
+   "step": 2,
+   "ex": null,
+   "ins": {
+    "t": "I",
+    "cls": "income",
+    "cat": "other",
+    "amt": 100.0,
+    "ccy": "SAR",
+    "day": "2026-09-11",
+    "pm": "payment_methods-474",
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-09|income": 100.0
+   }
+  },
+  {
+   "prefix": "a19ff882",
+   "usr": "f923c68b",
+   "rtype": "T8",
+   "step": 2,
+   "ex": {
+    "table": "income_events",
+    "amount": 0.23,
+    "currency": "SAR",
+    "day": "2026-10-21",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": {
+    "t": "E",
+    "cls": "netzero",
+    "cat": "Other",
+    "amt": 0.23,
+    "ccy": "SAR",
+    "day": "2026-10-21",
+    "pm": "payment_methods-435",
+    "refund": [
+     "refunded",
+     "a19ff882"
+    ],
+    "flags": [
+     "refund_unmatched"
+    ],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-10|income": -0.23
+   }
+  },
+  {
+   "prefix": "acbe9dd7",
+   "usr": "f923c68b",
+   "rtype": "T6",
+   "step": 2,
+   "ex": null,
+   "ins": {
+    "t": "I",
+    "cls": "income",
+    "cat": "other",
+    "amt": 100.0,
+    "ccy": "SAR",
+    "day": "2026-08-13",
+    "pm": "payment_methods-474",
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-08|income": 100.0
+   }
+  },
+  {
+   "prefix": "ad8523cb",
+   "usr": "b85f074d",
+   "rtype": "T6",
+   "step": 2,
+   "ex": null,
+   "ins": {
+    "t": "E",
+    "cls": "nonspend",
+    "cat": "ATM Cash Withdrawal",
+    "amt": 1000.0,
+    "ccy": "EGP",
+    "day": "2026-07-12",
+    "pm": "4149ecec",
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [],
+    "excl": null
+   },
+   "eff": {}
+  },
+  {
+   "prefix": "b61afd88",
+   "usr": "f923c68b",
+   "rtype": "T5",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 6.0,
+    "currency": "SAR",
+    "day": "2026-10-26",
+    "refund_by": null,
+    "flags": [],
+    "category": "CC Payoff",
+    "flags_add": [
+     "model_kind_unproven"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "c18dabf3",
+   "usr": "f923c68b",
+   "rtype": "T5",
+   "step": 2,
+   "ex": {
+    "table": "expenses",
+    "amount": 1600.0,
+    "currency": "SAR",
+    "day": "2026-09-03",
+    "refund_by": null,
+    "flags": [],
+    "category": "CC Payoff",
+    "flags_add": [
+     "model_kind_unproven"
+    ]
+   },
+   "ins": null,
+   "eff": {}
+  },
+  {
+   "prefix": "cb5fd476",
+   "usr": "f923c68b",
+   "rtype": "T4",
+   "step": 2,
+   "ex": {
+    "table": "income_events",
+    "amount": 700.0,
+    "currency": "SAR",
+    "day": "2026-08-10",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": {
+    "t": "E",
+    "cls": "nonspend",
+    "cat": "Transfer",
+    "amt": 700.0,
+    "ccy": "SAR",
+    "day": "2026-08-10",
+    "pm": null,
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [
+     "cash_deposit"
+    ],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-08|income": -700.0
+   }
+  },
+  {
+   "prefix": "ec6ae237",
+   "usr": "f923c68b",
+   "rtype": "T8",
+   "step": 2,
+   "ex": {
+    "table": "income_events",
+    "amount": 29.0,
+    "currency": "SAR",
+    "day": "2026-09-03",
+    "refund_by": null,
+    "flags": []
+   },
+   "ins": {
+    "t": "E",
+    "cls": "netzero",
+    "cat": "Other",
+    "amt": 29.0,
+    "ccy": "SAR",
+    "day": "2026-09-03",
+    "pm": "payment_methods-470",
+    "refund": [
+     "refunded",
+     "ec6ae237"
+    ],
+    "flags": [
+     "refund_unmatched"
+    ],
+    "excl": null
+   },
+   "eff": {
+    "SAR|2026-09|income": -29.0
+   }
+  },
+  {
+   "prefix": "fa2a8ec2",
+   "usr": "b85f074d",
+   "rtype": "T6",
+   "step": 2,
+   "ex": null,
+   "ins": {
+    "t": "E",
+    "cls": "spend",
+    "cat": "Other",
+    "amt": 499.05,
+    "ccy": "EGP",
+    "day": "2026-07-13",
+    "pm": "4149ecec",
+    "refund": [
+     null,
+     null
+    ],
+    "flags": [],
+    "excl": null
+   },
+   "eff": {
+    "EGP|2026-07|spend": 499.05
+   }
+  }
+ ]
+}
