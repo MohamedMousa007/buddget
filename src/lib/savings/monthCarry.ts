@@ -45,6 +45,33 @@ export function computeMonthCarry(input: MonthCarryInput): MonthCarryResult {
   return { carryRaw, adjustment, carry, saved: input.allocated + carryRaw }
 }
 
+// ponytail: fixed threshold in base-currency units; make it per-currency if small-unit currencies complain.
+export const CARRY_STALE_THRESHOLD = 1
+
+export interface CarryDrift {
+  posted: number
+  recomputed: number
+  delta: number
+  stale: boolean
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * How far a closed month's posted carry (carry + adjustments) has drifted from what its rows say now. `changed` says a row of
+ * the month was written since the carry was last settled: a figure that moved with no row change is only a rate move, not stale.
+ */
+export function carryDrift(
+  row: { carry: number; carry_adjustment: number },
+  figures: { income: number; spend: number; allocated: number },
+  changed = true,
+): CarryDrift {
+  const posted = round2(row.carry + row.carry_adjustment)
+  const recomputed = round2(computeMonthCarry(figures).carry)
+  const delta = round2(recomputed - posted)
+  return { posted, recomputed, delta, stale: changed && Math.abs(delta) >= CARRY_STALE_THRESHOLD }
+}
+
 const INVESTMENT = new Set<string>(INVESTMENT_PRODUCT_TYPES)
 
 /** Currencies the server has no quote for (gold grams, crypto): a carry into one of these cannot be priced. */

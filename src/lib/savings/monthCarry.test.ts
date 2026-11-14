@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Goal, SavingsAccount } from '@/lib/store/types'
-import { computeMonthCarry, resolveCarryDestination, isEligibleCarryPocket, findUnlinkedGoalPocket } from './monthCarry'
+import { carryDrift, CARRY_STALE_THRESHOLD, computeMonthCarry, resolveCarryDestination, isEligibleCarryPocket, findUnlinkedGoalPocket } from './monthCarry'
 
 describe('computeMonthCarry', () => {
   it('banks the whole surplus', () => {
@@ -119,5 +119,36 @@ describe('findUnlinkedGoalPocket', () => {
     expect(findUnlinkedGoalPocket([orphan], [goal({ name: 'Car', linkedSavingsAccountIds: ['o'] })], 'Car', 'EGP')).toBeUndefined()
     expect(findUnlinkedGoalPocket([orphan], [], 'Car', 'USD')).toBeUndefined()
     expect(findUnlinkedGoalPocket([pocket({ id: 'b', name: 'Car', type: 'bank' })], [], 'Car', 'EGP')).toBeUndefined()
+  })
+})
+
+describe('carryDrift', () => {
+  const fig = { income: 10_000, spend: 6_000, allocated: 2_000 }
+  it('is not stale when the posted carry matches the rows', () => {
+    expect(carryDrift({ carry: 2_000, carry_adjustment: 0 }, fig)).toEqual({ posted: 2_000, recomputed: 2_000, delta: 0, stale: false })
+  })
+  it('counts earlier adjustments as posted', () => {
+    expect(carryDrift({ carry: 1_500, carry_adjustment: 500 }, fig).stale).toBe(false)
+  })
+  it('a late income makes the month stale with a positive delta', () => {
+    const d = carryDrift({ carry: 2_000, carry_adjustment: 0 }, { ...fig, income: 10_300 })
+    expect(d).toMatchObject({ posted: 2_000, recomputed: 2_300, delta: 300, stale: true })
+  })
+  it('a late expense makes it stale with a negative delta, floored at a zero carry', () => {
+    expect(carryDrift({ carry: 2_000, carry_adjustment: 0 }, { ...fig, spend: 6_500 }).delta).toBe(-500)
+    expect(carryDrift({ carry: 2_000, carry_adjustment: 0 }, { ...fig, spend: 9_000 })).toMatchObject({ recomputed: 0, delta: -2_000 })
+  })
+  it('a change below the threshold is not stale', () => {
+    expect(carryDrift({ carry: 2_000, carry_adjustment: 0 }, { ...fig, income: 10_000 + CARRY_STALE_THRESHOLD - 0.5 }).stale).toBe(false)
+    expect(carryDrift({ carry: 2_000, carry_adjustment: 0 }, { ...fig, income: 10_000 + CARRY_STALE_THRESHOLD }).stale).toBe(true)
+  })
+  it('a moved figure with no row written since is not stale; with a row written since it is', () => {
+    const moved = { ...fig, income: 10_300 }
+    expect(carryDrift({ carry: 2_000, carry_adjustment: 0 }, moved, false)).toMatchObject({ delta: 300, stale: false })
+    expect(carryDrift({ carry: 2_000, carry_adjustment: 0 }, moved, true).stale).toBe(true)
+  })
+  it('a negative remainder bigger than the carry is dropped, not carried forward', () => {
+    const r = computeMonthCarry({ income: 1_000, spend: 0, allocated: 0, priorAdjustment: -1_500 })
+    expect(r.carry).toBe(0)
   })
 })

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { cycleCarryFigures, type CycleCarryInput } from './cycleCarryFigures'
+import { carryDrift, computeMonthCarry } from './monthCarry'
 import type { Expense, IncomeEvent, IncomeSource } from '@/lib/store/types'
 
 const rates = { USD_EGP: 50 }
@@ -62,5 +63,18 @@ describe('cycleCarryFigures', () => {
   it('returns null when a currency cannot be converted, instead of posting wrong money', () => {
     expect(cycleCarryFigures(base({ expenses: [exp({ currency: 'KWD' })], rates: {} }))).toBeNull()
     expect(cycleCarryFigures(base({ extraCurrencies: ['BTC'], rates: {} }))).toBeNull()
+  })
+
+  it('a refund stamped on a spend after the month closed changes the recomputed carry', () => {
+    const mk = (refund: Partial<Expense>) => cycleCarryFigures(base({ incomeEvents: [ev({ amount: 1000 })], expenses: [exp({ amount: 400, ...refund })] }))!
+    const before = mk({})
+    const after = mk({ refundKind: 'refunded' } as Partial<Expense>)
+    expect(carryDrift({ carry: computeMonthCarry(before).carry, carry_adjustment: 0 }, after)).toMatchObject({ delta: 400, stale: true })
+  })
+  it('an applied adjustment deposit does not feed back into allocated, so the month is not stale again', () => {
+    const f = (deposits: CycleCarryInput['deposits']) => cycleCarryFigures(base({ incomeEvents: [ev({ amount: 1000 })], expenses: [exp({ amount: 400 })], deposits }))!
+    const adjustment = { amount: 150, currency: 'EGP', kind: 'deposit', isCashFlow: true, source: 'carry' }
+    expect(f([adjustment]).allocated).toBe(0)
+    expect(carryDrift({ carry: 450, carry_adjustment: 150 }, f([adjustment])).stale).toBe(false)
   })
 })

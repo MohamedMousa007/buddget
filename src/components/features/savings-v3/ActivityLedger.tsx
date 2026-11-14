@@ -18,14 +18,18 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatClock, formatLocalized } from '@/lib/i18n/dateFormat'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { formatCurrency } from '@/lib/utils/formatters'
+import { Badge } from '@/components/ui/badge'
 
 const fmtSigned = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(Math.round(n)).toLocaleString('en-US')}`
+
+/** The month a carry row belongs to, read from its `… · YYYY-MM` note. */
+const carryMonth = (tx: SavingsTransaction) => (tx.source === 'carry' ? tx.notes?.match(/(\d{4}-\d{2})\s*$/)?.[1] : undefined)
 
 type TagKind = 'carry' | 'moved' | 'saved' | 'withdrew'
 
 /** The coloured tag under each row's icon, derived from the transaction's kind/source. */
 function tagFor(tx: SavingsTransaction): { kind: TagKind; color: string; sign: 1 | -1 } {
-  if (tx.source === 'carry') return { kind: 'carry', color: 'var(--color-brand-gold)', sign: 1 }
+  if (tx.source === 'carry') return { kind: 'carry', color: 'var(--color-brand-gold)', sign: tx.type === 'deposit' ? 1 : -1 }
   if (tx.transferGroupId) return { kind: 'moved', color: 'var(--color-brand-primary-ink)', sign: tx.type === 'deposit' ? 1 : -1 }
   if (tx.type === 'deposit') return { kind: 'saved', color: 'var(--color-brand-green)', sign: 1 }
   return { kind: 'withdrew', color: 'var(--color-brand-red)', sign: -1 }
@@ -41,9 +45,11 @@ export interface ActivityLedgerProps {
   /** Only moves on accounts of this kind. */
   filter?: CatKey | null
   onSeeAll?: () => void
+  /** Months whose carry is out of date: their carry rows get an "Out of date" badge. */
+  staleMonthKeys?: string[]
 }
 
-export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll }: ActivityLedgerProps) {
+export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeRates, limit, filter, onSeeAll, staleMonthKeys = [] }: ActivityLedgerProps) {
   const t = useT().wealthPage
   const tagLabel: Record<TagKind, string> = { carry: t.ledgerMonthEnd, moved: t.ledgerMoved, saved: t.ledgerSaved, withdrew: t.ledgerWithdrew }
   const { locale } = useLocale()
@@ -123,6 +129,7 @@ export function ActivityLedger({ transactions, accounts, baseCurrency, exchangeR
                     caption={tagLabel[tag.kind]}
                     captionColor={tag.color}
                     title={a?.name ?? 'Savings'}
+                    titleBadge={staleMonthKeys.includes(carryMonth(tx) ?? '') ? <Badge tone="warn" size="xs">{t.carryOutOfDate}</Badge> : undefined}
                     subtitle={`${time} · ${tx.notes || tx.source || a?.institution || 'Savings'}`}
                     amount={`${fmtSigned(tag.sign * amtBase)}.00`}
                     amountColor={tag.sign > 0 ? 'var(--color-brand-green)' : 'var(--color-brand-red)'}

@@ -16,21 +16,15 @@ import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { isAuthorizedCron } from '@/lib/server/cronAuth'
 import { DEFAULT_USER_TIME_ZONE, isValidTimeZone } from '@/lib/server/userTimeZone'
-import { pendingCarryKeys, cycleRange } from '@/lib/savings/carryDateLogic'
-import { computeMonthCarry, findUnlinkedGoalPocket, resolveCarryDestination } from '@/lib/savings/monthCarry'
-import { cycleCarryFigures } from '@/lib/savings/cycleCarryFigures'
-import { savingsAccountFromRow } from '@/lib/supabase/remote/mappers/savingsAccountMapper'
-import { goalFromRow } from '@/lib/supabase/remote/mappers/goalMapper'
-import { expenseFromRow } from '@/lib/supabase/remote/mappers/expenseMapper'
-import { incomeEventFromRow } from '@/lib/supabase/remote/mappers/incomeEventMapper'
-import { incomeSourceFromRow } from '@/lib/supabase/remote/mappers/incomeSourceMapper'
+import { pendingCarryKeys } from '@/lib/savings/carryDateLogic'
+import { computeMonthCarry, findUnlinkedGoalPocket } from '@/lib/savings/monthCarry'
+import { carryPostDate, closedCycleDrift, fetchRates, loadCycle, must } from '@/lib/server/carryCycle'
 import { convertCurrency } from '@/lib/utils/currency'
 import { allocateGoalFunding } from '@/lib/server/allocateGoalFunding'
 import { emitNotification } from '@/lib/server/emitNotification'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { renderServerCopy } from '@/lib/notifications/serverCopy'
 import { goalMilestoneAlert, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
-import type { Currency, SavingsAccount } from '@/lib/store/types'
 
 type Service = ReturnType<typeof createServiceRoleClient>
 type Rates = Record<string, number>
@@ -41,35 +35,7 @@ const PAGE = 500
 /** Stop starting new users this long into the run so the function ends cleanly inside `maxDuration` instead of being killed mid-user. */
 const TIME_BUDGET_MS = 50_000
 
-async function fetchRates(): Promise<Record<string, number>> {
-  try {
-    const r = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(6000) })
-    const d = (await r.json()) as { rates?: Record<string, number> }
-    const out: Record<string, number> = {}
-    for (const [c, v] of Object.entries(d.rates ?? {})) if (typeof v === 'number') out[`USD_${c}`] = v
-    return out
-  } catch {
-    return {}
-  }
-}
-
 const userZone = (tz: unknown) => (typeof tz === 'string' && isValidTimeZone(tz) ? tz : DEFAULT_USER_TIME_ZONE)
-
-const ROWS_PER_REQUEST = 1000
-
-/** Reads every row of a query: PostgREST caps one response at 1000 rows, so a long cycle would otherwise be summed short. */
-async function allRows<Row>(
-  build: () => { order: (col: string) => { range: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: { message: string } | null }> } },
-  what: string,
-): Promise<Row[]> {
-  const out: Row[] = []
-  for (let from = 0; ; from += ROWS_PER_REQUEST) {
-    const { data, error } = await build().order('id').range(from, from + ROWS_PER_REQUEST - 1)
-    if (error) throw new Error(`${what}: ${error.message}`)
-    out.push(...(data ?? []))
-    if ((data?.length ?? 0) < ROWS_PER_REQUEST) return out
-  }
-}
 
 /** What a dry run reports: how many cycles would be swept and for how much, never who. */
 interface DryRun {
@@ -82,56 +48,18 @@ interface DryRun {
   carryByCurrency: Record<string, number>
 }
 
-const must = <T extends { error: { message: string } | null }>(r: T, what: string): T => {
-  if (r.error) throw new Error(`${what}: ${r.error.message}`)
-  return r
-}
-
 /** Carries one closed cycle for one user. Returns true when money moved or the cycle was recorded as empty. */
 async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string, rates: Rates, now: Date, dry?: DryRun): Promise<boolean> {
   const userId = s.user_id as string
   const monthStartDay = (s.month_start_day as number | null) ?? 1
-  const { start, end } = cycleRange(monthKey, monthStartDay)
-  const startISO = start.toISOString().slice(0, 10)
-  const endISO = end.toISOString().slice(0, 10)
-  const inWindow = (col: string) => `and(${col}.gte.${startISO},${col}.lt.${endISO})`
-
-  const [profileR, accountRows, goalRows, expenseRows, eventRows, sourceRows, txRows] = await Promise.all([
-    service.from('profiles').select('default_carry_pocket_id, created_at, base_currency').eq('id', userId).maybeSingle(),
-    allRows(() => service.from('savings_accounts').select('*').eq('user_id', userId).is('deleted_at', null), 'accounts'),
-    allRows(() => service.from('goals').select('*').eq('user_id', userId).is('deleted_at', null), 'goals'),
-    allRows(() => service.from('expenses').select('*').eq('user_id', userId).gte('expense_date', startISO).lt('expense_date', endISO).is('deleted_at', null), 'expenses'),
-    allRows(() => service.from('income_events').select('*').eq('user_id', userId).or(`${inWindow('received_date')},${inWindow('occurrence_date')}`).is('deleted_at', null), 'income events'),
-    allRows(() => service.from('income_sources').select('*').eq('user_id', userId).is('deleted_at', null), 'income sources'),
-    allRows(() => service.from('savings_transactions').select('id, amount, currency, kind, is_cash_flow, transaction_date, source').eq('user_id', userId).gte('transaction_date', startISO).lt('transaction_date', endISO).is('deleted_at', null), 'savings transactions'),
-  ])
-  must(profileR, 'profile')
+  const { start, end, base, profileCreatedAt, accounts, savingsPockets, goals, dest, destCurrency, figures } = await loadCycle(service, userId, monthKey, monthStartDay, rates)
 
   // First partial cycle: an account created after the cycle started shouldn't carry a full month.
-  const createdAt = profileR.data?.created_at ? new Date(profileR.data.created_at as string) : null
-  if (createdAt && createdAt > start) {
+  if (profileCreatedAt && profileCreatedAt > start) {
     if (dry) dry.skippedFirstPartial++
     return false
   }
 
-  const base = ((profileR.data?.base_currency as string | null) ?? 'EGP') as Currency
-  const accounts: SavingsAccount[] = accountRows.map(savingsAccountFromRow)
-  const savingsPockets = accounts.filter((a) => a.category === 'savings')
-  const goals = goalRows.map(goalFromRow)
-  // Resolve destination (default fiat pocket → active goal's pocket → the vault).
-  const dest = resolveCarryDestination(profileR.data?.default_carry_pocket_id as string | null, savingsPockets, goals)
-  const destCurrency = dest.kind === 'pocket' ? (accounts.find((a) => a.id === dest.pocketId)?.currency ?? base) : base
-
-  const figures = cycleCarryFigures({
-    monthKey, monthStartDay, base, rates,
-    expenses: expenseRows.map(expenseFromRow),
-    incomeEvents: eventRows.map(incomeEventFromRow),
-    incomeSources: sourceRows.map(incomeSourceFromRow),
-    deposits: txRows.map((t) => ({
-      amount: Number(t.amount) || 0, currency: t.currency as string, kind: t.kind as string, isCashFlow: t.is_cash_flow as boolean | null, source: t.source as string | null,
-    })),
-    extraCurrencies: [destCurrency],
-  })
   if (!figures) {
     if (dry) dry.noFxPath++
     else {
@@ -142,7 +70,15 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
     return false
   }
   const { income, spend, allocated } = figures
-  const { carry, saved } = computeMonthCarry({ income, spend, allocated })
+  // Earlier closed months whose rows changed since they were swept: their shortfall or excess is settled in this carry.
+  const prior = (await closedCycleDrift(service, userId, monthStartDay, rates, { before: monthKey })).map((p) => p.item).filter((p) => p.stale)
+  const { carry, carryRaw, saved } = computeMonthCarry({ income, spend, allocated, priorAdjustment: prior.reduce((n, p) => n + p.delta, 0) })
+  const carryAdjustment = Math.round((carryRaw - carry) * 100) / 100
+  const settlePrior = async () => {
+    for (const p of prior) {
+      must(await service.from('savings_month_summary').update({ carry_adjustment: Math.round((p.adjustment + p.delta) * 100) / 100 }).eq('user_id', userId).eq('month_key', p.monthKey), 'prior adjustment')
+    }
+  }
   if (dry) {
     dry.cycles++
     if (carry >= 0.01) {
@@ -152,7 +88,7 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
     return true
   }
 
-  const postDate = new Date(end.getTime() - 24 * 3600 * 1000).toISOString().slice(0, 10)
+  const postDate = carryPostDate(end)
   // Funded goals draw first (priority order); the rest is unassigned and stays free.
   const dict = getServerDictionary(s.language as string | null)
   const celebrate = (s.goal_progress_alerts as boolean | null) ?? true
@@ -171,7 +107,8 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   })
   if (remainder < 0.01) {
     // Nothing to sweep, but record the closed cycle so it isn't reconsidered.
-    must(await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry, saved, currency: base, closed_at: now.toISOString() }), 'summary')
+    must(await service.from('savings_month_summary').insert({ user_id: userId, month_key: monthKey, target: 0, allocated, carry, carry_adjustment: carryAdjustment, saved, currency: base, closed_at: now.toISOString() }), 'summary')
+    await settlePrior()
     return true
   }
 
@@ -210,8 +147,9 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
   }
 
   must(await service.from('savings_month_summary').insert({
-    user_id: userId, month_key: monthKey, target: 0, allocated, carry, saved, currency: base, pocket_id: pocketId, closed_at: now.toISOString(),
+    user_id: userId, month_key: monthKey, target: 0, allocated, carry, carry_adjustment: carryAdjustment, saved, currency: base, pocket_id: pocketId, closed_at: now.toISOString(),
   }), 'summary')
+  await settlePrior()
 
   await emitNotification(service, {
     userId, category: 'savings_carry', severity: 'success', dedupeKey: `carry:${monthKey}`,

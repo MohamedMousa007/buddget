@@ -14,6 +14,8 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { deleteHoldingWithUndo, deletePocketWithUndo } from '@/lib/savings/pocketUndo'
 import { PageGrid } from '@/components/layout/PageGrid'
 import { FlowStickyStrip } from '@/components/features/flow/FlowStickyStrip'
+import { CarryStalePrompt } from '@/components/features/savings-v3/CarryStalePrompt'
+import { useCarryStatus } from '@/hooks/useCarryStatus'
 import { ActivityLedger } from '@/components/features/savings-v3/ActivityLedger'
 import { AddHoldingSheet } from '@/components/features/savings-v3/AddHoldingSheet'
 import { AddSavingsSheetV3 } from '@/components/features/savings-v3/AddSavingsSheetV3'
@@ -92,6 +94,7 @@ export default function WealthPage() {
     })),
   )
   const base = settings.baseCurrency
+  const staleCarryMonths = useCarryStatus().staleCycles.map((c) => c.monthKey)
   const goldOk = goldPriceAvailable !== false
 
   const [addOpen, setAddOpen] = useState(false)
@@ -264,6 +267,7 @@ export default function WealthPage() {
       ) : null}
       <FlowStickyStrip visible={collapsed} primary={totalText} secondary={base} right={[netWorthText]} />
       {goldNisab > 0 ? <ZakatBasisPrompt {...prompt} /> : null}
+      <CarryStalePrompt />
 
       <SavingsHero
         total={totalText}
@@ -317,7 +321,7 @@ export default function WealthPage() {
           }
           secondary={
             <div className="mt-1 lg:mt-0">
-              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} filter={filter} />
+              <ActivityLedger transactions={savingsTransactions} accounts={savingsAccounts} baseCurrency={base} exchangeRates={exchangeRates} limit={3} filter={filter} staleMonthKeys={staleCarryMonths} />
             </div>
           }
         />

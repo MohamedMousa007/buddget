@@ -33,7 +33,10 @@ import { IncomePrompts } from '@/components/features/flow/IncomePrompts'
 import { OwnTransferPrompts } from '@/components/features/flow/OwnTransferPrompts'
 import { SmsFlagPrompts } from '@/components/features/flow/SmsFlagPrompts'
 import { MerchantCategoryPrompt } from '@/components/features/flow/MerchantCategoryPrompt'
+import { CarryStalePrompt } from '@/components/features/savings-v3/CarryStalePrompt'
 import { FlowPendingRow } from '@/components/features/flow/FlowPendingRow'
+import { CashLogPrompt } from '@/components/features/flow/CashLogPrompt'
+import { CashWithdrawnLine } from '@/components/features/flow/CashWithdrawnLine'
 import { methodLabel, useFlowLedger } from '@/components/features/flow/useFlowLedger'
 import { periodText, useFlowBand } from '@/components/features/flow/useFlowBand'
 import { PageGrid } from '@/components/layout/PageGrid'
@@ -230,7 +233,9 @@ export default function FlowPage() {
       {segment === 'in' ? <IncomePrompts /> : null}
       <OwnTransferPrompts />
       <SmsFlagPrompts />
+      <CashLogPrompt />
       <MerchantCategoryPrompt />
+      <CarryStalePrompt />
 
       <FlowSummaryBand {...band} />
 
@@ -272,6 +277,7 @@ export default function FlowPage() {
       />
 
       <FlowPendingRow />
+      <CashWithdrawnLine />
 
       {!dataReady ? (
         <div className="mx-4 mt-3.5">

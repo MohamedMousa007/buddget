@@ -342,6 +342,7 @@ export interface Dictionary {
   wealthPage: {
     deleteBlocked: (pocket: string, shortBy: string) => string
     ledgerMonthEnd: string
+    carryOutOfDate: string
     ledgerMoved: string
     ledgerSaved: string
     ledgerWithdrew: string
@@ -642,6 +643,7 @@ export interface Dictionary {
     doneCta: string
     badgeSms: string
     badgeRefunded: string
+    badgePartlyRefunded: string
     badgeDeclined: string
     /** Accessible label for the non-spend marker on money-movement rows. */
     badgeNotCounted: string
@@ -2955,6 +2957,8 @@ export interface Dictionary {
     emptyMonthTitle: (month: string) => string
     emptyMonthBody: string
     turnOnSms: string
+    cashWithdrawn: (amount: string) => string
+    cashWithdrawnChange: string
     noMatchTitle: string
     noMatchNo: string
     noMatchSpending: string
@@ -3040,10 +3044,20 @@ export interface Dictionary {
     passThroughBody: (n: number, total: string) => string
     passThroughYes: string
     passThroughNo: string
+    cashLogTitle: string
+    cashLogBody: string
+    cashLogYes: string
+    cashLogNo: string
+    cashLogCounted: string
     merchantCategoryTitle: (name: string) => string
     merchantCategoryBody: (n: number, total: string) => string
     merchantCategoryChoose: string
     merchantCategoryLater: string
+    carryStaleTitle: string
+    carryStaleBody: (month: string, posted: string, recomputed: string) => string
+    carryStaleUpdate: string
+    carryStaleLater: string
+    carryStaleUpdated: string
     passThroughApplied: (n: number) => string
     passThroughReviewTitle: (n: number) => string
     passThroughReviewBody: (total: string) => string
