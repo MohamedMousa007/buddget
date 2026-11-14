@@ -16,6 +16,7 @@ import { matchByTail } from '@/lib/accounts/identity/accountRef'
 import { ensureProvisionalAccount, provisionalSpec } from './accountPlacement'
 import { toSupportedCurrency } from './ingestGuards'
 import { normalizeMerchant } from './merchantNormalizer'
+import { isServiceBill } from './merchantDictionary'
 import { resolveMerchantCategory, rememberMerchantCategory } from './merchantCategoryCache'
 
 export type SmsExpenseKind =
@@ -59,6 +60,8 @@ export function mapKindToCategory(
   if (kind === 'installment_payment') return 'Installment'
   if (kind === 'own_transfer') return 'Transfer'
   if (kind === 'currency_exchange') return 'Currency Exchange'
+  // A telecom or utility bill the bank words as "service value plus stamp tax": no merchant, so the parser calls it a fee.
+  if (kind === 'fee' && isServiceBill(rawBody)) return 'Utilities'
   if (kind === 'instant_transfer_out') {
     // An external send — still spend. In Egypt it almost always rides InstaPay (IPN); label it
     // as such so it's instantly recognisable. Non-IPN / international sends stay 'Remittance'.
@@ -504,18 +507,15 @@ export async function createSmsExpense(
           bankName: row.bankName,
         }, { currency: row.currency, rawBody: row.rawBody })
   let mappedCategory = row.categoryOverride ?? mapKindToCategory(row.kind, row.categoryHint, row.rawBody)
-  // Purchases are the only merchant-bearing spend kind, and curated/template tiers hand them
-  // over with no categoryHint → they default to 'Other'. Fill from the shared merchant memory
-  // (catalog + learned cache); when the AI DID name a category, feed it back so the next
-  // curated/template hit on this merchant is categorised for free. Keyed on `title`, the same
-  // string the stored description (and the user-edit trigger) uses.
-  if (row.kind === 'purchase' || row.kind === 'online_purchase') {
-    if (mappedCategory === 'Other') {
-      const learned = await resolveMerchantCategory(service, title, row.userId)
-      if (learned) mappedCategory = learned
-    } else if (row.categoryHint) {
-      await rememberMerchantCategory(service, title, mappedCategory, 'ai')
-    }
+  // Purchases are the only merchant-bearing spend kind. What is already known about the merchant (the user's own
+  // correction, the dictionary, their earlier purchases there, the shared memory) outranks this one message's
+  // category guess, so one merchant keeps one category on every tier. Only when nothing knows the merchant is the
+  // AI's category used, and fed back so the next curated/template hit is categorised for free. Keyed on `title`,
+  // the same string the stored description (and the user-edit trigger) uses.
+  if (!row.categoryOverride && (row.kind === 'purchase' || row.kind === 'online_purchase')) {
+    const known = await resolveMerchantCategory(service, title, row.userId)
+    if (known) mappedCategory = known
+    else if (mappedCategory !== 'Other' && row.categoryHint) await rememberMerchantCategory(service, title, mappedCategory, 'ai')
   }
 
   // Money that stays inside the user's own accounts credits the other side: cash out lands in Cash,

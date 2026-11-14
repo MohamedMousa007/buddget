@@ -19,10 +19,13 @@ describe('normalizeMerchant — brand names', () => {
 describe('normalizeMerchant — cosmetic tidy for ordinary merchants', () => {
   it.each([
     ['LA ROSE PASTRY', 'La Rose Pastry'],
-    ['CARREFOUR EGYPT SHERATON', 'Carrefour Egypt Sheraton'],
-    ['UBER* TRIP', 'Uber Trip'],
+    // A known national merchant reads as one merchant whatever branch or suffix the bank printed (S2 slice 2).
+    ['CARREFOUR EGYPT SHERATON', 'Carrefour'],
+    ['UBER* TRIP', 'Uber'],
+    ['SOMESHOP* BRANCH', 'Someshop Branch'],
     ['POS  SPINNEYS MAADI', 'Spinneys Maadi'],
-    ['  TALABAT   EG  ', 'Talabat Eg'],
+    ['  TALABAT   EG  ', 'Talabat'],
+    ['  SOME   SHOP  ', 'Some Shop'],
   ])('%s -> %s', (raw, expected) => {
     expect(normalizeMerchant(raw, 'purchase')).toBe(expected)
   })

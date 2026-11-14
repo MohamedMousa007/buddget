@@ -15,6 +15,8 @@ import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { decomposePaymentMethodName, resolvePaymentBrandKey } from '@/lib/payment/paymentMethodDefaults'
 import type { Identified } from '@/lib/accounts/identity/accountRef'
 import { providerFromBody } from '@/lib/sms/providerFromBody'
+import { isGenericMerchant, resolveKnownMerchant } from '@/lib/sms/merchantDictionary'
+import { catalogCategory } from '@/lib/sms/merchantCategoryCache'
 
 export interface GoldLabel { s: 't' | 'h'; topup?: string; relay?: string; fx?: string }
 export interface GoldRow {
@@ -111,13 +113,45 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
     target: '>=95%',
   })
   const booked = purchases.filter((r) => r.e)
-  out.push({ name: 'Purchases in Other or uncategorised', now: pct(booked.filter((r) => !r.ecat || r.ecat === 'Other').length, booked.length), replay: PENDING, target: '<25%' })
-  const groups = new Map<string, Set<string>>()
-  for (const r of booked) {
-    const k = foldName(r.m)
-    if (k) groups.set(`${r.u}|${k}`, (groups.get(`${r.u}|${k}`) ?? new Set()).add(r.ecat ?? 'Other'))
+  // Replay of resolveMerchantCategory in arrival order: dictionary and catalog first, then what this user's earlier
+  // purchases at the same (normalized) merchant were filed under, then the category production stored.
+  const memory = new Map<string, string>()
+  const replayCat = new Map<string, string | null>()
+  const titleOf = (r: GoldRow) => normalizeMerchant(r.m, r.k as 'purchase') ?? ''
+  for (const r of [...inputs.rows].sort((x, y) => x.ts - y.ts)) {
+    if (!PURCHASE.has(r.k ?? '') || !r.m || !r.e) continue
+    const title = titleOf(r)
+    const mem = `${r.u}|${title.toLowerCase()}`
+    const stored = r.ecat && r.ecat !== 'Other' ? r.ecat : null
+    const generic = isGenericMerchant(title)
+    const cat = generic ? stored : resolveKnownMerchant(title)?.category ?? catalogCategory(title) ?? memory.get(mem) ?? stored
+    if (cat && !generic && !memory.has(mem)) memory.set(mem, cat)
+    replayCat.set(r.id, cat)
   }
-  out.push({ name: 'Same merchant, same category (per user)', now: pct([...groups.values()].filter((s) => s.size === 1).length, groups.size), replay: PENDING, target: '100%' })
+  // The background categoriser back-fills this user's earlier 'Other' rows at a merchant once it learns the category.
+  for (const r of booked) if (!replayCat.get(r.id)) replayCat.set(r.id, memory.get(`${r.u}|${titleOf(r).toLowerCase()}`) ?? null)
+  out.push({
+    name: 'Purchases in Other or uncategorised',
+    now: pct(booked.filter((r) => !r.ecat || r.ecat === 'Other').length, booked.length),
+    replay: pct(booked.filter((r) => !replayCat.get(r.id)).length, booked.length),
+    target: '<25%',
+  })
+  const consistent = (keyOf: (r: GoldRow) => string | null, catOf: (r: GoldRow) => string) => {
+    const groups = new Map<string, Set<string>>()
+    for (const r of booked) {
+      const k = keyOf(r)
+      if (k) groups.set(`${r.u}|${k}`, (groups.get(`${r.u}|${k}`) ?? new Set()).add(catOf(r)))
+    }
+    return pct([...groups.values()].filter((g) => g.size === 1).length, groups.size)
+  }
+  out.push({
+    name: 'Same merchant, same category (per user)',
+    now: consistent((r) => foldName(r.m), (r) => r.ecat ?? 'Other'),
+    // A bare company-form word is not one merchant, so it is not held to one category.
+    replay: consistent((r) => (isGenericMerchant(titleOf(r)) ? null : titleOf(r).toLowerCase() || null), (r) => replayCat.get(r.id) ?? 'Other'),
+    target: '100%',
+  })
+  out.push({ name: '  distinct merchants per user (fewer = variants merged)', now: String(new Set(booked.map((r) => `${r.u}|${foldName(r.m)}`)).size), replay: String(new Set(booked.map((r) => `${r.u}|${titleOf(r).toLowerCase()}`)).size), target: '-' })
 
   // 6. Wallet top-ups: either leg booked as spend or as income.
   const topups = rows.filter((r) => labels[r.id].topup)

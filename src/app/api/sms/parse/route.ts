@@ -59,6 +59,8 @@ import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { fetchCorrectionExemplar } from '@/lib/sms/correctionExemplar'
 import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
 import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
+import { normalizeMerchant } from '@/lib/sms/merchantNormalizer'
+import { isGenericMerchant } from '@/lib/sms/merchantDictionary'
 import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sms/merchantCategoryPrompt'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
@@ -1024,6 +1026,11 @@ export async function POST(request: Request) {
         if (metered.denied || !metered.value) return
         const cat = metered.value
         await service.from('expenses').update({ category: cat }).eq('id', expenseId)
+        // One merchant, one category: this user's earlier uncategorised purchases at the same merchant follow
+        // (never for a bare company-form word, which is many merchants).
+        if (!isGenericMerchant(merchant)) await service.from('expenses').update({ category: cat })
+          .eq('user_id', userId).eq('category', 'Other').ilike('description', merchant.replace(/[\\%_]/g, (c) => `\\${c}`))
+          .not('sms_log_id', 'is', null).is('deleted_at', null).is('refunded_at', null)
         await rememberMerchantCategory(service, merchant, cat, 'ai')
       } catch (e) {
         console.warn('[sms/parse] merchant categorise failed', e)
@@ -1105,7 +1112,9 @@ export async function POST(request: Request) {
       // parser kind would leave every reclassified leg unpairable by its own sibling.
       kind: tx.kind ?? parsed.kind,
       clean_title: parsed.cleanTitle,
-      merchant_normalized: parsed.merchantNormalized ?? null,
+      // Every tier, not only the AI: the curated and template tiers capture a raw merchant and nothing else. Purchases
+      // only, because on a transfer this field is a person, not a merchant.
+      merchant_normalized: parsed.merchantNormalized ?? (tx.kind === 'purchase' || tx.kind === 'online_purchase' ? normalizeMerchant(parsed.merchant, tx.kind) : null),
       parse_method: parseMethod,
       pattern_id: patternId,
       // B1: without this a template-parsed row has no link to the template that produced it,

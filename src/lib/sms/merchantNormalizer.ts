@@ -1,5 +1,6 @@
 import { findBrandByKey, resolveBrandKeyFromMerchant } from '@/lib/constants/subscriptionCatalog'
 import type { SmsExpenseKind } from './createSmsExpense'
+import { resolveKnownMerchant, stripGateway } from './merchantDictionary'
 
 /**
  * Kinds whose title is a real merchant string. Everything else is a phrase composed by
@@ -17,6 +18,10 @@ function isAllCaps(s: string): boolean {
   return /[A-Z]/.test(s) && !/[a-z]/.test(s)
 }
 
+function isAllLower(s: string): boolean {
+  return /[a-z]/.test(s) && !/[A-Z]/.test(s)
+}
+
 function titleCase(s: string): string {
   return s.replace(/[A-Za-z0-9]+/g, (w) => w[0].toUpperCase() + w.slice(1).toLowerCase())
 }
@@ -26,14 +31,15 @@ function titleCase(s: string): string {
  * Title-casing is gated on the string being ALL CAPS so a name the bank already cased
  * ("EL Wahat for oil") is left exactly as the user knows it, and Arabic is untouched.
  */
-function tidy(s: string): string {
-  const out = s
+function tidy(s: string, merchant = false): string {
+  const out = (merchant ? stripGateway(s) : s)
     .replace(LEADING_NOISE, '')
     .replace(/\s*\*+\s*/g, ' ') // "UBER* TRIP" -> "UBER TRIP"
     .replace(TRAILING_REF, '')
     .replace(/\s+/g, ' ')
     .trim()
-  return isAllCaps(out) ? titleCase(out) : out
+  // A merchant the bank printed in lower case is the same merchant as its upper-case form: both read title-cased.
+  return isAllCaps(out) || (merchant && isAllLower(out)) ? titleCase(out) : out
 }
 
 /**
@@ -41,10 +47,9 @@ function tidy(s: string): string {
  *
  * "Netflix.com" -> "Netflix"; "LA ROSE PASTRY" -> "La Rose Pastry".
  *
- * Deterministic — no AI. Until now only the Gemini tier produced a normalised name
- * (`merchantNormalized`), while the curated and learned-template tiers — the common,
- * fast paths — stored whatever the regex captured, because `buildCleanTitle`'s default
- * branch returns the counterparty verbatim.
+ * Deterministic — no AI, the same on every parse tier. For a purchase: the gateway prefix
+ * goes ("GEIDEA*SHOP" -> "Shop"), a subscription brand or a known Egypt / Saudi merchant
+ * gets its canonical name whatever the case or cut-off, and anything else is tidied.
  *
  * Falls back to the input rather than ever returning empty: a raw name beats no name.
  */
@@ -56,10 +61,14 @@ export function normalizeMerchant(
   const trimmed = raw.trim()
   if (!trimmed) return null
 
-  if (PURCHASE_KINDS.has(kind ?? '')) {
-    const brand = findBrandByKey(resolveBrandKeyFromMerchant(trimmed))
+  const purchase = PURCHASE_KINDS.has(kind ?? '')
+  if (purchase) {
+    const merchant = stripGateway(trimmed)
+    const brand = findBrandByKey(resolveBrandKeyFromMerchant(merchant))
     if (brand) return brand.name
+    const known = resolveKnownMerchant(merchant)
+    if (known?.name) return known.name
   }
 
-  return tidy(trimmed) || trimmed
+  return tidy(trimmed, purchase) || trimmed
 }

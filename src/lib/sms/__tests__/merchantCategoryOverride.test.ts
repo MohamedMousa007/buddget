@@ -10,6 +10,12 @@ function fakeService(rows: Record<string, Record<string, unknown>>) {
     const q = {
       select: () => q,
       eq: (col: string, val: unknown) => { filters[col] = val; return q },
+      ilike: (col: string, val: unknown) => { filters[col] = val; return q },
+      not: () => q,
+      neq: () => q,
+      is: () => q,
+      order: () => q,
+      limit: () => q,
       maybeSingle: async () => {
         queried.push(table)
         const hit = rows[table]
@@ -35,7 +41,27 @@ describe('resolveMerchantCategory with a per-user override', () => {
   it('falls back to the shared memory when this user has no override', async () => {
     const { service, queried } = fakeService({ merchant_categories: { merchant_key: 'zzshop', category: 'Shopping' } })
     expect(await resolveMerchantCategory(service, 'ZZ Shop', 'u1')).toBe('Shopping')
-    expect(queried).toEqual(['merchant_category_overrides', 'merchant_categories'])
+    expect(queried).toEqual(['merchant_category_overrides', 'expenses', 'merchant_categories'])
+  })
+
+  it('answers a known Egypt / Saudi merchant from the dictionary, ahead of the shared memory', async () => {
+    const { service, queried } = fakeService({ merchant_categories: { merchant_key: 'kazyon', category: 'Shopping' } })
+    expect(await resolveMerchantCategory(service, 'Kazyon', 'u1')).toBe('Groceries')
+    expect(queried).toEqual(['merchant_category_overrides'])
+  })
+
+  it('lets the user correction outrank the dictionary', async () => {
+    const { service } = fakeService({ merchant_category_overrides: { user_id: 'u1', merchant_key: 'kazyon', category: 'Shopping' } })
+    expect(await resolveMerchantCategory(service, 'Kazyon', 'u1')).toBe('Shopping')
+  })
+
+  it('files a merchant where this user filed it before, ahead of the shared memory', async () => {
+    const { service, queried } = fakeService({
+      expenses: { user_id: 'u1', description: 'ZZ Shop', category: 'Food' },
+      merchant_categories: { merchant_key: 'zzshop', category: 'Shopping' },
+    })
+    expect(await resolveMerchantCategory(service, 'ZZ Shop', 'u1')).toBe('Food')
+    expect(queried).toEqual(['merchant_category_overrides', 'expenses'])
   })
 
   it('never lets a non-spend override change a purchase category', async () => {
