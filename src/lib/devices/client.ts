@@ -72,13 +72,50 @@ export async function reportSmsQueue(status: { pendingCount?: number; oldestPend
   }
 }
 
-/** This phone's own SMS role, written when the user switches collecting on or off here. */
-export async function setDeviceCollectsSms(collectsSms: boolean): Promise<void> {
+const ROLE_PENDING_KEY = 'sms.rolePending'
+
+/** The role the user chose here that the server has not confirmed yet, or null. */
+export function readPendingSmsRole(): boolean | null {
   try {
-    await apiFetchAuth('/api/devices', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collectsSms }) })
+    const v = localStorage.getItem(ROLE_PENDING_KEY)
+    return v === 'true' ? true : v === 'false' ? false : null
   } catch {
-    /* the heartbeat reports the real state on the next open */
+    return null
   }
+}
+
+function storePendingSmsRole(value: boolean | null): void {
+  try {
+    if (value === null) localStorage.removeItem(ROLE_PENDING_KEY)
+    else localStorage.setItem(ROLE_PENDING_KEY, String(value))
+  } catch {
+    /* storage unavailable: nothing to remember the choice with */
+  }
+}
+
+/** Which intent a start uses: the choice the server never confirmed beats the stale server row. */
+export function resolveStartIntent(pending: boolean | null, device: boolean | null, account: boolean | null): boolean | null {
+  return pending ?? device ?? account
+}
+
+/**
+ * This phone's own SMS role, written when the user switches collecting on or off here. True only on a 2xx (two tries).
+ * A failed write is remembered and replayed at the next start, so a lost write cannot flip the choice back.
+ */
+export async function setDeviceCollectsSms(collectsSms: boolean): Promise<boolean> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await apiFetchAuth('/api/devices', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...selfReport(), collectsSms }) })
+      if (res.ok) {
+        storePendingSmsRole(null)
+        return true
+      }
+    } catch {
+      /* try again, then remember the choice */
+    }
+  }
+  storePendingSmsRole(collectsSms)
+  return false
 }
 
 /** true / false from this phone's server record, or null when it has none yet or the read failed. */

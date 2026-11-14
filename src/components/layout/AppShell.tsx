@@ -111,8 +111,11 @@ function SmsStartupSync() {
       if (canArm && (refreshToken || status?.needsResync || !status?.tokenSaved) && isOnline()) {
         // This phone's own role first (another phone turning tracking off must not disarm it); the account setting only
         // decides for a phone the server has not met yet.
-        const { fetchDeviceCollectsSms } = await import('@/lib/devices/client')
-        const intent = (await fetchDeviceCollectsSms()) ?? (await fetchAccountSmsIntent(userId))
+        const { fetchDeviceCollectsSms, readPendingSmsRole, setDeviceCollectsSms, resolveStartIntent } = await import('@/lib/devices/client')
+        const pending = readPendingSmsRole()
+        if (pending !== null) await setDeviceCollectsSms(pending)
+        const device = pending === null ? await fetchDeviceCollectsSms() : null
+        const intent = resolveStartIntent(pending, device, device === null && pending === null ? await fetchAccountSmsIntent(userId) : null)
         if (intent === true) {
           // ensureIngestToken re-stamps the token to this account (self-heal).
           if (await ensureIngestToken(token, userId)) await setSmsEnabled(true)

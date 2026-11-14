@@ -304,7 +304,8 @@ const FORCE_COOLDOWN_MS = 5_000
  * The queue stays authoritative: an item is removed ONLY after the server accepted it (2xx). A refusal of any kind
  * (400/422, auth, rate limit, 5xx, network) leaves it queued on a jittered backoff schedule (see smsRetryState), so a
  * message the server keeps refusing is parked and visible to staff, never deleted. A failure that would hit every
- * remaining item the same way (network, auth, rate limit, 5xx) stops the run. `force` (the user tapped the message)
+ * remaining item the same way (network, auth, per-minute rate limit) stops the run; one that only affects AI-needing messages
+ * (daily AI quota, 5xx) parks that item and goes on. `force` (the user tapped the message)
  * ignores the schedule. Concurrent calls share one run.
  */
 export function drainAndSubmitPendingSms(accessToken: string, userId: string, opts: { force?: boolean } = {}): Promise<void> {
@@ -328,6 +329,22 @@ export async function retrySmsNow(): Promise<void> {
 
 /** 4xx that belongs to this one message (not the session, the clock or the rate limit): the rest of the queue may still go. */
 const isMessageSpecific = (status: number) => status >= 400 && status < 500 && ![401, 403, 408, 429].includes(status)
+
+/** A refusal that would hit every remaining message too: bad session, or the per-minute rate limit. The daily AI quota (carries `limit`) and 5xx only affect messages that need the AI, so parsable ones behind may still go. */
+async function stopsRun(res: Response): Promise<boolean> {
+  if (res.status === 401 || res.status === 403) return true
+  if (res.status !== 429) return false
+  const body = (await res.clone().json().catch(() => null)) as { limit?: number } | null
+  return body?.limit === undefined
+}
+
+/** Drops every queued message (data reset) without touching the token or the armed state. Never throws. */
+export async function clearPendingSmsQueue(): Promise<void> {
+  if (!isNative()) return
+  const items = await peekPendingSms()
+  if (items.length > 0) await callNative('removePending', (p) => p.removePending({ items }), undefined)
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(SMS_QUEUE_CHANGED_EVENT))
+}
 
 async function runDrain(accessToken: string, userId: string, force: boolean): Promise<void> {
   if (!isNative() || !accessToken || !userId) return
@@ -369,7 +386,7 @@ async function runDrain(accessToken: string, userId: string, force: boolean): Pr
       }
       const poison = isMessageSpecific(res.status)
       park(key, `http_${res.status}`, { poison, retryAfterMs: retryAfterMs(res.headers.get('Retry-After')) })
-      if (!poison) break
+      if (await stopsRun(res)) break
     } catch {
       park(key, 'network')
       break // the rest would fail the same way; they stay queued

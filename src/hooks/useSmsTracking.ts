@@ -16,6 +16,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { isNative, isAndroid, isIOS } from '@/lib/native/isNative'
 import { createClient } from '@/lib/supabase/client'
 import { apiFetchAuth } from '@/lib/apiBase'
+import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { setDeviceCollectsSms } from '@/lib/devices/client'
 import { saveSmsToken, setSmsEnabled, setIosSetupCompleted, getSmsBridgeStatus, SMS_QUEUE_CHANGED_EVENT, type SmsBridgeStatus } from '@/lib/native/smsTracker'
 
@@ -54,6 +55,7 @@ export function useSmsArmed(): boolean {
 }
 
 export function useSmsTracking() {
+  const t = useSettingsHubCopy().sms
   const { settings, updateSettings } = useFinanceStore(
     useShallow((s) => ({
       settings: s.settings,
@@ -91,6 +93,9 @@ export function useSmsTracking() {
 
   useEffect(() => {
     void refreshStatus()
+    const onVisible = () => { if (document.visibilityState === 'visible') void refreshStatus() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [refreshStatus])
 
   // Fetch token + connection status when enabled
@@ -154,7 +159,10 @@ export function useSmsTracking() {
         if (value) {
           const alreadyGranted = await checkSmsPermission()
           const granted = alreadyGranted || (await requestSmsPermission())
-          if (!granted) return // user denied — leave switch OFF
+          if (!granted) {
+            setError(t.permissionDenied)
+            return // user denied — leave switch OFF
+          }
           // Store the non-expiring ingest token (never the 1-hour JWT), then
           // flip the native gate — same order as the iOS path below.
           const session = await createClient().auth.getSession()
@@ -272,5 +280,6 @@ export function useSmsTracking() {
     rotateToken,
     lastReceivedAt,
     todayCount,
+    permission: deviceStatus?.permission,
   }
 }

@@ -387,9 +387,29 @@ enum SmsCredentialStore {
         return (out.eventId, out.receivedAt)
     }
 
+    private static let maxAge: TimeInterval = 30 * 86_400
+
+    /// Same rule as Android's queue: a message waiting longer than 30 days is dropped and counted as evicted.
+    /// An unreadable receivedAt is kept. Callers hold queueLock.
+    private static func evictExpired(_ queue: [[String: String]], now: Date = Date()) -> [[String: String]] {
+        let plain = ISO8601DateFormatter()
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let kept = queue.filter { item in
+            guard let raw = item["receivedAt"], let at = plain.date(from: raw) ?? fractional.date(from: raw) else { return true }
+            return now.timeIntervalSince(at) <= maxAge
+        }
+        if kept.count < queue.count {
+            let d = UserDefaults.standard
+            d.set(d.integer(forKey: evictedKey) + queue.count - kept.count, forKey: evictedKey)
+            writeQueue(kept)
+        }
+        return kept
+    }
+
     static func peekPending() -> [[String: String]] {
         queueLock.lock(); defer { queueLock.unlock() }
-        return readQueue() ?? []
+        return evictExpired(readQueue() ?? [])
     }
 
     static func removePending(_ items: [[String: String]]) {

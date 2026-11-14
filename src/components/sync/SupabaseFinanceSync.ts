@@ -572,6 +572,7 @@ async function runFullSync(
         useSettingsStore.getState().reset()
         clearSyncCursors()
         clearNetWorthStamps()
+        void clearSmsQueueAfterReset()
         return runFullSync(supabase, userId, null)
       }
     }
@@ -594,6 +595,10 @@ function storeVersion(): number {
   return useFinanceStore.persist.getOptions().version ?? 0
 }
 
+function clearSmsQueueAfterReset(): Promise<void> {
+  return import('@/lib/native/smsTracker').then((m) => m.clearPendingSmsQueue()).catch(() => undefined)
+}
+
 async function runLegacyFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
@@ -608,6 +613,7 @@ async function runLegacyFullSync(
     useSettingsStore.getState().reset()
     clearSyncCursors()
     clearNetWorthStamps()
+    void clearSmsQueueAfterReset()
   }
   const server = await pullAll(supabase, userId)
   if (!server) return

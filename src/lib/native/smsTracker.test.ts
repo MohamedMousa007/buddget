@@ -180,6 +180,26 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.fetch).toHaveBeenCalledTimes(2)
   })
 
+  it('a daily-AI-quota answer parks that item and the parsable ones behind it still go', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items })
+    mocks.fetch
+      .mockResolvedValueOnce(new Response('{"limit":50}', { status: 429 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 502 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    expect(mocks.fetch).toHaveBeenCalledTimes(3)
+    expect(mocks.removePending).toHaveBeenCalledWith({ items: [items[1]] })
+  })
+
+  it('the per-minute rate limit (no quota body) still stops the run', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items })
+    mocks.fetch.mockResolvedValue(new Response('{"error":"Too many messages"}', { status: 429 }))
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-1')
+    expect(mocks.fetch).toHaveBeenCalledTimes(1)
+  })
+
   it('stops on auth failure without touching the queue (every item would 401)', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items })
     mocks.fetch.mockResolvedValue(new Response('{}', { status: 401 }))
@@ -328,5 +348,24 @@ describe('native error state', () => {
     mocks.setEnabled.mockResolvedValueOnce(undefined)
     await sms.setSmsEnabled(true)
     expect(sms.getSmsNativeError()).toBeNull()
+  })
+})
+
+describe('clearPendingSmsQueue', () => {
+  it('removes every queued message and leaves the token and armed state alone', async () => {
+    const items = [{ message: 'a', sender: 'X', receivedAt: '2026-07-01T00:00:00Z', source: 'sms' }]
+    mocks.peekPendingQueue.mockResolvedValue({ items })
+    const sms = await freshModule()
+    await sms.clearPendingSmsQueue()
+    expect(mocks.removePending).toHaveBeenCalledWith({ items })
+    expect(mocks.clearCredentials).not.toHaveBeenCalled()
+    expect(mocks.setEnabled).not.toHaveBeenCalled()
+  })
+
+  it('does not throw when the plugin fails', async () => {
+    mocks.peekPendingQueue.mockRejectedValue(new Error('boom'))
+    const sms = await freshModule()
+    await expect(sms.clearPendingSmsQueue()).resolves.toBeUndefined()
+    expect(mocks.removePending).not.toHaveBeenCalled()
   })
 })
