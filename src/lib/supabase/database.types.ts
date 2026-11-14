@@ -3350,6 +3350,7 @@ export type Database = {
           leg_direction: string | null
           learn_template_id: string | null
           skeleton_key: string | null
+          shape_key: string | null
           matched_template_id: string | null
           merchant: string | null
           merchant_normalized: string | null
@@ -3404,6 +3405,7 @@ export type Database = {
           leg_direction?: string | null
           learn_template_id?: string | null
           skeleton_key?: string | null
+          shape_key?: string | null
           matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null
@@ -3458,6 +3460,7 @@ export type Database = {
           leg_direction?: string | null
           learn_template_id?: string | null
           skeleton_key?: string | null
+          shape_key?: string | null
           matched_template_id?: string | null
           merchant?: string | null
           merchant_normalized?: string | null

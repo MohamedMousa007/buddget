@@ -62,6 +62,8 @@ import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
 import { normalizeMerchant } from '@/lib/sms/merchantNormalizer'
 import { isGenericMerchant } from '@/lib/sms/merchantDictionary'
 import { hasPersonCounterparty, isOwnName, ownNames } from '@/lib/sms/ownName'
+import { KNOWN_NON_TRANSACTION, isKnownNonTransaction } from '@/lib/sms/negativeCache'
+import { coarseShapeKey, maskSkeletonText } from '@/lib/sms/skeleton'
 import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sms/merchantCategoryPrompt'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
@@ -685,6 +687,8 @@ export async function POST(request: Request) {
       parsed_at: new Date().toISOString(),
       received_at: nowIso,
       device_id: deviceId,
+      // Groups every message of one bank template, whatever merchant or amount it carries.
+      shape_key: coarseShapeKey(keptBody, effectiveSender(sender, message, null)),
     })
     .select('id')
     .single()
@@ -829,6 +833,16 @@ export async function POST(request: Request) {
     paymentInstrument = fallback.paymentInstrument
     quarantinedFallback = true
   } else {
+    // Negative cache: the AI already judged this exact masked shape "not a transaction" (twice, and it never parsed
+    // for anyone), so it is not asked again. A message a quarantined template matches still goes to the AI.
+    if (shadowMatches.length === 0 && (await isKnownNonTransaction(service, message))) {
+      await service.from('sms_parse_log')
+        .update({ status: 'rejected', failure_code: KNOWN_NON_TRANSACTION, parse_method: 'fully_curated', harvested_at: new Date().toISOString(), masked_body: maskSkeletonText(message) })
+        .eq('id', logId)
+      after(() => recordSmsStats(service, { userId, senderKey: effectiveSender(sender, message, null), message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: null, parseMethod: 'fully_curated', currencyCode: null }))
+      return NextResponse.json({ ok: false, reason: 'not_transaction', rejected: 'known_shape' })
+    }
+
     // Gemini path: API key required, rate-limited.
     const apiKey = process.env.GEMINI_API_KEY?.trim()
     if (!apiKey) {
@@ -923,6 +937,8 @@ export async function POST(request: Request) {
         failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
         parse_method: parseMethod,
         harvested_at: new Date().toISOString(),
+        // Stamped now (the harvest would stamp the same value later) so the negative cache sees this verdict at once.
+        ...(parsed.is_transaction ? {} : { masked_body: maskSkeletonText(message) }),
       })
       .eq('id', logId)
     after(() => recordSmsStats(service, { userId, senderKey, message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: parsed.kind ?? null, parseMethod, currencyCode: null }))

@@ -20,6 +20,9 @@ import { catalogCategory } from '@/lib/sms/merchantCategoryCache'
 import { findPassThroughLegs } from '@/lib/sms/passThrough'
 import { brandSpellings } from '@/lib/sms/pairing'
 import { fxLegAction } from '@/lib/sms/fxEvent'
+import { coarseShapeKey } from '@/lib/sms/skeleton'
+import { effectiveSender } from '@/lib/sms/routingKey'
+import { MIN_AI_REJECTIONS } from '@/lib/sms/negativeCache'
 import { PAYMENT_BRANDS, normalizeBrandToken } from '@/lib/payment/paymentMethodDefaults'
 
 export interface GoldLabel { s: 't' | 'h'; topup?: string; relay?: string; fx?: string }
@@ -45,7 +48,6 @@ export function bankKeyOf(inputs: GoldInputs, r: GoldRow): string | null {
 export interface Metric { name: string; now: string; replay: string; target: string }
 
 const PURCHASE = new Set(['purchase', 'online_purchase'])
-const PENDING = 'pending (later slice)'
 const pct = (n: number, d: number) => (d === 0 ? 'n/a' : `${Math.round((n / d) * 100)}% (${n}/${d})`)
 const foldName = (m: string | undefined) => (m ? m.toLowerCase().replace(/[^a-z0-9؀-ۿ]/g, '') || null : null)
 
@@ -217,9 +219,47 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
     target: '0',
   })
 
-  // 9. AI share of parsed messages. A replay figure needs message bodies, which are never exported.
+  // 9 + 10. Speed. These need wording, so they run only when the local masked bodies are present.
   const parsed = rows.filter((r) => r.k)
-  out.push({ name: 'Parsed messages needing the AI', now: pct(parsed.filter((r) => r.pm === 'ai_new').length, parsed.length), replay: 'needs bodies (see S2 closing note)', target: '<35%' })
+  const aiNow = pct(parsed.filter((r) => r.pm === 'ai_new').length, parsed.length)
+  if (!inputs.bodies) {
+    out.push({ name: 'Parsed messages needing the AI', now: aiNow, replay: 'needs the local masked bodies', target: '<35%' })
+    return out
+  }
+  const bodies = inputs.bodies
+  const ordered = [...inputs.rows].filter((r) => !r.dup && bodies[r.id]).sort((x, y) => x.ts - y.ts)
+  const coarse = (r: GoldRow) => coarseShapeKey(bodies[r.id], effectiveSender(r.s ?? null, bodies[r.id], null))
+  // A message is "seen before" when an earlier message of the same coarse shape parsed as a transaction: with a
+  // template learned from that first sight it would not need the AI. This is the floor templates can reach.
+  const parsedShapes = new Set<string>()
+  const firstSight = new Set<string>()
+  // Negative cache replay: the exact masked body was rejected by the AI at least twice before and never parsed.
+  const aiRejections = new Map<string, number>()
+  const parsedBodies = new Set<string>()
+  const cached = new Set<string>()
+  for (const r of ordered) {
+    const body = bodies[r.id]
+    const shape = coarse(r)
+    if (r.k) {
+      if (r.pm === 'ai_new' && !(shape && parsedShapes.has(shape))) firstSight.add(r.id)
+      if (shape) parsedShapes.add(shape)
+      parsedBodies.add(body)
+    } else if (r.st === 'rejected' && r.pm === 'ai_new') {
+      if ((aiRejections.get(body) ?? 0) >= MIN_AI_REJECTIONS && !parsedBodies.has(body)) cached.add(r.id)
+      else aiRejections.set(body, (aiRejections.get(body) ?? 0) + 1)
+    }
+  }
+  out.push({
+    name: 'Parsed messages needing the AI',
+    now: aiNow,
+    replay: `${pct(parsed.filter((r) => firstSight.has(r.id)).length, parsed.length)} floor, if every shape seen once had a template`,
+    target: '<35%',
+  })
+  const aiRejected = rows.filter((r) => !r.k && r.st === 'rejected' && r.pm === 'ai_new')
+  const repeats = aiRejected.filter((r) => cached.has(r.id)).length
+  out.push({ name: 'Repeat rejected shapes sent to the AI', now: `${repeats} of ${aiRejected.length} AI rejections`, replay: `0 (${repeats} answered from the negative cache)`, target: '0' })
+  const inSplit = rows.filter((r) => bodies[r.id])
+  out.push({ name: '  distinct shapes: fine skeleton vs coarse key', now: String(new Set(inSplit.map((r) => r.sk)).size), replay: String(new Set(inSplit.map((r) => coarse(r))).size), target: '-' })
   return out
 }
 
