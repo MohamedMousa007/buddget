@@ -34,6 +34,8 @@ import { useLocale, useT } from '@/lib/i18n'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { applyPassThrough, labelledPassThroughPairs, rememberedYesPairs } from '@/lib/spending/passThrough'
+import { firstOpenFlag, type FlagRowKind } from '@/lib/sms/flagPrompts'
+import type { SmsFlag } from '@/lib/sms/smsFlags'
 import type { Expense, IncomeEvent, IncomeSource, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 const REALIZED = new Set<IncomeEvent['status']>(['confirmed', 'late', 'partial'])
@@ -171,6 +173,17 @@ export function useFlowLedger() {
     )
     const ink = (text: string) => <span className="font-semibold text-[var(--color-brand-primary-ink)]">{text}</span>
     const items: FlowItem[] = []
+    const flagLabel: Record<SmsFlag, string> = {
+      possible_duplicate: t.prompts.smsFlags.badgeDuplicate,
+      date_unsure: t.prompts.smsFlags.badgeDate,
+      refund_unmatched: t.prompts.smsFlags.badgeRefund,
+      model_kind_unproven: t.prompts.smsFlags.badgeKind,
+      cash_deposit: t.prompts.smsFlags.badgeCash,
+    }
+    const openFlag = (row: { smsFlags?: string[]; smsFlagsAck?: string[] } | undefined, kind: FlagRowKind) => {
+      const flag = row ? firstOpenFlag(row, kind) : null
+      return flag ? <Badge variant="muted" size="xs" className="shrink-0">{flagLabel[flag]}</Badge> : null
+    }
 
     for (const e of expenses) {
       const date = e.date.slice(0, 10)
@@ -209,7 +222,8 @@ export function useFlowLedger() {
             },
             title: e.description,
             titleBadge:
-              e.refundKind === 'refunded' ? (
+              openFlag(e, 'expense') ??
+              (e.refundKind === 'refunded' ? (
                 <Badge variant="positive" size="xs" className="shrink-0">{t.expenses.badgeRefunded}</Badge>
               ) : e.refundKind === 'declined' ? (
                 <Badge variant="muted" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
@@ -223,7 +237,7 @@ export function useFlowLedger() {
                 <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
               ) : e.linkedSubscriptionId ? (
                 <LinkIcon role="img" aria-label={t.subscriptions.ui.chips.subscription} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
-              ) : null,
+              ) : null),
             subtitle:
               e.refundKind === 'refunded' ? (
                 <span className="font-semibold text-[var(--color-brand-green)]">{t.flow.returnedOn(statusDate)}</span>
@@ -338,7 +352,7 @@ export function useFlowLedger() {
             // A credit that is probably a payday opens the link sheet: linking needs a visible route.
             onClick: notLinked ? link : open,
             title: inc.name,
-            titleBadge: passedThrough ? (
+            titleBadge: openFlag(inc.event, 'income') ?? (passedThrough ? (
               <Badge variant="muted" size="xs" className="shrink-0">{t.flow.passThrough}</Badge>
             ) : possiblePassThrough.has(inc.id) ? (
               <Badge variant="muted" size="xs" className="shrink-0">{t.flow.possiblePassThrough}</Badge>
@@ -350,7 +364,7 @@ export function useFlowLedger() {
               <Badge variant="muted" size="xs" className="shrink-0">{t.income.notLinked}</Badge>
             ) : (
               <Badge variant="muted" size="xs" className="shrink-0">{t.income.oneTimeLabel}</Badge>
-            ),
+            )),
             subtitle:
               daysLate && inc.event?.occurrenceDate ? (
                 <span className="truncate">{t.income.paydayArrived(shortDate(inc.event.occurrenceDate), shortDate(inc.date))}</span>

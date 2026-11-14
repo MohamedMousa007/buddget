@@ -3058,6 +3058,47 @@ export interface Dictionary {
     ownTransferSettledTitle: string
     ownTransferSettledBody: (detail: string) => string
     ownTransferOk: string
+    ownTransferAccountTitle: (tail: string) => string
+    ownTransferAccountBody: (detail: string) => string
+    smsFlags: {
+      badgeDuplicate: string
+      badgeDate: string
+      badgeRefund: string
+      badgeKind: string
+      badgeCash: string
+      duplicateTitle: string
+      duplicateBody: (detail: string) => string
+      duplicateRemove: string
+      duplicateKeep: string
+      duplicateRemoved: string
+      dateTitle: string
+      dateBody: (detail: string) => string
+      dateFix: string
+      dateRight: string
+      kindTitle: string
+      kindBody: (detail: string) => string
+      kindTransfer: string
+      kindSpending: string
+      kindReview: string
+      kindIncome: string
+      kindMarkedTransfer: string
+      refundTitle: string
+      refundBody: (detail: string) => string
+      refundChoose: string
+      refundLeave: string
+      cashTitle: string
+      cashBody: (detail: string) => string
+      cashOwn: string
+      cashIncome: string
+      cashDone: string
+      failed: string
+      pickTitle: string
+      pickSub: string
+      pickEmpty: string
+      pickClose: string
+      pickDone: string
+      pickRow: string
+    }
     addCard: string
     addAccount: string
     addWallet: string
