@@ -31,6 +31,7 @@ import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
 import { cadenceLine } from '@/lib/income/cadence'
+import { countPassThroughCredit } from '@/lib/spending/passThrough'
 import { formatFixed2 } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
 import { occurrenceChange } from '@/lib/income/occurrenceChange'
@@ -160,7 +161,7 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
               value: t.income.notCountedPassThrough,
               valueTone: 'var(--color-brand-text-muted)',
               trailing: (
-                <Button variant="link" size="touch" onClick={() => updateIncomeEvent(event.id, { exclusion: null })}>
+                <Button variant="link" size="touch" onClick={() => countPassThroughCredit(event.id)}>
                   {t.income.countAsIncome}
                 </Button>
               ),

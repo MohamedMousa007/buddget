@@ -18,6 +18,8 @@ export interface MoneyLeg {
   account: string | null
   /** Instant of the movement, epoch ms. */
   at: number
+  /** The user chose to count this row. It never pairs and is never labelled again. */
+  counted?: boolean
 }
 
 export interface PassThroughPair { inId: string; outId: string }
@@ -32,7 +34,7 @@ export const PASS_THROUGH_WINDOW_MS = 10 * 60 * 1000
 export function findPassThroughPairs(legs: readonly MoneyLeg[], windowMs: number = PASS_THROUGH_WINDOW_MS): PassThroughPair[] {
   const buckets = new Map<string, MoneyLeg[]>()
   for (const l of legs) {
-    if (!l.account || !(l.amount > 0)) continue
+    if (l.counted || !l.account || !(l.amount > 0)) continue
     const key = `${l.owner}|${l.account}|${l.currency}|${Math.round(l.amount * 100)}`
     buckets.set(key, [...(buckets.get(key) ?? []), l])
   }

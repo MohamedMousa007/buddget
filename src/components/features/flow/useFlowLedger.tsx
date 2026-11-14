@@ -33,7 +33,7 @@ import { compareFlowItems, instantOf } from '@/components/features/flow/flowOrde
 import { useLocale, useT } from '@/lib/i18n'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
-import { applyPassThrough, passThroughAnswer, pendingPassThroughPairs } from '@/lib/spending/passThrough'
+import { applyPassThrough, labelledPassThroughPairs, rememberedYesPairs } from '@/lib/spending/passThrough'
 import type { Expense, IncomeEvent, IncomeSource, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 const REALIZED = new Set<IncomeEvent['status']>(['confirmed', 'late', 'partial'])
@@ -129,16 +129,21 @@ export function useFlowLedger() {
   const previews = usePendingSmsPreviews()
   const { matches } = useIncomeResolution()
   // Money that came in and went straight out. Unanswered: both legs carry a label and nothing changes. Answered
-  // "yes" once: pairs found later follow the remembered answer. Answered "no": they are ordinary income and spending.
-  const passThroughChoice = passThroughAnswer(settings.promptState)
-  const passThroughPairs = useMemo(() => pendingPassThroughPairs(expenses, incomeEvents), [expenses, incomeEvents])
+  // "yes" once: only pairs on one known account follow the remembered answer (with a toast); the rest are labelled
+  // and counted. Answered "no": they are ordinary income and spending.
   const possiblePassThrough = useMemo(
-    () => new Set(passThroughChoice === null ? passThroughPairs.flatMap((p) => [p.expenseId, p.incomeId]) : []),
-    [passThroughChoice, passThroughPairs],
+    () => new Set(labelledPassThroughPairs(expenses, incomeEvents, settings.promptState).flatMap((p) => [p.expenseId, p.incomeId])),
+    [expenses, incomeEvents, settings.promptState],
   )
   useEffect(() => {
-    if (passThroughChoice === 'yes' && passThroughPairs.length > 0) applyPassThrough(passThroughPairs)
-  }, [passThroughChoice, passThroughPairs])
+    // Read fresh from the store: the flags this writes take the pairs out of the pending set, which is what stops a
+    // second run (a re-render, a remount, strict mode) from applying or announcing them again.
+    const { expenses: es, incomeEvents: is, settings: st } = useFinanceStore.getState()
+    const pairs = rememberedYesPairs(es, is, st.promptState)
+    if (pairs.length === 0) return
+    const undo = applyPassThrough(pairs)
+    toast(t.prompts.passThroughApplied(pairs.length), { undoLabel: t.common.undo, undo })
+  }, [expenses, incomeEvents, settings.promptState, toast, t])
   const weekStart = useWeekStart()
   const base = settings.baseCurrency
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : undefined

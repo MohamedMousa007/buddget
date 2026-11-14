@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ArrowLeftRight, Clock, Link } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -13,8 +13,12 @@ import { useT } from '@/lib/i18n'
 import { settlePrompt } from '@/lib/prompts/settle'
 import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { useActionToast } from '@/components/ui/ActionToast'
-import { answerPassThrough, passThroughAnswer, pendingPassThroughPairs } from '@/lib/spending/passThrough'
+import { PASS_THROUGH_YES, answerPassThrough, excludedPassThroughPairs, passThroughAnswer, pendingPassThroughPairs } from '@/lib/spending/passThrough'
+import { PassThroughReviewSheet } from './PassThroughReviewSheet'
 import { totalsByCurrency } from '@/lib/accounts/unplacedSms'
+
+/** Settled once the user has reviewed, or dismissed, the pairs an earlier "yes" left out. */
+const REVIEW_KEY = 'passthrough:review'
 
 /** The late-payday and income-match questions, with what answering them writes. */
 export function useIncomeResolution() {
@@ -61,6 +65,11 @@ export function IncomePrompts() {
   )
   const passThrough = useMemo(
     () => (passThroughAnswer(promptState) === null ? pendingPassThroughPairs(expenses, incomeEvents) : []),
+    [expenses, incomeEvents, promptState],
+  )
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const excluded = useMemo(
+    () => (promptState?.[PASS_THROUGH_YES] && !promptState?.[REVIEW_KEY] ? excludedPassThroughPairs(expenses, incomeEvents) : []),
     [expenses, incomeEvents, promptState],
   )
 
@@ -150,6 +159,24 @@ export function IncomePrompts() {
       ],
     })
   }
+  // For users who answered "yes" before pairs were checked one by one: totals stay as they are until they answer.
+  if (excluded.length > 0) {
+    const total = Object.entries(totalsByCurrency(excluded.map((p) => p.income)))
+      .map(([currency, amount]) => `${formatFlex(amount)} ${currency}`)
+      .join(' + ')
+    prompts.push({
+      key: REVIEW_KEY,
+      priority: PROMPT_PRIORITY.sms,
+      tone: 'brand',
+      icon: ArrowLeftRight,
+      title: t.prompts.passThroughReviewTitle(excluded.length),
+      description: t.prompts.passThroughReviewBody(total),
+      actions: [
+        { label: t.prompts.review, variant: 'default', onPress: () => setReviewOpen(true) },
+        { label: t.prompts.passThroughReviewKeep, variant: 'secondary', onPress: () => settlePrompt(REVIEW_KEY) },
+      ],
+    })
+  }
   useRegisterPrompts('income', prompts)
-  return null
+  return <PassThroughReviewSheet open={reviewOpen && excluded.length > 0} onClose={() => setReviewOpen(false)} pairs={excluded} />
 }

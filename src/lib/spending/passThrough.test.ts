@@ -3,7 +3,8 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense, IncomeEvent } from '@/lib/store/types'
 import { actualIncomeForMonth } from '@/lib/utils/calculations'
 import {
-  PASS_THROUGH_NO, PASS_THROUGH_YES, answerPassThrough, applyPassThrough, passThroughAnswer, pendingPassThroughPairs,
+  PASS_THROUGH_COUNTED, PASS_THROUGH_NO, PASS_THROUGH_YES, answerPassThrough, applyPassThrough, countPassThroughCredit, excludedPassThroughPairs,
+  labelledPassThroughPairs, passThroughAnswer, pendingPassThroughPairs, rememberedYesPairs,
 } from './passThrough'
 
 const AT = '2026-10-05T10:00:00.000Z'
@@ -78,5 +79,118 @@ describe('the one remembered answer', () => {
     expect(total()).toBe(0)
     state().updateIncomeEvent('in', { exclusion: null })
     expect(total()).toBe(1500)
+  })
+})
+
+const YES = { [PASS_THROUGH_YES]: 'x' }
+
+describe('I3/I7: a remembered yes applies only to pairs the legs prove', () => {
+  it('applies a pair on the same known account', () => {
+    expect(rememberedYesPairs([out()], [inn()], YES)).toEqual([{ expenseId: 'out', incomeId: 'in' }])
+  })
+
+  it('labels, and does not apply, a pair with both legs unassigned', () => {
+    const e = [out({ paymentMethodId: '' })]
+    const i = [inn({ paymentMethodId: undefined })]
+    expect(rememberedYesPairs(e, i, YES)).toEqual([])
+    expect(labelledPassThroughPairs(e, i, YES)).toHaveLength(1)
+  })
+
+  it('never pairs, so never applies, legs on two different known accounts', () => {
+    expect(rememberedYesPairs([out({ paymentMethodId: 'a' })], [inn({ paymentMethodId: 'b' })], YES)).toEqual([])
+    expect(labelledPassThroughPairs([out({ paymentMethodId: 'a' })], [inn({ paymentMethodId: 'b' })], YES)).toEqual([])
+  })
+
+  it('applies nothing before an answer or after "no", and labels per the answer', () => {
+    expect(rememberedYesPairs([out()], [inn()], {})).toEqual([])
+    expect(rememberedYesPairs([out()], [inn()], { [PASS_THROUGH_NO]: 'x' })).toEqual([])
+    expect(labelledPassThroughPairs([out()], [inn()], {})).toHaveLength(1)
+    expect(labelledPassThroughPairs([out()], [inn()], { [PASS_THROUGH_NO]: 'x' })).toEqual([])
+    expect(labelledPassThroughPairs([out()], [inn()], YES)).toEqual([])
+  })
+})
+
+describe('P1-1: undo holds when the remembered yes runs again', () => {
+  beforeEach(() => {
+    useFinanceStore.setState({ expenses: [out()], incomeEvents: [inn()] })
+    useFinanceStore.getState().updateSettings({ promptState: {} })
+  })
+  const state = () => useFinanceStore.getState()
+  const rerun = () => {
+    const pairs = rememberedYesPairs(state().expenses, state().incomeEvents, state().settings.promptState)
+    if (pairs.length > 0) applyPassThrough(pairs)
+    return pairs
+  }
+
+  it('keeps both legs counted after undo, and the effect finds nothing to apply', () => {
+    const undo = answerPassThrough('yes', pendingPassThroughPairs(state().expenses, state().incomeEvents))
+    expect(rerun()).toEqual([])
+    undo?.()
+    expect(rerun()).toEqual([])
+    expect(state().expenses[0].spendExclusion).toBeUndefined()
+    expect(state().incomeEvents[0].exclusion ?? null).toBeNull()
+    expect(state().expenses[0].smsFlagsAck).toEqual([PASS_THROUGH_COUNTED])
+    expect(state().incomeEvents[0].smsFlagsAck).toEqual([PASS_THROUGH_COUNTED])
+  })
+
+  it('a later pair on the same known account is applied once, then no longer pending', () => {
+    useFinanceStore.setState({ expenses: [out()], incomeEvents: [inn()] })
+    useFinanceStore.getState().updateSettings({ promptState: YES })
+    expect(rerun()).toHaveLength(1)
+    expect(rerun()).toEqual([])
+  })
+
+  it('keeps existing acknowledgements and adds the marker once', () => {
+    useFinanceStore.setState({ expenses: [out({ smsFlagsAck: ['date_unsure'] })], incomeEvents: [inn()] })
+    const undo = applyPassThrough([{ expenseId: 'out', incomeId: 'in' }])
+    undo()
+    undo()
+    expect(state().expenses[0].smsFlagsAck).toEqual(['date_unsure', PASS_THROUGH_COUNTED])
+  })
+
+  it('the income sheet undo counts both legs of a left-out pair', () => {
+    applyPassThrough([{ expenseId: 'out', incomeId: 'in' }])
+    countPassThroughCredit('in')
+    expect(state().expenses[0].spendExclusion).toBeUndefined()
+    expect(state().expenses[0].smsFlagsAck).toContain(PASS_THROUGH_COUNTED)
+    expect(state().incomeEvents[0].smsFlagsAck).toContain(PASS_THROUGH_COUNTED)
+  })
+})
+
+describe('a row carrying pass_through_counted', () => {
+  it('is never paired or labelled again', () => {
+    const counted = [PASS_THROUGH_COUNTED]
+    expect(pendingPassThroughPairs([out({ smsFlagsAck: counted })], [inn()])).toEqual([])
+    expect(pendingPassThroughPairs([out()], [inn({ smsFlagsAck: counted })])).toEqual([])
+    expect(labelledPassThroughPairs([out({ smsFlagsAck: counted })], [inn()], {})).toEqual([])
+  })
+})
+
+describe('the review list', () => {
+  const excludedOut = (over: Partial<Expense> = {}) => out({ spendExclusion: 'for_someone', owedSettledAt: AT, ...over })
+  const excludedIn = (over: Partial<IncomeEvent> = {}) => inn({ exclusion: 'pass_through', ...over })
+
+  it('lists each excluded pair', () => {
+    const pairs = excludedPassThroughPairs([excludedOut()], [excludedIn()])
+    expect(pairs).toHaveLength(1)
+    expect(pairs[0].expense?.id).toBe('out')
+    expect(pairs[0].income.id).toBe('in')
+  })
+
+  it('lists a credit alone when its expense leg is gone, and it can be counted', () => {
+    useFinanceStore.setState({ expenses: [], incomeEvents: [excludedIn()] })
+    const pairs = excludedPassThroughPairs([], useFinanceStore.getState().incomeEvents)
+    expect(pairs).toHaveLength(1)
+    expect(pairs[0]?.expense).toBeUndefined()
+    countPassThroughCredit('in')
+    const row = useFinanceStore.getState().incomeEvents[0]
+    expect(row.exclusion ?? null).toBeNull()
+    expect(row.smsFlagsAck).toContain(PASS_THROUGH_COUNTED)
+    expect(excludedPassThroughPairs([], useFinanceStore.getState().incomeEvents)).toEqual([])
+  })
+
+  it('is empty for a user with none, or once the pair is counted', () => {
+    expect(excludedPassThroughPairs([out()], [inn()])).toEqual([])
+    expect(excludedPassThroughPairs([excludedOut({ smsFlagsAck: [PASS_THROUGH_COUNTED] })], [excludedIn({ smsFlagsAck: [PASS_THROUGH_COUNTED] })])).toEqual([])
   })
 })

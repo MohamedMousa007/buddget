@@ -20,6 +20,10 @@ describe('findPassThroughPairs', () => {
     expect(findPassThroughPairs([leg('a', 'in', 0), leg('b', 'out', 20_000, over)])).toEqual([])
   })
 
+  it('never pairs a leg the user chose to count', () => {
+    expect(findPassThroughPairs([leg('a', 'in', 0, { counted: true }), leg('b', 'out', 20_000)])).toEqual([])
+  })
+
   it('does not pair legs further apart than the window', () => {
     expect(findPassThroughPairs([leg('a', 'in', 0), leg('b', 'out', 11 * MIN)])).toEqual([])
   })

@@ -3045,6 +3045,12 @@ export interface Dictionary {
     merchantCategoryChoose: string
     merchantCategoryLater: string
     passThroughApplied: (n: number) => string
+    passThroughReviewTitle: (n: number) => string
+    passThroughReviewBody: (total: string) => string
+    passThroughReviewKeep: string
+    passThroughReviewSub: string
+    passThroughCountIt: string
+    passThroughCounted: string
     ownTransferAskTitle: string
     ownTransferAskBody: (detail: string) => string
     ownTransferYes: string
