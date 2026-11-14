@@ -16,7 +16,7 @@ import { decomposePaymentMethodName, resolvePaymentBrandKey } from '@/lib/paymen
 import type { Identified } from '@/lib/accounts/identity/accountRef'
 import { providerFromBody } from '@/lib/sms/providerFromBody'
 import { isGenericMerchant, resolveKnownMerchant } from '@/lib/sms/merchantDictionary'
-import { catalogCategory } from '@/lib/sms/merchantCategoryCache'
+import { catalogCategory, uniquePrefixCategory } from '@/lib/sms/merchantCategoryCache'
 import { findPassThroughLegs } from '@/lib/sms/passThrough'
 import { brandSpellings } from '@/lib/sms/pairing'
 import { fxLegAction } from '@/lib/sms/fxEvent'
@@ -187,7 +187,9 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
     const mem = `${r.u}|${title.toLowerCase()}`
     const stored = r.ecat && r.ecat !== 'Other' ? r.ecat : null
     const generic = isGenericMerchant(title)
-    const cat = generic ? stored : resolveKnownMerchant(title)?.category ?? catalogCategory(title) ?? memory.get(mem) ?? stored
+    // The user's own earlier spellings of a cut-off name: exactly one earlier merchant with 5+ characters shared.
+    const earlier = [...memory].filter(([k]) => k.startsWith(`${r.u}|`)).map(([k, category]) => ({ description: k.slice(r.u.length + 1), category }))
+    const cat = generic ? stored : resolveKnownMerchant(title)?.category ?? catalogCategory(title) ?? memory.get(mem) ?? uniquePrefixCategory(title, earlier) ?? stored
     if (cat && !generic && !memory.has(mem)) memory.set(mem, cat)
     replayCat.set(r.id, cat)
   }

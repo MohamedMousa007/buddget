@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { resolveMerchantCategory, rememberMerchantCategory } from '../merchantCategoryCache'
+import { resolveMerchantCategory, rememberMerchantCategory, uniquePrefixCategory } from '../merchantCategoryCache'
 import type { ServiceClient } from '@/lib/supabase/service'
 
 function fakeService(rows: Record<string, Record<string, unknown>>) {
@@ -10,7 +10,9 @@ function fakeService(rows: Record<string, Record<string, unknown>>) {
     const q = {
       select: () => q,
       eq: (col: string, val: unknown) => { filters[col] = val; return q },
-      ilike: (col: string, val: unknown) => { filters[col] = val; return q },
+      ilike: (col: string, val: unknown) => { if (!String(val).endsWith('%')) filters[col] = val; else filters.__prefix = true; return q },
+      in: () => q,
+      then: (r: (v: unknown) => unknown) => { queried.push(`${table}:prefix`); return r({ data: [] }) },
       not: () => q,
       neq: () => q,
       is: () => q,
@@ -19,7 +21,7 @@ function fakeService(rows: Record<string, Record<string, unknown>>) {
       maybeSingle: async () => {
         queried.push(table)
         const hit = rows[table]
-        const matches = hit && Object.entries(filters).every(([k, v]) => hit[k] === undefined || hit[k] === v)
+        const matches = hit && Object.entries(filters).every(([k, v]) => k === '__prefix' || hit[k] === undefined || hit[k] === v)
         return { data: matches ? { category: hit.category } : null }
       },
     }
@@ -41,7 +43,7 @@ describe('resolveMerchantCategory with a per-user override', () => {
   it('falls back to the shared memory when this user has no override', async () => {
     const { service, queried } = fakeService({ merchant_categories: { merchant_key: 'zzshop', category: 'Shopping' } })
     expect(await resolveMerchantCategory(service, 'ZZ Shop', 'u1')).toBe('Shopping')
-    expect(queried).toEqual(['merchant_category_overrides', 'expenses', 'merchant_categories'])
+    expect(queried).toEqual(['merchant_category_overrides', 'expenses', 'expenses:prefix', 'merchant_categories'])
   })
 
   it('answers a known Egypt / Saudi merchant from the dictionary, ahead of the shared memory', async () => {
@@ -78,5 +80,21 @@ describe('rememberMerchantCategory', () => {
     expect(rpc).not.toHaveBeenCalled()
     await rememberMerchantCategory(service, 'ZZ Shop', 'Health', 'ai')
     expect(rpc).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('uniquePrefixCategory (a cut-off name against the user\'s own history)', () => {
+  const earlier = [{ description: 'Some Corner Bakery', category: 'Food' }, { description: 'Other Place', category: 'Shopping' }]
+  it('files a cut-off name with the one earlier merchant it is the start of, and the reverse', () => {
+    expect(uniquePrefixCategory('Some Corn', earlier)).toBe('Food')
+    expect(uniquePrefixCategory('Some Corner Bakery Branch 2', earlier)).toBe('Food')
+  })
+  it('needs five shared characters and exactly one fit', () => {
+    expect(uniquePrefixCategory('Some', earlier)).toBeNull()
+    expect(uniquePrefixCategory('Some Corn', [...earlier, { description: 'Some Corner Shop', category: 'Groceries' }])).toBeNull()
+    expect(uniquePrefixCategory('Unrelated', earlier)).toBeNull()
+  })
+  it('never returns a money-movement category', () => {
+    expect(uniquePrefixCategory('Some Corn', [{ description: 'Some Corner Bakery', category: 'Transfer' }])).toBeNull()
   })
 })

@@ -93,15 +93,58 @@ export async function resolveMerchantCategory(
       .maybeSingle()
     const before = asCategory(earlier?.category as string | undefined)
     if (before) return before
+
+    // A name the bank cut off ("Carrefo") against this user's own earlier, longer or shorter spelling of it. Only
+    // when 5+ characters are shared and exactly one earlier merchant fits: two candidates means ask, not guess.
+    const stem = merchant.trim()
+    if ([...stem].length >= MIN_PREFIX_CHARS) {
+      const { data: near } = await service
+        .from('expenses')
+        .select('description, category')
+        .eq('user_id', userId)
+        .ilike('description', `${likeLiteral(stem.slice(0, MIN_PREFIX_CHARS))}%`)
+        .not('sms_log_id', 'is', null)
+        .neq('category', 'Other')
+        .is('deleted_at', null)
+        .limit(50)
+      const fromPrefix = uniquePrefixCategory(stem, (near ?? []) as { description: string | null; category: string | null }[])
+      if (fromPrefix) return fromPrefix
+    }
   }
 
   if (!key) return null
+  // What other people's purchases taught: only a curated seed row, or a category that 5+ distinct users agreed on
+  // (the edit trigger writes source 'user' at that threshold). A single AI answer is kept in the table as a log but
+  // is not applied to another user.
   const { data } = await service
     .from('merchant_categories')
     .select('category')
     .eq('merchant_key', key)
+    .in('source', SHARED_SOURCES)
     .maybeSingle()
   return asCategory(data?.category as string | undefined)
+}
+
+/** Sources of the shared table that may set another user's category. */
+const SHARED_SOURCES = ['seed', 'user']
+
+/** Fewest characters a cut-off name must share with an earlier one before they are taken for the same merchant. */
+export const MIN_PREFIX_CHARS = 5
+
+/**
+ * The category of the ONE earlier merchant that `name` is a prefix of, or that is a prefix of `name` (5+ characters
+ * shared either way). Null when none or more than one merchant fits.
+ */
+export function uniquePrefixCategory(name: string, earlier: readonly { description: string | null; category: string | null }[]): ExpenseCategory | null {
+  const me = name.trim().toLowerCase()
+  if ([...me].length < MIN_PREFIX_CHARS) return null
+  const fits = new Map<string, string | null>()
+  for (const e of earlier) {
+    const other = (e.description ?? '').trim().toLowerCase()
+    if (other === me || [...other].length < MIN_PREFIX_CHARS) continue
+    if (other.startsWith(me) || me.startsWith(other)) fits.set(other, e.category)
+  }
+  return fits.size === 1 ? asCategory([...fits.values()][0]) : null
 }
 
 /**
