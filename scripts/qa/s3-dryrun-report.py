@@ -166,7 +166,7 @@ def rtype(r):
     if i in NOT_REPLAYABLE: return None
     if i in NOTICES: return ('T3 collected-notice income removed', APPLY, 'I3: a "collected" notice is not a transaction')
     if i in CASH_DEP: return ('T4 cash deposit becomes transfer from cash', APPLY, 'council verdict (46aec162): neither income nor spending, a transfer from Cash, flagged cash_deposit')
-    if i in VIA_CARD: return ('T5 via-card payment becomes spending', HOLD, 'I3 default, but the balance check on b61afd88 leans the other way (the payment raised the card balance): owner to read it first')
+    if i in VIA_CARD: return ('T5 via-card: flag only', APPLY, 'council verdict 1: not repaired, stays non-spend, a flag lets the user confirm in one tap')
     lc = r['live'][0]['cls'] if r['live'] else 'none'; pc = r['prop'][0]['cls'] if r['prop'] else 'none'
     live_stamp = [x['refund'][1] for x in r['live'] if x['refund'][1]]
     prop_stamp = [x['refund'][1] for x in r['prop'] if x['refund'][1]]
@@ -194,6 +194,7 @@ def rtype(r):
     if 'class' in ch: return (f'T13 other class change {lc}->{pc}', HOLD, 'not covered by a rule above')
     if 'amount' in ch: return ('T14 amount', HOLD, 'amount differs')
     if 'date' in ch:
+        if r['live'][0]['day'] == utc_day(r['id']) and r['prop'][0]['day'] != r['live'][0]['day'] and r['prop'][0]['day'] < DST_END and r['live'][0]['day'][:7] != r['prop'][0]['day'][:7]: return ('T15c day shift across a month', HOLD, 'council verdict 4: skipped, left for the closed-month notice to raise with the user')
         if r['live'][0]['day'] == utc_day(r['id']) and r['prop'][0]['day'] != r['live'][0]['day'] and r['prop'][0]['day'] < DST_END: return ('T15 date: UTC day instead of local day', APPLY, 'P3-3: the stored day was the UTC day of the arrival, the local day differs')
         return ('T15b date differs, not the UTC pattern', HOLD, 'live day is neither the UTC nor the local day of arrival (body day, user edit, or November zone)')
     if 'flags' in ch: return ('T16 flag only', HOLD, 'possible_duplicate is an upper bound on masked text; no money effect')
@@ -201,11 +202,19 @@ def rtype(r):
     return None
 
 for r in recs:
+    if r['id'] in VIA_CARD:
+        r['prop'] = [dict(x, flags=sorted(set(x['flags']) | {'card_flag'})) for x in r['live']]; r['prop_s'] = desc(r['prop']); r['changes'] = ['flags']; r['eff_prop'] = effect(r['prop'])
+for r in recs:
     t = rtype(r)
     r['type'], r['decision'], r['reason'] = t if t else (None, None, None)
     # the repair never overwrites the user's own correction
     if r['type'] and r['decision'] == APPLY and r['touched']: r['decision'] = NOCHANGE; r['reason'] += ' | USER-TOUCHED: ' + '; '.join(r['touched'])
 
+for r in recs:
+    if r['type'] and r['type'][:3] in ('T11',) and r['decision'] == APPLY:
+        r['prop'] = [dict(x, flags=sorted(set(x['flags']) | {'topup_repaired'})) for x in r['prop']]; r['prop_s'] = desc(r['prop']); r['changes'] = sorted(set(r['changes']) | {'flags'})
+STEP1 = ('T1 ', 'T2a', 'T2b', 'T3 ', 'T7b', 'T15 ')
+for r in recs: r['step'] = (1 if r['type'].startswith(STEP1) else 2) if r['type'] and r['decision'] == APPLY else None
 # an own net-zero row for a refund whose live stamp is on hold waits with it
 hold_stamped = {x['refund'][1] for r in recs if r['decision'] == HOLD and r['type'] and r['type'].startswith('T2c') for x in r['live'] if x['refund'][1]}
 for r in recs:
@@ -325,3 +334,22 @@ with open('.claude/s3-parts/touched.md', 'w') as o:
         o.write(f"| `{r['id']}` | `{r['user']}` | {r['type']} | {r['live_s']} | {'; '.join(r['touched'])} | {r['decision']} |\n")
 print('typed rows with a strong user-touch signal', sum(1 for r in typed if r['touched']), dict(collections.Counter(r['decision'] for r in typed if r['touched'])))
 print('apply rows whose only weak signal is the edited_at one:', sum(1 for r in ap if r['weak'] and all(w.startswith('edited_at') for w in r['weak'])), 'apply rows with a category/account/description weak signal:', sum(1 for r in ap if any(not w.startswith('edited_at') for w in r['weak'])))
+
+print('--- steps')
+print('step 1', collections.Counter(r['type'] for r in ap if r['step'] == 1)); print('step 2', collections.Counter(r['type'] for r in ap if r['step'] == 2))
+# prompts a user would receive: flags on the proposed row that the live row lacks (T15 changes the day only)
+pr = collections.defaultdict(collections.Counter)
+for r in ap:
+    if r['type'].startswith('T15'): continue
+    lf = {f for x in r['live'] for f in x['flags']}
+    for x in r['prop']:
+        for f in x['flags']:
+            if f not in lf: pr[r['user']][f] += 1
+print('prompts by user', {k: dict(v) for k, v in pr.items()})
+print('wallet_unregistered stamped by the replay on rows with no flag live:', sum(1 for i, a in A.items() if any('wallet_unregistered' in (e['sms_flags'] or []) for e in a['exp'] + a['inc']) ), 'of which typed', sum(1 for i, a in A.items() if any('wallet_unregistered' in (e['sms_flags'] or []) for e in a['exp'] + a['inc']) and R[i]['type']))
+months = collections.defaultdict(set)
+for r in ap:
+    for k in list(r['eff']) or []: months[r['user']].add(k[1])
+    for x in r['live'] + r['prop']: months[r['user']].add(x['day'][:7])
+print('months touched by apply rows (will show as stale)', {k: sorted(v) for k, v in months.items()}, sum(len(v) for v in months.values()))
+json.dump({'step1': sorted(r['id'] for r in ap if r['step'] == 1), 'step2': sorted(r['id'] for r in ap if r['step'] == 2), 'hold': sorted(r['id'] for r in hd), 'nochange': sorted(r['id'] for r in nc)}, open('.claude/s3-steps.json', 'w'))
