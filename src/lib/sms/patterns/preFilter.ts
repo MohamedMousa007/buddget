@@ -9,8 +9,9 @@
 
 import { TXN_KEYWORD_RE } from '@/lib/sms/patterns/currency'
 import { normalizeDigits } from '@/lib/sms/normalizeDigits'
+import { isCollectedNotice } from '@/lib/sms/collectedNotice'
 
-export type NonTransactionReason = 'otp' | 'marketing' | 'balance_only'
+export type NonTransactionReason = 'otp' | 'marketing' | 'balance_only' | 'collected_notice'
 
 /** Strong transaction verbs (EN + AR, Egypt + Gulf) — presence means "let the
  * parsers decide". Shared with the currency vocab so coverage stays in sync. */
@@ -117,6 +118,9 @@ export function isNonTransaction(rawText: string): NonTransactionReason | null {
   // ends with an anti-fraud footer ("Never share your PIN or OTP") has a verb and an amount, no code.
   if (OTP_RE.test(text) && (carriesOtpCode(text) || !(TXN_VERBS.test(text) && hasNonBalanceAmount(text)))) return 'otp'
   if (PROMO_AD_RE.test(text) && !(COMPLETED_TRANSFER_RE.test(text) && hasNonBalanceAmount(text))) return 'marketing'
+  // "Your transfer was collected by the receiver" tells the sender about money that left earlier. It carries transfer
+  // vocabulary, so it has to be judged before the transaction-verb override below lets it through.
+  if (isCollectedNotice(text)) return 'collected_notice'
   // A transaction verb overrides marketing/balance vocabulary —
   // "debited EGP 50 for bundle renewal" is a real fee.
   if (TXN_VERBS.test(text)) return null

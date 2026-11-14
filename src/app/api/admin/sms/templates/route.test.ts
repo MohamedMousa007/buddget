@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   template: { data: null as unknown, error: null as unknown },
   flagged: [{ id: 'a' }, { id: 'b' }] as unknown,
   rpc: { data: null as unknown, error: null as unknown },
+  list: [] as unknown[],
   report: { ok: true, checked: 0, regressions: [] as unknown[] },
   cases: [{}, {}, {}] as unknown[],
 }))
@@ -24,11 +25,11 @@ import { POST } from './route'
 const from = (table: string) => {
   let row: Record<string, unknown> | null = null
   const c: Record<string, unknown> = {}
-  for (const m of ['eq', 'is', 'neq', 'select']) c[m] = () => c
+  for (const m of ['eq', 'is', 'neq', 'select', 'order', 'limit']) c[m] = () => c
   c.update = (r: Record<string, unknown>) => { row = r; state.updates.push({ table, row: r }); return c }
   c.single = async () => state.template
   c.then = (res: (v: unknown) => unknown) =>
-    Promise.resolve(table === 'sms_parse_log' ? { data: state.flagged, error: null } : { data: row, error: null }).then(res)
+    Promise.resolve(table === 'sms_parse_log' ? { data: state.flagged, error: null } : { data: row ?? state.list, error: null }).then(res)
   return c
 }
 
@@ -43,9 +44,21 @@ beforeEach(() => {
   state.template = { data: { ...healthy }, error: null }
   state.flagged = [{ id: 'a' }, { id: 'b' }]
   state.rpc = { data: null, error: null }
+  state.list = []
   state.report = { ok: true, checked: 0, regressions: [] }
   invalidate.mockReset()
   audit.mockReset()
+})
+
+describe('list', () => {
+  it('returns the masked sample, never the stored message', async () => {
+    state.list = [{ id: 't1', sender: 'BANK', template_sample: 'Instant transfer to Hassan Sample EGP 120.50 ref 9876543210', match_count: 4 }]
+    const body = (await (await POST(post({ op: 'list' }))).json()) as { templates: Array<{ id: string; template_sample: string; match_count: number }> }
+    expect(body.templates[0]).toMatchObject({ id: 't1', match_count: 4 })
+    expect(body.templates[0]!.template_sample).not.toContain('Hassan')
+    expect(body.templates[0]!.template_sample).not.toContain('9876543210')
+    expect(body.templates[0]!.template_sample).toContain('Instant transfer')
+  })
 })
 
 describe('kill', () => {

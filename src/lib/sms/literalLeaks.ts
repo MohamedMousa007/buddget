@@ -1,7 +1,11 @@
 import { scanForLeaks } from '@/lib/sms/maskPii'
 
-/** Wording a template legitimately holds as a literal: Title-Case phrases, a static URL, a printed example amount. */
-const LITERAL_NOISE = new Set<string>(['name_title', 'url_path', 'amount'])
+/**
+ * Wording a template legitimately holds as a literal: Title-Case phrases, a static URL, a printed example amount, and the
+ * words after "to" or "from" ("transfer to your", "sent from savings"). The name-slot detector cannot tell those from a
+ * name, so it is noise here; a hard-coded person's name is still caught by the ALL-CAPS, Title-Case and Arabic-cue detectors.
+ */
+const LITERAL_NOISE = new Set<string>(['name_title', 'url_path', 'amount', 'name_slot'])
 
 /** Regex syntax that is not a literal: character classes, escapes, group/quantifier punctuation. */
 function literalText(regexPattern: string): string {

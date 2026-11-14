@@ -19,13 +19,9 @@ import { normalizeMerchant } from './merchantNormalizer'
 import { isServiceBill } from './merchantDictionary'
 import { resolveMerchantCategoryInfo, rememberMerchantCategory } from './merchantCategoryCache'
 import type { SmsFlag } from './smsFlags'
+import type { KnownSmsKind } from './smsKinds'
 
-export type SmsExpenseKind =
-  | 'purchase' | 'online_purchase' | 'atm_withdrawal'
-  | 'instant_transfer_out' | 'instant_transfer_in'
-  | 'cc_payoff' | 'installment_payment' | 'own_transfer' | 'currency_exchange'
-  | 'income' | 'refund' | 'declined' | 'fee' | 'other'
-  | null
+export type SmsExpenseKind = KnownSmsKind | null
 
 /**
  * Narrows a validated currency string to the DB enum at the persistence boundary.

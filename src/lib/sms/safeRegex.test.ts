@@ -26,7 +26,7 @@ describe('applyMappingRules skip logging', () => {
   it('warns when an unsafe template is skipped', async () => {
     const { applyMappingRules } = await import('./templateApply')
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const out = applyMappingRules('aaaa', '(a+)+b', { amount: { group: 1 } } as never)
+    const out = applyMappingRules('aaaa', '(a+)+b', { amount: { group: 1 }, kind: 'purchase' } as never)
     expect(out).toBeNull()
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()

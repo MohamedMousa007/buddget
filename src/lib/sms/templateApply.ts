@@ -11,6 +11,7 @@ import { execBounded } from '@/lib/sms/boundedRegex'
 import { parseSmsDay } from '@/lib/sms/patterns'
 import { normalizeDigits, normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
+import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
 
 /**
  * JSONB schema stored in `sms_tracking_templates_ai.mapping_rules`. It is written by the AI,
@@ -36,6 +37,8 @@ export interface MappingRules {
   payment_instrument?: { literal: string }
   kind: string
   bank_name?: { literal: string }
+  /** Guard words (wordingGuard.ts) the learner's own sample contained: they belong to the format, so they are not a hit. */
+  guardWords?: string[]
 }
 
 export interface TemplateExtraction {
@@ -89,6 +92,8 @@ export function applyMappingRules(
   rules: MappingRules,
   opts: ApplyOptions = {},
 ): TemplateExtraction | null {
+  // The kind is a free string the model wrote into a JSON column; an unknown one is no match, so the message falls to the next tier.
+  if (!isSmsExpenseKind(rules.kind)) return null
   if (!isSafeRegexPattern(regexPattern)) {
     console.warn('[sms/templateApply] template skipped: unsafe regex', regexPattern.slice(0, 80))
     return null

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ServiceClient } from '@/lib/supabase/service'
 import { maskPii, scanForLeaks, type LeakKind } from '@/lib/sms/maskPii'
 import { maskSkeletonText } from '@/lib/sms/skeleton'
+import { maskTemplateSample } from '@/lib/sms/templateSample'
 
 const PAGE = 200
 
@@ -18,6 +19,8 @@ const STORES: Store[] = [
   { table: 'sms_corpus', key: 'skeleton_key', column: 'redacted_body', remask: maskSkeletonText, ignore: [] },
   { table: 'sms_corrections', key: 'id', column: 'redacted_body', remask: maskPii, ignore: ['amount'] },
   { table: 'sms_parse_log', key: 'id', column: 'masked_body', remask: maskSkeletonText, ignore: [] },
+  // Samples learned before they were masked hold a real message. Small decimals stay readable, as in corrections.
+  { table: 'sms_tracking_templates_ai', key: 'id', column: 'template_sample', remask: maskTemplateSample, ignore: ['amount'] },
 ]
 
 export interface SweepResult {

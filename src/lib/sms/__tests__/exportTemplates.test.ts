@@ -26,7 +26,7 @@ describe('redactSample — a committed sample is public and permanent', () => {
   it('masks person names', () => {
     const out = redactSample('IPN outward transfer to SALMA SAMY ELSAYED with reference 35692982')
     expect(out).not.toContain('SALMA')
-    expect(out).toContain('NAME REDACTED')
+    expect(out).toContain('<NAME>')
   })
 
   it('masks masked and long account numbers', () => {

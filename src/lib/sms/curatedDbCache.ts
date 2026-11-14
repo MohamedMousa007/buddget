@@ -15,7 +15,7 @@ import type { ServiceClient } from '@/lib/supabase/service'
 import type { TemplateCandidate } from '@/lib/sms/templateScope'
 
 export const TEMPLATE_COLUMNS =
-  'id, regex_pattern, mapping_rules, match_count, kind, tier, status, template_sample'
+  'id, sender, regex_pattern, mapping_rules, match_count, kind, tier, status, template_sample'
 
 const TTL_MS = 60_000
 let cache: { rows: TemplateCandidate[]; expiry: number } | null = null

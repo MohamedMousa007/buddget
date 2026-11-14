@@ -31,6 +31,11 @@ import { monthNameInZone } from '@/lib/time/zonedMonth'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
+import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
+import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
+import { guardWordsIn, storedGuardWords, wordingGuardDiverts, WORDING_GUARD_ENFORCED } from '@/lib/sms/wordingGuard'
+import { maskForModel, type ModelView } from '@/lib/sms/maskForModel'
+import { maskTemplateSample } from '@/lib/sms/templateSample'
 import { execBounded } from '@/lib/sms/boundedRegex'
 import { isSafeRegexPattern, MAX_TEMPLATE_INPUT_CHARS } from '@/lib/sms/safeRegex'
 import { runLearnGates } from '@/lib/sms/learnGates'
@@ -42,6 +47,7 @@ import {
   partitionByScope,
   validateAgainstAiParse,
   behaviourallyEquivalent,
+  curatedTemplateInScope,
   computeShadowVerdicts,
   extractionToObjective,
   type TemplateCandidate,
@@ -132,9 +138,7 @@ interface ParsedTx {
   bank_name: string | null
   category: string | null
   confidence: number
-  kind: 'purchase' | 'online_purchase' | 'atm_withdrawal' | 'instant_transfer_out' |
-        'instant_transfer_in' | 'cc_payoff' | 'installment_payment' | 'own_transfer' | 'currency_exchange' |
-        'income' | 'refund' | 'declined' | 'fee' | 'other' | null
+  kind: SmsExpenseKind
   cleanTitle: string | null
   detectedAccountLast4: string | null
   detectedCounterpartyLast4: string | null
@@ -177,6 +181,8 @@ interface TemplateMatch {
   /** Transaction date from the SMS body (YYYY-MM-DD), else null. */
   txDay: string | null
   paymentInstrument: string | null
+  /** The message carries a guard word the template's own sample did not (wordingGuard.ts). Recorded, not acted on. */
+  wordingGuardHit: boolean
 }
 
 /** Reach of a DB template: author-scoped (supervised) vs global (trusted). */
@@ -193,6 +199,11 @@ function applyTemplate(
   const got = applyMappingRules(message, tpl.regex_pattern, rules, { receivedAt })
   if (!got) return null
 
+  // The one place wording enforcement goes: a divert is "no match", so the message falls to the next template and
+  // tier. It never rejects. Off until the hit count has been read.
+  const wordingGuardHit = wordingGuardDiverts(storedGuardWords(rules), message)
+  if (WORDING_GUARD_ENFORCED && wordingGuardHit) return null
+
   const { merchant, bankName, kind } = got
   const cleanTitle =
     kind === 'atm_withdrawal'       ? `ATM Withdrawal${bankName ? ` — ${bankName}` : ''}` :
@@ -208,6 +219,7 @@ function applyTemplate(
     tier: tpl.tier === 'curated_db' ? 'curated_db' : 'template',
     txDay: got.txDay,
     paymentInstrument: got.paymentInstrument,
+    wordingGuardHit,
     parsed: {
       is_transaction: true,
       amount: got.amount,
@@ -264,6 +276,7 @@ async function fetchTemplateCandidates(
 }> {
   // Trusted tier first, straight from memory — no query on the common path.
   for (const tpl of await getCuratedDbTemplates(service)) {
+    if (!curatedTemplateInScope(tpl.sender, keys)) continue
     const result = applyTemplate(message, tpl, receivedAt)
     if (result) return { match: result, validationOnly: [], shadow: [] }
   }
@@ -321,6 +334,18 @@ async function fetchTemplateCandidates(
     if (result) return { match: result, validationOnly, shadow }
   }
   return { match: null, validationOnly, shadow }
+}
+
+/**
+ * Marks the log row of a message a template matched although the message carries a guard word the template's sample did
+ * not. Best-effort and silent: the guard only counts for now.
+ */
+async function recordWordingGuardHit(service: ReturnType<typeof createServiceRoleClient>, logId: string): Promise<void> {
+  try {
+    await service.from('sms_parse_log').update({ wording_guard_hit: true }).eq('id', logId)
+  } catch (e) {
+    console.warn('[sms/parse] wording guard record failed', e)
+  }
 }
 
 /**
@@ -404,7 +429,8 @@ async function generateMatchingRegex(
     // thinkingBudget:0 produced empty responses — a small cap is the sweet spot.)
     signal: AbortSignal.timeout(18_000),
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(message, sender, parsed, ctx.hint) }] }],
+      // The model sees the structure of the message, not the person in it; the regex is verified against the real text below.
+      contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(maskForModel(message, parsed), sender, parsed, ctx.hint) }] }],
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.1,
@@ -535,8 +561,10 @@ async function learnPattern(
       user_id: null,
       sender,
       regex_pattern: attempt.regex,
-      template_sample: message.slice(0, 500),
-      mapping_rules: attempt.mapping as unknown as Json,
+      // Only for a person to recognise the format, so it is the masked form (S2c step 9a).
+      template_sample: maskTemplateSample(message),
+      // The guard words the sample itself carries belong to the format (wordingGuard.ts).
+      mapping_rules: { ...attempt.mapping, guardWords: guardWordsIn(message) } as unknown as Json,
       ai_enabled: true,
       match_count: 0,
       avg_ai_confidence: parsed.confidence ?? null,
@@ -575,12 +603,13 @@ async function learnPattern(
   }
 }
 
-function buildRegexLearningPrompt(message: string, sender: string, parsed: ParsedTx, hint: string | null): string {
+function buildRegexLearningPrompt(view: ModelView, sender: string, parsed: ParsedTx, hint: string | null): string {
+  const message = view.message
   return `You are a regex engineer. Given a bank SMS and its extracted fields, generate a JavaScript regex to match future SMS from this sender.
 
 SMS: ${JSON.stringify(message)}
 Sender: ${JSON.stringify(sender)}
-${hint ? `Previous attempt failed. ${hint}\n` : ''}Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON.stringify(parsed.merchant)}, kind=${parsed.kind}, last4=${parsed.detectedAccountLast4}, counterpartyLast4=${parsed.detectedCounterpartyLast4}
+${hint ? `Previous attempt failed. ${hint}\n` : ''}Extracted: amount=${parsed.amount}, currency=${parsed.currency}, merchant=${JSON.stringify(view.merchant)}, kind=${parsed.kind}, last4=${parsed.detectedAccountLast4}, counterpartyLast4=${parsed.detectedCounterpartyLast4}
 
 Rules:
 - Use numbered capture groups (NOT named groups)
@@ -829,6 +858,7 @@ export async function POST(request: Request) {
 
   const staticResult = staticMatch?.parsed ?? null
   const matchedTemplateId = staticMatch?.templateId ?? null
+  if (staticMatch?.wordingGuardHit) after(() => recordWordingGuardHit(service, logId))
 
   if (curated) {
     patternId = curated.patternId
@@ -1670,6 +1700,12 @@ async function aiCategorizeMerchant(
   }
 }
 
+/** The model's kind is a free string: an unknown one is `other`, never trusted as written. */
+function aiKind(kind: unknown): SmsExpenseKind {
+  if (kind == null) return null
+  return isSmsExpenseKind(kind) ? kind : 'other'
+}
+
 async function callGemini(apiKey: string, message: string, exemplar?: string | null): Promise<ParsedTx> {
   const body = {
     contents: [
@@ -1723,7 +1759,7 @@ async function callGemini(apiKey: string, message: string, exemplar?: string | n
     bank_name: parsed.bank_name ?? null,
     category: parsed.category ?? null,
     confidence: typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0,
-    kind: parsed.kind ?? null,
+    kind: aiKind(parsed.kind),
     cleanTitle: parsed.cleanTitle ?? null,
     detectedAccountLast4: parsed.detectedAccountLast4 ?? null,
     detectedCounterpartyLast4: parsed.detectedCounterpartyLast4 ?? null,

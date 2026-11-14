@@ -8,7 +8,7 @@ const BATCH = 200
 const STAMP_CONCURRENCY = 20
 
 /** Version of the masking rules behind masked_body; raise it when maskPii changes so older rows are re-masked. */
-export const MASKER_VERSION = 1
+export const MASKER_VERSION = 2
 
 /** Postgres undefined_column (select) and PostgREST schema-cache miss (write): the lifecycle migration is not applied yet. */
 const MISSING_COLUMN_CODES = new Set(['42703', 'PGRST204'])

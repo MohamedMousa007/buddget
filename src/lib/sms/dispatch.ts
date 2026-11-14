@@ -59,6 +59,7 @@ import {
 import { NO_OWN_ACCOUNT, oneLegTails, readOwnAccount } from './ownAccounts'
 import { plainKindForModelOwnTransfer, plainKindForModelRepayment } from './kindProvenance'
 import { detectLegDirection, guardDirection, type MoneyDirection } from './directionGuard'
+import { cashDepositVerdict } from './cashDeposit'
 import { fxLegAction } from './fxEvent'
 import { decideOwnTransfer } from './ownTransferDecision'
 import { isDeclineMessage, findDeclineTwin, findRefundOriginal } from './refundMatch'
@@ -253,19 +254,23 @@ export async function createSmsTransaction(
   //     103-104***-110" for an inbound wire), so the title goes with it. A named counterparty
   //     is still true either way and keeps precedence; only when there is none does the bank
   //     name get a direction-correct wrapper, so the row doesn't land in the ledger as "HSBC".
-  const guardedKind = guardDirection(parsedRow.kind, normalizeDigits(parsedRow.rawBody))
+  const directionKind = guardDirection(parsedRow.kind, normalizeDigits(parsedRow.rawBody))
+  // A deposit at a cash machine is a credit whatever the tier called it (N18). It is a wording fact, not a ledger-sign
+  // fact, so it is applied after the direction guard and is not evidence against a template's direction.
+  const cashDeposit = cashDepositVerdict(directionKind, parsedRow.rawBody)
+  const guardedKind = cashDeposit.kind
 
   // N1 — a free, deterministic health oracle. The guard runs on every tier, so when it has to
   // override a TEMPLATE-parsed row the template's `kind` is provably wrong: the bank's own
   // ledger sign contradicts it. Until now the guard silently fixed such rows, which meant a
   // defective template kept its reputation while the guard quietly cleaned up after it. One hit
   // is enough to quarantine, where a shadow comparison decides its fate without user friction.
-  if (guardedKind !== parsedRow.kind && parsedRow.matchedTemplateId) {
+  if (directionKind !== parsedRow.kind && parsedRow.matchedTemplateId) {
     try {
       await bumpTemplateFailure(service, {
         templateId: parsedRow.matchedTemplateId,
         hard: true,
-        reason: `direction_guard_override: ${parsedRow.kind} -> ${guardedKind}`,
+        reason: `direction_guard_override: ${parsedRow.kind} -> ${directionKind}`,
         userId: parsedRow.userId,
       })
     } catch (e) {
@@ -285,6 +290,7 @@ export async function createSmsTransaction(
               ? `Transfer from ${parsedRow.bankName}`
               : null,
         }
+  if (cashDeposit.flag && !row.smsFlags?.includes('cash_deposit')) row = { ...row, smsFlags: [...(row.smsFlags ?? []), 'cash_deposit'] }
 
   // Provenance (P1-7). A kind only the AI or a learned template asserted does not take money out of spending on its
   // own. A repayment whose wording makes the card the instrument ("via card") is a purchase made with the card.
@@ -691,6 +697,11 @@ export async function createSmsTransaction(
   //    match (e.g. a raise) asks the user first; on confirm we post it linked too.
   //    Only a genuinely new credit is captured as unlinked one-time income.
   if (isIncomeKind(kind)) {
+    // Cash the user put in at a machine is not a paycheck: it never links to a salary schedule or asks about one.
+    if (row.smsFlags?.includes('cash_deposit')) {
+      const res = await createSmsExpense(service, { ...row, kind })
+      return { ...base('income', kind), incomeId: res.incomeId, error: res.error }
+    }
     const decision = await matchSalary(service, {
       userId: row.userId,
       amount: row.amount,

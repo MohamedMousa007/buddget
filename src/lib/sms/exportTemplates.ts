@@ -8,13 +8,14 @@
  *
  * Two things the exporter must get right, because both are irreversible once committed:
  *
- *  1. PII. `template_sample` holds a real user's SMS — account numbers and people's full names
- *     are in the corpus. A sample pasted into the repo is public and permanent, so it is
+ *  1. PII. `template_sample` of a template stored before samples were masked holds a real user's SMS — account numbers
+ *     and people's full names are in the corpus. A sample pasted into the repo is public and permanent, so it is
  *     redacted here and the redaction is tested.
  *  2. `verified: true`. `tryPattern` skips any pattern without it, so an export that omitted it
  *     would produce a file that silently matches nothing.
  */
 import type { MappingRules } from '@/lib/sms/templateApply'
+import { maskTemplateSample } from '@/lib/sms/templateSample'
 
 export interface ExportableTemplate {
   id: string
@@ -28,17 +29,12 @@ export interface ExportableTemplate {
 }
 
 /**
- * Masks the parts of a sample that identify a person or an account, keeping the structure that
- * makes the sample useful for review.
+ * Masks a sample for a file that is public and permanent: the project masker, then the masked or hyphenated account
+ * numbers it leaves readable (it only masks digit runs of four or more), on one comment line.
  */
 export function redactSample(body: string): string {
-  return body
-    .replace(/\r?\n/g, ' ')
-    // Masked or long account/reference numbers.
+  return maskTemplateSample(body.replace(/\r?\n/g, ' '))
     .replace(/[\d*]{2,}[-*\d]{4,}/g, '****')
-    .replace(/\b\d{5,}\b/g, '#####')
-    // Runs of capitalised words — person names in this corpus.
-    .replace(/\b[A-Z][A-Z'’-]{2,}(?:\s+[A-Z][A-Z'’-]{2,})+\b/g, 'NAME REDACTED')
     .replace(/\s{2,}/g, ' ')
     .trim()
 }

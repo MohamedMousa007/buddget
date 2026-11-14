@@ -163,4 +163,43 @@ describe('AI-learning hooks', () => {
     expect(learnUpdates().at(-1)).toBe('cap_reached')
     expect(h.ops.some((o) => o.table === 'sms_tracking_templates_ai' && o.op === 'insert')).toBe(false)
   })
+
+  describe('privacy and kind of what is learned (S2c steps 8c, 8e, 9a, 9b)', () => {
+    const PERSONAL = 'Transfer declined to Hassan Sample EGP 120.50 ref 9876543210 card 1234'
+    const learnFrom = async (message: string, ai: Record<string, unknown>) => {
+      h.learnGates.mockReturnValue({ ok: true })
+      const regexPrompts: string[] = []
+      vi.stubGlobal('fetch', vi.fn(async (_url: string, init: { body: string }) => {
+        if (!init.body.includes('regex_pattern')) return geminiJson({ ...aiParse, ...ai })
+        regexPrompts.push(init.body)
+        return geminiJson({ regex_pattern: 'Transfer\\s+declined\\s+to\\s+.+?\\s+EGP\\s+(\\d+\\.\\d+)', mapping_rules: { amount: { group: 1 }, kind: 'instant_transfer_out' } })
+      }))
+      await post({ message, sender: 'TESTBANK', receivedAt: RECEIVED })
+      for (const fn of h.afters) await fn()
+      const insert = h.ops.find((o) => o.table === 'sms_tracking_templates_ai' && o.op === 'insert')
+      return { regexPrompts, insert }
+    }
+
+    it('sends the model no name and no long digit run, and stores a masked sample', async () => {
+      const { regexPrompts, insert } = await learnFrom(PERSONAL, { kind: 'instant_transfer_out', merchant: 'Hassan Sample', amount: 120.5 })
+      expect(regexPrompts).toHaveLength(1)
+      expect(regexPrompts[0]).not.toContain('Hassan')
+      expect(regexPrompts[0]).not.toContain('9876543210')
+      expect(regexPrompts[0]).toContain('120.50')
+      const sample = String(insert!.values!.template_sample)
+      expect(sample).not.toContain('Hassan')
+      expect(sample).not.toContain('9876543210')
+      expect(sample).toContain('Transfer declined')
+    })
+
+    it('records the guard words the sample itself carries on the template', async () => {
+      const { insert } = await learnFrom(PERSONAL, { kind: 'instant_transfer_out', amount: 120.5 })
+      expect((insert!.values!.mapping_rules as { guardWords: string[] }).guardWords).toEqual(['declined'])
+    })
+
+    it('stores an AI kind outside the list as other', async () => {
+      const { insert } = await learnFrom(PERSONAL, { kind: 'remittance', amount: 120.5 })
+      expect(insert!.values!.kind).toBe('other')
+    })
+  })
 })

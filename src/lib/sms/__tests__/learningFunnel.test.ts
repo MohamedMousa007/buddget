@@ -103,7 +103,7 @@ describe('N14 per-user literals + LF6 masking', () => {
   })
   it('the learn gate rejects such a regex', () => {
     const msg = 'Sent EGP 55.25 to NAME ONE card 9999'
-    const rules: MappingRules = { amount: { group: 1 }, kind: 'transfer' }
+    const rules: MappingRules = { amount: { group: 1 }, kind: 'instant_transfer_out' }
     const r = runLearnGates(msg, 'Sent\\s+EGP\\s+([\\d.]+)\\s+to\\s+NAME ONE', rules, { amount: 55.25, currency: null, detectedAccountLast4: null })
     expect(r).toMatchObject({ ok: false, status: 'gate_per_user_literal' })
   })

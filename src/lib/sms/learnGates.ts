@@ -16,6 +16,7 @@ import { applyMappingRules, last4Agrees, type MappingRules } from '@/lib/sms/tem
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { perUserLiteralKinds } from '@/lib/sms/literalLeaks'
 import { replayCandidate, type ReplayCase } from '@/lib/sms/replayHarness'
+import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
 
 export type GateFailure =
   | 'gate_no_match'
@@ -28,6 +29,7 @@ export type GateFailure =
   | 'gate_regex_unsafe'
   | 'gate_per_user_literal'
   | 'gate_replay_regression'
+  | 'gate_unknown_kind'
 
 export type GateResult = { ok: true } | { ok: false; status: GateFailure; detail?: string }
 
@@ -80,6 +82,8 @@ export function runLearnGates(
   if (!isSafeRegexPattern(regexPattern)) {
     return { ok: false, status: 'gate_regex_unsafe', detail: 'nested quantifier or overlong pattern' }
   }
+
+  if (!isSmsExpenseKind(rules.kind)) return { ok: false, status: 'gate_unknown_kind', detail: String(rules.kind).slice(0, 40) }
 
   // ---- L4: greediness -----------------------------------------------------
   // Checked first because it is a property of the regex alone and needs no match.

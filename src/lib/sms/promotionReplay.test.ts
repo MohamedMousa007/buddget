@@ -7,7 +7,7 @@ vi.mock('@/lib/sms/curatedDbCache', () => ({ invalidateCuratedDbCache: vi.fn() }
 
 const TEMPLATE = {
   regex_pattern: 'Spent (\\d+) EGP',
-  mapping_rules: { amount: { group: 1 }, currency: { literal: 'EGP' } },
+  mapping_rules: { amount: { group: 1 }, currency: { literal: 'EGP' }, kind: 'purchase' },
 }
 
 function makeService() {

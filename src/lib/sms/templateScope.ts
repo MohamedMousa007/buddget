@@ -21,6 +21,8 @@ import { applyMappingRules, type MappingRules, type TemplateExtraction } from '@
 /** Row shape the parse route fetches. */
 export interface TemplateCandidate {
   id: string
+  /** The routing key the template was learned under (see routingKey.ts). */
+  sender?: string | null
   regex_pattern: string
   mapping_rules: Record<string, unknown>
   match_count: number
@@ -61,6 +63,17 @@ export function objectiveFieldsAgree(a: ObjectiveFields, b: ObjectiveFields): bo
 
 export function extractionToObjective(e: TemplateExtraction): ObjectiveFields {
   return { amount: e.amount, currency: e.currency, kind: e.kind, last4: e.last4 }
+}
+
+/**
+ * Whether a Curated DB template may be tried on a message with these routing keys. Curated templates apply to every
+ * user, but not to every sender: a template one bank's SMS earned global reach with must not be run over another bank's
+ * messages, where a loose regex can match by accident. A message with no key at all (a sender-less iPhone capture with no
+ * hotline and too short a body to have a shape) has nothing to scope by, so the broad behaviour stays.
+ */
+export function curatedTemplateInScope(templateSender: string | null | undefined, messageKeys: readonly string[]): boolean {
+  if (messageKeys.length === 0) return true
+  return !!templateSender && messageKeys.includes(templateSender)
 }
 
 /**

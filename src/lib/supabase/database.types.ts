@@ -3390,6 +3390,7 @@ export type Database = {
           debt_payment_id: string | null
           expense_id: string | null
           failure_code: string | null
+          wording_guard_hit: boolean | null
           id: string
           income_id: string | null
           is_duplicate: boolean
@@ -3457,6 +3458,7 @@ export type Database = {
           debt_payment_id?: string | null
           expense_id?: string | null
           failure_code?: string | null
+          wording_guard_hit?: boolean | null
           id?: string
           income_id?: string | null
           is_duplicate?: boolean
@@ -3524,6 +3526,7 @@ export type Database = {
           debt_payment_id?: string | null
           expense_id?: string | null
           failure_code?: string | null
+          wording_guard_hit?: boolean | null
           id?: string
           income_id?: string | null
           is_duplicate?: boolean

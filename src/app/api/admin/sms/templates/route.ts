@@ -5,6 +5,7 @@ import { invalidateCuratedDbCache } from '@/lib/sms/curatedDbCache'
 import { loadReplayCases } from '@/lib/sms/replayLoader'
 import { replayCandidate } from '@/lib/sms/replayHarness'
 import type { MappingRules } from '@/lib/sms/templateApply'
+import { remaskTemplateRow } from '@/lib/sms/templateSample'
 import type { AdminContext } from '@/lib/server/admin/guard'
 
 type Body = {
@@ -44,7 +45,8 @@ export async function POST(req: Request) {
   if (op === 'list') {
     const { data, error } = await service.from(TABLE).select('*').order('match_count', { ascending: false }).limit(500)
     if (error) return bad('Failed to load templates.', 500)
-    return json({ templates: data ?? [] })
+    // Rows stored before samples were masked still hold a real message: what leaves the server is always the masked form.
+    return json({ templates: (data ?? []).map(remaskTemplateRow) })
   }
 
   if (op === 'update' && typeof id === 'string') {
@@ -62,9 +64,9 @@ export async function POST(req: Request) {
     if (safe.ai_enabled === false) {
       invalidateCuratedDbCache()
       const flagged = await flagTemplateRows(service, id, now)
-      return json({ ok: true, template: data, flagged })
+      return json({ ok: true, template: remaskTemplateRow(data), flagged })
     }
-    return json({ ok: true, template: data })
+    return json({ ok: true, template: remaskTemplateRow(data) })
   }
 
   if (op === 'delete' && typeof id === 'string') {
