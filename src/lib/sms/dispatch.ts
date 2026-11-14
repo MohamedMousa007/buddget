@@ -173,8 +173,9 @@ async function finalizeOwnTransferPair(
   service: ServiceClient,
   row: SmsRowData,
   sibling: PairSibling,
+  logId: string,
 ): Promise<SmsTxResult> {
-  const { needsPost } = await reconcileSibling(service, sibling)
+  const { needsPost } = await reconcileSibling(service, sibling, logId)
   if (!needsPost) {
     // The sibling already carries the row. If it was the provisional Remittance of an outbound
     // leg, that guess is now disproved — retag it, or a transfer to your own account stays
@@ -285,7 +286,7 @@ export async function createSmsTransaction(
         // a34d517 fixed. Excluding it means it is never claimed in the first place.
         matchKinds: ['own_transfer', 'instant_transfer_in', 'instant_transfer_out'],
       })
-      if (sibling) return finalizeOwnTransferPair(service, row, sibling)
+      if (sibling) return finalizeOwnTransferPair(service, row, sibling, row.logId)
     }
     // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
@@ -361,7 +362,7 @@ export async function createSmsTransaction(
       })
     }
 
-    if (sibling) return finalizeOwnTransferPair(service, row, sibling)
+    if (sibling) return finalizeOwnTransferPair(service, row, sibling, row.logId)
     // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
 
@@ -387,7 +388,7 @@ export async function createSmsTransaction(
       return base('transfer_paired', kind)
     }
     // A sibling that was booked as income is retracted; this leg then posts the one row.
-    if (sibling) await reconcileSibling(service, sibling)
+    if (sibling && row.logId) await reconcileSibling(service, sibling, row.logId)
     const posted = await createSmsExpense(service, { ...row, kind, destinationLeg: direction === 'credit' })
     return {
       ...base(sibling ? 'transfer_paired' : 'transfer_single', kind),
@@ -425,7 +426,7 @@ export async function createSmsTransaction(
           return base('transfer_paired', kind)
         }
 
-        const { needsPost } = await reconcileSibling(service, sibling)
+        const { needsPost } = await reconcileSibling(service, sibling, row.logId)
         if (!needsPost) return base('transfer_paired', kind)
         // Income sibling was removed — post a single visible non-spend row.
         const posted = await createSmsExpense(service, { ...row, kind, destinationLeg })
@@ -463,7 +464,7 @@ export async function createSmsTransaction(
         accountLast4: row.last4 ?? null,
         kind,
       })
-      if (sibling) funding = await reconcileCcPayoffFundingLeg(service, sibling)
+      if (sibling) funding = await reconcileCcPayoffFundingLeg(service, sibling, row.logId)
     }
 
     const res = await createSmsDebtPayment(service, row, { fundingLast4: funding?.fundingLast4 })

@@ -52,7 +52,7 @@ A signal is a fact about one message or a pair of messages. The names are the on
 | `name` | Same counterparty-name hash on both messages (per-user salt) | two messages |
 | `account` | The counterparty digits answer to one of the user's accounts, registered or provisional, by the alias- and length-aware tail match | one message |
 | `registered` | As `account`, and the account is one the user confirmed (not provisional, not closed) | one message |
-| `counterparty_bank` | The counterparty bank named in the message is the bank of the account that `registered` found | one message |
+| `counterparty_bank` | The counterparty bank named in the message is the bank of the account that `registered` found. Not available in batch 1: no tier parses the counterparty's bank into a field, so no rule may use it yet | one message |
 | `answered_yes` / `answered_no` | The user's stored answer for this pair of tails | stored |
 | `profile` | The counterparty matches the user's own name | one message |
 | `own_wallet_exact` | The merchant is exactly one of the user's own stored-value methods (with top-up wording when the brand also sells goods) | one message, code rule |
@@ -81,7 +81,7 @@ A signal is a fact about one message or a pair of messages. The names are the on
 
 **Currency exchange.** Two legs of opposite known direction and different known currency. Unchanged.
 
-**Refund.** I1 exception 1. No hit: the credit is booked outside income and outside spending and asks.
+**Refund.** I1 exception 1. No hit: the credit is booked outside income and outside spending and asks. It is stored as an expense row already marked refunded (the same net-zero form a decline's own row uses, which every total already treats as zero), flagged `refund_unmatched`. It is not an income row, because several income views ignore the income exclusion column. Known limit: on a tracked account the balance misses that credit until the user picks the purchase.
 
 **Never settles anything:** `profile` alone, `account` on a provisional account alone, `sibling_exact` alone between two transfers out or two transfers in, any signal whose value is unknown (I7).
 

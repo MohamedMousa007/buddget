@@ -172,6 +172,10 @@ export interface IncomeEvent {
   sharedPlanId?: string | null
   /** Provenance when ingested from an SMS credit (`sms_parse_log.id`). */
   smsLogId?: string | null
+  /** Flags the server stamped on a row a message created (`SMS_FLAGS`). Read-only on the client. */
+  smsFlags?: string[]
+  /** The flags the user has dismissed. */
+  smsFlagsAck?: string[]
   /**
    * Set when the user confirmed this credit only passed through them: it leaves income totals, the account balance
    * still counts it, and clearing it counts it again.
@@ -216,6 +220,10 @@ export interface Expense {
   linkedSubscriptionId?: string
   /** When set, this expense was auto-created from a parsed bank SMS (`sms_parse_log.id`). */
   smsLogId?: string
+  /** Flags the server stamped on a row a message created (`SMS_FLAGS`). Read-only on the client. */
+  smsFlags?: string[]
+  /** The flags the user has dismissed. */
+  smsFlagsAck?: string[]
   /** When set, this expense is the total of a scanned receipt (`receipts.id`); breakdown lives there. */
   receiptId?: string
   /** Set when a refund/decline SMS reversed this expense — excluded from spend, shown struck. */

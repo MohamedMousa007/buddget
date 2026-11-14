@@ -83,6 +83,8 @@ describe('POST /api/sms/own-transfer', () => {
     expect(await res.json()).toEqual({ ok: true, action: 'confirm' })
     expect(h.db.expenses[0].category).toBe('Transfer')
     expect(h.db.income_events[0].deleted_at).toEqual(expect.any(String))
+    expect(h.db.income_events[0].retracted_by_sms_log_id).toBe(OUT)
+    expect(h.writes.find((w) => w.table === 'income_events')?.values).toMatchObject({ deleted_at: expect.any(String), retracted_by_sms_log_id: OUT })
     expect(log(OUT)).toMatchObject({ paired_log_id: IN, own_transfer_verdict: 'settle' })
     expect(log(IN)).toMatchObject({ paired_log_id: OUT, own_transfer_verdict: 'settle' })
     expect(h.remember).toHaveBeenCalledWith(expect.anything(), 'u1', '1111', '2222', true)
@@ -98,13 +100,28 @@ describe('POST /api/sms/own-transfer', () => {
   })
 
   it('undo restores a soft-deleted income and the spending category', async () => {
-    h.db = { sms_parse_log: logs('settle', true), expenses: [{ ...expense(), category: 'Transfer' }], income_events: [{ id: 'i1', user_id: 'u1', sms_log_id: IN, deleted_at: '2026-11-01T11:00:00Z' }] }
+    h.db = { sms_parse_log: logs('settle', true), expenses: [{ ...expense(), category: 'Transfer' }], income_events: [{ id: 'i1', user_id: 'u1', sms_log_id: IN, deleted_at: '2026-11-01T11:00:00Z', retracted_by_sms_log_id: OUT }] }
     expect((await call(OUT, 'undo')).status).toBe(200)
     expect(h.db.income_events[0].deleted_at).toBeNull()
+    expect(h.db.income_events[0].retracted_by_sms_log_id).toBeNull()
     expect(h.db.expenses[0].category).not.toBe('Transfer')
     expect(log(OUT)).toMatchObject({ paired_log_id: null, own_transfer_verdict: 'undone' })
     expect(log(IN)).toMatchObject({ paired_log_id: null, own_transfer_verdict: 'undone' })
     expect(h.remember).toHaveBeenCalledWith(expect.anything(), 'u1', '1111', '2222', false)
+  })
+
+  it("undo leaves a user-deleted income deleted (no marker) and inserts nothing", async () => {
+    h.db = { sms_parse_log: logs('settle', true), expenses: [{ ...expense(), category: 'Transfer' }], income_events: [{ id: 'i1', user_id: 'u1', sms_log_id: IN, deleted_at: '2026-11-01T11:00:00Z', retracted_by_sms_log_id: null }] }
+    expect((await call(OUT, 'undo')).status).toBe(200)
+    expect(h.db.income_events[0].deleted_at).toBe('2026-11-01T11:00:00Z')
+    expect(h.writes.some((w) => w.table === 'income_events')).toBe(false)
+    expect(log(OUT).own_transfer_verdict).toBe('undone')
+  })
+
+  it("undo ignores a marker that names a message outside this pair", async () => {
+    h.db = { sms_parse_log: logs('settle', true), expenses: [{ ...expense(), category: 'Transfer' }], income_events: [{ id: 'i1', user_id: 'u1', sms_log_id: IN, deleted_at: '2026-11-01T11:00:00Z', retracted_by_sms_log_id: '33333333-3333-4333-8333-333333333333' }] }
+    expect((await call(OUT, 'undo')).status).toBe(200)
+    expect(h.db.income_events[0].deleted_at).toBe('2026-11-01T11:00:00Z')
   })
 
   it('undo creates the income when none exists', async () => {

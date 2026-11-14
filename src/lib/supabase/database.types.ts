@@ -1605,6 +1605,9 @@ export type Database = {
           refund_kind: string | null
           refund_sms_log_id: string | null
           refunded_at: string | null
+          retracted_by_sms_log_id: string | null
+          sms_flags: string[] | null
+          sms_flags_ack: string[] | null
           sms_log_id: string | null
           updated_at: string
           edited_at: string
@@ -1640,6 +1643,9 @@ export type Database = {
           refund_kind?: string | null
           refund_sms_log_id?: string | null
           refunded_at?: string | null
+          retracted_by_sms_log_id?: string | null
+          sms_flags?: string[] | null
+          sms_flags_ack?: string[] | null
           sms_log_id?: string | null
           updated_at?: string
           edited_at?: string
@@ -1675,6 +1681,9 @@ export type Database = {
           refund_kind?: string | null
           refund_sms_log_id?: string | null
           refunded_at?: string | null
+          retracted_by_sms_log_id?: string | null
+          sms_flags?: string[] | null
+          sms_flags_ack?: string[] | null
           sms_log_id?: string | null
           updated_at?: string
           edited_at?: string
@@ -1952,7 +1961,10 @@ export type Database = {
           occurrence_date: string | null
           payment_method_id: string | null
           received_date: string
+          retracted_by_sms_log_id: string | null
           shared_plan_id: string | null
+          sms_flags: string[] | null
+          sms_flags_ack: string[] | null
           sms_log_id: string | null
           source_type: Database["public"]["Enums"]["income_source_type"]
           status: Database["public"]["Enums"]["income_event_status"]
@@ -1976,7 +1988,10 @@ export type Database = {
           occurrence_date?: string | null
           payment_method_id?: string | null
           received_date: string
+          retracted_by_sms_log_id?: string | null
           shared_plan_id?: string | null
+          sms_flags?: string[] | null
+          sms_flags_ack?: string[] | null
           sms_log_id?: string | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           status?: Database["public"]["Enums"]["income_event_status"]
@@ -2000,7 +2015,10 @@ export type Database = {
           occurrence_date?: string | null
           payment_method_id?: string | null
           received_date?: string
+          retracted_by_sms_log_id?: string | null
           shared_plan_id?: string | null
+          sms_flags?: string[] | null
+          sms_flags_ack?: string[] | null
           sms_log_id?: string | null
           source_type?: Database["public"]["Enums"]["income_source_type"]
           status?: Database["public"]["Enums"]["income_event_status"]

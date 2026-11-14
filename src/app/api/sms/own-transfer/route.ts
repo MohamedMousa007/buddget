@@ -97,19 +97,20 @@ export async function POST(request: Request) {
 
   const { data: inc, error: incErr } = await service
     .from('income_events')
-    .select('id, sms_log_id, deleted_at')
+    .select('id, sms_log_id, deleted_at, retracted_by_sms_log_id')
     .eq('user_id', userId)
     .in('sms_log_id', ids)
   if (incErr) return fail('Failed to load ledger')
-  const incomes = (inc ?? []) as { id: string; sms_log_id: string; deleted_at: string | null }[]
+  const incomes = (inc ?? []) as { id: string; sms_log_id: string; deleted_at: string | null; retracted_by_sms_log_id: string | null }[]
   const liveIncome = incomes.find((i) => !i.deleted_at)
-  const deletedIncome = incomes.find((i) => i.deleted_at)
+  // Only a retraction caused by this pair is undone here; a deleted income with no marker is the user's own delete.
+  const deletedIncome = incomes.find((i) => i.deleted_at && i.retracted_by_sms_log_id && ids.includes(i.retracted_by_sms_log_id))
 
   if (action === 'confirm') {
     const { error } = await service.from('expenses').update({ category: 'Transfer' }).eq('id', expense.id).eq('user_id', userId)
     if (error) return fail('Failed to update expense')
     if (liveIncome) {
-      const { error: delErr } = await service.from('income_events').update({ deleted_at: new Date().toISOString() }).eq('id', liveIncome.id).eq('user_id', userId)
+      const { error: delErr } = await service.from('income_events').update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: out.id }).eq('id', liveIncome.id).eq('user_id', userId)
       if (delErr) return fail('Failed to update income')
     }
     const first = await service.from('sms_parse_log').update({ paired_log_id: partner.id, own_transfer_verdict: 'settle' }).eq('id', logRow.id)
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
     const { error } = await service.from('expenses').update({ category }).eq('id', expense.id).eq('user_id', userId)
     if (error) return fail('Failed to update expense')
     if (deletedIncome && !liveIncome) {
-      const { error: restoreErr } = await service.from('income_events').update({ deleted_at: null }).eq('id', deletedIncome.id).eq('user_id', userId)
+      const { error: restoreErr } = await service.from('income_events').update({ deleted_at: null, retracted_by_sms_log_id: null }).eq('id', deletedIncome.id).eq('user_id', userId)
       if (restoreErr) return fail('Failed to restore income')
       // Settling cleared the link from the log to its income row; put it back with the row.
       await service.from('sms_parse_log').update({ income_id: deletedIncome.id }).eq('id', inn.id)

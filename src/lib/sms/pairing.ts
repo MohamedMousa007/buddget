@@ -528,6 +528,7 @@ export interface CcPayoffFundingLeg {
 export async function reconcileCcPayoffFundingLeg(
   service: ServiceClient,
   sibling: PairSibling,
+  retractedByLogId: string,
 ): Promise<CcPayoffFundingLeg> {
   const { data: log } = await service
     .from('sms_parse_log')
@@ -538,7 +539,7 @@ export async function reconcileCcPayoffFundingLeg(
   if (sibling.siblingExpenseId) {
     await service
       .from('expenses')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: retractedByLogId })
       .eq('id', sibling.siblingExpenseId)
     await service
       .from('sms_parse_log')
@@ -549,7 +550,7 @@ export async function reconcileCcPayoffFundingLeg(
   if (sibling.siblingIncomeId) {
     await service
       .from('income_events')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: retractedByLogId })
       .eq('id', sibling.siblingIncomeId)
     await service
       .from('sms_parse_log')
@@ -613,10 +614,12 @@ export async function attributeFundingToPayoff(
  *    suppress the current leg).
  *  - true when the sibling was posted as INCOME (now soft-deleted) and the
  *    current leg should post a single non-spend Transfer/FX expense for visibility.
+ * `retractedByLogId` (the message doing the retraction) is stored with `deleted_at`, so only an undo of that pair may restore the row.
  */
 export async function reconcileSibling(
   service: ServiceClient,
   sibling: PairSibling,
+  retractedByLogId: string,
 ): Promise<{ needsPost: boolean }> {
   if (sibling.siblingIncomeId) {
     // income_events, NOT income_sources: sms_parse_log.income_id points at the EVENT
@@ -625,7 +628,7 @@ export async function reconcileSibling(
     // phantom income leg survived every pairing this function was written to retract.
     await service
       .from('income_events')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: retractedByLogId })
       .eq('id', sibling.siblingIncomeId)
     await service
       .from('sms_parse_log')
