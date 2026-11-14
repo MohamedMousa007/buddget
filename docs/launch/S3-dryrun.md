@@ -354,7 +354,9 @@ Method: the raw text still exists for this row. Read in the database only (query
 
 ## 7. Proposed apply plan (not executed)
 
-**Preconditions.** The owner approves the sample below; this report is re-run after the last SMS rule change; the working tree is clean; one batch id per run (`s3-YYYYMMDD`).
+**Adjusted by section 11 (council verdicts); where this part and section 11 differ, section 11 wins.** Via-card rows are not repaired (flag only); the two 700 SAR deposits are both kept; T11 and T9 wait for the S2d "treated as a top-up, undo?" flag; T15 applies to the 69 same-month shifts only; zero-risk types may be applied without the owner, money-moving types need the owner's sample approval; the revert test recomputes per-user per-month totals.
+
+**Preconditions.** SMS batch 2 (S2d) has landed and this report is re-run; the owner approves the sample below (money-moving types); this report is re-run after the last SMS rule change; the working tree is clean; one batch id per run (`s3-YYYYMMDD`).
 
 **Migration shape** (one new migration, additive; apply with `execute_sql`, then regenerate `database.types.ts`):
 1. `sms_repair_audit(id bigserial, batch text, repair_type text, user_id uuid, sms_log_id uuid, table_name text, row_id uuid, action text check (action in ('update','soft_delete','insert','relink')), old_values jsonb, new_values jsonb, applied_at timestamptz default now(), reverted_at timestamptz)`, RLS enabled, no policy (service role only), unique `(batch, table_name, row_id, repair_type)` so a run is idempotent.
@@ -369,9 +371,9 @@ Method: the raw text still exists for this row. Read in the database only (query
 3. T1 un-reverse and T7b own rows for the declines.
 4. T2a, T2b the refund mark move (one transaction, both rows).
 5. T8 unmatched refunds out of income.
-6. T9, T11 the own-wallet pair and the four own-wallet purchases.
+6. T9, T11 the own-wallet pair and the four own-wallet purchases, each carrying the new "we now treat this as a top-up, undo?" flag; not before that flag is live.
 7. T6 lost rows (booked last of the money inserts; each is a new row the phone pulls).
-8. T15 day shifts, last, user by user, after the owner confirms the two month-crossing rows.
+8. T15 day shifts, last, user by user: the 69 that stay within a month only; the two month-crossing rows are skipped and left to the closed-month notice.
 
 Per user, in a transaction, smallest user first; a failed check stops the batch.
 
@@ -452,3 +454,14 @@ The planning session accepted this report as provisional. Spot-checks live: the 
 6. **Prompts from flags on old rows.** Counted from the apply set (`.claude/s3-diff.json`, flags on the proposed row that the live row lacks, T15 excluded because it changes the date only): user `f923c68b` would receive 4 `cash_deposit` (`0812aa55`, `78e0b305`, `818b0736`, `cb5fd476`), 2 `refund_unmatched` (`a19ff882`, `ec6ae237`) and 1 `possible_duplicate` (`78e0b305`, also a deposit): **7 flags on 6 rows, 6 prompts at most**; every other user 0. If the 13 T15 rows that carry `possible_duplicate` in the replay were stamped as well, that adds 13. The owner approves this number.
 7. **Via-card rows: the hold stands.** The forward rule shipped in S2c (this format books as spending, flagged) leans the wrong way on the balance evidence of part 6. If the owner confirms a card load, the forward rule changes in batch 2 and these seven rows stay as they are.
 8. **Fresh export and a mandatory staleness check.** One user had 276 SMS expense rows rewritten in a single minute at 17:36 UTC today (a whole-row push from a phone, after this export). The re-run must take a fresh export, and the apply function's check that each live value still equals the value in the report is mandatory, not optional (part 7, step 2).
+
+## 11. Council verdicts on the apply (2026-11-14)
+
+The owner delegated these decisions to the council (via the planning session). Nothing is applied until batch 2 (S2d) lands and this dry run is re-run; no database write is made by this report.
+
+1. **Via-card rows (3 of 3).** The seven rows (`51966294`, `5fe0a498`, `6cde6c02`, `81144634`, `82133010`, `b61afd88`, `c18dabf3`) are not repaired and stay non-spend; they get a flag only, so the user can confirm in one tap. The forward rule changes in batch 2: card balance at least the payment amount means a card load (non-spend, flagged), otherwise spending, flagged. T5 is therefore "flag only", no money effect.
+2. **The two 700 SAR deposits 34 seconds apart (3 of 3).** `cb5fd476` and `78e0b305`: keep both, the second flagged `possible_duplicate`. Never remove.
+3. **Own-wallet repairs T11 and T9 (3 of 3).** Applied with the batch, but every such row carries a new "we now treat this as a top-up, undo?" flag with a one-tap undo. S2d builds that flag; the repair may not run before it is live. This replaces reviewer condition 4 of section 10 (row-by-row approval). Minority view: one voice wanted the 740 SAR income retraction (`858f6536`) held.
+4. **Day shifts (3 of 3).** Apply the 69 that stay within a month; skip the 2 that cross a month (user `4fce9265`, 2026-09 to 2026-10) and leave them for the closed-month notice to raise with the user.
+5. **Who approves (2 of 3).** Zero-risk types (decline marks removed T1, the refund mark move T2a/T2b, collected-notice incomes T3, own net-zero rows T7b, same-month day shifts T15) may be applied after the re-run without the owner, if the re-run reproduces the same rows, a Fable reviewer signs off the rolled-back test, and revert is proven. Every money-moving type (cash deposits T4, own-wallet T11/T9, unmatched refunds T8, lost-row inserts T6, the income retraction) needs the owner to approve a sample of those types before it is applied; the council declined to approve those itself.
+6. **Revert test (adopted from one voice).** Prove the revert with recomputed per-user per-month totals, not only row values, and prove it does not overwrite an edit the user made to a repaired row after the apply (the audit old-values restore must be skipped for a row whose `edited_at` is later than the repair).
