@@ -71,3 +71,21 @@ export function decideLearnRetry(status: string | null | undefined, lastAttemptA
   const notBefore = new Date(lastAttemptAt.getTime() + policy.cooldownMs)
   return { retry: now >= notBefore, notBefore, hint: HINT[cls] ?? null }
 }
+
+/** `learn_status` of a message whose shape is still cooling down from an earlier failure, so no model call was made. Terminal: it never counts as a failure itself. */
+export const SKIPPED_COOLDOWN = 'skipped_cooldown'
+
+export interface LearnPlan {
+  skip: boolean
+  /** Instruction for the one attempt, taken from the shape's last failure. */
+  hint: string | null
+  /** The attempt number to store if this attempt fails too. */
+  attempt: number
+}
+
+/** One model attempt per message: whether the shape's last failure (any user) still forbids it, and what that failure says to fix. */
+export function planLearnAttempt(last: { status: string | null; at: Date } | null, now: Date = new Date()): LearnPlan {
+  if (!last || classifyLearnStatus(last.status) === 'terminal') return { skip: false, hint: null, attempt: 1 }
+  const d = decideLearnRetry(last.status, last.at, now)
+  return { skip: !d.retry, hint: d.hint, attempt: decodeLearnAttempt(last.status) + 1 }
+}

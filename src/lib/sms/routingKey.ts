@@ -13,6 +13,7 @@
  * falls through to the next tier.
  */
 import { normalizeSender } from '@/lib/sms/patterns'
+import { CURRENCY_AMOUNT_ALT, CURRENCY_TOKEN_RE } from '@/lib/sms/patterns/currency'
 
 /**
  * Known bank hotline / short-code numbers that appear in SMS bodies. Used only
@@ -32,7 +33,22 @@ const KNOWN_HOTLINES = [
   '920003344',  // SNB / AlAhli (KSA)
 ]
 
-const HOTLINE_RE = new RegExp(`\\b(${KNOWN_HOTLINES.join('|')})\\b`)
+const HOTLINE_RE = new RegExp(`\\b(${KNOWN_HOTLINES.join('|')})\\b`, 'g')
+
+const CURRENCY_BEFORE = new RegExp(`(?<![a-z])(?:${CURRENCY_AMOUNT_ALT}|جنيه|جنية|ريال|درهم|دينار)\\s*[:\\-]?\\s*$`, 'i')
+
+/**
+ * A number equal to a hotline is only a hotline when it is not money: not after a currency or a digit and a separator
+ * ("EGP 19700", "1,19700"), not before a decimal or thousands part or a currency ("19700.00", "19700 EGP").
+ */
+export function isHotlineStandalone(message: string, index: number, length: number): boolean {
+  const before = message.slice(Math.max(0, index - 12), index)
+  if (/\d[.,٫٬]?$/.test(before) || CURRENCY_BEFORE.test(before)) return false
+  const after = message.slice(index + length, index + length + 14)
+  if (/^[.,٫٬]\d/.test(after)) return false
+  const token = CURRENCY_TOKEN_RE.exec(after)
+  return !(token && /^\s*$/.test(after.slice(0, token.index)))
+}
 
 /**
  * Returns an opaque `HOTLINE-<digits>` key if a known hotline appears in the
@@ -40,8 +56,10 @@ const HOTLINE_RE = new RegExp(`\\b(${KNOWN_HOTLINES.join('|')})\\b`)
  * Android), so templates learned from one platform match the other.
  */
 export function detectHotline(message: string): string | null {
-  const m = HOTLINE_RE.exec(message)
-  return m ? `HOTLINE-${m[1]}` : null
+  for (const m of message.matchAll(HOTLINE_RE)) {
+    if (isHotlineStandalone(message, m.index ?? 0, m[1].length)) return `HOTLINE-${m[1]}`
+  }
+  return null
 }
 
 /**

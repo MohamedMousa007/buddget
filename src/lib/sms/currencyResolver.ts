@@ -6,7 +6,7 @@
  * per (user, sender) and auto-resolve forever after).
  *
  * Order:
- *   1. Literal in the SMS body (parsed currency AND a currency token present).
+ *   1. Literal: a code-tier pattern's currency, or a parsed currency with a currency token present in the body.
  *   2. A confirmed (user, sender) learned mapping.
  *   3. An unconfirmed (user, sender) learned guess (still provisional).
  *   4. The user's profile base currency → fallback 'EGP'.
@@ -28,12 +28,14 @@ export async function resolveCurrency(
     sender: string | null
     rawBody: string
     parsedCurrency: string | null
+    /** The literal comes from a code-tier (curated, verified) pattern, which states it for a format that never prints it. */
+    codeTier?: boolean
   },
 ): Promise<ResolvedCurrency> {
-  // 1. Trust a currency the model extracted only when the body actually contains
-  //    a currency token — otherwise the model inferred it and we still confirm.
+  // 1. Trust a code-tier pattern's currency outright; trust a model's or a learned template's only when the body
+  //    actually contains a currency token — otherwise it inferred it and we still confirm.
   const literal = toSupportedCurrency(params.parsedCurrency)
-  if (literal && hasCurrencyToken(params.rawBody)) {
+  if (literal && (params.codeTier || hasCurrencyToken(params.rawBody))) {
     return { currency: literal, provisional: false }
   }
   // A code outside the DB enum (e.g. TRY) can never be inserted: guess instead and let the user confirm.

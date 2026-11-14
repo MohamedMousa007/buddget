@@ -57,7 +57,7 @@ import { MAX_SMS_BODY_CHARS, checkCreditSender, claimInProgressResponse, heldFor
 import { withSmsAiQuota } from '@/lib/sms/meteredAi'
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { senderCapReached } from '@/lib/sms/senderCap'
-import { classifyLearnStatus, decideLearnRetry, encodeLearnStatus } from '@/lib/sms/learnRetry'
+import { SKIPPED_COOLDOWN, classifyLearnStatus, encodeLearnStatus, planLearnAttempt } from '@/lib/sms/learnRetry'
 import { loadReplayCases } from '@/lib/sms/replayLoader'
 import { bumpTemplateFailure } from '@/lib/sms/bumpTemplateFailure'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
@@ -381,9 +381,9 @@ async function recordTemplateUser(
 // ---------------------------------------------------------------------------
 
 /** A failure is stored as `<class>#<attempt>|<reason>` so the retry policy and the coverage view can read it; outcomes stay plain. */
-function withFailureClass(status: string): string {
+function withFailureClass(status: string, attempt = 1): string {
   const cls = classifyLearnStatus(status)
-  return cls === 'terminal' || status === 'pending' || /^[a-z_]+#\d+\|/.test(status) ? status : encodeLearnStatus(cls, 1, status)
+  return cls === 'terminal' || status === 'pending' || /^[a-z_]+#\d+\|/.test(status) ? status : encodeLearnStatus(cls, attempt, status)
 }
 
 /** Persist the template-learning outcome on the parse-log row (admin-visible). */
@@ -392,9 +392,10 @@ async function recordLearnOutcome(
   logId: string,
   status: string,
   templateId: string | null = null,
+  attempt = 1,
 ): Promise<void> {
   try {
-    status = withFailureClass(status)
+    status = withFailureClass(status, attempt)
     await service
       .from('sms_parse_log')
       .update({ learn_status: status, learn_template_id: templateId })
@@ -487,6 +488,24 @@ async function generateMatchingRegex(
   return { ok: true, regex: learned.regex_pattern, mapping: learned.mapping_rules }
 }
 
+/** The newest real learn outcome among other messages of this shape. Skips and quota denials say nothing about the shape; a failed lookup means no history. */
+async function lastLearnFailure(service: ReturnType<typeof createServiceRoleClient>, logId: string): Promise<{ status: string; at: Date } | null> {
+  const { data: me } = await service.from('sms_parse_log').select('shape_key').eq('id', logId).maybeSingle()
+  if (!me?.shape_key) return null
+  const { data } = await service
+    .from('sms_parse_log')
+    .select('learn_status, created_at')
+    .eq('shape_key', me.shape_key)
+    .neq('id', logId)
+    .not('learn_status', 'is', null)
+    .not('learn_status', 'in', '(pending,quota_denied)')
+    .not('learn_status', 'like', 'skipped_%')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return data?.learn_status ? { status: data.learn_status, at: new Date(data.created_at) } : null
+}
+
 async function learnPattern(
   message: string,
   sender: string,
@@ -498,22 +517,17 @@ async function learnPattern(
   receivedAt: string,
 ): Promise<void> {
   try {
-    // The LLM is non-deterministic — a single call routinely returns no JSON or
-    // a regex that doesn't match its own sample. Retry up to 3× and keep the
-    // first attempt that compiles AND matches; record the last failure otherwise.
-    let attempt: RegexAttempt = { ok: false, status: 'no_json' }
+    // One metered attempt per message. The shape's last failure (any user) decides whether it is still cooling down or
+    // out of attempts, and tells the attempt what to fix.
+    const plan = planLearnAttempt(await lastLearnFailure(service, logId))
+    if (plan.skip) return recordLearnOutcome(service, logId, SKIPPED_COOLDOWN)
     const replay = await loadReplayCases(service, sender)
-    for (let i = 0; i < 3; i++) {
-      // The previous failure's class tells the next attempt what to fix.
-      const hint: string | null = i === 0 ? null : decideLearnRetry(attempt.ok ? null : attempt.status, new Date()).hint
-      const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, (): Promise<RegexAttempt> => generateMatchingRegex(message, sender, parsed, apiKey, { receivedAt, replay, hint }))
-      if (metered.denied) return recordLearnOutcome(service, logId, 'quota_denied')
-      attempt = metered.value
-      if (attempt.ok) break
-    }
+    const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, (): Promise<RegexAttempt> => generateMatchingRegex(message, sender, parsed, apiKey, { receivedAt, replay, hint: plan.hint }))
+    if (metered.denied) return recordLearnOutcome(service, logId, 'quota_denied')
+    const attempt = metered.value
     if (!attempt.ok) {
-      console.warn('[sms/parse] pattern learning: no matching regex after retries', { sender, status: attempt.status })
-      return recordLearnOutcome(service, logId, attempt.status)
+      console.warn('[sms/parse] pattern learning: no matching regex', { sender, status: attempt.status })
+      return recordLearnOutcome(service, logId, attempt.status, null, plan.attempt)
     }
 
     const { data: bucket } = await service
@@ -692,7 +706,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, reason: 'invalid_body' })
   }
 
-  const { sender, source, receivedAt } = parsedBody.data
+  const { sender, source, receivedAt, truncated } = parsedBody.data
   const rawMessage = parsedBody.data.message
   const message = normalizeSmsText(rawMessage)
   const service = createServiceRoleClient()
@@ -992,10 +1006,23 @@ export async function POST(request: Request) {
   // Stable sender identity (hotline → sender → bank) for currency learning + pooling.
   const senderKey = effectiveSender(sender, message, parsed.bank_name)
 
+  // The body's date when believable (it differs from the receive time for delayed or offline deliveries); otherwise
+  // the capture day, then the server's arrival day, flagged. A date never rejects a message (I6). `nowIso` is the
+  // CLIENT's clock when it sent one, so the arrival day is read from the server clock.
+  const timeZone = await getUserTimeZone(service, userId)
+  const { day, unsure: dateUnsure, source: daySource } = resolveSmsDay({
+    bodyDay: txDay,
+    captureDay: receivedAt ? smsLocalDay(receivedAt, timeZone) : null,
+    arrivalDay: smsLocalDay(new Date().toISOString(), timeZone),
+  })
+  const rowFlags: SmsFlag[] = [...(dateUnsure ? (['date_unsure'] as const) : []), ...(possibleDuplicate ? (['possible_duplicate'] as const) : [])]
+
+  const kindSource = parseMethod === 'fully_curated' ? 'code' : 'model'
+
   // What a message the tiers called a transaction but that cannot be booked yet becomes: a row held for the user, in
   // the same shape as a credit held for its sender (parsed_ok, awaiting_confirmation), so the review list shows it and
   // /api/sms/confirm or /api/sms/dismiss settles it. Never an answer that makes the phone forget it (I6).
-  const holdForReview = async (code: 'null_amount' | 'low_confidence' | 'implausible_amount') => {
+  const holdForReview = async (code: 'null_amount' | 'low_confidence' | 'implausible_amount' | 'truncated_amount') => {
     const { error: holdErr } = await service.from('sms_parse_log')
       .update({
         status: 'logged',
@@ -1012,6 +1039,9 @@ export async function POST(request: Request) {
         kind: parsed.kind,
         clean_title: parsed.cleanTitle,
         parse_method: parseMethod,
+        booked_day: day,
+        sms_flags: rowFlags.length ? rowFlags : null,
+        kind_source: kindSource,
         harvested_at: new Date().toISOString(),
       })
       .eq('id', logId)
@@ -1051,6 +1081,7 @@ export async function POST(request: Request) {
     sender: senderKey,
     rawBody: message,
     parsedCurrency: parsed.currency,
+    codeTier: parseMethod === 'fully_curated',
   })
   parsed.currency = resolvedCurrency
 
@@ -1063,17 +1094,8 @@ export async function POST(request: Request) {
   const cleanCpLast4 = (parsed.detectedCounterpartyLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
   if (!isPlausibleAmount(parsed.amount)) return holdForReview('implausible_amount')
-
-  // The body's date when believable (it differs from the receive time for delayed or offline deliveries); otherwise
-  // the capture day, then the server's arrival day, flagged. A date never rejects a message (I6). `nowIso` is the
-  // CLIENT's clock when it sent one, so the arrival day is read from the server clock.
-  const timeZone = await getUserTimeZone(service, userId)
-  const { day, unsure: dateUnsure } = resolveSmsDay({
-    bodyDay: txDay,
-    captureDay: receivedAt ? smsLocalDay(receivedAt, timeZone) : null,
-    arrivalDay: smsLocalDay(new Date().toISOString(), timeZone),
-  })
-  const rowFlags: SmsFlag[] = [...(dateUnsure ? (['date_unsure'] as const) : []), ...(possibleDuplicate ? (['possible_duplicate'] as const) : [])]
+  // The phone says it cut the message, so the amount may be a fragment: the user checks it (N6).
+  if (truncated === true) return holdForReview('truncated_amount')
 
   // Classify + persist via the shared dispatcher: own-account/transfer/FX
   // pairing → CC payoff → salary dedup → ATM → subscription → purchase. Posts
@@ -1115,6 +1137,7 @@ export async function POST(request: Request) {
     last4: cleanLast4,
     counterpartyLast4: cleanCpLast4,
     receivedAtIso: nowIso,
+    occurredAtIso: daySource === 'arrival' ? new Date().toISOString() : undefined,
     logId,
     matchedTemplateId,
     counterpartyIsSelf,
@@ -1123,7 +1146,7 @@ export async function POST(request: Request) {
     counterpartyHash: counterpartyNameHash,
     referenceHash: paymentReferenceHash,
     // Only a code-tier match proves the kind; the AI and learned templates only assert it (P1-7).
-    kindSource: parseMethod === 'fully_curated' ? 'code' : 'model',
+    kindSource,
     smsFlags: rowFlags.length ? rowFlags : undefined,
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
@@ -1252,6 +1275,10 @@ export async function POST(request: Request) {
         ? null
         : parsed.merchantNormalized ?? (tx.kind === 'purchase' || tx.kind === 'online_purchase' ? normalizeMerchant(parsed.merchant, tx.kind) : null),
       parse_method: parseMethod,
+      masked_body: maskSkeletonText(message),
+      booked_day: day,
+      sms_flags: rowFlags.length ? rowFlags : null,
+      kind_source: kindSource,
       pattern_id: patternId,
       // B1: without this a template-parsed row has no link to the template that produced it,
       // and no failure signal can ever be attributed.

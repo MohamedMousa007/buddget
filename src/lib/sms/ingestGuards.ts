@@ -108,12 +108,21 @@ export function smsPlausibilityIssue(amount: number, day: string, nowMs: number 
  * message that prints no date and was captured on a believable day is simply dated by its capture, with no flag.
  * `arrivalDay` must come from the server clock, never from the client's reported time.
  */
-export function resolveSmsDay(i: { bodyDay: string | null; captureDay: string | null; arrivalDay: string; nowMs?: number }): { day: string; unsure: boolean } {
+export function resolveSmsDay(i: { bodyDay: string | null; captureDay: string | null; arrivalDay: string; nowMs?: number }): { day: string; unsure: boolean; source: 'body' | 'capture' | 'arrival' } {
   const nowMs = i.nowMs ?? Date.now()
-  if (i.bodyDay && isPlausibleDay(i.bodyDay, nowMs)) return { day: i.bodyDay, unsure: false }
+  if (i.bodyDay && isPlausibleDay(i.bodyDay, nowMs)) return { day: i.bodyDay, unsure: false, source: 'body' }
   const printedDateFailed = i.bodyDay != null
-  if (i.captureDay && isPlausibleDay(i.captureDay, nowMs)) return { day: i.captureDay, unsure: printedDateFailed }
-  return { day: i.arrivalDay, unsure: printedDateFailed || i.captureDay != null }
+  if (i.captureDay && isPlausibleDay(i.captureDay, nowMs)) return { day: i.captureDay, unsure: printedDateFailed, source: 'capture' }
+  return { day: i.arrivalDay, unsure: printedDateFailed || i.captureDay != null, source: 'arrival' }
+}
+
+const DAY_MS = 86_400_000
+
+/** True when a booked day sits more than 2 days from the day the capture time gives, so the capture time is not what dated the row. */
+export function dayDiffersFromCapture(bookedDay: string, captureIso: string, timeZone: string): boolean {
+  const a = Date.parse(`${bookedDay}T00:00:00Z`)
+  const b = Date.parse(`${smsLocalDay(captureIso, timeZone)}T00:00:00Z`)
+  return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) > 2 * DAY_MS
 }
 
 const SUPPORTED = new Set<string>(Constants.public.Enums.currency_code)

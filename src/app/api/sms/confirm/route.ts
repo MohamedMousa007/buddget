@@ -9,7 +9,7 @@
  */
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
-import { isPlausibleAmount, smsLocalDay } from '@/lib/sms/ingestGuards'
+import { dayDiffersFromCapture, isPlausibleAmount, smsLocalDay } from '@/lib/sms/ingestGuards'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { z } from 'zod'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
@@ -22,6 +22,7 @@ import { createSmsTransaction } from '@/lib/sms/dispatch'
 import { isIncomeKind } from '@/lib/sms/createSmsExpense'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { effectiveSender } from '@/lib/sms/routingKey'
+import { SMS_FLAGS } from '@/lib/sms/smsFlags'
 import type { Currency } from '@/lib/store/types'
 
 const bodySchema = z
@@ -34,7 +35,7 @@ const bodySchema = z
   .refine((d) => !!d.logId || !!d.hash, { message: 'Provide logId or hash' })
 
 const ROW_COLUMNS =
-  'id, status, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code, matched_template_id, reference_hash'
+  'id, status, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code, matched_template_id, reference_hash, booked_day, sms_flags, device_id, counterparty_hash, counterparty_is_self'
 
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
@@ -103,11 +104,11 @@ export async function POST(request: Request) {
       const confirmedCurrency = (parsed.data.currency ?? row.currency) as Currency | null
       if (confirmedCurrency) {
         if (row.expense_id) {
-          const { error } = await service.from('expenses').update({ currency: confirmedCurrency }).eq('id', row.expense_id).eq('user_id', userId)
+          const { error } = await service.from('expenses').update({ currency: confirmedCurrency }).eq('id', row.expense_id).eq('user_id', userId).eq('sms_log_id', row.id)
           if (error) { console.error('[sms/confirm] expense currency update failed', error); return fail('currency_update_failed', 500) }
         }
         if (row.income_id) {
-          const { error } = await service.from('income_events').update({ currency: confirmedCurrency }).eq('id', row.income_id).eq('user_id', userId)
+          const { error } = await service.from('income_events').update({ currency: confirmedCurrency }).eq('id', row.income_id).eq('user_id', userId).eq('sms_log_id', row.id)
           if (error) { console.error('[sms/confirm] income currency update failed', error); return fail('currency_update_failed', 500) }
         }
         if (senderKey) {
@@ -142,7 +143,9 @@ export async function POST(request: Request) {
     }
 
     const receivedAtIso = new Date(row.received_at ?? Date.now()).toISOString()
-    const day = smsLocalDay(receivedAtIso, await getUserTimeZone(service, userId))
+    const timeZone = await getUserTimeZone(service, userId)
+    const day = row.booked_day ?? smsLocalDay(receivedAtIso, timeZone)
+    const smsFlags = SMS_FLAGS.filter((f) => row.sms_flags?.includes(f))
 
     // Re-run the full classifier so a user-confirmed row gets the same
     // transfer/CC/subscription/salary handling as the auto path.
@@ -163,11 +166,17 @@ export async function POST(request: Request) {
       last4: row.account_last4 ?? null,
       counterpartyLast4: row.counterparty_last4 ?? null,
       receivedAtIso,
+      // A day that came from the arrival fallback is not the capture day: the phone's clock is not what dated the row.
+      occurredAtIso: row.booked_day && dayDiffersFromCapture(row.booked_day, receivedAtIso, timeZone) ? new Date().toISOString() : undefined,
       logId: row.id,
       // Carried so the direction-guard oracle can attribute a wrong `kind` back to the template
       // that produced it on this path too — a defect is no less real for being user-confirmed.
       matchedTemplateId: row.matched_template_id ?? null,
       referenceHash: row.reference_hash ?? null,
+      deviceId: row.device_id ?? null,
+      counterpartyHash: row.counterparty_hash ?? null,
+      counterpartyIsSelf: row.counterparty_is_self ?? null,
+      smsFlags: smsFlags.length ? smsFlags : undefined,
       // The user confirmed this row, so its kind is no longer only a model's assertion.
       kindSource: 'code',
     }, { exchangeRates: DEFAULT_MARKET_RATES, userConfirmed: true })

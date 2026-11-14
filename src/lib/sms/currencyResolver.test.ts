@@ -21,4 +21,13 @@ describe('resolveCurrency', () => {
   it('unknown code falls back to base, provisional', async () => {
     expect(await resolveCurrency(service('SAR'), { ...params, parsedCurrency: 'TRY' })).toEqual({ currency: 'SAR', provisional: true })
   })
+  it('P2-6: a code-tier literal is trusted with no currency token in the body', async () => {
+    expect(await resolveCurrency(service('SAR'), { ...params, rawBody: 'Purchase 50 at X', parsedCurrency: 'EGP', codeTier: true })).toEqual({ currency: 'EGP', provisional: false })
+  })
+  it('P2-6: a learned-template or AI literal with no currency token still falls back, provisional', async () => {
+    expect(await resolveCurrency(service('SAR'), { ...params, rawBody: 'Purchase 50 at X', parsedCurrency: 'EGP' })).toEqual({ currency: 'SAR', provisional: true })
+  })
+  it('P2-6: a code-tier literal outside the supported list is still a guess', async () => {
+    expect(await resolveCurrency(service('SAR'), { ...params, rawBody: 'Purchase 50 at X', parsedCurrency: 'TRY', codeTier: true })).toEqual({ currency: 'SAR', provisional: true })
+  })
 })

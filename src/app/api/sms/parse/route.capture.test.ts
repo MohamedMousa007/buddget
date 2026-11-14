@@ -248,6 +248,17 @@ describe('I6: dates never reject', () => {
     const res = await (await post({ message: PLAIN, receivedAt: '2023-10-27T10:00:00+03:00', eventId: EVT(1) })).json()
     expect(res).toMatchObject({ ok: true, autoAdded: true })
     expect(h.dispatch.mock.calls[0][1]).toMatchObject({ day: '2026-10-27', smsFlags: ['date_unsure'] })
+    expect(Math.abs(Date.parse(h.dispatch.mock.calls[0][1].occurredAtIso) - Date.parse(NOW))).toBeLessThan(60_000)
+  })
+
+  it('keeps the phone capture time as occurred_at when the capture day is believable', async () => {
+    await post({ message: PLAIN, receivedAt: '2026-10-27T10:00:00+03:00', eventId: EVT(1) })
+    expect(h.dispatch.mock.calls[0][1].occurredAtIso).toBeUndefined()
+  })
+
+  it('stores the booked day, flags and kind source on the promoted log row', async () => {
+    await post({ message: PLAIN, receivedAt: '2023-10-27T10:00:00+03:00', eventId: EVT(1) })
+    expect(claims()[0]).toMatchObject({ booked_day: '2026-10-27', sms_flags: ['date_unsure'], kind_source: 'code' })
   })
 
   it('uses a plausible body date with no flag', async () => {
@@ -283,4 +294,21 @@ describe('I6: an amount that cannot be booked is held, never answered as success
     expect(h.dispatch).not.toHaveBeenCalled()
     vi.unstubAllGlobals()
   })
+})
+
+describe('N6 / N19: a truncated message is held with the facts the parse resolved', () => {
+  it('holds a message the phone flagged truncated, and stores the day, flags and kind source for /confirm', async () => {
+    h.curated = curated({ amount: 1204.5 })
+    const res = await post({ message: 'Purchase at Test Shop card ending 1234 EGP 1,204.50', truncated: true, receivedAt: '2023-10-27T10:00:00+03:00', eventId: EVT(1) })
+    expect(await res.json()).toMatchObject({ ok: true, held: true, reason: 'truncated_amount' })
+    expect(claims()[0]).toMatchObject({ awaiting_confirmation: true, failure_code: 'truncated_amount', amount: 1204.5, booked_day: '2026-10-27', sms_flags: ['date_unsure'], kind_source: 'code' })
+    expect(h.dispatch).not.toHaveBeenCalled()
+  })
+
+  it('books a body that merely ends in its amount when the phone did not flag it', async () => {
+    h.curated = curated({ amount: 1204.5 })
+    const res = await post({ message: 'Purchase at Test Shop card ending 1234 EGP 1,204.50', receivedAt: '2026-10-27T10:00:00+03:00', eventId: EVT(1) })
+    expect(await res.json()).toMatchObject({ ok: true, autoAdded: true })
+  })
+
 })

@@ -156,4 +156,36 @@ describe('POST /api/sms/confirm', () => {
     expect(await res.json()).toMatchObject({ ok: true, currencyConfirmed: true, currency: 'USD' })
     expect(h.create).not.toHaveBeenCalled()
   })
+
+  it('I5/I6 (N19): a held row confirmed books on the stored day with both flags, its device and counterparty facts, and kind source code even when the log says model', async () => {
+    h.claimRow = pending({
+      booked_day: '2026-09-28', sms_flags: ['date_unsure', 'possible_duplicate', 'bogus'], kind_source: 'model',
+      device_id: 'dev1', counterparty_hash: 'hash1', counterparty_is_self: true,
+    })
+    await post({ logId: LOG_ID })
+    expect(h.create.mock.calls[0][1]).toMatchObject({
+      day: '2026-09-28', smsFlags: ['possible_duplicate', 'date_unsure'], deviceId: 'dev1', counterpartyHash: 'hash1', counterpartyIsSelf: true, kindSource: 'code',
+    })
+  })
+
+  it('I6: a stored day far from the capture day takes the server arrival time as occurred_at; a near one does not', async () => {
+    h.claimRow = pending({ booked_day: '2026-10-01' })
+    await post({ logId: LOG_ID })
+    expect(h.create.mock.calls[0][1].occurredAtIso).toBeUndefined()
+    h.create.mockClear()
+    h.claimRow = pending({ booked_day: '2026-11-14', received_at: '2023-10-01T10:00:00Z' })
+    await post({ logId: LOG_ID })
+    expect(Date.now() - Date.parse(h.create.mock.calls[0][1].occurredAtIso)).toBeLessThan(60_000)
+  })
+
+  it('a row with none of the stored facts books as before: capture day, no flags, kind source code', async () => {
+    await post({ logId: LOG_ID })
+    expect(h.create.mock.calls[0][1]).toMatchObject({ day: '2026-10-01', kindSource: 'code', smsFlags: undefined })
+  })
+
+  it('N19(d): a currency confirmation only touches money this message owns, so a matched refund leaves the purchase alone', async () => {
+    h.claimRow = pending({ expense_id: 'purchase1' })
+    await post({ logId: LOG_ID, currency: 'USD' })
+    expect(h.filters).toContainEqual(['sms_log_id', LOG_ID])
+  })
 })

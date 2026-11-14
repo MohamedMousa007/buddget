@@ -1,4 +1,5 @@
 import { PAYMENT_BRANDS } from '@/lib/payment/paymentMethodDefaults'
+import { isHotlineStandalone } from '@/lib/sms/routingKey'
 
 /**
  * Which bank or wallet a message came from, read from the message itself.
@@ -59,7 +60,7 @@ export interface DetectedProvider {
 export function providerFromBody(message: string): DetectedProvider | null {
   for (const m of message.matchAll(/\b(\d{5})\b/g)) {
     const id = HOTLINES[m[1]]
-    if (id) return { brandId: id, name: PAYMENT_BRANDS[id].name, via: 'hotline', at: m.index ?? 0 }
+    if (id && isHotlineStandalone(message, m.index ?? 0, 5)) return { brandId: id, name: PAYMENT_BRANDS[id].name, via: 'hotline', at: m.index ?? 0 }
   }
   cache ??= needlesFor()
   let best: { brandId: string; at: number } | null = null

@@ -27,7 +27,7 @@ export const LEARN: Record<string, { label: string; tone: Tone }> = {
   learned: { label: 'learned', tone: 'good' }, duplicate: { label: 'dup', tone: 'good' }, merged_equivalent: { label: 'merged', tone: 'good' },
   pending: { label: 'pending', tone: 'brand' },
   cap_reached: { label: 'cap', tone: 'warn' }, skipped_low_conf: { label: 'low-conf', tone: 'warn' }, skipped_no_key: { label: 'no-key', tone: 'warn' },
-  skipped_not_tx: { label: 'not-tx', tone: 'warn' }, blocked_retired: { label: 'blocked', tone: 'warn' },
+  skipped_not_tx: { label: 'not-tx', tone: 'warn' }, skipped_cooldown: { label: 'cooldown', tone: 'warn' }, blocked_retired: { label: 'blocked', tone: 'warn' },
   gemini_error: { label: 'ai-err', tone: 'bad' }, no_json: { label: 'no-json', tone: 'bad' }, no_regex_or_amount: { label: 'bad-rule', tone: 'bad' },
   regex_invalid: { label: 'bad-regex', tone: 'bad' }, regex_no_match: { label: 'no-match', tone: 'bad' },
   gate_amount_mismatch: { label: 'gate:amount', tone: 'bad' }, gate_currency_mismatch: { label: 'gate:ccy', tone: 'bad' },
@@ -51,6 +51,7 @@ export function rowStatus(row: SmsTrackedRow, now: number): { label: string; ton
   if (row.parsed_ok && !row.expense_id && !row.income_id && !['add_failed', 'rejected', 'failed', 'paired'].includes(row.status)) {
     return { label: 'No transaction', tone: 'bad' }
   }
+  if (row.status === 'undone') return { label: 'Undone by user', tone: 'neutral' }
   switch (row.status) {
     case 'confirmed': return { label: 'Confirmed', tone: 'good' }
     case 'tapped': return { label: 'Tapped · manual', tone: 'warn' }

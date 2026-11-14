@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  computeSmsHash, claimInProgressResponse, isClaimInFlight, maskOtpDigits, checkCreditSender, heldForConfirmation, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction, resolveSmsDay, computeBodyHash, captureSecond, isPlausibleAmount,
+  computeSmsHash, claimInProgressResponse, isClaimInFlight, maskOtpDigits, checkCreditSender, heldForConfirmation, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction, resolveSmsDay, computeBodyHash, captureSecond, isPlausibleAmount, dayDiffersFromCapture,
 } from './ingestGuards'
 import { parseSmsDay, matchCuratedPattern } from './patterns'
 
@@ -52,19 +52,19 @@ describe('resolveSmsDay (I6: a date never rejects)', () => {
   const nowMs = Date.parse('2026-10-27T12:00:00Z')
   const arrivalDay = '2026-10-27'
   it('uses a plausible body day with no flag', () => {
-    expect(resolveSmsDay({ bodyDay: '2026-10-25', captureDay: '2026-10-27', arrivalDay, nowMs })).toEqual({ day: '2026-10-25', unsure: false })
+    expect(resolveSmsDay({ bodyDay: '2026-10-25', captureDay: '2026-10-27', arrivalDay, nowMs })).toEqual({ day: '2026-10-25', unsure: false, source: 'body' })
   })
   it('falls back to the capture day, flagged, when the body year is far in the future', () => {
-    expect(resolveSmsDay({ bodyDay: '2090-01-14', captureDay: '2026-10-27', arrivalDay, nowMs })).toEqual({ day: '2026-10-27', unsure: true })
+    expect(resolveSmsDay({ bodyDay: '2090-01-14', captureDay: '2026-10-27', arrivalDay, nowMs })).toEqual({ day: '2026-10-27', unsure: true, source: 'capture' })
   })
   it('falls back to the arrival day, flagged, when a phone clock three years behind made the capture day implausible', () => {
-    expect(resolveSmsDay({ bodyDay: null, captureDay: '2023-10-27', arrivalDay, nowMs })).toEqual({ day: arrivalDay, unsure: true })
+    expect(resolveSmsDay({ bodyDay: null, captureDay: '2023-10-27', arrivalDay, nowMs })).toEqual({ day: arrivalDay, unsure: true, source: 'arrival' })
   })
   it('dates an undated message by its capture day without a flag', () => {
-    expect(resolveSmsDay({ bodyDay: null, captureDay: '2026-10-26', arrivalDay, nowMs })).toEqual({ day: '2026-10-26', unsure: false })
+    expect(resolveSmsDay({ bodyDay: null, captureDay: '2026-10-26', arrivalDay, nowMs })).toEqual({ day: '2026-10-26', unsure: false, source: 'capture' })
   })
   it('dates an undated message with no capture time by the arrival day without a flag', () => {
-    expect(resolveSmsDay({ bodyDay: null, captureDay: null, arrivalDay, nowMs })).toEqual({ day: arrivalDay, unsure: false })
+    expect(resolveSmsDay({ bodyDay: null, captureDay: null, arrivalDay, nowMs })).toEqual({ day: arrivalDay, unsure: false, source: 'arrival' })
   })
   it('keeps the existing bounds: 2 days ahead is fine, 3 is not, 400 days back (counted from noon) is the edge', () => {
     expect(resolveSmsDay({ bodyDay: '2026-10-29', captureDay: null, arrivalDay, nowMs }).unsure).toBe(false)
@@ -202,5 +202,18 @@ describe('N8/N12/N18/N3 ingest guards (masked fixtures)', () => {
   })
   it('held credit posts nothing', () => {
     expect(heldForConfirmation('income')).toMatchObject({ outcome: 'awaiting_confirmation', expenseId: null, incomeId: null })
+  })
+})
+
+describe('I6: occurred_at follows the day source', () => {
+  it('names the arrival day as the source when the capture time is implausible, and the others otherwise', () => {
+    const nowMs = Date.parse('2026-10-27T12:00:00Z')
+    expect(resolveSmsDay({ bodyDay: null, captureDay: '2023-10-27', arrivalDay: '2026-10-27', nowMs }).source).toBe('arrival')
+    expect(resolveSmsDay({ bodyDay: null, captureDay: '2026-10-27', arrivalDay: '2026-10-27', nowMs }).source).toBe('capture')
+  })
+  it('dayDiffersFromCapture: more than 2 days apart only', () => {
+    expect(dayDiffersFromCapture('2026-10-27', '2023-10-27T10:00:00Z', 'Africa/Cairo')).toBe(true)
+    expect(dayDiffersFromCapture('2026-10-26', '2026-10-27T10:00:00Z', 'Africa/Cairo')).toBe(false)
+    expect(dayDiffersFromCapture('2026-10-24', '2026-10-27T10:00:00Z', 'Africa/Cairo')).toBe(true)
   })
 })

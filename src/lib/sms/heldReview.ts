@@ -5,7 +5,7 @@ export const CREDIT_KINDS = new Set(['income', 'instant_transfer_in', 'refund'])
 
 /**
  * Held messages were held for a reason, so nothing is chosen for the user. `ready` rows (a plain debit nothing has
- * been created for) are what "Select all ready" picks; `check` rows (a credit, or a currency still to confirm) need a
+ * been created for) are what "Select all ready" picks; `check` rows (a credit, a currency still to confirm, or an amount that may be cut off) need a
  * look; `locked` rows (unverified sender) can only be confirmed one at a time, from their own detail.
  */
 export type HeldGroup = 'ready' | 'check' | 'locked'
@@ -19,7 +19,7 @@ export const isCurrencyOnly = (i: Pick<PendingConfirmation, 'expense_id' | 'inco
 
 export function heldGroup(i: Held): HeldGroup {
   if (i.failure_code === 'sender_mismatch') return 'locked'
-  if (isCredit(i) || isCurrencyOnly(i)) return 'check'
+  if (isCredit(i) || isCurrencyOnly(i) || i.failure_code === 'truncated_amount') return 'check'
   return 'ready'
 }
 

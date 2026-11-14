@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { providerFromBody } from './providerFromBody'
+import { detectHotline } from './routingKey'
 
 const name = (m: string) => providerFromBody(m)?.name ?? null
 
@@ -22,5 +23,19 @@ describe('providerFromBody', () => {
   it('takes the provider named first, and ignores random 5-digit numbers', () => {
     expect(name('NBE transfer to CIB account EGP 100')).toBe('NBE')
     expect(name('Ref 12345 EGP 40 at SHOP')).toBeNull()
+  })
+})
+
+describe('P2-9: a hotline number that is money names no bank', () => {
+  it.each(['Paid EGP 19700 at SHOP', 'Paid 19700.00 at SHOP', 'Paid 19,700 at SHOP', 'Paid 19700 EGP at SHOP', 'Paid LE 19666', 'Paid 1,19666 at SHOP', 'دفع ١٩٧٠٠٫٥٠ جنيه'])('%s', (body) => {
+    expect(detectHotline(body)).toBeNull()
+    expect(providerFromBody(body)).toBeNull()
+  })
+  it.each([['call 19666', 'HOTLINE-19666'], ['اتصل 19666', 'HOTLINE-19666'], ['Paid EGP 50 at SHOP. Help: 19700.', 'HOTLINE-19700']])('%s still names the bank', (body, key) => {
+    expect(detectHotline(body)).toBe(key)
+    expect(providerFromBody(body)?.via).toBe('hotline')
+  })
+  it('a money hotline-lookalike does not hide a real hotline later in the body', () => {
+    expect(detectHotline('Paid EGP 19700 at SHOP, call 19666')).toBe('HOTLINE-19666')
   })
 })
