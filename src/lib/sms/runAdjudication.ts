@@ -14,6 +14,7 @@ import {
   ADJUDICATOR_PROMPT,
   buildAdjudicationPrompt,
   parseAdjudication,
+  validateCorrection,
   verdictCountsAgainstTemplate,
   type AdjudicationInput,
 } from '@/lib/sms/adjudicator'
@@ -79,13 +80,14 @@ export async function runAdjudication(
         continue
       }
 
+      const judged = signals.filter((s) => s.sms_log_id === logId)
       const { data: log } = await service
         .from('sms_parse_log')
-        .select('raw_body, amount, currency, kind, account_last4, received_at')
+        .select('raw_body, amount, currency, kind, merchant, account_last4, received_at')
         .eq('id', logId)
         .maybeSingle()
       if (!log?.raw_body) {
-        await markVerdict(service, signals, 'unclear')
+        await markVerdict(service, judged, 'unclear')
         continue
       }
 
@@ -98,7 +100,7 @@ export async function runAdjudication(
           last4: (log.account_last4 as string | null) ?? null,
           date: ((log.received_at as string | null) ?? '').slice(0, 10) || null,
         },
-        changes: signals.map((s) => ({
+        changes: judged.map((s) => ({
           signalKind: s.signal_kind,
           field: s.field,
           from: s.old_value,
@@ -106,12 +108,12 @@ export async function runAdjudication(
         })),
       }
 
-      const raw = await deps.askModel(ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input))
+      const raw = await deps.askModel(ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input, (log.merchant as string | null) ?? null))
       if (raw === null) continue // model unavailable — leave the signals pending for next time
 
       const result = parseAdjudication(raw)
-      await markVerdict(service, signals, result.verdict)
-      adjudicated += signals.length
+      await markVerdict(service, judged, result.verdict)
+      adjudicated += judged.length
 
       if (verdictCountsAgainstTemplate(result.verdict)) {
         counted++
@@ -121,20 +123,21 @@ export async function runAdjudication(
           // retire a template on one person's say-so.
           hard: false,
           reason: `adjudicated_${result.verdict}: ${result.reason ?? ''}`.slice(0, 200),
-          userId: signals[0].user_id,
+          userId: judged[0].user_id,
         })
 
         // The correction is the system's memory: injected into future prompts for this message
         // shape so the same mistake is not repeated for the next user.
-        if (result.verdict === 'parse_error' && result.corrected) {
+        const corrected = result.verdict === 'parse_error' ? validateCorrection(result.corrected, input.body) : undefined
+        if (corrected) {
           const shape = bodyShapeKey(input.body)
           if (shape) {
             await service.from('sms_corrections').insert({
               body_shape_key: shape,
               redacted_body: maskPii(input.body),
-              corrected_fields: result.corrected,
+              corrected_fields: corrected,
               source_template_id: template_id,
-              source_signal_id: signals[0].id,
+              source_signal_id: judged[0].id,
               confidence: result.confidence,
             })
           }
@@ -183,7 +186,7 @@ async function adjudicateAiOnly(service: ServiceClient, deps: AdjudicationDeps):
     }
     const { data: log } = await service
       .from('sms_parse_log')
-      .select('raw_body, amount, currency, kind, account_last4, received_at')
+      .select('raw_body, amount, currency, kind, merchant, account_last4, received_at')
       .eq('id', sig.sms_log_id)
       .maybeSingle()
     if (!log?.raw_body) {
@@ -203,20 +206,21 @@ async function adjudicateAiOnly(service: ServiceClient, deps: AdjudicationDeps):
       changes: [{ signalKind: sig.signal_kind, field: sig.field, from: sig.old_value, to: sig.new_value }],
     }
 
-    const raw = await deps.askModel(ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input))
+    const raw = await deps.askModel(ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input, (log.merchant as string | null) ?? null))
     if (raw === null) continue // model unavailable — leave pending
 
     const result = parseAdjudication(raw)
     await markVerdict(service, [sig], result.verdict)
     done++
 
-    if (result.verdict === 'parse_error' && result.corrected) {
+    const corrected = result.verdict === 'parse_error' ? validateCorrection(result.corrected, input.body) : undefined
+    if (corrected) {
       const shape = bodyShapeKey(input.body)
       if (shape) {
         await service.from('sms_corrections').insert({
           body_shape_key: shape,
           redacted_body: maskPii(input.body),
-          corrected_fields: result.corrected,
+          corrected_fields: corrected,
           source_template_id: null,
           source_signal_id: sig.id,
           confidence: result.confidence,

@@ -12,6 +12,9 @@ export const CURRENCY_CODES = [
   'EGP', 'SAR', 'AED', 'KWD', 'QAR', 'OMR', 'BHD', 'USD', 'EUR', 'GBP',
 ] as const
 
+/** Regex alternation of every code and abbreviation a ledger-signed amount may be written with. */
+export const CURRENCY_AMOUNT_ALT = [...CURRENCY_CODES, 'LE', 'SR', 'جم', 'ر\\.?\\s?س', 'د\\.?\\s?إ', 'د\\.?\\s?ك', 'ر\\.?\\s?ق', 'ر\\.?\\s?ع', 'د\\.?\\s?ب'].join('|')
+
 /**
  * Any currency token: ISO code (EGP/SAR/AED/…), the colloquial `LE`, or an
  * Arabic currency word/symbol — جنيه/جم (EGP), ريال/ر.س (SAR), درهم/د.إ (AED),

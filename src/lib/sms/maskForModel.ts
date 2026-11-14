@@ -30,10 +30,11 @@ function standInDigits(digits: string, from: number): string {
 }
 
 /** `keep` is the amount's integer text: it is a long run too, but the pattern has to capture it. */
-function replaceDigits(text: string, keep: string | null): string {
+function replaceDigits(text: string, keep: string | null, keepNumbers: boolean): string {
   let n = 0
-  return text
-    .replace(PHONE_LIKE_RE, (m) => m.replace(/\d/g, () => DIGITS[n++ % DIGITS.length]!))
+  const phonesMasked = text.replace(PHONE_LIKE_RE, (m) => m.replace(/\d/g, () => DIGITS[n++ % DIGITS.length]!))
+  if (keepNumbers) return phonesMasked
+  return phonesMasked
     .replace(LONG_RUN_RE, (run) => {
       if (run === keep) return run
       if (run.length < KEEP_LAST_MIN_RUN) return standInDigits(run, n++)
@@ -47,7 +48,17 @@ export interface ModelView {
   merchant: string | null
 }
 
-export function maskForModel(rawMessage: string, extracted: { merchant: string | null; kind: string | null; amount: number | null }): ModelView {
+/**
+ * `keepNumbers` is for the adjudicator, which must judge the amount, date and last four against the message: names and
+ * phone-like numbers are still replaced, but no other digit run is. The phone patterns need a leading + or a 0/20-01x
+ * mobile prefix, so a plain amount or a compact date is never matched.
+ * ponytail: an account or IBAN-length digit run stays visible to the adjudicator; that is the price of never blinding it.
+ */
+export function maskForModel(
+  rawMessage: string,
+  extracted: { merchant: string | null; kind: string | null; amount: number | null },
+  { keepNumbers = false }: { keepNumbers?: boolean } = {},
+): ModelView {
   const seen: Array<[string, string]> = []
   let nth = 0
   const standIn = (original: string, script: 'latin' | 'arabic'): string => {
@@ -78,6 +89,6 @@ export function maskForModel(rawMessage: string, extracted: { merchant: string |
     }
   }
 
-  message = replaceDigits(message, extracted.amount != null ? String(Math.trunc(extracted.amount)) : null)
+  message = replaceDigits(message, extracted.amount != null ? String(Math.trunc(extracted.amount)) : null, keepNumbers)
   return { message, merchant }
 }

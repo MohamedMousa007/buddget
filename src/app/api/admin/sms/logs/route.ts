@@ -31,7 +31,7 @@ export async function GET(req: Request) {
     const stuck = new Date(Date.now() - 10 * 60_000).toISOString()
     q = q.or(`status.in.(${FAILURE_STATUSES.join(',')}),and(status.in.(logged,notified),received_at.lt.${stale}),and(status.eq.processing,received_at.lt.${stuck})`)
   } else if (queue === 'unparsed') {
-    q = q.eq('parsed_ok', false).neq('status', 'rejected')
+    q = q.eq('parsed_ok', false).not('status', 'in', '(rejected,undone)')
   }
   if (status) q = q.eq('status', status)
   if (userId && UUID_RE.test(userId)) q = q.eq('user_id', userId)

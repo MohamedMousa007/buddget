@@ -47,7 +47,7 @@ export async function GET(req: Request, { params }: Params) {
     events.push({
       at: s.received_at,
       source: 'sms',
-      title: failed ? `SMS failed to import${s.failure_code ? ` (${s.failure_code})` : ''}` : s.status === 'rejected' ? 'SMS ignored (not a transaction)' : s.parsed_ok ? 'SMS imported' : `SMS ${s.status ?? 'received'}`,
+      title: failed ? `SMS failed to import${s.failure_code ? ` (${s.failure_code})` : ''}` : s.status === 'rejected' ? 'SMS ignored (not a transaction)' : s.status === 'undone' ? 'SMS undone by user' : s.parsed_ok ? 'SMS imported' : `SMS ${s.status ?? 'received'}`,
       detail: [s.sender, granted ? s.merchant : null, granted && s.amount != null ? `${s.amount} ${s.currency ?? ''}`.trim() : null, s.parse_method].filter(Boolean).join(' · '),
       tone: failed ? 'bad' : s.parsed_ok ? 'good' : 'neutral',
     })

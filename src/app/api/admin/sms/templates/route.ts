@@ -72,14 +72,18 @@ export async function POST(req: Request) {
   if (op === 'delete' && typeof id === 'string') {
     const { error } = await service.from(TABLE).delete().eq('id', id)
     if (error) return bad('Delete failed.', 500)
+    invalidateCuratedDbCache()
     await ctx.audit('sms.template_delete', { ...target, summary: 'Deleted SMS template' })
     return json({ ok: true })
   }
 
   if (op === 'bulk_toggle' && typeof patch?.ai_enabled === 'boolean') {
-    const { error } = await service.from(TABLE).update({ ai_enabled: patch.ai_enabled, updated_at: now }).neq('id', '00000000-0000-0000-0000-000000000000')
+    const q = service.from(TABLE).update({ ai_enabled: patch.ai_enabled, updated_at: now })
+    // Enabling must not revive quarantined, retired, exported or switched-off templates; `kill` leaves no mark that tells a killed row from a disabled one, so only active rows are touched.
+    const { error } = await (patch.ai_enabled ? q.eq('status', 'active') : q.neq('id', '00000000-0000-0000-0000-000000000000'))
     if (error) return bad('Bulk update failed.', 500)
-    await ctx.audit('sms.template_bulk_toggle', { summary: `AI ${patch.ai_enabled ? 'enabled' : 'disabled'} on every template` })
+    invalidateCuratedDbCache()
+    await ctx.audit('sms.template_bulk_toggle', { summary: patch.ai_enabled ? 'AI enabled on every active template' : 'AI disabled on every template' })
     return json({ ok: true })
   }
 
@@ -96,6 +100,12 @@ export async function POST(req: Request) {
     const { data: tpl } = await service.from(TABLE).select('sender, regex_pattern, mapping_rules, status, ai_enabled, failure_count, hard_fail').eq('id', id).single()
     if (!tpl) return bad('Template not found.', 404)
     if (tpl.status !== 'active' || !tpl.ai_enabled || tpl.failure_count || tpl.hard_fail) return bad('This template is not active or has recorded failures.')
+    const rpc = service.rpc as unknown as (fn: string) => PromiseLike<{ data: Array<{ template_id: string }> | null; error: unknown }>
+    const [auto, candidates] = await Promise.all([rpc.call(service, 'check_sms_promotion_eligibility'), rpc.call(service, 'sms_promotion_candidates')])
+    if (auto.error || candidates.error) return bad('Eligibility check failed.', 500)
+    if (![...(auto.data ?? []), ...(candidates.data ?? [])].some((r) => r.template_id === id)) {
+      return bad('Not promotable yet: it is on neither the automatic eligibility list nor the staff candidate list (match count, age, users or confidence gate not met).')
+    }
     const cases = await loadReplayCases(service, tpl.sender)
     const report = replayCandidate({ regex: tpl.regex_pattern, rules: tpl.mapping_rules as unknown as MappingRules }, cases)
     if (!report.ok) return bad(`Replay found ${report.regressions.length} regression(s); not promoted.`)

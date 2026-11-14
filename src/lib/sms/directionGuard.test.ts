@@ -83,6 +83,11 @@ describe('ledger sign followed by punctuation or an LE / جم token', () => {
     expect(detectLedgerSign('جم 715.00+ رصيد')).toBe('credit')
   })
 
+  it('reads an SR amount (currency-list parity)', () => {
+    expect(detectLedgerSign('SR 715.00- at X')).toBe('debit')
+    expect(detectLedgerSign('SR715.00+ at X')).toBe('credit')
+  })
+
   it('still ignores dates and masked accounts', () => {
     expect(detectLedgerSign('on 20-07-2026 acct 103-104***-110 PLE 5-x')).toBeNull()
   })

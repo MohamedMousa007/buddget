@@ -40,3 +40,16 @@ describe('run_auto_promote', () => {
     expect(body).toEqual({ ok: true, promoted: 1, eligible: 3 })
   })
 })
+
+describe('save floors (N11c)', () => {
+  it('raises sub-floor values to what the eligibility RPC enforces', async () => {
+    const updates: Array<Record<string, unknown>> = []
+    const c: Record<string, unknown> = {}
+    c.update = (r: Record<string, unknown>) => { updates.push(r); return c }
+    for (const m of ['eq', 'select']) c[m] = () => c
+    c.single = async () => ({ data: {}, error: null })
+    state.guard = { ...guard, ctx: { ...guard.ctx, service: { from: () => c } } }
+    await POST(post({ op: 'save', config: { min_match_count: 1, min_unique_users: 1, min_age_days: 0 } }))
+    expect(updates[0]).toMatchObject({ min_match_count: 3, min_unique_users: 2, min_age_days: 7 })
+  })
+})

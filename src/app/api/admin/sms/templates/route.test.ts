@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   flagged: [{ id: 'a' }, { id: 'b' }] as unknown,
   rpc: { data: null as unknown, error: null as unknown },
   list: [] as unknown[],
+  filters: [] as Array<[string, unknown[]]>,
   report: { ok: true, checked: 0, regressions: [] as unknown[] },
   cases: [{}, {}, {}] as unknown[],
 }))
@@ -25,7 +26,8 @@ import { POST } from './route'
 const from = (table: string) => {
   let row: Record<string, unknown> | null = null
   const c: Record<string, unknown> = {}
-  for (const m of ['eq', 'is', 'neq', 'select', 'order', 'limit']) c[m] = () => c
+  for (const m of ['eq', 'is', 'neq', 'select', 'order', 'limit']) c[m] = (...a: unknown[]) => { state.filters.push([m, a]); return c }
+  c.delete = () => c
   c.update = (r: Record<string, unknown>) => { row = r; state.updates.push({ table, row: r }); return c }
   c.single = async () => state.template
   c.then = (res: (v: unknown) => unknown) =>
@@ -41,9 +43,10 @@ const healthy = { sender: 'BANK', regex_pattern: 'x', mapping_rules: {}, status:
 beforeEach(() => {
   state.guard = guard(['sms.view', 'sms.manage'])
   state.updates = []
+  state.filters = []
   state.template = { data: { ...healthy }, error: null }
   state.flagged = [{ id: 'a' }, { id: 'b' }]
-  state.rpc = { data: null, error: null }
+  state.rpc = { data: [{ template_id: 't1' }], error: null }
   state.list = []
   state.report = { ok: true, checked: 0, regressions: [] }
   invalidate.mockReset()
@@ -95,6 +98,13 @@ describe('update', () => {
 })
 
 describe('promote', () => {
+  it('is refused when the template is on neither eligibility list', async () => {
+    state.rpc = { data: [{ template_id: 'other' }], error: null }
+    const res = await POST(post({ op: 'promote', id: 't1' }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toContain('Not promotable')
+    expect(state.updates).toHaveLength(0)
+  })
   it('is refused when the replay reports a regression', async () => {
     state.report = { ok: false, checked: 3, regressions: [{}] }
     const res = await POST(post({ op: 'promote', id: 't1' }))
@@ -125,5 +135,25 @@ describe('candidates', () => {
   it('fails cleanly on RPC error', async () => {
     state.rpc = { data: null, error: { message: 'x' } }
     expect((await POST(post({ op: 'candidates' }))).status).toBe(500)
+  })
+})
+
+describe('bulk_toggle (N11b)', () => {
+  it('enabling touches only active templates and busts the cache', async () => {
+    await POST(post({ op: 'bulk_toggle', patch: { ai_enabled: true } }))
+    expect(state.filters).toContainEqual(['eq', ['status', 'active']])
+    expect(invalidate).toHaveBeenCalled()
+  })
+  it('disabling still reaches every row', async () => {
+    await POST(post({ op: 'bulk_toggle', patch: { ai_enabled: false } }))
+    expect(state.filters.some(([m, a]) => m === 'eq' && a[0] === 'status')).toBe(false)
+    expect(invalidate).toHaveBeenCalled()
+  })
+})
+
+describe('delete (N11b)', () => {
+  it('busts the curated cache', async () => {
+    await POST(post({ op: 'delete', id: 't1' }))
+    expect(invalidate).toHaveBeenCalled()
   })
 })

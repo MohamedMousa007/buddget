@@ -103,3 +103,14 @@ describe('redactBody — exemplars are read into prompts and shown in admin', ()
     expect(out).toContain('EGP')
   })
 })
+
+describe('N10: the prompt carries the masked message', () => {
+  it('does not contain the person name but keeps the amount', () => {
+    const p = buildAdjudicationPrompt(
+      { body: 'Transfer from Hassan Sample EGP 50000 received', extracted: { amount: 50000, currency: 'EGP', kind: 'instant_transfer_in', last4: null, date: null }, changes: [{ signalKind: 'delete' }] },
+      'Hassan Sample',
+    )
+    expect(p).not.toContain('Hassan')
+    expect(p).toContain('50000')
+  })
+})

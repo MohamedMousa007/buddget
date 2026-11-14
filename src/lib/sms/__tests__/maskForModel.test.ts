@@ -106,3 +106,19 @@ describe('template samples (S2c step 9a, 9c, 9e)', () => {
     expect(updates[0]!.values.template_sample).not.toContain('Hassan')
   })
 })
+
+describe('keepNumbers (adjudicator view)', () => {
+  const body = 'Purchase EGP 50000 on 20260720 card ending 4321 ref 12345678901234, EGP 1250.75, call +201012345678'
+  const out = maskForModel(body, { merchant: null, kind: 'purchase', amount: 1 }, { keepNumbers: true }).message
+  it('lets amounts, a compact date, a decimal amount and the last four through', () => {
+    for (const keep of ['EGP 50000', '20260720', '1250.75', '4321']) expect(out).toContain(keep)
+  })
+  it('still replaces a phone-like number', () => {
+    expect(out).not.toContain('201012345678')
+  })
+  it('replaces a person after to/from', () => {
+    const m = maskForModel('Transfer from Hassan Sample EGP 50000 received', { merchant: 'Hassan Sample', kind: 'instant_transfer_in', amount: 50000 }, { keepNumbers: true }).message
+    expect(m).not.toContain('Hassan')
+    expect(m).toContain('50000')
+  })
+})

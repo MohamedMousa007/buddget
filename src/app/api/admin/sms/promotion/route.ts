@@ -24,7 +24,7 @@ const unit = (n: number) => Math.max(0, Math.min(1, n))
 function sanitize(config: Config): Record<string, number> {
   const out: Record<string, number> = {}
   const ints: Array<[keyof Config, number]> = [
-    ['min_match_count', 1], ['min_unique_users', 1], ['min_age_days', 0], ['min_matches_before_retire', 1],
+    ['min_match_count', 3], ['min_unique_users', 2], ['min_age_days', 7], ['min_matches_before_retire', 1],
     ['quarantine_exonerate_after', 1], ['signals_before_adjudication', 1], ['max_user_signals_per_day', 1],
   ]
   for (const [key, min] of ints) if (typeof config[key] === 'number') out[key] = int(config[key]!, min)

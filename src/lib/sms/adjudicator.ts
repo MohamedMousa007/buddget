@@ -16,6 +16,11 @@
  * was*.
  */
 
+import { toSupportedCurrency } from '@/lib/sms/ingestGuards'
+import { maskForModel } from '@/lib/sms/maskForModel'
+import { normalizeDigits } from '@/lib/sms/normalizeDigits'
+import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
+
 export type AdjudicationVerdict =
   /** The extraction is objectively wrong — counts against the template, and carries a fix. */
   | 'parse_error'
@@ -107,7 +112,7 @@ Rules:
 - "corrected" must be null unless the verdict is "parse_error".
 - "confidence" reflects how certain you are, 0 to 1.`
 
-export function buildAdjudicationPrompt(input: AdjudicationInput): string {
+export function buildAdjudicationPrompt(input: AdjudicationInput, merchant: string | null = null): string {
   const changes = input.changes
     .map((c) =>
       c.signalKind === 'delete'
@@ -118,8 +123,9 @@ export function buildAdjudicationPrompt(input: AdjudicationInput): string {
     )
     .join('\n')
 
+  const view = maskForModel(input.body, { merchant, kind: input.extracted.kind, amount: input.extracted.amount }, { keepNumbers: true })
   return `SMS:
-${JSON.stringify(input.body)}
+${JSON.stringify(view.message)}
 
 The parser extracted:
 ${JSON.stringify(input.extracted, null, 2)}
@@ -168,6 +174,40 @@ export function parseAdjudication(raw: unknown): AdjudicationResult {
     ...(corrected ? { corrected } : {}),
     ...(typeof o.reason === 'string' ? { reason: o.reason.slice(0, 300) } : {}),
   }
+}
+
+const NUMBER_RE = /\d[\d,]*(?:\.\d+)?/g
+
+function isCalendarDate(value: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!m) return false
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const t = new Date(Date.UTC(y, mo - 1, d))
+  return y >= 2000 && y <= new Date().getUTCFullYear() + 1 && t.getUTCMonth() === mo - 1 && t.getUTCDate() === d
+}
+
+/**
+ * A model's correction is stored and later fed to prompts for every user of that body shape, so each field is checked
+ * against the real body first. Invalid fields are dropped; with none left there is no correction.
+ */
+export function validateCorrection(
+  corrected: AdjudicationResult['corrected'],
+  body: string,
+): AdjudicationResult['corrected'] | undefined {
+  if (!corrected) return undefined
+  const text = normalizeDigits(body)
+  const out: NonNullable<AdjudicationResult['corrected']> = {}
+  const { amount, currency, kind, last4, date } = corrected
+  if (typeof amount === 'number' && Number.isFinite(amount) && amount > 0) {
+    const numbers = (text.match(NUMBER_RE) ?? []).map((n) => Number(n.replace(/,/g, '')))
+    if (numbers.some((n) => Math.abs(n - amount) < 0.005)) out.amount = amount
+  }
+  const ccy = toSupportedCurrency(currency)
+  if (ccy) out.currency = ccy
+  if (isSmsExpenseKind(kind)) out.kind = kind
+  if (typeof last4 === 'string' && /^\d{3,4}$/.test(last4) && text.includes(last4)) out.last4 = last4
+  if (typeof date === 'string' && isCalendarDate(date)) out.date = date
+  return Object.keys(out).length ? out : undefined
 }
 
 /**
