@@ -217,3 +217,33 @@ Config change: `sms_promotion_config.min_unique_users` 5 → 2. To restore: `upd
 ## Gate (follow-up)
 
 `npm run verify` passed on the final tree (2026-11-14): lint 0 errors, types clean, 5253 tests in Cairo and New York, coverage 87.2% lines and 78.5% branches, migration check, dependency audit, production build.
+
+---
+
+# Council on the five open items (2026-11-14) and what was built
+
+Four voices (Architect, Skeptic, Pragmatist, Critic); the three outside voices saw only the question and its context.
+
+| # | Item | Verdict | Vote | Status |
+|---|---|---|---|---|
+| 1 | AI categoriser | Keep applying, as a visible suggestion with a one-tap change | 4 of 4 | Built |
+| 2 | iPhone Shortcut bank value | Defer; spec only | 2 to 2 | Spec below |
+| 3 | Category picker | Keep the edit-sheet route; extract in S7 | 3 of 4 | No change; answer rate now recorded |
+| 4 | Credit sender name | Read it from the user's own transaction title | 3 of 4 | Built |
+| 5 | The 15 relabels | All stay out until S3 | 2 to 2 | No change |
+
+**Item 1, built** (migration 0268, additive). `expenses.category_source = 'ai_suggested'` when the category is only the AI's guess: the background categoriser, the AI tier's own category for a merchant nothing else knows, and any later purchase that inherits it. The row shows a "Suggested" badge in Flow. Saving the row records `user_confirmed` or `user_changed`. To read the accuracy of the guesses:
+```sql
+select category_source, count(*) from public.expenses where category_source is not null group by 1;
+```
+Dissent kept: the Skeptic notes a badge on an applied guess does not literally meet "an AI guess may only pre-fill a question". If that is wanted literally, the change is to stop writing the category and keep only the flag.
+
+**Item 2, spec only.** Add an optional text parameter "Bank" to the App Intent the Shortcut runs. Each automation is already per sender or phrase, so the user picks the bank once when creating it. The app sends it as `sender`; the server treats it as the first stage of the provider cascade but cross-checks it: a hotline or bank name in the message that disagrees wins, and the mismatch is logged. Existing automations keep working with the parameter empty. Not built: it would not place any of the rows still unplaced (they lack digits), and a change to the Shortcut risks the capture pipe for the current iPhone users.
+
+**Item 3.** The question still opens the existing expense sheet. Whether it is answered or skipped is now recorded per merchant in the synced prompt state (`merchantcatopen:<key>` beside `merchantcat:<key>`); `merchantAnswerRate` in `src/lib/spending/merchantCategory.ts` counts them. If fewer than about 20% are answered, extract the picker before S7.
+
+**Item 4, built.** The assign-income sheet reads the sender from the credit's own title (`creditSenderFromTitle`); nothing is fetched from the parse log and the hook is removed. A generic title names nobody.
+
+**Item 5.** Unchanged. The owner's review of the 15 rows is an S3 input.
+
+**Raised by all three outside voices.** There is one manual category edit in the whole database, so every path that learns from the user is unmeasured. The two counters above are the first real measurements.
