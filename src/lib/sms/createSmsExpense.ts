@@ -135,6 +135,16 @@ export interface SmsRowData {
   occurrenceDate?: string | null
   /** Force a specific category (overrides kind/hint mapping). */
   categoryOverride?: ExpenseCategory | null
+  /**
+   * True when the transfer's counterparty matched one of the user's own names (ownName.ts). A supporting signal
+   * only: dispatch also requires this message's own account to be a confirmed one before it acts on it.
+   */
+  counterpartyIsSelf?: boolean | null
+  /**
+   * Set on an `own_transfer` posted from the RECEIVING side: the message's own account is where the money landed, so
+   * it is the transfer's destination and the counterparty account (when known) is the source.
+   */
+  ownTransferInbound?: boolean
   /** When set, stamp the new expense as already reversed (standalone-declined case). */
   refundMark?: { refundKind: 'refunded' | 'declined'; day: string } | null
 }
@@ -497,11 +507,16 @@ export async function createSmsExpense(
     return { ...emptyResult(), incomeId: data?.id ?? null, error }
   }
 
+  // An own transfer seen from the receiving account: the money LEFT the counterparty account (when the message names
+  // it) and landed on this one. Booking it the other way round would debit the account that was credited.
+  const inboundOwn = row.kind === 'own_transfer' && row.ownTransferInbound === true
   // CC payoff is funded from bank/cash — never attach to a payment method, or
   // computeCreditCardOutstanding would re-add it and cancel the payoff.
   const paymentMethodId =
     row.kind === 'cc_payoff'
       ? null
+      : inboundOwn
+        ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
       : await resolvePaymentMethodByLast4(service, row.userId, row.last4, {
           sender: row.sender,
           bankName: row.bankName,
@@ -522,6 +537,7 @@ export async function createSmsExpense(
   // an own transfer lands in the account named as counterparty (the posted row is always the debit leg).
   const toPaymentMethodId =
     row.kind === 'atm_withdrawal' ? await cashAccountFor(service, row.userId)
+    : inboundOwn ? await resolveCreditAccount(service, row)
     : row.kind === 'own_transfer' ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
     : null
 
@@ -640,6 +656,19 @@ export async function resolveExactPaymentMethod(
 ): Promise<string | null> {
   if (!last4) return null
   return (await findUniqueByLast4(service, userId, last4, provider)).id
+}
+
+/** True when the digits name one registered account the user has confirmed. A provisional account is not yet "known". */
+export async function isConfirmedOwnAccount(
+  service: ServiceClient,
+  userId: string,
+  last4: string | null | undefined,
+  provider?: { sender?: string | null; bankName?: string | null },
+): Promise<boolean> {
+  const id = await resolveExactPaymentMethod(service, userId, last4, provider)
+  if (!id) return false
+  const { data } = await service.from('payment_methods').select('provisional').eq('id', id).maybeSingle()
+  return !!data && data.provisional !== true
 }
 
 /** ± window (days) for treating a second refund SMS as a duplicate of the same event. */

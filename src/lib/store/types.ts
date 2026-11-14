@@ -172,6 +172,11 @@ export interface IncomeEvent {
   sharedPlanId?: string | null
   /** Provenance when ingested from an SMS credit (`sms_parse_log.id`). */
   smsLogId?: string | null
+  /**
+   * Set when the user confirmed this credit only passed through them: it leaves income totals, the account balance
+   * still counts it, and clearing it counts it again.
+   */
+  exclusion?: 'pass_through' | null
   notes?: string
   createdAt: string
   updatedAt: string

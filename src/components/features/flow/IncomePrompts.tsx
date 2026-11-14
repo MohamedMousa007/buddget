@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Clock, Link } from 'lucide-react'
+import { ArrowLeftRight, Clock, Link } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
@@ -12,6 +12,9 @@ import { useShortDate } from '@/hooks/useShortDate'
 import { useT } from '@/lib/i18n'
 import { settlePrompt } from '@/lib/prompts/settle'
 import { useWeekendFirstDay } from '@/hooks/useWeekStart'
+import { useActionToast } from '@/components/ui/ActionToast'
+import { answerPassThrough, passThroughAnswer, pendingPassThroughPairs } from '@/lib/spending/passThrough'
+import { totalsByCurrency } from '@/lib/accounts/unplacedSms'
 
 /** The late-payday and income-match questions, with what answering them writes. */
 export function useIncomeResolution() {
@@ -52,6 +55,14 @@ export function IncomePrompts() {
   )
   const openAmountReceived = useSettingsStore((s) => s.openAmountReceived)
   const dismissBanner = settlePrompt
+  const toast = useActionToast()
+  const { expenses, incomeEvents, promptState } = useFinanceStore(
+    useShallow((s) => ({ expenses: s.expenses, incomeEvents: s.incomeEvents, promptState: s.settings.promptState })),
+  )
+  const passThrough = useMemo(
+    () => (passThroughAnswer(promptState) === null ? pendingPassThroughPairs(expenses, incomeEvents) : []),
+    [expenses, incomeEvents, promptState],
+  )
 
   const prompts: Prompt[] = []
   const match = matches[0]
@@ -109,6 +120,33 @@ export function IncomePrompts() {
             dismissBanner(key)
           },
         },
+      ],
+    })
+  }
+  // Asked once: the answer is remembered and applied to pairs found later. The count and total are stated before
+  // anything changes, and "yes" comes with Undo.
+  if (passThrough.length > 0) {
+    const legs = new Set(passThrough.map((p) => p.expenseId))
+    const total = Object.entries(totalsByCurrency(expenses.filter((e) => legs.has(e.id))))
+      .map(([currency, amount]) => `${formatFlex(amount)} ${currency}`)
+      .join(' + ')
+    prompts.push({
+      key: 'passthrough',
+      priority: PROMPT_PRIORITY.sms,
+      tone: 'positive',
+      icon: ArrowLeftRight,
+      title: t.prompts.passThroughTitle(passThrough.length),
+      description: t.prompts.passThroughBody(passThrough.length, total),
+      actions: [
+        {
+          label: t.prompts.passThroughYes,
+          variant: 'default',
+          onPress: () => {
+            const undo = answerPassThrough('yes', passThrough)
+            if (undo) toast(t.prompts.passThroughApplied(passThrough.length), { undoLabel: t.common.undo, undo })
+          },
+        },
+        { label: t.prompts.passThroughNo, variant: 'secondary', onPress: () => void answerPassThrough('no', passThrough) },
       ],
     })
   }

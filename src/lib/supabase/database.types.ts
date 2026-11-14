@@ -1936,6 +1936,7 @@ export type Database = {
       income_events: {
         Row: {
           occurred_at: string | null
+          exclusion: string | null
           amount: number
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -1959,6 +1960,7 @@ export type Database = {
         }
         Insert: {
           occurred_at?: string | null
+          exclusion?: string | null
           amount: number
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
@@ -1982,6 +1984,7 @@ export type Database = {
         }
         Update: {
           occurred_at?: string | null
+          exclusion?: string | null
           amount?: number
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
@@ -3333,6 +3336,7 @@ export type Database = {
           confidence: number | null
           confirmed_at: string | null
           counterparty_last4: string | null
+          counterparty_is_self: boolean | null
           created_at: string
           currency: string | null
           debt_payment_id: string | null
@@ -3386,6 +3390,7 @@ export type Database = {
           confidence?: number | null
           confirmed_at?: string | null
           counterparty_last4?: string | null
+          counterparty_is_self?: boolean | null
           created_at?: string
           currency?: string | null
           debt_payment_id?: string | null
@@ -3439,6 +3444,7 @@ export type Database = {
           confidence?: number | null
           confirmed_at?: string | null
           counterparty_last4?: string | null
+          counterparty_is_self?: boolean | null
           created_at?: string
           currency?: string | null
           debt_payment_id?: string | null

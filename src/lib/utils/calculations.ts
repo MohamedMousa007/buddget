@@ -241,7 +241,8 @@ export function actualIncomeForMonth(
     }
     coveredSourceIds.add(e.id) // backfilled one-time events reuse their source id
     if (!inWindow(e.receivedDate)) continue
-    if (REALIZED_EVENT_STATUSES.has(e.status)) {
+    // A credit the user confirmed as pass-through money arrived, but is not their income.
+    if (REALIZED_EVENT_STATUSES.has(e.status) && !e.exclusion) {
       total += convertCurrency(e.amount, e.currency, baseCurrency, rates)
     }
   }

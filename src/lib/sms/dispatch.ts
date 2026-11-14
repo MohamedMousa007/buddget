@@ -28,11 +28,13 @@ import {
   mapKindToCategory,
   isIncomeKind,
   resolveExactPaymentMethod,
+  isConfirmedOwnAccount,
   type SmsRowData,
   type SmsExpenseKind,
 } from './createSmsExpense'
 import {
   isOwnAccountTransfer,
+  hasOppositeLegOnSameAccount,
   isOwnTopUpTarget,
   namesOwnStoredValue,
   retagSiblingAsTransfer,
@@ -280,10 +282,17 @@ export async function createSmsTransaction(
 
   // 1. Own-account reclassification — an inbound/outbound transfer whose
   //    counterparty is a registered own account is a Transfer, not income/spend.
+  //    The counterparty being the user by NAME is a supporting signal: it counts only together with this message's
+  //    own account being one the user has confirmed (two people can share a name).
+  /** The reclassified leg is the receiving side, so its own account is the transfer's destination. */
+  let ownTransferInbound = false
   if (
     (kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
-    (await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null))
+    ((await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null)) ||
+      (row.counterpartyIsSelf === true &&
+        (await isConfirmedOwnAccount(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))))
   ) {
+    ownTransferInbound = kind === 'instant_transfer_in'
     kind = 'own_transfer'
   }
 
@@ -324,7 +333,13 @@ export async function createSmsTransaction(
     //     both registered payment methods, within the window, amounts within the transfer fee.
     // ponytail: can in theory pair two unrelated IPN transfers colliding within the window and
     // fee tolerance — rare, and 1b handles the normal case first.
-    if (!sibling && (await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))) {
+    //     Not when the opposite leg is on this SAME account: that is money passing through the user, which is never
+    //     settled automatically (it stays income + spend, labelled for the user to decide).
+    if (
+      !sibling &&
+      !(await hasOppositeLegOnSameAccount(service, { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, accountLast4: row.last4 ?? null, kind })) &&
+      (await resolveExactPaymentMethod(service, row.userId, row.last4, { sender: row.sender, bankName: row.bankName }))
+    ) {
       sibling = await tryPairLeg(service, {
         userId: row.userId,
         logId: row.logId,
@@ -373,7 +388,7 @@ export async function createSmsTransaction(
         const { needsPost } = await reconcileSibling(service, sibling)
         if (!needsPost) return base('transfer_paired', kind)
         // Income sibling was removed — post a single visible non-spend row.
-        const posted = await createSmsExpense(service, { ...row, kind })
+        const posted = await createSmsExpense(service, { ...row, kind, ownTransferInbound })
         return {
           ...base('transfer_paired', kind),
           expenseId: posted.expenseId,
@@ -382,7 +397,7 @@ export async function createSmsTransaction(
         }
       }
     }
-    const res = await createSmsExpense(service, { ...row, kind })
+    const res = await createSmsExpense(service, { ...row, kind, ownTransferInbound })
     return {
       ...base('transfer_single', kind),
       expenseId: res.expenseId,

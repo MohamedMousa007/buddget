@@ -3,7 +3,7 @@
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { localDayKey } from '@/lib/utils/localDate'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { format, parseISO, subDays } from 'date-fns'
 import { CircleSlash, Link as LinkIcon, Link2, MessageSquare } from 'lucide-react'
@@ -33,6 +33,7 @@ import { compareFlowItems, instantOf } from '@/components/features/flow/flowOrde
 import { useLocale, useT } from '@/lib/i18n'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
+import { applyPassThrough, passThroughAnswer, pendingPassThroughPairs } from '@/lib/spending/passThrough'
 import type { Expense, IncomeEvent, IncomeSource, IncomeSourceType, PaymentMethod } from '@/lib/store/types'
 
 const REALIZED = new Set<IncomeEvent['status']>(['confirmed', 'late', 'partial'])
@@ -127,6 +128,17 @@ export function useFlowLedger() {
   )
   const previews = usePendingSmsPreviews()
   const { matches } = useIncomeResolution()
+  // Money that came in and went straight out. Unanswered: both legs carry a label and nothing changes. Answered
+  // "yes" once: pairs found later follow the remembered answer. Answered "no": they are ordinary income and spending.
+  const passThroughChoice = passThroughAnswer(settings.promptState)
+  const passThroughPairs = useMemo(() => pendingPassThroughPairs(expenses, incomeEvents), [expenses, incomeEvents])
+  const possiblePassThrough = useMemo(
+    () => new Set(passThroughChoice === null ? passThroughPairs.flatMap((p) => [p.expenseId, p.incomeId]) : []),
+    [passThroughChoice, passThroughPairs],
+  )
+  useEffect(() => {
+    if (passThroughChoice === 'yes' && passThroughPairs.length > 0) applyPassThrough(passThroughPairs)
+  }, [passThroughChoice, passThroughPairs])
   const weekStart = useWeekStart()
   const base = settings.baseCurrency
   const secondary = settings.showSecondaryCurrency ? settings.secondaryCurrency : undefined
@@ -198,6 +210,8 @@ export function useFlowLedger() {
                 <Badge variant="muted" size="xs" className="shrink-0">{t.expenses.badgeDeclined}</Badge>
               ) : e.spendExclusion === 'for_someone' ? (
                 <Badge variant="muted" size="xs" className="shrink-0">{e.owedSettledAt ? t.exclusion.badgeRepaid : t.exclusion.badgeOwed(e.owedBy ?? t.exclusion.forSomeone)}</Badge>
+              ) : possiblePassThrough.has(e.id) ? (
+                <Badge variant="muted" size="xs" className="shrink-0">{t.flow.possiblePassThrough}</Badge>
               ) : nonSpend ? (
                 <CircleSlash role="img" aria-label={t.expenses.badgeNotCounted} className="h-3.5 w-3.5 shrink-0 text-[var(--color-brand-text-muted)]" />
               ) : e.linkedSubscriptionId ? (
@@ -275,6 +289,7 @@ export function useFlowLedger() {
       const fromSms = Boolean(inc.event?.smsLogId)
       const daysLate = inc.event && recurring ? eventDaysLate(inc.event) : null
       const notLinked = Boolean(inc.event && unmatched.has(inc.event.id))
+      const passedThrough = inc.event?.exclusion === 'pass_through'
       const pmLabel = methodLabel(inc.paymentMethodId ? pmById.get(inc.paymentMethodId) : undefined)
       // §8.4/§8.5: only a payment method is a destination; never "Main account".
       const dest = pmLabel ? (
@@ -301,7 +316,7 @@ export function useFlowLedger() {
         date: inc.date,
         at: inc.at,
         amountBase,
-        counted: true,
+        counted: !passedThrough,
         facet: recurring ? (inc.sourceType ?? 'other') : ONE_TIME_INCOME,
         methodId: inc.paymentMethodId,
         row: {
@@ -316,7 +331,11 @@ export function useFlowLedger() {
             // A credit that is probably a payday opens the link sheet: linking needs a visible route.
             onClick: notLinked ? link : open,
             title: inc.name,
-            titleBadge: daysLate ? (
+            titleBadge: passedThrough ? (
+              <Badge variant="muted" size="xs" className="shrink-0">{t.flow.passThrough}</Badge>
+            ) : possiblePassThrough.has(inc.id) ? (
+              <Badge variant="muted" size="xs" className="shrink-0">{t.flow.possiblePassThrough}</Badge>
+            ) : daysLate ? (
               <Badge variant="warning" size="xs" className="shrink-0">{t.income.arrivedDaysLate(daysLate)}</Badge>
             ) : recurring ? (
               <Badge variant="brand" size="xs" className="shrink-0">{t.income.recurringLabel}</Badge>
@@ -337,7 +356,7 @@ export function useFlowLedger() {
                 dest
               ),
             amount: amountNode('+', amountBase, false),
-            amountColor: 'var(--color-brand-green)',
+            amountColor: passedThrough ? 'var(--color-brand-text-muted)' : 'var(--color-brand-green)',
             sub: sub(amountBase, ''),
           },
           swipe: {
@@ -408,7 +427,7 @@ export function useFlowLedger() {
     }
     return items
   }, [
-    expenses, incomeEvents, incomeSources, paymentMethods, previews, matches, resolved, base, secondary, rates, t,
+    expenses, incomeEvents, incomeSources, paymentMethods, previews, matches, resolved, base, secondary, rates, t, possiblePassThrough,
     setActiveModal, setEditingExpenseId, setEditingIncomeEventId, setEditingIncomeId, openAssignIncome,
     removeExpense, deleteIncomeEvent, deleteIncomeSource, restoreIncomeEvent, restoreIncomeSource, toast, shortDate,
   ])

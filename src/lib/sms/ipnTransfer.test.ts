@@ -22,7 +22,7 @@ interface Log {
 interface State {
   registeredLast4: string[]
   logs: Log[]
-  expenses: Array<{ id: string; category: string; deleted: boolean }>
+  expenses: Array<{ id: string; category: string; deleted: boolean; row?: Record<string, unknown> }>
   incomes: Array<{ id: string; deleted: boolean }>
 }
 
@@ -94,7 +94,7 @@ function makeService(state: State) {
       return banks()
     if (table === 'expenses')
       return chain({
-        onInsertExpense: (r) => { const id = `e${state.expenses.length + 1}`; state.expenses.push({ id, category: String(r.category), deleted: false }); return id },
+        onInsertExpense: (r) => { const id = `e${state.expenses.length + 1}`; state.expenses.push({ id, category: String(r.category), deleted: false, row: r }); return id },
         onUpdate: (patch, id) => { const e = state.expenses.find((x) => x.id === id); if (!e) return; if (patch.deleted_at) e.deleted = true; if (typeof patch.category === 'string') e.category = patch.category },
       })
     if (table === 'income_events')
@@ -102,7 +102,22 @@ function makeService(state: State) {
         onInsertIncome: () => { const id = `i${state.incomes.length + 1}`; state.incomes.push({ id, deleted: false }); return id },
         onUpdate: (patch, id) => { if (patch.deleted_at) { const i = state.incomes.find((x) => x.id === id); if (i) i.deleted = true } },
       })
-    return chain({}) // income_sources (matchSalary), sms_parse_log, etc.
+    if (table === 'sms_parse_log') {
+      // The same-account check reads persisted legs by account, amount and kind.
+      const eqs: Record<string, unknown> = {}
+      let kinds: string[] | null = null
+      const c = chain({})
+      c.eq = (col: string, v: unknown) => { eqs[col] = v; return c }
+      c.in = (_col: string, v: string[]) => { kinds = v; return c }
+      c.then = (r: (v: unknown) => unknown) => r({
+        data: state.logs
+          .filter((l) => (!kinds || kinds.includes(l.kind)) && (eqs.account_last4 === undefined || l.account_last4 === eqs.account_last4) && (eqs.amount === undefined || l.amount === eqs.amount))
+          .map((l) => ({ id: l.id })),
+        error: null,
+      })
+      return c
+    }
+    return chain({}) // income_sources (matchSalary), etc.
   }
 
   return { from, rpc } as unknown as SupabaseClient
@@ -229,5 +244,70 @@ describe('IPN own-account transfer — guards', () => {
     const res = await createSmsTransaction(svc, outLeg(), opts)
     expect(res.outcome).toBe('expense') // fell through to Remittance
     expect(state.logs.find((l) => l.id === 'log-payoff')!.paired).toBe(false) // untouched
+  })
+})
+
+describe('money passing through ONE account is never settled as an own transfer', () => {
+  // Same account, same amount, no shared reference: the registered fallback (1c) would otherwise claim the pair.
+  const IN = 'IPN transfer received with amount of EGP 2000.00 on 0001 on 18/07 at 09:55 PM.'
+  const OUT = 'Your Account ********0001 was debited with IPN outward transfer for EGP 2000.00 on 18-07-2026 21:56.'
+  const relayIn = () => inLeg({ rawBody: IN, last4: '0001', bankName: 'HSBC', amount: 2000 })
+  const relayOut = () => outLeg({ rawBody: OUT, last4: '0001', amount: 2000, merchant: null })
+
+  it('in then out stays income plus spend', async () => {
+    const svc = makeService(state)
+    const a = await createSmsTransaction(svc, relayIn(), opts)
+    persist(state, relayIn(), a)
+    const b = await createSmsTransaction(svc, relayOut(), opts)
+    expect(b.outcome).toBe('expense')
+    expect(state.expenses.filter((e) => !e.deleted).map((e) => e.category)).toEqual(['Instapay'])
+    expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(1)
+  })
+
+  it('out then in stays spend plus income', async () => {
+    const svc = makeService(state)
+    const a = await createSmsTransaction(svc, relayOut(), opts)
+    persist(state, relayOut(), a)
+    const b = await createSmsTransaction(svc, relayIn(), opts)
+    expect(b.outcome).toBe('income')
+    expect(state.expenses.filter((e) => !e.deleted)).toHaveLength(1)
+    expect(state.incomes.filter((i) => !i.deleted)).toHaveLength(1)
+  })
+
+  it('two DIFFERENT own accounts still settle as one transfer', async () => {
+    const svc = makeService(state)
+    const a = await createSmsTransaction(svc, inLeg({ rawBody: IN.replace('0001', '5124'), amount: 2000 }), opts)
+    persist(state, inLeg({ amount: 2000 }), a)
+    const b = await createSmsTransaction(svc, relayOut(), opts)
+    expect(b.outcome).toBe('transfer_paired')
+    expectSettledAsTransfer()
+  })
+})
+
+describe('the counterparty is the user by name (supporting signal)', () => {
+  // The receiving bank names the sender. When that is the user AND the receiving account is one they confirmed,
+  // the credit is a transfer from another of their accounts, not income.
+  const named = (over: Partial<SmsRowData> = {}) => inLeg({ rawBody: 'Transfer received 2000.00 on 5124.', amount: 2000, counterpartyIsSelf: true, ...over })
+
+  it('a name match plus a confirmed own account books one transfer INTO that account, no income', async () => {
+    const res = await createSmsTransaction(makeService(state), named(), opts)
+    expect(res.kind).toBe('own_transfer')
+    expect(state.incomes).toHaveLength(0)
+    expect(state.expenses).toHaveLength(1)
+    expect(state.expenses[0].category).toBe('Transfer')
+    // The message's own account received the money: it is the destination, and the unknown source is left empty.
+    expect(state.expenses[0].row).toMatchObject({ to_payment_method_id: 'pm5124', payment_method_id: null })
+  })
+
+  it('a name match alone never reclassifies: the account must be a known own account', async () => {
+    state.registeredLast4 = []
+    const res = await createSmsTransaction(makeService(state), named(), opts)
+    expect(res.kind).toBe('instant_transfer_in')
+    expect(res.outcome).toBe('income')
+  })
+
+  it('a known own account alone never reclassifies either', async () => {
+    const res = await createSmsTransaction(makeService(state), named({ counterpartyIsSelf: false }), opts)
+    expect(res.outcome).toBe('income')
   })
 })

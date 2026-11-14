@@ -11,6 +11,7 @@
 import type { ServiceClient } from '@/lib/supabase/service'
 import type { SmsExpenseKind } from './createSmsExpense'
 import type { MoneyDirection } from './directionGuard'
+import { PASS_THROUGH_WINDOW_MS } from './passThrough'
 import {
   PAYMENT_BRANDS,
   decomposePaymentMethodName,
@@ -20,6 +21,41 @@ import {
 } from '@/lib/payment/paymentMethodDefaults'
 
 const PAIR_WINDOW_SECONDS = 300
+
+/**
+ * True when the opposite leg of the same amount sits on the SAME account within the pass-through window: money that
+ * came in and went straight out (or the reverse). That is not a transfer between the user's accounts, so the caller
+ * must not pair the two as one; they stay income and spending until the user says otherwise (audit decision 6a.2).
+ * ponytail: reads persisted rows, so two legs landing within the same second can miss each other and fall back to
+ * the old pairing; the legs of a relay are seconds apart in practice.
+ */
+export async function hasOppositeLegOnSameAccount(
+  service: ServiceClient,
+  p: { userId: string; logId: string; receivedAtIso: string; amount: number; accountLast4: string | null; kind: SmsExpenseKind },
+): Promise<boolean> {
+  if (!p.accountLast4) return false
+  const at = new Date(p.receivedAtIso).getTime()
+  if (!Number.isFinite(at)) return false
+  try {
+    const { data } = await service
+      .from('sms_parse_log')
+      .select('id')
+      .eq('user_id', p.userId)
+      .eq('account_last4', p.accountLast4)
+      .eq('amount', p.amount)
+      .eq('is_duplicate', false)
+      .in('kind', p.kind === 'instant_transfer_out' ? ['instant_transfer_in', 'income'] : ['instant_transfer_out'])
+      .neq('id', p.logId)
+      .gte('received_at', new Date(at - PASS_THROUGH_WINDOW_MS).toISOString())
+      .lte('received_at', new Date(at + PASS_THROUGH_WINDOW_MS).toISOString())
+      .limit(1)
+    return (data?.length ?? 0) > 0
+  } catch (e) {
+    // A failed read must not lose the message: fall back to the pairing that existed before this check.
+    console.warn('[sms/pairing] same-account check failed', e)
+    return false
+  }
+}
 
 /** Legs arriving together both look for a sibling before either has persisted its `kind`. */
 const PAIR_RETRY_DELAY_MS = 400
@@ -65,6 +101,17 @@ const TOP_UP_WORDING = /\btop[\s-]?up\b|\btopup\b|\breload\b|\brecharge\b|شحن
 interface StoredValueMethod {
   provider: string
   alsoMerchant: boolean
+  /** Catalogue brand of the method, when its name resolves to one. */
+  brandId: string | null
+}
+
+/**
+ * Every exact spelling a catalogue brand goes by (id, name, full name, aliases), folded. A wallet is often printed
+ * under a name the user did not type: STC Pay became "STC Bank", and a bank prints whichever the acquirer registered.
+ */
+export function brandSpellings(brandId: string | null): string[] {
+  const b = brandId ? PAYMENT_BRANDS[brandId] : undefined
+  return b ? [brandId as string, b.name, b.full, ...(b.aliases ?? [])].filter((t): t is string => !!t).map(normalizeBrandToken) : []
 }
 
 /**
@@ -99,6 +146,7 @@ async function ownStoredValueMethods(
       const brandId = resolvePaymentBrandKey(provider)
       return {
         provider,
+        brandId,
         alsoMerchant: brandId ? PAYMENT_BRANDS[brandId].alsoMerchant === true : false,
         passThrough: isPassThroughBrand(provider),
       }
@@ -110,11 +158,12 @@ async function ownStoredValueMethods(
  * True when `merchant` IS one of the user's own stored-value methods — i.e. this leg is
  * the funding side of a top-up rather than a purchase.
  *
- * Compares the WHOLE merchant string, never a substring and never via brand aliases:
- * `careem` is a catalogue alias of the Careem Pay wallet, so alias matching would turn
- * every ride into a transfer, and substring matching would do the same to a shop called
- * "Lucky Market". Exact matching fails safe — an unrecognised top-up just stays spend,
- * which is only the status quo.
+ * Compares the WHOLE merchant string, never a substring: substring matching would turn a
+ * shop called "Lucky Market" into a transfer. The whole string may be the method's name or
+ * any exact spelling of its brand ("STC Bank" for an STC Pay wallet). A brand that is also
+ * somewhere you buy from (`careem` is an alias of the Careem Pay wallet) is still protected
+ * by the top-up wording rule below. Exact matching fails safe — an unrecognised top-up
+ * just stays spend, which is only the status quo.
  *
  * For a brand you can also buy FROM, an exact merchant hit is still ambiguous (fuel at
  * ADNOC vs reloading the ADNOC card), so those additionally require {@link TOP_UP_WORDING}.
@@ -130,7 +179,7 @@ export async function isOwnTopUpTarget(
   const norm = normalizeBrandToken(merchant)
   if (!norm) return false
   const hit = (await ownStoredValueMethods(service, userId)).find(
-    (m) => normalizeBrandToken(m.provider) === norm,
+    (m) => normalizeBrandToken(m.provider) === norm || brandSpellings(m.brandId).includes(norm),
   )
   if (!hit) return false
   return hit.alsoMerchant ? TOP_UP_WORDING.test(body ?? '') : true

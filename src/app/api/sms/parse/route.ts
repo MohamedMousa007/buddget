@@ -61,6 +61,7 @@ import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
 import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
 import { normalizeMerchant } from '@/lib/sms/merchantNormalizer'
 import { isGenericMerchant } from '@/lib/sms/merchantDictionary'
+import { hasPersonCounterparty, isOwnName, ownNames } from '@/lib/sms/ownName'
 import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sms/merchantCategoryPrompt'
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
@@ -945,7 +946,7 @@ export async function POST(request: Request) {
         confidence: parsed.confidence,
         amount: parsed.amount,
         currency: parsed.currency,
-        merchant: parsed.merchant,
+        merchant: hasPersonCounterparty(parsed.kind) ? null : parsed.merchant,
         bank_name: parsed.bank_name,
         category: parsed.category,
         failure_code: 'low_confidence',
@@ -981,6 +982,11 @@ export async function POST(request: Request) {
   const senderCheck = checkCreditSender(curated?.bank ?? parsed.bank_name, parsed.kind, sender)
   if (senderCheck === 'absent') console.info('[sms/parse] credit without sender (log only)', { bank: curated?.bank ?? parsed.bank_name, kind: parsed.kind })
   const senderHeld = senderCheck === 'mismatch'
+  // Is the other party of a transfer the user themself? Compared here, on the raw name, before anything is stored
+  // or masked; only the boolean goes any further.
+  const counterpartyIsSelf = hasPersonCounterparty(parsed.kind) && parsed.merchant
+    ? isOwnName(parsed.merchant, await ownNames(service, userId))
+    : null
   const tx: SmsTxResult = senderHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
     userId,
     amount: parsed.amount,
@@ -1000,6 +1006,7 @@ export async function POST(request: Request) {
     receivedAtIso: nowIso,
     logId,
     matchedTemplateId,
+    counterpartyIsSelf,
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
@@ -1101,7 +1108,10 @@ export async function POST(request: Request) {
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
-      merchant: parsed.merchant,
+      // On a transfer the counterparty is a person: their name stays in the user's own ledger title and is not
+      // copied into this log column (it was stored unmasked). The comparison result is all that is kept.
+      merchant: hasPersonCounterparty(tx.kind ?? parsed.kind) ? null : parsed.merchant,
+      counterparty_is_self: counterpartyIsSelf,
       bank_name: parsed.bank_name,
       // Persist the APPLIED category (e.g. Transfer / CC Payoff / Subscription) when known.
       category: tx.category ?? parsed.category,

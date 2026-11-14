@@ -17,6 +17,9 @@ import type { Identified } from '@/lib/accounts/identity/accountRef'
 import { providerFromBody } from '@/lib/sms/providerFromBody'
 import { isGenericMerchant, resolveKnownMerchant } from '@/lib/sms/merchantDictionary'
 import { catalogCategory } from '@/lib/sms/merchantCategoryCache'
+import { findPassThroughLegs } from '@/lib/sms/passThrough'
+import { brandSpellings } from '@/lib/sms/pairing'
+import { PAYMENT_BRANDS, normalizeBrandToken } from '@/lib/payment/paymentMethodDefaults'
 
 export interface GoldLabel { s: 't' | 'h'; topup?: string; relay?: string; fx?: string }
 export interface GoldRow {
@@ -50,6 +53,21 @@ const foldName = (m: string | undefined) => (m ? m.toLowerCase().replace(/[^a-z0
  * server. Returns, per log id, where the row lands: a registered account, a provisional one, or nowhere.
  */
 export function replayPlacement(inputs: GoldInputs): Map<string, 'existing' | 'provisional' | 'unassigned'> {
+  return replayAccounts(inputs).placement
+}
+
+/** Placement plus, per user, the stored-value brands (wallets, prepaid) they hold: registered ones and provisional ones with the instant they appear. */
+export function replayAccounts(inputs: GoldInputs): { placement: Map<string, 'existing' | 'provisional' | 'unassigned'>; wallets: Map<string, Map<string, number>> } {
+  const wallets = new Map<string, Map<string, number>>()
+  const addWallet = (u: string, brand: string | null, since: number) => {
+    if (!brand || PAYMENT_BRANDS[brand]?.type !== 'wallet' || PAYMENT_BRANDS[brand].passThrough) return
+    const mine = wallets.get(u) ?? new Map<string, number>()
+    if (!mine.has(brand)) mine.set(brand, since)
+    wallets.set(u, mine)
+  }
+  for (const m of inputs.methods) {
+    if (m.type === 'wallet' || m.type === 'prepaid_card') addWallet(m.u, resolvePaymentBrandKey(decomposePaymentMethodName(m.name.trim(), m.t ?? undefined).provider), 0)
+  }
   const byUser = new Map<string, Identified[]>()
   for (const m of inputs.methods) {
     const bankKey = resolvePaymentBrandKey(decomposePaymentMethodName(m.name.trim(), m.t ?? undefined).provider) ?? resolvePaymentBrandKey(m.name)
@@ -65,11 +83,12 @@ export function replayPlacement(inputs: GoldInputs): Map<string, 'existing' | 'p
       const id = `prov:${r.u}:${p.bankKey}:${p.tail}:${p.currency}`
       created.add(id)
       byUser.set(r.u, [...methods, { id, last4: p.tail, bankKey: p.bankKey }])
+      addWallet(r.u, p.bankKey, r.ts)
       out.set(r.id, 'provisional')
     } else if (p.kind === 'existing') out.set(r.id, created.has(p.id) ? 'provisional' : 'existing')
     else out.set(r.id, 'unassigned')
   }
-  return out
+  return { placement: out, wallets }
 }
 
 export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, GoldLabel>, split: 't' | 'h'): Metric[] {
@@ -80,7 +99,7 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
   const expenseRows = rows.filter((r) => r.e && r.ecat !== 'CC Payoff')
   const unplacedNow = expenseRows.filter((r) => !r.epm)
   // A row production already placed keeps its account; the rest go through today's placement.
-  const placement = replayPlacement(inputs)
+  const { placement, wallets } = replayAccounts(inputs)
   const landsOn = (r: GoldRow) => (r.epm ? 'existing' : placement.get(r.id) ?? 'unassigned')
   const stillUnplaced = expenseRows.filter((r) => landsOn(r) === 'unassigned')
   const shownAsCash = stillUnplaced.filter((r) => smsAccountLabelKind({ smsLogId: r.id, paymentMethodId: '' }) !== 'unassigned')
@@ -153,13 +172,30 @@ export function computeGoldMetrics(inputs: GoldInputs, labels: Record<string, Go
   })
   out.push({ name: '  distinct merchants per user (fewer = variants merged)', now: String(new Set(booked.map((r) => `${r.u}|${foldName(r.m)}`)).size), replay: String(new Set(booked.map((r) => `${r.u}|${titleOf(r).toLowerCase()}`)).size), target: '-' })
 
-  // 6. Wallet top-ups: either leg booked as spend or as income.
+  // 6. Wallet top-ups: either leg booked as spend or as income. Replay of dispatch step 0: the funding leg is a
+  // purchase whose merchant IS a wallet the user holds at that moment, which makes both legs one own transfer.
+  const byId = new Map(inputs.rows.map((r) => [r.id, r]))
   const topups = rows.filter((r) => labels[r.id].topup)
-  out.push({ name: 'Wallet top-up legs counted as income or expense', now: pct(topups.filter((r) => (r.e && r.ecat !== 'Transfer') || r.i).length, topups.length), replay: PENDING, target: '0' })
+  const resolvesAsTransfer = (r: GoldRow) => {
+    const partner = byId.get(labels[r.id].topup ?? '')
+    const funding = PURCHASE.has(r.k ?? '') || r.k === 'own_transfer' ? r : partner
+    const brand = funding?.m ? Object.keys(PAYMENT_BRANDS).find((id) => brandSpellings(id).includes(normalizeBrandToken(funding.m as string))) : undefined
+    const since = brand ? wallets.get(r.u)?.get(brand) : undefined
+    return since !== undefined && since <= (funding?.ts ?? 0)
+  }
+  out.push({
+    name: 'Wallet top-up legs counted as income or expense',
+    now: pct(topups.filter((r) => (r.e && r.ecat !== 'Transfer') || r.i).length, topups.length),
+    replay: pct(topups.filter((r) => !resolvesAsTransfer(r)).length, topups.length),
+    target: '0',
+  })
 
-  // 7. Relay (pass-through) legs.
+  // 7. Relay (pass-through) legs: a credit and an outgoing transfer of one amount on one account, minutes apart.
   const relays = rows.filter((r) => labels[r.id].relay)
-  out.push({ name: 'Relay legs flagged "possible pass-through"', now: pct(0, relays.length), replay: PENDING, target: '>=90%' })
+  const flagged = findPassThroughLegs(inputs.rows.filter((r) => r.k && !r.dup && r.a).map((r) => ({
+    id: r.id, owner: r.u, dir: r.k === 'instant_transfer_out' ? 'out' as const : 'in' as const, amount: r.a as number, currency: r.c ?? '', account: r.t ?? null, at: r.ts * 1000,
+  })).filter((l, i, all) => l.dir === 'out' || ['instant_transfer_in', 'income'].includes(byId.get(all[i].id)?.k ?? '')))
+  out.push({ name: 'Relay legs flagged "possible pass-through"', now: pct(0, relays.length), replay: pct(relays.filter((r) => flagged.has(r.id)).length, relays.length), target: '>=90%' })
 
   // 8. FX: an expense on the credit leg, or a booked leg that never credits the destination.
   const fx = rows.filter((r) => labels[r.id].fx)

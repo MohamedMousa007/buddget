@@ -154,7 +154,18 @@ function IncomeEventDetail({ event, onClose, onEdit }: { event: IncomeEvent; onC
     : [
         { label: t.income.factReceived, value: shortDate(event.receivedDate) },
         paidInto,
-        { label: t.income.factCountedIn, value: t.income.countedInOneTime },
+        event.exclusion === 'pass_through'
+          ? {
+              label: t.income.factCountedIn,
+              value: t.income.notCountedPassThrough,
+              valueTone: 'var(--color-brand-text-muted)',
+              trailing: (
+                <Button variant="link" size="touch" onClick={() => updateIncomeEvent(event.id, { exclusion: null })}>
+                  {t.income.countAsIncome}
+                </Button>
+              ),
+            }
+          : { label: t.income.factCountedIn, value: t.income.countedInOneTime },
       ]
 
   return (

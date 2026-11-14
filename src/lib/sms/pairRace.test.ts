@@ -111,6 +111,7 @@ function makeService(state: State) {
     let id = ''
     const c: Record<string, unknown> = {
       select: () => c, in: () => c, is: () => c, not: () => c, order: () => c, limit: () => c,
+      neq: () => c, gte: () => c, lte: () => c,
       eq: (_col: string, v: string) => { id = v; return c },
       maybeSingle: () => {
         const l = state.logs.find((x) => x.id === id)

@@ -322,6 +322,12 @@ describe('isOwnTopUpTarget — strict, because a payment brand can also be a mer
     expect(await isOwnTopUpTarget(stub([{ name: 'Careem Pay' }]), 'u1', 'Careem', '')).toBe(false)
   })
 
+  it('matches a wallet printed under another exact spelling of its brand', async () => {
+    // The bank prints the acquirer's name for the wallet, which is not always what the user typed.
+    expect(await isOwnTopUpTarget(stub([{ name: 'STC Pay' }]), 'u1', 'STC Bank', '')).toBe(true)
+    expect(await isOwnTopUpTarget(stub([{ name: 'STC Pay' }]), 'u1', 'STC Bank Store', '')).toBe(false)
+  })
+
   it('does not turn a shop whose name contains the wallet into a transfer', async () => {
     expect(await isOwnTopUpTarget(stub([{ name: 'Lucky' }]), 'u1', 'Lucky Market', '')).toBe(false)
   })

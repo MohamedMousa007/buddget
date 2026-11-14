@@ -780,6 +780,8 @@ export interface Dictionary {
     recordedSms: string
     recordedManual: string
     countedInOneTime: string
+    notCountedPassThrough: string
+    countAsIncome: string
     oneTimeIncome: string
     makeRecurringNote: string
     linkSheetTitle: string
@@ -2962,6 +2964,8 @@ export interface Dictionary {
     pending: string
     capturedOffline: string
     blockedNotCounted: string
+    possiblePassThrough: string
+    passThrough: string
     returnedOn: (d: string) => string
     oneTimeCaption: string
     askBuddgy: string
@@ -3030,6 +3034,11 @@ export interface Dictionary {
     review: string
     linkIt: string
     keepSeparate: string
+    passThroughTitle: (n: number) => string
+    passThroughBody: (n: number, total: string) => string
+    passThroughYes: string
+    passThroughNo: string
+    passThroughApplied: (n: number) => string
     addCard: string
     addAccount: string
     addWallet: string
