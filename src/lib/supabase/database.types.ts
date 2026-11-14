@@ -3367,6 +3367,8 @@ export type Database = {
       }
       sms_parse_log: {
         Row: {
+          body_hash: string | null
+          captured_at: string | null
           device_id: string | null
           payment_method_id: string | null
           balance_after: number | null
@@ -3431,6 +3433,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          body_hash?: string | null
+          captured_at?: string | null
           device_id?: string | null
           payment_method_id?: string | null
           balance_after?: number | null
@@ -3495,6 +3499,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          body_hash?: string | null
+          captured_at?: string | null
           device_id?: string | null
           payment_method_id?: string | null
           balance_after?: number | null

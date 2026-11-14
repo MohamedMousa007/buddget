@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-  computeSmsHash, claimInProgressResponse, isClaimInFlight, maskOtpDigits, checkCreditSender, heldForConfirmation, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction,
+  computeSmsHash, claimInProgressResponse, isClaimInFlight, maskOtpDigits, checkCreditSender, heldForConfirmation, nonTransactionReason, smsLocalDay, smsPlausibilityIssue, toSupportedCurrency, isStaleClaim, computeNeighbourSmsHashes, hasPostedTransaction, resolveSmsDay, computeBodyHash, captureSecond, isPlausibleAmount,
 } from './ingestGuards'
 import { parseSmsDay, matchCuratedPattern } from './patterns'
 
@@ -45,6 +45,50 @@ describe('smsPlausibilityIssue', () => {
   })
   it('accepts a normal SMS', () => {
     expect(smsPlausibilityIssue(99, '2026-10-26', now)).toBeNull()
+  })
+})
+
+describe('resolveSmsDay (I6: a date never rejects)', () => {
+  const nowMs = Date.parse('2026-10-27T12:00:00Z')
+  const arrivalDay = '2026-10-27'
+  it('uses a plausible body day with no flag', () => {
+    expect(resolveSmsDay({ bodyDay: '2026-10-25', captureDay: '2026-10-27', arrivalDay, nowMs })).toEqual({ day: '2026-10-25', unsure: false })
+  })
+  it('falls back to the capture day, flagged, when the body year is far in the future', () => {
+    expect(resolveSmsDay({ bodyDay: '2090-01-14', captureDay: '2026-10-27', arrivalDay, nowMs })).toEqual({ day: '2026-10-27', unsure: true })
+  })
+  it('falls back to the arrival day, flagged, when a phone clock three years behind made the capture day implausible', () => {
+    expect(resolveSmsDay({ bodyDay: null, captureDay: '2023-10-27', arrivalDay, nowMs })).toEqual({ day: arrivalDay, unsure: true })
+  })
+  it('dates an undated message by its capture day without a flag', () => {
+    expect(resolveSmsDay({ bodyDay: null, captureDay: '2026-10-26', arrivalDay, nowMs })).toEqual({ day: '2026-10-26', unsure: false })
+  })
+  it('dates an undated message with no capture time by the arrival day without a flag', () => {
+    expect(resolveSmsDay({ bodyDay: null, captureDay: null, arrivalDay, nowMs })).toEqual({ day: arrivalDay, unsure: false })
+  })
+  it('keeps the existing bounds: 2 days ahead is fine, 3 is not, 400 days back (counted from noon) is the edge', () => {
+    expect(resolveSmsDay({ bodyDay: '2026-10-29', captureDay: null, arrivalDay, nowMs }).unsure).toBe(false)
+    expect(resolveSmsDay({ bodyDay: '2026-10-30', captureDay: null, arrivalDay, nowMs }).unsure).toBe(true)
+    expect(resolveSmsDay({ bodyDay: '2025-09-23', captureDay: null, arrivalDay, nowMs }).unsure).toBe(false)
+    expect(resolveSmsDay({ bodyDay: '2025-09-22', captureDay: null, arrivalDay, nowMs }).unsure).toBe(true)
+  })
+})
+
+describe('isPlausibleAmount', () => {
+  it.each([0, -1, NaN, Infinity, 1_000_000_001, null, undefined])('refuses %s', (a) => expect(isPlausibleAmount(a)).toBe(false))
+  it.each([0.01, 250, 1_000_000_000])('accepts %s', (a) => expect(isPlausibleAmount(a)).toBe(true))
+})
+
+describe('computeBodyHash and captureSecond (I5)', () => {
+  it('does not depend on the capture id, and folds case and whitespace like the capture-id hash', () => {
+    expect(computeBodyHash('Debited EGP 99.00 for SHOP')).toBe(computeBodyHash('  debited egp 99.00   for shop '))
+    expect(computeSmsHash('Debited EGP 99.00', '2026-10-01T10:00:00Z', 'a'.repeat(8) + '-0000-4000-8000-000000000001'))
+      .not.toBe(computeSmsHash('Debited EGP 99.00', '2026-10-01T10:00:00Z', 'a'.repeat(8) + '-0000-4000-8000-000000000002'))
+  })
+  it('cuts the capture time to the second and never invents one', () => {
+    expect(captureSecond('2026-10-01T10:00:00.987+03:00')).toBe('2026-10-01T07:00:00.000Z')
+    expect(captureSecond(undefined)).toBeNull()
+    expect(captureSecond('yesterday')).toBeNull()
   })
 })
 

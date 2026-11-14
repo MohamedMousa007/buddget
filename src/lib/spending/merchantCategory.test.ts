@@ -55,6 +55,11 @@ describe('sameMerchantUncategorised', () => {
     ]
     expect(sameMerchantUncategorised(rows, edited)).toEqual([a])
   })
+  it('leaves a row the user chose or confirmed as Other alone, and picks one that has no source', () => {
+    const open = exp({ description: 'Acme Mart' })
+    const rows = [open, exp({ categorySource: 'user_changed' }), exp({ categorySource: 'user_confirmed' })]
+    expect(sameMerchantUncategorised(rows, edited)).toEqual([open])
+  })
   it('is empty for a null key or company-form name', () => {
     expect(sameMerchantUncategorised([exp({ description: 'Company S' })], { id: 'x', description: 'Company S' })).toEqual([])
     expect(sameMerchantUncategorised([exp({ description: 'ab' })], { id: 'x', description: 'ab' })).toEqual([])
@@ -62,6 +67,9 @@ describe('sameMerchantUncategorised', () => {
 })
 
 describe('unknownMerchants', () => {
+  it('does not ask again about a merchant the user already chose Other for', () => {
+    expect(unknownMerchants([exp({ categorySource: 'user_changed' }), exp({ categorySource: 'user_confirmed' })], undefined)).toEqual([])
+  })
   it('groups, sorts by count then recency, names by latest', () => {
     const rows = [
       exp({ description: 'Acme Mart', date: '2026-01-01' }),

@@ -15,8 +15,14 @@ export function isCompanyFormOnly(description: string): boolean {
   return folded.length >= 4 && COMPANY_WORDS.some((w) => w.startsWith(folded))
 }
 
+/**
+ * 'Other' with no source: the category nobody has chosen. A source of `user_confirmed` or `user_changed` means the user
+ * picked 'Other' (or confirmed it), and the merchant prompt and the same-merchant apply must leave it alone. Known
+ * limit: a row the user set to 'Other' by hand before `category_source` existed has no source and still reads as
+ * uncategorised.
+ */
 const isUncategorisedBankPurchase = (e: Expense): boolean =>
-  Boolean(e.smsLogId) && !e.refundKind && e.category === 'Other'
+  Boolean(e.smsLogId) && !e.refundKind && e.category === 'Other' && !e.categorySource
 
 export function sameMerchantUncategorised(
   expenses: readonly Expense[],

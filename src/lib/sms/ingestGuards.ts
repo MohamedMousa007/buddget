@@ -29,10 +29,28 @@ export function computeSmsHash(message: string, receivedAt?: string, eventId?: s
   return eventId ? hashForEvent(message, eventId) : hashForBucket(message, receivedAt, 0)
 }
 
+const foldBody = (message: string): string => message.trim().replace(/\s+/g, ' ').toLowerCase()
+
 /** A capture id is the exact retry identity: twin purchases (different ids) both book, a retry (same id) collapses. */
 function hashForEvent(message: string, eventId: string): string {
-  const normalized = message.trim().replace(/\s+/g, ' ').toLowerCase()
-  return crypto.createHash('sha256').update(`${normalized}|evt:${eventId.toLowerCase()}`).digest('hex')
+  return crypto.createHash('sha256').update(`${foldBody(message)}|evt:${eventId.toLowerCase()}`).digest('hex')
+}
+
+/**
+ * The text alone, with the same folding as the capture-id hash and over the same raw message. Unlike `sms_hash` it does
+ * not change with the capture id, so a copy re-sent under a new id still carries it (I5).
+ */
+export function computeBodyHash(message: string): string {
+  return crypto.createHash('sha256').update(foldBody(message)).digest('hex')
+}
+
+/**
+ * The capture time the phone reported, cut to the whole second, or null when it sent none or an unreadable one. Never
+ * the server clock: a retry would get a different value and the same-capture index would never match.
+ */
+export function captureSecond(receivedAt: string | undefined): string | null {
+  const ms = receivedAt ? Date.parse(receivedAt) : NaN
+  return Number.isFinite(ms) ? new Date(Math.floor(ms / 1000) * 1000).toISOString() : null
 }
 
 function hashForBucket(message: string, receivedAt: string | undefined, offset: number): string {
@@ -65,15 +83,37 @@ export function smsLocalDay(iso: string, timeZone: string = DEFAULT_TIMEZONE): s
 
 export type SmsPlausibilityIssue = 'implausible_amount' | 'implausible_date'
 
-/** Rejects what no real SMS carries: non-positive or absurd amounts and dates far from today. */
-export function smsPlausibilityIssue(amount: number, day: string, nowMs: number = Date.now()): SmsPlausibilityIssue | null {
-  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_AMOUNT) return 'implausible_amount'
+/** No real SMS carries a non-positive or absurd amount. */
+export function isPlausibleAmount(amount: number | null | undefined): amount is number {
+  return typeof amount === 'number' && Number.isFinite(amount) && amount > 0 && amount <= MAX_AMOUNT
+}
+
+/** A transaction day that is not more than 2 days ahead and not more than 400 days back. */
+export function isPlausibleDay(day: string, nowMs: number = Date.now()): boolean {
   const dayMs = Date.parse(`${day}T00:00:00Z`)
   const dayLength = 86_400_000
-  if (!Number.isFinite(dayMs) || dayMs > nowMs + MAX_FUTURE_DAYS * dayLength || dayMs < nowMs - MAX_PAST_DAYS * dayLength) {
-    return 'implausible_date'
-  }
-  return null
+  return Number.isFinite(dayMs) && dayMs <= nowMs + MAX_FUTURE_DAYS * dayLength && dayMs >= nowMs - MAX_PAST_DAYS * dayLength
+}
+
+/** Rejects what no real SMS carries: non-positive or absurd amounts and dates far from today. */
+export function smsPlausibilityIssue(amount: number, day: string, nowMs: number = Date.now()): SmsPlausibilityIssue | null {
+  if (!isPlausibleAmount(amount)) return 'implausible_amount'
+  return isPlausibleDay(day, nowMs) ? null : 'implausible_date'
+}
+
+/**
+ * The day a message is booked on, and whether it is a fallback. A date can never reject a message (I6), so an
+ * untrustworthy one falls back: the body's own day when plausible, else the capture day, else the server's arrival day.
+ * `unsure` is set only when a date the message printed (or the capture time the phone sent) could not be believed; a
+ * message that prints no date and was captured on a believable day is simply dated by its capture, with no flag.
+ * `arrivalDay` must come from the server clock, never from the client's reported time.
+ */
+export function resolveSmsDay(i: { bodyDay: string | null; captureDay: string | null; arrivalDay: string; nowMs?: number }): { day: string; unsure: boolean } {
+  const nowMs = i.nowMs ?? Date.now()
+  if (i.bodyDay && isPlausibleDay(i.bodyDay, nowMs)) return { day: i.bodyDay, unsure: false }
+  const printedDateFailed = i.bodyDay != null
+  if (i.captureDay && isPlausibleDay(i.captureDay, nowMs)) return { day: i.captureDay, unsure: printedDateFailed }
+  return { day: i.arrivalDay, unsure: printedDateFailed || i.captureDay != null }
 }
 
 const SUPPORTED = new Set<string>(Constants.public.Enums.currency_code)

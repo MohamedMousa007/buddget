@@ -47,7 +47,7 @@ import {
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
 import { SMS_SENDER_HELD_PUSH_KIND } from '@/lib/sms/pushKinds'
-import { MAX_SMS_BODY_CHARS, checkCreditSender, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, hasPostedTransaction, isClaimInFlight, isStaleClaim, maskOtpDigits, nonTransactionReason, smsLocalDay, smsPlausibilityIssue } from '@/lib/sms/ingestGuards'
+import { MAX_SMS_BODY_CHARS, checkCreditSender, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, computeBodyHash, captureSecond, hasPostedTransaction, isClaimInFlight, isPlausibleAmount, isStaleClaim, maskOtpDigits, nonTransactionReason, resolveSmsDay, smsLocalDay } from '@/lib/sms/ingestGuards'
 import { withSmsAiQuota } from '@/lib/sms/meteredAi'
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { senderCapReached } from '@/lib/sms/senderCap'
@@ -59,8 +59,8 @@ import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { fetchCorrectionExemplar } from '@/lib/sms/correctionExemplar'
 import { createSmsTransaction, extractIpnReference, type SmsTxResult } from '@/lib/sms/dispatch'
 import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
+import { applyAiCategory, mayServerCategorise } from '@/lib/sms/aiCategoryWrite'
 import { normalizeMerchant } from '@/lib/sms/merchantNormalizer'
-import { isGenericMerchant } from '@/lib/sms/merchantDictionary'
 import { hasPersonCounterparty, isOwnName, ownNames } from '@/lib/sms/ownName'
 import { KNOWN_NON_TRANSACTION, isKnownNonTransaction } from '@/lib/sms/negativeCache'
 import { coarseShapeKey, maskSkeletonText } from '@/lib/sms/skeleton'
@@ -71,7 +71,10 @@ import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sm
 import type { ExpenseCategory } from '@/lib/store/types'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 import { resolveCurrency } from '@/lib/sms/currencyResolver'
-import { recordBalanceReport } from '@/lib/sms/balanceReport'
+import { extractBalance, recordBalanceReport } from '@/lib/sms/balanceReport'
+import { findEarlierCopy, secondCopyVerdict } from '@/lib/sms/captureGuard'
+import { appendSmsFlags } from '@/lib/sms/stampFlags'
+import type { SmsFlag } from '@/lib/sms/smsFlags'
 import { extractAccountTail } from '@/lib/accounts/identity/accountRef'
 import { providerFromBody } from '@/lib/sms/providerFromBody'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
@@ -668,6 +671,9 @@ export async function POST(request: Request) {
   // sms_hash identifies the row for /api/sms/confirm + the FCM sms_confirm push.
   const eventId = parsedBody.data.eventId ?? (UUID_RE.test(request.headers.get('x-sms-event-id') ?? '') ? request.headers.get('x-sms-event-id') : null)
   const hash = computeSmsHash(rawMessage, receivedAt, eventId ?? undefined)
+  // Identifies the capture whatever capture id was sent: the same text at the same second is one capture (I5).
+  const bodyHash = computeBodyHash(rawMessage)
+  const capturedAt = captureSecond(receivedAt)
   const nowIso = receivedAt ?? new Date().toISOString()
 
   // Idempotency: a WorkManager/Shortcut retry of an SMS we already hold hits the unique (user_id, sms_hash)
@@ -687,6 +693,8 @@ export async function POST(request: Request) {
       status: 'processing',
       failure_code: 'processing',
       sms_hash: hash,
+      body_hash: bodyHash,
+      captured_at: capturedAt,
       parsed_at: new Date().toISOString(),
       received_at: nowIso,
       device_id: deviceId,
@@ -715,16 +723,22 @@ export async function POST(request: Request) {
   }
   let { data: logRow, error: logErr } = await claimLog()
 
+  // The live row that already holds this message: the same retry identity (sms_hash), or the same capture (text and
+  // capture second) under another capture id. One lookup for both, so both are treated the same way.
+  const findPrior = async () => {
+    const cols = 'id, expense_id, income_id, status, parsed_at'
+    const byHash = await service.from('sms_parse_log').select(cols)
+      .eq('user_id', userId).eq('sms_hash', hash).eq('is_duplicate', false).maybeSingle()
+    if (byHash.data || !capturedAt) return byHash.data
+    const byCapture = await service.from('sms_parse_log').select(cols)
+      .eq('user_id', userId).eq('body_hash', bodyHash).eq('captured_at', capturedAt).eq('is_duplicate', false).maybeSingle()
+    return byCapture.data
+  }
+
   // A retry must not be blocked by a claim that can never finish (failed attempt, or a function killed
   // mid-flight). Retire that row from the unique index and claim afresh.
   if (!logRow && logErr?.code === '23505') {
-    const { data: prior } = await service
-      .from('sms_parse_log')
-      .select('id, status, parsed_at')
-      .eq('user_id', userId)
-      .eq('sms_hash', hash)
-      .eq('is_duplicate', false)
-      .maybeSingle()
+    const prior = await findPrior()
     if (prior && isStaleClaim(prior.status, prior.parsed_at)) {
       // A claim that already posted (the link write is what died) must not be retired: the retry would post it again.
       if (await hasPostedTransaction(service, userId, prior.id)) {
@@ -739,16 +753,11 @@ export async function POST(request: Request) {
 
   if (!logRow) {
     // Concurrent duplicate: two shortcuts with different keywords matched the same SMS
-    // body simultaneously. The unique index on (user_id, sms_hash) WHERE is_duplicate=false
-    // catches the second insert — return the same duplicate response as the sequential path.
+    // body simultaneously, or one capture was re-sent under a new capture id. The unique indexes on
+    // (user_id, sms_hash) and (user_id, body_hash, captured_at) WHERE is_duplicate=false catch the second insert,
+    // so return the same duplicate response as the sequential path.
     if (logErr?.code === '23505') {
-      const { data: prior } = await service
-        .from('sms_parse_log')
-        .select('expense_id, income_id, status')
-        .eq('user_id', userId)
-        .eq('sms_hash', hash)
-        .eq('is_duplicate', false)
-        .maybeSingle()
+      const prior = await findPrior()
       if (prior && isClaimInFlight(prior.status)) return claimInProgressResponse()
       return NextResponse.json({
         ok: true,
@@ -771,6 +780,25 @@ export async function POST(request: Request) {
     if (rejectErr) await service.from('sms_parse_log').update(rejectedRow).eq('id', logId)
     after(() => recordSmsStats(service, { userId, senderKey: effectiveSender(sender, message, null), message: keptBody, rejectReason, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: null, parseMethod: 'fully_curated', currencyCode: null }))
     return NextResponse.json({ ok: false, reason: 'not_transaction', rejected: rejectReason })
+  }
+
+  // ---- I5: the same text captured minutes ago under another capture time -------
+  // Read after this message's own claim row exists, so two simultaneous requests see each other and exactly one of
+  // them is the later copy. A reference or a running balance proves the same movement; without either, both book.
+  let possibleDuplicate = false
+  const earlierCopy = await findEarlierCopy(service, { userId, logId, bodyHash, capturedAt, receivedAt: nowIso })
+  if (earlierCopy) {
+    const verdict = secondCopyVerdict({ hasReference: extractIpnReference(message) != null, hasBalance: extractBalance(message) != null })
+    if (verdict === 'possible_duplicate') {
+      possibleDuplicate = true
+    } else if (isClaimInFlight(earlierCopy.status)) {
+      // The earlier run may still die: retire this claim so the phone's retry can claim again, and keep its copy.
+      await service.from('sms_parse_log').update({ is_duplicate: true, status: 'failed', failure_code: 'duplicate_retry' }).eq('id', logId)
+      return claimInProgressResponse()
+    } else {
+      await service.from('sms_parse_log').update({ is_duplicate: true, status: 'rejected', failure_code: 'duplicate_capture' }).eq('id', logId)
+      return NextResponse.json({ ok: true, duplicate: true, expenseId: earlierCopy.expense_id ?? null, incomeId: earlierCopy.income_id ?? null })
+    }
   }
 
   // ---- Tier 1: curated pattern library (code-shipped, global) -------------
@@ -934,23 +962,57 @@ export async function POST(request: Request) {
   // Stable sender identity (hotline → sender → bank) for currency learning + pooling.
   const senderKey = effectiveSender(sender, message, parsed.bank_name)
 
+  // What a message the tiers called a transaction but that cannot be booked yet becomes: a row held for the user, in
+  // the same shape as a credit held for its sender (parsed_ok, awaiting_confirmation), so the review list shows it and
+  // /api/sms/confirm or /api/sms/dismiss settles it. Never an answer that makes the phone forget it (I6).
+  const holdForReview = async (code: 'null_amount' | 'low_confidence' | 'implausible_amount') => {
+    const { error: holdErr } = await service.from('sms_parse_log')
+      .update({
+        status: 'logged',
+        parsed_ok: true,
+        awaiting_confirmation: true,
+        failure_code: code,
+        confidence: parsed.confidence ?? 0,
+        // An absurd amount is not stored: the column could refuse it, and the held row would then never be written.
+        amount: isPlausibleAmount(parsed.amount) ? parsed.amount : null,
+        currency: parsed.currency ?? null,
+        merchant: hasPersonCounterparty(parsed.kind) ? null : parsed.merchant,
+        bank_name: parsed.bank_name,
+        category: parsed.category,
+        kind: parsed.kind,
+        clean_title: parsed.cleanTitle,
+        parse_method: parseMethod,
+        harvested_at: new Date().toISOString(),
+      })
+      .eq('id', logId)
+    if (holdErr) {
+      console.error('[sms/parse] hold write failed', holdErr)
+      return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
+    }
+    after(() => recordSmsStats(service, { userId, senderKey, message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: parsed.kind ?? null, parseMethod, currencyCode: parsed.currency ?? null }))
+    after(() => nudgeUser(userId, 'sms', { logId }))
+    return NextResponse.json({ ok: true, held: true, reason: code })
+  }
+
   // Reject only true non-transactions — NEVER for a missing currency (Egyptian
   // wallet SMS often omit it). resolveCurrency backfills below.
-  if (!parsed.is_transaction || !parsed.amount) {
+  if (!parsed.is_transaction) {
     await service.from('sms_parse_log')
       .update({
         status: 'rejected',
         confidence: parsed.confidence ?? 0,
-        failure_code: parsed.is_transaction ? 'null_amount' : 'not_transaction',
+        failure_code: 'not_transaction',
         parse_method: parseMethod,
         harvested_at: new Date().toISOString(),
         // Stamped now (the harvest would stamp the same value later) so the negative cache sees this verdict at once.
-        ...(parsed.is_transaction ? {} : { masked_body: maskSkeletonText(message) }),
+        masked_body: maskSkeletonText(message),
       })
       .eq('id', logId)
     after(() => recordSmsStats(service, { userId, senderKey, message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: parsed.kind ?? null, parseMethod, currencyCode: null }))
     return NextResponse.json({ ok: false, reason: 'not_transaction' })
   }
+  // A transaction with no amount cannot be booked, but it is not a message the phone may forget.
+  if (!parsed.amount) return holdForReview('null_amount')
 
   // Backfill the currency (literal → learned (user,sender) → base → EGP). When the
   // value is a guess, `provisional` flags the row for one-time user confirmation.
@@ -962,24 +1024,7 @@ export async function POST(request: Request) {
   })
   parsed.currency = resolvedCurrency
 
-  if (parsed.confidence < CONFIRM_CONFIDENCE) {
-    await service.from('sms_parse_log')
-      .update({
-        status: 'rejected',
-        confidence: parsed.confidence,
-        amount: parsed.amount,
-        currency: parsed.currency,
-        merchant: hasPersonCounterparty(parsed.kind) ? null : parsed.merchant,
-        bank_name: parsed.bank_name,
-        category: parsed.category,
-        failure_code: 'low_confidence',
-        parse_method: parseMethod,
-        harvested_at: new Date().toISOString(),
-      })
-      .eq('id', logId)
-    after(() => recordSmsStats(service, { userId, senderKey, message, templateId: null, currency: null, isTransaction: false, parsedOk: false, kind: parsed.kind ?? null, parseMethod, currencyCode: parsed.currency ?? null }))
-    return NextResponse.json({ ok: false, reason: 'low_confidence', confidence: parsed.confidence })
-  }
+  if (parsed.confidence < CONFIRM_CONFIDENCE) return holdForReview('low_confidence')
 
   // Server-side security: strip non-digits and truncate to last 4 — never trust raw output.
   const cleanLast4 = (parsed.detectedAccountLast4 ?? '').replace(/\D/g, '').slice(-4)
@@ -987,17 +1032,18 @@ export async function POST(request: Request) {
     || null
   const cleanCpLast4 = (parsed.detectedCounterpartyLast4 ?? '').replace(/\D/g, '').slice(-4) || null
 
-  // Prefer the transaction date embedded in the SMS body (curated patterns)
-  // over the receive timestamp — they differ for delayed/offline deliveries.
-  const day = txDay ?? smsLocalDay(nowIso, await getUserTimeZone(service, userId))
+  if (!isPlausibleAmount(parsed.amount)) return holdForReview('implausible_amount')
 
-  const implausible = smsPlausibilityIssue(parsed.amount, day)
-  if (implausible) {
-    await service.from('sms_parse_log')
-      .update({ status: 'rejected', confidence: parsed.confidence, amount: parsed.amount, failure_code: implausible, parse_method: parseMethod, harvested_at: new Date().toISOString() })
-      .eq('id', logId)
-    return NextResponse.json({ ok: false, reason: implausible })
-  }
+  // The body's date when believable (it differs from the receive time for delayed or offline deliveries); otherwise
+  // the capture day, then the server's arrival day, flagged. A date never rejects a message (I6). `nowIso` is the
+  // CLIENT's clock when it sent one, so the arrival day is read from the server clock.
+  const timeZone = await getUserTimeZone(service, userId)
+  const { day, unsure: dateUnsure } = resolveSmsDay({
+    bodyDay: txDay,
+    captureDay: receivedAt ? smsLocalDay(receivedAt, timeZone) : null,
+    arrivalDay: smsLocalDay(new Date().toISOString(), timeZone),
+  })
+  const rowFlags: SmsFlag[] = [...(dateUnsure ? (['date_unsure'] as const) : []), ...(possibleDuplicate ? (['possible_duplicate'] as const) : [])]
 
   // Classify + persist via the shared dispatcher: own-account/transfer/FX
   // pairing → CC payoff → salary dedup → ATM → subscription → purchase. Posts
@@ -1047,9 +1093,15 @@ export async function POST(request: Request) {
     referenceHash: paymentReferenceHash,
     // Only a code-tier match proves the kind; the AI and learned templates only assert it (P1-7).
     kindSource: parseMethod === 'fully_curated' ? 'code' : 'model',
+    smsFlags: rowFlags.length ? rowFlags : undefined,
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
+  // A pairing creates its row inside the database and cannot take flags with the insert; stamp what it did not carry.
+  // The money is already booked, so a failure here is logged and never fails the message.
+  if (rowFlags.length && (expenseId || incomeId)) {
+    try { await appendSmsFlags(service, userId, logId, rowFlags) } catch (e) { console.warn('[sms/parse] flag stamp failed', e) }
+  }
 
   // A purchase the curated/template tiers matched but couldn't categorise (AI never saw it, and
   // neither catalog nor learned cache knew the merchant) lands as 'Other'. Categorise it once, in
@@ -1064,21 +1116,15 @@ export async function POST(request: Request) {
     after(async () => {
       try {
         const { data: exp } = await service.from('expenses')
-          .select('description, category').eq('id', expenseId).maybeSingle()
-        // Non-Other means catalog or the learned cache already categorised it in createSmsExpense.
-        if (!exp || exp.category !== 'Other') return
+          .select('description, category, category_source').eq('id', expenseId).maybeSingle()
+        // Not categorisable means catalog or the learned cache already categorised it in createSmsExpense, or the user chose.
+        if (!exp || !mayServerCategorise(exp)) return
         const merchant = (exp.description as string | null) ?? parsed.merchant
         if (!merchant) return
         const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, () => aiCategorizeMerchant(geminiKey, merchant, message))
         if (metered.denied || !metered.value) return
         const cat = metered.value
-        // The AI's answer is applied as a SUGGESTION: the row says so until the user confirms or changes it.
-        await service.from('expenses').update({ category: cat, category_source: 'ai_suggested' }).eq('id', expenseId)
-        // One merchant, one category: this user's earlier uncategorised purchases at the same merchant follow
-        // (never for a bare company-form word, which is many merchants).
-        if (!isGenericMerchant(merchant)) await service.from('expenses').update({ category: cat, category_source: 'ai_suggested' })
-          .eq('user_id', userId).eq('category', 'Other').ilike('description', merchant.replace(/[\\%_]/g, (c) => `\\${c}`))
-          .not('sms_log_id', 'is', null).is('deleted_at', null).is('refunded_at', null)
+        await applyAiCategory(service, { userId, expenseId, merchant, category: cat })
         await rememberMerchantCategory(service, merchant, cat, 'ai')
       } catch (e) {
         console.warn('[sms/parse] merchant categorise failed', e)

@@ -9,7 +9,7 @@
  */
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
-import { smsLocalDay } from '@/lib/sms/ingestGuards'
+import { isPlausibleAmount, smsLocalDay } from '@/lib/sms/ingestGuards'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { z } from 'zod'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
@@ -126,7 +126,8 @@ export async function POST(request: Request) {
       })
     }
 
-    if (row.amount == null || !row.currency) return fail('invalid_row', 422)
+    // A message held for a missing or absurd amount can only be dismissed: booking it would book a guess.
+    if (!isPlausibleAmount(row.amount) || !row.currency) return fail('invalid_row', 422)
 
     // Salary matching, transfer pairing and debt picking read the SMS text. Once retention has removed it, booking
     // would silently degrade (wrong category, no counterparty), so say so instead.

@@ -121,6 +121,14 @@ describe('POST /api/sms/confirm', () => {
     expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'invalid_row' })
   })
 
+  it.each([0, -5, 5_000_000_000])('refuses to book a held row whose amount is %s and keeps it held', async (amount) => {
+    h.claimRow = pending({ amount, failure_code: 'implausible_amount' })
+    const res = await post({ logId: LOG_ID })
+    expect(res.status).toBe(422)
+    expect(h.create).not.toHaveBeenCalled()
+    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'invalid_row' })
+  })
+
   it('rejects a currency outside the enum', async () => {
     expect((await post({ logId: LOG_ID, currency: 'XYZ' })).status).toBe(400)
     expect(h.updates).toHaveLength(0)
