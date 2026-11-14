@@ -334,6 +334,19 @@ export async function namesOwnStoredValue(
   return (await walletsNamedIn(service, userId, text)).length > 0
 }
 
+/** The route stores no merchant on a leg whose applied kind is own_transfer, so the bank leg is read from the columns it does write. */
+async function isBankLegOf(
+  service: ServiceClient,
+  userId: string,
+  wallet: string,
+  c: { merchant?: unknown; merchant_normalized?: unknown; clean_title?: unknown; raw_body?: unknown },
+): Promise<boolean> {
+  for (const name of [c.merchant, c.merchant_normalized, c.clean_title]) {
+    if (typeof name === 'string' && (await ownTopUpWallet(service, userId, name, c.raw_body as string | null)) === wallet) return true
+  }
+  return false
+}
+
 interface WalletFeeLeg { id: string; kind: string; amount: number; accountLast4: string | null }
 
 /**
@@ -352,9 +365,9 @@ export async function findWalletFeeLeg(
   const tolerance = transferFeeTolerance(p.amount)
   const { data } = await service
     .from('sms_parse_log')
-    .select('id, kind, amount, account_last4, merchant, raw_body, received_at, status, is_duplicate, awaiting_confirmation')
+    .select('id, kind, amount, account_last4, merchant, merchant_normalized, clean_title, raw_body, received_at, status, is_duplicate, awaiting_confirmation')
     .eq('user_id', p.userId)
-    .eq('kind', p.side === 'credit' ? 'own_transfer' : 'instant_transfer_in')
+    .in('kind', p.side === 'credit' ? ['own_transfer'] : ['instant_transfer_in', 'income'])
     .eq('parsed_ok', true)
     .is('paired_log_id', null)
     .gte('received_at', new Date(at - PAIR_WINDOW_SECONDS * 1000).toISOString())
@@ -366,7 +379,7 @@ export async function findWalletFeeLeg(
     .filter((c) => (p.side === 'credit' ? (c.amount as number) > p.amount : (c.amount as number) < p.amount))
     .sort((x, y) => Math.abs(Date.parse(x.received_at as string) - at) - Math.abs(Date.parse(y.received_at as string) - at))
   for (const c of candidates) {
-    const names = p.side === 'credit' ? await ownTopUpWallet(service, p.userId, c.merchant as string | null, c.raw_body as string | null) === p.wallet : (await walletsNamedIn(service, p.userId, c.raw_body as string | null)).includes(p.wallet)
+    const names = p.side === 'credit' ? await isBankLegOf(service, p.userId, p.wallet, c) : (await walletsNamedIn(service, p.userId, c.raw_body as string | null)).includes(p.wallet)
     if (names) return { id: c.id as string, kind: c.kind as string, amount: c.amount as number, accountLast4: (c.account_last4 as string | null) ?? null }
   }
   return null

@@ -79,8 +79,8 @@ describe('createSmsDebtPayment', () => {
 
 describe('N7 (I7): the only debt or plan takes a message unless two known values conflict', () => {
   const created = () => vi.fn(async () => ({ data: { outcome: 'created', debt_payment_id: 'p1', expense_id: 'e1' }, error: null }))
-  const pmA = { id: 'pmA', name: 'CIB Card', last4: '1111', last4_aliases: [] }
-  const pmB = { id: 'pmB', name: 'CIB Card', last4: '2222', last4_aliases: [] }
+  const pmA = { id: 'pmA', name: 'CIB Card', last4: '1111', last4_aliases: [], type: 'credit_card' }
+  const pmB = { id: 'pmB', name: 'CIB Card', last4: '2222', last4_aliases: [], type: 'credit_card' }
   const linked = { ...card, linked_payment_method_id: 'pmA' }
 
   it('one card debt and a repayment naming another registered card: needs confirmation, debt untouched', async () => {
@@ -90,6 +90,14 @@ describe('N7 (I7): the only debt or plan takes a message unless two known values
     expect(res.needsConfirm).toBe(true)
     expect(rpc).not.toHaveBeenCalled()
     expect(inserts).toHaveLength(0)
+  })
+
+  it('N7: one card debt and a repayment whose digits are the user\'s own bank account (the funding account): applied, not asked', async () => {
+    const rpc = created()
+    const pmBank = { id: 'pmBank', name: 'CIB Salary', last4: '7777', last4_aliases: [], type: 'bank_account' }
+    const { service } = mockService({ debts: { list: [linked] }, payment_methods: { list: [pmA, pmBank], one: pmBank } }, rpc)
+    expect(await createSmsDebtPayment(service, { ...row, last4: '7777', bankName: 'CIB' })).toMatchObject({ expenseId: 'e1' })
+    expect(rpc).toHaveBeenCalled()
   })
 
   it('one card debt and digits that fit no registered card against a linked card with other digits: needs confirmation', async () => {

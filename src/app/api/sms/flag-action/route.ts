@@ -101,7 +101,9 @@ async function refundMatch(service: Service, userId: string, expenseId: string, 
     .eq('user_id', userId)
     .is('refunded_at', null)
     .is('refunded_amount', null)
+    .select('id')
   if (stamp.error) return fail('Failed to update purchase')
+  if (!stamp.data?.length) return conflict()
 
   const retire = await service
     .from('expenses')
@@ -227,20 +229,6 @@ async function topupUndo(service: Service, userId: string, expenseId: string): P
   const logId = expense?.sms_log_id
   if (!expense || !logId || !expense.sms_flags?.includes('topup_repaired')) return conflict()
 
-  const remaining = expense.sms_flags.filter((f) => f !== 'topup_repaired' && !f.startsWith(TOPUP_PREV_PREFIX))
-  const restored = await service
-    .from('expenses')
-    .update({
-      category: toDbExpenseCategory(repairedPrevCategory(expense.sms_flags) ?? '', 'Other'),
-      to_payment_method_id: null,
-      sms_flags: remaining.length ? remaining : null,
-    })
-    .eq('id', expense.id)
-    .eq('user_id', userId)
-    .select('id')
-  if (restored.error) return fail('Failed to update top-up')
-  if (!restored.data?.length) return conflict()
-
   // Only an income this purchase's message retracted comes back (I4); the pairing is released with the pipeline's own helpers.
   const { data: inc, error: incErr } = await service
     .from('income_events')
@@ -267,6 +255,20 @@ async function topupUndo(service: Service, userId: string, expenseId: string): P
     console.error('[sms/flag-action] a retracted income was not restored', stillRetracted.error?.message)
     return fail('Failed to restore income')
   }
+
+  const remaining = expense.sms_flags.filter((f) => f !== 'topup_repaired' && !f.startsWith(TOPUP_PREV_PREFIX))
+  const restored = await service
+    .from('expenses')
+    .update({
+      category: toDbExpenseCategory(repairedPrevCategory(expense.sms_flags) ?? '', 'Other'),
+      to_payment_method_id: null,
+      sms_flags: remaining.length ? remaining : null,
+    })
+    .eq('id', expense.id)
+    .eq('user_id', userId)
+    .select('id')
+  if (restored.error) return fail('Failed to update top-up')
+  if (!restored.data?.length) return conflict()
   return null
 }
 

@@ -786,15 +786,16 @@ const REFUND_TWIN_MINUTES = 10
 
 /**
  * Duplicate guard: a bank may send the same refund as two differently-worded SMS (distinct sms_hash, so the route
- * dedupe misses them). A row of the SAME amount + currency + card already reversed within ±3 days is that refund's
- * twin only when the message that stamped it carries the same known reference or arrived within 10 minutes of this
- * one; otherwise this is a second genuine refund and matches its own purchase. Only a row stamped by a refund counts:
- * a decline's own row never stands for a refund (I2).
+ * dedupe misses them). A row of the SAME amount + currency + card already reversed within ±3 days is a loose twin.
+ * It is a strict twin (`strict`) when the message that stamped it carries the same known reference or arrived within
+ * 10 minutes of this one; a loose twin that is not strict may be the same refund re-sent hours later or a second
+ * genuine one, so the caller matches nothing and asks. Only a row stamped by a refund counts: a decline's own row
+ * never stands for a refund (I2).
  */
 export async function findRefundedTwin(
   service: ServiceClient,
   row: SmsRowData,
-): Promise<{ id: string; category: string } | null> {
+): Promise<{ id: string; category: string; strict: boolean } | null> {
   const lo = new Date(row.day)
   lo.setUTCDate(lo.getUTCDate() - REFUND_DEDUPE_DAYS)
   const hi = new Date(row.day)
@@ -833,8 +834,9 @@ export async function findRefundedTwin(
     if (row.referenceHash && l.reference_hash === row.referenceHash) return true
     return Math.abs(Date.parse(l.received_at) - at) <= REFUND_TWIN_MINUTES * 60_000
   }
-  const best = stamped.find((r) => sameEvent(r.refund_sms_log_id))
-  return best ? { id: best.id, category: best.category as string } : null
+  const strictTwin = stamped.find((r) => sameEvent(r.refund_sms_log_id))
+  const best = strictTwin ?? stamped[0]
+  return { id: best.id, category: best.category as string, strict: !!strictTwin }
 }
 
 /** Stamps an existing expense as reversed. The updated_at trigger propagates it to clients. */
@@ -844,12 +846,15 @@ export async function markExpenseRefunded(
   refundKind: 'refunded' | 'declined',
   day: string,
   logId: string | null | undefined,
-): Promise<{ error: PostgrestError | null }> {
-  const { error } = await service
+): Promise<{ error: PostgrestError | null; stamped: boolean }> {
+  const { data, error } = await service
     .from('expenses')
     .update({ refunded_at: day, refund_kind: refundKind, refund_sms_log_id: logId ?? null })
     .eq('id', expenseId)
-  return { error }
+    .is('refunded_at', null)
+    .is('refunded_amount', null)
+    .select('id')
+  return { error, stamped: !error && (data?.length ?? 0) > 0 }
 }
 
 /**
@@ -862,19 +867,21 @@ export async function markExpensePartiallyRefunded(
   expenseId: string,
   amount: number,
   logId: string | null | undefined,
-): Promise<{ error: PostgrestError | null }> {
-  const { error } = await service
+): Promise<{ error: PostgrestError | null; stamped: boolean }> {
+  const { data, error } = await service
     .from('expenses')
     .update({ refunded_amount: amount, refund_sms_log_id: logId ?? null })
     .eq('id', expenseId)
     .is('refunded_at', null)
     .is('refunded_amount', null)
-  return { error }
+    .select('id')
+  return { error, stamped: !error && (data?.length ?? 0) > 0 }
 }
 
 /**
  * With one card debt, a repayment is applied to it unless the message and the debt's card show two known, conflicting
- * values (I7): digits that name another registered card, digits that fit nothing against a linked card with other
+ * values (I7): digits that name another registered credit card (a bank account, wallet or cash method is the funding
+ * account, not evidence of another card), digits that fit nothing against a linked card with other
  * digits, or, with no digits, two known and different banks. Unknown on either side agrees.
  */
 async function singleDebtConflicts(
@@ -884,7 +891,11 @@ async function singleDebtConflicts(
   resolvedId: string | null,
 ): Promise<boolean> {
   if (!linkedId) return false
-  if (resolvedId) return resolvedId !== linkedId
+  if (resolvedId) {
+    if (resolvedId === linkedId) return false
+    const { data: other } = await service.from('payment_methods').select('type').eq('id', resolvedId).is('deleted_at', null).maybeSingle()
+    return other?.type === 'credit_card'
+  }
   const { data: m } = await service
     .from('payment_methods')
     .select('name, last4, last4_aliases')

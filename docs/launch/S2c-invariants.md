@@ -111,7 +111,7 @@ A candidate leg is refused only when: it is a duplicate, failed, rejected or hel
 
 Date 2026-11-14. Rest of N2: partial refunds, a refund in another currency, a refund that arrives before its purchase, and a narrower twin check.
 
-**I1 exception 1, extended.** After rules (a) to (c), a fourth rule (d) applies: the same account and merchant, where the refund is smaller than the purchase, or (another currency only) within 5% of it after conversion. It picks only when exactly one purchase at that merchant qualifies; two or more pick nothing and the refund asks (I3, I7). Rule (a) also allows a smaller refund and a refund in another currency, converted into the purchase's currency. A refund larger than the purchase never matches by (a) or (d). A missing rate is unknown and matches nothing.
+**I1 exception 1, extended.** After rules (a) to (c), a fourth rule (d) applies: the same account and merchant, where the refund is smaller than the purchase, or (another currency only) within 15% of it after conversion by an approximate rate, as a full refund and never a partial amount. It picks only when exactly one purchase at that merchant qualifies; two or more pick nothing and the refund asks (I3, I7). Rule (a) also allows a smaller refund in the purchase's currency, and a refund in another currency, converted into the purchase's currency by an approximate rate: that fits only as a full refund within 15% of the purchase (rate plus bank markup), never as a partial amount; outside the band there is no match and the refund asks. A refund larger than the purchase never matches by (a) or (d). A missing rate is unknown and matches nothing.
 
 **A partial refund** sets `refunded_amount` (in the purchase's currency) and `refund_sms_log_id` on the purchase and leaves `refunded_at` and `refund_kind` null, so the purchase still counts for the remainder and an older app build does not zero it. One partial refund per purchase: a purchase that already carries `refunded_amount` or `refunded_at` is not a candidate, so a second partial refund goes unmatched and asks. Upgrade path is a child table. Discarding the refund message clears the stamp.
 
@@ -119,7 +119,7 @@ Date 2026-11-14. Rest of N2: partial refunds, a refund in another currency, a re
 
 **I8.** `refunded_amount` is server-owned on `expenses`, enforced in the stale-write trigger like the other refund stamps (migration 0275).
 
-**The twin rule.** A refund of the same amount, currency and card as an already stamped row is its twin only when the message that placed that stamp has the same known reference, or was received within 10 minutes of this one. Otherwise it is a second genuine refund and matches its own purchase. A stamp whose message is no longer stored cannot be shown to be a twin.
+**The twin rule.** A refund of the same amount, currency and card as an already stamped row (a loose twin, within 3 days) has three outcomes. A strict twin, where the message that placed that stamp has the same known reference or was received within 10 minutes of this one, is acknowledged against it. A loose twin that is not strict (a second notice hours later, a second genuine refund, or a stamp whose message is no longer stored) auto-matches nothing: the refund is booked as the unmatched placeholder (`refund_unmatched`) and asks. With no earlier stamp, normal matching applies. A stamp that touches no row because another stamp won first also ends in the placeholder.
 
 ### S2d additions, second batch
 

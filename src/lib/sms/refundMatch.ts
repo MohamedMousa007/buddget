@@ -19,7 +19,8 @@ const REFUND_LOOKBACK_DAYS = 90
 const WINDOW_MINUTES = 15
 const DECLINE_TWIN_DAYS = 3
 const CANDIDATE_LIMIT = 500
-const CROSS_CURRENCY_TOLERANCE = 0.05
+/** Rates are the route's approximate defaults and the bank adds a markup, so another currency fits only as a full refund within this band. */
+const CROSS_CURRENCY_TOLERANCE = 0.15
 
 /** The kinds of earlier message a refund may reverse. Never a cash withdrawal, a fee, a repayment or an instalment. */
 export const REFUNDABLE_KINDS = ['purchase', 'online_purchase', 'instant_transfer_out'] as const
@@ -70,7 +71,8 @@ const round2 = (n: number): number => Math.round(n * 100) / 100
 /**
  * How much of the candidate this refund reverses: `{ refundedAmount: null }` for all of it, a number for a part, null
  * when it cannot be this candidate (larger than it, or a currency or rate that is unknown, I7). A refund in another
- * currency is converted into the candidate's and counts as the whole when within 5% of it.
+ * currency is converted into the candidate's by an approximate rate: it counts as the whole when within
+ * CROSS_CURRENCY_TOLERANCE of it and is never a part.
  */
 function refundFit(c: RefundCandidate, refund: RefundFacts): { refundedAmount: number | null } | null {
   if (c.amount == null || !c.currency || !refund.currency) return null
@@ -79,8 +81,8 @@ function refundFit(c: RefundCandidate, refund: RefundFacts): { refundedAmount: n
   if (cross && !Object.keys(refund.rates ?? {}).length) return null
   const converted = cross ? tryConvertCurrency(refund.amount, refund.currency.toUpperCase(), c.currency.toUpperCase(), refund.rates ?? {}) : refund.amount
   if (converted == null || !Number.isFinite(converted)) return null
+  if (cross) return Math.abs(converted - c.amount) <= c.amount * CROSS_CURRENCY_TOLERANCE ? { refundedAmount: null } : null
   if (Math.abs(converted - c.amount) < AMOUNT_EPSILON) return { refundedAmount: null }
-  if (cross && Math.abs(converted - c.amount) <= c.amount * CROSS_CURRENCY_TOLERANCE) return { refundedAmount: null }
   return converted < c.amount ? { refundedAmount: round2(converted) } : null
 }
 
@@ -247,7 +249,7 @@ export interface EarlierUnmatchedRefund {
 /**
  * The earlier unmatched refund a purchase that arrived after it completes (docs/launch/S2c-invariants.md, I1 exception
  * 1 reversed in time), by the first rule that hits, nearest in time within a rule: (a) the same reference; (b) the same
- * account, messages 15 minutes apart or less; (c) the same account and merchant, the refund received no earlier than
+ * account, messages 15 minutes apart or less, the refund received no earlier than the purchase; (c) the same account and merchant, the refund received no earlier than
  * the purchase (delivered out of order). Amount and currency are matched by the caller. Unknown never matches (I7).
  */
 export function pickEarlierUnmatchedRefund(
@@ -259,7 +261,7 @@ export function pickEarlierUnmatchedRefund(
   const nearest = (list: EarlierUnmatchedRefund[]) => [...list].sort((x, y) => gap(x) - gap(y))[0] ?? null
   return (
     refunds.find((r) => !!purchase.referenceHash && r.log.reference_hash === purchase.referenceHash) ??
-    nearest(refunds.filter((r) => sameAcct(r) && gap(r) <= WINDOW_MINUTES * MINUTE_MS)) ??
+    nearest(refunds.filter((r) => sameAcct(r) && gap(r) <= WINDOW_MINUTES * MINUTE_MS && Date.parse(r.log.received_at) >= purchase.receivedAtMs)) ??
     nearest(
       refunds.filter(
         (r) => sameAcct(r) && sameMerchant(purchase.merchant, r.log.merchant_normalized ?? r.log.clean_title) && Date.parse(r.log.received_at) >= purchase.receivedAtMs,

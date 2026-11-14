@@ -8,7 +8,7 @@ vi.mock('./accountPlacement', async (orig) => ({
 }))
 
 import { createSmsTransaction } from './dispatch'
-import { createSmsExpense, type SmsRowData } from './createSmsExpense'
+import { createSmsExpense, markExpenseRefunded, markExpensePartiallyRefunded, type SmsRowData } from './createSmsExpense'
 import { referenceHash } from './ownTransferDecision'
 
 type Row = Record<string, unknown>
@@ -272,16 +272,17 @@ describe('I1 exception 1: a refund stamps one earlier message row', () => {
     expect(ownRows('r2')).toHaveLength(0)
   })
 
-  it('I1: a second genuine refund of the same amount and card a day later, another reference, is not a twin and finds its own purchase', async () => {
+  it('I1, N2 loose twin: a second notice of the same refund 3 hours later with no reference, another same-amount purchase at the merchant exists: placeholder, the other purchase is NOT stamped', async () => {
     const first = seed({ log: 'p1', kind: 'purchase', amount: 400, at: plus(AT, -2 * MIN), merchant: 'ACME STORE' })
-    const second = seed({ log: 'p2', kind: 'purchase', amount: 400, at: plus(AT, -3 * DAY), merchant: 'OTHER SHOP' })
-    sentRefund('r1', { ref: 'aaaa1111' })
-    await dispatch(refundMsg({ logId: 'r1', amount: 400, merchant: 'ACME STORE', referenceHash: referenceHash(U, 'aaaa1111') }))
+    const second = seed({ log: 'p2', kind: 'purchase', amount: 400, at: plus(AT, -3 * DAY), merchant: 'ACME STORE' })
+    sentRefund('r1', {})
+    await dispatch(refundMsg({ logId: 'r1', amount: 400, merchant: 'ACME STORE' }))
     expect(expense(first).refund_sms_log_id).toBe('r1')
-    sentRefund('r2', { ref: 'bbbb2222', at: plus(AT, DAY) })
-    const tx = await dispatch(refundMsg({ logId: 'r2', amount: 400, merchant: 'OTHER SHOP', day: '2026-10-28', receivedAtIso: plus(AT, DAY), referenceHash: referenceHash(U, 'bbbb2222') }))
-    expect(tx).toMatchObject({ outcome: 'refund_matched', expenseId: second })
-    expect(expense(second)).toMatchObject({ refund_kind: 'refunded', refund_sms_log_id: 'r2' })
+    sentRefund('r2', { at: plus(AT, 3 * HOUR) })
+    const tx = await dispatch(refundMsg({ logId: 'r2', amount: 400, merchant: 'ACME STORE', receivedAtIso: plus(AT, 3 * HOUR) }))
+    expect(tx.outcome).toBe('refund_unmatched')
+    expect(expense(second).refunded_at).toBeNull()
+    expect(ownRows('r2')[0]).toMatchObject({ refund_kind: 'refunded', refund_sms_log_id: 'r2', sms_flags: ['refund_unmatched'] })
   })
 
   it('I1: the same reference a day later is the same refund re-sent, so it is a twin', async () => {
@@ -374,7 +375,7 @@ describe('I1 exception 1 (d): a part of a purchase, or one in another currency',
     expect(expense(original).refunded_amount).toBe(30)
   })
 
-  it('I1, I7: a refund in another currency within 5% of the purchase after conversion is a full stamp; with no rates it is unmatched', async () => {
+  it('I1, I7: a refund in another currency within 15% of the purchase after conversion is a full stamp; with no rates it is unmatched', async () => {
     const original = seed({ log: 'p1', kind: 'purchase', amount: 100, at: plus(AT, -DAY), merchant: 'ACME STORE' })
     db.sms_parse_log[0].currency = 'USD'
     expense(original).currency = 'USD'
@@ -384,6 +385,38 @@ describe('I1 exception 1 (d): a part of a purchase, or one in another currency',
     expect(tx).toMatchObject({ outcome: 'refund_matched', expenseId: original })
     expect(expense(original)).toMatchObject({ refund_kind: 'refunded', refund_sms_log_id: 'r1' })
     expect(expense(original).refunded_amount ?? null).toBeNull()
+  })
+})
+
+describe('stamps that touch no row (concurrent stamp won)', () => {
+  it('markExpenseRefunded and markExpensePartiallyRefunded report stamped=false and change nothing on a row already stamped', async () => {
+    const id = seed({ log: 'p1', kind: 'purchase', amount: 100 })
+    Object.assign(expense(id), { refunded_amount: 30, refund_sms_log_id: 'r0' })
+    expect((await markExpenseRefunded(svc, id, 'refunded', AT.slice(0, 10), 'r1')).stamped).toBe(false)
+    expect((await markExpensePartiallyRefunded(svc, id, 20, 'r1')).stamped).toBe(false)
+    expect(expense(id)).toMatchObject({ refunded_amount: 30, refund_sms_log_id: 'r0', refunded_at: null })
+    const fresh = seed({ log: 'p2', kind: 'purchase', amount: 100 })
+    expect((await markExpenseRefunded(svc, fresh, 'refunded', AT.slice(0, 10), 'r1')).stamped).toBe(true)
+  })
+
+  it('a stamp that loses the race falls through to the unmatched placeholder, not refund_matched', async () => {
+    const original = seed({ log: 'p1', kind: 'purchase', amount: 300, at: plus(AT, -2 * MIN) })
+    const racing = {
+      from: (n: string) => {
+        const b = (svc as unknown as { from: (n: string) => Record<string, (p: Row) => unknown> }).from(n)
+        if (n !== 'expenses') return b
+        const update = b.update
+        b.update = (p: Row) => {
+          if (p.refund_kind === 'refunded' && p.refund_sms_log_id === 'r1') Object.assign(expense(original), { refunded_at: '2026-10-01', refund_kind: 'refunded', refund_sms_log_id: 'winner' })
+          return update(p)
+        }
+        return b
+      },
+    } as unknown as ServiceClient
+    const tx = await createSmsTransaction(racing, refundMsg({ logId: 'r1', amount: 300 }), { exchangeRates: {} })
+    expect(tx.outcome).toBe('refund_unmatched')
+    expect(expense(original).refund_sms_log_id).toBe('winner')
+    expect(ownRows('r1')[0]).toMatchObject({ sms_flags: ['refund_unmatched'] })
   })
 })
 

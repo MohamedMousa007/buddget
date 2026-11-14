@@ -384,7 +384,7 @@ export async function createSmsTransaction(
           }))
           if (leg && feeSibling) {
             const paired = await finalizeOwnTransferPair(service, row, feeSibling, row.logId, legDirection)
-            await postTransferFee(service, row, { fundingLast4: leg.accountLast4, fundingAmount: leg.amount, payoffAmount: row.amount })
+            if (!paired.error) await postTransferFee(service, row, { fundingLast4: leg.accountLast4, fundingAmount: leg.amount, payoffAmount: row.amount })
             return paired
           }
         }
@@ -705,18 +705,20 @@ export async function createSmsTransaction(
         error: res.error,
       }
     }
-    // Duplicate guard: the same refund re-sent as differently-worded SMS. A refund of the same amount on the same
-    // card was already stamped within ±3 days, so ack against it instead of reversing a second unrelated charge.
+    // Duplicate guard: the same refund re-sent as differently-worded SMS. A strict twin (same known reference, or
+    // received within 10 minutes) is acknowledged against its stamped row. A loose twin (same amount and card already
+    // stamped, nothing proving the same event) matches nothing: the refund is booked unmatched and asks.
     const twin = await findRefundedTwin(service, row)
-    if (twin) {
+    if (twin?.strict) {
       return { ...base('refund_matched', kind), expenseId: twin.id, category: twin.category }
     }
-    const original = await findRefundOriginal(service, row, opts.exchangeRates)
+    const original = twin ? null : await findRefundOriginal(service, row, opts.exchangeRates)
     if (original) {
-      const { error } = original.refundedAmount == null
+      const { error, stamped } = original.refundedAmount == null
         ? await markExpenseRefunded(service, original.id, 'refunded', row.day, row.logId)
         : await markExpensePartiallyRefunded(service, original.id, original.refundedAmount, row.logId)
-      return { ...base('refund_matched', kind), expenseId: original.id, category: original.category, error }
+      // A concurrent stamp won: nothing was reversed here, so the refund asks like any unmatched one.
+      if (error || stamped) return { ...base('refund_matched', kind), expenseId: original.id, category: original.category, error }
     }
     const res = await createSmsExpense(service, { ...row, kind, unmatchedRefund: true, smsFlags: ['refund_unmatched'] })
     return {

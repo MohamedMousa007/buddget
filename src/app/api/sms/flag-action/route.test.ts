@@ -8,6 +8,8 @@ const h = vi.hoisted(() => ({
   writes: [] as { table: string; op: string; values: Row }[],
   failInsert: false,
   raceRetract: false,
+  raceStamp: false,
+  skipIncomeRestore: false,
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
@@ -35,6 +37,10 @@ vi.mock('@/lib/supabase/service', () => ({
             h.raceRetract = false
             matching().forEach((r) => Object.assign(r, { deleted_at: '2026-11-09T11:00:00Z', retracted_by_sms_log_id: LOG }))
           }
+          if (h.raceStamp && table === 'expenses' && 'refund_sms_log_id' in v) {
+            h.raceStamp = false
+            matching().forEach((r) => Object.assign(r, { refund_sms_log_id: 'winner', refunded_at: '2026-11-11T00:00:00Z', refund_kind: 'refunded' }))
+          }
           return q
         },
         insert: (v: Row) => ((mode = 'insert'), (values = v), q),
@@ -46,7 +52,7 @@ vi.mock('@/lib/supabase/service', () => ({
         },
         then: (resolve: (v: unknown) => void) => {
           let hit: Row[] = mode === 'select' ? matching() : []
-          if (mode === 'update') {
+          if (mode === 'update' && !(h.skipIncomeRestore && table === 'income_events')) {
             h.writes.push({ table, op: 'update', values })
             hit = matching()
             hit.forEach((r) => Object.assign(r, values))
@@ -80,6 +86,8 @@ describe('POST /api/sms/flag-action', () => {
     h.writes.length = 0
     h.failInsert = false
     h.raceRetract = false
+    h.raceStamp = false
+    h.skipIncomeRestore = false
     h.db = {
       expenses: [placeholder(), target(), deposit()],
       income_events: [],
@@ -110,6 +118,15 @@ describe('POST /api/sms/flag-action', () => {
     expect(row(TARGET)).toMatchObject({ refunded_amount: 250, refund_sms_log_id: LOG, refunded_at: null, refund_kind: null })
     expect(row(PLACEHOLDER)).toMatchObject({ deleted_at: expect.any(String), retracted_by_sms_log_id: LOG })
     expect(h.db.sms_parse_log[0].expense_id).toBe(TARGET)
+  })
+
+  it('I1: refund_match answers 409 and leaves the placeholder untouched when a concurrent stamp won (0 rows stamped)', async () => {
+    h.raceStamp = true
+    expect((await call(match())).status).toBe(409)
+    expect(row(TARGET).refund_sms_log_id).toBe('winner')
+    expect(row(PLACEHOLDER)).toMatchObject({ deleted_at: null })
+    expect(row(PLACEHOLDER).retracted_by_sms_log_id ?? null).toBeNull()
+    expect(h.db.sms_parse_log[0].expense_id).toBe(PLACEHOLDER)
   })
 
   it('I1: refund_match refuses a larger purchase that already carries a partial refund', async () => {
@@ -247,6 +264,20 @@ describe('POST /api/sms/flag-action', () => {
       expect(h.db.sms_parse_log[1]).toMatchObject({ status: 'confirmed', income_id: CREDIT, paired_log_id: null })
       expect(h.db.sms_parse_log[0].paired_log_id).toBeNull()
       expect(h.writes.every((w) => !('edited_at' in w.values))).toBe(true)
+    })
+
+    it('I4: a failing income restore answers 500, leaves the flag in place and the expense unchanged, and a retry then succeeds', async () => {
+      h.db.expenses = [repaired()]
+      h.db.income_events = [retracted()]
+      h.db.sms_parse_log = logs()
+      h.skipIncomeRestore = true
+      expect((await undo()).status).toBe(500)
+      expect(row(REPAIRED)).toMatchObject({ category: 'Transfer', to_payment_method_id: 'wallet-1', sms_flags: ['topup_repaired', 'topup_prev:Utilities'] })
+      h.skipIncomeRestore = false
+      h.db.sms_parse_log = logs()
+      expect((await undo()).status).toBe(200)
+      expect(row(REPAIRED)).toMatchObject({ category: 'Utilities', sms_flags: null })
+      expect(h.db.income_events[0]).toMatchObject({ deleted_at: null, retracted_by_sms_log_id: null })
     })
 
     it('restores only the row when there is no income leg, and keeps unrelated flag entries', async () => {

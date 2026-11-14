@@ -99,21 +99,38 @@ const row = (over: Partial<SmsRowData> & { logId: string }): SmsRowData => ({
 const walletCredit = (over: Partial<SmsRowData> & { logId: string }): SmsRowData =>
   row({ kind: 'income', amount: 100, merchant: null, bankName: null, last4: null, rawBody: 'Money added to your Barq wallet: EGP 100', receivedAtIso: plus(20_000), ...over })
 
-/** The route writes the log row before dispatch and the booked ids after it. */
-async function book(input: SmsRowData, logRow: Row) {
-  seedLog(input.logId as string, logRow)
+const PERSON_KINDS = ['instant_transfer_in', 'instant_transfer_out', 'own_transfer']
+
+/**
+ * The route claims the log row with the raw body and the arrival time only, dispatch publishes kind, amount and the
+ * account while pairing, and the route's final write then stores the APPLIED kind, with `merchant` and
+ * `merchant_normalized` null for a transfer kind (hasPersonCounterparty), `clean_title` always, and the booked ids.
+ */
+async function book(input: SmsRowData, logRow: Row = {}) {
+  seedLog(input.logId as string, { raw_body: input.rawBody, received_at: input.receivedAtIso, ...logRow })
   const tx = await createSmsTransaction(svc, input, { exchangeRates: {} })
-  Object.assign(log(input.logId as string), { status: 'confirmed', expense_id: tx.expenseId, income_id: tx.incomeId })
+  const kind = tx.kind ?? input.kind ?? ''
+  const person = PERSON_KINDS.includes(kind)
+  Object.assign(log(input.logId as string), {
+    parsed_ok: true,
+    status: tx.outcome === 'transfer_paired' ? 'paired' : 'confirmed',
+    kind,
+    amount: input.amount,
+    account_last4: input.last4 ?? null,
+    merchant: person ? null : input.merchant ?? null,
+    merchant_normalized: person ? null : input.merchantNormalized ?? null,
+    clean_title: input.cleanTitle ?? input.merchant ?? null,
+    expense_id: tx.expenseId,
+    income_id: tx.incomeId,
+  })
   return tx
 }
-const bankLog = { kind: 'online_purchase', amount: 105, merchant: 'Barq', account_last4: '4444', received_at: AT, raw_body: 'Online purchase EGP 105 at Barq' }
-const walletLog = { kind: 'income', amount: 100, merchant: null, account_last4: null, received_at: plus(20_000), raw_body: 'Money added to your Barq wallet: EGP 100' }
 const live = (t: string) => db[t].filter((r) => r.deleted_at == null)
 
 describe('N9 (I3, I7): a wallet top-up with a fee pairs on the wallet and the fee tolerance', () => {
   it('the bank debit of 105 first, the wallet credit of 100 second: one transfer, no income, the 5 fee booked as spending', async () => {
-    await book(row({ logId: 'b1' }), bankLog)
-    const tx = await book(walletCredit({ logId: 'c1' }), walletLog)
+    await book(row({ logId: 'b1' }))
+    const tx = await book(walletCredit({ logId: 'c1' }))
     expect(tx.outcome).toBe('transfer_paired')
     expect(live('income_events')).toHaveLength(0)
     const main = live('expenses').filter((e) => e.description !== 'Transfer fee')
@@ -123,9 +140,10 @@ describe('N9 (I3, I7): a wallet top-up with a fee pairs on the wallet and the fe
   })
 
   it('the wallet credit first, the bank debit second: the income row is retracted with the marker and one transfer remains', async () => {
-    await book(walletCredit({ logId: 'c1' }), walletLog)
+    await book(walletCredit({ logId: 'c1' }))
     expect(live('income_events')).toHaveLength(1)
-    const tx = await book(row({ logId: 'b1' }), bankLog)
+    expect(log('c1').kind).toBe('instant_transfer_in')
+    const tx = await book(row({ logId: 'b1' }))
     expect(tx.outcome).toBe('transfer_paired')
     expect(db.income_events[0]).toMatchObject({ retracted_by_sms_log_id: 'b1' })
     expect(db.income_events[0].deleted_at).toEqual(expect.any(String))
@@ -136,31 +154,31 @@ describe('N9 (I3, I7): a wallet top-up with a fee pairs on the wallet and the fe
   })
 
   it('a debit that names a different wallet is not paired: the credit stays income', async () => {
-    await book(row({ logId: 'b1', merchant: 'Telda', rawBody: 'Online purchase EGP 105 at Telda' }), { ...bankLog, merchant: 'Telda', raw_body: 'Online purchase EGP 105 at Telda' })
-    const tx = await book(walletCredit({ logId: 'c1' }), walletLog)
+    await book(row({ logId: 'b1', merchant: 'Telda', rawBody: 'Online purchase EGP 105 at Telda' }))
+    const tx = await book(walletCredit({ logId: 'c1' }))
     expect(tx.outcome).not.toBe('transfer_paired')
     expect(live('income_events')).toHaveLength(1)
     expect(log('c1').paired_log_id).toBeNull()
   }, 15_000)
 
   it('a debit that is not a purchase at the wallet is not paired: the credit stays income', async () => {
-    await book(row({ logId: 'b1', merchant: 'ACME STORE', rawBody: 'Online purchase EGP 105 at ACME STORE' }), { ...bankLog, merchant: 'ACME STORE', raw_body: 'Online purchase EGP 105 at ACME STORE' })
-    const tx = await book(walletCredit({ logId: 'c1' }), walletLog)
+    await book(row({ logId: 'b1', merchant: 'ACME STORE', rawBody: 'Online purchase EGP 105 at ACME STORE' }))
+    const tx = await book(walletCredit({ logId: 'c1' }))
     expect(tx.outcome).not.toBe('transfer_paired')
     expect(live('income_events')).toHaveLength(1)
   }, 15_000)
 
   it('amounts further apart than the fee tolerance are not paired', async () => {
     const debit = 100 + transferFeeTolerance(100) + 10
-    await book(row({ logId: 'b1', amount: debit }), { ...bankLog, amount: debit })
-    const tx = await book(walletCredit({ logId: 'c1' }), walletLog)
+    await book(row({ logId: 'b1', amount: debit }))
+    const tx = await book(walletCredit({ logId: 'c1' }))
     expect(tx.outcome).not.toBe('transfer_paired')
     expect(live('income_events')).toHaveLength(1)
   }, 15_000)
 
   it('a credit larger than the debit is not paired', async () => {
-    await book(row({ logId: 'b1', amount: 95 }), { ...bankLog, amount: 95 })
-    const tx = await book(walletCredit({ logId: 'c1' }), walletLog)
+    await book(row({ logId: 'b1', amount: 95 }))
+    const tx = await book(walletCredit({ logId: 'c1' }))
     expect(tx.outcome).not.toBe('transfer_paired')
     expect(live('income_events')).toHaveLength(1)
   }, 15_000)
@@ -169,19 +187,19 @@ describe('N9 (I3, I7): a wallet top-up with a fee pairs on the wallet and the fe
 describe('N9 second half and the lone leg', () => {
   it('N9 (I3): a credit naming a wallet the user has not registered is booked as income and carries wallet_unregistered', async () => {
     const body = 'Money added to your Ziina wallet: EGP 100'
-    await book(walletCredit({ logId: 'c1', rawBody: body }), { ...walletLog, raw_body: body })
+    await book(walletCredit({ logId: 'c1', rawBody: body }))
     expect(live('income_events')).toHaveLength(1)
     expect(live('income_events')[0].sms_flags).toEqual(['wallet_unregistered'])
   })
 
   it('N9: a credit naming a registered wallet does not carry the flag', async () => {
-    await book(walletCredit({ logId: 'c1' }), walletLog)
+    await book(walletCredit({ logId: 'c1' }))
     expect(live('income_events')[0].sms_flags ?? null).toBeNull()
   }, 15_000)
 
   it('I3: a lone transfer leg whose only signal is the user\'s own name records no two-leg question', async () => {
     const body = 'Instant transfer of EGP 300 sent'
-    await book(row({ logId: 'o1', kind: 'instant_transfer_out', amount: 300, merchant: null, counterpartyIsSelf: true, rawBody: body }), { ...bankLog, kind: 'instant_transfer_out', amount: 300, merchant: null, raw_body: body })
+    await book(row({ logId: 'o1', kind: 'instant_transfer_out', amount: 300, merchant: null, counterpartyIsSelf: true, rawBody: body }))
     expect(log('o1').own_transfer_verdict).toBe('none')
   }, 15_000)
 })

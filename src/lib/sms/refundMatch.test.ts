@@ -179,16 +179,19 @@ describe('pickRefundOriginals: partial and cross-currency refunds', () => {
 
   const usd = (over: Partial<RefundCandidate> = {}) => shop({ currency: 'USD', ...over })
   const eur = { EGP_USD: 0.02 }
-  it('I1 (d): a refund in another currency within 5% of the purchase after conversion is the whole refund', () => {
+  it('I1 (d): a refund in another currency within 15% of the purchase after conversion is the whole refund, never a part', () => {
     expect(picked([usd()], refund({ amount: 4900, currency: 'EGP', merchant: 'ACME STORE', rates: eur }))).toEqual(['c1:merchant_partial:null'])
+    expect(picked([usd()], refund({ amount: 4300, currency: 'EGP', merchant: 'ACME STORE', rates: eur }))).toEqual(['c1:merchant_partial:null'])
   })
-  it('I1 (d): a much smaller refund in another currency is partial, converted and rounded to 2 decimals', () => {
-    expect(picked([usd()], refund({ amount: 1555, currency: 'EGP', merchant: 'ACME STORE', rates: eur }))).toEqual(['c1:merchant_partial:31.1'])
+  it('I1 (d): a refund in another currency outside the 15% band, smaller or larger, is no match and never a partial amount', () => {
+    expect(picked([usd()], refund({ amount: 1555, currency: 'EGP', merchant: 'ACME STORE', rates: eur }))).toEqual([])
+    expect(picked([usd()], refund({ amount: 4000, currency: 'EGP', merchant: 'ACME STORE', rates: eur }))).toEqual([])
   })
-  it('I1 (a): the same reference in another currency converts too, and a refund over 5% larger is no match', () => {
+  it('I1 (a): the same reference in another currency fits only as a full refund within 15%, else no match', () => {
     const h = referenceHash('u1', 'ab12cd34')
-    expect(picked([usd({ reference_hash: h })], refund({ amount: 1500, currency: 'EGP', referenceHash: h, rates: eur }))).toEqual(['c1:reference:30'])
-    expect(picked([usd({ reference_hash: h })], refund({ amount: 5400, currency: 'EGP', referenceHash: h, rates: eur }))).toEqual([])
+    expect(picked([usd({ reference_hash: h })], refund({ amount: 5400, currency: 'EGP', referenceHash: h, rates: eur }))).toEqual(['c1:reference:null'])
+    expect(picked([usd({ reference_hash: h })], refund({ amount: 1500, currency: 'EGP', referenceHash: h, rates: eur }))).toEqual([])
+    expect(picked([usd({ reference_hash: h })], refund({ amount: 6000, currency: 'EGP', referenceHash: h, rates: eur }))).toEqual([])
   })
   it('I7: a missing rate or a missing currency is unknown, so no match', () => {
     expect(picked([usd()], refund({ amount: 1500, currency: 'EGP', merchant: 'ACME STORE', rates: {} }))).toEqual([])
@@ -213,8 +216,12 @@ describe('pickEarlierUnmatchedRefund (I1, I7)', () => {
     expect(id(pickEarlierUnmatchedRefund([early('r', { reference_hash: h, account_last4: null, received_at: iso(-3 * DAY) })], purchase({ referenceHash: h, last4: null })))).toBe('r')
   })
   it('by the same account within 15 minutes, nearest first; 16 minutes is out', () => {
-    expect(id(pickEarlierUnmatchedRefund([early('far', { received_at: iso(-12 * MIN) }), early('near', { received_at: iso(-2 * MIN) })], purchase()))).toBe('near')
-    expect(pickEarlierUnmatchedRefund([early('out', { received_at: iso(-16 * MIN) })], purchase())).toBeNull()
+    expect(id(pickEarlierUnmatchedRefund([early('far', { received_at: iso(12 * MIN) }), early('near', { received_at: iso(2 * MIN) })], purchase()))).toBe('near')
+    expect(pickEarlierUnmatchedRefund([early('out', { received_at: iso(16 * MIN) })], purchase())).toBeNull()
+  })
+  it('I1 (b): a refund received 10 minutes BEFORE the purchase, same account and amount, no reference, is not adopted; 10 minutes after is', () => {
+    expect(pickEarlierUnmatchedRefund([early('before', { received_at: iso(-10 * MIN) })], purchase())).toBeNull()
+    expect(id(pickEarlierUnmatchedRefund([early('after', { received_at: iso(10 * MIN) })], purchase()))).toBe('after')
   })
   it('by account and merchant when the refund was received later than the purchase', () => {
     const later = early('r', { received_at: iso(2 * HOUR), merchant_normalized: 'ACME STORE' })

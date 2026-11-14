@@ -39,19 +39,19 @@ describe('findRefundedTwin (duplicate-SMS guard)', () => {
   it('I1: returns the twin when the message that stamped it arrived within 10 minutes', async () => {
     const logs = [{ id: 'r0', received_at: '2026-07-08T09:55:00.000Z', reference_hash: null }]
     const twin = await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: logs }), row({ receivedAtIso: at }))
-    expect(twin).toEqual({ id: 'already', category: 'Food' })
+    expect(twin).toEqual({ id: 'already', category: 'Food', strict: true })
   })
 
   it('I1: returns the twin on the same known reference whatever the time', async () => {
     const logs = [{ id: 'r0', received_at: '2026-07-07T09:00:00.000Z', reference_hash: 'h1' }]
     const twin = await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: logs }), row({ receivedAtIso: at, referenceHash: 'h1' }))
-    expect(twin?.id).toBe('already')
+    expect(twin).toMatchObject({ id: 'already', strict: true })
   })
 
-  it('I1, I7: no twin when the stamping message is a day away with another or no reference, or is not stored', async () => {
+  it('I1, I7: a stamp from a day away with another or no reference, or an unstored message, is only a loose twin', async () => {
     const logs = [{ id: 'r0', received_at: '2026-07-07T10:00:00.000Z', reference_hash: 'h1' }]
-    expect(await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: logs }), row({ receivedAtIso: at, referenceHash: 'h2' }))).toBeNull()
-    expect(await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: logs }), row({ receivedAtIso: at }))).toBeNull()
-    expect(await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: [] }), row({ receivedAtIso: at, referenceHash: 'h1' }))).toBeNull()
+    expect(await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: logs }), row({ receivedAtIso: at, referenceHash: 'h2' }))).toMatchObject({ id: 'already', strict: false })
+    expect(await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: logs }), row({ receivedAtIso: at }))).toMatchObject({ strict: false })
+    expect(await findRefundedTwin(stub({ expenses: stamped, sms_parse_log: [] }), row({ receivedAtIso: at, referenceHash: 'h1' }))).toMatchObject({ strict: false })
   })
 })
