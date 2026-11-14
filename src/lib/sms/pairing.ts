@@ -68,38 +68,6 @@ const PAIR_RETRY_DELAY_MS = 400
 const SETTLE_POLL_MS = 150
 const SETTLE_MAX_POLLS = 70
 
-/**
- * True when a transfer is between the user's OWN accounts: the counterparty
- * account last4 must match a registered payment method. (The source last4 is
- * always the user's own account, so it alone can't distinguish own vs external.)
- */
-export async function isOwnAccountTransfer(
-  service: ServiceClient,
-  userId: string,
-  counterpartyLast4: string | null,
-): Promise<boolean> {
-  if (!counterpartyLast4) return false
-  const { data } = await service
-    .from('payment_methods')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('last4', counterpartyLast4)
-    // An account the server created from a message is an inference, not the user's word: it cannot settle a
-    // transfer by itself (it still counts as one signal, see countersOwnAccountDigits).
-    .eq('provisional', false)
-    .is('deleted_at', null)
-    .limit(1)
-    .maybeSingle()
-  return !!data?.id
-}
-
-/** Signal `account`: the counterparty digits belong to ANY account of this user, registered or provisional. */
-export async function countersOwnAccountDigits(service: ServiceClient, userId: string, counterpartyLast4: string | null): Promise<boolean> {
-  if (!counterpartyLast4) return false
-  const { data } = await service.from('payment_methods').select('id').eq('user_id', userId).eq('last4', counterpartyLast4).is('deleted_at', null).limit(1).maybeSingle()
-  return !!data?.id
-}
-
 export interface OwnTransferCandidate {
   id: string
   amount: number
@@ -147,14 +115,48 @@ export async function findOwnTransferCandidate(
   }
 }
 
+/**
+ * What a leg knows about itself that the pairing guards compare (migration 0271). Only known values are written, so
+ * publishing never blanks a column and an unknown stays unknown (I7).
+ */
+export interface LegFacts {
+  currency?: string | null
+  legDirection?: MoneyDirection | null
+  counterpartyLast4?: string | null
+  counterpartyHash?: string | null
+  counterpartyIsSelf?: boolean | null
+  referenceHash?: string | null
+}
+
+function legFactColumns(f: LegFacts): Record<string, unknown> {
+  return {
+    ...(f.currency ? { currency: f.currency } : {}),
+    ...(f.legDirection ? { leg_direction: f.legDirection } : {}),
+    ...(f.counterpartyLast4 ? { counterparty_last4: f.counterpartyLast4 } : {}),
+    ...(f.counterpartyHash ? { counterparty_hash: f.counterpartyHash } : {}),
+    ...(f.counterpartyIsSelf != null ? { counterparty_is_self: f.counterpartyIsSelf } : {}),
+    ...(f.referenceHash ? { reference_hash: f.referenceHash } : {}),
+  }
+}
+
+/**
+ * The direction of money a leg carries, decided by the kind it ARRIVED with. Dispatch relabels kinds (a purchase that
+ * funds a wallet becomes an own transfer), so the direction has to be taken before that happens.
+ */
+export function legDirectionOfKind(kind: SmsExpenseKind): MoneyDirection | null {
+  if (kind === 'instant_transfer_in' || kind === 'income' || kind === 'cc_payoff') return 'credit'
+  if (kind === 'instant_transfer_out' || kind === 'purchase' || kind === 'online_purchase') return 'debit'
+  return null
+}
+
 /** Makes this leg visible to a sibling that is being processed at the same moment (the route persists these only at the end). */
 export async function publishTransferLeg(
   service: ServiceClient,
-  p: { logId: string; kind: SmsExpenseKind; amount: number; accountLast4: string | null; counterpartyHash: string | null },
+  p: { logId: string; kind: SmsExpenseKind; amount: number; accountLast4: string | null } & LegFacts,
 ): Promise<void> {
   const { error } = await service
     .from('sms_parse_log')
-    .update({ kind: p.kind, parsed_ok: true, amount: p.amount, ...(p.accountLast4 ? { account_last4: p.accountLast4 } : {}), ...(p.counterpartyHash ? { counterparty_hash: p.counterpartyHash } : {}) })
+    .update({ kind: p.kind, parsed_ok: true, amount: p.amount, ...(p.accountLast4 ? { account_last4: p.accountLast4 } : {}), ...legFactColumns(p) })
     .eq('id', p.logId)
   if (error) console.warn('[sms/pairing] publishing transfer leg failed', error)
 }
@@ -229,7 +231,7 @@ export function brandSpellings(brandId: string | null): string[] {
  *
  * These are the only things that can be topped up, and the only ones whose top-up needs
  * name matching at all: a bank or card leg is identified by last4 via
- * {@link isOwnAccountTransfer}. A wallet may have no card, so the NAME is often the only
+ * {@link readOwnAccount}. A wallet may have no card, so the NAME is often the only
  * handle an SMS gives us. Three filters keep that handle honest:
  *  - pass-through brands are dropped: Apple Pay and InstaPay are `type: 'wallet'` and sit
  *    in the SA/AE/EG quick-add lists, but hold no balance, so "topping one up" is not a
@@ -348,6 +350,86 @@ export interface PairSibling {
   siblingStatus: string
 }
 
+/** The facts of one leg that the pairing guards read (the columns migration 0271 reads off sms_parse_log). */
+export interface PairLegFacts {
+  id?: string
+  kind: string | null
+  legDirection?: MoneyDirection | null
+  status?: string | null
+  isDuplicate?: boolean | null
+  awaitingConfirmation?: boolean | null
+  accountLast4?: string | null
+  currency?: string | null
+  amount?: number | null
+  counterpartyLast4?: string | null
+  counterpartyHash?: string | null
+  counterpartyIsSelf?: boolean | null
+  referenceHash?: string | null
+}
+
+/** Mirror of public.sms_last4_match: both tails present, at least 3 characters compared, the shorter is the end of the longer. */
+function sqlLast4Match(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false
+  const n = Math.min(a.length, b.length)
+  return n >= 3 && a.slice(-n) === b.slice(-n)
+}
+
+/** Mirror of public.sms_leg_direction: certain from the kind where the kind says so, else what the leg published. */
+function sqlLegDirection(kind: string | null, published: MoneyDirection | null | undefined): MoneyDirection | null {
+  if (kind === 'instant_transfer_in' || kind === 'cc_payoff') return 'credit'
+  if (kind === 'instant_transfer_out') return 'debit'
+  return published ?? null
+}
+
+/**
+ * Is `sibling` allowed to be paired with `self`? The rules of guards a to f of migration 0271, each read under I7: a
+ * value unknown (null) on either side passes, and a guard refuses only on two known, conflicting values.
+ *
+ * The SQL in 0271 is the enforcing copy; this function exists for tests and for the replay. Both must change together.
+ * It does not repeat the window, the kind list, the reference match or the registered-sibling clause, which are not guards.
+ *
+ * `selfKind` and `selfDirection` are the arguments the caller sent with the claim; they default to what the caller's own
+ * row published. `amountTolerance` is the transfer-fee allowance, which a repayment pair earns only with matching digits
+ * or a shared reference.
+ */
+export function pairGuardsAllow(
+  self: PairLegFacts,
+  sibling: PairLegFacts,
+  opts: { selfKind?: string | null; selfDirection?: MoneyDirection | null; selfCurrency?: string | null; siblingId?: string | null; amountTolerance?: number } = {},
+): boolean {
+  if (sibling.isDuplicate === true) return false
+  if (sibling.status === 'failed' || sibling.status === 'rejected') return false
+  if (sibling.awaitingConfirmation === true) return false
+  if (opts.siblingId && sibling.id !== opts.siblingId) return false
+  if (opts.selfKind === 'currency_exchange') return true
+
+  if (self.accountLast4 && sibling.accountLast4 && sqlLast4Match(sibling.accountLast4, self.accountLast4)) return false
+
+  const selfCurrency = opts.selfCurrency ?? self.currency
+  if (selfCurrency && sibling.currency && selfCurrency.toUpperCase() !== sibling.currency.toUpperCase()) return false
+
+  const selfKind = opts.selfKind ?? self.kind
+  const selfDirection = opts.selfDirection ?? sqlLegDirection(self.kind, self.legDirection)
+  const siblingDirection = sqlLegDirection(sibling.kind, sibling.legDirection)
+  if (selfDirection && siblingDirection && selfDirection === siblingDirection) return false
+
+  const selfIsCard = selfKind === 'cc_payoff'
+  const siblingIsCard = sibling.kind === 'cc_payoff'
+  if (selfIsCard !== siblingIsCard) {
+    const funding = selfIsCard ? sibling : self
+    const card = selfIsCard ? self : sibling
+    const knownTails = (funding.counterpartyLast4?.length ?? 0) >= 3 && (card.accountLast4?.length ?? 0) >= 3
+    if (knownTails && !sqlLast4Match(funding.counterpartyLast4, card.accountLast4)) return false
+    if (funding.counterpartyHash && funding.counterpartyIsSelf === false) return false
+    const exact = self.amount != null && sibling.amount != null && Math.abs(self.amount - sibling.amount) < 0.005
+    if (!exact && self.amount != null && sibling.amount != null) {
+      const proven = (knownTails && sqlLast4Match(funding.counterpartyLast4, card.accountLast4)) || (!!self.referenceHash && self.referenceHash === sibling.referenceHash)
+      if (!proven || Math.abs(self.amount - sibling.amount) > (opts.amountTolerance ?? 0)) return false
+    }
+  }
+  return true
+}
+
 /**
  * Absolute slack for two reports of the SAME movement that a transfer fee separates.
  *
@@ -397,9 +479,20 @@ export async function tryPairLeg(
     requireRegisteredSibling?: boolean
     /** This leg's own account tail; published with the amount so a concurrent sibling can match on it. */
     accountLast4?: string | null
-    /** This leg's currency and ledger direction; a currency exchange pairs only with an opposite direction in a different currency. */
+    /**
+     * This leg's currency and ledger direction. Published and sent for every kind: the RPC refuses a pair whose two
+     * known currencies differ or whose two known directions are equal, and a currency exchange pairs only with an
+     * opposite direction in a different currency.
+     */
     currency?: string | null
     direction?: MoneyDirection | null
+    /** The facts the RPC's repayment guard compares; published before the claim, so a concurrent sibling reads them too. */
+    counterpartyLast4?: string | null
+    counterpartyHash?: string | null
+    counterpartyIsSelf?: boolean | null
+    referenceHash?: string | null
+    /** Claim only this sibling: the one the caller read and decided on. */
+    siblingId?: string
   },
 ): Promise<PairSibling | null> {
   const requireEqual =
@@ -430,9 +523,9 @@ export async function tryPairLeg(
     p_self_kind: params.kind ?? undefined,
     p_reference: params.reference ?? undefined,
     p_require_registered_sibling: params.requireRegisteredSibling ?? false,
-    ...(params.kind === 'currency_exchange'
-      ? { p_direction: params.direction ?? undefined, p_currency: params.currency ?? undefined }
-      : {}),
+    p_direction: params.direction ?? undefined,
+    p_currency: params.currency ?? undefined,
+    p_sibling_id: params.siblingId ?? undefined,
   })
   // sms_try_pair only sees siblings that are parsed_ok with a kind, and compares their amount and account_last4,
   // all of which the parse route persists only at the end. Publish them now so two legs arriving together can find each other.
@@ -443,8 +536,7 @@ export async function tryPairLeg(
       parsed_ok: true,
       amount: params.amount,
       ...(params.accountLast4 ? { account_last4: params.accountLast4 } : {}),
-      ...(params.currency ? { currency: params.currency } : {}),
-      ...(params.direction ? { leg_direction: params.direction } : {}),
+      ...legFactColumns({ ...params, legDirection: params.direction }),
     })
     .eq('id', params.logId)
   if (publishErr) console.warn('[sms/pairing] publishing leg kind failed', publishErr)
@@ -467,6 +559,28 @@ export async function tryPairLeg(
     siblingStatus: row.sibling_status ?? '',
   }
   return sibling.siblingStatus === 'processing' ? settleSibling(service, sibling) : sibling
+}
+
+/** Releases a claim: both log rows are unpaired, so each can be claimed again. */
+export async function unpairLegs(service: ServiceClient, logId: string, siblingId: string): Promise<void> {
+  for (const id of [logId, siblingId]) {
+    const { error } = await service.from('sms_parse_log').update({ paired_log_id: null }).eq('id', id)
+    if (error) console.warn('[sms/pairing] releasing a claim failed', error)
+  }
+}
+
+/**
+ * Claims a sibling and checks it holds a money row. A claimed sibling that posted nothing (neither an expense nor an
+ * income row, once it has settled) would leave this leg reconciling against nothing, so the pair would post no row at
+ * all and both messages would vanish. In that case both log rows are unpaired and the caller carries on as if no
+ * sibling had been found: it books its own plain kind.
+ */
+export async function claimSibling(service: ServiceClient, params: Parameters<typeof tryPairLeg>[1]): Promise<PairSibling | null> {
+  const sibling = await tryPairLeg(service, params)
+  if (!sibling) return null
+  if (sibling.siblingExpenseId || sibling.siblingIncomeId) return sibling
+  await unpairLegs(service, params.logId, sibling.siblingId)
+  return null
 }
 
 /**
@@ -512,30 +626,43 @@ export interface CcPayoffFundingLeg {
   fundingAmount: number | null
 }
 
-/**
- * Reconciles the FUNDING leg of a credit-card payoff against the card leg.
- *
- * Paying a card by Instapay produces two SMS: the funding bank ("12,012 sent to ••2016")
- * and the card bank ("payment of 12,000 received"). The funding leg is reclassified to
- * `own_transfer` by dispatch — because the counterparty last4 matches the user's own
- * registered card — and posts a Transfer row. That row and the payoff are the SAME money,
- * which is why the user saw the payoff twice.
- *
- * The payoff row is the better representation (it drives the debt payment), so the funding
- * leg's row is retired here. Its value before it goes: it is the ONLY place the funding
- * account appears — the card bank's SMS carries the CARD's last4, not the source.
- */
-export async function reconcileCcPayoffFundingLeg(
-  service: ServiceClient,
-  sibling: PairSibling,
-  retractedByLogId: string,
-): Promise<CcPayoffFundingLeg> {
+/** Reads what the funding leg of a card repayment knows (its account and what left it), retiring nothing. */
+export async function readCcPayoffFundingLeg(service: ServiceClient, sibling: PairSibling): Promise<CcPayoffFundingLeg> {
   const { data: log } = await service
     .from('sms_parse_log')
     .select('amount, account_last4')
     .eq('id', sibling.siblingId)
     .maybeSingle()
+  return {
+    fundingLast4: (log?.account_last4 as string | null) ?? null,
+    fundingAmount: (log?.amount as number | null) ?? null,
+  }
+}
 
+/**
+ * Clears an open question on a log row whose money row the pipeline has just retracted: nobody can answer a question
+ * about a row that is gone (P2-16). The partner named by the question is cleared with it when it still carries the
+ * same open question.
+ */
+async function clearOpenQuestion(service: ServiceClient, logId: string): Promise<void> {
+  const isOpen = (v: unknown) => v === 'ask' || v === 'ask_account'
+  const { data: log } = await service.from('sms_parse_log').select('own_transfer_verdict, own_transfer_candidate').eq('id', logId).maybeSingle()
+  if (!log || !isOpen(log.own_transfer_verdict)) return
+  const candidateId = log.own_transfer_candidate as string | null
+  await service.from('sms_parse_log').update({ own_transfer_verdict: 'none', own_transfer_candidate: null }).eq('id', logId)
+  if (!candidateId) return
+  const { data: partner } = await service.from('sms_parse_log').select('own_transfer_verdict').eq('id', candidateId).maybeSingle()
+  if (partner && isOpen(partner.own_transfer_verdict)) {
+    await service.from('sms_parse_log').update({ own_transfer_verdict: 'none', own_transfer_candidate: null }).eq('id', candidateId)
+  }
+}
+
+/**
+ * Retires the funding leg's row: the payoff row is the better representation (it drives the debt payment), and the
+ * retraction carries its cause so only an undo of this pair may restore it (I4). Call it only once the repayment is
+ * known to post: retiring first loses the funding account when the repayment turns out to need the user's answer.
+ */
+export async function retireCcPayoffFundingLeg(service: ServiceClient, sibling: PairSibling, retractedByLogId: string): Promise<void> {
   if (sibling.siblingExpenseId) {
     await service
       .from('expenses')
@@ -557,11 +684,30 @@ export async function reconcileCcPayoffFundingLeg(
       .update({ status: 'paired', income_id: null })
       .eq('id', sibling.siblingId)
   }
+  if (sibling.siblingExpenseId || sibling.siblingIncomeId) await clearOpenQuestion(service, sibling.siblingId)
+}
 
-  return {
-    fundingLast4: (log?.account_last4 as string | null) ?? null,
-    fundingAmount: (log?.amount as number | null) ?? null,
-  }
+/**
+ * Reads, then retires, the FUNDING leg of a credit-card payoff against the card leg.
+ *
+ * Paying a card by Instapay produces two SMS: the funding bank ("12,012 sent to ••2016")
+ * and the card bank ("payment of 12,000 received"). The funding leg is reclassified to
+ * `own_transfer` by dispatch — because the counterparty last4 matches the user's own
+ * registered card — and posts a Transfer row. That row and the payoff are the SAME money,
+ * which is why the user saw the payoff twice.
+ *
+ * The payoff row is the better representation (it drives the debt payment), so the funding
+ * leg's row is retired here. Its value before it goes: it is the ONLY place the funding
+ * account appears — the card bank's SMS carries the CARD's last4, not the source.
+ */
+export async function reconcileCcPayoffFundingLeg(
+  service: ServiceClient,
+  sibling: PairSibling,
+  retractedByLogId: string,
+): Promise<CcPayoffFundingLeg> {
+  const funding = await readCcPayoffFundingLeg(service, sibling)
+  await retireCcPayoffFundingLeg(service, sibling, retractedByLogId)
+  return funding
 }
 
 export interface PayoffAttribution {
@@ -634,6 +780,7 @@ export async function reconcileSibling(
       .from('sms_parse_log')
       .update({ status: 'paired', income_id: null })
       .eq('id', sibling.siblingId)
+    await clearOpenQuestion(service, sibling.siblingId)
     return { needsPost: true }
   }
   // Sibling already carries the (non-spend) expense representation; keep it.

@@ -4766,6 +4766,7 @@ export type Database = {
           p_require_equal_amount: boolean
           p_require_registered_sibling?: boolean
           p_self_kind?: string
+          p_sibling_id?: string
           p_user_id: string
           p_window_seconds: number
         }

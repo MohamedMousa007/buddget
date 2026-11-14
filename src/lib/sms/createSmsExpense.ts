@@ -168,6 +168,21 @@ export interface SmsRowData {
   unmatchedRefund?: boolean
   /** Server flags stamped on the row this call inserts. */
   smsFlags?: SmsFlag[]
+  /**
+   * Where `kind` came from: 'code' (a code-tier pattern or rule, or the user confirmed it) or 'model' (asserted only by
+   * the AI or a learned template). Missing means 'code', so a caller that does not say changes nothing.
+   */
+  kindSource?: 'code' | 'model'
+  /**
+   * The account a card repayment's money left, carried onto the plain CC Payoff expense booked after the user confirms.
+   * An explicit value overrides the rule that a CC Payoff expense carries no account.
+   */
+  fundingPaymentMethodId?: string | null
+  /**
+   * The other leg's own account tail, for an own transfer posted from the sending side when the counterparty digits
+   * name no destination: the retracted credit leg's account is where the money landed.
+   */
+  creditLegLast4?: string | null
 }
 
 export interface CreateSmsExpenseResult {
@@ -483,7 +498,7 @@ async function provisionalAccountFor(
 }
 
 /** Where a credit lands: the exact account/card the message names, else the sending provider, else a provisional account. Never the default method. */
-async function resolveCreditAccount(service: ServiceClient, row: SmsRowData): Promise<string | null> {
+export async function resolveCreditAccount(service: ServiceClient, row: SmsRowData): Promise<string | null> {
   const provider = providerOf(row)
   if (row.last4) {
     const byLast4 = await findUniqueByLast4(service, row.userId, row.last4, provider)
@@ -556,11 +571,11 @@ export async function createSmsExpense(
   // (when the message names it) and landed on this one. Booking it the other way round would debit the account
   // that was credited.
   const inboundOwn = (row.kind === 'own_transfer' || row.kind === 'currency_exchange') && row.destinationLeg === true
-  // CC payoff is funded from bank/cash — never attach to a payment method, or
-  // computeCreditCardOutstanding would re-add it and cancel the payoff.
+  // CC payoff is funded from bank/cash — never attach the CARD, or computeCreditCardOutstanding would re-add it and
+  // cancel the payoff. Only an explicit funding account (the paired funding leg's) is attached.
   const paymentMethodId =
     row.kind === 'cc_payoff'
-      ? null
+      ? row.fundingPaymentMethodId ?? null
       : inboundOwn
         ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
       : await resolvePaymentMethodByLast4(service, row.userId, row.last4, {
@@ -591,7 +606,8 @@ export async function createSmsExpense(
   const toPaymentMethodId =
     row.kind === 'atm_withdrawal' ? await cashAccountFor(service, row.userId)
     : inboundOwn ? await resolveCreditAccount(service, row)
-    : row.kind === 'own_transfer' || row.kind === 'currency_exchange' ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
+    : row.kind === 'own_transfer' || row.kind === 'currency_exchange'
+      ? (await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)) ?? (await resolveExactPaymentMethod(service, row.userId, row.creditLegLast4))
     : null
 
   const refundMark = row.refundMark ?? (row.unmatchedRefund ? { refundKind: 'refunded' as const, day: row.day } : null)

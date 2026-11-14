@@ -1045,6 +1045,8 @@ export async function POST(request: Request) {
     deviceId,
     counterpartyHash: counterpartyNameHash,
     referenceHash: paymentReferenceHash,
+    // Only a code-tier match proves the kind; the AI and learned templates only assert it (P1-7).
+    kindSource: parseMethod === 'fully_curated' ? 'code' : 'model',
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx

@@ -45,7 +45,17 @@ describe('decideOwnTransfer', () => {
   })
 
   it('respects an earlier no', () => {
-    expect(decideOwnTransfer(facts({ answered: false, sameReference: true }))).toEqual({ verdict: 'none', signals: [] })
+    expect(decideOwnTransfer(facts({ answered: false, sameDevice: true, differentAccounts: true, amountsEqual: true }))).toEqual({ verdict: 'none', signals: [] })
+  })
+
+  it('P2-11: an earlier no with the same payment reference asks again instead of doing nothing', () => {
+    const r = decideOwnTransfer(facts({ answered: false, sameReference: true, sameDevice: true, differentAccounts: true, amountsEqual: true }))
+    expect(r.verdict).toBe('ask')
+    expect(r.signals).toEqual(['device', 'reference'])
+  })
+
+  it('P2-11: the same account on both legs still does nothing, whatever the reference says', () => {
+    expect(decideOwnTransfer(facts({ answered: false, sameAccount: true, sameReference: true })).verdict).toBe('none')
   })
 })
 

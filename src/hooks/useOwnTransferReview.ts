@@ -10,15 +10,21 @@ export interface OwnTransferRow {
   currency: string | null
   received_at: string
   own_transfer_verdict: string | null
+  counterparty_last4?: string | null
+  paired_log_id?: string | null
 }
 
 const LOOKBACK_DAYS = 30
 
-/** Splits the outgoing-leg rows into pairs still waiting on the user and pairs the server already settled. */
-export function splitOwnTransferRows(rows: OwnTransferRow[]): { asks: OwnTransferRow[]; settled: OwnTransferRow[] } {
+/**
+ * Splits the rows into pairs still waiting on the user, pairs the server already settled, and single legs whose
+ * counterparty digits may be the user's own account. Only a settled pair has an Undo; a one-leg yes has no partner.
+ */
+export function splitOwnTransferRows(rows: OwnTransferRow[]): { asks: OwnTransferRow[]; settled: OwnTransferRow[]; accountAsks: OwnTransferRow[] } {
   return {
     asks: rows.filter((r) => r.own_transfer_verdict === 'ask'),
-    settled: rows.filter((r) => r.own_transfer_verdict === 'settle'),
+    settled: rows.filter((r) => r.own_transfer_verdict === 'settle' && r.paired_log_id !== null),
+    accountAsks: rows.filter((r) => r.own_transfer_verdict === 'ask_account'),
   }
 }
 
@@ -35,9 +41,9 @@ export function useOwnTransferReview() {
       const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString()
       const { data } = await createClient()
         .from('sms_parse_log')
-        .select('id, amount, currency, received_at, own_transfer_verdict')
-        .in('own_transfer_verdict', ['ask', 'settle'])
-        .not('expense_id', 'is', null)
+        .select('id, amount, currency, received_at, own_transfer_verdict, counterparty_last4, paired_log_id')
+        // A pair is listed once, from its outgoing leg; a one-leg question has no pair and may sit on an income row.
+        .or('and(own_transfer_verdict.in.(ask,settle),expense_id.not.is.null),own_transfer_verdict.eq.ask_account')
         .gte('received_at', since)
         .order('received_at', { ascending: false })
         .limit(20)

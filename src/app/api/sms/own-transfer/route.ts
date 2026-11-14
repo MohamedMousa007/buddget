@@ -3,7 +3,9 @@
  *
  * The user's answer on a bank-message pair that may be a transfer between their own accounts:
  * confirm (an 'ask' pair is booked as one own transfer), decline (an 'ask' pair stays as it is), or
- * undo (a 'settle' pair goes back to spending plus income). Auth and device gate match /api/sms/undo.
+ * undo (a 'settle' pair goes back to spending plus income). One leg whose counterparty digits may be the user's own
+ * account ('ask_account') is answered with confirm_account or decline_account, on that one log. Auth and device gate
+ * match /api/sms/undo.
  */
 
 import { gateOutdatedClient } from '@/lib/server/clientGate'
@@ -14,17 +16,18 @@ import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
 import { rememberOwnAnswer } from '@/lib/sms/pairing'
+import { answerOneLegQuestion } from '@/lib/sms/ownAccountAnswer'
 import { mapKindToCategory } from '@/lib/sms/createSmsExpense'
 import type { Database } from '@/lib/supabase/database.types'
 import { nudgeUser } from '@/lib/server/realtime/nudge'
 
 const bodySchema = z.object({
   parseLogId: z.string().uuid(),
-  action: z.enum(['confirm', 'decline', 'undo']),
+  action: z.enum(['confirm', 'decline', 'undo', 'confirm_account', 'decline_account']),
 })
 
-const LOG_COLUMNS = 'id, user_id, amount, currency, account_last4, received_at, raw_body, paired_log_id, own_transfer_verdict, own_transfer_candidate'
-const ALLOWED_VERDICT = { confirm: 'ask', decline: 'ask', undo: 'settle' } as const
+const LOG_COLUMNS = 'id, user_id, amount, currency, account_last4, counterparty_last4, bank_name, received_at, raw_body, paired_log_id, own_transfer_verdict, own_transfer_candidate'
+const ALLOWED_VERDICT = { confirm: 'ask', decline: 'ask', undo: 'settle', confirm_account: 'ask_account', decline_account: 'ask_account' } as const
 
 type Service = ReturnType<typeof createServiceRoleClient>
 interface LogRow {
@@ -33,6 +36,8 @@ interface LogRow {
   amount: number | null
   currency: string | null
   account_last4: string | null
+  counterparty_last4: string | null
+  bank_name: string | null
   received_at: string
   raw_body: string | null
   paired_log_id: string | null
@@ -46,6 +51,14 @@ async function setLogs(service: Service, ids: string[], values: Record<string, u
   const { error } = await service.from('sms_parse_log').update(values).in('id', ids)
   if (error) console.error('[sms/own-transfer] log update error', error.message)
   return !error
+}
+
+async function nudge(userId: string, logId: string): Promise<void> {
+  try {
+    await nudgeUser(userId, 'sms', { logId })
+  } catch {
+    /* best effort */
+  }
 }
 
 export async function POST(request: Request) {
@@ -77,6 +90,13 @@ export async function POST(request: Request) {
   if (logRow.user_id !== userId) return fail('Forbidden', 403)
   if (logRow.own_transfer_verdict !== ALLOWED_VERDICT[action]) return fail('Not allowed in this state', 409)
 
+  if (action === 'confirm_account' || action === 'decline_account') {
+    const result = await answerOneLegQuestion(service, userId, logRow, action)
+    if (!result.ok) return fail(result.error, result.status)
+    await nudge(userId, logRow.id)
+    return NextResponse.json(result.stale ? { ok: true, stale: true } : { ok: true, action })
+  }
+
   const partnerId = logRow.paired_log_id ?? logRow.own_transfer_candidate
   const { data: p } = partnerId ? await service.from('sms_parse_log').select(LOG_COLUMNS).eq('id', partnerId).single() : { data: null }
   const partner = p as LogRow | null
@@ -91,7 +111,12 @@ export async function POST(request: Request) {
     .is('deleted_at', null)
   if (expErr) return fail('Failed to load ledger')
   const expense = ((exp ?? []) as { id: string; sms_log_id: string; description: string | null }[]).find((e) => e.description !== 'Transfer fee')
-  if (!expense) return fail('Nothing to change', 409)
+  if (!expense) {
+    // The row the question was about is gone: clear the question on both logs so it stops being offered.
+    if (!(await setLogs(service, ids, { own_transfer_verdict: 'none' }))) return fail('Failed to update logs')
+    await nudge(userId, logRow.id)
+    return NextResponse.json({ ok: true, stale: true })
+  }
   const out = expense.sms_log_id === logRow.id ? logRow : partner
   const inn = out === logRow ? partner : logRow
 
@@ -154,10 +179,6 @@ export async function POST(request: Request) {
     await rememberOwnAnswer(service, userId, out.account_last4, inn.account_last4, false)
   }
 
-  try {
-    await nudgeUser(userId, 'sms', { logId: logRow.id })
-  } catch {
-    /* best effort */
-  }
+  await nudge(userId, logRow.id)
   return NextResponse.json({ ok: true, action })
 }

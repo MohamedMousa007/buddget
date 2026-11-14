@@ -27,32 +27,38 @@ import {
   mapKindToCategory,
   isIncomeKind,
   resolveExactPaymentMethod,
+  resolveCreditAccount,
   providerOf,
+  bankKeyOf,
   completeFxEvent,
   type SmsRowData,
   type SmsExpenseKind,
 } from './createSmsExpense'
 import {
-  isOwnAccountTransfer,
   hasOppositeLegOnSameAccount,
   findOwnTransferCandidate,
   transferFeeTolerance,
   publishTransferLeg,
   pauseForSibling,
-  countersOwnAccountDigits,
   rememberedOwnAnswer,
   recordOwnTransferEvidence,
   isOwnTopUpTarget,
   namesOwnStoredValue,
   retagSiblingAsTransfer,
   tryPairLeg,
+  claimSibling,
+  unpairLegs,
+  legDirectionOfKind,
   reconcileSibling,
-  reconcileCcPayoffFundingLeg,
+  readCcPayoffFundingLeg,
+  retireCcPayoffFundingLeg,
   attributeFundingToPayoff,
   type CcPayoffFundingLeg,
   type PairSibling,
 } from './pairing'
-import { detectLegDirection, guardDirection } from './directionGuard'
+import { NO_OWN_ACCOUNT, oneLegTails, readOwnAccount } from './ownAccounts'
+import { plainKindForModelOwnTransfer, plainKindForModelRepayment } from './kindProvenance'
+import { detectLegDirection, guardDirection, type MoneyDirection } from './directionGuard'
 import { fxLegAction } from './fxEvent'
 import { decideOwnTransfer } from './ownTransferDecision'
 import { isDeclineMessage, findDeclineTwin, findRefundOriginal } from './refundMatch'
@@ -167,6 +173,26 @@ export function extractIpnReference(body: string): string | null {
 }
 
 /**
+ * The destination of a pair whose legs name each other by name only. The posted row takes its destination from the
+ * counterparty digits, which such legs lack, so the account that received the money was never credited. When the
+ * kept row is the debit leg and has no destination yet, this (credit) leg's own account is the destination. Only an
+ * empty destination is filled (I1 exception 3): a destination already there is never overwritten.
+ */
+async function fillSiblingDestination(service: ServiceClient, row: SmsRowData, sibling: PairSibling): Promise<void> {
+  if (!sibling.siblingExpenseId) return
+  const { data } = await service.from('expenses').select('to_payment_method_id').eq('id', sibling.siblingExpenseId).maybeSingle()
+  if (!data || data.to_payment_method_id) return
+  const account = await resolveCreditAccount(service, row)
+  if (account) await service.from('expenses').update({ to_payment_method_id: account }).eq('id', sibling.siblingExpenseId).is('to_payment_method_id', null)
+}
+
+/** The retracted credit leg's own account tail: where the money landed when this (debit) leg's digits do not say. */
+async function siblingAccountTail(service: ServiceClient, sibling: PairSibling): Promise<string | null> {
+  const { data } = await service.from('sms_parse_log').select('account_last4').eq('id', sibling.siblingId).maybeSingle()
+  return (data?.account_last4 as string | null | undefined) ?? null
+}
+
+/**
  * Reconciles a claimed sibling into a single non-spend Transfer, whichever leg arrived first.
  * Shared by the wallet-movement block (step 0) and the IPN reference/fallback steps (1b/1c).
  */
@@ -175,6 +201,7 @@ async function finalizeOwnTransferPair(
   row: SmsRowData,
   sibling: PairSibling,
   logId: string,
+  legDirection: MoneyDirection | null,
 ): Promise<SmsTxResult> {
   const { needsPost } = await reconcileSibling(service, sibling, logId)
   if (!needsPost) {
@@ -184,16 +211,36 @@ async function finalizeOwnTransferPair(
     if (sibling.siblingKind === 'instant_transfer_out') {
       await retagSiblingAsTransfer(service, sibling)
     }
+    if (legDirection === 'credit') await fillSiblingDestination(service, row, sibling)
     return base('transfer_paired', 'own_transfer')
   }
-  // Sibling was booked as income (now soft-deleted) — post one visible non-spend row.
-  const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer' })
+  // Sibling was booked as income (now soft-deleted) — post one visible non-spend row. It is the debit leg, so the
+  // retracted credit leg's account is the destination when its own digits name none.
+  const creditLegLast4 = legDirection === 'credit' ? null : await siblingAccountTail(service, sibling)
+  const posted = await createSmsExpense(service, { ...row, kind: 'own_transfer', creditLegLast4 })
   return {
     ...base('transfer_paired', 'own_transfer'),
     expenseId: posted.expenseId,
     category: 'Transfer',
     error: posted.error,
   }
+}
+
+/**
+ * This leg funded a credit-card payoff that already posted. The payoff row is the better representation (it drives the
+ * debt payment), so no Transfer row is posted: the funding account the payoff could not know is back-filled onto it, and
+ * the fee the funding bank took on top is kept.
+ */
+async function pairFundingLegWithPayoff(service: ServiceClient, row: SmsRowData, payoff: PairSibling): Promise<SmsTxResult> {
+  const fundingPmId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
+  const { payoffAmount } = await attributeFundingToPayoff(service, payoff, fundingPmId)
+  await postTransferFee(service, row, {
+    fundingLast4: row.last4 ?? null,
+    // This leg IS the funding side, so the fee is what it debited beyond the payoff.
+    fundingAmount: row.amount,
+    payoffAmount,
+  })
+  return base('transfer_paired', 'own_transfer')
 }
 
 export async function createSmsTransaction(
@@ -227,7 +274,7 @@ export async function createSmsTransaction(
     }
   }
 
-  const row: SmsRowData =
+  let row: SmsRowData =
     guardedKind === parsedRow.kind
       ? parsedRow
       : {
@@ -239,7 +286,26 @@ export async function createSmsTransaction(
               : null,
         }
 
+  // Provenance (P1-7). A kind only the AI or a learned template asserted does not take money out of spending on its
+  // own. A repayment whose wording makes the card the instrument ("via card") is a purchase made with the card.
+  const modelKind = row.kindSource === 'model'
+  const plainRepayment = row.kind === 'cc_payoff' && modelKind ? plainKindForModelRepayment(row.rawBody) : null
+  if (plainRepayment) row = { ...row, kind: plainRepayment, smsFlags: [...(row.smsFlags ?? []), 'model_kind_unproven'] }
+  // An own transfer the model asserted on arrival; one dispatch derives itself (own wallet, own digits) is not this.
+  const modelOwnTransfer = modelKind && row.kind === 'own_transfer'
+
   let kind: SmsExpenseKind = row.kind
+
+  // The direction of this leg is the kind it ARRIVED with, taken before any step relabels the kind, and the facts the
+  // pairing guards compare are published with every claim (migration 0271).
+  const legDirection = legDirectionOfKind(kind)
+  const legFacts = {
+    currency: row.currency,
+    counterpartyLast4: row.counterpartyLast4 ?? null,
+    counterpartyHash: row.counterpartyHash ?? null,
+    counterpartyIsSelf: row.counterpartyIsSelf ?? null,
+    referenceHash: row.referenceHash ?? null,
+  }
 
   // 0. Movements involving the user's own STORED-VALUE methods (wallets, prepaid cards).
   //    Topping one up, and cashing one out, are neither spend nor income — but each emits
@@ -273,12 +339,14 @@ export async function createSmsTransaction(
     // the opposite arrival order.
     if (!outbound) kind = 'instant_transfer_in'
     if (row.logId && row.receivedAtIso) {
-      const sibling = await tryPairLeg(service, {
+      const sibling = await claimSibling(service, {
         userId: row.userId,
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
         accountLast4: row.last4 ?? null,
+        ...legFacts,
+        direction: legDirection,
         // 'own_transfer' for the exact-amount rule; a wallet movement has no fee to absorb.
         kind: 'own_transfer',
         // No cc_payoff: a payoff is settled by step 3, which needs its own funding leg. The
@@ -287,28 +355,48 @@ export async function createSmsTransaction(
         // a34d517 fixed. Excluding it means it is never claimed in the first place.
         matchKinds: ['own_transfer', 'instant_transfer_in', 'instant_transfer_out'],
       })
-      if (sibling) return finalizeOwnTransferPair(service, row, sibling, row.logId)
+      if (sibling) return finalizeOwnTransferPair(service, row, sibling, row.logId, legDirection)
     }
     // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
   }
 
-  // 1. Own-account reclassification — an inbound/outbound transfer whose
-  //    counterparty is a registered own account is a Transfer, not income/spend.
-  //    Only an account the user confirmed counts here. The counterparty being the user by NAME never settles
-  //    anything: it is one supporting signal of the decision in 1b, where it can only raise a question.
+  // 1. Own-account reclassification — an inbound/outbound transfer whose counterparty digits are the user's own
+  //    confirmed account is a Transfer, not income/spend, but only once the user has said so for this pair of tails.
+  //    The digits alone, the first time, settle nothing: the row is booked as its plain kind and the user is asked
+  //    once (below, after 1b). The counterparty being the user by NAME never settles anything either: it is one
+  //    supporting signal of the decision in 1b, where it can only raise a question.
   /** The reclassified leg is the receiving side, so its own account is the transfer's destination. */
   let destinationLeg = false
-  if (
-    (kind === 'instant_transfer_in' || kind === 'instant_transfer_out') &&
-    (await isOwnAccountTransfer(service, row.userId, row.counterpartyLast4 ?? null))
-  ) {
+  const isTransferLeg = kind === 'instant_transfer_in' || kind === 'instant_transfer_out'
+  const counterpartyTail = row.counterpartyLast4 ?? null
+  const own = isTransferLeg ? await readOwnAccount(service, row.userId, counterpartyTail, bankKeyOf(providerOf(row))) : NO_OWN_ACCOUNT
+  // The user's stored answer for (this message's own tail, the counterparty tail); a missing own tail is stored as '-'.
+  const oneLegAnswer = own.account && counterpartyTail ? await rememberedOwnAnswer(service, row.userId, ...oneLegTails(row.last4, counterpartyTail)) : null
+  if (isTransferLeg && own.registered && oneLegAnswer === true) {
     destinationLeg = kind === 'instant_transfer_in'
     kind = 'own_transfer'
+  }
+  // An earlier card repayment is itself the second signal for a transfer out: the card bank's message may have arrived
+  // first. Claim a repayment only (the 0271 guards refuse one whose card digits differ from this leg's counterparty
+  // digits, or when this leg names another person); otherwise everything below continues unchanged.
+  if (kind === 'instant_transfer_out' && row.logId && row.receivedAtIso) {
+    const payoff = await claimSibling(service, {
+      userId: row.userId,
+      logId: row.logId,
+      receivedAtIso: row.receivedAtIso,
+      amount: row.amount,
+      accountLast4: row.last4 ?? null,
+      ...legFacts,
+      direction: legDirection,
+      matchKinds: ['cc_payoff'],
+      kind: 'own_transfer',
+    })
+    if (payoff) return pairFundingLegWithPayoff(service, row, payoff)
   }
 
   // 1b/1c. Account-to-account IPN transfer between the user's OWN accounts. IPN SMS identify the
   //   counterparty only by name (outbound) or not at all (inbound), so step 1's last4 join never
-  //   sees them and the transfer was booked as Remittance + income. Both paths below only claim
+  //   sees them and the transfer was booked as Remittance (spend) + income. Both paths below only claim
   //   a sibling that actually exists — a real remittance to someone else has no inbound leg on
   //   this phone, so it stays spend.
   if (
@@ -328,7 +416,7 @@ export async function createSmsTransaction(
     const reference = extractIpnReference(row.rawBody)
     // Two legs arriving together each look before the other has persisted anything: publish this leg first, and
     // look a second time after a short pause when the first look finds nothing.
-    await publishTransferLeg(service, { logId: row.logId, kind, amount: row.amount, accountLast4: row.last4 ?? null, counterpartyHash: row.counterpartyHash ?? null })
+    await publishTransferLeg(service, { logId: row.logId, kind, amount: row.amount, accountLast4: row.last4 ?? null, ...legFacts, legDirection })
     const lookFor = { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, kind, reference }
     const candidate = (await findOwnTransferCandidate(service, lookFor)) ?? (await pauseForSibling().then(() => findOwnTransferCandidate(service, lookFor)))
     const mine = row.last4 ?? null
@@ -343,43 +431,57 @@ export async function createSmsTransaction(
       withinFee: !!candidate && Math.abs(candidate.amount - row.amount) <= transferFeeTolerance(Math.max(candidate.amount, row.amount)),
       sameReference: candidate?.sameReference ?? false,
       sameCounterpartyHash: !!candidate && !!row.counterpartyHash && row.counterpartyHash === candidate.counterpartyHash,
-      counterpartyIsOwnAccount: await countersOwnAccountDigits(service, row.userId, row.counterpartyLast4 ?? null),
+      counterpartyIsOwnAccount: own.account,
       counterpartyIsProfileName: row.counterpartyIsSelf === true,
-      answered: candidate ? await rememberedOwnAnswer(service, row.userId, mine, theirs) : null,
+      // With a sibling the answer is the one for the two legs' accounts; without one, the one for the one-leg pair.
+      answered: candidate ? await rememberedOwnAnswer(service, row.userId, mine, theirs) : oneLegAnswer,
     })
     await recordOwnTransferEvidence(service, row.logId, candidate?.id ?? null, decision)
 
     let sibling: PairSibling | null = null
     if (decision.verdict === 'settle' && candidate) {
-      sibling = await tryPairLeg(service, {
+      sibling = await claimSibling(service, {
         userId: row.userId,
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
         accountLast4: mine,
         matchKinds,
+        ...legFacts,
+        direction: legDirection,
+        // Only the leg that was read and decided on may be claimed.
+        siblingId: candidate.id,
         // By reference when both legs carry it (the amounts may differ by the fee); otherwise the exact amount.
         ...(candidate.sameReference && reference ? { kind, reference } : { kind: 'own_transfer' as const }),
       })
     }
 
-    if (sibling) return finalizeOwnTransferPair(service, row, sibling, row.logId)
+    if (sibling) return finalizeOwnTransferPair(service, row, sibling, row.logId, legDirection)
     // No sibling: genuine income (inbound) or a real remittance (outbound). Falls through.
-  }
 
+    // One leg, digits that are the user's own confirmed account, nobody has answered for this pair of tails: the row is
+    // booked as its plain kind (the safe default if the user never answers) and the user is asked once.
+    if (own.registered && oneLegAnswer === null && !candidate) {
+      const { error } = await service
+        .from('sms_parse_log')
+        .update({ own_transfer_verdict: 'ask_account', own_transfer_candidate: null, own_transfer_signals: ['account'] })
+        .eq('id', row.logId)
+      if (error) console.warn('[sms/dispatch] one-leg own-account question not recorded', error)
+    }
+  }
   // 2a. Currency exchange: one event, one row. The debited account is its source and the credited account its
   //     destination, whichever message arrives first; the credit leg never books the account the money left.
   if (kind === 'currency_exchange') {
     const direction = detectLegDirection(normalizeDigits(row.rawBody))
     const sibling = row.logId && row.receivedAtIso
-      ? await tryPairLeg(service, {
+      ? await claimSibling(service, {
           userId: row.userId,
           logId: row.logId,
           receivedAtIso: row.receivedAtIso,
           amount: row.amount,
           accountLast4: row.last4 ?? null,
+          ...legFacts,
           kind,
-          currency: row.currency,
           direction,
         })
       : null
@@ -401,51 +503,51 @@ export async function createSmsTransaction(
 
   // 2. Own transfer — pair the two legs, represent the pair once (non-spend).
   if (kind === 'own_transfer') {
+    let sibling: PairSibling | null = null
     if (row.logId && row.receivedAtIso) {
-      const sibling = await tryPairLeg(service, {
+      sibling = await claimSibling(service, {
         userId: row.userId,
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
         accountLast4: row.last4 ?? null,
+        ...legFacts,
+        direction: legDirection,
         kind,
       })
-      if (sibling) {
-        // This leg funded a credit-card payoff that already posted. The payoff row is the
-        // better representation (it drives the debt payment), so post no Transfer row —
-        // otherwise the user sees the same money twice, which is the whole bug. Back-fill
-        // the funding account the payoff could not know, and keep the fee it took on top.
-        if (sibling.siblingKind === 'cc_payoff') {
-          const fundingPmId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
-          const { payoffAmount } = await attributeFundingToPayoff(service, sibling, fundingPmId)
-          await postTransferFee(service, row, {
-            fundingLast4: row.last4 ?? null,
-            // This leg IS the funding side, so the fee is what it debited beyond the payoff.
-            fundingAmount: row.amount,
-            payoffAmount,
-          })
-          return base('transfer_paired', kind)
-        }
+    }
+    if (sibling) {
+      // This leg funded a credit-card payoff that already posted. The payoff row is the
+      // better representation (it drives the debt payment), so post no Transfer row —
+      // otherwise the user sees the same money twice, which is the whole bug. Back-fill
+      // the funding account the payoff could not know, and keep the fee it took on top.
+      if (sibling.siblingKind === 'cc_payoff') return pairFundingLegWithPayoff(service, row, sibling)
 
-        const { needsPost } = await reconcileSibling(service, sibling, row.logId)
-        if (!needsPost) return base('transfer_paired', kind)
-        // Income sibling was removed — post a single visible non-spend row.
-        const posted = await createSmsExpense(service, { ...row, kind, destinationLeg })
-        return {
-          ...base('transfer_paired', kind),
-          expenseId: posted.expenseId,
-          category: 'Transfer',
-          error: posted.error,
-        }
+      if (!row.logId) return base('transfer_paired', kind)
+      const { needsPost } = await reconcileSibling(service, sibling, row.logId)
+      if (!needsPost) return base('transfer_paired', kind)
+      // Income sibling was removed — post a single visible non-spend row.
+      const posted = await createSmsExpense(service, { ...row, kind, destinationLeg })
+      return {
+        ...base('transfer_paired', kind),
+        expenseId: posted.expenseId,
+        category: 'Transfer',
+        error: posted.error,
       }
     }
-    const res = await createSmsExpense(service, { ...row, kind, destinationLeg })
-    return {
-      ...base('transfer_single', kind),
-      expenseId: res.expenseId,
-      category: 'Transfer',
-      error: res.error,
+    if (!modelOwnTransfer) {
+      const res = await createSmsExpense(service, { ...row, kind, destinationLeg })
+      return {
+        ...base('transfer_single', kind),
+        expenseId: res.expenseId,
+        category: 'Transfer',
+        error: res.error,
+      }
     }
+    // Only the model called this an own transfer, and nothing proves it (no sibling, no own wallet, no own digits):
+    // it is booked as its plain kind by the direction the message shows, flagged, and the rest of the dispatch runs.
+    kind = plainKindForModelOwnTransfer(row.rawBody)
+    row = { ...row, kind, smsFlags: [...(row.smsFlags ?? []), 'model_kind_unproven'] }
   }
 
   // 3. CC payoff → debt payment, funded from the paired bank leg.
@@ -454,30 +556,52 @@ export async function createSmsTransaction(
     // ("12,012 sent to ••2016", which step 1 reclassifies to own_transfer because the
     // counterparty is the user's own card) and the card bank ("12,000 received"). They
     // are the same money, so without this the user sees the payoff twice; the amounts
-    // differ only by the transfer fee, which `pairAmountTolerance` allows for.
+    // differ only by the transfer fee, which the pairing guards allow only when the digits or the reference agree.
+    //
+    // Decide first, retire second: the claim only READS the funding leg. Its row is retired once the repayment is
+    // known to post. When the repayment needs the user's answer the claim is released and the funding row is left
+    // exactly as it was, so the funding account is not lost.
+    let claimed: PairSibling | null = null
     let funding: CcPayoffFundingLeg | null = null
     if (row.logId && row.receivedAtIso) {
-      const sibling = await tryPairLeg(service, {
+      claimed = await tryPairLeg(service, {
         userId: row.userId,
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
         accountLast4: row.last4 ?? null,
+        ...legFacts,
+        direction: legDirection,
         kind,
       })
-      if (sibling) funding = await reconcileCcPayoffFundingLeg(service, sibling, row.logId)
+      if (claimed) funding = await readCcPayoffFundingLeg(service, claimed)
+    }
+    const releaseClaim = async () => {
+      if (claimed && row.logId) await unpairLegs(service, row.logId, claimed.siblingId)
     }
 
     const res = await createSmsDebtPayment(service, row, { fundingLast4: funding?.fundingLast4 })
     if (res.needsConfirm) {
       // Ambiguous (several cards, foreign currency, gold, overpay): never guess a debt. The row waits for the user
       // (pending confirmation); /confirm re-runs this with userConfirmed and then takes the plain fallback below.
-      if (!opts.userConfirmed) return { ...base('awaiting_confirmation', kind), confirmReason: 'cc_ambiguous' }
+      if (!opts.userConfirmed) {
+        await releaseClaim()
+        return { ...base('awaiting_confirmation', kind), confirmReason: 'cc_ambiguous' }
+      }
       // Confirmed: post a non-spend CC Payoff expense with NO card linkage (last4 null) so spend
       // totals stay correct and the card balance isn't wrongly inflated. The
-      // debt is not auto-reduced; the user can attach it.
-      const fb = await createSmsExpense(service, { ...row, kind, last4: null })
+      // debt is not auto-reduced; the user can attach it. The money did leave the funding account, so that account
+      // is carried onto the expense and the funding row is retired now.
+      const fundingPaymentMethodId = await resolveExactPaymentMethod(service, row.userId, funding?.fundingLast4)
+      const fb = await createSmsExpense(service, { ...row, kind, last4: null, fundingPaymentMethodId })
+      if (claimed && row.logId && !fb.error) await retireCcPayoffFundingLeg(service, claimed, row.logId)
+      else await releaseClaim()
       return { ...base('expense', kind), expenseId: fb.expenseId, category: 'CC Payoff', error: fb.error }
+    }
+    if (res.error) {
+      await releaseClaim()
+    } else if (claimed && row.logId) {
+      await retireCcPayoffFundingLeg(service, claimed, row.logId)
     }
 
     // The fee the funding bank took on top. It is real spend and must count — only the

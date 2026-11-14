@@ -162,6 +162,8 @@ export async function POST(request: Request) {
       // that produced it on this path too — a defect is no less real for being user-confirmed.
       matchedTemplateId: row.matched_template_id ?? null,
       referenceHash: row.reference_hash ?? null,
+      // The user confirmed this row, so its kind is no longer only a model's assertion.
+      kindSource: 'code',
     }, { exchangeRates: DEFAULT_MARKET_RATES, userConfirmed: true })
 
     const { expenseId, incomeId, debtPaymentId } = tx

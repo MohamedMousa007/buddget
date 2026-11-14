@@ -54,10 +54,13 @@ export function ownTransferSignals(f: PairFacts): OwnTransferSignal[] {
 
 /**
  * Strong (the pair on one device plus a decisive signal) settles. Any signal short of that asks the user once.
- * No signal, the same account on both legs, or an earlier "no" does nothing.
+ * No signal, the same account on both legs, or an earlier "no" does nothing, except that an earlier "no" for a pair
+ * whose legs share a payment reference asks again (a shared reference is strong evidence the answer was about
+ * another transfer).
  */
 export function decideOwnTransfer(f: PairFacts): { verdict: OwnTransferVerdict; signals: OwnTransferSignal[] } {
-  if (f.sameAccount || f.answered === false) return { verdict: 'none', signals: [] }
+  if (f.sameAccount) return { verdict: 'none', signals: [] }
+  if (f.answered === false) return f.sameReference ? { verdict: 'ask', signals: ownTransferSignals(f) } : { verdict: 'none', signals: [] }
   const signals = ownTransferSignals(f)
   if (signals.includes('device') && signals.some((s) => DECISIVE.has(s))) return { verdict: 'settle', signals }
   // A pair that only "looks close" (similar amounts, no shared device, no other signal) is a coincidence until shown otherwise.

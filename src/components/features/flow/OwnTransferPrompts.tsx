@@ -11,13 +11,14 @@ import { settlePrompt } from '@/lib/prompts/settle'
 import { useT } from '@/lib/i18n'
 
 /**
- * Registers the server's own-transfer questions with the prompt stack: a middle-evidence pair is asked about, and a
- * pair the server already booked as a transfer says so with an Undo. Not tied to a Flow segment.
+ * Registers the server's own-transfer questions with the prompt stack: a middle-evidence pair is asked about, a single
+ * leg to digits that may be the user's own account is asked about, and a pair the server already booked as a transfer
+ * says so with an Undo. Not tied to a Flow segment.
  */
 export function OwnTransferPrompts() {
   const t = useT()
   const shortDate = useShortDate()
-  const { asks, settled, refresh } = useOwnTransferReview()
+  const { asks, settled, accountAsks, refresh } = useOwnTransferReview()
   const dismissed = useSettingsStore((s) => s.dismissedBanners)
 
   const describe = (r: { amount: number | null; currency: string | null; received_at: string }) =>
@@ -37,6 +38,22 @@ export function OwnTransferPrompts() {
       actions: [
         { label: t.prompts.ownTransferYes, variant: 'default', onPress: answer('confirm') },
         { label: t.prompts.ownTransferNo, variant: 'secondary', onPress: answer('decline') },
+      ],
+    })
+  }
+  const accountAsk = accountAsks[0]
+  if (accountAsk) {
+    const answer = (action: 'confirm_account' | 'decline_account') => () => void answerOwnTransfer(accountAsk.id, action).then(refresh)
+    prompts.push({
+      key: `owntransfer:ask_account:${accountAsk.id}`,
+      priority: PROMPT_PRIORITY.sms,
+      tone: 'brand',
+      icon: ArrowLeftRight,
+      title: t.prompts.ownTransferAccountTitle(accountAsk.counterparty_last4 ?? ''),
+      description: t.prompts.ownTransferAccountBody(describe(accountAsk)),
+      actions: [
+        { label: t.prompts.ownTransferYes, variant: 'default', onPress: answer('confirm_account') },
+        { label: t.prompts.ownTransferNo, variant: 'secondary', onPress: answer('decline_account') },
       ],
     })
   }

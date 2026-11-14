@@ -132,6 +132,63 @@ describe('POST /api/sms/own-transfer', () => {
     expect(log(IN).income_id).toBe('new-income')
   })
 
+  it('P2-16: an answer about a pair whose expense is gone clears the question on both logs and is a success', async () => {
+    h.db.expenses = []
+    const res = await call(OUT, 'confirm')
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true, stale: true })
+    expect(log(OUT).own_transfer_verdict).toBe('none')
+    expect(log(IN).own_transfer_verdict).toBe('none')
+    expect(h.remember).not.toHaveBeenCalled()
+  })
+
+  describe('one-leg own-account question (ask_account)', () => {
+    const ONE = '44444444-4444-4444-8444-444444444444'
+    const oneLeg = (verdict = 'ask_account') => [{ id: ONE, user_id: 'u1', amount: 500, currency: 'EGP', account_last4: '1111', counterparty_last4: '2222', bank_name: null, received_at: '2026-11-01T10:00:00Z', raw_body: 'x', paired_log_id: null, own_transfer_verdict: verdict, own_transfer_candidate: null }]
+    const accounts = [{ id: 'pm-2', user_id: 'u1', name: 'QNB', last4: '2222', last4_aliases: [], provisional: false, closed_at: null, deleted_at: null }]
+    beforeEach(() => {
+      h.db = { sms_parse_log: oneLeg(), expenses: [{ id: 'e1', user_id: 'u1', sms_log_id: ONE, deleted_at: null, description: 'Transfer', category: 'Instapay', to_payment_method_id: null }], income_events: [], payment_methods: accounts }
+    })
+
+    it('confirm_account on a transfer out sets Transfer and the destination, settles the one log and remembers yes', async () => {
+      const res = await call(ONE, 'confirm_account')
+      expect(res.status).toBe(200)
+      expect(await res.json()).toEqual({ ok: true, action: 'confirm_account' })
+      expect(h.db.expenses[0]).toMatchObject({ category: 'Transfer', to_payment_method_id: 'pm-2' })
+      expect(log(ONE).own_transfer_verdict).toBe('settle')
+      expect(h.remember).toHaveBeenCalledWith(expect.anything(), 'u1', '1111', '2222', true)
+    })
+
+    it('decline_account declines the one log, touches no ledger row and remembers no', async () => {
+      expect((await call(ONE, 'decline_account')).status).toBe(200)
+      expect(log(ONE).own_transfer_verdict).toBe('declined')
+      expect(h.writes.every((w) => w.table === 'sms_parse_log')).toBe(true)
+      expect(h.remember).toHaveBeenCalledWith(expect.anything(), 'u1', '1111', '2222', false)
+    })
+
+    it('the account actions are allowed only for ask_account, and the pair actions only for their own verdicts', async () => {
+      h.db.sms_parse_log = oneLeg('ask')
+      expect((await call(ONE, 'confirm_account')).status).toBe(409)
+      h.db.sms_parse_log = oneLeg('ask_account')
+      expect((await call(ONE, 'confirm')).status).toBe(409)
+      expect(h.writes).toHaveLength(0)
+    })
+
+    it('confirm_account with the row gone clears the question and answers ok', async () => {
+      h.db.expenses = []
+      const res = await call(ONE, 'confirm_account')
+      expect(await res.json()).toEqual({ ok: true, stale: true })
+      expect(log(ONE).own_transfer_verdict).toBe('none')
+    })
+
+    it('confirm_account with no registered account behind the digits changes nothing', async () => {
+      h.db.payment_methods = []
+      expect((await call(ONE, 'confirm_account')).status).toBe(409)
+      expect(h.db.expenses[0].category).toBe('Instapay')
+      expect(h.remember).not.toHaveBeenCalled()
+    })
+  })
+
   it('answers 409 when the verdict does not allow the action', async () => {
     expect((await call(OUT, 'undo')).status).toBe(409)
     h.db.sms_parse_log = logs('settle', true)
