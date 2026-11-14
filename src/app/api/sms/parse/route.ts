@@ -65,6 +65,7 @@ import { hasPersonCounterparty, isOwnName, ownNames } from '@/lib/sms/ownName'
 import { KNOWN_NON_TRANSACTION, isKnownNonTransaction } from '@/lib/sms/negativeCache'
 import { coarseShapeKey, maskSkeletonText } from '@/lib/sms/skeleton'
 import { resolveProvider } from '@/lib/sms/providerCascade'
+import { counterpartyHash } from '@/lib/sms/ownTransferDecision'
 import { PAYMENT_BRANDS } from '@/lib/payment/paymentMethodDefaults'
 import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sms/merchantCategoryPrompt'
 import type { ExpenseCategory } from '@/lib/store/types'
@@ -1014,6 +1015,9 @@ export async function POST(request: Request) {
   const counterpartyIsSelf = hasPersonCounterparty(parsed.kind) && parsed.merchant
     ? isOwnName(parsed.merchant, await ownNames(service, userId))
     : null
+  // The counterparty's name as a per-user salted hash, so the two legs of one transfer can be compared on it
+  // without the name ever being stored.
+  const counterpartyNameHash = hasPersonCounterparty(parsed.kind) ? counterpartyHash(userId, parsed.merchant) : null
   const tx: SmsTxResult = senderHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
     userId,
     amount: parsed.amount,
@@ -1035,6 +1039,8 @@ export async function POST(request: Request) {
     matchedTemplateId,
     counterpartyIsSelf,
     providerKey: provider.bankKey,
+    deviceId,
+    counterpartyHash: counterpartyNameHash,
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
@@ -1140,6 +1146,7 @@ export async function POST(request: Request) {
       // copied into this log column (it was stored unmasked). The comparison result is all that is kept.
       merchant: hasPersonCounterparty(tx.kind ?? parsed.kind) ? null : parsed.merchant,
       counterparty_is_self: counterpartyIsSelf,
+      counterparty_hash: counterpartyNameHash,
       // A bank a trusted stage named is stored as the bank; otherwise the parser's own (possibly guessed) name stays
       // for display, with no source, so it can never be used as evidence.
       bank_name: provider.bankKey ? PAYMENT_BRANDS[provider.bankKey].name : parsed.bank_name,

@@ -17,6 +17,7 @@ import type { SmsRowData } from './createSmsExpense'
 interface Log {
   id: string; kind: string | null; amount: number; raw_body: string; account_last4: string | null
   status: string; parsed_ok: boolean; paired: boolean
+  device_id: string | null; received_at: string | null; counterparty_hash: string | null; own_transfer_verdict: string | null
   expense_id: string | null; income_id: string | null
 }
 interface Ledger { id: string; category: string; deleted: boolean; logId: string | null }
@@ -39,8 +40,6 @@ function makeService(state: State) {
     const kinds = p.p_match_kinds as string[]
     const amount = p.p_amount as number
     const ref = (p.p_reference as string | null) ?? null
-    const requireReg = (p.p_require_registered_sibling as boolean) ?? false
-    const tol = (p.p_amount_tolerance as number) ?? 0
     const selfId = p.p_log_id as string
 
     const self = state.logs.find((l) => l.id === selfId)
@@ -49,9 +48,6 @@ function makeService(state: State) {
     const hit = state.logs.find((l) => {
       if (l.paired || l.id === selfId || !l.parsed_ok || !l.kind || !kinds.includes(l.kind)) return false
       if (ref) return l.raw_body.includes(ref)
-      if (requireReg) {
-        return Math.abs(l.amount - amount) <= tol && !!l.account_last4 && state.registeredLast4.includes(l.account_last4)
-      }
       return l.amount === amount
     })
     if (!hit) return { data: [], error: null }
@@ -109,15 +105,28 @@ function makeService(state: State) {
 
   const logChain = () => {
     let id = ''
+    let cols = ''
+    let kinds: string[] | null = null
+    let excluded: string | null = null
+    let unpairedOnly = false
     const c: Record<string, unknown> = {
-      select: () => c, in: () => c, is: () => c, not: () => c, order: () => c, limit: () => c,
-      neq: () => c, gte: () => c, lte: () => c,
+      select: (s: string) => { cols = s; return c },
+      in: (_col: string, v: string[]) => { kinds = v; return c },
+      is: (col: string, v: unknown) => { if (col === 'paired_log_id' && v === null) unpairedOnly = true; return c },
+      neq: (col: string, v: string) => { if (col === 'id') excluded = v; return c },
+      not: () => c, order: () => c, limit: () => c, gte: () => c, lte: () => c,
       eq: (_col: string, v: string) => { id = v; return c },
       maybeSingle: () => {
         const l = state.logs.find((x) => x.id === id)
         return Promise.resolve({ data: l ? { status: l.status, expense_id: l.expense_id, income_id: l.income_id, amount: l.amount, account_last4: l.account_last4 } : null, error: null })
       },
-      then: (r: (v: unknown) => unknown) => r({ data: [], error: null }),
+      // The candidate lookup selects the full leg; the same-account check (only `id`) finds nothing here.
+      then: (r: (v: unknown) => unknown) => r({
+        data: !cols.includes('device_id') ? [] : state.logs
+          .filter((l) => l.parsed_ok && !!l.kind && (!kinds || kinds.includes(l.kind)) && l.id !== excluded && (!unpairedOnly || !l.paired))
+          .map((l) => ({ id: l.id, amount: l.amount, account_last4: l.account_last4, device_id: l.device_id, counterparty_hash: l.counterparty_hash, raw_body: l.raw_body, received_at: l.received_at, own_transfer_verdict: l.own_transfer_verdict })),
+        error: null,
+      }),
       update: (patch: Record<string, unknown>) => ({
         eq: (_col: string, target: string) => {
           const l = state.logs.find((x) => x.id === target)
@@ -133,7 +142,7 @@ function makeService(state: State) {
     const methods = state.registeredLast4.map((l4) => ({ id: `pm${l4}`, name: l4 === '0001' ? 'HSBC Egypt ••0001' : `QNB ••${l4}`, last4: l4, last4_aliases: [] }))
     let wallets = false
     const c: Record<string, unknown> = {
-      select: () => c, eq: () => c, is: () => c, limit: () => c,
+      select: () => c, eq: () => c, is: () => c, limit: () => c, // tolerates the extra .eq('provisional', false)
       in: () => { wallets = true; return c },
       maybeSingle: () => Promise.resolve({ data: { id: 'pm' }, error: null }),
       then: (r: (v: unknown) => unknown) => r({ data: wallets ? [] : methods, error: null }),
@@ -145,6 +154,7 @@ function makeService(state: State) {
     if (table === 'payment_methods') return banks()
     if (table === 'expenses' || table === 'income_events') return ledgerChain(table)
     if (table === 'sms_parse_log') return logChain()
+    // sms_own_transfer_answers: no remembered answer — falls through to the empty generic chain below.
     const c: Record<string, unknown> = {
       select: () => c, eq: () => c, neq: () => c, in: () => c, is: () => c, not: () => c, gte: () => c, lte: () => c, order: () => c, limit: () => c,
       maybeSingle: () => Promise.resolve({ data: null, error: null }),
@@ -163,7 +173,7 @@ function outLeg(): SmsRowData {
     userId: 'u1', amount: 2002, currency: 'EGP', day: '2026-07-18', kind: 'instant_transfer_out',
     cleanTitle: null, merchantNormalized: null, merchant: 'MOHAMED MOUSA ABDELLATIF METWALLY ALI',
     bankName: 'HSBC', categoryHint: null, source: 'sms', rawBody: OUT_REF, last4: '0001',
-    counterpartyLast4: null, receivedAtIso: '2026-07-18T18:56:43Z', logId: 'log-out',
+    counterpartyLast4: null, receivedAtIso: '2026-07-18T18:56:43Z', logId: 'log-out', deviceId: 'dev-1',
   } as SmsRowData
 }
 function inLeg(): SmsRowData {
@@ -171,7 +181,7 @@ function inLeg(): SmsRowData {
     userId: 'u1', amount: 2000, currency: 'EGP', day: '2026-07-18', kind: 'instant_transfer_in',
     cleanTitle: null, merchantNormalized: null, merchant: null, bankName: 'QNB', categoryHint: null,
     source: 'sms', rawBody: IN_REF, last4: '5124', counterpartyLast4: null,
-    receivedAtIso: '2026-07-18T18:55:51Z', logId: 'log-in',
+    receivedAtIso: '2026-07-18T18:55:51Z', logId: 'log-in', deviceId: 'dev-1',
   } as SmsRowData
 }
 
@@ -183,7 +193,7 @@ beforeEach(() => {
   state = { registeredLast4: ['0001', '5124'], logs: [], expenses: [], incomes: [], gate: null }
   // The route inserts the log row as 'processing' before it dispatches.
   for (const id of ['log-out', 'log-in']) {
-    state.logs.push({ id, kind: null, amount: 0, raw_body: id === 'log-out' ? OUT_REF : IN_REF, account_last4: null, status: 'processing', parsed_ok: false, paired: false, expense_id: null, income_id: null })
+    state.logs.push({ id, kind: null, amount: 0, raw_body: id === 'log-out' ? OUT_REF : IN_REF, account_last4: null, status: 'processing', parsed_ok: false, paired: false, device_id: 'dev-1', received_at: id === 'log-out' ? '2026-07-18T18:56:43Z' : '2026-07-18T18:55:51Z', counterparty_hash: null, own_transfer_verdict: null, expense_id: null, income_id: null })
   }
 })
 afterEach(() => { vi.useRealTimers() })

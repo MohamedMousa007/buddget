@@ -3039,6 +3039,13 @@ export interface Dictionary {
     passThroughYes: string
     passThroughNo: string
     passThroughApplied: (n: number) => string
+    ownTransferAskTitle: string
+    ownTransferAskBody: (detail: string) => string
+    ownTransferYes: string
+    ownTransferNo: string
+    ownTransferSettledTitle: string
+    ownTransferSettledBody: (detail: string) => string
+    ownTransferOk: string
     addCard: string
     addAccount: string
     addWallet: string

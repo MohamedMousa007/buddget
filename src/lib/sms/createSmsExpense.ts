@@ -135,6 +135,10 @@ export interface SmsRowData {
   occurrenceDate?: string | null
   /** Force a specific category (overrides kind/hint mapping). */
   categoryOverride?: ExpenseCategory | null
+  /** The device that captured the message, when the app reported one. */
+  deviceId?: string | null
+  /** Per-user salted hash of the transfer counterparty's name (ownTransferDecision.ts). Never the name. */
+  counterpartyHash?: string | null
   /**
    * The bank the provider cascade named (providerCascade.ts), or null when no trusted stage could. Undefined on
    * callers that did not run the cascade. An AI guess is never here.

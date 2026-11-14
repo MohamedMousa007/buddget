@@ -3320,6 +3320,30 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_own_transfer_answers: {
+        Row: {
+          account_a: string
+          account_b: string
+          answered_at: string
+          is_own: boolean
+          user_id: string
+        }
+        Insert: {
+          account_a: string
+          account_b: string
+          answered_at?: string
+          is_own: boolean
+          user_id: string
+        }
+        Update: {
+          account_a?: string
+          account_b?: string
+          answered_at?: string
+          is_own?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       sms_parse_log: {
         Row: {
           device_id: string | null
@@ -3351,6 +3375,10 @@ export type Database = {
           learn_template_id: string | null
           skeleton_key: string | null
           shape_key: string | null
+          own_transfer_signals: string[] | null
+          own_transfer_verdict: string | null
+          own_transfer_candidate: string | null
+          counterparty_hash: string | null
           bank_source: string | null
           format_key: string | null
           bank_suggestion: string | null
@@ -3410,6 +3438,10 @@ export type Database = {
           learn_template_id?: string | null
           skeleton_key?: string | null
           shape_key?: string | null
+          own_transfer_signals?: string[] | null
+          own_transfer_verdict?: string | null
+          own_transfer_candidate?: string | null
+          counterparty_hash?: string | null
           bank_source?: string | null
           format_key?: string | null
           bank_suggestion?: string | null
@@ -3469,6 +3501,10 @@ export type Database = {
           learn_template_id?: string | null
           skeleton_key?: string | null
           shape_key?: string | null
+          own_transfer_signals?: string[] | null
+          own_transfer_verdict?: string | null
+          own_transfer_candidate?: string | null
+          counterparty_hash?: string | null
           bank_source?: string | null
           format_key?: string | null
           bank_suggestion?: string | null

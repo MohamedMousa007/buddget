@@ -37,6 +37,12 @@ import {
 import {
   isOwnAccountTransfer,
   hasOppositeLegOnSameAccount,
+  findOwnTransferCandidate,
+  publishTransferLeg,
+  pauseForSibling,
+  countersOwnAccountDigits,
+  rememberedOwnAnswer,
+  recordOwnTransferEvidence,
   isOwnTopUpTarget,
   namesOwnStoredValue,
   retagSiblingAsTransfer,
@@ -49,6 +55,7 @@ import {
 } from './pairing'
 import { detectLegDirection, guardDirection } from './directionGuard'
 import { fxLegAction } from './fxEvent'
+import { decideOwnTransfer } from './ownTransferDecision'
 import { normalizeDigits } from './normalizeDigits'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
@@ -316,42 +323,43 @@ export async function createSmsTransaction(
         ? ['instant_transfer_in', 'own_transfer']
         : ['instant_transfer_out', 'own_transfer']
 
-    // 1b. Same IPN reference on both legs — definitive; only the user's own account receives
-    //     the inbound SMS, so an out+in leg sharing a reference is an own transfer for certain.
+    // 1b. Several signals decide, never one (ownTransferDecision.ts). The candidate is only READ here; it is claimed
+    //     below and only when the evidence is strong. Everything found is logged with both rows either way.
     const reference = extractIpnReference(row.rawBody)
-    let sibling = reference
-      ? await tryPairLeg(service, {
-          userId: row.userId,
-          logId: row.logId,
-          receivedAtIso: row.receivedAtIso,
-          amount: row.amount,
-          accountLast4: row.last4 ?? null,
-          kind,
-          matchKinds,
-          reference,
-        })
-      : null
+    // Two legs arriving together each look before the other has persisted anything: publish this leg first, and
+    // look a second time after a short pause when the first look finds nothing.
+    await publishTransferLeg(service, { logId: row.logId, kind, amount: row.amount, accountLast4: row.last4 ?? null, counterpartyHash: row.counterpartyHash ?? null })
+    const lookFor = { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, kind, reference }
+    const candidate = (await findOwnTransferCandidate(service, lookFor)) ?? (await pauseForSibling().then(() => findOwnTransferCandidate(service, lookFor)))
+    const mine = row.last4 ?? null
+    const theirs = candidate?.accountLast4 ?? null
+    const decision = decideOwnTransfer({
+      differentAccounts: !!mine && !!theirs && mine !== theirs,
+      // The same account on both legs is money passing through the user: never an own transfer.
+      sameAccount: (!!mine && !!theirs && mine === theirs) ||
+        (await hasOppositeLegOnSameAccount(service, { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, accountLast4: mine, kind })),
+      sameDevice: !!candidate && !!row.deviceId && !!candidate.deviceId && row.deviceId === candidate.deviceId,
+      amountsEqual: !!candidate && Math.abs(candidate.amount - row.amount) < 0.005,
+      withinFee: !!candidate,
+      sameReference: candidate?.sameReference ?? false,
+      sameCounterpartyHash: !!candidate && !!row.counterpartyHash && row.counterpartyHash === candidate.counterpartyHash,
+      counterpartyIsOwnAccount: await countersOwnAccountDigits(service, row.userId, row.counterpartyLast4 ?? null),
+      counterpartyIsProfileName: row.counterpartyIsSelf === true,
+      answered: candidate ? await rememberedOwnAnswer(service, row.userId, mine, theirs) : null,
+    })
+    await recordOwnTransferEvidence(service, row.logId, candidate?.id ?? null, decision)
 
-    // 1c. Fallback for a garbled/absent reference: this leg's own account AND the sibling's are
-    //     both registered payment methods, within the window, amounts within the transfer fee.
-    // ponytail: can in theory pair two unrelated IPN transfers colliding within the window and
-    // fee tolerance — rare, and 1b handles the normal case first.
-    //     Not when the opposite leg is on this SAME account: that is money passing through the user, which is never
-    //     settled automatically (it stays income + spend, labelled for the user to decide).
-    if (
-      !sibling &&
-      !(await hasOppositeLegOnSameAccount(service, { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, accountLast4: row.last4 ?? null, kind })) &&
-      (await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row)))
-    ) {
+    let sibling: PairSibling | null = null
+    if (decision.verdict === 'settle' && candidate) {
       sibling = await tryPairLeg(service, {
         userId: row.userId,
         logId: row.logId,
         receivedAtIso: row.receivedAtIso,
         amount: row.amount,
-        accountLast4: row.last4 ?? null,
-        kind,
+        accountLast4: mine,
         matchKinds,
-        requireRegisteredSibling: true,
+        // By reference when both legs carry it (the amounts may differ by the fee); otherwise the exact amount.
+        ...(candidate.sameReference && reference ? { kind, reference } : { kind: 'own_transfer' as const }),
       })
     }
 

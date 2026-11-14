@@ -84,10 +84,120 @@ export async function isOwnAccountTransfer(
     .select('id')
     .eq('user_id', userId)
     .eq('last4', counterpartyLast4)
+    // An account the server created from a message is an inference, not the user's word: it cannot settle a
+    // transfer by itself (it still counts as one signal, see countersOwnAccountDigits).
+    .eq('provisional', false)
     .is('deleted_at', null)
     .limit(1)
     .maybeSingle()
   return !!data?.id
+}
+
+/** Signal `account`: the counterparty digits belong to ANY account of this user, registered or provisional. */
+export async function countersOwnAccountDigits(service: ServiceClient, userId: string, counterpartyLast4: string | null): Promise<boolean> {
+  if (!counterpartyLast4) return false
+  const { data } = await service.from('payment_methods').select('id').eq('user_id', userId).eq('last4', counterpartyLast4).is('deleted_at', null).limit(1).maybeSingle()
+  return !!data?.id
+}
+
+export interface OwnTransferCandidate {
+  id: string
+  amount: number
+  accountLast4: string | null
+  deviceId: string | null
+  counterpartyHash: string | null
+  sameReference: boolean
+}
+
+/**
+ * The opposite leg this one may be the other half of: unclaimed, inside the pairing window, carrying the same
+ * reference or, failing that, the nearest leg of a comparable amount. Read-only: nothing is claimed here, so a pair
+ * that is only going to be asked about keeps its pairing slot.
+ */
+export async function findOwnTransferCandidate(
+  service: ServiceClient,
+  p: { userId: string; logId: string; receivedAtIso: string; amount: number; kind: SmsExpenseKind; reference: string | null },
+): Promise<OwnTransferCandidate | null> {
+  const at = new Date(p.receivedAtIso).getTime()
+  if (!Number.isFinite(at)) return null
+  try {
+    const { data } = await service
+      .from('sms_parse_log')
+      .select('id, amount, account_last4, device_id, counterparty_hash, raw_body, received_at, own_transfer_verdict')
+      .eq('user_id', p.userId)
+      .eq('parsed_ok', true)
+      .eq('is_duplicate', false)
+      .is('paired_log_id', null)
+      .in('kind', p.kind === 'instant_transfer_out' ? ['instant_transfer_in', 'own_transfer'] : ['instant_transfer_out', 'own_transfer'])
+      .neq('id', p.logId)
+      .gte('received_at', new Date(at - PAIR_WINDOW_SECONDS * 1000).toISOString())
+      .lte('received_at', new Date(at + PAIR_WINDOW_SECONDS * 1000).toISOString())
+      .limit(20)
+    const rows = ((data ?? []) as Array<{ id: string; amount: number | null; account_last4: string | null; device_id: string | null; counterparty_hash: string | null; raw_body: string | null; received_at: string | null; own_transfer_verdict: string | null }>)
+      // A pair the user already said no to is never offered again.
+      .filter((r) => r.amount != null && r.own_transfer_verdict !== 'undone' && r.own_transfer_verdict !== 'declined')
+      .map((r) => ({ r, sameReference: !!p.reference && (r.raw_body ?? '').toLowerCase().includes(p.reference.toLowerCase()), gap: Math.abs(new Date(r.received_at ?? p.receivedAtIso).getTime() - at) }))
+      .filter((c) => c.sameReference || Math.abs((c.r.amount as number) - p.amount) <= transferFeeTolerance(Math.max(c.r.amount as number, p.amount)))
+      .sort((x, y) => Number(y.sameReference) - Number(x.sameReference) || x.gap - y.gap)
+    const best = rows[0]
+    return best ? { id: best.r.id, amount: best.r.amount as number, accountLast4: best.r.account_last4, deviceId: best.r.device_id, counterpartyHash: best.r.counterparty_hash, sameReference: best.sameReference } : null
+  } catch (e) {
+    console.warn('[sms/pairing] own-transfer candidate lookup failed', e)
+    return null
+  }
+}
+
+/** Makes this leg visible to a sibling that is being processed at the same moment (the route persists these only at the end). */
+export async function publishTransferLeg(
+  service: ServiceClient,
+  p: { logId: string; kind: SmsExpenseKind; amount: number; accountLast4: string | null; counterpartyHash: string | null },
+): Promise<void> {
+  const { error } = await service
+    .from('sms_parse_log')
+    .update({ kind: p.kind, parsed_ok: true, amount: p.amount, ...(p.accountLast4 ? { account_last4: p.accountLast4 } : {}), ...(p.counterpartyHash ? { counterparty_hash: p.counterpartyHash } : {}) })
+    .eq('id', p.logId)
+  if (error) console.warn('[sms/pairing] publishing transfer leg failed', error)
+}
+
+/** The wait before a second look for a sibling that arrived together with this leg. */
+export const pauseForSibling = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, PAIR_RETRY_DELAY_MS))
+
+const tailPair = (a: string, b: string): [string, string] => (a < b ? [a, b] : [b, a])
+
+/** The user's remembered answer for transfers between these two account tails, or null when never asked. */
+export async function rememberedOwnAnswer(service: ServiceClient, userId: string, a: string | null, b: string | null): Promise<boolean | null> {
+  if (!a || !b || a === b) return null
+  const [x, y] = tailPair(a, b)
+  try {
+    const { data } = await service.from('sms_own_transfer_answers').select('is_own').eq('user_id', userId).eq('account_a', x).eq('account_b', y).maybeSingle()
+    return data ? data.is_own === true : null
+  } catch {
+    return null
+  }
+}
+
+/** Remembers the user's answer for this pair of account tails. */
+export async function rememberOwnAnswer(service: ServiceClient, userId: string, a: string | null, b: string | null, isOwn: boolean): Promise<void> {
+  if (!a || !b || a === b) return
+  const [x, y] = tailPair(a, b)
+  await service.from('sms_own_transfer_answers').upsert({ user_id: userId, account_a: x, account_b: y, is_own: isOwn, answered_at: new Date().toISOString() })
+}
+
+/** Logs what was found for a transfer leg (and its candidate), whether or not anything was applied. Never throws. */
+export async function recordOwnTransferEvidence(
+  service: ServiceClient,
+  logId: string,
+  candidateId: string | null,
+  decision: { verdict: string; signals: readonly string[] },
+): Promise<void> {
+  try {
+    await service.from('sms_parse_log').update({ own_transfer_verdict: decision.verdict, own_transfer_signals: [...decision.signals], own_transfer_candidate: candidateId }).eq('id', logId)
+    if (candidateId && decision.verdict !== 'none') {
+      await service.from('sms_parse_log').update({ own_transfer_verdict: decision.verdict, own_transfer_signals: [...decision.signals], own_transfer_candidate: logId }).eq('id', candidateId)
+    }
+  } catch (e) {
+    console.warn('[sms/pairing] own-transfer evidence not recorded', e)
+  }
 }
 
 /**
