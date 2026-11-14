@@ -3422,6 +3422,7 @@ export type Database = {
           masked_body: string | null
           raw_sms_summary: string | null
           received_at: string
+          reference_hash: string | null
           savings_transaction_id: string | null
           sender: string | null
           sms_hash: string | null
@@ -3485,6 +3486,7 @@ export type Database = {
           masked_body?: string | null
           raw_sms_summary?: string | null
           received_at?: string
+          reference_hash?: string | null
           savings_transaction_id?: string | null
           sender?: string | null
           sms_hash?: string | null
@@ -3548,6 +3550,7 @@ export type Database = {
           masked_body?: string | null
           raw_sms_summary?: string | null
           received_at?: string
+          reference_hash?: string | null
           savings_transaction_id?: string | null
           sender?: string | null
           sms_hash?: string | null

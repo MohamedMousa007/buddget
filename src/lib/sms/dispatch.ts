@@ -22,7 +22,6 @@ import {
   createSmsExpense,
   createSmsDebtPayment,
   createSmsInstallmentPayment,
-  matchOriginalExpense,
   markExpenseRefunded,
   findRefundedTwin,
   mapKindToCategory,
@@ -56,6 +55,7 @@ import {
 import { detectLegDirection, guardDirection } from './directionGuard'
 import { fxLegAction } from './fxEvent'
 import { decideOwnTransfer } from './ownTransferDecision'
+import { isDeclineMessage, findDeclineTwin, findRefundOriginal } from './refundMatch'
 import { normalizeDigits } from './normalizeDigits'
 import { matchSalary } from './matchSalary'
 import { matchSubscription } from './matchSubscription'
@@ -67,6 +67,7 @@ export type SmsTxOutcome =
   | 'income'
   | 'income_matched'
   | 'refund_matched'
+  | 'refund_unmatched'
   | 'debt_payment'
   | 'transfer_single'
   | 'transfer_paired'
@@ -516,39 +517,48 @@ export async function createSmsTransaction(
     }
   }
 
-  // 3.5 Refund / decline → reverse the ORIGINAL expense instead of booking
-  //     one-time income. `declined`/reversal wording = no money moved.
+  // 3.5 Decline / refund. A decline moved no money: it never reads or changes a row it did not create (I2), and books
+  //     one net-zero row of its own. A refund (reversal wording included) stamps one earlier message's row, matched
+  //     from messages (I1), and with no match is booked outside income and outside spending, flagged, and asks.
   if (kind === 'refund' || kind === 'declined') {
-    const refundKind: 'refunded' | 'declined' =
-      kind === 'declined' || /declin|revers|reject|مرفوض|رفض|عكس/i.test(row.rawBody)
-        ? 'declined'
-        : 'refunded'
-    // Duplicate guard: same refund re-sent as differently-worded SMS. If an
-    // equal-amount charge on the same card was already reversed within ±3 days,
-    // ack against it instead of reversing a second unrelated charge.
+    if (isDeclineMessage(kind, row.rawBody)) {
+      // A repeat of the same decline within 3 days acknowledges against the earlier decline's own row, only.
+      const twin = await findDeclineTwin(service, row)
+      if (twin) {
+        return { ...base('refund_matched', kind), expenseId: twin.id, category: twin.category }
+      }
+      // Booked as kind `declined` even when the tier said refund: a refund-kind row would take the income path.
+      const res = await createSmsExpense(service, {
+        ...row,
+        kind: 'declined',
+        refundMark: { refundKind: 'declined', day: row.day },
+        noProvisionalAccount: true,
+      })
+      return {
+        ...base('expense', 'declined'),
+        expenseId: res.expenseId,
+        category: mapKindToCategory('declined', row.categoryHint, row.rawBody),
+        error: res.error,
+      }
+    }
+    // Duplicate guard: the same refund re-sent as differently-worded SMS. A refund of the same amount on the same
+    // card was already stamped within ±3 days, so ack against it instead of reversing a second unrelated charge.
     const twin = await findRefundedTwin(service, row)
     if (twin) {
       return { ...base('refund_matched', kind), expenseId: twin.id, category: twin.category }
     }
-    const match = await matchOriginalExpense(service, row)
-    if (match) {
-      const { error } = await markExpenseRefunded(service, match.id, refundKind, row.day, row.logId)
-      return { ...base('refund_matched', kind), expenseId: match.id, category: match.category, error }
+    const original = await findRefundOriginal(service, row)
+    if (original) {
+      const { error } = await markExpenseRefunded(service, original.id, 'refunded', row.day, row.logId)
+      return { ...base('refund_matched', kind), expenseId: original.id, category: original.category, error }
     }
-    if (refundKind === 'declined') {
-      // No original to reverse, but a decline moved no money — track it as a
-      // net-zero expense so the user sees it (never income).
-      const res = await createSmsExpense(service, { ...row, kind, refundMark: { refundKind, day: row.day } })
-      return {
-        ...base('expense', kind),
-        expenseId: res.expenseId,
-        category: mapKindToCategory(kind, row.categoryHint, row.rawBody),
-        error: res.error,
-      }
+    const res = await createSmsExpense(service, { ...row, kind, unmatchedRefund: true, smsFlags: ['refund_unmatched'] })
+    return {
+      ...base('refund_unmatched', kind),
+      expenseId: res.expenseId,
+      category: mapKindToCategory(kind, row.categoryHint, row.rawBody),
+      error: res.error,
     }
-    // Refunded with no match → one-time income (unchanged legacy behavior).
-    const res = await createSmsExpense(service, { ...row, kind: 'refund' })
-    return { ...base('income', kind), incomeId: res.incomeId, error: res.error }
   }
 
   // 4. Income → salary matching. A confident match posts the ACTUAL received

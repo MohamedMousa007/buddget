@@ -76,3 +76,12 @@ export function counterpartyHash(userId: string, name: string | null | undefined
   if (folded.split(' ').filter((p) => [...p].length >= 2).length < 2) return null
   return createHash('sha256').update(`${userId}|${folded}`).digest('hex').slice(0, 32)
 }
+
+/**
+ * A payment reference as a hash only this user's rows can be compared on, kept on the log row after the message text
+ * is purged. Case-folded because banks print the same reference in either case. The reference itself is never stored.
+ */
+export function referenceHash(userId: string, reference: string | null | undefined): string | null {
+  if (!reference) return null
+  return createHash('sha256').update(`${userId}|${reference.toLowerCase()}`).digest('hex').slice(0, 32)
+}

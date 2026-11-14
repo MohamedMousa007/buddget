@@ -57,7 +57,7 @@ import { bumpTemplateFailure } from '@/lib/sms/bumpTemplateFailure'
 import { checkAndAutoPromote } from '@/lib/sms/promotionChecker'
 import { lookupKeys, effectiveSender } from '@/lib/sms/routingKey'
 import { fetchCorrectionExemplar } from '@/lib/sms/correctionExemplar'
-import { createSmsTransaction, type SmsTxResult } from '@/lib/sms/dispatch'
+import { createSmsTransaction, extractIpnReference, type SmsTxResult } from '@/lib/sms/dispatch'
 import { rememberMerchantCategory } from '@/lib/sms/merchantCategoryCache'
 import { normalizeMerchant } from '@/lib/sms/merchantNormalizer'
 import { isGenericMerchant } from '@/lib/sms/merchantDictionary'
@@ -65,7 +65,7 @@ import { hasPersonCounterparty, isOwnName, ownNames } from '@/lib/sms/ownName'
 import { KNOWN_NON_TRANSACTION, isKnownNonTransaction } from '@/lib/sms/negativeCache'
 import { coarseShapeKey, maskSkeletonText } from '@/lib/sms/skeleton'
 import { resolveProvider } from '@/lib/sms/providerCascade'
-import { counterpartyHash } from '@/lib/sms/ownTransferDecision'
+import { counterpartyHash, referenceHash } from '@/lib/sms/ownTransferDecision'
 import { PAYMENT_BRANDS } from '@/lib/payment/paymentMethodDefaults'
 import { buildMerchantCategoryPrompt, MERCHANT_CATEGORY_CHOICES } from '@/lib/sms/merchantCategoryPrompt'
 import type { ExpenseCategory } from '@/lib/store/types'
@@ -1018,6 +1018,9 @@ export async function POST(request: Request) {
   // The counterparty's name as a per-user salted hash, so the two legs of one transfer can be compared on it
   // without the name ever being stored.
   const counterpartyNameHash = hasPersonCounterparty(parsed.kind) ? counterpartyHash(userId, parsed.merchant) : null
+  // The payment reference as a per-user hash, kept on the log row after the text is purged so a later refund can find
+  // this message by it.
+  const paymentReferenceHash = referenceHash(userId, extractIpnReference(message))
   const tx: SmsTxResult = senderHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
     userId,
     amount: parsed.amount,
@@ -1041,6 +1044,7 @@ export async function POST(request: Request) {
     providerKey: provider.bankKey,
     deviceId,
     counterpartyHash: counterpartyNameHash,
+    referenceHash: paymentReferenceHash,
   }, { exchangeRates: DEFAULT_MARKET_RATES })
 
   const { expenseId, incomeId, debtPaymentId } = tx
@@ -1157,6 +1161,7 @@ export async function POST(request: Request) {
       category: tx.category ?? parsed.category,
       account_last4: cleanLast4,
       counterparty_last4: cleanCpLast4,
+      reference_hash: paymentReferenceHash,
       // The APPLIED kind, for the same reason as the category above — and this one is
       // load-bearing: sms_try_pair matches siblings on this column, so writing the raw
       // parser kind would leave every reclassified leg unpairable by its own sibling.

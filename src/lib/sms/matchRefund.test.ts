@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { matchOriginalExpense, findRefundedTwin, type SmsRowData } from './createSmsExpense'
+import { findRefundedTwin, type SmsRowData } from './createSmsExpense'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /** Minimal chainable Supabase stub: every filter returns `this`; awaiting resolves `result`. */
@@ -23,42 +23,6 @@ const row = (over: Partial<SmsRowData> = {}): SmsRowData =>
     cleanTitle: null, merchantNormalized: null, merchant: null, bankName: null,
     categoryHint: null, source: 'sms', rawBody: '', last4: null, ...over,
   }) as SmsRowData
-
-describe('matchOriginalExpense', () => {
-  it('returns null when no candidate expense exists', async () => {
-    const res = await matchOriginalExpense(stub({ expenses: [] }), row())
-    expect(res).toBeNull()
-  })
-
-  it('returns the single candidate (rows arrive most-recent-first)', async () => {
-    const res = await matchOriginalExpense(
-      stub({ expenses: [{ id: 'e1', category: 'Food', description: 'Carrefour' }] }),
-      row(),
-    )
-    expect(res).toEqual({ id: 'e1', category: 'Food' })
-  })
-
-  it('prefers the candidate whose description matches the counterparty', async () => {
-    const res = await matchOriginalExpense(
-      stub({
-        expenses: [
-          { id: 'recent', category: 'Other', description: 'Uber' },
-          { id: 'match', category: 'Groceries', description: 'Spinneys Maadi' },
-        ],
-      }),
-      row({ merchant: 'Spinneys' }),
-    )
-    expect(res?.id).toBe('match')
-  })
-
-  it('resolves last4 to a payment method without throwing', async () => {
-    const res = await matchOriginalExpense(
-      stub({ payment_methods: [{ id: 'pm1', name: 'HSBC Egypt ••1234', last4: '1234' }], expenses: [{ id: 'e9', category: 'Food', description: 'x' }] }),
-      row({ last4: '1234' }),
-    )
-    expect(res?.id).toBe('e9')
-  })
-})
 
 describe('findRefundedTwin (duplicate-SMS guard)', () => {
   it('returns null when no already-refunded twin exists in the window', async () => {

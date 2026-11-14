@@ -34,7 +34,7 @@ const bodySchema = z
   .refine((d) => !!d.logId || !!d.hash, { message: 'Provide logId or hash' })
 
 const ROW_COLUMNS =
-  'id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code, matched_template_id'
+  'id, kind, clean_title, merchant_normalized, merchant, bank_name, amount, currency, category, raw_sms_summary, source, raw_body, received_at, account_last4, counterparty_last4, sender, expense_id, income_id, failure_code, matched_template_id, reference_hash'
 
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
@@ -161,6 +161,7 @@ export async function POST(request: Request) {
       // Carried so the direction-guard oracle can attribute a wrong `kind` back to the template
       // that produced it on this path too — a defect is no less real for being user-confirmed.
       matchedTemplateId: row.matched_template_id ?? null,
+      referenceHash: row.reference_hash ?? null,
     }, { exchangeRates: DEFAULT_MARKET_RATES, userConfirmed: true })
 
     const { expenseId, incomeId, debtPaymentId } = tx

@@ -18,6 +18,7 @@ import { toSupportedCurrency } from './ingestGuards'
 import { normalizeMerchant } from './merchantNormalizer'
 import { isServiceBill } from './merchantDictionary'
 import { resolveMerchantCategoryInfo, rememberMerchantCategory } from './merchantCategoryCache'
+import type { SmsFlag } from './smsFlags'
 
 export type SmsExpenseKind =
   | 'purchase' | 'online_purchase' | 'atm_withdrawal'
@@ -156,6 +157,17 @@ export interface SmsRowData {
   destinationLeg?: boolean
   /** When set, stamp the new expense as already reversed (standalone-declined case). */
   refundMark?: { refundKind: 'refunded' | 'declined'; day: string } | null
+  /** Per-user salted hash of the message's payment reference (ownTransferDecision.ts). Never the reference. */
+  referenceHash?: string | null
+  /** A decline moves no money, so it never creates a provisional account for its card (I2). */
+  noProvisionalAccount?: boolean
+  /**
+   * A refund no earlier purchase claimed: stored as an expense already marked refunded (net zero in every total),
+   * never as income, so the credit counts nowhere until the user says which purchase it was for (I1).
+   */
+  unmatchedRefund?: boolean
+  /** Server flags stamped on the row this call inserts. */
+  smsFlags?: SmsFlag[]
 }
 
 export interface CreateSmsExpenseResult {
@@ -497,7 +509,9 @@ export async function createSmsExpense(
 ): Promise<CreateSmsExpenseResult> {
   const title = smsTitle(row)
 
-  if (isIncomeKind(row.kind)) {
+  const smsFlags = row.smsFlags?.length ? row.smsFlags : null
+
+  if (isIncomeKind(row.kind) && !row.unmatchedRefund) {
     // A salary match links the event to its recurring template (source_type 'salary');
     // otherwise it's a standalone credit in the events ledger.
     const linked = !!row.templateId
@@ -520,6 +534,7 @@ export async function createSmsExpense(
         payment_method_id: await resolveCreditAccount(service, row),
         occurred_at: row.receivedAtIso ?? null,
         notes: null,
+        sms_flags: smsFlags,
       })
       .select('id')
       .single()
@@ -551,7 +566,7 @@ export async function createSmsExpense(
       : await resolvePaymentMethodByLast4(service, row.userId, row.last4, {
           sender: row.sender,
           bankName: row.bankName,
-        }, { currency: row.currency, rawBody: row.rawBody })
+        }, row.noProvisionalAccount ? undefined : { currency: row.currency, rawBody: row.rawBody })
   let mappedCategory = row.categoryOverride ?? mapKindToCategory(row.kind, row.categoryHint, row.rawBody)
   // Purchases are the only merchant-bearing spend kind. What is already known about the merchant (the user's own
   // correction, the dictionary, their earlier purchases there, the shared memory) outranks this one message's
@@ -579,6 +594,8 @@ export async function createSmsExpense(
     : row.kind === 'own_transfer' || row.kind === 'currency_exchange' ? await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)
     : null
 
+  const refundMark = row.refundMark ?? (row.unmatchedRefund ? { refundKind: 'refunded' as const, day: row.day } : null)
+
   const { data, error } = await service
     .from('expenses')
     .insert({
@@ -595,9 +612,10 @@ export async function createSmsExpense(
       notes: null,
       linked_subscription_id: row.linkedSubscriptionId ?? null,
       sms_log_id: row.logId ?? null,
-      refunded_at: row.refundMark ? row.refundMark.day : null,
-      refund_kind: row.refundMark?.refundKind ?? null,
-      refund_sms_log_id: row.refundMark ? row.logId ?? null : null,
+      refunded_at: refundMark ? refundMark.day : null,
+      refund_kind: refundMark?.refundKind ?? null,
+      refund_sms_log_id: refundMark ? row.logId ?? null : null,
+      sms_flags: smsFlags,
     })
     .select('id')
     .single()
@@ -725,7 +743,7 @@ const REFUND_DEDUPE_DAYS = 3
  * SMS (distinct sms_hash, so the route dedupe misses them). If an expense with
  * the SAME amount + currency + card was ALREADY reversed within ±3 days, the new
  * SMS is that same refund — return the twin so it acks without reversing a second
- * unrelated charge (or creating a duplicate standalone-declined row).
+ * unrelated charge. Only a row stamped by a refund counts: a decline's own row never stands for a refund (I2).
  */
 export async function findRefundedTwin(
   service: ServiceClient,
@@ -743,6 +761,7 @@ export async function findRefundedTwin(
     .eq('user_id', row.userId)
     .eq('currency', dbCurrency(row.currency))
     .eq('amount', row.amount)
+    .eq('refund_kind', 'refunded')
     .not('refunded_at', 'is', null)
     .is('deleted_at', null)
     .gte('refunded_at', lo.toISOString().slice(0, 10))
@@ -754,48 +773,6 @@ export async function findRefundedTwin(
   const { data } = await q
   const best = data?.[0]
   return best ? { id: best.id, category: best.category as string } : null
-}
-
-/**
- * Finds the original expense a refund/decline SMS reverses. Requires an EXACT
- * amount + currency match on an un-refunded row within a 90-day back-window;
- * when the SMS carries a card last4 that resolves to a specific payment method,
- * that must match too. Ties break toward a description matching the counterparty,
- * then the most recent charge. Returns null when nothing qualifies (→ fallback).
- */
-export async function matchOriginalExpense(
-  service: ServiceClient,
-  row: SmsRowData,
-): Promise<{ id: string; category: string } | null> {
-  const from = new Date(row.day)
-  from.setUTCDate(from.getUTCDate() - 90)
-  const fromDay = from.toISOString().slice(0, 10)
-
-  const pmId = await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
-
-  let q = service
-    .from('expenses')
-    .select('id, category, description')
-    .eq('user_id', row.userId)
-    .eq('currency', dbCurrency(row.currency))
-    .eq('amount', row.amount)
-    .is('refunded_at', null)
-    .is('deleted_at', null)
-    .gte('expense_date', fromDay)
-    .lte('expense_date', row.day)
-    .order('expense_date', { ascending: false })
-  if (pmId) q = q.eq('payment_method_id', pmId)
-
-  const { data } = await q
-  if (!data || data.length === 0) return null
-
-  // Rows arrive most-recent-first; a stable sort floats a counterparty-name
-  // match to the top without disturbing the recency order among equals.
-  const counterparty = (row.merchant ?? row.merchantNormalized ?? '').toLowerCase()
-  const best = counterparty
-    ? (data.find((e) => (e.description ?? '').toLowerCase().includes(counterparty)) ?? data[0])
-    : data[0]
-  return { id: best.id, category: best.category as string }
 }
 
 /** Stamps an existing expense as reversed. The updated_at trigger propagates it to clients. */
