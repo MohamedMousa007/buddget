@@ -14,12 +14,12 @@
  *  - Confidence >= 0.6 → expense/income auto-added immediately.
  *  - Confidence < 0.6 → ignored (logged but not stored as an expense).
  */
-import { aiCallsToday } from '@/lib/sms/aiUsage'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { usageFromGemini, type TokenUsage } from '@/lib/server/ai/units'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
@@ -98,11 +98,12 @@ const GEMINI_MODEL = 'gemini-2.5-flash'
 const SOURCE_ACCOUNT_KINDS: ReadonlySet<string> = new Set(['purchase', 'online_purchase', 'atm_withdrawal', 'fee'])
 /** Typical cost of one SMS parse (prompt plus a short JSON answer) in quota units. */
 const SMS_PARSE_UNITS = 1500
+/** failure_code of a message held because the user's SMS model-call allowance was spent (or AI is paused); it is parsed when the user reviews it. */
+const AI_QUOTA_HOLD = 'ai_quota_held'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 /** The key travels in a header, never the URL, so request-URL logs and proxies cannot capture it. */
 const geminiHeaders = (apiKey: string) => ({ 'Content-Type': 'application/json', 'x-goog-api-key': apiKey })
 
-const RATE_LIMIT_PER_DAY = 100
 const CONFIRM_CONFIDENCE = 0.6
 const PATTERN_LEARN_CONFIDENCE = 0.9
 // Share of parses that trigger the background adjudication pass (the zero-variance check runs on a database
@@ -906,7 +907,7 @@ export async function POST(request: Request) {
     // transaction date and payment instrument too, instead of falling back to arrival time.
     txDay = staticMatch.txDay
     paymentInstrument = staticMatch.paymentInstrument
-  } else if (shadowMatches.length > 0 && !aiAvailable(await geminiBudget(service, userId))) {
+  } else if (shadowMatches.length > 0 && !aiAvailable(await geminiBudget())) {
     // C4 — quarantine must never cost the user a transaction. Shadow mode routes this SMS to AI,
     // but if AI is unavailable (no key, or the user is at their daily cap) the only reading we
     // have is the quarantined template's. Use it rather than dropping the SMS, and flag the row
@@ -940,17 +941,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Rate-limit (per UTC day — counts Gemini calls only).
-    if ((await aiCallsToday(service as never, userId)) >= RATE_LIMIT_PER_DAY) {
-      await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new', is_duplicate: true })
-        .eq('id', logId)
-      return NextResponse.json(
-        { error: 'Daily SMS parse quota reached', limit: RATE_LIMIT_PER_DAY },
-        { status: 429 },
-      )
-    }
-
     // The system's memory. If a user previously corrected a parse of this same message SHAPE,
     // that correction is injected into the prompt — otherwise the model has no recollection and
     // reproduces the identical mistake for the next user, which is exactly what made retiring a
@@ -960,18 +950,32 @@ export async function POST(request: Request) {
     // Same wheel as every other AI surface; an SMS parse is about this many tokens in and out.
     const quota = await reserveAiQuota({ userId, feature: 'sms', estUnits: SMS_PARSE_UNITS })
     if (!quota.allowed) {
-      await service.from('sms_parse_log')
-        .update({ status: 'failed', failure_code: 'rate_limited', parse_method: 'ai_new', is_duplicate: true })
+      // A spent allowance never costs the user a message: it waits in the review list and the phone is told it was
+      // received. Only a broken quota store answers 5xx, so the phone keeps the message and tries again.
+      if (quota.layer === 'unavailable') {
+        await service.from('sms_parse_log')
+          .update({ status: 'failed', failure_code: 'quota_unavailable', parse_method: 'ai_new', is_duplicate: true })
+          .eq('id', logId)
+        return quotaDeniedResponse(quota)
+      }
+      const { error: heldErr } = await service.from('sms_parse_log')
+        .update({ status: 'logged', parsed_ok: true, awaiting_confirmation: true, failure_code: AI_QUOTA_HOLD, parse_method: 'ai_new', harvested_at: new Date().toISOString() })
         .eq('id', logId)
-      return quotaDeniedResponse(quota)
+      if (heldErr) {
+        console.error('[sms/parse] quota hold write failed', heldErr)
+        return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
+      }
+      after(() => nudgeUser(userId, 'sms', { logId }))
+      return NextResponse.json({ ok: true, held: true, reason: AI_QUOTA_HOLD, layer: quota.layer, resetAt: quota.resetAt })
     }
     const geminiStarted = Date.now()
+    let usage: TokenUsage = { promptTokens: SMS_PARSE_UNITS, cachedTokens: 0, outputTokens: 0 }
     const settleSms = (status: 'ok' | 'error') =>
-      settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - geminiStarted, usage: { promptTokens: SMS_PARSE_UNITS, cachedTokens: 0, outputTokens: 0 }, status })
+      settleAiQuota(quota, { model: GEMINI_MODEL, tier: 'smart', latencyMs: Date.now() - geminiStarted, usage, status })
 
     // Call Gemini.
     try {
-      parsed = await callGemini(apiKey, message, exemplar)
+      parsed = await callGemini(apiKey, message, exemplar, (u) => { usage = u })
       await settleSms('ok')
     } catch (e) {
       await settleSms('error')
@@ -1668,13 +1672,9 @@ export async function POST(request: Request) {
  * ParsedTx shape. Returns null on any failure so the caller can leave its work pending rather
  * than record a wrong verdict.
  */
-/** Remaining AI headroom for a user: null when unconfigured, else calls left today. */
-async function geminiBudget(
-  service: ReturnType<typeof createServiceRoleClient>,
-  userId: string,
-): Promise<number | null> {
-  if (!process.env.GEMINI_API_KEY?.trim()) return null
-  return RATE_LIMIT_PER_DAY - (await aiCallsToday(service as never, userId))
+/** Whether an AI call can be attempted at all: null when unconfigured. The allowance itself is checked when the call is reserved. */
+async function geminiBudget(): Promise<number | null> {
+  return process.env.GEMINI_API_KEY?.trim() ? 1 : null
 }
 
 function aiAvailable(budget: number | null): boolean {
@@ -1742,7 +1742,7 @@ function aiKind(kind: unknown): SmsExpenseKind {
   return isSmsExpenseKind(kind) ? kind : 'other'
 }
 
-async function callGemini(apiKey: string, message: string, exemplar?: string | null): Promise<ParsedTx> {
+async function callGemini(apiKey: string, message: string, exemplar?: string | null, onUsage?: (usage: TokenUsage) => void): Promise<ParsedTx> {
   const body = {
     contents: [
       {
@@ -1774,7 +1774,9 @@ async function callGemini(apiKey: string, message: string, exemplar?: string | n
   }
   const payload = (await res.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; cachedContentTokenCount?: number; thoughtsTokenCount?: number }
   }
+  if (onUsage && typeof payload.usageMetadata?.promptTokenCount === 'number') onUsage(usageFromGemini(payload.usageMetadata))
   const raw = payload.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
   if (!raw) throw new Error('Empty AI response')
 

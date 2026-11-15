@@ -11,6 +11,8 @@ const h = vi.hoisted(() => ({
   counterDown: false,
   neighbourRows: [] as Array<Record<string, unknown>>,
   geminiRegexOk: false,
+  quota: { allowed: true } as Record<string, unknown>,
+  settled: [] as Array<Record<string, unknown>>,
   learnGates: vi.fn(),
   loadReplay: vi.fn(),
 }))
@@ -23,7 +25,7 @@ vi.mock('@/lib/sms/deviceGate', () => ({ smsDeviceGate: async () => null }))
 vi.mock('@/lib/server/userTimeZone', () => ({ getUserTimeZone: async () => 'Africa/Cairo' }))
 vi.mock('@/lib/sms/curatedDbCache', () => ({ getCuratedDbTemplates: async () => [], TEMPLATE_COLUMNS: '*', invalidateCuratedDbCache: () => {} }))
 vi.mock('@/lib/sms/correctionExemplar', () => ({ fetchCorrectionExemplar: async () => null }))
-vi.mock('@/lib/server/ai/quota', () => ({ reserveAiQuota: async () => ({ allowed: true }), settleAiQuota: async () => {}, quotaDeniedResponse: () => new Response(null, { status: 429 }) }))
+vi.mock('@/lib/server/ai/quota', () => ({ reserveAiQuota: async () => h.quota, settleAiQuota: async (_g: unknown, a: Record<string, unknown>) => { h.settled.push(a) }, quotaDeniedResponse: (d: { layer: string }) => new Response(null, { status: d.layer === 'unavailable' ? 503 : 429 }) }))
 vi.mock('@/lib/sms/meteredAi', () => ({ withSmsAiQuota: async (_u: string, _n: number, _m: string, call: () => Promise<unknown>) => ({ denied: false, value: await call() }) }))
 vi.mock('@/lib/sms/replayLoader', () => ({ loadReplayCases: h.loadReplay }))
 vi.mock('@/lib/sms/learnGates', () => ({ runLearnGates: h.learnGates }))
@@ -68,7 +70,7 @@ const geminiJson = (obj: unknown) => ({ ok: true, status: 200, text: async () =>
 const learnUpdates = () => h.ops.filter((o) => o.table === 'sms_parse_log' && o.op === 'update' && o.values && 'learn_status' in o.values).map((o) => o.values!.learn_status)
 
 beforeEach(() => {
-  h.limited = false; h.counterDown = false; h.ops.length = 0; h.afters.length = 0; h.siblings = []; h.neighbourRows = []
+  h.quota = { allowed: true }; h.settled.length = 0; h.limited = false; h.counterDown = false; h.ops.length = 0; h.afters.length = 0; h.siblings = []; h.neighbourRows = []
   h.learnGates.mockReset().mockReturnValue({ ok: false, status: 'gate_stub' })
   h.loadReplay.mockReset().mockResolvedValue([])
   process.env.GEMINI_API_KEY = 'test-key'
@@ -249,5 +251,35 @@ describe('AI-learning hooks', () => {
       const { insert } = await learnFrom(PERSONAL, { kind: 'remittance', amount: 120.5 })
       expect(insert!.values!.kind).toBe('other')
     })
+  })
+})
+
+describe('S6 SMS model-call allowance', () => {
+  const aiParse = { is_transaction: true, amount: 120.5, currency: 'EGP', merchant: 'Test Shop', bank_name: 'Test Bank', category: null, confidence: 0.95, kind: 'purchase', cleanTitle: 'Test Shop', detectedAccountLast4: '1234', detectedCounterpartyLast4: null, merchantNormalized: null }
+  const parseLogWrites = () => h.ops.filter((o) => o.table === 'sms_parse_log' && o.op === 'update').map((o) => o.values!)
+
+  it('holds the message for review and answers 2xx when the allowance is spent, never writing rate_limited', async () => {
+    h.quota = { allowed: false, layer: 'sms_day', resetAt: '2026-11-16T00:00:00Z' }
+    vi.stubGlobal('fetch', vi.fn(async () => geminiJson(aiParse)))
+    const res = await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: RECEIVED })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ ok: true, held: true, reason: 'ai_quota_held', layer: 'sms_day' })
+    const writes = parseLogWrites()
+    expect(writes.some((w) => w.awaiting_confirmation === true && w.failure_code === 'ai_quota_held' && w.status === 'logged')).toBe(true)
+    expect(writes.some((w) => w.failure_code === 'rate_limited')).toBe(false)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('answers 5xx, so the phone retries, only when the quota store itself is down', async () => {
+    h.quota = { allowed: false, layer: 'unavailable', resetAt: null }
+    const res = await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: RECEIVED })
+    expect(res.status).toBe(503)
+    expect(parseLogWrites().some((w) => w.failure_code === 'quota_unavailable')).toBe(true)
+  })
+
+  it('settles the token counts the provider returned instead of the flat estimate', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ...geminiJson(aiParse), json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(aiParse) }] } }], usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 60, cachedContentTokenCount: 100 } }) })))
+    await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: RECEIVED })
+    expect(h.settled[0]).toMatchObject({ status: 'ok', usage: { promptTokens: 900, cachedTokens: 100, outputTokens: 60 } })
   })
 })

@@ -19,6 +19,9 @@ export type QuotaLayer =
   | 'chat_messages_day'
   | 'receipts_month'
   | 'voice_day'
+  | 'sms_day'
+  | 'sms_month'
+  | 'sparks'
   | 'unavailable'
 
 export interface QuotaGrant {

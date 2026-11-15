@@ -45,3 +45,11 @@ describe('quotaDeniedMessage', () => {
     expect(msg).toMatch(/reset/i)
   })
 })
+
+describe('unit-window denials (S5c item 12)', () => {
+  it.each(['window_5h', 'window_24h', 'window_7d'])('%s names the reset time and offers no upgrade', (layer) => {
+    const text = quotaDeniedMessage(layer, '2026-11-16T10:30:00Z', 'en')
+    expect(text).toMatch(/resets around/)
+    expect(text).not.toMatch(/upgrade|plus|spark/i)
+  })
+})
