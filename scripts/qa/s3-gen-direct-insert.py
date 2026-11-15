@@ -9,15 +9,22 @@ failed check (so nothing persists) and returns silently when every check passes.
 """
 import argparse
 
-# prefix, user prefix, type, table, description (None = the log's clean_title), category, amount, currency, day, refund_kind, reference kind
+# prefix, user prefix, type, table, description (None = the log's clean_title), category, amount, currency, day, refund_kind, reference kind, sms_flags
+# T4 and T8 have no live app-booked reference: their reference kinds 'cashdep' and 'refund' are asserted column by column below
+# (docs/launch/S3b-apply.md section 8), traced to cashDeposit.ts / dispatch.ts / createSmsExpense.ts.
 ROWS = [
-    ('0fe8887c', 'f923c68b', 'T7b', 'expenses', 'Bank transaction', 'Other', '4000', 'EGP', '2026-09-09', 'declined', 'declined'),
-    ('4a7d7250', '6090c8e7', 'T7b', 'expenses', 'Anthropic', 'Other', '5.7', 'USD', '2026-10-27', 'declined', 'declined'),
-    ('540077ff', 'f923c68b', 'T6', 'expenses', 'Apple.Com/Bill', 'Subscription', '99.99', 'SAR', '2026-08-10', None, 'apple'),
-    ('fa2a8ec2', 'b85f074d', 'T6', 'expenses', 'Sahl', 'Other', '499.05', 'EGP', '2026-07-13', None, 'purchase'),
-    ('ad8523cb', 'b85f074d', 'T6', 'expenses', None, 'ATM Cash Withdrawal', '1000', 'EGP', '2026-07-12', None, 'atm'),
-    ('916e58d4', 'f923c68b', 'T6', 'income_events', None, 'other', '100', 'SAR', '2026-09-11', None, 'income'),
-    ('acbe9dd7', 'f923c68b', 'T6', 'income_events', None, 'other', '100', 'SAR', '2026-08-13', None, 'income'),
+    ('0fe8887c', 'f923c68b', 'T7b', 'expenses', 'Bank transaction', 'Other', '4000', 'EGP', '2026-09-09', 'declined', 'declined', None),
+    ('4a7d7250', '6090c8e7', 'T7b', 'expenses', 'Anthropic', 'Other', '5.7', 'USD', '2026-10-27', 'declined', 'declined', None),
+    ('540077ff', 'f923c68b', 'T6', 'expenses', 'Apple.Com/Bill', 'Subscription', '99.99', 'SAR', '2026-08-10', None, 'apple', None),
+    ('fa2a8ec2', 'b85f074d', 'T6', 'expenses', 'Sahl', 'Other', '499.05', 'EGP', '2026-07-13', None, 'purchase', None),
+    ('ad8523cb', 'b85f074d', 'T6', 'expenses', None, 'ATM Cash Withdrawal', '1000', 'EGP', '2026-07-12', None, 'atm', None),
+    ('916e58d4', 'f923c68b', 'T6', 'income_events', None, 'other', '100', 'SAR', '2026-09-11', None, 'income', None),
+    ('acbe9dd7', 'f923c68b', 'T6', 'income_events', None, 'other', '100', 'SAR', '2026-08-13', None, 'income', None),
+    ('0812aa55', 'f923c68b', 'T4', 'expenses', 'Cash deposit', 'Transfer', '50', 'SAR', '2026-09-21', None, 'cashdep', ['cash_deposit']),
+    ('78e0b305', 'f923c68b', 'T4', 'expenses', 'Cash deposit', 'Transfer', '700', 'SAR', '2026-08-10', None, 'cashdep', ['possible_duplicate', 'cash_deposit']),
+    ('cb5fd476', 'f923c68b', 'T4', 'expenses', 'Cash deposit', 'Transfer', '700', 'SAR', '2026-08-10', None, 'cashdep', ['cash_deposit']),
+    ('a19ff882', 'f923c68b', 'T8', 'expenses', None, 'Other', '0.23', 'SAR', '2026-10-21', 'refunded', 'refund', ['refund_unmatched']),
+    ('ec6ae237', 'f923c68b', 'T8', 'expenses', None, 'Other', '29', 'SAR', '2026-09-03', 'refunded', 'refund', ['refund_unmatched']),
 ]
 
 TOTALS_SQL = r"""
@@ -41,22 +48,23 @@ ALLOWED = ['category_label', 'id', 'user_id', 'description', 'name', 'amount', '
 def sql(batch, types, only, rollback):
     rows = [r for r in ROWS if r[2] in types and (not only or r[0] in only)]
     values = ',\n      '.join(
-        "('{}','{}','{}','{}',{},'{}',{}::numeric,'{}','{}'::date,{},'{}')".format(
-            p, u, t, tb, "'" + d.replace("'", "''") + "'" if d else 'null', c, a, cur, day, "'" + rk + "'" if rk else 'null', ref)
-        for p, u, t, tb, d, c, a, cur, day, rk, ref in rows)
+        "('{}','{}','{}','{}',{},'{}',{}::numeric,'{}','{}'::date,{},'{}',{})".format(
+            p, u, t, tb, "'" + d.replace("'", "''") + "'" if d else 'null', c, a, cur, day, "'" + rk + "'" if rk else 'null', ref,
+            "array[" + ", ".join("'" + f + "'" for f in fl) + "]::text[]" if fl else 'null::text[]')
+        for p, u, t, tb, d, c, a, cur, day, rk, ref, fl in rows)
     allowed = ', '.join("'" + k + "'" for k in ALLOWED)
     return f"""do $$
 declare
   b constant text := '{batch}';
   rb constant boolean := {'true' if rollback else 'false'};
   totals_sql constant text := $q${TOTALS_SQL} $q$;
-  res text := ''; sp record; lg record; uid uuid; newid uuid; refid uuid; pm uuid; n int; bad int; oldptr uuid; ptrcol text; newj jsonb; refj jsonb; dk text; v_notif int; v_pushed int; v_signals int; v_discard int;
+  res text := ''; sp record; lg record; uid uuid; newid uuid; refid uuid; pm uuid; n int; bad int; oldptr uuid; ptrcol text; newj jsonb; refj jsonb; wantj jsonb; dk text; v_notif int; v_pushed int; v_signals int; v_discard int;
   t0 timestamptz := transaction_timestamp(); newids uuid[] := '{{}}'; pm_before int; fails int;
 begin
   perform set_config('statement_timeout', '90000', true);
   create temp table spec on commit drop as select * from (values
       {values}
-  ) v(prefix, usr, rtype, tbl, descr, cat, amt, ccy, dy, rk, ref);
+  ) v(prefix, usr, rtype, tbl, descr, cat, amt, ccy, dy, rk, ref, flags);
   select count(*) into n from spec;
   res := res || E'\\n' || 'INFO rows in scope ' || n;
   select count(*) into v_notif from notifications;
@@ -85,7 +93,7 @@ begin
       insert into expenses (user_id, expense_date, occurred_at, to_payment_method_id, description, category, category_source, amount, currency, payment_method_id, notes,
                             linked_subscription_id, sms_log_id, refunded_at, refund_kind, refund_sms_log_id, sms_flags)
       values (uid, sp.dy, lg.received_at, null, coalesce(sp.descr, lg.clean_title, 'Bank transaction'), sp.cat::public.expense_category, null, sp.amt, sp.ccy::public.currency_code, pm, null,
-              null, lg.id, case when sp.rk is not null then sp.dy end, sp.rk, case when sp.rk is not null then lg.id end, null)
+              null, lg.id, case when sp.rk is not null then sp.dy end, sp.rk, case when sp.rk is not null then lg.id end, sp.flags)
       returning id into newid;
       ptrcol := 'expense_id';
     else
@@ -107,11 +115,39 @@ begin
       perform private.s3_set('sms_parse_log', lg.id, jsonb_build_object(ptrcol, newid));
     end if;
     execute format('select %I from sms_parse_log where id = $1', ptrcol) into oldptr using lg.id;
-    res := res || E'\\n' || case when oldptr = newid then 'PASS' else 'FAIL' end || ' (' || sp.prefix || ') the log pointer names the new row';
+    -- a message that books a row (not an income) leaves income_id empty, as the route's promote writes it and as the flag action restores it
+    if sp.rtype in ('T4', 'T8') then
+      select income_id into oldptr from sms_parse_log where id = lg.id;
+      if oldptr is not null then
+        update sms_repair_audit set old_values = old_values || jsonb_build_object('income_id', oldptr), new_values = new_values || jsonb_build_object('income_id', null)
+         where batch = b and table_name = 'sms_parse_log' and row_id = lg.id and repair_type = sp.rtype and action = 'relink';
+        perform private.s3_set('sms_parse_log', lg.id, jsonb_build_object('income_id', null));
+      end if;
+    end if;
+    execute format('select %I from sms_parse_log where id = $1', ptrcol) into oldptr using lg.id;
+    res := res || E'\\n' || case when oldptr = newid and (select income_id is null from sms_parse_log where id = lg.id) or sp.rtype not in ('T4', 'T8') and oldptr = newid then 'PASS' else 'FAIL' end || ' (' || sp.prefix || ') the log pointer names the new row';
 
     -- the reference: a live row the app itself booked for the same kind, never an audited row
     refid := null;
-    if sp.tbl = 'expenses' then
+    if sp.ref in ('cashdep', 'refund') then
+      -- no live app-booked row of this kind exists: the expected row is traced to the booking code (S3b-apply.md section 8)
+      select to_jsonb(e) into newj from expenses e where e.id = newid;
+      wantj := jsonb_build_object('category', sp.cat, 'description', coalesce(sp.descr, lg.clean_title), 'amount', sp.amt, 'currency', sp.ccy, 'expense_date', sp.dy,
+                                  'occurred_at', lg.received_at, 'sms_flags', to_jsonb(sp.flags), 'payment_method_id', null, 'to_payment_method_id', null,
+                                  'category_source', null, 'linked_subscription_id', null, 'refund_kind', sp.rk,
+                                  'refunded_at', case when sp.rk is not null then to_jsonb(sp.dy::timestamptz) end, 'refund_sms_log_id', case when sp.rk is not null then to_jsonb(lg.id) end);
+      select string_agg(k, ',' order by k) into dk from jsonb_object_keys(wantj) k where newj -> k is distinct from wantj -> k;
+      res := res || E'\\n' || case when dk is null then 'PASS' else 'FAIL' end || ' (' || sp.prefix || ') every traced column equals what the booking code writes (differing: ' || coalesce(dk, 'none') || ')';
+      select (select jsonb_object_agg(k, case when wantj ? k then wantj -> k when k in ('is_recurring', 'is_debt_payment') then 'false'::jsonb when k = 'server_rev' then '0'::jsonb else 'null'::jsonb end)
+                from jsonb_object_keys(newj) k where k <> all (array['category_label', 'id', 'user_id', 'description', 'name', 'amount', 'currency', 'expense_date', 'received_date', 'occurred_at', 'created_at', 'updated_at', 'edited_at', 'sms_log_id', 'refund_sms_log_id', 'refunded_at']))
+             || (select jsonb_object_agg(k, newj -> k) from jsonb_object_keys(newj) k where k = any (array['category_label', 'id', 'user_id', 'description', 'name', 'amount', 'currency', 'expense_date', 'received_date', 'occurred_at', 'created_at', 'updated_at', 'edited_at', 'sms_log_id', 'refund_sms_log_id', 'refunded_at']))
+        into refj;
+      refid := newid;
+      -- the flag action's guards (flag-action/route.ts): cash_deposit needs sms_log_id, the flag and category Transfer; the refund prompt needs sms_log_id, refund_kind refunded and refund_unmatched
+      res := res || E'\\n' || case when (sp.ref = 'cashdep' and newj ->> 'sms_log_id' is not null and newj -> 'sms_flags' ? 'cash_deposit' and newj ->> 'category' = 'Transfer' and newj ->> 'deleted_at' is null)
+                                        or (sp.ref = 'refund' and newj ->> 'sms_log_id' is not null and newj ->> 'refund_kind' = 'refunded' and newj -> 'sms_flags' ? 'refund_unmatched' and newj ->> 'deleted_at' is null)
+                                   then 'PASS' else 'FAIL' end || ' (' || sp.prefix || ') the prompt action''s guard accepts the row';
+    elsif sp.tbl = 'expenses' then
       select e.id into refid from expenses e where e.deleted_at is null and e.notes is null and e.id <> newid and not exists (select 1 from sms_repair_audit a where a.row_id = e.id)
         and left(e.user_id::text, 8) = case when sp.ref = 'declined' then 'f923c68b' else sp.usr end
         and case sp.ref
@@ -131,7 +167,7 @@ begin
       select to_jsonb(i) into newj from income_events i where i.id = newid;
       select to_jsonb(i) into refj from income_events i where i.id = refid;
     end if;
-    res := res || E'\\n' || case when refid is not null then 'PASS' else 'FAIL' end || ' (' || sp.prefix || ') a live app-booked reference row exists (' || sp.ref || ', ' || coalesce(left(refid::text, 8), 'none') || ')';
+    res := res || E'\\n' || case when refid is not null then 'PASS' else 'FAIL' end || ' (' || sp.prefix || ') a reference exists: a live app-booked row, or for cashdep and refund the row traced to the booking code (' || sp.ref || ', ' || coalesce(left(refid::text, 8), 'none') || ')';
     select string_agg(k, ',' order by k) into dk from jsonb_object_keys(newj) k
       where newj -> k is distinct from refj -> k and k <> all (array[{allowed}]);
     res := res || E'\\n' || case when dk is null then 'PASS' else 'FAIL' end || ' (' || sp.prefix || ') columns outside the message''s own facts that differ from the reference: ' || coalesce(dk, 'none');
@@ -140,15 +176,12 @@ begin
   end loop;
 
   execute 'create temp table t_after on commit drop as ' || totals_sql;
-  create temp table t_pred on commit drop as
-    select (s.usr || '|' || split_part(e.key, '|', 1) || '|' || split_part(e.key, '|', 2)) as k,
-           sum(case when split_part(e.key, '|', 3) = 'spend' then e.value::numeric else 0 end) as spend,
-           sum(case when split_part(e.key, '|', 3) = 'income' then e.value::numeric else 0 end) as income
-    from spec s join sms_s3_input x on x.prefix = s.prefix, jsonb_each_text(coalesce(x.eff, '{{}}'::jsonb)) e group by 1;
+  -- no key may move (the T4 and T8 replacements are non-spend or net-zero); the table sms_s3_input that held the T6 prediction is dropped (0287)
+  create temp table t_pred on commit drop as select null::text as k, 0::numeric as spend, 0::numeric as income where false;
   select count(*) into bad from (select k from t_before union select k from t_after union select k from t_pred) keys
     where abs(coalesce((select spend from t_after a where a.k = keys.k), 0) - coalesce((select spend from t_before a where a.k = keys.k), 0) - coalesce((select spend from t_pred a where a.k = keys.k), 0)) > 0.005
        or abs(coalesce((select income from t_after a where a.k = keys.k), 0) - coalesce((select income from t_before a where a.k = keys.k), 0) - coalesce((select income from t_pred a where a.k = keys.k), 0)) > 0.005;
-  res := res || E'\\n' || case when bad = 0 then 'PASS' else 'FAIL' end || ' totals after the inserts equal before + the report prediction (mismatching keys ' || bad || ')';
+  res := res || E'\\n' || case when bad = 0 then 'PASS' else 'FAIL' end || ' totals after the inserts equal the totals before (no key moves) (mismatching keys ' || bad || ')';
   res := res || E'\\n' || 'INFO totals moved: ' || coalesce((select string_agg(a.k || ' spend ' || (a.spend - coalesce(bf.spend, 0)) || ' income ' || (a.income - coalesce(bf.income, 0)), '; ') from t_after a left join t_before bf using (k)
                                                         where a.spend <> coalesce(bf.spend, 0) or a.income <> coalesce(bf.income, 0)), 'none');
 

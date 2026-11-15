@@ -102,7 +102,7 @@ S1 only chased the four reported symptoms. S2b reviews the entire SMS logic end 
 - You approve a sample, then apply as a migration (rows are real money data; every change reversible, old values kept in an audit column or table).
 - Promotion: run the promotion checker against the **held-out** set; promote to curated only the templates that pass. Keep quarantine shadow mode on. Never bulk-promote unreviewed.
 Exit: repaired data, promoted templates with a recorded holdout result, rollback note.
-**Status (2026-11-15): repair done** (104 repairs applied and audited, totals match on 36 keys, nothing sent; 5 replacement rows held: see `docs/launch/S3b-apply.md` section 7 and S3 status; template promotion not part of this step). Commit: see git log for `S3b: inserts`.
+**Status (2026-11-15): repair done, nothing held** (109 repairs applied and audited across 12 inserts and 97 in-place changes, totals match on all 36 keys, nothing sent; details `docs/launch/S3b-apply.md` sections 7 and 8; template promotion is not part of this step). Commit: the one that adds section 8 of `S3b-apply.md`.
 
 Carried into S3 from S2 (2026-11-14): owner reviews the 15 relabels before they enter the gold set; old rows need `bank_source`, `format_key` and `shape_key` (the bank is re-derived from the masked body); rows flagged `template_revoked_at` are a repair input; `sms_try_pair` should refuse a same-account pair in SQL (today the guard is in `dispatch.ts`).
 

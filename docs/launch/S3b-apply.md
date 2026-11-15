@@ -135,12 +135,46 @@ Audit: 7 insert rows, 7 relink rows, none reverted. Every message now owns exact
 
 **Cleanup:** migration 0287 drops `sms_s3_input` (104 rows) and `sms_s3_totals_before` (36 rows); `database.types.ts` updated. `sms_repair_audit` and the functions of 0283 stay. The list is reproducible from `scripts/qa/s3-apply-input.json`.
 
+## 8. The 5 replacement rows (2026-11-15, reviewer amendment S3-dryrun section 14a)
+
+No live app-booked row exists for a cash-deposit transfer or an unmatched net-zero refund, so each column is traced to the booking code and its unit test instead; the rehearsal and the real run assert every traced column (`scripts/qa/s3-gen-direct-insert.py`, reference kinds `cashdep` and `refund`; a failed assertion aborts and rolls back). Input: `scripts/qa/s3-apply-input.json` (the helper table is dropped); the titles were read from the logs before S4's retention migration. New batch `s3-20261115-s3c` (the 7 inserts stay in `-s3`).
+
+**Cash-deposit transfer (T4, 3 rows).** Path: `createSmsTransaction` runs `cashDepositVerdict` (dispatch.ts, the cash-deposit verdict near the top; cashDeposit.ts) which turns the message into income with the flag, adds `cash_deposit` after any flag the route already carried (`possible_duplicate` for `78e0b305`, so the order is `possible_duplicate, cash_deposit`), and the income branch (`isIncomeKind`, the `cash_deposit` check) calls `createSmsExpense` with kind `own_transfer`, `destinationLeg: true`, `fromCash: true`, `cleanTitle: 'Cash deposit'`.
+
+| Column | Value | Set by | Asserted by |
+|---|---|---|---|
+| table | expenses (no income row) | `createSmsExpense`: `isIncomeKind('own_transfer')` is false | refundDispatch.test.ts "books a cash-machine deposit as a Transfer from the cash account ... with no income row" |
+| description | `Cash deposit` | `smsTitle`: `cleanTitle` override, `normalizeMerchant` leaves a mixed-case non-purchase title alone | dispatch call site (no test on the string; the flag-action route writes the same title for the income) |
+| category | Transfer, `category_source` null | `mapKindToCategory('own_transfer')`; `category_source` only set for purchases | same test (`category: 'Transfer'`) |
+| payment_method_id | null | `fromCash` gives `cashAccountFor`, and the user has no cash account | refundDispatch.test.ts "with no source account when the user has no cash account" |
+| to_payment_method_id | null | `inboundOwn` gives `resolveCreditAccount`: no account answers the tail, no sender or bank on the log, so no wallet; the provisional account the code would create is not created (section 7) | "to_payment_method_id truthy" test covers the case with an account; none here |
+| sms_flags | `[cash_deposit]` (`78e0b305`: `[possible_duplicate, cash_deposit]`) | dispatch line adding the flag, `createSmsExpense` insert `sms_flags` | same test (`sms_flags: ['cash_deposit']`); cashDeposit.test.ts for the verdict |
+| refund and link columns | null | insert statement | - |
+| amount, currency, day, occurred_at | the log's amount and currency, the report's day, the log's `received_at` | insert statement | report |
+
+**Unmatched refund (T8, 2 rows).** Path: dispatch step 3.5: not a decline, no twin, no original, so `createSmsExpense` with kind `refund`, `unmatchedRefund: true`, `smsFlags: ['refund_unmatched']`.
+
+| Column | Value | Set by | Asserted by |
+|---|---|---|---|
+| table | expenses (the income branch is skipped when `unmatchedRefund`) | `createSmsExpense` first condition | refundDispatch.test.ts "(a) ... booked as the unmatched-refund expense, no income row" |
+| description | the log's clean title as is | `smsTitle`: `normalizeMerchant` with a non-purchase kind only tidies all-caps, noise prefixes, asterisks and trailing digits, none present | - |
+| category | Other, `category_source` null | `mapKindToCategory('refund', hint)` with no hint | - |
+| refunded_at, refund_kind, refund_sms_log_id | the day, `refunded`, the message's own log | `refundMark` from `unmatchedRefund` | same test (`refund_kind: 'refunded', refund_sms_log_id: 'r0'`) |
+| sms_flags | `[refund_unmatched]` | the dispatch call replaces any earlier flags | same test (`sms_flags: ['refund_unmatched']`) |
+| payment_method_id | null | `resolvePaymentMethodByLast4`: no account for the tail, no sender, no default; no provisional account created (section 7) | - |
+
+The 2 refund descriptions carry the log's own title text, including a literal "null" where the parser had no merchant; that is what the code writes from that title.
+
+**Log pointer.** The route's promote writes `expense_id` and `income_id` from the booking result: `expense_id` = the new row, `income_id` = null. These 5 logs pointed at the retracted income, so one audited relink per message sets `expense_id` to the new row and `income_id` to null, with both old values kept (a revert restores both, checked in the rehearsal). The "It was income" action sets the pointers the opposite way, so this is the state it expects.
+
+**Prompt guards (checked on every new row).** The cash-deposit income action (flag-action route) needs `sms_log_id`, the `cash_deposit` flag and category Transfer: all five Transfer rows pass. The unmatched-refund prompt needs `sms_log_id`, `refund_kind = refunded` and the `refund_unmatched` flag: both refund rows pass.
+
+**Rehearsal** (all 5, rolled back): every check PASS, totals equal before (no key moves), nothing queued, no payment method created, the revert soft-deleted all 5 and restored both pointer columns (10 changes). **Real run:** `0812aa55` first (row `5111d595`, verified: row, audit with both old pointer values, totals, no notification), then T4 `78e0b305` (`77b7ebf8`) and `cb5fd476` (`ff02ed8c`), then T8 `a19ff882` (`122284a5`) and `ec6ae237` (`923a9361`). Audit: 5 insert, 5 relink, none reverted; each message owns exactly one live row; 0 notifications, push stamps, template signals or discard requests.
+
 ## S3 status (final)
 
-**Done:** step 1 (78 rows: T15 69, T3 5, T1 2, T2a 1, T2b 1), the 19 in-place step 2 rows (T4 4, T11 5, T5 7, T9 1, T8 2) and 7 inserts (T7b 2, T6 5): 104 repairs, every one audited and revertible with `sms_s3_revert(batch)` (batches `s3-20261115`, `-s2`, `-s3`). Totals match the prediction on all 36 keys. Nothing was sent to any user.
+**Done, nothing held:** step 1 (78 rows), the 19 in-place step 2 rows and all 12 inserts (T7b 2, T6 5, T4 3, T8 2): (78 + 19 + 12 = 109 repairs). Every repair is audited and revertible with `sms_s3_revert(batch)` (batches `s3-20261115`, `-s2`, `-s3`, `-s3c`). Totals match the full prediction on all 36 keys after the 7 inserts, and the 5 replacements moved no key. Nothing was sent to any user.
 
-**Held, 5 replacement rows (not booked):** the 3 cash-deposit transfers for the retracted T4 incomes and the 2 net-zero refund rows for the retracted T8 incomes. The owner's condition is a live row the app itself booked for the same kind; there is none for either kind (no unmatched-refund row and no cash-deposit transfer exists live that the app booked; the only cash-deposit row is a repaired ATM row). Those 5 messages have no live row; their wrong income is gone and the replacements are non-spend or net-zero, so no total is wrong. They stay held until someone accepts a non-live reference (the booking code and its tests) or the service-role key exists, when `scripts/qa/s3-insert.test.ts` books them.
+**Known gaps:** the cash-account balance effect of cash deposits is unmodelled (the user has no cash account, so the source is empty); the retagged top-ups (T11) have no destination wallet; the T5 prompt title reads "Card top-up" for a card payoff; inserted rows have no `category_label` until a phone syncs them; no provisional accounts for the inserted rows; two refund rows carry a title with a literal "null".
 
-**Known gaps:** the cash-account balance effect of cash deposits is unmodelled; the retagged top-ups (T11) have no destination wallet; the T5 prompt title reads "Card top-up" for a card payoff; the inserted rows have no `category_label` until a phone syncs them; no provisional accounts for the new rows.
-
-**Not verified:** nothing on a device (the app-side view of any repaired or inserted row); no bit-exact row hash after a revert (per-column and totals checks only).
+**Not verified:** nothing on a device (the app-side view of any repaired or inserted row, and the two prompt actions run against the new rows); no bit-exact row hash after a revert (per-column and totals checks only).
