@@ -3702,8 +3702,7 @@ export type Database = {
           device_id: string | null
           id: string
           is_active: boolean
-          token: string
-          token_hash: string | null
+          token_hash: string
           user_id: string
         }
         Insert: {
@@ -3711,8 +3710,7 @@ export type Database = {
           device_id?: string | null
           id?: string
           is_active?: boolean
-          token?: string
-          token_hash?: string | null
+          token_hash: string
           user_id: string
         }
         Update: {
@@ -3720,8 +3718,7 @@ export type Database = {
           device_id?: string | null
           id?: string
           is_active?: boolean
-          token?: string
-          token_hash?: string | null
+          token_hash?: string
           user_id?: string
         }
         Relationships: []

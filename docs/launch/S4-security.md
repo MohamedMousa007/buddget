@@ -183,7 +183,7 @@ Commits: `ec1ad1b2` (database), `f282ecd8` (SMS and tokens), `075fa3f1` (AI and 
 | 2 | Carry deposits filtered on the client | Fixed (`075fa3f1`), closes P2-8. |
 | 3 | Counterparty names leave after 30 days | **Applied 2026-11-15 on the owner's approval** (the permission check had refused it as destructive; it was first held for the S3 inserts, which take their description from `clean_title`): `supabase/migrations/0286_s4_sms_counterparty_retention.sql`. Counted again just before: 228 rows (119 out, 103 in, 6 own transfer), none waiting for an answer. Checked after: 0 rows past the age still hold a name, `sms_retention` carries the new step once, the migration is recorded. The 84 transfer logs inside the 30 days keep their names until they age out. It clears `clean_title` and also `merchant`, `merchant_normalized` and `raw_sms_summary`, which hold the same name (184 of the 228 rows past the age have `merchant` set), on transfer kinds, skips rows still waiting for an answer, backfills the 228 rows, and adds the same step to `sms_retention`. |
 | 4 | Two users must agree on a shared category | Already stricter in the code: a shared row needs five users (the edit trigger) and readers ignore single AI rows. The real gap, an AI answer replacing a seed row and so removing it for everyone, is fixed in migration 0284 (`ec1ad1b2`). Closes P2-23. |
-| 5 | Ingest tokens stored as a hash | Fixed (`ec1ad1b2`, `f282ecd8`), phase 1 live: `token_hash` column, backfilled, lookup by hash, new tokens generated on the server and never stored. **Phase 2 (drop the plain `token` column) is not done**: it must wait until this code is deployed, or the old code would stop resolving tokens. |
+| 5 | Ingest tokens stored as a hash | Fixed (`ec1ad1b2`, `f282ecd8`), phase 1 live: `token_hash` column, backfilled, lookup by hash, new tokens generated on the server and never stored. **Phase 2 done 2026-11-15 on the owner's approval:** `supabase/migrations/0288_s4_drop_plain_ingest_token.sql` dropped the plain `token` column and the phase-1 fill trigger and made `token_hash` not null, after the hash code was confirmed deployed. Before: 29 rows, 0 null hashes, nothing else depending on the column. After: 29 rows, 23 active, column gone. No request was made with a real phone token after the drop. |
 | 6 | `requireFeature` | Fixed (`075fa3f1`), see section 5. |
 | 7 | Billing states | Design written into section 5 for S6. |
 
@@ -206,7 +206,7 @@ Commits: `ec1ad1b2` (database), `f282ecd8` (SMS and tokens), `075fa3f1` (AI and 
 | P2-22 | **Later.** The file is `src/lib/sms/aiUsage.ts`. The check counts AI calls from a view; replacing it with the request counter would count every parse, including template-only ones, and could refuse real messages. The overshoot is a few calls from one phone and is now bounded by the reservation and the P2-20 ceiling. |
 | P2-23 | Fixed (`ec1ad1b2`), see decision 4. |
 | P2-24 | Fixed (`075fa3f1`): 413 from the header before the read on buddgy turn, receipt scan and voice. |
-| P2-25 | Fixed, phase 1 (`ec1ad1b2`, `f282ecd8`); phase 2 pending, see decision 5. |
+| P2-25 | Fixed (`ec1ad1b2`, `f282ecd8`, migration 0288), see decision 5. |
 | P2-26 | Fixed (`f282ecd8`): 60 token issues an hour per user, newest 3 active per phone, older ones deactivated. |
 | P2-27 | Fixed (`f282ecd8`): 429 when limited, 503 with `Retry-After` when the counter is down, 413 over 64 KB. Both native clients keep the message queued on these, checked in the code. |
 | P2-28 | Fixed (`f282ecd8`): a failed revoke is remembered per account and replayed at the next start; switching tracking off revokes this phone's token. TypeScript only. |
@@ -219,6 +219,6 @@ Commits: `ec1ad1b2` (database), `f282ecd8` (SMS and tokens), `075fa3f1` (AI and 
 
 ### Still open after this batch
 1. Migration 0286: done, applied 2026-11-15 (decision 3 above). The patched `sms_retention` job has not yet run on its schedule since.
-2. Token phase 2: drop `sms_ingest_tokens.token`. The code that reads the hash is now deployed (`bb4e70e4`), so only the owner's approval is missing (destructive step). Until then the plain tokens issued before this batch are still in the table (new tokens are not).
+2. Token phase 2: done, migration 0288 applied 2026-11-15 (decision 5 above). No plain ingest token is stored any more.
 3. U-1 remainder: confirm should hold the same lock as the undo function.
 4. A native build for the four files above.
