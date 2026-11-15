@@ -47,7 +47,7 @@ interface LogRow {
 const fail = (message: string, status = 500) => NextResponse.json({ error: message }, { status })
 
 async function setLogs(service: Service, ids: string[], values: Record<string, unknown>): Promise<boolean> {
-  const { error } = await service.from('sms_parse_log').update(values).in('id', ids)
+  const { error } = await service.from('sms_parse_log').update(values as never).in('id', ids) // the client rejects a loose record; callers pass known log columns
   if (error) console.error('[sms/own-transfer] log update error', error.message)
   return !error
 }
