@@ -477,3 +477,13 @@ Recorded by the planning session, to which the owner said it directly: every cur
 - Rows a user edited or deleted are never touched. The audit table is kept. The undo prompts stay live.
 - The testers are told beforehand that their numbers will shift.
 - **Limit of this approval:** it rests on all users being internal testers on 2026-11-14 and does not carry over once outside users exist.
+
+## 13. Council verdicts for step 2 (2026-11-15)
+
+Owner's message to the reviewer session, 2026-11-15: "Use council for the three points and start S4, make sure that S3 is completely done". Three voices (Skeptic, Pragmatist, Critic), all 3 of 3 on every point.
+
+1. **T5 flag: `card_load`**, not `model_kind_unproven` (its "Spending" button only dismisses, so the row would stay non-spend). Condition (Critic): before applying, check per row that "money loaded onto your card" is not contradicted by the row's own data; a row where it is contradicted gets no flag and is listed.
+2. **`818b0736`: category Transfer plus `cash_deposit`**, as the report proposed. Flag-only leaves an "It was income" button that fails (the server action requires Transfer). Re-rehearse that row rolled back first. The cash-account balance effect stays unmodelled: known gap.
+3. **T11: accept as built** (Transfer, `topup_repaired`, previous category kept). Missing destination wallet: known gap.
+4. **Timing: the 19 in-place step 2 rows may run the same day as step 1.** This replaces the "at least a day" wait of section 12, on the owner's instruction above and because step 1 totals matched the prediction exactly. Conditions: re-check step 1 totals immediately before; one type per transaction; totals check after each type; any drift stops the run and reverts the type.
+5. **The 7 inserts (T7b 2, T6 5) wait for the owner to put the service-role key in the local env file.** Not pulled from Vercel by an agent, not re-implemented in SQL, not dropped silently. When the key is there: dry run, then one row for real and verified, then the rest. S3 is closed except for these 7.
