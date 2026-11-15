@@ -168,7 +168,7 @@ const en: MembershipCopy = {
     outcomes: {
       everyAccount: { t: 'Every account, automatically', d: 'Pro reads SMS from every bank and wallet you use. Free reads 2.' },
       wholeYear: { t: 'The whole year in view', d: 'Any range, trends and the year view. Free shows the last 3 months.' },
-      testPlans: { t: 'Plans you can test', d: 'Keep every plan, compare two side by side, and see what happens if rent goes up 10%.' },
+      testPlans: { t: 'Plans side by side', d: 'Keep every plan and compare two side by side.' },
     },
     compareTitle: 'Free and Pro, side by side',
     compareHead: { label: '', free: 'Free', pro: 'Buddget Pro' },
@@ -176,7 +176,7 @@ const en: MembershipCopy = {
       { label: 'SMS auto-tracking', free: '2 bank or wallet accounts', pro: 'Every account' },
       { label: 'Reports', free: 'Last 3 months', pro: 'Any range, trends, year view' },
       { label: 'Saved budget plans', free: '2', pro: 'Unlimited' },
-      { label: 'Compare and stress test', free: 'No', pro: 'Yes' },
+      { label: 'Compare plans', free: 'No', pro: 'Yes' },
       { label: 'Live-price estimates', free: '3 a day', pro: '10 a day' },
       { label: 'Sparks for Buddgy', free: '20 a month', pro: '100 a month' },
     ],
@@ -224,7 +224,7 @@ const en: MembershipCopy = {
     includedRows: {
       sms: (n) => (n > 1 ? `SMS on all ${n} accounts` : 'SMS on every account'),
       year: 'The whole year in reports',
-      plans: 'Unlimited plans, compare and stress test',
+      plans: 'Unlimited plans and side-by-side compare',
       sparks: (sparks, estimates) => `${sparks} Sparks and ${estimates} live-price estimates a day`,
     },
     manage: 'Manage in the store',
@@ -362,7 +362,7 @@ const ar: MembershipCopy = {
     outcomes: {
       everyAccount: { t: 'كل حساب، تلقائياً', d: 'يقرأ Pro رسائل كل بنك ومحفظة تستخدمها. المجاني يقرأ حسابين.' },
       wholeYear: { t: 'العام كله أمامك', d: 'أي فترة، الاتجاهات وعرض السنة. المجاني يعرض آخر 3 أشهر.' },
-      testPlans: { t: 'خطط يمكنك اختبارها', d: 'احتفظ بكل خططك، قارن بين خطتين، واعرف ماذا يحدث لو زاد الإيجار 10%.' },
+      testPlans: { t: 'خطط جنباً إلى جنب', d: 'احتفظ بكل خططك وقارن بين خطتين.' },
     },
     compareTitle: 'المجاني وPro جنباً إلى جنب',
     compareHead: { label: '', free: 'المجاني', pro: 'Buddget Pro' },
@@ -370,7 +370,7 @@ const ar: MembershipCopy = {
       { label: 'تتبع SMS التلقائي', free: 'حسابان بنكيان أو محفظتان', pro: 'كل الحسابات' },
       { label: 'التقارير', free: 'آخر 3 أشهر', pro: 'أي فترة، اتجاهات، عرض السنة' },
       { label: 'خطط الميزانية المحفوظة', free: '2', pro: 'بلا حد' },
-      { label: 'المقارنة واختبار الضغط', free: 'لا', pro: 'نعم' },
+      { label: 'مقارنة الخطط', free: 'لا', pro: 'نعم' },
       { label: 'تقديرات بالأسعار الحية', free: '3 يومياً', pro: '10 يومياً' },
       { label: 'Sparks لـ Buddgy', free: '20 شهرياً', pro: '100 شهرياً' },
     ],
@@ -418,7 +418,7 @@ const ar: MembershipCopy = {
     includedRows: {
       sms: (n) => (n > 1 ? `SMS على كل الحسابات الـ ${n}` : 'SMS على كل حساباتك'),
       year: 'العام كله في التقارير',
-      plans: 'خطط بلا حد، مقارنة واختبار ضغط',
+      plans: 'خطط بلا حد ومقارنة جنباً إلى جنب',
       sparks: (sparks, estimates) => `${sparks} Sparks و${estimates} تقديرات بالأسعار الحية يومياً`,
     },
     manage: 'الإدارة في المتجر',
