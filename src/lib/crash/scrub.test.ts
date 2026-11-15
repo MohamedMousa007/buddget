@@ -6,7 +6,7 @@ describe('scrubText', () => {
   it('removes tokens, emails, amounts, phone numbers and key query params', () => {
     const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r'
     expect(scrubText(`bad ${jwt}`)).toBe('bad [token]')
-    expect(scrubText('mail m.mousaofficial@gmail.com now')).toBe('mail [email] now')
+    expect(scrubText('mail someone@example.com now')).toBe('mail [email] now')
     expect(scrubText('spent 1,250.50 EGP at a shop')).toBe('spent [amount] at a shop')
     expect(scrubText('balance USD 300 left')).toBe('balance [amount] left')
     expect(scrubText('call +20 100 123 4567 please')).toBe('call [number] please')

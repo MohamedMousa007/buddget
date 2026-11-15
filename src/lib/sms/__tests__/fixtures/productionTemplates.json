@@ -41,7 +41,7 @@
         "literal": "HSBC Egypt"
       }
     },
-    "sample": "Your HSBC Account ********0001 was reversed with IPN outward transfer for EGP 1.50 on 03-07-2026 05:32 from MOHAMED MOUSSA ABDELLATIF with reference 35692982. For further details, please contact HSBC call centre",
+    "sample": "Your HSBC Account ********0001 was reversed with IPN outward transfer for EGP 1.50 on 03-07-2026 05:32 from SAMPLE HOLDER ONE with reference 35692982. For further details, please contact HSBC call centre",
     "amount": 1.5,
     "currency": "EGP",
     "last4": null

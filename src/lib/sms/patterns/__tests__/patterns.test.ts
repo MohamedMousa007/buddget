@@ -99,7 +99,7 @@ const HSBC_PHONE_BANKING_TRANSFER =
 // NBE Instapay card credit — the iOS bridge strips the sender, so this must
 // match on body alone (real capture, sms_parse_log 2026-06-12).
 const NBE_IPN_IN_CARD =
-  'تم إضافة تحويل لحظي الي بطاقة رقم 507803******6685 بمبلغ 2 من MOHAMED MOUSSA ABDELLATIF رقم مرجعي 222267828819يوم 2026-06-12 الساعه 22:32 للمزيد اتصل علي 19888 '
+  'تم إضافة تحويل لحظي الي بطاقة رقم 507803******6685 بمبلغ 2 من SAMPLE HOLDER ONE رقم مرجعي 222267828819يوم 2026-06-12 الساعه 22:32 للمزيد اتصل علي 19888 '
 
 describe('CIB curated patterns', () => {
   it('parses EN credit card purchase (both template generations)', () => {
@@ -247,10 +247,10 @@ describe('Vodafone Cash + generic bank patterns', () => {
       expect(m?.kind).toBe('instant_transfer_in')
       expect(m?.amount).toBe(2)
       expect(m?.currency).toBe('EGP')
-      expect(m?.counterparty).toBe('MOHAMED MOUSSA ABDELLATIF')
+      expect(m?.counterparty).toBe('SAMPLE HOLDER ONE')
       expect(m?.last4).toBe('6685')
       expect(m?.paymentInstrument).toBe('card')
-      expect(m?.cleanTitle).toBe('Transfer from MOHAMED MOUSSA ABDELLATIF')
+      expect(m?.cleanTitle).toBe('Transfer from SAMPLE HOLDER ONE')
     }
   })
 })

@@ -144,13 +144,13 @@ function makeService(state: State) {
   return { from, rpc } as unknown as SupabaseClient
 }
 
-const OUT_REF = 'Your HSBC Account ********0001 was debited with IPN outward transfer for EGP 2002.00 on 18-07-2026 21:55 to MOHAMED MOUSA ABDELLATIF METWALLY ALI with reference b3abc23b. For further details, please contact HSBC call centre'
+const OUT_REF = 'Your HSBC Account ********0001 was debited with IPN outward transfer for EGP 2002.00 on 18-07-2026 21:55 to SAMPLE HOLDER ONE TWO THREE with reference b3abc23b. For further details, please contact HSBC call centre'
 const IN_REF = 'IPN transfer received with amount of EGP 2000.00 on 5124 on 18/07 at 09:55 PM. Ref# b3abc23b. For more details call 16607.'
 
 function outLeg(over: Partial<SmsRowData> = {}): SmsRowData {
   return {
     userId: 'u1', amount: 2002, currency: 'EGP', day: '2026-07-18', kind: 'instant_transfer_out',
-    cleanTitle: null, merchantNormalized: null, merchant: 'MOHAMED MOUSA ABDELLATIF METWALLY ALI',
+    cleanTitle: null, merchantNormalized: null, merchant: 'SAMPLE HOLDER ONE TWO THREE',
     bankName: 'HSBC', categoryHint: null, source: 'sms', rawBody: OUT_REF, last4: '0001',
     counterpartyLast4: null, receivedAtIso: '2026-07-18T18:56:43Z', logId: 'log-out', deviceId: 'dev-1', ...over,
   } as SmsRowData
@@ -245,7 +245,7 @@ describe('IPN own-account transfer — reference match needs the same device', (
 
 describe('IPN own-account transfer — no shared reference does not settle on its own', () => {
   // No shared reference in the bodies → 1b can't fire. A fee-sized difference needs the reference, so the legs stay.
-  const OUT_NOREF = 'Account 0001 debited IPN outward transfer EGP 2015 to Mohamed Mousa'
+  const OUT_NOREF = 'Account 0001 debited IPN outward transfer EGP 2015 to Sample Holder'
   const IN_NOREF = 'IPN transfer received EGP 2000 on 5124'
 
   it('2015 out / 2000 in (15 fee), same device, both accounts registered → both legs stay, nothing paired', async () => {
@@ -263,7 +263,7 @@ describe('IPN own-account transfer — no shared reference does not settle on it
     const a = await createSmsTransaction(svc, inLeg({ amount: 2000, rawBody: IN_NOREF }), opts)
     persist(state, inLeg({ amount: 2000, rawBody: IN_NOREF }), a)
 
-    const b = await createSmsTransaction(svc, outLeg({ amount: 2500, rawBody: 'Account 0001 debited IPN outward transfer EGP 2500 to Mohamed Mousa' }), opts)
+    const b = await createSmsTransaction(svc, outLeg({ amount: 2500, rawBody: 'Account 0001 debited IPN outward transfer EGP 2500 to Sample Holder' }), opts)
     expect(b.outcome).toBe('expense') // stayed a spend send (Egyptian IPN → Instapay)
     expectBothLegsStay()
   })
@@ -284,7 +284,7 @@ describe('IPN own-account transfer — no shared reference does not settle on it
     const a = await createSmsTransaction(svc, inLeg({ amount: 2000, rawBody: IN_NOREF }), opts)
     persist(state, inLeg({ amount: 2000, rawBody: IN_NOREF }), a)
 
-    const b = await createSmsTransaction(svc, outLeg({ amount: 2000, rawBody: 'Account 0001 debited IPN outward transfer EGP 2000 to Mohamed Mousa' }), opts)
+    const b = await createSmsTransaction(svc, outLeg({ amount: 2000, rawBody: 'Account 0001 debited IPN outward transfer EGP 2000 to Sample Holder' }), opts)
     expect(b.outcome).toBe('expense')
     expectBothLegsStay()
     expect(state.logs.find((l) => l.id === 'log-out')!.own_transfer_verdict).toBe('ask')
@@ -295,7 +295,7 @@ describe('IPN own-account transfer — no shared reference does not settle on it
     const a = await createSmsTransaction(svc, inLeg({ amount: 2000, rawBody: IN_NOREF, counterpartyHash: 'h1' }), opts)
     persist(state, inLeg({ amount: 2000, rawBody: IN_NOREF, counterpartyHash: 'h1' }), a)
 
-    const b = await createSmsTransaction(svc, outLeg({ amount: 2000, rawBody: 'Account 0001 debited IPN outward transfer EGP 2000 to Mohamed Mousa', counterpartyHash: 'h1' }), opts)
+    const b = await createSmsTransaction(svc, outLeg({ amount: 2000, rawBody: 'Account 0001 debited IPN outward transfer EGP 2000 to Sample Holder', counterpartyHash: 'h1' }), opts)
     expect(b.outcome).toBe('transfer_paired')
     expectSettledAsTransfer()
   })

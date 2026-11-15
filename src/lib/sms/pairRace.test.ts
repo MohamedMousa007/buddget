@@ -165,13 +165,13 @@ function makeService(state: State) {
   return { from, rpc } as unknown as SupabaseClient
 }
 
-const OUT_REF = 'Your HSBC Account ********0001 was debited with IPN outward transfer for EGP 2002.00 on 18-07-2026 21:55 to MOHAMED MOUSA ABDELLATIF METWALLY ALI with reference b3abc23b. For further details, please contact HSBC call centre'
+const OUT_REF = 'Your HSBC Account ********0001 was debited with IPN outward transfer for EGP 2002.00 on 18-07-2026 21:55 to SAMPLE HOLDER ONE TWO THREE with reference b3abc23b. For further details, please contact HSBC call centre'
 const IN_REF = 'IPN transfer received with amount of EGP 2000.00 on 5124 on 18/07 at 09:55 PM. Ref# b3abc23b. For more details call 16607.'
 
 function outLeg(): SmsRowData {
   return {
     userId: 'u1', amount: 2002, currency: 'EGP', day: '2026-07-18', kind: 'instant_transfer_out',
-    cleanTitle: null, merchantNormalized: null, merchant: 'MOHAMED MOUSA ABDELLATIF METWALLY ALI',
+    cleanTitle: null, merchantNormalized: null, merchant: 'SAMPLE HOLDER ONE TWO THREE',
     bankName: 'HSBC', categoryHint: null, source: 'sms', rawBody: OUT_REF, last4: '0001',
     counterpartyLast4: null, receivedAtIso: '2026-07-18T18:56:43Z', logId: 'log-out', deviceId: 'dev-1',
   } as SmsRowData
