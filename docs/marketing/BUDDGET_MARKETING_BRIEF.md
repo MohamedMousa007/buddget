@@ -1,6 +1,6 @@
 # Buddget Marketing Brief (source of truth)
 
-Version 1.0, 2026-11-15. Built from an interview with the owner, the repo (`CLAUDE_CONTEXT.md`, `docs/MASTER_PLAN_LAUNCH.md`, `docs/launch/*`, `docs/QA_ROUND_6.md`, site content), read-only aggregates from the live database, and competitor store pages read on 2026-11-15.
+Version 1.1, 2026-11-15 (owner decisions 1 to 5 incorporated; see section 13). Built from an interview with the owner, the repo (`CLAUDE_CONTEXT.md`, `docs/MASTER_PLAN_LAUNCH.md`, `docs/launch/*`, `docs/QA_ROUND_6.md`, site content), read-only aggregates from the live database, and competitor store pages read on 2026-11-15.
 
 **Rule for every marketing decision:** if a statement is not marked VERIFIED here, it is not a claim. Update this file before changing a claim, never after.
 
@@ -9,6 +9,9 @@ Evidence tags used below:
 - **OWNER BELIEF**: stated by the owner, not tested.
 - **ASSUMPTION**: my working assumption, needs validation.
 - **UNKNOWN**: could not be checked. See section 12.
+- **CONFIRMED DECISION**: made by the owner. Binding until the owner changes it.
+- **RECOMMENDATION**: my proposal, not yet approved.
+- **NEEDS VERIFICATION**: depends on a check nobody has done; do not treat as true.
 
 ---
 
@@ -34,6 +37,20 @@ A budgeting app for iPhone and Android (plus a web app) in Arabic and English. I
 | Egypt | Primary. Arabic and English; EGP default. | Partly verified (see section 4). Verify bank by bank before naming banks or giving accuracy. |
 | Saudi Arabia | Arabic and English; manual and voice entry as the conservative positioning. | UNVERIFIED. One tester; no code-tier pattern in the November review; do not claim. |
 | UAE | Arabic and English; manual and voice entry as the conservative positioning. | UNVERIFIED. No real messages in the data; patterns come from third-party fixtures. Do not claim. |
+
+### 3a. Arabic language support vs full RTL (decision 1)
+
+**CONFIRMED DECISION:** full Arabic RTL is part of the product direction. **Do not advertise it as a current capability** until the tester build is verified to be RTL.
+
+| Level | State | Evidence |
+|---|---|---|
+| Arabic language (translated copy, Arabic font, text alignment, Latin digits, Arabic plurals) | **VERIFIED in code** | `ar.ts` dictionary, IBM Plex Sans Arabic via `data-locale`, `ar-EG-u-nu-latn` formatting, `arPlural.ts` |
+| Full RTL interface (mirrored navigation, layouts, forms, charts, numbers, mixed text) | **NOT PRESENT in the app code** | `src/app/(app)/layout.tsx` hardcodes `<html dir="ltr">`; `docs/DESIGN_SYSTEM.md` says "UI layout stays LTR throughout; `dir` on `<html>` is always `ltr`" |
+| Public website in Arabic | **RTL** (`dir="rtl"` on the Arabic site layout) | `src/app/(site-ar)/layout.tsx` |
+
+Groundwork exists (85 `rtl:` class uses and many logical-property utilities), so RTL is a plausible build, but it reverses a standing design-system rule and needs a design decision, mirrored icons and charts, and a mixed Arabic/English text pass. Because `dir` is hardcoded, every build from this code is LTR; a tester build cannot be RTL unless it predates this code (NEEDS VERIFICATION on the device).
+
+**Allowed wording now:** "Arabic and English". **Not allowed:** "full RTL", "right-to-left interface", "built for Arabic layout". The website being RTL must not be used as proof of the app.
 
 Three levels of readiness, never conflated: (1) implemented in code, (2) bank coverage verified by real testing, (3) reliable enough to promise. **Today nothing is at level 3 for any market.**
 
@@ -96,6 +113,14 @@ Possible gaps (hypotheses): trust and track record (rivals have 0 to 5 ratings);
 
 **Personality:** a smart, approachable financial companion. Modern, clear, confident, practical, reassuring. Smart but not arrogant; friendly but not childish; confident but not aggressive; reassuring but not boring; modern but not trend-obsessed; realistic; encouraging without promising outcomes.
 
+### 7a. Brand colour (decision 2)
+
+**CONFIRMED DECISION:** teal is the primary brand colour. Red is used selectively for alerts, negative balances and spending warnings.
+
+**VERIFIED: this already matches the shipped brand.** `globals.css` defines the primary as teal (`#0D8578` fill, `#12B0A0` bright, `#E3F6F3` soft); the PWA manifest uses `#12B0A0` and `#0A100F`; the press kit uses teal and "Ink" `#0A100F` and "Mist" `#F4F7F6`; the logo handoff specifies brand teal `#12B0A0` with deep `#0D8578`; Buddgy's brand tone uses the bright teal and `danger` uses red `#BE343A` (negative/destructive only). `CLAUDE_CONTEXT.md` still lists red `#E50914` as the brand colour; that is **stale documentation, not the brand**. No hex `#E50914` remains in `src` or `public`. No asset change is needed; update the doc.
+
+Reference tokens: teal fill `#0D8578`, bright `#12B0A0`, ink `#0A100F`, mist `#F4F7F6`, alert red `#BE343A`, income green `#0F7635`, investment gold `#896617` (founders gold is for founders only). Marketing assets must use these, not new hexes. The logo set is in `design/buddget-logo` (read its README before producing assets); the Buddgy character is `src/components/ai/BuddgyIcon.tsx` (16 moods, outline style, tone variables).
+
 **Idea:** *Month-end should not be a surprise.* The enemy is the guessing, not the user. Candidate line (not approved): "Money is complicated enough. Buddget makes it easier to understand and manage." "Easier" is a promise: theme, not a measurable claim.
 
 **The user should feel:** (1) "This understands my financial life." (2) "Managing my money doesn't have to be this complicated." (3) "I want to see what Buddget can do for me."
@@ -125,7 +150,7 @@ No public date is confirmed. **Do not announce a date until gates 1 to 7 are gre
 | 1. Core product | Amber (QA6: 0 P0; live sweep with real data and real-device paths not run; S7 pending) |
 | 2. Budget builder | Unverified (three user types untested; redesign status unknown) |
 | 3. Data reliability | Amber (November review found P0 bugs; batch 1 fixed; batch 2 status not read) |
-| 4. Market readiness | Amber Egypt, Red Gulf. **The app stays LTR**, which conflicts with "proper RTL"; six of ten SMS users default to Cairo time zone |
+| 4. Market readiness | Amber Egypt, Red Gulf. **The app is LTR** (`dir="ltr"` hardcoded); full RTL is now a confirmed product direction but not built; six of ten SMS users default to Cairo time zone |
 | 5. Bank SMS | Red (no accuracy table; Saudi one tester; UAE none; Play `RECEIVE_SMS` declaration open) |
 | 6. Platform | Red (Android debug-signed only; release build never run; native code unverified on device) |
 | 7. Business | Amber (policy, terms, deletion, analytics exist; screenshots, store copy, handles, assets, legal reconciliation open) |
@@ -156,7 +181,17 @@ Windows are placeholders until L is set. Phases 1 and 2 can start now (no app, n
 
 **Minimal-tier cadence:** Instagram 2 Reels, 2 carousels or posts, 3 to 4 Stories a week; TikTok 3 videos a week (2 adapted, 1 native). Judge results against your own baseline (saves, shares, DMs, profile visits, follows, link clicks; completion, shares, recognition comments).
 
-**Language and dialect:** an open decision (Egyptian Arabic, Gulf, MSA, English). Native review is required per market.
+**Content language (decision 3, CONFIRMED):**
+
+| Market | Primary | Secondary |
+|---|---|---|
+| Egypt | Egyptian Arabic | English |
+| Saudi Arabia | Natural Saudi Arabic | English |
+| UAE | Accessible Gulf-friendly Arabic | English |
+
+Modern Standard Arabic where formal or educational. No literal translations; each market's content is written for that market. **RECOMMENDATION:** a native reviewer per market (Egyptian, Saudi, Emirati or Gulf) before posting, because one reviewer cannot cover all three dialects; start Egypt-first, and run Saudi and UAE content only at low volume until Egypt works. Note the in-app copy is simple MSA by design (`docs/COPY_GLOSSARY.md`), so social tone will be more colloquial than the app; keep the same calm, no-shame voice.
+
+**Accounts structure (RECOMMENDATION, not decided):** one account per platform, Egyptian Arabic first, rather than three country accounts, until Egypt proves out. NEEDS owner decision.
 
 ## 10. Budget and production
 
@@ -204,15 +239,25 @@ Start at Minimal. Move up when a message has proven itself, the reveal needs sto
 | 5 | Device test of SMS, voice, receipts on iOS and Android | Owner / dev |
 | 6 | Does investments work end to end? | Owner / dev |
 | 7 | Play `RECEIVE_SMS` declaration submitted? Play closed-test rule and account type | Owner |
-| 8 | Handles and trademark check for "Buddget" and "Buddgy" | Owner |
-| 9 | Brand colour decision (red vs teal) | Owner |
-| 10 | RTL: confirm the LTR layout decision and what Arabic claims are safe | Owner |
+| 8 | **Name conflict check.** An App Store finance app already uses the name **"Buddget: Expense Tracker"** (see 12a). Handles for Buddget and Buddgy on Instagram, TikTok, Facebook, LinkedIn, X: NOT checked. Trademark searches in Egypt, Saudi Arabia, UAE: NOT done. | Owner, with a qualified trademark professional |
+| 9 | Brand colour: **resolved** (teal; matches shipped brand). Update stale `CLAUDE_CONTEXT.md` and keep marketing assets on the tokens in 7a. | Done / dev |
+| 10 | RTL: direction confirmed; build and design decision not made; verify the tester build on device before any RTL wording | Owner / dev |
 | 11 | Beta numbers: reconcile 15 vs 45 to 47 users and the 85% figure | Owner |
-| 12 | Content language and dialect per market | Owner |
-| 13 | Marketing budget and production roles | Owner |
+| 12 | Content language: **decided** (3). Open: a native reviewer per market; one account vs per-country accounts | Owner |
+| 13 | Marketing budget: **not fixed**; lean and organic first. Production: owner directs and approves, AI assists, outsource editing and motion when needed | Owner |
 | 14 | Launch date | Unset; set only after gates are green |
 | 15 | Competitor hands-on benchmark and user interviews | Owner, with tooling support |
 | 16 | Attribution: per-platform links or beta-form field | Owner approval, then dev |
+
+### 12a. Name and handle risk (decision 4)
+
+**NEEDS VERIFICATION. No legal conclusion is drawn here.**
+
+- **Found (VERIFIED on the store page, 2026-11-15):** an iOS finance app called "Buddget: Expense Tracker", seller "Samuel Pinheiro Junior", copyright "© 2025 Buddget Inc.", English and Portuguese, free with in-app purchases, earliest version-history entry 03/26/2025, version 1.6.1. It is listed in the **Egypt storefront** with Egyptian-pound purchase prices. Its description is a general personal-finance pitch similar to ours, with no ratings shown.
+- **What this does not tell us:** whether "Buddget Inc." is a registered company, whether the name is a registered trademark anywhere, whether it is used in Egypt, Saudi Arabia or the UAE beyond the storefront listing, or who has prior rights. It is a risk to investigate, not a finding of infringement.
+- **Why it matters for marketing:** a same-name finance app in the same store, category and country can cause search confusion, handle conflicts and App Store naming collisions, and can undermine a "Buddget" brand build. Resolve it before spending on a brand campaign or announcing handles.
+- **Checks to run (owner, with a trademark professional):** (1) handle availability and ownership for Buddget and Buddgy on Instagram, TikTok, Facebook, LinkedIn, X, YouTube; (2) trademark searches in the Egyptian, Saudi and UAE registries and WIPO; (3) the App Store name situation for our own listing; (4) a conflict review with counsel. I did not search any trademark registry, and I can't check social handles from here.
+- **Interim rule:** keep phases 1 and 2 teasers name-neutral where practical (no logo lockup, no "Buddget" handle push) until the checks come back.
 
 ## 13. Decisions log
 
@@ -224,6 +269,11 @@ Start at Minimal. Move up when a message has proven itself, the reveal needs sto
 - No shame, ever. (Owner, non-negotiable)
 - Competitive features (SMS, safe-to-spend, Arabic) treated as table stakes. (Owner)
 - Differentiators stay hypotheses until tested. (Owner)
+- Full Arabic RTL is part of the product direction; not advertised until verified in the tester build; Arabic language support and RTL are distinct. (Owner, 2026-11-15)
+- Primary brand colour is teal; red only for alerts, negative balances, spending warnings. (Owner, 2026-11-15; matches shipped brand)
+- Content language: Egyptian Arabic (Egypt), natural Saudi Arabic (Saudi), accessible Gulf-friendly Arabic (UAE); English secondary; MSA for formal or educational content; no literal translations. (Owner, 2026-11-15)
+- Handles and trademarks must be verified in Egypt, Saudi Arabia and UAE before assumed available; no legal conclusions without verification. (Owner, 2026-11-15)
+- No fixed budget; lean organic Instagram and TikTok; AI-assisted production with owner approval; outsource editing and motion when needed; paid ads only as controlled experiments after promising content. (Owner, 2026-11-15)
 
 ## 14. Sources
 
