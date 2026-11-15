@@ -3359,6 +3359,39 @@ export interface Dictionary {
     splitNeedsFunding: string
     splitFirstDueInvalid: string
   }
+  /** Plus subscription: paywall and Settings. Rendered only while the server's billing switch is on. */
+  billing: {
+    sectionTitle: string
+    planFree: string
+    planPlus: string
+    statusLine: Record<'active' | 'trialing' | 'past_due' | 'canceled' | 'expired' | 'paused', string>
+    trialEnds: (date: string) => string
+    sparksLeft: (left: number, total: number) => string
+    sparksRefill: (date: string) => string
+    upgrade: string
+    upgradeHint: string
+    manage: string
+    manageHint: string
+    restore: string
+    restoreHint: string
+    restored: string
+    restoreNothing: string
+    paywallTitle: string
+    paywallSubtitle: string
+    perks: string[]
+    annual: string
+    monthly: string
+    perYear: string
+    perMonth: string
+    monthlyEquivalent: (price: string) => string
+    subscribe: string
+    loading: string
+    unavailable: string
+    purchaseFailed: string
+    waitingForStore: string
+    notYet: string
+    close: string
+  }
   /** Screen-reader names for icon-only controls. Visible text lives in its own sections. */
   a11y: {
     closeNumberPad: string

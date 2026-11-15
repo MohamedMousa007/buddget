@@ -12,6 +12,7 @@ import { ProfileBanner } from '@/components/features/settings/hub/ProfileBanner'
 import { SecurityEntry } from '@/components/features/settings/hub/SecurityCard'
 import { SettingsSearch } from '@/components/features/settings/hub/SettingsSearch'
 import { SmsCard } from '@/components/features/settings/hub/SmsCard'
+import { SubscriptionCard } from '@/components/features/settings/hub/SubscriptionCard'
 import { Card } from '@/components/ui/card'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -56,6 +57,7 @@ export default function SettingsPage() {
         </Card>
         {user ? <SecurityEntry /> : null}
         {user ? <SmsCard /> : null}
+        {user ? <SubscriptionCard /> : null}
         <AiCard />
         <NotificationsCard />
         <DataCard />

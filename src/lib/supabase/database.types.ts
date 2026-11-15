@@ -852,6 +852,54 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_testers: {
+        Row: {
+          granted_at: string
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      billing_events: {
+        Row: {
+          event_at: string
+          event_id: string
+          id: number
+          outcome: string
+          provider: string
+          received_at: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          event_at: string
+          event_id: string
+          id?: never
+          outcome?: string
+          provider: string
+          received_at?: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          event_at?: string
+          event_id?: string
+          id?: never
+          outcome?: string
+          provider?: string
+          received_at?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       biometric_devices: {
         Row: {
           created_at: string
@@ -1966,6 +2014,66 @@ export type Database = {
           },
         ]
       }
+      founder_candidates: {
+        Row: {
+          decided_at: string | null
+          decided_by: string | null
+          decision: string | null
+          proposed_at: string
+          qualified_at: string
+          user_id: string
+        }
+        Insert: {
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          proposed_at?: string
+          qualified_at: string
+          user_id: string
+        }
+        Update: {
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string | null
+          proposed_at?: string
+          qualified_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      founders: {
+        Row: {
+          cohort: string
+          credit_name: string | null
+          granted_at: string
+          number: number
+          qualified_at: string
+          retired_at: string | null
+          retired_reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cohort: string
+          credit_name?: string | null
+          granted_at?: string
+          number: number
+          qualified_at: string
+          retired_at?: string | null
+          retired_reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cohort?: string
+          credit_name?: string | null
+          granted_at?: string
+          number?: number
+          qualified_at?: string
+          retired_at?: string | null
+          retired_reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       goal_allocation_runs: {
         Row: {
           amount: number
@@ -2398,24 +2506,39 @@ export type Database = {
       }
       loyalty_accounts: {
         Row: {
+          freezes_banked: number
+          kept_weeks_total: number
+          last_kept_week: string | null
           lifetime_points: number
           points_balance: number
+          streak_best: number
+          streak_weeks: number
           tier_key: string | null
           tier_locked: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
+          freezes_banked?: number
+          kept_weeks_total?: number
+          last_kept_week?: string | null
           lifetime_points?: number
           points_balance?: number
+          streak_best?: number
+          streak_weeks?: number
           tier_key?: string | null
           tier_locked?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
+          freezes_banked?: number
+          kept_weeks_total?: number
+          last_kept_week?: string | null
           lifetime_points?: number
           points_balance?: number
+          streak_best?: number
+          streak_weeks?: number
           tier_key?: string | null
           tier_locked?: boolean
           updated_at?: string
@@ -2430,6 +2553,33 @@ export type Database = {
             referencedColumns: ["key"]
           },
         ]
+      }
+      loyalty_events: {
+        Row: {
+          created_at: string
+          id: number
+          kind: string
+          meta: Json
+          period_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          kind: string
+          meta?: Json
+          period_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          kind?: string
+          meta?: Json
+          period_key?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       loyalty_ledger: {
         Row: {
@@ -2468,6 +2618,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      loyalty_program: {
+        Row: {
+          founder_cap: number
+          founder_window_closes: string
+          founder_window_opens: string
+          id: boolean
+        }
+        Insert: {
+          founder_cap?: number
+          founder_window_closes: string
+          founder_window_opens: string
+          id?: boolean
+        }
+        Update: {
+          founder_cap?: number
+          founder_window_closes?: string
+          founder_window_opens?: string
+          id?: boolean
+        }
+        Relationships: []
       }
       loyalty_tiers: {
         Row: {
@@ -2723,6 +2894,33 @@ export type Database = {
           },
         ]
       }
+      paywall_views: {
+        Row: {
+          country: string | null
+          id: number
+          platform: string | null
+          source: string | null
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          country?: string | null
+          id?: never
+          platform?: string | null
+          source?: string | null
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          country?: string | null
+          id?: never
+          platform?: string | null
+          source?: string | null
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string
@@ -2737,6 +2935,7 @@ export type Database = {
           price_yearly_cents: number | null
           sort_order: number
           status: string
+          store_products: Json
           trial_days: number
           updated_at: string
         }
@@ -2753,6 +2952,7 @@ export type Database = {
           price_yearly_cents?: number | null
           sort_order?: number
           status?: string
+          store_products?: Json
           trial_days?: number
           updated_at?: string
         }
@@ -2769,6 +2969,7 @@ export type Database = {
           price_yearly_cents?: number | null
           sort_order?: number
           status?: string
+          store_products?: Json
           trial_days?: number
           updated_at?: string
         }
@@ -3843,6 +4044,7 @@ export type Database = {
           source: string
           status: string
           template_revoked_at: string | null
+          user_confirmed_at: string | null
           user_id: string
           wording_guard_hit: boolean | null
         }
@@ -3914,6 +4116,7 @@ export type Database = {
           source: string
           status?: string
           template_revoked_at?: string | null
+          user_confirmed_at?: string | null
           user_id: string
           wording_guard_hit?: boolean | null
         }
@@ -3985,6 +4188,7 @@ export type Database = {
           source?: string
           status?: string
           template_revoked_at?: string | null
+          user_confirmed_at?: string | null
           user_id?: string
           wording_guard_hit?: boolean | null
         }
@@ -5096,45 +5300,63 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           feature_overrides: Json
+          grace_ends_at: string | null
           granted_by: string | null
+          last_event_at: string | null
           limit_overrides: Json
           note: string | null
           plan_key: string
+          product_id: string | null
           source: string
           status: string
+          store: string | null
+          store_original_txn: string | null
           trial_ends_at: string | null
           updated_at: string
           user_id: string
+          will_renew: boolean | null
         }
         Insert: {
           canceled_at?: string | null
           created_at?: string
           current_period_end?: string | null
           feature_overrides?: Json
+          grace_ends_at?: string | null
           granted_by?: string | null
+          last_event_at?: string | null
           limit_overrides?: Json
           note?: string | null
           plan_key: string
+          product_id?: string | null
           source?: string
           status?: string
+          store?: string | null
+          store_original_txn?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id: string
+          will_renew?: boolean | null
         }
         Update: {
           canceled_at?: string | null
           created_at?: string
           current_period_end?: string | null
           feature_overrides?: Json
+          grace_ends_at?: string | null
           granted_by?: string | null
+          last_event_at?: string | null
           limit_overrides?: Json
           note?: string | null
           plan_key?: string
+          product_id?: string | null
           source?: string
           status?: string
+          store?: string | null
+          store_original_txn?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
+          will_renew?: boolean | null
         }
         Relationships: [
           {
@@ -5273,6 +5495,25 @@ export type Database = {
         }
         Relationships: []
       }
+      gate3_preview_monthly: {
+        Row: {
+          month: string | null
+          sms_accounts_receiving: number | null
+          sparks_used: number | null
+          third_account_receiving: boolean | null
+          used_sparks: boolean | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      loyalty_action_days: {
+        Row: {
+          day: string | null
+          source: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       sms_ai_today: {
         Row: {
           ai_count_today: number | null
@@ -5379,6 +5620,19 @@ export type Database = {
         }[]
       }
       admin_feature_adoption: { Args: never; Returns: Json }
+      admin_founder_candidates: {
+        Args: never
+        Returns: {
+          account_created: string
+          action_days: number
+          proposed_at: string
+          provider: string
+          qualified_at: string
+          record_count: number
+          sms_on: boolean
+          user_id: string
+        }[]
+      }
       admin_funnel: { Args: { p_days?: number }; Returns: Json }
       admin_granted_users: {
         Args: { p_staff: string; p_users: string[] }
@@ -5536,7 +5790,26 @@ export type Database = {
         Args: { p_pm: string; p_user: string }
         Returns: undefined
       }
+      billing_apply: {
+        Args: {
+          p_effect: Json
+          p_event_id: string
+          p_event_ms: number
+          p_type: string
+          p_user: string
+        }
+        Returns: string
+      }
       billing_enabled: { Args: never; Returns: boolean }
+      billing_note: {
+        Args: {
+          p_event_id: string
+          p_event_ms: number
+          p_type: string
+          p_user: string
+        }
+        Returns: undefined
+      }
       bump_sms_keyword: {
         Args: { p_keyword: string; p_lang: string }
         Returns: undefined
@@ -5636,6 +5909,16 @@ export type Database = {
           template_id: string
         }[]
       }
+      entitlement_grants: {
+        Args: {
+          p_grace_ends: string
+          p_now: string
+          p_period_end: string
+          p_status: string
+          p_trial_ends: string
+        }
+        Returns: boolean
+      }
       find_unclaimed_debt_payment: {
         Args: {
           p_amount: number
@@ -5712,6 +5995,44 @@ export type Database = {
         }
         Returns: undefined
       }
+      loyalty_award: {
+        Args: {
+          p_points: number
+          p_reason: string
+          p_ref: string
+          p_user: string
+        }
+        Returns: number
+      }
+      loyalty_close_periods: { Args: never; Returns: number }
+      loyalty_decide_founder: {
+        Args: {
+          p_actor: string
+          p_approve: boolean
+          p_credit_name?: string
+          p_user: string
+        }
+        Returns: number
+      }
+      loyalty_founder_bar: {
+        Args: never
+        Returns: {
+          action_days: number
+          qualified_at: string
+          user_id: string
+          weeks: number
+        }[]
+      }
+      loyalty_grant_founders: { Args: never; Returns: number }
+      loyalty_local_day: {
+        Args: { p_ts: string; p_tz: string }
+        Returns: string
+      }
+      loyalty_record_week_check: { Args: { p_week: string }; Returns: Json }
+      loyalty_week_start: {
+        Args: { p_day: string; p_week_start: number }
+        Returns: string
+      }
       notification_candidate_users: { Args: never; Returns: string[] }
       publish_email_template: {
         Args: { p_key: string; p_locale: string; p_staff: string }
@@ -5757,6 +6078,10 @@ export type Database = {
           p_title: string
           p_user_id: string
         }
+        Returns: undefined
+      }
+      record_paywall_view: {
+        Args: { p_platform: string; p_source: string; p_user: string }
         Returns: undefined
       }
       record_second_factor: {

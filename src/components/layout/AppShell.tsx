@@ -1,5 +1,6 @@
 'use client'
 
+import { BillingHost } from '@/components/features/billing/BillingHost'
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
@@ -339,6 +340,7 @@ export function AppShell({ children }: AppShellProps) {
       </main>
       {/* One drop-down stack for every question; the sources register into it. */}
       <HeldMessagesHost />
+      <BillingHost />
       <SubscriptionPlanChangeBanner />
       <BannerStack />
       <SyncFailureBanner />

@@ -92,7 +92,7 @@ describe('POST /api/sms/confirm', () => {
     h.create.mockRejectedValueOnce(new Error('boom'))
     const res = await post({ logId: LOG_ID })
     expect(res.status).toBe(500)
-    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'confirm_exception' })
+    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, user_confirmed_at: null, status: 'add_failed', failure_code: 'confirm_exception' })
   })
 
   it('fails loudly instead of degrading when a kind that needs the text has none left', async () => {
@@ -119,7 +119,7 @@ describe('POST /api/sms/confirm', () => {
   it('claims the row first and posts once', async () => {
     const res = await post({ logId: LOG_ID })
     expect(res.status).toBe(200)
-    expect(logUpdates()[0]).toEqual({ awaiting_confirmation: false })
+    expect(logUpdates()[0]).toEqual({ awaiting_confirmation: false, user_confirmed_at: expect.any(String) })
     expect(h.create).toHaveBeenCalledTimes(1)
   })
 
@@ -140,7 +140,7 @@ describe('POST /api/sms/confirm', () => {
     h.create.mockResolvedValue({ expenseId: null, incomeId: null, debtPaymentId: null, error: 'x' })
     const res = await post({ logId: LOG_ID })
     expect(res.status).toBe(500)
-    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'insert_failed' })
+    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, user_confirmed_at: null, status: 'add_failed', failure_code: 'insert_failed' })
   })
 
   it('releases the claim and refuses a row with no amount or currency', async () => {
@@ -148,7 +148,7 @@ describe('POST /api/sms/confirm', () => {
     const res = await post({ logId: LOG_ID })
     expect(res.status).toBe(422)
     expect(h.create).not.toHaveBeenCalled()
-    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'invalid_row' })
+    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, user_confirmed_at: null, status: 'add_failed', failure_code: 'invalid_row' })
   })
 
   it.each([0, -5, 5_000_000_000])('refuses to book a held row whose amount is %s and keeps it held', async (amount) => {
@@ -156,7 +156,7 @@ describe('POST /api/sms/confirm', () => {
     const res = await post({ logId: LOG_ID })
     expect(res.status).toBe(422)
     expect(h.create).not.toHaveBeenCalled()
-    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'invalid_row' })
+    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, user_confirmed_at: null, status: 'add_failed', failure_code: 'invalid_row' })
   })
 
   it('rejects a currency outside the enum', async () => {
@@ -169,7 +169,7 @@ describe('POST /api/sms/confirm', () => {
     h.failTable = 'expenses'
     const res = await post({ logId: LOG_ID, currency: 'USD' })
     expect(res.status).toBe(500)
-    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, status: 'add_failed', failure_code: 'currency_update_failed' })
+    expect(logUpdates()).toContainEqual({ awaiting_confirmation: true, user_confirmed_at: null, status: 'add_failed', failure_code: 'currency_update_failed' })
     expect(logUpdates()).not.toContainEqual(expect.objectContaining({ status: 'confirmed' }))
   })
 

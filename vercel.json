@@ -30,6 +30,10 @@
     {
       "path": "/api/cron/month-carry",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/loyalty",
+      "schedule": "20 5 * * *"
     }
   ]
 }

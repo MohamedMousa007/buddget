@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   // Claim the row atomically: only one concurrent confirm (push tap + sheet, double tap) gets it.
   let claim = service
     .from('sms_parse_log')
-    .update({ awaiting_confirmation: false })
+    .update({ awaiting_confirmation: false, user_confirmed_at: new Date().toISOString() })
     .eq('user_id', userId)
     .eq('awaiting_confirmation', true)
     .eq('parsed_ok', true)
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
   }
 
   const release = (failure: { status: string; failure_code: string }) =>
-    service.from('sms_parse_log').update({ awaiting_confirmation: true, ...failure }).eq('id', row.id)
+    service.from('sms_parse_log').update({ awaiting_confirmation: true, user_confirmed_at: null, ...failure }).eq('id', row.id)
   const fail = async (reason: string, status: number) => {
     await release({ status: 'add_failed', failure_code: reason })
     return NextResponse.json({ ok: false, reason }, { status })

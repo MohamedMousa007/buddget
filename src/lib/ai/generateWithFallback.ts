@@ -5,6 +5,7 @@ import {
 import { apiFetchAuth } from '@/lib/apiBase'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { quotaDeniedMessage } from '@/lib/ai/quotaDeniedCopy'
+import { noteQuotaDenial } from '@/lib/billing/billingStore'
 
 /** POST body for `/api/ai` (Gemini proxy). */
 export interface GeminiProxyRequestBody {
@@ -103,6 +104,7 @@ export async function throwIfAiProxyNotOk(response: Response): Promise<void> {
   const errorData = (await response.clone().json().catch(() => null)) as { error?: string; stage?: string; layer?: string; resetAt?: string | null } | null
   if (errorData?.stage === 'quota') {
     const lang = useFinanceStore.getState().settings.language === 'ar' ? 'ar' : 'en'
+    noteQuotaDenial(errorData.layer)
     throw new Error(quotaDeniedMessage(errorData.layer, errorData.resetAt, lang))
   }
   const raw = errorData?.error || `Oops, something didn't go as planned (${response.status})`

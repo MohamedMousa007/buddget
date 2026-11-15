@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { decideFeature, resolveEntitlements, type EntitlementRecord, type PlanRecord } from './resolve'
+import { STATUS_CASES, STATUS_CASES_NOW } from './entitlementStatusCases'
+import { decideFeature, grantsPlan, resolveEntitlements, type EntitlementRecord, type PlanRecord } from './resolve'
 
 const free: PlanRecord = { key: 'free', name: 'Free', limits: { ai_budget_per_hour: 15 }, features: ['sms_tracking'], trial_days: 0 }
 const plus: PlanRecord = { key: 'plus', name: 'Plus', limits: { ai_budget_per_hour: 60, receipt_scans_per_month: null }, features: ['ai_assistant'], trial_days: 14 }
@@ -82,5 +83,19 @@ describe('decideFeature', () => {
   })
   it('has no paid features today', () => {
     expect(decideFeature('advanced_reports', undefined, [])).toBe('allow')
+  })
+})
+
+describe('grantsPlan: the shared status table (the same rows were run against SQL entitlement_grants)', () => {
+  it.each(STATUS_CASES)('$name', (c) => {
+    expect(grantsPlan({ status: c.status, trial_ends_at: c.trialEndsAt, current_period_end: c.periodEnd, grace_ends_at: c.graceEndsAt }, Date.parse(STATUS_CASES_NOW))).toBe(c.grants)
+  })
+
+  it('resolveEntitlements keeps a canceled plan to the period end, then drops it to the default', () => {
+    const e = ent({ status: 'canceled', current_period_end: '2026-12-20T00:00:00Z' })
+    expect(resolveEntitlements(free, e, plans, Date.parse('2026-12-10T00:00:00Z')).planKey).toBe('plus')
+    const after = resolveEntitlements(free, e, plans, Date.parse('2026-12-21T00:00:00Z'))
+    expect(after.planKey).toBe('free')
+    expect(after.status).toBe('expired')
   })
 })

@@ -15,6 +15,8 @@ export interface EntitlementRecord {
   status: EntitlementStatus
   trial_ends_at: string | null
   current_period_end: string | null
+  /** The store's grace expiry on a billing issue (S5c item 14); null falls back to the period end plus three days. */
+  grace_ends_at?: string | null
   limit_overrides: Record<string, unknown>
   feature_overrides: Record<string, unknown>
 }
@@ -39,6 +41,29 @@ function lapsed(iso: string | null, now: number): boolean {
   return !!iso && new Date(iso).getTime() <= now
 }
 
+const GRACE_FALLBACK_MS = 3 * 86_400_000
+
+/**
+ * Whether a status still grants its plan right now. The same rule as the SQL `entitlement_grants`, pinned by the one case
+ * table in `entitlementStatusCases.ts`: a canceled plan keeps access to the end of the paid period, a past_due plan to the
+ * store's grace expiry (or three days after the period end when none was reported), a lapsed trial or period grants nothing.
+ */
+export function grantsPlan(
+  e: Pick<EntitlementRecord, 'status' | 'trial_ends_at' | 'current_period_end'> & { grace_ends_at?: string | null },
+  now: number,
+): boolean {
+  switch (e.status) {
+    case 'trialing': return !lapsed(e.trial_ends_at, now)
+    case 'active': return !lapsed(e.current_period_end, now)
+    case 'canceled': return !!e.current_period_end && !lapsed(e.current_period_end, now)
+    case 'past_due': {
+      const until = e.grace_ends_at ?? (e.current_period_end ? new Date(new Date(e.current_period_end).getTime() + GRACE_FALLBACK_MS).toISOString() : null)
+      return !lapsed(until, now)
+    }
+    default: return false
+  }
+}
+
 /**
  * What a user may do right now. Precedence for each limit: individual override, then the plan the user is
  * entitled to, then the platform fallback. A lapsed trial or paid period drops the user to the default plan,
@@ -51,13 +76,9 @@ export function resolveEntitlements(
   now = Date.now(),
 ): ResolvedEntitlements {
   let status: EntitlementStatus = entitlement?.status ?? 'active'
-  if (entitlement) {
-    if (status === 'trialing' && lapsed(entitlement.trial_ends_at, now)) status = 'expired'
-    if (status === 'active' && entitlement.current_period_end && lapsed(entitlement.current_period_end, now)) status = 'expired'
-  }
-
-  const grantsPlan = !!entitlement && (status === 'active' || status === 'trialing' || status === 'past_due')
-  const plan = (grantsPlan && plans.get(entitlement!.plan_key)) || defaultPlan
+  const grants = !!entitlement && grantsPlan(entitlement, now)
+  if (entitlement && !grants && (status === 'trialing' || status === 'active' || status === 'canceled' || status === 'past_due')) status = 'expired'
+  const plan = (grants && plans.get(entitlement!.plan_key)) || defaultPlan
 
   const limits = {} as Record<LimitKey, number | null>
   for (const key of LIMIT_KEYS) {
