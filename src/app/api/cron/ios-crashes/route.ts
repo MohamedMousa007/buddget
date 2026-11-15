@@ -47,7 +47,8 @@ export async function GET(request: Request) {
       p_sentry_url: null,
       p_seen: c.seen,
       p_event_id: `asc:${c.submissionId}`,
-    })
+      // Generated arg types cannot express a nullable argument; the function accepts null for these.
+    } as never)
     if (error) console.error('[cron/ios-crashes] record failed', error.code)
     else recorded += 1
   }
