@@ -139,3 +139,21 @@ Also done first, as the brief asked: `database.types.ts` regenerated from the li
 - The two races (P1-1, P1-2) are proven by tests that simulate the interleaving, not by concurrent requests against a real database.
 - The grounded-search cost claim is from the provider's pricing model, not from a bill.
 - No native build was made. No live rows were changed; all SQL was read only.
+
+## 8. Council verdicts (2026-11-15)
+
+The owner delegated the section 6 decisions to the council (Skeptic, Pragmatist, Critic). Votes in brackets.
+
+1. **Grounded search allowance: 3 a day on the free plan**, higher on paid plans when they exist (2 of 3; one vote for a flat 10). Show the limit to the user rather than failing silently.
+2. **Carry deposits: filter them on the client too**, so the closed month keeps showing the real leftover and the phone and server agree (2 of 3; one vote to document only). This closes P2-8.
+3. **`clean_title` on transfer kinds: null it after 30 days** with the raw text; the booked row keeps its title (3 of 3).
+4. **Shared merchant categories: two distinct users must agree** before a shared write (3 of 3). Closes P2-23.
+5. **Ingest tokens: store a hash now**, before launch; testers re-issue once (3 of 3). Closes P2-25.
+6. **Plan features on the server: build `requireFeature` now** and put it on every route that already has a feature key; S6 adds keys for new paid features and no paid route ships without it (2 of 3; one vote to leave it all to S6).
+7. **Billing states (design, implemented in S6):** `canceled` keeps access until the period ends (3 of 3); `past_due` gets a 3-day grace after the period end (2 of 3; one vote for 7 days). Check the grace against the store's own retry window when S6 wires RevenueCat.
+
+**P2 triage (3 of 3 for a split, changes by majority).**
+- Fix now, in S4: P2-3, 4, 7, 8, 9, 13, 16, 21, 22, 23, 24, 25, 26, 27, 28, 31; P2-20 (voice cost, a ceiling for the exempt features); P2-19 in its cheap form only (model allowlist, output-token and payload caps; the named-tasks refactor stays later); P2-12 and P2-17 only if each is a small fix, otherwise later with the reason written down.
+- Later, logged with an owner: P2-1, 2, 5 (with the billing webhook, S6), 6, 10, 11, 14, 15, 18, 29, 30, and the full P2-19 refactor.
+
+**Unconfirmed (3 of 3):** prove or dismiss U-1, U-2 and U-5 with tests now and fix any that are real; leave the other five listed.
