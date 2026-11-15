@@ -123,6 +123,12 @@ begin
   select count(*) into n2 from s3_in;
   res := res || E'\n' || case when n = n2 + (select count(*) from s3_in where ex is not null and ins is not null) then 'PASS' else 'FAIL' end
          || ' (2) audit rows ' || n || ' for ' || n2 || ' list rows (a deposit or unmatched refund has a retraction and an insert)';
+  select count(*) into n from expenses e join s3_in s on s.lid = e.sms_log_id where s.prefix = '818b0736' and e.deleted_at is null
+     and e.category::text = 'Transfer' and 'cash_deposit' = any (e.sms_flags);
+  res := res || E'\n' || case when n = 1 then 'PASS' else 'FAIL' end || ' (2) 818b0736 is Transfer with the cash_deposit flag after the apply';
+  select count(*) into n from expenses e join s3_in s on s.lid = e.sms_log_id where s.prefix in ('51966294','5fe0a498','6cde6c02','81144634','82133010','b61afd88','c18dabf3') and e.deleted_at is null
+     and e.category::text = 'CC Payoff' and 'card_load' = any (e.sms_flags) and not ('model_kind_unproven' = any (e.sms_flags));
+  res := res || E'\n' || case when n = 7 then 'PASS' else 'FAIL ' || n end || ' (2) the 7 T5 rows carry card_load only, category unchanged';
   out := sms_s3_apply(b, 'T15', (select array_agg(lid) from s3_in where rtype = 'T15'), (select jsonb_object_agg(lid::text, ex) from s3_in where rtype = 'T15'));
   res := res || E'\n' || case when jsonb_array_length(out -> 'applied') = 0 and jsonb_array_length(out -> 'refused') = (select count(*) from s3_in where rtype = 'T15') then 'PASS' else 'FAIL' end || ' (2) a second call of the same batch applies nothing (idempotent)';
 
@@ -210,6 +216,9 @@ begin
   select count(*) into n from expenses e join s3_in s on s.lid = e.sms_log_id where s.prefix in ('9e75b537', 'bfe884e3', 'e8b0e3ed') and e.deleted_at is null
      and ((s.prefix = '9e75b537' and e.refunded_at is not null and e.refund_sms_log_id is not null) or (s.prefix = 'bfe884e3' and e.refunded_at is not null) or (s.prefix = 'e8b0e3ed' and e.refunded_at is null));
   res := res || E'\n' || case when n = 3 then 'PASS' else 'FAIL ' || n end || ' (6) the decline stamp and the refund-mark move are back as they were';
+  select count(*) into n from expenses e join s3_in s on s.lid = e.sms_log_id where s.prefix = '818b0736' and e.deleted_at is null
+     and e.category::text = 'ATM Cash Withdrawal' and not ('cash_deposit' = any (coalesce(e.sms_flags, '{}')));
+  res := res || E'\n' || case when n = 1 then 'PASS' else 'FAIL' end || ' (6) 818b0736 is back to ATM Cash Withdrawal without the flag after the revert';
   select count(*) into n from sms_parse_log where discard_requested_at is not null;
   res := res || E'\n' || case when n = v_discard then 'PASS' else 'FAIL' end || ' (6) the revert queued no discard';
 

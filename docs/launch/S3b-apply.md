@@ -76,3 +76,35 @@ Reviewer sign-off for step 1 received (rehearsal at 091d5092). Batch id `s3-2026
 **Nothing sent:** since the first audit row, no notification row, push stamp, template signal or discard request was created (count 0).
 
 **Not verified:** T7b; the app-side view of the repaired rows on a device; a hash of each repaired row before and after (the audit table holds the old rows). Step 2 not run; `sms_s3_input` and `sms_s3_totals_before` not dropped.
+
+## 6. Step 2 (in-place rows) (2026-11-15)
+
+Decisions from S3-dryrun section 13 applied: T5 uses `card_load`; `818b0736` is retyped to Transfer with `cash_deposit` (function change in 0283: the T4 expense branch sets category Transfer, audit keeps the old row so the revert restores ATM Cash Withdrawal); T11 as built. Step 1 totals re-checked against `sms_s3_totals_before` first: the same four keys, same amounts, no drift.
+
+**T5 per-row check** (7 rows, 1 user): the prompt says "money loaded onto your card, not spending". Every row is kind cc_payoff, category CC Payoff, non-spend, with no payment method or destination, so there is no balance to contradict the claim and the claim matches the classification. The "It was spending" action takes any category (sets Other, moves the payment method from the destination if present; here neither exists). All 7 get the flag. Known weakness: the prompt title reads "Card top-up" for a card payoff.
+
+**Expected totals, step 2 in-place rows** (written before applying; every other key unchanged): T4 SAR income 2026-08 -1400.00 and 2026-09 -50.00; T11 SAR spending 2026-08 -1482.00 and 2026-09 -2800.00; T5 none; T9 SAR income 2026-09 -740.00; T8 SAR income 2026-09 -29.00 and 2026-10 -0.23.
+
+**Pending inserts are 12, not 7:** T4's 3 income rows and T8's 2 income rows are retracted by the apply and their replacement rows (cash-deposit transfers, net-zero refunds, no total effect) are booked by the insert script, so they also wait for the service-role key, as do T7b 2 and T6 5.
+
+**Rehearsal (rolled back, `scripts/qa/sql/0283_s3_step2_rehearsal.test.sql`):** 19 of 19 rows, all checks PASS: each type applied in full; `818b0736` Transfer with `cash_deposit`; the 7 T5 rows carry exactly `card_load`; totals equal before plus the step 2 prediction (0 mismatching keys); stale pushes cannot undo the top-up retag, the cash-deposit retag, a retracted income or the flags; a later edit wins; nothing queued; the revert restored 20 changes and skipped only the user-edited row, totals back to the start, `818b0736` back to ATM Cash Withdrawal without the flag, the 6 retracted incomes live again. The full-row hash differs for all 19 rows after the revert (server_rev and updated_at move on every write), so I compared per-column values and totals, not a bit-exact hash.
+
+**Applied** (batch `s3-20261115-s2`, one type per transaction, totals checked after T4, T11, T5+T9 and T8; no timeout, no refusal):
+
+| Type | Applied | Audit rows | Totals after |
+|---|---|---|---|
+| T4 | 4 of 4 | 3 soft_delete, 1 update | SAR income 2026-08 -4393.71, 2026-09 -4034.39: as predicted |
+| T11 | 5 of 5 | 5 update | SAR spending 2026-08 -1482.00, 2026-09 -2800.00: as predicted |
+| T5 | 7 of 7 | 7 update | no total moved: as predicted |
+| T9 | 1 of 1 | 1 soft_delete, 2 relink | SAR income 2026-09 -4774.39: as predicted |
+| T8 | 2 of 2 | 2 soft_delete | SAR income 2026-09 -4803.39, 2026-10 -986.34: as predicted |
+
+Final state against the starting totals, steps 1 and 2 together: 6090c8e7 USD 2026-10 spending +5.70; f923c68b SAR 2026-08 spending -1482.00 and income -4393.71; 2026-09 spending -2800.00 and income -4803.39; 2026-10 income -986.34. No other key moved. Nothing was queued (no notification row, push stamp, template signal or discard request since the first audit row).
+
+## S3 status
+
+**Done:** step 1 (78 rows: T15 69, T3 5, T1 2, T2a 1, T2b 1) and the 19 in-place step 2 rows (T4 4, T11 5, T5 7, T9 1, T8 2), 97 live repairs in all, every one audited and revertible with `sms_s3_revert(batch)`.
+
+**Pending, 12 inserts, wait for the owner to put the service-role key in the local env file:** T7b 2, T6 5, and the replacement rows for the 3 retracted T4 incomes and 2 retracted T8 incomes. Until they run, those 5 messages have no live row (their wrong income is already gone; the replacements are non-spend or net-zero, so no total changes). Run order: `S3_DRY=1`, then one row for real and verified, then the rest. Keep `sms_s3_input` and `sms_s3_totals_before` until then, then drop both.
+
+**Known gaps:** the cash-account balance effect of the cash deposits is unmodelled; the retagged top-ups (T11) have no destination wallet; the T5 prompt title reads "Card top-up" for a card payoff; no check on a device; no bit-exact row hash.

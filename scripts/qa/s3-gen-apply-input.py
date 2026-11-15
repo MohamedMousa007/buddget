@@ -10,8 +10,8 @@ diff = {x['id']: x for x in json.load(open(root / '.claude/s3-diff.json'))}
 steps = json.load(open(root / '.claude/s3-steps.json'))
 excluded = set(sys.argv[1:])
 
-# the report calls the via-card flag card_flag; the shipped flag with a prompt is model_kind_unproven
-T5_FLAGS = ['model_kind_unproven']
+# the report calls the via-card flag card_flag; the shipped flag is card_load (council, S3-dryrun section 13)
+T5_FLAGS = ['card_load']
 
 
 def rtype(x):

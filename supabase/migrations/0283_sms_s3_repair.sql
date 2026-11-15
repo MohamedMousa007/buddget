@@ -105,7 +105,7 @@ begin
         when 'T3', 'T8', 'T4', 'T9' then
           if p_repair_type = 'T4' and tbl = 'expenses' then
             if jsonb_array_length(coalesce(ex -> 'flags_add', '[]'::jsonb)) = 0 then reason := 'no_flags_add'; exit per_row; end if;
-            patch := jsonb_build_object('sms_flags', coalesce(nullif(r -> 'sms_flags', 'null'::jsonb), '[]'::jsonb) || (ex -> 'flags_add'));
+            patch := jsonb_build_object('category', 'Transfer', 'sms_flags', coalesce(nullif(r -> 'sms_flags', 'null'::jsonb), '[]'::jsonb) || (ex -> 'flags_add'));
           else
             if tbl <> 'income_events' then reason := 'soft_delete_needs_income'; exit per_row; end if;
             marker := coalesce((ex ->> 'marker_log')::uuid, lid);
