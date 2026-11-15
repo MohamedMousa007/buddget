@@ -2,6 +2,7 @@
  * Shared helper: promote a sms_parse_log row to an expense or income_source.
  * Used by both /api/sms/parse (auto-add) and /api/sms/confirm (user confirm).
  */
+import { billingEnabled } from '@/lib/entitlements/billingSwitch'
 import type { ServiceClient } from '@/lib/supabase/service'
 import type { Database } from '@/lib/supabase/database.types'
 import type {PostgrestError} from '@supabase/supabase-js'
@@ -442,6 +443,25 @@ async function findUniqueByLast4(
   }))
   const smsBankKey = bankKeyOf(provider)
   return matchByTail(methods, last4, smsBankKey)
+}
+
+/**
+ * True when the free SMS-account cap left the account this message names untracked (S5c item 18): the message is held
+ * for review with a reason line, never booked and never dropped. Only while billing is on; a card follows its account.
+ */
+export async function namesUntrackedAccount(
+  service: ServiceClient,
+  userId: string,
+  last4: string | null | undefined,
+  provider?: SmsProvider,
+): Promise<boolean> {
+  if (!last4 || !(await billingEnabled(service))) return false
+  const { id } = await findUniqueByLast4(service, userId, last4, provider)
+  if (!id) return false
+  const read = (key: string) => service.from('payment_methods').select('track_sms, type, parent_id').eq('id', key).maybeSingle()
+  let { data } = await read(id)
+  if (data?.parent_id) data = (await read(data.parent_id)).data
+  return !!data && data.type !== 'cash' && data.track_sms === false
 }
 
 /**

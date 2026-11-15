@@ -8,6 +8,9 @@ export const CREDIT_KINDS = new Set(['income', 'instant_transfer_in', 'refund'])
  * been created for) are what "Select all ready" picks; `check` rows (a credit, a currency still to confirm, or an amount that may be cut off) need a
  * look; `locked` rows (unverified sender) can only be confirmed one at a time, from their own detail.
  */
+/** failure_code of a message held because the SMS model-call allowance was spent: it was never read, so it can only be dismissed. */
+export const AI_QUOTA_HOLD = 'ai_quota_held'
+
 export type HeldGroup = 'ready' | 'check' | 'locked'
 
 type Held = Pick<PendingConfirmation, 'kind' | 'failure_code' | 'expense_id' | 'income_id'>
@@ -19,7 +22,7 @@ export const isCurrencyOnly = (i: Pick<PendingConfirmation, 'expense_id' | 'inco
 
 export function heldGroup(i: Held): HeldGroup {
   if (i.failure_code === 'sender_mismatch') return 'locked'
-  if (isCredit(i) || isCurrencyOnly(i) || i.failure_code === 'truncated_amount') return 'check'
+  if (isCredit(i) || isCurrencyOnly(i) || i.failure_code === 'truncated_amount' || i.failure_code === 'sms_account_cap' || i.failure_code === AI_QUOTA_HOLD) return 'check'
   return 'ready'
 }
 

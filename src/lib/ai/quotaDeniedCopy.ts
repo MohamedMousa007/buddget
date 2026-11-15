@@ -9,6 +9,7 @@ const COPY = {
     rate: 'You’re sending requests too fast. Try again in a moment.',
     disabled: 'This AI feature isn’t available on your plan.',
     unavailable: 'AI is unavailable right now. Try again shortly.',
+    sparks: (when: string | null) => `You’ve used this month’s Sparks.${when ? ` They refill on ${when}.` : ''}`,
   },
   ar: {
     limit: 'وصلت إلى حد الذكاء الاصطناعي حاليًا.',
@@ -16,6 +17,7 @@ const COPY = {
     rate: 'ترسل الطلبات بسرعة كبيرة. حاول بعد قليل.',
     disabled: 'ميزة الذكاء الاصطناعي هذه غير متاحة في خطتك.',
     unavailable: 'الذكاء الاصطناعي غير متاح الآن. حاول بعد قليل.',
+    sparks: (when: string | null) => `استخدمت شرارات هذا الشهر.${when ? ` تتجدد في ${when}.` : ''}`,
   },
 } as const
 
@@ -25,8 +27,17 @@ export function quotaDeniedMessage(layer: QuotaLayer | string | undefined, reset
   if (layer === 'feature_disabled') return c.disabled
   if (layer === 'unavailable') return c.unavailable
   if (layer === 'rate') return c.rate
+  if (layer === 'sparks') {
+    const d = resetAt ? new Date(resetAt) : null
+    return c.sparks(d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { day: 'numeric', month: 'long' }) : null)
+  }
   const reset = resetAt ? new Date(resetAt) : null
   if (!reset || Number.isNaN(reset.getTime())) return c.limit
   const when = reset.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit' })
   return c.limit + c.resetAt(when)
+}
+
+/** Only a spent Sparks balance can be answered by buying more; a time window just resets, so it never offers an upgrade (S5c item 12). */
+export function quotaDeniedOffersUpgrade(layer: QuotaLayer | string | undefined): boolean {
+  return layer === 'sparks'
 }

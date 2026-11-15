@@ -20,6 +20,7 @@ import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { usageFromGemini, type TokenUsage } from '@/lib/server/ai/units'
+import { AI_QUOTA_HOLD } from '@/lib/sms/heldReview'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
@@ -32,7 +33,7 @@ import { getUserTimeZone } from '@/lib/server/userTimeZone'
 import { matchCuratedPattern } from '@/lib/sms/patterns'
 import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
-import type { SmsExpenseKind } from '@/lib/sms/createSmsExpense'
+import { namesUntrackedAccount, type SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { guardWordsIn, storedGuardWords, wordingGuardDiverts, WORDING_GUARD_ENFORCED } from '@/lib/sms/wordingGuard'
 import { maskForModel, type ModelView } from '@/lib/sms/maskForModel'
 import { maskTemplateSample } from '@/lib/sms/templateSample'
@@ -98,8 +99,6 @@ const GEMINI_MODEL = 'gemini-2.5-flash'
 const SOURCE_ACCOUNT_KINDS: ReadonlySet<string> = new Set(['purchase', 'online_purchase', 'atm_withdrawal', 'fee'])
 /** Typical cost of one SMS parse (prompt plus a short JSON answer) in quota units. */
 const SMS_PARSE_UNITS = 1500
-/** failure_code of a message held because the user's SMS model-call allowance was spent (or AI is paused); it is parsed when the user reviews it. */
-const AI_QUOTA_HOLD = 'ai_quota_held'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 /** The key travels in a header, never the URL, so request-URL logs and proxies cannot capture it. */
 const geminiHeaders = (apiKey: string) => ({ 'Content-Type': 'application/json', 'x-goog-api-key': apiKey })
@@ -1131,7 +1130,9 @@ export async function POST(request: Request) {
   // The payment reference as a per-user hash, kept on the log row after the text is purged so a later refund can find
   // this message by it.
   const paymentReferenceHash = referenceHash(userId, extractIpnReference(message))
-  const tx: SmsTxResult = senderHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
+  // The free plan tracks two bank accounts by SMS. A message for one the cap left untracked waits in the review list with a reason line.
+  const capHeld = !senderHeld && await namesUntrackedAccount(service, userId, cleanLast4, { sender, bankName: parsed.bank_name, bankKey: provider.bankKey })
+  const tx: SmsTxResult = senderHeld || capHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
     userId,
     amount: parsed.amount,
     currency: parsed.currency,
@@ -1257,7 +1258,7 @@ export async function POST(request: Request) {
       status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : preAck ? 'confirmed' : 'logged',
       ...(preAck && tx.outcome !== 'transfer_paired' ? { acked_at: new Date().toISOString(), confirmed_at: new Date().toISOString() } : {}),
       harvested_at: new Date().toISOString(),
-      failure_code: senderHeld ? 'sender_mismatch' : addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
+      failure_code: senderHeld ? 'sender_mismatch' : capHeld ? 'sms_account_cap' : addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
@@ -1342,7 +1343,7 @@ export async function POST(request: Request) {
       data: { kind: SMS_SENDER_HELD_PUSH_KIND, hash, logId, amount: String(parsed.amount), currency: parsed.currency },
       collapseKey: `sms-held-${hash.slice(0, 12)}`,
     }
-  } else if (addFailed || debtAwaitingUser) {
+  } else if (addFailed || debtAwaitingUser || capHeld) {
     pushArgs = {
       userId,
       title: np.smsConfirmTitle,

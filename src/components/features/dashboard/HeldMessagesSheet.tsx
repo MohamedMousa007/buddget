@@ -18,7 +18,7 @@ import { useWeekendFirstDay } from '@/hooks/useWeekStart'
 import { categoryLabel } from '@/lib/i18n/categoryLabel'
 import type { PendingConfirmation } from '@/hooks/useSmsConfirmations'
 import { formatFixed2 } from '@/lib/utils/formatters'
-import { createDeferred, dismissKind, dismissNeedsUndo, groupHeld, isCredit, isCurrencyOnly, runBatch } from '@/lib/sms/heldReview'
+import { AI_QUOTA_HOLD, createDeferred, dismissKind, dismissNeedsUndo, groupHeld, isCredit, isCurrencyOnly, runBatch } from '@/lib/sms/heldReview'
 
 interface HeldMessagesSheetProps {
   open: boolean
@@ -44,6 +44,10 @@ export interface ReviewMatch {
  *  - provisional currency (transaction exists) → confirming locks the currency; dismissing only stops the question
  *  - add-failed rescue (nothing created yet)   → confirming creates it; dismissing means it is never added (Undo for 8 s)
  */
+/** The one line saying why a message waits, for the holds that come from a plan limit rather than from the message itself. */
+const heldReason = (code: string | null, s: { heldAccountCap: string; heldAiQuota: string }): string | null =>
+  code === 'sms_account_cap' ? s.heldAccountCap : code === AI_QUOTA_HOLD ? s.heldAiQuota : null
+
 export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: HeldMessagesSheetProps) {
   const shortDate = useShortDate()
   const t = useT()
@@ -198,11 +202,12 @@ export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissIt
         chip={chip}
         label={[title, amountText, shortDate(item.received_at), chip?.text].filter(Boolean).join(', ')}
         detailLabels={{ show: s.seeMessage, hide: s.hideMessage }}
-        detailDefaultOpen={locked}
+        detailDefaultOpen={locked || !!heldReason(item.failure_code, s)}
         detail={
-          item.raw_body || locked ? (
+          item.raw_body || locked || heldReason(item.failure_code, s) ? (
             <div className="flex flex-col gap-2 px-1">
               {item.raw_body ? <p dir="auto" className="font-mono-numbers text-[0.6875rem] leading-[1.45] text-[var(--color-brand-text-secondary)]">{item.raw_body}</p> : null}
+              {heldReason(item.failure_code, s) ? <p className="text-xs text-[var(--color-brand-text-secondary)]" role="note">{heldReason(item.failure_code, s)}</p> : null}
               {locked ? (
                 <>
                   <p className="text-xs text-[var(--color-brand-red)]" role="note">{s.unverifiedSender(item.sender ?? '?')}</p>

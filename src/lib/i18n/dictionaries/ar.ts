@@ -2918,6 +2918,8 @@ export const ar: Dictionary = {
     groupReady: (count: number) => `جاهزة · ${count}`,
     groupCheck: (count: number) => `تستحق نظرة · ${count}`,
     groupUnverified: (count: number) => `مُرسِل غير موثّق · ${count}`,
+    heldAccountCap: 'محجوزة لأن هذا الحساب تجاوز حسابَي التتبع بالرسائل في الخطة المجانية. أكّدها يدويًا أو قلّل الحسابات المتتبَّعة.',
+    heldAiQuota: 'محجوزة لأن حصة القراءة التلقائية لهذا الشهر انتهت. لا يمكن تسجيلها من هنا؛ تجاهلها أو أضفها يدويًا.',
     seeMessage: 'عرض الرسالة',
     hideMessage: 'إخفاء الرسالة',
     confirmN: (count: number) => (count <= 1 ? 'تأكيد' : `تأكيد ${count}`),

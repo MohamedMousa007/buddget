@@ -2913,6 +2913,8 @@ export const en: Dictionary = {
     groupReady: (count: number) => `Ready · ${count}`,
     groupCheck: (count: number) => `Take a look · ${count}`,
     groupUnverified: (count: number) => `Unverified sender · ${count}`,
+    heldAccountCap: 'Held because this account is past the free plan’s two SMS-tracked accounts. Confirm it by hand, or track fewer accounts.',
+    heldAiQuota: 'Held because this month’s automatic reading allowance is used up. It cannot be booked from here; dismiss it or add it by hand.',
     seeMessage: 'See message',
     hideMessage: 'Hide message',
     confirmN: (count: number) => (count <= 1 ? 'Confirm' : `Confirm ${count}`),

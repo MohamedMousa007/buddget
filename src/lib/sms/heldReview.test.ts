@@ -3,7 +3,7 @@
  * entries: only a plain debit with nothing created is ready; credits, currency-only rows and unverified senders never are.
  */
 import { describe, it, expect } from 'vitest'
-import { dismissKind, dismissNeedsUndo, groupHeld, heldGroup, runBatch } from '@/lib/sms/heldReview'
+import { AI_QUOTA_HOLD, dismissKind, dismissNeedsUndo, groupHeld, heldGroup, runBatch } from '@/lib/sms/heldReview'
 
 const row = (over: Partial<Parameters<typeof heldGroup>[0]> = {}) => ({ kind: 'expense', failure_code: 'insert_failed', expense_id: null, income_id: null, ...over })
 
@@ -124,5 +124,14 @@ describe('createDeferred (the Undo window for "Don’t add")', () => {
     await vi.advanceTimersByTimeAsync(20000)
     expect(run).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
+  })
+})
+
+describe('holds that come from a plan limit (S5c items 7 and 18)', () => {
+  const held = (failure_code: string) => ({ kind: 'expense', failure_code, expense_id: null, income_id: null })
+  it('puts a message held by the SMS account cap, or by a spent reading allowance, in the group that needs a look, never in "ready"', () => {
+    expect(heldGroup(held('sms_account_cap'))).toBe('check')
+    expect(heldGroup(held(AI_QUOTA_HOLD))).toBe('check')
+    expect(heldGroup(held('null_amount'))).toBe('ready')
   })
 })

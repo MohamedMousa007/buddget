@@ -596,6 +596,7 @@ export type Database = {
           feature: string
           id: string
           settled: boolean
+          sparks: number
           user_id: string
         }
         Insert: {
@@ -606,6 +607,7 @@ export type Database = {
           feature: string
           id?: string
           settled?: boolean
+          sparks?: number
           user_id: string
         }
         Update: {
@@ -616,6 +618,7 @@ export type Database = {
           feature?: string
           id?: string
           settled?: boolean
+          sparks?: number
           user_id?: string
         }
         Relationships: [
@@ -4536,6 +4539,153 @@ export type Database = {
           },
         ]
       }
+      spark_allowances: {
+        Row: {
+          created_at: string
+          granted: number
+          id: string
+          kind: string
+          original_period_end: string | null
+          period_end: string
+          period_start: string
+          ref: string | null
+          used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted: number
+          id?: string
+          kind: string
+          original_period_end?: string | null
+          period_end: string
+          period_start: string
+          ref?: string | null
+          used?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted?: number
+          id?: string
+          kind?: string
+          original_period_end?: string | null
+          period_end?: string
+          period_start?: string
+          ref?: string | null
+          used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      spark_prices: {
+        Row: {
+          feature: string
+          sparks: number
+          updated_at: string
+        }
+        Insert: {
+          feature: string
+          sparks: number
+          updated_at?: string
+        }
+        Update: {
+          feature?: string
+          sparks?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      spark_purchases: {
+        Row: {
+          currency: string | null
+          id: string
+          price_micros: number | null
+          product_id: string
+          purchased_at: string
+          refunded_at: string | null
+          remaining: number
+          sparks: number
+          store: string
+          store_txn: string
+          user_id: string
+        }
+        Insert: {
+          currency?: string | null
+          id?: string
+          price_micros?: number | null
+          product_id: string
+          purchased_at?: string
+          refunded_at?: string | null
+          remaining: number
+          sparks: number
+          store: string
+          store_txn: string
+          user_id: string
+        }
+        Update: {
+          currency?: string | null
+          id?: string
+          price_micros?: number | null
+          product_id?: string
+          purchased_at?: string
+          refunded_at?: string | null
+          remaining?: number
+          sparks?: number
+          store?: string
+          store_txn?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      spark_spend: {
+        Row: {
+          allowance_id: string | null
+          created_at: string
+          feature: string
+          id: number
+          purchase_id: string | null
+          reservation_id: string | null
+          sparks: number
+          user_id: string
+        }
+        Insert: {
+          allowance_id?: string | null
+          created_at?: string
+          feature: string
+          id?: never
+          purchase_id?: string | null
+          reservation_id?: string | null
+          sparks: number
+          user_id: string
+        }
+        Update: {
+          allowance_id?: string | null
+          created_at?: string
+          feature?: string
+          id?: never
+          purchase_id?: string | null
+          reservation_id?: string | null
+          sparks?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spark_spend_allowance_id_fkey"
+            columns: ["allowance_id"]
+            isOneToOne: false
+            referencedRelation: "spark_allowances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spark_spend_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "spark_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount: number
@@ -4823,6 +4973,24 @@ export type Database = {
           },
         ]
       }
+      trial_claims: {
+        Row: {
+          claimed_at: string
+          email_key: string
+          user_id: string | null
+        }
+        Insert: {
+          claimed_at?: string
+          email_key: string
+          user_id?: string | null
+        }
+        Update: {
+          claimed_at?: string
+          email_key?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       trusted_devices: {
         Row: {
           created_at: string
@@ -5019,6 +5187,7 @@ export type Database = {
           show_all_currencies_in_forms: boolean
           show_cents_in_dashboard: boolean
           show_secondary_currency: boolean
+          sms_first_enabled_at: string | null
           sms_tracking_enabled: boolean
           sub_due_reminders: boolean
           sub_price_alerts: boolean
@@ -5047,6 +5216,7 @@ export type Database = {
           show_all_currencies_in_forms?: boolean
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
+          sms_first_enabled_at?: string | null
           sms_tracking_enabled?: boolean
           sub_due_reminders?: boolean
           sub_price_alerts?: boolean
@@ -5075,6 +5245,7 @@ export type Database = {
           show_all_currencies_in_forms?: boolean
           show_cents_in_dashboard?: boolean
           show_secondary_currency?: boolean
+          sms_first_enabled_at?: string | null
           sms_tracking_enabled?: boolean
           sub_due_reminders?: boolean
           sub_price_alerts?: boolean
@@ -5251,6 +5422,13 @@ export type Database = {
           status: string
         }[]
       }
+      admin_trial_grants_daily: {
+        Args: { p_days?: number }
+        Returns: {
+          day: string
+          granted: number
+        }[]
+      }
       admin_user_directory: {
         Args: {
           p_limit?: number
@@ -5296,7 +5474,31 @@ export type Database = {
         }
         Returns: Json
       }
+      ai_quota_reserve_v2_core: {
+        Args: {
+          p_chat: string
+          p_est: number
+          p_feature: string
+          p_user: string
+        }
+        Returns: Json
+      }
       ai_quota_settle: {
+        Args: {
+          p_cached: number
+          p_in: number
+          p_latency: number
+          p_model: string
+          p_out: number
+          p_reservation: string
+          p_status: string
+          p_tier: string
+          p_units: number
+          p_user: string
+        }
+        Returns: undefined
+      }
+      ai_quota_settle_core: {
         Args: {
           p_cached: number
           p_in: number
@@ -5334,6 +5536,7 @@ export type Database = {
         Args: { p_pm: string; p_user: string }
         Returns: undefined
       }
+      billing_enabled: { Args: never; Returns: boolean }
       bump_sms_keyword: {
         Args: { p_keyword: string; p_lang: string }
         Returns: undefined
@@ -5708,6 +5911,47 @@ export type Database = {
         }[]
       }
       sms_zero_variance_sweep: { Args: never; Returns: number }
+      spark_available: {
+        Args: { p_t: string; p_user: string }
+        Returns: number
+      }
+      spark_charge: {
+        Args: {
+          p_feature: string
+          p_reservation: string
+          p_sparks: number
+          p_user: string
+        }
+        Returns: number
+      }
+      spark_end_plan_period: {
+        Args: { p_at: string; p_user: string }
+        Returns: number
+      }
+      spark_ensure_allowance: {
+        Args: { p_granted: number; p_t: string; p_user: string }
+        Returns: undefined
+      }
+      spark_open_plan_period: {
+        Args: {
+          p_end: string
+          p_granted: number
+          p_ref: string
+          p_start: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      spark_open_trial: {
+        Args: {
+          p_end: string
+          p_granted: number
+          p_start: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      spark_restore_plan_period: { Args: { p_user: string }; Returns: number }
       stable_uuid: {
         Args: { p_legacy: string; p_user_id: string }
         Returns: string
@@ -5737,6 +5981,10 @@ export type Database = {
       sync_pull_v2: { Args: { p_since?: string }; Returns: Json }
       sync_table_delta: {
         Args: { p_table: string; p_win: string }
+        Returns: Json
+      }
+      trial_claim: {
+        Args: { p_email_key: string; p_user: string }
         Returns: Json
       }
       update_subscription_and_re: {

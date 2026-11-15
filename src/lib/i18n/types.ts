@@ -2777,6 +2777,8 @@ export interface Dictionary {
     groupReady: (count: number) => string
     groupCheck: (count: number) => string
     groupUnverified: (count: number) => string
+    heldAccountCap: string
+    heldAiQuota: string
     seeMessage: string
     hideMessage: string
     confirmN: (count: number) => string

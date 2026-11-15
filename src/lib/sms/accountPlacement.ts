@@ -102,6 +102,8 @@ export async function ensureProvisionalAccount(
         ...(brand ? { color: brand.colors[0] } : {}),
         is_default: false,
         provisional: true,
+        // The column default is false (the free cap decides); an account the user's own bank message created is tracked unless the cap says no.
+        track_sms: true,
       })
       .select('id')
       .single()
