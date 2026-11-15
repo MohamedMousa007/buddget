@@ -113,7 +113,7 @@ Carried into S4 from S2 (2026-11-14): `sms_parse_log.clean_title` still holds tr
 
 ### S5a. Pricing, free trial and AI credits design — **Fable 5.2**, W1 (owner decision 2026-11-14, council advised design free, implementation fitted)
 Clean-sheet design: start from the business questions, not the tables. Treat the existing `plans`/`user_entitlements`/resolver/quota scaffold as a **constraint to challenge**: first fit-test it (about an hour), then keep, extend or replace each part with a written reason. Council (3 of 3) rejected "disregard the existing structure" because it yields churn and a spec that cannot map onto the live DB; it endorsed Fable designing freely. Also evaluate the cheapest validation first: manual entitlements via the `promo` source plus InstaPay/Fawry to test willingness to pay before building billing. Skills to consider only if S5 picks RevenueCat: RevenueCat/ai-toolkit (official). Do not install `rc-claude-code-plugin` without a review (a Tessl audit flagged it as high risk).
-**Status (2026-11-15): document written, waiting for the owner's pick** (`docs/launch/S5a-pricing.md`; the 16 decisions are in its section 10 with the council's votes). Recommended: one paid plan "Plus" at EGP 79 a month or 599 a year, SMS free on 3 accounts, a 14-day no-card trial, AI credits ("Sparks") as a monthly allowance with top-up packs designed but held back from v1, RevenueCat for billing. No code, no migrations, no database writes.
+**Status (2026-11-15): written, then revised by a business review; waiting for the owner's pick** (`docs/launch/S5a-pricing.md`, decisions in its section 10 with changed rows marked; evidence in `docs/launch/S5a-business-review.md`). Recommended now: one paid plan "Plus" (a household plan later, on a written trigger); Egypt EGP 69 a month or 499 a year, UAE AED 14.99 / 99.99, Saudi SAR 12.99 / 99.99; a founding price on the annual plan for the first 60 days; SMS free on 2 accounts; export and 3 months of reports free; a 14-day no-card trial; AI credits ("Sparks") 20 free and 100 on Plus, no top-up packs in v1; RevenueCat. The review's main finding: price is not the problem, the paid plan's content and buyer trust are (60 simulated buyers, none would pay; rivals already sell SMS tracking in Egypt and the UAE). Break-even is about 44 subscribers on about $58 a month of fixed cost. No code, no migrations, no database writes.
 This is a decision document, not code. Deliverable `docs/launch/S5a-pricing.md` (first named `S5-monetization.md` in this plan):
 - Freemium ladder grounded in the data: what is free (core tracking, manual entry, limited accounts), what is paid (e.g. SMS auto-tracking volume, AI chat/receipt/voice quotas, multi-account depth, reports/export, budgets studio), a trial, annual discount.
 - Egypt-first pricing in EGP with USD/AED anchors, purchasing-power reality, and store fee/tax assumptions (verify against current Apple/Google programs before committing).
@@ -135,12 +135,27 @@ Deliverable `docs/launch/S5b-loyalty.md`. Inputs from the council:
 - **Loyalty tiers:** design the full ladder and rewards (themes, badges, mascot skins, early features, time-boxed credit bonuses), but reward **consistency and outcomes** (a fully tracked month, budget set, weekly review), not raw transaction counts or logins, to avoid fake-transaction gaming and over-tracking in a finance app. Council dissent (Skeptic): with 45 users there is no retention data, so ship v1 as founder badge + streak + the ledger and switch tiers on after 60 to 90 days of data. Plan adopts that rollout.
 - Check Apple/Google rules on rewards that carry value before any redeemable reward is designed.
 
+Required by the S5a business review (2026-11-15, `docs/launch/S5a-business-review.md` sections 5 and 7):
+- One founding window, one end date (launch + 60 days), no extension and no second "last chance". The only money perk is the founding price on the annual plan for the first year (EGP 399, AED 79.99, SAR 79.99), delivered as a store introductory offer; the badge and number are the lasting part.
+- Loyalty rewards must not lean on AI credits as the main prize: buyers are not short of them. A reward may add bonus Sparks (expiring) but never purchased-type balance.
+- Design for the household plan that may follow: status belongs to a person, not to a shared budget.
+
 ### S5c. Economics, abuse and store-policy review — **Fable 5.2**, W1 or W2 (short)
 Adversarial review of S5a + S5b: price math, worst-user cost, trial abuse, credit refund liability, gaming of loyalty, and Apple/Google policy on credits, rewards and subscriptions. Output: `docs/launch/S5c-review.md` with changes required before S6 starts.
+
+Added by the S5a business review: also check (1) whether a pay-up-front annual introductory offer can be switched off on a set date in both stores; (2) the 30-day annual-plan guarantee wording against Apple's and Google's refund rules (Apple does not let a developer issue the refund); (3) the no-card trial against App Review; (4) every claim in the proposed privacy block against the code and the privacy policy; (5) the worst case in the review's section 6 (an Egypt annual subscriber at both caps costs more than they pay); (6) the AI cost table after 2026-12-01, when `gemini-2.5-flash` requests route to a newer model at different rates.
 
 ### S6. Billing, AI credits and loyalty implementation — **Sonnet 5.5**, after S5a/S5b/S5c approval, W2
 Scope: subscriptions + trial, the credits ledger and top-up packs, the loyalty/founder ledger and badge UI. If S5a picks RevenueCat, use the installed RevenueCat skills below (entitlements gate, paywall, purchase flow, testing setup).
 Implements exactly what S5 decided, on the scaffold where S5 kept it (migrations for anything S5 replaced). Steps: seed paid plans via migration; purchase/restore/manage flows in the apps; server-verified receipts/webhooks writing entitlements; flip `enforced: false` limits that S5 gates; paywall and upgrade prompts built from existing design-system components (no new component without alert); admin Plans view already exists. **Fable 5.2** reviews the webhook and entitlement code in W2 (small, high-risk). Tests include expired/refund/grace/restore paths.
+
+Aligned to the S5a business review (2026-11-15), which overrides older numbers in this section:
+- No top-up packs in v1 (create the empty table only). Plans as revised: free `sms_accounts_max` 2, `sparks_per_month` 20; Plus `sparks_per_month` 100, `sms_ai_per_day` 30. `data_export` is free. Add the limit key `seats` and reserve the feature key `shared_budget` so a household plan later is one more `plans` row.
+- Store products: `plus_monthly` and `plus_annual` at EGP 69 / 499, AED 14.99 / 99.99, SAR 12.99 / 99.99, USD 4.99 / 39.99, plus the founding introductory offer on the annual plan with a fixed end date. If the offer cannot be scheduled and removed safely, launch without it.
+- First migration lowers the hidden AI limits, before anything is sold.
+- Trial: day-12 "what Plus found in your last 30 days" from the user's own data, replacing the day-10 summary.
+- Record, per user: time from switching SMS on to the first automatic transaction, and paywall views by country (needed for the launch gates and for price tests).
+- After launch, the first new Plus feature is sharing one budget with a partner (its own session; not part of S6).
 
 ### S7. UI/UX smoothness — **Sonnet 5.5** (+ Haiku 5.5 for repetitive screen sweeps), W2
 - Walk with seeded data (`buddget-qa-local` with `__finance/__settings` hooks) on 375/768/1440, light and dark if present, plus the iOS simulator and an Android emulator for native.
@@ -150,18 +165,24 @@ Implements exactly what S5 decided, on the scaffold where S5 kept it (migrations
 
 Carried into S7 from S2 (2026-11-14): extract a reusable `CategoryGrid` from the expense form (owner approval needed, additive, form unchanged) so the "what kind of place is X?" question is answered in place; show the stored bank suggestion as the pre-selected bank when a bank-less account is kept; the edit sheet for an Unassigned expense still preselects Cash.
 
+Added by the S5a business review: time to first value is a launch gate (40% of testers who switch SMS on should see a first automatic transaction within 10 minutes), so the SMS setup flow, above all the iPhone Shortcuts step, is the first friction to fix. Onboarding shows a plain privacy block (SMS is optional, only bank messages are read, text deleted after 30 days, nothing sold) and says the app works fully by typing, voice or receipt photo. Do a full Arabic pass: Saudi buyers treated incomplete Arabic as a reason not to install.
+
 ### S8. QA delta — **Sonnet 5.5** (sweeps) with **Haiku 5.5** for repetition, W2
 - Vet the neonwitty QA skill before installing (read the repo, check what it executes, as QA6 did for the others); install only if it passes.
 - Cover QA6 "Not covered" plus new code: live browser sweep with data, real-device native (SMS receive, queue drain, biometric, push), Buddgy against the live model with the eval script, light/tablet/desktop.
 - Triage findings; anything touching money or auth escalates to Fable in W2.
+- Added by the S5a business review: produce a per-bank accuracy table (supported banks and wallets, messages tested, share booked correctly) for Egypt from the gold set, and measure the same for UAE and Saudi banks from testers' real messages. No country gets a "reads your bank" claim or marketing until its table exists.
 
 ### S9. Store and website readiness — **Sonnet 5.5**, W2
 - Signed Android release build and R8 sanity run on a device; iOS archive checks; both only when you say build.
 - Update store copy (remove "Free. No ads."), Data safety and nutrition labels for purchases, subscription terms and auto-renew disclosures, Restore Purchases, reviewer notes explaining SMS (Android receive-only; iOS via Shortcuts), demo account.
 - Retake screenshots from the store build; refresh the automation claim; fill store links; legal pages reconciled; fix `CLAUDE_CONTEXT.md` drift.
+- Added by the S5a business review: the listing leads with the supported-bank list and measured accuracy, the privacy block, "works without SMS", installments and buy-now-pay-later, and full Arabic, not with AI. Competitors that read bank SMS exist in Egypt and the UAE, so no "only app that" wording. Paywall copy: normal price and the founding end date, no crossed-out price; the 12-month price promise; the annual-plan guarantee as worded after S5c's check. Market Egypt first; UAE and Saudi listings stay plain until their bank tables exist.
 
 ### S10. Launch gate — **Opus 5.5** with a council (+ **Fable 5.2** in W2 for the money-path re-review)
 Go/no-go checklist: gold-set metrics, S4 findings closed, billing sandbox pass on both stores, store declarations approved, staged rollout plan, monitoring (Sentry, SMS canary, queue health in admin), rollback steps, support readiness.
+
+Added by the S5a business review, the four gates on promoting the paid plan: (1) the Egypt bank accuracy table is published; (2) 40% of testers who switch SMS on see a first automatic transaction within 10 minutes; (3) at least 5 of the 47 testers say they would buy the annual plan after the free Plus preview; (4) a written rule that if under 2% of active users pay by day 60, the free line and what Plus contains are reopened before the price is. The app can launch free with the paid plan live but unpromoted if gates 1 to 3 are not met.
 
 ## 3. Decisions needed from you (none block S1)
 1. Is SMS auto-tracking free, capped on free, or paid? (affects S5/S6 and the Play declaration story)
