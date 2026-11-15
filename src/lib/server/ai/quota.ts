@@ -6,7 +6,7 @@ import { spendBlocks } from '@/lib/server/ai/spendGuard'
 import { computeUnits, type TokenUsage } from '@/lib/server/ai/units'
 
 /** `chat_hop` is a tool-loop continuation inside one user turn: counted for cost, not as a new turn. */
-export type AiFeature = 'chat' | 'chat_hop' | 'proxy' | 'voice' | 'receipt' | 'budget' | 'goals' | 'sms'
+export type AiFeature = 'chat' | 'chat_hop' | 'proxy' | 'voice' | 'receipt' | 'budget' | 'goals' | 'goals_grounded' | 'sms'
 
 export type QuotaLayer =
   | 'feature_disabled'
@@ -72,6 +72,7 @@ const FEATURE_KEY: Record<AiFeature, string> = {
   receipt: 'receipt_scanning',
   budget: 'ai_budget',
   goals: 'ai_assistant',
+  goals_grounded: 'ai_assistant',
   sms: 'sms_tracking',
 }
 

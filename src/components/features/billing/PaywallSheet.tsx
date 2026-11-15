@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { SelectableCard } from '@/components/ui/SelectableCard'
 import { billingOn, refreshUntilPaid, useBillingStore } from '@/lib/billing/billingStore'
 import { buildPlanOptions, type PlanOption } from '@/lib/billing/planOptions'
-import { loadPackages, purchasePackage } from '@/lib/billing/purchases'
+import { loadPackages, purchasePackage, restorePurchases } from '@/lib/billing/purchases'
 import { useT } from '@/lib/i18n'
 
 /** Plus, sold through the store. Renders nothing unless the server's billing switch is on and the sheet was opened. */
@@ -50,6 +50,16 @@ export function PaywallSheet() {
     setBusy(false)
   }
 
+  // App Review expects a way to restore on the paywall itself, not only in Settings.
+  const restore = async () => {
+    setBusy(true)
+    setNote(null)
+    const restored = (await restorePurchases()) === 'restored' && (await refreshUntilPaid(3))
+    setBusy(false)
+    if (restored) close()
+    else setNote(t.restoreNothing)
+  }
+
   return (
     <ModalShell open onBackdropClick={busy ? () => {} : close} scrollChild>
       <div className="flex min-h-0 flex-1 flex-col">
@@ -86,6 +96,7 @@ export function PaywallSheet() {
         <SheetFooter safeArea>
           <Button size="cta-block" loading={busy} disabled={!chosen} onClick={() => chosen && void buy(chosen)} className="font-semibold">{t.subscribe}</Button>
           <Button size="touch" variant="ghost" className="mt-1 w-full font-semibold text-[var(--color-brand-text-secondary)]" disabled={busy} onClick={close}>{t.notYet}</Button>
+          <Button size="touch" variant="ghost" className="w-full text-[var(--color-brand-text-muted)]" disabled={busy} onClick={() => void restore()}>{t.restore}</Button>
         </SheetFooter>
       </div>
     </ModalShell>

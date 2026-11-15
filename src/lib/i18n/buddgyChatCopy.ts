@@ -3,6 +3,7 @@ import { intlTag } from '@/lib/i18n/dateFormat'
 import type { Locale } from '@/lib/i18n/types'
 import type { ChatError } from '@/lib/buddgy/client/chatTypes'
 import type { ToolRisk } from '@/lib/buddgy/tools/spec'
+import { quotaDeniedMessage } from '@/lib/ai/quotaDeniedCopy'
 
 export interface BuddgyChatCopy {
   newChat: string
@@ -43,6 +44,7 @@ const hhmm = (iso: string | null, locale: Locale) =>
   iso ? new Date(iso).toLocaleTimeString(intlTag(locale), { hour: 'numeric', minute: '2-digit' }) : null
 
 function quotaEn(layer: string, resetAt: string | null): string {
+  if (layer === 'sparks') return quotaDeniedMessage(layer, resetAt, 'en')
   const at = hhmm(resetAt, 'en')
   if (layer === 'chats_hour' || layer === 'chats_day') return `That's a lot of fresh chats. Let's pick this up${at ? ` after ${at}` : ' a bit later'}.`
   if (layer === 'feature_disabled') return 'Buddgy chat is switched off for your plan right now.'
@@ -51,6 +53,7 @@ function quotaEn(layer: string, resetAt: string | null): string {
 }
 
 function quotaAr(layer: string, resetAt: string | null): string {
+  if (layer === 'sparks') return quotaDeniedMessage(layer, resetAt, 'ar')
   const at = hhmm(resetAt, 'ar')
   if (layer === 'chats_hour' || layer === 'chats_day') return `بدأنا محادثات كثيرة. نكمل${at ? ` بعد ${at}` : ' بعد قليل'}.`
   if (layer === 'feature_disabled') return 'محادثة بادجي متوقفة في باقتك حاليًا.'

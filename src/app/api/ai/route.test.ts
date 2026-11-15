@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const h = vi.hoisted(() => ({ call: vi.fn(), limited: vi.fn(), runtime: vi.fn(), settle: vi.fn(), ent: vi.fn() }))
+const h = vi.hoisted(() => ({ call: vi.fn(), limited: vi.fn(), runtime: vi.fn(), settle: vi.fn(), ent: vi.fn(), reserve: vi.fn() }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/server/ai/auth', () => ({ requireAiUser: async () => ({ userId: 'u1' }) }))
@@ -9,7 +9,7 @@ vi.mock('@/lib/entitlements/server', () => ({ getUserEntitlements: h.ent }))
 vi.mock('@/lib/server/rateLimit', () => ({ isRateLimited: h.limited }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({}) }))
 vi.mock('@/lib/server/ai/quota', () => ({
-  reserveAiQuota: async () => ({ allowed: true }),
+  reserveAiQuota: h.reserve,
   settleAiQuota: h.settle,
   quotaDeniedResponse: () => new Response(null, { status: 429 }),
 }))
@@ -33,6 +33,7 @@ describe('POST /api/ai', () => {
     h.limited.mockReset().mockResolvedValue(false)
     h.settle.mockReset().mockResolvedValue(undefined)
     h.ent.mockReset().mockResolvedValue({ limits: { grounded_per_day: 3 } })
+    h.reserve.mockReset().mockResolvedValue({ allowed: true })
     h.runtime.mockReset().mockResolvedValue({ rateLimitingEnabled: true, rateLimitMaxRequests: 5, rateLimitWindowMs: 60_000 })
   })
 
@@ -134,6 +135,19 @@ describe('POST /api/ai', () => {
   it('does not flag a request that was granted grounding', async () => {
     const res = await post({ contents, grounded: true })
     expect(res.headers.get('x-grounding')).toBeNull()
+  })
+
+  it('prices a grounded call at its own Sparks price, and an ungrounded or limited one as an ordinary call', async () => {
+    const featureOf = () => h.reserve.mock.calls.at(-1)![0].feature
+    await post({ contents, grounded: true })
+    expect(featureOf()).toBe('goals_grounded')
+    await post({ contents })
+    expect(featureOf()).toBe('proxy')
+    await post({ contents, tier: 'fast', grounded: true })
+    expect(featureOf()).toBe('proxy')
+    h.limited.mockImplementation(async (_c: unknown, key: string) => key.startsWith('ai-grounded:'))
+    await post({ contents, grounded: true })
+    expect(featureOf()).toBe('proxy')
   })
 
   it('does not touch the grounding allowance for an ungrounded request', async () => {

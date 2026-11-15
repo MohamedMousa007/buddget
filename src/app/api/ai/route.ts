@@ -120,9 +120,16 @@ export async function POST(req: Request) {
     tierName = knownTier ?? 'legacy'
     model = knownTier ? TIER_MODELS[knownTier] : LEGACY_MODEL
 
+    // Search grounding is billed per request on top of tokens and the client asks for it: past the daily
+    // allowance the request still runs, ungrounded. Fails closed (no grounding) when the counter is unreachable.
+    // Decided before the reservation so a grounded call carries its own Sparks price (`goals_grounded`).
+    const wantsGrounding = grounded === true && tier !== 'fast'
+    const limited = wantsGrounding ? await groundingLimited(userId) : false
+    const useGrounding = wantsGrounding && !limited
+
     const quota = await reserveAiQuota({
       userId,
-      feature: 'proxy',
+      feature: useGrounding ? 'goals_grounded' : 'proxy',
       estUnits: estimateUnits(JSON.stringify(contents).length + JSON.stringify(systemInstruction ?? '').length, config.maxOutputTokens as number),
     })
     if (!quota.allowed) return quotaDeniedResponse(quota)
@@ -130,13 +137,7 @@ export async function POST(req: Request) {
     const estInput = Math.ceil((JSON.stringify(contents).length + JSON.stringify(systemInstruction ?? '').length) / 4)
     estUsage = { promptTokens: estInput, cachedTokens: 0, outputTokens: config.maxOutputTokens as number }
 
-    // Search grounding is billed per request on top of tokens and the client asks for it: past the daily
-    // allowance the request still runs, ungrounded. Fails closed (no grounding) when the counter is unreachable.
-    let limited = false
-    if (grounded === true && tier !== 'fast') {
-      limited = await groundingLimited(userId)
-      if (!limited) geminiBody.tools = [{ google_search: {} }]
-    }
+    if (useGrounding) geminiBody.tools = [{ google_search: {} }]
     const noteHeaders: Record<string, string> = limited ? { 'x-grounding': 'limited' } : {}
 
     const wantStream = stream === true
