@@ -2,6 +2,8 @@
 
 Date 2026-11-15. Scope: section S4 of `docs/MASTER_PLAN_LAUNCH.md`. Delta since QA round 6 (commit `5c3cdb8e`). Fable 5.2 designed and reviewed; Sonnet agents did the first-pass reads and wrote part of the tests. No personal names, message text or account digits appear here.
 
+**Production was not receiving any deployment.** Every Vercel build from at least 2026-11-14 23:01 (commit `0087710d`) to `40059618` failed on one type error in `src/app/api/sms/own-transfer/route.ts`. The lockfile installs `@supabase/supabase-js` 2.119.0, but this checkout's `node_modules` still had 2.99.3, so the local `npm run verify` passed while the real build failed. Fixed in `bb4e70e4` after `npm ci`; that deployment succeeded. Consequence: the S2d, S3 and S4 code all went live together at that moment, and every earlier "pushed" in these notes meant pushed, not deployed. Migrations applied in that window ran against the older deployed code.
+
 **Closing batch (section 9, commits `ec1ad1b2`, `f282ecd8`, `075fa3f1`) changes live behaviour for testers in two ways.**
 1. **SMS ingest tokens are now stored as a hash.** Existing phones keep working with no action: the hashes of the tokens already issued were backfilled. Every token fetch now issues a new token (the newest 3 per phone stay valid). See section 9 for the one tester instruction.
 2. **Shared merchant categories:** one AI answer can no longer replace a seed category. Reading the code showed other users were already protected from single AI answers (only seed rows and rows five users agreed on are shared), so the two-user rule the council asked for was already exceeded; the gap was the seed overwrite.
@@ -139,6 +141,8 @@ Also done first, as the brief asked: `database.types.ts` regenerated from the li
 ## 7. Not verified
 
 - Nothing was run on a device or against the deployed site. All route findings are from code and unit tests.
+- The deployment of `bb4e70e4` reports success; no request was made against it. Which earlier commit was the last one live before it is not known (the last successful deployment before 2026-11-14 23:01 was not looked up).
+- `npm run verify` cannot catch this class of failure while a checkout's `node_modules` is behind the lockfile; the gate does not run `npm ci` or compare versions.
 - **Native edits were not compiled or run:** `PendingSmsQueue.kt`, `SmsGate.kt`, `SmsGateTest.kt`, `SmsCapacitorPlugin.swift`. They need a native build to take effect and to prove they compile.
 - The token change was not exercised on a phone: issue, save, forward with the app killed, and switch-off then switch-on.
 - The races (P1-1, P1-2, U-1) are proven by tests that simulate the interleaving, not by concurrent requests against a real database. U-2's floor was proven against the live function.
@@ -215,6 +219,6 @@ Commits: `ec1ad1b2` (database), `f282ecd8` (SMS and tokens), `075fa3f1` (AI and 
 
 ### Still open after this batch
 1. Apply migration 0286: needs the owner's approval in the S4 session (the permission check refused it as destructive). The S3 inserts it waited on are done.
-2. Token phase 2: drop `sms_ingest_tokens.token` after the deploy of `075fa3f1` is confirmed. Also a destructive step, so it also waits for the owner's approval. Until then the plain tokens issued before this batch are still in the table (new tokens are not).
+2. Token phase 2: drop `sms_ingest_tokens.token`. The code that reads the hash is now deployed (`bb4e70e4`), so only the owner's approval is missing (destructive step). Until then the plain tokens issued before this batch are still in the table (new tokens are not).
 3. U-1 remainder: confirm should hold the same lock as the undo function.
 4. A native build for the four files above.
