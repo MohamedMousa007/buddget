@@ -30,6 +30,13 @@ describe('POST /api/receipt/scan', () => {
     vi.stubEnv('GEMINI_API_KEY', 'k')
   })
 
+  it('rejects by content-length before reading the body', async () => {
+    const req = new Request('http://x/api/receipt/scan', { method: 'POST', headers: { 'content-length': '9000000' }, body: new FormData() })
+    const form = vi.spyOn(req, 'formData')
+    expect((await POST(req as never)).status).toBe(413)
+    expect(form).not.toHaveBeenCalled()
+  })
+
   it('rejects a non-image before reading it', async () => {
     expect((await call([file('application/pdf')])).status).toBe(415)
     expect(h.fetch).not.toHaveBeenCalled()

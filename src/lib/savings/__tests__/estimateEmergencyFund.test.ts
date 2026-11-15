@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest'
-import { parseEmergencyEstimate } from '@/lib/savings/estimateEmergencyFund'
+import { describe, it, expect, vi } from 'vitest'
+
+const generate = vi.fn()
+vi.mock('@/lib/ai/generateWithFallback', () => ({
+  generateWithFallback: (...a: unknown[]) => generate(...a),
+  throwIfAiProxyNotOk: async () => undefined,
+}))
+
+import { estimateEmergencyFund, parseEmergencyEstimate } from '@/lib/savings/estimateEmergencyFund'
 
 describe('parseEmergencyEstimate', () => {
   it('extracts JSON from a prose-wrapped grounded reply and rounds', () => {
@@ -16,5 +23,17 @@ describe('parseEmergencyEstimate', () => {
   it('rejects a reply with no JSON or a non-positive amount', () => {
     expect(() => parseEmergencyEstimate('sorry, I cannot help')).toThrow()
     expect(() => parseEmergencyEstimate('{"monthlyEssentials": 0, "targetMonths": 3}')).toThrow()
+  })
+})
+
+describe('estimateEmergencyFund', () => {
+  const reply = (headers: Record<string, string>) =>
+    ({ ok: true, headers: new Headers(headers), json: async () => ({ candidates: [{ content: { parts: [{ text: '{"monthlyEssentials": 5000, "targetMonths": 3}' }] } }] }) }) as unknown as Response
+
+  it('flags an estimate made without live prices when the search allowance was spent', async () => {
+    generate.mockResolvedValue(reply({ 'x-grounding': 'limited' }))
+    expect((await estimateEmergencyFund({ currency: 'EGP' })).groundingLimited).toBe(true)
+    generate.mockResolvedValue(reply({}))
+    expect((await estimateEmergencyFund({ currency: 'EGP' })).groundingLimited).toBeUndefined()
   })
 })

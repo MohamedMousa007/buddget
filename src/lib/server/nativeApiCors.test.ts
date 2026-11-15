@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { isCapacitorApiOrigin, NATIVE_ALLOWED_HEADERS } from './nativeApiCors'
+import { NextRequest, NextResponse } from 'next/server'
+import { isCapacitorApiOrigin, NATIVE_ALLOWED_HEADERS, withNativeApiCors } from './nativeApiCors'
 
 afterEach(() => vi.unstubAllEnvs())
 
@@ -26,5 +27,10 @@ describe('native API CORS', () => {
 
   it('never lets a cross-origin caller send the admin session header', () => {
     expect(NATIVE_ALLOWED_HEADERS).not.toContain('X-Admin-Session')
+  })
+
+  it('lets the native shell read the grounding note on an AI response', () => {
+    const req = new NextRequest('https://x/api/ai', { headers: { origin: 'https://localhost' } })
+    expect(withNativeApiCors(req, NextResponse.json({})).headers.get('Access-Control-Expose-Headers')).toContain('X-Grounding')
   })
 })

@@ -1,7 +1,7 @@
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import type { AiFeature } from '@/lib/server/ai/quota'
 
-/** Capture paths people rely on without opening the app; everything else pauses when the day's cap is spent. */
+/** Capture paths people rely on without opening the app; everything else pauses when the day's cap is spent, these only at the higher ceiling. */
 const ESSENTIAL: readonly AiFeature[] = ['sms', 'receipt']
 
 export interface SpendState { costMicro: number; capUsd: number | null }
@@ -14,8 +14,13 @@ export function spendLevel(s: SpendState): SpendLevel {
   return used >= 1 ? 'capped' : used >= 0.8 ? 'warn' : 'ok'
 }
 
-export function blocksFeature(level: SpendLevel, feature: AiFeature): boolean {
-  return level === 'capped' && !ESSENTIAL.includes(feature)
+/** The essential features stop at this multiple of the day's cap, so a runaway loop on them still ends. */
+export const ESSENTIAL_CAP_MULTIPLE = 3
+
+export function blocksFeature(state: SpendState, feature: AiFeature): boolean {
+  const essential = ESSENTIAL.includes(feature)
+  const capUsd = essential && state.capUsd ? state.capUsd * ESSENTIAL_CAP_MULTIPLE : state.capUsd
+  return spendLevel({ costMicro: state.costMicro, capUsd }) === 'capped'
 }
 
 const TTL_MS = 60_000
@@ -39,5 +44,5 @@ export async function currentSpend(): Promise<SpendState | null> {
 
 export async function spendBlocks(feature: AiFeature): Promise<boolean> {
   const state = await currentSpend()
-  return state ? blocksFeature(spendLevel(state), feature) : false
+  return state ? blocksFeature(state, feature) : false
 }

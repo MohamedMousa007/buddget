@@ -1,4 +1,4 @@
-import { LIMIT_CATALOG, LIMIT_KEYS, type LimitKey } from './limits'
+import { LIMIT_CATALOG, LIMIT_KEYS, PAID_FEATURES, type LimitKey } from './limits'
 
 export type EntitlementStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'expired' | 'paused'
 
@@ -80,4 +80,19 @@ export function resolveEntitlements(
     limits,
     features: [...features],
   }
+}
+
+export type FeatureDecision = 'allow' | 'deny' | 'unavailable'
+
+/** `planFeatures` is null when the entitlement read failed: a paid key then cannot be decided, an unpaid one keeps its default of allowed. */
+export function decideFeature(
+  key: string,
+  override: unknown,
+  planFeatures: readonly string[] | null,
+  paid: ReadonlySet<string> = PAID_FEATURES,
+): FeatureDecision {
+  if (override === false) return 'deny'
+  if (override === true || !paid.has(key)) return 'allow'
+  if (planFeatures === null) return 'unavailable'
+  return planFeatures.includes(key) ? 'allow' : 'deny'
 }

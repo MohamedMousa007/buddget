@@ -8,12 +8,15 @@ import { INTENT_CONFIG, SYSTEM_PROMPT } from '@/lib/server/ai/buddgy/prompt'
 import { selectSpecs } from '@/lib/server/ai/buddgy/select'
 import { buildContents, turnEventStream } from '@/lib/server/ai/buddgy/turn'
 import { parseTurnRequest } from '@/lib/server/ai/buddgy/validate'
+import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { computeUnits, estimateUnits } from '@/lib/server/ai/units'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
+/** A turn is capped at ~24k chars of messages plus signatures; this is the byte ceiling before it is read. */
+const MAX_BODY_BYTES = 256 * 1024
 const KNOWN_TOOLS: ReadonlySet<string> = new Set(SPEC_BY_NAME.keys())
 
 export async function POST(req: Request) {
@@ -25,6 +28,9 @@ export async function POST(req: Request) {
 
   const apiKey = process.env.GEMINI_API_KEY?.trim()
   if (!apiKey) return NextResponse.json({ error: 'not_configured' }, { status: 503 })
+
+  const tooLarge = tooLargeByHeader(req, MAX_BODY_BYTES)
+  if (tooLarge) return tooLarge
 
   let raw: unknown
   try {

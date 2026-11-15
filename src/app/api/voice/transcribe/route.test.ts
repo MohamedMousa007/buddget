@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const h = vi.hoisted(() => ({ ctor: vi.fn(), create: vi.fn() }))
+const h = vi.hoisted(() => ({ ctor: vi.fn(), create: vi.fn(), settle: vi.fn(), reserve: vi.fn() }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/supabase/resolveRouteUser', () => ({ resolveRouteIdentity: async () => ({ id: 'u1', email: null, amr: [] }) }))
 vi.mock('@/lib/server/ai/quota', () => ({
-  reserveAiQuota: async () => ({ allowed: true }),
-  settleAiQuota: async () => undefined,
+  reserveAiQuota: h.reserve,
+  settleAiQuota: h.settle,
   quotaDeniedResponse: () => new Response(null, { status: 429 }),
 }))
 vi.mock('groq-sdk', () => ({
@@ -24,6 +24,8 @@ describe('POST /api/voice/transcribe', () => {
   beforeEach(() => {
     h.ctor.mockReset()
     h.create.mockReset().mockResolvedValue({ text: 'hi' })
+    h.reserve.mockReset().mockResolvedValue({ allowed: true })
+    h.settle.mockReset().mockResolvedValue(undefined)
     vi.stubEnv('GROQ_API_KEY', 'k')
   })
 
@@ -56,5 +58,24 @@ describe('POST /api/voice/transcribe', () => {
     const args = h.create.mock.calls[0][0]
     expect(args).not.toHaveProperty('language')
     expect(args.prompt).not.toMatch(/spent 250|Formats expected/)
+  })
+
+  it('rejects by content-length before reading the body', async () => {
+    const req = new Request('http://x', { method: 'POST', headers: { 'content-length': '9000000' }, body: new FormData() })
+    const form = vi.spyOn(req, 'formData')
+    expect((await POST(req as never)).status).toBe(413)
+    expect(form).not.toHaveBeenCalled()
+  })
+
+  it('settles by the audio duration Whisper reports, not zero or bytes', async () => {
+    h.create.mockResolvedValue({ text: 'hi', duration: 12.5 })
+    await post()
+    expect(h.settle.mock.calls[0][1].usage.promptTokens).toBe(1250)
+  })
+
+  it('falls back to a bytes-per-second estimate when no duration comes back, and reserves on the same scale', async () => {
+    await post()
+    expect(h.reserve.mock.calls[0][0].estUnits).toBe(1)
+    expect(h.settle.mock.calls[0][1].usage.promptTokens).toBe(1)
   })
 })

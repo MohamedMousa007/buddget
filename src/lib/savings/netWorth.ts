@@ -1,7 +1,7 @@
 import type { Currency, Debt, FinanceStore, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
 import { pocketBalanceInBase } from '@/lib/savings/savingsConversions'
 import { totalInvestmentValue, type PriceLookup } from '@/lib/savings/holdingValuation'
-import { convertCurrency } from '@/lib/utils/currency'
+import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 
 export interface NetWorthInput {
   savingsAccounts: SavingsAccount[]
@@ -70,7 +70,9 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   // Holdings are valued in EGP regardless of base currency.
   const holdings = totalInvestmentValue(i.investmentHoldings, i.lookup)
   if (holdings.anyUnpriced) valuationIncomplete = true
-  totalInvestments += convertCurrency(holdings.total, 'EGP', base, exchangeRates)
+  const holdingsInBase = tryConvertCurrency(holdings.total, 'EGP', base, exchangeRates)
+  if (holdingsInBase === null) valuationIncomplete = true
+  else totalInvestments += holdingsInBase
 
   const monthlyFlow = i.monthlyIncome - i.cashOutflow
   const netWorth = totalSavings + totalInvestments + (i.accountsBasis ?? monthlyFlow) - i.debtRemaining

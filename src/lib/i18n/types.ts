@@ -2606,6 +2606,7 @@ export interface Dictionary {
         loading: string
         retry: string
         retryCta: string
+        groundingLimited: string
         use: (amount: string) => string
       }
       s3: {
@@ -3207,6 +3208,7 @@ export interface Dictionary {
       estimating: string
       estimated: (amount: string, currency: string) => string
       estimateFailed: string
+      groundingLimited: string
       needed: (n: number) => string
       neededSub: (per: string, n: number) => string
       coverBold: string

@@ -41,6 +41,14 @@ describe('cycleCarryFigures', () => {
     const f = cycleCarryFigures(base({ incomeEvents: [ev({ amount: 1000 }), ev({ id: 'j', status: 'missed' })] }))!
     expect(f.income).toBe(1000)
   })
+  it('a pass-through event linked to a template is not income', () => {
+    const t = {
+      id: 't', name: 'Salary', amount: 5000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly',
+      dayOfMonth: 5, createdAt: '2026-01-01T00:00:00Z', effectiveStart: '2026-01-01',
+    } as IncomeSource
+    const f = cycleCarryFigures(base({ incomeSources: [t], incomeEvents: [ev({ templateId: 't', occurrenceDate: '2026-07-05', exclusion: 'pass_through' })] }))!
+    expect(f.income).toBe(0)
+  })
   it('income ignores a recurring template whose payday never arrived (W13)', () => {
     const t = {
       id: 't', name: 'Salary', amount: 5000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly',

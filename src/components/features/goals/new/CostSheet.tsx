@@ -76,6 +76,7 @@ export function CostSheet({
               </SelectableCard>
             ))}
             {est.assumption ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{est.assumption}</p> : null}
+            {est.groundingLimited ? <p className="text-xs text-[var(--color-brand-text-secondary)]">{t.groundingLimited}</p> : null}
           </div>
         ) : null}
         {failed ? (

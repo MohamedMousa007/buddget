@@ -9,6 +9,7 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { applyCarryDrift } from '@/lib/server/carryAdjust'
+import { isRateLimited } from '@/lib/server/rateLimit'
 import { closedCycleDrift, fetchRates, type CycleDriftItem } from '@/lib/server/carryCycle'
 
 const bodySchema = z.object({ monthKey: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) })
@@ -21,9 +22,10 @@ async function context(request: Request) {
   if (outdated) return outdated
   const userId = await resolveActiveApiUserId(request)
   if (!userId) return fail('Unauthorized', 401)
+  const service = createServiceRoleClient()
+  if (await isRateLimited(service, `savings-carry:${userId}`, 60, 20)) return fail('Too many requests', 429)
   const rates = await fetchRates()
   if (Object.keys(rates).length === 0) return fail('FX rates unavailable', 503)
-  const service = createServiceRoleClient()
   const { data } = await service.from('user_settings').select('month_start_day').eq('user_id', userId).maybeSingle()
   return { userId, rates, service, monthStartDay: (data?.month_start_day as number | null) ?? 1 }
 }

@@ -231,6 +231,7 @@ export function actualIncomeForMonth(
   const orphanByOcc = new Map<string, IncomeEvent>()
   for (const e of events) {
     if (e.templateId) {
+      if (e.exclusion) continue // pass-through money is not income; its payday falls back to the projection
       const t = templateById.get(e.templateId)
       const orphan = !t || !t.isRecurring || !recurringActiveForWindow(t, start, end)
       if (orphan && REALIZED_EVENT_STATUSES.has(e.status) && inWindow(e.occurrenceDate ?? e.receivedDate)) {
@@ -256,7 +257,7 @@ export function actualIncomeForMonth(
       const perOccurrence = convertCurrency(t.amount, t.currency, baseCurrency, rates)
       const paydayCount = paydayDatesForWindow(t, start, end).length
       // Window-test by the fulfilled payday when stamped, else by received date.
-      const evForT = events.filter((e) => e.templateId === t.id && inWindow(e.occurrenceDate ?? e.receivedDate))
+      const evForT = events.filter((e) => e.templateId === t.id && !e.exclusion && inWindow(e.occurrenceDate ?? e.receivedDate))
       if (evForT.length === 0) {
         if (!realizedOnly) total += perOccurrence * paydayCount // == projected; behavior preserved when no events exist
       } else {
@@ -507,6 +508,9 @@ export function netSavingsLedgerInBaseForMonth(
  * Deposits only, never the net ledger: `withdrawFromSavings` already posts a confirmed
  * IncomeEvent that `actualIncomeForMonth` counts, so a withdrawal already nets to zero.
  * Subtracting `deposits − withdrawals` would add withdrawals back a second time.
+ *
+ * The month-carry sweep (`source === 'carry'`) is excluded, as the server's carry figures do:
+ * it is dated the last day of the closed month but is that month's leftover moving, not spend.
  */
 export function cashSavingsDepositsInBaseForMonth(
   transactions: SavingsTransaction[],
@@ -517,7 +521,7 @@ export function cashSavingsDepositsInBaseForMonth(
   gold: GoldQuote
 ): number {
   return filterSavingsTransactionsByMonth(transactions, monthStr, monthStartDay)
-    .filter((t) => t.type === 'deposit' && t.isCashFlow !== false)
+    .filter((t) => t.type === 'deposit' && t.isCashFlow !== false && t.source !== 'carry')
     .reduce(
       (sum, t) => sum + (tryConvertWithGold(t.amount, t.currency, baseCurrency, rates, baseCurrency, gold) ?? 0),
       0

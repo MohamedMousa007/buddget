@@ -108,7 +108,8 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
       setTargetMonths(est.targetMonths)
       setOwnFigure(String(est.monthlyEssentials))
       save(est.targetMonths, est.monthlyEssentials, off)
-      setAiNote(est.rationale || t.estimated(fmtNum(est.monthlyEssentials), currency))
+      const note = est.rationale || t.estimated(fmtNum(est.monthlyEssentials), currency)
+      setAiNote(est.groundingLimited ? `${note} ${t.groundingLimited}` : note)
     } catch (e) {
       setAiError(e instanceof Error ? e.message : t.estimateFailed)
     } finally {

@@ -20,4 +20,23 @@ describe('computeNetWorth accounts basis', () => {
     expect(r.netWorth).toBe(100 + 900 - 50)
     expect(r.accountsTotal).toBe(900)
   })
+  it('leaves EGP holdings out and flags incomplete when there is no EGP rate to the base', () => {
+    const holdings = [{ assetType: 'property', propertyValue: 1000 }] as never
+    const r = computeNetWorth(input({
+      savingsAccounts: [], investmentHoldings: holdings, monthlyIncome: 0, cashOutflow: 0, debtRemaining: 0,
+      settings: { baseCurrency: 'CAD', secondaryCurrency: null, showSecondaryCurrency: false } as never,
+    }))
+    expect(r.totalInvestments).toBe(0)
+    expect(r.netWorthIncomplete).toBe(true)
+  })
+  it('converts EGP holdings when the rate exists', () => {
+    const holdings = [{ assetType: 'property', propertyValue: 1000 }] as never
+    const r = computeNetWorth(input({
+      savingsAccounts: [], investmentHoldings: holdings, monthlyIncome: 0, cashOutflow: 0, debtRemaining: 0,
+      exchangeRates: { USD_EGP: 50 },
+      settings: { baseCurrency: 'USD', secondaryCurrency: null, showSecondaryCurrency: false } as never,
+    }))
+    expect(r.totalInvestments).toBe(20)
+    expect(r.netWorthIncomplete).toBe(false)
+  })
 })

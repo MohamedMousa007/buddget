@@ -16,6 +16,7 @@ import { z } from 'zod'
 import { LEGACY_MAX_AMOUNT } from '@/lib/ai/legacyGuards'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { usageFromPayload } from '@/lib/server/ai/gemini'
+import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { SUPPORTED_CATEGORIES, SUPPORTED_CURRENCIES } from '@/lib/receipt/normaliseReceipt'
 import { addUsage, estimateUnits, EMPTY_USAGE, type TokenUsage } from '@/lib/server/ai/units'
@@ -100,6 +101,8 @@ const DEADLINE_MS = 52_000
 const MIN_ATTEMPT_MS = 5_000
 /** Vercel rejects request bodies over 4.5 MB before this route runs. */
 const MAX_TOTAL_BYTES = 4_000_000
+/** Multipart framing on top of the images. */
+const MAX_BODY_BYTES = MAX_TOTAL_BYTES + 65_536
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
 
 const money = z.number().finite().min(-LEGACY_MAX_AMOUNT).max(LEGACY_MAX_AMOUNT)
@@ -229,6 +232,9 @@ export async function POST(request: NextRequest) {
       { status: 503 },
     )
   }
+
+  const tooLarge = tooLargeByHeader(request, MAX_BODY_BYTES)
+  if (tooLarge) return tooLarge
 
   let form: FormData
   try {

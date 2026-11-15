@@ -2732,6 +2732,7 @@ export const en: Dictionary = {
         loading: 'Checking prices\u2026',
         retry: 'I couldn\u2019t get prices right now. Try again, or type the amount yourself.',
         retryCta: 'Try again',
+        groundingLimited: 'Web search limit reached for today. These prices did not use live data.',
         use: (a) => `Use ${a}`,
       },
       s3: {
@@ -3352,6 +3353,7 @@ export const en: Dictionary = {
       estimating: 'Estimating for your country\u2026',
       estimated: (amount: string, currency: string) => `Estimated ${amount} ${currency}/month.`,
       estimateFailed: 'Couldn\u2019t estimate right now.',
+      groundingLimited: 'Web search limit reached for today. This estimate did not use live prices.',
       needed: (n: number) => `Needed for ${n} months`,
       neededSub: (per: string, n: number) => `${per} \u00d7 ${n}`,
       coverBold: 'Covered by your savings pockets.',

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { PAID_FEATURES } from '@/lib/entitlements/limits'
+import { requireFeature } from '@/lib/entitlements/server'
 import { spendBlocks } from '@/lib/server/ai/spendGuard'
 import { computeUnits, type TokenUsage } from '@/lib/server/ai/units'
 
@@ -58,6 +60,18 @@ export function quotaStoreAvailable(): boolean {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() && process.env.SUPABASE_SECRET_KEY?.trim())
 }
 
+/** The plan feature each AI surface is sold under; the SQL reserve already applies a per-user `false` override to these. */
+const FEATURE_KEY: Record<AiFeature, string> = {
+  chat: 'ai_assistant',
+  chat_hop: 'ai_assistant',
+  proxy: 'ai_assistant',
+  voice: 'ai_voice',
+  receipt: 'receipt_scanning',
+  budget: 'ai_budget',
+  goals: 'ai_assistant',
+  sms: 'sms_tracking',
+}
+
 export async function reserveAiQuota(args: {
   userId: string
   feature: AiFeature
@@ -68,6 +82,11 @@ export async function reserveAiQuota(args: {
     return { allowed: true, userId: args.userId, reservationId: null, chatId: args.chatId ?? null, newChat: false, rolled: false, soft: false, disabled: [] }
   }
   if (await spendBlocks(args.feature)) return { allowed: false, layer: 'feature_disabled', resetAt: null }
+  const key = FEATURE_KEY[args.feature]
+  if (PAID_FEATURES.has(key)) {
+    const denied = await requireFeature(args.userId, key)
+    if (denied) return { allowed: false, layer: denied.status === 503 ? 'unavailable' : 'feature_disabled', resetAt: null }
+  }
   try {
     const params = {
       p_user: args.userId,

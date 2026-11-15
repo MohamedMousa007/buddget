@@ -10,8 +10,8 @@ vi.mock('@/lib/ai/generateWithFallback', () => ({
 
 import { estimateGoalCost, parseGoalText } from './goalAi'
 
-const reply = (text: string, ok = true) =>
-  ({ ok, json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }) }) as unknown as Response
+const reply = (text: string, ok = true, headers: Record<string, string> = {}) =>
+  ({ ok, headers: new Headers(headers), json: async () => ({ candidates: [{ content: { parts: [{ text }] } }] }) }) as unknown as Response
 
 beforeEach(() => generate.mockReset())
 
@@ -36,6 +36,12 @@ describe('goal AI calls', () => {
     expect(c.options).toHaveLength(2)
     expect(generate.mock.calls[0][0].grounded).toBe(true)
     expect(generate.mock.calls[0][0].contents[0].parts[0].text).toContain('in Egypt')
+  })
+  it('cost: flags an estimate that ran without live prices because the search allowance was spent', async () => {
+    generate.mockResolvedValue(reply('{"options":[{"label":"Camp","amount":30000}]}', true, { 'x-grounding': 'limited' }))
+    expect((await estimateGoalCost({ name: 'Limited', category: 'Vacation', currency: 'EGP' })).groundingLimited).toBe(true)
+    generate.mockResolvedValue(reply('{"options":[{"label":"Camp","amount":30000}]}'))
+    expect((await estimateGoalCost({ name: 'Limited', category: 'Vacation', currency: 'EGP' })).groundingLimited).toBeUndefined()
   })
   it('cost: an empty estimate rejects', async () => {
     generate.mockResolvedValue(reply('{"options":[]}'))

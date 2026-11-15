@@ -20,6 +20,7 @@ export function withNativeApiCors(request: NextRequest, response: NextResponse):
   response.headers.set('Access-Control-Allow-Credentials', 'true')
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE, OPTIONS')
   response.headers.set('Access-Control-Allow-Headers', NATIVE_ALLOWED_HEADERS)
+  response.headers.set('Access-Control-Expose-Headers', 'X-Grounding')
   response.headers.append('Vary', 'Origin')
   return response
 }

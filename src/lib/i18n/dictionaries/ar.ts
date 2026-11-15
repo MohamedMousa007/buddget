@@ -2738,6 +2738,7 @@ export const ar: Dictionary = {
         loading: 'جارٍ فحص الأسعار…',
         retry: 'تعذّر جلب الأسعار الآن. حاول مرة أخرى أو اكتب المبلغ بنفسك.',
         retryCta: 'حاول مرة أخرى',
+        groundingLimited: 'تم بلوغ حد البحث على الإنترنت لهذا اليوم. لم تعتمد هذه الأسعار على بيانات حية.',
         use: (a) => `استخدم ${a}`,
       },
       s3: {
@@ -3362,6 +3363,7 @@ export const ar: Dictionary = {
       estimating: 'جارٍ التقدير لبلدك…',
       estimated: (amount: string, currency: string) => `التقدير ${amount} ${currency} شهريًا.`,
       estimateFailed: 'تعذّر التقدير الآن.',
+      groundingLimited: 'تم بلوغ حد البحث على الإنترنت لهذا اليوم. لم يعتمد هذا التقدير على أسعار حية.',
       needed: (n: number) => `المطلوب لـ ${arCount(n, 'month')}`,
       neededSub: (per: string, n: number) => `${per} × ${n}`,
       coverBold: 'مغطّى من جيوب ادخارك.',

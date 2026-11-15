@@ -12,8 +12,10 @@ import {
   usageFromPayload,
   type Tier,
 } from '@/lib/server/ai/gemini'
+import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota, type QuotaGrant } from '@/lib/server/ai/quota'
 import { estimateUnits } from '@/lib/server/ai/units'
+import { getUserEntitlements } from '@/lib/entitlements/server'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -25,8 +27,27 @@ const MAX_BODY_BYTES = 256 * 1024
 const MAX_CONTENTS = 60
 /** One deadline across the call, its retry and the model fallback; the function is killed at maxDuration (30s) and would leave the reservation unsettled. */
 const UPSTREAM_DEADLINE_MS = 25_000
-/** Grounded (web search) requests one user may make per day; the legitimate callers are goal and emergency-fund estimates. */
-const GROUNDED_PER_DAY = 10
+/** Most inline media parts one request may carry; no caller sends file URIs, so those are refused outright. */
+const MAX_INLINE_PARTS = 4
+
+function mediaPartsOk(contents: unknown[]): boolean {
+  let inline = 0
+  for (const c of contents) {
+    const parts = (c as { parts?: unknown } | null)?.parts
+    if (!Array.isArray(parts)) continue
+    for (const p of parts as Array<Record<string, unknown> | null>) {
+      if (p && ('fileData' in p || 'file_data' in p)) return false
+      if (p && ('inlineData' in p || 'inline_data' in p)) inline += 1
+    }
+  }
+  return inline <= MAX_INLINE_PARTS
+}
+
+/** Grounded (web search) requests one user may make per day: the `grounded_per_day` entitlement limit (default 3); the callers are goal and emergency-fund estimates. */
+async function groundingLimited(userId: string): Promise<boolean> {
+  const perDay = (await getUserEntitlements(createServiceRoleClient(), userId)).limits.grounded_per_day
+  return perDay !== null && (await isRateLimited(createServiceRoleClient(), `ai-grounded:${userId}`, 86_400, perDay))
+}
 
 export async function POST(req: Request) {
   const outdated = await gateOutdatedClient(req)
@@ -65,6 +86,8 @@ export async function POST(req: Request) {
       }
     }
 
+    const tooLarge = tooLargeByHeader(req, MAX_BODY_BYTES)
+    if (tooLarge) return tooLarge
     const rawBody = await req.text()
     if (rawBody.length > MAX_BODY_BYTES) return NextResponse.json({ error: 'Request too large' }, { status: 413 })
     let body: unknown
@@ -85,7 +108,7 @@ export async function POST(req: Request) {
       grounded?: boolean
     }
 
-    if (!Array.isArray(contents) || contents.length === 0 || contents.length > MAX_CONTENTS) {
+    if (!Array.isArray(contents) || contents.length === 0 || contents.length > MAX_CONTENTS || !mediaPartsOk(contents)) {
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
     }
 
@@ -93,8 +116,9 @@ export async function POST(req: Request) {
     const geminiBody: Record<string, unknown> = { contents, generationConfig: config }
     if (systemInstruction) geminiBody.systemInstruction = systemInstruction
 
-    tierName = tier && tier in TIER_MODELS ? tier : 'legacy'
-    model = tier && tier in TIER_MODELS ? TIER_MODELS[tier] : LEGACY_MODEL
+    const knownTier = typeof tier === 'string' && Object.hasOwn(TIER_MODELS, tier) ? tier : null
+    tierName = knownTier ?? 'legacy'
+    model = knownTier ? TIER_MODELS[knownTier] : LEGACY_MODEL
 
     const quota = await reserveAiQuota({
       userId,
@@ -108,10 +132,12 @@ export async function POST(req: Request) {
 
     // Search grounding is billed per request on top of tokens and the client asks for it: past the daily
     // allowance the request still runs, ungrounded. Fails closed (no grounding) when the counter is unreachable.
-    if (
-      grounded === true && tier !== 'fast' &&
-      !(await isRateLimited(createServiceRoleClient(), `ai-grounded:${userId}`, 86_400, GROUNDED_PER_DAY))
-    ) geminiBody.tools = [{ google_search: {} }]
+    let limited = false
+    if (grounded === true && tier !== 'fast') {
+      limited = await groundingLimited(userId)
+      if (!limited) geminiBody.tools = [{ google_search: {} }]
+    }
+    const noteHeaders: Record<string, string> = limited ? { 'x-grounding': 'limited' } : {}
 
     const wantStream = stream === true
     const deadline = AbortSignal.timeout(UPSTREAM_DEADLINE_MS)
@@ -139,7 +165,7 @@ export async function POST(req: Request) {
       console.info(`[AI] ok stream user=${userId} model=${model} ttfb=${Date.now() - started}ms`)
       const tapped = tapStreamUsage(response.body, (usage, completed) => settle(usage, completed ? 'ok' : 'aborted'))
       return new Response(tapped, {
-        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform' },
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', ...noteHeaders },
       })
     }
 
@@ -156,7 +182,7 @@ export async function POST(req: Request) {
 
     await settle(usageFromPayload(payload), 'ok')
     console.info(`[AI] ok user=${userId} model=${model} latency=${Date.now() - started}ms`)
-    return NextResponse.json(payload)
+    return NextResponse.json(payload, { headers: noteHeaders })
   } catch (err) {
     if (grant) {
       await settleAiQuota(grant, {

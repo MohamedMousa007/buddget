@@ -5,6 +5,8 @@ export interface EmergencyEstimate {
   monthlyEssentials: number
   targetMonths: number
   rationale: string
+  /** The daily web-search allowance was spent, so the figure is not based on live local prices. */
+  groundingLimited?: boolean
 }
 
 /**
@@ -37,7 +39,8 @@ export async function estimateEmergencyFund(
 
   const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
   const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
-  return parseEmergencyEstimate(text)
+  const estimate = parseEmergencyEstimate(text)
+  return res.headers.get('x-grounding') === 'limited' ? { ...estimate, groundingLimited: true } : estimate
 }
 
 /** Pull the JSON out of a (possibly grounded, prose-wrapped) model reply and clamp to sane values. */

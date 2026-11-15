@@ -104,6 +104,13 @@ export const LIMIT_CATALOG = {
     fallback: 30,
     enforced: true,
   },
+  grounded_per_day: {
+    label: 'Web-search estimates',
+    unit: 'per day',
+    description: 'AI estimates that look up live prices (goal costs, emergency fund). Past the limit they still run, without live data.',
+    fallback: 3,
+    enforced: true,
+  },
   budget_plans_max: {
     label: 'Saved budget plans',
     unit: 'plans',
@@ -148,6 +155,9 @@ export const FEATURE_CATALOG = {
 } as const
 
 export type FeatureKey = keyof typeof FEATURE_CATALOG
+
+/** Features only a plan that lists them may use. Empty until billing ships; S6 adds a key here with the route that needs it. */
+export const PAID_FEATURES: ReadonlySet<string> = new Set()
 
 export function isFeatureKey(value: string): value is FeatureKey {
   return Object.hasOwn(FEATURE_CATALOG, value)

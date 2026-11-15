@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveEntitlements, type EntitlementRecord, type PlanRecord } from './resolve'
+import { decideFeature, resolveEntitlements, type EntitlementRecord, type PlanRecord } from './resolve'
 
 const free: PlanRecord = { key: 'free', name: 'Free', limits: { ai_budget_per_hour: 15 }, features: ['sms_tracking'], trial_days: 0 }
 const plus: PlanRecord = { key: 'plus', name: 'Plus', limits: { ai_budget_per_hour: 60, receipt_scans_per_month: null }, features: ['ai_assistant'], trial_days: 14 }
@@ -55,5 +55,32 @@ describe('resolveEntitlements', () => {
 
   it('ignores malformed override values', () => {
     expect(resolveEntitlements(free, ent({ limit_overrides: { ai_budget_per_hour: 'lots' } }), plans, now).limits.ai_budget_per_hour).toBe(60)
+  })
+})
+
+describe('decideFeature', () => {
+  const paid = new Set(['advanced_reports'])
+  const run = (key: string, override: unknown, planFeatures: readonly string[] | null) => decideFeature(key, override, planFeatures, paid)
+
+  it('denies when the override is false, even for a plan feature', () => {
+    expect(run('advanced_reports', false, ['advanced_reports'])).toBe('deny')
+    expect(run('ai_assistant', false, [])).toBe('deny')
+  })
+  it('allows when the override is true, even for a paid key the plan lacks', () => {
+    expect(run('advanced_reports', true, [])).toBe('allow')
+  })
+  it('allows an unpaid key with no override', () => {
+    expect(run('ai_assistant', undefined, [])).toBe('allow')
+  })
+  it('requires the plan to include a paid key', () => {
+    expect(run('advanced_reports', undefined, ['advanced_reports'])).toBe('allow')
+    expect(run('advanced_reports', undefined, [])).toBe('deny')
+  })
+  it('a failed entitlement read is unavailable for a paid key and allowed for an unpaid one', () => {
+    expect(run('advanced_reports', undefined, null)).toBe('unavailable')
+    expect(run('ai_assistant', undefined, null)).toBe('allow')
+  })
+  it('has no paid features today', () => {
+    expect(decideFeature('advanced_reports', undefined, [])).toBe('allow')
   })
 })

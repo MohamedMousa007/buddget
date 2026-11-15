@@ -17,9 +17,10 @@ import {
   calculateTotalBudget,
   calculateTotalBudgetExcludingSavings,
   expenseAmountInBase,
+  cashSavingsDepositsInBaseForMonth,
 } from './calculations'
 import { deriveDefaultPaydays } from './paydaySchedule'
-import type { IncomeSource, IncomeEvent, Expense, BudgetCategory } from '@/lib/store/types'
+import type { IncomeSource, IncomeEvent, Expense, BudgetCategory, SavingsTransaction } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
 
 const jan2025 = new Date('2025-01-15T12:00:00.000Z')
@@ -214,6 +215,19 @@ describe('actualIncomeForMonth', () => {
     })
     const event = evt({ id: 's1', templateId: null, amount: 800, receivedDate: '2025-01-10' })
     expect(actualIncomeForMonth([oneTime], [event], 'AED', {}, jan, 1)).toBe(800)
+  })
+
+  it('a pass-through event linked to a template does not count as income', () => {
+    const tmpl = [src({ id: 't1', name: 'Salary', amount: 5000, currency: 'AED', effectiveStart: '2024-01-01' })]
+    const events = [evt({ id: 'e1', templateId: 't1', amount: 5200, occurrenceDate: '2025-01-01', exclusion: 'pass_through' })]
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1, true)).toBe(0)
+    expect(actualIncomeForMonth(tmpl, events, 'AED', {}, jan, 1)).toBe(5000)
+  })
+
+  it('a pass-through event whose template ended does not count as income', () => {
+    const ended = [src({ id: 't1', name: 'Old', amount: 5000, currency: 'AED', effectiveStart: '2023-01-01', effectiveEnd: '2024-06-30' })]
+    const events = [evt({ id: 'e1', templateId: 't1', amount: 700, exclusion: 'pass_through' })]
+    expect(actualIncomeForMonth(ended, events, 'AED', {}, jan, 1)).toBe(0)
   })
 
   it('counts a new one-time source that has no event yet', () => {
@@ -428,5 +442,15 @@ describe('filterExpensesByRange invalid dates', () => {
       range,
     )
     expect(out.map((e: { date: string }) => e.date)).toEqual(['2026-01-15', '2026-01-20T10:00:00Z'])
+  })
+})
+
+describe('cashSavingsDepositsInBaseForMonth', () => {
+  const tx = (o: Partial<SavingsTransaction>): SavingsTransaction =>
+    ({ id: 'x', accountId: 'a', type: 'deposit', amount: 100, currency: 'AED', date: '2025-01-15', ...o }) as SavingsTransaction
+  const gold = { pricePerGram: 0, available: false } as Parameters<typeof cashSavingsDepositsInBaseForMonth>[5]
+  it('skips the month-carry sweep so a closed month matches the server figures', () => {
+    const rows = [tx({ id: '1' }), tx({ id: '2', amount: 900, source: 'carry' })]
+    expect(cashSavingsDepositsInBaseForMonth(rows, '2025-01', 1, 'AED', {}, gold)).toBe(100)
   })
 })

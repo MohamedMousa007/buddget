@@ -45,3 +45,14 @@ export function usageFromGemini(meta: GeminiUsageMetadata | undefined | null): T
 export function estimateUnits(inputChars: number, maxOutputTokens: number): number {
   return Math.ceil(inputChars / 4) + maxOutputTokens * OUTPUT_WEIGHT
 }
+
+/** Whisper is billed per second of audio (about $0.11 an hour), roughly 100 units a second on this scale. */
+export const AUDIO_UNITS_PER_SECOND = 100
+/** Compressed speech (webm/opus, mp4/aac) runs near 32 kbps; used only when the provider reports no duration. */
+export const AUDIO_BYTES_PER_SECOND = 4000
+
+/** Units for a clip: the provider's reported seconds when usable, else seconds estimated from its size in bytes. */
+export function audioUnits(seconds: number | undefined, bytes = 0): number {
+  const s = typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0 ? seconds : bytes / AUDIO_BYTES_PER_SECOND
+  return Math.ceil(s * AUDIO_UNITS_PER_SECOND)
+}

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const h = vi.hoisted(() => ({ call: vi.fn(), limited: vi.fn(), runtime: vi.fn(), settle: vi.fn() }))
+const h = vi.hoisted(() => ({ call: vi.fn(), limited: vi.fn(), runtime: vi.fn(), settle: vi.fn(), ent: vi.fn() }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/server/ai/auth', () => ({ requireAiUser: async () => ({ userId: 'u1' }) }))
 vi.mock('@/lib/server/aiRuntimeConfig', () => ({ getEffectiveAiRuntimeConfig: h.runtime }))
+vi.mock('@/lib/entitlements/server', () => ({ getUserEntitlements: h.ent }))
 vi.mock('@/lib/server/rateLimit', () => ({ isRateLimited: h.limited }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({}) }))
 vi.mock('@/lib/server/ai/quota', () => ({
@@ -18,9 +19,11 @@ vi.mock('@/lib/server/ai/gemini', async (orig) => ({
   retryOnOverload: (fn: () => Promise<Response>) => fn(),
 }))
 
+import { LEGACY_MODEL, TIER_MODELS } from '@/lib/server/ai/gemini'
 import { POST } from './route'
 
-const post = (body: unknown) => POST(new Request('http://x/api/ai', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }))
+const post = (body: unknown, headers?: Record<string, string>) =>
+  POST(new Request('http://x/api/ai', { method: 'POST', headers, body: typeof body === 'string' ? body : JSON.stringify(body) }))
 const contents = [{ role: 'user', parts: [{ text: 'hi' }] }]
 
 describe('POST /api/ai', () => {
@@ -29,6 +32,7 @@ describe('POST /api/ai', () => {
     h.call.mockReset().mockResolvedValue(new Response(JSON.stringify({ candidates: [] }), { status: 200 }))
     h.limited.mockReset().mockResolvedValue(false)
     h.settle.mockReset().mockResolvedValue(undefined)
+    h.ent.mockReset().mockResolvedValue({ limits: { grounded_per_day: 3 } })
     h.runtime.mockReset().mockResolvedValue({ rateLimitingEnabled: true, rateLimitMaxRequests: 5, rateLimitWindowMs: 60_000 })
   })
 
@@ -96,7 +100,7 @@ describe('POST /api/ai', () => {
   it('grants grounding under the daily limit and counts it per user', async () => {
     await post({ contents, grounded: true })
     expect(h.call.mock.calls[0][2].tools).toEqual([{ google_search: {} }])
-    expect(h.limited).toHaveBeenCalledWith(expect.anything(), 'ai-grounded:u1', 86_400, 10)
+    expect(h.limited).toHaveBeenCalledWith(expect.anything(), 'ai-grounded:u1', 86_400, 3)
   })
 
   it('drops grounding, not the request, once the daily limit is reached', async () => {
@@ -104,10 +108,80 @@ describe('POST /api/ai', () => {
     const res = await post({ contents, grounded: true })
     expect(res.status).toBe(200)
     expect(h.call.mock.calls[0][2]).not.toHaveProperty('tools')
+    expect(res.headers.get('x-grounding')).toBe('limited')
+  })
+
+  it('tells the client on a stream response too', async () => {
+    h.limited.mockImplementation(async (_c: unknown, key: string) => key.startsWith('ai-grounded:'))
+    h.call.mockResolvedValue(new Response('data: {}\n\n', { status: 200 }))
+    const res = await post({ contents, grounded: true, stream: true })
+    expect(res.headers.get('x-grounding')).toBe('limited')
+  })
+
+  it('reads the allowance from the user entitlement limits', async () => {
+    h.ent.mockResolvedValue({ limits: { grounded_per_day: 25 } })
+    await post({ contents, grounded: true })
+    expect(h.limited).toHaveBeenCalledWith(expect.anything(), 'ai-grounded:u1', 86_400, 25)
+  })
+
+  it('does not cap grounding when the entitlement limit is unlimited', async () => {
+    h.ent.mockResolvedValue({ limits: { grounded_per_day: null } })
+    await post({ contents, grounded: true })
+    expect(h.call.mock.calls[0][2].tools).toEqual([{ google_search: {} }])
+    expect(h.limited.mock.calls.some((c) => String(c[1]).startsWith('ai-grounded:'))).toBe(false)
+  })
+
+  it('does not flag a request that was granted grounding', async () => {
+    const res = await post({ contents, grounded: true })
+    expect(res.headers.get('x-grounding')).toBeNull()
   })
 
   it('does not touch the grounding allowance for an ungrounded request', async () => {
     await post({ contents })
     expect(h.limited.mock.calls.some((c) => String(c[1]).startsWith('ai-grounded:'))).toBe(false)
+  })
+
+  describe('what the client can choose', () => {
+    it('uses only a server tier model, never a client-sent model string', async () => {
+      await post({ contents, model: 'gemini-evil', tier: 'smart' })
+      expect(h.call.mock.calls[0][0]).toBe(TIER_MODELS.smart)
+      await post({ contents, model: 'gemini-evil' })
+      expect(h.call.mock.calls[1][0]).toBe(LEGACY_MODEL)
+    })
+
+    it('treats an inherited property name as no tier', async () => {
+      await post({ contents, tier: 'toString' })
+      expect(h.call.mock.calls[0][0]).toBe(LEGACY_MODEL)
+    })
+
+    it('clamps maxOutputTokens', async () => {
+      await post({ contents, generationConfig: { maxOutputTokens: 1_000_000 } })
+      expect(h.call.mock.calls[0][2].generationConfig.maxOutputTokens).toBe(8192)
+    })
+
+    it('never forwards tools, safetySettings, cachedContent or any other key', async () => {
+      await post({ contents, tools: [{ code_execution: {} }], safetySettings: [], cachedContent: 'c', toolConfig: {}, extra: 1 })
+      expect(Object.keys(h.call.mock.calls[0][2]).sort()).toEqual(['contents', 'generationConfig'])
+    })
+
+    it('rejects a file URI part', async () => {
+      const res = await post({ contents: [{ role: 'user', parts: [{ fileData: { fileUri: 'https://x/y', mimeType: 'image/png' } }] }] })
+      expect(res.status).toBe(400)
+      expect(h.call).not.toHaveBeenCalled()
+    })
+
+    it('rejects too many inline parts', async () => {
+      const part = { inlineData: { mimeType: 'image/png', data: 'AA==' } }
+      const res = await post({ contents: [{ role: 'user', parts: Array(5).fill(part) }] })
+      expect(res.status).toBe(400)
+      expect((await post({ contents: [{ role: 'user', parts: Array(4).fill(part) }] })).status).toBe(200)
+    })
+  })
+
+  it('rejects by content-length before reading the body', async () => {
+    const req = new Request('http://x/api/ai', { method: 'POST', headers: { 'content-length': '300000' }, body: '{}' })
+    const text = vi.spyOn(req, 'text')
+    expect((await POST(req)).status).toBe(413)
+    expect(text).not.toHaveBeenCalled()
   })
 })

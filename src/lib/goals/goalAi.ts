@@ -19,6 +19,8 @@ export interface CostOption {
 export interface CostEstimate {
   options: CostOption[]
   assumption: string
+  /** The daily web-search allowance was spent, so these prices are the model's own, not live. */
+  groundingLimited?: boolean
 }
 
 const firstJson = (text: string) => text.match(/\{[\s\S]*\}/)?.[0]
@@ -30,7 +32,7 @@ const firstJson = (text: string) => text.match(/\{[\s\S]*\}/)?.[0]
  */
 const QUICK = { thinkingConfig: { thinkingLevel: 'minimal' }, maxOutputTokens: 400, temperature: 0.2 }
 
-async function askJson(prompt: string, opts: { grounded?: boolean; signal?: AbortSignal }): Promise<string> {
+async function askJson(prompt: string, opts: { grounded?: boolean; signal?: AbortSignal }): Promise<{ text: string; groundingLimited: boolean }> {
   const res = await generateWithFallback(
     {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -42,7 +44,10 @@ async function askJson(prompt: string, opts: { grounded?: boolean; signal?: Abor
   )
   await throwIfAiProxyNotOk(res)
   const payload = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
-  return payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
+  return {
+    text: payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '',
+    groundingLimited: res.headers.get('x-grounding') === 'limited',
+  }
 }
 
 export function parseGoalReply(text: string, now: Date): ParsedGoal {
@@ -73,7 +78,7 @@ export async function parseGoalText(
     `wedding, retirement, business, phone_device, gift, investment, family_support, sadaqah_charity, custom; ` +
     `"name": short title; "target": number in ${input.currency} only if the user stated or clearly implied one; ` +
     `"date": "YYYY-MM" only if a time was stated}. Goal: """${text.slice(0, 300)}"""`
-  return parseGoalReply(await askJson(prompt, { signal }), input.now)
+  return parseGoalReply((await askJson(prompt, { signal })).text, input.now)
 }
 
 export function parseCostReply(text: string): CostEstimate {
@@ -102,7 +107,9 @@ export async function estimateGoalCost(
   const prompt =
     `Typical current cost of "${input.name}" (${input.category})${where}, in ${input.currency}: three options, cheaper to pricier. ` +
     `JSON only: {"options":[{"label":"<2-4 words>","amount":<number>}],"assumption":"<one short sentence>"}`
-  const estimate = parseCostReply(await askJson(prompt, { grounded: true, signal }))
+  const { text, groundingLimited } = await askJson(prompt, { grounded: true, signal })
+  const estimate = parseCostReply(text)
+  if (groundingLimited) return { ...estimate, groundingLimited }
   costCache.set(key, estimate)
   return estimate
 }
