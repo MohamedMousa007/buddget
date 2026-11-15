@@ -15,6 +15,10 @@ describe('membership copy', () => {
     const keys = (o: unknown, p = ''): string[] => (o && typeof o === 'object' && !Array.isArray(o) ? Object.entries(o).flatMap(([k, v]) => keys(v, `${p}.${k}`)) : [p])
     expect(keys(membershipCopy.ar)).toEqual(keys(membershipCopy.en))
   })
+  it.each(['en', 'ar'] as const)('%s: the SMS row never prints a count of 0 or 1', (l) => {
+    for (const n of [0, 1]) expect(membershipCopy[l].state.includedRows.sms(n)).not.toMatch(/\d/)
+    expect(membershipCopy[l].state.includedRows.sms(4)).toContain('4')
+  })
   it('the 14 days are named exactly as the board says', () => {
     expect(membershipCopy.en.hub.trialLine).toBe('14 days of Pro, no card')
   })

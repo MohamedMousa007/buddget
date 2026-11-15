@@ -16,8 +16,9 @@ export interface SubscriptionView {
 }
 
 const DAY = 86_400_000
+// Any store naming (`plus_annual`, `pro_yearly`, Google's `pro:monthly-base`): the period word is in the id.
 const periodOf = (productId: string | null | undefined): 'monthly' | 'yearly' | null =>
-  !productId ? null : productId.startsWith('plus_annual') ? 'yearly' : productId.startsWith('plus_monthly') ? 'monthly' : null
+  !productId ? null : /annual|year/i.test(productId) ? 'yearly' : /month/i.test(productId) ? 'monthly' : null
 
 /** Reads the plan the server reported into the one state a membership screen draws. Pure: the clock is passed in. */
 export function subscriptionView(me: BillingMe | null, now = Date.now()): SubscriptionView {

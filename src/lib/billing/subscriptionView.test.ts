@@ -7,6 +7,12 @@ const sub = (over: Partial<NonNullable<BillingMe['subscription']>> = {}) => ({ f
 const me = (over: Partial<BillingMe> = {}): BillingMe => ({ planKey: 'plus', planName: 'Pro', status: 'active', trialEndsAt: null, billingEnabled: true, sparks: null, loyalty: null, subscription: sub(), ...over })
 
 describe('subscriptionView', () => {
+  it.each([
+    ['plus_monthly', 'monthly'], ['plus_annual', 'yearly'], ['pro_annual', 'yearly'], ['buddget_pro_monthly', 'monthly'],
+    ['pro:yearly', 'yearly'], ['buddget_pro:monthly-base', 'monthly'], ['pro_lifetime', null], [null, null],
+  ] as const)('reads the period from any product id naming: %s', (productId, period) => {
+    expect(subscriptionView(me({ subscription: sub({ productId }) }), NOW).period).toBe(period)
+  })
   it('free with no history is free', () => {
     expect(subscriptionView(me({ planKey: 'free', status: 'active', subscription: sub({ memberSince: null, fromStore: false }) }), NOW).kind).toBe('free')
     expect(subscriptionView(null, NOW).kind).toBe('free')

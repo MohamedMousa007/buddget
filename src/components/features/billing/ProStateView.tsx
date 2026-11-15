@@ -112,7 +112,7 @@ export function ProStateView({ me }: { me: BillingMe }) {
       ) : null}
 
       {view.kind === 'active' || view.kind === 'canceled' || view.kind === 'issue' ? (
-        <FactsTable rows={[{ label: s.plan, value: view.period ? s.period[view.period] : '' }, { label: s.memberSince, value: date(view.memberSince, true) }, { label: untilLabel, value: date(view.until, true) }]} />
+        <FactsTable rows={[...(view.period ? [{ label: s.plan, value: s.period[view.period] }] : []), { label: s.memberSince, value: date(view.memberSince, true) }, { label: untilLabel, value: date(view.until, true) }]} />
       ) : null}
 
       {sparks && view.proActive ? (

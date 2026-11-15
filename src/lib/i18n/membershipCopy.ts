@@ -222,7 +222,7 @@ const en: MembershipCopy = {
     founderHint: 'Your number and perks. It doesn’t change your plan.',
     included: 'In your Pro',
     includedRows: {
-      sms: (n) => `SMS on all ${n} accounts`,
+      sms: (n) => (n > 1 ? `SMS on all ${n} accounts` : 'SMS on every account'),
       year: 'The whole year in reports',
       plans: 'Unlimited plans, compare and stress test',
       sparks: (sparks, estimates) => `${sparks} Sparks and ${estimates} live-price estimates a day`,
@@ -416,7 +416,7 @@ const ar: MembershipCopy = {
     founderHint: 'رقمك ومزاياك. لا يغيّر خطتك.',
     included: 'ما يتضمنه Pro',
     includedRows: {
-      sms: (n) => `SMS على كل الحسابات الـ ${n}`,
+      sms: (n) => (n > 1 ? `SMS على كل الحسابات الـ ${n}` : 'SMS على كل حساباتك'),
       year: 'العام كله في التقارير',
       plans: 'خطط بلا حد، مقارنة واختبار ضغط',
       sparks: (sparks, estimates) => `${sparks} Sparks و${estimates} تقديرات بالأسعار الحية يومياً`,
