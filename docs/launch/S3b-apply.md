@@ -58,3 +58,21 @@ Reviewer sign-off for step 1 received (rehearsal at 091d5092). Batch id `s3-2026
 - 6090c8e7 USD 2026-10 spending +5.70 (T1)
 - f923c68b SAR 2026-08 income -2993.71, 2026-09 income -3984.39, 2026-10 income -986.11 (T3)
 - T15, T2a, T2b and T7b move no total.
+
+**Applied** (batch `s3-20261115`, 2026-11-15, one transaction per type, 90 s statement timeout; no timeout, no retry):
+
+| Type | Applied | Expected | Refused | Audit rows |
+|---|---|---|---|---|
+| T15 | 69 | 69 | none | 69 update |
+| T3 | 5 | 5 | none | 5 soft_delete |
+| T1 | 2 | 2 | none | 2 update |
+| T2a | 1 | 1 | none | 1 update |
+| T2b | 1 | 1 | none | 1 update |
+
+**T7b (2 inserts): not run, left out.** The dry run `S3_DRY=1` of `scripts/qa/s3-insert.test.ts` failed at once with "Missing SUPABASE_SECRET_KEY": the local `.env.local` holds no service-role key. Not a booking-path result. Needs the key supplied by the owner (or the run moved to where it exists); booking code untouched.
+
+**Totals check:** per-user per-month totals now vs `sms_s3_totals_before` differ in exactly the four predicted keys and by exactly the predicted amounts: 6090c8e7 USD 2026-10 spending +5.70; f923c68b SAR income 2026-08 -2993.71, 2026-09 -3984.39, 2026-10 -986.11. No other key moved. No revert needed.
+
+**Nothing sent:** since the first audit row, no notification row, push stamp, template signal or discard request was created (count 0).
+
+**Not verified:** T7b; the app-side view of the repaired rows on a device; a hash of each repaired row before and after (the audit table holds the old rows). Step 2 not run; `sms_s3_input` and `sms_s3_totals_before` not dropped.
