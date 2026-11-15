@@ -27,7 +27,7 @@ function post(event: Record<string, unknown>, over: { auth?: string; ts?: number
   const sig = createHmac('sha256', over.sign ?? HMAC).update(`${ts}.${raw}`).digest('hex')
   return POST(new Request('http://x/api/billing/revenuecat', {
     method: 'POST', body: raw,
-    headers: { authorization: over.auth ?? `Bearer ${AUTH}`, 'x-revenuecat-webhook-timestamp': ts, 'x-revenuecat-webhook-signature': sig },
+    headers: { authorization: over.auth ?? `Bearer ${AUTH}`, 'x-revenuecat-webhook-signature': `t=${ts},v1=${sig}` },
   }))
 }
 const purchase = { type: 'INITIAL_PURCHASE', id: 'e1', app_user_id: USER, product_id: 'plus_monthly', store: 'APP_STORE', event_timestamp_ms: NOW, purchased_at_ms: NOW, expiration_at_ms: NOW + 30 * 86_400_000, original_transaction_id: 'o1' }

@@ -5,14 +5,15 @@
  *
  * Mapping (S5c items 9, 10, 14, S5a section 8):
  *   INITIAL_PURCHASE, RENEWAL          active Plus to the period end; the only two that open a Sparks period
- *   UNCANCELLATION, PRODUCT_CHANGE     active again / new product; never grant Sparks
+ *   UNCANCELLATION                     active again; never grants Sparks
  *   CANCELLATION                       canceled: access runs to the period end. Reason CUSTOMER_SUPPORT is a refund: expired now, Sparks period ended
  *   REFUND_REVERSED                    active again, the refunded Sparks period reopened
  *   BILLING_ISSUE                      past_due with the store's grace expiry (null = the resolver's fallback of period end + 3 days)
  *   EXPIRATION                         expired, Sparks period ended
- *   SUBSCRIPTION_PAUSED                paused
  *   TRANSFER                           the subscription moves to the receiving user; the old rows expire; no Sparks
- * Everything else (a pack purchase, TEST, a product that is not Plus, an anonymous app user) is ignored.
+ * Ignored: PRODUCT_CHANGE (a notice only; the RENEWAL or INITIAL_PURCHASE that follows applies it) and
+ * SUBSCRIPTION_PAUSED (Google Play, scheduled for the period end; RevenueCat: "Don't revoke access on this event",
+ * the EXPIRATION that follows ends it), a pack purchase, TEST, a product that is not Plus, an anonymous app user.
  */
 
 export type BillingStore = 'app_store' | 'play_store'
@@ -143,7 +144,6 @@ export function planEffects(ev: RcEvent, transferSource: EntitlementWrite | null
       }
     }
     case 'UNCANCELLATION':
-    case 'PRODUCT_CHANGE':
       return { userId, entitlement: entitlementOf(ev, {}), sparks: null }
     case 'REFUND_REVERSED':
       return { userId, entitlement: entitlementOf(ev, {}), sparks: { action: 'restore' } }
@@ -156,8 +156,6 @@ export function planEffects(ev: RcEvent, transferSource: EntitlementWrite | null
       return { userId, entitlement: entitlementOf(ev, { status: 'past_due', grace_ends_at: iso(ev.graceMs) }), sparks: null }
     case 'EXPIRATION':
       return { userId, entitlement: entitlementOf(ev, { status: 'expired', will_renew: false }), sparks: { action: 'end' } }
-    case 'SUBSCRIPTION_PAUSED':
-      return { userId, entitlement: entitlementOf(ev, { status: 'paused' }), sparks: null }
     default:
       return 'ignore'
   }

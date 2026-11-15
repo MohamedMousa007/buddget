@@ -91,16 +91,14 @@ describe('billing issue and grace follow the store', () => {
   it('with no expiry reported the grace stays null, which the resolver turns into period end plus three days', () => {
     expect(plan(ev({ type: 'BILLING_ISSUE', graceMs: null })).entitlement?.grace_ends_at).toBeNull()
   })
-  it('a pause grants nothing', () => {
-    expect(plan(ev({ type: 'SUBSCRIPTION_PAUSED' })).entitlement?.status).toBe('paused')
+  it('a scheduled pause changes nothing: access runs to the period end, and the EXPIRATION that follows ends it', () => {
+    expect(planEffects(ev({ type: 'SUBSCRIPTION_PAUSED' }))).toBe('ignore')
   })
 })
 
 describe('product change and transfer', () => {
-  it('a product change updates the product and period without minting Sparks', () => {
-    const out = plan(ev({ type: 'PRODUCT_CHANGE', productId: 'plus_annual', expirationMs: T0 + 365 * DAY }))
-    expect(out.entitlement).toMatchObject({ product_id: 'plus_annual', status: 'active' })
-    expect(out.sparks).toBeNull()
+  it('a product change is only a notice: the RENEWAL or INITIAL_PURCHASE that follows applies it', () => {
+    expect(planEffects(ev({ type: 'PRODUCT_CHANGE', productId: 'plus_monthly', expirationMs: T0 + 30 * DAY }))).toBe('ignore')
   })
   it('a transfer expires the old users, copies the subscription to the new one, and grants no Sparks', () => {
     const copied = { plan_key: 'plus', status: 'active', source: 'apple', trial_ends_at: null, current_period_end: new Date(T0 + 20 * DAY).toISOString(), canceled_at: null, will_renew: true, product_id: 'plus_monthly', store: 'app_store', store_original_txn: 'txn-9', grace_ends_at: null } as const
