@@ -154,7 +154,7 @@ export function useSmsTracking() {
       // Android native: OS permission must be confirmed before enabling.
       // The switch only flips green after the grant dialog resolves 'granted'.
       if (isNative() && isAndroid()) {
-        const { checkSmsPermission, requestSmsPermission, ensureIngestToken, stopSMSTracking } =
+        const { checkSmsPermission, requestSmsPermission, ensureIngestToken, stopSMSTracking, revokeOwnIngestToken } =
           await import('@/lib/native/smsTracker')
         if (value) {
           const alreadyGranted = await checkSmsPermission()
@@ -178,6 +178,7 @@ export function useSmsTracking() {
           setError(null)
         } else {
           await stopSMSTracking()
+          await revokeOwnIngestToken()
           setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })
@@ -206,6 +207,7 @@ export function useSmsTracking() {
           setError(null)
         } else {
           await setSmsEnabled(false)
+          await (await import('@/lib/native/smsTracker')).revokeOwnIngestToken()
           setError(null)
         }
         updateSettings({ smsTrackingEnabled: value })

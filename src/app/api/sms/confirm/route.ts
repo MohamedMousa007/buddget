@@ -195,7 +195,7 @@ export async function POST(request: Request) {
 
     // Manually rescued by the user — mark 'tapped' (a warning state in admin) so
     // the tech team can see auto-add needed human intervention.
-    const { error: finalErr } = await service
+    const { data: finalRows, error: finalErr } = await service
       .from('sms_parse_log')
       .update({
         status: 'tapped',
@@ -209,8 +209,17 @@ export async function POST(request: Request) {
         debt_payment_id: debtPaymentId,
       })
       .eq('id', row.id)
+      .neq('status', 'undone')
+      .select('id')
     // The transaction is already posted; the claim stays released so a retry cannot post it twice.
-    if (finalErr) console.error('[sms/confirm] log link update failed', finalErr)
+    if (finalErr) console.error('[sms/confirm] log link update failed', { message: finalErr.message, code: finalErr.code })
+    else if (!finalRows?.length) {
+      // An undo ran while this booking was in flight and already marked the message undone: what was just booked goes with it.
+      const now = new Date().toISOString()
+      if (expenseId) await service.from('expenses').update({ deleted_at: now }).eq('id', expenseId).eq('user_id', userId)
+      if (incomeId) await service.from('income_events').update({ deleted_at: now }).eq('id', incomeId).eq('user_id', userId)
+      return NextResponse.json({ ok: false, reason: 'undone' }, { status: 409 })
+    }
 
     return NextResponse.json({
       ok: true,

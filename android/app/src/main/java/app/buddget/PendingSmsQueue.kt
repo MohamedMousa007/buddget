@@ -30,6 +30,7 @@ object SmsTime {
 
 object PendingSmsQueue {
     private const val KEY = "pending_queue"
+    private const val CORRUPT_KEY = "pending_queue.corrupt"
     private const val CAP = 200
     private const val EVICTED_KEY = "evicted_count"
 
@@ -91,7 +92,10 @@ object PendingSmsQueue {
     private fun read(context: Context): JSONArray {
         val raw = SmsStore.prefs(context)
             .getString(KEY, null) ?: return JSONArray()
-        return try { JSONArray(raw) } catch (_: Exception) { JSONArray() }
+        return try { JSONArray(raw) } catch (_: Exception) {
+            SmsStore.prefs(context).edit().putString(CORRUPT_KEY, raw).commit()
+            JSONArray()
+        }
     }
 
     private fun write(context: Context, items: JSONArray) {

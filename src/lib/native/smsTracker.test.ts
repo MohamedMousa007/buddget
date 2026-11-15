@@ -60,13 +60,13 @@ beforeEach(() => {
 describe('ensureIngestToken', () => {
   it('stores the ingest token returned by setup-token, never the JWT', async () => {
     mocks.fetch.mockResolvedValue(
-      new Response(JSON.stringify({ token: 'ingest-abc' }), { status: 200 }),
+      new Response(JSON.stringify({ token: '11111111-1111-4111-8111-111111111111' }), { status: 200 }),
     )
     const sms = await freshModule()
     const ok = await sms.ensureIngestToken('jwt-SHOULD-NEVER-BE-STORED', 'user-1')
     expect(ok).toBe(true)
     expect(mocks.saveToken).toHaveBeenCalledTimes(1)
-    expect(mocks.saveToken.mock.calls[0][0]).toMatchObject({ token: 'ingest-abc', userId: 'user-1' })
+    expect(mocks.saveToken.mock.calls[0][0]).toMatchObject({ token: '11111111-1111-4111-8111-111111111111', userId: 'user-1' })
     // The JWT is only allowed in the Authorization header of the fetch.
     const fetchInit = mocks.fetch.mock.calls[0][1] as RequestInit
     expect((fetchInit.headers as Record<string, string>).Authorization).toBe(
@@ -135,9 +135,9 @@ describe('reconcileSmsOwner (account switch)', () => {
 
 describe('drainAndSubmitPendingSms', () => {
   const items = [
-    { message: 'txn 1', sender: 'CIB', receivedAt: '2026-07-01T00:00:00Z', source: 'sms' },
-    { message: 'txn 2', sender: 'NBE', receivedAt: '2026-07-01T00:01:00Z', source: 'sms' },
-    { message: 'txn 3', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms' },
+    { message: 'txn 1', sender: 'CIB', receivedAt: '2026-07-01T00:00:00Z', source: 'sms', userId: 'user-1' },
+    { message: 'txn 2', sender: 'NBE', receivedAt: '2026-07-01T00:01:00Z', source: 'sms', userId: 'user-1' },
+    { message: 'txn 3', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms', userId: 'user-1' },
   ]
 
   it('removes only items the server accepted; every refusal stays queued', async () => {
@@ -293,10 +293,7 @@ describe('drainAndSubmitPendingSms', () => {
     expect(mocks.removePending).not.toHaveBeenCalled()
   })
 
-  it('never forwards SMS owned by another account (leaves them queued)', async () => {
-    // The security fix: an SMS captured under user-A must NOT be POSTed with
-    // user-B's session — it would land in the wrong account. Legacy items
-    // (no owner stamp) still deliver to the current user.
+  it('never forwards SMS owned by another account (leaves them queued) and drops unstamped ones unsent', async () => {
     mocks.peekPendingQueue.mockResolvedValue({ items: [
       { message: 'mine', sender: 'CIB', receivedAt: '2026-07-01T00:00:00Z', source: 'sms', userId: 'user-B' },
       { message: 'theirs', sender: 'NBE', receivedAt: '2026-07-01T00:01:00Z', source: 'sms', userId: 'user-A' },
@@ -305,10 +302,19 @@ describe('drainAndSubmitPendingSms', () => {
     mocks.fetch.mockResolvedValue(new Response('{}', { status: 200 }))
     const sms = await freshModule()
     await sms.drainAndSubmitPendingSms('jwt', 'user-B')
-    // Only user-B's item + the legacy item are posted; user-A's is skipped.
-    expect(mocks.fetch).toHaveBeenCalledTimes(2)
     const bodies = mocks.fetch.mock.calls.map((c) => JSON.parse((c[1] as RequestInit).body as string).message)
-    expect(bodies).toEqual(['mine', 'legacy'])
+    expect(bodies).toEqual(['mine'])
+    const removed = mocks.removePending.mock.calls.flatMap((c) => c[0].items.map((i) => i.message))
+    expect(removed).toContain('legacy')
+    expect(removed).not.toContain('theirs')
+  })
+
+  it('drops unstamped items even when nothing else is queued, without any network call', async () => {
+    mocks.peekPendingQueue.mockResolvedValue({ items: [{ message: 'legacy', sender: 'HSBC', receivedAt: '2026-07-01T00:02:00Z', source: 'sms', userId: '' }] })
+    const sms = await freshModule()
+    await sms.drainAndSubmitPendingSms('jwt', 'user-B')
+    expect(mocks.fetch).not.toHaveBeenCalled()
+    expect(mocks.removePending).toHaveBeenCalledTimes(1)
   })
 
   it('replays the SMS arrival time, not the drain time', async () => {
@@ -324,7 +330,7 @@ describe('drainAndSubmitPendingSms', () => {
       message: 'txn 1',
       sender: 'CIB',
       receivedAt: '2026-07-01T00:00:00Z',
-      source: 'sms',
+      source: 'sms', userId: 'user-1',
     })
   })
 })
@@ -332,19 +338,29 @@ describe('drainAndSubmitPendingSms', () => {
 describe('token-write surface', () => {
   it('saveSmsToken is the only exported function that persists a token', async () => {
     mocks.fetch.mockResolvedValue(
-      new Response(JSON.stringify({ token: 'ingest-xyz' }), { status: 200 }),
+      new Response(JSON.stringify({ token: '22222222-2222-4222-8222-222222222222' }), { status: 200 }),
     )
     const sms = await freshModule()
-    await sms.saveSmsToken('ingest-xyz', 'user-1')
+    await sms.saveSmsToken('22222222-2222-4222-8222-222222222222', 'user-1')
     await sms.setSmsEnabled(true)
     await sms.stopSMSTracking()
     // Exactly one write, from saveSmsToken, with the ingest token.
     expect(mocks.saveToken).toHaveBeenCalledTimes(1)
-    expect(mocks.saveToken.mock.calls[0][0]).toMatchObject({ token: 'ingest-xyz' })
+    expect(mocks.saveToken.mock.calls[0][0]).toMatchObject({ token: '22222222-2222-4222-8222-222222222222' })
     // The legacy JWT-writing entry points are gone.
     expect('startSMSTracking' in sms).toBe(false)
     expect('resumeSmsTrackingIfEnabled' in sms).toBe(false)
     expect('refreshSmsToken' in sms).toBe(false)
+  })
+})
+
+describe('P2-31 saveSmsToken shape', () => {
+  it('refuses a JWT and any value that is not the ingest-token UUID', async () => {
+    const sms = await freshModule()
+    await sms.saveSmsToken('aaa.bbb.ccc', 'user-1')
+    await sms.saveSmsToken('not-a-uuid', 'user-1')
+    expect(mocks.saveToken).not.toHaveBeenCalled()
+    expect(sms.getSmsNativeError()).toMatch(/ingest token/)
   })
 })
 
@@ -353,7 +369,7 @@ describe('SST-2 saveSmsToken base URL', () => {
     vi.doMock('@/lib/apiBase', () => ({ apiUrl: (path: string) => `https://evil.example${path}` }))
     vi.resetModules()
     const fresh = await import('@/lib/native/smsTracker')
-    await fresh.saveSmsToken('ingest-xyz', 'user-1')
+    await fresh.saveSmsToken('22222222-2222-4222-8222-222222222222', 'user-1')
     expect(mocks.saveToken).not.toHaveBeenCalled()
     expect(fresh.getSmsNativeError()).toMatch(/not allowed/)
     vi.doUnmock('@/lib/apiBase')
@@ -403,5 +419,58 @@ describe('clearPendingSmsQueue', () => {
     const sms = await freshModule()
     await expect(sms.clearPendingSmsQueue('u1', null)).resolves.toBeUndefined()
     expect(mocks.removePending).not.toHaveBeenCalled()
+  })
+})
+
+describe('P2-28 token revoke', () => {
+  const pending = () => localStorage.getItem('sms.revokePending')
+
+  it('remembers a refused revoke and replays it for the same account at next start', async () => {
+    mocks.fetch.mockResolvedValueOnce(new Response('{}', { status: 500 }))
+    const sms = await freshModule()
+    await sms.revokeIngestToken('jwt', 'user-1')
+    expect(JSON.parse(pending()!)).toEqual(['user-1'])
+    mocks.fetch.mockResolvedValueOnce(new Response('{}', { status: 200 }))
+    await sms.replayPendingTokenRevoke('jwt', 'user-1')
+    expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    expect(String(mocks.fetch.mock.calls[1][0])).toContain('/api/sms/revoke-token')
+    expect(pending()).toBeNull()
+  })
+
+  it('remembers a network failure too, and does not store anything after a good revoke', async () => {
+    mocks.fetch.mockRejectedValueOnce(new TypeError('offline'))
+    const sms = await freshModule()
+    await sms.revokeIngestToken('jwt', 'user-1')
+    expect(JSON.parse(pending()!)).toEqual(['user-1'])
+    localStorage.removeItem('sms.revokePending')
+    mocks.fetch.mockResolvedValueOnce(new Response('{}', { status: 200 }))
+    await sms.revokeIngestToken('jwt', 'user-1')
+    expect(pending()).toBeNull()
+  })
+
+  it('does not replay another account\'s pending revoke and keeps it for that account', async () => {
+    localStorage.setItem('sms.revokePending', JSON.stringify(['user-1']))
+    const sms = await freshModule()
+    await sms.replayPendingTokenRevoke('jwt', 'user-2')
+    expect(mocks.fetch).not.toHaveBeenCalled()
+    expect(JSON.parse(pending()!)).toEqual(['user-1'])
+  })
+
+  it('switch-off revokes with the live session and remembers a refusal against that account', async () => {
+    vi.doMock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { getSession: async () => ({ data: { session: { access_token: 'live-jwt', user: { id: 'user-1' } } } }) } }) }))
+    mocks.fetch.mockResolvedValueOnce(new Response('{}', { status: 500 }))
+    const sms = await freshModule()
+    await sms.revokeOwnIngestToken()
+    expect(new Headers((mocks.fetch.mock.calls[0][1] as RequestInit).headers).get('Authorization')).toBe('Bearer live-jwt')
+    expect(JSON.parse(pending()!)).toEqual(['user-1'])
+    vi.doUnmock('@/lib/supabase/client')
+  })
+
+  it('keeps the pending revoke when the replay is refused again', async () => {
+    localStorage.setItem('sms.revokePending', JSON.stringify(['user-1']))
+    mocks.fetch.mockResolvedValueOnce(new Response('{}', { status: 503 }))
+    const sms = await freshModule()
+    await sms.replayPendingTokenRevoke('jwt', 'user-1')
+    expect(JSON.parse(pending()!)).toEqual(['user-1'])
   })
 })

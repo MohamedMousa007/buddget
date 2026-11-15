@@ -541,7 +541,7 @@ enum SmsBackgroundDrain {
         for item in SmsCredentialStore.peekPending() {
             if Task.isCancelled { return false }
             let owner = item["userId"] ?? ""
-            guard owner.isEmpty || owner == userId, let message = item["message"], let receivedAt = item["receivedAt"] else { continue }
+            guard owner == userId, let message = item["message"], let receivedAt = item["receivedAt"] else { continue }
             var payload: [String: Any] = ["message": message, "sender": item["sender"] ?? "", "source": "sms", "receivedAt": receivedAt]
             if let eventId = item["eventId"], !eventId.isEmpty { payload["eventId"] = eventId }
             guard let body = try? JSONSerialization.data(withJSONObject: payload) else { continue }

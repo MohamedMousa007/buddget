@@ -1,10 +1,11 @@
+import { createHash } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const h = vi.hoisted(() => ({ identity: vi.fn(), active: vi.fn(), tokenRow: vi.fn() }))
+const h = vi.hoisted(() => ({ identity: vi.fn(), active: vi.fn(), tokenRow: vi.fn(), eq: vi.fn() }))
 vi.mock('@/lib/supabase/resolveRouteUser', () => ({ looksLikeJwt: (t: string) => t.split('.').length === 3, resolveRouteIdentity: h.identity }))
 vi.mock('@/lib/auth/accountActive', () => ({ isAccountActive: h.active }))
 vi.mock('@/lib/supabase/service', () => ({
-  createServiceRoleClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ single: h.tokenRow }) }) }) }) }),
+  createServiceRoleClient: () => ({ from: () => ({ select: () => ({ eq: (k: string, v: string) => (h.eq(k, v), { eq: () => ({ single: h.tokenRow }) }) }) }) }),
 }))
 
 import { resolveSmsCaller } from './resolveSmsUser'
@@ -32,6 +33,10 @@ describe('resolveSmsCaller', () => {
   })
   it('an active ingest token resolves its device', async () => {
     expect(await resolveSmsCaller(req('opaque-token'))).toEqual({ userId: 'u1', deviceId: 'dev1', viaJwt: false })
+  })
+  it('looks the token up by its hash, never by the token itself', async () => {
+    await resolveSmsCaller(req('OPAQUE-token'))
+    expect(h.eq).toHaveBeenCalledWith('token_hash', createHash('sha256').update('opaque-token').digest('hex'))
   })
   it('no bearer means no caller and no Auth lookup', async () => {
     expect((await resolveSmsCaller(new Request('http://x'))).userId).toBeNull()

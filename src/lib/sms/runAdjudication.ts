@@ -21,6 +21,8 @@ import {
 import { bumpTemplateFailure } from '@/lib/sms/bumpTemplateFailure'
 import { maskPii } from '@/lib/sms/maskPii'
 import { bodyShapeKey } from '@/lib/sms/routingKey'
+import { reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
+import { estimateUnits } from '@/lib/server/ai/units'
 
 /** Templates adjudicated per invocation — this is background work riding on a user request. */
 const MAX_TEMPLATES_PER_RUN = 2
@@ -38,7 +40,31 @@ interface SignalRow {
 
 export interface AdjudicationDeps {
   /** Calls the model with a system prompt + user content, returning parsed JSON or null. */
-  askModel: (system: string, user: string) => Promise<unknown | null>
+  askModel: (system: string, user: string, opts: { maxOutputTokens: number }) => Promise<unknown | null>
+}
+
+/** A verdict is one small JSON object. */
+const ADJUDICATION_MAX_OUTPUT_TOKENS = 400
+
+/** The model call under the user's AI quota. Null when the quota says no or the model is unavailable, so the signal stays pending. */
+async function askMetered(deps: AdjudicationDeps, userId: string, system: string, user: string): Promise<unknown | null> {
+  const chars = system.length + user.length
+  const quota = await reserveAiQuota({ userId, feature: 'sms', estUnits: estimateUnits(chars, ADJUDICATION_MAX_OUTPUT_TOKENS) })
+  if (!quota.allowed) return null
+  const started = Date.now()
+  let raw: unknown | null = null
+  try {
+    raw = await deps.askModel(system, user, { maxOutputTokens: ADJUDICATION_MAX_OUTPUT_TOKENS })
+    return raw
+  } finally {
+    await settleAiQuota(quota, {
+      model: 'sms-adjudicator',
+      tier: 'fast',
+      latencyMs: Date.now() - started,
+      usage: { promptTokens: Math.ceil(chars / 4), cachedTokens: 0, outputTokens: raw === null ? 0 : ADJUDICATION_MAX_OUTPUT_TOKENS },
+      status: raw === null ? 'error' : 'ok',
+    })
+  }
 }
 
 /**
@@ -108,8 +134,8 @@ export async function runAdjudication(
         })),
       }
 
-      const raw = await deps.askModel(ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input, (log.merchant as string | null) ?? null))
-      if (raw === null) continue // model unavailable — leave the signals pending for next time
+      const raw = await askMetered(deps, judged[0].user_id, ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input, (log.merchant as string | null) ?? null))
+      if (raw === null) continue // model unavailable or over quota — leave the signals pending for next time
 
       const result = parseAdjudication(raw)
       await markVerdict(service, judged, result.verdict)
@@ -206,8 +232,8 @@ async function adjudicateAiOnly(service: ServiceClient, deps: AdjudicationDeps):
       changes: [{ signalKind: sig.signal_kind, field: sig.field, from: sig.old_value, to: sig.new_value }],
     }
 
-    const raw = await deps.askModel(ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input, (log.merchant as string | null) ?? null))
-    if (raw === null) continue // model unavailable — leave pending
+    const raw = await askMetered(deps, sig.user_id, ADJUDICATOR_PROMPT, buildAdjudicationPrompt(input, (log.merchant as string | null) ?? null))
+    if (raw === null) continue // model unavailable or over quota — leave pending
 
     const result = parseAdjudication(raw)
     await markVerdict(service, [sig], result.verdict)

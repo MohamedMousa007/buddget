@@ -3,7 +3,6 @@ import { cookies } from 'next/headers'
 import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
-import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
 import { resolveRouteUser, resolveVerifiedIdentity } from '@/lib/supabase/resolveRouteUser'
 import { accessTokenOf, verifyReauth } from '@/lib/server/reauth'
 import { deliverDeviceSecret, newDeviceSecret } from '@/lib/server/trustedDevice'
@@ -43,6 +42,9 @@ export async function POST(request: Request) {
     // Refused before anything is cleared: a no-op change must not cost the user their biometric and 2-step trust.
     if (parsed.data.currentPassword === parsed.data.newPassword) return NextResponse.json({ error: 'Same password', code: 'same_password' }, { status: 422 })
 
+    const live = await admin.from('sms_ingest_tokens').select('id').eq('user_id', identity.id).eq('is_active', true)
+    const liveTokenIds = (live.data ?? []).map((r) => r.id as string)
+
     // The non-expiring SMS ingest tokens are credentials a stolen session could have read; they end with the old password.
     const [bio, trusted, tokens] = await Promise.all([
       admin.from('biometric_devices').delete().eq('user_id', identity.id),
@@ -54,21 +56,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Could not change the password' }, { status: 500 })
     }
 
-    // The fresh token replaces the retired ones for this phone, so SMS keeps flowing here; the other phones re-arm on their next sign-in.
-    const mintSmsToken = async () => {
-      const fresh = await admin.from('sms_ingest_tokens').insert({ user_id: identity.id, device_id: request.headers.get(DEVICE_ID_HEADER)?.trim().slice(0, 100) || null })
-      if (fresh.error) console.error('[auth/password] minting a fresh SMS ingest token failed', fresh.error.message)
-    }
-
     const updated = await admin.auth.admin.updateUserById(identity.id, { password: parsed.data.newPassword })
     if (updated.error) {
-      // The tokens were already retired: without a new one this phone would stop sending SMS although the password never changed.
-      await mintSmsToken()
+      // The password never changed, so the tokens retired above come back: only hashes are stored and a replacement could not reach the phone from here.
+      if (liveTokenIds.length > 0) {
+        const back = await admin.from('sms_ingest_tokens').update({ is_active: true }).in('id', liveTokenIds)
+        if (back.error) console.error('[auth/password] restoring SMS ingest tokens failed', back.error.message)
+      }
       const same = (updated.error as { code?: string }).code === 'same_password' || /same|different from the old/i.test(updated.error.message)
       return NextResponse.json({ error: same ? 'Same password' : 'Could not change the password', code: same ? 'same_password' : undefined }, { status: same ? 422 : 500 })
     }
 
-    await mintSmsToken()
+    // The retired SMS tokens are not replaced here: only hashes are stored, so the app fetches a fresh one itself (next start, or when SMS settings open).
 
     const token = await accessTokenOf(request)
     let revokedOthers = false

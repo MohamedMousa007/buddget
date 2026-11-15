@@ -2,6 +2,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { looksLikeJwt, resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
 import { isAccountActive } from '@/lib/auth/accountActive'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
+import { hashIngestToken } from '@/lib/sms/ingestToken'
 
 export interface SmsCaller {
   userId: string | null
@@ -31,7 +32,7 @@ async function resolveSmsCallerUnchecked(req: Request): Promise<SmsCaller> {
   const { data: tokenRow } = await createServiceRoleClient()
     .from('sms_ingest_tokens')
     .select('user_id, device_id')
-    .eq('token', bearer)
+    .eq('token_hash', hashIngestToken(bearer))
     .eq('is_active', true)
     .single()
 

@@ -108,7 +108,7 @@ describe('SST-1: accounts that never removed a phone are not locked out', () => 
   it('header-less setup-token GET keeps working', async () => {
     const res = await getToken(req('GET'))
     expect(res.status).toBe(200)
-    expect((await res.json()).token).toBe('tok-web')
+    expect((await res.json()).token).toMatch(/^[0-9a-f-]{36}$/)
   })
 
   it('a header-less rotate only deactivates device-less tokens, never another phone', async () => {

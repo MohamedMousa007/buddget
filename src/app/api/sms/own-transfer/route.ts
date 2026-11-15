@@ -87,7 +87,7 @@ export async function POST(request: Request) {
   const { data: l } = await service.from('sms_parse_log').select(LOG_COLUMNS).eq('id', parseLogId).single()
   const logRow = l as LogRow | null
   if (!logRow) return fail('Parse log not found', 404)
-  if (logRow.user_id !== userId) return fail('Forbidden', 403)
+  if (logRow.user_id !== userId) return fail('Parse log not found', 404)
   if (logRow.own_transfer_verdict !== ALLOWED_VERDICT[action]) return fail('Not allowed in this state', 409)
 
   if (action === 'confirm_account' || action === 'decline_account') {

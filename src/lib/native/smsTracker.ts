@@ -147,18 +147,60 @@ export async function requestSmsPermission(): Promise<boolean> {
   return callNative('requestPermission', (p) => withNativeFlow(async () => (await p.requestPermission()).granted), false)
 }
 
-/**
- * Explicit sign-out: retires this phone's server-side ingest token so the non-expiring token left in native storage stops
- * working (NAT-2). Best-effort and idempotent; the next sign-in re-arms through `ensureIngestToken`.
- */
-export async function revokeIngestToken(accessToken: string): Promise<void> {
-  if (!isNative() || !accessToken) return
+const REVOKE_PENDING_KEY = 'sms.revokePending'
+
+function readPendingRevokes(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(REVOKE_PENDING_KEY) ?? '[]') as unknown
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function writePendingRevokes(userIds: string[]): void {
+  try {
+    if (userIds.length === 0) localStorage.removeItem(REVOKE_PENDING_KEY)
+    else localStorage.setItem(REVOKE_PENDING_KEY, JSON.stringify(userIds))
+  } catch { /* storage unavailable: nothing to remember the revoke with */ }
+}
+
+async function postRevoke(accessToken: string): Promise<boolean> {
   try {
     const { apiFetchAuth } = await import('@/lib/apiBase')
-    await apiFetchAuth('/api/sms/revoke-token', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } })
+    const res = await apiFetchAuth('/api/sms/revoke-token', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } })
+    return res.ok
   } catch (e) {
     console.error('[sms] token revoke failed', e)
+    return false
   }
+}
+
+/**
+ * Retires this phone's server-side ingest token so the non-expiring token left in native storage stops working (NAT-2),
+ * on sign-out and when tracking is switched off. A refused or unreachable revoke is remembered per account and replayed
+ * at the next start (`replayPendingTokenRevoke`). Idempotent; the next arm re-issues through `ensureIngestToken`.
+ */
+export async function revokeIngestToken(accessToken: string, userId: string): Promise<void> {
+  if (!isNative() || !accessToken || !userId) return
+  if (await postRevoke(accessToken)) return
+  const pending = readPendingRevokes()
+  if (!pending.includes(userId)) writePendingRevokes([...pending, userId])
+}
+
+/** Start-up: replays a revoke that failed earlier for THIS account, before a fresh token is issued. Another account's stays remembered. */
+export async function replayPendingTokenRevoke(accessToken: string, userId: string): Promise<void> {
+  if (!isNative() || !accessToken || !userId) return
+  const pending = readPendingRevokes()
+  if (!pending.includes(userId)) return
+  if (await postRevoke(accessToken)) writePendingRevokes(pending.filter((u) => u !== userId))
+}
+
+/** Switch-off: retires this phone's token with the live session. */
+export async function revokeOwnIngestToken(): Promise<void> {
+  const { createClient } = await import('@/lib/supabase/client')
+  const { data } = await createClient().auth.getSession()
+  if (data.session) await revokeIngestToken(data.session.access_token, data.session.user.id)
 }
 
 /**
@@ -206,8 +248,11 @@ export async function stopSMSTracking(): Promise<void> {
  * Called from useSmsTracking whenever the ingest token is fetched or rotated.
  * resolveUserId in /api/sms/parse accepts this token as Bearer.
  */
+const INGEST_TOKEN_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function saveSmsToken(ingestToken: string, userId: string): Promise<void> {
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')
+  if (!INGEST_TOKEN_RE.test(ingestToken)) { setNativeError('saveToken: value is not an ingest token'); return }
   const base = buildUrl('').replace(/\/$/, '')
   // The native plugins refuse the same URLs; failing here keeps a misconfigured build visible in the native-error banner.
   if (!isAllowedSmsApiUrl(`${base}/`)) { setNativeError('saveToken: SMS API base URL is not allowed'); return }
@@ -361,8 +406,10 @@ async function runDrain(accessToken: string, userId: string, force: boolean): Pr
   if (!peeked) return
   // Only replay SMS captured under the CURRENT account. Items owned by a previous
   // account (item.userId set and different) stay queued for when that user returns.
-  // Legacy items (no owner stamp) deliver to the current user.
-  const items = peeked.filter((i) => !i.userId || i.userId === userId)
+  // Unstamped items (queued before owner stamping) have no known owner: never posted, dropped.
+  const unowned = peeked.filter((i) => !i.userId)
+  if (unowned.length > 0) await callNative('removePending', (p) => p.removePending({ items: unowned }), undefined)
+  const items = peeked.filter((i) => i.userId === userId)
   if (items.length === 0) return
 
   const { apiUrl: buildUrl } = await import('@/lib/apiBase')

@@ -25,7 +25,7 @@ import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiPars
 import { sendNativePush, type SendNativePushArgs } from '@/lib/server/sendNativePush'
 import { smsDeviceGate } from '@/lib/sms/deviceGate'
 import { recordIngestRefusal } from '@/lib/sms/ingestRefusal'
-import { isRateLimited } from '@/lib/server/rateLimit'
+import { rateLimitOutcome } from '@/lib/server/rateLimit'
 import { resolveSmsCaller } from '@/lib/sms/resolveSmsUser'
 import { monthNameInZone } from '@/lib/time/zonedMonth'
 import { getUserTimeZone } from '@/lib/server/userTimeZone'
@@ -589,7 +589,7 @@ async function learnPattern(
       .single()
 
     if (tplErr && tplErr.code !== '23505') {
-      console.warn('[sms/parse] template insert failed', tplErr)
+      console.warn('[sms/parse] template insert failed', { message: tplErr.message, code: tplErr.code })
       return recordLearnOutcome(service, logId, 'insert_failed')
     } else if (!tplErr && inserted) {
       console.log('[sms/parse] template learned', { sender, regex: attempt.regex })
@@ -667,6 +667,7 @@ Omit "merchant", "last4", "datetime" and "counterparty_last4" from mapping_rules
 // ---------------------------------------------------------------------------
 
 const PARSE_PER_HOUR = 1200
+const MAX_BODY_BYTES = 64 * 1024
 
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
@@ -681,10 +682,17 @@ export async function POST(request: Request) {
     await recordIngestRefusal(createServiceRoleClient(), { userId, deviceId }, request, 'device_blocked')
     return blocked
   }
-  // Bounds what a token holder can write (each message becomes a parse-log row, ledger rows and pushes). Fails open: a
-  // database hiccup must never lose a real bank SMS.
-  if (await isRateLimited(createServiceRoleClient(), `sms-parse:${userId}`, 3600, PARSE_PER_HOUR, true)) {
+  // Bounds what a token holder can write (each message becomes a parse-log row, ledger rows and pushes). A counter outage
+  // answers 503: both phone clients keep the message queued on any non-2xx and retry, so nothing is lost.
+  const limit = await rateLimitOutcome(createServiceRoleClient(), `sms-parse:${userId}`, 3600, PARSE_PER_HOUR)
+  if (limit === 'limited') {
     return NextResponse.json({ error: 'Too many messages, try again later' }, { status: 429 })
+  }
+  if (limit === 'error') {
+    return NextResponse.json({ error: 'Temporarily unavailable' }, { status: 503, headers: { 'Retry-After': '60' } })
+  }
+  if (Number(request.headers.get('content-length')) > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
   }
 
   // Parse body first — sender is needed for the static template lookup.
@@ -809,7 +817,7 @@ export async function POST(request: Request) {
         incomeId: prior?.income_id ?? null,
       })
     }
-    console.error('[sms/parse] log insert failed', logErr)
+    console.error('[sms/parse] log insert failed', { message: logErr?.message, code: logErr?.code })
     return NextResponse.json({ ok: false, reason: 'log_insert_failed' }, { status: 500 })
   }
   const logId = logRow.id
@@ -1619,7 +1627,7 @@ export async function POST(request: Request) {
     if (key && Math.random() < HEALTH_SWEEP_SAMPLE_RATE) {
       after(async () => {
         const res = await runAdjudication(service, {
-          askModel: (system, user) => askModelJson(key, system, user),
+          askModel: (system, user, opts) => askModelJson(key, system, user, opts),
         })
         if (res.adjudicated > 0) console.log('[sms/adjudication]', res)
       })
@@ -1673,7 +1681,7 @@ function aiAvailable(budget: number | null): boolean {
   return budget !== null && budget > 0
 }
 
-async function askModelJson(apiKey: string, system: string, user: string): Promise<unknown | null> {
+async function askModelJson(apiKey: string, system: string, user: string, opts: { maxOutputTokens: number }): Promise<unknown | null> {
   try {
     const res = await fetch(GEMINI_URL, {
       method: 'POST',
@@ -1681,7 +1689,7 @@ async function askModelJson(apiKey: string, system: string, user: string): Promi
       signal: AbortSignal.timeout(20_000),
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: system }, { text: user }] }],
-        generationConfig: { temperature: 0, responseMimeType: 'application/json' },
+        generationConfig: { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: opts.maxOutputTokens },
       }),
     })
     if (!res.ok) return null

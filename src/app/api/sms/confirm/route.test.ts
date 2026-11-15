@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   rpc: vi.fn(),
   gate: vi.fn(),
   filters: [] as [string, unknown][],
+  undoneMidBooking: false,
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
@@ -26,7 +27,11 @@ vi.mock('@/lib/supabase/service', () => ({
         h.updates.push(rec)
         const q = {
           eq: (col: string, val: unknown) => { h.filters.push([col, val]); return q },
-          select: () => ({ maybeSingle: async () => ({ data: h.claimRow }) }),
+          neq: (col: string, val: unknown) => { h.filters.push([`neq:${col}`, val]); return q },
+          select: () => ({
+            maybeSingle: async () => ({ data: h.claimRow }),
+            then: (r: (v: unknown) => void) => r({ data: h.undoneMidBooking ? [] : [{ id: LOG_ID }], error: null }),
+          }),
           then: (r: (v: unknown) => void) => r({ error: h.failTable === table ? { message: 'boom' } : null }),
         }
         return q
@@ -55,6 +60,7 @@ describe('POST /api/sms/confirm', () => {
     h.updates.length = 0
     h.filters.length = 0
     h.failTable = null
+    h.undoneMidBooking = false
     h.claimRow = pending()
   })
 
@@ -63,6 +69,15 @@ describe('POST /api/sms/confirm', () => {
     const res = await post({ logId: LOG_ID })
     expect(res.status).toBe(409)
     expect(h.create).not.toHaveBeenCalled()
+  })
+
+  it('an undo that lands while the booking is in flight is not overwritten: the log stays undone and the new row goes with it', async () => {
+    h.undoneMidBooking = true
+    const res = await post({ logId: LOG_ID })
+    expect(res.status).toBe(409)
+    expect((await res.json()).reason).toBe('undone')
+    expect(h.filters).toContainEqual(['neq:status', 'undone'])
+    expect(h.updates).toContainEqual({ table: 'expenses', values: { deleted_at: expect.any(String) } })
   })
 
   it('releases the claim when posting throws', async () => {

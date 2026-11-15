@@ -9,9 +9,10 @@
  */
 
 import { isRateLimited } from '@/lib/server/rateLimit'
-import { ROTATIONS_PER_HOUR, trimRetiredIngestTokens } from '@/lib/server/tokenCaps'
+import { ISSUES_PER_HOUR, ROTATIONS_PER_HOUR, capActiveIngestTokens, trimRetiredIngestTokens } from '@/lib/server/tokenCaps'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse } from 'next/server'
+import { newIngestToken } from '@/lib/sms/ingestToken'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { DEVICE_ID_HEADER } from '@/lib/auth/deviceIdConstants'
@@ -55,34 +56,26 @@ export async function GET(request: Request) {
   const refusal = await deviceRefusal(serviceClient, userId, deviceId)
   if (refusal) return refusal
 
-  // Check for an existing active token for this scope.
-  let existingQuery = serviceClient
-    .from('sms_ingest_tokens')
-    .select('token')
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-  existingQuery = deviceId ? existingQuery.eq('device_id', deviceId) : existingQuery.is('device_id', null)
-  const { data: existing } = await existingQuery.maybeSingle()
-
-  if (existing?.token) {
-    return NextResponse.json({ token: existing.token })
+  if (await isRateLimited(serviceClient, `sms-setup-token:${userId}`, 3600, ISSUES_PER_HOUR)) {
+    return NextResponse.json({ error: 'Too many token requests, try again later' }, { status: 429 })
   }
 
-  // Create a new token bound to this device (null for web).
-  const { data: newToken, error } = await serviceClient
+  // Only the hash is stored, so a token already issued cannot be handed back: every call issues one, bound to this
+  // device (null for web). The newest few of the scope stay active, so a phone that has not saved the new one yet keeps sending.
+  const fresh = newIngestToken()
+  const { error } = await serviceClient
     .from('sms_ingest_tokens')
-    .insert({ user_id: userId, device_id: deviceId })
-    .select('token')
-    .single()
+    .insert({ user_id: userId, device_id: deviceId, token_hash: fresh.token_hash })
 
-  if (error || !newToken) {
-    console.error('[sms/setup-token] insert error', error?.message)
+  if (error) {
+    console.error('[sms/setup-token] insert error', error.message)
     return NextResponse.json({ error: 'Failed to create token' }, { status: 500 })
   }
 
-  return NextResponse.json({ token: newToken.token })
+  await capActiveIngestTokens(serviceClient, userId, deviceId)
+  await trimRetiredIngestTokens(serviceClient, userId)
+
+  return NextResponse.json({ token: fresh.token })
 }
 
 /** DELETE — rotates the token (deactivates current, issues new). */
@@ -107,13 +100,12 @@ export async function DELETE(request: Request) {
 
   // Issue the new token first so a failed insert never leaves the user without one, then retire the others
   // of the same scope only: this device's tokens, or (no device id) the device-less ones. Rotating never de-arms another phone.
-  const { data: newToken, error } = await serviceClient
+  const fresh = newIngestToken()
+  const { error } = await serviceClient
     .from('sms_ingest_tokens')
-    .insert({ user_id: userId, device_id: deviceId })
-    .select('token')
-    .single()
+    .insert({ user_id: userId, device_id: deviceId, token_hash: fresh.token_hash })
 
-  if (error || !newToken) {
+  if (error) {
     return NextResponse.json({ error: 'Failed to rotate token' }, { status: 500 })
   }
 
@@ -122,7 +114,7 @@ export async function DELETE(request: Request) {
     .update({ is_active: false })
     .eq('user_id', userId)
     .eq('is_active', true)
-    .neq('token', newToken.token)
+    .neq('token_hash', fresh.token_hash)
   deactivate = deviceId ? deactivate.eq('device_id', deviceId) : deactivate.is('device_id', null)
   const { error: deactivateError } = await deactivate
   if (deactivateError) {
@@ -131,5 +123,5 @@ export async function DELETE(request: Request) {
   }
   await trimRetiredIngestTokens(serviceClient, userId)
 
-  return NextResponse.json({ token: newToken.token, rotated: true })
+  return NextResponse.json({ token: fresh.token, rotated: true })
 }

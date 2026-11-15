@@ -88,7 +88,7 @@ function SmsStartupSync() {
     // round-trip) — resume never changes accounts, and the token never expires.
     const tryStart = async (token: string, userId: string, refreshToken = true) => {
       if (!token || !userId) return
-      const { getSmsBridgeStatus, ensureIngestToken, drainAndSubmitPendingSms, reconcileSmsOwner, setSmsEnabled } =
+      const { getSmsBridgeStatus, ensureIngestToken, drainAndSubmitPendingSms, reconcileSmsOwner, replayPendingTokenRevoke, setSmsEnabled } =
         await import('@/lib/native/smsTracker')
       const { isOnline } = await import('@/hooks/useNetworkStatus')
 
@@ -96,6 +96,8 @@ function SmsStartupSync() {
       //    belongs to a previous account, drop it + disarm before any SMS can be
       //    forwarded into the wrong account. Keeps the device capability intact.
       await reconcileSmsOwner(userId)
+      // A sign-out revoke that never landed goes first: a token issued below must not be the one it retires.
+      if (isOnline()) await replayPendingTokenRevoke(token, userId)
 
       const status = await getSmsBridgeStatus()
       // Every phone checks in (a phone that does not collect texts still belongs in the devices list).

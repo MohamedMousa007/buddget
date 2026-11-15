@@ -98,9 +98,9 @@ describe('POST /api/sms/own-transfer', () => {
     expect((await call(OUT, 'confirm')).status).toBe(401)
   })
 
-  it("refuses another user's row", async () => {
+  it("answers 404 for another user's row, same as a missing one", async () => {
     h.caller.mockResolvedValue({ userId: 'u2', deviceId: 'd1', viaJwt: true })
-    expect((await call(OUT, 'confirm')).status).toBe(403)
+    expect((await call(OUT, 'confirm')).status).toBe(404)
     expect(h.writes).toHaveLength(0)
   })
 

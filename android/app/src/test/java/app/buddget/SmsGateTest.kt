@@ -77,7 +77,8 @@ class SmsGateTest {
     @Test fun aQueuedSmsIsOnlySentForTheAccountItArrivedUnder() {
         assertTrue(SmsGate.belongsToCurrentAccount("user-a", "user-a"))
         assertFalse(SmsGate.belongsToCurrentAccount("user-a", "user-b"))
-        assertTrue(SmsGate.belongsToCurrentAccount("", "user-b"))
+        assertFalse(SmsGate.belongsToCurrentAccount("", "user-b"))
+        assertTrue(SmsGate.belongsToCurrentAccount("", ""))
         assertTrue(SmsGate.belongsToCurrentAccount("user-a", ""))
     }
 

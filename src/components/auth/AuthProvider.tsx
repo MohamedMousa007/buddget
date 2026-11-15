@@ -424,6 +424,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Capture the token BEFORE clearing — the background push-unregister needs it.
     const accessToken = session?.access_token ?? null
+    const userId = session?.user?.id ?? ''
     const supabase = createClient()
     // A full sign-out drops the lock gate; biometric stays enabled and re-arms
     // on the next sign-in (the session is destroyed here, so there's nothing to
@@ -472,7 +473,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) { console.error('[auth] sms credential clear failed', e) }
       if (accessToken) {
         try { await unregisterPushToken(accessToken) } catch (e) { console.error('[auth] push unregister failed', e) }
-        try { await (await import('@/lib/native/smsTracker')).revokeIngestToken(accessToken) } catch (e) { console.error('[auth] sms token revoke failed', e) }
+        try { await (await import('@/lib/native/smsTracker')).revokeIngestToken(accessToken, userId) } catch (e) { console.error('[auth] sms token revoke failed', e) }
       }
     })()
   }, [configured, session])

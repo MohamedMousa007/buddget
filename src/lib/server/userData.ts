@@ -85,7 +85,7 @@ export const SIGN_IN_TABLES: readonly OwnedTable[] = [{ table: 'trusted_devices'
 
 /** Columns that are credentials, never exported. */
 const REDACTED_COLUMNS: Record<string, readonly string[]> = {
-  sms_ingest_tokens: ['token'],
+  sms_ingest_tokens: ['token', 'token_hash'],
   biometric_devices: ['secret_hash'],
 }
 

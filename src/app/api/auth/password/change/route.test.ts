@@ -16,6 +16,7 @@ vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
     from: (table: string) => ({
       delete: () => ({ eq: async () => { h.order.push(`delete:${table}`); return { error: null } } }),
+      select: () => ({ eq: () => ({ eq: async () => ({ data: [], error: null }) }) }),
       upsert: async () => { h.order.push(`upsert:${table}`); return { error: null } },
       update: (patch: unknown) => ({ eq: () => ({ eq: async () => { h.order.push(`update:${table}:${JSON.stringify(patch)}`); return { error: h.tokensFail ? { message: 'boom' } : null } } }) }),
       insert: async () => { h.order.push(`insert:${table}`); return { error: null } },
@@ -62,7 +63,7 @@ describe('POST /api/auth/password/change', () => {
     const i = (s: string) => h.order.findIndex((x) => x.startsWith(s))
     expect(h.order).toContain('update:sms_ingest_tokens:{"is_active":false}')
     expect(i('update:sms_ingest_tokens')).toBeLessThan(i('password'))
-    expect(i('insert:sms_ingest_tokens')).toBeGreaterThan(i('password'))
+    expect(h.order.some((o) => o.startsWith('insert:sms_ingest_tokens'))).toBe(false)
   })
 
   it('DBS-3: changes nothing when the tokens cannot be retired', async () => {

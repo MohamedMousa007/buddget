@@ -8,6 +8,7 @@ const h = vi.hoisted(() => ({
   afters: [] as Array<() => unknown>,
   siblings: [] as Array<Record<string, unknown>>,
   limited: false,
+  counterDown: false,
   neighbourRows: [] as Array<Record<string, unknown>>,
   geminiRegexOk: false,
   learnGates: vi.fn(),
@@ -34,7 +35,7 @@ vi.mock('@/lib/sms/runAdjudication', () => ({ runAdjudication: async () => ({ ad
 
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
-    rpc: async (name: string) => (name === 'api_rate_hit' && h.limited ? { data: false, error: null } : { data: [], error: null }),
+    rpc: async (name: string) => (name === 'api_rate_hit' && h.counterDown ? { data: null, error: { message: 'down' } } : name === 'api_rate_hit' && h.limited ? { data: false, error: null } : { data: [], error: null }),
     from: (table: string) => {
       const rec: Op = { table, op: 'select', filters: [] }
       const result = () => {
@@ -67,7 +68,7 @@ const geminiJson = (obj: unknown) => ({ ok: true, status: 200, text: async () =>
 const learnUpdates = () => h.ops.filter((o) => o.table === 'sms_parse_log' && o.op === 'update' && o.values && 'learn_status' in o.values).map((o) => o.values!.learn_status)
 
 beforeEach(() => {
-  h.limited = false; h.ops.length = 0; h.afters.length = 0; h.siblings = []; h.neighbourRows = []
+  h.limited = false; h.counterDown = false; h.ops.length = 0; h.afters.length = 0; h.siblings = []; h.neighbourRows = []
   h.learnGates.mockReset().mockReturnValue({ ok: false, status: 'gate_stub' })
   h.loadReplay.mockReset().mockResolvedValue([])
   process.env.GEMINI_API_KEY = 'test-key'
@@ -82,6 +83,29 @@ describe('SLG-9 per-user parse cap', () => {
     const res = await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: RECEIVED })
     expect(res.status).toBe(429)
     expect(h.ops.find((o) => o.table === 'sms_parse_log' && o.op === 'insert')).toBeUndefined()
+  })
+})
+
+describe('P2-27 counter outage and body size', () => {
+  it('answers 503 with Retry-After and writes nothing when the counter is down, so the phone keeps the message queued', async () => {
+    h.counterDown = true
+    const res = await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: RECEIVED })
+    expect(res.status).toBe(503)
+    expect(res.headers.get('retry-after')).toBeTruthy()
+    expect(h.ops.find((o) => o.table === 'sms_parse_log' && o.op === 'insert')).toBeUndefined()
+  })
+
+  it('answers 413 on a declared content-length over the cap, before reading the body', async () => {
+    const json = vi.fn()
+    const req = { headers: new Headers({ 'content-length': String(64 * 1024 + 1) }), json } as unknown as Request
+    const res = await POST(req)
+    expect(res.status).toBe(413)
+    expect(json).not.toHaveBeenCalled()
+  })
+
+  it('still accepts a body under the cap', async () => {
+    const res = await post({ message: NEUTRAL, sender: 'TESTBANK', receivedAt: RECEIVED })
+    expect(res.status).not.toBe(413)
   })
 })
 

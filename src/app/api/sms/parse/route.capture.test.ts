@@ -15,7 +15,7 @@ vi.mock('next/server', async (orig) => ({ ...(await orig<typeof import('next/ser
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/sms/resolveSmsUser', () => ({ resolveSmsCaller: async () => ({ userId: 'u1', deviceId: null }) }))
 vi.mock('@/lib/sms/deviceGate', () => ({ smsDeviceGate: async () => null }))
-vi.mock('@/lib/server/rateLimit', () => ({ isRateLimited: async () => false }))
+vi.mock('@/lib/server/rateLimit', () => ({ rateLimitOutcome: async () => 'ok' }))
 vi.mock('@/lib/server/userTimeZone', () => ({ getUserTimeZone: async () => 'Africa/Cairo' }))
 vi.mock('@/lib/server/userLocale', () => ({ getUserLocale: async () => 'en' }))
 vi.mock('@/lib/server/sendNativePush', () => ({ sendNativePush: async () => ({ ok: true, sent: 1 }) }))
