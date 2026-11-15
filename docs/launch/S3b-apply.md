@@ -101,10 +101,46 @@ Decisions from S3-dryrun section 13 applied: T5 uses `card_load`; `818b0736` is 
 
 Final state against the starting totals, steps 1 and 2 together: 6090c8e7 USD 2026-10 spending +5.70; f923c68b SAR 2026-08 spending -1482.00 and income -4393.71; 2026-09 spending -2800.00 and income -4803.39; 2026-10 income -986.34. No other key moved. Nothing was queued (no notification row, push stamp, template signal or discard request since the first audit row).
 
-## S3 status
+## 7. Inserts by direct SQL (2026-11-15)
 
-**Done:** step 1 (78 rows: T15 69, T3 5, T1 2, T2a 1, T2b 1) and the 19 in-place step 2 rows (T4 4, T11 5, T5 7, T9 1, T8 2), 97 live repairs in all, every one audited and revertible with `sms_s3_revert(batch)`.
+Owner decision (S3-dryrun section 14, "just use sql yes"): the service-role key was not available, so the inserts are SQL, not the booking function. Generator and rehearsal: `scripts/qa/s3-gen-direct-insert.py` (one DO block; `--rollback` ends in `ROLLBACK_OK`, a real run aborts and rolls back on any failed check).
 
-**Pending, 12 inserts, wait for the owner to put the service-role key in the local env file:** T7b 2, T6 5, and the replacement rows for the 3 retracted T4 incomes and 2 retracted T8 incomes. Until they run, those 5 messages have no live row (their wrong income is already gone; the replacements are non-spend or net-zero, so no total changes). Run order: `S3_DRY=1`, then one row for real and verified, then the rest. Keep `sms_s3_input` and `sms_s3_totals_before` until then, then drop both.
+**What the booking function writes** (read from `dispatch.ts`, `createSmsExpense.ts`, `parse/route.ts`): for these kinds exactly one insert into `expenses` or `income_events` (every column in the insert, the log pointer `sms_log_id`, flags, refund stamp, payment methods in that same statement), then the route promotes the log row (`expense_id` or `income_id`, status, acks). No pairing link, no balance write, no debt or subscription write for these kinds (a purchase could link a subscription or park a plan change; none of the 3 purchases matched one: the same-merchant references carry no link and the one user with a registered card has no subscription). Outside the DB the route sends the push, the notification row and the toast; the SQL sends none.
 
-**Known gaps:** the cash-account balance effect of the cash deposits is unmodelled; the retagged top-ups (T11) have no destination wallet; the T5 prompt title reads "Card top-up" for a card payoff; no check on a device; no bit-exact row hash.
+**Column comparison.** Each new row was compared, column by column, with a live row the app itself booked for the same kind (never an audited row, user note empty): declined row (T7b, 2 rows), subscription online purchase, plain purchase, ATM withdrawal, income from an incoming transfer (T6, 5 rows). A check fails the transaction if any column outside the message's own facts differs. Differences found, all explained: identity and timestamps, the message's own amount, currency, day, description or name, and the refund stamp's day; `category_label`, which only the client sync mapper writes (live app-booked rows hold either null or a synced label; ours are null until a phone syncs them). Everything else equal: category, `category_source` null, payment method, flags null, `server_rev` 0, owed, exclusion, recurrence, links. One real difference in how a column was reached: the payment method. The booking function would create a provisional account for a card tail no account answers to; every live app-booked row of those two users on these tails has no payment method, so the new rows have none and no account was created (checked: `payment_methods` row count unchanged). The two rows of the user with a registered card carry it, as their references do.
+
+**Log pointer.** The 5 T6 messages had no pointer, which `sms_s3_record_insert` filled. The 2 T7b declines already pointed at the earlier row of another message (the old code matched them as refunds of it, which step 1 undid); the new row replaces that pointer by an audited `relink` that keeps the old value, so a revert restores it.
+
+**Rehearsal** (all 7 rows, rolled back, then the one row whose reference changed): every check PASS: no live row per message before, log amount and currency equal the report, pointer set, a reference exists, no unexplained column, totals equal before plus the prediction (SAR 2026-08 spending +99.99 and income +100.00, 2026-09 income +100.00; EGP 2026-07 spending +499.05; nothing else), no other money row, debt, debt payment or subscription written, no payment method created, nothing queued; the revert soft-deleted all 7 rows, put every pointer back and returned the totals to the start.
+
+**Real run** (batch `s3-20261115-s3`; one row first, then each type in one transaction):
+
+| Type | Message | Row | Table, class | Amount |
+|---|---|---|---|---|
+| T7b | `4a7d7250` (the first, checked alone: row, audit, pointer, totals, no notification) | `18be206d` | expenses, net-zero decline | USD 5.70 |
+| T7b | `0fe8887c` | `9aa83277` | expenses, net-zero decline | EGP 4000.00 |
+| T6 | `540077ff` | `2a1f5e08` | expenses, spending (Subscription) | SAR 99.99 |
+| T6 | `fa2a8ec2` | `4925e882` | expenses, spending (Other) | EGP 499.05 |
+| T6 | `ad8523cb` | `c3045111` | expenses, non-spend (ATM Cash Withdrawal) | EGP 1000.00 |
+| T6 | `916e58d4` | `bab7548d` | income_events, income | SAR 100.00 |
+| T6 | `acbe9dd7` | `fd94715a` | income_events, income | SAR 100.00 |
+
+Audit: 7 insert rows, 7 relink rows, none reverted. Every message now owns exactly one live money row.
+
+**Final totals** against `sms_s3_totals_before` plus the prediction for all 104 messages (steps 1 and 2 and these 7): 36 keys, 0 mismatching. The net movement: 6090c8e7 USD 2026-10 spending +5.70 (the decline row is net-zero, so this comes from the step 1 removal of the decline mark, not from the insert); b85f074d EGP 2026-07 spending +499.05; f923c68b SAR 2026-08 spending -1382.01 and income -4293.71; 2026-09 spending -2800.00 and income -4703.39; 2026-10 income -986.34.
+
+**Nothing sent** (checked after the run): 0 notification rows, 0 push stamps, 0 template signals, 0 discard requests since the first audit row.
+
+**Not replicated, listed:** the provisional account the booking function would create (see above); the route's own promote fields on the log (`status`, acks, `harvested_at`, flags: the 7 logs were already confirmed and acked; `booked_day` is null on live app-booked logs too, so left null); the push, notification row and toast; the AI categorisation and merchant-category memory that run after a purchase (the category was set from the report and matches the user's earlier rows for the same merchant).
+
+**Cleanup:** migration 0287 drops `sms_s3_input` (104 rows) and `sms_s3_totals_before` (36 rows); `database.types.ts` updated. `sms_repair_audit` and the functions of 0283 stay. The list is reproducible from `scripts/qa/s3-apply-input.json`.
+
+## S3 status (final)
+
+**Done:** step 1 (78 rows: T15 69, T3 5, T1 2, T2a 1, T2b 1), the 19 in-place step 2 rows (T4 4, T11 5, T5 7, T9 1, T8 2) and 7 inserts (T7b 2, T6 5): 104 repairs, every one audited and revertible with `sms_s3_revert(batch)` (batches `s3-20261115`, `-s2`, `-s3`). Totals match the prediction on all 36 keys. Nothing was sent to any user.
+
+**Held, 5 replacement rows (not booked):** the 3 cash-deposit transfers for the retracted T4 incomes and the 2 net-zero refund rows for the retracted T8 incomes. The owner's condition is a live row the app itself booked for the same kind; there is none for either kind (no unmatched-refund row and no cash-deposit transfer exists live that the app booked; the only cash-deposit row is a repaired ATM row). Those 5 messages have no live row; their wrong income is gone and the replacements are non-spend or net-zero, so no total is wrong. They stay held until someone accepts a non-live reference (the booking code and its tests) or the service-role key exists, when `scripts/qa/s3-insert.test.ts` books them.
+
+**Known gaps:** the cash-account balance effect of cash deposits is unmodelled; the retagged top-ups (T11) have no destination wallet; the T5 prompt title reads "Card top-up" for a card payoff; the inserted rows have no `category_label` until a phone syncs them; no provisional accounts for the new rows.
+
+**Not verified:** nothing on a device (the app-side view of any repaired or inserted row); no bit-exact row hash after a revert (per-column and totals checks only).

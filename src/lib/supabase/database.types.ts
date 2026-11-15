@@ -4215,54 +4215,6 @@ export type Database = {
         }
         Relationships: []
       }
-      sms_s3_input: {
-        Row: {
-          eff: Json | null
-          ex: Json | null
-          ins: Json | null
-          prefix: string
-          rtype: string
-          step: number
-          usr: string
-        }
-        Insert: {
-          eff?: Json | null
-          ex?: Json | null
-          ins?: Json | null
-          prefix: string
-          rtype: string
-          step: number
-          usr: string
-        }
-        Update: {
-          eff?: Json | null
-          ex?: Json | null
-          ins?: Json | null
-          prefix?: string
-          rtype?: string
-          step?: number
-          usr?: string
-        }
-        Relationships: []
-      }
-      sms_s3_totals_before: {
-        Row: {
-          income: number | null
-          k: string | null
-          spend: number | null
-        }
-        Insert: {
-          income?: number | null
-          k?: string | null
-          spend?: number | null
-        }
-        Update: {
-          income?: number | null
-          k?: string | null
-          spend?: number | null
-        }
-        Relationships: []
-      }
       sms_sender_currency: {
         Row: {
           confirmed: boolean
