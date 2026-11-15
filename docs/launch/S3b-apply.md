@@ -1,6 +1,6 @@
 # S3b: SMS repair tooling and apply log
 
-Date 2026-11-15. **Nothing has been applied to money rows.** Phase A (tooling) is built and live; phase B (rolled-back rehearsal) is **not finished**: the SQL tool path to the database timed out from the fourth rehearsal run on, so the rehearsal has no result yet. Rows are cited by the first 8 characters of the log id, users by the first 8 of the user id.
+Date 2026-11-15. **Nothing has been applied to money rows.** Phase A (tooling) is built and live; phase B (rolled-back rehearsal) passed, see section 3. Rows are cited by the first 8 characters of the log id, users by the first 8 of the user id.
 
 ## 1. What exists (live and in the repo)
 
@@ -31,12 +31,21 @@ Repo: `scripts/qa/s3-gen-apply-input.py` (builds `s3-apply-input.json`, `sql/028
 3. **T11** sets category Transfer plus `topup_repaired` and `topup_prev:<old>`; the live rows have no payment method, so no destination is written (undo clears it anyway).
 4. The insert script checks that the booked row equals the report's proposed row and that no other row of the user changed; a mismatch stops the run with the row already audited. Side effects of the booking function on tables it could touch beyond those checked (payment methods, debts, debt payments, expenses, income) are the ones listed in the script.
 
-## 3. Rehearsal (phase B): what ran
+## 3. Rehearsal (phase B): result, 2026-11-15
 
-Four rolled-back runs of `0283_s3_apply_revert.test.sql` on the live database. The first three stopped on defects of the test or functions, all fixed: a variable named like a column, an invalid exclusion value (`manual` is valid), and a JSON null read from an empty array column (patched in the live function and the migration file). The fourth run never returned: the tool reports `Connection terminated due to connection timeout` for every call since, including `select 1`. The planning session reports the project healthy, crons and API normal, no lock waits or errors in the Postgres log. At the last successful call the audit table was empty and the input table held its 104 rows.
+The earlier timeouts were the SQL tool path, not the database (no idle transaction, no lock wait, audit table empty). The fifth run, the whole of `0283_s3_apply_revert.test.sql` in one rolled-back block with a 90 s statement timeout, completed. **Every check is PASS (47 of 47); everything was rolled back** (afterwards: audit rows 0, simulated rows 0, idle transactions 0). Nothing was applied to money rows.
 
-**Not run, so not proven:** the totals check (after apply equals the prediction, after revert equals the start), the stale push and later edit checks, the refusal checks (the first ones ran), the no-notification check, the revert of an edited row, the prompt and stale-month count, the fresh export comparison, a dry run of the insert script.
+- Setup: all 104 ids resolve to one live log each.
+- Refusals (1a-1i): a note, an answered flag, an exclusion, a deleted row, a differing amount, day or category, and a cross-month shift are each refused, and a refusal writes no audit row.
+- Apply (2): T3 5/5, T4 4/4, T1 2/2, T2a 1/1, T2b 1/1, T8 2/2, T9 1/1, T11 5/5, T5 7/7, T15 69/69, none refused; 109 audit rows for 104 list rows; a second call applies nothing.
+- Fresh comparison: the apply re-reads each live row and refuses any whose amount, currency, day, category, stamp or flags differ from the report. None was refused, so all 104 rows still match the re-run; no exclusions.
+- Totals (3): per-user per-month totals after the apply equal before plus the re-run prediction (0 mismatching keys). Five months move: one USD, one EGP, three SAR, all for user f923c68b except one each for 6090c8e7 (USD 2026-10 spending +5.70) and b85f074d (EGP 2026-07 spending +499.05); f923c68b SAR 2026-08 spending -1382.01 income -4293.71, 2026-09 spending -2800.00 income -4703.39, 2026-10 income -986.34.
+- Stale push and later edit (4a-4h): a stale push cannot restore the old category, day, flag, retracted income or decline stamp; a later edit that echoes the current revision wins.
+- Prompts (5): new flags on live rows, all user f923c68b: cash_deposit x4, model_kind_unproven x7, possible_duplicate x1, refund_unmatched x2, topup_repaired x5. No notification, push stamp, template signal or discard request was queued.
+- Revert (6, 7): 119 changes restored; the two rows a user edited after the apply (02370960, 08ca4f8f) were skipped and kept their edit; totals equal the starting totals (0 mismatching keys); stamps back; no discard queued. An inserted row a user edited stays; an untouched inserted row is soft-deleted with its marker.
+
+**Not covered by this run:** the inserts were simulated by direct inserts, so the real booking path (`scripts/qa/s3-insert.test.ts`, `S3_DRY=1`) has still not been run; the revert was checked by per-column totals and spot rows, not by a hash of every row; `sms_s3_input` has RLS on and no policy (checked).
 
 ## 4. Step lists (from the re-run, unchanged)
 
-Step 1 (80): T15 69 same-month day shifts, T7b 2, T3 5, T1 2, T2a 1, T2b 1. Step 2 (24): T4 4, T11 5, T5 7, T6 5, T9 1, T8 2. The log ids are in `scripts/qa/s3-apply-input.json`. Excluded: none yet (the fresh comparison has not run).
+Step 1 (80): T15 69 same-month day shifts, T7b 2, T3 5, T1 2, T2a 1, T2b 1. Step 2 (24): T4 4, T11 5, T5 7, T6 5, T9 1, T8 2. The log ids are in `scripts/qa/s3-apply-input.json`. Excluded: none (the rehearsal re-checked all 104 against the live rows).
