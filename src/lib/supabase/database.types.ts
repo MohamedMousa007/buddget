@@ -2045,6 +2045,8 @@ export type Database = {
         Row: {
           cohort: string
           credit_name: string | null
+          credit_name_requested: string | null
+          credit_name_status: string
           granted_at: string
           number: number
           qualified_at: string
@@ -2055,6 +2057,8 @@ export type Database = {
         Insert: {
           cohort: string
           credit_name?: string | null
+          credit_name_requested?: string | null
+          credit_name_status?: string
           granted_at?: string
           number: number
           qualified_at: string
@@ -2065,6 +2069,8 @@ export type Database = {
         Update: {
           cohort?: string
           credit_name?: string | null
+          credit_name_requested?: string | null
+          credit_name_status?: string
           granted_at?: string
           number?: number
           qualified_at?: string
@@ -5598,6 +5604,7 @@ export type Database = {
           out_tokens: number
         }[]
       }
+      admin_billing_counts: { Args: { p_days?: number }; Returns: Json }
       admin_email_status_counts: {
         Args: {
           p_from?: string
@@ -6005,6 +6012,17 @@ export type Database = {
         Returns: number
       }
       loyalty_close_periods: { Args: never; Returns: number }
+      loyalty_credits: {
+        Args: never
+        Returns: {
+          credit_name: string
+          number: number
+        }[]
+      }
+      loyalty_decide_credit_name: {
+        Args: { p_approve: boolean; p_user: string }
+        Returns: string
+      }
       loyalty_decide_founder: {
         Args: {
           p_actor: string
@@ -6028,11 +6046,14 @@ export type Database = {
         Args: { p_ts: string; p_tz: string }
         Returns: string
       }
+      loyalty_next_founder_number: { Args: never; Returns: number }
       loyalty_record_week_check: { Args: { p_week: string }; Returns: Json }
+      loyalty_request_credit_name: { Args: { p_name: string }; Returns: string }
       loyalty_week_start: {
         Args: { p_day: string; p_week_start: number }
         Returns: string
       }
+      loyalty_week_summary: { Args: never; Returns: Json }
       notification_candidate_users: { Args: never; Returns: string[] }
       publish_email_template: {
         Args: { p_key: string; p_locale: string; p_staff: string }
