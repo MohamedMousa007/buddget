@@ -77,6 +77,14 @@ describe('POST /api/sms/confirm', () => {
     expect(res.status).toBe(409)
     expect((await res.json()).reason).toBe('undone')
     expect(h.filters).toContainEqual(['neq:status', 'undone'])
+    expect(h.rpc).toHaveBeenCalledWith('sms_discard_after_confirm', { p_user_id: 'u1', p_log_id: LOG_ID })
+    expect(h.updates.some((u) => u.table === 'expenses')).toBe(false)
+  })
+
+  it('falls back to retiring the new row itself when the full reversal fails', async () => {
+    h.undoneMidBooking = true
+    h.rpc.mockResolvedValueOnce({ error: { message: 'boom' } })
+    expect((await post({ logId: LOG_ID })).status).toBe(409)
     expect(h.updates).toContainEqual({ table: 'expenses', values: { deleted_at: expect.any(String) } })
   })
 

@@ -5592,6 +5592,10 @@ export type Database = {
         Returns: undefined
       }
       sms_coverage_by_bank: { Args: never; Returns: Json }
+      sms_discard_after_confirm: {
+        Args: { p_log_id: string; p_user_id: string }
+        Returns: Json
+      }
       sms_discard_message: {
         Args: { p_log_id: string; p_user_id: string }
         Returns: Json

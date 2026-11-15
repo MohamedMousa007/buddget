@@ -214,10 +214,15 @@ export async function POST(request: Request) {
     // The transaction is already posted; the claim stays released so a retry cannot post it twice.
     if (finalErr) console.error('[sms/confirm] log link update failed', { message: finalErr.message, code: finalErr.code })
     else if (!finalRows?.length) {
-      // An undo ran while this booking was in flight and already marked the message undone: what was just booked goes with it.
-      const now = new Date().toISOString()
-      if (expenseId) await service.from('expenses').update({ deleted_at: now }).eq('id', expenseId).eq('user_id', userId)
-      if (incomeId) await service.from('income_events').update({ deleted_at: now }).eq('id', incomeId).eq('user_id', userId)
+      // An undo ran while this booking was in flight and already marked the message undone: what was just booked goes
+      // with it, under the undo's own lock, so a debt payment or a pair made in that window is reversed too.
+      const { error: discardErr } = await service.rpc('sms_discard_after_confirm', { p_user_id: userId, p_log_id: row.id })
+      if (discardErr) {
+        console.error('[sms/confirm] reversal after undo failed', { message: discardErr.message, code: discardErr.code })
+        const now = new Date().toISOString()
+        if (expenseId) await service.from('expenses').update({ deleted_at: now }).eq('id', expenseId).eq('user_id', userId)
+        if (incomeId) await service.from('income_events').update({ deleted_at: now }).eq('id', incomeId).eq('user_id', userId)
+      }
       return NextResponse.json({ ok: false, reason: 'undone' }, { status: 409 })
     }
 

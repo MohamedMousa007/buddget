@@ -220,5 +220,5 @@ Commits: `ec1ad1b2` (database), `f282ecd8` (SMS and tokens), `075fa3f1` (AI and 
 ### Still open after this batch
 1. Migration 0286: done, applied 2026-11-15 (decision 3 above). The patched `sms_retention` job has not yet run on its schedule since.
 2. Token phase 2: done, migration 0288 applied 2026-11-15 (decision 5 above). No plain ingest token is stored any more.
-3. U-1 remainder: confirm should hold the same lock as the undo function.
+3. U-1 remainder: done 2026-11-15. Confirm cannot hold a database lock across its separate requests, so when it finishes and finds the message undone it calls `sms_discard_after_confirm` (migration 0289), which takes the undo's lock and runs the full discard: a debt payment or a pair booked in the window is reversed too. Proven on a live booked row inside a rolled-back transaction (refuses a message that is not undone, retires the row, leaves the user's other 23 rows, a second run does nothing) and by the route test. Not proven with two concurrent requests.
 4. A native build for the four files above.
