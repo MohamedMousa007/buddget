@@ -2,10 +2,12 @@
 
 Date: 2026-11-15. A design document: no code, no migrations, no database writes, nothing sent to testers. Inputs: the S5b section of `docs/MASTER_PLAN_LAUNCH.md`, `docs/launch/S5a-pricing.md` (sections 5, 8, 10), `docs/launch/S5a-business-review.md` (sections 1, 2, 5, 7, 8). S5a's recommendations are taken as given; section 12 says where a different owner pick would change this design. Users are cited only as counts.
 
+**Revised 2026-11-15 by the S5c review** (`docs/launch/S5c-review.md`). Changed lines are marked **[S5c]**. Where this document and section 14 of the review differ, the review wins. In short: an active day is a server-observed user action, not an app session; the nightly job proposes founders and the owner approves each one; the founding price is not built in v1; points are paid only for weeks and budgets with real activity; there is no device key for spotting duplicates.
+
 ## 0. Summary
 
-- **Founders:** at most 100 people, and the window closes at public launch + 60 days, whichever comes first. One bar for everyone, testers included: **7 active days spread over at least 2 weeks, at least one record they entered or confirmed, and at least one active day inside the window.** Testers' past activity counts. Today 11 of 47 accounts pass; 14 more were active in the last 60 days and could pass before the window closes. Testers who miss it keep a permanent "Beta tester" badge with no number.
-- **The founder perk is status.** Badge, number, early access, a founders' channel, an opt-in name in the credits screen, roadmap votes. No Sparks, no Plus time, no lasting discount. The founding annual price (EGP 399, AED 79.99, SAR 79.99, first year) is open to anyone who subscribes inside the window, founder or not, as a store introductory offer.
+- **Founders:** at most 100 people, and the window closes at public launch + 60 days, whichever comes first. One bar for everyone, testers included: **7 active days spread over at least 2 weeks, at least one record they entered or confirmed, and at least one active day inside the window.** Testers' past activity counts. **[S5c]** An active day is a day with a server-observed user action (2.1). Today 11 of 47 accounts pass on the older session-based count (fewer will on the new one); 14 more were active in the last 60 days and could pass before the window closes. Testers who miss it keep a permanent "Beta tester" badge with no number.
+- **The founder perk is status.** Badge, number, early access, a founders' channel, an opt-in name in the credits screen, roadmap votes. No Sparks, no Plus time, no lasting discount. The founding annual price (EGP 399, AED 79.99, SAR 79.99, first year) is open to anyone who subscribes inside the window, founder or not, as a store introductory offer. **[S5c] The founding price is not built in v1**, so founders have no money perk at all.
 - **Loyalty counts weeks, not days or transactions.** A week is "kept" when the user finishes a one-tap weekly check with nothing left unconfirmed. Points come only from kept weeks, a fully tracked month and a budget set for the month, each at most once per period. Points are never spent in v1 and have no cash value.
 - **Three tiers, switched on later:** Seed, Sprout, Tree (بذرة، نبتة، شجرة). Thresholds stay unset until real data exists. No demotion.
 - **No referrals.** An unrewarded share link only. Partner invites come with the household plan.
@@ -42,9 +44,11 @@ Date: 2026-11-15. A design document: no code, no migrations, no database writes,
 One bar for every person, tester or public:
 
 1. **7 active days**, on at least **2 different calendar weeks**. An active day is a day in `app_activity_days` with at least one session.
+   **[S5c] Replaced.** `app_activity_days` is filled by `analytics_touch`, a function any signed-in client can call, so one scripted call a day made an active day; 334 of 528 recorded days have under 30 seconds of activity. An active day is now a day, in the user's timezone, on which the server recorded a user action: a record the user created or edited by hand, an SMS item the user confirmed, or a finished weekly check, by a server-set timestamp. Rows written by the SMS pipeline, imports and sync replays do not count. It is a view over existing tables.
 2. **At least one record the person made or confirmed**: a manual expense, income or savings entry, or an SMS transaction they confirmed. A row the SMS pipeline wrote with no user action does not count.
 3. **At least one active day inside the window** (public launch to close). This is what keeps a tester who never comes back from holding a number.
-4. Not a staff account (`admin_staff`). Staff help run the program; they do not take slots.
+4. Not a staff account (`admin_staff`). Staff help run the program; they do not take slots. **[S5c]** The join is `admin_staff.user_id` (4 rows, all filled).
+5. **[S5c] The owner approves each founder.** The nightly job only proposes accounts that pass 1 to 4. A number is issued when the owner approves that account in admin, in approval order, with no bulk approve. Without this, 100 scripted accounts could take every number (council 4 of 4).
 
 Activity before launch counts, so testers who used the app start ahead. The bar is deliberately light. It filters people who installed and left, not people who track lightly: someone who logs a few things a week for two weeks passes.
 
@@ -54,21 +58,21 @@ Why this bar and not the earlier "10+ transactions or 14 active days": counting 
 
 The earlier council said the testers "count automatically". The data says that would put numbers on about 27 accounts that never recorded anything, which empties the badge of meaning and gives no proof. Adopted instead (council 3 of 3):
 
-- Every tester account that exists on launch day gets a **permanent "Beta tester" badge** (wording in section 10), whatever their activity. That is the thanks for carrying the risk.
+- Every tester account that exists on launch day gets a **permanent "Beta tester" badge** (wording in section 10), whatever their activity. That is the thanks for carrying the risk. **[S5c]** Apple 2.2 says beta apps cannot be given to testers "in exchange for compensation of any kind". The badge is kept (council 3 of 4; Skeptic would drop it) on three rules: it is granted at public launch to every pre-launch account, it is never announced as a reward for joining or staying in the beta, and it carries no credit, discount or feature.
 - A tester who meets the bar by the close date is also a founder. Testers who already meet it on launch day get the lowest numbers.
 - Testers are not given a reserved block of numbers. A tester who qualifies on day 40 gets the next number on day 40.
-- Before launch, the owner sends lapsed testers one plain note: the window, the bar, the date. That is the only reminder. No second "last chance".
+- Before launch, the owner sends lapsed testers one plain note: the window, the bar, the date. That is the only reminder. No second "last chance". **[S5c]** The note must not offer the Beta tester badge.
 
 ### 2.3 Cap and window
 
 - **Opens** at public launch (the day both store listings go live). **Closes** at 23:59 Cairo time on launch + 60 days, or the moment number 100 is issued, whichever comes first.
 - Both dates are written into the migration that opens the window. Changing them needs a new migration, which is the point: no extension, no second window, no "founders round two".
 - If fewer than 100 people qualify, the program closes short. Numbers are not backfilled later.
-- The founding annual price ends on the same date (S5a decision 7). S5c checks that the store offers can be set to end on that date in both stores.
+- The founding annual price ends on the same date (S5a decision 7). S5c checks that the store offers can be set to end on that date in both stores. **[S5c]** Checked: Apple can, Google Play cannot. The founding price is not built in v1.
 
 ### 2.4 How the number is assigned
 
-- A server job runs nightly during the window (the existing cron route), plus once at launch.
+- A server job runs nightly during the window (the existing cron route), plus once at launch. **[S5c]** The job writes proposals; numbers are issued on the owner's approval, in approval order. The ordering rules below decide the order proposals are shown in. Admin shows the pending count so approval cannot silently stall.
 - **Launch run:** testers who already pass the bar are numbered from #001 in order of account creation.
 - **Nightly runs:** everyone who newly passed the bar that day is numbered in the order they passed it (the later of the day they reached the seventh active day and the day of their first record; ties by account creation).
 - Numbers come from one locked counter inside the grant function, so two runs cannot hand out the same number.
@@ -83,7 +87,7 @@ The earlier council said the testers "count automatically". The data says that w
 | Data reset (`profiles.data_reset_at`) | Founder status stays. Status belongs to the person, not to their data |
 | Refund of the founding annual plan | No effect on founder status: status was never bought. The store enforces one introductory offer per store account; a refunded buyer who subscribes again pays the normal price |
 | Subscription lapses | No effect. The badge is not tied to paying |
-| Two accounts, one person | One founder per person. Signals: same device key (the `trial_claims` hash from S5a), same phone, same store account if both subscribe. On a match the earlier number stays and the later one is retired, with a reason. Staff decide from an admin list, not automatically, because households share phones |
+| Two accounts, one person | One founder per person. **[S5c]** There is no device key (the trial no longer uses one); the owner's approval step is the control, with sign-in method, creation date, action days and record count shown per candidate. Signals: same device key (the `trial_claims` hash from S5a), same phone, same store account if both subscribe. On a match the earlier number stays and the later one is retired, with a reason. Staff decide from an admin list, not automatically, because households share phones |
 | Tester who never returns | Beta tester badge only. No number |
 | Account moved to a new login (store `TRANSFER`) | Founder status does not move with a subscription. It stays with the Supabase user id |
 | Fraud found later (farmed accounts) | Staff can retire a number with a reason; the row stays, audited in `admin_audit_log`. Not reissued |
@@ -95,11 +99,11 @@ The earlier council said the testers "count automatically". The data says that w
 |---|---|---|---|
 | Badge and number | "Founder #023" on the profile and in Settings; a small mark next to the name in the app | About 1 day: an existing badge or chip primitive, one field in `/api/entitlements/me`. No running cost | Yes |
 | Beta tester badge | Same placement, no number | Same build | Yes |
-| Credits screen | A page in Settings listing founders by number, and by display name only for those who opt in | About half a day. Opt-in, display name only, off by default | Yes |
-| Early access | Founders get new features first, through a `founder` feature cohort | Small per feature; needs each new feature behind a flag (`feature_overrides` and the feature catalog exist) | Yes, from the first feature after launch |
+| Credits screen | A page in Settings listing founders by number, and by display name only for those who opt in. **[S5c]** A name shows only after the owner approves it | About half a day. Opt-in, display name only, off by default | Yes |
+| Early access | Founders get new features first, through a `founder` feature cohort. **[S5c]** Never across the plan line: a feature that is or will be Plus-only needs Plus even in early access (Apple 3.1.1) | Small per feature; needs each new feature behind a flag (`feature_overrides` and the feature catalog exist) | Yes, from the first feature after launch |
 | Founders' channel | One group chat run by the owner, plus a "Founder feedback" option in the in-app support form that tags the ticket | No build beyond a ticket tag. **The real cost is owner time: about 1 to 2 hours a week.** The most expensive perk and the most useful one | Yes |
 | Roadmap votes | A short poll each quarter on what to build next | Owner time, about 1 hour a quarter. Votes are advisory | After launch |
-| Founding annual price | EGP 399, AED 79.99, SAR 79.99 for year one, then the normal price | A store introductory offer, already in S6. The cost is the discount, about EGP 100 per buyer in year one, only for those who buy. Open to everyone in the window, so strictly it is not a founder perk | S6 |
+| Founding annual price **[S5c] not built in v1** | EGP 399, AED 79.99, SAR 79.99 for year one, then the normal price | A store introductory offer, already in S6. The cost is the discount, about EGP 100 per buyer in year one, only for those who buy. Open to everyone in the window, so strictly it is not a founder perk | S6 |
 
 Not offered, and why:
 
@@ -119,6 +123,8 @@ Only outcomes, each at most once per period, each checked on the server:
 | Budget set | A budget plan is active for the cycle (`budget_plan_activations` covers it) by day 7 of the cycle | 10 | Cycle |
 | Fully tracked month | At cycle end: a budget was active, at least 3 of the cycle's weeks were kept (a freeze counts), and nothing in the cycle is still unconfirmed | 40 | Cycle |
 
+**[S5c] Two payment rules.** A kept week pays its 10 points only if the week has at least one record dated in it (any source); a "nothing this week" check keeps the streak and pays 0. Budget set pays only if the user created, activated or edited the budget in that cycle or the one before; a budget left untouched pays nothing. Otherwise four function calls a month earned every point with no real use.
+
 The most anyone can earn in a month is about 100 points (5 kept weeks, budget set, tracked month). Points measure months of steady use. Nothing pays for more transactions, logins, savings deposits or AI use.
 
 Not counted, on purpose: number of transactions, app opens, Sparks used, goal deposits (a savings entry is a typed record and trivial to fake), streak length beyond the weekly points, and anything about ratings or reviews (forbidden by both stores, section 7).
@@ -128,6 +134,7 @@ Not counted, on purpose: number of transactions, app opens, Sparks used, goal de
 - **Unit: a week.** Week start comes from `user_settings.week_start_day` and the date from `user_settings.timezone`. Defaults by market in section 10.
 - **What makes a week count:** the weekly check. A one-tap sheet built from the existing sheet and row primitives: the week's total, the top three categories against budget if there is one, and any unconfirmed SMS items to clear. The button is "Looks right". A week with no spending counts if the user confirms "nothing this week". The user must act: a week where SMS logged everything and the user never looked does not count.
 - **Grace:** the check for a week can be done until the end of the third day of the next week.
+- **[S5c] Server-side keys.** The server computes the week from the user's settings (the key is the date of the week's first day) and two kept weeks must be at least 5 days apart, so changing the week-start setting cannot create extra weeks.
 - **Forgiveness:** every 8 kept weeks bank one freeze (at most 2 banked). A missed week uses a freeze automatically. A broken streak loses no points and no tier; only the "weeks in a row" number resets.
 - **Shown as:** "6 weeks in a row" on the weekly check and in Settings. No flames, no countdowns, no "you'll lose it" push. One optional reminder on the last grace day, off by default.
 
@@ -181,7 +188,7 @@ So the tiers can be calibrated and the program judged, record from the first day
 
 ### 5.3 Review prompts (proof)
 
-Use only Apple's `SKStoreReviewController` and Google's In-App Review API. Ask after a fully tracked month or after 4 kept weeks, at most once per 120 days per person, never on a day with an SMS error. Never tied to a reward or a feature.
+**[S5c]** Checked verbatim against Apple 5.6.1 and Google's ratings policy: compliant. No screen that asks "are you enjoying Buddget?" before the prompt. Use only Apple's `SKStoreReviewController` and Google's In-App Review API. Ask after a fully tracked month or after 4 kept weeks, at most once per 120 days per person, never on a day with an SMS error. Never tied to a reward or a feature.
 
 ### 5.4 Trigger for switching tiers on
 
@@ -208,7 +215,7 @@ If condition 1 still fails at day 90, do not switch tiers on. That is a retentio
 
 ## 7. Store rules
 
-Read 2026-11-15 by a fetch agent. Marked where only a summary was read.
+Read 2026-11-15 by a fetch agent. Marked where only a summary was read. **[S5c]** Apple 2.2, 3.1.1, 3.1.2, 3.2.2 and 5.6.1 have now been read verbatim (page last updated 2026-10-16); the readings below hold. 3.2.2(x): apps "may otherwise incentivize users to take specific actions within apps". 3.1.2(a) adds one rule: subscribers get what they paid for "without performing additional tasks", so no loyalty step may gate anything Plus includes. Google's payments FAQ says earned points may be issued without Play Billing.
 
 | Source | Read how | What matters here |
 |---|---|---|
@@ -243,13 +250,13 @@ retired_at     timestamptz
 retired_reason text check (retired_reason in ('deleted','duplicate','fraud'))
 ```
 
-On delete the number survives with a null user, so it is never reissued. Row security on; a user may select their own row; writes by `service_role` only.
+**[S5c]** Add `founder_candidates`: `user_id` primary key, `qualified_at`, `proposed_at`, `decided_at`, `decision` (`approved`, `rejected`), `decided_by`. `loyalty_grant_founders()` fills it; an admin action per account inserts the `founders` row. On delete the number survives with a null user, so it is never reissued. Row security on; a user may select their own row; writes by `service_role` only.
 
 **2. `beta_testers` (new).** `user_id` primary key references `auth.users` on delete cascade, `granted_at`. Filled once by the launch migration with every account that exists on launch day, minus staff.
 
 **3. `loyalty_program` (new, one row).** `founder_window_opens`, `founder_window_closes`, `founder_cap` (100). Written by the migration that opens the window; no admin edit path.
 
-**4. `loyalty_grant_founders()` (new).** Security definer, `service_role` execute only. Takes an advisory lock, returns at once if past the close date or at the cap, computes the bar from `app_activity_days` and the record tables, inserts the next numbers in order, writes a `founder_granted` event. Run by the cron route nightly and once at launch.
+**4. `loyalty_grant_founders()` (new).** Security definer, `service_role` execute only. Takes an advisory lock, returns at once if past the close date or at the cap, computes the bar from `app_activity_days` and the record tables, inserts the next numbers in order, writes a `founder_granted` event. **[S5c]** It computes the bar from the action-day view (2.1), never from `app_activity_days`, and inserts candidates, not numbers. Run by the cron route nightly and once at launch.
 
 **5. `loyalty_events` (new, append-only).** `id`, `user_id` (on delete cascade), `kind` (`week_kept`, `week_frozen`, `week_check_abandoned`, `budget_set`, `month_tracked`, `founder_granted`, `review_prompt`), `period_key` (`2026-W47`, `2026-12`), `meta jsonb` (counts only, never amounts or text), `created_at`. Unique on (`user_id`, `kind`, `period_key`) for the once-per-period kinds. Users select their own rows; writes only through functions.
 
@@ -263,7 +270,7 @@ On delete the number survives with a null user, so it is never reissued. Row sec
 
 | Function | Who calls | Checks |
 |---|---|---|
-| `loyalty_record_week_check(p_week text)` | `authenticated`, as `auth.uid()` | The week is this week, or last week within grace; no unconfirmed SMS items remain in it (S6 names the parse-log column); then writes `week_kept`, adds 10 points, updates the streak |
+| `loyalty_record_week_check(p_week text)` | `authenticated`, as `auth.uid()` | **[S5c]** The server derives the week; the argument is only checked against it. The unconfirmed column is `sms_parse_log.awaiting_confirmation`. Points only if the week has a record; at least 5 days since the last kept week. The week is this week, or last week within grace; no unconfirmed SMS items remain in it (S6 names the parse-log column); then writes `week_kept`, adds 10 points, updates the streak |
 | `loyalty_close_periods()` | `service_role`, nightly | Uses freezes for missed weeks; writes `budget_set` and `month_tracked` per section 4.1, with points |
 
 Points always go through `admin_adjust_loyalty_points` (or a renamed copy with the same body), so the tier logic stays in one place.
@@ -312,9 +319,9 @@ What the council changed in the architect's view: the "active inside the window"
 | Abuse | Control |
 |---|---|
 | Fake transactions to qualify or earn | Nothing counts volume. The founder bar needs one record; points need weeks and months. Fake entries buy nothing |
-| Opening the app on 7 days to farm a founder number | Costs 7 real days over 2 weeks per account, and wins only a badge with no money attached. Staff can retire farmed numbers |
+| Opening the app on 7 days to farm a founder number | Costs 7 real days over 2 weeks per account, and wins only a badge with no money attached. Staff can retire farmed numbers. **[S5c]** It cost less than that: seven scripted calls. Closed by the action-day definition and the owner's approval |
 | Many accounts for many founder numbers | Same signals as in 2.5 (device key, phone, store account); staff review a duplicate list in admin; one founder per person |
-| Tapping "Looks right" without looking | Allowed. It takes seconds and the reward is cosmetic; the check still clears unconfirmed items, which is the useful part |
+| Tapping "Looks right" without looking | **[S5c]** Still allowed, but it pays points only for a week with a record in it. Allowed. It takes seconds and the reward is cosmetic; the check still clears unconfirmed items, which is the useful part |
 | Farming bonus Sparks through tiers | Tier bonuses are once per tier and expire in 30 days; tiers need months of kept weeks. At most about $0.18 per account, ever |
 | Client forging status | Status is read from server tables; earning goes through security definer functions with `auth.uid()`; no client writes to any loyalty table |
 | Replaying an earn call | Unique (`user_id`, `kind`, `period_key`) on events and (`user_id`, `reason`, `ref`) on the ledger |
@@ -326,11 +333,11 @@ What the council changed in the architect's view: the "active inside the window"
 
 | # | Decision | Recommendation | Council | Depends on S5a pick |
 |---|---|---|---|---|
-| 1 | Founder bar | 7 active days over 2+ weeks, 1+ record the user made or confirmed, active once inside the window; the same for testers | (b) 4 of 4; level synthesised | None |
+| 1 | Founder bar | 7 active days over 2+ weeks, 1+ record the user made or confirmed, active once inside the window; the same for testers. **[S5c]** Active days are server-observed user actions; the owner approves each founder (council 4 of 4) | (b) 4 of 4; level synthesised | None |
 | 2 | Testers who miss the bar | Permanent Beta tester badge, no number; can still qualify until close | 4 of 4 | None |
 | 3 | Number order | Qualified testers first by signup date, then everyone by date of qualifying | Architect only | None |
 | 4 | Cap and window | 100 or launch + 60 days, dates fixed in a migration, no extension | Set by the plan | Decision 7 (founding offer) ends the same day |
-| 5 | Founder money perk | None beyond the founding annual price, which is open to every subscriber in the window | Architect; plan | **Decision 7.** If the owner drops the founding price, founders have no money perk at all, which is fine. If the owner wants the price for founders only, it needs per-user offer codes or promotional offers in both stores; S5c must check that first |
+| 5 | Founder money perk | None beyond the founding annual price, which is open to every subscriber in the window. **[S5c]** The founding price is not built in v1, so none | Architect; plan | **Decision 7.** If the owner drops the founding price, founders have no money perk at all, which is fine. If the owner wants the price for founders only, it needs per-user offer codes or promotional offers in both stores; S5c must check that first |
 | 6 | Bonus Sparks for founders | None | Architect only | Decisions 8 (name) and 10 (allowance) |
 | 7 | Streak | Weeks; the weekly check with nothing pending; 3-day grace; a freeze per 8 kept weeks; no point loss | 4 of 4 on weeks and on the check | None |
 | 8 | What earns points | Kept week 10, budget set 10, tracked month 40; nothing else | Architect, consistent with the council | None |
@@ -345,6 +352,7 @@ Owner actions that are not choices: send lapsed testers one note about the windo
 
 ## 13. Not verified
 
+- **[S5c]** The first four items below are now settled in `docs/launch/S5c-review.md` (sections 7 and 11); `admin_staff.user_id` is the staff join; `sms_parse_log.awaiting_confirmation` is the unconfirmed column.
 - Apple sections 3.1.1, 3.1.2, 3.2.2, 5.6 and 5.6.1 were read **through a summary**, not verbatim. The "own mechanisms to unlock content" and "may incentivize in-app actions" lines need a verbatim read in S5c.
 - Whether giving TestFlight testers a badge at launch could be read as compensation under Apple 2.2.
 - Whether both stores let the founding introductory offer end on an exact date (already on S5c's list).

@@ -4,13 +4,15 @@ Date: 2026-11-15. Decision document, no code, no migrations, no database writes.
 
 **Revised 2026-11-15 by the business review** (`docs/launch/S5a-business-review.md`: competitors in three markets, a 60-buyer simulated panel, price curves, unit economics, an offer pass and a three-lens board). Changed lines are marked **[changed]**. Where this document and the review differ, the review's section 10 is the list of what moved and why.
 
+**Revised 2026-11-15 by the S5c review** (`docs/launch/S5c-review.md`). Changed lines are marked **[S5c]**. Where this document and section 14 of the review differ, the review wins. In short: no founding price in v1, no device key for the trial, the SMS cap counts bank accounts with their cards, the SMS AI cap counts model calls and sits outside the unit windows, a `plus_trial` plan row, and tighter Sparks rules.
+
 Readers: the owner picks the ladder and SKUs from section 10. S5b reads sections 5 and 8 (ledgers, what a loyalty reward may touch). S5c attacks sections 3 to 7. S6 implements section 8.
 
 ## 0. Summary
 
 - **One paid plan, "Plus".** Free keeps the whole loop, including SMS auto-tracking on up to 2 accounts **[changed, was 3]**. Plus removes the caps and adds depth. A household plan is the likely second product, later, with a written trigger.
-- **Price [changed]:** EGP 69 a month or EGP 499 a year in Egypt; AED 14.99 / 99.99; SAR 12.99 / 99.99; USD 4.99 / 39.99 elsewhere. A founding price on the annual plan (EGP 399, AED 79.99, SAR 79.99) for the first 60 days.
-- **Trial:** every new account gets Plus for 14 days with no card (the app's own `trialing` entitlement), then drops to free with nothing deleted. No store trial at launch.
+- **Price [changed]:** EGP 69 a month or EGP 499 a year in Egypt; AED 14.99 / 99.99; SAR 12.99 / 99.99; USD 4.99 / 39.99 elsewhere. A founding price on the annual plan (EGP 399, AED 79.99, SAR 79.99) for the first 60 days. **[S5c] The founding price is not built in v1** (Google Play cannot end an offer on a date; council 3 of 3).
+- **Trial:** every new account gets Plus for 14 days with no card (the app's own `trialing` entitlement), then drops to free with nothing deleted. No store trial at launch. **[S5c]** Once per verified, normalised email; no device key in v1.
 - **AI credits ("Sparks"):** flat price per action, monthly allowance of 20 on free and 100 on Plus **[changed, was 150]**, SMS parsing never costs the user. Top-up packs are designed here but **not shipped in v1** (council 3 of 3).
 - **Rails:** Apple IAP and Play Billing through RevenueCat. Web checkout later. No paid manual pilot: validate with the survey plus a free Plus preview granted through the `promo` source.
 - **From the business review:** the price is not the problem, the paid plan's content and buyers' trust are. Simulated buyers stayed on free in all three markets. Four measured gates now sit in front of promoting the paid plan (section 10, row 17).
@@ -69,7 +71,7 @@ Rule: free is the complete loop (capture, categorise, budget, review, goals). Pl
 |---|---|---|
 | Manual expenses, income, transfers, categories | Unlimited | Unlimited |
 | Accounts, cards, wallets, cash | Unlimited | Unlimited |
-| **SMS auto-tracking** | **2 tracked accounts [changed, was 3]** | Unlimited |
+| **SMS auto-tracking** | **2 tracked accounts [changed, was 3]**. **[S5c]** An account is a bank or wallet account; cards under it come along; cash never counts | Unlimited |
 | Budget: one active plan, manual builder, templates, month close | Yes | Yes |
 | Saved budget plans (active plus drafts and archive) | 2 | Unlimited |
 | Budget compare and stress test | No | Yes |
@@ -95,6 +97,8 @@ Choices and why:
 
 Enforcement note for S6: reports, export, stress test and the plan count are computed on the device from synced data, so they can only be gated in the UI (reading `/api/entitlements/me`). Accept that. Things with a server path are gated on the server: every AI route (already through `reserveAiQuota`), and the SMS account cap (a database trigger on `payment_methods.track_sms`, so no client can exceed it).
 
+**[S5c] The cap, exactly.** `track_sms` defaults to true today on every payment method, cash included, so the trigger as first written would fire on every new account. Rule: one tracked account is a payment method with `track_sms` true, type not cash, not deleted or closed, and `parent_id` null. The column default becomes false. The trigger never blocks: at the cap it stores `track_sms = false`. Existing rows are left alone. Paywall sentence: "Free tracks 2 bank or wallet accounts; their cards come along; cash is always free."
+
 **Over the cap.** Nothing is deleted, ever. A free user with more than 2 SMS accounts picks which 2 stay on; messages for the others are held for review for 30 days with one line explaining why. Extra saved plans become read-only. This applies at trial end and at subscription end.
 
 ## 4. Trial
@@ -110,12 +114,15 @@ Enforcement note for S6: reports, export, stress test and the plan count are com
 - **Unlocked:** everything in Plus, with a trial allowance of 60 Sparks (not 100).
 - **Written as:** `user_entitlements` row `plan_key = 'plus'`, `status = 'trialing'`, `source = 'default'`, `trial_ends_at = now + plans.trial_days`. The resolver already drops a lapsed trial to free with no background job.
 - **Abuse control.** The owner's rule is "tied to store purchase history, not email". That is only possible for a store offer, so the design splits it:
-  - The no-card trial is granted once per account **and once per device** (iOS DeviceCheck bit, which survives reinstall; Android app-set id hashed, which does not survive a factory reset). A second account on a claimed device starts on free.
-  - The loss if someone beats it is bounded: 60 Sparks (about $0.20) and 14 days of unlimited SMS accounts.
+  - **[S5c] No device key in v1 (council 4 of 4).** DeviceCheck bits survive resale, so a second-hand iPhone would be refused; the Android app set ID resets on reinstall; the web has no key at all. The trial is granted on the server once per normalised email (lower case; for Gmail drop dots and anything from `+`), only after a verified sign-in (Google, Apple or a confirmed email code). A signup limit and a daily count of trials granted go in with it. Device checks are added later only if that count shows abuse.
+  - The loss if someone beats it is bounded: at most about $0.49 of model cost per account on the `plus_trial` limits (**[S5c]**, was "about $0.20"), and 14 days of unlimited SMS accounts. A new account starts with empty data.
   - Anything with money value (the intro price below) goes through the store, which enforces one per Apple or Google account.
+- **[S5c] Not built in v1.** Apple can end an introductory offer on a set date; Google Play cannot (offers are switched off by hand or by an API call and buyers keep their terms). Council 3 of 3 voices: launch without it. The paragraph below is kept as the spec if the owner reinstates it (conditions in the review, section 15).
 - **Founding price at launch [changed, was phase 2]:** the annual plan at EGP 399, AED 79.99 or SAR 79.99 for the first year, as a store introductory offer, only during the first 60 days after public launch (the founding-member window S5b defines), then removed. Apple allows one intro offer per person per subscription group; Google's standard offers go only to users who never had the subscription. If S6 cannot schedule and remove it safely in both stores, launch without it.
 
 **Conversion prompts** (reuse the existing prompt-stack registry and sheet components; at most one prompt a day; never during money entry):
+
+**[S5c] Wording.** Call it "14 days of Plus, no card", never "free trial" beside a price (on both stores that phrase means a store trial that charges at the end). Say that nothing is charged and nothing is deleted.
 
 1. Day 1: one card, "You have Plus for 14 days", three bullets.
 2. Day 12 **[changed, was a day-10 summary]**: "What Plus found in your last 30 days", built from the user's own data (accounts tracked, where the money went, the year so far), so the end of the trial is felt.
@@ -143,8 +150,8 @@ Store rules for the paywall (S9 owns the copy): price and period shown, auto-ren
 | SMS AI fallback (`sms`) | **0** | $0.00045 | n/a |
 | Local fast path, anything with no model call | 0 | 0 | n/a |
 
-- **SMS never costs Sparks.** It runs in the background, the user neither sees nor chooses it, and charging for it would turn the hero feature into silent loss. It has its own hidden cap, `sms_ai_per_day` (free 20, Plus 30). Past the cap a message is held for review, not dropped.
-- A failed or aborted call costs nothing (Sparks are taken at settle with status `ok`; the reservation only holds them).
+- **SMS never costs Sparks.** It runs in the background, the user neither sees nor chooses it, and charging for it would turn the hero feature into silent loss. It has its own hidden cap, `sms_ai_per_day` (free 20, Plus 30). Past the cap a message is held for review, not dropped. **[S5c]** The cap counts model calls, not messages (one message makes about 2 calls, up to 4), and SMS calls are taken out of the unit windows so SMS and Buddgy cannot starve each other: `sms_ai_calls_per_day` (free 30, trial 60, Plus 60) and `sms_ai_calls_per_month` (free 150, trial 250, Plus 450). Today a quota denial marks the row failed; S6 makes it a held message.
+- A failed call costs nothing. **[S5c]** Sparks are taken when a call settles `ok`, or `aborted` with output tokens above zero (otherwise cutting a stream just before its end is a free answer). An error, a release, or an abort with no output is free.
 
 **Allowance.**
 
@@ -193,10 +200,14 @@ Spec for when they ship (trigger: in any month, 10% of Plus subscribers use over
 | `ai_units_7d` | 6,000,000 | 200,000 | 450,000 |
 | `ai_req_per_min` | 30 | 10 | 20 |
 | `sms_ai_per_day` (new) | 100 (in code) | 20 | 30 |
+| **[S5c]** replaces the row above: `sms_ai_calls_per_day` | 100 log rows (in code) | 30 | 60 |
+| **[S5c]** `sms_ai_calls_per_month` (new) | none | 150 | 450 |
 | `grounded_per_day` | 3 | 3 | 10 |
 | `sms_accounts_max` | unlimited, not enforced | 2 | unlimited |
 | `seats` (new, for a later household plan) | none | 1 | 1 |
 | `budget_plans_max` | unlimited, not enforced | 2 | unlimited |
+
+**[S5c]** A third column exists in the review (section 14): the `plus_trial` plan (60 Sparks, 60,000 / 100,000 / 300,000 units, 20 a minute, SMS calls 60 a day and 250 in the trial). The global daily spend cap is not set today; S6's first migration sets `ai_spend_guard.dailyCapUsd` to 5.
 
 **Worst user, modelled first.**
 
@@ -213,6 +224,8 @@ Spec for when they ship (trigger: in any month, 10% of Plus subscribers use over
 | Plus, pathological long outputs up to the 7-day unit cap | at most $1.20 | same | Loses up to $0.50 a month on one account. Rare by construction; watch it in admin, do not design for it |
 | Plus, typical (twice today's heaviest tester, who cost $0.05) | $0.10 | same | About 90% gross margin on the monthly plan |
 
+**[S5c] Corrected ceilings.** The table above is too low on its abusive rows: the legacy proxy route lets one Spark cost about $0.04, so the unit windows set the ceiling, not the Sparks. On the revised limits: free at most $0.61 a month (was $0.34), a trial account $0.49 (was $0.20), Plus $1.42 (was $1.20). The Egypt annual case at both caps was understated (it is $1.16 at the measured 2 calls a message, not $0.75); with the monthly SMS call cap it becomes $0.55 against $0.57. Typical use is unchanged at $0.07 to $0.10.
+
 Credits here are a fairness and upsell device, not cost recovery. The margin check passes with room at every realistic level.
 
 ## 6. Prices
@@ -224,7 +237,7 @@ Credits here are a fairness and upsell device, not cost recovery. The margin che
 | Saudi Arabia (SAR) **[changed]** | 12.99 | 99.99 | 36% off | SAR 9.60 ($2.56) | SAR 73.91 ($19.71) |
 | Rest of world (USD anchor) | 4.99 | 39.99 | 33% off | $4.24 before local tax | $33.99 |
 
-Was: Egypt 79 / 599, UAE and Saudi 14.99 / 119.99. Founding price, first 60 days, annual only: EGP 399, AED 79.99, SAR 79.99 for the first year.
+Was: Egypt 79 / 599, UAE and Saudi 14.99 / 119.99. Founding price, first 60 days, annual only: EGP 399, AED 79.99, SAR 79.99 for the first year. **[S5c] Not built in v1.** For the record its net is $5.46, $17.63 and $15.77 a year.
 
 - **Why 69 and 499 in Egypt.** The one direct rival that reads bank SMS sells at EGP 89.99 a month and 499.99 a year; other budgeting apps list about EGP 240 to 250. The simulated panel's acceptable range was EGP 25 to 90 with indifference near 45, and the annual plan works out at EGP 41.6 a month. It also sits under Spotify (79), Anghami (90) and YouTube Premium (115).
 - **Why the Gulf prices differ from Egypt's and from each other.** UAE rivals run AED 8.99 to 29.99 a month (median 19.99); Saudi rivals SAR 12.99 to about 65. The panel's ranges were AED 5 to 25 and SAR 5 to 20. Saudi VAT is 15% against 5%.
@@ -232,9 +245,11 @@ Was: Egypt 79 / 599, UAE and Saudi 14.99 / 119.99. Founding price, first 60 days
 - **Why the annual discount is steep.** It pulls people to one payment, which matters where card renewals fail.
 - **Dissent kept:** the council's Pragmatist wanted EGP 99 / 799. The business review moved the other way; neither is proven.
 - **Promise and guarantee [new]:** a subscriber's price does not rise for 12 months. Annual plan: unhappy in the first 30 days, tell us; on Google Play we refund directly, on the App Store we back the request to Apple and add six months free if Apple declines.
+- **[S5c] Reworded (council 4 of 4).** No "guarantee" word and no six months: "Changed your mind within 30 days of buying the annual plan? On Android, tell us and we refund you. On iPhone, Apple handles refunds: we show you how to ask, and if Apple says no we add 3 months to your plan." Apple lets a developer extend a renewal date by at most 90 days, twice a year. It is a support action, once per subscription; S6 builds nothing for it. The price promise is keepable on both stores as written.
+- **[S5c] Showing the annual price.** Google requires that an annual plan does not show its monthly equivalent most prominently. The paywall leads with the yearly amount.
 - **Devaluation.** Review the EGP price every quarter. A rise for existing subscribers needs their consent in both stores; new subscribers can simply get the new price.
 - **Fees assumed:** Apple 15% (requires enrolling in the Small Business Program; owner action), Google 15%, RevenueCat $0 under $2,500 tracked revenue a month, then 1%.
-- **Break-even [new]:** fixed costs are about $58 a month (business review, section 6). Contribution per subscriber-month is about $0.69 in Egypt, $2.50 in the UAE and $2.03 in Saudi Arabia; blended $1.31; break-even about 44 subscribers.
+- **Break-even [new]:** fixed costs are about $58 a month (business review, section 6). Contribution per subscriber-month is about $0.69 in Egypt, $2.50 in the UAE and $2.03 in Saudi Arabia; blended $1.31; break-even about 44 subscribers. **[S5c]** Rounded up it is 45 (Egypt-only 85, UAE-only 24, Saudi-only 29). It also leaves out free users: at 2% paying each subscriber carries 49 free users at about $0.01 a month each, so the real figure is about 71. Apple's 15% starts 15 days after the end of the month in which Small Business Program enrolment is approved.
 
 Store products (S6 creates them):
 
@@ -244,11 +259,11 @@ Store products (S6 creates them):
 | Play | Subscription `plus` | base plans `monthly`, `annual` |
 | Both, phase 2 | Consumables | `sparks_100`, `sparks_300` |
 
-Family Sharing off. No lifetime product.
+Family Sharing off. No lifetime product. **[S5c]** No introductory offer in either store. RevenueCat restore behaviour is "Keep with original App User ID", so one store subscription cannot be passed between app accounts.
 
 ## 7. Payment path
 
-**Inside the apps: Apple IAP and Play Billing only.** Both stores require it for subscriptions and for in-app currency. In the app there is no link, button or wording that points at another way to pay (Apple allows that only on the US storefront; Google only in listed regions, and Egypt and the UAE are not among them).
+**Inside the apps: Apple IAP and Play Billing only.** Both stores require it for subscriptions and for in-app currency. **[S5c]** Confirmed on both stores' pages today: neither allows it in Egypt, the UAE or Saudi Arabia. In the app there is no link, button or wording that points at another way to pay (Apple allows that only on the US storefront; Google only in listed regions, and Egypt and the UAE are not among them).
 
 **RevenueCat or direct: RevenueCat.** Council 4 of 4.
 
@@ -296,6 +311,8 @@ plus         = { key: 'plus', name: 'Plus', status: 'active', trial_days: 14, so
                            ai_units_5h: 120000, ai_units_24h: 200000, ai_units_7d: 450000, ai_req_per_min: 20 } }
 ```
 
+**[S5c]** Section 14 of the review replaces the two limit objects above: `sms_ai_per_day` becomes `sms_ai_calls_per_day` and `sms_ai_calls_per_month`, and a third row `plus_trial` is added (same features as `plus`, its own limits, no store products). `grounded_per_day` must also be added to `ai_default_limits()`; it is missing there today.
+
 New column `plans.store_products jsonb` mapping `{ app_store: {monthly, annual}, play_store: {...} }`. Price columns stay as admin display anchors (`currency = 'EGP'`, 6900 and 49900). `data_export` is no longer a paid feature. Reserve the feature key `shared_budget` and the limit key `seats` now: a later household plan is then one more `plans` row and one more product in the same store subscription group, with no schema change.
 
 **2. `user_entitlements`.** Add `product_id text`, `store text` (`app_store`, `play_store`), `store_original_txn text` (unique where not null), `will_renew boolean`, `last_event_at timestamptz`. The `source` check already has `apple`, `google`, `promo`, `loyalty`; no change.
@@ -310,18 +327,18 @@ Row rule (one row per user): a store event always wins over `default`, `promo` a
 
 | RevenueCat event | Write |
 |---|---|
-| `INITIAL_PURCHASE`, `RENEWAL`, `UNCANCELLATION`, `PRODUCT_CHANGE` | `status = 'active'`, `plan_key = 'plus'`, `source` by store, `current_period_end` = expiry, `will_renew = true`; open a new Sparks period |
+| `INITIAL_PURCHASE`, `RENEWAL`, `UNCANCELLATION`, `PRODUCT_CHANGE` | `status = 'active'`, `plan_key = 'plus'`, `source` by store, `current_period_end` = expiry, `will_renew = true`; open a new Sparks period. **[S5c]** Only `INITIAL_PURCHASE` and `RENEWAL` open a Sparks period, and at most one `plan` row exists per user per period (monthly: the store period; annual: the monthly anniversary of purchase). `UNCANCELLATION` and `PRODUCT_CHANGE` never grant Sparks, or cancelling and un-cancelling would mint them |
 | `CANCELLATION` (not a refund) | `status = 'canceled'`, `canceled_at`, `will_renew = false`; access runs to period end |
-| `CANCELLATION` with a refund reason | `status = 'expired'` now; purchased Sparks from a refunded pack removed |
-| `BILLING_ISSUE` | `status = 'past_due'` |
+| `CANCELLATION` with a refund reason | `status = 'expired'` now; purchased Sparks from a refunded pack removed. **[S5c]** RevenueCat's refund signal is `cancel_reason = CUSTOMER_SUPPORT`. Also end the open `plan` allowance row now. `REFUND_REVERSED` restores both |
+| `BILLING_ISSUE` | `status = 'past_due'`. **[S5c]** Access lasts until the store grace expiry RevenueCat reports (store grace set to 3 days on Apple, 7 on Google); 3 days after the period end is only the fallback |
 | `EXPIRATION` | `status = 'expired'` |
 | `SUBSCRIPTION_PAUSED` (Play) | `status = 'paused'` |
-| `TRANSFER` | move the row to the new user id, expire the old one |
+| `TRANSFER` | move the row to the new user id, expire the old one. **[S5c]** Should not occur with restore behaviour "Keep with original"; if it does, it grants no Sparks |
 | `NON_RENEWING_PURCHASE` (phase 2 packs) | insert `spark_purchases` keyed on the store transaction id |
 
-A nightly reconcile job asks RevenueCat for every row whose `current_period_end` passed more than a day ago and is still `active` or `past_due`. Answer 2xx only after the write commits; RevenueCat retries 5 times over about 80 minutes.
+A nightly reconcile job asks RevenueCat for every row whose `current_period_end` passed more than a day ago and is still `active` or `past_due`. Answer 2xx only after the write commits; RevenueCat retries 5 times over about 80 minutes. **[S5c]** Confirmed today: events carry `id` and `event_timestamp_ms`, and an HMAC header `X-RevenueCat-Webhook-Signature` over the timestamp and raw body is available; use both it and the `Authorization` secret.
 
-**6. Trial.** At signup the server (the existing `handle_new_user` path or the first authenticated call) inserts the `trialing` row if the device has no claim. New table `trial_claims`: `device_key_hash` (unique), `user_id`, `platform`, `claimed_at`. Web signups get the trial once per account (no device key); the loss is bounded as in section 4.
+**6. Trial.** At signup the server (the existing `handle_new_user` path or the first authenticated call) inserts the `trialing` row if the device has no claim. New table `trial_claims`: `device_key_hash` (unique), `user_id`, `platform`, `claimed_at`. Web signups get the trial once per account (no device key); the loss is bounded as in section 4. **[S5c]** `trial_claims` is `email_key text unique`, `user_id`, `claimed_at`; no device key. The row written is `plan_key = 'plus_trial'`, and only after a verified sign-in.
 
 **7. Sparks.**
 
@@ -331,6 +348,7 @@ A nightly reconcile job asks RevenueCat for every row whose `current_period_end`
 - `spark_spend` (append-only): `user_id`, `reservation_id`, `feature`, `sparks`, `allowance_id` or `purchase_id`, `created_at`.
 - `ai_quota_reserve_v2` gains one step: look up the price, check that allowance plus purchased covers it, hold it on the reservation (new column `ai_reservations.sparks`). New denied layer `sparks` (HTTP 429, with the reset date) so the client can show the upgrade sheet. `ai_quota_settle` with status `ok` writes `spark_spend` and increments `used` in spend order; error and release write nothing.
 - `ai_quota_status` returns `{ sparks_left, sparks_total, resets_at, purchased_left }` for the balance line in Settings and in the chat header.
+- **[S5c]** `spark_spend` has a check that exactly one of `allowance_id` and `purchase_id` is set. When a unit window (not Sparks) denies a call, the client shows the reset time and no upgrade sheet.
 - All four tables: row security on, users may select their own rows, writes by service role only.
 
 **8. Enforcement points.**
@@ -338,8 +356,8 @@ A nightly reconcile job asks RevenueCat for every row whose `current_period_end`
 | Gate | Where |
 |---|---|
 | Sparks and unit windows | `ai_quota_reserve_v2`, already called by every AI route |
-| SMS AI per day | The SMS parse route, through the atomic counter (replaces `aiCallsToday`) |
-| SMS account cap | Trigger on `payment_methods` when `track_sms` becomes true: count for the user against `sms_accounts_max` from `ai_effective_limits` |
+| SMS AI per day | The SMS parse route, through the atomic counter (replaces `aiCallsToday`). **[S5c]** Counted inside `ai_quota_reserve_v2` as model calls per rolling 24 hours and 30 days; `sms` is excluded from the three unit windows; a denial holds the message and answers the phone 2xx |
+| SMS account cap | Trigger on `payment_methods` when `track_sms` becomes true: count for the user against `sms_accounts_max` from `ai_effective_limits`. **[S5c]** Counts top-level, non-cash accounts; sets the flag false at the cap and never raises (section 3) |
 | Advanced reports (beyond 3 months), compare, stress test, plan count | UI, from `/api/entitlements/me`; add the keys to `PAID_FEATURES` for any that get a server route |
 
 **9. Cost truth.** `ai_price_book`: add `per_call_usd` and a row for grounded search ($0.035); make `ai_cost_usd_micro` charge audio by seconds (units divided by 100). Without this the admin margin view under-reports voice and search.
@@ -392,13 +410,13 @@ Each has the architect's recommendation and the council's vote. The owner picks.
 
 | # | Decision | Recommendation | Council |
 |---|---|---|---|
-| 1 **[changed]** | SMS auto-tracking on free | Free, capped at **2** tracked accounts (was 3); unlimited on Plus. Test 2 against 3 with real users | Council: capped 3 of 4. Board split: Offers lens 1, Product lens 3, Monopoly lens no cap |
+| 1 **[changed]** | SMS auto-tracking on free | Free, capped at **2** tracked accounts (was 3); unlimited on Plus. Test 2 against 3 with real users. **[S5c]** An account is a bank or wallet account with its cards; cash never counts (council 3 of 4; Skeptic: count banks) | Council: capped 3 of 4. Board split: Offers lens 1, Product lens 3, Monopoly lens no cap |
 | 2 | Number of paid tiers | One, "Plus". A household plan later, when partner sharing ships and 20% of subscribers use it | Council 4 of 4; the panel's one-tier and two-tier results were the same; 13 of 20 competitors have one tier |
 | 3 **[changed]** | What Plus contains | Section 3 table. Export and 3 months of reports move to free. Partner sharing is the first Plus feature to build after launch. All AI surfaces stay usable on free through Sparks; second currency stays free; priority support is not sold | Tier list 4 of 4. Pragmatist and Critic would make receipt, voice and the AI builder Plus-only; the architect keeps them metered on free so one meter replaces five gates |
 | 4 **[changed]** | Launch markets | Egypt, UAE and Saudi Arabia priced by hand; **marketed only where bank coverage has been measured**, Egypt first | Board: Monopoly lens wants Egypt only until proven |
 | 5 **[changed]** | Price | EGP 69 / 499; AED 14.99 / 99.99; SAR 12.99 / 99.99; USD 4.99 / 39.99 (was EGP 79 / 599, AED and SAR 14.99 / 119.99) | Council had EGP 79, 3 of 4. Board 3 of 3: price is not the binding problem |
-| 6 | Trial | App's own 14-day no-card trial at signup, 60 Sparks, once per account and device | 3 of 4. Skeptic dissents: no trial, free is the trial |
-| 7 **[changed]** | Opening offer | A founding price on the annual plan for the first 60 days (EGP 399, AED 79.99, SAR 79.99), then removed; no other intro offer | Council had said no intro offer at launch, 4 of 4. Changed on the business review; S5c to check |
+| 6 | Trial | App's own 14-day no-card trial at signup, 60 Sparks, once per account and device. **[S5c]** Once per verified, normalised email; no device key in v1 (council 4 of 4) | 3 of 4. Skeptic dissents: no trial, free is the trial |
+| 7 **[changed]** | Opening offer | A founding price on the annual plan for the first 60 days (EGP 399, AED 79.99, SAR 79.99), then removed; no other intro offer. **[S5c] Not in v1** (council 3 of 3 voices; the owner can reinstate it under the review's section 15) | Council had said no intro offer at launch, 4 of 4. Changed on the business review; S5c to check |
 | 8 | Credits name | "Sparks" | Not voted. Critic would ship v1 with no branded name |
 | 9 | Credit pricing | Flat per action (section 5); SMS never costs Sparks | 4 of 4 |
 | 10 **[changed]** | Allowance | Free 20, trial 60, Plus **100** a month (was 150), no carry-over | Council 4 of 4 on 20; 55 of 60 simulated buyers said 20 is enough |
@@ -408,8 +426,8 @@ Each has the architect's recommendation and the council's vote. The owner picks.
 | 14 | Web checkout (Paymob, Fawry) | Later; first see whether Egyptian cards fail in the stores | 4 of 4 |
 | 15 | Validation before billing | Survey, then a free Plus preview for all testers through `promo`, then one real owner purchase and renewal on an Egyptian card. No paid manual pilot | 3 of 3 against a paid pilot. Departs from the plan's InstaPay idea, for the reasons in section 7 |
 | 16 **[changed]** | Annual discount | 40% in Egypt, 44% in the UAE, 36% in Saudi Arabia | Range across council voices 21% to 37%; deeper now so the annual plan is the one to buy |
-| 17 **[new]** | Gates before the paid plan is promoted | (1) a published list of Egyptian banks with measured accuracy; (2) 40% of testers who switch SMS on see a first automatic transaction within 10 minutes; (3) at least 5 of 47 testers say they would buy the annual plan after the Plus preview; (4) if under 2% of active users pay by day 60, reopen the free line before the price | Board 3 of 3 |
-| 18 **[new]** | Promise and guarantee | 12-month price promise; 30-day annual-plan guarantee worded within store rules | Offers lens |
+| 17 **[new]** | Gates before the paid plan is promoted | (1) a published list of Egyptian banks with measured accuracy; (2) 40% of testers who switch SMS on see a first automatic transaction within 10 minutes; (3) at least 5 of 47 testers say they would buy the annual plan after the Plus preview; (4) if under 2% of active users pay by day 60, reopen the free line before the price. **[S5c]** Gates 1, 2 and 4 are given exact measures and gate 3 becomes behaviour (at least 5 testers pass a free limit in real use on 2 or more days), in the review's section 9 | Board 3 of 3; S5c council 4 of 4 on gate 3 |
+| 18 **[new]** | Promise and guarantee | 12-month price promise; 30-day annual-plan guarantee worded within store rules. **[S5c]** The word "guarantee" is dropped; plain refund wording with 3 months added if Apple declines (section 6) | Offers lens; S5c council 4 of 4 |
 | 19 **[new]** | Pay-once (lifetime) price | Not at launch; revisit after 90 days of paywall data | 12 of 60 simulated buyers asked for it; none took it when offered |
 
 Owner actions that are not choices: enrol in the Apple Small Business Program; authorise the RevenueCat connector when S6 starts; send the survey.
@@ -445,7 +463,7 @@ Read directly today unless marked.
 ## 13. Not verified
 
 - The business review adds its own list (its section 11): the buyer panel is simulated, competitor prices are iOS storefront only, and Buddget's bank coverage in the UAE and Saudi Arabia has not been measured.
-- From 2026-12-01 `gemini-2.5-flash` requests route to a newer model at that model's rates (seen on the provider's price page during the review). Every AI cost in section 5 must be re-read after that date.
+- From 2026-12-01 `gemini-2.5-flash` requests route to a newer model at that model's rates (seen on the provider's price page during the review). Every AI cost in section 5 must be re-read after that date. **[S5c]** Re-read: the newer model (`gemini-3.5-flash-lite`) has the same text prices, so no Sparks price or cap changes; only web-search grounding changes (5,000 free a month, then $14 per 1,000). What does change is the model answering SMS, receipt and budget calls, which must be tested before 2026-12-01.
 
 - **No price was tested with a real buyer.** Every price here is a judgement from anchors.
 - Whether the App Store and Play offer exactly EGP 69, 499, AED 14.99 and 99.99, SAR 12.99 and 99.99 as price points. Use the nearest tier.
