@@ -5,6 +5,7 @@ const h = vi.hoisted(() => ({
   caller: vi.fn(),
   remember: vi.fn(),
   nudge: vi.fn(),
+  raceRetract: false,
   db: {} as Record<string, Row[]>,
   writes: [] as { table: string; op: string; values: Row; ids?: unknown }[],
 }))
@@ -27,16 +28,25 @@ vi.mock('@/lib/supabase/service', () => ({
         eq: (k: string, v: unknown) => (filters.push((r) => r[k] === v), q),
         in: (k: string, vs: unknown[]) => (filters.push((r) => vs.includes(r[k])), q),
         is: (k: string, v: unknown) => (filters.push((r) => (r[k] ?? null) === v), q),
-        update: (v: Row) => ((mode = 'update'), (values = v), q),
+        update: (v: Row) => {
+          mode = 'update'
+          values = v
+          if (h.raceRetract && table === 'income_events' && typeof v.deleted_at === 'string') {
+            h.raceRetract = false
+            ;(h.db.income_events ?? []).forEach((r) => Object.assign(r, { deleted_at: '2026-11-01T12:00:00Z' }))
+          }
+          return q
+        },
         insert: (v: Row) => ((mode = 'insert'), (values = v), q),
         single: async () => (mode === 'insert' ? (h.writes.push({ table, op: 'insert', values }), { data: { id: 'new-income' }, error: null }) : { data: matching()[0] ?? null, error: null }),
         then: (resolve: (v: unknown) => void) => {
+          const hit = matching()
           if (mode === 'update') {
             h.writes.push({ table, op: 'update', values })
-            matching().forEach((r) => Object.assign(r, values))
+            hit.forEach((r) => Object.assign(r, values))
           }
           if (mode === 'insert') h.writes.push({ table, op: 'insert', values })
-          resolve({ data: mode === 'select' ? matching() : null, error: null })
+          resolve({ data: mode === 'select' || mode === 'update' ? hit : null, error: null })
         },
       }
       return q
@@ -59,10 +69,11 @@ const log = (id: string) => h.db.sms_parse_log.find((r) => r.id === id)!
 
 describe('POST /api/sms/own-transfer', () => {
   beforeEach(() => {
-    h.caller.mockReset().mockResolvedValue({ userId: 'u1', deviceId: 'd1' })
+    h.caller.mockReset().mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: true })
     h.remember.mockReset()
     h.nudge.mockReset().mockResolvedValue(true)
     h.writes.length = 0
+    h.raceRetract = false
     h.db = { sms_parse_log: logs('ask', false), expenses: [expense()], income_events: [{ id: 'i1', user_id: 'u1', sms_log_id: IN, deleted_at: null }] }
   })
 
@@ -88,7 +99,7 @@ describe('POST /api/sms/own-transfer', () => {
   })
 
   it("refuses another user's row", async () => {
-    h.caller.mockResolvedValue({ userId: 'u2', deviceId: 'd1' })
+    h.caller.mockResolvedValue({ userId: 'u2', deviceId: 'd1', viaJwt: true })
     expect((await call(OUT, 'confirm')).status).toBe(403)
     expect(h.writes).toHaveLength(0)
   })
@@ -195,6 +206,22 @@ describe('POST /api/sms/own-transfer', () => {
       const res = await call(ONE, 'confirm_account')
       expect(await res.json()).toEqual({ ok: true, stale: true })
       expect(log(ONE).own_transfer_verdict).toBe('none')
+    })
+
+    it('confirm_account on a transfer in answers ok+stale, inserts nothing and revives nothing when another request already retracted the income', async () => {
+      h.db.expenses = []
+      h.db.income_events = [{ id: 'i1', user_id: 'u1', sms_log_id: ONE, deleted_at: null, name: 'In', amount: 500, currency: 'EGP', received_date: '2026-11-01', occurred_at: null, payment_method_id: 'pm-1' }]
+      h.raceRetract = true
+      const res = await call(ONE, 'confirm_account')
+      expect(await res.json()).toEqual({ ok: true, stale: true })
+      expect(h.writes.some((w) => w.table === 'expenses')).toBe(false)
+      expect(h.writes.some((w) => w.table === 'income_events' && w.values.deleted_at === null)).toBe(false)
+    })
+
+    it('a session-less ingest token is refused with 401 before any database call', async () => {
+      h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: false })
+      expect((await call(ONE, 'confirm_account')).status).toBe(401)
+      expect(h.writes).toHaveLength(0)
     })
 
     it('confirm_account with no registered account behind the digits changes nothing', async () => {

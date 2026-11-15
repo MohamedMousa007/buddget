@@ -68,6 +68,7 @@ export async function POST(request: Request) {
   const caller = hasBearer
     ? await resolveSmsCaller(request)
     : { userId: await resolveActiveApiUserId(request), deviceId: null, viaJwt: false }
+  if (hasBearer && !caller.viaJwt) return fail('Unauthorized', 401)
   const { userId } = caller
   if (!userId) return fail('Unauthorized', 401)
   const blocked = await smsDeviceGate(service, caller)

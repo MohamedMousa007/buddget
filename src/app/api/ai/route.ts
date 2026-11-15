@@ -25,6 +25,8 @@ const MAX_BODY_BYTES = 256 * 1024
 const MAX_CONTENTS = 60
 /** One deadline across the call, its retry and the model fallback; the function is killed at maxDuration (30s) and would leave the reservation unsettled. */
 const UPSTREAM_DEADLINE_MS = 25_000
+/** Grounded (web search) requests one user may make per day; the legitimate callers are goal and emergency-fund estimates. */
+const GROUNDED_PER_DAY = 10
 
 export async function POST(req: Request) {
   const outdated = await gateOutdatedClient(req)
@@ -33,6 +35,7 @@ export async function POST(req: Request) {
   let grant: QuotaGrant | null = null
   let model = LEGACY_MODEL
   let tierName = 'legacy'
+  let estUsage = { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }
   try {
     const auth = await requireAiUser(req)
     if ('denied' in auth) {
@@ -88,7 +91,6 @@ export async function POST(req: Request) {
 
     const config = clampGenerationConfig(generationConfig)
     const geminiBody: Record<string, unknown> = { contents, generationConfig: config }
-    if (grounded === true && tier !== 'fast') geminiBody.tools = [{ google_search: {} }]
     if (systemInstruction) geminiBody.systemInstruction = systemInstruction
 
     tierName = tier && tier in TIER_MODELS ? tier : 'legacy'
@@ -101,6 +103,15 @@ export async function POST(req: Request) {
     })
     if (!quota.allowed) return quotaDeniedResponse(quota)
     grant = quota
+    const estInput = Math.ceil((JSON.stringify(contents).length + JSON.stringify(systemInstruction ?? '').length) / 4)
+    estUsage = { promptTokens: estInput, cachedTokens: 0, outputTokens: config.maxOutputTokens as number }
+
+    // Search grounding is billed per request on top of tokens and the client asks for it: past the daily
+    // allowance the request still runs, ungrounded. Fails closed (no grounding) when the counter is unreachable.
+    if (
+      grounded === true && tier !== 'fast' &&
+      !(await isRateLimited(createServiceRoleClient(), `ai-grounded:${userId}`, 86_400, GROUNDED_PER_DAY))
+    ) geminiBody.tools = [{ google_search: {} }]
 
     const wantStream = stream === true
     const deadline = AbortSignal.timeout(UPSTREAM_DEADLINE_MS)
@@ -114,7 +125,6 @@ export async function POST(req: Request) {
       response = await retryOnOverload(() => callGemini(model, apiKey, geminiBody, wantStream, deadline), model)
     }
 
-    const estInput = Math.ceil((JSON.stringify(contents).length + JSON.stringify(systemInstruction ?? '').length) / 4)
     const settle = (usage: Parameters<typeof settleAiQuota>[1]['usage'], status: 'ok' | 'error' | 'aborted') =>
       settleAiQuota(quota, {
         model,
@@ -153,8 +163,9 @@ export async function POST(req: Request) {
         model,
         tier: tierName,
         latencyMs: Date.now() - started,
-        usage: { promptTokens: 0, cachedTokens: 0, outputTokens: 0 },
-        status: 'error',
+        // The upstream call was made (a timeout lands here): the provider bills it, so it is never settled as free.
+        usage: estUsage,
+        status: 'aborted',
       })
     }
     console.error(`[AI] fail status=500 latency=${Date.now() - started}ms err=${err instanceof Error ? err.message : String(err)}`)

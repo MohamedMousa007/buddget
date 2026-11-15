@@ -31,7 +31,8 @@ export async function POST(request: Request) {
     : { userId: await resolveActiveApiUserId(request), deviceId: null, viaJwt: false }
   const { userId } = caller
 
-  if (!userId) {
+  // The non-expiring ingest token may post messages, never change the ledger: undo needs a session.
+  if (!userId || (hasBearer && !caller.viaJwt)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const blocked = await smsDeviceGate(serviceClient, caller)

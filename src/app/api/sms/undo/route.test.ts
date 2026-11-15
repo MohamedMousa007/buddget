@@ -28,7 +28,7 @@ const req = (headers: Record<string, string> = { authorization: 'Bearer t' }) =>
 describe('POST /api/sms/undo', () => {
   beforeEach(() => {
     Object.values(h).forEach((m) => m.mockReset())
-    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1' })
+    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: true })
     h.revoked.mockResolvedValue(false)
     h.log.mockResolvedValue({ data: { user_id: 'u1' }, error: null })
     h.rpc.mockResolvedValue({ data: { found: true, nothing_to_do: false }, error: null })
@@ -76,7 +76,15 @@ describe('POST /api/sms/undo', () => {
   })
 
   it('rejects an unauthenticated caller', async () => {
-    h.caller.mockResolvedValue({ userId: null, deviceId: null })
+    h.caller.mockResolvedValue({ userId: null, deviceId: null, viaJwt: true })
     expect((await POST(req())).status).toBe(401)
+  })
+
+  it('refuses an SMS ingest token: undo is for the signed-in app only', async () => {
+    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: false })
+    expect((await POST(req())).status).toBe(401)
+    expect(h.revoked).not.toHaveBeenCalled()
+    expect(h.log).not.toHaveBeenCalled()
+    expect(h.rpc).not.toHaveBeenCalled()
   })
 })

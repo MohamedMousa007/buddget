@@ -110,9 +110,11 @@ async function refundMatch(service: Service, userId: string, expenseId: string, 
     .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: placeholder.sms_log_id })
     .eq('id', placeholder.id)
     .eq('user_id', userId)
-  if (retire.error) {
+    .is('deleted_at', null)
+    .select('id')
+  if (retire.error || !retire.data?.length) {
     await service.from('expenses').update({ refunded_at: null, refund_kind: null, refund_sms_log_id: null, refunded_amount: null }).eq('id', target.id).eq('user_id', userId)
-    return fail('Failed to update refund')
+    return retire.error ? fail('Failed to update refund') : conflict()
   }
   const log = await service.from('sms_parse_log').update({ expense_id: target.id }).eq('id', placeholder.sms_log_id).eq('user_id', userId)
   if (log.error) console.error('[sms/flag-action] log update error', log.error.message)
@@ -280,6 +282,7 @@ export async function POST(request: Request) {
   const caller = hasBearer
     ? await resolveSmsCaller(request)
     : { userId: await resolveActiveApiUserId(request), deviceId: null, viaJwt: false }
+  if (hasBearer && !caller.viaJwt) return fail('Unauthorized', 401)
   const { userId } = caller
   if (!userId) return fail('Unauthorized', 401)
   const blocked = await smsDeviceGate(service, caller)

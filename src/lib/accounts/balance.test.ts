@@ -10,6 +10,13 @@ const exp = (over: Partial<Expense> = {}): Expense => ({
 const balance = (e: Expense) =>
   computeBalances({ paymentMethods: [cash], expenses: [e], incomeEvents: [], debtPayments: [], debts: [], savingsTransactions: [], savingsAccounts: [], adjustments: [], convert: (a) => a }).get('cash')?.balance
 
+describe('computeBalances unplaced SMS transfer', () => {
+  it('credits the destination account and debits nothing when the source is unknown', () => {
+    expect(balance(exp({ category: 'Transfer', paymentMethodId: undefined, smsLogId: 'log', toPaymentMethodId: 'cash' }))).toBe(300)
+    expect(balance(exp({ smsLogId: 'log' }))).toBe(200)
+  })
+})
+
 describe('computeBalances partial refund', () => {
   it('debits only the part of the purchase that was not refunded', () => {
     expect(balance(exp())).toBe(100)

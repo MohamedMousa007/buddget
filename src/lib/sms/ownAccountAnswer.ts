@@ -70,9 +70,17 @@ export async function answerOneLegQuestion(
     // A transfer in: the money came from the registered account. The income row is retracted with its cause (I4) first
     // and one Transfer expense then stands for the movement, debiting the account it left and crediting the one it
     // reached. Retracting first means a failed retraction leaves no expense behind for a retry to mistake for a transfer
-    // out of an account into itself.
-    const { error: delErr } = await service.from('income_events').update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: log.id }).eq('id', income.id).eq('user_id', userId)
+    // out of an account into itself. The retraction is a claim: zero rows means another request already answered, and
+    // only the claimant may roll it back.
+    const { data: claimed, error: delErr } = await service
+      .from('income_events')
+      .update({ deleted_at: new Date().toISOString(), retracted_by_sms_log_id: log.id })
+      .eq('id', income.id)
+      .eq('user_id', userId)
+      .is('deleted_at', null)
+      .select('id')
     if (delErr) return { ok: false, status: 500, error: 'Failed to update income' }
+    if (!claimed?.length) return { ok: true, stale: true }
     const { data: created, error: insErr } = await service
       .from('expenses')
       .insert({

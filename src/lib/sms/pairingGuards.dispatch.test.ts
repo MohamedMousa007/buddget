@@ -800,7 +800,7 @@ describe('audit fix 8: confirm_account on an income row retracts first and resto
         const b = (svc as unknown as { from: (n: string) => unknown }).from(name) as unknown as Record<string, unknown>
         if (name === 'income_events') {
           b.update = () => {
-            const c: Record<string, unknown> = { eq: () => c, then: (res: (v: unknown) => unknown) => res({ data: null, error: { message: 'down' } }) }
+            const c: Record<string, unknown> = { eq: () => c, is: () => c, select: () => c, then: (res: (v: unknown) => unknown) => res({ data: null, error: { message: 'down' } }) }
             return c
           }
         }

@@ -83,9 +83,10 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     if (e.refundedAt || e.fundedFromSavingsTxId) continue // a pocket-funded expense leaves no account, the pocket already lost it
     // No funding source named: a CC payoff or an SMS the resolver could not place must not drain Cash.
     const unfunded = !e.paymentMethodId || e.paymentMethodId === DEFAULT_CASH_ID
-    if (unfunded && (e.category === 'CC Payoff' || e.smsLogId)) continue
+    if (unfunded && e.category === 'CC Payoff') continue
     const at = instantOf(e.occurredAt, e.date)
-    apply(resolveAccountId(e.paymentMethodId, pms), -Math.max(0, e.amount - (e.refundedAmount ?? 0)), e.currency, at)
+    // An unplaced SMS still credits the account it names as destination (a wallet top-up from "my own money").
+    if (!(unfunded && e.smsLogId)) apply(resolveAccountId(e.paymentMethodId, pms), -Math.max(0, e.amount - (e.refundedAmount ?? 0)), e.currency, at)
     if (e.toPaymentMethodId) apply(resolveAccountId(e.toPaymentMethodId, pms), e.amount, e.currency, at)
   }
 

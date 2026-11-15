@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   failInsert: false,
   raceRetract: false,
   raceStamp: false,
+  raceRetire: false,
   skipIncomeRestore: false,
 }))
 vi.mock('server-only', () => ({}))
@@ -36,6 +37,11 @@ vi.mock('@/lib/supabase/service', () => ({
           if (h.raceRetract && table === 'expenses' && 'retracted_by_sms_log_id' in v) {
             h.raceRetract = false
             matching().forEach((r) => Object.assign(r, { deleted_at: '2026-11-09T11:00:00Z', retracted_by_sms_log_id: LOG }))
+          }
+          if (h.raceRetire && table === 'expenses' && 'retracted_by_sms_log_id' in v) {
+            h.raceRetire = false
+            const placeholderRow = h.db.expenses.find((r) => r.id === PLACEHOLDER)
+            if (placeholderRow) Object.assign(placeholderRow, { deleted_at: '2026-11-09T11:00:00Z', retracted_by_sms_log_id: LOG })
           }
           if (h.raceStamp && table === 'expenses' && 'refund_sms_log_id' in v) {
             h.raceStamp = false
@@ -81,12 +87,13 @@ const match = (targetExpenseId = TARGET) => ({ action: 'refund_match', expenseId
 
 describe('POST /api/sms/flag-action', () => {
   beforeEach(() => {
-    h.caller.mockReset().mockResolvedValue({ userId: 'u1', deviceId: 'd1' })
+    h.caller.mockReset().mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: true })
     h.nudge.mockReset().mockResolvedValue(true)
     h.writes.length = 0
     h.failInsert = false
     h.raceRetract = false
     h.raceStamp = false
+    h.raceRetire = false
     h.skipIncomeRestore = false
     h.db = {
       expenses: [placeholder(), target(), deposit()],
@@ -98,7 +105,7 @@ describe('POST /api/sms/flag-action', () => {
   it('rejects an unauthenticated caller and a malformed body', async () => {
     h.caller.mockResolvedValue({ userId: null, deviceId: null })
     expect((await call(match())).status).toBe(401)
-    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1' })
+    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: true })
     expect((await call({ action: 'nope' })).status).toBe(400)
   })
 
@@ -129,6 +136,21 @@ describe('POST /api/sms/flag-action', () => {
     expect(h.db.sms_parse_log[0].expense_id).toBe(PLACEHOLDER)
   })
 
+  it('refund_match answers 409 and clears its own stamp when a concurrent call retired the placeholder first (0 rows retired)', async () => {
+    h.raceRetire = true
+    expect((await call(match())).status).toBe(409)
+    expect(row(TARGET)).toMatchObject({ refunded_at: null, refund_kind: null, refund_sms_log_id: null, refunded_amount: null })
+    expect(h.db.sms_parse_log[0].expense_id).toBe(PLACEHOLDER)
+  })
+
+  it('a session-less ingest token is refused with 401 before any database call', async () => {
+    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: false })
+    h.writes.length = 0
+    expect((await call(match())).status).toBe(401)
+    expect(h.writes).toHaveLength(0)
+    expect(row(TARGET).refund_sms_log_id ?? null).toBeNull()
+  })
+
   it('I1: refund_match refuses a larger purchase that already carries a partial refund', async () => {
     h.db.expenses = [placeholder(), target({ amount: 900, refunded_amount: 100 })]
     expect((await call(match())).status).toBe(409)
@@ -154,9 +176,9 @@ describe('POST /api/sms/flag-action', () => {
   })
 
   it("refund_match refuses another user's rows", async () => {
-    h.caller.mockResolvedValue({ userId: 'u2', deviceId: 'd1' })
+    h.caller.mockResolvedValue({ userId: 'u2', deviceId: 'd1', viaJwt: true })
     expect((await call(match())).status).toBe(409)
-    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1' })
+    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: true })
     h.db.expenses = [placeholder(), target({ user_id: 'u2' })]
     expect((await call(match())).status).toBe(409)
     expect(h.writes).toHaveLength(0)
@@ -197,9 +219,9 @@ describe('POST /api/sms/flag-action', () => {
   })
 
   it("deposit_income refuses another user's row, a row without the flag and a row that is not a Transfer", async () => {
-    h.caller.mockResolvedValue({ userId: 'u2', deviceId: 'd1' })
+    h.caller.mockResolvedValue({ userId: 'u2', deviceId: 'd1', viaJwt: true })
     expect((await call({ action: 'deposit_income', expenseId: DEPOSIT })).status).toBe(409)
-    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1' })
+    h.caller.mockResolvedValue({ userId: 'u1', deviceId: 'd1', viaJwt: true })
     h.db.expenses = [deposit({ sms_flags: [] })]
     expect((await call({ action: 'deposit_income', expenseId: DEPOSIT })).status).toBe(409)
     h.db.expenses = [deposit({ category: 'Food' })]

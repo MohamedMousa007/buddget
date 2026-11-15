@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const h = vi.hoisted(() => ({ call: vi.fn(), limited: vi.fn(), runtime: vi.fn() }))
+const h = vi.hoisted(() => ({ call: vi.fn(), limited: vi.fn(), runtime: vi.fn(), settle: vi.fn() }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null }))
 vi.mock('@/lib/server/ai/auth', () => ({ requireAiUser: async () => ({ userId: 'u1' }) }))
@@ -9,7 +9,7 @@ vi.mock('@/lib/server/rateLimit', () => ({ isRateLimited: h.limited }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceRoleClient: () => ({}) }))
 vi.mock('@/lib/server/ai/quota', () => ({
   reserveAiQuota: async () => ({ allowed: true }),
-  settleAiQuota: async () => undefined,
+  settleAiQuota: h.settle,
   quotaDeniedResponse: () => new Response(null, { status: 429 }),
 }))
 vi.mock('@/lib/server/ai/gemini', async (orig) => ({
@@ -28,6 +28,7 @@ describe('POST /api/ai', () => {
     vi.stubEnv('GEMINI_API_KEY', 'k')
     h.call.mockReset().mockResolvedValue(new Response(JSON.stringify({ candidates: [] }), { status: 200 }))
     h.limited.mockReset().mockResolvedValue(false)
+    h.settle.mockReset().mockResolvedValue(undefined)
     h.runtime.mockReset().mockResolvedValue({ rateLimitingEnabled: true, rateLimitMaxRequests: 5, rateLimitWindowMs: 60_000 })
   })
 
@@ -79,5 +80,34 @@ describe('POST /api/ai', () => {
     await post({ contents, tier: 'fast' })
     expect(cancel).toHaveBeenCalled()
     expect(h.call).toHaveBeenCalledTimes(2)
+  })
+
+  it('settles an upstream timeout as aborted with the estimated usage, not as free', async () => {
+    h.call.mockRejectedValue(new DOMException('timed out', 'TimeoutError'))
+    const res = await post({ contents, generationConfig: { maxOutputTokens: 500 } })
+    expect(res.status).toBe(500)
+    expect(h.settle).toHaveBeenCalledTimes(1)
+    const [, args] = h.settle.mock.calls[0]
+    expect(args.status).toBe('aborted')
+    expect(args.usage.promptTokens).toBeGreaterThan(0)
+    expect(args.usage.outputTokens).toBe(h.call.mock.calls[0][2].generationConfig.maxOutputTokens)
+  })
+
+  it('grants grounding under the daily limit and counts it per user', async () => {
+    await post({ contents, grounded: true })
+    expect(h.call.mock.calls[0][2].tools).toEqual([{ google_search: {} }])
+    expect(h.limited).toHaveBeenCalledWith(expect.anything(), 'ai-grounded:u1', 86_400, 10)
+  })
+
+  it('drops grounding, not the request, once the daily limit is reached', async () => {
+    h.limited.mockImplementation(async (_c: unknown, key: string) => key.startsWith('ai-grounded:'))
+    const res = await post({ contents, grounded: true })
+    expect(res.status).toBe(200)
+    expect(h.call.mock.calls[0][2]).not.toHaveProperty('tools')
+  })
+
+  it('does not touch the grounding allowance for an ungrounded request', async () => {
+    await post({ contents })
+    expect(h.limited.mock.calls.some((c) => String(c[1]).startsWith('ai-grounded:'))).toBe(false)
   })
 })
