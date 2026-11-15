@@ -49,3 +49,12 @@ The earlier timeouts were the SQL tool path, not the database (no idle transacti
 ## 4. Step lists (from the re-run, unchanged)
 
 Step 1 (80): T15 69 same-month day shifts, T7b 2, T3 5, T1 2, T2a 1, T2b 1. Step 2 (24): T4 4, T11 5, T5 7, T6 5, T9 1, T8 2. The log ids are in `scripts/qa/s3-apply-input.json`. Excluded: none (the rehearsal re-checked all 104 against the live rows).
+
+## 5. Step 1 apply log (2026-11-15)
+
+Reviewer sign-off for step 1 received (rehearsal at 091d5092). Batch id `s3-20261115`. Order: T15, T3, T1, T2a, T2b (one transaction per type, 90 s statement timeout), then T7b by the insert script (dry run first). Starting totals saved in `sms_s3_totals_before` (to drop with `sms_s3_input` after step 2).
+
+**Expected before applying** (step-1-only, from the rehearsal list split by type): the totals move in four keys only; every other key unchanged.
+- 6090c8e7 USD 2026-10 spending +5.70 (T1)
+- f923c68b SAR 2026-08 income -2993.71, 2026-09 income -3984.39, 2026-10 income -986.11 (T3)
+- T15, T2a, T2b and T7b move no total.
