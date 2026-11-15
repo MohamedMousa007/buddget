@@ -12,7 +12,7 @@ import { ProfileBanner } from '@/components/features/settings/hub/ProfileBanner'
 import { SecurityEntry } from '@/components/features/settings/hub/SecurityCard'
 import { SettingsSearch } from '@/components/features/settings/hub/SettingsSearch'
 import { SmsCard } from '@/components/features/settings/hub/SmsCard'
-import { SubscriptionCard } from '@/components/features/settings/hub/SubscriptionCard'
+import { MembershipCard } from '@/components/features/settings/hub/MembershipCard'
 import { Card } from '@/components/ui/card'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -52,12 +52,12 @@ export default function SettingsPage() {
     <div ref={bodyRef}>
       <PageBody narrow className="space-y-4">
         <ProfileBanner />
+        {user ? <MembershipCard /> : null}
         <Card padding="none">
           <QuickActions variant="hub" onSearch={() => setSearching(true)} />
         </Card>
         {user ? <SecurityEntry /> : null}
         {user ? <SmsCard /> : null}
-        {user ? <SubscriptionCard /> : null}
         <AiCard />
         <NotificationsCard />
         <DataCard />

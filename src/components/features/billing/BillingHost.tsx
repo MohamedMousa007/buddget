@@ -3,6 +3,8 @@
 import { useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { PaywallSheet } from '@/components/features/billing/PaywallSheet'
+import { WeekCheckSheet } from '@/components/features/billing/WeekCheckSheet'
+import { useWeekCheckStore } from '@/lib/loyalty/weekCheckStore'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
 import { startBillingSession } from '@/lib/billing/billingSession'
 import { stopPurchases } from '@/lib/billing/purchases'
@@ -17,19 +19,27 @@ export function BillingHost() {
   const enabled = useBillingStore((s) => billingOn(s.me))
   const refresh = useBillingStore((s) => s.refresh)
   const reset = useBillingStore((s) => s.reset)
+  const loadWeek = useWeekCheckStore((s) => s.load)
+  const resetWeek = useWeekCheckStore((s) => s.reset)
 
   useEffect(() => {
     if (!userId) {
       reset()
+      resetWeek()
       void stopPurchases()
       return
     }
     void refresh()
-  }, [userId, refresh, reset])
+  }, [userId, refresh, reset, resetWeek])
 
   useEffect(() => {
     if (userId) void startBillingSession(userId, enabled)
   }, [userId, enabled])
 
-  return enabled ? <PaywallSheet /> : null
+  // The weekly check's figures, only while selling is on.
+  useEffect(() => {
+    if (userId && enabled) void loadWeek()
+  }, [userId, enabled, loadWeek])
+
+  return enabled ? <><PaywallSheet /><WeekCheckSheet /></> : null
 }

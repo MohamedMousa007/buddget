@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { CalendarCheck, Landmark, MessageSquareText, type LucideIcon } from 'lucide-react'
 import { useT } from '@/lib/i18n'
+import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
+import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
+import { weekCheckState } from '@/lib/loyalty/weekCheck'
+import { useWeekCheckStore } from '@/lib/loyalty/weekCheckStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { usePendingSmsStore } from '@/lib/store/usePendingSmsStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -12,7 +17,9 @@ import { navigate } from '@/lib/navigation/navigate'
 import { pendingCopy, pendingKinds, pendingSeverity, type PendingEntry, type PendingKind, type PendingLabels } from '@/lib/alerts/pendingSummary'
 
 /** Teal = a review of something, amber = a balance is off until it is answered. */
-export const PENDING_TONE: Record<PendingKind, 'teal' | 'amber'> = { heldMessages: 'teal', unplacedExpenses: 'amber', accountsFound: 'teal' }
+export const PENDING_TONE: Record<PendingKind, 'teal' | 'amber'> = { heldMessages: 'teal', unplacedExpenses: 'amber', accountsFound: 'teal', weeklyCheck: 'teal' }
+
+export const PENDING_ICON: Record<PendingKind, LucideIcon> = { heldMessages: MessageSquareText, unplacedExpenses: Landmark, accountsFound: Landmark, weeklyCheck: CalendarCheck }
 
 /** What is waiting on the user right now: the one list the Flow row and the Inbox both read. */
 export function usePendingEntries(): PendingEntry[] {
@@ -26,14 +33,19 @@ export function usePendingEntries(): PendingEntry[] {
   })
   // The same list the Accounts row and the sheet use, so the count can never disagree with either.
   const accounts = useDetectedAccounts().length
+  // The weekly check exists only while billing is on, and is asked for only in its window.
+  const billing = useBillingStore((st) => billingOn(st.me))
+  const weekSummary = useWeekCheckStore((st) => st.summary)
+  const weekDue = billing && weekCheckState(weekSummary).due
   return useMemo(() => {
     const [n, since] = unplaced.split(':')
     return pendingKinds([
       { kind: 'heldMessages', count: held, ...(heldSince != null ? { since: heldSince } : {}) },
       { kind: 'unplacedExpenses', count: Number(n), ...(since ? { since: Number(since) } : {}) },
       { kind: 'accountsFound', count: accounts },
+      { kind: 'weeklyCheck', count: weekDue ? 1 : 0 },
     ])
-  }, [held, heldSince, unplaced, accounts])
+  }, [held, heldSince, unplaced, accounts, weekDue])
 }
 
 /** What the avatar dot shows: none, amber, or red after a week. The clock is re-read hourly, enough for a seven-day rule. */
@@ -49,22 +61,24 @@ export function usePendingSeverity(): 'none' | 'amber' | 'red' {
 
 export function usePendingLabels(): PendingLabels {
   const t = useT()
+  const week = useMembershipCopy().week
   return useMemo(
     () => ({
       mixedTitle: t.notifications.mixedTitle,
       label: (kind, count) =>
-        kind === 'heldMessages' ? t.notifications.heldLabel(count) : kind === 'unplacedExpenses' ? t.notifications.unplacedLabel(count) : t.notifications.accountsLabel(count),
+        kind === 'heldMessages' ? t.notifications.heldLabel(count) : kind === 'unplacedExpenses' ? t.notifications.unplacedLabel(count) : kind === 'weeklyCheck' ? week.label : t.notifications.accountsLabel(count),
       hint: (kind) =>
-        kind === 'heldMessages' ? t.notifications.heldHint : kind === 'unplacedExpenses' ? t.accountsPage.unplacedSub : t.notifications.accountsHint,
+        kind === 'heldMessages' ? t.notifications.heldHint : kind === 'unplacedExpenses' ? t.accountsPage.unplacedSub : kind === 'weeklyCheck' ? week.hint : t.notifications.accountsHint,
       more: t.notifications.moreKinds,
     }),
-    [t],
+    [t, week],
   )
 }
 
 /** One kind: held messages open their sheet in place; found accounts open theirs on Accounts; unplaced expenses go to Accounts, where their row sits. */
 export function openPending(kind: PendingKind): void {
   if (kind === 'heldMessages') requestSmsReview()
+  else if (kind === 'weeklyCheck') useWeekCheckStore.getState().openSheet()
   else if (kind === 'accountsFound') {
     useSettingsStore.getState().setAccountsFoundOpen(true)
     navigate('/accounts')

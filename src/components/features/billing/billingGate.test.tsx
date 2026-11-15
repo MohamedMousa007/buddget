@@ -15,7 +15,7 @@ vi.mock('@/components/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id:
 
 import { BillingHost } from './BillingHost'
 import { startBillingSession } from '@/lib/billing/billingSession'
-import { SubscriptionCard } from '@/components/features/settings/hub/SubscriptionCard'
+import { MembershipCard } from '@/components/features/settings/hub/MembershipCard'
 import { useBillingStore } from '@/lib/billing/billingStore'
 
 beforeEach(() => {
@@ -26,7 +26,7 @@ beforeEach(() => {
 describe('while billingEnabled is false', () => {
   it('Settings subscription section renders nothing, even with a store key', () => {
     useBillingStore.setState({ me: { planKey: 'free', planName: 'Free', status: 'active', trialEndsAt: null, billingEnabled: false, sparks: { left: 1, total: 2, resetsAt: null } } })
-    expect(renderToStaticMarkup(createElement(SubscriptionCard))).toBe('')
+    expect(renderToStaticMarkup(createElement(MembershipCard))).toBe('')
   })
   it('the host renders nothing', () => {
     expect(renderToStaticMarkup(createElement(BillingHost))).toBe('')

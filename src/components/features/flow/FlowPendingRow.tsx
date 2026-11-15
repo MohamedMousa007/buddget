@@ -1,8 +1,8 @@
 'use client'
 
-import { Inbox, Landmark, MessageSquareText } from 'lucide-react'
+import { Inbox } from 'lucide-react'
 import { PendingRow } from '@/components/ui/PendingRow'
-import { PENDING_TONE, openNeedsYou, openPending, usePending } from '@/lib/alerts/usePending'
+import { PENDING_ICON, PENDING_TONE, openNeedsYou, openPending, usePending } from '@/lib/alerts/usePending'
 
 /**
  * Held bank messages are transactions the app has not counted yet, so they sit at the top of the ledger they belong to,
@@ -18,7 +18,7 @@ export function FlowPendingRow() {
       <div className="mx-4 mt-3">
         <PendingRow
           tone={PENDING_TONE[kind]}
-          icon={kind === 'heldMessages' ? MessageSquareText : Landmark}
+          icon={PENDING_ICON[kind]}
           title={copy.title}
           subtitle={copy.subtitle}
           onPress={() => openPending(kind)}

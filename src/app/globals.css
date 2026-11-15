@@ -241,6 +241,25 @@
   --color-hero-stat-spend: #FFB4A8;
   --color-hero-stat-savings: #F5D98A;
 
+  /* Membership surfaces (S6 v2). Composites of the hero, gold and auth-floor values above: Pro is the teal aurora, Founder is gold on the dark floor.
+     The tints are white at fixed alphas for text and cells that sit on those surfaces in either theme. */
+  --member-gold-hi: #EDC463;
+  --member-gold-mid: #B68E30;
+  --member-mint: var(--color-hero-stat-income);
+  --member-aurora:
+    radial-gradient(70% 55% at 92% 0%, color-mix(in oklab, var(--member-mint) 42%, transparent), transparent 70%),
+    radial-gradient(60% 60% at 0% 18%, color-mix(in oklab, var(--color-hero-from) 60%, white 8%), transparent 72%),
+    linear-gradient(165deg, color-mix(in oklab, var(--color-hero-from) 88%, black) 0%, var(--color-hero-to) 45%, color-mix(in oklab, var(--color-hero-to) 70%, black) 100%);
+  --member-foil: linear-gradient(112deg, var(--color-hero-stat-savings) 0%, var(--member-gold-hi) 24%, var(--member-gold-mid) 50%, var(--color-hero-stat-savings) 64%, var(--member-gold-hi) 80%, var(--member-gold-mid) 100%);
+  --member-floor:
+    radial-gradient(80% 60% at 100% 0%, color-mix(in oklab, var(--member-gold-hi) 20%, transparent), transparent 65%),
+    radial-gradient(60% 50% at 0% 100%, color-mix(in oklab, var(--color-hero-from) 14%, transparent), transparent 70%),
+    var(--auth-floor);
+  --member-fg: #FFFFFF;
+  --member-fg-2: rgba(255, 255, 255, 0.8);
+  --member-cell: rgba(255, 255, 255, 0.1);
+  --member-line: rgba(255, 255, 255, 0.18);
+
   /* Shared pace/status semantic tokens */
   --color-status-ok-bg: #E3F5EA;
   --color-status-ok-fg: #0F7634;

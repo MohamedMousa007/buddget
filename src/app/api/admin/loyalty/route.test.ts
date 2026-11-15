@@ -53,3 +53,28 @@ describe('POST /api/admin/loyalty founder_decide', () => {
     expect((await post({ op: 'founder_decide', userId: USER, approve: false })).status).toBe(500)
   })
 })
+
+describe('POST /api/admin/loyalty credit_name_decide', () => {
+  beforeEach(() => {
+    h.rpc.mockReset().mockResolvedValue({ data: 'approved', error: null })
+    h.audit.mockReset().mockResolvedValue(undefined)
+    h.guard.mockReset().mockResolvedValue({ ok: true, ctx: { service: { rpc: h.rpc }, user: { id: 'admin-1' }, audit: h.audit } })
+  })
+
+  it('decides one name through the database function and audits without the name', async () => {
+    expect((await post({ op: 'credit_name_decide', userId: USER, approve: true })).status).toBe(200)
+    expect(h.rpc).toHaveBeenCalledWith('loyalty_decide_credit_name', { p_user: USER, p_approve: true })
+    expect(h.audit).toHaveBeenCalledWith('loyalty.credit_name_decide', expect.objectContaining({ targetId: USER, summary: 'Approved a credits name' }))
+  })
+
+  it('refuses a missing decision or a list of ids', async () => {
+    for (const body of [{ op: 'credit_name_decide', userId: USER }, { op: 'credit_name_decide', userId: [USER], approve: true }]) expect((await post(body)).status).toBe(400)
+    expect(h.rpc).not.toHaveBeenCalled()
+  })
+
+  it('answers a name that is not pending with 409', async () => {
+    h.rpc.mockResolvedValueOnce({ data: null, error: { message: 'not_pending' } })
+    expect((await post({ op: 'credit_name_decide', userId: USER, approve: false })).status).toBe(409)
+    expect(h.audit).not.toHaveBeenCalled()
+  })
+})

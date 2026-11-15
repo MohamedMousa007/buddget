@@ -7,16 +7,18 @@ export async function GET(req: Request) {
   const g = await guardAdmin(req, { permission: 'loyalty.view' })
   if (!g.ok) return g.res
   const { service } = g.ctx
-  const [tiers, accounts, ledger, candidates, founders] = await Promise.all([
+  const [tiers, accounts, ledger, candidates, founders, nextNumber, billing] = await Promise.all([
     service.from('loyalty_tiers').select('*').order('min_points'),
     service.rpc('admin_loyalty_summary'),
     service.from('loyalty_ledger').select('id, user_id, delta, reason, created_at').order('created_at', { ascending: false }).limit(25),
     service.rpc('admin_founder_candidates'),
-    service.from('founders').select('number, user_id, cohort, granted_at, credit_name, retired_at, retired_reason').order('number'),
+    service.from('founders').select('number, user_id, cohort, granted_at, credit_name, credit_name_requested, credit_name_status, retired_at, retired_reason').order('number'),
+    service.rpc('loyalty_next_founder_number'),
+    service.rpc('admin_billing_counts', { p_days: 30 }),
   ])
   if (tiers.error) return bad('Could not load loyalty.', 500)
   const summary = (accounts.data ?? {}) as { by_tier?: Record<string, number>; members?: number; outstanding?: number }
-  return json({ tiers: tiers.data ?? [], byTier: summary.by_tier ?? {}, members: summary.members ?? 0, outstandingPoints: summary.outstanding ?? 0, ledger: ledger.data ?? [], programLive: false, founderCandidates: candidates.data ?? [], pendingFounders: (candidates.data ?? []).length, founders: founders.data ?? [] })
+  return json({ tiers: tiers.data ?? [], byTier: summary.by_tier ?? {}, members: summary.members ?? 0, outstandingPoints: summary.outstanding ?? 0, ledger: ledger.data ?? [], programLive: false, founderCandidates: candidates.data ?? [], pendingFounders: (candidates.data ?? []).length, founders: founders.data ?? [], nextFounderNumber: nextNumber.data ?? null, billing: billing.data ?? null })
 }
 
 export async function POST(req: Request) {
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
 
   // One account at a time, never in bulk: the nightly job only proposes, a number is issued here (S5c item 20).
   if (body?.op === 'founder_decide') {
-    if (!body.userId || !UUID_RE.test(body.userId) || typeof body.approve !== 'boolean') return bad('Pick one account and approve or reject it.')
+    if (typeof body.userId !== 'string' || !UUID_RE.test(body.userId) || typeof body.approve !== 'boolean') return bad('Pick one account and approve or reject it.')
     const { data, error } = await ctx.service.rpc('loyalty_decide_founder', { p_user: body.userId, p_actor: ctx.user.id, p_approve: body.approve, p_credit_name: body.creditName ?? undefined })
     if (error) {
       const known: Record<string, string> = { not_pending: 'This account is not waiting for a decision.', program_closed: 'The founder program is not open.', staff: 'Staff accounts do not take founder numbers.', cap_reached: 'All founder numbers are issued.' }
@@ -44,6 +46,15 @@ export async function POST(req: Request) {
     }
     await ctx.audit('loyalty.founder_decide', { targetType: 'user', targetId: body.userId, summary: body.approve ? `Approved founder #${String(data)}` : 'Rejected founder candidate' })
     return json({ ok: true, number: data ?? null })
+  }
+
+  // A founder's requested credits name: approved or rejected one at a time. Rejected names are not shown on the list.
+  if (body?.op === 'credit_name_decide') {
+    if (typeof body.userId !== 'string' || !UUID_RE.test(body.userId) || typeof body.approve !== 'boolean') return bad('Pick one account and approve or reject its name.')
+    const { error } = await ctx.service.rpc('loyalty_decide_credit_name', { p_user: body.userId, p_approve: body.approve })
+    if (error) return bad(error.message === 'not_pending' ? 'This name is not waiting for a decision.' : 'Could not record the decision.', error.message === 'not_pending' ? 409 : 500)
+    await ctx.audit('loyalty.credit_name_decide', { targetType: 'user', targetId: body.userId, summary: body.approve ? 'Approved a credits name' : 'Rejected a credits name' })
+    return json({ ok: true })
   }
 
   if (body?.op === 'upsert_tier' && body.tier) {

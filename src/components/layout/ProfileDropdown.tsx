@@ -4,7 +4,7 @@ import { useEffect, useRef, useCallback, useState, type ComponentType, type RefO
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import {
-  BarChart3, Bell, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Settings, ShieldCheck, Target, User,
+  BarChart3, Bell, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Settings, ShieldCheck, Sparkles, Target, User,
 } from 'lucide-react'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { ProgressRing } from '@/components/ui/ProgressRing'
@@ -16,6 +16,10 @@ import { useStaffAccess } from '@/hooks/useStaffAccess'
 import { usePendingEntries } from '@/lib/alerts/usePending'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
+import { subscriptionView } from '@/lib/billing/subscriptionView'
+import { formatFounderNumber } from '@/lib/loyalty/loyaltyApi'
+import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
@@ -24,6 +28,7 @@ import { navigate } from '@/lib/navigation/navigate'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
+import { intlTag } from '@/lib/i18n/dateFormat'
 
 interface ProfileDropdownProps {
   open: boolean
@@ -50,6 +55,10 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const isStaff = useStaffAccess()
+  const member = useMembershipCopy()
+  const me = useBillingStore((st) => st.me)
+  const billing = billingOn(me)
+  const plan = subscriptionView(billing ? me : null)
   const prevPathname = useRef(pathname)
   const { pct } = useSetupProgress()
   const pendingCount = usePendingEntries().length
@@ -166,6 +175,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
                 <span className="flex items-center gap-2">
                   <span className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{displayName}</span>
                   {isStaff ? <Badge variant="brand" size="xs">{copy.menu.admin}</Badge> : null}
+                  {billing && me?.loyalty?.founderNumber != null ? <Badge tone="founder" size="xs">{formatFounderNumber(me.loyalty.founderNumber)}</Badge> : billing && plan.proActive ? <Badge tone="pro" size="xs">{member.mark}</Badge> : null}
                 </span>
                 {displayEmail ? <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{displayEmail}</span> : null}
               </span>
@@ -195,6 +205,16 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
               <span className={localeInlineLabelClass(locale)}>{copy.menu.signIn}</span>
             </button>
           )}
+
+          {user && billing ? (
+            <Link href="/settings/pro" onClick={delayedClose} role="menuitem" className={cn(itemClass, 'bg-[var(--color-brand-primary-soft)] font-bold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70')}>
+              <Sparkles className="size-[18px] shrink-0" />
+              <span className={cn('flex-1', localeInlineLabelClass(locale))}>{member.menu.label}</span>
+              {plan.kind === 'active' && plan.until ? (
+                <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">{member.menu.renews} {new Date(plan.until).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' })}</span>
+              ) : null}
+            </Link>
+          ) : null}
 
           <QuickActions variant="menu" />
           <Divider />

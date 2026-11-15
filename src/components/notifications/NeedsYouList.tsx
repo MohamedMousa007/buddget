@@ -1,10 +1,10 @@
 'use client'
 
-import { Bell, Landmark, MessageSquareText } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { PendingRow } from '@/components/ui/PendingRow'
 import { useT } from '@/lib/i18n'
-import { PENDING_TONE, openPending, usePending } from '@/lib/alerts/usePending'
+import { PENDING_ICON, PENDING_TONE, openPending, usePending } from '@/lib/alerts/usePending'
 
 /** The Inbox's "Needs you" tab: every kind that waits on the user as its own row, each opening what resolves it. */
 export function NeedsYouList() {
@@ -24,7 +24,7 @@ export function NeedsYouList() {
         <PendingRow
           key={kind}
           tone={PENDING_TONE[kind]}
-          icon={kind === 'heldMessages' ? MessageSquareText : Landmark}
+          icon={PENDING_ICON[kind]}
           title={labels.label(kind, count)}
           subtitle={labels.hint(kind)}
           onPress={() => openPending(kind)}

@@ -10,6 +10,8 @@ export interface BillingMe {
   trialEndsAt: string | null
   billingEnabled: boolean
   sparks: { left: number; total: number; resetsAt: string | null } | null
+  loyalty?: { founderNumber: number | null; betaTester: boolean; streakWeeks: number; freezesBanked: number; lifetimePoints: number; tier: string | null } | null
+  subscription?: { fromStore: boolean; billingIssue: boolean; graceEndsAt: string | null; willRenew: boolean | null; renewsAt: string | null; productId: string | null; memberSince: string | null } | null
 }
 
 interface BillingStore {

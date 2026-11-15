@@ -4,6 +4,8 @@ import { useEffect } from 'react'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useBillingStore } from '@/lib/billing/billingStore'
+import { useWeekCheckStore } from '@/lib/loyalty/weekCheckStore'
 
 /**
  * DEV-ONLY: mounted solely under the `NEXT_PUBLIC_DEV_AUTH_BYPASS` flag (see
@@ -17,6 +19,8 @@ export function DevAuthBypassSeed() {
     // Expose stores for local QA driving (dev-only).
     ;(window as unknown as Record<string, unknown>).__finance = useFinanceStore
     ;(window as unknown as Record<string, unknown>).__settings = useSettingsStore
+    ;(window as unknown as Record<string, unknown>).__billing = useBillingStore
+    ;(window as unknown as Record<string, unknown>).__weekCheck = useWeekCheckStore
     const st = useFinanceStore.getState()
     st.setDataReady(true)
     if (st.incomeSources.length === 0) {

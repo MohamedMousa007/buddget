@@ -47,6 +47,10 @@ const badgeVariants = cva(
         onBrand: "bg-white/20 text-inherit",
         /** Placeholder for something that does not count. */
         dashed: "border-dashed border-[var(--color-brand-border)] text-[var(--color-brand-text-muted)]",
+        /** Membership marks (S6 v2). Pro is the teal aurora, founder is gold on the dark floor, beta is a quiet outline. Gold is for founders only. */
+        pro: "bg-[image:var(--member-aurora)] text-[var(--member-fg)] font-bold tracking-[0.12em]",
+        founder: "bg-[image:var(--member-floor)] border-[color-mix(in_oklab,var(--member-gold-hi)_45%,transparent)] text-[var(--member-gold-hi)]",
+        beta: "bg-[var(--color-brand-card)] border-[var(--color-brand-border-strong)] text-[var(--color-brand-text-secondary)]",
       },
       size: {
         default: "h-5 px-2 py-0.5 text-xs font-medium",

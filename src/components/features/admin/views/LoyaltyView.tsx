@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Award, Plus, Trash2 } from 'lucide-react'
+import { Award, Crown, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/IconButton'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { useAdminQuery } from '../adminClient'
 import { ago, num } from '../format'
 import { useAdminAction } from '../useAdminAction'
 import { AdminSheet } from '../ui/AdminSheet'
-import { BarList, CHART } from '../ui/Charts'
+import { BarList, CHART, Legend, TrendChart } from '../ui/Charts'
 import { Field } from '../ui/Field'
 import { KpiGrid, StatTile } from '../ui/Kpi'
 import { Loading, Notice, PageHeader, Panel } from '../ui/Panel'
@@ -19,7 +19,25 @@ import { Pill, StatusPill } from '../ui/Pill'
 import type { AdminStatus } from '../types'
 
 interface Tier { key: string; name: string; description: string; min_points: number; color: string | null; perks: string[]; status: 'draft' | 'active' | 'archived'; sort_order: number }
-interface LoyaltyData { tiers: Tier[]; byTier: Record<string, number>; members: number; outstandingPoints: number; ledger: Array<{ id: number; user_id: string; delta: number; reason: string; created_at: string }>; programLive: boolean }
+interface Candidate { user_id: string; qualified_at: string; action_days: number; record_count: number; sms_on: boolean; provider: string }
+interface FounderRow { number: number; user_id: string; credit_name: string | null; credit_name_requested: string | null; credit_name_status: string; retired_at: string | null }
+interface DayCount { day: string; count: number }
+interface BillingCounts { trialsPerDay: DayCount[]; paywallViewsPerDay: DayCount[]; paywallViewsByCountry: Array<{ country: string; count: number }> }
+interface LoyaltyData {
+  tiers: Tier[]; byTier: Record<string, number>; members: number; outstandingPoints: number
+  ledger: Array<{ id: number; user_id: string; delta: number; reason: string; created_at: string }>; programLive: boolean
+  founderCandidates: Candidate[]; founders: FounderRow[]; nextFounderNumber: number | null; billing: BillingCounts | null
+}
+
+const short = (id: string) => id.slice(0, 8)
+/** Trials and paywall views on one day axis, oldest first. */
+function dayRows(b: BillingCounts) {
+  const days = new Map<string, { day: string; trials: number; views: number }>()
+  for (const r of b.trialsPerDay) days.set(r.day, { day: r.day, trials: r.count, views: 0 })
+  for (const r of b.paywallViewsPerDay) days.set(r.day, { ...(days.get(r.day) ?? { day: r.day, trials: 0, views: 0 }), views: r.count })
+  return [...days.values()].sort((a, b) => a.day.localeCompare(b.day))
+}
+const BILLING_SERIES = [{ key: 'views', label: 'Paywall views', color: CHART.one }, { key: 'trials', label: 'Trials granted', color: CHART.two }] as const
 
 const BLANK: Tier = { key: '', name: '', description: '', min_points: 0, color: null, perks: [], status: 'draft', sort_order: 0 }
 
@@ -70,6 +88,56 @@ export default function LoyaltyView({ status }: { status: AdminStatus }) {
             <BarList color={CHART.two} items={[...data.tiers.map((t) => ({ label: t.name, value: data.byTier[t.key] ?? 0 })), ...(data.byTier.none ? [{ label: 'No tier', value: data.byTier.none }] : [])]} empty="No members yet." />
           </Panel>
         </div>
+
+        <Panel title="Founders" flush>
+          <div className="grid gap-3 px-5 pb-1 pt-4 sm:grid-cols-3">
+            <StatTile label="Issued" value={data.founders.filter((f) => !f.retired_at).length} icon={<Crown className="size-4" />} />
+            <StatTile label="Next number" value={data.nextFounderNumber === null ? '—' : `#${String(data.nextFounderNumber).padStart(3, '0')}`} sub={data.nextFounderNumber === null ? 'None open' : undefined} />
+            <StatTile label="Waiting" value={data.founderCandidates.length} sub="proposed, not decided" />
+          </div>
+          {data.founderCandidates.length === 0 ? <p className="px-5 py-6 text-sm text-[var(--color-brand-text-muted)]">No candidates are waiting.</p> : (
+            <ul className="divide-y divide-[var(--color-brand-border)] text-sm">
+              {data.founderCandidates.map((c) => (
+                <li key={c.user_id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                  <span className="font-mono-numbers text-xs">{short(c.user_id)}</span>
+                  <span className="min-w-0 flex-1 text-xs text-[var(--color-brand-text-muted)]">{c.action_days} active days · {c.record_count} records · SMS {c.sms_on ? 'on' : 'off'} · {c.provider} · qualified {ago(c.qualified_at)}</span>
+                  {canManage ? (
+                    <span className="flex gap-1">
+                      <Button size="touch" loading={busy === `f-${c.user_id}`} onClick={() => void run(`f-${c.user_id}`, { op: 'founder_decide', userId: c.user_id, approve: true }, { success: 'Founder number issued', confirm: { title: `Issue ${data.nextFounderNumber === null ? 'a number' : `#${String(data.nextFounderNumber).padStart(3, '0')}`} to ${short(c.user_id)}?`, body: 'One account at a time. A rejected candidate cannot be proposed again.' } })}>Approve</Button>
+                      <Button size="touch" variant="outline" disabled={busy !== null} onClick={() => void run(`f-${c.user_id}`, { op: 'founder_decide', userId: c.user_id, approve: false }, { success: 'Candidate rejected', confirm: { title: `Reject ${short(c.user_id)}?`, destructive: true } })}>Reject</Button>
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+          {data.founders.some((f) => f.credit_name_status === 'pending') ? (
+            <ul className="divide-y divide-[var(--color-brand-border)] border-t border-[var(--color-brand-border)] text-sm">
+              {data.founders.filter((f) => f.credit_name_status === 'pending').map((f) => (
+                <li key={f.user_id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                  <span className="font-mono-numbers text-xs">#{String(f.number).padStart(3, '0')}</span>
+                  <span className="min-w-0 flex-1 truncate" dir="auto">{f.credit_name_requested}</span>
+                  {canManage ? (
+                    <span className="flex gap-1">
+                      <Button size="touch" loading={busy === `n-${f.user_id}`} onClick={() => void run(`n-${f.user_id}`, { op: 'credit_name_decide', userId: f.user_id, approve: true }, { success: 'Name approved' })}>Approve name</Button>
+                      <Button size="touch" variant="outline" disabled={busy !== null} onClick={() => void run(`n-${f.user_id}`, { op: 'credit_name_decide', userId: f.user_id, approve: false }, { success: 'Name rejected' })}>Reject</Button>
+                    </span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Panel>
+
+        {data.billing ? (
+          <Panel title="Trials and paywall, last 30 days">
+            <div className="space-y-4">
+              <Legend series={BILLING_SERIES} />
+              <TrendChart data={dayRows(data.billing)} series={BILLING_SERIES} height={200} />
+              <BarList color={CHART.one} items={data.billing.paywallViewsByCountry.map((r) => ({ label: r.country, value: r.count }))} empty="No paywall views yet." />
+            </div>
+          </Panel>
+        ) : null}
 
         <Panel title="Recent point activity" flush>
           {data.ledger.length === 0 ? <p className="px-5 py-8 text-center text-sm text-[var(--color-brand-text-muted)]">No point movements yet.</p> : (
