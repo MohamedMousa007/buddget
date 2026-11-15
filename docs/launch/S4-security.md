@@ -2,6 +2,10 @@
 
 Date 2026-11-15. Scope: section S4 of `docs/MASTER_PLAN_LAUNCH.md`. Delta since QA round 6 (commit `5c3cdb8e`). Fable 5.2 designed and reviewed; Sonnet agents did the first-pass reads and wrote part of the tests. No personal names, message text or account digits appear here.
 
+**Closing batch (section 9, commits `ec1ad1b2`, `f282ecd8`, `075fa3f1`) changes live behaviour for testers in two ways.**
+1. **SMS ingest tokens are now stored as a hash.** Existing phones keep working with no action: the hashes of the tokens already issued were backfilled. Every token fetch now issues a new token (the newest 3 per phone stay valid). See section 9 for the one tester instruction.
+2. **Shared merchant categories:** one AI answer can no longer replace a seed category. Reading the code showed other users were already protected from single AI answers (only seed rows and rows five users agreed on are shared), so the two-user rule the council asked for was already exceeded; the gap was the seed overwrite.
+
 **Result: 0 P0, 6 P1 (all fixed in this session, each with a test that failed before the fix), 31 P2 (listed with a proposed fix, not fixed), 8 unconfirmed.** The database check (row security, grants, function privileges) found nothing.
 
 How to read the severity: P0 = another user's data or money exposed or lost now. P1 = wrong money figure, a ledger change without a session, or a cost leak, reachable today. P2 = hardening, low reach, or needs a product decision.
@@ -94,11 +98,11 @@ Also done first, as the brief asked: `database.types.ts` regenerated from the li
 
 | # | Where | Suspicion |
 |---|---|---|
-| U-1 | confirm vs undo routes | A confirm and an undo for the same log at the same instant may both succeed. |
-| U-2 | `src/lib/server/carryAdjust.ts` | Two carry adjustments at once may overdraw a pocket. |
+| U-1 | confirm vs undo routes | **Real, fixed in the route (`f282ecd8`).** Undo could mark a message undone while confirm was still booking it, leaving a live row for an undone message. Confirm's last write now refuses an undone message, removes what it just booked and answers 409. Test: `src/app/api/sms/confirm/route.test.ts` "an undo that lands while the booking is in flight". Not covered: a debt payment or a pair booked in that window is not reversed; the full fix is for confirm to take the same advisory lock as `sms_discard_message` (later). |
+| U-2 | `src/lib/server/carryAdjust.ts` | **Real, fixed in SQL (`ec1ad1b2`, migration 0285).** Two different months adjusting the same pocket at once each withdrew against the same earlier balance. `adjust_pocket_balance` now refuses a withdrawal that would go below zero, under its row lock; proven against the live function (the call raised, nothing was written). Test: `src/lib/server/carryAdjust.test.ts`. |
 | U-3 | `SmsStore.kt:42-46`, `SmsForwardWorker.kt:65` | Losing the Android keystore key silently empties the queue. |
 | U-4 | `SmsCapacitorPlugin.swift:560-562` | One message that keeps getting a 5xx blocks the iOS background drain behind it. |
-| U-5 | legacy queue items | Items with no owner stamp may be posted under the next signed-in account. |
+| U-5 | legacy queue items | **Real in all three drains, fixed (`f282ecd8`).** A queued message with no owner stamp was posted under whoever signed in next. The app drain now drops such items without posting; Android refuses them under a stamped token; iOS background drain requires the owner to match. Tests in `src/lib/native/smsTracker.test.ts`; `SmsGateTest.kt` updated but not run. The Kotlin and Swift parts need a native build to take effect. Cost: a message queued by a very old build before owner stamping is dropped, not delivered. |
 | U-6 | template learner | A learned regex goes to global templates keyed on a client-supplied sender; promotion needs 2 users, 50 matches and 7 days, which may be enough. |
 | U-7 | `src/lib/sms/correctionExemplar.ts:29-31` | Adjudicated corrections may reach other users' prompts without a second user agreeing. |
 | U-8 | bulk enable of templates | Revives templates that were killed; known and accepted in S2d, listed for completeness. |
@@ -108,9 +112,9 @@ Also done first, as the brief asked: `database.types.ts` regenerated from the li
 **State today.** One plan (`free`, default, no features, 15 AI units an hour) and no `user_entitlements` rows. The SQL `ai_effective_limits` and the TypeScript resolver agree on lapsed trials and periods.
 
 **What billing will rely on, and the gaps.**
-1. Plan `features` are not enforced on the server. Only a per-user override of `false` turns an AI surface off. A paid feature gated only in the UI is free to anyone who calls the route. Every paid route needs one server check: `requireFeature(userId, 'x')` next to the existing AI auth.
-2. `past_due` grants the plan with no end date. Add a grace limit (for example 7 days after `current_period_end`).
-3. `canceled` drops access at once, even when the paid period has not ended. Keep access until `current_period_end`.
+1. **Built in the closing batch (`075fa3f1`):** `requireFeature(userId, key)` in `src/lib/entitlements/server.ts` and `PAID_FEATURES` in `limits.ts` (empty today). Every AI route already passes its feature through `reserveAiQuota`, which now calls `requireFeature` for any key in `PAID_FEATURES`; a failed entitlement read denies a paid key with 503 instead of downgrading silently. S6 adds a key to `PAID_FEATURES` with the route that needs it. Background: plan `features` were not enforced on the server. Only a per-user override of `false` turns an AI surface off. A paid feature gated only in the UI is free to anyone who calls the route. Every paid route needs one server check: `requireFeature(userId, 'x')` next to the existing AI auth.
+2. `past_due` grants the plan with no end date. **Rule for S6 (council): access continues for 3 days after `current_period_end`, then drops to the default plan.** Check the 3 days against the store's own retry window when RevenueCat is wired; the grace must not be shorter than the store's billing retry.
+3. `canceled` drops access at once, even when the paid period has not ended. **Rule for S6 (council): a canceled plan keeps access until `current_period_end`, in both the SQL `ai_effective_limits` and the TypeScript resolver, with one shared test table for the two.**
 4. Limit overrides outlive a lapsed plan.
 5. `getUserEntitlements` ignores a query error and falls back to the default plan. For a paying user that is a silent downgrade; it should fail the request or serve the last known value.
 
@@ -134,11 +138,15 @@ Also done first, as the brief asked: `database.types.ts` regenerated from the li
 
 ## 7. Not verified
 
-- Nothing was run on a device or against the deployed site. All route findings are from code and unit tests; the native findings (U-3, U-4, U-5, P2-30, P2-31) are code reading only.
-- The Supabase security advisor timed out and was not retried; the row-security and grant checks above were done by direct SQL instead.
-- The two races (P1-1, P1-2) are proven by tests that simulate the interleaving, not by concurrent requests against a real database.
-- The grounded-search cost claim is from the provider's pricing model, not from a bill.
-- No native build was made. No live rows were changed; all SQL was read only.
+- Nothing was run on a device or against the deployed site. All route findings are from code and unit tests.
+- **Native edits were not compiled or run:** `PendingSmsQueue.kt`, `SmsGate.kt`, `SmsGateTest.kt`, `SmsCapacitorPlugin.swift`. They need a native build to take effect and to prove they compile.
+- The token change was not exercised on a phone: issue, save, forward with the app killed, and switch-off then switch-on.
+- The races (P1-1, P1-2, U-1) are proven by tests that simulate the interleaving, not by concurrent requests against a real database. U-2's floor was proven against the live function.
+- The Supabase security advisor timed out and was not retried; row security and grants were checked by direct SQL.
+- The voice price (100 units a second) and the grounded-search cost are estimates, not read from a bill.
+- The limit note on the goal cost sheet and the emergency fund sheet was not looked at in a browser.
+- `src/lib/sms/gold/templateReplay.test.ts` timed out once (15 s) when run beside other work; it passed in the full `npm run verify` run.
+- No native build was made.
 
 ## 8. Council verdicts (2026-11-15)
 
@@ -157,3 +165,56 @@ The owner delegated the section 6 decisions to the council (Skeptic, Pragmatist,
 - Later, logged with an owner: P2-1, 2, 5 (with the billing webhook, S6), 6, 10, 11, 14, 15, 18, 29, 30, and the full P2-19 refactor.
 
 **Unconfirmed (3 of 3):** prove or dismiss U-1, U-2 and U-5 with tests now and fix any that are real; leave the other five listed.
+
+## 9. Closing batch (2026-11-15)
+
+Commits: `ec1ad1b2` (database), `f282ecd8` (SMS and tokens), `075fa3f1` (AI and money). `npm run verify` green before the push (5913 tests).
+
+### Decisions (section 8, items 1 to 7)
+
+| # | Decision | Status |
+|---|---|---|
+| 1 | Grounded search 3 a day, shown to the user | Fixed (`075fa3f1`). The limit is the entitlement `grounded_per_day` (default 3, a plan can raise it). When search is dropped the response carries `x-grounding: limited` and the goal cost sheet and the emergency fund sheet show one line saying live prices were not used. Reused the existing note text styles; no new component. |
+| 1b | Found while doing it | The daily counter never worked: the cleanup job deleted every rate counter older than an hour, every ten minutes, so the P1-5 cap reset all day. Fixed in migration 0284 (counters kept 25 hours). The public-site daily lead cap had the same fault. |
+| 2 | Carry deposits filtered on the client | Fixed (`075fa3f1`), closes P2-8. |
+| 3 | Counterparty names leave after 30 days | **Written, not applied:** `supabase/migrations/0286_s4_sms_counterparty_retention.sql`. Held because the 12 pending S3 inserts take their description from `clean_title`; apply after the coordinating session confirms the inserts. It clears `clean_title` and also `merchant`, `merchant_normalized` and `raw_sms_summary`, which hold the same name (184 of the 228 rows past the age have `merchant` set), on transfer kinds, skips rows still waiting for an answer, backfills the 228 rows, and adds the same step to `sms_retention`. |
+| 4 | Two users must agree on a shared category | Already stricter in the code: a shared row needs five users (the edit trigger) and readers ignore single AI rows. The real gap, an AI answer replacing a seed row and so removing it for everyone, is fixed in migration 0284 (`ec1ad1b2`). Closes P2-23. |
+| 5 | Ingest tokens stored as a hash | Fixed (`ec1ad1b2`, `f282ecd8`), phase 1 live: `token_hash` column, backfilled, lookup by hash, new tokens generated on the server and never stored. **Phase 2 (drop the plain `token` column) is not done**: it must wait until this code is deployed, or the old code would stop resolving tokens. |
+| 6 | `requireFeature` | Fixed (`075fa3f1`), see section 5. |
+| 7 | Billing states | Design written into section 5 for S6. |
+
+**Tester instruction (tokens).** Nothing to do on a phone that already works: open the app once after the update and it fetches a new token by itself. If SMS tracking stops on a phone, open Settings, SMS tracking, switch it off and on. A password change now needs the app to be opened once on each phone before background forwarding resumes (messages wait in the queue meanwhile).
+
+### P2 fix-now list
+
+| Item | Status |
+|---|---|
+| P2-3 | Fixed (`f282ecd8`): message and code only. |
+| P2-4 | Fixed (`075fa3f1`): 20 a minute per user, before the FX fetch. |
+| P2-7 | Fixed (`f282ecd8`): own-transfer answers 404 for another user's log. flag-action never answered 403 (a miss is 409), no change. |
+| P2-8 | Fixed (`075fa3f1`). |
+| P2-9 | Fixed (`075fa3f1`): an excluded templated event is not income; its payday falls back to the projection unless only received money is counted. |
+| P2-13 | Fixed (`075fa3f1`) in `src/lib/savings/netWorth.ts` (the path in section 3 was wrong): holdings with no rate are left out and the existing incomplete flag is set. The secondary-currency line a few lines below still uses the 1:1 fallback (later). |
+| P2-16 | **Later.** Not the bug it looked like: migration 0197 says `amount` has always been in debt units and backfilled the unit column; every current writer sets it. One live row has a null unit amount. The fallback only matters for rows from old builds, whose amount is already in debt units. |
+| P2-19 (cheap form) | Fixed (`075fa3f1`): tier names checked with own-property lookup (inherited names such as `toString` were accepted before), size checked from the header before the read, only three known keys reach the provider, file URIs refused, at most 4 inline parts. |
+| P2-20 | Fixed (`075fa3f1`): voice costed by seconds (100 units a second, or bytes at about 32 kbps when the provider gives no duration); SMS and receipt stop at 3 times the daily cap. |
+| P2-21 | Fixed (`075fa3f1`, `f282ecd8`): adjudicator calls reserve and settle under the SMS feature with a 400-token output limit. |
+| P2-22 | **Later.** The file is `src/lib/sms/aiUsage.ts`. The check counts AI calls from a view; replacing it with the request counter would count every parse, including template-only ones, and could refuse real messages. The overshoot is a few calls from one phone and is now bounded by the reservation and the P2-20 ceiling. |
+| P2-23 | Fixed (`ec1ad1b2`), see decision 4. |
+| P2-24 | Fixed (`075fa3f1`): 413 from the header before the read on buddgy turn, receipt scan and voice. |
+| P2-25 | Fixed, phase 1 (`ec1ad1b2`, `f282ecd8`); phase 2 pending, see decision 5. |
+| P2-26 | Fixed (`f282ecd8`): 60 token issues an hour per user, newest 3 active per phone, older ones deactivated. |
+| P2-27 | Fixed (`f282ecd8`): 429 when limited, 503 with `Retry-After` when the counter is down, 413 over 64 KB. Both native clients keep the message queued on these, checked in the code. |
+| P2-28 | Fixed (`f282ecd8`): a failed revoke is remembered per account and replayed at the next start; switching tracking off revokes this phone's token. TypeScript only. |
+| P2-31 | Fixed (`f282ecd8`): Android keeps an unreadable queue aside (**needs a native build**); iOS already did. The token writer refuses anything that is not token-shaped. |
+| P2-12 | **Later.** With no Cash account the credit leg has nowhere to go; adding it back would overstate, because later cash spending is not recorded either. Needs an implicit Cash account or a prompt, which is UI work. |
+| P2-17 | **Later.** Deducting a deposit with no source needs a per-account start date these rows do not have. The real fix is to require a source in the UI or mark the deposit as declared. |
+
+### Needs a native build to take effect
+`android/app/src/main/java/app/buddget/PendingSmsQueue.kt`, `SmsGate.kt`, `android/app/src/test/java/app/buddget/SmsGateTest.kt`, `ios/App/App/SmsCapacitorPlugin.swift`. Not compiled.
+
+### Still open after this batch
+1. Apply migration 0286 once the S3 inserts are confirmed.
+2. Token phase 2: drop `sms_ingest_tokens.token` after the deploy of `075fa3f1` is confirmed.
+3. U-1 remainder: confirm should hold the same lock as the undo function.
+4. A native build for the four files above.
