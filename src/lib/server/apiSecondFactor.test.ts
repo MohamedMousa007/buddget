@@ -46,6 +46,17 @@ describe('API second-factor gate', () => {
     expect(a.rpc).not.toHaveBeenCalled()
   })
 
+  it('turning 2FA on while a session is open refuses that session once the 60 s cache lapses, whatever cookies it carries', async () => {
+    const t0 = 1_800_000_000_000
+    const withCookie = { headers: new Headers({ cookie: 'b2f=9999999999999.deadbeef' }) } as unknown as NextRequest
+    expect(await apiSecondFactorRefusal(withCookie, '/api/devices', claims('s-enrol'), admin(true), t0)).toBeNull()
+    // 2FA is now on: the database answers false for this password-only session.
+    const after = admin(false)
+    expect(await apiSecondFactorRefusal(withCookie, '/api/devices', claims('s-enrol'), after, t0 + 59_000)).toBeNull()
+    expect((await apiSecondFactorRefusal(withCookie, '/api/devices', claims('s-enrol'), after, t0 + 60_001))?.status).toBe(403)
+    expect(after.rpc).toHaveBeenCalledTimes(1)
+  })
+
   it('fails open when the check itself errors, so an outage cannot lock the API', async () => {
     expect(await apiSecondFactorRefusal(req(), '/api/devices', claims('s-err'), admin(null, { message: 'down' }))).toBeNull()
   })

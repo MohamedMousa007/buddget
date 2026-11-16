@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { mintProof, verifyProof } from '@/lib/server/secondFactorProof'
 import { identityOf, looksLikeJwt, verifyBearerJwt, type RouteIdentity } from '@/lib/supabase/resolveRouteUser'
 
 /** Routes a not-yet-verified session must still reach: the second-factor step itself, anonymous and machine-called routes, the portal (own guard). */
@@ -32,14 +31,11 @@ export async function apiSecondFactorRefusal(
   cookieClaims: Parameters<typeof identityOf>[0],
   admin: SupabaseClient = createServiceRoleClient() as unknown as SupabaseClient,
   now = Date.now(),
-  proof?: { value: string | undefined; secret: string | undefined; mint: (value: string) => void },
 ): Promise<NextResponse | null> {
   if (!needsSecondFactor(pathname)) return null
   const who = await callerOf(request, cookieClaims)
   if (!who?.sessionId) return null
   if ((verified.get(who.sessionId) ?? 0) > now) return null
-  // A signed proof from an earlier verified answer (bound to this session and user) spares the database call on a cold instance.
-  if (proof && verifyProof(proof.secret, proof.value, who.sessionId, who.id, now)) return null
   try {
     const { data, error } = await admin.rpc('second_factor_verified', { p_user: who.id, p_session: who.sessionId, p_amr: who.amr })
     if (error) {
@@ -49,8 +45,6 @@ export async function apiSecondFactorRefusal(
     if (data !== false) {
       if (verified.size >= CACHE_MAX) verified.clear()
       verified.set(who.sessionId, now + VERIFIED_TTL_MS)
-      const minted = proof && mintProof(proof.secret, who.sessionId, who.id, now)
-      if (minted) proof.mint(minted)
       return null
     }
   } catch (e) {

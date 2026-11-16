@@ -41,7 +41,7 @@ Not verified: a full authenticated sync with a pending discard (needs a user ses
 
 1. Choose the folder (default `~/Backups/buddget`) and make a passphrase: `mkdir -p ~/.config/buddget && openssl rand -base64 48 > ~/.config/buddget/backup.key && chmod 600 ~/.config/buddget/backup.key`. Keep a copy of the key somewhere safe outside this Mac; without it the backups cannot be opened.
 2. Create `~/.config/buddget/backup.env` (chmod 600) with `BACKUP_DB_URL='postgresql://...'` (the Supabase session pooler URI, which holds the database password) and optionally `BACKUP_DIR`.
-3. Test once: `bash scripts/db-backup.sh` (needs `pg_dump`, at `/opt/homebrew/opt/postgresql@16/bin`).
+3. Test once: `bash scripts/db-backup.sh` (needs `pg_dump` 17, at `/opt/homebrew/opt/postgresql@17/bin`: `brew install postgresql@17`).
 4. Install: `sed -e "s|__REPO__|$PWD|" -e "s|__HOME__|$HOME|" scripts/launchd/app.buddget.db-backup.plist > ~/Library/LaunchAgents/app.buddget.db-backup.plist && launchctl load ~/Library/LaunchAgents/app.buddget.db-backup.plist`. It runs at 03:30 local time; the Mac must be awake. Stop with `launchctl unload` of the same file.
 5. Restore: see the last line of `scripts/db-backup.sh`.
 

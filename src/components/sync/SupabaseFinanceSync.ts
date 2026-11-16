@@ -40,7 +40,7 @@ import { clearNetWorthStamps } from '@/lib/storage/removeByPrefix'
 
 const DEBOUNCE_MS = 500
 /** Returning to the app reconciles at most this often; the realtime nudge stays the main freshness trigger. */
-const RESUME_THROTTLE_MS = 120_000
+const RESUME_THROTTLE_MS = 30_000
 
 const fingerprintTimers = new Map<string, ReturnType<typeof setTimeout>>()
 /** Remembers what the server has received, so edits still unsent when the app closes are found at the next start. */

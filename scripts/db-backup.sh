@@ -15,7 +15,7 @@ set -euo pipefail
 BACKUP_DIR="${BACKUP_DIR:-$HOME/Backups/buddget}"
 BACKUP_KEY_FILE="${BACKUP_KEY_FILE:-$HOME/.config/buddget/backup.key}"
 BACKUP_KEEP="${BACKUP_KEEP:-14}"
-PATH="/opt/homebrew/bin:/opt/homebrew/opt/postgresql@16/bin:/usr/local/bin:$PATH"
+PATH="/opt/homebrew/opt/postgresql@17/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"  # pg_dump must be >= the server (17.x); 16 refuses
 
 [ -r "$BACKUP_KEY_FILE" ] || { echo "backup: key file $BACKUP_KEY_FILE missing" >&2; exit 1; }
 mkdir -p "$BACKUP_DIR"; chmod 700 "$BACKUP_DIR"
@@ -43,3 +43,5 @@ chmod 600 "$out"
 ls -1t "$BACKUP_DIR"/buddget-*.dump.enc | tail -n +"$((BACKUP_KEEP + 1))" | while read -r f; do rm -f -- "$f"; done
 echo "backup ok: $(basename "$out") ($(du -h "$out" | cut -f1)), kept $(ls -1 "$BACKUP_DIR"/buddget-*.dump.enc | wc -l | tr -d ' ')"
 # Restore:  openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in FILE.enc -out FILE.dump -pass file:$BACKUP_KEY_FILE
+#           pg_restore --clean --if-exists --no-owner --no-privileges --exit-on-error -d <fresh scratch Postgres 17 URL> FILE.dump
+#           (--clean is needed: the dump creates schema public, which every new database already has. Never restore into production.)

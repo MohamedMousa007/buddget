@@ -1,5 +1,7 @@
 # Database load, phase B (2026-11-16)
 
+> Superseded in part by the audit ([DB-backend-audit.md](DB-backend-audit.md)): the `b2f` second-factor cookie was reverted, the AI credit counters were removed in 0302 (plain sums again), and the resume throttle is back to 30 s.
+
 Spec: the Database load plan artifact. Migration: `supabase/migrations/0301_db_load_phase_b.sql` (applied to production with `execute_sql`). Phase A: [DB-load-phaseA.md](DB-load-phaseA.md).
 
 | Item | Before | After |
