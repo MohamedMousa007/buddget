@@ -515,6 +515,24 @@ export type Database = {
           },
         ]
       }
+      advisor_free_uses: {
+        Row: {
+          id: number
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: never
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: never
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_chats: {
         Row: {
           chat_id: string
@@ -541,6 +559,51 @@ export type Database = {
           started_at?: string
           turns?: number
           units?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_credit_resets: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: number
+          reason: string | null
+          scope: string
+          seen_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: never
+          reason?: string | null
+          scope: string
+          seen_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: never
+          reason?: string | null
+          scope?: string
+          seen_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_credit_sessions: {
+        Row: {
+          session_start: string
+          user_id: string
+        }
+        Insert: {
+          session_start: string
+          user_id: string
+        }
+        Update: {
+          session_start?: string
           user_id?: string
         }
         Relationships: []
@@ -589,6 +652,7 @@ export type Database = {
       }
       ai_reservations: {
         Row: {
+          advisor_free: boolean
           chat_id: string | null
           created_at: string
           est_units: number
@@ -597,9 +661,11 @@ export type Database = {
           id: string
           settled: boolean
           sparks: number
+          use_sparks: boolean
           user_id: string
         }
         Insert: {
+          advisor_free?: boolean
           chat_id?: string | null
           created_at?: string
           est_units?: number
@@ -608,9 +674,11 @@ export type Database = {
           id?: string
           settled?: boolean
           sparks?: number
+          use_sparks?: boolean
           user_id: string
         }
         Update: {
+          advisor_free?: boolean
           chat_id?: string | null
           created_at?: string
           est_units?: number
@@ -619,6 +687,7 @@ export type Database = {
           id?: string
           settled?: boolean
           sparks?: number
+          use_sparks?: boolean
           user_id?: string
         }
         Relationships: [
@@ -679,6 +748,7 @@ export type Database = {
           chat_id: string | null
           cost_usd_micro: number | null
           created_at: string
+          credits_exempt: boolean
           feature: string
           id: number
           in_tokens: number
@@ -695,6 +765,7 @@ export type Database = {
           chat_id?: string | null
           cost_usd_micro?: number | null
           created_at?: string
+          credits_exempt?: boolean
           feature: string
           id?: never
           in_tokens?: number
@@ -711,6 +782,7 @@ export type Database = {
           chat_id?: string | null
           cost_usd_micro?: number | null
           created_at?: string
+          credits_exempt?: boolean
           feature?: string
           id?: never
           in_tokens?: number
@@ -852,6 +924,27 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_views: {
+        Row: {
+          id: number
+          payment_method_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: never
+          payment_method_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: never
+          payment_method_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
       beta_testers: {
         Row: {
           granted_at: string
@@ -869,32 +962,44 @@ export type Database = {
       }
       billing_events: {
         Row: {
+          currency: string | null
           event_at: string
           event_id: string
           id: number
           outcome: string
+          price_micros: number | null
+          product_id: string | null
           provider: string
           received_at: string
+          store: string | null
           type: string
           user_id: string | null
         }
         Insert: {
+          currency?: string | null
           event_at: string
           event_id: string
           id?: never
           outcome?: string
+          price_micros?: number | null
+          product_id?: string | null
           provider: string
           received_at?: string
+          store?: string | null
           type: string
           user_id?: string | null
         }
         Update: {
+          currency?: string | null
           event_at?: string
           event_id?: string
           id?: never
           outcome?: string
+          price_micros?: number | null
+          product_id?: string | null
           provider?: string
           received_at?: string
+          store?: string | null
           type?: string
           user_id?: string | null
         }
@@ -1335,6 +1440,24 @@ export type Database = {
           status?: string
           title?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      coming_soon_interest: {
+        Row: {
+          created_at: string
+          feature: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -4806,6 +4929,27 @@ export type Database = {
         }
         Relationships: []
       }
+      spark_products: {
+        Row: {
+          active: boolean
+          countries: string[] | null
+          product_id: string
+          sparks: number
+        }
+        Insert: {
+          active?: boolean
+          countries?: string[] | null
+          product_id: string
+          sparks: number
+        }
+        Update: {
+          active?: boolean
+          countries?: string[] | null
+          product_id?: string
+          sparks?: number
+        }
+        Relationships: []
+      }
       spark_purchases: {
         Row: {
           currency: string | null
@@ -5707,9 +5851,31 @@ export type Database = {
         Returns: Json
       }
       admin_user_overview: { Args: { p_user: string }; Returns: Json }
-      ai_cost_usd_micro: {
-        Args: { p_cached: number; p_in: number; p_model: string; p_out: number }
-        Returns: number
+      advisor_gate: { Args: { p_user: string }; Returns: Json }
+      ai_cost_usd_micro:
+        | {
+            Args: {
+              p_cached: number
+              p_in: number
+              p_model: string
+              p_out: number
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_audio_seconds: number
+              p_cached: number
+              p_extra_micro: number
+              p_in: number
+              p_model: string
+              p_out: number
+            }
+            Returns: number
+          }
+      ai_credit_windows: {
+        Args: { p_t: string; p_user: string }
+        Returns: Json
       }
       ai_default_limits: { Args: never; Returns: Json }
       ai_effective_limits: { Args: { p_user: string }; Returns: Json }
@@ -5728,6 +5894,7 @@ export type Database = {
       }
       ai_quota_reserve_v2: {
         Args: {
+          p_advisor_free?: boolean
           p_chat: string
           p_est: number
           p_feature: string
@@ -5746,7 +5913,9 @@ export type Database = {
       }
       ai_quota_settle: {
         Args: {
+          p_audio_seconds?: number
           p_cached: number
+          p_extra_cost_micro?: number
           p_in: number
           p_latency: number
           p_model: string
@@ -5761,7 +5930,9 @@ export type Database = {
       }
       ai_quota_settle_core: {
         Args: {
+          p_audio_seconds?: number
           p_cached: number
+          p_extra_cost_micro?: number
           p_in: number
           p_latency: number
           p_model: string
@@ -5772,10 +5943,11 @@ export type Database = {
           p_units: number
           p_user: string
         }
-        Returns: undefined
+        Returns: number
       }
       ai_quota_status: { Args: { p_user: string }; Returns: Json }
       ai_spend_today: { Args: never; Returns: Json }
+      ai_usage_state: { Args: { p_user: string }; Returns: Json }
       analytics_rollup: { Args: never; Returns: number }
       analytics_touch: {
         Args: { p_paths?: Json; p_seconds?: number; p_sessions?: number }
@@ -5797,6 +5969,7 @@ export type Database = {
         Args: { p_pm: string; p_user: string }
         Returns: undefined
       }
+      balance_view: { Args: { p_payment_method: string }; Returns: Json }
       billing_apply: {
         Args: {
           p_effect: Json
@@ -5867,6 +6040,7 @@ export type Database = {
       }
       cleanup_abandoned_anon_users: { Args: never; Returns: number }
       cleanup_expired_trusted_devices: { Args: never; Returns: number }
+      coming_soon_notify: { Args: { p_feature: string }; Returns: undefined }
       correct_savings_balance: {
         Args: {
           p_account_id: string
@@ -6297,6 +6471,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      spark_pack_grant: {
+        Args: {
+          p_at: string
+          p_currency: string
+          p_price_micros: number
+          p_product: string
+          p_store: string
+          p_txn: string
+          p_user: string
+        }
+        Returns: number
+      }
+      spark_pack_refund: { Args: { p_store_txn: string }; Returns: number }
       spark_restore_plan_period: { Args: { p_user: string }; Returns: number }
       stable_uuid: {
         Args: { p_legacy: string; p_user_id: string }
@@ -6350,6 +6537,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      usage_reset: {
+        Args: {
+          p_actor: string
+          p_reason: string
+          p_scope: string
+          p_user: string
+        }
+        Returns: undefined
+      }
+      usage_resets_seen: { Args: { p_user: string }; Returns: undefined }
       user_id_by_email: { Args: { p_email: string }; Returns: string }
       withdraw_from_savings: {
         Args: {

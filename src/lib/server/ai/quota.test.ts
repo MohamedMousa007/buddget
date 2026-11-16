@@ -7,7 +7,7 @@ const feature = vi.hoisted(() => ({ require: vi.fn(), paid: new Set<string>() })
 vi.mock('@/lib/entitlements/server', () => ({ requireFeature: feature.require }))
 vi.mock('@/lib/entitlements/limits', () => ({ PAID_FEATURES: feature.paid }))
 
-import { reserveAiQuota } from './quota'
+import { reserveAiQuota, settleAiQuota } from './quota'
 
 const args = { userId: 'u1', feature: 'receipt' as const, estUnits: 5 }
 const grant = { allowed: true, reservation_id: 'r1' }
@@ -55,5 +55,40 @@ describe('reserveAiQuota', () => {
     expect(rpc).not.toHaveBeenCalled()
     feature.require.mockResolvedValue(new Response(null, { status: 403 }))
     expect(await reserveAiQuota(args)).toEqual({ allowed: false, layer: 'feature_disabled', resetAt: null })
+  })
+})
+
+describe('reserve and settle by cost', () => {
+  beforeEach(() => {
+    rpc.mockReset()
+    feature.require.mockReset().mockResolvedValue(null)
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://x'
+    process.env.SUPABASE_SECRET_KEY = 'k'
+  })
+
+  it('passes a free Advisor answer to the reservation, and nothing extra otherwise', async () => {
+    rpc.mockResolvedValue({ data: grant, error: null })
+    await reserveAiQuota({ ...args, feature: 'chat', advisorFree: true })
+    expect(rpc.mock.calls[0]![1]).toMatchObject({ p_advisor_free: true })
+    rpc.mockClear()
+    await reserveAiQuota({ ...args, feature: 'chat' })
+    expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_advisor_free')
+  })
+
+  it.each(['session', 'week'] as const)('denies with the %s window and its reset time', async (layer) => {
+    rpc.mockResolvedValue({ data: { allowed: false, layer, reset_at: '2026-11-20T22:00:00Z' }, error: null })
+    expect(await reserveAiQuota(args)).toEqual({ allowed: false, layer, resetAt: '2026-11-20T22:00:00Z' })
+  })
+
+  it('settles with audio seconds and the extra provider cost only when there are some', async () => {
+    rpc.mockResolvedValue({ error: null })
+    const g = { allowed: true as const, userId: 'u1', reservationId: 'r1', chatId: null, newChat: false, rolled: false, soft: false, disabled: [] }
+    const base = { model: 'm', tier: 't', latencyMs: 1, usage: { promptTokens: 1, cachedTokens: 0, outputTokens: 1 }, status: 'ok' as const }
+    await settleAiQuota(g, { ...base, audioSeconds: 12.2, extraCostMicro: 14000 })
+    expect(rpc.mock.calls[0]![1]).toMatchObject({ p_audio_seconds: 13, p_extra_cost_micro: 14000 })
+    rpc.mockClear()
+    await settleAiQuota(g, base)
+    expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_audio_seconds')
+    expect(rpc.mock.calls[0]![1]).not.toHaveProperty('p_extra_cost_micro')
   })
 })

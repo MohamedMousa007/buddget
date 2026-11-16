@@ -9,7 +9,7 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
     rpc: h.rpc,
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: h.sourceRow, error: null }) }) }) }),
+    from: () => ({ select: () => ({ eq: () => Object.assign(Promise.resolve({ data: [], error: null }), { maybeSingle: async () => ({ data: h.sourceRow, error: null }) }) }) }),
   }),
 }))
 
@@ -99,6 +99,6 @@ describe('POST /api/billing/revenuecat', () => {
     expect(args.p_user).toBe(OTHER)
     expect(args.p_effect.transfer).toEqual({ from: [USER] })
     expect(args.p_effect.entitlement).toMatchObject({ store_original_txn: 'o9', status: 'active' })
-    expect(args.p_effect.sparks).toBeNull()
+    expect(args.p_effect.sparks).toBeUndefined()
   })
 })

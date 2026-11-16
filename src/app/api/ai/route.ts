@@ -14,6 +14,7 @@ import {
 } from '@/lib/server/ai/gemini'
 import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota, type QuotaGrant } from '@/lib/server/ai/quota'
+import { groundedSearchCostMicro } from '@/lib/server/ai/pricing'
 import { estimateUnits } from '@/lib/server/ai/units'
 import { getUserEntitlements } from '@/lib/entitlements/server'
 import { isRateLimited } from '@/lib/server/rateLimit'
@@ -56,6 +57,7 @@ export async function POST(req: Request) {
   let grant: QuotaGrant | null = null
   let model = LEGACY_MODEL
   let tierName = 'legacy'
+  let groundingCost = 0
   let estUsage = { promptTokens: 0, cachedTokens: 0, outputTokens: 0 }
   try {
     const auth = await requireAiUser(req)
@@ -126,6 +128,7 @@ export async function POST(req: Request) {
     const wantsGrounding = grounded === true && tier !== 'fast'
     const limited = wantsGrounding ? await groundingLimited(userId) : false
     const useGrounding = wantsGrounding && !limited
+    groundingCost = useGrounding ? await groundedSearchCostMicro() : 0
 
     const quota = await reserveAiQuota({
       userId,
@@ -160,6 +163,8 @@ export async function POST(req: Request) {
         // An abort before usage was reported still consumed the prompt; never settle it as free.
         usage: status === 'aborted' && usage.promptTokens === 0 ? { promptTokens: estInput, cachedTokens: 0, outputTokens: 0 } : usage,
         status,
+        // The search is billed per grounded request whenever the provider ran it, so only a failed call is free.
+        extraCostMicro: status === 'error' ? 0 : groundingCost,
       })
 
     if (wantStream && response.ok && response.body) {
@@ -193,6 +198,7 @@ export async function POST(req: Request) {
         // The upstream call was made (a timeout lands here): the provider bills it, so it is never settled as free.
         usage: estUsage,
         status: 'aborted',
+        extraCostMicro: groundingCost,
       })
     }
     console.error(`[AI] fail status=500 latency=${Date.now() - started}ms err=${err instanceof Error ? err.message : String(err)}`)

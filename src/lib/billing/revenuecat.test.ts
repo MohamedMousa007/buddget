@@ -8,7 +8,7 @@ const T0 = Date.UTC(2026, 11, 1)
 
 const ev = (over: Partial<RcEvent> = {}): RcEvent => ({
   type: 'INITIAL_PURCHASE', id: 'evt-1', appUserId: USER, eventMs: T0, productId: 'plus_monthly', store: 'app_store',
-  purchasedMs: T0, expirationMs: T0 + 30 * DAY, graceMs: null, cancelReason: null, originalTxn: 'txn-1', transferredFrom: [], transferredTo: [], ...over,
+  purchasedMs: T0, expirationMs: T0 + 30 * DAY, graceMs: null, cancelReason: null, originalTxn: 'txn-1', transferredFrom: [], transferredTo: [], transactionId: null, priceMicros: null, currency: null, ...over,
 })
 const plan = (e: RcEvent, source?: Parameters<typeof planEffects>[1]) => {
   const out = planEffects(e, source)
@@ -120,5 +120,29 @@ describe('what is ignored', () => {
     expect(planEffects(ev({ appUserId: '$RCAnonymousID:abc' }))).toBe('ignore')
     expect(planEffects(ev({ type: 'NON_RENEWING_PURCHASE' }))).toBe('ignore')
     expect(planEffects(ev({ type: 'TEST' }))).toBe('ignore')
+  })
+})
+
+describe('Sparks packs', () => {
+  const PACKS = new Set(['sparks_400'])
+  const pack = (over: Partial<RcEvent> = {}) => ev({ type: 'NON_RENEWING_PURCHASE', productId: 'sparks_400', transactionId: 'txn-9', priceMicros: 990_000, currency: 'USD', purchasedMs: null, expirationMs: null, ...over })
+  it('a pack purchase adds Sparks through the pack effect, with no entitlement change', () => {
+    const out = planEffects(pack(), null, PACKS)
+    expect(out).toMatchObject({ userId: USER, entitlement: null, sparks: null, pack: { action: 'purchase', store: 'app_store', store_txn: 'txn-9', product_id: 'sparks_400', price_micros: 990_000, currency: 'USD' } })
+  })
+  it('a refund removes the unspent Sparks of that transaction', () => {
+    expect(planEffects(pack({ type: 'CANCELLATION', cancelReason: 'CUSTOMER_SUPPORT' }), null, PACKS)).toMatchObject({ pack: { action: 'refund', store_txn: 'txn-9' } })
+  })
+  it('a pack is ignored when its product is not a known pack, or has no transaction id', () => {
+    expect(planEffects(pack(), null, new Set())).toBe('ignore')
+    expect(planEffects(pack({ transactionId: null }), null, PACKS)).toBe('ignore')
+  })
+  it('a subscription event keeps what the store charged on the receipt note', () => {
+    const out = plan(ev({ priceMicros: 499_000_000, currency: 'EGP' }))
+    expect(out.receipt).toEqual({ store: 'app_store', product_id: 'plus_monthly', price_micros: 499_000_000, currency: 'EGP' })
+  })
+  it('parses the transaction id and the price in the purchase currency', () => {
+    const parsed = parseEvent({ event: { type: 'NON_RENEWING_PURCHASE', id: 'e1', app_user_id: USER, product_id: 'sparks_400', store: 'PLAY_STORE', event_timestamp_ms: 5, transaction_id: 'T1', price_in_purchased_currency: 3.99, currency: 'SAR' } })
+    expect(parsed).toMatchObject({ transactionId: 'T1', priceMicros: 3_990_000, currency: 'SAR' })
   })
 })

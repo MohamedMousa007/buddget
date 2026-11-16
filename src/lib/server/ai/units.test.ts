@@ -12,3 +12,12 @@ describe('audioUnits', () => {
     expect(audioUnits(0, AUDIO_BYTES_PER_SECOND * 5)).toBe(5 * AUDIO_UNITS_PER_SECOND)
   })
 })
+
+import { audioSeconds } from './units'
+describe('audioSeconds', () => {
+  it('uses the reported duration, rounded up, else estimates from the size', () => {
+    expect(audioSeconds(12.2)).toBe(13)
+    expect(audioSeconds(undefined, 40_000)).toBe(10)
+    expect(audioSeconds(0, 8_000)).toBe(2)
+  })
+})

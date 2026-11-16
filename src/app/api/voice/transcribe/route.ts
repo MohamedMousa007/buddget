@@ -16,7 +16,7 @@ import Groq from 'groq-sdk'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
-import { audioUnits } from '@/lib/server/ai/units'
+import { audioSeconds, audioUnits } from '@/lib/server/ai/units'
 import { audioMimeToExt } from '@/lib/voice/audioMime'
 import { isPhantomTranscript } from '@/lib/voice/whisperEcho'
 
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
   const quota = await reserveAiQuota({ userId: user.id, feature: 'voice', estUnits: estimated })
   if (!quota.allowed) return quotaDeniedResponse(quota)
   const spent = (status: 'ok' | 'error', seconds?: number) =>
-    settleAiQuota(quota, { model: 'whisper-large-v3', tier: 'transcribe', latencyMs: Date.now() - started, usage: { promptTokens: audioUnits(seconds, audio.size), cachedTokens: 0, outputTokens: 0 }, status })
+    settleAiQuota(quota, { model: 'whisper-large-v3', tier: 'transcribe', latencyMs: Date.now() - started, usage: { promptTokens: audioUnits(seconds, audio.size), cachedTokens: 0, outputTokens: 0 }, status, audioSeconds: audioSeconds(seconds, audio.size) })
 
   try {
     const groq = new Groq({ apiKey, timeout: GROQ_TIMEOUT_MS, maxRetries: 0 })

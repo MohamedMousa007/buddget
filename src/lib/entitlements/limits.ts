@@ -112,11 +112,39 @@ export const LIMIT_CATALOG = {
     enforced: true,
   },
   sparks_per_month: {
-    label: 'Sparks',
+    label: 'Sparks (monthly allowance, retired)',
     unit: 'per month',
-    description: 'AI credits. Chat, budget builder, receipts, voice and live-price estimates spend them; SMS parsing never does.',
-    fallback: 20,
+    description: 'Retired: Sparks are now bought packs only, used after a credit limit is reached. Kept at 0 so old plan rows stay valid.',
+    fallback: 0,
     enforced: false,
+  },
+  ai_credits_session: {
+    label: 'AI credits, session',
+    unit: 'per 5-hour session',
+    description: 'AI usage charged by real cost (1 credit = $0.001 of model cost). A session starts with its first AI request and lasts 5 hours. SMS parsing never counts.',
+    fallback: 6,
+    enforced: true,
+  },
+  ai_credits_week: {
+    label: 'AI credits, week',
+    unit: 'per week',
+    description: 'AI credits per week, resetting on the user\'s week-start day in their timezone. Past a limit, Sparks are used if the user has any.',
+    fallback: 15,
+    enforced: true,
+  },
+  balance_views_per_month: {
+    label: 'Live balance views',
+    unit: 'per month',
+    description: 'Opening one account\'s live balance card. Reopening the same account within 24 hours is free; only a view that shows a bank balance counts.',
+    fallback: 10,
+    enforced: true,
+  },
+  advisor_free_per_month: {
+    label: 'Free Advisor answers',
+    unit: 'per month',
+    description: 'Advisor answers for a plan without the Advisor, kept outside the credit windows. Used up only when the answer arrives.',
+    fallback: 1,
+    enforced: true,
   },
   sms_ai_calls_per_day: {
     label: 'SMS model calls',
@@ -142,16 +170,16 @@ export const LIMIT_CATALOG = {
   budget_plans_max: {
     label: 'Saved budget plans',
     unit: 'plans',
-    description: 'Active plus archived budget plans.',
+    description: 'Active plus archived budget plans. Enforced in the app and by a database trigger while selling is on.',
     fallback: null,
-    enforced: false,
+    enforced: true,
   },
   sms_accounts_max: {
     label: 'SMS-tracked accounts',
     unit: 'accounts',
-    description: 'Bank senders tracked automatically.',
+    description: 'Bank senders tracked automatically. Null (unlimited) on every plan; the cap code stays in place, inactive.',
     fallback: null,
-    enforced: false,
+    enforced: true,
   },
 } as const satisfies Record<string, LimitDefinition>
 
@@ -179,6 +207,7 @@ export const FEATURE_CATALOG = {
   ai_budget: 'AI budget planner',
   multi_currency: 'Multi-currency',
   data_export: 'Data export',
+  buddgy_advisor: 'Buddgy Advisor',
   priority_support: 'Priority support',
 } as const
 

@@ -32,6 +32,10 @@ export interface RcEvent {
   originalTxn: string | null
   transferredFrom: string[]
   transferredTo: string[]
+  transactionId: string | null
+  /** What the store charged, in millionths of the purchase currency. */
+  priceMicros: number | null
+  currency: string | null
 }
 
 export interface EntitlementWrite {
@@ -53,10 +57,20 @@ export type SparksEffect =
   | { action: 'end' }
   | { action: 'restore' }
 
+export type PackEffect =
+  | { action: 'purchase'; store: string; store_txn: string; product_id: string; price_micros: number | null; currency: string | null }
+  | { action: 'refund'; store_txn: string }
+
+export interface ReceiptNote { store: BillingStore | null; product_id: string | null; price_micros: number | null; currency: string | null }
+
 export interface BillingEffect {
   userId: string
   entitlement: EntitlementWrite | null
   sparks: SparksEffect | null
+  /** A Sparks pack bought or refunded. */
+  pack?: PackEffect
+  /** What the store charged, kept on the billing log for the purchases list. */
+  receipt?: ReceiptNote
   endTrial?: boolean
   transfer?: { from: string[] }
 }
@@ -90,6 +104,9 @@ export function parseEvent(body: unknown): RcEvent | null {
     originalTxn: str(e.original_transaction_id),
     transferredFrom: ids(e.transferred_from),
     transferredTo: ids(e.transferred_to),
+    transactionId: str(e.transaction_id),
+    priceMicros: ((n) => (n === null ? null : Math.round(n * 1_000_000)))(num(e.price_in_purchased_currency)),
+    currency: str(e.currency),
   }
 }
 
@@ -121,14 +138,32 @@ function entitlementOf(ev: RcEvent, over: Partial<EntitlementWrite>): Entitlemen
  * The effect of one event, or 'ignore'. `transferSource` is the entitlement the transferring user held (the route reads it);
  * a TRANSFER event itself carries no period or product.
  */
-export function planEffects(ev: RcEvent, transferSource: EntitlementWrite | null = null): BillingEffect | 'ignore' {
+export function planEffects(ev: RcEvent, transferSource: EntitlementWrite | null = null, packIds: ReadonlySet<string> = new Set()): BillingEffect | 'ignore' {
   if (ev.type === 'TRANSFER') {
     const to = ev.transferredTo.find((id) => UUID.test(id))
     if (!to) return 'ignore'
     return { userId: to, entitlement: transferSource, sparks: null, transfer: { from: ev.transferredFrom.filter((id) => UUID.test(id)) } }
   }
+  if (UUID.test(ev.appUserId) && ev.productId && packIds.has(ev.productId)) return packEffect(ev)
   if (!UUID.test(ev.appUserId) || !isPlus(ev.productId)) return 'ignore'
   const userId = ev.appUserId
+  const withReceipt = (e: BillingEffect | 'ignore'): BillingEffect | 'ignore' =>
+    e === 'ignore' ? e : { ...e, receipt: { store: ev.store, product_id: ev.productId, price_micros: ev.priceMicros, currency: ev.currency } }
+  return withReceipt(subscriptionEffect(ev, userId))
+}
+
+/** A consumable Sparks pack: a purchase adds its Sparks (the server adds the Pro bonus), a refund removes the unspent ones. */
+function packEffect(ev: RcEvent): BillingEffect | 'ignore' {
+  if (!ev.transactionId || !ev.productId) return 'ignore'
+  const base = { userId: ev.appUserId, entitlement: null, sparks: null }
+  if (ev.type === 'NON_RENEWING_PURCHASE') {
+    return { ...base, pack: { action: 'purchase', store: ev.store ?? 'unknown', store_txn: ev.transactionId, product_id: ev.productId, price_micros: ev.priceMicros, currency: ev.currency }, receipt: { store: ev.store, product_id: ev.productId, price_micros: ev.priceMicros, currency: ev.currency } }
+  }
+  if (ev.type === 'CANCELLATION') return { ...base, pack: { action: 'refund', store_txn: ev.transactionId } }
+  return 'ignore'
+}
+
+function subscriptionEffect(ev: RcEvent, userId: string): BillingEffect | 'ignore' {
 
   switch (ev.type) {
     case 'INITIAL_PURCHASE':

@@ -16,6 +16,8 @@ export type QuotaLayer =
   | 'window_5h'
   | 'window_24h'
   | 'window_7d'
+  | 'session'
+  | 'week'
   | 'chat_messages_day'
   | 'receipts_month'
   | 'voice_day'
@@ -81,6 +83,8 @@ export async function reserveAiQuota(args: {
   feature: AiFeature
   estUnits: number
   chatId?: string | null
+  /** The turn is a free monthly Advisor answer: it is kept out of the credit windows and used up only when it succeeds. */
+  advisorFree?: boolean
 }): Promise<QuotaResult> {
   if (!quotaStoreAvailable() && process.env.NODE_ENV !== 'production') {
     return { allowed: true, userId: args.userId, reservationId: null, chatId: args.chatId ?? null, newChat: false, rolled: false, soft: false, disabled: [] }
@@ -98,6 +102,7 @@ export async function reserveAiQuota(args: {
       p_chat: (args.chatId ?? null) as string,
       p_feature: args.feature,
       p_est: Math.max(0, Math.round(args.estUnits)),
+      ...(args.advisorFree ? { p_advisor_free: true } : {}),
     }
     // v2 also counts in-flight reservations against per-month/day caps; until migration 0224 is applied fall back to v1.
     let useV1 = false
@@ -144,6 +149,10 @@ export interface SettleArgs {
   latencyMs: number
   usage: TokenUsage
   status: 'ok' | 'error' | 'aborted'
+  /** Audio seconds for a transcription, priced from the price book. */
+  audioSeconds?: number
+  /** Extra provider cost in millionths of a dollar that tokens do not show (a grounded web search). */
+  extraCostMicro?: number
 }
 
 /** Records what the call actually cost. Failures are logged, never thrown into the response path. */
@@ -161,6 +170,8 @@ export async function settleAiQuota(grant: QuotaGrant, args: SettleArgs): Promis
       p_tier: args.tier,
       p_latency: args.latencyMs,
       p_status: args.status,
+      ...(args.audioSeconds ? { p_audio_seconds: Math.max(0, Math.ceil(args.audioSeconds)) } : {}),
+      ...(args.extraCostMicro ? { p_extra_cost_micro: Math.max(0, Math.round(args.extraCostMicro)) } : {}),
     })
     if (error) console.error('[ai-quota] settle failed', error.message)
   } catch (e) {

@@ -43,7 +43,8 @@ export async function POST(request: Request) {
     }
   }
 
-  const effect = planEffects(ev, source)
+  const { data: packs } = await service.from('spark_products').select('product_id').eq('active', true)
+  const effect = planEffects(ev, source, new Set((packs ?? []).map((p) => p.product_id)))
   if (effect === 'ignore') {
     const { error } = await service.rpc('billing_note', { p_user: (UUID.test(ev.appUserId) ? ev.appUserId : null) as string, p_event_id: ev.id, p_type: ev.type, p_event_ms: ev.eventMs })
     if (error) console.warn('[billing] note failed', ev.id, ev.type, error.message)
@@ -55,7 +56,8 @@ export async function POST(request: Request) {
     p_event_id: ev.id,
     p_type: ev.type,
     p_event_ms: ev.eventMs,
-    p_effect: JSON.parse(JSON.stringify({ entitlement: effect.entitlement, sparks: effect.sparks, endTrial: effect.endTrial ?? false, transfer: effect.transfer ?? null })),
+    // Keys that do not apply are left out, not sent as null: the database reads a missing key as nothing to do.
+    p_effect: JSON.parse(JSON.stringify({ entitlement: effect.entitlement ?? undefined, sparks: effect.sparks ?? undefined, endTrial: effect.endTrial ?? false, transfer: effect.transfer, pack: effect.pack, receipt: effect.receipt })),
   })
   if (error) {
     if (error.code === FOREIGN_KEY_VIOLATION) {

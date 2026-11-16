@@ -56,3 +56,9 @@ export function audioUnits(seconds: number | undefined, bytes = 0): number {
   const s = typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0 ? seconds : bytes / AUDIO_BYTES_PER_SECOND
   return Math.ceil(s * AUDIO_UNITS_PER_SECOND)
 }
+
+/** Seconds billed for a clip: the provider's reported duration when usable, else estimated from its size. Priced per second from the price book. */
+export function audioSeconds(seconds: number | undefined, bytes = 0): number {
+  const s = typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0 ? seconds : bytes / AUDIO_BYTES_PER_SECOND
+  return Math.ceil(s)
+}
