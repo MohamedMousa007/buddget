@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { clientIp } from '@/lib/server/clientIp'
-import { STALE_CACHE_SECONDS, ageSeconds, buildInfo } from '@/lib/health/buildInfo'
+import { ageSeconds, buildInfo } from '@/lib/health/buildInfo'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { CRON_LAST_RUN_KEY, evaluateCronHealth } from '@/lib/server/cronHealth'
 
@@ -39,7 +39,8 @@ export async function GET(request: Request) {
   })
   const dbOk = !db.error
   const cacheAge = ageSeconds(cache.data?.[0]?.computed_at, Date.now())
-  const cacheOk = !cache.error && (cacheAge === null || cacheAge < STALE_CACHE_SECONDS)
+  // The metrics cache is refreshed when an admin opens the metrics (no schedule), so an old cache is normal and never makes the app unhealthy.
+  const cacheOk = !cache.error
   const ok = dbOk && cacheOk
 
   return NextResponse.json(

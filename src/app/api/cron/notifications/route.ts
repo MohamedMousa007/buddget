@@ -1,6 +1,9 @@
 /**
  * GET|POST /api/cron/notifications  (Supabase pg_cron hourly via net.http_post; the only scheduler: a second Vercel cron only produced duplicate-key errors)
  *
+ * Due users come from one set-based query (notification_due_users: inside the 09:00-21:00 window and either alertable or near month end);
+ * the pg_cron entry point (notifications_tick) does not call at all when nobody is due, and each page prefetches its users' rows in bulk.
+ *
  * Evaluates the time-sensitive alerts (recurring debt due/tomorrow, month-end)
  * for every account and emits them as localized in-app notifications + OS push.
  * Each user is evaluated only between 09:00 and 21:00 in their own timezone (Cairo when none is reported), so an hourly
@@ -32,6 +35,7 @@ export const maxDuration = 60
 
 const PAGE = 500
 const CONCURRENCY = 8
+const PREFETCH = 96 // a multiple of CONCURRENCY, so each chunk starts on a batch boundary
 const TIME_BUDGET_MS = 48_000
 
 export async function GET(request: Request) {
@@ -47,26 +51,54 @@ export async function GET(request: Request) {
   // Only users with something that can alert get the full evaluation (the rest still get the month-end notice, which
   // needs no data). The run is resumable: if it nears the time limit it stores where it stopped and the next run
   // continues from there, so nobody is starved however many accounts there are.
-  const { data: candidateIds } = await service.rpc('notification_candidate_users')
-  const candidates = new Set<string>((candidateIds ?? []) as string[])
   const { data: cursorRow } = await service.from('platform_settings').select('value').eq('key', 'notification_cron_cursor').maybeSingle()
-  let cursor = String((cursorRow?.value as { after?: string } | null)?.after ?? '')
+  const startCursor = String((cursorRow?.value as { after?: string } | null)?.after ?? '')
+  let cursor = startCursor
 
   let stoppedEarly = false
   for (;;) {
-    let query = service
-      .from('user_settings')
-      .select('user_id, language, timezone, month_start_day, sub_due_reminders, sub_price_alerts, goal_alerts')
-      .order('user_id', { ascending: true })
-      .limit(PAGE)
-    if (cursor) query = query.gt('user_id', cursor)
-    const { data: settingsRows, error } = await query
+    const { data: settingsRows, error } = await service.rpc('notification_due_users', {
+      p_now: utcNow.toISOString(),
+      p_after: cursor || undefined,
+      p_limit: PAGE,
+    })
     if (error) {
       console.error('[cron/notifications] user_settings query failed', error)
       stoppedEarly = true // keep the cursor: resetting it would restart from the first user next run
       break
     }
     if (!settingsRows || settingsRows.length === 0) break
+
+    type Rows = Record<string, unknown>[]
+    const byUser = (rows: Rows | null) => {
+      const m = new Map<string, Rows>()
+      for (const r of rows ?? []) {
+        const k = r.user_id as string
+        m.set(k, [...(m.get(k) ?? []), r])
+      }
+      return m
+    }
+    // One query per table for a chunk of users instead of one per user.
+    let recurringBy = new Map<string, Rows>()
+    let debtsBy = new Map<string, Rows>()
+    let subsBy = new Map<string, Rows>()
+    const prefetch = async (rows: typeof settingsRows) => {
+      const ids = rows.filter((r) => r.is_candidate).map((r) => r.user_id)
+      if (ids.length === 0) {
+        recurringBy = new Map()
+        debtsBy = new Map()
+        subsBy = new Map()
+        return
+      }
+      const [rec, debts, subs] = await Promise.all([
+        service.from('recurring_debt_payments').select('id, user_id, debt_id, amount, currency, next_due_date, is_active').in('user_id', ids).eq('is_active', true),
+        service.from('debts').select('id, user_id, name').in('user_id', ids),
+        service.from('subscriptions').select('*').in('user_id', ids).is('deleted_at', null).in('status', ['active', 'trial']),
+      ])
+      recurringBy = byUser(rec.data as Rows | null)
+      debtsBy = byUser(debts.data as Rows | null)
+      subsBy = byUser(subs.data as Rows | null)
+    }
 
     const handleUser = async (s: (typeof settingsRows)[number]) => {
       const timeZone = resolveUserTimeZone(s.timezone as string | null)
@@ -76,18 +108,12 @@ export async function GET(request: Request) {
       }
       scanned++
       const now = wallClockNow(utcNow, timeZone)
-      const full = candidates.has(s.user_id as string)
+      const full = s.is_candidate
       const userId = s.user_id as string
 
-      const { data: recurringRows } = full
-        ? await service
-            .from('recurring_debt_payments')
-            .select('id, debt_id, amount, currency, next_due_date, is_active')
-            .eq('user_id', userId)
-            .eq('is_active', true)
-        : { data: [] }
+      const recurringRows = full ? (recurringBy.get(userId) ?? []) : []
 
-      const recurring = (recurringRows ?? []).map((r) => ({
+      const recurring = recurringRows.map((r) => ({
         id: r.id as string,
         debtId: r.debt_id as string,
         amount: Number(r.amount),
@@ -97,15 +123,8 @@ export async function GET(request: Request) {
       }))
 
       const debtNameById: Record<string, string> = {}
-      const debtIds = [...new Set(recurring.map((r) => r.debtId))]
-      if (debtIds.length > 0) {
-        const { data: debtRows } = await service
-          .from('debts')
-          .select('id, name')
-          .eq('user_id', userId)
-          .in('id', debtIds)
-        for (const d of debtRows ?? []) debtNameById[d.id as string] = (d.name as string) ?? ''
-      }
+      const debtIds = new Set(recurring.map((r) => r.debtId))
+      for (const d of debtsBy.get(userId) ?? []) if (debtIds.has(d.id as string)) debtNameById[d.id as string] = (d.name as string) ?? ''
 
       const descriptors = evaluateAlerts({
         now,
@@ -117,15 +136,8 @@ export async function GET(request: Request) {
 
       const dict = getServerDictionary(s.language as string | null)
 
-      const { data: subRows } = full
-        ? await service
-            .from('subscriptions')
-            .select('*')
-            .eq('user_id', userId)
-            .is('deleted_at', null)
-            .in('status', ['active', 'trial'])
-        : { data: [] }
-      if (subRows && subRows.length > 0) {
+      const subRows = full ? (subsBy.get(userId) ?? []) : []
+      if (subRows.length > 0) {
         const since = format(new Date(now.getTime() - 400 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
         const { data: expRows } = await service
           .from('expenses')
@@ -136,7 +148,7 @@ export async function GET(request: Request) {
           .gte('expense_date', since)
         const subAlerts = evaluateSubscriptionAlerts({
           today: now,
-          subscriptions: subRows.map(subscriptionFromRow),
+          subscriptions: subRows.map((r) => subscriptionFromRow(r as never)),
           expenses: (expRows ?? []).map(expenseFromRow),
           dueReminders: (s.sub_due_reminders as boolean | null) ?? true,
           priceAlerts: (s.sub_price_alerts as boolean | null) ?? true,
@@ -234,6 +246,7 @@ export async function GET(request: Request) {
         stoppedEarly = true
         break
       }
+      if (i % PREFETCH === 0) await prefetch(settingsRows.slice(i, i + PREFETCH))
       const batch = settingsRows.slice(i, i + CONCURRENCY)
       await Promise.all(batch.map((row) => handleUser(row).catch((e) => console.error('[cron/notifications] user failed', e instanceof Error ? e.message : e))))
       cursor = batch[batch.length - 1]!.user_id as string
@@ -243,8 +256,9 @@ export async function GET(request: Request) {
     if (settingsRows.length < PAGE) break
   }
 
+  const nextCursor = stoppedEarly ? cursor : ''
   const [cursorSave, runSave] = await Promise.all([
-    service.from('platform_settings').upsert({ key: 'notification_cron_cursor', value: { after: stoppedEarly ? cursor : '' } }),
+    nextCursor === startCursor ? { error: null } : service.from('platform_settings').upsert({ key: 'notification_cron_cursor', value: { after: nextCursor } }),
     service.from('platform_settings').upsert({ key: CRON_LAST_RUN_KEY, value: { at: new Date().toISOString(), scanned, skipped, emitted, partial: stoppedEarly } }),
   ])
   if (cursorSave.error || runSave.error) console.error('[cron/notifications] could not record the run', cursorSave.error?.message ?? runSave.error?.message)

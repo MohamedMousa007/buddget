@@ -5808,6 +5808,7 @@ export type Database = {
         Returns: boolean
       }
       admin_refresh_metrics: { Args: never; Returns: undefined }
+      admin_refresh_metrics_if_stale: { Args: { p_max_age?: string }; Returns: boolean }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_retention_days: { Args: { p_signup_days?: number }; Returns: Json }
       admin_signup_series: {
@@ -6229,6 +6230,20 @@ export type Database = {
       }
       loyalty_week_summary: { Args: never; Returns: Json }
       notification_candidate_users: { Args: never; Returns: string[] }
+      notification_due_users: {
+        Args: { p_after?: string; p_limit?: number; p_now?: string }
+        Returns: {
+          goal_alerts: boolean
+          is_candidate: boolean
+          language: string
+          month_start_day: number
+          sub_due_reminders: boolean
+          sub_price_alerts: boolean
+          timezone: string
+          user_id: string
+        }[]
+      }
+      notifications_tick: { Args: never; Returns: boolean }
       publish_email_template: {
         Args: { p_key: string; p_locale: string; p_staff: string }
         Returns: number
@@ -6371,7 +6386,8 @@ export type Database = {
         Args: { period_end: string; period_start: string }
         Returns: Json
       }
-      sms_run_pending_discards: { Args: never; Returns: number }
+      sms_run_my_pending_discards: { Args: never; Returns: number }
+      sms_run_pending_discards: { Args: { p_user?: string }; Returns: number }
       sms_s3_apply: {
         Args: {
           p_batch: string
@@ -6397,6 +6413,7 @@ export type Database = {
       }
       sms_safe_tz: { Args: { p: string }; Returns: string }
       sms_stats_drain: { Args: { p_limit?: number }; Returns: number }
+      sms_tick: { Args: never; Returns: number }
       sms_templates_awaiting_adjudication: {
         Args: { p_undo_grace_seconds?: number }
         Returns: {

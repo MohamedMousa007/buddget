@@ -1,10 +1,12 @@
 import type { ServiceClient } from '@/lib/supabase/service'
 
-/** The heavy admin aggregates are computed on a schedule (pg_cron, every 15 min) into `admin_metrics_cache`. */
+/** The heavy admin aggregates are computed when an admin opens a page and the cache is older than 15 minutes (no schedule), into `admin_metrics_cache`. */
 export const METRIC_KEYS = ['overview', 'feature_adoption', 'sms_health_7', 'retention_10', 'signup_series_30', 'activity_series_30', 'funnel_30', 'retention_days'] as const
 export type MetricKey = (typeof METRIC_KEYS)[number]
 
-/** A cached value is trusted for this long; the schedule refreshes it three times as often. */
+/** A refresh is requested when the cache is older than this; one caller at a time refreshes (database advisory lock). */
+export const METRIC_REFRESH_AFTER_MS = 15 * 60 * 1000
+/** A cached value is still served this long while another admin's refresh is in flight; older ones are computed live. */
 export const METRIC_MAX_AGE_MS = 45 * 60 * 1000
 
 async function live(service: ServiceClient, key: MetricKey): Promise<{ data: unknown; error: { message: string } | null }> {
@@ -22,9 +24,18 @@ async function live(service: ServiceClient, key: MetricKey): Promise<{ data: unk
 
 /** Fresh cached values, falling back to computing live for anything missing or stale (never wrong, only slower). */
 export async function adminMetrics(service: ServiceClient, keys: readonly MetricKey[], now = Date.now()): Promise<Record<MetricKey, unknown>> {
-  const { data } = await service.from('admin_metrics_cache').select('key, value, computed_at').in('key', [...keys])
+  const read = async () => (await service.from('admin_metrics_cache').select('key, value, computed_at').in('key', [...keys])).data ?? []
+  let data = await read()
+  const needsRefresh = keys.some((k) => {
+    const row = data.find((r) => r.key === k)
+    return !row || now - new Date(row.computed_at).getTime() >= METRIC_REFRESH_AFTER_MS
+  })
+  if (needsRefresh) {
+    const { data: refreshed } = await service.rpc('admin_refresh_metrics_if_stale', { p_max_age: '15 minutes' })
+    if (refreshed) data = await read()
+  }
   const fresh = new Map<string, unknown>()
-  for (const row of data ?? []) if (now - new Date(row.computed_at).getTime() < METRIC_MAX_AGE_MS) fresh.set(row.key, row.value)
+  for (const row of data) if (now - new Date(row.computed_at).getTime() < METRIC_MAX_AGE_MS) fresh.set(row.key, row.value)
 
   const out = {} as Record<MetricKey, unknown>
   await Promise.all(

@@ -21,5 +21,3 @@ export function ageSeconds(iso: string | null | undefined, now: number): number 
   return Number.isFinite(t) ? Math.max(0, Math.round((now - t) / 1000)) : null
 }
 
-/** Cached admin metrics older than this mean the refresh job has stopped. */
-export const STALE_CACHE_SECONDS = 6 * 60 * 60
