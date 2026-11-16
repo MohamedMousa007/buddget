@@ -123,7 +123,7 @@ export function PrivacyDataSections() {
               Supabase (supabase.com):
             </strong>{' '}
             Authentication, database, and file storage. Processes your account and financial data on
-            our behalf. Data is stored on Supabase servers in Singapore (Southeast Asia region).{' '}
+            our behalf. Data is stored on Supabase servers in Frankfurt, Germany (EU Central region).{' '}
             <a
               href="https://supabase.com/privacy"
               className="text-[var(--color-brand-primary-ink)] hover:underline"

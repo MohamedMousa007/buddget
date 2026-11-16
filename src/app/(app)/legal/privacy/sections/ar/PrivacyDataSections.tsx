@@ -95,7 +95,7 @@ export function PrivacyDataSectionsAr() {
         <ul className="list-disc ps-5 space-y-2">
           <li>
             <Strong>Supabase (supabase.com):</Strong> المصادقة وقاعدة البيانات وتخزين الملفات. تعالج بيانات حسابك وبياناتك
-            المالية نيابةً عنا. تُخزَّن البيانات على خوادم Supabase في سنغافورة (منطقة جنوب شرق آسيا).{' '}
+            المالية نيابةً عنا. تُخزَّن البيانات على خوادم Supabase في فرانكفورت بألمانيا (منطقة وسط أوروبا).{' '}
             <ExternalLink href="https://supabase.com/privacy">سياسة الخصوصية</ExternalLink>
           </li>
           <li>

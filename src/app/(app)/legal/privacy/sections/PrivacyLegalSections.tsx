@@ -6,7 +6,7 @@ export function PrivacyLegalSections() {
     <>
       <LegalSection title="11. International Data Transfers">
         <p>
-          Your data may be processed in countries other than your own, including Singapore (where our
+          Your data may be processed in countries other than your own, including Germany (where our
           database and servers are hosted) and the United States (where Google and Groq process AI
           requests). These countries may have data
           protection laws different from those in Egypt, UAE, or your country of residence.
