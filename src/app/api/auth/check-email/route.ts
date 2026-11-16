@@ -24,7 +24,8 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
  *     verified — resend the code".
  */
 
-const MIN_LATENCY_MS = 450
+// The body already says whether the email exists, so a long floor hides nothing; it only slows every signup by this much.
+const MIN_LATENCY_MS = 100
 const RATE_WINDOW_SECONDS = 60
 const RATE_MAX_HITS = 30
 
