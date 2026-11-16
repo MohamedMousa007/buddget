@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { cachedSetting, invalidatePlatformSettings } from '@/lib/server/platformCache'
 
 /** Row key in `platform_settings`; a serverless host has no durable local disk, so the database is the store. */
 const SETTING_KEY = 'ai_throttle'
@@ -76,8 +77,12 @@ export async function getStoredAiRuntimeConfig(): Promise<AiRuntimeConfig> {
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.value
   const defaults = defaultFromEnv()
   try {
-    const { data } = await createServiceRoleClient().from('platform_settings').select('value').eq('key', SETTING_KEY).maybeSingle()
-    const value = data ? normalise(parseStored(data.value), defaults) : defaults
+    const stored = await cachedSetting(['ai_runtime'], async () => {
+      const { data, error } = await createServiceRoleClient().from('platform_settings').select('value').eq('key', SETTING_KEY).maybeSingle()
+      if (error) throw new Error(error.message)
+      return data ? { value: data.value } : null
+    })
+    const value = stored ? normalise(parseStored(stored.value), defaults) : defaults
     cache = { at: Date.now(), value }
     return value
   } catch {
@@ -111,6 +116,7 @@ export async function saveAiRuntimeConfig(patch: Partial<AiRuntimeConfig>, staff
   const next = normalise(patch, await getStoredAiRuntimeConfig())
   const { error } = await createServiceRoleClient().from('platform_settings').upsert({ key: SETTING_KEY, value: next, updated_by: staffId })
   if (error) throw new Error(error.message)
+  invalidatePlatformSettings()
   cache = { at: Date.now(), value: next }
   return next
 }

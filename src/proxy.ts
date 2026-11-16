@@ -9,6 +9,7 @@ import {
 } from '@/lib/supabase/env'
 import { buildCsp } from '@/lib/security/csp'
 import { apiSecondFactorRefusal } from '@/lib/server/apiSecondFactor'
+import { PROOF_COOKIE, PROOF_TTL_MS } from '@/lib/server/secondFactorProof'
 import { publicApiRateLimitOk } from '@/lib/server/publicApiRateLimit'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
 import { SITE_CSP, decideSiteRoute, hasAuthCookie, isSitePath, splitHosts } from '@/lib/site/entry'
@@ -143,7 +144,11 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api')) {
-    const refusal = await apiSecondFactorRefusal(request, pathname, user)
+    const refusal = await apiSecondFactorRefusal(request, pathname, user, undefined, Date.now(), {
+      value: request.cookies.get(PROOF_COOKIE)?.value,
+      secret: process.env.SUPABASE_SECRET_KEY,
+      mint: (value) => supabaseResponse.cookies.set(PROOF_COOKIE, value, { httpOnly: true, secure: true, sameSite: 'lax', path: '/api', maxAge: PROOF_TTL_MS / 1000 }),
+    })
     return withNativeApiCors(request, refusal ?? supabaseResponse)
   }
 

@@ -95,6 +95,16 @@ function listDelta<T>(rows: Row[] | undefined, fromRow: (row: never) => T): List
   return out
 }
 
+/** Cheap "anything changed since the last pull?" probe. True on any error or doubt, so the full pull always remains the authority. */
+export async function hasChangesSince(client: SupabaseClient<Database>, since: string): Promise<boolean> {
+  try {
+    const { data, error } = await client.rpc('sync_changed_since', { p_since: since })
+    return Boolean(error) || data !== false
+  } catch {
+    return true
+  }
+}
+
 /** One request for everything that changed since `since` (null = the live rows, i.e. a full first pull). Null when the account has no profile yet. */
 export async function pullDelta(client: SupabaseClient<Database>, since: string | null): Promise<MappedDelta | null> {
   const { data, error } = await client.rpc('sync_pull_v2', since ? { p_since: since } : {})

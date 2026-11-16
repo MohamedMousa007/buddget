@@ -35,6 +35,7 @@ vi.mock('@/lib/store/useSyncFailures', () => ({
 vi.mock('@/lib/supabase/remote', () => ({
   pullAll: vi.fn(),
   pullDelta: vi.fn(async () => null),
+  hasChangesSince: vi.fn(async () => true),
   applyDelta: vi.fn(),
   readSyncCursor: vi.fn(() => null),
   writeSyncCursor: vi.fn(),

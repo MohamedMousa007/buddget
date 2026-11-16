@@ -1,4 +1,5 @@
 import type { ServiceClient } from '@/lib/supabase/service'
+import { cachedSetting } from '@/lib/server/platformCache'
 
 const TTL_MS = 30_000
 let cached: { at: number; on: boolean } | null = null
@@ -11,9 +12,16 @@ let cached: { at: number; on: boolean } | null = null
 export async function billingEnabled(service: ServiceClient): Promise<boolean> {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.on
   try {
-    const { data, error } = await service.rpc('billing_enabled')
-    if (error) return cached?.on ?? false
-    cached = { at: Date.now(), on: data === true }
+    const on = await cachedSetting(
+      ['billing_enabled'],
+      async () => {
+        const { data, error } = await service.rpc('billing_enabled')
+        if (error) throw new Error(error.message)
+        return data === true
+      },
+      30,
+    )
+    cached = { at: Date.now(), on }
     return cached.on
   } catch {
     return cached?.on ?? false

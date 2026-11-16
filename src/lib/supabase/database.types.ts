@@ -6244,6 +6244,10 @@ export type Database = {
         }[]
       }
       notifications_tick: { Args: never; Returns: boolean }
+      sync_changed_since: { Args: { p_since: string }; Returns: boolean }
+      ai_credit_bump: { Args: { p_cost: number; p_user: string }; Returns: undefined }
+      ai_credit_cuts: { Args: { p_t: string; p_user: string }; Returns: Json }
+      db_retention: { Args: never; Returns: number }
       publish_email_template: {
         Args: { p_key: string; p_locale: string; p_staff: string }
         Returns: number

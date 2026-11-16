@@ -1,28 +1,20 @@
 import { NextResponse } from 'next/server'
-import { clientIp } from '@/lib/server/clientIp'
+import { unstable_cache } from 'next/cache'
 import { ageSeconds, buildInfo } from '@/lib/health/buildInfo'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { CRON_LAST_RUN_KEY, evaluateCronHealth } from '@/lib/server/cronHealth'
 
 export const dynamic = 'force-dynamic'
 
-const PER_MINUTE = 30
-
 /**
  * Readiness for a monitor and the portal: one cheap database read, the metrics cache, the last notification cron run and the integration outbox.
  * `degraded` means the app is up but a background job is not (missing CRON_SECRET, stale cron, dead outbox rows).
- * Rate limited per caller address so it cannot be used to load the database. Reports status only, never data.
+ * The whole answer is computed at most once a minute for every caller together (shared data cache), so polling it cannot load the database;
+ * uptime monitors that only need "is the app up" should call the light `/api/health`. Reports status only, never data.
  */
-export async function GET(request: Request) {
+async function readiness() {
   const started = Date.now()
   const service = createServiceRoleClient()
-  // The platform sets x-real-ip itself; the first x-forwarded-for hop is client-supplied and would let a caller pick its own bucket.
-  const caller = clientIp(request)
-
-  const { data: allowed, error: rateErr } = await service.rpc('api_rate_hit', { p_key: `health:${caller}`, p_window_seconds: 60, p_max_hits: PER_MINUTE })
-  if (rateErr) return NextResponse.json({ ok: false, error: 'database_unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
-  if (allowed === false) return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429, headers: { 'Retry-After': '60' } })
-
   const [db, cache, lastRun, outboxPending, outboxDead, outboxOldest] = await Promise.all([
     service.from('platform_settings').select('key').limit(1),
     service.from('admin_metrics_cache').select('computed_at').order('computed_at', { ascending: false }).limit(1),
@@ -42,9 +34,17 @@ export async function GET(request: Request) {
   // The metrics cache is refreshed when an admin opens the metrics (no schedule), so an old cache is normal and never makes the app unhealthy.
   const cacheOk = !cache.error
   const ok = dbOk && cacheOk
+  return { ok, checks: { database: dbOk, metricsCache: cacheOk, metricsCacheAgeSeconds: cacheAge }, cron: cronHealth, degraded: ok && !cronHealth.ok, latencyMs: Date.now() - started }
+}
 
-  return NextResponse.json(
-    { ok, ...buildInfo(), checks: { database: dbOk, metricsCache: cacheOk, metricsCacheAgeSeconds: cacheAge }, cron: cronHealth, degraded: ok && !cronHealth.ok, latencyMs: Date.now() - started },
-    { status: ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } },
-  )
+const cachedReadiness = unstable_cache(readiness, ['health-deep'], { revalidate: 60 })
+
+export async function GET() {
+  let body: Awaited<ReturnType<typeof readiness>>
+  try {
+    body = await cachedReadiness()
+  } catch {
+    return NextResponse.json({ ok: false, error: 'database_unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
+  }
+  return NextResponse.json({ ...buildInfo(), ...body }, { status: body.ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } })
 }

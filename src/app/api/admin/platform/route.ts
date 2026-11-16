@@ -6,6 +6,7 @@ import {
   saveAiRuntimeConfig,
 } from '@/lib/server/aiRuntimeConfig'
 import { can } from '@/lib/admin/permissions'
+import { invalidatePlatformSettings } from '@/lib/server/platformCache'
 import { confirmsLockOut, exceedsLatestRelease, LOCK_OUT_CONFIRMATION } from '@/lib/admin/minVersion'
 import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
@@ -126,6 +127,7 @@ export async function POST(req: Request) {
   const { data: before } = await ctx.service.from('platform_settings').select('value').eq('key', body.key).maybeSingle()
   const { error } = await ctx.service.from('platform_settings').upsert({ key: body.key, value: clean, updated_by: ctx.staff.id })
   if (error) return bad('Could not save the setting.', 500)
+  invalidatePlatformSettings()
   await ctx.audit('platform.setting', { targetType: 'setting', targetId: body.key, summary: `Changed ${body.key}`, metadata: { value: clean, before: before?.value ?? null } })
   return json({ ok: true })
 }

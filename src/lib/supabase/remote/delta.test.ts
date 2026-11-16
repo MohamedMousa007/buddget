@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { applyDelta, pullDelta, type MappedDelta } from './delta'
+import { applyDelta, hasChangesSince, pullDelta, type MappedDelta } from './delta'
 import { emptySnapshot, type Snapshot } from './snapshot'
 import { readSyncCursor, writeSyncCursor, clearSyncCursors } from './cursor'
 
@@ -151,5 +151,20 @@ describe('sync cursor', () => {
     clearSyncCursors()
     expect(readSyncCursor('u1', 21)).toBeNull()
     expect(readSyncCursor('u2', 21)).toBeNull()
+  })
+})
+
+describe('hasChangesSince', () => {
+  const client = (result: unknown) => ({ rpc: vi.fn().mockResolvedValue(result) }) as never
+  it('is false only when the server explicitly says nothing changed', async () => {
+    expect(await hasChangesSince(client({ data: false, error: null }), 'c0')).toBe(false)
+  })
+  it('is true when the server says something changed, answers null, or errors', async () => {
+    expect(await hasChangesSince(client({ data: true, error: null }), 'c0')).toBe(true)
+    expect(await hasChangesSince(client({ data: null, error: null }), 'c0')).toBe(true)
+    expect(await hasChangesSince(client({ data: false, error: { message: 'down' } }), 'c0')).toBe(true)
+  })
+  it('is true when the call throws, so the full pull stays the authority', async () => {
+    expect(await hasChangesSince({ rpc: vi.fn().mockRejectedValue(new Error('offline')) } as never, 'c0')).toBe(true)
   })
 })

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isVersionBelow } from '@/lib/appVersion'
 import { createServiceRoleClient } from '@/lib/supabase/service'
+import { cachedSetting } from '@/lib/server/platformCache'
 
 export interface MinVersions {
   ios: string
@@ -34,8 +35,12 @@ export async function getMinVersions(now = Date.now()): Promise<MinVersions> {
   if (cached && now - cached.at < TTL_MS) return cached.value
   let value: MinVersions = { ios: '', android: '', iosUrl: '', androidUrl: '' }
   try {
-    const { data } = await createServiceRoleClient().from('platform_settings').select('value').eq('key', 'min_app_version').maybeSingle()
-    const v = (data?.value ?? {}) as Record<string, unknown>
+    const stored = await cachedSetting(['min_app_version'], async () => {
+      const { data, error } = await createServiceRoleClient().from('platform_settings').select('value').eq('key', 'min_app_version').maybeSingle()
+      if (error) throw new Error(error.message)
+      return data?.value ?? null
+    })
+    const v = (stored ?? {}) as Record<string, unknown>
     const s = (k: string) => (typeof v[k] === 'string' ? (v[k] as string) : '')
     value = { ios: s('ios'), android: s('android'), iosUrl: s('ios_url'), androidUrl: s('android_url') }
   } catch (e) {

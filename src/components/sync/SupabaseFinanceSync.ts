@@ -10,6 +10,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
   pullAll,
   pullDelta,
+  hasChangesSince,
   applyDelta,
   readSyncCursor,
   writeSyncCursor,
@@ -38,6 +39,8 @@ import { adoptedLoggedIds } from '@/lib/subscriptions/adoptLogged'
 import { clearNetWorthStamps } from '@/lib/storage/removeByPrefix'
 
 const DEBOUNCE_MS = 500
+/** Returning to the app reconciles at most this often; the realtime nudge stays the main freshness trigger. */
+const RESUME_THROTTLE_MS = 120_000
 
 const fingerprintTimers = new Map<string, ReturnType<typeof setTimeout>>()
 /** Remembers what the server has received, so edits still unsent when the app closes are found at the next start. */
@@ -457,7 +460,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const onShow = () => {
       if (syncSuspended || !hydrated.current) return
       const now = Date.now()
-      if (now - lastResumeSync < 30_000) return
+      if (now - lastResumeSync < RESUME_THROTTLE_MS) return
       lastResumeSync = now
       void pendingSync?.().catch((e) => console.error('[finance sync] resume reconcile failed', e))
     }
@@ -565,6 +568,11 @@ async function runFullSync(
   const hasLocalCopy = useFinanceStore.getState().profile.id === userId
   const since = hasLocalCopy ? readSyncCursor(userId, storeVersion()) : null
   try {
+    // One cheap probe first: when nothing changed since the last pull, skip the full pull (any doubt answers "changed").
+    if (since && !(await hasChangesSince(supabase, since))) {
+      useSettingsStore.getState().markServerSynced(userId)
+      return []
+    }
     const delta = await pullDelta(supabase, since)
     if (!delta) return []
     if (delta.profile) {

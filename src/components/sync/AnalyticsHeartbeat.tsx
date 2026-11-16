@@ -5,11 +5,11 @@ import { usePathname } from 'next/navigation'
 import { createAnalyticsBuffer } from '@/lib/analytics/buffer'
 import { createClient } from '@/lib/supabase/client'
 
-const FLUSH_INTERVAL_MS = 120_000
+export const FLUSH_INTERVAL_MS = 600_000
 
 /**
  * Activity reporting: visible time, session starts and page visits are buffered and sent as one small batch every
- * couple of minutes and whenever the app is hidden (one upsert per user per day on the server).
+ * ten minutes and whenever the app is hidden (one upsert per user per day on the server).
  */
 export function AnalyticsHeartbeat({ userId }: { userId: string }) {
   const pathname = usePathname()
