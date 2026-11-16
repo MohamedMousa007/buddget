@@ -152,17 +152,17 @@ export default async function RootLayout({
         <PlatformBodyClass />
         <TooltipProvider>
           <LocaleProvider>
-            <AuthProvider>
-              <CrashReporter />
-              <ActionToastProvider>
+            <ActionToastProvider>
+              <AuthProvider>
+                <CrashReporter />
                 <MotionConfigRoot>
                   <AppShell>{children}</AppShell>
                   <UpdateToast />
                   <OfflineBanner />
                   <UpdateGate />
                 </MotionConfigRoot>
-              </ActionToastProvider>
-            </AuthProvider>
+              </AuthProvider>
+            </ActionToastProvider>
           </LocaleProvider>
         </TooltipProvider>
       </body>

@@ -7,6 +7,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { isUnknownAccountOtpError, mapAuthError, mapOAuthCallbackReason, mapOAuthError, isValidEmailFormat } from '@/components/auth/authErrors'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
+import { useActionToast } from '@/components/ui/ActionToast'
 import { apiFetch, apiFetchAuth } from '@/lib/apiBase'
 import { useSecondFactorGate } from '@/lib/auth/secondFactorGate'
 import { navigateAfterAuth, safeInternalPath } from '@/lib/auth/postAuthRedirect'
@@ -62,6 +63,7 @@ export function useAuthModal() {
     authModalInitialStep,
   } = useAuth()
   const t = useT()
+  const showToast = useActionToast()
   const sec = useAuthSecurityCopy()
   const supabase = useMemo(
     () => (isSupabaseConfigured() ? createClient() : null),
@@ -509,7 +511,11 @@ export function useAuthModal() {
     })
     if (e) {
       setLoading(false)
-      setError(mapAuthError(e, 'otp', t))
+      const msg = mapAuthError(e, 'otp', t)
+      if (msg === t.auth.errorOtpExpired) {
+        setOtp('')
+        showToast(msg)
+      } else setError(msg)
       return
     }
     // Recovery: the session now carries recovery scope — go set the new password
@@ -534,7 +540,7 @@ export function useAuthModal() {
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
     if (!isNative()) router.refresh()
     navigateAfterAuth(router, safeNext)
-  }, [email, otp, router, safeNext, supabase, t, verifyPurpose])
+  }, [email, otp, router, safeNext, showToast, supabase, t, verifyPurpose])
 
   /**
    * State 'reset-new-password': set the new password using the recovery-scoped
