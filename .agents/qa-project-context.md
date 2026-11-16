@@ -21,8 +21,8 @@ Generated 2026-10-30 from repo evidence. Sources cited inline. Items marked **Un
 ## Tech Stack
 - **Frontend:** Next.js 16 (App Router, `next build --webpack`), React 19.2.4, TypeScript 5, Tailwind CSS 4, Zustand 5, framer-motion, recharts. Source: `package.json`.
 - **Native shell:** Capacitor 8 (`@capacitor/core` ^8.3.4, iOS and Android) with static export. Source: `package.json`, `capacitor.config.ts`, `CLAUDE_CONTEXT.md`.
-- **Backend:** Next.js route handlers (`src/app/api/*`, 93 route files) on Vercel (region `sin1`). Source: `vercel.json`.
-- **Database and auth:** Supabase (PostgreSQL + RLS + Auth), `@supabase/supabase-js` ^2.49.1, `@supabase/ssr` ^0.6.1. Live project ref `ydihurtbcnoflhormgzi`. Source: `package.json`, `CLAUDE_CONTEXT.md`.
+- **Backend:** Next.js route handlers (`src/app/api/*`, 93 route files) on Vercel (region `fra1`). Source: `vercel.json`.
+- **Database and auth:** Supabase (PostgreSQL + RLS + Auth), `@supabase/supabase-js` ^2.49.1, `@supabase/ssr` ^0.6.1. Live project ref `tzioppxwsljhlglyducm`. Source: `package.json`, `CLAUDE_CONTEXT.md`.
 - **AI:** Gemini (`/api/ai`, `/api/buddgy/turn`), Groq whisper (voice). Source: `CLAUDE_CONTEXT.md`.
 - **Push:** Web Push/VAPID, and Firebase Cloud Messaging for native (`firebase-admin`). Source: `package.json`, `CLAUDE_CONTEXT.md`.
 - **Observability:** Sentry (`@sentry/react` 10.69.0, `@sentry/capacitor` 4.4.0). Source: `package.json`.
@@ -62,7 +62,7 @@ Generated 2026-10-30 from repo evidence. Sources cited inline. Items marked **Un
 - **Scheduled jobs (Vercel crons, `vercel.json`):** `/api/cron/notifications` 06:00 daily, `/api/cron/prices` 03:00, `/api/cron/integrations` 05:30, `/api/cron/sms-harvest` 04:10. `/api/cron/month-carry` is **not** listed in `vercel.json` (intentional per `CLAUDE_CONTEXT.md`/route header, pending sign-off).
 
 ## Environments
-- **Production:** Vercel (`sin1`), Supabase project `ydihurtbcnoflhormgzi` (ap-southeast-1). Native apps call `https://buddget.app` through `NEXT_PUBLIC_API_BASE_URL`.
+- **Production:** Vercel (`fra1`), Supabase project `tzioppxwsljhlglyducm` (eu-central-1). Native apps call `https://buddget.app` through `NEXT_PUBLIC_API_BASE_URL`.
 - **Staging:** **Unknown.** No staging project found in the repo.
 - **Development:** `npm run dev` (Next dev with webpack) against live Supabase, or dummy env for build only. Local Postgres via `scripts/qa/setup.sh`.
 - **Parity risks:** Test suite pinned to Africa/Cairo timezone (product wall clock). Production cron times are UTC. Staging parity: **Unknown**.
@@ -93,7 +93,7 @@ Scores are proposals (Impact 1-5 x Probability 1-5) grounded in code evidence. O
 | AI and Buddgy (`/api/ai`, `/api/buddgy/turn`, `src/lib/buddgy/*`) | High (proposed I3 x P4) | Cost abuse, wrong proposals applied | `/api/ai` relays client `systemInstruction`; auto-apply `add_expense` bounded (10k base, 7 days, 5/min per process). |
 | Crons (`/api/cron/*`) | Medium-High (proposed I4 x P3) | Missed notifications, wrong FX in month-carry | `CRON_SECRET` checked; `month-carry` not scheduled in `vercel.json`. |
 | Admin portal (`/api/admin/*`, `/admin`) | Medium (proposed I4 x P2) | Staff privilege misuse | RBAC tests exist but pg suites are skipped without `QA_PG_URL`. |
-| Database RLS and migrations (live `ydihurtbcnoflhormgzi`) | High (proposed I5 x P2) | Cross-tenant data exposure | 84 tables with RLS; many policies on PUBLIC role; leaked-password protection off. |
+| Database RLS and migrations (live `tzioppxwsljhlglyducm`) | High (proposed I5 x P2) | Cross-tenant data exposure | 84 tables with RLS; many policies on PUBLIC role; leaked-password protection off. |
 | Offline and native shell (Capacitor, Android SMS, biometrics, push) | Medium (proposed I3 x P3) | Lost offline edits, native-only failures | Real-device paths (SMS, push, biometric, scanner) manual only. |
 | UI and accessibility (design system, 375px layouts, Arabic/RTL, dark mode) | Medium (proposed I2 x P4) | UX defects, touch-target misses | Not automated; DESIGN_SYSTEM rules exist in `docs/DESIGN_SYSTEM.md`. |
 

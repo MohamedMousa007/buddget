@@ -4,7 +4,7 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 
 ## Session start
 - Read `CLAUDE_CONTEXT.md` for architecture, design tokens and DB state.
-- DB-first: run `list_migrations` / `list_tables` on Supabase project `ydihurtbcnoflhormgzi` and confirm the live schema matches `src/lib/supabase/database.types.ts`.
+- DB-first: run `list_migrations` / `list_tables` on Supabase project `tzioppxwsljhlglyducm` (Frankfurt, eu-central-1; the old Singapore `ydihurtbcnoflhormgzi` is retired) and confirm the live schema matches `src/lib/supabase/database.types.ts`.
 
 ## Workflow
 - Lifecycle: classify tier -> scope context -> execute -> verify -> auto-push. No plan-approval step.
