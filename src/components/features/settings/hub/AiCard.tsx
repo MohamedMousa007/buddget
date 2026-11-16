@@ -8,7 +8,7 @@ import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
-/** Buddgy and AI: tips, learning, reading answers aloud, and the way into Memory. */
+/** Buddgy and AI: tips, learning, and the way into Memory. */
 export function AiCard() {
   const copy = useSettingsHubCopy()
   const tone = GROUP_TONE.ai
@@ -17,7 +17,6 @@ export function AiCard() {
     <SettingsSection title={copy.groupName.ai}>
       <SettingsToggleRow id="tips" tone={tone} hint={copy.ai.tipsHint} />
       <SettingsToggleRow id="learning" tone={tone} hint={copy.ai.learningHint} />
-      <SettingsToggleRow id="voiceReadAloud" tone={tone} hint={copy.ai.voiceHint} tag={copy.ai.deviceOnly} />
       <SettingsRow
         icon={SETTING_ICONS.brain}
         tone={tone}

@@ -36,6 +36,8 @@ export interface UserItem {
   id: string
   role: 'user'
   text: string
+  /** Sent as a voice message: the words are the transcript. */
+  voice?: boolean
 }
 
 export interface BuddgyItem {
@@ -49,6 +51,10 @@ export interface BuddgyItem {
   truncated?: boolean
   /** Set when this reply answered without the model (local fast path). */
   local?: boolean
+  /** `free`: it used the plan's free monthly Advisor answer. `locked`: the Advisor is in Pro, so the fast model answered. */
+  advisor?: 'free' | 'locked'
+  /** The chat passed its soft budget: suggest a fresh one. */
+  longChat?: boolean
 }
 
 export type ChatItem = UserItem | BuddgyItem
@@ -62,4 +68,5 @@ export interface TurnOutcome {
   soft: boolean
   truncated: boolean
   intent: BuddgyIntent
+  advisor?: 'free' | 'locked'
 }

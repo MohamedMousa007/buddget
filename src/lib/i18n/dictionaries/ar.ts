@@ -3566,8 +3566,6 @@ export const ar: Dictionary = {
     cancelTranscription: 'إلغاء التفريغ النصي',
     holdToRecord: 'اضغط مطولاً للتسجيل',
     releaseToTranscribe: 'أفلت لتحويل الصوت إلى نص',
-    muteAnswer: 'كتم الإجابة',
-    unmuteAnswer: 'تشغيل صوت الإجابة',
     removeItem: 'إزالة العنصر',
     removeNamed: (name) => `إزالة ${name}`,
     category: 'الفئة',

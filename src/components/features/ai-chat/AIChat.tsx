@@ -11,6 +11,7 @@ import { AIChatHeader } from '@/components/features/ai-chat/AIChatHeader'
 import { AIChatEmptyState } from '@/components/features/ai-chat/AIChatEmptyState'
 import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageList'
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
+import { useChatVoice } from '@/hooks/useChatVoice'
 import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
 import { useDismissable } from '@/hooks/useDismissable'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
@@ -90,6 +91,7 @@ export function AIChat() {
     applyProposal, dismissProposal, reviseProposal, undoApplied,
   } = useBuddgyChat()
   const copy = useBuddgyChatCopy()
+  const chatVoice = useChatVoice((text) => void send(text, { voice: true }))
   const orb = useSettingsStore((s) => s.buddgyOrb)
   const [panel, setPanel] = useState<PanelGeometry | null>(() => computePanel(orb))
 
@@ -152,6 +154,7 @@ export function AIChat() {
                   onUndo={undoApplied}
                   onRetry={retry}
                   onContinue={keepGoing}
+                  onNewChat={newChat}
                 />
               )}
               <div ref={bottomRef} />
@@ -171,6 +174,7 @@ export function AIChat() {
               onStop={stop}
               busy={busy}
               usageKey={`${busy}:${items.length === 0}`}
+              mic={{ state: chatVoice.state, error: chatVoice.error, onStart: () => void chatVoice.start(), onStop: () => void chatVoice.stop() }}
             />
           </motion.div>
         </>

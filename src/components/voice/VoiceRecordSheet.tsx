@@ -1,18 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { Mic, MicOff, X, Trash2, MessageCircle, Volume2, VolumeX, CheckCircle2 } from 'lucide-react'
+import { Mic, MicOff, X, Trash2, MessageCircle, CheckCircle2 } from 'lucide-react'
 import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useVoiceExpense } from '@/hooks/useVoiceExpense'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
-import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { VoiceRecapEditor } from '@/components/voice/VoiceRecapEditor'
-import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isNative } from '@/lib/native/isNative'
-import { IconButton } from '@/components/ui/IconButton'
 import { useT } from '@/lib/i18n'
 import { mix } from '@/lib/utils/color'
 
@@ -377,9 +374,7 @@ function AnswerView({
   onOpenChat: () => void
   onClose: () => void
 }) {
-  const { voice: v, a11y: a } = useT()
-  const muted = useSettingsStore((s) => s.voiceSpeakMuted)
-  const setMuted = useSettingsStore((s) => s.setVoiceSpeakMuted)
+  const { voice: v } = useT()
 
   return (
     <div className="w-full">
@@ -397,19 +392,6 @@ function AnswerView({
       >
         <span className="shrink-0 text-[var(--color-brand-text)]"><BuddgyIcon mood="happy" size={26} strokeWidth={1.75} filled /></span>
         <p className="flex-1 text-sm text-[var(--color-brand-text-primary)]">{message}</p>
-        <IconButton
-          onClick={() => {
-            const next = !muted
-            setMuted(next)
-            if (next) stopSpeaking()
-            else speak(message)
-          }}
-          size="sm"
-          aria-label={muted ? a.unmuteAnswer : a.muteAnswer}
-          aria-pressed={muted}
-        >
-          {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </IconButton>
       </Card>
 
       <div className="mt-5 flex gap-2">

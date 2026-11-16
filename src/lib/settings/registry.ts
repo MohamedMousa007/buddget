@@ -5,7 +5,7 @@ export type GroupId = 'profile' | 'security' | 'quick' | 'autoTrack' | 'ai' | 'm
 export const SETTING_IDS = [
   'profile', 'password', 'twoFactor', 'biometric', 'appLock', 'deleteAccount',
   'baseCurrency', 'secondaryCurrency', 'converter', 'theme', 'language', 'showCents',
-  'sms', 'cashWithdrawals', 'tips', 'learning', 'memories', 'voiceReadAloud',
+  'sms', 'cashWithdrawals', 'tips', 'learning', 'memories',
   'household', 'lifestyle', 'budgetEntryMode', 'weekStart', 'goldStrip',
   'pushStatus', 'subDueReminders', 'subPriceAlerts', 'goalProgressAlerts', 'goalAlerts',
   'notCounted', 'exportData', 'restoreBackup', 'feedback', 'terms', 'privacy', 'about',
@@ -62,7 +62,6 @@ export const SETTINGS_REGISTRY: readonly SettingEntry[] = [
   e('tips', 'ai', 'toggle', HUB, 'buddgy'),
   e('learning', 'ai', 'toggle', HUB, 'brain'),
   e('memories', 'ai', 'nav', MEMORY, 'brain'),
-  e('voiceReadAloud', 'ai', 'toggle', HUB, 'mic'),
   e('household', 'memory', 'nav', MEMORY, 'home', { action: 'household' }),
   e('lifestyle', 'memory', 'nav', MEMORY, 'home', { action: 'lifestyle' }),
   e('budgetEntryMode', 'memory', 'value', MEMORY, 'chart'),

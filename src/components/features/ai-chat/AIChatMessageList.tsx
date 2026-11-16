@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, RotateCw, Zap } from 'lucide-react'
+import { AlertCircle, Mic, RotateCw, Zap } from 'lucide-react'
 import { BuddgyIcon } from '@/components/ai/BuddgyIcon'
 import { BuddgyMarkdown } from '@/components/features/ai-chat/BuddgyMarkdown'
 import { ProposalCard } from '@/components/features/ai-chat/ProposalCard'
@@ -18,6 +18,7 @@ export interface AIChatMessageListProps {
   onUndo: (itemId: string, proposalId: string) => void
   onRetry: () => void
   onContinue: () => void
+  onNewChat: () => void
 }
 
 function Dots() {
@@ -41,7 +42,7 @@ function moodFor(item: BuddgyItem) {
 }
 
 /** The transcript. A live log region so screen readers hear each reply as it lands. */
-export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, onUndo, onRetry, onContinue }: AIChatMessageListProps) {
+export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, onUndo, onRetry, onContinue, onNewChat }: AIChatMessageListProps) {
   const copy = useBuddgyChatCopy()
   return (
     <div role="log" aria-live="polite" aria-relevant="additions text" className="space-y-4">
@@ -50,6 +51,7 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
           return (
             <div key={item.id} className="flex justify-end">
               <p dir="auto" className="max-w-[85%] whitespace-pre-line break-words rounded-2xl rounded-ee-md bg-[var(--color-brand-primary)] px-4 py-2.5 text-sm text-[var(--color-brand-on-primary)]">
+                {item.voice ? <Mic className="me-1.5 inline size-3.5 align-[-2px] opacity-80" role="img" aria-label={copy.voiceMessage} /> : null}
                 {item.text}
               </p>
             </div>
@@ -102,6 +104,17 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
                 <Button variant="outline" size="touch" onClick={onContinue} className="text-[0.8125rem]">
                   {copy.keepGoing}
                 </Button>
+              ) : null}
+
+              {item.status === 'done' && item.advisor ? (
+                <p dir="auto" className="px-1 text-[0.6875rem] text-[var(--color-brand-text-muted)]">{item.advisor === 'free' ? copy.advisorFree : copy.advisorLocked}</p>
+              ) : null}
+
+              {item.status === 'done' && item.longChat && last ? (
+                <div dir="auto" className="flex items-center gap-2 px-1 text-[0.75rem] text-[var(--color-brand-text-secondary)]">
+                  <span className="min-w-0 flex-1">{copy.longChat}</span>
+                  <Button variant="ghost" size="touch" onClick={onNewChat} className="shrink-0 px-3 text-[0.8125rem]">{copy.newChat}</Button>
+                </div>
               ) : null}
 
               {item.status === 'done' && (item.reads.length > 0 || item.local) ? (

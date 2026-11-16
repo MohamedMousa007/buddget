@@ -36,7 +36,7 @@ export interface TurnRequest {
 }
 
 export type TurnEvent =
-  | { t: 'meta'; chatId: string | null; newChat: boolean; rolled: boolean; soft: boolean; tier: string }
+  | { t: 'meta'; chatId: string | null; newChat: boolean; rolled: boolean; soft: boolean; tier: string; maxHops?: number; advisor?: 'free' | 'locked' }
   | { t: 'text'; d: string }
   /** The model wants tools run. `parts` must be echoed back verbatim in the next request. */
   | { t: 'calls'; parts: unknown[]; calls: WireToolCall[] }

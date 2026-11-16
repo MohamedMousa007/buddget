@@ -167,7 +167,7 @@ export function useBuddgyChat() {
   )
 
   const send = useCallback(
-    async (override?: string) => {
+    async (override?: string, opts?: { voice?: boolean }) => {
       const text = (override ?? input).trim()
       if (!text || busyRef.current) return
       if (!guardSignedIn()) return
@@ -181,7 +181,7 @@ export function useBuddgyChat() {
       }
       lastActivityRef.current = Date.now()
 
-      const userItem: ChatItem = { id: newId(), role: 'user', text }
+      const userItem: ChatItem = { id: newId(), role: 'user', text, ...(opts?.voice ? { voice: true } : {}) }
       const replyId = newId()
       const base: BuddgyItem = { id: replyId, role: 'buddgy', text: '', proposals: [], reads: [], status: 'streaming' }
       const prior = itemsRef.current
@@ -236,7 +236,7 @@ export function useBuddgyChat() {
         chatIdRef.current = out.chatId
         softRef.current = out.soft
         if (out.reads.length > 0) taintedRef.current = true
-        patchBuddgy(replyId, (it) => ({ ...it, text: out.text, reads: out.reads, status: 'done', truncated: out.truncated }))
+        patchBuddgy(replyId, (it) => ({ ...it, text: out.text, reads: out.reads, status: 'done', truncated: out.truncated, advisor: out.advisor, longChat: out.soft }))
         finishWithProposals(replyId, out.proposals)
         setBeat({ mood: out.proposals.length > 0 ? 'awake' : 'happy', at: Date.now() })
       } catch (e) {

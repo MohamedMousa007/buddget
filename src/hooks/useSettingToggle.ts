@@ -11,7 +11,7 @@ import type { Currency } from '@/lib/store/types'
 export const TOGGLE_SETTING_IDS = [
   'secondaryCurrency', 'goldStrip', 'showCents',
   'subDueReminders', 'subPriceAlerts', 'goalProgressAlerts', 'goalAlerts',
-  'tips', 'learning', 'voiceReadAloud',
+  'tips', 'learning',
 ] as const satisfies readonly SettingId[]
 
 export type ToggleSettingId = (typeof TOGGLE_SETTING_IDS)[number]
@@ -39,10 +39,8 @@ export function useSettingToggle(id: ToggleSettingId): SettingToggle {
     useShallow((s) => ({
       tips: s.buddgyNudges,
       learning: s.buddgyLearning,
-      muted: s.voiceSpeakMuted,
       setTips: s.setBuddgyNudges,
       setLearning: s.setBuddgyLearning,
-      setMuted: s.setVoiceSpeakMuted,
     })),
   )
   const { settings, updateSettings } = fin
@@ -68,7 +66,6 @@ export function useSettingToggle(id: ToggleSettingId): SettingToggle {
         case 'goalAlerts': return updateSettings({ goalAlerts: next })
         case 'tips': return ui.setTips(next)
         case 'learning': return ui.setLearning(next)
-        case 'voiceReadAloud': return ui.setMuted(!next)
       }
     },
     [id, settings.secondaryCurrency, settings.baseCurrency, updateSettings, ui],
@@ -85,7 +82,6 @@ export function useSettingToggle(id: ToggleSettingId): SettingToggle {
       case 'goalAlerts': return settings.goalAlerts ?? true
       case 'tips': return ui.tips
       case 'learning': return ui.learning
-      case 'voiceReadAloud': return !ui.muted
     }
   })()
 

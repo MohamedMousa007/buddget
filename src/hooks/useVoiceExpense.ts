@@ -1,15 +1,14 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useAuth } from '@/components/auth/auth-context'
 import { useT } from '@/lib/i18n'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useMonthlyStats } from '@/hooks/useMonthlyStats'
-import { startRecording, requestMicPermission, getMicPermissionStatus } from '@/lib/native/voiceRecorder'
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
+import { transcribeAudio } from '@/lib/voice/transcribeAudio'
 import { runAiCommand, type AiCommandStats } from '@/lib/ai/runAiCommand'
-import { quotaDeniedMessage } from '@/lib/ai/quotaDeniedCopy'
-import { noteQuotaDenial } from '@/lib/billing/billingStore'
 import { classifyVoiceIntent } from '@/lib/voice/classifyVoiceIntent'
 import { needsEscalation } from '@/lib/voice/escalation'
 import {
@@ -24,10 +23,8 @@ import {
   VoiceStageError,
   type VoiceStage,
 } from '@/lib/voice/voiceStages'
-import { speak, stopSpeaking } from '@/lib/voice/speak'
 import { isOnline } from '@/hooks/useNetworkStatus'
 import { isNative } from '@/lib/native/isNative'
-import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { usePendingAiJobs, savePendingMedia, deletePendingMedia } from '@/lib/store/usePendingAiJobs'
 import { useBuddgyMoodWhile, useBuddgyMoodOnce } from '@/lib/ai/useBuddgyMood'
 
@@ -47,35 +44,6 @@ const TRANSCRIBE_TIMEOUT_MS = 20_000
 // Extract may run two sequential model calls (tier-1 → escalate to tier-2), so it
 // gets a wider budget than a single stage.
 const EXTRACT_TIMEOUT_MS = 30_000
-
-/**
- * Temporary on-device diagnostic for auth rejections. Decodes the current Supabase
- * access token client-side and reports exactly why a 401/403 happened (missing /
- * expired / wrong issuer), so the failure is actionable from the device.
- */
-async function diagnoseAuth(status: number): Promise<{ message: string; hasToken: boolean }> {
-  let message: string
-  let hasToken = false
-  try {
-    const { createClient } = await import('@/lib/supabase/client')
-    const { data: { session }, error } = await createClient().auth.getSession()
-    const tok = session?.access_token
-    if (!tok) {
-      message = `no session token on device — sign in again. (getSession err=${error?.message ?? 'none'})`
-    } else {
-      hasToken = true
-      let b64 = tok.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/') ?? ''
-      b64 += '='.repeat((4 - (b64.length % 4)) % 4)
-      const p = JSON.parse(atob(b64)) as { exp?: number }
-      const expMs = (p.exp ?? 0) * 1000
-      message = expMs < Date.now() ? 'your session expired — sign in again.' : 'token looks valid; please retry.'
-    }
-  } catch {
-    message = 'could not verify your session — sign in again.'
-  }
-  logVoiceStage('transcribe', 'fail', `auth=${status} ${message}`)
-  return { message, hasToken }
-}
 
 /**
  * Turn a transcript into an AIResponse via the two-tier router:
@@ -164,24 +132,20 @@ export function useVoiceExpense(): UseVoiceCommandResult {
   const statsRef = useRef<AiCommandStats>(stats)
   statsRef.current = stats
 
-  const recorderRef = useRef<{
-    stop(): Promise<{ audio: Blob | null; inlineText: string | null; mimeType: string | null }>
-    cancel(): Promise<void>
-    getAmplitude(): number
-  } | null>(null)
-  const rafRef = useRef<number | null>(null)
-  const stopPendingRef = useRef(false)
+  const recorder = useVoiceRecorder()
+  const { start: recStart, stop: recStop, cancel: recCancel, requestPermission: recRequestPermission } = recorder
   const stageFormat = useCallback(
     (stage: VoiceStage) => (message: string) => vt.errors.stepFormat(vt.stages[stage], message),
     [vt],
   )
   const abortRef = useRef<AbortController | null>(null)
 
-  const [state, setState] = useState<VoiceState>('idle')
+  // What the pipeline is doing after the mic: processing, confirming, answering. Recording and the permission prompt belong to the recorder.
+  const [pipeline, setState] = useState<VoiceState>('idle')
+  const state: VoiceState = recorder.state !== 'idle' ? recorder.state : pipeline
 
   // Buddgy mirrors what the mic is doing. Bound declaratively so an unmount
   // mid-recording releases the mood instead of freezing the orb.
-  useBuddgyMoodWhile('listening', state === 'recording')
   useBuddgyMoodWhile('thinking', state === 'processing')
   useBuddgyMoodOnce('error', state === 'error')
   const [response, setResponse] = useState<AIResponse | null>(null)
@@ -191,139 +155,37 @@ export function useVoiceExpense(): UseVoiceCommandResult {
   const [itemErrors, setItemErrors] = useState<(string | null)[]>([])
   const [transcript, setTranscript] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [amplitude, setAmplitude] = useState(0)
-  const [animTime, setAnimTime] = useState(0)
-
-  const stopRaf = useCallback(() => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
-    }
-    setAmplitude(0)
-  }, [])
-
-  useEffect(() => () => stopRaf(), [stopRaf])
-
   const reset = useCallback(() => {
-    stopSpeaking()
     setState('idle')
     setResponse(null)
     setDraftActions([])
     setItemErrors([])
     setTranscript(null)
     setError(null)
-    stopRaf()
-  }, [stopRaf])
+  }, [])
 
   const requestPermission = useCallback(async () => {
-    if (getMicPermissionStatus() === 'granted') return
-    setState('permission')
-    try {
-      const status = await withNativeFlow(() => requestMicPermission())
-      if (status === 'granted') {
-        setState('idle')
-      } else {
-        setError(vt.errors.micDenied)
-        setState('error')
-      }
-    } catch {
-      setState('idle')
+    const denied = await recRequestPermission()
+    if (denied) {
+      setError(denied)
+      setState('error')
     }
-  }, [vt])
+  }, [recRequestPermission])
 
   const start = useCallback(async () => {
     setError(null)
     setResponse(null)
     setTranscript(null)
-    stopPendingRef.current = false
-
-    if (getMicPermissionStatus() !== 'granted') {
-      await requestPermission()
-      return
-    }
-
-    try {
-      const recorder = await startRecording({})
-      if (stopPendingRef.current) {
-        stopPendingRef.current = false
-        try { await recorder.cancel() } catch { /* noop */ }
-        return
-      }
-      recorderRef.current = recorder
-      setState('recording')
-      logVoiceStage('record', 'start')
-
-      const poll = () => {
-        if (!recorderRef.current) return
-        const now = Date.now()
-        const raw = recorderRef.current.getAmplitude()
-        setAmplitude(raw > 0.01 ? raw : 0.12 + 0.08 * Math.sin(now / 400))
-        setAnimTime(now)
-        rafRef.current = requestAnimationFrame(poll)
-      }
-      rafRef.current = requestAnimationFrame(poll)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : vt.errors.micFallback
-      setError(vt.errors.stepFormat(vt.stages.record, msg))
+    const out = await recStart()
+    if (out.kind === 'error') {
+      setError(out.message)
       setState('error')
     }
-  }, [requestPermission, vt])
-
-  /** POST the audio to the transcribe route (base64 JSON bypasses CapacitorHttp
-   *  header stripping) and return the text. Handles the 401 self-heal. */
-  const transcribeAudio = useCallback(
-    async (audio: Blob, mimeType: string | null, signal: AbortSignal): Promise<string> => {
-      const mime = audio.type || mimeType || 'audio/mp4'
-      const arrayBuffer = await audio.arrayBuffer()
-      const bytes = new Uint8Array(arrayBuffer)
-      let binary = ''
-      for (let i = 0; i < bytes.length; i += 8192) {
-        binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + 8192, bytes.length)))
-      }
-      const base64Audio = btoa(binary)
-      const language = useFinanceStore.getState().settings.language === 'ar' ? 'ar' : 'en'
-      const body = JSON.stringify({ audio: base64Audio, mimeType: mime, language })
-
-      const { apiFetchAuth } = await import('@/lib/apiBase')
-      const headers: HeadersInit = session?.access_token
-        ? { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
-        : { 'Content-Type': 'application/json' }
-      const res = await apiFetchAuth('/api/voice/transcribe', { method: 'POST', body, signal, headers })
-
-      if (!res.ok) {
-        if (res.status === 413) throw new VoiceStageError('transcribe', vt.errors.tooLarge)
-        const err = (await res.json().catch(() => null)) as { error?: string; stage?: string; layer?: string; resetAt?: string | null } | null
-        if (err?.stage === 'quota') {
-          noteQuotaDenial(err.layer)
-          throw new VoiceStageError('transcribe', quotaDeniedMessage(err.layer, err.resetAt, useFinanceStore.getState().settings.language === 'ar' ? 'ar' : 'en'))
-        }
-        if (res.status === 401 || res.status === 403) {
-          const diag = await diagnoseAuth(res.status)
-          if (!diag.hasToken) {
-            try {
-              const { createClient } = await import('@/lib/supabase/client')
-              await createClient().auth.signOut({ scope: 'local' })
-            } catch { /* noop */ }
-          }
-          throw new VoiceStageError('transcribe', diag.message)
-        }
-        throw new VoiceStageError('transcribe', err?.error || vt.errors.transcriptionFailed(res.status))
-      }
-      const data = (await res.json()) as { text?: string }
-      return data.text?.trim() ?? ''
-    },
-    [session, vt],
-  )
+  }, [recStart])
 
   const stop = useCallback(async () => {
-    const recorder = recorderRef.current
-    if (!recorder) {
-      stopPendingRef.current = true
-      return
-    }
-    recorderRef.current = null
-    stopRaf()
-    logVoiceStage('record', 'ok')
+    const recording = await recStop()
+    if (!recording) return
     setState('processing')
 
     const abort = new AbortController()
@@ -343,7 +205,7 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     }
 
     try {
-      const { audio, inlineText, mimeType } = await recorder.stop()
+      const { audio, inlineText, mimeType } = recording
       let text = inlineText?.trim() ?? ''
 
       // Offline capture-now-process-later (native): keep the recording on
@@ -371,7 +233,7 @@ export function useVoiceExpense(): UseVoiceCommandResult {
       if (!text && audio) {
         text = await runStage('transcribe', vt.errors.serverUnreachable, () =>
           withTimeout(
-            transcribeAudio(audio, mimeType, abort.signal),
+            transcribeAudio({ audio, mimeType, signal: abort.signal, accessToken: session?.access_token, errors: { tooLarge: vt.errors.tooLarge, transcriptionFailed: vt.errors.transcriptionFailed } }),
             TRANSCRIBE_TIMEOUT_MS,
             'transcribe',
             vt.errors.transcribeSlow,
@@ -410,9 +272,6 @@ export function useVoiceExpense(): UseVoiceCommandResult {
         setState('clarify')
       } else {
         setState('answer')
-        if (!useSettingsStore.getState().voiceSpeakMuted) {
-          speak(aiResponse.message, useFinanceStore.getState().settings.language)
-        }
       }
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') return
@@ -422,18 +281,14 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     } finally {
       abortRef.current = null
     }
-  }, [monthFilter, stopRaf, transcribeAudio, vt, stageFormat])
+  }, [monthFilter, recStop, session, vt, stageFormat])
 
   const cancel = useCallback(async () => {
     abortRef.current?.abort()
     abortRef.current = null
-    stopPendingRef.current = false
-    const recorder = recorderRef.current
-    recorderRef.current = null
-    stopRaf()
-    try { await recorder?.cancel() } catch { /* noop */ }
+    await recCancel()
     reset()
-  }, [reset, stopRaf])
+  }, [reset, recCancel])
 
   const updateDraftField = useCallback((index: number, key: string, value: unknown) => {
     setDraftActions((prev) =>
@@ -494,8 +349,8 @@ export function useVoiceExpense(): UseVoiceCommandResult {
     itemErrors,
     transcript,
     error,
-    amplitude,
-    animTime,
+    amplitude: recorder.amplitude,
+    animTime: recorder.animTime,
     start,
     stop,
     cancel,

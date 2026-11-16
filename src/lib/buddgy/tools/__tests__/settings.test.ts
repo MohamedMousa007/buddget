@@ -42,7 +42,7 @@ beforeEach(() => {
     budgetPlans: [plan],
     exchangeRates: { EGP_USD: 0.02, USD_EGP: 50 },
   })
-  useSettingsStore.setState({ buddgyNudges: true, buddgyLearning: true, voiceSpeakMuted: false })
+  useSettingsStore.setState({ buddgyNudges: true, buddgyLearning: true })
 })
 
 const change = (setting: string, value: unknown, c: ToolContext = ctx) => write.propose({ setting, value }, c)
@@ -57,7 +57,6 @@ describe('get_settings', () => {
       monthStartDay: 1,
       goldStrip: true,
       tips: true,
-      voiceReadAloud: true,
       smsTracking: false,
     })
   })
@@ -98,7 +97,6 @@ describe('change_setting', () => {
       ['onlyMyCurrencies', () => !settings().showAllCurrenciesInForms],
       ['tips', () => useSettingsStore.getState().buddgyNudges],
       ['learning', () => useSettingsStore.getState().buddgyLearning],
-      ['voiceReadAloud', () => !useSettingsStore.getState().voiceSpeakMuted],
     ] as const) {
       const was = read()
       const p = change(setting, was ? 'off' : 'on')

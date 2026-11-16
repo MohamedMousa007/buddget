@@ -141,7 +141,6 @@ interface SettingsState {
   addBuddgyNotes: (notes: string[]) => void
   removeBuddgyNote: (note: string) => void
   /** Mute spoken-aloud answers in the voice flow (persisted). */
-  voiceSpeakMuted: boolean
   /** The settings-page sheet being asked to open (from search or Buddgy). Not persisted. */
   settingsSheet: SettingsSheetId | null
   openSettingsSheet: (sheet: SettingsSheetId | null) => void
@@ -193,7 +192,6 @@ interface SettingsState {
   setMonthFilter: (month: string) => void
   openAiChatWithSeed: (text: string, send?: boolean) => void
   clearAiChatSeed: () => void
-  setVoiceSpeakMuted: (muted: boolean) => void
   openDebtSheetNew: (family?: 'personal' | 'installment') => void
   openPayDebtSheet: () => void
   openDebtSheetRecordPayment: (debtId: string) => void
@@ -270,7 +268,6 @@ export const useSettingsStore = create<SettingsState>()(
       addBuddgyNotes: (notes) =>
         set((st) => ({ buddgyNotes: [...st.buddgyNotes.filter((n) => !notes.includes(n)), ...notes].slice(-20) })),
       removeBuddgyNote: (note) => set((st) => ({ buddgyNotes: st.buddgyNotes.filter((n) => n !== note) })),
-      voiceSpeakMuted: false,
       settingsSheet: null,
       openSettingsSheet: (sheet) => set({ settingsSheet: sheet }),
       pushOptOut: false,
@@ -321,7 +318,6 @@ export const useSettingsStore = create<SettingsState>()(
       setMonthFilter: (month) => set({ monthFilter: month }),
       openAiChatWithSeed: (text, send = false) => set({ activeModal: 'aiChat', aiChatSeed: text, aiChatSeedSend: send }),
       clearAiChatSeed: () => set({ aiChatSeed: null, aiChatSeedSend: false }),
-      setVoiceSpeakMuted: (muted) => set({ voiceSpeakMuted: muted }),
       openDebtSheetNew: (family) =>
         set({
           debtSheetPaymentOnly: false,
@@ -364,7 +360,6 @@ export const useSettingsStore = create<SettingsState>()(
           monthFilter: getCurrentMonth(),
           aiChatSeed: null,
           aiChatSeedSend: false,
-          voiceSpeakMuted: false,
           debtSheetPaymentOnly: false,
           debtSheetPrefillDebtId: null,
         }),
@@ -379,7 +374,6 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'buddget-ui-settings',
       storage: createJSONStorage(() => createSafeLocalStorage()),
       partialize: (state) => ({
-        voiceSpeakMuted: state.voiceSpeakMuted,
         pushOptOut: state.pushOptOut,
         recentSettingSearches: state.recentSettingSearches,
         buddgyOrb: state.buddgyOrb,

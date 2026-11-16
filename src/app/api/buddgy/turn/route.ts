@@ -5,7 +5,11 @@ import { toGeminiDeclaration } from '@/lib/buddgy/tools/spec'
 import { requireAiUser } from '@/lib/server/ai/auth'
 import { callGeminiResilient, TIER_MODELS } from '@/lib/server/ai/gemini'
 import { INTENT_CONFIG, SYSTEM_PROMPT } from '@/lib/server/ai/buddgy/prompt'
-import { selectSpecs } from '@/lib/server/ai/buddgy/select'
+import { advisorGate } from '@/lib/server/ai/buddgy/advisor'
+import { FREE_ADVISOR_THINKING_BUDGET, MAX_HOPS, hopsDone, resolveAdvisor, trimContext } from '@/lib/server/ai/buddgy/plan'
+import { billingEnabled } from '@/lib/entitlements/billingSwitch'
+import { getUserEntitlements } from '@/lib/entitlements/server'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { buildContents, turnEventStream } from '@/lib/server/ai/buddgy/turn'
 import { parseTurnRequest } from '@/lib/server/ai/buddgy/validate'
 import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
@@ -42,14 +46,26 @@ export async function POST(req: Request) {
   if (!parsed.ok) return NextResponse.json({ error: 'bad_request', reason: parsed.reason }, { status: 400 })
   const turn = parsed.value
 
-  const cfg = INTENT_CONFIG[turn.intent ?? 'answer']
+  // The Advisor (the smart tier, an `advice` turn) is Pro; a plan without it gets one free answer a month, then the fast tier.
+  const advisor = resolveAdvisor(turn.intent ?? 'answer', turn.intent === 'advice' ? await advisorGate(auth.userId) : null)
+  const baseCfg = INTENT_CONFIG[advisor.intent]
+  const cfg = advisor.mode === 'free' ? { ...baseCfg, thinkingBudget: Math.min(baseCfg.thinkingBudget, FREE_ADVISOR_THINKING_BUDGET) } : baseCfg
   const model = TIER_MODELS[cfg.tier]
-  const contents = buildContents(turn)
+
+  // Tool hops per turn: 2 on Free while selling is on, 3 otherwise.
+  const service = createServiceRoleClient()
+  const free = (await billingEnabled(service)) && (await getUserEntitlements(service, auth.userId)).planKey === 'free'
+  const maxHops = free ? MAX_HOPS.free : MAX_HOPS.pro
+  if (hopsDone(turn.messages) > maxHops) return NextResponse.json({ error: 'bad_request', reason: 'hops' }, { status: 400 })
+
+  const sent = { ...turn, context: trimContext(turn.context, advisor.intent) }
+  const contents = buildContents(sent)
 
   const quota = await reserveAiQuota({
     userId: auth.userId,
     feature: turn.hop ? 'chat_hop' : 'chat',
     chatId: turn.chatId ?? null,
+    advisorFree: advisor.mode === 'free',
     estUnits: estimateUnits(JSON.stringify(contents).length + SYSTEM_PROMPT.length, cfg.maxOutputTokens),
   })
   if (!quota.allowed) return quotaDeniedResponse(quota)
@@ -61,7 +77,8 @@ export async function POST(req: Request) {
 
   let upstream: Response
   try {
-    const tools = selectSpecs(ALL_SPECS.filter((t) => !quota.disabled.includes(`tool:${t.domain}`)), turn)
+    // Always the full list in its fixed order: with the system prompt it is the cacheable prefix (cached tokens cost a tenth).
+    const tools = ALL_SPECS.filter((t) => !quota.disabled.includes(`tool:${t.domain}`))
     const body: Record<string, unknown> = {
       systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
       contents,
@@ -88,7 +105,7 @@ export async function POST(req: Request) {
 
   const stream = turnEventStream(
     upstream.body,
-    { t: 'meta', chatId: quota.chatId, newChat: quota.newChat, rolled: quota.rolled, soft: quota.soft, tier: cfg.tier },
+    { t: 'meta', chatId: quota.chatId, newChat: quota.newChat, rolled: quota.rolled, soft: quota.soft, tier: cfg.tier, maxHops, ...(advisor.mode === 'free' || advisor.mode === 'locked' ? { advisor: advisor.mode } : {}) },
     async (outcome) => {
       // An abort before Gemini reported usage still consumed the prompt; never settle it as free.
       const usage = outcome.usage.promptTokens === 0 && outcome.status === 'aborted' ? { promptTokens: estInputTokens, cachedTokens: 0, outputTokens: 0 } : outcome.usage

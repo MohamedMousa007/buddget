@@ -3554,8 +3554,6 @@ export const en: Dictionary = {
     cancelTranscription: 'Cancel transcription',
     holdToRecord: 'Hold to record',
     releaseToTranscribe: 'Release to transcribe',
-    muteAnswer: 'Mute answer',
-    unmuteAnswer: 'Unmute answer',
     removeItem: 'Remove item',
     removeNamed: (name) => `Remove ${name}`,
     category: 'Category',

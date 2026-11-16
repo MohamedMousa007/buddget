@@ -66,7 +66,7 @@ export interface SettingsHubCopy {
     keptQuiet: string
   }
   sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string; permissionDenied: string; permissionOff: string; cashCount: string; cashCountHint: string }
-  ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string; voiceHint: string; deviceOnly: string }
+  ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string }
   notif: { title: string; master: string; on: string; off: string; blocked: string; unsupported: string; pushHint: string; subs: string; goals: string; dueHint: string; priceHint: string; progressHint: string; behindHint: string }
   data: {
     title: string
@@ -235,7 +235,7 @@ const en: SettingsHubCopy = {
     some: (n) => `${n} not counted`,
   },
   sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up', permissionDenied: 'Permission to read messages was not granted', permissionOff: 'Message permission was turned off. Bank messages are not being read.', cashCount: 'Count cash withdrawals as spending', cashCountHint: 'Applies to new withdrawals only.' },
-  ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned', voiceHint: 'Speak answers in voice chats', deviceOnly: 'This device only' },
+  ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned' },
   notif: {
     title: 'Notifications',
     master: 'Notifications',
@@ -342,7 +342,6 @@ const en: SettingsHubCopy = {
     tips: { label: 'Buddgy tips', keywords: 'nudge suggestion assistant ai نصائح', exact: ['tips', 'نصائح'] },
     learning: { label: 'Learn from chats', keywords: 'memory assistant ai تعلم' },
     memories: { label: 'Memory', keywords: 'memories forget household rent budget answers ذاكرة', exact: ['memory', 'ذاكرة'] },
-    voiceReadAloud: { label: 'Read answers aloud', keywords: 'voice speak tts mute صوت' },
     household: { label: 'Household & rent', keywords: 'family rent home people ايجار اسرة' },
     lifestyle: { label: 'Lifestyle', keywords: 'food transport habits نمط الحياة' },
     budgetEntryMode: { label: 'Budget entry', keywords: 'percent income amount budget ميزانية نسبة' },
@@ -457,7 +456,7 @@ const ar: SettingsHubCopy = {
     some: (n) => `${n} غير محسوب`,
   },
   sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائياً', iosHint: 'يُضبط عبر Shortcut', on: 'يتابع رسائل البنك', off: 'متوقف', guide: 'إعداد', permissionDenied: 'لم يتم منح إذن قراءة الرسائل', permissionOff: 'تم إيقاف إذن الرسائل. رسائل البنك لا تُقرأ.', cashCount: 'احتساب السحب النقدي كمصروفات', cashCountHint: 'ينطبق على السحب الجديد فقط.' },
-  ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'يقترح نصائح في وقتها', learningHint: 'يتذكر معلومات مفيدة من محادثاتك معه', memoryHint: 'الأسرة وإجابات الميزانية وما تعلّمه بادجي', voiceHint: 'ينطق الإجابات في المحادثات الصوتية', deviceOnly: 'على هذا الجهاز فقط' },
+  ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'يقترح نصائح في وقتها', learningHint: 'يتذكر معلومات مفيدة من محادثاتك معه', memoryHint: 'الأسرة وإجابات الميزانية وما تعلّمه بادجي' },
   notif: {
     title: 'الإشعارات',
     master: 'الإشعارات',
@@ -564,7 +563,6 @@ const ar: SettingsHubCopy = {
     tips: { label: 'نصائح بادجي', keywords: 'nudge suggestion assistant ai tips نصائح', exact: ['tips', 'نصائح'] },
     learning: { label: 'التعلّم من المحادثات', keywords: 'memory assistant ai learn تعلم' },
     memories: { label: 'الذاكرة', keywords: 'memories forget household rent budget answers memory ذاكرة', exact: ['memory', 'ذاكرة'] },
-    voiceReadAloud: { label: 'قراءة الإجابات بصوت عال', keywords: 'voice speak tts mute صوت' },
     household: { label: 'الأسرة والإيجار', keywords: 'family rent home people household ايجار اسرة' },
     lifestyle: { label: 'نمط الحياة', keywords: 'food transport habits lifestyle نمط الحياة' },
     budgetEntryMode: { label: 'إدخال الميزانية', keywords: 'percent income amount budget ميزانية نسبة' },

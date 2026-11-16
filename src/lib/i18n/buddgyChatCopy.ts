@@ -9,10 +9,17 @@ export interface BuddgyChatCopy {
   newChat: string
   close: string
   composerPlaceholder: string
+  mic: string
+  micStop: string
+  micSending: string
+  voiceMessage: string
   send: string
   stop: string
   retry: string
   keepGoing: string
+  advisorFree: string
+  advisorLocked: string
+  longChat: string
   checking: (what: string) => string
   checked: string
   confirm: Record<'add' | 'change' | 'danger', string>
@@ -65,10 +72,17 @@ const en: BuddgyChatCopy = {
   newChat: 'New chat',
   close: 'Close chat',
   composerPlaceholder: 'Ask or tell Buddgy…',
+  mic: 'Record a voice message',
+  micStop: 'Stop and send',
+  micSending: 'Turning your voice into text…',
+  voiceMessage: 'Voice message',
   send: 'Send',
   stop: 'Stop',
   retry: 'Try again',
   keepGoing: 'Keep going',
+  advisorFree: 'Using your free Advisor answer for this month.',
+  advisorLocked: 'The Advisor is in Pro. This answer is from the fast model.',
+  longChat: 'This chat is getting long. A new one answers faster.',
   checking: (what) => `Checking ${what}…`,
   checked: 'Checked',
   confirm: { add: 'Add', change: 'Apply', danger: 'Delete' },
@@ -105,10 +119,17 @@ const ar: BuddgyChatCopy = {
   newChat: 'محادثة جديدة',
   close: 'إغلاق المحادثة',
   composerPlaceholder: 'اسأل بادجي أو قله…',
+  mic: 'سجّل رسالة صوتية',
+  micStop: 'أوقف وأرسل',
+  micSending: 'نحوّل صوتك إلى نص…',
+  voiceMessage: 'رسالة صوتية',
   send: 'إرسال',
   stop: 'إيقاف',
   retry: 'حاول مرة أخرى',
   keepGoing: 'كمّل',
+  advisorFree: 'تستخدم إجابة المستشار المجانية لهذا الشهر.',
+  advisorLocked: 'المستشار ضمن Pro. هذه الإجابة من النموذج السريع.',
+  longChat: 'هذه المحادثة طالت. المحادثة الجديدة أسرع في الرد.',
   checking: (what) => `أراجع ${what}…`,
   checked: 'راجعت',
   confirm: { add: 'إضافة', change: 'تطبيق', danger: 'حذف' },

@@ -16,7 +16,6 @@ export const CHANGEABLE_SETTINGS = [
   'goalAlerts',
   'tips',
   'learning',
-  'voiceReadAloud',
 ] as const
 
 export const settingsSpecs: ToolSpec[] = [

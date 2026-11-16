@@ -3411,8 +3411,6 @@ export interface Dictionary {
     cancelTranscription: string
     holdToRecord: string
     releaseToTranscribe: string
-    muteAnswer: string
-    unmuteAnswer: string
     removeItem: string
     removeNamed: (name: string) => string
     category: string

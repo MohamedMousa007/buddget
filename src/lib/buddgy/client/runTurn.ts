@@ -144,12 +144,15 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
   let rolled = false
   let soft = false
   let truncated = false
+  let advisor: 'free' | 'locked' | undefined
+  // The plan sets the hop cap (Free 2, Pro 3); the server tells us on the first frame and refuses a hop past it.
+  let hopLimit: number = TURN_LIMITS.maxHops
   let text = ''
   const proposals: Proposal[] = []
   const reads: ReadNote[] = []
 
   try {
-    for (let hop = 0; hop <= TURN_LIMITS.maxHops; hop++) {
+    for (let hop = 0; hop <= hopLimit; hop++) {
       const body: TurnRequest = {
         ...(chatId ? { chatId } : {}),
         ...(hop > 0 ? { hop: true } : {}),
@@ -183,6 +186,8 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
             if (ev.chatId) args.onChat?.(ev.chatId)
             rolled ||= ev.rolled
             soft ||= ev.soft
+            if (typeof ev.maxHops === 'number') hopLimit = Math.max(0, Math.min(hopLimit, ev.maxHops))
+            if (ev.advisor) advisor = ev.advisor
           } else if (ev.t === 'text') {
             text += ev.d
             args.onText(text)
@@ -210,7 +215,7 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
       reads.push(...ran.reads)
       if (!ran.needsModel) break
       // The last hop still asking for data means the model never answered: say so instead of a silent empty reply.
-      if (hop === TURN_LIMITS.maxHops) {
+      if (hop >= hopLimit) {
         if (proposals.length === 0 && !text.trim()) throw new TurnFailure({ kind: 'failed' })
         break
       }
@@ -227,5 +232,5 @@ export async function runTurn(args: RunTurnArgs): Promise<TurnOutcome> {
     truncated = true
   }
 
-  return { text: text.trim(), proposals, reads, chatId, rolled, soft, truncated, intent: args.intent }
+  return { text: text.trim(), proposals, reads, chatId, rolled, soft, truncated, intent: args.intent, ...(advisor ? { advisor } : {}) }
 }

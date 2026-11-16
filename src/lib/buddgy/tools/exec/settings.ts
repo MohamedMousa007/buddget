@@ -24,12 +24,11 @@ interface View {
   s: AppSettings
   tips: boolean
   learning: boolean
-  muted: boolean
 }
 
 interface Patch {
   fin?: Partial<AppSettings>
-  ui?: { tips?: boolean; learning?: boolean; muted?: boolean }
+  ui?: { tips?: boolean; learning?: boolean }
 }
 
 const THEMES = ['light', 'dark', 'system'] as const
@@ -37,13 +36,12 @@ const LANGUAGES = ['en', 'ar'] as const
 const ENTRY_MODES = ['amount', 'percent_of_income'] as const
 const SAMPLE_AMOUNT = 1250
 
-const viewNow = (): View => ({ s: fin().settings, tips: ui().buddgyNudges, learning: ui().buddgyLearning, muted: ui().voiceSpeakMuted })
+const viewNow = (): View => ({ s: fin().settings, tips: ui().buddgyNudges, learning: ui().buddgyLearning })
 
 const withPatch = (v: View, p: Patch): View => ({
   s: { ...v.s, ...p.fin },
   tips: p.ui?.tips ?? v.tips,
   learning: p.ui?.learning ?? v.learning,
-  muted: p.ui?.muted ?? v.muted,
 })
 
 function current(key: Key, v: View): Value {
@@ -63,7 +61,6 @@ function current(key: Key, v: View): Value {
     case 'goalAlerts': return v.s.goalAlerts ?? true
     case 'tips': return v.tips
     case 'learning': return v.learning
-    case 'voiceReadAloud': return !v.muted
   }
 }
 
@@ -85,7 +82,7 @@ const currencyOf = (raw: unknown): Currency | undefined => {
   return FIAT_CURRENCIES.find((c) => c === code)
 }
 
-const AUTO: readonly Key[] = ['theme', 'language', 'showCents', 'goldStrip', 'onlyMyCurrencies', 'secondaryCurrency', 'tips', 'learning', 'voiceReadAloud']
+const AUTO: readonly Key[] = ['theme', 'language', 'showCents', 'goldStrip', 'onlyMyCurrencies', 'secondaryCurrency', 'tips', 'learning']
 
 type Planned = { value: string; patch: Patch } | { error: string; hint?: string }
 
@@ -139,7 +136,6 @@ function plan(key: Key, raw: unknown, v: View): Planned {
     case 'goalAlerts': return flag((on) => ({ fin: { goalAlerts: on } }))
     case 'tips': return flag((on) => ({ ui: { tips: on } }))
     case 'learning': return flag((on) => ({ ui: { learning: on } }))
-    case 'voiceReadAloud': return flag((on) => ({ ui: { muted: !on } }))
     case 'baseCurrency': throw new Error('baseCurrency has its own flow')
   }
 }
@@ -313,7 +309,6 @@ function writePatch(fp: Partial<AppSettings>, up: NonNullable<Patch['ui']>) {
   }
   if (up.tips !== undefined) ui().setBuddgyNudges(up.tips)
   if (up.learning !== undefined) ui().setBuddgyLearning(up.learning)
-  if (up.muted !== undefined) ui().setVoiceSpeakMuted(up.muted)
 }
 
 const change_setting: WriteImpl = {
