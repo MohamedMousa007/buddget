@@ -8,6 +8,7 @@ export const FAILURE_LABELS: Record<string, string> = {
   duplicate: 'Duplicate', log_insert_failed: 'Save failed', insert_failed: 'Save failed', parse_exception: 'Parse crash',
   device_blocked: 'Refused: phone removed or unidentified', invalid_body: 'Refused: bad message format', invalid_json: 'Refused: unreadable request',
   processing: 'Processing', timed_out: 'Timed out', rate_limited: 'Rate limited', not_configured: 'AI not configured',
+  ai_quota_held: 'Held: SMS AI cap reached', sms_account_cap: 'Held: account cap', quota_unavailable: 'Quota check failed',
 }
 
 /**

@@ -119,3 +119,10 @@ Phases 2 and 3 were pushed together: the regenerated `database.types.ts` carries
   - **Admin founder approval** pinned by `src/app/api/admin/loyalty/route.test.ts` (guard permission, one account only, number issued and audited, known refusals 409, unexpected 500).
 - **Still open:** `ai_quota_status` is unchanged (the balance comes from `/api/entitlements/me`); no weekly-check sheet, streak line, badge or credits screen in the app, and no admin screen for pending founders, trial counts or paywall views (APIs and views exist). These are UI work, needed before the founder window opens or selling starts, not before.
 
+
+## Closing check (2026-11-16)
+
+- **Sparks refund (0299), re-run on the live database in one rolled-back transaction:** the 70 pack bought by a Pro account granted 87 (+25%); the same transaction again granted 0; after 3 were spent the refund returned 84 and left 0 with `refunded_at` set; a second refund and an unknown transaction returned 0. Nothing persisted.
+- **Admin screens:** trials and paywall views per day and paywall views by country are in Admin, Loyalty ("Trials and paywall, last 30 days", `admin_billing_counts`), built in S6 v2. Empty until billing is on. The "no admin screen" lines above are out of date.
+- **Held `ai_quota_held` SMS (council, 2026-11-16):** no automatic re-read. A cron would load the small database, spend the user's cap on old messages and starve new ones, and late inserts would move past budgets and duplicate hand-entered expenses. Held count is 0 today. Held codes now have readable labels in Admin, SMS, "Why they failed", which is the watch point. If real holds appear, add a user-tapped "Read now" in the Held sheet (oldest first, a few per tap, through the same cap) before the 30-day masking.
+- **Chat metering:** not under-counted. The 31 zero-token chat rows are all failed calls (status `error`); successful chat rows carry real tokens. Separate bug found: every fast-tier chat call (gemini-2.5-flash-lite) since 2026-10-19 failed upstream (31 of 31) while smart-tier calls succeed. Cause still to be read from a live log.
