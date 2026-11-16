@@ -1,0 +1,433 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buddget First-Run Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a long audit report, sticky section nav, then flow lanes, a filterable question bank, path and accuracy panels, ranked findings. */
+:root{
+  --bg:#f6f7f6; --panel:#ffffff; --sunk:#eceeec; --ink:#16201d; --ink2:#47524e; --ink3:#6f7a76; --line:#d9dedb;
+  --accent:#0f6b5c; --accent-soft:#dcefe9; --bar:#2f7f6f;
+  --crit:#b42318; --crit-soft:#fbe4e1; --high:#b54708; --high-soft:#fdeedd; --med:#8a6d00; --med-soft:#fbf3cf; --low:#3b5b8c; --low-soft:#e3ebf7;
+  --sans:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1513; --panel:#161e1b; --sunk:#1d2724; --ink:#e7ecea; --ink2:#b3bdb9; --ink3:#86918d; --line:#2a3532;
+  --accent:#5cc4ae; --accent-soft:#173a33; --bar:#4fb09b;
+  --crit:#ff8a7d; --crit-soft:#3a1714; --high:#f5a55c; --high-soft:#3a2510; --med:#e3c55a; --med-soft:#332b0e; --low:#93b4ea; --low-soft:#172437; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1513; --panel:#161e1b; --sunk:#1d2724; --ink:#e7ecea; --ink2:#b3bdb9; --ink3:#86918d; --line:#2a3532;
+  --accent:#5cc4ae; --accent-soft:#173a33; --bar:#4fb09b;
+  --crit:#ff8a7d; --crit-soft:#3a1714; --high:#f5a55c; --high-soft:#3a2510; --med:#e3c55a; --med-soft:#332b0e; --low:#93b4ea; --low-soft:#172437; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+h1,h2,h3{text-wrap:balance;margin:0;letter-spacing:-.015em}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.1;font-weight:700}
+h2{font-size:24px;font-weight:700}
+h3{font-size:16px;font-weight:600}
+p{margin:0}
+.mono,code{font-family:var(--mono);font-size:.86em}
+code{background:var(--sunk);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.lead{color:var(--ink2);max-width:68ch;font-size:16px}
+.muted{color:var(--ink3)}
+section{display:flex;flex-direction:column;gap:16px;padding-top:40px;scroll-margin-top:64px}
+.sechead{display:flex;flex-direction:column;gap:6px;border-top:2px solid var(--ink);padding-top:14px}
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-left,0px));display:flex;gap:6px;overflow-x:auto}
+nav.toc a{flex:none;color:var(--ink2);text-decoration:none;font-weight:600;font-size:13px;padding:8px 12px;border-radius:999px;min-height:36px;display:inline-flex;align-items:center}
+nav.toc a:hover,nav.toc a:focus-visible{background:var(--sunk);color:var(--ink);outline:none}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:4px}
+.kpi b{font-family:var(--mono);font-size:30px;font-weight:500;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.kpi.bad b{color:var(--crit)}
+.kpi span{color:var(--ink2);font-size:13.5px}
+.verdict{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:10px}
+.verdict ul{margin:0;padding-inline-start:20px;display:grid;gap:6px;color:var(--ink2)}
+/* flow */
+.lanes{display:grid;gap:14px}
+.lane{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px}
+.lanehead{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.lanehead .no{font-family:var(--mono);color:var(--accent);font-weight:500}
+.steps{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.step{flex:1 1 200px;min-width:0;background:var(--sunk);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;position:relative}
+.step.dec{background:transparent;border:1.5px dashed var(--ink3)}
+.step .t{font-weight:600}
+.step .d{font-size:13.5px;color:var(--ink2)}
+.step .src{font-family:var(--mono);font-size:11.5px;color:var(--ink3);overflow-wrap:anywhere}
+.arrow{align-self:center;color:var(--ink3);font-size:18px;flex:none}
+.br{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--ink2)}
+.flag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;text-decoration:none;min-height:24px}
+.flag.critical{background:var(--crit-soft);color:var(--crit)} .flag.high{background:var(--high-soft);color:var(--high)} .flag.medium{background:var(--med-soft);color:var(--med)} .flag.low{background:var(--low-soft);color:var(--low)}
+.order{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:start;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600;background:var(--panel);position:sticky;top:0}
+td.num,th.num{text-align:end;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mod{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:2px 6px;border-radius:5px;background:var(--sunk);white-space:nowrap}
+.mod.focus{background:var(--accent-soft);color:var(--accent)}
+/* bank */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;font-weight:600;color:var(--ink3)}
+select,input[type=search]{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;height:44px;padding:0 10px;min-width:0}
+input[type=search]{width:min(260px,100%)}
+select:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bank{overflow:auto;max-height:720px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.bank td .q{font-weight:500}
+.bank td .id{font-family:var(--mono);font-size:11.5px;color:var(--ink3)}
+.bank td .gate{font-family:var(--mono);font-size:11.5px;color:var(--ink2);overflow-wrap:anywhere}
+.bank tr.zero td.asked{color:var(--crit);font-weight:600}
+.tier{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.tier.core{background:var(--accent-soft);color:var(--accent)} .tier.std{background:var(--high-soft);color:var(--high)} .tier.follow{background:var(--sunk);color:var(--ink2)}
+.mini{display:inline-block;width:56px;height:6px;border-radius:3px;background:var(--sunk);vertical-align:middle;margin-inline-start:6px;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--bar);border-radius:3px}
+.count{font-size:13px;color:var(--ink3)}
+/* scenarios */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--panel);color:var(--ink2);border-radius:999px;padding:0 14px;min-height:44px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--mono);font-size:22px;font-weight:500;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--ink3)}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--ink3);font:11px var(--mono)}
+.chart .grid{stroke:var(--line)}
+.chart rect.m{fill:var(--bar)}
+.chart rect.m:hover,.chart rect.m.on{fill:var(--accent)}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:6px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s}
+.hbars{display:grid;gap:7px}
+.hbar{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 52px;gap:10px;align-items:center;font-size:13px}
+.hbar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .track{height:10px;background:var(--sunk);border-radius:5px;overflow:hidden}
+.hbar .track i{display:block;height:100%;background:var(--bar);border-radius:5px}
+.hbar .v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:end;font-size:12.5px}
+.paths{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.paths li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;font-size:13px}
+.paths .p{font-family:var(--mono);font-size:12px;color:var(--ink2);overflow-wrap:anywhere}
+.paths .v{font-family:var(--mono);text-align:end}
+.cmp{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+/* findings */
+.findings{display:grid;gap:12px}
+.finding,.lane{scroll-margin-top:64px}
+.finding{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px;border-inline-start:4px solid var(--line)}
+.finding.critical{border-inline-start-color:var(--crit)} .finding.high{border-inline-start-color:var(--high)} .finding.medium{border-inline-start-color:var(--med)} .finding.low{border-inline-start-color:var(--low)}
+.fhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fid{font-family:var(--mono);font-size:12px;color:var(--ink3)}
+.finding dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:6px 12px;margin:0;font-size:14px}
+.finding dt{color:var(--ink3);font-size:12.5px;font-weight:600;padding-top:2px}
+.finding dd{margin:0;color:var(--ink2);min-width:0}
+.sevkey{display:flex;gap:8px;flex-wrap:wrap}
+.method{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px;color:var(--ink2)}
+.method ul{margin:0;padding-inline-start:20px;display:grid;gap:6px}
+details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+@media (max-width:640px){.finding dl{grid-template-columns:1fr}.arrow{display:none}.hbar{grid-template-columns:minmax(0,1fr) 90px 48px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header style="display:grid;gap:14px">
+  <span class="eyebrow">Buddget · production code as of commit f824b27d · audit 2026-11-16</span>
+  <h1>First-run onboarding and Budget Studio, as built today</h1>
+  <p class="lead">This page maps the onboarding journey and the budget question flow that ship in <code>src/</code> today: every step, branch and question. It also shows what happened when the real graph and engine were run over 21,000 simulated people (3,000 for each of seven entry scenarios).</p>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#summary">Summary</a><a href="#flow">Flow chart</a><a href="#order">Module order</a><a href="#bank">Question bank</a><a href="#paths">Paths</a><a href="#accuracy">Accuracy</a><a href="#findings">Findings</a><a href="#method">Method</a>
+</nav>
+
+<section id="summary">
+  <div class="kpis" id="kpis"></div>
+  <div class="verdict">
+    <h3>The short version</h3>
+    <ul>
+      <li>The design underneath is sound. A declarative graph of 106 questions with gates, follow-ups and whole-picture checks feeds a deterministic engine, and the AI only reads text and polishes the result.</li>
+      <li>One bug breaks most of it. When Buddgy reads the opener text and finds an answer from a later section, the question cursor jumps to that section and every earlier section counts as done. Core questions about income type, housing, household and debts are then never asked.</li>
+      <li>Even without that bug, the flow allows only four optional questions per run. Zakat is never asked in any scenario. With the mixed intent that onboarding uses, the question "Is there something big you are saving for?" is never asked either.</li>
+      <li>The progress percentage only counts questions still in the run, so it reaches 100% while the plan is still far from one built on full answers.</li>
+      <li>Onboarding asks payday, savings and intent, and the studio asks them again because it does not read them.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="flow">
+  <div class="sechead"><span class="eyebrow">A · Flow chart</span><h2>From a new account to a draft budget</h2>
+  <p class="lead">Each lane is a stage in order. Dashed boxes are decisions. Coloured tags link to the findings below.</p></div>
+  <div class="lanes" id="lanes"></div>
+</section>
+
+<section id="order">
+  <div class="sechead"><span class="eyebrow">B · Module order</span><h2>How the starting intent reorders the questions</h2>
+  <p class="lead">The studio walks ten modules in an order set by the intent. Highlighted modules get a 1.6× boost when the four optional slots are handed out. Onboarding always opens the studio as <b>mixed</b>, which has no focus.</p></div>
+  <div class="order"><table id="ordertbl"></table></div>
+</section>
+
+<section id="bank">
+  <div class="sechead"><span class="eyebrow">C · Question bank</span><h2>All 106 questions, their gates and how often each is asked</h2>
+  <p class="lead">The gate is the production <code>when</code> condition, shown as code. "Asked" means the question appeared on a screen. "Missed" means it applied to the person but was never asked, answered from the opener or known. Rates are for the scenario you pick.</p></div>
+  <div class="filters">
+    <div class="field"><label for="fScen">Scenario</label><select id="fScen"></select></div>
+    <div class="field"><label for="fMod">Module</label><select id="fMod"></select></div>
+    <div class="field"><label for="fTier">Tier</label><select id="fTier"><option value="">All tiers</option><option value="core">Core (always asked)</option><option value="std">Standard (4 slots per run)</option><option value="follow">Follow-up / check</option></select></div>
+    <div class="field"><label for="fShow">Show</label><select id="fShow"><option value="">Every question</option><option value="missed">Missed at least 25%</option><option value="never">Never asked when it applied</option><option value="ai">Answerable from the opener</option></select></div>
+    <div class="field"><label for="fQ">Search</label><input type="search" id="fQ" placeholder="rent, zakat, card…"></div>
+  </div>
+  <span class="count" id="bankCount" aria-live="polite"></span>
+  <div class="bank"><table><thead><tr><th>Question</th><th>Module</th><th>Tier</th><th class="num">Stake</th><th>Gate (asked only when)</th><th class="num">Applies</th><th class="num">Asked</th><th class="num">Missed</th></tr></thead><tbody id="bankBody"></tbody></table></div>
+</section>
+
+<section id="paths">
+  <div class="sechead"><span class="eyebrow">D · Paths</span><h2>How many screens people see, and which routes they take</h2>
+  <p class="lead">A screen is one card. Related fields share it, so one screen can hold several answers. Pick a scenario.</p></div>
+  <div class="tabs" id="scenTabs" role="group" aria-label="Scenario"></div>
+  <div class="grid2">
+    <div class="card"><h3 id="pTitle"></h3><div class="stats" id="pStats"></div><div class="chart" id="pHist"></div><p class="muted" style="font-size:12.5px">Share of runs by number of screens.</p></div>
+    <div class="card"><h3>Most common routes</h3><ol class="paths" id="pTop"></ol><p class="muted" style="font-size:12.5px" id="pDistinct"></p></div>
+  </div>
+  <div class="cmp"><table id="cmpTbl"></table></div>
+</section>
+
+<section id="accuracy">
+  <div class="sechead"><span class="eyebrow">E · Accuracy</span><h2>How far the draft lands from a fully answered budget</h2>
+  <p class="lead">For each simulated person, the engine built two budgets: one from the answers this run actually collected, and one from every true answer that applied. <b>Misallocation</b> is the share of income placed on different lines (half the sum of the absolute differences per line). 0% means identical.</p></div>
+  <div class="grid2">
+    <div class="card"><h3 id="aTitle"></h3><div class="stats" id="aStats"></div><div class="chart" id="aHist"></div><p class="muted" style="font-size:12.5px">Share of runs by misallocation, in 5-point bins.</p></div>
+    <div class="card"><h3>Lines that absorb the error</h3><div class="hbars" id="aLines"></div><p class="muted" style="font-size:12.5px">Average gap per run, as a share of income. The buffer swells when a commitment is never asked.</p></div>
+  </div>
+  <div class="card"><h3>Questions most often missed in this scenario</h3><div class="hbars" id="aMissed"></div></div>
+</section>
+
+<section id="findings">
+  <div class="sechead"><span class="eyebrow">F · Findings and criticism</span><h2>What is wrong, how sure I am, and what to do</h2>
+  <p class="lead">Ranked by impact on the first budget. Each finding cites the code. "Measured" means the simulation shows it; "Read" means I confirmed it from the code path alone.</p></div>
+  <div class="sevkey"><span class="flag critical">Critical</span><span class="flag high">High</span><span class="flag medium">Medium</span><span class="flag low">Low</span></div>
+  <div class="findings" id="findList"></div>
+</section>
+
+<section id="method">
+  <div class="sechead"><span class="eyebrow">G · Method and limits</span><h2>How these numbers were made</h2></div>
+  <div class="method">
+    <ul>
+      <li><b>Real code, simulated people.</b> The production graph (<code>src/lib/budget/flow/*</code>), the situation parser (<code>situationAi.parseSituation</code>) and engine v2 (<code>engine.buildPlan</code>) were bundled unchanged and driven the way <code>StudioPage</code> drives them: <code>acceptDescribed</code> for the opener, then <code>nextQuestion</code>, <code>screenNodes</code> and <code>answer</code> or <code>skip</code> per screen.</li>
+      <li><b>The population is synthetic.</b> It is 50% Egypt, 25% UAE and 25% Saudi Arabia, with log-uniform income in local ranges. The answer mix is my estimate (for example 45% renters, 45% with debts, 55% with a goal). The rates scale with these assumptions; the structural results do not. The cursor jump, zakat never being asked and readiness reaching 100% happen in every population.</li>
+      <li><b>The opener is modelled, not called.</b> Gemini was not called. Each fact the person holds that the AI can read was "said" with probability 45% (15% in the short-opener scenario). The parser then filtered it the way production does. The person skipped each skippable field with 15% probability.</li>
+      <li><b>What "applies" means.</b> A question applies when its gate holds on the person's full true answers, settled over five passes.</li>
+      <li><b>What the simulation leaves out.</b> Back and edit on the Known sheet, "Build now" (only the offer is counted) and the AI refinement step after the engine. It also never answers "not right" on a confirmation card, and it does not cover the manual, template or copy builders.</li>
+      <li><b>Engine issues from the v5 prototype work.</b> A rent answered without housing is dropped, tracked utility bills are double-counted, a deficit removes everyday lines, and the reasons are in English only. These were not re-measured here.</li>
+      <li><b>Not checked.</b> Nothing was run on a device. No real user data or analytics funnel was used. <code>/api/analytics/onboarding</code> has the real step drop-off and should be compared with this.</li>
+    </ul>
+  </div>
+</section>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+const D=JSON.parse(document.getElementById('data').textContent)
+const S=D.scenarios, N=D.n
+const SC_ORDER=['onboarding','light','offline','save','goal','debt','rich']
+const pct=(x,d=0)=>x==null?'–':(x*100).toFixed(d)+'%'
+const esc=(s)=>String(s).replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))
+const $=(id)=>document.getElementById(id)
+const MODS=['found','income','housing','household','life','debts','security','goals','annual','priorities']
+const node=(id)=>D.nodes.find((n)=>n.id===id)
+const rate=(id,sc,k)=>{const b=node(id).by[sc];return b&&b.applicable?b[k]/b.applicable:null}
+
+/* KPIs */
+const kp=[
+  ['106','questions in the bank: 13 core, 17 standard, 76 follow-ups and checks'],
+  [S.offline.screens.p50+' → '+S.onboarding.screens.p50,'median screens without the opener, then with it. A shorter flow, but because questions are skipped',true],
+  [pct(rate('housing','onboarding','missed')),'of onboarding runs never ask where the person lives (core question), once the opener is used',true],
+  [pct(S.offline.misallocation.mean)+' – '+pct(S.onboarding.misallocation.mean),'of income lands on different lines than in a fully answered budget (offline, then with opener)',true],
+]
+$('kpis').innerHTML=kp.map(([b,s,bad])=>`<div class="kpi${bad?' bad':''}"><b>${b}</b><span>${s}</span></div>`).join('')
+
+/* Flow lanes */
+const F=(id,sev)=>`<a class="flag ${sev}" href="#${id}">${id}</a>`
+const lanes=[
+ {no:'1',t:'Who sees onboarding',d:'Decided once the account has answered, never from an empty local store.',steps:[
+   {dec:1,t:'Flag on and profile loaded?',d:'While the rollout flag or the first sync is pending, nothing is shown.',src:'lib/onboarding/eligibility.ts'},
+   {dec:1,t:'Record state',d:'Done or skipped means hidden. Started but unfinished means resume. No record and no data means new. Any data at all means hidden.',src:'eligibility.ts · held.ts',br:['new','resume','hidden → app']}]},
+ {no:'2',t:'Onboarding journey: six steps (five on the web)',d:'Progress syncs on the profile at every move. "Skip" leaves for Flow, which offers to continue.',steps:[
+   {t:'1 · About you',d:'Name (required), country (EG, AE, SA or Other), language. Currency follows the country; Other lets you pick one of six.',src:'StepAbout.tsx',f:[['F12','low']]},
+   {t:'2 · What brings you here',d:'Up to two of: see my money, stop running out, save, pay off debt, budget. Written to profile priorities.',src:'StepGoals.tsx',f:[['F4','high']]},
+   {t:'3 · Accounts',d:'Add cash, bank or wallet with the Accounts sheet. Shows the total. Continue is disabled with none; "Later" moves on.',src:'StepAccounts.tsx',f:[['F8','medium']]},
+   {t:'4 · Income',d:'Amount, payday (1, 15, 25, 28 or custom), steady or varies. Creates one monthly income source typed salary. "No income" sets a flag. Then shows how much there is to spend per day until payday.',src:'StepIncome.tsx',f:[['F7','medium']]},
+   {t:'5 · Automate (apps only)',d:'Bank texts (Android permission, or the iOS Shortcuts setup) and push. Each shown working before it asks.',src:'StepAutomate.tsx'},
+   {t:'6 · Budget',d:'Shows what the plan will start from. "Build" opens the studio; "Later" goes to Flow.',src:'StepBudget.tsx',f:[['F4','high']]}]},
+ {no:'3',t:'Ways into the Budget Studio',d:'Every entry runs the same question graph. Only the intent differs.',steps:[
+   {t:'From onboarding',d:'requestBudgetStudio() opens the studio with intent null, which runs as mixed.',src:'useBudgetTakeover.ts:37',f:[['F4','high']]},
+   {t:'From the Budget tab',d:'Create chooser: Save more, Reach a goal, Pay off debt. Or build it yourself: blank, template or copy, which skip the studio entirely.',src:'builder/CreateChooser.tsx'},
+   {t:'From Buddgy chat',d:'A navigation tool asks for the studio (intent null).',src:'lib/buddgy/tools/exec/navigation.ts'},
+   {dec:1,t:'Saved draft for this intent, under 7 days old?',d:'Resume it, otherwise start fresh. The draft lives on this device only.',src:'lib/budget/studioDraft.ts',f:[['F10','medium']]}]},
+ {no:'4',t:'Studio: opener',d:'Shown first when online and nothing is answered yet.',steps:[
+   {dec:1,t:'Online?',d:'Offline goes straight to the questions. Online always shows the opener.',src:'StudioPage.tsx:215'},
+   {t:'Describe your situation',d:'Free text of 12 to 400 characters, or tap one of three example chips. There is no skip button.',src:'OpenerStep.tsx',f:[['F6','medium'],['F5','high']]},
+   {t:'Gemini reads it',d:'Structured output for the 49 questions it can answer, plus commitments. parseSituation drops anything that is not a valid answer.',src:'situationAi.ts',f:[['F9','medium']]},
+   {t:'acceptDescribed',d:'Each fact the AI read is recorded as an answer, in graph order. Each answer moves the module cursor forward.',src:'flow.ts:161',f:[['F1','critical']]},
+   {t:'"Understood" screen',d:'Lists what was kept. You can only continue from here.',src:'UnderstoodStep.tsx'}]},
+ {no:'5',t:'Studio: question loop',d:'nextQuestion walks the modules in the intent order. Related fields share one screen.',steps:[
+   {t:'Confirm cards',d:'Income, bills, debts and goals the app already holds, shown as Right? / Not right. "Not right" drops the known value.',src:'nodes.ts · flow.ts answer()'},
+   {dec:1,t:'Which questions are open',d:'Core: always. Standard: only the 4 highest stake. Follow-up: when its parent unlocks it, and above the stake floor, which rises after 10, 14 and 18 screens. Modules behind the cursor: never.',src:'flow.ts:22, 41, 46',f:[['F2','high'],['F1','critical']]},
+   {t:'Whole-picture checks',d:'At module boundaries: housing over 40% of income, deficit, goal too big, goal versus safety, what to trim first.',src:'nodes.ts (needs)'},
+   {dec:1,t:'Build now?',d:'Offered when income and housing are known and readiness is at least 85%. Readiness counts only questions still in the run.',src:'flow.ts:142-148',f:[['F3','high']]},
+   {t:'Known sheet and Back',d:'Reopen any answer. Answers that no longer apply are dropped (pruneInapplicable).',src:'KnownSheet.tsx'}]},
+ {no:'6',t:'Build',d:'Runs when there is no next question or after "Build now".',steps:[
+   {t:'Create records',d:'Income, savings, debts and goals the person stated become real records, once (idempotent across retries).',src:'studioEntities.ts'},
+   {t:'Facts → engine v2',d:'Store facts, remembered answers and this run are merged, then buildPlan runs. It is deterministic.',src:'toFacts.ts · engine.ts'},
+   {t:'AI refine (30 s)',d:'Gemini may adjust the draft. repairDraft re-balances it. On a timeout or failure the engine draft is kept, with a note.',src:'StudioPage.tsx:154',f:[['F13','low']]},
+   {t:'Draft plan',d:'Saved as a draft. The person reviews it, then activates it.',src:'sheets/ActivateSheet.tsx'}]},
+]
+$('lanes').innerHTML=lanes.map((l)=>`<div class="lane"><div class="lanehead"><span class="no">${l.no}</span><h3>${l.t}</h3><span class="muted" style="font-size:13.5px">${l.d}</span></div><div class="steps">${l.steps.map((s,i)=>`${i?'<span class="arrow" aria-hidden="true">→</span>':''}<div class="step${s.dec?' dec':''}"><span class="t">${s.dec?'◇ ':''}${s.t}</span><span class="d">${s.d}</span>${s.br?`<span class="br">${s.br.map((b)=>`<span class="chip">${b}</span>`).join('')}</span>`:''}${s.f?`<span class="br">${s.f.map(([id,sev])=>F(id,sev)).join('')}</span>`:''}<span class="src">${s.src}</span></div>`).join('')}</div></div>`).join('')
+
+/* Module order */
+const FOCUS={save:['security','life'],goal:['goals','security'],debt:['debts','security'],mixed:[]}
+$('ordertbl').innerHTML='<thead><tr><th>Intent</th>'+MODS.map((_,i)=>`<th>${i+1}</th>`).join('')+'</tr></thead><tbody>'+Object.entries(D.order).map(([k,o])=>`<tr><td><b>${k}</b>${k==='mixed'?' <span class="muted">(onboarding, Buddgy)</span>':''}</td>${o.map((m)=>`<td><span class="mod${FOCUS[k].includes(m)?' focus':''}">${m}</span></td>`).join('')}</tr>`).join('')+'</tbody>'
+
+/* Question bank */
+const fScen=$('fScen'),fMod=$('fMod')
+fScen.innerHTML=SC_ORDER.map((k)=>`<option value="${k}">${esc(S[k].label)}</option>`).join('')
+fMod.innerHTML='<option value="">All modules</option>'+MODS.map((m)=>`<option>${m}</option>`).join('')
+function bank(){
+  const sc=fScen.value,m=fMod.value,t=$('fTier').value,sh=$('fShow').value,q=$('fQ').value.trim().toLowerCase()
+  const rows=D.nodes.filter((n)=>{
+    const b=n.by[sc]||{applicable:0,asked:0,missed:0}
+    if(m&&n.mod!==m)return false
+    if(t&&n.tier!==t)return false
+    if(sh==='missed'&&!(b.applicable&&b.missed/b.applicable>=.25))return false
+    if(sh==='never'&&!(b.applicable>0&&b.asked===0))return false
+    if(sh==='ai'&&!n.ai)return false
+    if(q&&!(n.id+' '+n.q+' '+n.why+' '+(n.opts||[]).join(' ')).toLowerCase().includes(q))return false
+    return true})
+  $('bankCount').textContent=`${rows.length} of ${D.nodes.length} questions`
+  $('bankBody').innerHTML=rows.map((n)=>{
+    const b=n.by[sc]||{applicable:0,asked:0,missed:0},ap=b.applicable/N,as=b.applicable?b.asked/b.applicable:null,mi=b.applicable?b.missed/b.applicable:null
+    const isConfirm=n.control==='confirm'
+    const gate=n.needs?`check after: ${n.needs.join(', ')}<br>${esc(n.when)}`:esc(n.when)||'always'
+    const opts=n.opts?`<div class="id">${n.opts.join(' · ')}</div>`:n.range?`<div class="id">${n.range[0]}–${n.range[1]}</div>`:''
+    return `<tr class="${b.applicable&&b.asked===0?'zero':''}"><td><div class="q">${esc(n.q)}</div><div class="id">${n.id} · ${n.control}${n.skippable?' · not-sure':''}${n.ai?' · AI':''}</div>${opts}<div class="muted" style="font-size:12.5px">${esc(n.why)}</div></td><td><span class="mod">${n.mod}</span></td><td><span class="tier ${n.tier}">${n.tier}</span></td><td class="num">${n.stake}</td><td class="gate">${gate}</td><td class="num">${isConfirm?'n/a':pct(ap)}</td><td class="num asked">${isConfirm||as==null?'–':pct(as)}<span class="mini" aria-hidden="true"><i style="width:${(as||0)*100}%"></i></span></td><td class="num">${isConfirm||mi==null?'–':pct(mi)}</td></tr>`}).join('')
+}
+for(const id of ['fScen','fMod','fTier','fShow'])$(id).addEventListener('change',bank)
+$('fQ').addEventListener('input',bank)
+
+/* charts */
+function hist(el,h,xs,fmtX,fmtTip){
+  const W=520,H=170,pl=34,pb=22,pt=8,keys=xs,vals=keys.map((k)=>(h[k]||0)/N),max=Math.max(.0001,...vals)
+  const st=max>.3?.1:.05,top=Math.ceil(max/st)*st,bw=(W-pl)/keys.length,nt=Math.round(top/st)
+  let g=''
+  for(let i=0;i<=nt;i++){const v=st*i,y=pt+(H-pt-pb)*(1-v/top);g+=`<line class="grid" x1="${pl}" x2="${W}" y1="${y}" y2="${y}"/><text x="${pl-6}" y="${y+3}" text-anchor="end">${Math.round(v*100)}%</text>`}
+  const step=Math.ceil(keys.length/10)
+  keys.forEach((k,i)=>{const v=vals[i],h0=(H-pt-pb)*v/top,x=pl+i*bw+1,y=H-pb-h0
+    g+=`<rect class="m" x="${x}" y="${v>0?y:H-pb}" width="${Math.max(1,bw-2)}" height="${Math.max(0,h0)}" rx="${Math.min(4,bw/3)}" data-t="${esc(fmtTip(k,v))}"/>`
+    g+=`<rect x="${pl+i*bw}" y="${pt}" width="${bw}" height="${H-pt-pb}" fill="transparent" data-t="${esc(fmtTip(k,v))}" data-i="${i}"/>`
+    if(i%step===0)g+=`<text x="${x+bw/2}" y="${H-6}" text-anchor="middle">${fmtX(k)}</text>`})
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Histogram">${g}</svg><div class="tip"></div>`
+  const tip=el.querySelector('.tip'),svg=el.querySelector('svg'),marks=[...svg.querySelectorAll('rect.m')]
+  svg.addEventListener('pointermove',(e)=>{const r=e.target.closest('rect[data-i]');marks.forEach((m)=>m.classList.remove('on'));if(!r){tip.style.opacity=0;return}
+    const i=+r.dataset.i;marks[i].classList.add('on');const bb=el.getBoundingClientRect(),mb=marks[i].getBoundingClientRect();tip.textContent=r.dataset.t;tip.style.left=(mb.left-bb.left+mb.width/2)+'px';tip.style.top=(mb.top-bb.top)+'px';tip.style.opacity=1})
+  svg.addEventListener('pointerleave',()=>{tip.style.opacity=0;marks.forEach((m)=>m.classList.remove('on'))})
+}
+const hbars=(el,rows,max,fmt)=>{el.innerHTML=rows.map(([l,v])=>`<div class="hbar"><span class="lab" title="${esc(l)}">${esc(l)}</span><span class="track"><i style="width:${Math.min(100,v/max*100)}%"></i></span><span class="v">${fmt(v)}</span></div>`).join('')}
+
+let cur='onboarding'
+function scen(){
+  const s=S[cur]
+  document.querySelectorAll('#scenTabs button').forEach((b)=>b.setAttribute('aria-pressed',b.dataset.k===cur))
+  $('pTitle').textContent=s.label
+  $('pStats').innerHTML=[[s.screens.p50,'median screens'],[s.screens.p10+'–'+s.screens.p90,'10th–90th percentile'],[s.screens.max,'longest run'],[s.questions.p50,'median fields answered'],[s.openerAnswered.toFixed(1),'facts taken from the opener'],[pct(s.buildNowOffered),'were offered "Build now"']].map(([b,l])=>`<div class="stat"><b>${b}</b><span>${l}</span></div>`).join('')
+  const mx=Math.max(21,s.screens.max),xs=[...Array(mx+1).keys()].slice(1)
+  hist($('pHist'),s.screens.hist,xs,(k)=>k,(k,v)=>`${k} screen${k==1?'':'s'}: ${pct(v,1)} of runs`)
+  $('pTop').innerHTML=s.topPaths.map(([p,v])=>`<li><span class="v">${pct(v,1)}</span><span class="p">${esc(p||'(no questions)')}</span></li>`).join('')
+  $('pDistinct').textContent=`${s.distinctPaths.toLocaleString('en-US')} distinct routes across ${N.toLocaleString('en-US')} runs. Names are screen groups from nodes.ts.`
+  $('aTitle').textContent=s.label
+  $('aStats').innerHTML=[[pct(s.misallocation.p50),'median misallocation'],[pct(s.misallocation.p90),'90th percentile'],[pct(s.misallocation.over10),'runs more than 10% off'],[pct(s.misallocation.over20),'runs more than 20% off'],[pct(s.readinessEnd/100),'readiness shown at the end'],[pct(s.missedAmountShare),'runs missing at least one amount']].map(([b,l])=>`<div class="stat"><b>${b}</b><span>${l}</span></div>`).join('')
+  const bins=[...Array(20).keys()].map((i)=>String(i*5))
+  hist($('aHist'),s.misallocation.hist,bins,(k)=>k%20==0?k+'%':'',(k,v)=>`${k}–${(+k+5)}%${k=='95'?'+':''} off: ${pct(v,1)} of runs`)
+  hbars($('aLines'),s.lineErr,Math.max(...s.lineErr.map((x)=>x[1])),(v)=>pct(v,1))
+  hbars($('aMissed'),s.missedTop.map(([id,v])=>[`${id} · ${node(id).q}`,v]),1,(v)=>pct(v))
+}
+$('scenTabs').innerHTML=SC_ORDER.map((k)=>`<button type="button" data-k="${k}" aria-pressed="false">${esc(S[k].label)}</button>`).join('')
+$('scenTabs').addEventListener('click',(e)=>{const b=e.target.closest('button');if(b){cur=b.dataset.k;scen()}})
+$('cmpTbl').innerHTML='<thead><tr><th>Scenario</th><th>Intent</th><th class="num">Opener</th><th class="num">Median screens</th><th class="num">P90 screens</th><th class="num">Routes</th><th class="num">Housing missed</th><th class="num">Goal question missed</th><th class="num">Mean misallocation</th></tr></thead><tbody>'+SC_ORDER.map((k)=>{const s=S[k];return `<tr><td>${esc(s.label)}</td><td>${s.intent}</td><td class="num">${pct(s.opener)}</td><td class="num">${s.screens.p50}</td><td class="num">${s.screens.p90}</td><td class="num">${s.distinctPaths}</td><td class="num">${pct(rate('housing',k,'missed'))}</td><td class="num">${rate('hasGoal',k,'missed')==null?'n/a':pct(rate('hasGoal',k,'missed'))}</td><td class="num">${pct(s.misallocation.mean)}</td></tr>`}).join('')+'</tbody>'
+
+/* Findings */
+const r=(id,sc,k)=>pct(rate(id,sc,k))
+const FIND=[
+ {id:'F1',sev:'critical',t:'Answers read from the opener skip every earlier module, core questions included',how:'Measured + read',
+  ev:`acceptDescribed records each fact the AI read with answer(), and answer() moves the cursor to that answer's module (advance, flow.ts:48). Questions in modules behind the cursor are treated as passed. A one-line opener, "I have 5,000 saved", sends the next question straight to emergencyMonths: confirm income, income type, housing, household and debts are never asked. In the onboarding scenario housing is missed in ${r('housing','onboarding','missed')} of runs, household in ${r('household','onboarding','missed')} and income type in ${r('incomeType','onboarding','missed')}. In ${pct(S.onboarding.topPaths[0][1])} of runs the whole studio is a single priorities screen. Even a short opener (about ${S.light.openerAnswered.toFixed(1)} facts) misses housing in ${r('housing','light','missed')} of runs.`,
+  src:'src/lib/budget/flow/flow.ts:48, :161 · StudioPage.tsx finishOpener',
+  p:`Happens to anyone online whose opener text mentions savings, debt, a goal or anything past income. That is most people the opener reaches.`,
+  fix:'Restore the original cursor after acceptDescribed. Opener answers should fill questions, not advance the walk. Add a flow.test.ts case: an opener that sets only savingsOnHand must still ask housing and household.'},
+ {id:'F2',sev:'high',t:'Only four optional questions per run, so whole topics are never asked',how:'Measured',
+  ev:`STD_BUDGET = 4 shares four slots among 17 standard questions, ranked by stake. Zakat (stake 0.2) is never asked in any of the 21,000 runs. With the mixed intent that onboarding uses and no opener, "Is there something big you are saving for?" is missed ${r('hasGoal','offline','missed')} of the time, health cover ${r('healthCover','offline','missed')}, retirement ${r('retirement','offline','missed')} and how you get around ${r('transportMode','offline','missed')}. The engine fills these with typical values, and the draft gives no sign they were guesses.`,
+  src:'src/lib/budget/flow/flow.ts:22 (STD_BUDGET), :41 (stakeFloor), nodes.ts stake values',
+  p:'Every run. The order is fixed, so the same topics are always dropped for the same intent.',
+  fix:'Make zakat and the goal question core for EG and SA, or derive them from the onboarding goals. Show estimated lines as estimated on the draft. Consider ranking by how much the answer would move the plan rather than by a fixed stake.'},
+ {id:'F3',sev:'high',t:'The progress percentage reaches 100% on a budget built mostly on guesses',how:'Measured + read',
+  ev:`flowReadiness sums stake only over questions still in the run. Questions cut by the four-slot limit, the stake floor or the cursor jump leave the total, so the bar finishes at 100% in every scenario. Meanwhile the draft is ${pct(S.offline.misallocation.mean)} (offline) to ${pct(S.onboarding.misallocation.mean)} (with opener) away from the fully answered budget. "Build now" uses the same number (≥85%) and was offered in ${pct(S.offline.buildNowOffered)} of offline runs.`,
+  src:'src/lib/budget/flow/flow.ts:142-148',
+  p:'Every run.',
+  fix:'Count readiness against every question whose gate holds, including the cut ones. Or rename it "questions left" and drop the percentage.'},
+ {id:'F4',sev:'high',t:'Onboarding learns the intent, then the studio ignores it',how:'Read',
+  ev:'Step 2 records goals such as "pay off debt" or "save" as profile priorities. The hand-off calls requestBudgetStudio(), which opens the studio with intent null, which runs as mixed. Mixed has no focus module, so debt or savings questions get no boost. "Priorities" is a core question that is never carried over (NOT_CARRIED), so it is asked again. "See my money" and "budget" map to nothing.',
+  src:'useOnboarding.ts:53 · useBudgetTakeover.ts:37 · lib/onboarding/steps.ts prioritiesFor · flow/known.ts NOT_CARRIED',
+  p:'Everyone who builds from onboarding.',
+  fix:'Map the onboarding goals to an intent (debt → debt, save → save) and pass it through requestBudgetStudio. Read profile priorities as known.'},
+ {id:'F5',sev:'high',t:'The opener example chips can become the person\'s real answers',how:'Read',
+  ev:'Tapping "I own my home, owe a card, want to save" fills the text box, and Send treats it as the person\'s own words. Gemini returns housing = own and a card debt, both accepted. Because of F1, the cursor then jumps to the debts module.',
+  src:'src/lib/i18n/budgetPage/studioCopy.ts:103 · OpenerStep.tsx',
+  p:'Anyone who taps a chip and sends it unchanged. Chips are the lowest-effort way past the step, which has no skip (F6).',
+  fix:'Make chips placeholders or editable starters, not one-tap answers. Mark what came from a chip on the Understood screen.'},
+ {id:'F6',sev:'medium',t:'The opener cannot be skipped online',how:'Read',
+  ev:'With a connection, the first studio screen needs 12+ characters before Continue works, and there is no skip or "ask me instead". The only other exit is closing the studio. Offline, the opener is silently not shown at all.',
+  src:'OpenerStep.tsx:14, :55 · StudioPage.tsx:215',
+  p:'Everyone online.',
+  fix:'Add "I\'d rather answer questions". Treat it the same as offline.'},
+ {id:'F7',sev:'medium',t:'Payday and income type are asked twice, and the income is always saved as salary',how:'Read',
+  ev:'Onboarding step 4 collects the payday and steady or varies. knownFromStore never maps payday or payFrequency, so salaried people are asked "Which day of the month?" again. The income source is created with sourceType "salary" whatever the person does, and incomeType is a core question asked again.',
+  src:'StepIncome.tsx:49 · flow/known.ts',
+  p:`Salaried onboarding users without an opener: payday is asked in ${r('payday','offline','asked')} of offline runs where it applies.`,
+  fix:'Map dayOfMonth to payday, and payFrequency from the source. Ask the income kind in onboarding, or do not stamp salary.'},
+ {id:'F8',sev:'medium',t:'Balances entered in onboarding are not counted as savings',how:'Read',
+  ev:'Step 3 shows the total across cash, bank and wallet accounts. The studio\'s savingsOnHand reads liquidSavings, which sums savings vaults only, so "How much do you have saved right now?" is asked straight after the app showed that number.',
+  src:'flow/known.ts:31 · budget/liveLinks.ts:276 liquidSavings',
+  p:'Anyone who added accounts in onboarding.',
+  fix:'Offer the account total as the default with a confirm card, and let the person exclude spending accounts.'},
+ {id:'F9',sev:'medium',t:'Some facts the opener read are dropped without saying so',how:'Read',
+  ev:'acceptDescribed skips any fact whose gate is not yet open when it is applied. "In 10 months" (goalMonths) needs goalTiming, which the AI cannot answer. Payday needs incomeType. parseSituation deletes a rent amount when the model does not also return housing = rent. The Understood screen lists only what was kept, so the person never sees what was lost.',
+  src:'flow.ts acceptDescribed · situationAi.ts:116',
+  p:'Openers that mention a goal date, a payday or rent.',
+  fix:'Infer the parent from the child (goalMonths implies by_date, rent implies renting), as parseSituation already does for debt kinds.'},
+ {id:'F10',sev:'medium',t:'An unfinished studio run stays on one device, and is lost when the intent changes',how:'Read',
+  ev:'The onboarding record syncs on the profile. The studio draft sits in the persisted settings store on the device. A draft is resumed only for the same intent and within 7 days. Starting again from a different card overwrites it.',
+  src:'lib/budget/studioDraft.ts · useSettingsStore.ts budgetStudioDraft',
+  p:'People who switch devices or entry points mid-run.',
+  fix:'Store the draft on the profile next to the onboarding record. Ask before replacing a draft from another intent.'},
+ {id:'F11',sev:'low',t:'"Do you pay mostly in cash?" is never asked',how:'Measured',
+  ev:'cashHeavy needs history and a standard slot at stake 0.2. It was asked in 0 runs, including the data-rich scenario where it is the only one that applies. Cash under-counting is exactly what makes history-based amounts wrong.',
+  src:'nodes.ts cashHeavy',
+  p:'Every data-rich account.',
+  fix:'Make it a follow-up of confirmBills, or core when hasHistory.'},
+ {id:'F12',sev:'low',t:'Two hard stops in the first minute',how:'Read',
+  ev:'Step 1 needs a name before Continue works, though the app only uses it in greetings. Step 3\'s main button is disabled until an account is added. The way on is a ghost "Later" button.',
+  src:'StepAbout.tsx:36 · StepAccounts.tsx:68',
+  p:'Anyone who hesitates on either step. Compare with the step-view funnel in /api/analytics/onboarding.',
+  fix:'Make the name optional. Let Continue mean Later when there are no accounts.'},
+ {id:'F13',sev:'low',t:'The AI may rewrite engine amounts after the person is done',how:'Read',
+  ev:'After buildPlan, refineDraft can change line amounts within 30 seconds, and repairDraft rebalances the result. The plan the person sees can differ from the deterministic one, and the shown reasons were written for the engine draft.',
+  src:'StudioPage.tsx:154-157 · budgetAi.applyRefinement',
+  p:'Every online build. Not measured.',
+  fix:'Limit the refine step to wording, or show which lines it moved and why.'},
+]
+$('findList').innerHTML=FIND.map((f)=>`<article class="finding ${f.sev}" id="${f.id}"><div class="fhead"><span class="flag ${f.sev}">${f.sev[0].toUpperCase()+f.sev.slice(1)}</span><span class="fid">${f.id} · ${f.how}</span></div><h3>${esc(f.t)}</h3><dl><dt>Evidence</dt><dd>${esc(f.ev)}</dd><dt>How often</dt><dd>${esc(f.p)}</dd><dt>Code</dt><dd><code>${esc(f.src)}</code></dd><dt>Fix</dt><dd>${esc(f.fix)}</dd></dl></article>`).join('')
+
+bank();scen()
+})()
+</script>
