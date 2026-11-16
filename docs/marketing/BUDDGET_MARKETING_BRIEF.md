@@ -261,7 +261,7 @@ Start at Minimal. Move up when a message has proven itself, the reveal needs sto
   - Social handles: none of 17 profile URLs (`buddget`, `buddgy`, `buddget.app`, `getbuddget`, `buddgetapp` across Instagram, TikTok, Facebook, LinkedIn, X, YouTube) returned a real profile. Instagram was rate-limited (429), TikTok returned a generic page, Facebook a login wall (one page named "Buddget" may exist at `/buddgetapp`, nothing else visible), LinkedIn 403, X 402, YouTube 404 for `@buddget` and `@buddgy` (a 404 suggests but does not prove availability). Logged-out reads cannot establish availability; the only reliable test is trying to create the account while logged in.
   - Domains: `buddget.app` is ours (live, Arabic landing page). `buddget.com` redirects to a different host that I did not follow (unverified). `buddgy.com` returned 503; `buddgy.app` did not resolve from this environment.
   - Trademark: web searches found no record of "Buddget" or "Buddgy" as marks, but these searches do not cover national registers and are **not a clearance**. WIPO's Global Brand Database covers Madrid-system marks and is listed by the UAE portal as a search tool. A law-firm page says Egypt has no public trademark database and Saudi Arabia may not be covered by WIPO's database (both possibly out of date), so Egypt and Saudi Arabia likely need the national offices or a local attorney. Nothing was searched in the Egyptian, Saudi (SAIP) or UAE registers.
-- **Interim rule:** keep phases 1 and 2 teasers name-neutral where practical (no logo lockup, no "Buddget" handle push) until the checks come back.
+- **Interim rule (superseded 2026-11-16):** the owner decided to use the Buddget name from the first post. Owner states the name is not trademarked; this is the owner's own check, not verified here, and does not address prior unregistered use or the existing App Store listing. The trademark and handle checks above remain required as a precaution and must not be skipped.
 
 ## 13. Decisions log
 
@@ -277,6 +277,13 @@ Start at Minimal. Move up when a message has proven itself, the reveal needs sto
 - Primary brand colour is teal; red only for alerts, negative balances, spending warnings. (Owner, 2026-11-15; matches shipped brand)
 - Content language: Egyptian Arabic (Egypt), natural Saudi Arabic (Saudi), accessible Gulf-friendly Arabic (UAE); English secondary; MSA for formal or educational content; no literal translations. (Owner, 2026-11-15)
 - Handles and trademarks must be verified in Egypt, Saudi Arabia and UAE before assumed available; no legal conclusions without verification. (Owner, 2026-11-15)
+- Positioning approved: "Buddget is a personal finance companion that helps people understand, organize, and take control of their money." Core message: managing money doesn't have to be complicated; a clearer picture and more informed decisions. (Owner, 2026-11-16)
+- Audience segments approved as hypotheses, not validated demographics. Priorities: Egypt, then Saudi Arabia, then UAE. (Owner, 2026-11-16)
+- Content pillars and mix approved: relatable situations, education, entertainment and shareability, brand storytelling, Buddgy-led content, demonstrations, behind-the-scenes and building in public, promotional content nearer launch. Early stages prioritise awareness, relatability, curiosity and engagement over promotion. (Owner, 2026-11-16)
+- Creative direction conditionally approved: hybrid accepted in principle; owner must approve the concrete execution (see `STAGE2_CAMPAIGN_CONCEPT.md`). Teal primary, red only for warnings; existing logo and Buddgy preserved. (Owner, 2026-11-16)
+- Use the Buddget name from the first post, including teasers; trademark and handle checks continue as a precaution and do not block the campaign. (Owner, 2026-11-16)
+- Ramadan: seasonal content only where natural; not the brand identity; no launch date based on Ramadan; readiness gates set the date. (Owner, 2026-11-16)
+- No on-camera dependency. Build on motion graphics, screen recordings, voice-over, typography, Buddgy animation and AI-assisted production; occasional founder appearances possible later. (Owner, 2026-11-16)
 - No fixed budget; lean organic Instagram and TikTok; AI-assisted production with owner approval; outsource editing and motion when needed; paid ads only as controlled experiments after promising content. (Owner, 2026-11-15)
 
 ## 14. Sources
