@@ -3,12 +3,12 @@ import { subscriptionView } from './subscriptionView'
 import type { BillingMe } from './billingStore'
 
 const NOW = Date.UTC(2026, 10, 15)
-const sub = (over: Partial<NonNullable<BillingMe['subscription']>> = {}) => ({ fromStore: true, billingIssue: false, graceEndsAt: null, willRenew: true, renewsAt: '2026-12-14T00:00:00Z', productId: 'plus_monthly', memberSince: '2026-10-14T00:00:00Z', ...over })
+const sub = (over: Partial<NonNullable<BillingMe['subscription']>> = {}) => ({ fromStore: true, billingIssue: false, graceEndsAt: null, willRenew: true, renewsAt: '2026-12-14T00:00:00Z', productId: 'pro_monthly', memberSince: '2026-10-14T00:00:00Z', ...over })
 const me = (over: Partial<BillingMe> = {}): BillingMe => ({ planKey: 'plus', planName: 'Pro', status: 'active', trialEndsAt: null, billingEnabled: true, sparks: null, loyalty: null, subscription: sub(), ...over })
 
 describe('subscriptionView', () => {
   it.each([
-    ['plus_monthly', 'monthly'], ['plus_annual', 'yearly'], ['pro_annual', 'yearly'], ['buddget_pro_monthly', 'monthly'],
+    ['pro_monthly', 'monthly'], ['pro_annual', 'yearly'], ['pro_annual', 'yearly'], ['buddget_pro_monthly', 'monthly'],
     ['pro:yearly', 'yearly'], ['buddget_pro:monthly-base', 'monthly'], ['pro_lifetime', null], [null, null],
   ] as const)('reads the period from any product id naming: %s', (productId, period) => {
     expect(subscriptionView(me({ subscription: sub({ productId }) }), NOW).period).toBe(period)
@@ -30,7 +30,7 @@ describe('subscriptionView', () => {
   })
   it('active reads the period from the product and the renewal date', () => {
     expect(subscriptionView(me(), NOW)).toMatchObject({ kind: 'active', period: 'monthly', until: '2026-12-14T00:00:00Z' })
-    expect(subscriptionView(me({ subscription: sub({ productId: 'plus_annual:base' }) }), NOW).period).toBe('yearly')
+    expect(subscriptionView(me({ subscription: sub({ productId: 'pro_annual:base' }) }), NOW).period).toBe('yearly')
   })
   it('a billing issue keeps Pro on and points at the grace expiry', () => {
     const v = subscriptionView(me({ status: 'past_due', subscription: sub({ billingIssue: true, graceEndsAt: '2026-11-30T00:00:00Z' }) }), NOW)

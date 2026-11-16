@@ -30,7 +30,7 @@ function post(event: Record<string, unknown>, over: { auth?: string; ts?: number
     headers: { authorization: over.auth ?? `Bearer ${AUTH}`, 'x-revenuecat-webhook-signature': `t=${ts},v1=${sig}` },
   }))
 }
-const purchase = { type: 'INITIAL_PURCHASE', id: 'e1', app_user_id: USER, product_id: 'plus_monthly', store: 'APP_STORE', event_timestamp_ms: NOW, purchased_at_ms: NOW, expiration_at_ms: NOW + 30 * 86_400_000, original_transaction_id: 'o1' }
+const purchase = { type: 'INITIAL_PURCHASE', id: 'e1', app_user_id: USER, product_id: 'pro_monthly', store: 'APP_STORE', event_timestamp_ms: NOW, purchased_at_ms: NOW, expiration_at_ms: NOW + 30 * 86_400_000, original_transaction_id: 'o1' }
 
 beforeEach(() => {
   process.env.REVENUECAT_WEBHOOK_AUTH = AUTH
@@ -93,7 +93,7 @@ describe('POST /api/billing/revenuecat', () => {
   })
 
   it('a transfer copies the subscription the old user held to the new one', async () => {
-    h.sourceRow = { plan_key: 'plus', status: 'active', source: 'apple', trial_ends_at: null, current_period_end: '2027-01-01T00:00:00.000Z', canceled_at: null, will_renew: true, product_id: 'plus_monthly', store: 'app_store', store_original_txn: 'o9', grace_ends_at: null }
+    h.sourceRow = { plan_key: 'plus', status: 'active', source: 'apple', trial_ends_at: null, current_period_end: '2027-01-01T00:00:00.000Z', canceled_at: null, will_renew: true, product_id: 'pro_monthly', store: 'app_store', store_original_txn: 'o9', grace_ends_at: null }
     await post({ type: 'TRANSFER', id: 'e3', app_user_id: OTHER, event_timestamp_ms: NOW, transferred_from: [USER], transferred_to: [OTHER] })
     const args = h.rpc.mock.calls[0]![1]
     expect(args.p_user).toBe(OTHER)

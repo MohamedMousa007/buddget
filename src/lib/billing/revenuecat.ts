@@ -77,8 +77,8 @@ export interface BillingEffect {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const iso = (ms: number | null): string | null => (ms === null ? null : new Date(ms).toISOString())
-const isAnnual = (product: string | null): boolean => !!product && product.startsWith('plus_annual')
-const isPlus = (product: string | null): boolean => !!product && (product.startsWith('plus_monthly') || isAnnual(product))
+const isAnnual = (product: string | null): boolean => !!product && product.startsWith('pro_annual')
+const isPlus = (product: string | null): boolean => !!product && (product.startsWith('pro_monthly') || isAnnual(product))
 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null)

@@ -34,8 +34,8 @@ type Purchase = NonNullable<NonNullable<BillingMe['subscription']>['purchases']>
 
 function purchaseLabel(p: Purchase, b: { proYearly: string; proMonthly: string; sparksOf: (n: number) => string }): string {
   const id = p.productId ?? ''
-  if (id.startsWith('plus_annual')) return b.proYearly
-  if (id.startsWith('plus_monthly')) return b.proMonthly
+  if (id.startsWith('pro_annual')) return b.proYearly
+  if (id.startsWith('pro_monthly')) return b.proMonthly
   const n = /^sparks_(\d+)/.exec(id)?.[1]
   return n ? b.sparksOf(Number(n)) : id
 }

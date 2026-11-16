@@ -16,7 +16,7 @@ export interface SubscriptionView {
 }
 
 const DAY = 86_400_000
-// Any store naming (`plus_annual`, `pro_yearly`, Google's `pro:monthly-base`): the period word is in the id.
+// Any store naming (`pro_annual`, `pro_yearly`, Google's `pro:monthly-base`): the period word is in the id.
 const periodOf = (productId: string | null | undefined): 'monthly' | 'yearly' | null =>
   !productId ? null : /annual|year/i.test(productId) ? 'yearly' : /month/i.test(productId) ? 'monthly' : null
 
