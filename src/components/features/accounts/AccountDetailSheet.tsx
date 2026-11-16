@@ -19,6 +19,10 @@ import { resolveAccountId } from '@/lib/accounts/resolve'
 import type { AccountView } from '@/lib/accounts/useAccounts'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { MASK } from '@/lib/privacy/mask'
+import { UsageMeter } from '@/components/features/usage/UsageMeter'
+import { useBalanceView } from '@/lib/accounts/useBalanceView'
+import { useUsageCopy } from '@/lib/i18n/usageCopy'
+import { clock } from '@/lib/usage/format'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import { accountIdentifier, accountTitle, splitMoney } from './accountDisplay'
@@ -49,6 +53,8 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
   const { method, balance, cards } = account
   const cur = String(method.currency)
   const card = cards[active]
+  const uc = useUsageCopy().balance
+  const live = useBalanceView(method.id, open, method.type === 'cash')
   const fmt = (n: number) => (masked ? MASK : splitMoney(n, cur).int + splitMoney(n, cur).dec)
 
   // Bank messages attribute to a card only by its last four digits, so a card without digits owns nothing: fall back to the account's recent activity instead of an empty list.
@@ -119,6 +125,27 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
                 </>
               ) : null}
             </div>
+          ) : null}
+          {live.data ? (
+            <div className="mx-5 space-y-2 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] p-3.5">
+              <div dir="auto" className="flex items-baseline justify-between gap-3">
+                <p className="text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{uc.title}</p>
+                <p dir="ltr" className="font-mono-numbers text-lg font-semibold text-[var(--color-brand-text-primary)]">{masked ? MASK : fmt(live.data.balance)}</p>
+              </div>
+              <p dir="auto" className="text-xs text-[var(--color-brand-text-secondary)]">{uc.from(clock(live.data.reportedAt, locale))}</p>
+              {balance && !masked ? (
+                <p dir="auto" className="text-xs font-semibold text-[var(--color-brand-text-primary)]">
+                  {Math.abs(balance.balance - live.data.balance) <= Math.max(1, Math.abs(live.data.balance) * 0.005) ? uc.matches : uc.differs(fmt(Math.abs(balance.balance - live.data.balance)))}
+                </p>
+              ) : null}
+              {live.data.limit !== null && live.data.used >= 8 ? (
+                <UsageMeter kind="count" label={uc.title} used={live.data.used} limit={live.data.limit} value={uc.usedOf(live.data.used, live.data.limit)} />
+              ) : live.data.limit !== null && live.data.used >= 7 ? (
+                <p dir="auto" className="text-xs text-[var(--color-brand-amber)]">{uc.left(live.data.limit - live.data.used)}</p>
+              ) : null}
+            </div>
+          ) : live.blocked ? (
+            <p dir="auto" role="status" className="mx-5 rounded-2xl bg-[var(--color-brand-elevated)] p-3.5 text-xs text-[var(--color-brand-text-secondary)]">{uc.blocked}</p>
           ) : null}
           <div className="grid grid-cols-3 gap-2 px-5">
             <Button variant="secondary" size="cta-block" className="h-14 flex-col gap-1 text-xs" onClick={() => onMove('cash')} disabled={!balance}><Banknote aria-hidden />{t.cashOut}</Button>

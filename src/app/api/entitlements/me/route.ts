@@ -17,8 +17,9 @@ export async function GET(request: Request) {
   const sparks = usage && usage.sparksLeft > 0 ? { left: usage.sparksLeft, total: usage.sparksLeft, resetsAt: null } : null
   const loyalty = enabled ? await loyaltyStatus(service, uid) : null
   const subscription = enabled ? await subscriptionState(service, uid) : null
+  const sparkProducts = enabled ? ((await service.from('spark_products').select('product_id, sparks').eq('active', true).order('sparks')).data ?? []).map((p) => ({ id: p.product_id, sparks: p.sparks })) : []
   // `billingEnabled` is the one server-side switch: while it is false the app shows no paywall, no purchase entry point and no Sparks.
-  return NextResponse.json({ ...entitlements, billingEnabled: enabled, sparks, usage, loyalty, subscription }, { headers: { 'Cache-Control': 'private, no-store' } })
+  return NextResponse.json({ ...entitlements, billingEnabled: enabled, sparks, usage, sparkProducts, loyalty, subscription }, { headers: { 'Cache-Control': 'private, no-store' } })
 }
 
 /** Everything the usage screens read, from one database function: the two credit windows, Sparks, balance views, plans, the Advisor, staff resets and coming-soon interest. */
@@ -66,7 +67,7 @@ async function subscriptionState(service: ReturnType<typeof createServiceRoleCli
   const [ent, first, purchases] = await Promise.all([
     service.from('user_entitlements').select('status, source, will_renew, current_period_end, grace_ends_at, product_id, canceled_at').eq('user_id', uid).maybeSingle(),
     service.from('billing_events').select('event_at').eq('user_id', uid).eq('type', 'INITIAL_PURCHASE').order('event_at').limit(1).maybeSingle(),
-    service.from('billing_events').select('event_at, type, store, product_id, price_micros, currency').eq('user_id', uid).in('type', ['INITIAL_PURCHASE', 'RENEWAL', 'NON_RENEWING_PURCHASE']).eq('outcome', 'applied').order('event_at', { ascending: false }).limit(6),
+    service.from('billing_events').select('event_at, type, store, product_id, price_micros, currency').eq('user_id', uid).in('type', ['INITIAL_PURCHASE', 'RENEWAL', 'NON_RENEWING_PURCHASE']).eq('outcome', 'applied').order('event_at', { ascending: false }).limit(31),
   ])
   const e = ent.data
   const store = e?.source === 'apple' || e?.source === 'google'
@@ -82,8 +83,8 @@ async function subscriptionState(service: ReturnType<typeof createServiceRoleCli
     productId: store ? (e?.product_id ?? null) : null,
     memberSince: first.data?.event_at ?? null,
     canceledAt: e?.canceled_at ?? null,
-    // The last five purchases from our own log; the sixth tells the app there is a "See all". Store price and currency come from the event.
-    purchases: (purchases.data ?? []).slice(0, 5).map((p) => ({ at: p.event_at, type: p.type, store: p.store, productId: p.product_id, priceMicros: p.price_micros, currency: p.currency })),
+    // Up to 30 purchases from our own log: the app shows the last five and the rest under "See all". Store price and currency come from the event.
+    purchases: (purchases.data ?? []).slice(0, 30).map((p) => ({ at: p.event_at, type: p.type, store: p.store, productId: p.product_id, priceMicros: p.price_micros, currency: p.currency })),
     hasMorePurchases: (purchases.data?.length ?? 0) > 5,
   }
 }

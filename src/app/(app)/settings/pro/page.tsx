@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react'
 import { PlansView } from '@/components/features/billing/PlansView'
-import { ProStateView } from '@/components/features/billing/ProStateView'
+import { ProStateView, WelcomeToPro } from '@/components/features/billing/ProStateView'
+import { useUsageStore } from '@/lib/usage/usageStore'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
 import { subscriptionView } from '@/lib/billing/subscriptionView'
@@ -14,6 +15,8 @@ export default function ProPage() {
   const c = useMembershipCopy()
   const me = useBillingStore((s) => s.me)
   const on = billingOn(me)
+  const welcome = useUsageStore((s) => s.welcome)
+  const setWelcome = useUsageStore((s) => s.setWelcome)
 
   useEffect(() => {
     if (me && !on) navigate('/settings', { replace: true })
@@ -22,7 +25,7 @@ export default function ProPage() {
   if (me && !on) return null
   return (
     <SettingsSubPageShell title={c.state.title}>
-      {!me ? <p role="status" className="text-sm text-[var(--color-brand-text-muted)]">{c.state.loading}</p> : subscriptionView(me).kind === 'free' ? <PlansView /> : <ProStateView me={me} />}
+      {!me ? <p role="status" className="text-sm text-[var(--color-brand-text-muted)]">{c.state.loading}</p> : welcome && subscriptionView(me).proActive ? <WelcomeToPro me={me} back={welcome === 'back'} onDone={() => setWelcome(null)} /> : subscriptionView(me).kind === 'free' ? <PlansView /> : <ProStateView me={me} />}
     </SettingsSubPageShell>
   )
 }

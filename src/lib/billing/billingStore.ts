@@ -1,7 +1,19 @@
 import { create } from 'zustand'
 import { apiFetchAuth } from '@/lib/apiBase'
-import { quotaDeniedOffersUpgrade } from '@/lib/ai/quotaDeniedCopy'
 import type { EntitlementStatus } from '@/lib/entitlements/resolve'
+
+export interface UsageWindow { used: number; limit: number | null; resetAt: string | null; pct: number | null }
+export interface UsageState {
+  session: UsageWindow
+  week: UsageWindow
+  byFeature: Record<string, number>
+  sparksLeft: number
+  balanceViews: { used: number; limit: number | null; resetAt: string }
+  plans: { used: number; limit: number | null }
+  advisor: { entitled: boolean; free_left: number; free_total: number }
+  resetsUnseen: Array<'session' | 'week'>
+  interest: string[]
+}
 
 export interface BillingMe {
   planKey: string
@@ -10,16 +22,17 @@ export interface BillingMe {
   trialEndsAt: string | null
   billingEnabled: boolean
   sparks: { left: number; total: number; resetsAt: string | null } | null
+  /** What the usage screens read: both credit windows, Sparks, balance views, plans, the Advisor (from `ai_usage_state`). */
+  usage?: UsageState | null
+  /** The Sparks packs for sale, by store product id (owner-set settings). */
+  sparkProducts?: Array<{ id: string; sparks: number }>
   loyalty?: { founderNumber: number | null; betaTester: boolean; streakWeeks: number; freezesBanked: number; lifetimePoints: number; tier: string | null } | null
-  subscription?: { fromStore: boolean; billingIssue: boolean; graceEndsAt: string | null; willRenew: boolean | null; renewsAt: string | null; productId: string | null; memberSince: string | null } | null
+  subscription?: { fromStore: boolean; billingIssue: boolean; graceEndsAt: string | null; willRenew: boolean | null; renewsAt: string | null; productId: string | null; memberSince: string | null; canceledAt?: string | null; purchases?: Array<{ at: string; type: string; store: string | null; productId: string | null; priceMicros: number | null; currency: string | null }>; hasMorePurchases?: boolean } | null
 }
 
 interface BillingStore {
   me: BillingMe | null
-  paywallOpen: boolean
   refresh: () => Promise<BillingMe | null>
-  openPaywall: () => void
-  closePaywall: () => void
   reset: () => void
 }
 
@@ -30,7 +43,6 @@ export const isPaidPlan = (me: BillingMe | null | undefined): boolean => !!me &&
 
 export const useBillingStore = create<BillingStore>((set, get) => ({
   me: null,
-  paywallOpen: false,
   refresh: async () => {
     try {
       const res = await apiFetchAuth('/api/entitlements/me')
@@ -42,20 +54,8 @@ export const useBillingStore = create<BillingStore>((set, get) => ({
       return get().me
     }
   },
-  openPaywall: () => {
-    if (!billingOn(get().me)) return
-    set({ paywallOpen: true })
-    // Measurement only (S5c item 27); the server reads the country and ignores the call while billing is off.
-    void apiFetchAuth('/api/billing/paywall-view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'paywall' }) }).catch(() => {})
-  },
-  closePaywall: () => set({ paywallOpen: false }),
-  reset: () => set({ me: null, paywallOpen: false }),
+  reset: () => set({ me: null }),
 }))
-
-/** Called wherever an AI request is refused. Only a spent Sparks balance opens the paywall, and only while billing is on. */
-export function noteQuotaDenial(layer: string | undefined): void {
-  if (quotaDeniedOffersUpgrade(layer)) useBillingStore.getState().openPaywall()
-}
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 

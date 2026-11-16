@@ -12,6 +12,7 @@ import { AIChatEmptyState } from '@/components/features/ai-chat/AIChatEmptyState
 import { AIChatMessageList } from '@/components/features/ai-chat/AIChatMessageList'
 import { AIChatComposer } from '@/components/features/ai-chat/AIChatComposer'
 import { useChatVoice } from '@/hooks/useChatVoice'
+import { NoticeBanners } from '@/components/features/usage/NoticeHost'
 import type { BuddgyOrbPosition } from '@/lib/store/useSettingsStore'
 import { useDismissable } from '@/hooks/useDismissable'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
@@ -166,6 +167,8 @@ export function AIChat() {
                 {copy.offline}
               </div>
             )}
+
+            <NoticeBanners screen="chat" className="flex flex-col gap-2 px-3 pb-2" />
 
             <AIChatComposer
               value={input}

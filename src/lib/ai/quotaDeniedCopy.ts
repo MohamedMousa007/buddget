@@ -36,8 +36,3 @@ export function quotaDeniedMessage(layer: QuotaLayer | string | undefined, reset
   const when = reset.toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB', { weekday: 'short', hour: 'numeric', minute: '2-digit' })
   return c.limit + c.resetAt(when)
 }
-
-/** Only a spent Sparks balance can be answered by buying more; a time window just resets, so it never offers an upgrade (S5c item 12). */
-export function quotaDeniedOffersUpgrade(layer: QuotaLayer | string | undefined): boolean {
-  return layer === 'sparks'
-}

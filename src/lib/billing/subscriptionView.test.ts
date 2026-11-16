@@ -21,12 +21,12 @@ describe('subscriptionView', () => {
     const v = subscriptionView(me({ planKey: 'free', status: 'expired' }), NOW)
     expect(v).toMatchObject({ kind: 'expired', proActive: false, memberSince: '2026-10-14T00:00:00Z' })
   })
-  it('a trial counts its day out of 14 from the end date', () => {
+  it('a trial counts its day out of 30 from the end date', () => {
     const day = (daysLeft: number) => subscriptionView(me({ planKey: 'plus_trial', status: 'trialing', trialEndsAt: new Date(NOW + daysLeft * 86_400_000).toISOString(), subscription: null }), NOW)
-    expect(day(14)).toMatchObject({ kind: 'trial', trialDay: 1 })
-    expect(day(9)).toMatchObject({ trialDay: 6 })
-    expect(day(1).trialDay).toBe(14)
-    expect(day(0.2).trialDay).toBe(14)
+    expect(day(30)).toMatchObject({ kind: 'trial', trialDay: 1 })
+    expect(day(25)).toMatchObject({ trialDay: 6 })
+    expect(day(1).trialDay).toBe(30)
+    expect(day(0.2).trialDay).toBe(30)
   })
   it('active reads the period from the product and the renewal date', () => {
     expect(subscriptionView(me(), NOW)).toMatchObject({ kind: 'active', period: 'monthly', until: '2026-12-14T00:00:00Z' })

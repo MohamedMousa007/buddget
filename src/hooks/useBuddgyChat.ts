@@ -17,6 +17,7 @@ import { buddgyChatCopy } from '@/lib/i18n/buddgyChatCopy'
 import { useLocale, useT } from '@/lib/i18n'
 import { isSupabaseConfigured } from '@/lib/supabase/env'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { useUsageStore } from '@/lib/usage/usageStore'
 
 /** A chat left alone this long starts fresh: the next question is almost never about the last one. */
 const IDLE_RESET_MS = 30 * 60 * 1000
@@ -235,6 +236,8 @@ export function useBuddgyChat() {
         if (turnSeqRef.current !== seq) return
         chatIdRef.current = out.chatId
         softRef.current = out.soft
+        // The Advisor answered (Pro, trial, or the free one): the trial's day-3 nudge for it is no longer needed.
+        if (out.intent === 'advice' && out.advisor !== 'locked') useUsageStore.getState().setSignal('advisorUsed', true)
         if (out.reads.length > 0) taintedRef.current = true
         patchBuddgy(replyId, (it) => ({ ...it, text: out.text, reads: out.reads, status: 'done', truncated: out.truncated, advisor: out.advisor, longChat: out.soft }))
         finishWithProposals(replyId, out.proposals)

@@ -34,6 +34,7 @@ import {
 import { parseLocalizedAmount } from '@/lib/ui/amountParse'
 import { reconcileTyped } from '@/lib/ui/typedAmount'
 import { useT } from '@/lib/i18n'
+import { useUsageStore } from '@/lib/usage/usageStore'
 
 type ScanState = 'idle' | 'scanning' | 'parsing' | 'result' | 'notReceipt' | 'error' | 'queued'
 
@@ -151,6 +152,7 @@ export function ReceiptScanSheet({ open, onClose, seed, onConfirmed }: ReceiptSc
       if (!data.receipt) throw new Error(rc.errors.unreadable)
       if (ctrl.signal.aborted) return
       const normalised = normaliseReceipt(data.receipt, baseCurrency)
+      if (normalised.isReceipt) useUsageStore.getState().setSignal('receiptScanned', true)
       setResult(normalised)
       setState(normalised.isReceipt ? 'result' : 'notReceipt')
     } catch (e) {

@@ -22,11 +22,12 @@ export interface MembershipCopy {
     sampleRow: string
     privacy: string
     whatProAdds: string
-    outcomes: { everyAccount: { t: string; d: string }; wholeYear: { t: string; d: string }; testPlans: { t: string; d: string } }
+    outcomes: { moreAi: { t: string; d: string }; advisor: { t: string; d: string }; noLimits: { t: string; d: string } }
     compareTitle: string
     compareHead: { label: string; free: string; pro: string }
     compareRows: { label: string; free: string; pro: string }[]
     stayFree: string
+    comingSoon: { title: string; partner: string; insights: string; notify: string; noted: string }
     choose: string
     best: string
     yearly: string
@@ -52,6 +53,31 @@ export interface MembershipCopy {
     pricesUnavailable: string
     notOnThisDevice: string
   }
+  welcome: { title: string; back: string; rows: [string, string, string]; price: string; start: string }
+  billing: {
+    title: string
+    section: string
+    billedBy: string
+    manage: (store: string) => string
+    manageHint: string
+    howCancel: string
+    howCancelHint: string
+    steps: { appStore: string[]; playStore: string[] }
+    restore: string
+    purchases: string
+    seeAll: string
+    lastSaw: string
+    receipts: (store: string) => string
+    problem: string
+    problemBody: (store: string) => string
+    none: string
+    noneHint: string
+    sparksOf: (n: number) => string
+    proYearly: string
+    proMonthly: string
+    loadError: string
+    tryAgain: string
+  }
   state: {
     title: string
     plan: string
@@ -73,7 +99,7 @@ export interface MembershipCopy {
     restore: string
     restored: string
     restoreNothing: string
-    trial: { chip: string; day: string; movesToFree: string; line: (date: string) => string; soFar: string; accounts: string; logged: string; seePlans: string; noCard: string }
+    trial: { tryTitle: string; tries: [string, string, string]; chip: string; day: string; movesToFree: string; line: (date: string) => string; soFar: string; accounts: string; logged: string; seePlans: string; noCard: string }
     issue: { chip: string; title: string; body: (date: string) => string; fix: string; lastTry: string }
     expired: { chip: string; title: string; lines: string[]; rejoin: string; rejoinFrom: (price: string) => string; back: string }
     loading: string
@@ -146,18 +172,18 @@ const en: MembershipCopy = {
     freeLine: 'Every account on autopilot',
     freeCta: 'See what Pro adds',
     trialDay: (day, total) => `Day ${day} of ${total}`,
-    trialLine: '14 days of Pro, no card',
+    trialLine: '30 days of Pro, no card',
     renews: 'Renews',
     memberSince: (date) => `Member since ${date}`,
     ended: 'Ended',
     issue: 'Payment pending',
     since: 'Member since',
   },
-  menu: { label: 'Buddget Pro', renews: 'Renews' },
+  menu: { label: 'Plan and billing', renews: 'Renews' },
   plans: {
     yourPlan: 'Your plan: Free',
-    promise: 'Every account on autopilot. Your whole year in view.',
-    lede: 'Buddget Pro reads every bank and wallet you use and keeps all twelve months in one place.',
+    promise: 'Your money on autopilot. Buddgy does the work.',
+    lede: 'About 10x the AI, the Advisor and unlimited plans.',
     proofAccounts: 'free SMS accounts in use',
     proofLogged: 'logged for you this month',
     sample: 'Example',
@@ -166,21 +192,22 @@ const en: MembershipCopy = {
     privacy: 'Only bank and wallet messages are read. Message text is deleted within 60 days. Nothing is sold.',
     whatProAdds: 'What Pro adds',
     outcomes: {
-      everyAccount: { t: 'Every account, automatically', d: 'Pro reads SMS from every bank and wallet you use. Free reads 2.' },
-      wholeYear: { t: 'The whole year in view', d: 'Any range, trends and the year view. Free shows the last 3 months.' },
-      testPlans: { t: 'Plans side by side', d: 'Keep every plan and compare two side by side.' },
+      moreAi: { t: 'About 10x the AI', d: 'Ask Buddgy, scan receipts, send voice messages and build budgets without watching a limit.' },
+      advisor: { t: 'A smarter Buddgy', d: 'The Advisor, the reasoning model for planning and “what should I do” questions. Pro only.' },
+      noLimits: { t: 'Plan without limits', d: 'Keep every budget plan and check your bank-confirmed balances as often as you like.' },
     },
     compareTitle: 'Free and Pro, side by side',
     compareHead: { label: '', free: 'Free', pro: 'Buddget Pro' },
     compareRows: [
-      { label: 'SMS auto-tracking', free: '2 bank or wallet accounts', pro: 'Every account' },
-      { label: 'Reports', free: 'Last 3 months', pro: 'Any range, trends, year view' },
+      { label: 'SMS auto-tracking', free: 'Every account', pro: 'Every account' },
+      { label: 'Live balance views', free: '10 a month', pro: 'Unlimited' },
+      { label: 'Buddgy chat, receipts, voice, budget builder', free: 'Yes, limited', pro: 'Yes, about 10x more' },
+      { label: 'Buddgy Advisor', free: '1 free answer a month', pro: 'Yes' },
       { label: 'Saved budget plans', free: '2', pro: 'Unlimited' },
-      { label: 'Compare plans', free: 'No', pro: 'Yes' },
-      { label: 'Live-price estimates', free: '3 a day', pro: '10 a day' },
-      { label: 'Sparks for Buddgy', free: '20 a month', pro: '100 a month' },
+      { label: 'Sparks for extra AI', free: 'Standard packs', pro: '25% more per pack' },
     ],
-    stayFree: 'Free keeps the whole loop: manual entry, budgets, goals, debts and installments, export, two currencies.',
+    stayFree: 'SMS tracking on every account, free forever. Free also keeps reports, export, goals, debts and installments.',
+    comingSoon: { title: 'Coming soon to Pro', partner: 'Share a budget with your partner', insights: 'Advanced insights', notify: 'Notify me', noted: 'We’ll let you know' },
     choose: 'Choose your plan',
     best: 'Best value',
     yearly: 'Yearly',
@@ -206,8 +233,36 @@ const en: MembershipCopy = {
     pricesUnavailable: 'Prices are not available right now. Try again shortly.',
     notOnThisDevice: 'Plans are chosen in the iOS or Android app.',
   },
+  welcome: { title: 'Welcome to Buddget Pro', back: 'Welcome back to Buddget Pro', rows: ['About 10x the AI for chat, voice and scans', 'The Advisor for the big questions', 'Unlimited plans and live balance views'], price: 'Your price stays the same for 12 months.', start: 'Start using Pro' },
+  billing: {
+    title: 'Plan and billing',
+    section: 'Billing and purchases',
+    billedBy: 'Billed by',
+    manage: (store) => `Manage in ${store}`,
+    manageHint: 'Payment method, receipts, change plan or cancel',
+    howCancel: 'How to cancel',
+    howCancelHint: '3 steps in your store settings',
+    steps: {
+      appStore: ['Open Settings and tap your name.', 'Tap Subscriptions, then Buddget Pro.', 'Tap Cancel Subscription.'],
+      playStore: ['Open Google Play and tap your profile.', 'Tap Payments and subscriptions, then Subscriptions.', 'Choose Buddget Pro, then Cancel.'],
+    },
+    restore: 'Restore purchases',
+    purchases: 'Purchases in Buddget',
+    seeAll: 'See all',
+    lastSaw: 'What Buddget last saw. Your store receipts are the official record:',
+    receipts: (store) => `${store} receipts`,
+    problem: 'Problem with a purchase?',
+    problemBody: (store) => `${store} handles these.`,
+    none: 'No purchases yet',
+    noneHint: 'Pro and Sparks you buy show here.',
+    sparksOf: (n) => `${n} Sparks`,
+    proYearly: 'Buddget Pro, yearly',
+    proMonthly: 'Buddget Pro, monthly',
+    loadError: 'Couldn’t load your purchases. Your plan details are still shown.',
+    tryAgain: 'Try again',
+  },
   state: {
-    title: 'Your plan',
+    title: 'Plan and billing',
     plan: 'Plan',
     period: { monthly: 'Monthly', yearly: 'Yearly' },
     memberSince: 'Member since',
@@ -233,7 +288,9 @@ const en: MembershipCopy = {
     restored: 'Checked. Your plan is up to date.',
     restoreNothing: 'No purchase found for this store account.',
     trial: {
-      chip: '14 days of Pro, no card',
+      tryTitle: 'You have Buddget Pro for 30 days',
+      tries: ['Ask the Advisor a money question', 'Scan a receipt', 'Send Buddgy a voice message'],
+      chip: '30 days of Pro, no card',
       day: 'Day',
       movesToFree: 'Moves to Free',
       line: (date) => `On ${date} you move to Free. Nothing is charged and nothing is deleted.`,
@@ -340,18 +397,18 @@ const ar: MembershipCopy = {
     freeLine: 'كل حساباتك على الوضع التلقائي',
     freeCta: 'شاهد ما يضيفه Pro',
     trialDay: (day, total) => `اليوم ${day} من ${total}`,
-    trialLine: '14 يوماً من Pro بلا بطاقة',
+    trialLine: '30 يوماً من Pro بلا بطاقة',
     renews: 'يتجدد',
     memberSince: (date) => `عضو منذ ${date}`,
     ended: 'انتهى',
     issue: 'الدفع معلّق',
     since: 'عضو منذ',
   },
-  menu: { label: 'Buddget Pro', renews: 'يتجدد' },
+  menu: { label: 'الخطة والفوترة', renews: 'يتجدد' },
   plans: {
     yourPlan: 'خطتك: المجاني',
-    promise: 'كل حساباتك على الوضع التلقائي. وعامك كله أمامك.',
-    lede: 'Buddget Pro يقرأ كل بنك ومحفظة تستخدمها ويجمع الاثني عشر شهراً في مكان واحد.',
+    promise: 'أموالك على الوضع التلقائي. Buddgy يقوم بالعمل.',
+    lede: 'حوالي 10 أضعاف الذكاء الاصطناعي، والمستشار، وخطط بلا حد.',
     proofAccounts: 'حسابات SMS المجانية مستخدمة',
     proofLogged: 'سُجلت لك هذا الشهر',
     sample: 'مثال',
@@ -360,21 +417,22 @@ const ar: MembershipCopy = {
     privacy: 'تُقرأ رسائل البنوك والمحافظ فقط. يُحذف نص الرسالة خلال 60 يوماً. لا نبيع أي بيانات.',
     whatProAdds: 'ماذا يضيف Pro',
     outcomes: {
-      everyAccount: { t: 'كل حساب، تلقائياً', d: 'يقرأ Pro رسائل كل بنك ومحفظة تستخدمها. المجاني يقرأ حسابين.' },
-      wholeYear: { t: 'العام كله أمامك', d: 'أي فترة، الاتجاهات وعرض السنة. المجاني يعرض آخر 3 أشهر.' },
-      testPlans: { t: 'خطط جنباً إلى جنب', d: 'احتفظ بكل خططك وقارن بين خطتين.' },
+      moreAi: { t: 'حوالي 10 أضعاف الذكاء الاصطناعي', d: 'اسأل Buddgy وامسح الإيصالات وأرسل رسائل صوتية وابنِ ميزانيات دون مراقبة أي حد.' },
+      advisor: { t: 'Buddgy أذكى', d: 'المستشار، نموذج التفكير للتخطيط وأسئلة «ماذا أفعل». في Pro فقط.' },
+      noLimits: { t: 'خطط بلا حدود', d: 'احتفظ بكل خطط الميزانية وراجع أرصدتك المؤكدة من البنك كلما أردت.' },
     },
     compareTitle: 'المجاني وPro جنباً إلى جنب',
     compareHead: { label: '', free: 'المجاني', pro: 'Buddget Pro' },
     compareRows: [
-      { label: 'تتبع SMS التلقائي', free: 'حسابان بنكيان أو محفظتان', pro: 'كل الحسابات' },
-      { label: 'التقارير', free: 'آخر 3 أشهر', pro: 'أي فترة، اتجاهات، عرض السنة' },
+      { label: 'تتبع SMS التلقائي', free: 'كل الحسابات', pro: 'كل الحسابات' },
+      { label: 'عروض الرصيد المباشر', free: '10 شهرياً', pro: 'بلا حد' },
+      { label: 'محادثة Buddgy والإيصالات والصوت وبناء الميزانية', free: 'نعم، بحد', pro: 'نعم، حوالي 10 أضعاف' },
+      { label: 'مستشار Buddgy', free: 'إجابة مجانية واحدة شهرياً', pro: 'نعم' },
       { label: 'خطط الميزانية المحفوظة', free: '2', pro: 'بلا حد' },
-      { label: 'مقارنة الخطط', free: 'لا', pro: 'نعم' },
-      { label: 'تقديرات بالأسعار الحية', free: '3 يومياً', pro: '10 يومياً' },
-      { label: 'Sparks لـ Buddgy', free: '20 شهرياً', pro: '100 شهرياً' },
+      { label: 'Sparks للذكاء الاصطناعي الإضافي', free: 'الباقات العادية', pro: '25% إضافية في كل باقة' },
     ],
-    stayFree: 'المجاني يحتفظ بالدورة كاملة: الإدخال اليدوي، الميزانيات، الأهداف، الديون والأقساط، التصدير، وعملتان.',
+    stayFree: 'تتبع SMS على كل حساب، مجاناً للأبد. والمجاني يحتفظ أيضاً بالتقارير والتصدير والأهداف والديون والأقساط.',
+    comingSoon: { title: 'قريباً في Pro', partner: 'شارك ميزانية مع شريكك', insights: 'رؤى متقدمة', notify: 'أخبرني', noted: 'سنخبرك' },
     choose: 'اختر خطتك',
     best: 'القيمة الأفضل',
     yearly: 'سنوي',
@@ -400,8 +458,36 @@ const ar: MembershipCopy = {
     pricesUnavailable: 'الأسعار غير متاحة الآن. حاول بعد قليل.',
     notOnThisDevice: 'تُختار الخطط من تطبيق iOS أو Android.',
   },
+  welcome: { title: 'أهلاً بك في Buddget Pro', back: 'أهلاً بعودتك إلى Buddget Pro', rows: ['حوالي 10 أضعاف الذكاء الاصطناعي للمحادثة والصوت والمسح', 'المستشار للأسئلة الكبيرة', 'خطط وعروض رصيد مباشر بلا حد'], price: 'سعرك يبقى كما هو لمدة 12 شهراً.', start: 'ابدأ استخدام Pro' },
+  billing: {
+    title: 'الخطة والفوترة',
+    section: 'الفوترة والمشتريات',
+    billedBy: 'الفوترة عبر',
+    manage: (store) => `الإدارة في ${store}`,
+    manageHint: 'وسيلة الدفع، الإيصالات، تغيير الخطة أو الإلغاء',
+    howCancel: 'كيف تلغي',
+    howCancelHint: '3 خطوات في إعدادات المتجر',
+    steps: {
+      appStore: ['افتح الإعدادات واضغط على اسمك.', 'اضغط على الاشتراكات ثم Buddget Pro.', 'اضغط على إلغاء الاشتراك.'],
+      playStore: ['افتح Google Play واضغط على ملفك.', 'اضغط على المدفوعات والاشتراكات ثم الاشتراكات.', 'اختر Buddget Pro ثم إلغاء.'],
+    },
+    restore: 'استعادة المشتريات',
+    purchases: 'المشتريات في Buddget',
+    seeAll: 'عرض الكل',
+    lastSaw: 'هذا آخر ما رآه Buddget. إيصالات المتجر هي السجل الرسمي:',
+    receipts: (store) => `إيصالات ${store}`,
+    problem: 'مشكلة في عملية شراء؟',
+    problemBody: (store) => `${store} يتولى هذه الأمور.`,
+    none: 'لا مشتريات بعد',
+    noneHint: 'ما تشتريه من Pro وSparks يظهر هنا.',
+    sparksOf: (n) => `${n} Sparks`,
+    proYearly: 'Buddget Pro، سنوي',
+    proMonthly: 'Buddget Pro، شهري',
+    loadError: 'تعذّر تحميل مشترياتك. تفاصيل خطتك ما زالت معروضة.',
+    tryAgain: 'حاول مجدداً',
+  },
   state: {
-    title: 'خطتك',
+    title: 'الخطة والفوترة',
     plan: 'الخطة',
     period: { monthly: 'شهري', yearly: 'سنوي' },
     memberSince: 'عضو منذ',
@@ -427,7 +513,9 @@ const ar: MembershipCopy = {
     restored: 'تم التحقق. خطتك محدّثة.',
     restoreNothing: 'لا توجد عملية شراء لحساب المتجر هذا.',
     trial: {
-      chip: '14 يوماً من Pro بلا بطاقة',
+      tryTitle: 'لديك Buddget Pro لمدة 30 يوماً',
+      tries: ['اسأل المستشار سؤالاً عن المال', 'امسح إيصالاً', 'أرسل لـ Buddgy رسالة صوتية'],
+      chip: '30 يوماً من Pro بلا بطاقة',
       day: 'اليوم',
       movesToFree: 'الانتقال إلى المجاني',
       line: (date) => `في ${date} تنتقل إلى المجاني. لا يُخصم شيء ولا يُحذف شيء.`,

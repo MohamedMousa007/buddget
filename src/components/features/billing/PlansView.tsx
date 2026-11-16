@@ -1,7 +1,10 @@
 'use client'
 
-import type { ReactNode } from 'react'
-import { BarChart3, CalendarRange, MessageSquareText } from 'lucide-react'
+import { useEffect, type ReactNode } from 'react'
+import { Infinity, Lightbulb, Sparkles } from 'lucide-react'
+import { apiFetchAuth } from '@/lib/apiBase'
+import { notifyComingSoon, type ComingSoonFeature } from '@/lib/billing/comingSoon'
+import { useState } from 'react'
 import { MembershipHero, HeroStat } from '@/components/features/membership/MembershipHero'
 import { PlanCompare } from '@/components/features/membership/PlanCompare'
 import { AppLink as Link } from '@/components/ui/AppLink'
@@ -9,6 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { SelectableCard } from '@/components/ui/SelectableCard'
+import { useBillingStore } from '@/lib/billing/billingStore'
+import { useUsageStore } from '@/lib/usage/usageStore'
 import { smsAccountsOn, smsLoggedThisMonth } from '@/lib/billing/proof'
 import { purchasesAvailable } from '@/lib/billing/purchases'
 import { usePlanPurchase } from '@/lib/billing/usePlanPurchase'
@@ -20,7 +25,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 /** The Free plan tracks two bank or wallet accounts (plans.limits.sms_accounts_max). */
 const FREE_SMS_ACCOUNTS = 2
 
-function Outcome({ icon: Icon, title, text }: { icon: typeof BarChart3; title: string; text: string }) {
+function Outcome({ icon: Icon, title, text }: { icon: typeof Sparkles; title: string; text: string }) {
   return (
     <Card padding="md" className="flex items-start gap-3">
       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"><Icon className="size-5" aria-hidden /></span>
@@ -29,6 +34,30 @@ function Outcome({ icon: Icon, title, text }: { icon: typeof BarChart3; title: s
         <span className="mt-0.5 block text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{text}</span>
       </span>
     </Card>
+  )
+}
+
+/** What is coming to Pro, with a Notify me for each: shown below what Pro includes today and never in the purchase table. */
+export function ComingSoon({ interest }: { interest: readonly string[] }) {
+  const p = useMembershipCopy().plans.comingSoon
+  const [noted, setNoted] = useState<readonly string[]>(interest)
+  const rows: Array<{ id: ComingSoonFeature; label: string }> = [{ id: 'partner_sharing', label: p.partner }, { id: 'advanced_insights', label: p.insights }]
+  return (
+    <section className="space-y-2">
+      <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{p.title}</h2>
+      <Card padding="none" divide className="overflow-hidden">
+        {rows.map((r) => (
+          <div key={r.id} dir="auto" className="flex min-h-[52px] items-center gap-3 px-4 py-2">
+            <span className="min-w-0 flex-1 text-sm text-[var(--color-brand-text-primary)]">{r.label}</span>
+            {noted.includes(r.id) ? (
+              <Badge tone="soft" size="sm">{p.noted}</Badge>
+            ) : (
+              <Button size="touch" variant="ghost" className="font-semibold text-[var(--color-brand-primary-ink)]" onClick={() => void notifyComingSoon(r.id).then((ok) => ok && setNoted((n) => [...n, r.id]))}>{p.notify}</Button>
+            )}
+          </div>
+        ))}
+      </Card>
+    </section>
   )
 }
 
@@ -46,9 +75,16 @@ export function PlansView() {
   const p = c.plans
   const paymentMethods = useFinanceStore((s) => s.paymentMethods)
   const expenses = useFinanceStore((s) => s.expenses)
-  const { packages, options, chosen, setPicked, busy, note, buy, restore } = usePlanPurchase(true, t)
+  const { packages, options, chosen, setPicked, busy, note, buy: purchase, restore: bringBack } = usePlanPurchase(true, t)
+  const buy = async (o: Parameters<typeof purchase>[0]) => { if (await purchase(o)) useUsageStore.getState().setWelcome('new') }
+  const restore = async () => { if (await bringBack()) useUsageStore.getState().setWelcome('back') }
   const available = purchasesAvailable()
+  // Measurement only (S5c item 27): one paywall view per visit; the server reads the country and ignores it while billing is off.
+  useEffect(() => {
+    void apiFetchAuth('/api/billing/paywall-view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'plans' }) }).catch(() => undefined)
+  }, [])
   const store = getPlatform() === 'android' ? p.playStore : p.appStore
+  const interest = useBillingStore((st) => st.me?.usage?.interest ?? [])
   const smsOn = smsAccountsOn(paymentMethods)
   const logged = smsLoggedThisMonth(expenses)
 
@@ -81,9 +117,9 @@ export function PlansView() {
 
       <section className="space-y-2.5">
         <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{p.whatProAdds}</h2>
-        <Outcome icon={MessageSquareText} title={p.outcomes.everyAccount.t} text={p.outcomes.everyAccount.d} />
-        <Outcome icon={CalendarRange} title={p.outcomes.wholeYear.t} text={p.outcomes.wholeYear.d} />
-        <Outcome icon={BarChart3} title={p.outcomes.testPlans.t} text={p.outcomes.testPlans.d} />
+        <Outcome icon={Sparkles} title={p.outcomes.moreAi.t} text={p.outcomes.moreAi.d} />
+        <Outcome icon={Lightbulb} title={p.outcomes.advisor.t} text={p.outcomes.advisor.d} />
+        <Outcome icon={Infinity} title={p.outcomes.noLimits.t} text={p.outcomes.noLimits.d} />
       </section>
 
       <section className="space-y-3">
@@ -91,6 +127,8 @@ export function PlansView() {
         <PlanCompare head={p.compareHead} rows={p.compareRows} />
         <Prompt>{p.stayFree}</Prompt>
       </section>
+
+      <ComingSoon interest={interest} />
 
       <section className="space-y-3">
         <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{p.choose}</h2>

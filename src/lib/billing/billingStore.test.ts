@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({ fetch: vi.fn() }))
 vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: h.fetch }))
 
-import { billingOn, isPaidPlan, noteQuotaDenial, refreshUntilPaid, useBillingStore, type BillingMe } from './billingStore'
+import { billingOn, isPaidPlan, refreshUntilPaid, useBillingStore, type BillingMe } from './billingStore'
 import { buildPlanOptions } from './planOptions'
 
 const me = (over: Partial<BillingMe> = {}): BillingMe => ({ planKey: 'free', planName: 'Free', status: 'active', trialEndsAt: null, billingEnabled: false, sparks: null, ...over })
@@ -15,27 +15,9 @@ beforeEach(() => {
 })
 
 describe('the billing-off gate', () => {
-  it('shows nothing and cannot open the paywall before the server answers', () => {
+  it('shows nothing before the server answers', () => {
     expect(billingOn(null)).toBe(false)
-    useBillingStore.getState().openPaywall()
-    noteQuotaDenial('sparks')
-    expect(useBillingStore.getState().paywallOpen).toBe(false)
-  })
-
-  it('stays closed on a sparks denial while billingEnabled is false', async () => {
-    h.fetch.mockResolvedValue(reply(me()))
-    await useBillingStore.getState().refresh()
-    noteQuotaDenial('sparks')
-    expect(useBillingStore.getState().paywallOpen).toBe(false)
-  })
-
-  it('opens on a sparks denial once billing is on, never on a time-window denial', async () => {
-    h.fetch.mockResolvedValue(reply(me({ billingEnabled: true })))
-    await useBillingStore.getState().refresh()
-    noteQuotaDenial('window_5h')
-    expect(useBillingStore.getState().paywallOpen).toBe(false)
-    noteQuotaDenial('sparks')
-    expect(useBillingStore.getState().paywallOpen).toBe(true)
+    expect(useBillingStore.getState().me).toBeNull()
   })
 
   it('a failed read leaves billing off', async () => {

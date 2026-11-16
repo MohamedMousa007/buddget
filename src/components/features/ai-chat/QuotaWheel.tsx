@@ -11,11 +11,31 @@ import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/IconButton'
 import { ProgressRing } from '@/components/ui/ProgressRing'
 import { Scrim } from '@/components/ui/Scrim'
+import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
+import { navigate } from '@/lib/navigation/navigate'
 
 const arcFor = (pct: number) => (pct >= 90 ? 'var(--color-brand-red)' : pct >= 70 ? 'var(--color-brand-amber)' : 'var(--color-brand-green)')
 
 /** Claude-style usage wheel beside the send button: the tightest limit as a ring, every limit on tap. */
+/** While selling is on, the wheel reads the same state as the Usage page: the tighter of the session and the week; tapping it opens Usage. */
 export function QuotaWheel({ refreshKey }: { refreshKey: string }) {
+  const usage = useBillingStore((s) => (billingOn(s.me) ? s.me?.usage : null))
+  if (usage) return <UsageWheel pct={Math.max(usage.session.pct ?? 0, usage.week.pct ?? 0)} />
+  return <LegacyQuotaWheel refreshKey={refreshKey} />
+}
+
+function UsageWheel({ pct }: { pct: number }) {
+  const copy = useBuddgyChatCopy().usage
+  return (
+    <div className="relative shrink-0">
+      <IconButton variant="ghost" size="md" aria-label={copy.aria(pct)} onClick={() => navigate('/settings/pro/usage')}>
+        <ProgressRing pct={pct} size={26} stroke={3} arc={arcFor(pct)} />
+      </IconButton>
+    </div>
+  )
+}
+
+function LegacyQuotaWheel({ refreshKey }: { refreshKey: string }) {
   const copy = useBuddgyChatCopy().usage
   const { locale } = useLocale()
   const status = useBuddgyUsage(refreshKey)

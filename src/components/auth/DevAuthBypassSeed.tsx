@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useBillingStore } from '@/lib/billing/billingStore'
 import { useWeekCheckStore } from '@/lib/loyalty/weekCheckStore'
+import { useUsageStore } from '@/lib/usage/usageStore'
 
 /**
  * DEV-ONLY: mounted solely under the `NEXT_PUBLIC_DEV_AUTH_BYPASS` flag (see
@@ -21,6 +22,7 @@ export function DevAuthBypassSeed() {
     ;(window as unknown as Record<string, unknown>).__settings = useSettingsStore
     ;(window as unknown as Record<string, unknown>).__billing = useBillingStore
     ;(window as unknown as Record<string, unknown>).__weekCheck = useWeekCheckStore
+    ;(window as unknown as Record<string, unknown>).__usage = useUsageStore
     const st = useFinanceStore.getState()
     st.setDataReady(true)
     if (st.incomeSources.length === 0) {

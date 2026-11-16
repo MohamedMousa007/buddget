@@ -1,5 +1,6 @@
 'use client'
 
+import { planLimitReached } from '@/lib/usage/planGate'
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -160,8 +161,8 @@ export function BudgetPlanPage({ ready }: { ready: boolean }) {
         setCreating(false)
         setStudio({ intent })
       }}
-      onBlank={() => openBuilder(planActions.createDraft(), true)}
-      onTemplate={() => openBuilder(planActions.createDraft())}
+      onBlank={() => { if (!planLimitReached()) openBuilder(planActions.createDraft(), true) }}
+      onTemplate={() => { if (!planLimitReached()) openBuilder(planActions.createDraft()) }}
       onCopy={(id) => {
         const copy = planActions.duplicate(id)
         if (copy) openBuilder(copy)

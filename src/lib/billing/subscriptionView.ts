@@ -7,9 +7,9 @@ export interface SubscriptionView {
   /** Pro features are on right now (a trial, a paid period, a cancelled period still running, a billing-issue grace window). */
   proActive: boolean
   period: 'monthly' | 'yearly' | null
-  /** Trial: the 1-based day out of 14, clamped. */
+  /** Trial: the 1-based day out of 30, clamped. */
   trialDay: number | null
-  trialTotal: 14
+  trialTotal: 30
   /** The date the next thing happens: the trial's end, the renewal, the end of access, or the grace expiry. */
   until: string | null
   memberSince: string | null
@@ -23,7 +23,7 @@ const periodOf = (productId: string | null | undefined): 'monthly' | 'yearly' | 
 /** Reads the plan the server reported into the one state a membership screen draws. Pure: the clock is passed in. */
 export function subscriptionView(me: BillingMe | null, now = Date.now()): SubscriptionView {
   const sub = me?.subscription ?? null
-  const base = { period: periodOf(sub?.productId), trialDay: null, trialTotal: 14 as const, memberSince: sub?.memberSince ?? null }
+  const base = { period: periodOf(sub?.productId), trialDay: null, trialTotal: 30 as const, memberSince: sub?.memberSince ?? null }
   if (!me) return { ...base, kind: 'free', proActive: false, until: null }
   const paid = me.planKey !== 'free'
   if (!paid) {
@@ -32,7 +32,7 @@ export function subscriptionView(me: BillingMe | null, now = Date.now()): Subscr
   }
   if (me.status === 'trialing') {
     const end = me.trialEndsAt ? Date.parse(me.trialEndsAt) : NaN
-    const day = Number.isFinite(end) ? Math.min(14, Math.max(1, 14 - Math.ceil((end - now) / DAY) + 1)) : 1
+    const day = Number.isFinite(end) ? Math.min(30, Math.max(1, 30 - Math.ceil((end - now) / DAY) + 1)) : 1
     return { ...base, kind: 'trial', proActive: true, trialDay: day, until: me.trialEndsAt }
   }
   if (me.status === 'past_due' || sub?.billingIssue) return { ...base, kind: 'issue', proActive: true, until: sub?.graceEndsAt ?? sub?.renewsAt ?? null }

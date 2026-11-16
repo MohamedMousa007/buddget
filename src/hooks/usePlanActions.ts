@@ -8,6 +8,7 @@ import { useBudgetDeckCopy } from '@/components/features/budget/useDeckCopy'
 import { useBudgetPageCopy } from '@/components/features/budget/usePageCopy'
 import { cycleKeyOf } from '@/lib/budget/activations'
 import { duplicatePlanCategories, duplicatePlanExtras } from '@/lib/budget/duplicatePlan'
+import { planLimitReached } from '@/lib/usage/planGate'
 
 const newId = () => crypto.randomUUID()
 
@@ -23,7 +24,7 @@ export function usePlanActions() {
     (id: string) => {
       const s = store.getState()
       const source = s.budgetPlans.find((p) => p.id === id)
-      if (!source) return
+      if (!source || planLimitReached()) return
       // Created as a draft so the copy does not take over; ready once its lines are in.
       const copy = s.addBudgetPlan(page.planNames.copyOf(source.name), { status: 'draft', origin: 'clone', intent: source.intent })
       s.updateBudgetPlan(copy, { status: 'ready', categories: duplicatePlanCategories(source, newId), ...duplicatePlanExtras(source) })
@@ -34,6 +35,7 @@ export function usePlanActions() {
   )
 
   const createBlank = useCallback(() => {
+    if (planLimitReached()) return
     const s = store.getState()
     const id = s.addBudgetPlan(page.planNames.fresh, { status: 'draft', origin: 'manual' })
     s.updateBudgetPlan(id, { status: 'ready' })

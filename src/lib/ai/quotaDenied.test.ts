@@ -5,7 +5,7 @@ vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: h.fetch }))
 vi.mock('@/lib/store/useFinanceStore', () => ({ useFinanceStore: { getState: () => ({ settings: { language: h.lang } }) } }))
 
 import { generateWithFallback, throwIfAiProxyNotOk } from './generateWithFallback'
-import { quotaDeniedMessage, quotaDeniedOffersUpgrade } from './quotaDeniedCopy'
+import { quotaDeniedMessage } from './quotaDeniedCopy'
 
 const denied = (layer = 'window_5h', resetAt: string | null = null) =>
   new Response(JSON.stringify({ error: 'ai_quota', layer, resetAt, stage: 'quota' }), { status: layer === 'feature_disabled' ? 403 : 429 })
@@ -55,9 +55,7 @@ describe('unit-window denials (S5c item 12)', () => {
 })
 
 describe('Sparks denial (S5c item 12)', () => {
-  it('names the refill date and is the only layer that offers an upgrade', () => {
+  it('names the refill date', () => {
     expect(quotaDeniedMessage('sparks', '2026-12-01T00:00:00Z', 'en')).toMatch(/Sparks.*refill on/)
-    expect(quotaDeniedOffersUpgrade('sparks')).toBe(true)
-    for (const layer of ['window_5h', 'window_24h', 'window_7d', 'rate', 'sms_day', 'sms_month', 'feature_disabled', 'unavailable']) expect(quotaDeniedOffersUpgrade(layer), layer).toBe(false)
   })
 })

@@ -1,5 +1,5 @@
 import { quotaDeniedMessage } from '@/lib/ai/quotaDeniedCopy'
-import { noteQuotaDenial } from '@/lib/billing/billingStore'
+import { onLimitDenied } from '@/lib/usage/onLimitDenied'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { logVoiceStage, VoiceStageError } from '@/lib/voice/voiceStages'
 
@@ -65,7 +65,7 @@ export async function transcribeAudio(args: {
     if (res.status === 413) throw new VoiceStageError('transcribe', errors.tooLarge)
     const err = (await res.json().catch(() => null)) as { error?: string; stage?: string; layer?: string; resetAt?: string | null } | null
     if (err?.stage === 'quota') {
-      noteQuotaDenial(err.layer)
+      onLimitDenied(err.layer, err.resetAt)
       throw new VoiceStageError('transcribe', quotaDeniedMessage(err.layer, err.resetAt, language))
     }
     if (res.status === 401 || res.status === 403) {

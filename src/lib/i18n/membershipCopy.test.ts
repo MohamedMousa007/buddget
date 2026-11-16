@@ -19,7 +19,7 @@ describe('membership copy', () => {
     for (const n of [0, 1]) expect(membershipCopy[l].state.includedRows.sms(n)).not.toMatch(/\d/)
     expect(membershipCopy[l].state.includedRows.sms(4)).toContain('4')
   })
-  it('the 14 days are named exactly as the board says', () => {
-    expect(membershipCopy.en.hub.trialLine).toBe('14 days of Pro, no card')
+  it('the 30 days are named exactly as the board says', () => {
+    expect(membershipCopy.en.hub.trialLine).toBe('30 days of Pro, no card')
   })
 })

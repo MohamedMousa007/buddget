@@ -2,7 +2,7 @@ import { isMasked } from '@/lib/privacy/mask'
 import { redactBalances } from '@/lib/privacy/redact'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { apiFetchAuth } from '@/lib/apiBase'
-import { noteQuotaDenial } from '@/lib/billing/billingStore'
+import { onLimitDenied } from '@/lib/usage/onLimitDenied'
 import {
   TURN_LIMITS,
   type BuddgyIntent,
@@ -51,7 +51,7 @@ export interface RunTurnArgs {
 function toFailure(ev: Extract<TurnEvent, { t: 'error' }>): TurnFailure {
   if (ev.code === 'unauthorized') return new TurnFailure({ kind: 'unauthorized' })
   if (ev.code === 'quota') {
-    noteQuotaDenial(ev.layer)
+    onLimitDenied(ev.layer, ev.resetAt)
     return new TurnFailure({ kind: 'quota', layer: ev.layer ?? 'unavailable', resetAt: ev.resetAt ?? null })
   }
   if (ev.code === 'blocked') return new TurnFailure({ kind: 'blocked' })
@@ -62,7 +62,7 @@ async function failureFromResponse(res: Response): Promise<TurnFailure> {
   if (res.status === 401) return new TurnFailure({ kind: 'unauthorized' })
   if (res.status === 429 || res.status === 403 || res.status === 503) {
     const body = (await res.json().catch(() => null)) as { layer?: string; resetAt?: string | null } | null
-    if (body?.layer) noteQuotaDenial(body.layer)
+    if (body?.layer) onLimitDenied(body.layer, body.resetAt)
     if (body?.layer) return new TurnFailure({ kind: 'quota', layer: body.layer, resetAt: body.resetAt ?? null })
   }
   return new TurnFailure({ kind: 'failed' })

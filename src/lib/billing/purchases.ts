@@ -1,4 +1,4 @@
-import type { PurchasesPackage } from '@revenuecat/purchases-capacitor'
+import type { PurchasesPackage, PurchasesStoreProduct } from '@revenuecat/purchases-capacitor'
 import { getPlatform, isNative } from '@/lib/native/isNative'
 
 /** Store keys come only from the build environment; with none set this module does nothing. */
@@ -8,6 +8,12 @@ const ANDROID_KEY = process.env.NEXT_PUBLIC_REVENUECAT_ANDROID_KEY?.trim()
 export const MANAGE_SUBSCRIPTION_URL = {
   ios: 'https://apps.apple.com/account/subscriptions',
   android: 'https://play.google.com/store/account/subscriptions',
+} as const
+
+/** Where the store keeps the receipts and the way to report a problem; the app only links there and never handles them. */
+export const STORE_LINKS = {
+  ios: { receipts: 'https://apps.apple.com/account/billing', problem: 'https://reportaproblem.apple.com' },
+  android: { receipts: 'https://play.google.com/store/account/orderhistory', problem: 'https://play.google.com/store/account/orderhistory' },
 } as const
 
 export type PurchaseOutcome = 'purchased' | 'cancelled' | 'failed'
@@ -63,6 +69,27 @@ export async function loadPackages(): Promise<PurchasesPackage[]> {
 export async function purchasePackage(aPackage: PurchasesPackage): Promise<PurchaseOutcome> {
   try {
     await (await sdk()).purchasePackage({ aPackage })
+    return 'purchased'
+  } catch (e) {
+    return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed'
+  }
+}
+
+/** The Sparks packs the store can sell here: consumable products by id. A pack the store does not offer in this country is simply absent. */
+export async function loadSparksProducts(ids: readonly string[]): Promise<PurchasesStoreProduct[]> {
+  if (configuredFor === null || ids.length === 0) return []
+  try {
+    const { PRODUCT_CATEGORY } = await import('@revenuecat/purchases-capacitor')
+    const { products } = await (await sdk()).getProducts({ productIdentifiers: [...ids], type: PRODUCT_CATEGORY.NON_SUBSCRIPTION })
+    return products
+  } catch {
+    return []
+  }
+}
+
+export async function purchaseProduct(product: PurchasesStoreProduct): Promise<PurchaseOutcome> {
+  try {
+    await (await sdk()).purchaseStoreProduct({ product })
     return 'purchased'
   } catch (e) {
     return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed'

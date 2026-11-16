@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { PaywallSheet } from '@/components/features/billing/PaywallSheet'
+import { NoticeHost } from '@/components/features/usage/NoticeHost'
 import { WeekCheckSheet } from '@/components/features/billing/WeekCheckSheet'
 import { useWeekCheckStore } from '@/lib/loyalty/weekCheckStore'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
@@ -41,5 +41,5 @@ export function BillingHost() {
     if (userId && enabled) void loadWeek()
   }, [userId, enabled, loadWeek])
 
-  return enabled ? <><PaywallSheet /><WeekCheckSheet /></> : null
+  return enabled ? <><NoticeHost /><WeekCheckSheet /></> : null
 }
