@@ -284,6 +284,8 @@ Start at Minimal. Move up when a message has proven itself, the reveal needs sto
 - Use the Buddget name from the first post, including teasers; trademark and handle checks continue as a precaution and do not block the campaign. (Owner, 2026-11-16)
 - Ramadan: seasonal content only where natural; not the brand identity; no launch date based on Ramadan; readiness gates set the date. (Owner, 2026-11-16)
 - No on-camera dependency. Build on motion graphics, screen recordings, voice-over, typography, Buddgy animation and AI-assisted production; occasional founder appearances possible later. (Owner, 2026-11-16)
+- Creative direction locked 2026-11-16 (see `STAGE2_APPROVAL.md`): three-act concept "What's actually left?" (The Question, The Picture, The Answer); taglines "What's actually left?", "One month. One picture.", "Here's what's left.", "Money, in plain words."; five devices; Buddgy rules with the helmet joke removed; five-stage name sequence; reviewer sourcing and budget controls. (Owner)
+- Production approved 2026-11-16: relative-phase calendar and Batch 1 (five posts) with Instagram and TikTok adaptations; native Egyptian review before final approval; batches of five reviewed before the next. Buddgy's gender wording remains open. (Owner)
 - No fixed budget; lean organic Instagram and TikTok; AI-assisted production with owner approval; outsource editing and motion when needed; paid ads only as controlled experiments after promising content. (Owner, 2026-11-15)
 
 ## 14. Sources
