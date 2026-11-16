@@ -7,7 +7,8 @@ import { EMPTY_USAGE, usageFromGemini, type TokenUsage } from '@/lib/server/ai/u
 export const LEGACY_MODEL = process.env.GEMINI_MODEL_LEGACY?.trim() || 'gemini-2.5-flash'
 
 export const TIER_MODELS = {
-  fast: process.env.GEMINI_MODEL_FAST?.trim() || 'gemini-2.5-flash-lite',
+  // gemini-2.5-flash-lite answers 404 ("no longer available to new users") since 2026-10.
+  fast: process.env.GEMINI_MODEL_FAST?.trim() || 'gemini-3.5-flash-lite',
   smart: process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-2.5-flash',
 } as const
 export type Tier = keyof typeof TIER_MODELS
@@ -27,7 +28,12 @@ export function geminiUrl(model: string, stream: boolean): string {
 
 /** 2.x models speak `thinkingBudget`; 3.x speak `thinkingLevel`. */
 export function configFor(model: string, config: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
-  if (!model.startsWith('gemini-2.')) return config
+  if (!model.startsWith('gemini-2.')) {
+    const budget = (config?.thinkingConfig as { thinkingBudget?: number } | undefined)?.thinkingBudget
+    if (typeof budget !== 'number') return config
+    // ponytail: two levels only; minimal and medium are the ones every 3.x Flash model documents.
+    return { ...config, thinkingConfig: { thinkingLevel: budget === 0 ? 'minimal' : 'medium' } }
+  }
   const thinking = config?.thinkingConfig as { thinkingLevel?: string } | undefined
   if (!thinking?.thinkingLevel) return config
   return { ...config, thinkingConfig: { thinkingBudget: THINKING_BUDGET[thinking.thinkingLevel] ?? 0 } }
@@ -94,8 +100,10 @@ export async function callGeminiResilient(
 ): Promise<{ res: Response; model: string }> {
   const plan = [models[0], models[0], ...models.slice(1)]
   let last: { res: Response; model: string } | null = null
+  const gone = new Set<string>()
   for (const [i, model] of plan.entries()) {
     if (signal?.aborted) break
+    if (gone.has(model)) continue
     if (i > 0) await new Promise((r) => setTimeout(r, RETRY_DELAY_MS))
     const ctl = new AbortController()
     signal?.addEventListener('abort', () => ctl.abort(), { once: true })
@@ -105,7 +113,9 @@ export async function callGeminiResilient(
       if (res.ok && res.body) return { res, model }
       console.error(`[gemini] ${model} answered ${res.status}: ${(await res.clone().text().catch(() => '')).slice(0, 300)}`)
       last = { res, model }
-      if (!RETRYABLE.has(res.status)) break
+      // A retired model (404) will not come back on a retry, but the other model may still answer.
+      if (res.status === 404) gone.add(model)
+      else if (!RETRYABLE.has(res.status)) break
     } catch (e) {
       if (signal?.aborted) throw e
       console.error(`[gemini] ${model} ${ctl.signal.aborted ? `gave no answer in ${CONNECT_TIMEOUT_MS}ms` : 'failed'}:`, e instanceof Error ? e.message : e)

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { callGeminiResilient, clampGenerationConfig, MAX_OUTPUT_TOKENS_CAP, MAX_THINKING_BUDGET, tapStreamUsage } from '@/lib/server/ai/gemini'
+import { callGeminiResilient, clampGenerationConfig, configFor, MAX_OUTPUT_TOKENS_CAP, MAX_THINKING_BUDGET, tapStreamUsage } from '@/lib/server/ai/gemini'
 
 describe('clampGenerationConfig', () => {
   it('caps requested output tokens', () => {
@@ -65,6 +65,18 @@ describe('callGeminiResilient', () => {
     expect(urls.map((u) => (u.includes('model-a') ? 'a' : 'b')).join('')).toBe('aab')
   })
 
+  it('moves straight to the other model when the primary is retired (404)', async () => {
+    const urls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      urls.push(url)
+      return url.includes('model-a') ? new Response('gone', { status: 404 }) : ok()
+    }))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const out = await callGeminiResilient(['model-a', 'model-b'], 'k', {})
+    expect(out.model).toBe('model-b')
+    expect(urls.map((u) => (u.includes('model-a') ? 'a' : 'b')).join('')).toBe('ab')
+  })
+
   it('does not retry a request the model rejected', async () => {
     const fetchMock = vi.fn(async () => new Response('bad', { status: 400 }))
     vi.stubGlobal('fetch', fetchMock)
@@ -72,5 +84,13 @@ describe('callGeminiResilient', () => {
     const out = await callGeminiResilient(['model-a', 'model-b'], 'k', {})
     expect(out.res.status).toBe(400)
     expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('configFor', () => {
+  it('turns a thinking budget into a level for 3.x models and leaves 2.x alone', () => {
+    expect(configFor('gemini-3.5-flash-lite', { thinkingConfig: { thinkingBudget: 0 } })).toEqual({ thinkingConfig: { thinkingLevel: 'minimal' } })
+    expect(configFor('gemini-3.5-flash-lite', { thinkingConfig: { thinkingBudget: 1024 } })).toEqual({ thinkingConfig: { thinkingLevel: 'medium' } })
+    expect(configFor('gemini-2.5-flash', { thinkingConfig: { thinkingBudget: 0 } })).toEqual({ thinkingConfig: { thinkingBudget: 0 } })
   })
 })
