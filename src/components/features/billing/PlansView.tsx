@@ -38,6 +38,9 @@ function Outcome({ icon: Icon, title, text }: { icon: typeof Sparkles; title: st
 }
 
 /** What is coming to Pro, with a Notify me for each: shown below what Pro includes today and never in the purchase table. */
+// A selector must return a stable value: a fresh [] on every render loops forever when usage is missing.
+const NO_INTEREST: string[] = []
+
 export function ComingSoon({ interest }: { interest: readonly string[] }) {
   const p = useMembershipCopy().plans.comingSoon
   const [noted, setNoted] = useState<readonly string[]>(interest)
@@ -84,7 +87,7 @@ export function PlansView() {
     void apiFetchAuth('/api/billing/paywall-view', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'plans' }) }).catch(() => undefined)
   }, [])
   const store = getPlatform() === 'android' ? p.playStore : p.appStore
-  const interest = useBillingStore((st) => st.me?.usage?.interest ?? [])
+  const interest = useBillingStore((st) => st.me?.usage?.interest ?? NO_INTEREST)
   const smsOn = smsAccountsOn(paymentMethods)
   const logged = smsLoggedThisMonth(expenses)
 
