@@ -14,6 +14,7 @@ import { lockScroll, unlockScroll } from '@/lib/ui/scrollLock'
 import { isNative } from '@/lib/native/isNative'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
+import { expectSignOut } from '@/lib/auth/intentionalSignOut'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
 import { changePassword } from '@/lib/auth/changePassword'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
@@ -342,12 +343,14 @@ export function useAuthModal() {
       /* required stays null */
     }
     if (required === null) {
+      expectSignOut()
       await supabase.auth.signOut({ scope: 'local' })
       setLoading(false)
       setError(sec.secondStepUnavailable)
       return
     }
     if (required) {
+      expectSignOut()
       await supabase.auth.signOut({ scope: 'local' })
       const { error: otpErr } = await supabase.auth.signInWithOtp({
         email: email.trim(),

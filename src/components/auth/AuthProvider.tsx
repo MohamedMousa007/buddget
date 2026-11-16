@@ -32,6 +32,7 @@ import { DevAuthBypassSeed } from '@/components/auth/DevAuthBypassSeed'
 // flashing the spinner splash before the welcome screen painted.
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen'
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
+import { consumeExpectedSignOut } from '@/lib/auth/intentionalSignOut'
 import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
 
 /**
@@ -303,7 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           console.error('[auth] clearBudgetData on SIGNED_OUT failed', e)
         }
-        const intentional = userInitiatedSignOutRef.current
+        const intentional = consumeExpectedSignOut() || userInitiatedSignOutRef.current
         userInitiatedSignOutRef.current = false
         // Only flag "session expired" when we were authed AND this wasn't
         // the user clicking Sign Out themselves. Deliberate sign-outs drop
