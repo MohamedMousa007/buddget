@@ -89,7 +89,7 @@ describe('callGeminiResilient', () => {
 
 describe('configFor', () => {
   it('turns a thinking budget into a level for 3.x models and leaves 2.x alone', () => {
-    expect(configFor('gemini-3.5-flash-lite', { thinkingConfig: { thinkingBudget: 0 } })).toEqual({ thinkingConfig: { thinkingLevel: 'minimal' } })
+    expect(configFor('gemini-3.5-flash-lite', { thinkingConfig: { thinkingBudget: 256 } })).toEqual({ thinkingConfig: { thinkingLevel: 'minimal' } })
     expect(configFor('gemini-3.5-flash-lite', { thinkingConfig: { thinkingBudget: 1024 } })).toEqual({ thinkingConfig: { thinkingLevel: 'medium' } })
     expect(configFor('gemini-2.5-flash', { thinkingConfig: { thinkingBudget: 0 } })).toEqual({ thinkingConfig: { thinkingBudget: 0 } })
   })

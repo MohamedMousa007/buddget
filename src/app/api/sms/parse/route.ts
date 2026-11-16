@@ -20,6 +20,7 @@ import { z } from 'zod'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { usageFromGemini, type TokenUsage } from '@/lib/server/ai/units'
+import { TIER_MODELS, configFor, geminiUrl } from '@/lib/server/ai/gemini'
 import { AI_QUOTA_HOLD } from '@/lib/sms/heldReview'
 import type { Database, Json } from '@/lib/supabase/database.types'
 import { SMS_PARSER_SYSTEM_PROMPT, MASKED_ACCOUNT_CLASS } from '@/lib/sms/aiParserPrompt'
@@ -93,13 +94,13 @@ import { nudgeUser } from '@/lib/server/realtime/nudge'
 // toward the function cap — the default would kill learning mid-call.
 export const maxDuration = 60
 
-const GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_MODEL = TIER_MODELS.smart
 
 /** Kinds whose "from <masked number>" names the account the money left; a transfer's number names the other side. */
 const SOURCE_ACCOUNT_KINDS: ReadonlySet<string> = new Set(['purchase', 'online_purchase', 'atm_withdrawal', 'fee'])
 /** Typical cost of one SMS parse (prompt plus a short JSON answer) in quota units. */
 const SMS_PARSE_UNITS = 1500
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const GEMINI_URL = geminiUrl(GEMINI_MODEL, false)
 /** The key travels in a header, never the URL, so request-URL logs and proxies cannot capture it. */
 const geminiHeaders = (apiKey: string) => ({ 'Content-Type': 'application/json', 'x-goog-api-key': apiKey })
 
@@ -432,11 +433,11 @@ async function generateMatchingRegex(
     body: JSON.stringify({
       // The model sees the structure of the message, not the person in it; the regex is verified against the real text below.
       contents: [{ role: 'user', parts: [{ text: buildRegexLearningPrompt(maskForModel(message, parsed), sender, parsed, ctx.hint) }] }],
-      generationConfig: {
+      generationConfig: configFor(GEMINI_MODEL, {
         responseMimeType: 'application/json',
         temperature: 0.1,
         thinkingConfig: { thinkingBudget: 256 },
-      },
+      }),
     }),
   })
   if (!res.ok) return { ok: false, status: 'gemini_error' }
@@ -1690,7 +1691,7 @@ async function askModelJson(apiKey: string, system: string, user: string, opts: 
       signal: AbortSignal.timeout(20_000),
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: system }, { text: user }] }],
-        generationConfig: { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: opts.maxOutputTokens },
+        generationConfig: configFor(GEMINI_MODEL, { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: opts.maxOutputTokens }),
       }),
     })
     if (!res.ok) return null
@@ -1720,7 +1721,7 @@ async function aiCategorizeMerchant(
       signal: AbortSignal.timeout(15_000),
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } },
+        generationConfig: configFor(GEMINI_MODEL, { temperature: 0, responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 0 } }),
       }),
     })
     if (!res.ok) return null
@@ -1755,11 +1756,11 @@ async function callGemini(apiKey: string, message: string, exemplar?: string | n
         ],
       },
     ],
-    generationConfig: {
+    generationConfig: configFor(GEMINI_MODEL, {
       temperature: 0,
       responseMimeType: 'application/json',
       thinkingConfig: { thinkingBudget: 0 },
-    },
+    }),
   }
 
   const res = await fetch(GEMINI_URL, {

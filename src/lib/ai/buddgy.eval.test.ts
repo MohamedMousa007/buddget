@@ -16,7 +16,7 @@ import { thinkingFor } from '@/lib/ai/runAiCommand'
 const KEY = process.env.GEMINI_API_KEY
 const MODELS = {
   fast: process.env.GEMINI_MODEL_FAST || 'gemini-3.5-flash-lite',
-  smart: process.env.GEMINI_MODEL_SMART || 'gemini-2.5-flash',
+  smart: process.env.GEMINI_MODEL_SMART || 'gemini-3.5-flash-lite',
 }
 const THINKING_BUDGET = { minimal: 0, low: 512, medium: 2048 } as const
 

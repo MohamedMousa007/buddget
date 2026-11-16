@@ -15,6 +15,8 @@ vi.mock('@/lib/server/ai/quota', () => ({
 }))
 vi.mock('@/lib/server/ai/gemini', async (orig) => ({
   ...(await orig<typeof import('@/lib/server/ai/gemini')>()),
+  // Distinct from LEGACY_MODEL so the tier-to-legacy fallback is exercised (the defaults are all one model today).
+  TIER_MODELS: { fast: 'test-fast-model', smart: 'test-smart-model' },
   callGemini: h.call,
   retryOnOverload: (fn: () => Promise<Response>) => fn(),
 }))

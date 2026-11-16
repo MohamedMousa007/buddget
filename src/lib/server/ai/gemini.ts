@@ -4,12 +4,13 @@ import { EMPTY_USAGE, usageFromGemini, type TokenUsage } from '@/lib/server/ai/u
  * Buddgy's tiers. `fast` = quick capture, `smart` = chat and reasoning. Override per
  * environment with GEMINI_MODEL_FAST / GEMINI_MODEL_SMART / GEMINI_MODEL_LEGACY.
  */
-export const LEGACY_MODEL = process.env.GEMINI_MODEL_LEGACY?.trim() || 'gemini-2.5-flash'
+export const LEGACY_MODEL = process.env.GEMINI_MODEL_LEGACY?.trim() || 'gemini-3.5-flash-lite'
 
 export const TIER_MODELS = {
   // gemini-2.5-flash-lite answers 404 ("no longer available to new users") since 2026-10.
   fast: process.env.GEMINI_MODEL_FAST?.trim() || 'gemini-3.5-flash-lite',
-  smart: process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-2.5-flash',
+  // gemini-2.5-flash is routed to 3.5-flash-lite by Google from 2026-12-01 (its named successor, same price); 3.6-flash costs 2.5-5x.
+  smart: process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-3.5-flash-lite',
 } as const
 export type Tier = keyof typeof TIER_MODELS
 
@@ -32,7 +33,7 @@ export function configFor(model: string, config: Record<string, unknown> | undef
     const budget = (config?.thinkingConfig as { thinkingBudget?: number } | undefined)?.thinkingBudget
     if (typeof budget !== 'number') return config
     // ponytail: two levels only; minimal and medium are the ones every 3.x Flash model documents.
-    return { ...config, thinkingConfig: { thinkingLevel: budget === 0 ? 'minimal' : 'medium' } }
+    return { ...config, thinkingConfig: { thinkingLevel: budget <= 512 ? 'minimal' : 'medium' } }
   }
   const thinking = config?.thinkingConfig as { thinkingLevel?: string } | undefined
   if (!thinking?.thinkingLevel) return config

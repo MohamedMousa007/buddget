@@ -15,7 +15,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { LEGACY_MAX_AMOUNT } from '@/lib/ai/legacyGuards'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
-import { usageFromPayload } from '@/lib/server/ai/gemini'
+import { TIER_MODELS, configFor, geminiUrl, usageFromPayload } from '@/lib/server/ai/gemini'
 import { tooLargeByHeader } from '@/lib/server/ai/bodyLimit'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
 import { SUPPORTED_CATEGORIES, SUPPORTED_CURRENCIES } from '@/lib/receipt/normaliseReceipt'
@@ -25,8 +25,8 @@ import { addUsage, estimateUnits, EMPTY_USAGE, type TokenUsage } from '@/lib/ser
 // short default function duration — sibling AI routes all set this too.
 export const maxDuration = 60
 
-const GEMINI_MODEL = 'gemini-2.5-flash'
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const GEMINI_MODEL = TIER_MODELS.smart
+const GEMINI_URL = geminiUrl(GEMINI_MODEL, false)
 const MAX_OUTPUT_TOKENS = 8192
 /** A photo costs roughly this many input tokens to read. */
 const TOKENS_PER_IMAGE = 1300
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
         ],
       },
     ],
-    generationConfig: {
+    generationConfig: configFor(GEMINI_MODEL, {
       temperature: 0,
       responseMimeType: 'application/json',
       // Root cause of the "trouble reading" failures: 2.5-flash "thinking" tokens
@@ -284,7 +284,7 @@ export async function POST(request: NextRequest) {
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       thinkingConfig: { thinkingBudget: 2048 },
       responseSchema: RESPONSE_SCHEMA,
-    },
+    }),
   }
 
   const quota = await reserveAiQuota({ userId: user.id, feature: 'receipt', estUnits: estimateUnits(SYSTEM_PROMPT.length + images.length * TOKENS_PER_IMAGE * 4, MAX_OUTPUT_TOKENS) })

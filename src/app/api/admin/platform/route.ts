@@ -1,4 +1,5 @@
 import { APP_CONFIG } from '@/lib/config'
+import { TIER_MODELS } from '@/lib/server/ai/gemini'
 import { getFirebaseAdmin } from '@/lib/server/firebaseAdmin'
 import {
   getEffectiveAiRuntimeConfig,
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
   return json({
     ai: {
       keyPresent: present('GEMINI_API_KEY'),
-      model: 'gemini-2.5-flash',
+      model: TIER_MODELS.smart,
       stored: await getStoredAiRuntimeConfig(),
       effective: await getEffectiveAiRuntimeConfig(),
       envHints: {

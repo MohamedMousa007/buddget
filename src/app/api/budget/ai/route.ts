@@ -12,10 +12,9 @@ import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { retryOnOverload } from '@/lib/server/ai/gemini'
+import { TIER_MODELS, configFor, geminiUrl, retryOnOverload, usageFromPayload } from '@/lib/server/ai/gemini'
 import { getUserEntitlements } from '@/lib/entitlements/server'
 import { quotaDeniedResponse, reserveAiQuota, settleAiQuota } from '@/lib/server/ai/quota'
-import { usageFromPayload } from '@/lib/server/ai/gemini'
 import { estimateUnits, type TokenUsage } from '@/lib/server/ai/units'
 import {
   ADJUST_SCHEMA,
@@ -32,8 +31,8 @@ import { SITUATION_SCHEMA, parseSituation, situationMessages, validateSituationI
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
 
-const MODEL = process.env.GEMINI_MODEL_SMART?.trim() || 'gemini-2.5-flash'
-const URL_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
+const MODEL = TIER_MODELS.smart
+const URL_BASE = geminiUrl(MODEL, false)
 // api_rate_hit prunes counters older than an hour, so the window cannot be longer.
 const RATE_WINDOW_SECONDS = 3600
 const MAX_BODY_CHARS = 60_000
@@ -83,13 +82,13 @@ async function askModel(apiKey: string, system: string, user: string, schema: ob
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: system }] },
             contents: [{ role: 'user', parts: [{ text: user }] }],
-            generationConfig: {
+            generationConfig: configFor(MODEL, {
               temperature: 0.3,
               responseMimeType: 'application/json',
               responseSchema: schema,
               maxOutputTokens: MAX_OUTPUT_TOKENS,
               thinkingConfig: { thinkingBudget: thinking },
-            },
+            }),
           }),
         }),
       MODEL,
