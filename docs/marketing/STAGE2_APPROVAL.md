@@ -13,7 +13,7 @@ The creative direction is locked, subject to the owner's conditions. Visual docu
 | 7 | Move into production: calendar, Batch 1 of five posts, Instagram and TikTok adaptations, native Egyptian review before final approval. Batches of five, reviewed before the next. | **Approved** |
 
 ## Still open
-- Buddgy's gender (English and Arabic wording). The owner's "7" was the production approval, so the earlier item 7 is unanswered. Batch 1 avoids it.
+- ~~Buddgy's gender~~ Decided 2026-11-16: masculine grammatical wording where Arabic requires it; prefer the name; not a marketing message.
 - Arabic wording of the Act 1 tagline for Egypt («فاضل فعلًا كام؟» vs «فاضل بجد كام؟»): for the native reviewer; the English tagline stays.
 - Reviewer hired; beta-list form verified.
 
