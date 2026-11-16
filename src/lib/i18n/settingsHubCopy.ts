@@ -65,7 +65,7 @@ export interface SettingsHubCopy {
     alsoNotifyNo: string
     keptQuiet: string
   }
-  sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string; permissionDenied: string; permissionOff: string; cashCount: string; cashCountHint: string }
+  sms: { title: string; hint: string; iosHint: string; on: string; off: string; guide: string; permissionDenied: string; permissionOff: string }
   ai: { title: string; tipsHint: string; learningHint: string; memoryHint: string }
   notif: { title: string; master: string; on: string; off: string; blocked: string; unsupported: string; pushHint: string; subs: string; goals: string; dueHint: string; priceHint: string; progressHint: string; behindHint: string }
   data: {
@@ -234,7 +234,7 @@ const en: SettingsHubCopy = {
     empty: 'Add an account or card first.',
     some: (n) => `${n} not counted`,
   },
-  sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up', permissionDenied: 'Permission to read messages was not granted', permissionOff: 'Message permission was turned off. Bank messages are not being read.', cashCount: 'Count cash withdrawals as spending', cashCountHint: 'Applies to new withdrawals only.' },
+  sms: { title: 'SMS tracking', hint: 'Log bank texts as expenses automatically', iosHint: 'Set up with a Shortcut', on: 'Tracking bank texts', off: 'Off', guide: 'Set up', permissionDenied: 'Permission to read messages was not granted', permissionOff: 'Message permission was turned off. Bank messages are not being read.' },
   ai: { title: 'Buddgy & AI', tipsHint: 'Speaks up with timely tips', learningHint: 'Remembers useful facts from chats', memoryHint: 'Household, budget answers and what Buddgy learned' },
   notif: {
     title: 'Notifications',
@@ -338,7 +338,6 @@ const en: SettingsHubCopy = {
     language: { label: 'Language', keywords: 'arabic english عربي انجليزي لغة', exact: ['language', 'لغة'] },
     showCents: { label: 'Show cents', keywords: 'decimals pennies قروش هللة' },
     sms: { label: 'SMS tracking', keywords: 'bank auto track messages رسائل بنك', exact: ['sms', 'رسائل'] },
-    cashWithdrawals: { label: 'Cash withdrawals', keywords: 'atm cash spending count withdraw سحب نقد صراف مصروفات' },
     tips: { label: 'Buddgy tips', keywords: 'nudge suggestion assistant ai نصائح', exact: ['tips', 'نصائح'] },
     learning: { label: 'Learn from chats', keywords: 'memory assistant ai تعلم' },
     memories: { label: 'Memory', keywords: 'memories forget household rent budget answers ذاكرة', exact: ['memory', 'ذاكرة'] },
@@ -455,7 +454,7 @@ const ar: SettingsHubCopy = {
     empty: 'أضف حساباً أو بطاقة أولاً.',
     some: (n) => `${n} غير محسوب`,
   },
-  sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائياً', iosHint: 'يُضبط عبر Shortcut', on: 'يتابع رسائل البنك', off: 'متوقف', guide: 'إعداد', permissionDenied: 'لم يتم منح إذن قراءة الرسائل', permissionOff: 'تم إيقاف إذن الرسائل. رسائل البنك لا تُقرأ.', cashCount: 'احتساب السحب النقدي كمصروفات', cashCountHint: 'ينطبق على السحب الجديد فقط.' },
+  sms: { title: 'تتبع الرسائل', hint: 'سجّل رسائل البنك كمصروفات تلقائياً', iosHint: 'يُضبط عبر Shortcut', on: 'يتابع رسائل البنك', off: 'متوقف', guide: 'إعداد', permissionDenied: 'لم يتم منح إذن قراءة الرسائل', permissionOff: 'تم إيقاف إذن الرسائل. رسائل البنك لا تُقرأ.' },
   ai: { title: 'بادجي والذكاء الاصطناعي', tipsHint: 'يقترح نصائح في وقتها', learningHint: 'يتذكر معلومات مفيدة من محادثاتك معه', memoryHint: 'الأسرة وإجابات الميزانية وما تعلّمه بادجي' },
   notif: {
     title: 'الإشعارات',
@@ -559,7 +558,6 @@ const ar: SettingsHubCopy = {
     language: { label: 'اللغة', keywords: 'arabic english language عربي انجليزي لغة', exact: ['language', 'لغة'] },
     showCents: { label: 'إظهار القروش', keywords: 'decimals pennies cents قروش هللة' },
     sms: { label: 'تتبع الرسائل', keywords: 'bank auto track messages sms رسائل بنك', exact: ['sms', 'رسائل'] },
-    cashWithdrawals: { label: 'السحب النقدي', keywords: 'atm cash spending withdraw سحب نقد صراف مصروفات' },
     tips: { label: 'نصائح بادجي', keywords: 'nudge suggestion assistant ai tips نصائح', exact: ['tips', 'نصائح'] },
     learning: { label: 'التعلّم من المحادثات', keywords: 'memory assistant ai learn تعلم' },
     memories: { label: 'الذاكرة', keywords: 'memories forget household rent budget answers memory ذاكرة', exact: ['memory', 'ذاكرة'] },

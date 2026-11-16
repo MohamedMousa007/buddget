@@ -7,7 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { LocaleProvider } from '@/lib/i18n'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { UpdateToast } from '@/components/ui/UpdateToast'
+import { UpdatePrompt } from '@/components/ui/UpdatePrompt'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
 import { UpdateGate } from '@/components/ui/UpdateGate'
 import { ActionToastProvider } from '@/components/ui/ActionToast'
@@ -157,7 +157,7 @@ export default async function RootLayout({
                 <CrashReporter />
                 <MotionConfigRoot>
                   <AppShell>{children}</AppShell>
-                  <UpdateToast />
+                  <UpdatePrompt />
                   <OfflineBanner />
                   <UpdateGate />
                 </MotionConfigRoot>

@@ -3,6 +3,8 @@ export interface ToastItem {
   message: string
   undo?: () => void
   undoLabel?: string
+  /** Positive (default) is the green ✓; warning is amber for a problem the user should know about. */
+  tone?: "positive" | "warning"
 }
 
 export const MAX_TOASTS = 3

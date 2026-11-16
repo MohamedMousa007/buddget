@@ -3,10 +3,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useT } from '@/lib/i18n'
 import { pushToast, toastDuration, type ToastItem } from './toastQueue'
+import { Button } from './button'
 
 interface ToastOptions {
   undo?: () => void
   undoLabel?: string
+  tone?: ToastItem['tone']
 }
 
 type ShowToast = (msg: string, opts?: ToastOptions) => void
@@ -61,21 +63,23 @@ function ToastCard({ item, onDone }: { item: ToastItem; onDone: (id: number) => 
       className={`flex items-center gap-3 rounded-full shadow-lg pointer-events-auto text-sm font-medium ${
         hasUndo
           ? 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-primary)] border border-[var(--color-brand-border)] ps-4 pe-1.5 py-1.5'
-          : 'bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] px-4 py-2'
+          : item.tone === 'warning'
+            ? 'border border-[color-mix(in_oklab,var(--color-brand-amber)_50%,transparent)] bg-[color-mix(in_oklab,var(--color-brand-amber)_18%,var(--color-brand-card))] text-[var(--color-brand-text-primary)] px-4 py-2'
+            : 'bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] px-4 py-2'
       }`}
     >
-      {hasUndo ? <span>{item.message}</span> : <span><span aria-hidden>✓ </span>{item.message}</span>}
+      {hasUndo || item.tone === 'warning' ? <span>{item.message}</span> : <span><span aria-hidden>✓ </span>{item.message}</span>}
       {hasUndo ? (
-        <button
-          type="button"
+        <Button
+          size="sm"
+          className="rounded-full px-4"
           onClick={() => {
             item.undo!()
             onDone(item.id)
           }}
-          className="min-h-11 min-w-11 rounded-full bg-[var(--color-brand-primary)] px-4 text-xs font-semibold text-[var(--color-brand-on-primary)] active:opacity-80"
         >
           {item.undoLabel || t.common.undo}
-        </button>
+        </Button>
       ) : null}
     </div>
   )
@@ -87,14 +91,14 @@ export function ActionToastProvider({ children }: { children: React.ReactNode })
   const done = useCallback((id: number) => setToasts((list) => list.filter((x) => x.id !== id)), [])
 
   const show = useCallback<ShowToast>((message, opts) => {
-    setToasts((list) => pushToast(list, { id: nextId++, message, undo: opts?.undo, undoLabel: opts?.undoLabel }))
+    setToasts((list) => pushToast(list, { id: nextId++, message, undo: opts?.undo, undoLabel: opts?.undoLabel, tone: opts?.tone }))
   }, [])
 
   return (
     <ToastContext.Provider value={show}>
       {children}
       {/* One live region that is always mounted: screen readers only announce text added to a region that already exists. */}
-      <div data-toast-region role="status" aria-live="polite" className="fixed top-[calc(env(safe-area-inset-top)+1rem)] inset-x-0 z-[var(--z-toast)] flex flex-col items-center gap-2 pointer-events-none px-4">
+      <div data-toast-region role="status" aria-live="polite" className="fixed top-[calc(env(safe-area-inset-top)+1rem+var(--top-notices-h,0px))] inset-x-0 transition-[top] duration-200 z-[var(--z-toast)] flex flex-col items-center gap-2 pointer-events-none px-4">
         {toasts.map((item) => (
           <ToastCard key={item.id} item={item} onDone={done} />
         ))}

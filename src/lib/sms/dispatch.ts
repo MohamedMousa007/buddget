@@ -66,7 +66,6 @@ import { cashDepositVerdict } from './cashDeposit'
 import { fxLegAction } from './fxEvent'
 import { decideOwnTransfer } from './ownTransferDecision'
 import { namesUnregisteredWallet } from './walletBrand'
-import { cashWithdrawalsAreSpending } from './cashLogAnswer'
 import { isDeclineMessage, findDeclineTwin, findRefundOriginal, adoptEarlierUnmatchedRefund } from './refundMatch'
 import { normalizeDigits } from './normalizeDigits'
 import { matchSalary } from './matchSalary'
@@ -770,11 +769,6 @@ export async function createSmsTransaction(
 
   // 5. ATM withdrawal → non-spend (category mapped in createSmsExpense).
   if (kind === 'atm_withdrawal') {
-    // The user said they log no cash spending: this new withdrawal is ordinary spending. Rows already booked never change.
-    if (await cashWithdrawalsAreSpending(service, row.userId)) {
-      const res = await createSmsExpense(service, { ...row, kind, categoryOverride: 'Other', cleanTitle: 'Cash withdrawal', noCashCredit: true })
-      return { ...base('atm', kind), expenseId: res.expenseId, category: 'Other', error: res.error }
-    }
     const res = await createSmsExpense(service, { ...row, kind })
     return { ...base('atm', kind), expenseId: res.expenseId, category: 'ATM Cash Withdrawal', error: res.error }
   }

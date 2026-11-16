@@ -24,7 +24,7 @@ export interface Prompt {
   actions: PromptAction[]
 }
 
-export const PROMPT_PRIORITY = { late: 10, match: 20, sms: 30, account: 40, subscription: 50, planChange: 60 } as const
+export const PROMPT_PRIORITY = { late: 10, match: 20, sms: 30, account: 40, subscription: 50, planChange: 60, update: 70 } as const
 
 interface PromptState {
   /** Prompts by registering source. Only data lives here; callbacks are read fresh from `latest`. */

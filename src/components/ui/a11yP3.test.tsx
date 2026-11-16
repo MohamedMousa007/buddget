@@ -100,15 +100,15 @@ describe('A11-16 live regions exist before their message', () => {
     expect(src).not.toContain('{toasts.length ? (')
     expect(src).toContain('<span aria-hidden>✓ </span>')
   })
-  it('update toast and status pill keep the region outside the conditional message', () => {
-    expect(read('components/ui/UpdateToast.tsx')).toMatch(/role="status"\s+aria-live="polite"\s+>/)
+  it('the update prompt rides the shared stack, and the status pill keeps the region outside the conditional message', () => {
+    expect(read('components/ui/UpdatePrompt.tsx')).toContain("useRegisterPrompts('pwaUpdate'")
     expect(read('components/ui/StatusPill.tsx')).toContain('data-inert-exempt role="status" aria-live="polite"')
   })
 })
 
 describe('A11-18 no off-palette colour utilities in the update toast', () => {
   it('uses the shadow and brand tokens, not blue-500', () => {
-    expect(read('components/ui/UpdateToast.tsx')).not.toMatch(/blue-500/)
+    expect(read('components/ui/UpdatePrompt.tsx')).not.toMatch(/blue-500/)
   })
 })
 

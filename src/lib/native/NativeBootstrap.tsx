@@ -13,8 +13,7 @@ import { onboardingState } from '@/lib/onboarding/eligibility'
 import { pushBootAction } from '@/lib/onboarding/pushPolicy'
 import { checkPushPermission } from '@/lib/native/pushPermission'
 import { PushPrePromptSheet } from '@/components/features/notifications/PushPrePromptSheet'
-import { useNotifyDecision } from '@/hooks/useNotifyDecision'
-import { reportThisDevice } from '@/lib/devices/notify'
+import { notifyCheck } from '@/hooks/useNotifyDecision'
 
 interface NativeBootstrapProps {
   session: Session | null
@@ -32,7 +31,6 @@ interface NativeBootstrapProps {
  */
 export function NativeBootstrap({ session }: NativeBootstrapProps) {
   const language = useFinanceStore((s) => s.settings.language)
-  const decide = useNotifyDecision()
 
   // Read the token via a ref at call time. Keying the effect on access_token
   // re-ran the ENTIRE bootstrap (permission request, FCM register, SMS resume)
@@ -48,6 +46,7 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
   const synced = useSettingsStore((s) => !!userId && s.serverSyncedFor === userId)
   const bootstrapped = useRef<string | null>(null)
   const [askPush, setAskPush] = useState(false)
+  const [otherPhones, setOtherPhones] = useState<string | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -77,18 +76,18 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
           setAskPush(true)
           return
         }
-        // A phone that is not the main one asks first when another phone already gets notifications.
-        const decision = await decide()
-        if (!decision.proceed) {
-          useSettingsStore.getState().setPushOptOut(true)
-          await reportThisDevice(false)
+        // A phone that is not the main one asks first when another phone already gets notifications: the same sheet, its second step.
+        const check = await notifyCheck()
+        if (check.ask) {
+          setOtherPhones(check.names)
+          setAskPush(true)
           return
         }
         await registerPushNotifications({
           accessToken,
           userId,
           locale: language,
-          notify: decision.explicit ? true : undefined,
+          notify: check.explicit ? true : undefined,
         })
       } catch (e) {
         console.error('[native-bootstrap] push register failed', e)
@@ -99,5 +98,5 @@ export function NativeBootstrap({ session }: NativeBootstrapProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, synced, flagOn]) // once per signed-in user, after the first sync — token read from ref, language at first-run value
 
-  return <PushPrePromptSheet open={askPush} onClose={() => setAskPush(false)} />
+  return <PushPrePromptSheet open={askPush} otherPhones={otherPhones} onClose={() => { setAskPush(false); setOtherPhones(null) }} />
 }

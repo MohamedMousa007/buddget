@@ -16,6 +16,7 @@ import { ModalProvider } from '@/components/modals/ModalProvider'
 import { SyncFailureBanner } from '@/components/layout/SyncFailureBanner'
 import { PendingCapturesChip } from '@/components/features/pending/PendingCapturesChip'
 import { BannerStack } from '@/components/features/dashboard/BannerStack'
+import { TopNoticeRegion } from '@/components/layout/TopNoticeRegion'
 import { HeldMessagesHost } from '@/components/features/dashboard/HeldMessagesHost'
 import { SubscriptionPlanChangeBanner } from '@/components/features/dashboard/SubscriptionPlanChangeBanner'
 import { ownsHeader } from '@/lib/navigation/ownsHeader'
@@ -342,7 +343,9 @@ export function AppShell({ children }: AppShellProps) {
       <HeldMessagesHost />
       <BillingHost />
       <SubscriptionPlanChangeBanner />
-      <BannerStack />
+      <TopNoticeRegion>
+        <BannerStack />
+      </TopNoticeRegion>
       <SyncFailureBanner />
       <BottomNav />
       <ModalProvider />

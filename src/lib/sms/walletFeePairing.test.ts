@@ -216,18 +216,11 @@ describe('cash switch, server half: a "no" books each new withdrawal as ordinary
     expect(db.expenses[0]).toMatchObject({ category: 'ATM Cash Withdrawal', to_payment_method_id: 'cash1' })
   })
 
-  it('"no": an Other row titled Cash withdrawal, the Cash account not credited, the kind still atm_withdrawal', async () => {
+  it('an old "count it" answer no longer changes anything: still non-spend, crediting the Cash account', async () => {
     withCash()
     answer({ 'cashlog:no': '2026-11-02T10:00:00.000Z' })
     const tx = await createSmsTransaction(svc, atm(), { exchangeRates: {} })
-    expect(tx).toMatchObject({ outcome: 'atm', kind: 'atm_withdrawal', category: 'Other' })
-    expect(db.expenses[0]).toMatchObject({ category: 'Other', description: 'Cash withdrawal', to_payment_method_id: null })
-  })
-
-  it('a later "yes" over an earlier "no" leaves the withdrawal non-spend', async () => {
-    withCash()
-    answer({ 'cashlog:no': '2026-11-01T10:00:00.000Z', 'cashlog:yes': '2026-11-02T10:00:00.000Z' })
-    await createSmsTransaction(svc, atm(), { exchangeRates: {} })
+    expect(tx).toMatchObject({ outcome: 'atm', kind: 'atm_withdrawal', category: 'ATM Cash Withdrawal' })
     expect(db.expenses[0]).toMatchObject({ category: 'ATM Cash Withdrawal', to_payment_method_id: 'cash1' })
   })
 })

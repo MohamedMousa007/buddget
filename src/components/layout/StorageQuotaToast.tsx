@@ -10,7 +10,7 @@ export function StorageQuotaToast() {
   const showToast = useActionToast()
   const message = useT().common.storageFull
   useEffect(() => {
-    const onQuota = () => showToast(message)
+    const onQuota = () => showToast(message, { tone: 'warning' })
     window.addEventListener(STORAGE_QUOTA_EVENT, onQuota)
     return () => window.removeEventListener(STORAGE_QUOTA_EVENT, onQuota)
   }, [showToast, message])

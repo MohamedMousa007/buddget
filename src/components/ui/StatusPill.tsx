@@ -3,6 +3,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from 'framer-motion'
 import { ArrowUp } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { useStatusSlot } from '@/components/layout/TopNoticeRegion'
 
 export interface StatusPillProps {
   /** 16px glyph, drawn in amber. */
@@ -26,6 +28,8 @@ export function StatusPill({ icon, label, visible = true, onHide, hiddenHint }: 
   const y = useMotionValue(0)
   const opacity = useTransform(y, [-60, 0], [0.45, 1])
   const [hinting, setHinting] = useState(false)
+  // Inside the app shell the pill joins the shared top area (above the prompt card); elsewhere it places itself.
+  const slot = useStatusSlot()
 
   useEffect(() => {
     if (!hinting) return
@@ -40,8 +44,8 @@ export function StatusPill({ icon, label, visible = true, onHide, hiddenHint }: 
     }
   }
 
-  return (
-    <div data-inert-exempt role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+7px)] lg:start-[var(--sidebar-w)] lg:top-[calc(var(--app-header-h-lg)+8px)] z-[58] flex flex-col items-center gap-2.5">
+  const pill = (
+    <div data-inert-exempt role="status" aria-live="polite" className={slot ? "flex flex-col items-center gap-2.5" : "pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top,0px)+7px)] lg:start-[var(--sidebar-w)] lg:top-[calc(var(--app-header-h-lg)+8px)] z-[58] flex flex-col items-center gap-2.5"}>
       {visible ? (
       <motion.div
         className="pointer-events-auto inline-flex h-9 touch-none items-center gap-2 whitespace-nowrap rounded-full border border-[color-mix(in_oklab,var(--color-brand-amber)_50%,transparent)] bg-[color-mix(in_oklab,var(--color-brand-amber)_18%,var(--color-brand-card))] pe-1.5 ps-3 text-[0.78125rem] font-semibold text-[var(--color-brand-text-primary)] shadow-[var(--shadow-md)]"
@@ -65,6 +69,9 @@ export function StatusPill({ icon, label, visible = true, onHide, hiddenHint }: 
       </AnimatePresence>
     </div>
   )
+  if (!slot) return pill
+  // Nothing to show: leave the slot empty so the shared area collapses.
+  return visible || hinting ? createPortal(pill, slot) : null
 }
 
 /** The small card-coloured note that confirms a hide or a snooze. */

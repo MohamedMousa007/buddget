@@ -15,25 +15,32 @@ export interface NotifyDecision {
 }
 
 /**
- * Before this phone asks the OS for notifications: if another phone already gets them, ask the user whether they really
- * want both. The main phone and an account with no other notifier are never asked. Unknown state (offline) proceeds as
+ * The lookup alone. `ask` names the other phones that already get notifications, so the caller asks the user; otherwise
+ * go ahead. The main phone and an account with no other notifier are never asked. Unknown state (offline) goes ahead as
  * it always did, so a failed lookup never blocks the prompt.
  */
+export async function notifyCheck(): Promise<{ ask: false; explicit: boolean } | { ask: true; names: string }> {
+  if (!isNative()) return { ask: false, explicit: false }
+  const id = await getOrCreateDeviceId()
+  const payload = id ? await fetchDevices() : null
+  if (!payload || !id) return { ask: false, explicit: false }
+  const me = payload.devices.find((x) => x.deviceId === id)
+  if (me?.isMain) return { ask: false, explicit: false }
+  const others = otherNotifiers(payload, id)
+  if (others.length === 0) return { ask: false, explicit: Boolean(me) }
+  return { ask: true, names: others.map((o) => o.name).join(', ') }
+}
+
+/** Settings' switch: the same check, asked with the confirm dialog (nothing else is open there). */
 export function useNotifyDecision() {
   const confirm = useConfirm()
   const d = useSettingsHubCopy().devices
   return useCallback(async (): Promise<NotifyDecision> => {
-    if (!isNative()) return { proceed: true, explicit: false }
-    const id = await getOrCreateDeviceId()
-    const payload = id ? await fetchDevices() : null
-    if (!payload || !id) return { proceed: true, explicit: false }
-    const me = payload.devices.find((x) => x.deviceId === id)
-    if (me?.isMain) return { proceed: true, explicit: false }
-    const others = otherNotifiers(payload, id)
-    if (others.length === 0) return { proceed: true, explicit: Boolean(me) }
+    const check = await notifyCheck()
+    if (!check.ask) return { proceed: true, explicit: check.explicit }
     const ok = await confirm({
       title: d.alsoNotifyTitle,
-      body: d.alsoNotifyBody(others.map((o) => o.name).join(', ')),
+      body: d.alsoNotifyBody(check.names),
       confirmLabel: d.alsoNotifyYes,
       cancelLabel: d.alsoNotifyNo,
     })

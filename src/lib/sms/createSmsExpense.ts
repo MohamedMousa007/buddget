@@ -162,8 +162,6 @@ export interface SmsRowData {
   refundMark?: { refundKind: 'refunded' | 'declined'; day: string } | null
   /** Per-user salted hash of the message's payment reference (ownTransferDecision.ts). Never the reference. */
   referenceHash?: string | null
-  /** A cash withdrawal booked as ordinary spending (the user logs no cash): the Cash account is not credited. */
-  noCashCredit?: boolean
   /** A repayment-wording payment that loaded the user's own prepaid card: the card is the destination, nothing is the source. */
   cardLoad?: boolean
   /** A decline moves no money, so it never creates a provisional account for its card (I2). */
@@ -633,7 +631,7 @@ export async function createSmsExpense(
   // an own transfer lands in the account named as counterparty (the posted row is always the debit leg).
   const toPaymentMethodId =
     row.cardLoad ? await resolveExactPaymentMethod(service, row.userId, row.last4, providerOf(row))
-    : row.kind === 'atm_withdrawal' ? (row.noCashCredit ? null : await cashAccountFor(service, row.userId))
+    : row.kind === 'atm_withdrawal' ? await cashAccountFor(service, row.userId)
     : inboundOwn ? await resolveCreditAccount(service, row)
     : row.kind === 'own_transfer' || row.kind === 'currency_exchange'
       ? (await resolveExactPaymentMethod(service, row.userId, row.counterpartyLast4)) ?? (await resolveExactPaymentMethod(service, row.userId, row.creditLegLast4))

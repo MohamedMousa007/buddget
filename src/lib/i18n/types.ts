@@ -2960,8 +2960,6 @@ export interface Dictionary {
     emptyMonthTitle: (month: string) => string
     emptyMonthBody: string
     turnOnSms: string
-    cashWithdrawn: (amount: string) => string
-    cashWithdrawnChange: string
     noMatchTitle: string
     noMatchNo: string
     noMatchSpending: string
@@ -3047,11 +3045,6 @@ export interface Dictionary {
     passThroughBody: (n: number, total: string) => string
     passThroughYes: string
     passThroughNo: string
-    cashLogTitle: string
-    cashLogBody: string
-    cashLogYes: string
-    cashLogNo: string
-    cashLogCounted: string
     merchantCategoryTitle: (name: string) => string
     merchantCategoryBody: (n: number, total: string) => string
     merchantCategoryChoose: string
@@ -3398,7 +3391,6 @@ export interface Dictionary {
     decimalPoint: string
     padAmount: string
     padCardLast4: string
-    dismissUpdate: string
     colour: (name: string) => string
     colourGroup: string
     otpCode: string
