@@ -14,7 +14,7 @@ The creative direction is locked, subject to the owner's conditions. Visual docu
 
 ## Still open
 - ~~Buddgy's gender~~ Decided 2026-11-16: masculine grammatical wording where Arabic requires it; prefer the name; not a marketing message.
-- Arabic wording of the Act 1 tagline for Egypt («فاضل فعلًا كام؟» vs «فاضل بجد كام؟»): for the native reviewer; the English tagline stays.
+- ~~Arabic wording of the Act 1 tagline for Egypt~~ Decided 2026-11-16 by the owner: «فاضل كام فعلًا؟». The reviewer may suggest refinements; the English tagline stays.
 - Reviewer hired; beta-list form verified.
 
 ## Changes made in production, with reasons

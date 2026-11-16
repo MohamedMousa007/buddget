@@ -288,6 +288,7 @@ Start at Minimal. Move up when a message has proven itself, the reveal needs sto
 - Production approved 2026-11-16: relative-phase calendar and Batch 1 (five posts) with Instagram and TikTok adaptations; native Egyptian review before final approval; batches of five reviewed before the next. Buddgy's gender wording remains open. (Owner)
 - Buddgy gender wording FINAL (2026-11-16): masculine grammatical wording where Arabic requires it, consistently; prefer the name; no gender as a marketing message; character and design unchanged. (Owner)
 - Copy craft (2026-11-16): Buddget speaks as "we" rather than "you" in Arabic copy; Batch 1 rewritten after a self-critique (cashier listicle cut, repeated insight removed, Buddgy only in post 3). Reviewer trial package prepared; reviewer NOT yet contacted or hired. Final campaign package: `stage2/campaign-package.html`.
+- Arabic wording of the Act 1 tagline for Egypt decided 2026-11-16: «فاضل كام فعلًا؟» (replaces «فاضل كام فعلًا؟»). English tagline unchanged. Applied to all documents and Day 1 assets; the native Egyptian reviewer may still suggest refinements. (Owner)
 - No fixed budget; lean organic Instagram and TikTok; AI-assisted production with owner approval; outsource editing and motion when needed; paid ads only as controlled experiments after promising content. (Owner, 2026-11-15)
 
 ## 14. Sources

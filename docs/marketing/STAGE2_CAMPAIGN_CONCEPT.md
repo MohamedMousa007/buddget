@@ -4,7 +4,7 @@
 
 ## Campaign idea
 
-**"What's actually left?"** (Egyptian Arabic: «فاضل فعلًا كام؟»)
+**"What's actually left?"** (Egyptian Arabic: «فاضل كام فعلًا؟»)
 
 Insight (OWNER BELIEF, to validate): people check the bank balance, but the balance is the number before instalments, subscriptions, rent and goals. The real question is what is actually left.
 
@@ -36,7 +36,7 @@ Weeks 1 to 2: wordmark as sign-off with the question. Weeks 3 to 4: Buddget as c
 
 ## Localisation (drafts, unreviewed)
 
-Egypt «فاضل كام؟ / فاضل فعلًا كام؟»; Saudi «وش باقي معك فعلًا؟»; UAE «كم باقي لك فعلًا؟ / شو اللي باقي؟». Saudi and UAE are a thin layer, manual and voice only, no SMS claims. A native reviewer per market before publishing.
+Egypt «فاضل كام؟ / فاضل كام فعلًا؟»; Saudi «وش باقي معك فعلًا؟»; UAE «كم باقي لك فعلًا؟ / شو اللي باقي؟». Saudi and UAE are a thin layer, manual and voice only, no SMS claims. A native reviewer per market before publishing.
 
 ## Seasonal
 
