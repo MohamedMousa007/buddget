@@ -5,7 +5,7 @@ import type { SavingsFormsCopy } from './savingsFormsCopy'
 import type { SystemPagesCopy } from './systemPagesCopy'
 import type { InlineCopy } from './inlineCopy'
 import type { CatalogCopy } from './catalogCopy'
-/** Buddget i18n dictionary shape — every key in ar.ts must match en.ts exactly. */
+/** buddget i18n dictionary shape — every key in ar.ts must match en.ts exactly. */
 
 /** Tutorial tour copy. Top-level so copyKeys in the manifest stay short
  *  (`tour.debug.fab.title`). Tours tied to onboarding modals still use

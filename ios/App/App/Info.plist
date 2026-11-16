@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Buddget</string>
+	<string>buddget</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -85,15 +85,15 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Buddget uses Face ID to allow you to log in securely without entering your password.</string>
+	<string>buddget uses Face ID to allow you to log in securely without entering your password.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Buddget uses the microphone to let you add expenses by voice.</string>
+	<string>buddget uses the microphone to let you add expenses by voice.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Buddget uses the camera to let you scan receipts and track expenses.</string>
+	<string>buddget uses the camera to let you scan receipts and track expenses.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Buddget accesses your photo library to let you attach receipt images to expenses.</string>
+	<string>buddget accesses your photo library to let you attach receipt images to expenses.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Buddget saves receipt images to your photo library.</string>
+	<string>buddget saves receipt images to your photo library.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

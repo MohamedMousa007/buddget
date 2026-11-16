@@ -1,4 +1,4 @@
-# Supabase setup (Buddget)
+# Supabase setup (buddget)
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. In **Project Settings → API**, copy the **URL** and **publishable** key into `.env.local` for native builds (see `.env.example`). Put the **secret** key on **Vercel** only (`SUPABASE_SECRET_KEY`), not in `.env.local`.
@@ -9,7 +9,7 @@
 
 4. Under **Authentication → Providers → Email**:
    - Turn **Email** on.
-   - Enable **email + password** (users create a password in Buddget; there is no passwordless / magic-link login in the app).
+   - Enable **email + password** (users create a password in buddget; there is no passwordless / magic-link login in the app).
    - If you use **Confirm email**, new users enter the **6-digit code** in the **auth modal** (`verifyOtp` with type `signup`). Disable or avoid relying on magic links for signup confirmation — see templates below.
 
 5. Under **Authentication → URL configuration**:
@@ -19,7 +19,7 @@
 
 6. **Email templates (OTP, not magic link for signup):**  
    - Edit the **Confirm signup** (and related) templates so they emphasize **`{{ .Token }}`** and remove or hide magic-link CTAs if you do not want links.  
-   - Buddget does **not** call `signInWithOtp` for login — only **email + password** for sign-in, and **OTP** only when the user must confirm their email after **Create account**.  
+   - buddget does **not** call `signInWithOtp` for login — only **email + password** for sign-in, and **OTP** only when the user must confirm their email after **Create account**.  
    - **Forgot password** uses Supabase’s recovery email, which typically still contains a **link** (Supabase limitation); that link should open your app and hit `/auth/callback` if you keep the default redirect.
 
 After that, sign-in, onboarding, cloud sync, analytics, and admin survey tools will work against your project.

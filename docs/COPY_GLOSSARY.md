@@ -1,4 +1,4 @@
-# Buddget copy glossary (en + ar)
+# buddget copy glossary (en + ar)
 
 Source: QA Round 2 decision "Copy" (2026-10-27). Applies to every user-visible string in `src/lib/i18n/**` and hardcoded UI text. Arabic is simple Modern Standard Arabic; the app stays LTR.
 

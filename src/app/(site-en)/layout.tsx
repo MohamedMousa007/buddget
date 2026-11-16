@@ -8,9 +8,9 @@ import '@/components/site/home.css'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: 'Buddget', template: '%s | Buddget' },
-  applicationName: 'Buddget',
-  authors: [{ name: 'Buddget', url: SITE_URL }],
+  title: { default: 'buddget', template: '%s | buddget' },
+  applicationName: 'buddget',
+  authors: [{ name: 'buddget', url: SITE_URL }],
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
   icons: {
     icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }],

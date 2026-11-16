@@ -1,4 +1,4 @@
-# Buddget — Full-App QA Round Plan
+# buddget — Full-App QA Round Plan
 
 Status: PLAN ONLY. No fixes applied. Bug list below is a seed from a read-only code scan (race behaviour reasoned from code, not run). The skill runs in Part 2 will confirm, extend, and re-rank it.
 
@@ -7,7 +7,7 @@ Status: PLAN ONLY. No fixes applied. Bug list below is a seed from a read-only c
 Source: `petrkindlmann/qa-skills` (MIT, plain SKILL.md folders, copied via git clone, no npm CLI executed). 21 of 50 chosen; the rest (Cypress, Selenium-style, BrowserStack, Pact, TestRail, payments, email, analytics, chaos, k6-infra, dashboards) don't fit this stack.
 Rejected: `PramodDutta/qaskills` (20 generic stubs, needs an npm CLI), `awesome-claude-skills` (an index; `webapp-testing` is already installed), `agentskills/agentskills` (no QA pack there).
 
-| # | Skill | Covers in Buddget |
+| # | Skill | Covers in buddget |
 |---|---|---|
 | 1 | qa-project-context | Writes the stack/risk context file all others read |
 | 2 | risk-based-testing | Ranks areas (money math, SMS ingest, sync) |

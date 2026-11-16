@@ -5,7 +5,7 @@ import { createSmsTransaction } from './dispatch'
 import { resolvePaymentMethodByLast4, type SmsRowData } from './createSmsExpense'
 
 /**
- * Loading your own wallet emits two SMS and Buddget believed both: the funding card's
+ * Loading your own wallet emits two SMS and buddget believed both: the funding card's
  * bank ("Online Purchase ... From: barq") posted a 2 SAR expense, and Barq ("Money Added
  * to your Barq wallet") posted 2 SAR of income. Same own money, booked as spend AND
  * income — and the purchase later made from the wallet counted it a third time.

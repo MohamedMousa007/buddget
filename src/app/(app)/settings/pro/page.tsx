@@ -10,7 +10,7 @@ import { subscriptionView } from '@/lib/billing/subscriptionView'
 import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
 import { navigate } from '@/lib/navigation/navigate'
 
-/** Buddget Pro: the plans page for a Free account, the state page for everyone else. Unreachable while the server's billing switch is off. */
+/** buddget Pro: the plans page for a Free account, the state page for everyone else. Unreachable while the server's billing switch is off. */
 export default function ProPage() {
   const c = useMembershipCopy()
   const me = useBillingStore((s) => s.me)

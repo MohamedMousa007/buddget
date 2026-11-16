@@ -85,7 +85,7 @@ async function startWebRecording(): Promise<RecorderHandle> {
     _permStatus = 'denied'
     if (e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError')) {
       throw new Error(
-        'Microphone access denied. Please go to Settings → Apps → Buddget → Permissions and enable Microphone.'
+        'Microphone access denied. Please go to Settings → Apps → buddget → Permissions and enable Microphone.'
       )
     }
     throw e

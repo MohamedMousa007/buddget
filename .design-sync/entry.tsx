@@ -1,4 +1,4 @@
-// design-sync entry: Buddget has no library build (it is a Next.js app), so this
+// design-sync entry: buddget has no library build (it is a Next.js app), so this
 // file is the hand-authored barrel the converter bundles. Keep it in sync with
 // `componentSrcMap` in config.json — that map is what gets a preview card; anything
 // exported here is importable by the design agent whether or not it has a card.

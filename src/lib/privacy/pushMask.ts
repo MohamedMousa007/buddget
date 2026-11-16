@@ -1,8 +1,8 @@
 import type { PrivacySettings } from '@/lib/store/types'
 import { isMasked } from './mask'
 
-const HIDDEN_BODY = { en: 'Open Buddget to see the details', ar: 'افتح بادجت لعرض التفاصيل' } as const
-const HIDDEN_TITLE = 'Buddget'
+const HIDDEN_BODY = { en: 'Open buddget to see the details', ar: 'افتح بادجت لعرض التفاصيل' } as const
+const HIDDEN_TITLE = 'buddget'
 const ROUTING_KEYS = new Set(['route', 'url', 'link', 'deeplink', 'screen', 'path', 'tab', 'type', 'kind', 'category', 'id', 'logId', 'expenseId', 'notificationId'])
 
 export interface PushContent {

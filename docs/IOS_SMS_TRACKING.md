@@ -30,7 +30,7 @@ guide's first two steps (Automation tab, + button) should be re-checked on an iO
 
 ## What changed in the guide
 
-Eight steps instead of fifteen, drawn with Buddget's own tokens instead of annotated screenshots (the old ones showed the previous
+Eight steps instead of fifteen, drawn with buddget's own tokens instead of annotated screenshots (the old ones showed the previous
 red app icon and the Sender field). Apple's own labels ("Automation", "Message Contains", "Run Immediately", "Shortcut Input") stay in
 English in the illustrations: they are what the reader has to match on the phone.
 

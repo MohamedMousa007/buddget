@@ -1,4 +1,4 @@
-# Buddget Team Structure: Launch and GTM
+# buddget Team Structure: Launch and GTM
 
 Six roles, assigned below (council decision 2026-11-14, owner has final say). Shareable overview: https://claude.ai/artifact/AGUxPK6jNxD25ty9RfvSvw
 
@@ -125,7 +125,7 @@ Common to every role: one Linear ticket per piece of work, branch and PR per tic
 
 - **Plus:** campaign execution with R5, store listing text, website copy, help center. Arabic is written, not machine-translated; R5 reviews Saudi dialect.
 
-- **Mission:** make Buddget sound and look like one consistent, trustworthy brand in English and Arabic.
+- **Mission:** make buddget sound and look like one consistent, trustworthy brand in English and Arabic.
 - **Owns:** UX copy (EN/AR), `COPY_GLOSSARY`, email and notification copy, help center/FAQ, store text and social copy, social media accounts and calendar, short video, community (Discord/WhatsApp/Reddit/X), influencer content briefs, visual creatives, brand guidelines, legal text drafts for lawyer review.
 - **Paths:** `src/lib/i18n/`, `docs/COPY_GLOSSARY.md`, `docs/ARABIC_REVIEW.md`, `docs/email-templates/`, `docs/buddgy/` (tone), `src/components/legal/`.
 - **Decides alone:** wording and tone inside the glossary, social content.

@@ -2040,7 +2040,7 @@ export const useFinanceStore = create<FinanceStore>()(
           parsed = JSON.parse(jsonString)
         } catch {
           throw new Error(
-            'Invalid file: could not parse JSON. Make sure you exported a Buddget backup (.json).'
+            'Invalid file: could not parse JSON. Make sure you exported a buddget backup (.json).'
           )
         }
 
@@ -2054,7 +2054,7 @@ export const useFinanceStore = create<FinanceStore>()(
           throw new Error(
             issues
               ? `Import failed — invalid data: ${issues}`
-              : 'Import failed — data format does not match Buddget export.'
+              : 'Import failed — data format does not match buddget export.'
           )
         }
 

@@ -1,6 +1,6 @@
 /* design-sync stylesheet entry — compiled to .design-sync/compiled.css (= cfg.cssEntry).
  *
- * Buddget's real stylesheet is src/app/globals.css, but it cannot ship as-is:
+ * buddget's real stylesheet is src/app/globals.css, but it cannot ship as-is:
  *   1. it opens with `@import "tailwindcss"` + `@import "tw-animate-css"` — npm packages,
  *      not files — so the design runtime resolves nothing and every utility class is dead.
  *   2. the brand families are injected by next/font at runtime, so outside Next.js the

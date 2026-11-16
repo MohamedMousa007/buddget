@@ -1,6 +1,6 @@
-# App Store submission — Buddget
+# App Store submission — buddget
 
-End-to-end checklist for shipping Buddget to the iOS App Store via the
+End-to-end checklist for shipping buddget to the iOS App Store via the
 Capacitor wrapper. **Egypt is the primary market**; UAE / GCC are expansion.
 
 > Privacy Policy + Terms already live at `/privacy` and `/terms`. Reference
@@ -10,7 +10,7 @@ Capacitor wrapper. **Egypt is the primary market**; UAE / GCC are expansion.
 
 ## 1. App Store Connect basics
 
-- **App Name:** Buddget — Budget & Expense Tracker
+- **App Name:** buddget — Budget & Expense Tracker
 - **Bundle Identifier:** `online.buddget`
 - **Subtitle (30 chars):** `Track EGP & AED smartly`
 - **Promotional text (170 chars):** `Built for Egypt. Voice expenses,
@@ -35,28 +35,28 @@ the final `</dict>`:
 
 ```xml
 <key>NSCameraUsageDescription</key>
-<string>Buddget uses the camera so you can scan receipts and turn them into
+<string>buddget uses the camera so you can scan receipts and turn them into
 expenses automatically. Photos are not saved to your library.</string>
 
 <key>NSMicrophoneUsageDescription</key>
-<string>Buddget uses the microphone so you can record an expense by voice
+<string>buddget uses the microphone so you can record an expense by voice
 (e.g. "spent 90 EGP at Talabat"). Audio is sent securely for transcription
 and not stored after processing.</string>
 
 <key>NSSpeechRecognitionUsageDescription</key>
-<string>Buddget uses speech recognition to turn your voice into a typed
+<string>buddget uses speech recognition to turn your voice into a typed
 expense, with Arabic and English support.</string>
 
 <key>NSFaceIDUsageDescription</key>
-<string>Buddget uses Face ID so you can sign in instantly without typing
+<string>buddget uses Face ID so you can sign in instantly without typing
 your password.</string>
 
 <key>NSUserNotificationUsageDescription</key>
-<string>Buddget sends notifications for budget alerts, recurring debt
+<string>buddget sends notifications for budget alerts, recurring debt
 reminders, and confirmation of auto-detected SMS transactions.</string>
 
 <key>NSPhotoLibraryUsageDescription</key>
-<string>Buddget can pick a previously taken receipt photo from your
+<string>buddget can pick a previously taken receipt photo from your
 library to scan it. We do not modify or upload anything else.</string>
 
 <key>UIBackgroundModes</key>
@@ -101,7 +101,7 @@ library to scan it. We do not modify or upload anything else.</string>
 - **App icon:** 1024×1024 PNG (no alpha channel) at
   `public/icons/icon-1024.png`. Re-export at every required size or use
   Asset Catalog automation in Xcode.
-- **Launch screen:** dark `#0A0A0F` background with white Buddget wordmark.
+- **Launch screen:** dark `#0A0A0F` background with white buddget wordmark.
 - **Marketing screenshots:** 6.7" / 6.1" / 5.5" at 1290×2796, 1170×2532,
   and 1242×2208 respectively. Recommended set (Egypt-first):
   1. Dashboard with EGP hero number and Egyptian-Arabic month label.
@@ -125,7 +125,7 @@ Disclose, in this order:
 | Photos | No | No | Receipt OCR (transient) |
 | Diagnostics — Crash data | No | No | App stability |
 
-Do **not** declare advertising data, location, or contacts — Buddget collects
+Do **not** declare advertising data, location, or contacts — buddget collects
 none.
 
 ## 7. Test account for App Review

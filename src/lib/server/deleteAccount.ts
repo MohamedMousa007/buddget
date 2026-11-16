@@ -16,7 +16,7 @@ export type DeleteResult =
   | { ok: false; error: string; details: string[] }
 
 /**
- * Permanently deletes a user and every piece of data Buddget holds for them.
+ * Permanently deletes a user and every piece of data buddget holds for them.
  *
  * Order matters (C23): the personal text that outlives the account row is scrubbed first, then the auth user is
  * deleted, which cascades through every table with a foreign key to `auth.users` (migration 0203 closed the last

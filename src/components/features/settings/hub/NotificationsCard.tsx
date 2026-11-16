@@ -27,7 +27,7 @@ async function askPermission(): Promise<boolean> {
   return (await Notification.requestPermission()) === 'granted'
 }
 
-/** Notifications as an ordinary switch, with the per-topic switches under it. Off means Buddget stops sending. */
+/** Notifications as an ordinary switch, with the per-topic switches under it. Off means buddget stops sending. */
 export function NotificationsCard() {
   const copy = useSettingsHubCopy()
   const n = copy.notif

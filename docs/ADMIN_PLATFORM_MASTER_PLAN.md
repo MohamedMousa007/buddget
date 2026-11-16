@@ -1,4 +1,4 @@
-# Buddget Admin Platform — Master Plan
+# buddget Admin Platform — Master Plan
 
 Owner-authored, decisions locked to the recommendations in section 11 (approved 2026-10-23). Review findings, corrections and build status: `docs/ADMIN_PLATFORM_REVIEW.md`. Where the review disagrees with this plan, the review wins (notably: do not revoke `anon` on `app_client_gate`).
 

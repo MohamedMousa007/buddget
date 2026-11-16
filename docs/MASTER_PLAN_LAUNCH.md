@@ -1,4 +1,4 @@
-# Buddget launch master plan (council-ordered, model-routed)
+# buddget launch master plan (council-ordered, model-routed)
 
 Written 2026-11-14. Evidence below was read from the repo and the live DB (read-only aggregates, no row contents). Council verdict: Fable only where judgment changes the outcome (SMS correctness, money-path security); cheaper models for bulk execution; switch models at session boundaries, never mid-task.
 

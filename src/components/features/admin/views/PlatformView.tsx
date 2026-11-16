@@ -136,7 +136,7 @@ function Maintenance({ data, canManage, onSaved }: { data: PlatformData; canMana
     <Panel title="Maintenance mode" description="Tell the app to show a maintenance notice" actions={<Pill tone={s.value.enabled ? 'bad' : 'good'}>{s.value.enabled ? 'On' : 'Off'}</Pill>}>
       <div className="space-y-4">
         <div className="flex items-center justify-between"><span className="text-sm">Maintenance in progress</span><Switch size="touch" checked={enabled} onCheckedChange={setEnabled} disabled={!canManage} aria-label="Maintenance mode" /></div>
-        <Field label="Message shown to users"><Input size="brand" value={message} maxLength={300} onChange={(e) => setMessage(e.target.value)} disabled={!canManage} placeholder="We’re upgrading Buddget. Back in a few minutes." /></Field>
+        <Field label="Message shown to users"><Input size="brand" value={message} maxLength={300} onChange={(e) => setMessage(e.target.value)} disabled={!canManage} placeholder="We’re upgrading buddget. Back in a few minutes." /></Field>
         {canManage ? <Button size="touch" loading={s.busy} onClick={() => void save()}>Save</Button> : null}
         <p className="text-xs text-[var(--color-brand-text-muted)]">Stored now and served from the platform settings; the app begins honouring it when its client reads <code>platform_settings</code>.</p>
       </div>

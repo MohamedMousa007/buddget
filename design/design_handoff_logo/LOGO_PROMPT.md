@@ -1,11 +1,11 @@
-# Design Brief — Buddget logo
+# Design Brief — buddget logo
 
-Paste into Claude Design with the **Buddget design system** attached
+Paste into Claude Design with the **buddget design system** attached
 (project `3e84a07a-da79-472d-b487-07c93afa5f48`, teal identity, re-synced 2026-09-28).
 
 ---
 
-## What Buddget is
+## What buddget is
 
 A personal-finance app for tracking spending, income, budgets, debts and savings. It ships as a web
 PWA and as native iOS and Android apps. Its real differentiator is **automation**: it reads bank SMS
@@ -23,10 +23,10 @@ gives context, gets out of the way. Calm and reassuring, not hype, not gamified.
 ## What we need
 
 1. **A logo mark (icon)** — the thing that becomes the app icon and sits at 26px in the app header.
-2. **The wordmark lockup** — mark + "Buddget", horizontal.
+2. **The wordmark lockup** — mark + "buddget", horizontal.
 3. Both in **light and dark** variants.
 
-**The wordmark itself already exists and must be kept**: the word "Buddget", with the **second "d"
+**The wordmark itself already exists and must be kept**: the word "buddget", with the **second "d"
 accented in the brand teal** — `Bud` + teal `d` + `get`. Do not redesign the word or the accent
 idea; recolour and set it, and design the mark that goes beside it. Typeface is DM Sans Bold, which
 is the app's heading face.
@@ -65,7 +65,7 @@ The mark may use a teal gradient (the app's hero uses `#0E9384 → #0A534A`). It
 - 🚫 **No alcohol, pork, or gambling imagery** — same reason.
 - 🚫 No generic wallet, no generic coin stack, no generic upward arrow, no dollar sign. These are
   the four clichés of the category and they say nothing.
-- 🚫 Nothing that reads as a bank or a card issuer — Buddget is not a bank and should not borrow
+- 🚫 Nothing that reads as a bank or a card issuer — buddget is not a bank and should not borrow
   their visual authority.
 - 🚫 No emoji, no mascot with a face, no 3D bevels, no drop shadows inside the mark.
 
@@ -94,7 +94,7 @@ The mark may use a teal gradient (the app's hero uses `#0E9384 → #0A534A`). It
 3. **App icons**: iOS squircle (1024×1024, no transparency, no pre-applied corner radius) and
    Android adaptive (foreground + background layers, safe zone respected, cropped to a circle as a
    proof).
-4. **The wordmark lockup**: mark + "Buddget" horizontal, with clear-space and minimum-width rules,
+4. **The wordmark lockup**: mark + "buddget" horizontal, with clear-space and minimum-width rules,
    light and dark.
 5. **A monochrome version** — pure black on white and pure white on black, for cases where colour
    is unavailable.

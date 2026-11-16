@@ -1,4 +1,4 @@
-# Buddget documentation
+# buddget documentation
 
 | Document | Purpose |
 |----------|---------|

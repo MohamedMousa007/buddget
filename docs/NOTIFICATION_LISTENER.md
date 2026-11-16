@@ -3,7 +3,7 @@
 # Android Notification Listener fallback
 
 When SMS Retriever can't see bank messages (push-only banks, WhatsApp Pay,
-Apple-Pay-on-Android relays), Buddget falls back to a custom Capacitor plugin
+Apple-Pay-on-Android relays), buddget falls back to a custom Capacitor plugin
 that hooks into `NotificationListenerService` and forwards each whitelisted
 bank notification to `/api/sms/parse`.
 
@@ -29,7 +29,7 @@ Inside `<application>`:
 ```xml
 <service
   android:name=".notifications.BuddgetNotificationListener"
-  android:label="Buddget Notification Listener"
+  android:label="buddget Notification Listener"
   android:exported="false"
   android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
   <intent-filter>
@@ -166,7 +166,7 @@ await startNotificationListener(session.access_token)
 
 ## Permission UX
 
-Notification Listener requires the user to manually enable Buddget in
+Notification Listener requires the user to manually enable buddget in
 **Settings → Apps & notifications → Special access → Notification access**.
 The plugin's `isEnabled()` lets you detect that and surface a one-tap
 **Open Settings** CTA. Document this clearly on the SMS auto-tracking

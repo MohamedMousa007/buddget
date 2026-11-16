@@ -1,9 +1,9 @@
-# QA Project Context: Buddget
+# QA Project Context: buddget
 
 Generated 2026-10-30 from repo evidence. Sources cited inline. Items marked **Unknown** were not inferable from the repo and need an owner's input.
 
 ## Product
-- **Name:** Buddget. Personal finance app (budgets, expenses, income, debts, savings, goals, subscriptions, SMS-based expense capture, Buddgy AI assistant). Source: `CLAUDE_CONTEXT.md`, `package.json`.
+- **Name:** buddget. Personal finance app (budgets, expenses, income, debts, savings, goals, subscriptions, SMS-based expense capture, Buddgy AI assistant). Source: `CLAUDE_CONTEXT.md`, `package.json`.
 - **Type:** Consumer mobile + web app (Next.js PWA web app plus Capacitor iOS/Android shells) with an admin portal. Source: `CLAUDE_CONTEXT.md` (Architecture).
 - **Environments/URLs:** Production web `https://buddget.app` (native API base per `CLAUDE_CONTEXT.md`). Staging, dev URLs: **Unknown**.
 - **Critical user journeys (from code surface; to be confirmed by owner):**

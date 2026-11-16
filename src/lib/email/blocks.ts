@@ -28,12 +28,12 @@ export function newBlock(type: BlockType): EmailBlock {
     case 'logo': return { id, type }
     case 'heading': return { id, type, eyebrow: '', text: 'Heading' }
     case 'paragraph': return { id, type, text: 'Write something here.' }
-    case 'button': return { id, type, label: 'Open Buddget', url: '{{link}}' }
+    case 'button': return { id, type, label: 'Open buddget', url: '{{link}}' }
     case 'code': return { id, type, label: 'Verification code', value: '{{code}}' }
     case 'note': return { id, type, title: 'Didn’t ask for this?', text: 'You can ignore this email.' }
     case 'divider': return { id, type }
     case 'image': return { id, type, src: 'https://buddget.app/email/buddget-wordmark-ink.png', alt: '' }
-    case 'footer': return { id, type, text: 'Sent by Buddget\nThis is an automated message, please don’t reply.' }
+    case 'footer': return { id, type, text: 'Sent by buddget\nThis is an automated message, please don’t reply.' }
   }
 }
 
@@ -61,7 +61,7 @@ function renderBlock(b: EmailBlock, rtl: boolean): string {
   switch (b.type) {
     case 'logo':
       return row(`
-              <img class="logo-light" src="https://buddget.app/email/buddget-wordmark-ink.png" width="168" height="40" alt="Buddget" style="display:inline-block; border:0; outline:none; text-decoration:none; height:40px; width:168px;" />
+              <img class="logo-light" src="https://buddget.app/email/buddget-wordmark-ink.png" width="168" height="40" alt="buddget" style="display:inline-block; border:0; outline:none; text-decoration:none; height:40px; width:168px;" />
               <img class="logo-dark" src="https://buddget.app/email/buddget-wordmark-light.png" width="168" height="40" alt="" style="display:none; border:0; outline:none; text-decoration:none; height:40px; width:168px;" />`, '36px 40px 8px')
     case 'heading':
       return row(`${b.eyebrow ? `

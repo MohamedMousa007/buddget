@@ -28,7 +28,7 @@ Rules:
 | 5 | Move | Cash out / Set aside segmented; **collapsing "From" picker** (tap to expand the list of accounts with free amounts); NumberPad; live validation vs free. |
 | 6 | Fix | Timeline (bank confirmed → entries → dashed missing → bank confirmed) + four tiles: Cash withdrawal (Likely), I spent it, Set aside, Not sure. |
 | 7 | Add card | Type tiles + last 4 + name; card spends from the account. |
-| 8 | Update | "What does your bank show now?" keypad, live difference vs Buddget. |
+| 8 | Update | "What does your bank show now?" keypad, live difference vs buddget. |
 | 9 | Add account | Bank, balance today, last 4, "check against my messages". |
 
 Hide balances: off by default, per-surface toggles (hero, lists, notifications, widgets, Buddgy) with presets; Buddgy masks when hiding is on.

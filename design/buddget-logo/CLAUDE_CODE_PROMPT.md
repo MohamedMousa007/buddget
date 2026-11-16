@@ -1,10 +1,10 @@
-# Implementation prompt: Buddget logo
+# Implementation prompt: buddget logo
 
 Paste everything below the line into Claude Code, run from the root of `MohamedMousa007/buddget`, with this `handoff/buddget-logo/` folder copied into the repo.
 
 ---
 
-You are replacing the Buddget logo and app icons everywhere in this repo (Next.js 16 app router, React 19, Tailwind v4, Capacitor 8). Every asset is final and lives in `handoff/buddget-logo/`. Integrate it exactly. Do not redraw, re-export, optimise or "improve" any artwork.
+You are replacing the buddget logo and app icons everywhere in this repo (Next.js 16 app router, React 19, Tailwind v4, Capacitor 8). Every asset is final and lives in `handoff/buddget-logo/`. Integrate it exactly. Do not redraw, re-export, optimise or "improve" any artwork.
 
 ## Sources of truth
 1. `handoff/buddget-logo/code/*.tsx`: geometry. Copy the path data byte for byte.
@@ -21,7 +21,7 @@ If something is not specified, stop and ask.
 
 ## Tasks
 1. **Components.** Copy `code/BuddgetMark.tsx` and `code/BuddgetWordmark.tsx` to `src/components/brand/`. Export both from an `index.ts`.
-2. **Replace existing logo usage.** Search `src/` for the current logo (text "Buddget" rendered as a logo, `<img src="/icons/...">`, any `Logo` component). Replace it with:
+2. **Replace existing logo usage.** Search `src/` for the current logo (text "buddget" rendered as a logo, `<img src="/icons/...">`, any `Logo` component). Replace it with:
    - Web and desktop header, auth screens, landing and legal: `<BuddgetWordmark height={24} />`.
    - Compact spots (collapsed sidebar, splash overlays, loading states): `<BuddgetMark size={26} />`.
    - The native mobile header stays avatar + greeting only (DS rule). Don't add the logo there.

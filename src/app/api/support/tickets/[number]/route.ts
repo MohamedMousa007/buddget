@@ -38,7 +38,7 @@ export async function GET(request: Request, { params }: Params) {
     .order('created_at')
     .limit(200)
   const visible = { number: ticket.number, subject: ticket.subject, status: ticket.status, kind: ticket.kind, created_at: ticket.created_at, updated_at: ticket.updated_at }
-  return NextResponse.json({ ticket: visible, messages: (messages ?? []).map((m) => ({ ...m, author_label: m.author_type === 'staff' ? 'Buddget support' : 'You' })) }, { headers: { 'Cache-Control': 'private, no-store' } })
+  return NextResponse.json({ ticket: visible, messages: (messages ?? []).map((m) => ({ ...m, author_label: m.author_type === 'staff' ? 'buddget support' : 'You' })) }, { headers: { 'Cache-Control': 'private, no-store' } })
 }
 
 /** The user adds to their own request; a resolved or waiting ticket reopens, a closed one stays closed. */

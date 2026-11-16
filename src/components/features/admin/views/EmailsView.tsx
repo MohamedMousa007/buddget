@@ -21,7 +21,7 @@ export default function EmailsView({ status }: { status: AdminStatus }) {
 
   return (
     <>
-      <PageHeader title="Emails" description="Create and manage every transactional email Buddget sends, in English and Arabic." />
+      <PageHeader title="Emails" description="Create and manage every transactional email buddget sends, in English and Arabic." />
       <div className="mb-4 max-w-md">
         <SegmentedControl
           ariaLabel="Emails section"

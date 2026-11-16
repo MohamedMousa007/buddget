@@ -1,4 +1,4 @@
-export const APP_TITLE = 'Buddget'
+export const APP_TITLE = 'buddget'
 export const MAIN_ID = 'main-content'
 
 /** Tab title for a view: its heading, then the app name; just the app name when it has no heading. */

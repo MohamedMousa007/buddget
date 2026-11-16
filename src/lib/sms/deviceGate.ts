@@ -25,7 +25,7 @@ export async function smsDeviceGate(service: ServiceClient, caller: SmsCaller): 
     }
     await pauseSmsForLegacyBuild(service, userId).catch((e) => console.error('[sms] pause for legacy build failed', e))
     return NextResponse.json(
-      { error: 'device_required', message: 'Update Buddget: this request did not identify the phone it came from' },
+      { error: 'device_required', message: 'Update buddget: this request did not identify the phone it came from' },
       { status: 403 },
     )
   }

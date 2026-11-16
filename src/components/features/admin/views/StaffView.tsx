@@ -307,7 +307,7 @@ function InviteSheet({ data, onClose, onDone }: { data: StaffData; onClose: () =
   return (
     <AdminSheet open title="Add a teammate" onClose={onClose}>
       <div className="space-y-4">
-        <p className="text-sm text-[var(--color-brand-text-secondary)]">We email them a link that signs them in and opens the portal, where they set their admin password and confirm it with an emailed code. They can also sign in to Buddget with this email and use the admin icon beside their profile.</p>
+        <p className="text-sm text-[var(--color-brand-text-secondary)]">We email them a link that signs them in and opens the portal, where they set their admin password and confirm it with an emailed code. They can also sign in to buddget with this email and use the admin icon beside their profile.</p>
         <Field label="Email"><Input size="brand" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Name"><Input size="brand" value={name} onChange={(e) => setName(e.target.value)} /></Field>

@@ -1,6 +1,6 @@
-# Buddget — Claude Rules
+# buddget — Claude Rules
 
-Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, code style). These are Buddget-specific and win on conflict.
+Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, code style). These are buddget-specific and win on conflict.
 
 ## Session start
 - Read `CLAUDE_CONTEXT.md` for architecture, design tokens and DB state.

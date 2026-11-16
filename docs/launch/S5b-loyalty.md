@@ -188,7 +188,7 @@ So the tiers can be calibrated and the program judged, record from the first day
 
 ### 5.3 Review prompts (proof)
 
-**[S5c]** Checked verbatim against Apple 5.6.1 and Google's ratings policy: compliant. No screen that asks "are you enjoying Buddget?" before the prompt. Use only Apple's `SKStoreReviewController` and Google's In-App Review API. Ask after a fully tracked month or after 4 kept weeks, at most once per 120 days per person, never on a day with an SMS error. Never tied to a reward or a feature.
+**[S5c]** Checked verbatim against Apple 5.6.1 and Google's ratings policy: compliant. No screen that asks "are you enjoying buddget?" before the prompt. Use only Apple's `SKStoreReviewController` and Google's In-App Review API. Ask after a fully tracked month or after 4 kept weeks, at most once per 120 days per person, never on a day with an SMS error. Never tied to a reward or a feature.
 
 ### 5.4 Trigger for switching tiers on
 

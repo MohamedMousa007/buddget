@@ -4,7 +4,7 @@ import { hashPassword, passwordProblem } from '@/lib/server/admin/crypto'
 import { sendEmailCode } from '@/lib/server/admin/emailCode'
 
 /**
- * Step 1 of first-time setup: choose the admin password (separate from the Buddget account password) and get an
+ * Step 1 of first-time setup: choose the admin password (separate from the buddget account password) and get an
  * emailed code. Nothing is usable until the code proves the person can read the mailbox (step 2).
  */
 export async function POST(req: Request) {

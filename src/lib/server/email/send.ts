@@ -6,7 +6,7 @@ import { renderEmail } from './render'
 import { resolveUserLocale } from './store'
 import { isSuppressed } from './suppression'
 
-const DEFAULT_FROM = 'Buddget <no-reply@buddget.app>'
+const DEFAULT_FROM = 'buddget <no-reply@buddget.app>'
 const SEND_TIMEOUT_MS = 4000
 
 export interface Recipient {

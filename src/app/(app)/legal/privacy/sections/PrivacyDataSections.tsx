@@ -6,7 +6,7 @@ export function PrivacyDataSections() {
     <>
       <LegalSection title="1. Who We Are">
         <p>
-          Buddget (&ldquo;we,&rdquo; &ldquo;us,&rdquo; &ldquo;our&rdquo;) is an independently operated personal finance application.
+          buddget (&ldquo;we,&rdquo; &ldquo;us,&rdquo; &ldquo;our&rdquo;) is an independently operated personal finance application.
           The Service is currently operated by an individual and has not yet established a formal legal
           entity. For all privacy inquiries, contact{' '}
           <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">

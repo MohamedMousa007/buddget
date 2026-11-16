@@ -1,4 +1,4 @@
-/* Buddget Budget Builder v6: proposed deterministic engine (written fresh for this prototype, not the production engine).
+/* buddget Budget Builder v6: proposed deterministic engine (written fresh for this prototype, not the production engine).
  * Facts in, a balanced budget out. Every line carries a source, a confidence and a keyed reason. No AI, no randomness.
  * Also answers "which question is worth asking next" by measuring how far each unknown fact could move the budget. */
 ;(function (root) {
@@ -14,7 +14,7 @@
 
   /* Typical monthly costs. Every figure is an internal heuristic with no outside source yet, and the app says so wherever one is used.
    * Index [0,1,2] = minimal, balanced, comfortable. rent by household: [one adult, two adults, family]; util[2] is per child. */
-  const META = { source: 'Buddget heuristic table (not externally sourced)', version: 'h-2026.11', updated: '2026-11-01', confidence: 'low', method: 'Monthly cost per adult by lifestyle tier; a child counts as 0.6 of an adult' }
+  const META = { source: 'buddget heuristic table (not externally sourced)', version: 'h-2026.11', updated: '2026-11-01', confidence: 'low', method: 'Monthly cost per adult by lifestyle tier; a child counts as 0.6 of an adult' }
   const TABLE = {
     EG: { cur: 'EGP', label: 'Egypt', housingCap: 0.3, rent: [5000, 7000, 9000], util: [1200, 1700, 300], phone: 600, groceries: [2500, 3500, 5500], groceriesMin: 1800,
       transport: { public: 900, car: 3500, taxi: 2500, walk: 200 }, health: 500, dining: [500, 1500, 3500], fun: [400, 1000, 2500], shopping: [400, 1200, 3000], personal: [200, 400, 800] },

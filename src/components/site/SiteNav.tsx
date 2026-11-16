@@ -63,7 +63,7 @@ export function SiteNav({ locale, slug }: Props) {
       <header className="nav">
         <div className="nav-in">
           <div className="nav-bar">
-            <Link className="wm" href={home} aria-label="Buddget"><BuddgetWordmark height={24} /></Link>
+            <Link className="wm" href={home} aria-label="buddget"><BuddgetWordmark height={24} /></Link>
             <nav className="tabs" aria-label="Main" ref={megaRef}>
               <button className="tab" type="button" aria-expanded={mega} aria-controls="hm-mega" onClick={(e) => { e.stopPropagation(); setMega((v) => !v) }}>
                 <span>{n.features}</span>

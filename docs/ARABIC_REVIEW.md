@@ -15,7 +15,7 @@ Function strings show a sample render (args 3, "X", "Y").
 | `voice.micRequired` |  (Microphone access required.) |  (يلزم السماح بالوصول إلى الميكروفون.) |
 | `voice.cancel` | Cancel | إلغاء |
 | `voice.micNeededTitle` | Microphone access needed | نحتاج إلى الوصول إلى الميكروفون |
-| `voice.micNeededBody` | Allow microphone access so Buddget can hear your expense. | اسمح بالوصول إلى الميكروفون ليتمكن Buddget من سماع مصروفك. |
+| `voice.micNeededBody` | Allow microphone access so buddget can hear your expense. | اسمح بالوصول إلى الميكروفون ليتمكن buddget من سماع مصروفك. |
 | `voice.allowMic` | Allow Microphone | السماح بالميكروفون |
 | `voice.transcribing` | Transcribing your voice… | جارٍ تفريغ صوتك… |
 | `voice.transcribingShort` | Transcribing… | جارٍ التفريغ… |
@@ -175,7 +175,7 @@ Function strings show a sample render (args 3, "X", "Y").
 | `savingsForms.zakat.longTermSub` | 30% counted | 30% تُحتسب |
 | `savingsForms.zakat.forTrading` | For trading | للمتاجرة |
 | `savingsForms.zakat.forTradingSub` | 100% counted | 100% تُحتسب |
-| `savingsForms.zakat.explainer` | Zakat is 2.5% of the wealth you have held for one lunar year above nisab. A home you live in and land you rent out are not counted — only the rent you kept. Buddget follows the majority view; check anything unusual with someone you trust. | الزكاة هي 2.5% من المال الذي مضى عليه عام هجري كامل وبلغ النصاب. لا يُحتسب المنزل الذي تسكنه ولا الأرض المؤجّرة، بل الإيجار الذي ادّخرته فقط. يتبع Buddget رأي الجمهور، فاسأل من تثق به في أي حالة غير معتادة. |
+| `savingsForms.zakat.explainer` | Zakat is 2.5% of the wealth you have held for one lunar year above nisab. A home you live in and land you rent out are not counted — only the rent you kept. buddget follows the majority view; check anything unusual with someone you trust. | الزكاة هي 2.5% من المال الذي مضى عليه عام هجري كامل وبلغ النصاب. لا يُحتسب المنزل الذي تسكنه ولا الأرض المؤجّرة، بل الإيجار الذي ادّخرته فقط. يتبع buddget رأي الجمهور، فاسأل من تثق به في أي حالة غير معتادة. |
 | `savingsForms.asset.titles.gold` | Add gold | إضافة ذهب |
 | `savingsForms.asset.titles.crypto` | Add crypto | إضافة عملة رقمية |
 | `savingsForms.asset.titles.stock` | Add a position | إضافة مركز استثماري |
@@ -213,7 +213,7 @@ Function strings show a sample render (args 3, "X", "Y").
 | `systemPages.routeError.title` | Something went wrong | حدث خطأ ما |
 | `systemPages.routeError.retry` | Try again | حاول مرة أخرى |
 | `systemPages.routeError.report` | Report 3 | البلاغ 3 |
-| `systemPages.rootError.title` | Buddget hit a problem | واجه Buddget مشكلة |
+| `systemPages.rootError.title` | buddget hit a problem | واجه buddget مشكلة |
 | `systemPages.rootError.body` | Your data is safe. Try again, and if it keeps happening, quote the report number to support. | بياناتك بأمان. حاول مرة أخرى، وإذا تكرر الأمر فاذكر رقم البلاغ للدعم. |
 | `systemPages.rootError.retry` | Try again | حاول مرة أخرى |
 | `systemPages.rootError.report` | Report 3 | البلاغ 3 |

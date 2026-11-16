@@ -2,29 +2,29 @@ import type { SiteContent } from './types'
 
 export const en: SiteContent = {
   locale: 'en',
-  name: 'Buddget',
+  name: 'buddget',
   meta: {
-    homeTitle: 'Buddget: see where your money goes',
+    homeTitle: 'buddget: see where your money goes',
     homeDescription:
-      'Buddget reads your bank texts, sorts your spending and shows what is safe to spend today. Free to start, in Arabic and English.',
+      'buddget reads your bank texts, sorts your spending and shows what is safe to spend today. Free to start, in Arabic and English.',
   },
   nav: {
     login: 'Log in',
     features: 'Features', how: 'How it works', afford: 'Can I afford it?', pricing: 'Pricing', security: 'Security', help: 'Help',
-    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode', megaAfford: 'Can I afford it?', getAppShort: '30 days of Pro', tryShort: 'Try in browser',
+    menuTitle: 'Everything buddget does', megaTools: 'Free tools', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode', megaAfford: 'Can I afford it?', getAppShort: '30 days of Pro', tryShort: 'Try in browser',
     menu: 'Menu', close: 'Close menu', cta: 'Start 30 days of Pro', skip: 'Skip to content', switchLabel: 'العربية', switchTo: 'Switch to Arabic',
   },
   footer: {
     tag: 'Know where your money goes, and keep more of it.',
-    follow: 'Follow Buddget',
+    follow: 'Follow buddget',
     product: 'Product', learn: 'Learn', company: 'Company', legal: 'Legal',
     links: {
       features: 'Features', how: 'How it works', pricing: 'Pricing', download: 'Download', tools: 'Free tools',
       guides: 'Guides', support: 'Help center', security: 'Security', ai: 'Buddgy facts', glossary: 'Glossary',
-      about: 'About', contact: 'Contact', press: 'Press kit', compare: 'Buddget or a spreadsheet?',
+      about: 'About', contact: 'Contact', press: 'Press kit', compare: 'buddget or a spreadsheet?',
       privacy: 'Privacy policy', terms: 'Terms of service', cookies: 'Cookies', delete: 'Delete your account',
     },
-    copy: '© 2026 Buddget. All rights reserved.',
+    copy: '© 2026 buddget. All rights reserved.',
     legalNote: 'The privacy policy and terms are available in English and Arabic.',
   },
   common: {
@@ -35,7 +35,7 @@ export const en: SiteContent = {
   landing: {
     hero: {
       h1: 'What can you spend today?',
-      lede: 'Buddget reads your bank texts, sorts every payment and answers that question, live. SMS tracking on every account is free forever.',
+      lede: 'buddget reads your bank texts, sorts every payment and answers that question, live. SMS tracking on every account is free forever.',
       assure: ['30 days of Pro on us', 'No download needed to try it', 'Delete your data any time'],
       hint: 'Tap something you bought', again: 'Start over', say0: 'Tap something you bought.', sayLow: 'That is most of today.',
       sayOver: 'Over by {n}. Tomorrow’s number shrinks.', sayOk: ['Logged.', 'Sorted.', 'Got it.'], sayReset: 'Fresh day.',
@@ -50,19 +50,19 @@ export const en: SiteContent = {
       coin: 'TRY IT IN YOUR BROWSER · LOG IN · ',
     },
     proof: {
-      label: 'Buddget in numbers',
+      label: 'buddget in numbers',
       items: [{ v: '85%', t: 'of beta entries were logged straight from bank texts' }, { v: '0', t: 'bank passwords asked for, ever' }, { v: '1', t: 'daily number that shows what is safe to spend' }],
       note: 'Beta data, October 2026: 497 of 588 entries came from bank texts, across 15 beta users.',
     },
     statement: [
       { text: 'Your salary arrives on the 25th. By the 3rd you are guessing.' },
-      { text: 'Buddget stops the guessing.', hl: true },
+      { text: 'buddget stops the guessing.', hl: true },
       { text: 'It reads every bank text, sets aside what is already spoken for, and tells you what is left for today.' },
     ],
     story: {
       label: 'How it works',
       steps: [
-        { h: 'A bank text arrives.', p: 'Buddget reads the amount, the merchant and the card, then files it. You do not type.' },
+        { h: 'A bank text arrives.', p: 'buddget reads the amount, the merchant and the card, then files it. You do not type.' },
         { h: 'Then it does the maths.', p: 'Rent and bills come out of the month. What is left, divided by the days to payday, is today’s number.' },
         { h: 'Goals get paid first.', p: 'Every payday your goals take their share. You see the percentage and the date.' },
         { h: 'Ask Buddgy.', p: 'Where did it go? Can I afford this? Add a coffee. Plain answers from your own numbers.' },
@@ -79,7 +79,7 @@ export const en: SiteContent = {
       chatDone: 'Done · coffee · EGP 45',
     },
     afford: {
-      nav: 'Can I afford it?', h2: 'Can you afford it?', p: 'Pick something you want. Buddget checks it against what is left of your month.',
+      nav: 'Can I afford it?', h2: 'Can you afford it?', p: 'Pick something you want. buddget checks it against what is left of your month.',
       hint: 'Things you might buy', custom: 'Or type a price (EGP)', note: 'Based on 8,247 EGP left and 12 days to payday, the same numbers you see above.', unit: 'EGP',
       items: [{ label: 'Headphones', price: 1800 }, { label: 'Dinner out', price: 700 }, { label: 'Weekend trip', price: 4500 }, { label: 'New phone', price: 9000 }],
       v0: { h: 'Pick something.', p: 'Choose an item or type a price to see what it does to your daily number.' },
@@ -87,7 +87,7 @@ export const en: SiteContent = {
       v2: { h: 'Yes, with a smaller number.', p: 'It is affordable, and every day until payday gets a little smaller.' },
       v3: { h: 'Possible, but it is a big bite.', p: 'It uses {s}% of what is left. Buddgy would suggest waiting a week.' },
       v4: { h: 'Not this month.', p: 'It does not fit before payday. As a goal over 8 weeks it is about {w} EGP a week.' },
-      before: 'Per day now', after: 'Per day after', share: '{s}% of what is left', days: '{d} days of spending', cta: 'Make it a goal in Buddget',
+      before: 'Per day now', after: 'Per day after', share: '{s}% of what is left', days: '{d} days of spending', cta: 'Make it a goal in buddget',
       foot: 'An example with sample numbers. In the app it uses your real month.',
     },
     inside: {
@@ -103,7 +103,7 @@ export const en: SiteContent = {
     trust: {
       h2: 'Your money data stays yours.',
       items: [
-        { icon: 'lock', h: 'No bank login', p: 'Buddget never asks for your bank password and cannot move money.' },
+        { icon: 'lock', h: 'No bank login', p: 'buddget never asks for your bank password and cannot move money.' },
         { icon: 'sms', h: 'Bank texts are optional', p: 'Reading is off until you turn it on, and you can switch it off any time.' },
         { icon: 'eye', h: 'Private by default', p: 'Your data belongs to your account. Other users cannot see it.' },
         { icon: 'trash', h: 'Delete everything', p: 'Remove your account and all its data from inside the app.' },
@@ -111,8 +111,8 @@ export const en: SiteContent = {
       link: { label: 'How we protect your data', slug: 'security' },
     },
     compare: {
-      h2: 'How Buddget is different',
-      cols: ['', 'Buddget', 'Manual-entry apps', 'Bank-sync apps'],
+      h2: 'How buddget is different',
+      cols: ['', 'buddget', 'Manual-entry apps', 'Bank-sync apps'],
       rows: [
         ['Logs spending', 'Automatically, from bank texts, voice and receipts', 'You type every entry', 'Automatically, through a bank connection'],
         ['Needs your bank login', 'Never', 'No', 'Usually'],
@@ -126,15 +126,15 @@ export const en: SiteContent = {
       h2: 'Free to start. Pro when you want more.', p: 'SMS tracking is free on every account, forever. Pro adds about 10x the AI, the Advisor and unlimited plans.',
       plans: [
         { name: 'Free', price: '0 EGP', tag: 'For tracking your money day to day.', items: ['SMS tracking on every account', 'Budgets, goals, debts and installments', 'Buddgy, with a weekly limit', '2 saved budget plans'], cta: 'Start 30 days of Pro' },
-        { name: 'Buddget Pro', price: 'EGP 499 a year', tag: 'EGP 69 a month. 30 days of Pro on us, no card.', items: ['About 10x the AI', 'The Buddgy Advisor', 'Unlimited plans and live balance views', '25% more Sparks in every pack'], cta: 'Start 30 days of Pro', main: true },
+        { name: 'buddget Pro', price: 'EGP 499 a year', tag: 'EGP 69 a month. 30 days of Pro on us, no card.', items: ['About 10x the AI', 'The Buddgy Advisor', 'Unlimited plans and live balance views', '25% more Sparks in every pack'], cta: 'Start 30 days of Pro', main: true },
       ],
     },
-    close: { h2: 'Find out what you can spend today.', lede: 'Join the beta list, or open it in your browser right now.', qr: 'Scan to open Buddget on your phone', soon: 'Coming soon to' },
+    close: { h2: 'Find out what you can spend today.', lede: 'Join the beta list, or open it in your browser right now.', qr: 'Scan to open buddget on your phone', soon: 'Coming soon to' },
   },
   home: {
     calc: {
       eyebrow: 'Your daily number', h2: 'What could you spend a day?',
-      lede: 'Move the sliders. This is the same sum Buddget runs for you every day, with your real payday and bills.',
+      lede: 'Move the sliders. This is the same sum buddget runs for you every day, with your real payday and bills.',
       link: { label: 'Open the full calculator', slug: 'tools/daily-spending-number' },
       income: 'Monthly income', bills: 'Rent, bills and installments', save: 'Savings to set aside',
       result: 'Safe to spend per day', cta: 'Track it for real',
@@ -144,9 +144,9 @@ export const en: SiteContent = {
     faq: {
       h2: 'Questions people ask first',
       items: [
-        { q: 'Is Buddget free?', a: 'Yes, to start. SMS tracking, budgets, goals, debts and subscriptions are free, and Buddgy is free with a weekly limit. Buddget Pro adds about 10x the AI, the Advisor and unlimited plans. SMS tracking on every account is free forever, and new accounts start with 30 days of Pro on us.' },
+        { q: 'Is buddget free?', a: 'Yes, to start. SMS tracking, budgets, goals, debts and subscriptions are free, and Buddgy is free with a weekly limit. buddget Pro adds about 10x the AI, the Advisor and unlimited plans. SMS tracking on every account is free forever, and new accounts start with 30 days of Pro on us.' },
         { q: 'Does it read my bank texts?', a: 'Only if you turn it on. When you do, the text of the bank messages you allow is sent to our servers to find the amount and merchant. The raw text is deleted within 30 days (7 days if it is rejected or holds a one-time code), and you can switch it off at any time.' },
-        { q: 'Does it connect to my bank account?', a: 'No. Buddget never logs in to your bank and cannot move money. It works from the texts you receive and from what you add yourself.' },
+        { q: 'Does it connect to my bank account?', a: 'No. buddget never logs in to your bank and cannot move money. It works from the texts you receive and from what you add yourself.' },
         { q: 'Can I use it if my salary is not on the 1st?', a: 'Yes. Set your payday and your month runs from payday to payday.' },
         { q: 'What happens to my data if I leave?', a: 'You can delete your account and all its data from inside the app, or ask us to do it.' },
       ],
@@ -154,8 +154,8 @@ export const en: SiteContent = {
   },
   features: {
     intro: {
-      eyebrow: 'Features', h1: 'Everything Buddget does, in one place',
-      lede: 'Buddget logs spending from bank texts, voice and receipts, then turns your income, bills and goals into a daily spending number. Here is each part.',
+      eyebrow: 'Features', h1: 'Everything buddget does, in one place',
+      lede: 'buddget logs spending from bank texts, voice and receipts, then turns your income, bills and goals into a daily spending number. Here is each part.',
     },
     core: 'Core feature',
     hubCta: 'See how it all fits together',
@@ -163,7 +163,7 @@ export const en: SiteContent = {
       {
         slug: 'bank-text-tracking', name: 'Bank text tracking', short: 'Every transaction text becomes an expense, in Arabic or English.',
         h1: 'Your bank texts, logged for you', lede: 'Turn it on once. Each transaction text becomes an entry with the amount, merchant, card and category.',
-        screen: 'sms-setup', heading: 'Only the odd one needs you', body: 'Buddget reads the amount, the merchant and the card, then files the entry. If a text is unclear it waits for one tap. On Android it works directly. On iPhone you add a Shortcuts automation once.',
+        screen: 'sms-setup', heading: 'Only the odd one needs you', body: 'buddget reads the amount, the merchant and the card, then files the entry. If a text is unclear it waits for one tap. On Android it works directly. On iPhone you add a Shortcuts automation once.',
         bullets: ['Works with Arabic and English texts', 'Cards link to the right account', 'Opt in, and switch off any time'],
         faq: [
           { q: 'What is sent to your servers?', a: 'The text of bank messages you allow is sent to find the amount, merchant and date. The extracted data is kept; the raw text is deleted within 30 days (7 days if it is rejected or holds a one-time code).' },
@@ -189,14 +189,14 @@ export const en: SiteContent = {
       },
       {
         slug: 'receipt-scanning', name: 'Receipt scanning', short: 'Photograph a receipt and confirm the details.',
-        h1: 'Snap a receipt, skip the typing', lede: 'Photograph a receipt. Buddget reads the merchant, total and date, and you confirm before it saves.',
+        h1: 'Snap a receipt, skip the typing', lede: 'Photograph a receipt. buddget reads the merchant, total and date, and you confirm before it saves.',
         screen: 'quickadd', heading: 'You stay in control', body: 'Photos are analysed to extract the expense and are not kept permanently once the details are saved.',
         bullets: ['Merchant, total and date read for you', 'You confirm before saving', 'Photos are not kept after extraction'],
         faq: [{ q: 'Are my receipt photos stored?', a: 'Not permanently. They are used to extract the expense and then discarded.' }],
       },
       {
         slug: 'budgets-and-daily-number', name: 'Budgets and the daily number', short: 'See what is safe to spend today.',
-        h1: 'Know what is safe to spend, today', lede: 'Build a budget in minutes. Buddget sets aside bills, installments and savings, then shows what is left per day until payday.',
+        h1: 'Know what is safe to spend, today', lede: 'Build a budget in minutes. buddget sets aside bills, installments and savings, then shows what is left per day until payday.',
         screen: 'flow', heading: 'One number that follows your payday', body: 'Your month runs from payday to payday. The daily number changes with every payment, so you see the effect of a purchase straight away.',
         bullets: ['Counts down to your own payday', 'Bills and installments first', 'Updates with every payment'],
         faq: [{ q: 'Can I set my payday?', a: 'Yes. Any day of the month, and more than one income if you have it.' }],
@@ -206,7 +206,7 @@ export const en: SiteContent = {
         h1: 'Every balance, one list', lede: 'Bank accounts, wallets, cash and cards together, with debit cards linked to their account.',
         screen: 'accounts', heading: 'Your real position, at a glance', body: 'See what you have across accounts, what sits on credit cards and what you owe, in pounds or another currency.',
         bullets: ['Bank accounts, wallets and cash', 'Debit and credit cards', 'Totals in your main currency'],
-        faq: [{ q: 'Does Buddget connect to my bank?', a: 'No. Balances come from what you enter and from the transactions Buddget logs.' }],
+        faq: [{ q: 'Does buddget connect to my bank?', a: 'No. Balances come from what you enter and from the transactions buddget logs.' }],
       },
       {
         slug: 'debts-and-installments', name: 'Debts and installments', short: 'See what you owe and when it ends.',
@@ -217,7 +217,7 @@ export const en: SiteContent = {
       },
       {
         slug: 'goals-and-savings', name: 'Goals and savings', short: 'Reach a goal on a date you picked.',
-        h1: 'Reach a goal on a date you picked', lede: 'Name the goal, set an amount and a date. Buddget works out the monthly amount and funds it from your budget.',
+        h1: 'Reach a goal on a date you picked', lede: 'Name the goal, set an amount and a date. buddget works out the monthly amount and funds it from your budget.',
         screen: 'goals', heading: 'Know how far you are, and by when', body: 'Each goal shows a percentage, an amount to go and the next milestone. Savings pockets can hold pounds, dollars or gold.',
         bullets: ['Milestones at 25, 50, 75 and 100 percent', 'Monthly amount from your date', 'Pockets in pounds, dollars and gold'],
         faq: [{ q: 'Can I save in gold or dollars?', a: 'Yes. Savings pockets can hold pounds, dollars or gold, valued in pounds.' }],
@@ -225,9 +225,9 @@ export const en: SiteContent = {
       {
         slug: 'subscriptions', name: 'Subscriptions', short: 'Caught before they renew.',
         h1: 'Catch subscriptions before they renew', lede: 'See every subscription with its next billing date, and get a reminder before it renews.',
-        screen: 'subscriptions', heading: 'Find the ones you forgot', body: 'Buddget can spot subscriptions from your bank texts and shows the total you pay each month.',
+        screen: 'subscriptions', heading: 'Find the ones you forgot', body: 'buddget can spot subscriptions from your bank texts and shows the total you pay each month.',
         bullets: ['Next billing date for each one', 'Reminders before renewal', 'A monthly total'],
-        faq: [{ q: 'Does it cancel subscriptions for me?', a: 'No. Buddget shows and reminds you. You cancel with the provider.' }],
+        faq: [{ q: 'Does it cancel subscriptions for me?', a: 'No. buddget shows and reminds you. You cancel with the provider.' }],
       },
       {
         slug: 'reports', name: 'Spending reports', short: 'Where your money goes, by category.',
@@ -241,7 +241,7 @@ export const en: SiteContent = {
   how: {
     intro: { eyebrow: 'How it works', h1: 'From bank text to a number you can trust', lede: 'Six small steps, most of them automatic. Here is what happens from your first day.' },
     steps: [
-      { n: '01', h: 'Set your payday and accounts', p: 'Tell Buddget when your salary arrives and add your accounts and cards. Two minutes, and you can skip anything.', screen: 'paydays' },
+      { n: '01', h: 'Set your payday and accounts', p: 'Tell buddget when your salary arrives and add your accounts and cards. Two minutes, and you can skip anything.', screen: 'paydays' },
       { n: '02', h: 'Let bank texts do the typing', p: 'Turn on bank text tracking. Each transaction text becomes an entry with the amount, merchant and card. You confirm only the odd one.', screen: 'sms-setup' },
       { n: '03', h: 'Add the rest in a few words', p: 'Say "coffee 45", photograph a receipt or tap the plus. It lands in the right category.', screen: 'quickadd' },
       { n: '04', h: 'Read your day in one number', p: 'Flow shows what is left until payday and what is safe to spend today. It updates with every payment.', screen: 'flow' },
@@ -258,12 +258,12 @@ export const en: SiteContent = {
       cta: 'Start 30 days of Pro',
     },
     pro: {
-      name: 'Buddget Pro', tag: 'Everything in Free, and a lot more AI.', price: 'EGP 499 a year', perMonth: 'Or EGP 69 a month. Other countries see their local price in the app.',
+      name: 'buddget Pro', tag: 'Everything in Free, and a lot more AI.', price: 'EGP 499 a year', perMonth: 'Or EGP 69 a month. Other countries see their local price in the app.',
       items: ['About 10x the AI for chat, voice, receipts and budgets', 'The Buddgy Advisor, for the big questions', 'Unlimited saved plans', 'Unlimited live balance views', '25% more Sparks in every pack'],
       cta: 'Start 30 days of Pro',
     },
     compare: {
-      h2: 'Free and Pro, side by side', head: ['', 'Free', 'Buddget Pro'],
+      h2: 'Free and Pro, side by side', head: ['', 'Free', 'buddget Pro'],
       rows: [
         ['SMS auto-tracking', 'Every account', 'Every account'],
         ['Live balance views', '10 a month', 'Unlimited'],
@@ -286,7 +286,7 @@ export const en: SiteContent = {
     ],
   },
   download: {
-    intro: { eyebrow: 'Download', h1: 'Get Buddget on your phone', lede: 'Free on iPhone and Android. Set up takes about two minutes and you see your daily number straight away.' },
+    intro: { eyebrow: 'Download', h1: 'Get buddget on your phone', lede: 'Free on iPhone and Android. Set up takes about two minutes and you see your daily number straight away.' },
     betaH: 'Join the beta list', betaP: 'We send one email when the app is ready for your phone. Nothing else.',
     emailLabel: 'Email address', emailPlaceholder: 'you@example.com', submit: 'Join the list', sent: 'You are on the list. Thank you.', error: 'That did not work. Check the address and try again.',
     soonApple: 'Coming soon to the App Store', soonGoogle: 'Coming soon to Google Play', badge: 'Coming soon', storeGet: 'Download on', webApp: 'Open the web app',
@@ -297,9 +297,9 @@ export const en: SiteContent = {
     ],
   },
   security: {
-    intro: { eyebrow: 'Security and privacy', h1: 'Your money data, handled with care', lede: 'What Buddget collects, what it does with it and how to remove it. No bank logins, no selling data.' },
+    intro: { eyebrow: 'Security and privacy', h1: 'Your money data, handled with care', lede: 'What buddget collects, what it does with it and how to remove it. No bank logins, no selling data.' },
     cards: [
-      { h: 'No bank login', p: 'Buddget never asks for your bank password and cannot move money.' },
+      { h: 'No bank login', p: 'buddget never asks for your bank password and cannot move money.' },
       { h: 'Private accounts', p: 'Your data belongs to your account. Other users cannot see it.' },
       { h: 'Opt-in bank texts', p: 'Bank text reading is off until you turn it on, and you can switch it off any time.' },
       { h: 'Biometrics stay on your phone', p: 'Face ID and fingerprint checks are done by your phone. They are never sent to us.' },
@@ -329,14 +329,14 @@ export const en: SiteContent = {
         items: [
           { q: 'How do I set my payday?', a: 'Open Paydays, add your income and choose the day it arrives. Your month then runs from payday to payday.' },
           { q: 'How do I add an expense?', a: 'Tap the plus. You can type it, hold the plus to say it, or photograph a receipt.' },
-          { q: 'Can I use Buddget in Arabic?', a: 'Yes. Go to Settings and choose Arabic.' },
+          { q: 'Can I use buddget in Arabic?', a: 'Yes. Go to Settings and choose Arabic.' },
         ],
       },
       {
         h: 'Bank texts',
         items: [
           { q: 'How do I turn on bank text tracking?', a: 'Open Settings, then SMS tracking, and follow the steps. On iPhone you add a Shortcuts automation once.' },
-          { q: 'A text was not picked up. What now?', a: 'Add the expense by hand and let us know the bank and the wording so we can teach Buddget to read it.' },
+          { q: 'A text was not picked up. What now?', a: 'Add the expense by hand and let us know the bank and the wording so we can teach buddget to read it.' },
           { q: 'How do I turn it off?', a: 'Open Settings, then SMS tracking, and switch it off. You can turn it on again later.' },
         ],
       },
@@ -357,7 +357,7 @@ export const en: SiteContent = {
     followH: 'Follow along', responseNote: 'We use your details only to reply.', formH: 'Send a message', name: 'Your name', email: 'Email', message: 'Message', send: 'Send message', sent: 'Message sent. We will reply soon.', error: 'That did not send. Try again or email us.',
   },
   about: {
-    intro: { eyebrow: 'About', h1: 'Month-end should not be a surprise', lede: 'Buddget is a budgeting app. It reads the bank texts you already get, so you can see where your money goes and spend with confidence.' },
+    intro: { eyebrow: 'About', h1: 'Month-end should not be a surprise', lede: 'buddget is a budgeting app. It reads the bank texts you already get, so you can see where your money goes and spend with confidence.' },
     pillars: [
       { h: 'Our mission', p: 'Help people see their money clearly, save on purpose and reach the goals they set.' },
       { h: 'What we believe', p: 'Tracking should take seconds, not hours. Your data is yours. Arabic is a first language, not a translation.' },
@@ -365,15 +365,15 @@ export const en: SiteContent = {
     ],
     storyH: 'The short story',
     story: [
-      'Buddget is independently built and operated. It started as a way to answer one question: how much can I spend today without breaking the month?',
+      'buddget is independently built and operated. It started as a way to answer one question: how much can I spend today without breaking the month?',
       'Everything in the app serves that question, from reading bank texts to funding goals before spending.',
     ],
     followH: 'Follow along', followP: 'New features, tips and the occasional look behind the scenes.',
   },
   press: {
-    intro: { eyebrow: 'Press kit', h1: 'Everything you need to write about Buddget', lede: 'The facts, the logo and the colours in one place.' },
-    aboutH: 'About Buddget',
-    boilerplate: 'Buddget is a budgeting app. It reads bank text messages to log spending, shows what is safe to spend today and helps people reach savings goals. It works in Arabic and English on iPhone and Android and is free to start.',
+    intro: { eyebrow: 'Press kit', h1: 'Everything you need to write about buddget', lede: 'The facts, the logo and the colours in one place.' },
+    aboutH: 'About buddget',
+    boilerplate: 'buddget is a budgeting app. It reads bank text messages to log spending, shows what is safe to spend today and helps people reach savings goals. It works in Arabic and English on iPhone and Android and is free to start.',
     facts: [
       { k: 'Platforms', v: 'iPhone and Android' }, { k: 'Languages', v: 'Arabic, English' }, { k: 'Price', v: 'Free to start, paid plan planned' }, { k: 'Contact', v: 'support@buddget.app' },
     ],
@@ -385,15 +385,15 @@ export const en: SiteContent = {
     screensH: 'Screenshots', contactH: 'Press contact', contactP: 'Write to us for interviews, assets and facts.',
   },
   ai: {
-    intro: { eyebrow: 'Buddgy facts', h1: 'What Buddget is, in facts', lede: 'A plain page for people and for AI assistants. Short, current and checkable.' },
+    intro: { eyebrow: 'Buddgy facts', h1: 'What buddget is, in facts', lede: 'A plain page for people and for AI assistants. Short, current and checkable.' },
     facts: [
       { k: 'What it is', v: 'A budgeting app for iPhone and Android.' },
       { k: 'What it does', v: 'Logs spending from bank text messages, voice and receipts. Shows what is left to spend until payday. Tracks budgets, goals, debts, installments, subscriptions and savings.' },
       { k: 'Assistant', v: 'Buddgy answers questions about your own finances in Arabic and English. It gives guidance, not financial advice.' },
       { k: 'Languages', v: 'Arabic and English.' },
       { k: 'Currency', v: 'Egyptian pound by default. Other currencies and gold are supported for savings.' },
-      { k: 'Price', v: 'Free to start. Buddget Pro is EGP 499 a year or EGP 69 a month, with 30 days of Pro on us.' },
-      { k: 'Bank connection', v: 'None. Buddget does not log in to your bank and cannot move money.' },
+      { k: 'Price', v: 'Free to start. buddget Pro is EGP 499 a year or EGP 69 a month, with 30 days of Pro on us.' },
+      { k: 'Bank connection', v: 'None. buddget does not log in to your bank and cannot move money.' },
       { k: 'Bank texts', v: 'Optional. Message text is sent to the server to extract amount, merchant and date. The raw text is deleted within 30 days.' },
       { k: 'Data', v: 'Private to each account. Delete the account and its data from the app at any time.' },
       { k: 'Support', v: 'support@buddget.app' },
@@ -409,11 +409,11 @@ export const en: SiteContent = {
         category: 'Budgeting', minutes: 5, published: '2026-10-20',
         answer: 'Collect last month’s spending in one place, sort it into six categories and look at the biggest one. That single number usually explains most of the gap between what you earn and what you keep.',
         sections: [
-          { h: 'Step 1: gather one month', p: ['Open your bank texts or statements for last month and list every payment. Include cash if you remember it. You do not need to be exact.', 'If you use Buddget, turn on bank text tracking and it does this for you.'] },
+          { h: 'Step 1: gather one month', p: ['Open your bank texts or statements for last month and list every payment. Include cash if you remember it. You do not need to be exact.', 'If you use buddget, turn on bank text tracking and it does this for you.'] },
           { h: 'Step 2: use six categories', p: ['Housing, food, transport, bills, fun and everything else. Fewer categories make the biggest one obvious.'] },
           { h: 'Step 3: find the biggest one that is not rent', p: ['Rent is fixed. Look at the largest flexible category. For many people it is food delivery or small daily purchases.', 'Pick one change that fits your life, not a rule you will break.'] },
         ],
-        cta: 'See your own categories in Buddget',
+        cta: 'See your own categories in buddget',
       },
       {
         slug: 'daily-number-beats-monthly-budget', title: 'Why a daily number beats a monthly budget', description: 'A monthly budget is easy to forget. A daily number tells you what you can spend today.',
@@ -433,7 +433,7 @@ export const en: SiteContent = {
         sections: [
           { h: 'Work out your target', p: ['Add one month of essentials. If that is 15,000, three months is 45,000.'] },
           { h: 'Pick a monthly amount you will keep', p: ['A small amount you keep beats a big one you stop. If you save 3,500 a month, 45,000 takes about 13 months.'] },
-          { h: 'Fund it first', p: ['Move the money on payday, before you spend. In Buddget the goal is funded from your budget before the daily number is worked out.'] },
+          { h: 'Fund it first', p: ['Move the money on payday, before you spend. In buddget the goal is funded from your budget before the daily number is worked out.'] },
         ],
         cta: 'Calculate your emergency fund',
       },
@@ -448,7 +448,7 @@ export const en: SiteContent = {
     daily: {
       intro: { eyebrow: 'Free tool', h1: 'Daily spending number calculator', lede: 'See what is safe to spend each day after bills and savings.' },
       explainH: 'How it is worked out',
-      explain: ['Income minus rent, bills, installments and savings, divided by the days in your month.', 'Buddget does this for you using your real payday and your actual spending, and updates it with every payment.'],
+      explain: ['Income minus rent, bills, installments and savings, divided by the days in your month.', 'buddget does this for you using your real payday and your actual spending, and updates it with every payment.'],
       cta: 'Track it for real',
     },
     emergency: {
@@ -456,23 +456,23 @@ export const en: SiteContent = {
       essentials: 'Essential costs per month', months: 'Months to cover', saving: 'Amount you can save per month',
       target: 'Your target', time: 'Time to reach it', monthsUnit: 'months',
       explainH: 'How it is worked out', explain: ['Target is essential monthly costs multiplied by the months you want covered. Time is the target divided by what you save each month.', 'Three to six months is a common range. Pick what lets you sleep.'],
-      cta: 'Set it as a goal in Buddget', currentH: 'Your result',
+      cta: 'Set it as a goal in buddget', currentH: 'Your result',
     },
   },
   deleteAccount: {
-    intro: { eyebrow: 'Delete account', h1: 'Delete your Buddget account', lede: 'You can delete your account and all its data yourself, in a minute.' },
+    intro: { eyebrow: 'Delete account', h1: 'Delete your buddget account', lede: 'You can delete your account and all its data yourself, in a minute.' },
     appH: 'Delete from the app',
-    steps: ['Open Buddget and go to Settings.', 'Choose Delete account.', 'Read the warning, type DELETE and confirm.', 'Your account and data are removed from our servers.'],
-    emailH: 'Cannot open the app?', emailP: 'Write to us from the email on your account and we will delete it for you.', mailSubject: 'Delete my Buddget account',
+    steps: ['Open buddget and go to Settings.', 'Choose Delete account.', 'Read the warning, type DELETE and confirm.', 'Your account and data are removed from our servers.'],
+    emailH: 'Cannot open the app?', emailP: 'Write to us from the email on your account and we will delete it for you.', mailSubject: 'Delete my buddget account',
     whatH: 'What is deleted',
     what: ['Your profile and sign-in', 'Income, expenses, debts, savings, budgets, goals and subscriptions', 'Payment methods and settings'],
     keepH: 'What we may keep', keep: 'Limited records we are required to keep for security or legal reasons, if any, are kept only for as long as the law requires.',
   },
   glossary: {
-    intro: { eyebrow: 'Glossary', h1: 'Money words, explained', lede: 'Short definitions for the terms used in Buddget and in the guides.' },
+    intro: { eyebrow: 'Glossary', h1: 'Money words, explained', lede: 'Short definitions for the terms used in buddget and in the guides.' },
     terms: [
       { term: 'Daily number', def: 'What is safe to spend today, after bills, installments and savings, until your next payday.' },
-      { term: 'Payday', def: 'The day your salary arrives. Your Buddget month runs from payday to payday.' },
+      { term: 'Payday', def: 'The day your salary arrives. Your buddget month runs from payday to payday.' },
       { term: 'Installment', def: 'A purchase paid in equal parts over several months.' },
       { term: 'Emergency fund', def: 'Savings kept for unexpected costs. A common target is three to six months of essentials.' },
       { term: 'Net worth', def: 'Everything you own minus everything you owe.' },
@@ -482,8 +482,8 @@ export const en: SiteContent = {
     ],
   },
   compare: {
-    intro: { eyebrow: 'Compare', h1: 'Buddget or a spreadsheet?', lede: 'A spreadsheet can do a lot. Here is where each one fits.' },
-    cols: ['Buddget', 'Spreadsheet'],
+    intro: { eyebrow: 'Compare', h1: 'buddget or a spreadsheet?', lede: 'A spreadsheet can do a lot. Here is where each one fits.' },
+    cols: ['buddget', 'Spreadsheet'],
     rows: [
       { f: 'Logs spending', a: 'From bank texts, voice and receipts', b: 'You type each entry' },
       { f: 'What is safe to spend today', a: 'Calculated and updated for you', b: 'You build and maintain the formula' },
@@ -492,14 +492,14 @@ export const en: SiteContent = {
       { f: 'Arabic', a: 'Arabic and English', b: 'Depends on how you set it up' },
       { f: 'Full control of the layout', a: 'Fixed layout', b: 'Anything you can design' },
     ],
-    honestH: 'When a spreadsheet is the better choice', honest: 'If you love building your own system and enjoy the upkeep, a spreadsheet gives you total control. Buddget is for people who want the answer without the upkeep.',
-    cta: 'Try Buddget free',
+    honestH: 'When a spreadsheet is the better choice', honest: 'If you love building your own system and enjoy the upkeep, a spreadsheet gives you total control. buddget is for people who want the answer without the upkeep.',
+    cta: 'Try buddget free',
   },
   cookies: {
     intro: { eyebrow: 'Cookies', h1: 'Cookies and tracking', lede: 'This website is built to work without tracking cookies.' },
     sections: [
-      { h: 'This website', p: 'The Buddget website does not set advertising or analytics cookies. We use privacy-friendly, cookieless measurement to count visits.' },
-      { h: 'The app', p: 'The Buddget app stores sign-in and settings on your device so it works. These are needed to run the service.' },
+      { h: 'This website', p: 'The buddget website does not set advertising or analytics cookies. We use privacy-friendly, cookieless measurement to count visits.' },
+      { h: 'The app', p: 'The buddget app stores sign-in and settings on your device so it works. These are needed to run the service.' },
       { h: 'Changes', p: 'If this changes we will update this page before it does.' },
     ],
   },

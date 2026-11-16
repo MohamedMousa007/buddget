@@ -352,7 +352,7 @@ export function PressPage({ locale }: P) {
             <Card className="grid gap-4">
               <H3>{p.logoH}</H3>
               <div className="flex flex-wrap gap-4">
-                <div className="grid min-h-28 flex-1 basis-44 place-items-center rounded-2xl border border-brand-border bg-brand-bg"><Image src="/icons/icon-192.png" alt="Buddget" width={64} height={64} unoptimized /></div>
+                <div className="grid min-h-28 flex-1 basis-44 place-items-center rounded-2xl border border-brand-border bg-brand-bg"><Image src="/icons/icon-192.png" alt="buddget" width={64} height={64} unoptimized /></div>
               </div>
               <H3>{p.colorsH}</H3>
               <ul className="grid grid-cols-2 gap-3">

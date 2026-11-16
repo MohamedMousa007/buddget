@@ -5,10 +5,10 @@ import { TIER_MODELS, callGemini } from '@/lib/server/ai/gemini'
 const TIMEOUT_MS = 25_000
 
 const SYSTEM = (from: string, to: string) =>
-  `You translate transactional emails for Buddget, a personal-finance app, from ${from} to ${to}. ` +
+  `You translate transactional emails for buddget, a personal-finance app, from ${from} to ${to}. ` +
   'Write what a friendly native speaker would write: warm, clear and short, never a literal word-for-word copy. ' +
   'For Arabic use simple Modern Standard Arabic that feels natural across Egypt and the Gulf. ' +
-  'Keep every {{variable}} exactly as written (same spelling, braces and count). Keep the brand name Buddget in Latin letters. ' +
+  'Keep every {{variable}} exactly as written (same spelling, braces and count). Keep the brand name buddget in Latin letters. ' +
   'Keep line breaks, numbers and codes. Return JSON {"strings": [...]} with exactly as many strings as you were given, in the same order.'
 
 /** Buddgy's model translates the email's text. The result is rejected unless it keeps every variable. */

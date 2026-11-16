@@ -1,4 +1,4 @@
-/* Buddget service worker (hand-written, no build step). Offline page + static assets only: never caches pages or /api/ (no account data on the device). Kill switch: docs/sw-kill.js. */
+/* buddget service worker (hand-written, no build step). Offline page + static assets only: never caches pages or /api/ (no account data on the device). Kill switch: docs/sw-kill.js. */
 const VERSION = 'v2'
 const STATIC = `static-${VERSION}`
 const OFFLINE = `offline-${VERSION}`
@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {}
 
-  const title = data.title ?? 'Buddget'
+  const title = data.title ?? 'buddget'
   const options = {
     body: data.body,
     icon: data.icon ?? '/icons/icon-192.png',

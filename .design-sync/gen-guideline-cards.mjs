@@ -175,7 +175,7 @@ cards['spacing-elevation.card.html'] = shell(
 // ── Logo ─────────────────────────────────────────────────────────────────────
 cards['brand-logo.card.html'] = shell(
   'Wordmark', 'Brand',
-  'Buddget with the accented d — now teal',
+  'buddget with the accented d — now teal',
   '700x200',
   `  <div style="display:flex;align-items:center;gap:36px">
     <div>

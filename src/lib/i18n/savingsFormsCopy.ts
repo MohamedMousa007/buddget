@@ -144,7 +144,7 @@ export const savingsFormsCopyEn: SavingsFormsCopy = {
     forTrading: 'For trading',
     forTradingSub: '100% counted',
     explainer:
-      'Zakat is 2.5% of the wealth you have held for one lunar year above nisab. A home you live in and land you rent out are not counted — only the rent you kept. Buddget follows the majority view; check anything unusual with someone you trust.',
+      'Zakat is 2.5% of the wealth you have held for one lunar year above nisab. A home you live in and land you rent out are not counted — only the rent you kept. buddget follows the majority view; check anything unusual with someone you trust.',
   },
   asset: {
     titles: { gold: 'Add gold', crypto: 'Add crypto', stock: 'Add a position', property: 'Add property' },
@@ -238,7 +238,7 @@ export const savingsFormsCopyAr: SavingsFormsCopy = {
     forTrading: 'للمتاجرة',
     forTradingSub: '100% تُحتسب',
     explainer:
-      'الزكاة هي 2.5% من المال الذي مضى عليه عام هجري كامل وبلغ النصاب. لا يُحتسب المنزل الذي تسكنه ولا الأرض المؤجّرة، بل الإيجار الذي ادّخرته فقط. يتبع Buddget رأي الجمهور، فاسأل من تثق به في أي حالة غير معتادة.',
+      'الزكاة هي 2.5% من المال الذي مضى عليه عام هجري كامل وبلغ النصاب. لا يُحتسب المنزل الذي تسكنه ولا الأرض المؤجّرة، بل الإيجار الذي ادّخرته فقط. يتبع buddget رأي الجمهور، فاسأل من تثق به في أي حالة غير معتادة.',
   },
   asset: {
     titles: { gold: 'إضافة ذهب', crypto: 'إضافة عملة رقمية', stock: 'إضافة مركز استثماري', property: 'إضافة عقار' },

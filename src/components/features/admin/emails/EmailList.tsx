@@ -43,7 +43,7 @@ export function EmailList({ canManage, onOpen }: { canManage: boolean; onOpen: (
       <Panel
         flush
         title="Emails"
-        description="Every transactional email Buddget sends. Variables available and where each one is used are listed per email."
+        description="Every transactional email buddget sends. Variables available and where each one is used are listed per email."
         actions={canManage ? <Button size="touch" onClick={() => setCreating({ key: '', name: '', description: '' })}><Plus />New email</Button> : undefined}
       >
         {!data && loading ? <div className="p-5"><Loading /></div> : (

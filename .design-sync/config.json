@@ -2,7 +2,7 @@
   "projectId": "3e84a07a-da79-472d-b487-07c93afa5f48",
   "shape": "package",
   "pkg": "buddget",
-  "globalName": "Buddget",
+  "globalName": "buddget",
   "entry": ".design-sync/entry.tsx",
   "srcDir": "src/components",
   "tsconfig": "./tsconfig.json",

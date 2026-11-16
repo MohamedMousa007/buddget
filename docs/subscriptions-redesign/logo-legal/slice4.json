@@ -28,7 +28,7 @@
   "policy_urls": [
    "https://developers.strava.com/guidelines/"
   ],
-  "paraphrase": "Strava API brand guidelines: reference only as 'Powered by Strava'/'Compatible with Strava'; truthful plain-text mentions fine; do not use any part of a Strava logo as app icon; do not modify/animate logos; no implied endorsement. These bind API users; Buddget does not use the Strava API for this tile.",
+  "paraphrase": "Strava API brand guidelines: reference only as 'Powered by Strava'/'Compatible with Strava'; truthful plain-text mentions fine; do not use any part of a Strava logo as app icon; do not modify/animate logos; no implied endorsement. These bind API users; buddget does not use the Strava API for this tile.",
   "checked_at": "2026-10-18",
   "confidence": "medium",
   "notes": "Guidelines target API integrators; the logo-as-identifier use is not explicitly covered. Plain text name is clearly allowed; a wordmark-as-text alternative is safer."

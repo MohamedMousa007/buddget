@@ -36,7 +36,7 @@ describe('decideHostRoute', () => {
   it('does nothing on localhost, previews or an unknown host, and ignores port and case', () => {
     expect(decide('localhost:3000', '/admin')).toEqual({ kind: 'next' })
     expect(decide('buddget-git-x.vercel.app', '/admin')).toEqual({ kind: 'next' })
-    expect(decide('Admin.Buddget.app:443', '/')).toEqual({ kind: 'rewrite', pathname: '/admin' })
+    expect(decide('Admin.buddget.app:443', '/')).toEqual({ kind: 'rewrite', pathname: '/admin' })
   })
 })
 

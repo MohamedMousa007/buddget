@@ -12,7 +12,7 @@ export function withDefaults(vars: EmailVars, locale: EmailLocale, extra: { supp
   const ar = locale === 'ar'
   const first = vars.first_name?.trim() || (ar ? 'بك' : 'there')
   return {
-    app_name: 'Buddget',
+    app_name: 'buddget',
     support_email: extra.supportEmail ?? 'support@buddget.app',
     year: String((extra.now ?? new Date()).getFullYear()),
     expires_in: ar ? '10 دقائق' : '10 minutes',

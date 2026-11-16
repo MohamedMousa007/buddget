@@ -26,7 +26,7 @@ export function TermsLiabilitySections() {
       <LegalSection title="9. Intellectual Property">
         <p>
           The Service, including its design, code, branding, features, and original content, is owned
-          by the Operator and protected by applicable intellectual property laws. &ldquo;Buddget&rdquo; and
+          by the Operator and protected by applicable intellectual property laws. &ldquo;buddget&rdquo; and
           associated logos are trademarks of the Operator.
         </p>
         <p>

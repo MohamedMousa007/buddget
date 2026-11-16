@@ -6,20 +6,20 @@ The staff console at `/admin`. One page with in-memory views (like the app shell
 
 Four layers, all enforced on the server in `src/lib/server/admin/guard.ts`:
 
-1. **Buddget sign-in.** Every admin request carries the normal Supabase session (cookie on web, Bearer on native).
+1. **buddget sign-in.** Every admin request carries the normal Supabase session (cookie on web, Bearer on native).
 2. **Active staff record.** `admin_staff` row matched by account id or confirmed email. Suspended = no access.
 3. **Unlocked admin session**, one of:
-   - **SSO (default).** With the person's switch on and setup finished, the app sign-in *is* the unlocked session (`sso.ts`): no cookie or token, nothing stored, and access ends exactly when the Buddget sign-in ends. Staff status, role and permissions are re-read on every request, so suspension or a role change applies on the next call.
+   - **SSO (default).** With the person's switch on and setup finished, the app sign-in *is* the unlocked session (`sso.ts`): no cookie or token, nothing stored, and access ends exactly when the buddget sign-in ends. Staff status, role and permissions are re-read on every request, so suspension or a role change applies on the next call.
    - **Password + emailed code** (switch off): opaque 12h session (60 min idle), stored hashed in `admin_sessions`, bound to the account. Web: `HttpOnly; SameSite=Strict` cookie. Native: token in `sessionStorage` sent as `X-Admin-Session`.
    - **Biometrics** (native, enrolled device): 4h session.
    All mutations also need `X-Requested-With: buddget-admin`.
 4. **Permission** for the specific action. Dangerous actions (delete user, reset a user's account, role/permission changes, resetting or removing staff) additionally ask for a **step-up**: a fresh emailed code or the admin password (`useStepUp` / `stepUp.ts`), in SSO mode too. Failed step-ups count towards the same lockout as unlocking.
 
-**The admin password is the portal's own**; the Buddget account password is never asked for or checked. **The second factor is a 6-digit code emailed to the account** with Supabase `signInWithOtp({ shouldCreateUser: false })` and checked with `verifyOtp({ type: 'email' })` through a non-persisting anon client (`emailCode.ts`), exactly like the app's email sign-in. Codes are single-use (Supabase consumes them) and bound to the account. The authenticator app and recovery codes are gone; the old `totp_*` and `recovery_hashes` columns on `admin_credentials` are **unused** (kept, not dropped) and `admin_sessions.method` still allows the retired `password_totp` / `recovery` values for old rows.
+**The admin password is the portal's own**; the buddget account password is never asked for or checked. **The second factor is a 6-digit code emailed to the account** with Supabase `signInWithOtp({ shouldCreateUser: false })` and checked with `verifyOtp({ type: 'email' })` through a non-persisting anon client (`emailCode.ts`), exactly like the app's email sign-in. Codes are single-use (Supabase consumes them) and bound to the account. The authenticator app and recovery codes are gone; the old `totp_*` and `recovery_hashes` columns on `admin_credentials` are **unused** (kept, not dropped) and `admin_sessions.method` still allows the retired `password_totp` / `recovery` values for old rows.
 
 First-time setup (owner, invited staff, everyone): choose an admin password, then confirm it with the emailed code (proves mailbox ownership). Nothing is usable until the code is entered. Unlock (SSO off): admin password + emailed code, or biometrics.
 
-**SSO switch (My security).** Stored as `admin_credentials.sso_enabled` (default true), exposed as `ssoEnabled` by `GET /api/admin/auth/status`, changed with `POST /api/admin/auth/sso`. Turning it **off** is stricter and needs nothing extra (the portal locks at once). Turning it **on** loosens the portal, so it needs a step-up (emailed code or admin password): otherwise a hijacked, unlocked session could silently downgrade the owner's protection. Trade-off: with SSO on, anyone holding a valid Buddget session of a staff member (stolen device, XSS on the app origin) is inside the portal; the per-person switch, step-ups for destructive actions, owner immutability and the audit log are the compensating controls. SSO logins are audited (`auth.login`, `via: sso`, at most hourly per person).
+**SSO switch (My security).** Stored as `admin_credentials.sso_enabled` (default true), exposed as `ssoEnabled` by `GET /api/admin/auth/status`, changed with `POST /api/admin/auth/sso`. Turning it **off** is stricter and needs nothing extra (the portal locks at once). Turning it **on** loosens the portal, so it needs a step-up (emailed code or admin password): otherwise a hijacked, unlocked session could silently downgrade the owner's protection. Trade-off: with SSO on, anyone holding a valid buddget session of a staff member (stolen device, XSS on the app origin) is inside the portal; the per-person switch, step-ups for destructive actions, owner immutability and the audit log are the compensating controls. SSO logins are audited (`auth.login`, `via: sso`, at most hourly per person).
 
 Details: scrypt password hashes; 5 failed unlocks or step-ups lock the account 15 minutes; login, code sending, biometric, setup and step-up are rate limited through `admin_rate_hit`.
 
@@ -73,7 +73,7 @@ Migrations `0159_onboarding_flag` (the `onboarding_v1` rollout flag, 10% to star
 Add teammate (Team & roles) creates the staff record and emails a one-tap link (Supabase auth mailer: account invite for new emails, magic link for existing accounts) pointing at `https://admin.buddget.app/auth/callback?next=/admin` (the app origin on localhost and previews). The callback forwards to `/admin/accept`, which reads the session from the link, signs the person in and opens the portal, where first-time setup (admin password + emailed code) runs. "Resend invite" is on any teammate who has not finished setup. Sends are rate limited (30/hour per inviter, 5/hour per address) and audited.
 
 ## Opening the portal
-Go to https://admin.buddget.app/ (or the profile menu's **Admin portal**, which lands there). With SSO on and setup done there is no prompt at all: being signed in to Buddget is enough. Signed-out visitors are sent to Buddget to sign in first. First visit: choose an admin password and enter the emailed code.
+Go to https://admin.buddget.app/ (or the profile menu's **Admin portal**, which lands there). With SSO on and setup done there is no prompt at all: being signed in to buddget is enough. Signed-out visitors are sent to buddget to sign in first. First visit: choose an admin password and enter the emailed code.
 
 ## Admin domain setup
 The same deployment serves both hosts (`src/middleware.ts`, pure routing in `src/lib/admin/host.ts`):
@@ -98,7 +98,7 @@ Admin > Emails (`emails.view` to read, `emails.manage` to edit; admin and engine
 - Admin invites already go through `sendTemplatedEmail('invite_admin', ...)`.
 - **Welcome email:** `POST /api/auth/welcome` (called once per device after sign-in by `AuthProvider`) claims `profiles.welcome_email_sent_at` with one atomic UPDATE, so it is sent exactly once per account and only to accounts under 72 hours old; migration `0137` marks every existing account as welcomed. A failed send releases the claim.
 - **Seeding:** `src/instrumentation.ts` makes sure all built-in emails (English and Arabic, v1, published) exist whenever a server instance starts.
-- **In the apps:** the portal is the bundled `/admin` page (shield icon in the profile menu, staff only). It talks to the production API with the app session; "Back to Buddget" reloads the app shell.
+- **In the apps:** the portal is the bundled `/admin` page (shield icon in the profile menu, staff only). It talks to the production API with the app session; "Back to buddget" reloads the app shell.
 
 ## Performance notes (2026-10-20)
 - Admin reads: identity is verified locally from the JWT and staff, role and credentials are remembered for 20 s per instance; every write skips that and asks the Auth server and the database fresh.

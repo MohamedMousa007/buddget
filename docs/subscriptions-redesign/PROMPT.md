@@ -1,4 +1,4 @@
-# Prompt for Claude Design — Subscriptions redesign (Buddget)
+# Prompt for Claude Design — Subscriptions redesign (buddget)
 
 Attach with this prompt: `docs/DESIGN_SYSTEM.md`, `AUDIT.md` (current UI inventory, every sheet/field/copy, behaviour spec, bugs), `catalog.json` + `catalog.md` + the `logos/` folder (Egypt catalog, prices, aliases, logo files; `CHANGES.md` lists what changed in the live price check), and screenshots of the live Flow, Wealth, Debts and Budget pages (the pattern to match).
 
@@ -6,13 +6,13 @@ Attach with this prompt: `docs/DESIGN_SYSTEM.md`, `AUDIT.md` (current UI invento
 
 ## 1. Your job
 
-Redesign the **Subscriptions** feature of Buddget from scratch so it feels like the rest of the app after its minimalist refactor (Flow, Wealth, Debts, Budget): calm, one idea per surface, one primary action, almost no chrome. It must be easy for a first-time Egyptian user, powerful enough for someone with 25 subscriptions, and honest about money (what is actually charged, when, and how it affects the budget).
+Redesign the **Subscriptions** feature of buddget from scratch so it feels like the rest of the app after its minimalist refactor (Flow, Wealth, Debts, Budget): calm, one idea per surface, one primary action, almost no chrome. It must be easy for a first-time Egyptian user, powerful enough for someone with 25 subscriptions, and honest about money (what is actually charged, when, and how it affects the budget).
 
 Deliver: mobile (390 px) and desktop (1440 px) frames, light and dark, English and Arabic (RTL text, numerals stay LTR), for every screen and state in section 6, built only from the existing components and tokens. Add nothing new to the design system unless you list it explicitly as a proposal.
 
 ## 2. Product and users
 
-Buddget is an offline-first personal-finance app (iOS, Android, web) for Egypt. Base currency EGP. Users pay for streaming, music, gaming (PS Plus, Game Pass, shared accounts), telecom and home internet (Vodafone, Orange, e&, WE), software and AI tools (often billed in **USD on a card**), gyms, delivery memberships (talabat Pro, Noon One, Uber One, Careem Plus), cloud storage, news, school and club fees. Payments arrive by card, carrier billing, Vodafone Cash, Fawry, InstaPay or cash. The app reads bank/wallet **SMS** to create expenses automatically and links a charge to its subscription when the merchant and amount match.
+buddget is an offline-first personal-finance app (iOS, Android, web) for Egypt. Base currency EGP. Users pay for streaming, music, gaming (PS Plus, Game Pass, shared accounts), telecom and home internet (Vodafone, Orange, e&, WE), software and AI tools (often billed in **USD on a card**), gyms, delivery memberships (talabat Pro, Noon One, Uber One, Careem Plus), cloud storage, news, school and club fees. Payments arrive by card, carrier billing, Vodafone Cash, Fawry, InstaPay or cash. The app reads bank/wallet **SMS** to create expenses automatically and links a charge to its subscription when the merchant and amount match.
 
 ## 3. Design system (non-negotiable)
 

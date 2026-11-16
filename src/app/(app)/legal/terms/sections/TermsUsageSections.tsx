@@ -30,7 +30,7 @@ export function TermsUsageSections() {
 
       <LegalSection title="5. AI Features — Not Financial Advice">
         <p>
-          Buddget includes AI-assisted features including budget plan generation, spending analysis,
+          buddget includes AI-assisted features including budget plan generation, spending analysis,
           voice expense parsing, and Buddgy, our AI assistant. These features are provided for
           informational and organizational purposes only and are powered by third-party AI services
           including Google Gemini.
@@ -50,7 +50,7 @@ export function TermsUsageSections() {
 
       <LegalSection title="6. Optional Native Device Features">
         <p>
-          When using Buddget as a native application (iOS or Android), you may be asked to grant
+          When using buddget as a native application (iOS or Android), you may be asked to grant
           permission for the following device features. All such permissions are optional and can be
           revoked at any time through your device settings:
         </p>
@@ -79,7 +79,7 @@ export function TermsUsageSections() {
 
       <LegalSection title="7. SMS Auto-Tracking Feature">
         <p>
-          Buddget offers an optional SMS auto-tracking feature that enables automatic expense detection
+          buddget offers an optional SMS auto-tracking feature that enables automatic expense detection
           from bank notification SMS messages via an iOS Shortcut or Android background service. This
           feature is strictly opt-in, disabled by default, and requires your explicit activation in
           Settings.
@@ -87,7 +87,7 @@ export function TermsUsageSections() {
         <p>By enabling this feature, you:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
-            Consent to transmitting the text content of bank notification SMS messages to Buddget&apos;s
+            Consent to transmitting the text content of bank notification SMS messages to buddget&apos;s
             servers for AI-powered parsing and expense logging
           </li>
           <li>

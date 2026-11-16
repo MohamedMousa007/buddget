@@ -7,7 +7,7 @@
   --coral:#E5684D; --sky:#389BD9; --violet:#8B5CF6; --deep:#0D8578; --gold:#F0BE5B;
   --f-sans:var(--font-sans),'DM Sans',system-ui,sans-serif; --f-ar:var(--font-sans-ar),'IBM Plex Sans Arabic',system-ui,sans-serif; --f-mono:var(--font-mono),'JetBrains Mono',ui-monospace,Menlo,monospace;
   --ease:cubic-bezier(.2,.8,.2,1);
-  /* light theme: the Buddget design system surfaces */
+  /* light theme: the buddget design system surfaces */
   --ink:#F4F7F6; --bg:#F4F7F6; --alt:#ECF1F0; --fg:#0D1A18; --muted:#566B68; --line:#DDE6E4; --line2:#CBD6D3; --surface:#FFFFFF; --surface2:#ECF1F0;
   --accent:#0B7568; --on-accent:#FFFFFF; --coin:#12B0A0; --coin-hi:#12B0A0;
   --brand-fill:#0D8578; --on-brand:#FFFFFF; --brand-text:#0B7568;

@@ -62,7 +62,7 @@ export function TermsLegalSections() {
       </LegalSection>
 
       <LegalSection title="17. Contact Us">
-        <p>Buddget is operated as an independent product. For all inquiries including legal matters:</p>
+        <p>buddget is operated as an independent product. For all inquiries including legal matters:</p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Email:</strong>{' '}
           <a href="mailto:support@buddget.app" className="text-[var(--color-brand-primary-ink)] hover:underline">

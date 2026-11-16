@@ -12,7 +12,7 @@ function selfReport() {
   } as const
 }
 
-/** What the OS currently lets Buddget do about notifications; null while the phone has not been asked. */
+/** What the OS currently lets buddget do about notifications; null while the phone has not been asked. */
 async function osPushPermission(): Promise<'granted' | 'denied' | null> {
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications')

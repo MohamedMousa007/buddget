@@ -107,7 +107,7 @@ export async function getType(): Promise<BiometryType> {
  * cancel / failure. The web fallback uses the WebAuthn `get()` ceremony with
  * userVerification: 'required'.
  */
-export async function authenticate(reason = 'Sign in to Buddget'): Promise<void> {
+export async function authenticate(reason = 'Sign in to buddget'): Promise<void> {
   const loaded = await loadPlugin()
   if (loaded) {
     // Android maps `androidTitle`→setTitle and `reason`→setDescription; setting
@@ -117,7 +117,7 @@ export async function authenticate(reason = 'Sign in to Buddget'): Promise<void>
       reason,
       cancelTitle: 'Cancel',
       fallbackTitle: 'Use passcode',
-      androidTitle: 'Buddget',
+      androidTitle: 'buddget',
       androidConfirmationRequired: false,
       androidBiometryStrength: 'weak',
     })

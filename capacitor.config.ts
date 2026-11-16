@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 /**
- * Capacitor 8 config for the Buddget native app.
+ * Capacitor 8 config for the buddget native app.
  *
  * Web layer is built as a static export from Next.js (`out/`) and shipped
  * inside the iOS/Android binaries. All API calls (`/api/*`) are made via
@@ -12,7 +12,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  */
 const config: CapacitorConfig = {
   appId: 'app.buddget',
-  appName: 'Buddget',
+  appName: 'buddget',
   webDir: 'out',
   server: {
     /** allowNavigation lets the WebView talk to the production API origin. */

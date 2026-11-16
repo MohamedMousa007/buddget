@@ -1,6 +1,6 @@
-## Building with Buddget
+## Building with buddget
 
-Buddget is a personal-finance app (expenses, income, budgets, debts, savings, AI SMS parsing) that
+buddget is a personal-finance app (expenses, income, budgets, debts, savings, AI SMS parsing) that
 ships as a web PWA and as iOS/Android Capacitor shells. **Design mobile-first**: the real surface is a
 390×844 phone. Centre wide layouts with `max-w-2xl mx-auto px-4`.
 
@@ -16,7 +16,7 @@ the component's `.d.ts`.
 
 ### Styling idiom: Tailwind utilities + CSS custom properties
 
-Buddget styles everything with **Tailwind v4 utility classes**, and every colour goes through a CSS
+buddget styles everything with **Tailwind v4 utility classes**, and every colour goes through a CSS
 variable in an arbitrary-value utility. Write `bg-[var(--color-brand-card)]`, never `bg-[#111118]`.
 
 | Purpose | Tokens |

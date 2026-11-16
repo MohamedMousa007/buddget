@@ -107,7 +107,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!target.user) return bad('User not found.', 404)
   const email = target.user.email ?? null
 
-  // The owner may empty any Buddget app account, their own and staff members' included; the portal account is a separate thing.
+  // The owner may empty any buddget app account, their own and staff members' included; the portal account is a separate thing.
   const ownerOnApp = ctx.role.key === OWNER_ROLE && (body.op === 'reset_data' || body.op === 'delete')
   const blocked = await blockedTarget(ctx, id, { allowSelf: ownerOnApp })
   if (blocked) return bad(blocked, 403)
@@ -208,7 +208,7 @@ export async function POST(req: Request, { params }: Params) {
       return json({ ok: true })
     }
     case 'test_push': {
-      const result = await sendNativePush({ userId: id, title: 'Buddget', body: 'Push delivery is working ✓', data: { type: 'test' } })
+      const result = await sendNativePush({ userId: id, title: 'buddget', body: 'Push delivery is working ✓', data: { type: 'test' } })
       await log('user.test_push', 'Sent test push', { result })
       return json(result)
     }
@@ -258,7 +258,7 @@ export async function POST(req: Request, { params }: Params) {
       // A person who is also staff keeps their sign-in and portal access: deleting the sign-in would delete the portal account with it.
       const result = await deleteUserCompletely(ctx.service, id, { keepStaffAccess: true })
       if (!result.ok) return bad(result.error, 500)
-      await log('user.delete', result.keptStaffAccess ? 'Deleted the Buddget app account; portal access kept' : 'Permanently deleted user', { partialErrors: result.partialErrors, keptStaffAccess: result.keptStaffAccess })
+      await log('user.delete', result.keptStaffAccess ? 'Deleted the buddget app account; portal access kept' : 'Permanently deleted user', { partialErrors: result.partialErrors, keptStaffAccess: result.keptStaffAccess })
       return json({ ok: true })
     }
   }

@@ -1,8 +1,8 @@
-# Buddget
+# buddget
 
-> Buddget is a budgeting app for iPhone and Android, made in Egypt. It reads bank text messages to log spending, shows what is safe to spend today, and helps people reach savings goals. It works in Arabic and English and is free to start.
+> buddget is a budgeting app for iPhone and Android, made in Egypt. It reads bank text messages to log spending, shows what is safe to spend today, and helps people reach savings goals. It works in Arabic and English and is free to start.
 
-Buddget does not connect to bank accounts and cannot move money. Bank text reading is optional. Buddgy is the in-app assistant and gives guidance from the user's own data, not financial advice.
+buddget does not connect to bank accounts and cannot move money. Bank text reading is optional. Buddgy is the in-app assistant and gives guidance from the user's own data, not financial advice.
 
 ## Key pages
 - [Home (Arabic)](https://buddget.app/ar): overview in Arabic

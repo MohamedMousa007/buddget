@@ -2,8 +2,8 @@ import { useLocale } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n/types'
 
 /**
- * Copy for the Buddget Pro, Sparks, Founders club and weekly check screens (S6 v2 boards).
- * Rules (docs/launch/S6-design-board.md section 3): "Buddget Pro" in Latin letters inside Arabic text; none of the words
+ * Copy for the buddget Pro, Sparks, Founders club and weekly check screens (S6 v2 boards).
+ * Rules (docs/launch/S6-design-board.md section 3): "buddget Pro" in Latin letters inside Arabic text; none of the words
  * free trial / web / website / cheaper / checkout / refund in either language (membershipCopy.test.ts); no counters, timers or loss copy.
  */
 export interface MembershipCopy {
@@ -167,7 +167,7 @@ export interface MembershipCopy {
 
 const en: MembershipCopy = {
   mark: 'PRO',
-  proName: 'Buddget Pro',
+  proName: 'buddget Pro',
   hub: {
     freeLine: 'Every account on autopilot',
     freeCta: 'See what Pro adds',
@@ -197,7 +197,7 @@ const en: MembershipCopy = {
       noLimits: { t: 'Plan without limits', d: 'Keep every budget plan and check your bank-confirmed balances as often as you like.' },
     },
     compareTitle: 'Free and Pro, side by side',
-    compareHead: { label: '', free: 'Free', pro: 'Buddget Pro' },
+    compareHead: { label: '', free: 'Free', pro: 'buddget Pro' },
     compareRows: [
       { label: 'SMS auto-tracking', free: 'Every account', pro: 'Every account' },
       { label: 'Live balance views', free: '10 a month', pro: 'Unlimited' },
@@ -220,8 +220,8 @@ const en: MembershipCopy = {
     priceHold: 'Your price won’t rise for 12 months.',
     makeItRight: 'Changed your mind within 30 days of the yearly plan? We’ll make it right.',
     howTitle: 'How it works',
-    howYearly: (price) => `Buddget Pro renews automatically at ${price} a year until you cancel.`,
-    howMonthly: (price) => `Buddget Pro renews automatically at ${price} a month until you cancel.`,
+    howYearly: (price) => `buddget Pro renews automatically at ${price} a year until you cancel.`,
+    howMonthly: (price) => `buddget Pro renews automatically at ${price} a month until you cancel.`,
     howStore: (store) => `Cancel anytime in your ${store} settings, at least 24 hours before the renewal date. Payment is taken by your ${store} account.`,
     appStore: 'App Store',
     playStore: 'Google Play',
@@ -233,7 +233,7 @@ const en: MembershipCopy = {
     pricesUnavailable: 'Prices are not available right now. Try again shortly.',
     notOnThisDevice: 'Plans are chosen in the iOS or Android app.',
   },
-  welcome: { title: 'Welcome to Buddget Pro', back: 'Welcome back to Buddget Pro', rows: ['About 10x the AI for chat, voice and scans', 'The Advisor for the big questions', 'Unlimited plans and live balance views'], price: 'Your price stays the same for 12 months.', start: 'Start using Pro' },
+  welcome: { title: 'Welcome to buddget Pro', back: 'Welcome back to buddget Pro', rows: ['About 10x the AI for chat, voice and scans', 'The Advisor for the big questions', 'Unlimited plans and live balance views'], price: 'Your price stays the same for 12 months.', start: 'Start using Pro' },
   billing: {
     title: 'Plan and billing',
     section: 'Billing and purchases',
@@ -243,21 +243,21 @@ const en: MembershipCopy = {
     howCancel: 'How to cancel',
     howCancelHint: '3 steps in your store settings',
     steps: {
-      appStore: ['Open Settings and tap your name.', 'Tap Subscriptions, then Buddget Pro.', 'Tap Cancel Subscription.'],
-      playStore: ['Open Google Play and tap your profile.', 'Tap Payments and subscriptions, then Subscriptions.', 'Choose Buddget Pro, then Cancel.'],
+      appStore: ['Open Settings and tap your name.', 'Tap Subscriptions, then buddget Pro.', 'Tap Cancel Subscription.'],
+      playStore: ['Open Google Play and tap your profile.', 'Tap Payments and subscriptions, then Subscriptions.', 'Choose buddget Pro, then Cancel.'],
     },
     restore: 'Restore purchases',
-    purchases: 'Purchases in Buddget',
+    purchases: 'Purchases in buddget',
     seeAll: 'See all',
-    lastSaw: 'What Buddget last saw. Your store receipts are the official record:',
+    lastSaw: 'What buddget last saw. Your store receipts are the official record:',
     receipts: (store) => `${store} receipts`,
     problem: 'Problem with a purchase?',
     problemBody: (store) => `${store} handles these.`,
     none: 'No purchases yet',
     noneHint: 'Pro and Sparks you buy show here.',
     sparksOf: (n) => `${n} Sparks`,
-    proYearly: 'Buddget Pro, yearly',
-    proMonthly: 'Buddget Pro, monthly',
+    proYearly: 'buddget Pro, yearly',
+    proMonthly: 'buddget Pro, monthly',
     loadError: 'Couldn’t load your purchases. Your plan details are still shown.',
     tryAgain: 'Try again',
   },
@@ -288,7 +288,7 @@ const en: MembershipCopy = {
     restored: 'Checked. Your plan is up to date.',
     restoreNothing: 'No purchase found for this store account.',
     trial: {
-      tryTitle: 'You have Buddget Pro for 30 days',
+      tryTitle: 'You have buddget Pro for 30 days',
       tries: ['Ask the Advisor a money question', 'Scan a receipt', 'Send Buddgy a voice message'],
       chip: '30 days of Pro, no card',
       day: 'Day',
@@ -311,7 +311,7 @@ const en: MembershipCopy = {
       chip: 'Ended',
       title: 'You’re on Free now. Nothing was deleted.',
       lines: ['SMS reads 2 accounts. Messages from other accounts wait for you for 30 days.', 'All your history is kept. Reports show the last 3 months.', 'Saved plans beyond 2 are read-only. Your active plan works as before.'],
-      rejoin: 'Rejoin Buddget Pro',
+      rejoin: 'Rejoin buddget Pro',
       rejoinFrom: (price) => `Rejoin from ${price} a year`,
       back: 'Everything comes back on, as you left it.',
     },
@@ -341,7 +341,7 @@ const en: MembershipCopy = {
   founders: {
     title: 'Founders club',
     mark: 'FOUNDER',
-    heroLine: 'Earned by using Buddget in its first weeks. Never bought.',
+    heroLine: 'Earned by using buddget in its first weeks. Never bought.',
     yourNumber: 'Your number',
     perksTitle: 'What founders get',
     perks: [
@@ -363,7 +363,7 @@ const en: MembershipCopy = {
     shareFail: 'Couldn’t make the image. Try again.',
     notFounder: 'The Founders club is for the first users who earned a place.',
     betaTitle: 'Beta tester',
-    betaLine: 'You helped test Buddget before launch. Thank you.',
+    betaLine: 'You helped test buddget before launch. Thank you.',
     badge: (number) => `Founder ${number}`,
     betaBadge: 'Beta tester',
     editNote: 'You can change this any time.',
@@ -392,7 +392,7 @@ const en: MembershipCopy = {
 
 const ar: MembershipCopy = {
   mark: 'PRO',
-  proName: 'Buddget Pro',
+  proName: 'buddget Pro',
   hub: {
     freeLine: 'كل حساباتك على الوضع التلقائي',
     freeCta: 'شاهد ما يضيفه Pro',
@@ -422,7 +422,7 @@ const ar: MembershipCopy = {
       noLimits: { t: 'خطط بلا حدود', d: 'احتفظ بكل خطط الميزانية وراجع أرصدتك المؤكدة من البنك كلما أردت.' },
     },
     compareTitle: 'المجاني وPro جنباً إلى جنب',
-    compareHead: { label: '', free: 'المجاني', pro: 'Buddget Pro' },
+    compareHead: { label: '', free: 'المجاني', pro: 'buddget Pro' },
     compareRows: [
       { label: 'تتبع SMS التلقائي', free: 'كل الحسابات', pro: 'كل الحسابات' },
       { label: 'عروض الرصيد المباشر', free: '10 شهرياً', pro: 'بلا حد' },
@@ -445,8 +445,8 @@ const ar: MembershipCopy = {
     priceHold: 'سعرك لن يرتفع لمدة 12 شهراً.',
     makeItRight: 'غيّرت رأيك خلال 30 يوماً من الاشتراك السنوي؟ سنتولى الأمر.',
     howTitle: 'كيف يعمل ذلك',
-    howYearly: (price) => `يتجدد Buddget Pro تلقائياً بسعر ${price} سنوياً حتى تلغيه.`,
-    howMonthly: (price) => `يتجدد Buddget Pro تلقائياً بسعر ${price} شهرياً حتى تلغيه.`,
+    howYearly: (price) => `يتجدد buddget Pro تلقائياً بسعر ${price} سنوياً حتى تلغيه.`,
+    howMonthly: (price) => `يتجدد buddget Pro تلقائياً بسعر ${price} شهرياً حتى تلغيه.`,
     howStore: (store) => `يمكنك الإلغاء في أي وقت من إعدادات ${store} قبل موعد التجديد بـ 24 ساعة على الأقل. يتم الدفع من حساب ${store}.`,
     appStore: 'App Store',
     playStore: 'Google Play',
@@ -458,7 +458,7 @@ const ar: MembershipCopy = {
     pricesUnavailable: 'الأسعار غير متاحة الآن. حاول بعد قليل.',
     notOnThisDevice: 'تُختار الخطط من تطبيق iOS أو Android.',
   },
-  welcome: { title: 'أهلاً بك في Buddget Pro', back: 'أهلاً بعودتك إلى Buddget Pro', rows: ['حوالي 10 أضعاف الذكاء الاصطناعي للمحادثة والصوت والمسح', 'المستشار للأسئلة الكبيرة', 'خطط وعروض رصيد مباشر بلا حد'], price: 'سعرك يبقى كما هو لمدة 12 شهراً.', start: 'ابدأ استخدام Pro' },
+  welcome: { title: 'أهلاً بك في buddget Pro', back: 'أهلاً بعودتك إلى buddget Pro', rows: ['حوالي 10 أضعاف الذكاء الاصطناعي للمحادثة والصوت والمسح', 'المستشار للأسئلة الكبيرة', 'خطط وعروض رصيد مباشر بلا حد'], price: 'سعرك يبقى كما هو لمدة 12 شهراً.', start: 'ابدأ استخدام Pro' },
   billing: {
     title: 'الخطة والفوترة',
     section: 'الفوترة والمشتريات',
@@ -468,21 +468,21 @@ const ar: MembershipCopy = {
     howCancel: 'كيف تلغي',
     howCancelHint: '3 خطوات في إعدادات المتجر',
     steps: {
-      appStore: ['افتح الإعدادات واضغط على اسمك.', 'اضغط على الاشتراكات ثم Buddget Pro.', 'اضغط على إلغاء الاشتراك.'],
-      playStore: ['افتح Google Play واضغط على ملفك.', 'اضغط على المدفوعات والاشتراكات ثم الاشتراكات.', 'اختر Buddget Pro ثم إلغاء.'],
+      appStore: ['افتح الإعدادات واضغط على اسمك.', 'اضغط على الاشتراكات ثم buddget Pro.', 'اضغط على إلغاء الاشتراك.'],
+      playStore: ['افتح Google Play واضغط على ملفك.', 'اضغط على المدفوعات والاشتراكات ثم الاشتراكات.', 'اختر buddget Pro ثم إلغاء.'],
     },
     restore: 'استعادة المشتريات',
-    purchases: 'المشتريات في Buddget',
+    purchases: 'المشتريات في buddget',
     seeAll: 'عرض الكل',
-    lastSaw: 'هذا آخر ما رآه Buddget. إيصالات المتجر هي السجل الرسمي:',
+    lastSaw: 'هذا آخر ما رآه buddget. إيصالات المتجر هي السجل الرسمي:',
     receipts: (store) => `إيصالات ${store}`,
     problem: 'مشكلة في عملية شراء؟',
     problemBody: (store) => `${store} يتولى هذه الأمور.`,
     none: 'لا مشتريات بعد',
     noneHint: 'ما تشتريه من Pro وSparks يظهر هنا.',
     sparksOf: (n) => `${n} Sparks`,
-    proYearly: 'Buddget Pro، سنوي',
-    proMonthly: 'Buddget Pro، شهري',
+    proYearly: 'buddget Pro، سنوي',
+    proMonthly: 'buddget Pro، شهري',
     loadError: 'تعذّر تحميل مشترياتك. تفاصيل خطتك ما زالت معروضة.',
     tryAgain: 'حاول مجدداً',
   },
@@ -513,7 +513,7 @@ const ar: MembershipCopy = {
     restored: 'تم التحقق. خطتك محدّثة.',
     restoreNothing: 'لا توجد عملية شراء لحساب المتجر هذا.',
     trial: {
-      tryTitle: 'لديك Buddget Pro لمدة 30 يوماً',
+      tryTitle: 'لديك buddget Pro لمدة 30 يوماً',
       tries: ['اسأل المستشار سؤالاً عن المال', 'امسح إيصالاً', 'أرسل لـ Buddgy رسالة صوتية'],
       chip: '30 يوماً من Pro بلا بطاقة',
       day: 'اليوم',
@@ -536,7 +536,7 @@ const ar: MembershipCopy = {
       chip: 'انتهى',
       title: 'أنت على المجاني الآن. لم يُحذف شيء.',
       lines: ['SMS يقرأ حسابين. رسائل الحسابات الأخرى تنتظرك 30 يوماً.', 'كل سجلك محفوظ. التقارير تعرض آخر 3 أشهر.', 'الخطط المحفوظة بعد الثانية للقراءة فقط. خطتك النشطة تعمل كما كانت.'],
-      rejoin: 'انضم إلى Buddget Pro من جديد',
+      rejoin: 'انضم إلى buddget Pro من جديد',
       rejoinFrom: (price) => `انضم من جديد بسعر ${price} سنوياً`,
       back: 'يعود كل شيء كما تركته.',
     },
@@ -566,7 +566,7 @@ const ar: MembershipCopy = {
   founders: {
     title: 'نادي المؤسسين',
     mark: 'مؤسس',
-    heroLine: 'يُكتسب باستخدام Buddget في أسابيعه الأولى. لا يُشترى أبداً.',
+    heroLine: 'يُكتسب باستخدام buddget في أسابيعه الأولى. لا يُشترى أبداً.',
     yourNumber: 'رقمك',
     perksTitle: 'ما يحصل عليه المؤسسون',
     perks: [
@@ -588,7 +588,7 @@ const ar: MembershipCopy = {
     shareFail: 'تعذّر إنشاء الصورة. حاول مرة أخرى.',
     notFounder: 'نادي المؤسسين للمستخدمين الأوائل الذين اكتسبوا مكانهم.',
     betaTitle: 'مختبر تجريبي',
-    betaLine: 'ساعدت في اختبار Buddget قبل الإطلاق. شكراً لك.',
+    betaLine: 'ساعدت في اختبار buddget قبل الإطلاق. شكراً لك.',
     badge: (number) => `مؤسس ${number}`,
     betaBadge: 'مختبر تجريبي',
     editNote: 'يمكنك تغيير ذلك في أي وقت.',

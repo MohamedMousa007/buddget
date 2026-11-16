@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copies the Buddget database from the old Supabase project to a new one (Supabase's documented CLI path).
+# Copies the buddget database from the old Supabase project to a new one (Supabase's documented CLI path).
 # Needs: Docker Desktop running, the Supabase CLI, psql 16+.
 # Usage (in your own terminal, so the passwords never leave it):
 #   export OLD_DB_URL='postgresql://postgres.<old-ref>:<password>@<old-pooler-host>:5432/postgres'

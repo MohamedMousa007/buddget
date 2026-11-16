@@ -1,4 +1,4 @@
-# Buddget — Home-screen widgets (iOS WidgetKit + Android Glance)
+# buddget — Home-screen widgets (iOS WidgetKit + Android Glance)
 
 The web layer pushes a JSON snapshot of the current month's spend into a shared
 keystore (`Capacitor Preferences` → App Group on iOS, EncryptedSharedPreferences
@@ -144,7 +144,7 @@ struct BuddgetWidget: Widget {
     StaticConfiguration(kind: kind, provider: Provider()) { entry in
       BuddgetWidgetEntryView(entry: entry)
     }
-    .configurationDisplayName("Buddget")
+    .configurationDisplayName("buddget")
     .description("This month's spend, budget, and last expense.")
     .supportedFamilies([.systemSmall, .systemMedium])
   }

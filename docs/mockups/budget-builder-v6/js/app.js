@@ -543,7 +543,7 @@
   el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('.amt input')) { clearTimeout(deb); const btn = e.target.closest('.row, .fld, .sh-b, .body') && (el.querySelector('.dock [data-act=saveQ]') || el.querySelector('.ft .cta:not(.alt):not(.txt)')); render(); if (btn) { const again = el.querySelector(`[data-act="${btn.dataset.act}"]`); if (again && !again.disabled) again.click() } } })
 
   function gate() {
-    if (!S.sim.online) { log('Account unreachable. With nothing local and no server answer, Buddget waits instead of starting a cold-start flow.', 'warn'); return render() }
+    if (!S.sim.online) { log('Account unreachable. With nothing local and no server answer, buddget waits instead of starting a cold-start flow.', 'warn'); return render() }
     later(() => {
       if (S.P.level === 'none') { log('Account answered: it holds nothing. Only now is this a new user.', 'ok'); S.screen = 'setup' }
       else { log(`Account answered: it holds data. ${S.sim.newDevice ? 'The phone was empty (new device), and setup is still skipped.' : 'Setup skipped.'}`, 'ok'); S.screen = 'home0' }

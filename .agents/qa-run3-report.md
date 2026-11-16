@@ -1,4 +1,4 @@
-# Buddget QA run 3: triage and release-readiness report
+# buddget QA run 3: triage and release-readiness report
 
 Date: 2026-10-31. Branch `claude/relaxed-allen-hixdfp` (merged with `origin/main` at `ca96bd8`). All 21 skills from `petrkindlmann/qa-skills` were loaded during this run.
 Evidence tags: **[live]** read-only query on the live Supabase project, **[probe]** executed test or script, **[measured]** browser or CI measurement, **[code]** read in source, **[schema]** read in live grants/policies, **[reasoned]** inferred, not exercised. No user data was changed and no account was created.

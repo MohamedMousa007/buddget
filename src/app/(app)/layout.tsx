@@ -38,8 +38,8 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 export const metadata: Metadata = {
   metadataBase: new URL('https://buddget.app'),
   title: {
-    default: 'Buddget — Personal Finance Tracker & Budget Planner',
-    template: '%s | Buddget',
+    default: 'buddget — Personal Finance Tracker & Budget Planner',
+    template: '%s | buddget',
   },
   description:
     'Track expenses, manage budgets, monitor debts and savings. Free personal finance tracker. Works on iPhone and Android. Supports AED, USD, EGP and 10+ currencies.',
@@ -59,8 +59,8 @@ export const metadata: Metadata = {
     'budget planner Dubai',
     'expense manager',
   ],
-  authors: [{ name: 'Buddget', url: 'https://buddget.app' }],
-  creator: 'Buddget',
+  authors: [{ name: 'buddget', url: 'https://buddget.app' }],
+  creator: 'buddget',
   robots: {
     index: true,
     follow: true,
@@ -75,21 +75,21 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://buddget.app',
-    siteName: 'Buddget',
-    title: 'Buddget — Personal Finance Tracker & Budget Planner',
+    siteName: 'buddget',
+    title: 'buddget — Personal Finance Tracker & Budget Planner',
     description: 'Track expenses, manage budgets, monitor debts. Free multi-currency planner.',
     images: [
       {
         url: '/opengraph-image.png',
         width: 1200,
         height: 630,
-        alt: 'Buddget — Personal Finance Tracker',
+        alt: 'buddget — Personal Finance Tracker',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Buddget — Personal Finance Tracker',
+    title: 'buddget — Personal Finance Tracker',
     description: 'Track expenses, manage budgets, monitor debts. Free multi-currency planner.',
     images: ['/opengraph-image.png'],
   },
@@ -98,7 +98,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Buddget',
+    title: 'buddget',
   },
   icons: {
     icon: [
@@ -143,7 +143,7 @@ export default async function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Buddget" />
+        <meta name="apple-mobile-web-app-title" content="buddget" />
       </head>
       <body
         style={{ '--font-heading': 'var(--font-sans)' } as React.CSSProperties}

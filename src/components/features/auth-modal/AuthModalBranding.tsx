@@ -8,7 +8,7 @@ export interface AuthModalBrandingProps {
 }
 
 /**
- * Buddget wordmark and optional contextual message above the form.
+ * buddget wordmark and optional contextual message above the form.
  */
 export function AuthModalBranding({ message }: AuthModalBrandingProps) {
   const t = useT()

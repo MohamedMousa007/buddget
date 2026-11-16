@@ -60,7 +60,7 @@ export function PrivacyLegalSections() {
           We will respond within 30 days.
         </p>
         <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">
-          &copy; 2026 Buddget. All rights reserved.
+          &copy; 2026 buddget. All rights reserved.
         </p>
       </LegalSection>
     </>

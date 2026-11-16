@@ -18,7 +18,7 @@ export function buildMetadata(locale: SiteLocale, slug: string): Metadata {
     alternates: { canonical: pathFor(locale, slug), languages },
     openGraph: {
       type: slug.startsWith('guides/') ? 'article' : 'website',
-      siteName: 'Buddget',
+      siteName: 'buddget',
       locale: OG_LOCALE[locale],
       alternateLocale: OG_LOCALE[locale === 'en' ? 'ar' : 'en'],
       url: urlFor(locale, slug),
@@ -36,7 +36,7 @@ function organization() {
   return {
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
-    name: 'Buddget',
+    name: 'buddget',
     url: SITE_URL,
     logo: `${SITE_URL}/icons/icon-512.png`,
     email: SUPPORT_EMAIL,
@@ -50,7 +50,7 @@ function application(locale: SiteLocale) {
   return {
     '@type': 'MobileApplication',
     '@id': `${SITE_URL}/#app`,
-    name: 'Buddget',
+    name: 'buddget',
     description: c.meta.homeDescription,
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'iOS, Android',
@@ -86,7 +86,7 @@ export function homeLd(locale: SiteLocale) {
   const c = siteContent[locale]
   return [
     organization(),
-    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, url: SITE_URL, name: 'Buddget', inLanguage: locale, publisher: { '@id': `${SITE_URL}/#organization` } },
+    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, url: SITE_URL, name: 'buddget', inLanguage: locale, publisher: { '@id': `${SITE_URL}/#organization` } },
     application(locale),
     faqLd(c.home.faq.items),
   ]

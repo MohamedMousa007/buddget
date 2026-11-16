@@ -171,7 +171,7 @@ export async function POST(req: Request, { params }: Params) {
         severity: 'info',
         dedupeKey: `staff-view:${ctx.staff.id}:${Math.floor(now / NOTICE_WINDOW_MS)}`,
         title: 'Support viewed your account',
-        body: `A Buddget team member viewed your financial details on ${smsLocalDay(new Date(now).toISOString(), await getUserTimeZone(ctx.service, id))}${ticket}, to help with your request.`,
+        body: `A buddget team member viewed your financial details on ${smsLocalDay(new Date(now).toISOString(), await getUserTimeZone(ctx.service, id))}${ticket}, to help with your request.`,
         push: false,
       })
       return json({ ok: true, snapshot })

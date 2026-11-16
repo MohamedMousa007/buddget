@@ -8,7 +8,7 @@ export const ADMIN_ACCEPT_NEXT = '/admin'
 /**
  * Emails a teammate the admin invite: a one-tap link that signs them in and lands on the portal, where first-time
  * setup (admin password + emailed code) takes over. The link is minted without sending anything, then mailed by us,
- * so new people and people who already have a Buddget account get the same invite and the project's
+ * so new people and people who already have a buddget account get the same invite and the project's
  * magic-link and code emails stay for ordinary sign-in only.
  */
 export async function sendStaffInviteEmail(service: ServiceClient, email: string, extra: { inviterName?: string; role?: string } = {}): Promise<boolean> {

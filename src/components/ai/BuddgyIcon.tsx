@@ -43,7 +43,7 @@ const FACES: Record<BuddgyMood, { tone: Tone; face?: string; icon?: string; path
 }
 
 /**
- * Mapped onto Buddget's real tokens rather than the handoff's frozen hexes.
+ * Mapped onto buddget's real tokens rather than the handoff's frozen hexes.
  *
  * The handoff was authored before the teal revamp, so its literal values
  * (ink #1A1A24, positive #18A349, negative #E5484D, warning #E0A126 …) no longer

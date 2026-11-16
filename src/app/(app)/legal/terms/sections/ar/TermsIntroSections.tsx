@@ -8,7 +8,7 @@ export function TermsIntroSectionsAr() {
     <>
       <LegalSection title="1. قبول الشروط">
         <p>
-          بوصولك إلى «بادجت» (Buddget) («الخدمة» أو «نحن» أو «لنا») أو استخدامك لها، فإنك تؤكد أنك قرأت شروط الخدمة هذه
+          بوصولك إلى «بادجت» (buddget) («الخدمة» أو «نحن» أو «لنا») أو استخدامك لها، فإنك تؤكد أنك قرأت شروط الخدمة هذه
           («الشروط») و
           <LegalDocLink doc="privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
             سياسة الخصوصية

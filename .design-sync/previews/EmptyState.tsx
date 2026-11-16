@@ -32,7 +32,7 @@ export const WithAction = () => (
     <EmptyState
       icon="🎯"
       title="No goals yet"
-      description="Set a target — a Hajj fund, a new car, six months of expenses — and Buddget tracks every deposit against it."
+      description="Set a target — a Hajj fund, a new car, six months of expenses — and buddget tracks every deposit against it."
       action={<Cta>Add your first goal</Cta>}
     />
   </Card>

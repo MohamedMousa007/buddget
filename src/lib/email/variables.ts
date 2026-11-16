@@ -7,7 +7,7 @@ export const EMAIL_VARIABLES = {
   code: { label: 'One-time code', sample: '482915' },
   link: { label: 'Action link', sample: 'https://buddget.app/auth/callback?token=sample' },
   expires_in: { label: 'Expires in', sample: '10 minutes' },
-  app_name: { label: 'App name', sample: 'Buddget' },
+  app_name: { label: 'App name', sample: 'buddget' },
   support_email: { label: 'Support email', sample: 'support@buddget.app' },
   inviter_name: { label: 'Inviter name', sample: 'Mohamed' },
   role: { label: 'Role', sample: 'Administrator' },

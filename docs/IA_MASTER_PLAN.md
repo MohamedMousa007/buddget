@@ -1,4 +1,4 @@
-# Buddget — Information Architecture Master Plan
+# buddget — Information Architecture Master Plan
 
 **Status:** decided 2026-09-29. This is the record of *what goes where and why*.
 Supersedes any earlier advice that assumed a Home tab or an open Flow page.

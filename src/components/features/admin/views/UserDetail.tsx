@@ -468,7 +468,7 @@ function ToolsTab({ id, data, banned, can, onChange }: { id: string; data: Overv
         ) : null}
 
         {can('users.delete') ? (
-          <Panel title="Danger zone" description="Permanent. Deletes the Buddget app account and all of their data. If they are on the team, their portal access stays; remove them under Team & roles.">
+          <Panel title="Danger zone" description="Permanent. Deletes the buddget app account and all of their data. If they are on the team, their portal access stays; remove them under Team & roles.">
             <Button variant="destructive-solid" size="touch" loading={busy === 'delete'} onClick={async () => {
               const proof = await stepUp('Deleting a user is permanent. Confirm it’s you.')
               if (!proof) return

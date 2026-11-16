@@ -1,4 +1,4 @@
-# Buddget — Repo Map
+# buddget — Repo Map
 
 Triage aid: locate the directory that owns a symptom before searching. Read this first, then `Grep` within the named path. Stack: Next.js (App Router) + Zustand + Supabase, wrapped as a native app via Capacitor (iOS/Android).
 

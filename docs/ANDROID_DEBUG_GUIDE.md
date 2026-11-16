@@ -1,4 +1,4 @@
-# Android Debug Guide — Buddget on S25 Ultra
+# Android Debug Guide — buddget on S25 Ultra
 
 ## 1. Logcat in Android Studio
 
@@ -41,12 +41,12 @@ This opens the full Chrome DevTools (Console, Network, Elements) for the live We
 chrome://inspect/#devices
 ```
 
-4. Under **Remote Target** you should see `Buddget` (or `com.buddget.app`) listed.  
+4. Under **Remote Target** you should see `buddget` (or `com.buddget.app`) listed.  
    If not, tap **Port forwarding** and confirm the USB connection is trusted on the phone.
 
 ### Using the inspector
 
-- Click **inspect** next to the Buddget WebView entry.
+- Click **inspect** next to the buddget WebView entry.
 - A full DevTools window opens — identical to debugging a desktop web app.
 
 | Panel | What to check |

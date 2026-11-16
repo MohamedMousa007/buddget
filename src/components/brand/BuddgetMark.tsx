@@ -1,7 +1,7 @@
 import { useId } from 'react'
 
 /**
- * Buddget mark: the coin b. 48-unit grid, geometry is fixed; do not edit path data.
+ * buddget mark: the coin b. 48-unit grid, geometry is fixed; do not edit path data.
  * variant: 'brand' (identity teal, follows light/dark via token), 'gradient', 'mono' (currentColor), 'on-teal' (white).
  * Minimum size 16px. The 48 box includes built-in padding; bbox is x 11-38, y 5-42.
  */

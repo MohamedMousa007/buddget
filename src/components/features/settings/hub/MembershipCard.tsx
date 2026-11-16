@@ -9,7 +9,7 @@ import { useLocale } from '@/lib/i18n'
 import { intlTag } from '@/lib/i18n/dateFormat'
 import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
 
-/** The Buddget Pro card under the profile banner: Free, a trial, active, a billing issue or ended. Opens /settings/pro. Absent while billing is off. */
+/** The buddget Pro card under the profile banner: Free, a trial, active, a billing issue or ended. Opens /settings/pro. Absent while billing is off. */
 export function MembershipCard() {
   const c = useMembershipCopy()
   const { locale } = useLocale()

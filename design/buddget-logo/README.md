@@ -1,4 +1,4 @@
-# Buddget logo — handoff v1.0 (2026-09-28)
+# buddget logo — handoff v1.0 (2026-09-28)
 
 Two assets make up the identity:
 
@@ -8,7 +8,7 @@ Two assets make up the identity:
 ## Meaning
 The b is the name's first letter and a coin at the same time. It means money, in a plain and friendly way, and it doesn't borrow a bank's authority. Its round forms and single weight keep it calm, and a solid silhouette holds up at 16px.
 
-## Colour (from the Buddget design system only)
+## Colour (from the buddget design system only)
 | Use | Light | Dark |
 |---|---|---|
 | Mark / teal d | `#12B0A0` | `#1FC3B2` |

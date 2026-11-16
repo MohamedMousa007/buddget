@@ -7,7 +7,7 @@ export function TermsIntroSections() {
     <>
       <LegalSection title="1. Acceptance of Terms">
         <p>
-          By accessing or using Buddget (&ldquo;Service,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), you confirm that you have read,
+          By accessing or using buddget (&ldquo;Service,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), you confirm that you have read,
           understood, and agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;) and our{' '}
           <LegalDocLink doc="privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
             Privacy Policy
@@ -16,7 +16,7 @@ export function TermsIntroSections() {
         </p>
         <p>
           These Terms constitute a legally binding agreement between you and the individual operator of
-          Buddget (&ldquo;Operator&rdquo;), who operates this Service independently and has not yet established a
+          buddget (&ldquo;Operator&rdquo;), who operates this Service independently and has not yet established a
           formal legal entity. By creating an account or otherwise accessing the Service, you represent
           that you are at least 18 years of age and have the legal capacity to enter into this agreement.
         </p>
@@ -24,7 +24,7 @@ export function TermsIntroSections() {
 
       <LegalSection title="2. Description of Service">
         <p>
-          Buddget is an AI-powered personal finance management platform that helps individuals track
+          buddget is an AI-powered personal finance management platform that helps individuals track
           expenses, income, debts, savings goals, subscriptions, and budget plans across multiple
           currencies. Features include, but are not limited to:
         </p>

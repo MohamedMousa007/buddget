@@ -1,4 +1,4 @@
-# Deploy Buddget to Vercel (exact steps)
+# Deploy buddget to Vercel (exact steps)
 
 ## Before you push
 
@@ -31,7 +31,7 @@ If this folder is already a git repo:
 cd buddget
 git status
 git add -A
-git commit -m "chore: ship Buddget for Vercel"
+git commit -m "chore: ship buddget for Vercel"
 git branch -M main
 ```
 
@@ -79,7 +79,7 @@ Redeploy after changing env vars (**Deployments → … → Redeploy**).
 
 **Supabase Auth (production):** In Supabase → **Authentication → URL configuration**, set **Site URL** to `https://buddget.app` (exact origin, no path). Under **Redirect URLs**, add `https://buddget.app/**` (and dev `http://localhost:3000/**`) so **password recovery** can return to `/auth/callback`. Sign-in uses **email + password**; signup confirmation can use a **6-digit OTP** when enabled — see [`supabase/README.md`](../supabase/README.md).
 
-**Admin:** `/admin` is the staff portal — sign in to Buddget, then unlock it with the admin password + authenticator (see `docs/ADMIN_PORTAL.md`). Only accounts in `admin_staff` can open it.
+**Admin:** `/admin` is the staff portal — sign in to buddget, then unlock it with the admin password + authenticator (see `docs/ADMIN_PORTAL.md`). Only accounts in `admin_staff` can open it.
 
 ## 4. Smoke checks after deploy
 

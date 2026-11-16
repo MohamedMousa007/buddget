@@ -1,4 +1,4 @@
-# Buddget: third-party logos in a subscription tracker - legal and platform framework
+# buddget: third-party logos in a subscription tracker - legal and platform framework
 
 Research assistant output, NOT legal advice. Date: 2026-10-17. Research was cut short by a session limit; items marked [UNVERIFIED] were not confirmed against primary text and must be checked by counsel. All URLs read 2026-10-17 (via search summaries or fetch).
 
@@ -15,7 +15,7 @@ Research assistant output, NOT legal advice. Date: 2026-10-17. Research was cut 
 - EUTMR Art. 14(1)(c) / Directive 2015/2436 Art. 14: proprietor cannot stop use of the mark to identify or refer to the proprietor's goods/services, or to indicate intended purpose, if in accordance with honest commercial practices. 2015 reform dropped the express "necessary" wording; national courts differ on whether necessity survives (https://www.maastrichtuniversity.nl/blog/2021/01/name-dropping-marketing).
 - BMW v Deenik (C-63/97) and Gillette (C-228/03): referential use is fine unless it creates impression of commercial connection, takes unfair advantage of reputation, denigrates, or presents goods as imitation (https://cms.law/en/gbr/legal-updates/use-of-third-party-trade-marks-permissible-provided-use-is-honest ; https://www.ippt.eu/sites/ippt/files/1999/IPPT19990223_ECJ_BMW_v_Deenik.pdf). Note summaries disagree on BMW judgment date (1998/1999); verify.
 - UK Trade Marks Act 1994 s.11(2)(c) (intended purpose, honest practices) and s.10(6) (referring to proprietor's goods): https://www.legislation.gov.uk/ukpga/1994/26/section/11 . Nokia v Wärtsilä not verified.
-- Buddget has no stated EU/UK users, so this is persuasive background only; but Apple/Google review is global.
+- buddget has no stated EU/UK users, so this is persuasive background only; but Apple/Google review is global.
 
 ### Egypt (Law 82/2002)
 - Trademark = sign distinguishing goods/services, must be visually perceptible (Art. 63); foreign WTO nationals can register (Art. 62). Law replaced Law 57/1939. Source (summary only): https://www.agip.com/Agip-Country-Service/en/30/T/2 ; https://alp.unescwa.org/legislations/law-82-2002-intellectual-property (403 on fetch).
@@ -72,8 +72,8 @@ Tier B - logo allowed with conditions: no published rule; logo fetched at runtim
 Tier C - initials/category icon: Apple/Apple logo (use word mark/initials instead; Apple restricts the logo), any brand that has objected, any brand whose logo is copyright-complex or a mascot, any brand with a prior takedown, anything we cannot source from a documented place, and any entity where the logo could look like endorsement (banks in Egypt/KSA/UAE pending counsel). Default for unknown brands.
 
 Draft in-app text (for lawyer review):
-"Brand names and logos shown in Buddget belong to their respective owners and are used only to help you recognise the service a charge relates to. Buddget is not affiliated with, endorsed by, or sponsored by any of them. If you own a brand shown here and want its logo changed or removed, email [legal address]; we aim to act within 24 hours."
-Terms clause: "Third-Party Marks. All third-party names, logos and brands are the property of their owners and appear solely for identification. Their appearance does not imply affiliation or endorsement. Rights holders may request removal at [address]; we will remove or replace the asset promptly. You may not use such marks through Buddget for any purpose other than identifying your own subscriptions."
+"Brand names and logos shown in buddget belong to their respective owners and are used only to help you recognise the service a charge relates to. buddget is not affiliated with, endorsed by, or sponsored by any of them. If you own a brand shown here and want its logo changed or removed, email [legal address]; we aim to act within 24 hours."
+Terms clause: "Third-Party Marks. All third-party names, logos and brands are the property of their owners and appear solely for identification. Their appearance does not imply affiliation or endorsement. Rights holders may request removal at [address]; we will remove or replace the asset promptly. You may not use such marks through buddget for any purpose other than identifying your own subscriptions."
 
 Pre-release checklist:
 1. Brand list diffed against Tier table; new brands default Tier C.
@@ -87,7 +87,7 @@ Pre-release checklist:
 
 ## Ten key risks
 1. Full logos exceed "only as much as necessary" in some tests; text name might suffice.
-2. API vendors do not license the marks; risk and indemnity sit with Buddget.
+2. API vendors do not license the marks; risk and indemnity sit with buddget.
 3. Implied endorsement, esp. with banks/telecoms (Plaid suits).
 4. Copyright in logo artwork not covered by nominative fair use.
 5. Egypt/KSA/UAE have no verified codified nominative exception; local counsel needed.

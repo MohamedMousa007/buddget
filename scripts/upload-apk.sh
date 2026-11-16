@@ -9,7 +9,7 @@
 set -euo pipefail
 
 APK="${1:?usage: upload-apk.sh <apk-path>}"
-REMOTE="buddget-drive:Buddget/APKs"
+REMOTE="buddget-drive:buddget/APKs"
 FILENAME="$(basename "$APK")"
 
 [ -f "$APK" ] || { echo "Not a file: $APK" >&2; exit 1; }

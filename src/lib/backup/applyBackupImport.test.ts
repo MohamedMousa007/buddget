@@ -28,8 +28,8 @@ describe('applyBackupImport (HKS5)', () => {
 
   it('an import that throws shows its message, or the generic error', async () => {
     const d = deps()
-    d.importData.mockRejectedValueOnce(new Error('Not a Buddget backup'))
-    expect(await applyBackupImport('x', d)).toEqual({ variant: 'error', text: 'Not a Buddget backup' })
+    d.importData.mockRejectedValueOnce(new Error('Not a buddget backup'))
+    expect(await applyBackupImport('x', d)).toEqual({ variant: 'error', text: 'Not a buddget backup' })
     d.importData.mockRejectedValueOnce('boom')
     expect(await applyBackupImport('x', d)).toEqual({ variant: 'error', text: 'bad' })
   })

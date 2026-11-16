@@ -38,7 +38,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Calls `/api/ai` with bounded retries on 429 (Buddget throttle or transient limits).
+ * Calls `/api/ai` with bounded retries on 429 (buddget throttle or transient limits).
  * Keeps spend predictable by reusing the same proxy route; does not add extra model calls on success.
  */
 export async function generateWithFallback(
@@ -98,7 +98,7 @@ export async function generateWithFallbackFromRequest(
 export const AI_UNAVAILABLE_MANUAL_SETUP_MESSAGE =
   'AI is currently unavailable. You can still set up your budget manually using the category editor above.'
 
-/** Maps failed proxy responses to a single Error for callers (Gemini vs Buddget throttle). */
+/** Maps failed proxy responses to a single Error for callers (Gemini vs buddget throttle). */
 export async function throwIfAiProxyNotOk(response: Response): Promise<void> {
   if (response.ok) return
   const errorData = (await response.clone().json().catch(() => null)) as { error?: string; stage?: string; layer?: string; resetAt?: string | null } | null

@@ -17,7 +17,7 @@ import { formatFixed2 } from '@/lib/utils/formatters'
 
 /**
  * Cancel confirm, no dark patterns: the last day of access (default: the end of the cycle
- * already paid), how to cancel with the service, what Buddget does, and a plain Keep it.
+ * already paid), how to cancel with the service, what buddget does, and a plain Keep it.
  */
 export function CancelSubscriptionSheet({ subId, onClose }: { subId: string | null; onClose: () => void }) {
   const t = useT()

@@ -7,7 +7,7 @@ export const CANARY_PREFLIGHT_HEADERS = ['authorization', 'content-type', 'x-bud
 const ORIGIN = 'capacitor://localhost'
 const TIMEOUT_MS = 10_000
 // A one-time-code text: the server's pre-filter rejects it before any AI or ledger work, so the probe creates no transaction.
-const PROBE_MESSAGE = 'Buddget canary: your verification code is 000000. Do not share it.'
+const PROBE_MESSAGE = 'buddget canary: your verification code is 000000. Do not share it.'
 
 export interface CanaryDeps {
   base: string

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { useT } from '@/lib/i18n'
 
 /**
- * Illustrated stand-ins for the iOS Shortcuts screens, drawn in Buddget's own tokens. Apple's labels are kept in English on
+ * Illustrated stand-ins for the iOS Shortcuts screens, drawn in buddget's own tokens. Apple's labels are kept in English on
  * purpose: they are Apple's words for its own UI, and what the reader must match on their phone.
  */
 export type SceneId = 'automationTab' | 'pickMessage' | 'messageContains' | 'runImmediately' | 'searchAction' | 'shortcutInput'
@@ -41,7 +41,7 @@ const Group = ({ children }: { children: ReactNode }) => (
 
 const Title = ({ children }: { children: ReactNode }) => <p className="mb-2.5 px-1 text-[19px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{children}</p>
 
-/** Buddget's mark as Shortcuts shows it next to the action. */
+/** buddget's mark as Shortcuts shows it next to the action. */
 const BuddgetIcon = () => (
   <span className="flex size-7 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-brand-primary)] text-[0.875rem] font-extrabold leading-none text-[var(--color-brand-on-primary)]" aria-hidden>B</span>
 )

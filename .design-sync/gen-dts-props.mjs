@@ -1,7 +1,7 @@
 /**
  * Generates cfg.dtsPropsFor for components whose props the converter can't auto-extract.
  *
- * design-sync's extractor looks for an exported `<Name>Props` interface. Most Buddget
+ * design-sync's extractor looks for an exported `<Name>Props` interface. Most buddget
  * components instead type their parameter with a file-local `interface Props` or an inline
  * object literal, so they emit `[key: string]: unknown` stubs — a useless API contract for
  * the design agent. This lifts the real member text (JSDoc included) out of the declarations

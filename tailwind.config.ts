@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 /**
- * Buddget design tokens — pairs with CSS variables in `src/app/globals.css`.
+ * buddget design tokens — pairs with CSS variables in `src/app/globals.css`.
  * Loaded via `@config` in globals (Tailwind v4).
  */
 /** v4: content paths are auto-detected; avoid duplicating `content` with `@config` in CSS. */

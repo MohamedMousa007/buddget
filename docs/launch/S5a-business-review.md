@@ -8,9 +8,9 @@ Date: 2026-11-15. A design review, no code, no migrations, no database writes, n
 
 **One paid plan is right for launch. A Pro and Max ladder like Claude's is not, and here is the difference.**
 
-Claude sells two paid tiers because heavy use costs many times more to serve and real users hit the limits every week. The higher tier sells something people already ran out of. Buddget has nothing that behaves like that:
+Claude sells two paid tiers because heavy use costs many times more to serve and real users hit the limits every week. The higher tier sells something people already ran out of. buddget has nothing that behaves like that:
 
-- **Cost does not scale with use.** A heavy Buddget user costs about $0.05 a month in AI. The most a Plus subscriber can cost at the cap is about $0.35. There is no expensive resource to ration.
+- **Cost does not scale with use.** A heavy buddget user costs about $0.05 a month in AI. The most a Plus subscriber can cost at the cap is about $0.35. There is no expensive resource to ration.
 - **Nobody runs out.** 55 of 60 simulated buyers said the free 20 AI credits a month are enough. The real testers' busiest month was 61 AI calls. A tier that sells "more AI" sells something nobody is short of.
 - **The panel did not want it.** Shown free plus one tier, 0 of 60 would pay. Shown free plus two tiers (Plus and a Pro at double the price with 600 credits, partner sharing, a monthly AI review and priority support), 0 of 60 would pay. The second tier won one extra trial, from a buyer who wanted to share a budget with his wife, and he and others said the same thing: put sharing in the cheaper plan.
 - **Competitors mostly agree.** Of the apps whose tiers could be read, 13 have one paid tier, 6 have two, 1 has three or more.
@@ -41,7 +41,7 @@ The four options, compared:
 
 1. **The price is not the problem. The paid plan's content is.** Plus sells volume (more accounts, longer reports, more AI) and most buyers never reach the limit. "Free already covers me" was the reason 48 of 60 gave for not paying.
 2. **Trust comes before price.** 11 of 60 would not let any app read bank SMS. The most common things that would change a no were a lower price (31 buyers) and proof that the app reads the buyer's own banks (28), then reviews (21), working without SMS (17), paying once (12), partner sharing (10), full Arabic (8, all in Saudi Arabia).
-3. **Buddget is not alone.** An SMS-reading app already sells in Egypt at EGP 89.99 a month. Two more do it in the UAE. Saudi Arabia has two bank-linked local apps, one owned by a large bank. The earlier document's line that no competitor has SMS tracking was wrong and is corrected.
+3. **buddget is not alone.** An SMS-reading app already sells in Egypt at EGP 89.99 a month. Two more do it in the UAE. Saudi Arabia has two bank-linked local apps, one owned by a large bank. The earlier document's line that no competitor has SMS tracking was wrong and is corrected.
 4. **A better listing did not rescue it.** A revised offer (named banks, a privacy note, 2 free SMS accounts, a lower Egypt price, partner sharing inside Plus, a pay-once option, a price promise) went to 20 of the same buyers. Still none would pay. One moved from "would not install" to "would use it free".
 5. **The business is cheap to carry.** Fixed costs are about $58 a month and break-even is about 44 subscribers. Launching with low revenue expectations costs little; what matters first is proof, reviews and retention.
 6. **The board (three lenses) scored the model 3, 4 and 4 out of 10** and all three voted "fund only if" real, measured gates are met before the paid plan is pushed.
@@ -100,7 +100,7 @@ Complaints seen: bank-link errors and duplicate transactions (Drahim 2), older m
 
 ### Price range, map and gap
 
-| Market | Monthly low | Monthly median | Monthly high | Annual low | Annual median | Annual high | Buddget (revised) |
+| Market | Monthly low | Monthly median | Monthly high | Annual low | Annual median | Annual high | buddget (revised) |
 |---|---|---|---|---|---|---|---|
 | Egypt (EGP) | 89.99 | about 245 | 249.99 | 499.99 | not reliable | about 6,000 | 69 / 499 |
 | UAE (AED) | 8.99 | 19.99 | 29.99 | 69.99 | 129.99 | 229.99 | 14.99 / 99.99 |
@@ -112,12 +112,12 @@ Positioning map (capture on one axis, local fit on the other):
 
 | | Global, English-first | Local: Arabic, local banks |
 |---|---|---|
-| **Automatic capture** | Wallet, Spendee, Crunch (bank sync that reviewers say fails on local banks) | Pockito (Egypt), Monee.ae and Expensly (UAE), Drahim and Malaa (Saudi, by bank link), **Buddget** |
+| **Automatic capture** | Wallet, Spendee, Crunch (bank sync that reviewers say fails on local banks) | Pockito (Egypt), Monee.ae and Expensly (UAE), Drahim and Malaa (Saudi, by bank link), **buddget** |
 | **Manual entry** | YNAB, Monefy, Money Manager, Money Lover | Masareef, Flosy, Throof, Excel and notes |
 
 **The gap.** The automatic-and-local corner is no longer empty. What is still open in it: one app that does automatic capture **and** the rest of a household's money (debts, installments and buy-now-pay-later, goals, savings, two currencies) with a free tier that is honestly usable, and that can show it reads the buyer's own bank. Nobody in the tables publishes measured accuracy by bank.
 
-**Who could copy Buddget fastest.** Egypt: Pockito already has the hero feature and a similar price. UAE: Monee.ae, then Expensly (already has Arabic and a family plan). Saudi: Drahim, which has the bank relationships and about 21,000 ratings. Wallet is the best-resourced global app and its UAE reviews show a bank-sync problem that SMS would solve (an inference, not a stated plan).
+**Who could copy buddget fastest.** Egypt: Pockito already has the hero feature and a similar price. UAE: Monee.ae, then Expensly (already has Arabic and a family plan). Saudi: Drahim, which has the bank relationships and about 21,000 ratings. Wallet is the best-resourced global app and its UAE reviews show a bank-sync problem that SMS would solve (an inference, not a stated plan).
 
 ## 4. Step 2: buyer panel
 
@@ -393,7 +393,7 @@ Unchanged: RevenueCat, no top-up packs in v1, the 14-day no-card trial, the thre
 - Competitor prices are from the iOS App Store storefront only; Google Play pages could not be read. Many prices have no period label. Several pages failed (rate limits, 403, 404).
 - Competitor claims about SMS and bank coverage are the developers' own. None was tested.
 - Review themes rest on a handful of reviews per app.
-- **Buddget's own bank coverage in the UAE and Saudi Arabia was not measured.** The re-test listing named banks in all three countries as a "what if this were true" test. No such claim may be published until measured.
+- **buddget's own bank coverage in the UAE and Saudi Arabia was not measured.** The re-test listing named banks in all three countries as a "what if this were true" test. No such claim may be published until measured.
 - The privacy block's claims (only bank messages read, text deleted after 30 days, nothing sold) follow the repo's context file; each should be checked against the code and the privacy policy before it is published.
 - The 12-month ramp's installs, activation and retention are assumptions; there is no acquisition plan behind them.
 - Vercel and Supabase plans are assumed; the domain prices are from third-party trackers.

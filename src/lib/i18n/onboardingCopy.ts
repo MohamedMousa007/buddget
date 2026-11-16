@@ -196,7 +196,7 @@ export const onboardingCopyEn: OnboardingCopy = {
   },
   automate: {
     title: 'Let your messages do the typing',
-    lead: 'Two things make Buddget run itself. Both are optional, and you can turn them on later.',
+    lead: 'Two things make buddget run itself. Both are optional, and you can turn them on later.',
     smsTitle: 'Bank text capture',
     smsSub: 'Every purchase logs itself',
     smsExample: 'CIB: EGP 245.00 spent at Carrefour. Available balance EGP 13,955.00',
@@ -209,10 +209,10 @@ export const onboardingCopyEn: OnboardingCopy = {
     pushSub: 'A nudge when it matters, never spam',
     pushAllow: 'Allow reminders',
     done: 'Done',
-    webNote: 'Bank text capture and reminders are in the Buddget app for iPhone and Android.',
+    webNote: 'Bank text capture and reminders are in the buddget app for iPhone and Android.',
   },
   android: {
-    title: 'Allow Buddget to read your bank texts',
+    title: 'Allow buddget to read your bank texts',
     bullets: [
       'Only messages from banks and wallets are used. Personal chats are ignored.',
       'Each one becomes a transaction with its amount, merchant and balance.',
@@ -224,7 +224,7 @@ export const onboardingCopyEn: OnboardingCopy = {
   },
   ios: {
     title: 'See it first. Set it up in two minutes, once.',
-    lead: "On iPhone, one Shortcut passes your bank texts to Buddget. I'll walk you through it step by step.",
+    lead: "On iPhone, one Shortcut passes your bank texts to buddget. I'll walk you through it step by step.",
     steps: ['Bank text arrives', 'Shortcut runs by itself', 'Transaction appears'],
     setup: 'Set up now, about 2 minutes',
     later: 'Later',
@@ -342,7 +342,7 @@ export const onboardingCopyAr: OnboardingCopy = {
   },
   automate: {
     title: 'دع رسائلك تكتب عنك',
-    lead: 'شيئان يجعلان Buddget يعمل وحده. كلاهما اختياري ويمكنك تفعيلهما لاحقًا.',
+    lead: 'شيئان يجعلان buddget يعمل وحده. كلاهما اختياري ويمكنك تفعيلهما لاحقًا.',
     smsTitle: 'التقاط رسائل البنك',
     smsSub: 'كل عملية شراء تُسجَّل وحدها',
     smsExample: 'CIB: EGP 245.00 spent at Carrefour. Available balance EGP 13,955.00',
@@ -355,10 +355,10 @@ export const onboardingCopyAr: OnboardingCopy = {
     pushSub: 'تنبيه عندما يهم، بلا إزعاج',
     pushAllow: 'اسمح بالتذكيرات',
     done: 'تم',
-    webNote: 'التقاط رسائل البنك والتذكيرات متوفران في تطبيق Buddget للآيفون والأندرويد.',
+    webNote: 'التقاط رسائل البنك والتذكيرات متوفران في تطبيق buddget للآيفون والأندرويد.',
   },
   android: {
-    title: 'اسمح لـ Buddget بقراءة رسائل البنك',
+    title: 'اسمح لـ buddget بقراءة رسائل البنك',
     bullets: [
       'تُستخدم رسائل البنوك والمحافظ فقط. المحادثات الشخصية تُتجاهل.',
       'كل رسالة تصبح معاملة بمبلغها والتاجر والرصيد.',
@@ -370,7 +370,7 @@ export const onboardingCopyAr: OnboardingCopy = {
   },
   ios: {
     title: 'شاهدها أولًا. أعدّها في دقيقتين، مرة واحدة.',
-    lead: 'على الآيفون يمرر اختصار واحد رسائل البنك إلى Buddget. سأرافقك خطوة بخطوة.',
+    lead: 'على الآيفون يمرر اختصار واحد رسائل البنك إلى buddget. سأرافقك خطوة بخطوة.',
     steps: ['تصل رسالة البنك', 'يعمل الاختصار وحده', 'تظهر المعاملة'],
     setup: 'أعدّها الآن، نحو دقيقتين',
     later: 'لاحقًا',

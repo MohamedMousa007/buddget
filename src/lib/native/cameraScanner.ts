@@ -89,7 +89,7 @@ async function captureNative(source: 'camera' | 'gallery'): Promise<CapturedImag
     const req = await withNativeFlow(() => Camera.requestPermissions({ permissions: ['camera'] }))
     if (req.camera !== 'granted') {
       throw new Error(
-        'Camera access denied. Please go to Settings → Apps → Buddget → Permissions and enable Camera.'
+        'Camera access denied. Please go to Settings → Apps → buddget → Permissions and enable Camera.'
       )
     }
   }

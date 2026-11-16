@@ -2,7 +2,7 @@ import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import { STEP_UP_ERROR, stepUp } from '@/lib/server/admin/stepUp'
 
 /**
- * The per-person "stay unlocked while signed in to Buddget" switch. Turning it off is stricter and needs nothing
+ * The per-person "stay unlocked while signed in to buddget" switch. Turning it off is stricter and needs nothing
  * extra; turning it on loosens the portal, so it needs a fresh emailed code or the admin password.
  */
 export async function POST(req: Request) {

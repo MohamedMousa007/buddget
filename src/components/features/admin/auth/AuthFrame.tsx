@@ -37,7 +37,7 @@ export function AuthFrame({ title, subtitle, children, wide = false, account }: 
           <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-[var(--color-brand-primary-soft)]">
             <BuddgetMark size={30} />
           </span>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-brand-primary-ink)]">Buddget Admin</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-brand-primary-ink)]">buddget Admin</p>
           <h1 className="mt-1 font-heading text-2xl font-bold text-[var(--color-brand-text-primary)]">{title}</h1>
           {subtitle ? <p className="mt-1.5 text-sm text-[var(--color-brand-text-secondary)]">{subtitle}</p> : null}
         </div>

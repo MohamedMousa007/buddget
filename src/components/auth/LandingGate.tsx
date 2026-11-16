@@ -32,7 +32,7 @@ const ACCENT: CSSProperties = { fontWeight: 700, color: '#12B0A0' }
 
 /**
  * Pre-auth landing screen. Email-first morph form centred vertically on the
- * viewport with a large "Buddget" wordmark sitting above it.
+ * viewport with a large "buddget" wordmark sitting above it.
  *
  * In dark mode the background matches the WelcomeScreen gradient with an
  * ambient red glow and a cycling marketing ticker at the bottom.

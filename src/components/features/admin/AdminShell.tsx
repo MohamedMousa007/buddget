@@ -100,7 +100,7 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
         </div>
         {/* In the apps the portal is its own bundled page: a plain anchor reloads the app shell, and never leaves the bundle for the website. */}
         <AppLink href={isNativeShellBuild() ? '/' : `${appOrigin()}/`} onClick={isNativeShellBuild() ? (e) => { e.preventDefault(); navigate('/') } : undefined} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">
-          <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden />Back to Buddget
+          <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden />Back to buddget
         </AppLink>
       </div>
     </div>
@@ -126,9 +126,9 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
           <div className="min-w-0 lg:hidden"><BuddgetWordmark height={18} /></div>
           <div className="ms-auto flex shrink-0 items-center gap-2">
             <AdminSearchButton perms={perms} />
-            <IconButton aria-label="Back to Buddget app" title="Back to Buddget app" variant="outlined" size="sm" className="lg:hidden" onClick={backToApp}><ArrowLeft className="rtl:rotate-180" /></IconButton>
-            <Button variant="outline" size="sm" aria-label="Back to Buddget app" title="Back to Buddget app" className="hidden lg:inline-flex" onClick={backToApp}>
-              <ArrowLeft className="rtl:rotate-180" aria-hidden />Buddget
+            <IconButton aria-label="Back to buddget app" title="Back to buddget app" variant="outlined" size="sm" className="lg:hidden" onClick={backToApp}><ArrowLeft className="rtl:rotate-180" /></IconButton>
+            <Button variant="outline" size="sm" aria-label="Back to buddget app" title="Back to buddget app" className="hidden lg:inline-flex" onClick={backToApp}>
+              <ArrowLeft className="rtl:rotate-180" aria-hidden />buddget
             </Button>
           </div>
         </header>

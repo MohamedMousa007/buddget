@@ -1,4 +1,4 @@
-# Buddget — QA Round 2 (deep run) — consolidated plan
+# buddget — QA Round 2 (deep run) — consolidated plan
 
 Status: DISCOVERY ONLY. Nothing from this run is fixed. Round 1 fixes are shipped (see QA_ROUND_PLAN.md Parts 5-6).
 Method: same skills and order as round 1 (context/risk, baseline, data layer, server/API/security, AI, web UI, native, close-out) plus the ponytail audit (component dedupe) and the design skills (system, critique, accessibility, UX copy), run as 15 area audits. Full reports with file:line, evidence and fixes: `docs/qa-round-2/<area>.md`.

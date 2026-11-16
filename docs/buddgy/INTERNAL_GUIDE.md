@@ -4,7 +4,7 @@ Audience: engineering, support, product and operations. For the customer-facing 
 
 ## 1. What Buddgy is
 
-An AI assistant that can read and change anything a user can in Buddget, from any screen, in English or Arabic. It is built around one rule: **the model proposes, the user approves, the device applies**.
+An AI assistant that can read and change anything a user can in buddget, from any screen, in English or Arabic. It is built around one rule: **the model proposes, the user approves, the device applies**.
 
 - The model never touches the database. It calls typed tools.
 - Read tools run on the device against the live local store, so numbers match what the screen shows (left to spend, net worth, goal progress use the same pure functions as the UI).

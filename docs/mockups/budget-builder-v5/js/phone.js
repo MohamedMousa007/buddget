@@ -572,7 +572,7 @@
 
   function runHydrate() {
     const P = S.P
-    if (!S.sim.online) { log('Server unreachable. Buddget does not guess: with nothing local and no answer from the server it waits instead of starting a cold-start flow.', 'warn'); return render() }
+    if (!S.sim.online) { log('Server unreachable. buddget does not guess: with nothing local and no answer from the server it waits instead of starting a cold-start flow.', 'warn'); return render() }
     later(() => {
       ready()
       if (P.level === 'none') { log('Server answered: this account holds nothing. Only now is the user treated as new.', 'ok'); S.screen = 'lang' }

@@ -20,7 +20,7 @@ export const systemPagesCopyEn: SystemPagesCopy = {
   routeError: { title: 'Something went wrong', retry: 'Try again', report: (id) => `Report ${id}` },
   notFound: { title: 'Page not found', body: 'That page does not exist or has moved.', back: 'Back to Flow' },
   rootError: {
-    title: 'Buddget hit a problem',
+    title: 'buddget hit a problem',
     body: 'Your data is safe. Try again, and if it keeps happening, quote the report number to support.',
     retry: 'Try again',
     report: (id) => `Report ${id}`,
@@ -47,7 +47,7 @@ export const systemPagesCopyAr: SystemPagesCopy = {
   routeError: { title: 'حدث خطأ ما', retry: 'حاول مرة أخرى', report: (id) => `البلاغ ${id}` },
   notFound: { title: 'الصفحة غير موجودة', body: 'هذه الصفحة غير موجودة أو تم نقلها.', back: 'العودة إلى المعاملات' },
   rootError: {
-    title: 'واجه Buddget مشكلة',
+    title: 'واجه buddget مشكلة',
     body: 'بياناتك بأمان. حاول مرة أخرى، وإذا تكرر الأمر فاذكر رقم البلاغ للدعم.',
     retry: 'حاول مرة أخرى',
     report: (id) => `البلاغ ${id}`,

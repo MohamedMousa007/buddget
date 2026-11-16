@@ -93,7 +93,7 @@ describe.skipIf(!pgEnabled)('admin auth (real Postgres)', () => {
       return u
     }
 
-    it('rejects non-staff, a missing CSRF header and weak passwords, and never asks for the Buddget password', async () => {
+    it('rejects non-staff, a missing CSRF header and weak passwords, and never asks for the buddget password', async () => {
       const plain = await makeUser('plain@x.com')
       expect((await call(setup, { method: 'POST', as: plain, body: { password: PW } })).body.code).toBe('not_staff')
       const s = await invitee()

@@ -27,7 +27,7 @@ export const BUILTIN_SCENARIOS: readonly EmailScenario[] = [
   { key: 'reauthentication', name: 'Re-authentication', usedIn: 'Sensitive actions that need a fresh code', vars: [...BASE, 'code', 'expires_in'], requiresAny: ['code'], required: ['code'] },
   { key: 'invite_admin', name: 'Admin invite', usedIn: 'Team & roles: invite a teammate', vars: [...BASE, 'link', 'inviter_name', 'role', 'expires_in'], requiresAny: ['link'], required: ['link'] },
   { key: 'admin_unlock_code', name: 'Admin unlock code', usedIn: 'Admin portal: setup and step-up code', vars: [...BASE, 'code', 'expires_in'], requiresAny: ['code'], required: ['code'] },
-  { key: 'invite_user', name: 'App invite', usedIn: 'Inviting someone to create a Buddget account', vars: [...BASE, 'code', 'link', 'expires_in'], requiresAny: ['link'], required: [] },
+  { key: 'invite_user', name: 'App invite', usedIn: 'Inviting someone to create a buddget account', vars: [...BASE, 'code', 'link', 'expires_in'], requiresAny: ['link'], required: [] },
   { key: 'password_changed', name: 'Password changed notice', usedIn: 'Security notice after a password change', vars: BASE, requiresAny: [], required: [] },
   { key: 'email_changed', name: 'Email changed notice', usedIn: 'Security notice after the email address changed', vars: [...BASE, 'old_email', 'new_email'], requiresAny: [], required: [] },
   { key: 'welcome', name: 'Welcome', usedIn: 'After the first sign-in', vars: BASE, requiresAny: [], required: [] },

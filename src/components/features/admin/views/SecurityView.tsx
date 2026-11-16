@@ -26,7 +26,7 @@ interface SecurityData {
   passwordChangedAt: string | null
 }
 
-const METHOD_LABEL: Record<string, string> = { password_email: 'Password + emailed code', sso: 'Buddget sign-in', biometric: 'Biometric', password_totp: 'Password + authenticator (retired)', recovery: 'Recovery code (retired)' }
+const METHOD_LABEL: Record<string, string> = { password_email: 'Password + emailed code', sso: 'buddget sign-in', biometric: 'Biometric', password_totp: 'Password + authenticator (retired)', recovery: 'Recovery code (retired)' }
 
 export default function SecurityView({ status }: { status: AdminStatus }) {
   const { data, error, refresh } = useAdminQuery<SecurityData>('/api/admin/auth/sessions')
@@ -62,7 +62,7 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
 
   const setSso = (enabled: boolean) => act('sso', async () => {
     if (enabled) {
-      const proof = await stepUp('Staying unlocked with your Buddget sign-in makes the portal easier to open. Confirm it’s you to turn it on.')
+      const proof = await stepUp('Staying unlocked with your buddget sign-in makes the portal easier to open. Confirm it’s you to turn it on.')
       if (!proof) return false
       await adminPost('/api/admin/auth/sso', { enabled, ...proof })
       return
@@ -82,10 +82,10 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
         <Panel title="Sign-in protection" description="How the portal opens for you">
           <div className="flex items-start gap-3 pb-4">
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Stay unlocked while signed in to Buddget</p>
-              <p className="text-xs text-[var(--color-brand-text-muted)]">On: the portal opens with your Buddget sign-in and closes when you sign out of Buddget. Off: it asks for your admin password and an emailed code (or biometrics).</p>
+              <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Stay unlocked while signed in to buddget</p>
+              <p className="text-xs text-[var(--color-brand-text-muted)]">On: the portal opens with your buddget sign-in and closes when you sign out of buddget. Off: it asks for your admin password and an emailed code (or biometrics).</p>
             </div>
-            <Switch size="touch" aria-label="Stay unlocked while signed in to Buddget" checked={data.ssoEnabled} disabled={busy === 'sso'} onCheckedChange={(v) => void setSso(v)} />
+            <Switch size="touch" aria-label="Stay unlocked while signed in to buddget" checked={data.ssoEnabled} disabled={busy === 'sso'} onCheckedChange={(v) => void setSso(v)} />
           </div>
           <dl className="divide-y divide-[var(--color-brand-border)] border-t border-[var(--color-brand-border)]">
             <KeyValue label="Admin password">Changed {ago(data.passwordChangedAt)}</KeyValue>
@@ -99,10 +99,10 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
         <Panel title="Biometric unlock" description="Face ID, Touch ID or fingerprint on your phone, instead of typing a password and code">
           {nativeBio ? (
             <div className="space-y-4">
-              {currentEnrolled && localSecret ? <Notice tone="positive">Enabled on this device.</Notice> : <p className="text-sm text-[var(--color-brand-text-secondary)]">Enable it here and the portal unlocks with your biometrics on this phone. It still needs your Buddget sign-in, and your password + emailed code remain the fallback.</p>}
+              {currentEnrolled && localSecret ? <Notice tone="positive">Enabled on this device.</Notice> : <p className="text-sm text-[var(--color-brand-text-secondary)]">Enable it here and the portal unlocks with your biometrics on this phone. It still needs your buddget sign-in, and your password + emailed code remain the fallback.</p>}
               {!currentEnrolled || !localSecret ? <Button size="touch" loading={busy === 'enroll'} onClick={() => void enroll()}><Fingerprint />Enable on this device</Button> : null}
             </div>
-          ) : <p className="text-sm text-[var(--color-brand-text-secondary)]">Biometric unlock is available in the Buddget iOS and Android apps. Open the portal there to enable it.</p>}
+          ) : <p className="text-sm text-[var(--color-brand-text-secondary)]">Biometric unlock is available in the buddget iOS and Android apps. Open the portal there to enable it.</p>}
           {data.devices.length > 0 ? (
             <ul className="mt-4 divide-y divide-[var(--color-brand-border)]">
               {data.devices.map((d) => (

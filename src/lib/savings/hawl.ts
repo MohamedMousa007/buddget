@@ -10,7 +10,7 @@ import { localDayKey } from '@/lib/utils/localDate'
  * meaning, presented as "due by".
  *
  * We cannot know when someone's wealth crossed the line — it usually happened long
- * before they opened Buddget — so the user sets it. Many people keep a fixed Hijri
+ * before they opened buddget — so the user sets it. Many people keep a fixed Hijri
  * anchor (1 Ramadan is common). Until they set one we still show a date, because a
  * blank is less useful than an estimate, but {@link Hawl.isPlaceholder} tells the UI to
  * say plainly that it is a guess.

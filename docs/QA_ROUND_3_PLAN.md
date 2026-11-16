@@ -1,4 +1,4 @@
-# Buddget QA round 3: bug register and fix plan
+# buddget QA round 3: bug register and fix plan
 
 Date: 2026-11-02. Branch `claude/relaxed-allen-hixdfp` (source identical to `main` at `ca96bd8`). **No fixes are applied.** This document only records what was found, why, how bad it is and how to fix and verify it.
 

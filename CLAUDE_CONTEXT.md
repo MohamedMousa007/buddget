@@ -1,4 +1,4 @@
-# CLAUDE_CONTEXT.md — Buddget System Snapshot
+# CLAUDE_CONTEXT.md — buddget System Snapshot
 > Updated: 2026-10-23 (Accounts refactor: migrations 0150-0155); other sections may lag. Re-generate after major architecture changes.
 
 ---

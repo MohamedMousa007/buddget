@@ -41,7 +41,7 @@ A chat message with its tool hops averages about $0.0035. One quota unit costs a
 
 **Store and tax (section 12 has sources).** Apple Small Business Program 15%. Google Play 15% on auto-renewing subscriptions in Egypt and the UAE (the 2026 fee changes cover the EEA, UK, US, Australia and Japan only so far). Apple collects 14% VAT in Egypt inside the shelf price. USD is about 54.5 EGP (range 53.9 to 55.5 this month).
 
-Net to Buddget from a shelf price P: `P / (1 + VAT) x 0.85`. Egypt VAT 14%, UAE 5%, KSA 15%.
+Net to buddget from a shelf price P: `P / (1 + VAT) x 0.85`. Egypt VAT 14%, UAE 5%, KSA 15%.
 
 ## 2. Fit-test of the existing scaffold
 
@@ -173,7 +173,7 @@ Unused allowance expires at reset. No carry-over. The busiest tester made 61 AI 
 
 - **Spend order:** allowance first (soonest expiry first: trial, plan, bonus), then purchased, oldest pack first. Apple requires subscription credits to be used before purchased ones.
 - **Loyalty never touches ledger 2.** If S5b lets points turn into Sparks, they arrive as a `bonus` row in ledger 1 with an expiry. A reward must never create purchased-type balance, or free points would become a refundable liability.
-- Purchased Sparks cannot be transferred, gifted, cashed out or used outside Buddget (Google requires in-app currency to stay in the app).
+- Purchased Sparks cannot be transferred, gifted, cashed out or used outside buddget (Google requires in-app currency to stay in the app).
 
 **Top-up packs: designed, not in v1.** Council 3 of 3 against shipping them now: total AI cost is $0.20 a month, and packs bring a liability ledger, refund clawback, two more store products and Apple's credit rules, for pennies. The schema in section 8 leaves the slot open so adding them later is one migration and two products, not a redesign.
 
@@ -255,7 +255,7 @@ Store products (S6 creates them):
 
 | Store | Product | Id |
 |---|---|---|
-| App Store | Subscription group "Buddget Plus" | `plus_monthly`, `plus_annual` |
+| App Store | Subscription group "buddget Plus" | `plus_monthly`, `plus_annual` |
 | Play | Subscription `plus` | base plans `monthly`, `annual` |
 | Both, phase 2 | Consumables | `sparks_100`, `sparks_300` |
 
@@ -272,9 +272,9 @@ Family Sharing off. No lifetime product. **[S5c]** No introductory offer in eith
 | Build | One Capacitor plugin, one webhook | Two native integrations, two notification formats (Apple signed JWS, Google Pub/Sub), receipt checks, grace, retries, upgrades |
 | Cost | $0 to $2,500 a month tracked, then 1% | $0 |
 | Risk | A vendor in the money path; pricing can change | The highest-risk code in the app written by hand, twice |
-| Exit | Store products belong to Buddget; the entitlement table is ours, so leaving means writing the direct integration later | n/a |
+| Exit | Store products belong to buddget; the entitlement table is ours, so leaving means writing the direct integration later | n/a |
 
-RevenueCat owns subscription state and trial eligibility. **Buddget's database owns Sparks**, because the spend has to happen in the same transaction as the quota reservation. RevenueCat's own virtual currency feature is not used.
+RevenueCat owns subscription state and trial eligibility. **buddget's database owns Sparks**, because the spend has to happen in the same transaction as the quota reservation. RevenueCat's own virtual currency feature is not used.
 
 **Web.** At launch the web app shows the plan and says Plus is bought in the mobile app. A Plus bought on a phone works on web through the same account. Web checkout through Paymob or Fawry (cards, wallets, cash at a kiosk; about 2.75% plus EGP 3 against 15%) is legal for purchases made on the web and is the answer if store cards keep failing in Egypt, but it is a third rail with its own refunds and tax and is not built now. InstaPay is person-to-person; no merchant collection rules were found.
 
@@ -368,19 +368,19 @@ A nightly reconcile job asks RevenueCat for every row whose `current_period_end`
 
 Send as a form link in the testers' channel. Anonymous, 3 minutes. English first, Arabic under it.
 
-**Intro.** We are deciding what stays free in Buddget and what a paid plan would cost. Your honest answers matter more than kind ones. Nothing here commits you to anything.
-نحدد الآن ما الذي سيبقى مجاناً في Buddget وكم ستكون تكلفة الاشتراك. إجابتك الصريحة أهم من المجاملة، ولا يترتب عليها أي التزام.
+**Intro.** We are deciding what stays free in buddget and what a paid plan would cost. Your honest answers matter more than kind ones. Nothing here commits you to anything.
+نحدد الآن ما الذي سيبقى مجاناً في buddget وكم ستكون تكلفة الاشتراك. إجابتك الصريحة أهم من المجاملة، ولا يترتب عليها أي التزام.
 
 1. Which country do you live in? (Egypt / UAE / Saudi Arabia / other)
    في أي بلد تعيش؟
-2. Which phone do you use Buddget on? (iPhone / Android / web only)
-   على أي جهاز تستخدم Buddget؟
+2. Which phone do you use buddget on? (iPhone / Android / web only)
+   على أي جهاز تستخدم buddget؟
 3. How many bank accounts, cards and wallets do you actively use? (1 / 2 / 3 / 4 / 5 or more)
    كم حساباً بنكياً وبطاقة ومحفظة تستخدمها فعلياً؟
-4. How do you track your money in Buddget today? (SMS auto-tracking / I type it / voice / receipt photo / I mostly do not) Pick all that apply.
+4. How do you track your money in buddget today? (SMS auto-tracking / I type it / voice / receipt photo / I mostly do not) Pick all that apply.
    كيف تسجل مصروفاتك اليوم؟ (الرسائل تلقائياً / أكتبها / الصوت / صورة الإيصال / لا أسجل غالباً)
-5. If Buddget disappeared tomorrow, how would you feel? (very disappointed / somewhat / not disappointed)
-   لو اختفى Buddget غداً، كيف ستشعر؟ (محبط جداً / إلى حد ما / لا يهمني)
+5. If buddget disappeared tomorrow, how would you feel? (very disappointed / somewhat / not disappointed)
+   لو اختفى buddget غداً، كيف ستشعر؟ (محبط جداً / إلى حد ما / لا يهمني)
 6. Pick the 3 you would miss most: automatic SMS tracking / Buddgy chat / AI budget builder / receipt scan / voice entry / reports / goals / debts and installments / export.
    اختر أكثر 3 ستفتقدها.
 7. Which apps or services do you pay for monthly today? (free text, for example music, video, cloud storage)
@@ -399,8 +399,8 @@ Send as a form link in the testers' channel. Anonymous, 3 minutes. English first
     كيف ستدفع؟ (بطاقة في المتجر / رصيد الهاتف / محفظة / إنستاباي / فوري / لن أدفع عبر الإنترنت)
 14. Has a card payment in the App Store or Google Play ever failed for you? (yes / no / never tried)
     هل فشلت معك عملية دفع بالبطاقة في المتجر من قبل؟
-15. What one thing would make you pay for Buddget? (free text)
-    ما الشيء الواحد الذي سيجعلك تدفع مقابل Buddget؟
+15. What one thing would make you pay for buddget? (free text)
+    ما الشيء الواحد الذي سيجعلك تدفع مقابل buddget؟
 
 Reading it: questions 8 to 11 are the standard four price questions; the acceptable range is between where "too cheap" crosses "expensive" and where "good deal" crosses "too expensive". Split by country. With about 30 answers, treat it as a sanity check on EGP 69, not as proof, and cut stated willingness roughly in half (friends answer generously). Question 5 at 40% "very disappointed" or more is the usual sign the product is ready to charge. Questions 13 and 14 decide how urgent carrier billing and web checkout are.
 
@@ -462,14 +462,14 @@ Read directly today unless marked.
 
 ## 13. Not verified
 
-- The business review adds its own list (its section 11): the buyer panel is simulated, competitor prices are iOS storefront only, and Buddget's bank coverage in the UAE and Saudi Arabia has not been measured.
+- The business review adds its own list (its section 11): the buyer panel is simulated, competitor prices are iOS storefront only, and buddget's bank coverage in the UAE and Saudi Arabia has not been measured.
 - From 2026-12-01 `gemini-2.5-flash` requests route to a newer model at that model's rates (seen on the provider's price page during the review). Every AI cost in section 5 must be re-read after that date. **[S5c]** Re-read: the newer model (`gemini-3.5-flash-lite`) has the same text prices, so no Sparks price or cap changes; only web-search grounding changes (5,000 free a month, then $14 per 1,000). What does change is the model answering SMS, receipt and budget calls, which must be tested before 2026-12-01.
 
 - **No price was tested with a real buyer.** Every price here is a judgement from anchors.
 - Whether the App Store and Play offer exactly EGP 69, 499, AED 14.99 and 99.99, SAR 12.99 and 99.99 as price points. Use the nearest tier.
 - Apple section 3 wording was read through a page summary, not verbatim. S5c should read 3.1.1 and 3.1.2 on the page.
 - Whether a no-card reverse trial for a subscription app is accepted by App Review. It is common practice and not named in the rules read; S5c to check, and S9 to describe it in the review notes.
-- Whether the Small Business Program's 15% applies to a subscription's first year. The page says 15% on "Apple In-App Purchases" with no carve-out; not stated explicitly. Buddget is not yet enrolled as far as this session knows.
+- Whether the Small Business Program's 15% applies to a subscription's first year. The page says 15% on "Apple In-App Purchases" with no carve-out; not stated explicitly. buddget is not yet enrolled as far as this session knows.
 - Google's VAT handling in Egypt and the UAE, and UAE payment methods (the page failed to load). Google's net was assumed to follow the same formula as Apple's.
 - Any income or withholding tax on store payouts to an Egyptian developer.
 - RevenueCat: Capacitor 8 support, whether the 1% applies to all revenue or only the part above $2,500, the HMAC webhook option on the free plan, and the virtual currency and promotional entitlement docs (both pages returned 404). The RevenueCat connector is not authorised, so nothing was read from an account.

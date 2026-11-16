@@ -25,7 +25,7 @@ export function TermsDocument() {
               Effective date: May 24, 2026 &nbsp;·&nbsp; Last updated: November 5, 2026
             </p>
             <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
-              Please read these Terms carefully before using Buddget. Also see our{' '}
+              Please read these Terms carefully before using buddget. Also see our{' '}
               <LegalDocLink doc="privacy" className="text-[var(--color-brand-primary-ink)] hover:underline">
                 Privacy Policy
               </LegalDocLink>

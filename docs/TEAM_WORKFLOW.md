@@ -1,4 +1,4 @@
-# Buddget Team Workflow (for everyone, including vibe coders)
+# buddget Team Workflow (for everyone, including vibe coders)
 
 Read this once before your first ticket. Roles are defined in [TEAM_STRUCTURE.md](TEAM_STRUCTURE.md).
 

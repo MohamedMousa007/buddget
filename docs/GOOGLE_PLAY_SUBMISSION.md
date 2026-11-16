@@ -1,7 +1,7 @@
-# Google Play submission — Buddget
+# Google Play submission — buddget
 
 Complete checklist for shipping the Capacitor Android build to Google Play.
-**Buddget is Egypt-first** — the marketing copy below targets Egyptian users
+**buddget is Egypt-first** — the marketing copy below targets Egyptian users
 first and treats UAE / GCC as expansion markets.
 
 > Privacy Policy + Terms already live at `https://buddget.app/legal/privacy` and
@@ -14,13 +14,13 @@ first and treats UAE / GCC as expansion markets.
 
 ## 1. App identity
 
-- **App name (Play Console title):** Buddget — Budget & Expense Tracker
+- **App name (Play Console title):** buddget — Budget & Expense Tracker
 - **Short description (80 chars):**
   `Built for Egypt. Track EGP / AED spend by voice, receipt, and SMS.`
 - **Long description:**
 
 ```
-Buddget is a personal-finance tracker built for Egypt — and it works
+buddget is a personal-finance tracker built for Egypt — and it works
 seamlessly across the UAE and the GCC.
 
 • Egypt-first defaults: EGP, جنيه, Egyptian banks (NBE, CIB, Banque Misr,
@@ -28,7 +28,7 @@ seamlessly across the UAE and the GCC.
   Banque du Caire, ADIB Egypt) — works in Arabic and English.
 • Voice expenses: long-press the FAB and say "200 جنيه taxi" or
   "spent 90 EGP at Talabat". Powered by Whisper.
-• Receipt scanning: snap a photo, Buddget reads the merchant, total,
+• Receipt scanning: snap a photo, buddget reads the merchant, total,
   and date with Gemini Vision.
 • Bank SMS auto-tracking: every transaction SMS becomes an expense — no
   copy-paste. Works in Arabic and English (تم خصم / debited / spent).
@@ -87,16 +87,16 @@ you need to override the FCM service icon.
 
 ## 3. Play Console — sensitive permissions form (SMS)
 
-Google restricts `RECEIVE_SMS` to a short list of approved use cases. Buddget
+Google restricts `RECEIVE_SMS` to a short list of approved use cases. buddget
 declares only `RECEIVE_SMS` (no `READ_SMS`, no default-SMS-handler role). Its
 justification:
 
 ```
-Buddget receives incoming SMS messages (RECEIVE_SMS only; it never reads the
+buddget receives incoming SMS messages (RECEIVE_SMS only; it never reads the
 inbox) and, on the device, keeps only messages from business senders or that
 match transaction keywords. Those messages are forwarded to the user's own
-account on Buddget's backend (HTTPS, per-user token), parsed there into an
-expense, and the raw text is masked and deleted on a schedule. Buddget is NOT
+account on buddget's backend (HTTPS, per-user token), parsed there into an
+expense, and the raw text is masked and deleted on a schedule. buddget is NOT
 a default SMS handler. The feature is opt-in:
 disabled by default, requires explicit user action in Settings, and can
 be revoked at any time. Egypt is our primary market — Egyptian banks send
@@ -134,7 +134,7 @@ Mapping onto the Play form:
 | Device or other IDs | Yes | No | No | App functionality (FCM push token, app-generated device id for biometric sign-in and trusted devices). Not the advertising ID |
 
 "Shared" is No for every row: hosting, AI and crash-reporting providers act as
-service providers processing the data for Buddget, which Play does not count as
+service providers processing the data for buddget, which Play does not count as
 sharing. No data is used for advertising, tracking or sold.
 
 State that **all** data is encrypted in transit (HTTPS) and at rest

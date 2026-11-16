@@ -1,12 +1,12 @@
-# Briefing for ChatGPT: write a prompt for Fable 5 that rebuilds Buddget's budget builder from scratch
+# Briefing for ChatGPT: write a prompt for Fable 5 that rebuilds buddget's budget builder from scratch
 
-You are helping the owner of Buddget write ONE prompt for a coding model (Fable 5). Fable 5 will recreate, from scratch, a state-of-the-art, AI-enabled **budget builder** (plus a minimal first-run entry to it). Below: what the app is, every data domain the builder can use, how today's builder works, the council decision on onboarding, and what your prompt must demand. Facts marked (current) come from the live codebase; items marked (recommended) are design decisions for the rebuild.
+You are helping the owner of buddget write ONE prompt for a coding model (Fable 5). Fable 5 will recreate, from scratch, a state-of-the-art, AI-enabled **budget builder** (plus a minimal first-run entry to it). Below: what the app is, every data domain the builder can use, how today's builder works, the council decision on onboarding, and what your prompt must demand. Facts marked (current) come from the live codebase; items marked (recommended) are design decisions for the rebuild.
 
 ---
 
 ## 1. The product in one paragraph
 
-Buddget (Buddgy is its AI character) is a mobile-first personal-finance app for Egypt and the Gulf (EGP, AED, SAR; English and Arabic with full RTL). It runs as a Next.js 16 / React 19 / TypeScript web app and as Capacitor iOS and Android shells. State is Zustand, offline-first, synced to Supabase (Postgres, RLS on every user table, last-write-wins merge). AI is Gemini behind server routes. It tracks spending (including automatic capture from bank SMS), income and paydays, accounts, subscriptions, debts, savings, investments, goals, and builds budget plans.
+buddget (Buddgy is its AI character) is a mobile-first personal-finance app for Egypt and the Gulf (EGP, AED, SAR; English and Arabic with full RTL). It runs as a Next.js 16 / React 19 / TypeScript web app and as Capacitor iOS and Android shells. State is Zustand, offline-first, synced to Supabase (Postgres, RLS on every user table, last-write-wins merge). AI is Gemini behind server routes. It tracks spending (including automatic capture from bank SMS), income and paydays, accounts, subscriptions, debts, savings, investments, goals, and builds budget plans.
 
 ## 2. The goal of the rebuild
 

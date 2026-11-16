@@ -1,7 +1,7 @@
 /**
  * GET /api/cron/data-retention  (Vercel Cron, daily)
  *
- * Erases addresses Buddget has no account to attach them to: `email_log` rows with no user (admin invitations to
+ * Erases addresses buddget has no account to attach them to: `email_log` rows with no user (admin invitations to
  * people who never signed up, and rows whose account was deleted) lose `to_email` after RETENTION_DAYS. The row stays
  * as a delivery record; only the address goes. Counts only in the response.
  *

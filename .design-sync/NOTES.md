@@ -1,6 +1,6 @@
 # design-sync notes
 
-- **Target project:** `Buddget Design System` (`3e84a07a-da79-472d-b487-07c93afa5f48`) — re-adopted on the
+- **Target project:** `buddget Design System` (`3e84a07a-da79-472d-b487-07c93afa5f48`) — re-adopted on the
   user's explicit choice (2026-09-28). It previously held 10 hand-authored stub components
   (Badge/Button/Card/BudgetRing/Progress/ExpenseRow/KPICard/MoneyDisplay/Input/Switch) whose
   `sourcePath`s never existed in this repo. Re-adoption ⇒ **atomic upload path** (upload once at the
@@ -26,12 +26,12 @@
 - **`src/app/globals.css` cannot be `cfg.cssEntry` directly.** It opens with
   `@import "tailwindcss"` + `@import "tw-animate-css"` (npm packages, not files), so validate fails
   `[CSS_IMPORT_MISSING]` twice and — worse — **every Tailwind utility is missing from the design
-  runtime**. Buddget styles everything with utility classes, so the whole DS would render unstyled.
+  runtime**. buddget styles everything with utility classes, so the whole DS would render unstyled.
   Fix: `.design-sync/ds-entry.css` imports globals.css + the Google-Fonts families + `@source "../src"`,
   and is compiled by the Tailwind v4 CLI to `.design-sync/compiled.css`, which IS `cfg.cssEntry`.
   **Re-sync must recompile it** (the CLI lives in `.ds-sync/node_modules`, which is gitignored):
   `node .ds-sync/node_modules/@tailwindcss/cli/dist/index.mjs -i .design-sync/ds-entry.css -o .design-sync/compiled.css`
-  Output was 198 KB / ~1584 rules, incl. the arbitrary-value utilities Buddget leans on
+  Output was 198 KB / ~1584 rules, incl. the arbitrary-value utilities buddget leans on
   (`rounded-[14px]`, `text-[34px]`, `bg-[var(--color-brand-red)]` — 138 `var(--color-brand*)` rules).
 - **`@source "../src"` is load-bearing.** Tailwind v4 bases auto-detection on the input file's own
   directory; without the explicit `@source`, compiling from `.design-sync/` emits almost no utilities.
@@ -53,7 +53,7 @@
   Verified in a real browser: `getComputedStyle(document.body).fontFamily` → `"DM Sans", ...` and
   `document.fonts.size` → 100 faces. Validate reports `[FONT_REMOTE]` (informational, expected —
   not a `[FONT_MISSING]` to chase).
-- **No library build exists** (Buddget is a Next.js app: no `dist/`, no `exports`/`main`). The synced
+- **No library build exists** (buddget is a Next.js app: no `dist/`, no `exports`/`main`). The synced
   surface comes from `.design-sync/entry.tsx`, a hand-authored barrel passed as `--entry`, plus an
   enumerated `componentSrcMap` (59 components). Synth-entry mode was rejected deliberately: it
   `export *`s every `.tsx` under the source root, which would drag in `admin/`, `auth/`, Supabase
@@ -114,7 +114,7 @@ BudgetRing, BudgetRingNoBudget, CategoryBar, CategoryBarExpenseRows, CategoryBar
 CategoryIcon, DashboardHero, DashboardHeroMinimal, DashboardNetWorthHero, DashboardPaceBadge,
 DashboardStatsRow, KPICard, SectionHeader — taking the synced surface from 59 to **46**.
 
-Rationale: a preview card teaches the design agent what "a Buddget dashboard" looks like, and
+Rationale: a preview card teaches the design agent what "a buddget dashboard" looks like, and
 these are about to change. Shipping them would bake the pre-refactor look into every design built
 from this DS.
 

@@ -1,6 +1,6 @@
 # Audit: account discovery from SMS (accounts, cards, wallets), confirmation and manual completion
 
-Date: 2026-11-02. Scope: how Buddget turns bank messages into accounts and cards, how it tells a card from an account, how the user confirms or completes missing details (provider, currency, number), and how this behaves on iOS where no sender is available. **Audit only: no code or data changed.** Evidence tags: **[code]**, **[live]** (read-only SELECT), **[reasoned]**.
+Date: 2026-11-02. Scope: how buddget turns bank messages into accounts and cards, how it tells a card from an account, how the user confirms or completes missing details (provider, currency, number), and how this behaves on iOS where no sender is available. **Audit only: no code or data changed.** Evidence tags: **[code]**, **[live]** (read-only SELECT), **[reasoned]**.
 Companion document: `docs/ACCOUNT_BALANCE_ACCURACY_PLAN.md` (root causes RC1-RC9 and phases 0-5). Section 4 maps this audit to that plan.
 
 ## 1. The flow as built

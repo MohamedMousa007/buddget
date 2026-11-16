@@ -55,7 +55,7 @@
   --radius-3xl: calc(var(--radius) * 2);     /* 24px — sheet tops */
   --radius-4xl: calc(var(--radius) * 2.333); /* 28px */
 
-  /* Buddget brand tokens — resolved at runtime via :root / .dark overrides */
+  /* buddget brand tokens — resolved at runtime via :root / .dark overrides */
   --color-brand-primary: var(--color-brand-primary);
   --color-brand-primary-hover: var(--color-brand-primary-hover);
   --color-brand-primary-bright: var(--color-brand-primary-bright);
@@ -86,7 +86,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Buddget Revamp Kit v1 — teal identity.
+   buddget Revamp Kit v1 — teal identity.
 
    The brand moved off Netflix-red to teal. Red keeps exactly one job now:
    destructive actions and over-budget alerts. `--primary` is the teal, so every

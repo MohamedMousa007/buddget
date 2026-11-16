@@ -1,6 +1,6 @@
 # Alerts redesign: audit, critique rounds, final plan
 
-Status: proposal, nothing built. Mockups: Claude design canvas "Buddget Alerts System" (7 boards). Written 2026-11-12.
+Status: proposal, nothing built. Mockups: Claude design canvas "buddget Alerts System" (7 boards). Written 2026-11-12.
 
 ## 1. What exists today (app-wide)
 
@@ -134,7 +134,7 @@ Decisions.
 - One Inbox on every platform, route `/notifications` (kept, extended): tabs **Needs you** (open actions, same data as the card, grouped Now, Suggestions, Later with "Do now") and **Updates** (today's bell content, unchanged).
 - Entry points: count badge on the avatar (mobile and desktop, same number), the tab/row under the card, a profile-menu item, push taps; on desktop also the bell, which gains a Needs you section above Updates and an "Open inbox" link, and a count on the sidebar Home item. No new header icon on mobile (no room, no new button).
 - Desktop (lg+): strip and card sit in the content column at the page's own max width, not full-bleed across the sidebar. Toasts anchor to the content area (today they centre on the whole window). Keyboard: real buttons, dropdown closes on Escape (already true).
-- Web has no push. Tab title shows "(3) Buddget" and `navigator.setAppBadge` is used where supported (installed PWA), both feature-detected.
+- Web has no push. Tab title shows "(3) buddget" and `navigator.setAppBadge` is used where supported (installed PWA), both feature-detected.
 
 ## 9. Push: what is true, and the plan (round 9)
 

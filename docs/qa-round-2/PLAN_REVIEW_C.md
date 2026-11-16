@@ -212,7 +212,7 @@ Counts: 26 issues (H 5, M 17, L 4), 12 accessibility risks (section 2), about 65
 | Global: focus | B10a (U25) | Keyboard focus ring is a darker teal, full strength, on every control. Decided ("same neutral hue" is actually teal). |
 | Global: chips/text | B10a (U24, U28, U16, X18) | Category chip labels, pale-on-light text and tiny dark-mode labels get darker text tokens. Decided. |
 | Global: forms | B10a (U21) | A few inputs (zakat inline fields, savings-account edit) become 48px high. (not decided) |
-| Global: header | B10a (X4) | Logo link gets a name ("Buddget home") and a larger tap area. |
+| Global: header | B10a (X4) | Logo link gets a name ("buddget home") and a larger tap area. |
 | Global: Arabic | B9 | Month/weekday names, correct plurals, Arabic keyboard digits accepted, no letter-spacing gaps in Arabic, correct punctuation placement. Decided. |
 | Global: copy | B9/B11 (U46-U49) | One vocabulary (Delete vs Remove, expense vs transaction, calm error tone, no developer messages). Needs glossary approval. |
 | **Auth** | B10b (U10) | Reset-password page uses the same password field (show/hide) as sign-in. |

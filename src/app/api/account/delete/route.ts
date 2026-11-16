@@ -6,7 +6,7 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 import { deleteUserCompletely } from '@/lib/server/deleteAccount'
 
 /**
- * Permanently delete the authenticated user's account and every piece of data Buddget holds for them.
+ * Permanently delete the authenticated user's account and every piece of data buddget holds for them.
  *
  * Supports both cookie-based auth (web) and Bearer JWT (native Capacitor) via
  * resolveVerifiedIdentity — never pass a user id in the body. The session must have been established in the last

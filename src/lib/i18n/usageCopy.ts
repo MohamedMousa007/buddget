@@ -4,7 +4,7 @@ import type { NoticeKey } from '@/lib/usage/usageNotices'
 
 /**
  * Copy for the notice system, the limit sheet, the Usage page and the Sparks packs (monetization plan v9, notices and usage board).
- * Rules: "Buddget Pro" in Latin letters; none of free trial / web / website / cheaper / checkout / refund in either language
+ * Rules: "buddget Pro" in Latin letters; none of free trial / web / website / cheaper / checkout / refund in either language
  * (usageCopy.test.ts); percentages only, credits stay internal; reset times are dates and clock times, never a countdown.
  */
 export interface NoticeData {
@@ -70,7 +70,7 @@ const en: UsageCopy = {
     plans_ro: { title: (d) => `${d.n} plans are read-only`, body: () => 'Your active plan works as before. Nothing was deleted.' },
     views7: { title: (d) => `${d.n} live balance views left this month` },
     views10: { title: () => '10 of 10 balance views used', body: (d) => `They reset ${d.date}. Balances from your own entries stay free and visible.` },
-    reset_granted: { title: () => 'Your weekly limit was reset by Buddget support.' },
+    reset_granted: { title: () => 'Your weekly limit was reset by buddget support.' },
     reset_back: { title: () => 'Your AI limit is back.' },
     grace: { title: () => 'The store couldn’t take this month’s payment', body: (d) => `You keep Pro until ${d.date} while it tries again.` },
     cancelled: { title: (d) => `Pro ends ${d.date}`, body: () => 'You cancelled in the store. Nothing changes until then, and nothing is deleted after.' },
@@ -87,7 +87,7 @@ const en: UsageCopy = {
   },
   sheet: {
     sparksHead: 'Sparks', sparksTitle: 'Keep going now', sparksFrom: (price) => `From ${price}`, sparksLines: ['About 230 quick answers', 'Use them right away', 'Never expire'],
-    proHead: 'Buddget Pro', proTitle: '10x more before a limit', proPrice: (price) => `${price} a year`, proPerMonth: (price) => `About ${price} a month`, proLines: ['10x the AI', 'The Advisor', 'Unlimited plans, +25% Sparks'],
+    proHead: 'buddget Pro', proTitle: '10x more before a limit', proPrice: (price) => `${price} a year`, proPerMonth: (price) => `About ${price} a month`, proLines: ['10x the AI', 'The Advisor', 'Unlimited plans, +25% Sparks'],
     plusBonus: 'Your +25% is already added',
     howTitle: 'How limits work', howBody: 'AI use is measured by what each request really costs. A session lasts 5 hours from your first request; the week resets on your week-start day. SMS tracking never counts.',
     pausedUntil: (when) => `Replies paused until ${when}`,
@@ -97,7 +97,7 @@ const en: UsageCopy = {
     viewsOf: (used, limit) => `${used} of ${limit}`, viewsLabel: 'Live balance views',
   },
   page: {
-    title: 'Usage', freePlan: 'Free plan', proPlan: 'Buddget Pro', trialPlan: (day) => `Pro trial · day ${day} of 30`, needMore: 'Need more?', sparksHead: 'Sparks', sparksNote: 'Used only after a limit is reached. Never expire.',
+    title: 'Usage', freePlan: 'Free plan', proPlan: 'buddget Pro', trialPlan: (day) => `Pro trial · day ${day} of 30`, needMore: 'Need more?', sparksHead: 'Sparks', sparksNote: 'Used only after a limit is reached. Never expire.',
     byFeature: 'This week by feature', features: { chat: 'Buddgy chat and voice', receipt: 'Receipt scans', budget: 'AI budget', goals: 'Goal estimates', other: 'Other' }, smsNever: 'Never counts',
     otherLimits: 'Other limits', plans: 'Budget plans', plansValue: (used, limit) => (limit === null ? 'Unlimited' : `${used} of ${limit}`),
     views: 'Live balance views', viewsValue: (used, limit, resets) => (limit === null ? 'Included' : `${used} of ${limit}, resets ${resets}`),
@@ -135,7 +135,7 @@ const ar: UsageCopy = {
     plans_ro: { title: (d) => `${d.n} خطط للقراءة فقط`, body: () => 'خطتك النشطة تعمل كما كانت. لم يُحذف شيء.' },
     views7: { title: (d) => `متبقٍّ ${d.n} عروض للرصيد المباشر هذا الشهر` },
     views10: { title: () => 'استُخدمت 10 من 10 عروض للرصيد', body: (d) => `تتجدد ${d.date}. الأرصدة من إدخالاتك تبقى مجانية ومرئية.` },
-    reset_granted: { title: () => 'أعاد دعم Buddget تعيين حدك الأسبوعي.' },
+    reset_granted: { title: () => 'أعاد دعم buddget تعيين حدك الأسبوعي.' },
     reset_back: { title: () => 'عاد حد الذكاء الاصطناعي.' },
     grace: { title: () => 'لم يتمكن المتجر من تحصيل دفعة هذا الشهر', body: (d) => `تحتفظ بـ Pro حتى ${d.date} بينما يعيد المحاولة.` },
     cancelled: { title: (d) => `ينتهي Pro في ${d.date}`, body: () => 'ألغيت من المتجر. لا شيء يتغير حتى ذلك الحين، ولن يُحذف شيء بعده.' },
@@ -152,7 +152,7 @@ const ar: UsageCopy = {
   },
   sheet: {
     sparksHead: 'Sparks', sparksTitle: 'تابع الآن', sparksFrom: (price) => `من ${price}`, sparksLines: ['حوالي 230 إجابة سريعة', 'استخدمها فوراً', 'لا تنتهي صلاحيتها'],
-    proHead: 'Buddget Pro', proTitle: '10 أضعاف قبل أي حد', proPrice: (price) => `${price} سنوياً`, proPerMonth: (price) => `حوالي ${price} شهرياً`, proLines: ['10 أضعاف الذكاء الاصطناعي', 'المستشار', 'خطط بلا حد، و25% Sparks إضافية'],
+    proHead: 'buddget Pro', proTitle: '10 أضعاف قبل أي حد', proPrice: (price) => `${price} سنوياً`, proPerMonth: (price) => `حوالي ${price} شهرياً`, proLines: ['10 أضعاف الذكاء الاصطناعي', 'المستشار', 'خطط بلا حد، و25% Sparks إضافية'],
     plusBonus: 'الـ 25% الإضافية مضافة بالفعل',
     howTitle: 'كيف تعمل الحدود', howBody: 'يُقاس استخدام الذكاء الاصطناعي بالتكلفة الفعلية لكل طلب. تستمر الجلسة 5 ساعات من أول طلب؛ ويتجدد الأسبوع في يوم بداية أسبوعك. تتبع SMS لا يُحتسب أبداً.',
     pausedUntil: (when) => `الردود متوقفة حتى ${when}`,
@@ -162,7 +162,7 @@ const ar: UsageCopy = {
     viewsOf: (used, limit) => `${used} من ${limit}`, viewsLabel: 'عروض الرصيد المباشر',
   },
   page: {
-    title: 'الاستخدام', freePlan: 'الخطة المجانية', proPlan: 'Buddget Pro', trialPlan: (day) => `تجربة Pro · اليوم ${day} من 30`, needMore: 'تحتاج المزيد؟', sparksHead: 'Sparks', sparksNote: 'تُستخدم فقط بعد بلوغ الحد. لا تنتهي صلاحيتها.',
+    title: 'الاستخدام', freePlan: 'الخطة المجانية', proPlan: 'buddget Pro', trialPlan: (day) => `تجربة Pro · اليوم ${day} من 30`, needMore: 'تحتاج المزيد؟', sparksHead: 'Sparks', sparksNote: 'تُستخدم فقط بعد بلوغ الحد. لا تنتهي صلاحيتها.',
     byFeature: 'هذا الأسبوع حسب الميزة', features: { chat: 'محادثة Buddgy والصوت', receipt: 'مسح الإيصالات', budget: 'الميزانية بالذكاء الاصطناعي', goals: 'تقديرات الأهداف', other: 'أخرى' }, smsNever: 'لا يُحتسب',
     otherLimits: 'حدود أخرى', plans: 'خطط الميزانية', plansValue: (used, limit) => (limit === null ? 'بلا حد' : `${used} من ${limit}`),
     views: 'عروض الرصيد المباشر', viewsValue: (used, limit, resets) => (limit === null ? 'مضمّن' : `${used} من ${limit}، تتجدد ${resets}`),

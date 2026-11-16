@@ -1,4 +1,4 @@
-# Buddget QA Strategy and Run Plan
+# buddget QA Strategy and Run Plan
 
 Created 2026-10-30. Owner: repo owner (single maintainer; see `.agents/qa-project-context.md`). Revision history at the end.
 Inputs: `.agents/qa-project-context.md` (stack, risks), risk-based-testing scoring (Impact x Likelihood, 1-5 each), live counts taken this session.

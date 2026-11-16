@@ -3,7 +3,7 @@ import { isAllowedSmsApiUrl } from './smsApiUrl'
 
 describe('SST-2 SMS API URL allow-list', () => {
   it('accepts https on buddget.app and its subdomains', () => {
-    for (const u of ['https://buddget.app', 'https://buddget.app/', 'https://api.buddget.app', 'HTTPS://Buddget.App']) {
+    for (const u of ['https://buddget.app', 'https://buddget.app/', 'https://api.buddget.app', 'HTTPS://buddget.App']) {
       expect(isAllowedSmsApiUrl(u, false), u).toBe(true)
     }
   })

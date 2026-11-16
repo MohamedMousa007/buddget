@@ -15,7 +15,7 @@ import { EmailCodeInput } from './EmailCodeInput'
 
 interface Unlocked { token: string; expiresAt: string }
 
-/** Shown when the person turned off "stay unlocked with Buddget sign-in": admin password + emailed code, or biometrics. */
+/** Shown when the person turned off "stay unlocked with buddget sign-in": admin password + emailed code, or biometrics. */
 export function UnlockScreen({ name, email, biometricEnrolled, onUnlocked }: { name: string; email: string; biometricEnrolled: boolean; onUnlocked: () => void }) {
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
@@ -81,7 +81,7 @@ export function UnlockScreen({ name, email, biometricEnrolled, onUnlocked }: { n
         <EmailCodeInput value={code} onChange={setCode} email={email} disabled={busy} />
         {error ? <Notice tone="negative">{error}</Notice> : null}
         <Button type="submit" size="cta-block" loading={busy} disabled={!password || code.replace(/\D/g, '').length < 6}><Lock />Unlock</Button>
-        <AppLink href={`${appOrigin()}/`} className="flex min-h-11 items-center justify-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]">← Back to Buddget</AppLink>
+        <AppLink href={`${appOrigin()}/`} className="flex min-h-11 items-center justify-center text-xs text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-secondary)]">← Back to buddget</AppLink>
       </form>
     </AuthFrame>
   )

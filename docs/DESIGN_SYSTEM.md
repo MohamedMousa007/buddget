@@ -1,4 +1,4 @@
-# Buddget Design System
+# buddget Design System
 
 Single source of truth for all UI/UX work. Read this before writing or modifying any component.
 

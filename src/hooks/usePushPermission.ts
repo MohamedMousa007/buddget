@@ -5,7 +5,7 @@ import { isNative } from '@/lib/native/isNative'
 
 export type PushPermission = 'checking' | 'allowed' | 'blocked' | 'notAsked' | 'unsupported'
 
-/** Whether this device lets Buddget send notifications: the OS permission, not a Buddget setting. */
+/** Whether this device lets buddget send notifications: the OS permission, not a buddget setting. */
 export function usePushPermission(): PushPermission {
   const [state, setState] = useState<PushPermission>('checking')
 

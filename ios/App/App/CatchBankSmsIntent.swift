@@ -2,14 +2,14 @@ import AppIntents
 import CryptoKit
 import Foundation
 
-/// "Catch Bank SMS" — the Buddget action a Shortcuts Message automation runs.
+/// "Catch Bank SMS" — the buddget action a Shortcuts Message automation runs.
 /// Executes headless in the background (openAppWhenRun = false) even when the
 /// app is killed, POSTs the message to /api/sms/parse with the non-expiring
 /// ingest token, and never surfaces errors (automations must stay silent).
 struct CatchBankSmsIntent: AppIntent {
     static var title: LocalizedStringResource = "Catch Bank SMS"
     static var description = IntentDescription(
-        "Hands a bank message to Buddget so your spending logs itself — silently, in the background."
+        "Hands a bank message to buddget so your spending logs itself — silently, in the background."
     )
     static var openAppWhenRun: Bool = false
 

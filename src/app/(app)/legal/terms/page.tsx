@@ -5,7 +5,7 @@ import { TermsDocument } from './TermsDocument'
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
-    'Buddget Terms of Service — the rules and conditions governing your use of the Buddget personal finance platform.',
+    'buddget Terms of Service — the rules and conditions governing your use of the buddget personal finance platform.',
   alternates: legalAlternates('terms', 'en'),
 }
 

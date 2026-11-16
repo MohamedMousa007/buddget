@@ -25,7 +25,7 @@ export function PrivacyDocument() {
               Effective date: October 28, 2026 &nbsp;·&nbsp; Last updated: November 5, 2026
             </p>
             <p className="text-sm text-[var(--color-brand-text-secondary)] max-w-xl">
-              This policy explains how Buddget collects, uses, stores, and protects your data. Also see our{' '}
+              This policy explains how buddget collects, uses, stores, and protects your data. Also see our{' '}
               <LegalDocLink doc="terms" className="text-[var(--color-brand-primary-ink)] hover:underline">
                 Terms of Service
               </LegalDocLink>

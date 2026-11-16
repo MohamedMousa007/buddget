@@ -5,7 +5,7 @@ import { PrivacyDocument } from './PrivacyDocument'
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'Buddget Privacy Policy — how we collect, use, store, and protect your personal finance data.',
+    'buddget Privacy Policy — how we collect, use, store, and protect your personal finance data.',
   alternates: legalAlternates('privacy', 'en'),
 }
 

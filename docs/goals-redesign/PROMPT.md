@@ -1,6 +1,6 @@
 # Prompt for Claude Code: refactor and redesign Goals end to end
 
-You are redesigning every Goals experience in Buddget (offline-first finance app, iOS/Android/web, Egypt, base EGP). Goal: **minimal and easier, with no feature cut**. Follow `CLAUDE.md` (DB-first, lint + tsc + test + build before push, no native build unless asked) and `docs/DESIGN_SYSTEM.md`. Use the shipped Subscriptions redesign as the style reference: `src/app/subscriptions/page.tsx`, `SubscriptionsHero`, `SheetFrame` (header, scrolling body, pinned `sheet-cta` footer with one primary action), `SubscriptionGroups`, `SubscriptionRow`, `StatusChip`, `HomeNudge`, `SubscriptionsRail`, `docs/subscriptions-redesign/IMPLEMENTATION.md`.
+You are redesigning every Goals experience in buddget (offline-first finance app, iOS/Android/web, Egypt, base EGP). Goal: **minimal and easier, with no feature cut**. Follow `CLAUDE.md` (DB-first, lint + tsc + test + build before push, no native build unless asked) and `docs/DESIGN_SYSTEM.md`. Use the shipped Subscriptions redesign as the style reference: `src/app/subscriptions/page.tsx`, `SubscriptionsHero`, `SheetFrame` (header, scrolling body, pinned `sheet-cta` footer with one primary action), `SubscriptionGroups`, `SubscriptionRow`, `StatusChip`, `HomeNudge`, `SubscriptionsRail`, `docs/subscriptions-redesign/IMPLEMENTATION.md`.
 
 ## Step 0: audit first
 Read this brief, then the code listed below, and write a short plan (what is replaced, reused, data-model changes, migrations) before coding. Apply migrations DB-first, regenerate `database.types.ts`.

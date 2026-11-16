@@ -1,6 +1,6 @@
-# Buddget Offline Guide (for beginners)
+# buddget Offline Guide (for beginners)
 
-Buddget is **offline-first**: your data lives on your device, and the internet is only used to back it up and sync it across devices. You can open the app, log expenses, and check your budget with zero connection — you shouldn't even notice you're offline.
+buddget is **offline-first**: your data lives on your device, and the internet is only used to back it up and sync it across devices. You can open the app, log expenses, and check your budget with zero connection — you shouldn't even notice you're offline.
 
 ## The golden rule
 
@@ -33,7 +33,7 @@ flowchart LR
 ```
 
 - Every change is written to the device first — the app never waits for the network.
-- On reconnect, Buddget **pushes your offline changes first, then pulls** what's new from your other devices. This order guarantees an expense you deleted offline stays deleted, and a setting you changed offline sticks.
+- On reconnect, buddget **pushes your offline changes first, then pulls** what's new from your other devices. This order guarantees an expense you deleted offline stays deleted, and a setting you changed offline sticks.
 - If the same item was edited on two devices, the newest edit wins, by edit time and not by who syncs last. Every row carries two times on the server. `edited_at` is when you last edited it (your device's time, put on the server's clock and never later than the server's own now); only your edits move it, and the server's own helpers (SMS pairing, price updates, month-carry) never do. `updated_at` is the server's write time and is only what other devices use to find what changed. A push is skipped when the stored `edited_at` is newer than the edit, and the device then pulls that newer row and keeps it. So a phone that was offline for days cannot overwrite a newer edit from your other device, and a server-side update that landed meanwhile does not make your later-synced edit look old. Edits less than three seconds apart are not told apart: the one that reaches the server last wins. A device clock that runs ahead cannot win by lying: its time is held at the server's now.
 - A row created offline gets the server's time when it finally arrives, so every other device finds it on its next sync.
 - If the server refuses one item for a reason of its own (a value out of range, a rule it breaks), only that item is set aside, a small notice says how many, and everything else keeps syncing. The item is offered again on the next sync and after any edit.
@@ -102,7 +102,7 @@ No. Your offline changes are pushed to the server *before* anything is pulled do
 Buddgy is a cloud AI model — it needs the internet to think. Everything it would tell you about (your numbers) is still available offline.
 
 **Do SMS arrive while the app is killed?**
-Yes (Android): the system hands the SMS to Buddget's background worker even when the app is closed. Without internet it's saved to the ledger on your phone.
+Yes (Android): the system hands the SMS to buddget's background worker even when the app is closed. Without internet it's saved to the ledger on your phone.
 
 **What if I disable SMS tracking while messages are still waiting?**
 They're not stranded — already-captured messages are still delivered on your next online app open.

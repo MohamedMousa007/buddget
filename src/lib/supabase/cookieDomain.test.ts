@@ -5,7 +5,7 @@ describe('supabaseCookieDomain', () => {
   it('shares the cookie across the app and admin hosts only', () => {
     expect(supabaseCookieDomain('buddget.app')).toBe('.buddget.app')
     expect(supabaseCookieDomain('admin.buddget.app')).toBe('.buddget.app')
-    expect(supabaseCookieDomain('Admin.Buddget.app:443')).toBe('.buddget.app')
+    expect(supabaseCookieDomain('Admin.buddget.app:443')).toBe('.buddget.app')
     expect(supabaseCookieDomain('localhost')).toBeUndefined()
     expect(supabaseCookieDomain('buddget-git-x.vercel.app')).toBeUndefined()
     expect(supabaseCookieDomain('evilbuddget.app')).toBeUndefined()

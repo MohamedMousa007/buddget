@@ -1,4 +1,4 @@
-# Buddget
+# buddget
 
 Personal finance app (Next.js): expenses, income, budgets, debts, savings, reports, and optional AI assistant.
 

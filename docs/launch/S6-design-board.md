@@ -1,4 +1,4 @@
-# S6 design board: Buddget Pro page, Sparks and the founders club
+# S6 design board: buddget Pro page, Sparks and the founders club
 
 Date: 2026-11-15. A design decision only: no code, no migrations, no database writes. The owner rejected the first S6 canvas (version 10) as "so simple", lacking branding and exclusivity. They asked for a dedicated subscription page in the profile menu, a plans page that sells the value of Pro, and a full page instead of a sheet where that fits.
 
@@ -96,7 +96,7 @@ Below the table, one line answers the fear that data is held hostage: "Free keep
 ### 2.4 Sparks presentation
 
 - **Quiet by default.** A small count beside the Buddgy entry points ("34 left"). The existing `QuotaWheel` ring stays inside chat. Sparks never appear on the dashboard and are never animated for urgency.
-- **A Sparks page under Buddget Pro.** It shows:
+- **A Sparks page under buddget Pro.** It shows:
   - a ring reading "34 of 100", with the reset date;
   - what each action costs;
   - "SMS auto-tracking never uses Sparks", stated plainly.
@@ -106,16 +106,16 @@ Below the table, one line answers the fear that data is held hostage: "Free keep
 
 ### 2.5 Where the Subscription page sits
 
-**Settings hub.** A full-width Buddget Pro membership card goes directly under the ProfileBanner, above quick actions, and replaces the small `SubscriptionCard` lower down. It opens `/settings/pro` and shows one of these states:
+**Settings hub.** A full-width buddget Pro membership card goes directly under the ProfileBanner, above quick actions, and replaces the small `SubscriptionCard` lower down. It opens `/settings/pro` and shows one of these states:
 
 - Free
 - Pro, with the renewal date
 - Pro, day 6 of 14
 - a billing problem
 
-**Profile menu (`ProfileDropdown`).** A "Buddget Pro" row goes right under the name block and opens the same page. **The label is "Buddget Pro", not "Subscription"**: the menu already has "Subscriptions" (recurring bills, `/subscriptions`), and two of them would confuse.
+**Profile menu (`ProfileDropdown`).** A "buddget Pro" row goes right under the name block and opens the same page. **The label is "buddget Pro", not "Subscription"**: the menu already has "Subscriptions" (recurring bills, `/subscriptions`), and two of them would confuse.
 
-**Founders club.** A separate page (`/settings/founders`), reached from the badge on the ProfileBanner and from a row on the Buddget Pro page. It is shown only to founders and beta testers. Plan and status stay apart (2.3).
+**Founders club.** A separate page (`/settings/founders`), reached from the badge on the ProfileBanner and from a row on the buddget Pro page. It is shown only to founders and beta testers. Plan and status stay apart (2.3).
 
 **Dissent kept:** Product wanted one home for plan, Sparks and founder status. **Chair's call:** Sparks live under Pro because they are part of the plan, and founder status gets its own page because the shared risk 3 outweighs having one home.
 
@@ -123,7 +123,7 @@ Below the table, one line answers the fear that data is held hostage: "Free keep
 
 | Entry point | Surface | Content |
 |---|---|---|
-| Settings hub card, profile menu row | **Full page**: Buddget Pro (state page) | Plan state, Sparks, manage, restore. For Free accounts the page is the plans page |
+| Settings hub card, profile menu row | **Full page**: buddget Pro (state page) | Plan state, Sparks, manage, restore. For Free accounts the page is the plans page |
 | End of the 14 days | **Full page**, once, on the first launch after day 14 | Leads with "What you keep for free" and a recap of what Pro did ("Pro read 4 accounts and logged 63 transactions"), then the plans section |
 | Sparks ran out | **Sheet** | One reason, the reset date, what still works, "See everything in Pro" to the full page |
 | SMS account cap hit | **Sheet** | "Free tracks 2 bank or wallet accounts; their cards come along; cash is always free", pick which 2, link to the full page |
@@ -142,7 +142,7 @@ A sheet names the exact thing that is blocked and never repeats the whole pitch.
 - [ ] Partner sharing is shown only as "coming first after launch".
 - [ ] The end-of-days page shows, as facts, what the user got and what they keep.
 - [ ] Copy rules (S5c item 16 and the copy test):
-  - "Buddget Pro" throughout.
+  - "buddget Pro" throughout.
   - None of these words in billing copy, in either language: "free trial", "web", "website", "cheaper", "checkout", "refund".
   - The 30-day annual line reads "Changed your mind within 30 days? We'll make it right", with a link to the help article. The store mechanics stay in help.
 - [ ] Store rules on the page: price and period, auto-renew wording, Restore, Terms and Privacy links.
@@ -150,7 +150,7 @@ A sheet names the exact thing that is blocked and never repeats the whole pitch.
 
 ## 4. The strongest version
 
-Buddget Pro is sold as one sentence, "every account on autopilot, the whole year in view". It is proved with the buyer's own numbers before any price appears. It looks like a membership, a deep-teal aurora card that says "Member since", and it is honest about what stays free.
+buddget Pro is sold as one sentence, "every account on autopilot, the whole year in view". It is proved with the buyer's own numbers before any price appears. It looks like a membership, a deep-teal aurora card that says "Member since", and it is honest about what stays free.
 
 Founders are a separate, numbered, gold club of at most 100, earned by use and never bought. They appear where people see themselves and are never used to sell. Sparks are a quiet meter nobody has to think about.
 
@@ -163,7 +163,7 @@ The style makes Pro feel worth belonging to. Only the proof and the outcomes can
 3. Does the proof strip need a server count, or are local counts enough? The design assumes local: accounts with SMS on, and transactions with `source = sms` this cycle.
 4. Should testers who have left keep seeing the Beta tester badge, or only active ones?
 5. Should the Pro welcome page be shown once after purchase? The design includes one.
-6. Arabic for "Buddget Pro" and "Founders club". The design keeps "Buddget Pro" in Latin letters inside Arabic text, and uses "نادي المؤسسين" for the club.
+6. Arabic for "buddget Pro" and "Founders club". The design keeps "buddget Pro" in Latin letters inside Arabic text, and uses "نادي المؤسسين" for the club.
 
 ## 6. Not verified
 

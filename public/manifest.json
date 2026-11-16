@@ -1,6 +1,6 @@
 {
-  "name": "Buddget",
-  "short_name": "Buddget",
+  "name": "buddget",
+  "short_name": "buddget",
   "description": "Your money, finally makes sense.",
   "start_url": "/flow",
   "scope": "/",

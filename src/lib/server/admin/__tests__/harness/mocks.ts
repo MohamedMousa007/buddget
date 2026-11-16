@@ -6,7 +6,7 @@ export const serviceMock = () => ({
   createSecretClient: () => createPgServiceClient(),
 })
 
-/** The signed-in Buddget account is named by the `x-test-user` header, standing in for the Supabase cookie / Bearer. */
+/** The signed-in buddget account is named by the `x-test-user` header, standing in for the Supabase cookie / Bearer. */
 export const routeUserMock = () => ({
   resolveRouteUser: async (req: Request) => {
     const id = req.headers.get('x-test-user')

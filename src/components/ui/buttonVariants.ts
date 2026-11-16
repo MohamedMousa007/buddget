@@ -45,7 +45,7 @@ export const buttonVariants = cva(
           HIT + " size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": HIT + " size-9",
 
-        /* ── Brand sizes (Buddget) ────────────────────────────────────────────
+        /* ── Brand sizes (buddget) ────────────────────────────────────────────
            The sizes above are shadcn's desktop density and top out at h-9 (36px),
            under this app's 44px minimum tap target — which is exactly why most
            call sites hand-rolled their own button instead of using this one.

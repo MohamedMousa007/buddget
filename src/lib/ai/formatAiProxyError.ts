@@ -1,10 +1,10 @@
-/** Buddget's own 429 message from /api/ai — do not label as Google quota. */
+/** buddget's own 429 message from /api/ai — do not label as Google quota. */
 export function isBuddgetServerThrottleMessage(message: string): boolean {
   return message.includes('This server allows') && message.includes('per device')
 }
 
 /**
- * Wrap Google Gemini quota / billing errors so users know it's not Buddget "throttle per device".
+ * Wrap Google Gemini quota / billing errors so users know it's not buddget "throttle per device".
  */
 export function formatProxyAiErrorForUser(message: string, httpStatus: number): string {
   if (isBuddgetServerThrottleMessage(message)) return message
@@ -22,7 +22,7 @@ export function formatProxyAiErrorForUser(message: string, httpStatus: number): 
 
   if (looksLikeGoogleQuota) {
     return (
-      "This is a Google Gemini API rate limit on your API key — it's separate from Buddget's per-device setting.\n\n" +
+      "This is a Google Gemini API rate limit on your API key — it's separate from buddget's per-device setting.\n\n" +
       'Adjusting the throttle in Admin only changes this app\'s per-IP cap. Google still applies its own limits.\n\n' +
       `Details: ${message}\n\n` +
       'What helps: wait a minute and try again, send fewer messages, or upgrade your key in Google AI Studio.'

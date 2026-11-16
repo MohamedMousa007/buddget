@@ -38,7 +38,7 @@ describe('two-host mode', () => {
 
   it('is off unless the app host is configured', () => {
     expect(splitHosts({})).toBeNull()
-    expect(splitHosts({ my: 'My.Buddget.app' })).toEqual({ marketing: 'buddget.app', app: 'my.buddget.app' })
+    expect(splitHosts({ my: 'My.buddget.app' })).toEqual({ marketing: 'buddget.app', app: 'my.buddget.app' })
     expect(splitHosts({ my: 'app.example.com', marketing: 'example.com' })).toEqual({ marketing: 'example.com', app: 'app.example.com' })
   })
 

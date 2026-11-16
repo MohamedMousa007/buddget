@@ -43,7 +43,7 @@ export async function prepareAdminBiometric(): Promise<{ secretHash: string; com
 
 /** Prompts for biometrics and returns the stored secret, or null if this device was never enrolled. */
 export async function readAdminSecretWithBiometric(): Promise<string | null> {
-  await authenticate('Unlock the Buddget admin portal')
+  await authenticate('Unlock the buddget admin portal')
   const { value } = await Preferences.get({ key: SECRET_KEY })
   return value || null
 }

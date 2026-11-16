@@ -1,6 +1,6 @@
 # Meet Buddgy
 
-Buddgy is the assistant inside Buddget. Think of a friend who is good with money: it knows your numbers, answers plainly, and can do the tapping for you. It never changes anything without showing you first.
+Buddgy is the assistant inside buddget. Think of a friend who is good with money: it knows your numbers, answers plainly, and can do the tapping for you. It never changes anything without showing you first.
 
 ## Opening Buddgy
 

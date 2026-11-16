@@ -124,10 +124,10 @@ describe('A11-6 SegmentedControl arrows move focus with selection', () => {
 
 describe('A11-7 route announcements and skip link', () => {
   it('title is the view heading then the app name', () => {
-    expect(documentTitleFor('Flow')).toBe('Flow · Buddget')
-    expect(documentTitleFor('  Net   worth ')).toBe('Net worth · Buddget')
-    expect(documentTitleFor(null)).toBe('Buddget')
-    expect(documentTitleFor('')).toBe('Buddget')
+    expect(documentTitleFor('Flow')).toBe('Flow · buddget')
+    expect(documentTitleFor('  Net   worth ')).toBe('Net worth · buddget')
+    expect(documentTitleFor(null)).toBe('buddget')
+    expect(documentTitleFor('')).toBe('buddget')
   })
 
   it('focus is only moved when no dialog is open and the user is not typing', () => {

@@ -5,7 +5,7 @@ the Capacitor CLI using local SDKs that aren't suitable to commit. After
 pulling, run the steps below. Repeat **Step 3** any time the web bundle changes
 (`npm run cap:sync`).
 
-> Buddget is **Egypt-first**. Replace any UAE-only sample copy with EGP / جنيه
+> buddget is **Egypt-first**. Replace any UAE-only sample copy with EGP / جنيه
 > defaults before showcasing the app.
 
 ## 0. Prerequisites

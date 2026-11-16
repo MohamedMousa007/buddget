@@ -2,7 +2,7 @@ import type { ServiceClient } from '@/lib/supabase/service'
 import { emitNotification } from '@/lib/server/emitNotification'
 
 const COPY = {
-  en: { title: 'SMS tracking is paused', body: 'For your security, SMS tracking was switched off on an older version of Buddget. Update the app, then turn it on again in Settings.' },
+  en: { title: 'SMS tracking is paused', body: 'For your security, SMS tracking was switched off on an older version of buddget. Update the app, then turn it on again in Settings.' },
   ar: { title: 'تم إيقاف تتبع الرسائل مؤقتًا', body: 'لحماية حسابك، تم إيقاف تتبع الرسائل على نسخة أقدم من بادجت. حدّث التطبيق ثم فعّله من جديد من الإعدادات.' },
 } as const
 
