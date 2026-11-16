@@ -138,20 +138,55 @@ export function PricingPage({ locale }: P) {
       <Section pad="md">
         <Container>
           <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
-            <Card className="flex flex-col gap-5 border-brand-primary">
+            <Card className="flex flex-col gap-5">
               <div><H3 as="h2" className="text-2xl">{p.free.name}</H3><p className="mt-1 text-brand-text-secondary">{p.free.tag}</p></div>
               <div dir="auto" className="font-mono text-5xl font-medium">{p.free.price}</div>
               <Ticks items={p.free.items} />
-              <div className="mt-auto grid gap-2"><ButtonLink href={pathFor(locale, 'download')}>{p.free.cta}</ButtonLink><ButtonLink href={WEB_APP_URL} variant="ghost" external>{c.common.tryBrowser}</ButtonLink></div>
+              <div className="mt-auto grid gap-2"><ButtonLink href={pathFor(locale, 'download')} variant="outline">{p.free.cta}</ButtonLink><ButtonLink href={WEB_APP_URL} variant="ghost" external>{c.common.tryBrowser}</ButtonLink></div>
             </Card>
-            <Card className="flex flex-col gap-5">
-              <div><H3 as="h2" className="text-2xl">{p.plus.name}</H3><p className="mt-1 text-brand-text-secondary">{p.plus.tag}</p></div>
-              <div dir="auto" className="font-mono text-3xl font-medium text-brand-text-secondary">{p.plus.price}</div>
-              <Ticks items={p.plus.items} />
-              <ButtonLink href={pathFor(locale, 'download')} variant="outline" className="mt-auto">{p.plus.cta}</ButtonLink>
+            <Card className="flex flex-col gap-5 border-brand-primary">
+              <div><H3 as="h2" className="text-2xl">{p.pro.name}</H3><p className="mt-1 text-brand-text-secondary">{p.pro.tag}</p></div>
+              <div><div dir="auto" className="font-mono text-4xl font-medium">{p.pro.price}</div><p dir="auto" className="mt-1 text-sm text-brand-text-secondary">{p.pro.perMonth}</p></div>
+              <Ticks items={p.pro.items} />
+              <ButtonLink href={pathFor(locale, 'download')} className="mt-auto">{p.pro.cta}</ButtonLink>
             </Card>
           </div>
           <p className="mx-auto mt-6 max-w-4xl text-sm text-brand-text-secondary">{p.note}</p>
+        </Container>
+      </Section>
+      <Section pad="md" tone="card">
+        <Container narrow>
+          <H3 as="h2" className="text-2xl">{p.trial.h2}</H3>
+          <p className="mt-2 text-brand-text-secondary">{p.trial.p}</p>
+        </Container>
+      </Section>
+      <Section pad="md">
+        <Container narrow>
+          <H3 as="h2" className="text-2xl">{p.compare.h2}</H3>
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-brand-border">
+            <table className="w-full min-w-[34rem] border-collapse text-start text-sm">
+              <thead>
+                <tr className="bg-brand-elevated">{p.compare.head.map((h, i) => <th key={i} scope="col" dir="auto" className={`px-4 py-3 text-start font-bold${i === 2 ? ' text-brand-primary-ink' : ''}`}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {p.compare.rows.map((r) => (
+                  <tr key={r[0]} className="border-t border-brand-border">
+                    <th scope="row" dir="auto" className="px-4 py-3 text-start font-semibold">{r[0]}</th>
+                    <td dir="auto" className="px-4 py-3 text-brand-text-secondary">{r[1]}</td>
+                    <td dir="auto" className="bg-brand-primary-soft px-4 py-3 font-semibold text-brand-primary-ink">{r[2]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-sm text-brand-text-secondary">{p.compare.foot}</p>
+        </Container>
+      </Section>
+      <Section pad="md" tone="card">
+        <Container narrow>
+          <H3 as="h2" className="text-2xl">{p.soon.h2}</H3>
+          <Ticks items={p.soon.items} />
+          <p className="mt-3 text-sm text-brand-text-secondary">{p.soon.note}</p>
         </Container>
       </Section>
       <Section pad="md" tone="card"><Container narrow><FaqList items={p.faq} /></Container></Section>

@@ -100,7 +100,10 @@ export type SiteContent = {
   pricing: {
     intro: PageIntro
     free: { name: string; tag: string; price: string; items: string[]; cta: string }
-    plus: { name: string; tag: string; price: string; items: string[]; cta: string }
+    pro: { name: string; tag: string; price: string; perMonth: string; items: string[]; cta: string }
+    compare: { h2: string; head: [string, string, string]; rows: [string, string, string][]; foot: string }
+    soon: { h2: string; items: string[]; note: string }
+    trial: { h2: string; p: string }
     note: string
     faq: Faq[]
   }

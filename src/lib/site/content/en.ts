@@ -11,8 +11,8 @@ export const en: SiteContent = {
   nav: {
     login: 'Log in',
     features: 'Features', how: 'How it works', afford: 'Can I afford it?', pricing: 'Pricing', security: 'Security', help: 'Help',
-    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode', megaAfford: 'Can I afford it?', getAppShort: 'Get the app', tryShort: 'Try in browser',
-    menu: 'Menu', close: 'Close menu', cta: 'Get the app', skip: 'Skip to content', switchLabel: 'العربية', switchTo: 'Switch to Arabic',
+    menuTitle: 'Everything Buddget does', megaTools: 'Free tools', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode', megaAfford: 'Can I afford it?', getAppShort: '30 days of Pro', tryShort: 'Try in browser',
+    menu: 'Menu', close: 'Close menu', cta: 'Start 30 days of Pro', skip: 'Skip to content', switchLabel: 'العربية', switchTo: 'Switch to Arabic',
   },
   footer: {
     tag: 'Know where your money goes, and keep more of it.',
@@ -29,14 +29,14 @@ export const en: SiteContent = {
   },
   common: {
     tryBrowser: 'Try it in your browser', logIn: 'Log in', noInstall: 'No download needed. Works on any phone or computer.', haveAccount: 'Already have an account?',
-    getApp: 'Get the app', seeHow: 'See how it works', joinBeta: 'Join the beta list', readMore: 'Learn more',
+    getApp: 'Start 30 days of Pro', seeHow: 'See how it works', joinBeta: 'Join the beta list', readMore: 'Learn more',
     home: 'Home', breadcrumb: 'Breadcrumb', contactUs: 'Contact us', example: 'Example from a demo account', free: 'Free', share: 'Share',
   },
   landing: {
     hero: {
       h1: 'What can you spend today?',
-      lede: 'Buddget reads your bank texts, sorts every payment and answers that question, live.',
-      assure: ['Free to start', 'No download needed to try it', 'Delete your data any time'],
+      lede: 'Buddget reads your bank texts, sorts every payment and answers that question, live. SMS tracking on every account is free forever.',
+      assure: ['30 days of Pro on us', 'No download needed to try it', 'Delete your data any time'],
       hint: 'Tap something you bought', again: 'Start over', say0: 'Tap something you bought.', sayLow: 'That is most of today.',
       sayOver: 'Over by {n}. Tomorrow’s number shrinks.', sayOk: ['Logged.', 'Sorted.', 'Got it.'], sayReset: 'Fresh day.',
       leftToday: 'left to spend today', unit: 'EGP',
@@ -123,10 +123,10 @@ export const en: SiteContent = {
       note: 'A general comparison of common types of budgeting apps.',
     },
     pricing: {
-      h2: 'Free to start. Plus is planned.', p: 'Everything you use today stays free. Plus is planned for the features that cost us the most to run.',
+      h2: 'Free to start. Pro when you want more.', p: 'SMS tracking is free on every account, forever. Pro adds about 10x the AI, the Advisor and unlimited plans.',
       plans: [
-        { name: 'Free', price: '0 EGP', tag: 'For tracking your money day to day.', items: ['Bank text, voice and receipt tracking', 'Budgets and the daily number', 'Goals, debts, installments and subscriptions', 'Buddgy essentials'], cta: 'Get the app', main: true },
-        { name: 'Plus', price: 'Soon', tag: 'Planned. Not on sale yet.', items: ['More Buddgy conversations', 'Extra reports'], cta: 'Join the beta list' },
+        { name: 'Free', price: '0 EGP', tag: 'For tracking your money day to day.', items: ['SMS tracking on every account', 'Budgets, goals, debts and installments', 'Buddgy, with a weekly limit', '2 saved budget plans'], cta: 'Start 30 days of Pro' },
+        { name: 'Buddget Pro', price: 'EGP 499 a year', tag: 'EGP 69 a month. 30 days of Pro on us, no card.', items: ['About 10x the AI', 'The Buddgy Advisor', 'Unlimited plans and live balance views', '25% more Sparks in every pack'], cta: 'Start 30 days of Pro', main: true },
       ],
     },
     close: { h2: 'Find out what you can spend today.', lede: 'Join the beta list, or open it in your browser right now.', qr: 'Scan to open Buddget on your phone', soon: 'Coming soon to' },
@@ -144,7 +144,7 @@ export const en: SiteContent = {
     faq: {
       h2: 'Questions people ask first',
       items: [
-        { q: 'Is Buddget free?', a: 'Yes. Tracking, budgets, goals, subscriptions and the essentials of Buddgy are free. A paid plan, Plus, is planned with more AI and extra reports. What you use today is meant to stay available.' },
+        { q: 'Is Buddget free?', a: 'Yes, to start. SMS tracking, budgets, goals, debts and subscriptions are free, and Buddgy is free with a weekly limit. Buddget Pro adds about 10x the AI, the Advisor and unlimited plans. SMS tracking on every account is free forever, and new accounts start with 30 days of Pro on us.' },
         { q: 'Does it read my bank texts?', a: 'Only if you turn it on. When you do, the text of the bank messages you allow is sent to our servers to find the amount and merchant. The raw text is deleted within 30 days (7 days if it is rejected or holds a one-time code), and you can switch it off at any time.' },
         { q: 'Does it connect to my bank account?', a: 'No. Buddget never logs in to your bank and cannot move money. It works from the texts you receive and from what you add yourself.' },
         { q: 'Can I use it if my salary is not on the 1st?', a: 'Yes. Set your payday and your month runs from payday to payday.' },
@@ -251,21 +251,38 @@ export const en: SiteContent = {
     ctaH: 'Ready to see your own number?', ctaP: 'Free to start. Arabic and English.',
   },
   pricing: {
-    intro: { eyebrow: 'Pricing', h1: 'Free to start. Plus is planned.', lede: 'Everything you use today stays free. Plus is planned for the features that cost the most to run.' },
+    intro: { eyebrow: 'Pricing', h1: 'Your money on autopilot. Buddgy does the work.', lede: 'SMS tracking is free on every account, forever. Pro gives about 10x the AI, the Advisor and unlimited plans. New accounts start with 30 days of Pro on us.' },
     free: {
       name: 'Free', tag: 'For tracking your money day to day.', price: '0 EGP',
-      items: ['Bank text, voice and receipt tracking', 'Budgets and the daily number', 'Accounts, cards, debts and installments', 'Goals, savings and subscriptions', 'Buddgy essentials', 'Arabic and English'],
-      cta: 'Get the app',
+      items: ['SMS tracking on every account', 'Budgets and the daily number', 'Accounts, cards, debts and installments', 'Goals, savings, reports and export', 'Buddgy and receipts, with a weekly limit', '2 saved budget plans', 'Arabic and English'],
+      cta: 'Start 30 days of Pro',
     },
-    plus: {
-      name: 'Plus', tag: 'Planned. Not available yet.', price: 'To be announced',
-      items: ['More Buddgy conversations', 'Data export', 'Extra reports'],
-      cta: 'Join the beta list',
+    pro: {
+      name: 'Buddget Pro', tag: 'Everything in Free, and a lot more AI.', price: 'EGP 499 a year', perMonth: 'Or EGP 69 a month. Other countries see their local price in the app.',
+      items: ['About 10x the AI for chat, voice, receipts and budgets', 'The Buddgy Advisor, for the big questions', 'Unlimited saved plans', 'Unlimited live balance views', '25% more Sparks in every pack'],
+      cta: 'Start 30 days of Pro',
     },
-    note: 'Plus is not on sale. Prices and features will be published here before anything changes.',
+    compare: {
+      h2: 'Free and Pro, side by side', head: ['', 'Free', 'Buddget Pro'],
+      rows: [
+        ['SMS auto-tracking', 'Every account', 'Every account'],
+        ['Live balance views', '10 a month', 'Unlimited'],
+        ['Buddgy chat, receipts, voice, budget builder', 'Yes, limited', 'Yes, about 10x more'],
+        ['Buddgy Advisor', '1 free answer a month', 'Yes'],
+        ['Saved budget plans', '2', 'Unlimited'],
+        ['Sparks for extra AI', 'Standard packs', '25% more per pack'],
+      ],
+      foot: 'Reports, export, goals, debts, savings and plan compare are included on Free too. Your AI budget uses real, live market prices.',
+    },
+    soon: { h2: 'Coming soon to Pro', items: ['Share a budget with your partner', 'Advanced insights'], note: 'These are not built yet. They are never part of what you get today.' },
+    trial: { h2: '30 days of Pro on us', p: 'Every new account starts with every Pro feature for 30 days, with no card. Nothing is charged when it ends, and you keep everything on Free. Buying happens in the app, through the App Store or Google Play.' },
+    note: 'Prices are set in the app stores. Subscriptions renew until you cancel in your store settings.',
     faq: [
-      { q: 'Will free features become paid?', a: 'We do not plan to move what you use today behind a payment. Anything new that costs us more to run may arrive in Plus.' },
-      { q: 'When will Plus launch?', a: 'We have not set a date. Join the beta list and we will tell you.' },
+      { q: 'What is free forever?', a: 'SMS tracking on every account, budgets, goals, debts, installments, subscriptions, reports and export. Buddgy and receipts are free too, with a weekly limit.' },
+      { q: 'What is limited on Free, and why?', a: 'AI costs us money every time it answers, so Free has a weekly AI limit, 2 saved budget plans and 10 live balance views a month. The Advisor is in Pro, with one free answer a month to try. Nothing you have entered is ever deleted or locked.' },
+      { q: 'What are Sparks?', a: 'Extra AI usage you can add after you reach a limit. They never expire, and Pro members get 25% more in every pack.' },
+      { q: 'How does the 30 days of Pro work?', a: 'Every new account gets Pro for 30 days with no card. When it ends you move to Free automatically. Nothing is charged and nothing is deleted.' },
+      { q: 'How do I cancel?', a: 'In your App Store or Google Play subscription settings, at least 24 hours before the renewal date. The app shows the steps under Plan and billing.' },
     ],
   },
   download: {
@@ -375,7 +392,7 @@ export const en: SiteContent = {
       { k: 'Assistant', v: 'Buddgy answers questions about your own finances in Arabic and English. It gives guidance, not financial advice.' },
       { k: 'Languages', v: 'Arabic and English.' },
       { k: 'Currency', v: 'Egyptian pound by default. Other currencies and gold are supported for savings.' },
-      { k: 'Price', v: 'Free to start. A paid plan, Plus, is planned.' },
+      { k: 'Price', v: 'Free to start. Buddget Pro is EGP 499 a year or EGP 69 a month, with 30 days of Pro on us.' },
       { k: 'Bank connection', v: 'None. Buddget does not log in to your bank and cannot move money.' },
       { k: 'Bank texts', v: 'Optional. Message text is sent to the server to extract amount, merchant and date. The raw text is deleted within 30 days.' },
       { k: 'Data', v: 'Private to each account. Delete the account and its data from the app at any time.' },
