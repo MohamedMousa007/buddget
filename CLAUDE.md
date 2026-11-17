@@ -20,6 +20,7 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Order: migration -> apply with `execute_sql` -> regenerate `database.types.ts` -> then code. Never write UI against a column the live DB lacks.
 - Adding a field to a type in `src/lib/store/types.ts` or a mapper: check whether a SQL migration is needed.
 - Before drop/alter column: run a `SELECT` for row counts and data-loss risk.
+- New functions get no `EXECUTE` for `anon`/`authenticated` by default (migration 0315). Grant it in the same migration, to the narrowest role that calls it; server-only functions get `service_role` only.
 
 ## Database load (the live database is a small instance; protect it)
 - Test before you run: `EXPLAIN` (no `ANALYZE`) every new or changed query on the live DB first. No sequential scan on a table that grows with users or events; add the index in the same migration.

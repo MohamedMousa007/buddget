@@ -37,7 +37,7 @@ export function AcceptInvite() {
     )
   }
   return (
-    <AuthFrame title="This link has expired" subtitle="Invite links work once and expire quickly. Ask whoever invited you to send a new one, or sign in to buddget with your email and open the admin icon.">
+    <AuthFrame title="This link has expired" subtitle="Invite links work once and expire quickly. Ask whoever invited you to send a new one, or open the portal and choose “First time here?” with your staff email.">
       <div className="flex flex-col items-center gap-4">
         <MailX className="size-8 text-[var(--color-brand-text-muted)]" aria-hidden />
         <AppLink href="/admin"><Button variant="outline" size="touch">Go to sign in</Button></AppLink>

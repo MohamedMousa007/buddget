@@ -4,7 +4,6 @@ import { STAFF_PASSWORD, call, makeStaff, makeUser, q, resetRateLimits, resetWor
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', async () => (await import('./harness/mocks')).serviceMock())
-vi.mock('@/lib/supabase/resolveRouteUser', async () => (await import('./harness/mocks')).routeUserMock())
 vi.mock('@/lib/auth/resolveDeviceId', async () => (await import('./harness/mocks')).deviceMock())
 vi.mock('@/lib/server/admin/inviteEmail', () => ({ sendStaffInviteEmail: async () => true }))
 vi.mock('@supabase/supabase-js', async () => (await import('./harness/mocks')).supabaseJsMock())
@@ -30,7 +29,6 @@ import { GET as staffGet, POST as staffPost } from '@/app/api/admin/staff/route'
 import { GET as auditGet } from '@/app/api/admin/audit/route'
 import { GET as sessionsGet, DELETE as sessionsDelete } from '@/app/api/admin/auth/sessions/route'
 import { POST as passwordPost } from '@/app/api/admin/auth/password/route'
-import { POST as ssoPost } from '@/app/api/admin/auth/sso/route'
 import { POST as deviceAdd, DELETE as deviceDel } from '@/app/api/admin/auth/biometric/device/route'
 
 const ROLES = ['owner', 'admin', 'support_lead', 'support_agent', 'engineer', 'finance', 'growth', 'viewer'] as const
@@ -92,7 +90,6 @@ describe.skipIf(!pgEnabled)('admin RBAC (real Postgres)', () => {
       { name: 'my sessions', handler: sessionsGet, perm: null },
       { name: 'revoke sessions', handler: sessionsDelete, method: 'DELETE', perm: null, body: { id: ZERO } },
       { name: 'change password', handler: passwordPost, method: 'POST', perm: null, body: {} },
-      { name: 'sso switch', handler: ssoPost, method: 'POST', perm: null, body: {} },
       { name: 'enroll biometric', handler: deviceAdd, method: 'POST', perm: null, body: {} },
       { name: 'remove biometric', handler: deviceDel, method: 'DELETE', perm: null },
     ]
@@ -116,17 +113,11 @@ describe.skipIf(!pgEnabled)('admin RBAC (real Postgres)', () => {
     }
   })
 
-  it('every endpoint refuses unauthenticated callers, non-staff, locked sessions and CSRF-less mutations', async () => {
-    const plain = await makeUser('plain@x.com')
+  it('every endpoint refuses callers without a portal session (an app sign-in is not one) and CSRF-less mutations', async () => {
     const viewer = staff.get('viewer')!
     for (const e of endpoints()) {
       const base = { method: e.method, body: e.body, params: e.params, query: e.query }
-      const anon = await call(e.handler, { ...base })
-      expect(anon.status, `${e.name}: anonymous`).toBe(401)
-      const nonStaff = await call(e.handler, { ...base, as: plain })
-      expect(nonStaff.status, `${e.name}: non-staff`).toBe(403)
-      expect(nonStaff.body.code, `${e.name}: non-staff code`).toBe('not_staff')
-      const locked = await call(e.handler, { ...base, as: viewer })
+      const locked = await call(e.handler, { ...base, headers: { authorization: 'Bearer app-jwt', cookie: 'sb-x-auth-token=app-session' } })
       expect(locked.status, `${e.name}: no session`).toBe(401)
       expect(locked.body.code, `${e.name}: no session code`).toBe('locked')
       if (e.method && e.method !== 'GET') {

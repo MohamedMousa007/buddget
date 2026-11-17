@@ -9,9 +9,8 @@ import { AdminShell } from './AdminShell'
 import { ADMIN_LOCKED_EVENT, adminFetch, adminPost, setAdminToken } from './adminClient'
 import { adminNavigate, syncAdminRoute, useAdminRoute } from './adminRouter'
 import { AuthFrame } from './auth/AuthFrame'
-import { NoAccess } from './auth/NoAccess'
 import { SetupFlow } from './auth/SetupFlow'
-import { UnlockScreen } from './auth/UnlockScreen'
+import { SignInScreen } from './auth/SignInScreen'
 import { StepUpProvider } from './ui/StepUp'
 import { Loading } from './ui/Panel'
 import type { AdminStatus } from './types'
@@ -72,6 +71,7 @@ type Phase = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 
 
 export function AdminApp() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
+  const [settingUp, setSettingUp] = useState(false)
   const route = useAdminRoute()
 
   const refresh = useCallback(async () => {
@@ -116,13 +116,10 @@ export function AdminApp() {
   }
 
   const { status } = phase
-  if (!status.isStaff) return <NoAccess signedIn={status.signedIn !== false} />
-
-  if (status.setup !== 'complete') {
-    return <SetupFlow email={status.staff?.email ?? ''} resume={status.setup === 'confirm_email'} onDone={() => void refresh()} />
-  }
-  if (!status.session) {
-    return <UnlockScreen name={status.staff?.name ?? ''} email={status.staff?.email ?? ''} biometricEnrolled={!!status.biometricEnrolled} onUnlocked={() => void refresh()} />
+  if (!status.isStaff || !status.session) {
+    return settingUp
+      ? <SetupFlow onDone={() => void refresh()} onBack={() => setSettingUp(false)} />
+      : <SignInScreen biometricEnrolled={!!status.biometricEnrolled} onSignedIn={() => void refresh()} onSetup={() => setSettingUp(true)} />
   }
 
   const perms = new Set(status.permissions ?? [])

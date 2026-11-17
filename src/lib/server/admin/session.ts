@@ -13,9 +13,8 @@ export const BIOMETRIC_SESSION_MS = 4 * 60 * 60 * 1000
 export const SESSION_IDLE_MS = 60 * 60 * 1000
 const TOUCH_EVERY_MS = 60 * 1000
 
-/** `sso` is never stored: it is the app sign-in itself. `password_totp` and `recovery` only exist on sessions created before the email-code rework. */
-export type SessionMethod = 'password_email' | 'biometric' | 'sso' | 'password_totp' | 'recovery'
-export type StoredSessionMethod = Exclude<SessionMethod, 'sso'>
+/** `password_totp` and `recovery` only exist on sessions created before the email-code rework. */
+export type SessionMethod = 'password_email' | 'biometric' | 'password_totp' | 'recovery'
 
 export interface AdminSessionRow {
   id: string
@@ -41,7 +40,7 @@ export function readSessionToken(req: Request): string | null {
 
 export async function createAdminSession(
   service: ServiceClient,
-  input: { userId: string; method: StoredSessionMethod; ip: string; userAgent: string | null },
+  input: { userId: string; method: SessionMethod; ip: string; userAgent: string | null },
 ): Promise<{ token: string; expiresAt: string; id: string }> {
   const token = randomToken()
   const lifetime = input.method === 'biometric' ? BIOMETRIC_SESSION_MS : SESSION_ABSOLUTE_MS
@@ -62,18 +61,14 @@ export async function createAdminSession(
   return { token, expiresAt, id: data.id }
 }
 
-/** A session is valid while unrevoked, before its absolute expiry, and recently used. */
-export async function validateAdminSession(
-  service: ServiceClient,
-  token: string,
-  userId: string,
-): Promise<AdminSessionRow | null> {
+/** A session is valid while unrevoked, before its absolute expiry, and recently used. The token alone names the staff member. */
+export async function validateAdminSession(service: ServiceClient, token: string): Promise<AdminSessionRow | null> {
   const { data } = await service
     .from('admin_sessions')
     .select('id, user_id, method, created_at, last_seen_at, expires_at, ip, user_agent, revoked_at')
     .eq('token_hash', sha256Hex(token))
     .maybeSingle()
-  if (!data || data.user_id !== userId || data.revoked_at) return null
+  if (!data || data.revoked_at) return null
   const now = Date.now()
   if (new Date(data.expires_at).getTime() <= now) return null
   const lastSeen = new Date(data.last_seen_at).getTime()
@@ -102,11 +97,4 @@ export function sessionCookie(token: string, expiresAt: string): string {
 export function clearedSessionCookie(): string {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
   return `${ADMIN_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure}`
-}
-
-/** Id of the app-session-backed pseudo session; it has no row, so it can be neither revoked nor listed from the table. */
-export const SSO_SESSION_ID = 'sso'
-
-export function storedSessionId(session: Pick<AdminSessionRow, 'id'> | null): string | undefined {
-  return session && session.id !== SSO_SESSION_ID ? session.id : undefined
 }

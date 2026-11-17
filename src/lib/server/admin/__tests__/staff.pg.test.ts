@@ -5,7 +5,6 @@ import { call, codeFor, makeStaff, makeUser, q, resetRateLimits, resetWorld, unl
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', async () => (await import('./harness/mocks')).serviceMock())
-vi.mock('@/lib/supabase/resolveRouteUser', async () => (await import('./harness/mocks')).routeUserMock())
 vi.mock('@/lib/auth/resolveDeviceId', async () => (await import('./harness/mocks')).deviceMock())
 const mail = vi.hoisted(() => ({ send: vi.fn(async (_email: string) => true) }))
 vi.mock('@/lib/server/admin/inviteEmail', () => ({ sendStaffInviteEmail: (_s: unknown, email: string) => mail.send(email) }))
@@ -188,7 +187,7 @@ describe.skipIf(!pgEnabled)('team & roles (real Postgres)', () => {
     it('suspends and restores, killing live sessions on suspend', async () => {
       const tAgent = await unlock(login, agent)
       expect((await act(admin, tAdmin, { op: 'suspend', id: agent.staffId })).status).toBe(200)
-      expect((await call(overview, { as: agent, token: tAgent })).status).toBe(403)
+      expect((await call(overview, { as: agent, token: tAgent })).status).toBe(401) // the session itself is gone
       expect((await q(`select count(*)::int n from admin_sessions where user_id=$1 and revoked_at is null`, [agent.id]))[0]).toMatchObject({ n: 0 })
       expect((await act(admin, tAdmin, { op: 'restore', id: agent.staffId })).status).toBe(200)
       expect((await q(`select status from admin_staff where id=$1`, [agent.staffId]))[0]).toMatchObject({ status: 'active' })
@@ -226,7 +225,7 @@ describe.skipIf(!pgEnabled)('team & roles (real Postgres)', () => {
       const [row] = await q<{ permissions: string[]; is_system: boolean; rank: number }>(`select * from admin_roles where key='qa_team'`)
       expect(row).toMatchObject({ permissions: ['users.view', 'sms.view'], is_system: false, rank: 40 })
       expect((await act(admin, tAdmin, { op: 'upsert_role', role: { ...role, permissions: ['users.view'] }, code: await fresh(admin) })).status).toBe(200)
-      expect((await act(admin, tAdmin, { op: 'delete_role', key: 'qa_team' })).status).toBe(200)
+      expect((await act(admin, tAdmin, { op: 'delete_role', key: 'qa_team', code: await fresh(admin) })).status).toBe(200)
       expect(await q(`select 1 from admin_roles where key='qa_team'`)).toHaveLength(0)
     })
 

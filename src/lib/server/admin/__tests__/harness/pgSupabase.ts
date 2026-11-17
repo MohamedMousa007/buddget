@@ -245,6 +245,10 @@ export async function loadAuthUser(id: string) {
 
 /** The slice of GoTrue's admin API the routes call. */
 const authAdmin = {
+  /** Our own mailer is not under test: failing here sends the code down the fallback (GoTrue OTP) path the mocks record. */
+  async generateLink() {
+    return { data: null, error: { message: 'no mailer in tests' } }
+  },
   async getUserById(id: string) {
     const user = await loadAuthUser(id)
     return { data: { user }, error: user ? null : { message: 'User not found' } }

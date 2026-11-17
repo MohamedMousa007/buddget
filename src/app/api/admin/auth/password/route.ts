@@ -2,7 +2,7 @@ import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
 import { allowAttempt, clearFailures, isLocked, loadCredentials, recordFailure } from '@/lib/server/admin/credentials'
 import { hashPassword, passwordProblem, verifyPassword } from '@/lib/server/admin/crypto'
 import { verifyEmailCode } from '@/lib/server/admin/emailCode'
-import { revokeAllAdminSessions, storedSessionId } from '@/lib/server/admin/session'
+import { revokeAllAdminSessions } from '@/lib/server/admin/session'
 
 /** Change the admin password. Needs the current password and an emailed code; signs every other session out. */
 export async function POST(req: Request) {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   await clearFailures(ctx.service, ctx.user.id)
 
   await ctx.service.from('admin_credentials').update({ password_hash: await hashPassword(body.next), password_changed_at: new Date().toISOString() }).eq('user_id', ctx.user.id)
-  await revokeAllAdminSessions(ctx.service, ctx.user.id, storedSessionId(ctx.session))
+  await revokeAllAdminSessions(ctx.service, ctx.user.id, ctx.session?.id)
   await ctx.audit('auth.password_changed')
   return json({ ok: true })
 }

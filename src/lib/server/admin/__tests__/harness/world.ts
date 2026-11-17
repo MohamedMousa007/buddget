@@ -45,13 +45,12 @@ export interface Staff extends TestUser { staffId: string }
 
 /**
  * A fully set-up staff member (admin password + completed email-code setup) holding `roleKey`.
- * SSO is off by default so tests exercise the unlock paths; pass `sso: true` for the app-session behaviour.
  */
-export async function makeStaff(email: string, roleKey: string, opts: { extra?: string[]; name?: string; confirmed?: boolean; sso?: boolean } = {}): Promise<Staff> {
+export async function makeStaff(email: string, roleKey: string, opts: { extra?: string[]; name?: string; confirmed?: boolean } = {}): Promise<Staff> {
   const user = await makeUser(email, { confirmed: opts.confirmed, name: opts.name })
   const db = adminPool()
   const staff = await db.query(`insert into admin_staff (email, user_id, display_name, role_key, extra_permissions) values ($1,$2,$3,$4,$5) returning id`, [email.toLowerCase(), user.id, opts.name ?? email, roleKey, opts.extra ?? []])
-  await db.query(`insert into admin_credentials (user_id, password_hash, setup_completed_at, sso_enabled) values ($1,$2,now(),$3)`, [user.id, await hashPassword(STAFF_PASSWORD), opts.sso ?? false])
+  await db.query(`insert into admin_credentials (user_id, password_hash, setup_completed_at) values ($1,$2,now())`, [user.id, await hashPassword(STAFF_PASSWORD)])
   return { ...user, staffId: staff.rows[0].id }
 }
 
@@ -64,6 +63,7 @@ export type Handler = (req: Request, ctx: any) => Promise<Response>
 
 export interface CallOpts {
   method?: string
+  /** Who the call is for. Documentation only: the portal knows a caller by the admin session `token`, nothing else. */
   as?: TestUser | null
   token?: string | null
   query?: Record<string, string>
@@ -79,7 +79,6 @@ export async function call(handler: Handler, opts: CallOpts = {}): Promise<Calle
   const url = new URL('https://buddget.app/api/admin/test')
   for (const [k, v] of Object.entries(opts.query ?? {})) url.searchParams.set(k, v)
   const headers = new Headers(opts.headers)
-  if (opts.as) headers.set('x-test-user', opts.as.id)
   if (opts.token) headers.set('x-admin-session', opts.token)
   if (method !== 'GET' && opts.csrf !== false) headers.set('x-requested-with', 'buddget-admin')
   let body: string | undefined
@@ -91,10 +90,10 @@ export async function call(handler: Handler, opts: CallOpts = {}): Promise<Calle
   return { status: res.status, body: parsed, headers: res.headers }
 }
 
-/** Unlock the portal the real way: POST /api/admin/auth/login with password + an emailed code. */
+/** Sign in to the portal the real way: POST /api/admin/auth/login with staff email, admin password and an emailed code. */
 export async function unlock(login: Handler, s: Staff): Promise<string> {
   await resetRateLimits()
-  const r = await call(login, { method: 'POST', as: s, body: { password: STAFF_PASSWORD, code: codeFor(s) } })
+  const r = await call(login, { method: 'POST', as: s, body: { email: s.email, password: STAFF_PASSWORD, code: codeFor(s) } })
   expect(r.status, JSON.stringify(r.body)).toBe(200)
   return r.body.token as string
 }

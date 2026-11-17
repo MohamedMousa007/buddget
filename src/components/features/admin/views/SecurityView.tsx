@@ -5,7 +5,6 @@ import { Fingerprint, KeyRound, LogOut, Monitor } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useActionToast } from '@/components/ui/ActionToast'
-import { Switch } from '@/components/ui/switch'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import { isAndroid } from '@/lib/native/isNative'
 import { adminBiometricSupported, clearLocalAdminSecret, hasLocalAdminSecret, prepareAdminBiometric } from '@/lib/native/adminBiometric'
@@ -16,23 +15,20 @@ import { EmailCodeInput } from '../auth/EmailCodeInput'
 import { Field } from '../ui/Field'
 import { KeyValue, Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import { Pill } from '../ui/Pill'
-import { useStepUp } from '../ui/StepUp'
 import type { AdminStatus } from '../types'
 
 interface SecurityData {
   sessions: Array<{ id: string; method: string; ip: string | null; user_agent: string | null; created_at: string; last_seen_at: string; expires_at: string; current: boolean }>
   devices: Array<{ device_id: string; label: string | null; platform: string | null; created_at: string; last_used_at: string | null; current: boolean }>
-  ssoEnabled: boolean
   passwordChangedAt: string | null
 }
 
-const METHOD_LABEL: Record<string, string> = { password_email: 'Password + emailed code', sso: 'buddget sign-in', biometric: 'Biometric', password_totp: 'Password + authenticator (retired)', recovery: 'Recovery code (retired)' }
+const METHOD_LABEL: Record<string, string> = { password_email: 'Password + emailed code', biometric: 'Biometric', password_totp: 'Password + authenticator (retired)', recovery: 'Recovery code (retired)' }
 
 export default function SecurityView({ status }: { status: AdminStatus }) {
   const { data, error, refresh } = useAdminQuery<SecurityData>('/api/admin/auth/sessions')
   const toast = useActionToast()
   const confirm = useConfirm()
-  const stepUp = useStepUp()
   const [sheet, setSheet] = useState<'password' | null>(null)
   const [nativeBio, setNativeBio] = useState(false)
   const [localSecret, setLocalSecret] = useState(false)
@@ -60,17 +56,6 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
     if (current) { await clearLocalAdminSecret(); setLocalSecret(false) }
   }, 'Biometric device removed')
 
-  const setSso = (enabled: boolean) => act('sso', async () => {
-    if (enabled) {
-      const proof = await stepUp('Staying unlocked with your buddget sign-in makes the portal easier to open. Confirm it’s you to turn it on.')
-      if (!proof) return false
-      await adminPost('/api/admin/auth/sso', { enabled, ...proof })
-      return
-    }
-    if (!(await confirm({ title: 'Ask for the password and a code again?', body: 'The portal locks right away and needs your admin password and an emailed code (or biometrics) to open.', confirmLabel: 'Turn off' }))) return false
-    await adminPost('/api/admin/auth/sso', { enabled })
-  }, enabled ? 'Portal now stays unlocked while you are signed in' : 'Portal now needs your password and a code')
-
   if (error && !data) return <Notice tone="negative">{error}</Notice>
   if (!data) return <Loading rows={6} />
   const currentEnrolled = data.devices.some((d) => d.current)
@@ -79,15 +64,8 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
     <>
       <PageHeader title="My security" description={`${status.staff?.email} · ${status.staff?.roleName}`} />
       <div className="grid gap-6 xl:grid-cols-2">
-        <Panel title="Sign-in protection" description="How the portal opens for you">
-          <div className="flex items-start gap-3 pb-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-[var(--color-brand-text-primary)]">Stay unlocked while signed in to buddget</p>
-              <p className="text-xs text-[var(--color-brand-text-muted)]">On: the portal opens with your buddget sign-in and closes when you sign out of buddget. Off: it asks for your admin password and an emailed code (or biometrics).</p>
-            </div>
-            <Switch size="touch" aria-label="Stay unlocked while signed in to buddget" checked={data.ssoEnabled} disabled={busy === 'sso'} onCheckedChange={(v) => void setSso(v)} />
-          </div>
-          <dl className="divide-y divide-[var(--color-brand-border)] border-t border-[var(--color-brand-border)]">
+        <Panel title="Sign-in protection" description="The portal has its own sign-in, separate from the buddget app">
+          <dl className="divide-y divide-[var(--color-brand-border)]">
             <KeyValue label="Admin password">Changed {ago(data.passwordChangedAt)}</KeyValue>
             <KeyValue label="Second step"><Pill tone="good">Emailed code</Pill></KeyValue>
           </dl>
@@ -99,7 +77,7 @@ export default function SecurityView({ status }: { status: AdminStatus }) {
         <Panel title="Biometric unlock" description="Face ID, Touch ID or fingerprint on your phone, instead of typing a password and code">
           {nativeBio ? (
             <div className="space-y-4">
-              {currentEnrolled && localSecret ? <Notice tone="positive">Enabled on this device.</Notice> : <p className="text-sm text-[var(--color-brand-text-secondary)]">Enable it here and the portal unlocks with your biometrics on this phone. It still needs your buddget sign-in, and your password + emailed code remain the fallback.</p>}
+              {currentEnrolled && localSecret ? <Notice tone="positive">Enabled on this device.</Notice> : <p className="text-sm text-[var(--color-brand-text-secondary)]">Enable it here and the portal unlocks with your biometrics on this phone. Your password + emailed code remain the fallback.</p>}
               {!currentEnrolled || !localSecret ? <Button size="touch" loading={busy === 'enroll'} onClick={() => void enroll()}><Fingerprint />Enable on this device</Button> : null}
             </div>
           ) : <p className="text-sm text-[var(--color-brand-text-secondary)]">Biometric unlock is available in the buddget iOS and Android apps. Open the portal there to enable it.</p>}

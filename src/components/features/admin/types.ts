@@ -134,9 +134,6 @@ export interface AdminStatus {
   isStaff: boolean
   staff?: { name: string | null; email: string; role: string; roleName: string; rank: number }
   permissions?: string[]
-  signedIn?: boolean
-  setup?: 'needed' | 'confirm_email' | 'complete'
-  ssoEnabled?: boolean
   session?: { method: string; expiresAt: string; createdAt: string } | null
   biometricEnrolled?: boolean
 }

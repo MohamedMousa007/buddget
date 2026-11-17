@@ -12,7 +12,7 @@ import { apiSecondFactorRefusal } from '@/lib/server/apiSecondFactor'
 import { publicApiRateLimitOk } from '@/lib/server/publicApiRateLimit'
 import { nativeApiPreflightResponse, withNativeApiCors } from '@/lib/server/nativeApiCors'
 import { SITE_CSP, decideSiteRoute, hasAuthCookie, isSitePath, splitHosts } from '@/lib/site/entry'
-import { appHostForRedirects, configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
+import { configuredAdminHost, decideHostRoute, normalizeHost } from '@/lib/admin/host'
 import {
   COOKIE_DOMAIN_MARKER,
   authCookieOptions,
@@ -24,7 +24,6 @@ import {
   supabaseCookieDomain,
 } from '@/lib/supabase/cookieDomain'
 
-const AUTH_CALLBACK = '/auth/callback'
 const AUTH_CHECK_TIMEOUT_MS = 1500
 
 export async function proxy(request: NextRequest) {
@@ -172,24 +171,7 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse
   }
 
-  const isAuthCallback = pathname === AUTH_CALLBACK || pathname.startsWith(`${AUTH_CALLBACK}/`)
-  const isResetPassword = pathname.startsWith('/reset-password')
-  const isAdmin = pathname.startsWith('/admin') && pathname !== '/admin/accept'
-
-  if (isAuthCallback || isResetPassword) {
-    return supabaseResponse
-  }
-
-  if (!user) {
-    if (isAdmin) {
-      if (onAdminHost) return NextResponse.redirect(`https://${appHostForRedirects()}/`, 307)
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      return NextResponse.redirect(url)
-    }
-    return supabaseResponse
-  }
-
+  // The admin portal is served to anyone: it has its own sign-in and never depends on the app session.
   return supabaseResponse
 }
 

@@ -44,7 +44,7 @@ const PAGE_SYNONYMS: Record<string, readonly string[]> = {
   loyalty: ['points', 'tiers', 'rewards', 'perks'],
   staff: ['team', 'roles', 'permissions', 'admins', 'invite', 'access'],
   audit: ['log', 'history', 'activity', 'trail', 'security events'],
-  security: ['password', 'biometric', 'sessions', 'two factor', 'sso', 'sign in'],
+  security: ['password', 'biometric', 'sessions', 'two factor', 'sign in'],
 }
 
 const EXTRAS: readonly Extra[] = [
@@ -76,7 +76,7 @@ const EXTRAS: readonly Extra[] = [
   { section: 'platform', group: 'Settings', title: 'Minimum app version', description: 'Force an update below a release', keywords: ['force update', 'release'] },
   { section: 'platform', group: 'Settings', title: 'AI limits', description: 'AI throttle and per-user limit', keywords: ['rate limit', 'throttle', 'gemini'] },
   { section: 'flags', group: 'Settings', title: 'Feature flags and rollouts', description: 'Roll out or switch off a feature', keywords: ['kill switch', 'percentage'] },
-  { section: 'security', group: 'Settings', title: 'Sign-in protection', description: 'Admin password and single sign-on', keywords: ['sso', 'password', 'two factor'] },
+  { section: 'security', group: 'Settings', title: 'Sign-in protection', description: 'Admin password and emailed code', keywords: ['password', 'two factor'] },
   { section: 'security', group: 'Settings', title: 'Biometric unlock', description: 'Face ID or fingerprint for the portal', keywords: ['face id', 'touch id', 'fingerprint'] },
   { section: 'security', group: 'Settings', title: 'Active sessions', description: 'Where you are unlocked right now', keywords: ['devices', 'sign out', 'lock'] },
 ]

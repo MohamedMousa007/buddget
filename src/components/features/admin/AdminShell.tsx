@@ -96,7 +96,7 @@ export function AdminShell({ status, onLock, children }: { status: AdminStatus; 
             <p className="truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{status.staff?.name?.trim() || status.staff?.email}</p>
             <p className="truncate text-xs text-[var(--color-brand-text-muted)]">{status.staff?.roleName}</p>
           </div>
-          {status.session?.method === 'sso' ? null : <IconButton aria-label="Lock the portal" size="sm" onClick={onLock}><Lock /></IconButton>}
+          <IconButton aria-label="Sign out of the portal" size="sm" onClick={onLock}><Lock /></IconButton>
         </div>
         {/* In the apps the portal is its own bundled page: a plain anchor reloads the app shell, and never leaves the bundle for the website. */}
         <AppLink href={isNativeShellBuild() ? '/' : `${appOrigin()}/`} onClick={isNativeShellBuild() ? (e) => { e.preventDefault(); navigate('/') } : undefined} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-[var(--color-brand-text-muted)] hover:text-[var(--color-brand-text-primary)]">

@@ -10,10 +10,10 @@ import { adminPost, errorMessage } from '../adminClient'
 const RESEND_SECONDS = 60
 
 /**
- * The emailed 6-digit code, the same one the app uses to sign in. `alreadySent` is for flows whose previous step
+ * The emailed 6-digit code. `alreadySent` is for flows whose previous step
  * already mailed it. Reuses the app's OTP row and its resend wording.
  */
-export function EmailCodeInput({ value, onChange, email, alreadySent = false, disabled = false }: { value: string; onChange: (code: string) => void; email?: string; alreadySent?: boolean; disabled?: boolean }) {
+export function EmailCodeInput({ value, onChange, email, alreadySent = false, disabled = false, request = '/api/admin/auth/code', body = {} }: { value: string; onChange: (code: string) => void; email?: string; alreadySent?: boolean; disabled?: boolean; /** Where a new code is asked for, and with what: the sign-in screens are not signed in yet and name the staff member themselves. */ request?: string; body?: Record<string, unknown> }) {
   const [sent, setSent] = useState(alreadySent)
   const [cooldown, setCooldown] = useState(alreadySent ? RESEND_SECONDS : 0)
   const [busy, setBusy] = useState(false)
@@ -29,7 +29,7 @@ export function EmailCodeInput({ value, onChange, email, alreadySent = false, di
     setBusy(true)
     setError(null)
     try {
-      await adminPost('/api/admin/auth/code', {})
+      await adminPost(request, body)
       setSent(true)
       setCooldown(RESEND_SECONDS)
     } catch (e) {

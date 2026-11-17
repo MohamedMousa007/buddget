@@ -12,3 +12,9 @@ create table if not exists public.recurring_expenses (id uuid primary key defaul
 create table if not exists public.recurring_savings_deposits (id uuid primary key default gen_random_uuid(), user_id uuid not null);
 create table if not exists public.savings_holdings (id uuid primary key default gen_random_uuid(), user_id uuid not null);
 create table if not exists public.savings_transactions (id uuid primary key default gen_random_uuid(), user_id uuid not null);
+
+-- Migration 0225: the sign-in endpoints find an invited address's account by email.
+create or replace function public.user_id_by_email(p_email text) returns uuid
+language sql stable security definer set search_path = auth, pg_temp as $$
+  select id from auth.users where lower(email) = lower(p_email) limit 1;
+$$;

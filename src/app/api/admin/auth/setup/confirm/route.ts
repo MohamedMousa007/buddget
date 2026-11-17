@@ -1,28 +1,43 @@
-import { bad, guardAdmin, json, readJson } from '@/lib/server/admin/guard'
-import { allowAttempt, isLocked, loadCredentials, recordFailure } from '@/lib/server/admin/credentials'
+import { bad, guardSignIn, json, readJson } from '@/lib/server/admin/guard'
+import { allowAttempt, loadCredentials } from '@/lib/server/admin/credentials'
+import { hashPassword, passwordProblem } from '@/lib/server/admin/crypto'
 import { verifyEmailCode } from '@/lib/server/admin/emailCode'
 import { createAdminSession, sessionCookie } from '@/lib/server/admin/session'
 
-/** Step 2: the emailed code proves mailbox ownership, completes setup and opens the portal. */
+const CODE_ERROR = 'That code did not match or has expired. Request a new one.'
+
+/**
+ * Step 2: the emailed code proves the person reads the staff mailbox; with it they choose the admin password
+ * (separate from any buddget password) and the portal opens. Only for staff who have never finished setup.
+ */
 export async function POST(req: Request) {
-  const g = await guardAdmin(req, { sessionOptional: true })
-  if (!g.ok) return g.res
+  const body = await readJson<{ email?: string; code?: string; password?: string }>(req)
+  if (typeof body?.email !== 'string' || typeof body.code !== 'string' || typeof body.password !== 'string') return bad('Enter the code and choose a password.')
+  const problem = passwordProblem(body.password)
+  if (problem) return bad(problem)
+
+  const g = await guardSignIn(req, { email: body.email })
+  if (!g.ok) return g.res.status === 401 ? bad(CODE_ERROR, 401) : g.res
   const { ctx } = g
 
-  const body = await readJson<{ code?: string }>(req)
   const cred = await loadCredentials(ctx.service, ctx.user.id)
-  if (!cred || cred.setup_completed_at) return bad('Start setup first.', 409)
-  if (typeof body?.code !== 'string') return bad('Enter the 6-digit code.')
-  if (isLocked(cred)) return bad('Too many failed attempts. Try again in 15 minutes.', 429)
+  if (cred?.setup_completed_at || !ctx.user.email) return bad(CODE_ERROR, 401)
   if (!(await allowAttempt(ctx.service, `admin-setup-confirm:${ctx.user.id}`, 900, 10))) return bad('Too many attempts. Try again later.', 429)
-
-  if (!ctx.user.email || !(await verifyEmailCode(ctx.user.email, body.code, ctx.user.id))) {
-    await recordFailure(ctx.service, cred)
-    return bad('That code did not match or has expired. Request a new one.', 401)
-  }
+  if (!(await verifyEmailCode(ctx.user.email, body.code, ctx.user.id))) return bad(CODE_ERROR, 401)
 
   const now = new Date().toISOString()
-  await ctx.service.from('admin_credentials').update({ setup_completed_at: now, failed_attempts: 0, locked_until: null }).eq('user_id', ctx.user.id)
+  const { error } = await ctx.service.from('admin_credentials').upsert({
+    user_id: ctx.user.id,
+    password_hash: await hashPassword(body.password),
+    setup_completed_at: now,
+    failed_attempts: 0,
+    locked_until: null,
+    password_changed_at: now,
+  })
+  if (error) {
+    console.error('[admin/setup] upsert failed', error.message)
+    return bad('Could not finish setup.', 500)
+  }
   await ctx.service.from('admin_staff').update({ last_login_at: now }).eq('id', ctx.staff.id)
 
   const session = await createAdminSession(ctx.service, { userId: ctx.user.id, method: 'password_email', ip: ctx.ip, userAgent: ctx.userAgent })

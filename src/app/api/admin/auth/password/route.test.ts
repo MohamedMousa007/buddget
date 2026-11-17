@@ -20,7 +20,7 @@ vi.mock('@/lib/server/admin/credentials', () => ({
 }))
 vi.mock('@/lib/server/admin/crypto', () => ({ hashPassword: async () => 'h', passwordProblem: () => null, verifyPassword: h.verify }))
 vi.mock('@/lib/server/admin/emailCode', () => ({ verifyEmailCode: h.code }))
-vi.mock('@/lib/server/admin/session', () => ({ revokeAllAdminSessions: async () => undefined, storedSessionId: () => 's' }))
+vi.mock('@/lib/server/admin/session', () => ({ revokeAllAdminSessions: async () => undefined }))
 
 import { POST } from './route'
 
