@@ -1,0 +1,22 @@
+/*
+ * Alternate card finishes from the points shop and the invite milestones. A finish is a wash laid over a card face (the Pro
+ * card's obsidian and the tier card's letterpress); the standard finish adds nothing. Set on the flip rig's root.
+ */
+.aurora [data-finish]::before,
+.connector [data-finish]::before { content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none; mix-blend-mode: screen; }
+
+.aurora [data-finish]::before {
+  background:
+    radial-gradient(85% 70% at 88% 0%, color-mix(in oklab, var(--member-mint) 42%, transparent), transparent 62%),
+    radial-gradient(80% 85% at 0% 100%, color-mix(in oklab, var(--color-cat-4) 40%, transparent), transparent 60%),
+    radial-gradient(60% 60% at 45% 45%, color-mix(in oklab, var(--color-brand-primary) 20%, transparent), transparent 70%);
+}
+
+.connector [data-finish]::before {
+  background:
+    radial-gradient(85% 70% at 0% 0%, color-mix(in oklab, var(--member-gold-hi) 34%, transparent), transparent 60%),
+    radial-gradient(80% 85% at 100% 100%, color-mix(in oklab, var(--color-brand-primary) 36%, transparent), transparent 62%);
+}
+
+:global(html:not(.dark)) .aurora [data-finish]::before,
+:global(html:not(.dark)) .connector [data-finish]::before { mix-blend-mode: multiply; opacity: .55; }

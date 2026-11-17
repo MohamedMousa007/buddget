@@ -11,6 +11,7 @@ import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryB
 import { AuthOAuthButtons } from '@/components/features/auth-modal/AuthOAuthButtons'
 import { PasswordStrengthMeter } from '@/components/features/auth-modal/PasswordStrengthMeter'
 import { useAuth } from '@/components/auth/auth-context'
+import { InviteCodeField } from '@/components/features/invite/InviteCodeField'
 import { useT } from '@/lib/i18n'
 import { emailLocalPart } from '@/lib/auth/emailLocalPart'
 import type { AuthEmailStep, AuthPasswordIntent } from '@/hooks/useAuthModal'
@@ -183,6 +184,7 @@ export function AuthSignInUpStep({
             </form>
 
             <AuthFormErrorAlert error={error} onResendCode={resendCode} />
+            <InviteCodeField />
           </motion.div>
         ) : emailStep === 'password' ? (
           <motion.div

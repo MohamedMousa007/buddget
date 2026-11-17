@@ -18,6 +18,7 @@ import { usePlanPurchase } from '@/lib/billing/usePlanPurchase'
 import { useSparksPacks } from '@/lib/billing/useSparksPacks'
 import { useLocale, useT } from '@/lib/i18n'
 import { useUsageCopy, type NoticeData } from '@/lib/i18n/usageCopy'
+import { useRewardsCopy } from '@/lib/i18n/rewardsCopy'
 import { navigate } from '@/lib/navigation/navigate'
 import { useNavPath } from '@/lib/navigation/navStore'
 import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
@@ -56,6 +57,7 @@ function dataFor(state: NoticeState, locale: string, dateAt: string | null): Not
 /** What a notice's button does. */
 function useActions(screen?: NoticeScreen) {
   const copy = useUsageCopy().actions
+  const invite = useRewardsCopy().notice
   const setPacksOpen = useUsageStore((s) => s.setPacksOpen)
   return useCallback((n: Notice): Array<{ label: string; onPress: () => void }> => {
     if (screen === 'usage' && (n.key === 'session80' || n.key === 'week80')) return []
@@ -68,12 +70,12 @@ function useActions(screen?: NoticeScreen) {
       case 'plans_ro': return [{ label: copy.seePro, onPress: go('/settings/pro') }]
       case 'trial.d3': return [{ label: copy.askAdvisor, onPress: () => useSettingsStore.getState().setActiveModal('aiChat') }]
       case 'trial.d10': return [{ label: copy.scanReceipt, onPress: () => useSettingsStore.getState().setActiveModal('scanReceipt') }]
-      case 'trial.d23': case 'trial.d28': return [{ label: copy.seePlans, onPress: go('/settings/pro') }]
+      case 'trial.d23': case 'trial.d28': return [{ label: copy.seePlans, onPress: go('/settings/pro') }, { label: invite.inviteAction, onPress: go('/settings/invite') }]
       case 'trial.d37': return [{ label: copy.seePro, onPress: go('/settings/pro') }]
       case 'expired': return [{ label: copy.rejoin, onPress: go('/settings/pro') }]
       default: return []
     }
-  }, [copy, setPacksOpen, screen])
+  }, [copy, invite, setPacksOpen, screen])
 }
 
 function useSnooze() {
@@ -128,24 +130,30 @@ function useStackCards(state: NoticeState | null, end: string | null) {
   const copy = useUsageCopy()
   const actions = useActions()
   const promptState = useFinanceStore((s) => s.settings.promptState)
+  const inviteLine = useRewardsCopy().notice.inviteLine
   const prompts = useMemo<Prompt[]>(() => {
     if (!state) return []
     const settled = settledKeys(promptState)
     const d = dataFor(state, locale, end)
     return visibleNotices(usageNotices(state, { screen: 'flow' }).filter((n) => n.surface === 'stack'), { snoozed: {}, settled, shownThisSession: new Set() }, state.now).map((n) => {
-      const [a] = actions(n)
+      const [a, b] = actions(n)
       const entry = copy.notices[n.key]
+      // The trial is about to end: a friend's week of Pro is the other way to keep it.
+      const ending = n.key === 'trial.d23' || n.key === 'trial.d28'
       return {
         key: `usage:${n.key}`,
         priority: PROMPT_PRIORITY.planChange + 5,
         tone: 'brand' as const,
         icon: n.key.startsWith('trial') ? CalendarClock : Crown,
         title: entry.title(d),
-        description: entry.body?.(d),
-        actions: a ? [{ label: a.label, variant: 'default' as const, onPress: () => { settlePrompt(`usage:${n.key}`); a.onPress() } }] : [],
+        description: ending ? `${entry.body?.(d) ?? ''} ${inviteLine}`.trim() : entry.body?.(d),
+        actions: [
+          ...(a ? [{ label: a.label, variant: 'default' as const, onPress: () => { settlePrompt(`usage:${n.key}`); a.onPress() } }] : []),
+          ...(b ? [{ label: b.label, variant: 'secondary' as const, onPress: () => { settlePrompt(`usage:${n.key}`); b.onPress() } }] : []),
+        ],
       }
     })
-  }, [state, locale, end, copy, actions, promptState])
+  }, [state, locale, end, copy, actions, promptState, inviteLine])
   useRegisterPrompts('usage-notices', prompts)
 }
 

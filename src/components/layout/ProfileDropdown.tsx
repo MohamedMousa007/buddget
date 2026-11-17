@@ -18,7 +18,9 @@ import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
 import { subscriptionView } from '@/lib/billing/subscriptionView'
-import { formatFounderNumber } from '@/lib/loyalty/loyaltyApi'
+import { AvatarBadge, FounderChip } from '@/components/features/membership/AvatarBadge'
+import { TierBadge } from '@/components/features/membership/TierBadge'
+import { useMemberMarks } from '@/components/features/rewards/useMemberMarks'
 import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
@@ -56,6 +58,7 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const isStaff = useStaffAccess()
   const member = useMembershipCopy()
+  const marks = useMemberMarks()
   const me = useBillingStore((st) => st.me)
   const billing = billingOn(me)
   const plan = subscriptionView(billing ? me : null)
@@ -163,19 +166,20 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
               role="menuitem"
               className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
             >
-              <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)]">
+              <AvatarBadge size="sm" proTag={marks.proTag} founder={!!marks.founderNumber}>
                 {avatarSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarSrc} alt="" className="size-full object-cover" width={44} height={44} />
+                  <img src={avatarSrc} alt="" width={40} height={40} />
                 ) : (
-                  <User className="size-5 text-[var(--color-brand-text-secondary)]" />
+                  <User className="size-5" aria-hidden />
                 )}
-              </span>
+              </AvatarBadge>
               <span className={cn('min-w-0 flex-1', locale === 'ar' && 'text-end')}>
                 <span className="flex items-center gap-2">
                   <span className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{displayName}</span>
                   {isStaff ? <Badge variant="brand" size="xs">{copy.menu.admin}</Badge> : null}
-                  {billing && me?.loyalty?.founderNumber != null ? <Badge tone="founder" size="xs">{formatFounderNumber(me.loyalty.founderNumber)}</Badge> : billing && plan.proActive ? <Badge tone="pro" size="xs">{member.mark}</Badge> : null}
+                  {marks.tier ? <TierBadge tier={marks.tier} size={16} label={marks.tierLabel} className="shrink-0" /> : null}
+                  {marks.founderNumber ? <FounderChip number={marks.founderNumber} className="shrink-0" /> : null}
                 </span>
                 {displayEmail ? <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{displayEmail}</span> : null}
               </span>

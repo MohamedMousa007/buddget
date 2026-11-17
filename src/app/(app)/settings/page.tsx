@@ -13,6 +13,8 @@ import { SecurityEntry } from '@/components/features/settings/hub/SecurityCard'
 import { SettingsSearch } from '@/components/features/settings/hub/SettingsSearch'
 import { SmsCard } from '@/components/features/settings/hub/SmsCard'
 import { MembershipCard } from '@/components/features/settings/hub/MembershipCard'
+import { MembershipRows } from '@/components/features/settings/hub/MembershipRows'
+import { InviteCta } from '@/components/features/invite/InviteCta'
 import { Card } from '@/components/ui/card'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -53,6 +55,8 @@ export default function SettingsPage() {
       <PageBody narrow className="space-y-4">
         <ProfileBanner />
         {user ? <MembershipCard /> : null}
+        {user ? <MembershipRows /> : null}
+        {user ? <InviteCta /> : null}
         <Card padding="none">
           <QuickActions variant="hub" onSearch={() => setSearching(true)} />
         </Card>

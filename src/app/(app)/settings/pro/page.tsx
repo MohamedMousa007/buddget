@@ -7,6 +7,7 @@ import { useUsageStore } from '@/lib/usage/usageStore'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
 import { subscriptionView } from '@/lib/billing/subscriptionView'
+import { planPageStateOf } from '@/components/features/billing/planBilling'
 import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
 import { navigate } from '@/lib/navigation/navigate'
 
@@ -25,7 +26,7 @@ export default function ProPage() {
   if (me && !on) return null
   return (
     <SettingsSubPageShell title={c.state.title}>
-      {!me ? <p role="status" className="text-sm text-[var(--color-brand-text-muted)]">{c.state.loading}</p> : welcome && subscriptionView(me).proActive ? <WelcomeToPro me={me} back={welcome === 'back'} onDone={() => setWelcome(null)} /> : subscriptionView(me).kind === 'free' ? <PlansView /> : <ProStateView me={me} />}
+      {!me ? <p role="status" className="text-sm text-[var(--color-brand-text-muted)]">{c.state.loading}</p> : welcome && subscriptionView(me).proActive ? <WelcomeToPro me={me} back={welcome === 'back'} onDone={() => setWelcome(null)} /> : planPageStateOf(me) === 'free' ? <PlansView /> : <ProStateView me={me} />}
     </SettingsSubPageShell>
   )
 }

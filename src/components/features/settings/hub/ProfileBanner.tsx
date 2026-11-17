@@ -5,7 +5,9 @@ import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Badge } from '@/components/ui/badge'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
-import { formatFounderNumber } from '@/lib/loyalty/loyaltyApi'
+import { AvatarBadge, FounderChip } from '@/components/features/membership/AvatarBadge'
+import { TierBadge } from '@/components/features/membership/TierBadge'
+import { useMemberMarks } from '@/components/features/rewards/useMemberMarks'
 import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { Card } from '@/components/ui/card'
@@ -28,6 +30,7 @@ export function ProfileBanner() {
   const me = useBillingStore((st) => st.me)
   const loyalty = billingOn(me) ? me?.loyalty ?? null : null
   const member = useMembershipCopy().founders
+  const marks = useMemberMarks()
   const avatarSrc = resolveProfileAvatarSrc(profile)
   const Chevron = locale === 'ar' ? ChevronLeft : ChevronRight
 
@@ -39,21 +42,24 @@ export function ProfileBanner() {
           padding="none"
           className="flex w-full items-center gap-3 px-4 py-3 hover:bg-[var(--color-brand-elevated)]"
         >
-          <span className="size-12 shrink-0 overflow-hidden rounded-full bg-[var(--color-brand-elevated)] ring-2 ring-[var(--color-brand-primary)] ring-offset-2 ring-offset-[var(--color-brand-card)]">
+          <AvatarBadge size="sm" proTag={marks.proTag} founder={!!marks.founderNumber} className="mb-1">
             {avatarSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarSrc} alt="" className="size-full object-cover" width={48} height={48} />
+              <img src={avatarSrc} alt="" width={40} height={40} />
             ) : (
-              <span className="flex size-full items-center justify-center"><User className="size-6 text-[var(--color-brand-text-secondary)]" /></span>
+              <User className="size-5" aria-hidden />
             )}
-          </span>
+          </AvatarBadge>
           <span className={cn('min-w-0 flex-1', locale === 'ar' && 'text-end')}>
-            <span className="block truncate text-base font-semibold text-[var(--color-brand-text-primary)]">{profile.name || t.common.user}</span>
+            <span className={cn('flex min-w-0 items-center gap-1.5', locale === 'ar' && 'flex-row-reverse')}>
+              <span className="truncate text-base font-semibold text-[var(--color-brand-text-primary)]">{profile.name || t.common.user}</span>
+              {marks.tier ? <TierBadge tier={marks.tier} size={16} label={marks.tierLabel} className="shrink-0" /> : null}
+              {marks.founderNumber ? <FounderChip number={marks.founderNumber} className="shrink-0" /> : null}
+            </span>
             <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{user.email || profile.email || copy.profileHint}</span>
-            {loyalty && (loyalty.founderNumber !== null || loyalty.betaTester) ? (
+            {loyalty?.betaTester ? (
               <span className={cn('mt-1 flex flex-wrap gap-1.5', locale === 'ar' && 'justify-end')}>
-                {loyalty.founderNumber !== null ? <Badge tone="founder" size="sm">{member.badge(formatFounderNumber(loyalty.founderNumber))}</Badge> : null}
-                {loyalty.betaTester ? <Badge tone="beta" size="sm">{member.betaBadge}</Badge> : null}
+                <Badge tone="beta" size="sm">{member.betaBadge}</Badge>
               </span>
             ) : null}
           </span>

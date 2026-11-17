@@ -8,6 +8,10 @@ import { useWeekCheckStore } from '@/lib/loyalty/weekCheckStore'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
 import { startBillingSession } from '@/lib/billing/billingSession'
 import { stopPurchases } from '@/lib/billing/purchases'
+import { redeemRememberedInvite } from '@/components/features/invite/inviteCode'
+import { BUDDGY_LOOK_ATTR } from '@/components/features/rewards/cosmetics'
+import { isNative } from '@/lib/native/isNative'
+import { redeemInviteCode } from '@/lib/referrals/referralsApi'
 
 /**
  * Loads the plan for the signed-in user and, only when the server's billing switch is on, starts the store SDK as that user
@@ -35,6 +39,24 @@ export function BillingHost() {
   useEffect(() => {
     if (userId) void startBillingSession(userId, enabled)
   }, [userId, enabled])
+
+  // A code from an invite link or the sign-up field is redeemed once the account exists; the server decides whether it counts.
+  useEffect(() => {
+    if (!userId || !enabled) return
+    let live = true
+    void (async () => {
+      const deviceId = isNative() ? await import('@/lib/native/deviceId').then((m) => m.getOrCreateDeviceId()).catch(() => null) : null
+      if (live && (await redeemRememberedInvite(redeemInviteCode, deviceId)) === 'ok') await refresh()
+    })()
+    return () => { live = false }
+  }, [userId, enabled, refresh])
+
+  // The chosen Buddgy look is published on <html> for the Buddgy face to style against.
+  const look = useBillingStore((s) => s.me?.rewards?.cosmetics.buddgyLook)
+  useEffect(() => {
+    if (look && look !== 'classic') document.documentElement.setAttribute(BUDDGY_LOOK_ATTR, look)
+    else document.documentElement.removeAttribute(BUDDGY_LOOK_ATTR)
+  }, [look])
 
   // The weekly check's figures, only while selling is on.
   useEffect(() => {

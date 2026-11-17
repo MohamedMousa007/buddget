@@ -1,15 +1,21 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Share2 } from 'lucide-react'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { CardSpotlight } from '@/components/features/membership/FlipCardRig'
+import { FounderSignatureCard } from '@/components/features/membership/FounderSignatureCard'
 import { MemberCard } from '@/components/features/membership/MemberCard'
+import { MembershipPanel } from '@/components/features/membership/PointsList'
+import { Fine, PageStack, Section, Sub, plainDate } from '@/components/features/rewards/pageParts'
 import { MembershipHero } from '@/components/features/membership/MembershipHero'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
+import { useLocale, useT } from '@/lib/i18n'
 import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
+import { useRewardsCopy } from '@/lib/i18n/rewardsCopy'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { founderCardImage, shareOrSaveImage } from '@/lib/loyalty/founderCardImage'
 import { fetchCredits, formatFounderNumber, requestCreditName, type CreditRow } from '@/lib/loyalty/loyaltyApi'
 import { navigate } from '@/lib/navigation/navigate'
@@ -21,6 +27,11 @@ import { navigate } from '@/lib/navigation/navigate'
 export default function FoundersPage() {
   const c = useMembershipCopy()
   const f = c.founders
+  const fc = useRewardsCopy().founders
+  const t = useT()
+  const { locale } = useLocale()
+  const { user } = useAuth()
+  const profileName = useFinanceStore((st) => st.profile.name) || t.common.user
   const me = useBillingStore((s) => s.me)
   const on = billingOn(me)
   const loyalty = me?.loyalty ?? null
@@ -60,64 +71,71 @@ export default function FoundersPage() {
     if (!blob || !(await shareOrSaveImage(blob, `founder-${formatFounderNumber(number).slice(1)}.png`))) setShareError(true)
   }
 
+  const tag = number !== null ? formatFounderNumber(number) : ''
+  const joined = plainDate(user?.created_at, locale)
+
   return (
-    <SettingsSubPageShell title={f.title} backHref="/settings/pro">
-      <div className="space-y-5">
-        <MembershipHero tone="founder">
-          {number !== null ? (
-            <MemberCard kind="founder" mark={f.mark} number={formatFounderNumber(number)} facts={[{ label: f.yourNumber, value: formatFounderNumber(number) }]} />
-          ) : (
+    <SettingsSubPageShell title={f.title}>
+      <PageStack>
+        {number !== null ? (
+          <CardSpotlight hint={fc.tap}>
+            <FounderSignatureCard
+              flipLabel={fc.flip(number)}
+              front={{ mark: fc.mark, number: tag, name: profileName, numberLabel: f.yourNumber, thanks: fc.thanks }}
+              back={{ mark: fc.clubMark, perks: fc.backPerks(tag), footer: [joined ? fc.joined(joined) : '', fc.forGood] }}
+            />
+          </CardSpotlight>
+        ) : (
+          <MembershipHero tone="founder">
             <MemberCard kind="beta" mark={f.betaTitle} />
-          )}
-          <p dir="auto" className="text-sm leading-relaxed text-[var(--member-fg-2)]">{number !== null ? f.heroLine : f.betaLine}</p>
-        </MembershipHero>
+            <p dir="auto" className="text-sm leading-relaxed text-[var(--member-fg-2)]">{f.betaLine}</p>
+          </MembershipHero>
+        )}
 
         {number !== null ? (
           <>
-            <section className="space-y-2">
-              <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{f.perksTitle}</h2>
-              <Card padding="md" divide>
-                {f.perks.map((perk) => (
-                  <div key={perk.t} dir="auto" className="py-2.5 first:pt-0 last:pb-0">
-                    <p className="text-sm font-bold text-[var(--color-brand-text-primary)]">{perk.t}</p>
-                    <p className="mt-0.5 text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{perk.d}</p>
+            <Section title={fc.getTitle}>
+              <MembershipPanel>
+                {fc.perks.map((perk, i) => (
+                  <div key={perk.t} dir="auto" className={i > 0 ? 'border-t border-[var(--color-brand-border)] px-4 py-[13px]' : 'px-4 py-[13px]'}>
+                    <b className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{perk.t}</b>
+                    <Sub>{perk.d}</Sub>
                   </div>
                 ))}
-              </Card>
-              <p dir="auto" className="rounded-[14px] bg-[var(--color-brand-elevated)] px-3.5 py-3 text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{f.fact}</p>
-            </section>
+              </MembershipPanel>
+              <Fine>{fc.fine}</Fine>
+            </Section>
 
-            <section className="space-y-2">
+            <section className="grid gap-2">
               <label htmlFor="credit-name" dir="auto" className="block text-sm font-bold text-[var(--color-brand-text-primary)]">{f.nameLabel}</label>
               <Input id="credit-name" size="brand" dir="auto" value={name} maxLength={60} placeholder={f.namePlaceholder} onChange={(e) => { setName(e.target.value); setStatus('idle') }} />
-              <div className="flex gap-2">
-                <Button size="touch" className="flex-1 font-semibold" loading={busy} disabled={!name.trim()} onClick={() => void send(name)}>{f.nameSend}</Button>
-                <Button size="touch" variant="ghost" disabled={busy} onClick={() => void send('')}>{f.nameClear}</Button>
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <Button size="touch" className="h-12 font-bold" loading={busy} disabled={!name.trim()} onClick={() => void send(name)}>{f.nameSend}</Button>
+                <Button size="touch" variant="outline" className="h-12" disabled={busy} onClick={() => void send('')}>{f.nameClear}</Button>
               </div>
-              {status === 'pending' ? <p role="status" dir="auto" className="text-xs text-[var(--color-brand-text-secondary)]">{f.namePending}</p> : mine?.credit_name ? <p role="status" dir="auto" className="text-xs text-[var(--color-brand-text-secondary)]">{f.nameApproved}</p> : null}
-              <p dir="auto" className="text-xs text-[var(--color-brand-text-muted)]">{f.editNote}</p>
+              {status === 'pending' ? <p role="status" dir="auto" className="text-[0.71875rem] text-[var(--color-brand-text-muted)]">{f.namePending}</p> : mine?.credit_name ? <p role="status" dir="auto" className="text-[0.71875rem] text-[var(--color-brand-text-muted)]">{f.nameApproved}</p> : null}
+              <p dir="auto" className="text-[0.71875rem] text-[var(--color-brand-text-muted)]">{f.editNote}</p>
             </section>
 
-            <div className="space-y-1.5">
-              <Button size="cta-block" variant="outline" onClick={() => void share()} className="font-semibold"><Share2 aria-hidden />{f.share}</Button>
+            <div className="grid gap-1.5">
+              <Button size="touch" variant="outline" onClick={() => void share()} className="w-full font-semibold">{f.share}</Button>
               {shareError ? <p role="status" className="text-xs text-[var(--color-brand-red)]">{f.shareFail}</p> : null}
             </div>
           </>
         ) : null}
 
-        <section className="space-y-2">
-          <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{f.creditsTitle}</h2>
-          <p dir="auto" className="text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{f.creditsHint}</p>
-          <Card padding="none" divide className="overflow-hidden">
-            {(credits ?? []).map((row) => (
-              <div key={row.number} dir="ltr" className="grid min-h-[52px] grid-cols-[64px_minmax(0,1fr)] items-center gap-2.5 px-4">
-                <span className="font-mono-numbers text-[0.9375rem] font-semibold text-[var(--color-brand-gold)]">{formatFounderNumber(row.number)}</span>
-                <span dir="auto" className={row.credit_name ? 'text-sm text-[var(--color-brand-text-primary)]' : 'text-sm text-[var(--color-brand-text-secondary)]'}>{row.credit_name ?? f.anon}</span>
+        <Section title={f.creditsTitle}>
+          <Sub>{f.creditsHint}</Sub>
+          <MembershipPanel>
+            {(credits ?? []).map((row, i) => (
+              <div key={row.number} dir="ltr" className={`flex min-h-11 items-center gap-3.5 px-4 py-[13px] text-sm rtl:flex-row-reverse ${i > 0 ? 'border-t border-[var(--color-brand-border)]' : ''}`}>
+                <b className="font-mono-numbers min-w-11 font-semibold text-[var(--color-brand-gold)]">{formatFounderNumber(row.number)}</b>
+                <span dir="auto" className={row.credit_name ? 'text-[var(--color-brand-text-primary)]' : 'text-[var(--color-brand-text-muted)]'}>{row.credit_name ?? f.anon}{row.number === number ? ` · ${fc.you}` : ''}</span>
               </div>
             ))}
-          </Card>
-        </section>
-      </div>
+          </MembershipPanel>
+        </Section>
+      </PageStack>
     </SettingsSubPageShell>
   )
 }

@@ -47,6 +47,8 @@ const STASH_TARGETS = [
   // Catch-all that renders the branded 404: a dynamic route cannot be exported without generateStaticParams, and the export already emits 404.html.
   { from: 'src/app/(app)/[...slug]', to: '.cap-stash/app-catch-all' },
   { from: 'src/app/setup', to: '.cap-stash/setup' },
+  // The invite link is a web route handler with a dynamic segment; native users type the code at sign-up.
+  { from: 'src/app/i', to: '.cap-stash/invite-link' },
   { from: 'src/app/sitemap.ts', to: '.cap-stash/sitemap.ts' },
   // The marketing website is web-only: static pages with their own root layouts.
   { from: 'src/app/(site-en)', to: '.cap-stash/site-en' },

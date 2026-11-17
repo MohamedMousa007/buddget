@@ -1,106 +1,166 @@
 'use client'
 
-import { useEffect } from 'react'
-import { NoticeBanners } from '@/components/features/usage/NoticeHost'
-import { UsageMeter } from '@/components/features/usage/UsageMeter'
+import { useEffect, useMemo, useState } from 'react'
+import { Sparkles } from 'lucide-react'
+import { priceRegion } from '@/components/features/billing/planBilling'
 import { MembershipHero } from '@/components/features/membership/MembershipHero'
+import { MembershipPanel } from '@/components/features/membership/PointsList'
+import { SparksPacks, packTotalSparks } from '@/components/features/membership/SparksPacks'
+import { PageStack, Section, SectionTitle, Sub } from '@/components/features/rewards/pageParts'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
+import { NoticeBanners } from '@/components/features/usage/NoticeHost'
+import { packLists } from '@/components/features/usage/packList'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { FactsTable } from '@/components/ui/FactsTable'
 import { SkeletonList } from '@/components/ui/SkeletonList'
-import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
+import { billingOn, useBillingStore, type UsageWindow } from '@/lib/billing/billingStore'
+import { PRO_PACK_BONUS } from '@/lib/billing/packBonus'
 import { subscriptionView } from '@/lib/billing/subscriptionView'
+import { useSparksPacks } from '@/lib/billing/useSparksPacks'
 import { useLocale } from '@/lib/i18n'
+import { useRewardsCopy } from '@/lib/i18n/rewardsCopy'
 import { useUsageCopy } from '@/lib/i18n/usageCopy'
 import { navigate } from '@/lib/navigation/navigate'
-import { clock, shortDate, weekdayDate } from '@/lib/usage/format'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { featureShares } from '@/lib/usage/featureShares'
-import { useUsageStore } from '@/lib/usage/usageStore'
+import { clock, weekdayDate } from '@/lib/usage/format'
+import { cn } from '@/lib/utils'
 
-/** The Usage page (replaces the Sparks page): the two meters, Sparks, this week by feature, and the other limits. */
+function Meter({ label, window, foot }: { label: string; window: UsageWindow; foot: string }) {
+  const pct = Math.min(100, Math.max(0, Math.round(window.pct ?? 0)))
+  return (
+    <div className="grid gap-2 px-4 py-3.5">
+      <div dir="auto" className="flex justify-between text-sm font-semibold text-[var(--member-fg)]">
+        <span>{label}</span>
+        <span dir="ltr" className="font-mono-numbers">{window.pct === null ? '—' : `${pct}%`}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-[var(--member-cell)]" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+        <i className={cn('block h-full rounded-full', pct >= 80 ? 'bg-[var(--color-hero-stat-savings)]' : 'bg-[var(--member-mint)]')} style={{ width: `${pct}%` }} />
+      </div>
+      <span dir="auto" className="text-xs text-[var(--member-fg-2)]">{foot}</span>
+    </div>
+  )
+}
+
+function LimitRow({ label, value, mono, first }: { label: string; value: string; mono?: boolean; first?: boolean }) {
+  return (
+    <div className={cn('flex items-center justify-between gap-3 px-4 py-[13px] text-sm', !first && 'border-t border-[var(--color-brand-border)]')}>
+      <span dir="auto" className="text-[var(--color-brand-text-secondary)]">{label}</span>
+      <b dir={mono ? 'ltr' : 'auto'} className={cn('font-semibold text-[var(--color-brand-text-primary)]', mono && 'font-mono-numbers')}>{value}</b>
+    </div>
+  )
+}
+
+/** Usage: the two meters with their credit amounts, the Sparks wallet with the packs inline, where the week went, and the other limits. */
 export default function UsagePage() {
   const copy = useUsageCopy()
-  const p = copy.page
+  const u = useRewardsCopy().usage
   const { locale } = useLocale()
   const me = useBillingStore((s) => s.me)
   const refresh = useBillingStore((s) => s.refresh)
-  const setPacksOpen = useUsageStore((s) => s.setPacksOpen)
+  const country = useFinanceStore((s) => s.profile.country)
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
   const on = billingOn(me)
+  const store = useSparksPacks(on)
+  const [picked, setPicked] = useState<string | null>(null)
+  const [note, setNote] = useState<string | null>(null)
 
   useEffect(() => {
     if (me && !on) navigate('/settings', { replace: true })
   }, [me, on])
   useEffect(() => { if (on) void refresh() }, [on, refresh])
 
+  const products = me?.sparkProducts
+  const storePacks = store.packs
+  const lists = useMemo(
+    () => packLists((products ?? []).map((p) => ({ ...p, countries: p.countries ?? null })), priceRegion(country, baseCurrency), store.available ? new Map(storePacks.map((p) => [p.id, p.price])) : null, u.packs.egypt),
+    [products, country, baseCurrency, store.available, storePacks, u.packs.egypt],
+  )
+  const all = [...lists.main, ...lists.extra]
+  const selected = all.find((p) => p.id === picked) ?? all.find((p) => p.id === lists.popularId) ?? null
+  const selectedId = selected?.id ?? null
+  const syncStore = store.setSelected
+  // The store hook buys its own selection: keep it on the pack shown selected here.
+  useEffect(() => { if (selectedId) syncStore(selectedId) }, [selectedId, syncStore])
+
   if (me && !on) return null
   const usage = me?.usage
   const view = subscriptionView(me)
-  const plan = view.kind === 'trial' ? p.trialPlan(view.trialDay ?? 1) : view.proActive ? p.proPlan : p.freePlan
   const paid = view.proActive
+  const bonus = me?.rewards?.packBonusPercent ?? 0
   const shares = usage ? featureShares(usage.byFeature) : []
 
+  const buy = async () => {
+    setNote(null)
+    if (!store.available || !storePacks.some((p) => p.id === selectedId)) return setNote(u.unavailable)
+    await store.buy()
+  }
+
   return (
-    <SettingsSubPageShell title={p.title} backHref="/settings/pro">
+    <SettingsSubPageShell title={copy.page.title} backHref="/settings/pro">
       {!me ? (
         <SkeletonList rows={4} />
       ) : !usage ? (
-        <EmptyState title={p.errorTitle} description={p.errorBody} action={<Button size="touch" onClick={() => void refresh()}>{copy.actions.tryAgain}</Button>} />
+        <EmptyState title={copy.page.errorTitle} description={copy.page.errorBody} action={<Button size="touch" onClick={() => void refresh()}>{copy.actions.tryAgain}</Button>} />
       ) : (
-        <div className="space-y-5">
+        <PageStack>
           <NoticeBanners screen="usage" />
-          <MembershipHero tone="pro">
-            <p dir="auto" className="text-sm font-semibold">{plan}</p>
-            <div className="flex flex-col gap-4 rounded-[18px] bg-[var(--color-brand-card)] p-4 text-[var(--color-brand-text-primary)]">
-              <UsageMeter label={copy.meter.session} pct={usage.session.pct} value={usage.session.pct === null ? '—' : copy.meter.pct(usage.session.pct)} note={usage.session.pct === null ? undefined : usage.session.pct >= 100 ? copy.meter.reached : usage.session.resetAt ? copy.meter.resets(clock(usage.session.resetAt, locale)) : undefined} />
-              <UsageMeter label={copy.meter.week} pct={usage.week.pct} value={usage.week.pct === null ? '—' : copy.meter.pct(usage.week.pct)} note={usage.week.pct === null ? undefined : usage.week.pct >= 100 ? copy.meter.reached : copy.meter.resets(weekdayDate(usage.week.resetAt, locale))} />
+          <MembershipHero tone="pro" className="gap-3 rounded-[22px] p-4">
+            <div dir="auto" className="flex items-center justify-between gap-2 font-bold">
+              <span>{view.kind === 'trial' ? u.trial : paid ? u.pro : u.freePlan}</span>
+              <span className="shrink-0 whitespace-nowrap rounded-full bg-[var(--member-cell)] px-2.5 py-1 text-[0.71875rem] font-bold">{paid ? u.pillPro : u.pillFree(Math.round(usage.week.pct ?? 0))}</span>
+            </div>
+            <div className="divide-y divide-[var(--member-line)] rounded-[20px] border border-[var(--member-line)] bg-black/40">
+              <Meter label={u.session} window={usage.session} foot={usage.session.pct !== null && usage.session.pct >= 100 && !usage.session.resetAt ? copy.meter.reached : u.refillsAt(clock(usage.session.resetAt, locale) || '—', usage.session.limit ?? 0)} />
+              <Meter label={u.week} window={usage.week} foot={u.refillsOn(weekdayDate(usage.week.resetAt, locale) || '—', usage.week.limit ?? 0)} />
             </div>
           </MembershipHero>
 
-          <section className="space-y-2">
-            <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{paid ? p.sparksHead : p.needMore}</h2>
-            <Card padding="md" className="space-y-3">
-              <div dir="auto" className="flex items-baseline justify-between gap-3">
-                <span className="text-sm font-semibold text-[var(--color-brand-text-primary)]">{p.sparksHead}</span>
-                <span dir="ltr" className="font-mono-numbers text-3xl font-semibold text-[var(--color-brand-text-primary)]">{usage.sparksLeft}</span>
+          <MembershipPanel className="grid gap-3.5 p-4">
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-[34px] shrink-0 place-items-center rounded-[11px] bg-[var(--color-brand-primary-soft)] text-[var(--color-brand-primary-ink)]"><Sparkles className="size-[18px]" aria-hidden /></span>
+                <div><SectionTitle>{u.sparks}</SectionTitle><Sub>{u.sparksSub}</Sub></div>
               </div>
-              <p dir="auto" className="text-[0.8125rem] leading-snug text-[var(--color-brand-text-secondary)]">{p.sparksNote}</p>
-              {paid ? <p dir="auto" className="text-xs font-semibold text-[var(--color-brand-primary-ink)]">{p.bonusAdded}</p> : null}
-              <div className="flex gap-2">
-                <Button size="touch" className="flex-1 font-semibold" onClick={() => setPacksOpen(true)}>{copy.actions.getSparks}</Button>
-                {!paid ? <Button size="touch" variant="outline" className="flex-1 font-semibold" onClick={() => navigate('/settings/pro')}>{copy.actions.goPro}</Button> : null}
-              </div>
-            </Card>
-          </section>
+              <b dir="ltr" className="font-mono-numbers text-[2rem] font-semibold text-[var(--color-brand-text-primary)]">{usage.sparksLeft}</b>
+            </div>
+            {selected ? (
+              <SparksPacks
+                packs={lists.main}
+                extraPacks={lists.extra}
+                selected={selected.id}
+                onSelect={(id) => { setPicked(id); setNote(null) }}
+                popularId={lists.popularId}
+                bonusPercent={bonus}
+                copy={u.packs}
+                disabled={store.busy}
+                cta={{ label: u.get(packTotalSparks(selected, bonus)), onClick: () => void buy(), loading: store.busy }}
+                upsell={bonus > 0 ? undefined : { text: u.withPro(packTotalSparks(selected, PRO_PACK_BONUS)), actionLabel: u.seePro, onAction: () => navigate('/settings/pro') }}
+                finePrint={bonus > 0 ? u.packsFine(bonus) : undefined}
+              />
+            ) : null}
+            {note ? <p role="status" dir="auto" className="text-center text-xs text-[var(--color-brand-text-secondary)]">{note}</p> : null}
+          </MembershipPanel>
 
-          <section className="space-y-2">
-            <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{p.byFeature}</h2>
-            <Card padding="none" divide className="overflow-hidden">
-              {shares.map((row) => (
-                <div key={row.key} dir="auto" className="flex min-h-[52px] items-center gap-3 px-4 py-2 text-sm">
-                  <span className="flex-1 text-[var(--color-brand-text-primary)]">{p.features[row.key]}</span>
-                  <span dir="ltr" className="font-mono-numbers font-semibold text-[var(--color-brand-text-primary)]">{copy.meter.pct(row.pct)}</span>
-                </div>
-              ))}
-              <div dir="auto" className="flex min-h-[52px] items-center gap-3 bg-[var(--color-brand-green-soft)] px-4 py-2 text-sm">
-                <span className="flex-1 text-[var(--color-brand-text-primary)]">SMS</span>
-                <span className="font-semibold text-[var(--color-brand-green)]">{p.smsNever}</span>
+          <Section title={u.wentTitle}>
+            <MembershipPanel className="overflow-hidden">
+              {shares.map((row, i) => <LimitRow key={row.key} first={i === 0} label={u.features[row.key]} value={`${row.pct}%`} mono />)}
+              <div className={cn('flex items-center justify-between gap-3 bg-[var(--color-brand-green-soft)] px-4 py-[13px] text-sm', shares.length > 0 && 'border-t border-[var(--color-brand-border)]')}>
+                <span dir="auto" className="text-[var(--color-brand-text-secondary)]">{u.sms}</span>
+                <b dir="auto" className="font-semibold text-[var(--color-brand-green)]">{u.never}</b>
               </div>
-            </Card>
-          </section>
+            </MembershipPanel>
+          </Section>
 
-          <section className="space-y-2">
-            <h2 dir="auto" className="text-xl font-extrabold tracking-tight text-[var(--color-brand-text-primary)] rtl:font-bold rtl:tracking-normal">{p.otherLimits}</h2>
-            <FactsTable
-              rows={[
-                { label: p.plans, value: p.plansValue(usage.plans.used, usage.plans.limit) },
-                { label: p.views, value: p.viewsValue(usage.balanceViews.used, usage.balanceViews.limit, shortDate(usage.balanceViews.resetAt, locale)) },
-                { label: p.advisor, value: usage.advisor.entitled ? p.advisorIncluded : p.advisorValue(usage.advisor.free_left) },
-              ]}
-            />
-          </section>
-        </div>
+          <Section title={u.otherTitle}>
+            <MembershipPanel>
+              <LimitRow first label={u.views} value={usage.balanceViews.limit === null ? u.unlimited : u.of(usage.balanceViews.used, usage.balanceViews.limit)} mono={usage.balanceViews.limit !== null} />
+              <LimitRow label={u.plans} value={usage.plans.limit === null ? u.unlimited : u.of(usage.plans.used, usage.plans.limit)} mono={usage.plans.limit !== null} />
+              <LimitRow label={u.advisor} value={usage.advisor.entitled ? u.included : u.freeThisMonth(usage.advisor.free_left)} />
+            </MembershipPanel>
+            {paid ? null : <Button size="touch" variant="outline" className="w-full font-semibold" onClick={() => navigate('/settings/pro')}>{u.removeLimits}</Button>}
+          </Section>
+        </PageStack>
       )}
     </SettingsSubPageShell>
   )
