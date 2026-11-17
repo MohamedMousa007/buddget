@@ -245,6 +245,12 @@
      The tints are white at fixed alphas for text and cells that sit on those surfaces in either theme. */
   --member-gold-hi: #EDC463;
   --member-gold-mid: #B68E30;
+  /* Gilt for Pro, Rewards and Founders (docs/design/pro-rewards): hairlines, the PRO tag, "Most popular", the Free-cap marker.
+     Deeper on light surfaces, brighter on dark ones. Fills and lines only: gold text uses --color-brand-gold. */
+  --member-gilt-hi: #C99A35;
+  --member-gilt-mid: #9C7623;
+  --member-gilt-lo: #E3C06A;
+  --member-on-gilt: #2A1D04;
   --member-mint: var(--color-hero-stat-income);
   --member-aurora:
     radial-gradient(70% 55% at 92% 0%, color-mix(in oklab, var(--member-mint) 42%, transparent), transparent 70%),
@@ -311,6 +317,9 @@
 
 /* ── Dark theme — the product default ── */
 .dark {
+  --member-gilt-hi: #EDC463;
+  --member-gilt-mid: #B68E30;
+  --member-gilt-lo: #F5D98A;
   --color-brand-primary: #1FC3B2;
   --color-brand-primary-hover: #35D4C3;
   --color-brand-primary-ink: #7FE6DA;
