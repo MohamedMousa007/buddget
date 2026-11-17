@@ -20,6 +20,8 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Order: migration -> apply with `execute_sql` -> regenerate `database.types.ts` -> then code. Never write UI against a column the live DB lacks.
 - Adding a field to a type in `src/lib/store/types.ts` or a mapper: check whether a SQL migration is needed.
 - Before drop/alter column: run a `SELECT` for row counts and data-loss risk.
+- A restore, project copy or region move resets every grant to the platform default (it happened on the Frankfurt move). After one, re-apply `0315_function_lockdown.sql` and `0316_table_grants_restore.sql` (both are safe to run again), then check `get_advisors`.
+- New tables get nothing for `anon` by default (0316); grant only what a policy needs.
 - New functions get no `EXECUTE` for `anon`/`authenticated` by default (migration 0315). Grant it in the same migration, to the narrowest role that calls it; server-only functions get `service_role` only.
 
 ## Database load (the live database is a small instance; protect it)
