@@ -21,6 +21,19 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Adding a field to a type in `src/lib/store/types.ts` or a mapper: check whether a SQL migration is needed.
 - Before drop/alter column: run a `SELECT` for row counts and data-loss risk.
 
+## Database load (the live database is a small instance; protect it)
+- Test before you run: `EXPLAIN` (no `ANALYZE`) every new or changed query on the live DB first. No sequential scan on a table that grows with users or events; add the index in the same migration.
+- Bound every query: a `WHERE` on an indexed column, a `LIMIT`, and keyset pagination (never `OFFSET` on large tables, never `SELECT *` in app code, never `count(*)` over a whole growing table on a hot path).
+- One round trip per screen: batch reads into one RPC or one query with joins; no per-row loops (N+1) in routes, crons or the client.
+- Do the work in the database in sets: one `INSERT ... SELECT` / `UPDATE ... FROM`, not a loop of statements. Bulk writes go in batches of at most a few thousand rows with a short `statement_timeout`.
+- Cron and background jobs: set-based SQL that returns only the rows that need work, a cursor, and a hard time budget. Never one query per user.
+- Indexes: one for every foreign key and every filter or sort used by a hot query; partial indexes for "open" rows; no duplicate or unused indexes. Check `get_advisors` after a migration and fix what it reports.
+- RLS policies use `(select auth.uid())` and indexed columns; no function calls per row.
+- Keep rows small and tables short: aggregate counters instead of re-counting, retention on event/log tables, no raw event rows kept without a purge.
+- Cache what does not change per request (settings, plans, prices) in the server with a TTL; do not read them on every call.
+- Diagnostics (`pg_stat_statements`, table sizes, ad-hoc analytics) run one at a time, off peak, with a `LIMIT`. Never run an untested heavy query "to see".
+- Details and the measured hot spots: `docs/DB_SCALING_PLAN.md`.
+
 ## UI & design system
 - Read `docs/DESIGN_SYSTEM.md` before touching any UI. Tokens only: no hardcoded hex, inputs at standard heights, touch targets 44x44px minimum, safe-area classes.
 - Reuse first: search `src/components/ui` and `src/components/features` (heroes use `HeroBand`; sheets, chips, cards, rows have primitives) and name what you reused. A composition of existing parts is not a new component.
