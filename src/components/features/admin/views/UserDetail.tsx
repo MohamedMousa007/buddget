@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { SelectField } from '@/components/ui/SelectField'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { REWARDS_READ_PERMISSIONS } from '@/lib/admin/rewardsOps'
 import { FEATURE_CATALOG, LIMIT_CATALOG, LIMIT_KEYS, type LimitKey } from '@/lib/entitlements/limits'
 import { adminNavigate } from '../adminRouter'
 import FinancialTab from './FinancialTab'
+import RewardsTab from './RewardsTab'
 import { SmsLogPanel } from './sms/SmsLogPanel'
 import { adminPost, errorMessage, useAdminQuery } from '../adminClient'
 import { ago, dateTime, num, personLabel } from '../format'
@@ -41,6 +43,7 @@ interface TimelineEvent { at: string; source: string; title: string; detail?: st
 
 const TABS = [
   { value: 'overview', label: 'Overview' }, { value: 'activity', label: 'Activity & logs' }, { value: 'sms', label: 'SMS' }, { value: 'billing', label: 'Plan & limits' },
+  { value: 'rewards', label: 'Membership & rewards' },
   { value: 'financial', label: 'Financial' }, { value: 'tools', label: 'Tools' }, { value: 'notes', label: 'Notes' },
 ] as const
 type Tab = (typeof TABS)[number]['value']
@@ -56,7 +59,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
 
   const banned = !!data.auth.banned_until && new Date(data.auth.banned_until) > new Date()
   const who = personLabel({ name: data.profile?.name, email: data.auth.email, id })
-  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'sms' ? can('sms.view') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'financial' ? can('financial.request') || can('financial.approve') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
+  const tabs = TABS.filter((t) => (t.value === 'activity' ? can('users.logs') : t.value === 'sms' ? can('sms.view') : t.value === 'billing' ? can('billing.view') || can('users.limits') : t.value === 'rewards' ? REWARDS_READ_PERMISSIONS.some(can) : t.value === 'financial' ? can('financial.request') || can('financial.approve') : t.value === 'tools' ? can('users.tools') || can('users.suspend') || can('users.reset') || can('users.delete') : true))
 
   return (
     <>
@@ -81,6 +84,7 @@ export default function UserDetail({ id, status }: { id: string; status: AdminSt
       {tab === 'activity' ? <ActivityTab id={id} /> : null}
       {tab === 'sms' ? <SmsTab id={id} can={can} /> : null}
       {tab === 'billing' ? <BillingTab id={id} data={data} can={can} onChange={refresh} /> : null}
+      {tab === 'rewards' ? <RewardsTab id={id} can={can} onChange={refresh} /> : null}
       {tab === 'financial' ? <FinancialTab id={id} /> : null}
       {tab === 'tools' ? <ToolsTab id={id} data={data} banned={banned} can={can} onChange={refresh} /> : null}
       {tab === 'notes' ? <NotesTab id={id} data={data} can={can} onChange={refresh} /> : null}

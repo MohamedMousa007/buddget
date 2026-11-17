@@ -6153,6 +6153,10 @@ export type Database = {
         Args: { p_actor: string; p_days?: number; p_user: string }
         Returns: Json
       }
+      admin_rewards_unbank_pro_days: {
+        Args: { p_actor: string; p_user: string }
+        Returns: Json
+      }
       admin_signup_series: {
         Args: { p_days?: number }
         Returns: {

@@ -17,8 +17,9 @@ import { KpiGrid, StatTile } from '../ui/Kpi'
 import { Loading, Notice, PageHeader, Panel } from '../ui/Panel'
 import { Pill, StatusPill } from '../ui/Pill'
 import type { AdminStatus } from '../types'
+import { RewardsSwitchesPanel } from './RewardsSwitchesPanel'
 
-interface Tier { key: string; name: string; description: string; min_points: number; color: string | null; perks: string[]; status: 'draft' | 'active' | 'archived'; sort_order: number }
+interface Tier { key: string; name: string; description: string; min_points: number; color: string | null; perks: string[]; status: 'draft' | 'active' | 'archived'; sort_order: number; requires_pro?: boolean; requires_founder?: boolean; sparks_gift?: number }
 interface Candidate { user_id: string; qualified_at: string; action_days: number; record_count: number; sms_on: boolean; provider: string }
 interface FounderRow { number: number; user_id: string; credit_name: string | null; credit_name_requested: string | null; credit_name_status: string; retired_at: string | null }
 interface DayCount { day: string; count: number }
@@ -46,6 +47,7 @@ export default function LoyaltyView({ status }: { status: AdminStatus }) {
   const { run, busy } = useAdminAction('/api/admin/loyalty', refresh)
   const [editing, setEditing] = useState<{ tier: Tier; isNew: boolean; perks: string } | null>(null)
   const canManage = (status.permissions ?? []).some((p) => p === '*' || p === 'loyalty.manage')
+  const can = (perm: string) => (status.permissions ?? []).some((p) => p === '*' || p === perm)
 
   if (error && !data) return <Notice tone="negative">{error}</Notice>
   if (!data) return <Loading rows={6} />
@@ -55,6 +57,7 @@ export default function LoyaltyView({ status }: { status: AdminStatus }) {
       <PageHeader title="Loyalty" description="Tiers, points and perks. Design the ladder here; points are granted from user profiles until earning rules ship." actions={canManage ? <Button size="touch" onClick={() => setEditing({ tier: BLANK, isNew: true, perks: '' })}><Plus />New tier</Button> : undefined} />
       <div className="space-y-6">
         {!data.programLive ? <Notice tone="info">The loyalty program is not live in the app yet. Tiers and balances are stored and manageable now, so launch is a switch rather than a migration.</Notice> : null}
+        <RewardsSwitchesPanel can={can} />
         <KpiGrid cols={3}>
           <StatTile label="Tiers" value={data.tiers.filter((t) => t.status === 'active').length} sub={`${data.tiers.length} defined`} icon={<Award className="size-4" />} />
           <StatTile label="Members" value={num(data.members)} sub="with a loyalty account" />
@@ -69,7 +72,7 @@ export default function LoyaltyView({ status }: { status: AdminStatus }) {
                   <li key={t.key} className="flex items-start gap-4 px-5 py-4">
                     <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full" style={{ background: t.color ?? 'var(--color-brand-primary-soft)' }}><Award className="size-4 text-[var(--color-brand-text-primary)]" aria-hidden /></span>
                     <div className="min-w-0 flex-1">
-                      <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">{t.name}<StatusPill status={t.status} /><Pill>{num(t.min_points)}+ pts</Pill><Pill tone="brand">{num(data.byTier[t.key] ?? 0)} members</Pill></p>
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">{t.name}<StatusPill status={t.status} /><Pill>{num(t.min_points)}+ pts</Pill><Pill tone="brand">{num(data.byTier[t.key] ?? 0)} members</Pill>{t.requires_pro ? <Pill tone="warn">Needs Pro</Pill> : null}{t.requires_founder ? <Pill tone="warn">Founders only</Pill> : null}{t.sparks_gift ? <Pill tone="good">+{num(t.sparks_gift)} Sparks gift</Pill> : null}</p>
                       {t.description ? <p className="mt-0.5 text-xs text-[var(--color-brand-text-muted)]">{t.description}</p> : null}
                       {t.perks.length ? <ul className="mt-2 flex flex-wrap gap-1.5">{t.perks.map((p) => <Pill key={p}>{p}</Pill>)}</ul> : null}
                     </div>
