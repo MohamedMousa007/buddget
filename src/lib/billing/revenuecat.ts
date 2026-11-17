@@ -36,6 +36,8 @@ export interface RcEvent {
   /** What the store charged, in millionths of the purchase currency. */
   priceMicros: number | null
   currency: string | null
+  /** ISO 3166 alpha-2 store country (`country_code`); sets the Egypt Pro limits. */
+  countryCode?: string | null
 }
 
 export interface EntitlementWrite {
@@ -73,6 +75,8 @@ export interface BillingEffect {
   receipt?: ReceiptNote
   endTrial?: boolean
   transfer?: { from: string[] }
+  /** The store country, stored on the entitlement (billing_apply). */
+  country?: string
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -107,6 +111,7 @@ export function parseEvent(body: unknown): RcEvent | null {
     transactionId: str(e.transaction_id),
     priceMicros: ((n) => (n === null ? null : Math.round(n * 1_000_000)))(num(e.price_in_purchased_currency)),
     currency: str(e.currency),
+    countryCode: str(e.country_code),
   }
 }
 
@@ -148,7 +153,7 @@ export function planEffects(ev: RcEvent, transferSource: EntitlementWrite | null
   if (!UUID.test(ev.appUserId) || !isPlus(ev.productId)) return 'ignore'
   const userId = ev.appUserId
   const withReceipt = (e: BillingEffect | 'ignore'): BillingEffect | 'ignore' =>
-    e === 'ignore' ? e : { ...e, receipt: { store: ev.store, product_id: ev.productId, price_micros: ev.priceMicros, currency: ev.currency } }
+    e === 'ignore' ? e : { ...e, receipt: { store: ev.store, product_id: ev.productId, price_micros: ev.priceMicros, currency: ev.currency }, ...(ev.countryCode ? { country: ev.countryCode } : {}) }
   return withReceipt(subscriptionEffect(ev, userId))
 }
 

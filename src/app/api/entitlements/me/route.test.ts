@@ -5,6 +5,7 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/lib/auth/resolveApiUser', () => ({ resolveApiUserId: async () => state.uid }))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
+    rpc: async () => ({ data: null, error: null }),
     from: (t: string) => ({
       select: () => (t === 'plans' ? Promise.resolve({ data: state.plans }) : { eq: () => ({ maybeSingle: async () => ({ data: state.ent }) }) }),
     }),

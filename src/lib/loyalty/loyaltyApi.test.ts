@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const rpc = vi.fn()
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({ rpc }) }))
-import { fetchCredits, fetchWeekSummary, formatFounderNumber, keepWeek, requestCreditName } from './loyaltyApi'
+import { applyCosmetic, buyShopItem, fetchCredits, fetchWeekSummary, formatFounderNumber, keepWeek, requestCreditName } from './loyaltyApi'
 
 beforeEach(() => rpc.mockReset())
 
@@ -22,6 +22,15 @@ describe('loyaltyApi', () => {
     expect(await fetchWeekSummary()).toBeNull()
     expect(await fetchCredits()).toEqual([])
     expect(await requestCreditName('Name')).toBe('error')
+  })
+  it('buys from the shop and applies a cosmetic through the server', async () => {
+    rpc.mockResolvedValue({ data: { status: 'ok', balance: 40, week: null }, error: null })
+    expect(await buyShopItem('streak_freeze')).toEqual({ status: 'ok', balance: 40, week: null })
+    expect(rpc).toHaveBeenCalledWith('loyalty_shop_buy', { p_item: 'streak_freeze' })
+    rpc.mockResolvedValue({ data: 'not_owned', error: null })
+    expect(await applyCosmetic('card_finish', 'aurora')).toBe('not_owned')
+    rpc.mockResolvedValue({ data: null, error: { message: 'x' } })
+    expect(await buyShopItem('streak_freeze')).toEqual({ status: 'error' })
   })
   it('requests a name and reads the list', async () => {
     rpc.mockResolvedValue({ data: 'pending', error: null })

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -2635,10 +2635,14 @@ export type Database = {
       }
       loyalty_accounts: {
         Row: {
+          buddgy_look: string
+          card_finish: string
           freezes_banked: number
+          gifted_rank: number
           kept_weeks_total: number
           last_kept_week: string | null
           lifetime_points: number
+          multiplier_step: number
           points_balance: number
           streak_best: number
           streak_weeks: number
@@ -2648,10 +2652,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          buddgy_look?: string
+          card_finish?: string
           freezes_banked?: number
+          gifted_rank?: number
           kept_weeks_total?: number
           last_kept_week?: string | null
           lifetime_points?: number
+          multiplier_step?: number
           points_balance?: number
           streak_best?: number
           streak_weeks?: number
@@ -2661,10 +2669,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          buddgy_look?: string
+          card_finish?: string
           freezes_banked?: number
+          gifted_rank?: number
           kept_weeks_total?: number
           last_kept_week?: string | null
           lifetime_points?: number
+          multiplier_step?: number
           points_balance?: number
           streak_best?: number
           streak_weeks?: number
@@ -2748,6 +2760,30 @@ export type Database = {
           },
         ]
       }
+      loyalty_owned_items: {
+        Row: {
+          acquired_at: string
+          item_key: string
+          kind: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          item_key: string
+          kind: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          item_key?: string
+          kind?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       loyalty_program: {
         Row: {
           founder_cap: number
@@ -2769,6 +2805,54 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_seasonal_freezes: {
+        Row: {
+          ends_on: string
+          id: number
+          label: string
+          starts_on: string
+        }
+        Insert: {
+          ends_on: string
+          id?: never
+          label: string
+          starts_on: string
+        }
+        Update: {
+          ends_on?: string
+          id?: never
+          label?: string
+          starts_on?: string
+        }
+        Relationships: []
+      }
+      loyalty_shop_items: {
+        Row: {
+          active: boolean
+          cost: number
+          item_key: string | null
+          key: string
+          kind: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          cost: number
+          item_key?: string | null
+          key: string
+          kind: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          cost?: number
+          item_key?: string | null
+          key?: string
+          kind?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       loyalty_tiers: {
         Row: {
           color: string | null
@@ -2778,7 +2862,10 @@ export type Database = {
           min_points: number
           name: string
           perks: Json
+          requires_founder: boolean
+          requires_pro: boolean
           sort_order: number
+          sparks_gift: number
           status: string
         }
         Insert: {
@@ -2789,7 +2876,10 @@ export type Database = {
           min_points?: number
           name: string
           perks?: Json
+          requires_founder?: boolean
+          requires_pro?: boolean
           sort_order?: number
+          sparks_gift?: number
           status?: string
         }
         Update: {
@@ -2800,8 +2890,29 @@ export type Database = {
           min_points?: number
           name?: string
           perks?: Json
+          requires_founder?: boolean
+          requires_pro?: boolean
           sort_order?: number
+          sparks_gift?: number
           status?: string
+        }
+        Relationships: []
+      }
+      member_numbers: {
+        Row: {
+          created_at: string
+          number: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          number?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          number?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -3129,6 +3240,50 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "admin_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pro_promo_grants: {
+        Row: {
+          created_at: string
+          days: number
+          granted_by: string | null
+          id: number
+          referral_id: number | null
+          revoked_at: string | null
+          source: string
+          started_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days: number
+          granted_by?: string | null
+          id?: never
+          referral_id?: number | null
+          revoked_at?: string | null
+          source: string
+          started_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          granted_by?: string | null
+          id?: never
+          referral_id?: number | null
+          revoked_at?: string | null
+          source?: string
+          started_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pro_promo_grants_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
             referencedColumns: ["id"]
           },
         ]
@@ -3559,6 +3714,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referral_codes: {
+        Row: {
+          activated_count: number
+          code: string
+          created_at: string
+          invited_count: number
+          rewards_count: number
+          user_id: string
+        }
+        Insert: {
+          activated_count?: number
+          code: string
+          created_at?: string
+          invited_count?: number
+          rewards_count?: number
+          user_id: string
+        }
+        Update: {
+          activated_count?: number
+          code?: string
+          created_at?: string
+          invited_count?: number
+          rewards_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          activated_at: string | null
+          active_days: number
+          code: string
+          created_at: string
+          device_id: string | null
+          ended_at: string | null
+          id: number
+          invitee_created_at: string
+          invitee_id: string | null
+          inviter_id: string | null
+          reason: string | null
+          reward_kind: string | null
+          rewarded_at: string | null
+          status: string
+          trial_bonus_applied: boolean
+          tx_count: number
+        }
+        Insert: {
+          activated_at?: string | null
+          active_days?: number
+          code: string
+          created_at?: string
+          device_id?: string | null
+          ended_at?: string | null
+          id?: never
+          invitee_created_at: string
+          invitee_id?: string | null
+          inviter_id?: string | null
+          reason?: string | null
+          reward_kind?: string | null
+          rewarded_at?: string | null
+          status?: string
+          trial_bonus_applied?: boolean
+          tx_count?: number
+        }
+        Update: {
+          activated_at?: string | null
+          active_days?: number
+          code?: string
+          created_at?: string
+          device_id?: string | null
+          ended_at?: string | null
+          id?: never
+          invitee_created_at?: string
+          invitee_id?: string | null
+          inviter_id?: string | null
+          reason?: string | null
+          reward_kind?: string | null
+          rewarded_at?: string | null
+          status?: string
+          trial_bonus_applied?: boolean
+          tx_count?: number
+        }
+        Relationships: []
       }
       savings_accounts: {
         Row: {
@@ -4881,6 +5120,7 @@ export type Database = {
           original_period_end: string | null
           period_end: string
           period_start: string
+          reason: string | null
           ref: string | null
           used: number
           user_id: string
@@ -4893,6 +5133,7 @@ export type Database = {
           original_period_end?: string | null
           period_end: string
           period_start: string
+          reason?: string | null
           ref?: string | null
           used?: number
           user_id: string
@@ -4905,6 +5146,7 @@ export type Database = {
           original_period_end?: string | null
           period_end?: string
           period_start?: string
+          reason?: string | null
           ref?: string | null
           used?: number
           user_id?: string
@@ -4952,6 +5194,7 @@ export type Database = {
       }
       spark_purchases: {
         Row: {
+          bonus_sparks: number
           currency: string | null
           id: string
           price_micros: number | null
@@ -4965,6 +5208,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bonus_sparks?: number
           currency?: string | null
           id?: string
           price_micros?: number | null
@@ -4978,6 +5222,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bonus_sparks?: number
           currency?: string | null
           id?: string
           price_micros?: number | null
@@ -5460,6 +5705,7 @@ export type Database = {
           source: string
           status: string
           store: string | null
+          store_country: string | null
           store_original_txn: string | null
           trial_ends_at: string | null
           updated_at: string
@@ -5481,6 +5727,7 @@ export type Database = {
           source?: string
           status?: string
           store?: string | null
+          store_country?: string | null
           store_original_txn?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -5502,6 +5749,7 @@ export type Database = {
           source?: string
           status?: string
           store?: string | null
+          store_country?: string | null
           store_original_txn?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -5808,9 +6056,103 @@ export type Database = {
         Returns: boolean
       }
       admin_refresh_metrics: { Args: never; Returns: undefined }
-      admin_refresh_metrics_if_stale: { Args: { p_max_age?: string }; Returns: boolean }
+      admin_refresh_metrics_if_stale: {
+        Args: { p_max_age?: string }
+        Returns: boolean
+      }
       admin_retention: { Args: { p_weeks?: number }; Returns: Json }
       admin_retention_days: { Args: { p_signup_days?: number }; Returns: Json }
+      admin_rewards_add_freezes: {
+        Args: { p_actor: string; p_count: number; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_bank_pro_days: {
+        Args: { p_actor: string; p_days: number; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_founder_remove: {
+        Args: { p_actor: string; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_founder_set: {
+        Args: { p_actor: string; p_number?: number; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_loyalty_reset: {
+        Args: { p_actor: string; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_platform_switch: {
+        Args: { p_actor: string; p_enabled: boolean; p_key: string }
+        Returns: Json
+      }
+      admin_rewards_pro_grant: {
+        Args: {
+          p_actor: string
+          p_ends_at?: string
+          p_note?: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      admin_rewards_pro_remove: {
+        Args: { p_actor: string; p_note?: string; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_referral_approve: {
+        Args: { p_actor: string; p_referral: number }
+        Returns: Json
+      }
+      admin_rewards_referral_mark_activated: {
+        Args: { p_actor: string; p_referral: number }
+        Returns: Json
+      }
+      admin_rewards_referral_revoke: {
+        Args: { p_actor: string; p_referral: number }
+        Returns: Json
+      }
+      admin_rewards_referrals_for: { Args: { p_user: string }; Returns: Json }
+      admin_rewards_set_streak: {
+        Args: {
+          p_actor: string
+          p_last_kept_week?: string
+          p_step?: number
+          p_user: string
+          p_weeks: number
+        }
+        Returns: Json
+      }
+      admin_rewards_set_tier: {
+        Args: {
+          p_actor: string
+          p_locked: boolean
+          p_tier: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      admin_rewards_sparks_adjust: {
+        Args: {
+          p_actor: string
+          p_amount: number
+          p_bucket: string
+          p_reason: string
+          p_user: string
+        }
+        Returns: Json
+      }
+      admin_rewards_sparks_ledger: {
+        Args: { p_limit?: number; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_trial_end: {
+        Args: { p_actor: string; p_user: string }
+        Returns: Json
+      }
+      admin_rewards_trial_start: {
+        Args: { p_actor: string; p_days?: number; p_user: string }
+        Returns: Json
+      }
       admin_signup_series: {
         Args: { p_days?: number }
         Returns: {
@@ -6061,6 +6403,7 @@ export type Database = {
         }
         Returns: string
       }
+      db_retention: { Args: never; Returns: number }
       deposit_to_savings: {
         Args: {
           p_account_id: string
@@ -6101,6 +6444,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      entitlements_state: { Args: { p_user: string }; Returns: Json }
       find_unclaimed_debt_payment: {
         Args: {
           p_amount: number
@@ -6177,6 +6521,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      loyalty_apply_cosmetic: {
+        Args: { p_key: string; p_kind: string }
+        Returns: string
+      }
       loyalty_award: {
         Args: {
           p_points: number
@@ -6216,14 +6564,28 @@ export type Database = {
           weeks: number
         }[]
       }
+      loyalty_gap_uncovered: {
+        Args: { p_from: string; p_to: string; p_user: string }
+        Returns: number
+      }
       loyalty_grant_founders: { Args: never; Returns: number }
       loyalty_local_day: {
         Args: { p_ts: string; p_tz: string }
         Returns: string
       }
       loyalty_next_founder_number: { Args: never; Returns: number }
+      loyalty_pro_active: { Args: { p_user: string }; Returns: boolean }
       loyalty_record_week_check: { Args: { p_week: string }; Returns: Json }
+      loyalty_refresh_pro_tiers: { Args: never; Returns: number }
+      loyalty_refresh_tier: { Args: { p_user: string }; Returns: string }
+      loyalty_repairable_week: { Args: { p_user: string }; Returns: string }
       loyalty_request_credit_name: { Args: { p_name: string }; Returns: string }
+      loyalty_shop_buy: { Args: { p_item: string }; Returns: Json }
+      loyalty_tier_key: {
+        Args: { p_founder: boolean; p_lifetime: number; p_pro: boolean }
+        Returns: string
+      }
+      loyalty_tiers_enabled: { Args: never; Returns: boolean }
       loyalty_week_start: {
         Args: { p_day: string; p_week_start: number }
         Returns: string
@@ -6244,8 +6606,7 @@ export type Database = {
         }[]
       }
       notifications_tick: { Args: never; Returns: boolean }
-      sync_changed_since: { Args: { p_since: string }; Returns: boolean }
-      db_retention: { Args: never; Returns: number }
+      promo_apply_banked: { Args: { p_user: string }; Returns: number }
       publish_email_template: {
         Args: { p_key: string; p_locale: string; p_staff: string }
         Returns: number
@@ -6304,11 +6665,42 @@ export type Database = {
         Args: { p_agreed: boolean; p_template_id: string }
         Returns: string
       }
+      referral_clawback: {
+        Args: { p_id: number; p_status?: string }
+        Returns: string
+      }
+      referral_ensure_code: { Args: { p_user: string }; Returns: string }
+      referral_evaluate: {
+        Args: { p_invitee?: string; p_limit?: number }
+        Returns: number
+      }
+      referral_my_summary: { Args: never; Returns: Json }
+      referral_redeem: {
+        Args: { p_code: string; p_device_id?: string }
+        Returns: Json
+      }
+      referral_reward: {
+        Args: { p_force?: boolean; p_id: number }
+        Returns: string
+      }
+      referrals_enabled: { Args: never; Returns: boolean }
       refresh_user_milestones: { Args: never; Returns: undefined }
       revoke_auth_session: {
         Args: { p_session: string; p_user: string }
         Returns: number
       }
+      rewards_admin_audit: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_meta?: Json
+          p_summary: string
+          p_user: string
+        }
+        Returns: string
+      }
+      rewards_daily: { Args: { p_budget_ms?: number }; Returns: Json }
+      rewards_touch: { Args: { p_user: string }; Returns: undefined }
       savings_balance_drift: {
         Args: never
         Returns: {
@@ -6415,7 +6807,6 @@ export type Database = {
       }
       sms_safe_tz: { Args: { p: string }; Returns: string }
       sms_stats_drain: { Args: { p_limit?: number }; Returns: number }
-      sms_tick: { Args: never; Returns: number }
       sms_templates_awaiting_adjudication: {
         Args: { p_undo_grace_seconds?: number }
         Returns: {
@@ -6423,6 +6814,7 @@ export type Database = {
           template_id: string
         }[]
       }
+      sms_tick: { Args: never; Returns: number }
       sms_try_pair: {
         Args: {
           p_amount: number
@@ -6471,6 +6863,16 @@ export type Database = {
         Args: { p_granted: number; p_t: string; p_user: string }
         Returns: undefined
       }
+      spark_grant_reward: {
+        Args: {
+          p_gift?: boolean
+          p_reason: string
+          p_ref: string
+          p_sparks: number
+          p_user: string
+        }
+        Returns: number
+      }
       spark_open_plan_period: {
         Args: {
           p_end: string
@@ -6489,6 +6891,10 @@ export type Database = {
           p_user: string
         }
         Returns: boolean
+      }
+      spark_pack_bonus_percent: {
+        Args: { p_at?: string; p_user: string }
+        Returns: number
       }
       spark_pack_grant: {
         Args: {
@@ -6529,6 +6935,7 @@ export type Database = {
           ticket_number: number
         }[]
       }
+      sync_changed_since: { Args: { p_since: string }; Returns: boolean }
       sync_pull: { Args: { p_since?: string }; Returns: Json }
       sync_pull_v2: { Args: { p_since?: string }; Returns: Json }
       sync_table_delta: {

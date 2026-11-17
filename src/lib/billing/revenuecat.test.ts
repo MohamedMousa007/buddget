@@ -146,3 +146,11 @@ describe('Sparks packs', () => {
     expect(parsed).toMatchObject({ transactionId: 'T1', priceMicros: 3_990_000, currency: 'SAR' })
   })
 })
+
+describe('store country (Egypt Pro limits)', () => {
+  it('reads country_code and passes it on subscription effects only when present', () => {
+    expect(parseEvent({ event: { type: 'RENEWAL', id: 'e1', app_user_id: USER, event_timestamp_ms: 5, country_code: 'EG' } })?.countryCode).toBe('EG')
+    expect(plan(ev({ countryCode: 'EG' })).country).toBe('EG')
+    expect(plan(ev()).country).toBeUndefined()
+  })
+})

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { weekCheckState } from './weekCheck'
 import type { WeekSummary } from './loyaltyApi'
 
-const base: WeekSummary = { thisWeek: '2026-11-15', lastWeek: '2026-11-08', lastWeekOpen: true, thisWeekKept: false, lastWeekKept: false, unconfirmedThisWeek: 0, unconfirmedLastWeek: 0, streakWeeks: 0, freezesBanked: 0, keptWeeksTotal: 0 }
+const base: WeekSummary = { thisWeek: '2026-11-15', lastWeek: '2026-11-08', lastWeekOpen: true, thisWeekKept: false, lastWeekKept: false, unconfirmedThisWeek: 0, unconfirmedLastWeek: 0, streakWeeks: 0, freezesBanked: 0, keptWeeksTotal: 0, recordsThisWeek: 3, recordsLastWeek: 3, recordsNeeded: 3, multiplier: 1 }
 
 describe('weekCheckState', () => {
   it('asks for last week while it is open and not kept', () => {

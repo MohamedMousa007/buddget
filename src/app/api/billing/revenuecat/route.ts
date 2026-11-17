@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     p_type: ev.type,
     p_event_ms: ev.eventMs,
     // Keys that do not apply are left out, not sent as null: the database reads a missing key as nothing to do.
-    p_effect: JSON.parse(JSON.stringify({ entitlement: effect.entitlement ?? undefined, sparks: effect.sparks ?? undefined, endTrial: effect.endTrial ?? false, transfer: effect.transfer, pack: effect.pack, receipt: effect.receipt })),
+    p_effect: JSON.parse(JSON.stringify({ entitlement: effect.entitlement ?? undefined, sparks: effect.sparks ?? undefined, endTrial: effect.endTrial ?? false, transfer: effect.transfer, pack: effect.pack, receipt: effect.receipt, country: effect.country })),
   })
   if (error) {
     if (error.code === FOREIGN_KEY_VIOLATION) {

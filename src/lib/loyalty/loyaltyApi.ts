@@ -11,11 +11,35 @@ export interface WeekSummary {
   streakWeeks: number
   freezesBanked: number
   keptWeeksTotal: number
+  /** Records (expenses and income) in each week; a week is kept only with `recordsNeeded` (3). */
+  recordsThisWeek: number
+  recordsLastWeek: number
+  recordsNeeded: number
+  multiplier: 1 | 1.5 | 2
 }
 
 export type KeepWeekResult =
-  | { status: 'kept'; streak: number; points: number; freezes: number }
+  | { status: 'kept'; streak: number; points: number; freezes: number; multiplier: 1 | 1.5 | 2; sparksGift: number }
+  | { status: 'too_few_records'; records: number; needed: number }
   | { status: 'already_kept' | 'too_soon' | 'out_of_window' | 'unconfirmed_items' | 'invalid_week' | 'error' }
+
+export type ShopResult =
+  | { status: 'ok'; balance: number; week: string | null }
+  | { status: 'insufficient_points'; balance: number }
+  | { status: 'unknown_item' | 'freezes_full' | 'nothing_to_repair' | 'already_owned' | 'error' }
+
+/** Buys a points-shop item (`repair_week`, `streak_freeze`, `card_finish_aurora`, `buddgy_look_midnight`). Spends points, never the tier. */
+export async function buyShopItem(item: string): Promise<ShopResult> {
+  const { data, error } = await createClient().rpc('loyalty_shop_buy', { p_item: item })
+  if (error || !data) return { status: 'error' }
+  return data as unknown as ShopResult
+}
+
+/** Applies an owned card finish or Buddgy look ('standard' and 'classic' are always owned). */
+export async function applyCosmetic(kind: 'card_finish' | 'buddgy_look', key: string): Promise<'ok' | 'not_owned' | 'invalid' | 'error'> {
+  const { data, error } = await createClient().rpc('loyalty_apply_cosmetic', { p_kind: kind, p_key: key })
+  return error || typeof data !== 'string' ? 'error' : (data as 'ok' | 'not_owned' | 'invalid')
+}
 
 export interface CreditRow { number: number; credit_name: string | null }
 

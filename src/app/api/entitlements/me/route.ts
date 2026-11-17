@@ -3,30 +3,40 @@ import { NextResponse } from 'next/server'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
 import { getUserEntitlements } from '@/lib/entitlements/server'
 import { billingEnabled } from '@/lib/entitlements/billingSwitch'
-import { createServiceRoleClient } from '@/lib/supabase/service'
+import { cachedSetting } from '@/lib/server/platformCache'
+import { createServiceRoleClient, type ServiceClient } from '@/lib/supabase/service'
+import type { HistoryItem, ProThisMonth, RewardsState, SparkProduct, SubscriptionRow } from '@/lib/loyalty/rewardsTypes'
 
-/** What the signed-in user's plan allows. The app reads this once gating (freemium, trials) ships. */
+/**
+ * Everything the Pro, Usage, Rewards, Founders and Invite pages read, in one database call (`entitlements_state`, which also runs
+ * the per-user upkeep: the friend's own activation check, banked Pro weeks, the tier) plus the plan resolution. The switch and the
+ * packs are cached server-side. Shapes: docs/launch/PRO_REWARDS_CONTRACT.md.
+ */
 export async function GET(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
   const uid = await resolveApiUserId(request)
   if (!uid) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   const service = createServiceRoleClient()
-  const [entitlements, enabled] = await Promise.all([getUserEntitlements(service, uid), billingEnabled(service)])
-  const usage = enabled ? await usageState(service, uid) : null
+  // The state call first: its upkeep may start banked Pro weeks, which the plan resolution must then see.
+  const [state, enabled, sparkProducts] = await Promise.all([loadState(service, uid), billingEnabled(service), sparkProductsCached(service)])
+  const entitlements = await getUserEntitlements(service, uid)
+  const usage = enabled ? (state?.usage ?? null) : null
   const sparks = usage && usage.sparksLeft > 0 ? { left: usage.sparksLeft, total: usage.sparksLeft, resetsAt: null } : null
-  const loyalty = enabled ? await loyaltyStatus(service, uid) : null
-  const subscription = enabled ? await subscriptionState(service, uid) : null
-  const sparkProducts = enabled ? ((await service.from('spark_products').select('product_id, sparks').eq('active', true).order('sparks')).data ?? []).map((p) => ({ id: p.product_id, sparks: p.sparks })) : []
-  // `billingEnabled` is the one server-side switch: while it is false the app shows no paywall, no purchase entry point and no Sparks.
-  return NextResponse.json({ ...entitlements, billingEnabled: enabled, sparks, usage, sparkProducts, loyalty, subscription }, { headers: { 'Cache-Control': 'private, no-store' } })
-}
-
-/** Everything the usage screens read, from one database function: the two credit windows, Sparks, balance views, plans, the Advisor, staff resets and coming-soon interest. */
-async function usageState(service: ReturnType<typeof createServiceRoleClient>, uid: string) {
-  const { data, error } = await service.rpc('ai_usage_state', { p_user: uid })
-  if (error || !data) return null
-  return data as unknown as UsageState
+  const rewards = state?.rewards ?? null
+  return NextResponse.json({
+    ...entitlements,
+    // `billingEnabled` is the one server-side switch for selling.
+    billingEnabled: enabled,
+    sparks,
+    usage,
+    sparkProducts: enabled ? sparkProducts : [],
+    rewards,
+    proThisMonth: state?.proThisMonth ?? null,
+    history: state?.history ?? [],
+    loyalty: rewards ? legacyLoyalty(rewards) : null,
+    subscription: state ? subscriptionView(state.subscription, state.history) : null,
+  }, { headers: { 'Cache-Control': 'private, no-store' } })
 }
 
 export interface UsageWindow { used: number; limit: number | null; resetAt: string | null; pct: number | null }
@@ -42,49 +52,75 @@ export interface UsageState {
   interest: string[]
 }
 
-/** Loyalty status, shown only once selling is on (the Beta tester badge is never presented as a reward). Tiers are off, so `tier` stays null. */
-async function loyaltyStatus(service: ReturnType<typeof createServiceRoleClient>, uid: string) {
-  const [founder, beta, account] = await Promise.all([
-    service.from('founders').select('number').eq('user_id', uid).is('retired_at', null).maybeSingle(),
-    service.from('beta_testers').select('user_id').eq('user_id', uid).maybeSingle(),
-    service.from('loyalty_accounts').select('streak_weeks, freezes_banked, lifetime_points, tier_key').eq('user_id', uid).maybeSingle(),
-  ])
+interface EntitlementsState {
+  usage: UsageState | null
+  subscription: SubscriptionRow
+  history: HistoryItem[]
+  proThisMonth: ProThisMonth
+  rewards: RewardsState
+}
+
+async function loadState(service: ServiceClient, uid: string): Promise<EntitlementsState | null> {
+  const { data, error } = await service.rpc('entitlements_state', { p_user: uid })
+  if (error || !data) {
+    if (error) console.error('[entitlements/me] state failed', error.message)
+    return null
+  }
+  return data as unknown as EntitlementsState
+}
+
+const PACKS_TTL_MS = 300_000
+let packs: { at: number; list: SparkProduct[] } | null = null
+
+/** The active Sparks packs (owner-set rows): cached per instance and in the shared data cache for 5 minutes. */
+async function sparkProductsCached(service: ServiceClient): Promise<SparkProduct[]> {
+  if (packs && Date.now() - packs.at < PACKS_TTL_MS) return packs.list
+  try {
+    const list = await cachedSetting(['spark_products'], async () => {
+      const { data, error } = await service.from('spark_products').select('product_id, sparks, countries').eq('active', true).order('sparks')
+      if (error) throw new Error(error.message)
+      return (data ?? []).map((p) => ({ id: p.product_id, sparks: p.sparks, countries: p.countries ?? null }))
+    }, 300)
+    packs = { at: Date.now(), list }
+    return list
+  } catch {
+    return packs?.list ?? []
+  }
+}
+
+/** The older `loyalty` block, kept for the screens that read it. */
+function legacyLoyalty(r: RewardsState) {
   return {
-    founderNumber: founder.data?.number ?? null,
-    betaTester: !!beta.data,
-    streakWeeks: account.data?.streak_weeks ?? 0,
-    freezesBanked: account.data?.freezes_banked ?? 0,
-    lifetimePoints: account.data?.lifetime_points ?? 0,
-    tier: account.data?.tier_key ?? null,
+    founderNumber: r.founder?.number ?? null,
+    betaTester: r.betaTester,
+    streakWeeks: r.streak.current,
+    freezesBanked: r.freezes.banked,
+    lifetimePoints: r.points.lifetime,
+    tier: r.tier?.key ?? null,
   }
 }
 
 /**
- * What the Pro page needs beyond the plan: the store's billing-issue flag with its grace expiry (a past_due plan keeps access to
- * `graceEndsAt`, or three days after the period end when the store reported none), whether it renews, and the member-since date.
+ * The Pro page's subscription facts: the store's billing-issue flag with its grace expiry (a past_due plan keeps access to
+ * `graceEndsAt`, or three days after the period end when the store reported none), renewal, member-since and the receipts.
  */
-async function subscriptionState(service: ReturnType<typeof createServiceRoleClient>, uid: string) {
-  const [ent, first, purchases] = await Promise.all([
-    service.from('user_entitlements').select('status, source, will_renew, current_period_end, grace_ends_at, product_id, canceled_at').eq('user_id', uid).maybeSingle(),
-    service.from('billing_events').select('event_at').eq('user_id', uid).eq('type', 'INITIAL_PURCHASE').order('event_at').limit(1).maybeSingle(),
-    service.from('billing_events').select('event_at, type, store, product_id, price_micros, currency').eq('user_id', uid).in('type', ['INITIAL_PURCHASE', 'RENEWAL', 'NON_RENEWING_PURCHASE']).eq('outcome', 'applied').order('event_at', { ascending: false }).limit(31),
-  ])
-  const e = ent.data
-  const store = e?.source === 'apple' || e?.source === 'google'
-  const graceEndsAt = e?.status === 'past_due'
-    ? (e.grace_ends_at ?? (e.current_period_end ? new Date(new Date(e.current_period_end).getTime() + 3 * 86_400_000).toISOString() : null))
+function subscriptionView(e: SubscriptionRow, history: HistoryItem[]) {
+  const store = e.source === 'apple' || e.source === 'google'
+  const graceEndsAt = e.status === 'past_due'
+    ? (e.graceEndsAt ?? (e.currentPeriodEnd ? new Date(new Date(e.currentPeriodEnd).getTime() + 3 * 86_400_000).toISOString() : null))
     : null
+  const purchases = history.map((h) => ({ at: h.at, type: h.type, store: h.store, productId: h.productId, priceMicros: h.priceMicros, currency: h.currency, kind: h.kind, sparks: h.sparks, bonusSparks: h.bonusSparks, refundedAt: h.refundedAt }))
   return {
     fromStore: store,
-    billingIssue: e?.status === 'past_due',
+    billingIssue: e.status === 'past_due',
     graceEndsAt,
-    willRenew: store ? (e?.will_renew ?? null) : null,
-    renewsAt: store ? (e?.current_period_end ?? null) : null,
-    productId: store ? (e?.product_id ?? null) : null,
-    memberSince: first.data?.event_at ?? null,
-    canceledAt: e?.canceled_at ?? null,
-    // Up to 30 purchases from our own log: the app shows the last five and the rest under "See all". Store price and currency come from the event.
-    purchases: (purchases.data ?? []).slice(0, 30).map((p) => ({ at: p.event_at, type: p.type, store: p.store, productId: p.product_id, priceMicros: p.price_micros, currency: p.currency })),
-    hasMorePurchases: (purchases.data?.length ?? 0) > 5,
+    willRenew: store ? e.willRenew : null,
+    renewsAt: store ? e.currentPeriodEnd : null,
+    productId: store ? e.productId : null,
+    memberSince: e.memberSince,
+    canceledAt: e.canceledAt,
+    bankedProDays: e.bankedProDays,
+    purchases,
+    hasMorePurchases: purchases.length > 5,
   }
 }
