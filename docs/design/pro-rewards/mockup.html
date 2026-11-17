@@ -1,0 +1,1128 @@
+<title>buddget Pro Pages</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=JetBrains+Mono:wght@400;500;600&family=Pinyon+Script&display=swap">
+<style>
+/* Layout: a showroom stage with two phone frames (Plan and billing, Usage); one switch picks the account state, one the app theme. Phone screens use the app's own light and dark tokens. */
+:root {
+  --page: #eef3f2; --page-fg: #0d1a18; --page-muted: #566b68; --page-line: #d6e1de; --page-card: #ffffff;
+  --font: 'DM Sans', system-ui, sans-serif; --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #070b0a; --page-fg: #e8f1ef; --page-muted: #93a6a2; --page-line: #1d2826; --page-card: #0e1513; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #070b0a; --page-fg: #e8f1ef; --page-muted: #93a6a2; --page-line: #1d2826; --page-card: #0e1513; color-scheme: dark }
+/* App tokens (globals.css) */
+.screen[data-app="dark"] { --bg: #0a100f; --card: #111917; --elev: #18211f; --line: #25302e; --fg: #eaf2f0; --fg2: #9baba8; --fg3: #73847f; --pri: #1fc3b2; --pri-ink: #062a26; --pri-soft: #10302b; --green: #37c368; --amber: #edb24a; --hero-from: #0e9384; --hero-to: #073c36; --mint: #6ee7a8; --veil: rgba(255,255,255,.08); --gold-hi: #edc463; --gold-mid: #b68e30; --gold-lo: #f5d98a; color-scheme: dark; }
+.screen[data-app="light"] { --bg: #f4f7f6; --card: #ffffff; --elev: #ecf1f0; --line: #dde6e4; --fg: #0d1a18; --fg2: #566b68; --fg3: #7b8d8a; --pri: #0d8578; --pri-ink: #ffffff; --pri-soft: #e1f2ef; --green: #0f7635; --amber: #8c5e0a; --hero-from: #0e9384; --hero-to: #0a534a; --mint: #6ee7a8; --veil: rgba(13,26,24,.06); --gold-hi: #c99a35; --gold-mid: #9c7623; --gold-lo: #e3c06a; color-scheme: light; }
+
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--page-fg); font-family: var(--font);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.shell { max-width: 1320px; margin: 0 auto; padding-block: 36px 72px; display: flex; flex-direction: column; gap: 28px; }
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; }
+.top h1 { margin: 0; font-size: clamp(28px, 4.5vw, 40px); letter-spacing: -0.03em; line-height: 1.05; text-wrap: balance; }
+.top p { margin: 6px 0 0; color: var(--page-muted); max-width: 62ch; line-height: 1.5; }
+.ctrls { display: flex; flex-wrap: wrap; gap: 10px; }
+.toggle { display: inline-flex; padding: 4px; gap: 4px; border-radius: 14px; background: var(--page-card); border: 1px solid var(--page-line); }
+.toggle button { font: 600 14px var(--font); color: var(--page-muted); background: none; border: 0; border-radius: 10px; min-height: 40px; padding: 0 14px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--page-fg); color: var(--page); }
+.toggle button:focus-visible { outline: 2px solid #1fc3b2; outline-offset: 2px; }
+.stage { display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; }
+.device { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 100%; }
+.device > span { font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); }
+.phone { width: 390px; max-width: 100%; height: 844px; border-radius: 52px; padding: 12px; background: #050807; box-shadow: 0 0 0 1px #24302d, 0 40px 80px -30px rgba(0,0,0,.5); }
+.screen { position: relative; height: 100%; border-radius: 41px; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--font); }
+.scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; padding: 54px 18px 110px; display: flex; flex-direction: column; gap: 22px; }
+.scroll::-webkit-scrollbar { display: none; }
+.scroll > * { flex: none; }
+.status { position: absolute; top: 0; inset-inline: 0; height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 6px 30px 0; font: 600 15px var(--font); z-index: 5; background: linear-gradient(var(--bg) 60%, transparent); }
+.island { position: absolute; top: 11px; left: 50%; translate: -50% 0; width: 118px; height: 34px; border-radius: 20px; background: #000; z-index: 6; }
+.navbar { position: absolute; bottom: 0; inset-inline: 0; height: 84px; background: color-mix(in oklab, var(--bg) 88%, transparent); backdrop-filter: blur(14px); border-top: 1px solid var(--line); display: flex; justify-content: space-around; align-items: start; padding-top: 12px; z-index: 5; font-size: 10.5px; color: var(--fg3); }
+.navbar i { display: block; width: 22px; height: 22px; margin: 0 auto 4px; border-radius: 7px; border: 1.6px solid currentColor; opacity: .8; }
+.navbar .on { color: var(--fg); }
+.bar { display: flex; align-items: center; gap: 12px; }
+.back { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--elev); border: 1px solid var(--line); color: var(--fg); }
+.bar h2 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.wm { font-weight: 800; letter-spacing: -0.04em; }
+.wm b { color: var(--pri); font-weight: 800; }
+h3.sec { margin: 0; font-size: 17px; letter-spacing: -0.01em; }
+.sub { color: var(--fg2); font-size: 13.5px; line-height: 1.45; margin: 0; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* --- Spotlight + member card ------------------------------------------------ */
+.spot { position: relative; margin: -10px -18px -6px; padding: 10px 18px 4px; display: flex; flex-direction: column; align-items: center; overflow: hidden;
+  background: radial-gradient(52% 60% at 50% 30%, var(--veil), transparent 72%), radial-gradient(80% 70% at 50% 40%, color-mix(in oklab, var(--hero-from) 14%, transparent), transparent 72%); }
+.spot::before { content: ""; position: absolute; top: 0; left: 50%; width: 300px; height: 240px; translate: -50% 0; pointer-events: none;
+  background: conic-gradient(from 180deg at 50% 0%, transparent 152deg, var(--veil) 167deg, color-mix(in oklab, var(--fg) 8%, transparent) 180deg, var(--veil) 193deg, transparent 208deg); filter: blur(10px); }
+.rig { position: relative; width: 100%; height: 236px; perspective: 1100px; display: grid; place-items: center; }
+.lift { transform-style: preserve-3d; will-change: transform; }
+.mcard { position: relative; display: block; width: 322px; max-width: calc(100vw - 72px); aspect-ratio: 1.586; transform-style: preserve-3d; cursor: pointer; border: 0; padding: 0; background: none; color: inherit; font: inherit; border-radius: 18px; }
+.mcard:focus-visible { outline: 2px solid var(--pri); outline-offset: 8px; }
+.face { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; text-align: start; display: flex; }
+.screen[data-app="dark"] .face { color: #f3f7f6; --c2: rgba(243,247,246,.62); --c3: rgba(243,247,246,.4); --hair: rgba(255,255,255,.09); --mono-c: rgba(255,255,255,.035);
+  background:
+    linear-gradient(105deg, transparent 30%, rgba(255,255,255,.05) 42%, transparent 54%),
+    radial-gradient(100% 140% at 100% 0%, color-mix(in oklab, var(--hero-from) 30%, transparent), transparent 55%),
+    linear-gradient(160deg, #1b2725 0%, #0e1514 46%, #070b0a 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 -1px 0 rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.06),
+    0 1px 1px rgba(0,0,0,.5), 0 6px 12px -2px rgba(0,0,0,.45), 0 22px 40px -12px rgba(0,0,0,.7), 0 50px 80px -30px rgba(0,0,0,.8), 0 0 90px -28px color-mix(in oklab, var(--hero-from) 70%, transparent); }
+.screen[data-app="light"] .face { color: #0d1a18; --c2: rgba(13,26,24,.6); --c3: rgba(13,26,24,.42); --hair: rgba(13,26,24,.07); --mono-c: rgba(13,26,24,.035);
+  background:
+    linear-gradient(105deg, transparent 30%, rgba(255,255,255,.85) 42%, transparent 54%),
+    radial-gradient(100% 140% at 100% 0%, color-mix(in oklab, var(--hero-from) 11%, transparent), transparent 55%),
+    linear-gradient(160deg, #ffffff 0%, #f2f6f5 50%, #e2e9e7 100%);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(13,26,24,.08), inset 0 0 0 1px rgba(13,26,24,.07),
+    0 1px 1px rgba(13,40,36,.08), 0 6px 12px -2px rgba(13,40,36,.10), 0 22px 36px -14px rgba(13,40,36,.22), 0 44px 70px -30px rgba(13,40,36,.35); }
+/* Gold, used once: a hairline along the top edge that fades out at both ends. */
+.face::after { content: ""; position: absolute; top: 0; left: 14%; right: 14%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-hi), var(--gold-lo), var(--gold-hi), transparent); opacity: .85; }
+.grain { position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: overlay; background: repeating-linear-gradient(100deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px); }
+.monogram { position: absolute; right: 18px; top: -6px; font: 700 150px/1 var(--font); letter-spacing: -0.06em; color: var(--mono-c); pointer-events: none; user-select: none; }
+.sheen { position: absolute; inset: -30%; pointer-events: none; opacity: var(--sa, .16); background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.6) 50%, transparent 60%); transform: translateX(var(--sx, -60%)); mix-blend-mode: soft-light; }
+.screen[data-app="light"] .sheen { mix-blend-mode: normal; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.8) 50%, transparent 60%); }
+.cin { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 18px 20px 16px; }
+.chead { display: flex; justify-content: space-between; align-items: center; }
+.chead .wm { font-size: 15px; }
+.screen[data-app="dark"] .chead .wm b { color: #6fe0d0; }
+.goldmark { font: 700 10px var(--font); letter-spacing: .36em; padding-left: .36em; background: linear-gradient(112deg, var(--gold-lo), var(--gold-hi) 40%, var(--gold-mid) 70%, var(--gold-hi)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.screen[data-app="light"] .goldmark { background: linear-gradient(112deg, #b68e30, #8a6a1e 50%, #b68e30); -webkit-background-clip: text; background-clip: text; }
+.cname { display: grid; gap: 4px; }
+.cname strong { font: 400 23px var(--font); letter-spacing: -0.02em; line-height: 1.05; }
+.cname span { font: 500 11px var(--font); color: var(--c2); letter-spacing: .02em; }
+.cfacts { display: grid; grid-template-columns: 1.15fr 1.15fr .7fr; gap: 8px; }
+.cfacts span { display: block; font: 600 6.5px var(--font); letter-spacing: .22em; text-transform: uppercase; color: var(--c3); margin-bottom: 4px; }
+.cfacts b { font: 500 11.5px var(--mono); letter-spacing: .03em; }
+.cfacts div:last-child { text-align: end; }
+.blist { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.blist li { display: grid; grid-template-columns: 12px 1fr; gap: 9px; align-items: center; font: 500 11.5px var(--font); }
+.blist li::before { content: ""; width: 9px; height: 5px; border-left: 1.5px solid var(--pri); border-bottom: 1.5px solid var(--pri); rotate: -45deg; translate: 1px -2px; }
+.screen[data-app="dark"] .blist li::before { border-color: #6fe0d0; }
+.bill { display: flex; justify-content: space-between; gap: 8px; font: 500 10px var(--mono); color: var(--c2); }
+.floor { position: absolute; bottom: 6px; left: 50%; width: 270px; height: 26px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.55), transparent); transform: translateX(-50%); filter: blur(2px); }
+.screen[data-app="light"] .floor { background: radial-gradient(closest-side, rgba(13,40,36,.25), transparent); }
+.tap { font-size: 11.5px; color: var(--fg3); margin-top: -2px; }
+/* Slim manage bar: one row of chips */
+.mbar { display: grid; grid-template-columns: auto 1fr 1fr; gap: 4px; padding: 5px; border-radius: 16px; background: var(--card); border: 1px solid var(--line); }
+.mbar::-webkit-scrollbar { display: none; }
+.mb { min-width: 0; justify-content: center; display: inline-flex; align-items: center; gap: 6px; min-height: 42px; padding: 0 10px; border-radius: 11px; font: 600 12.5px var(--font); color: var(--fg); background: transparent; border: 0; white-space: nowrap; cursor: pointer; }
+.mb svg { width: 15px; height: 15px; flex: none; color: var(--fg2); }
+.mb + .mb:not(.pri) { box-shadow: -1px 0 0 var(--line); border-radius: 0 11px 11px 0; }
+.mb.pri { background: var(--pri); color: var(--pri-ink); }
+.mb.pri svg { color: var(--pri-ink); }
+.mb.pri + .mb { box-shadow: none; }
+.goldtag { background: linear-gradient(112deg, var(--gold-lo), var(--gold-hi) 45%, var(--gold-mid)) !important; color: #2a1d04 !important; }
+
+/* --- Free showcase ---------------------------------------------------------- */
+.showcase { display: grid; gap: 14px; }
+.sc-head { text-align: center; display: grid; gap: 6px; }
+.sc-head h3 { margin: 0; font-size: 24px; letter-spacing: -0.025em; line-height: 1.12; text-wrap: balance; }
+.duo { display: grid; grid-template-columns: .82fr 1fr; gap: 10px; align-items: stretch; }
+.col { border-radius: 20px; padding: 14px 12px; display: grid; gap: 10px; align-content: start; border: 1px solid var(--line); background: var(--card); }
+.col.pro { border: 1.5px solid var(--pri); background: linear-gradient(180deg, var(--pri-soft), var(--card) 70%); box-shadow: 0 18px 36px -24px color-mix(in oklab, var(--pri) 70%, transparent); }
+.col h4 { margin: 0; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg2); display: flex; justify-content: space-between; align-items: center; }
+.col.pro h4 { color: var(--pri); }
+.col .now { font-size: 10px; letter-spacing: .04em; text-transform: none; color: var(--fg3); font-weight: 600; }
+.feat { display: grid; gap: 2px; }
+.feat span { font-size: 10.5px; color: var(--fg3); }
+.feat b { font-size: 14px; font-weight: 600; }
+.col.pro .feat b { font-weight: 700; }
+
+/* --- Blocks ------------------------------------------------------------------- */
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 20px; }
+.manage { display: grid; grid-template-columns: repeat(4, 1fr); padding: 6px; }
+.qa { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px 10px; border-radius: 14px; font-size: 11.5px; font-weight: 600; color: var(--fg); text-align: center; line-height: 1.2; min-height: 72px; }
+.qa i { width: 38px; height: 38px; border-radius: 12px; background: var(--elev); border: 1px solid var(--line); display: grid; place-items: center; color: var(--fg); }
+.qa svg { width: 18px; height: 18px; }
+.qa.hot i { background: var(--pri); border-color: var(--pri); color: var(--pri-ink); }
+.manage-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 4px; }
+.pill { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: color-mix(in oklab, var(--green) 14%, transparent); color: var(--green); }
+.pill.pri { background: var(--pri-soft); color: var(--pri); }
+.pill.amber { background: color-mix(in oklab, var(--amber) 14%, transparent); color: var(--amber); }
+.rows { display: flex; flex-direction: column; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 16px; border-top: 1px solid var(--line); font-size: 14px; }
+.row:first-child { border-top: 0; }
+.row span:first-child { color: var(--fg2); }
+.row b { font-weight: 600; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+.stat b { display: block; font: 600 24px var(--mono); letter-spacing: -0.02em; }
+.stat span { font-size: 12px; color: var(--fg2); }
+.cta { width: 100%; min-height: 52px; border-radius: 16px; border: 0; background: var(--pri); color: var(--pri-ink); font: 700 16px var(--font); cursor: pointer; }
+.ghost { width: 100%; min-height: 44px; border-radius: 14px; border: 1px solid var(--line); background: transparent; color: var(--fg); font: 600 14px var(--font); cursor: pointer; }
+.fine { font-size: 11.5px; color: var(--fg3); text-align: center; line-height: 1.45; margin: 0; }
+.plans { display: grid; gap: 12px; }
+.plan { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 16px; border-radius: 18px; border: 1px solid var(--line); background: var(--card); }
+.plan.sel { border: 1.5px solid var(--pri); background: linear-gradient(180deg, var(--pri-soft), var(--card)); }
+.plan .tagx { position: absolute; top: -10px; inset-inline-start: 14px; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--pri); color: var(--pri-ink); }
+.plan h4 { margin: 0 0 3px; font-size: 15px; }
+.plan small { color: var(--fg2); font-size: 12px; }
+.price { text-align: end; }
+.price b { display: block; font: 600 18px var(--mono); }
+.price s { color: var(--fg3); font-size: 12px; }
+.radio { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.plan.sel .radio { border: 6px solid var(--pri); }
+.history .row span:first-child { color: var(--fg); }
+.history small { display: block; color: var(--fg3); font-size: 11.5px; }
+.meter { display: grid; gap: 8px; padding: 14px 16px; }
+.meter + .meter { border-top: 1px solid rgba(255,255,255,.08); }
+.mtop { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; color: #fff; }
+.track { height: 8px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 99px; background: #6fe0d0; }
+.track i.warn { background: #edb24a; }
+.mfoot { font-size: 12px; color: rgba(255,255,255,.72); }
+.usage-hero { border-radius: 22px; padding: 16px; background: radial-gradient(70% 55% at 92% 0%, color-mix(in oklab, var(--mint) 30%, transparent), transparent 70%), linear-gradient(165deg, #0b6d62 0%, var(--hero-to) 50%, #04221f 100%); display: grid; gap: 12px; }
+.usage-hero .panel { background: rgba(4,14,12,.45); border-color: rgba(255,255,255,.1); }
+.uh-top { display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: 700; }
+.uh-top .pill { background: rgba(255,255,255,.14); color: #fff; }
+.wallet { padding: 16px; display: grid; gap: 14px; }
+.w-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.w-top > b { font: 600 32px var(--mono); }
+.spark { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--pri-soft); color: var(--pri); flex: none; }
+.spark svg { width: 18px; height: 18px; }
+.packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+.pack { border: 1px solid var(--line); border-radius: 16px; padding: 12px 6px; text-align: center; display: grid; gap: 3px; background: var(--elev); position: relative; }
+.pack.sel { border: 1.5px solid var(--pri); background: var(--pri-soft); }
+.pack b { font: 600 20px var(--mono); }
+.pack small { font-size: 11px; color: var(--fg2); }
+.pack em { font-style: normal; font-weight: 700; font-size: 12.5px; margin-top: 4px; }
+.pack .best { position: absolute; top: -9px; left: 50%; translate: -50% 0; font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: var(--pri); color: var(--pri-ink); white-space: nowrap; }
+.bonus { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--pri-soft); font-size: 12.5px; color: var(--fg); }
+.bonus a { color: var(--pri); font-weight: 700; text-decoration: none; margin-inline-start: auto; white-space: nowrap; }
+.featr .row b { font-family: var(--mono); }
+.never { background: color-mix(in oklab, var(--green) 10%, transparent); }
+.never b { color: var(--green); font-family: var(--font) !important; }
+
+/* --- v6: buttons, light card contrast, management list, value panel, loyalty ------- */
+.screen[data-app="dark"] { --btn: #0d8578; }
+.screen[data-app="light"] { --btn: #0d8578; }
+.cta { background: var(--btn) !important; color: #fff !important; }
+.screen[data-app="light"] .spot { background: radial-gradient(58% 66% at 50% 46%, rgba(13,60,54,.13), transparent 70%), radial-gradient(90% 70% at 50% 40%, color-mix(in oklab, var(--hero-from) 10%, transparent), transparent 72%); }
+.screen[data-app="light"] .face { --hair: rgba(13,26,24,.10); --mono-c: rgba(13,26,24,.10);
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.9) 42%, transparent 54%), radial-gradient(100% 140% at 100% 0%, color-mix(in oklab, var(--hero-from) 14%, transparent), transparent 55%), linear-gradient(160deg, #ffffff 0%, #edf2f1 46%, #d6e0dd 100%);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(13,26,24,.12), inset 0 0 0 1px rgba(13,26,24,.13),
+    0 1px 1px rgba(13,40,36,.12), 0 8px 14px -4px rgba(13,40,36,.16), 0 26px 44px -14px rgba(13,40,36,.34), 0 56px 84px -30px rgba(13,40,36,.48); }
+.screen[data-app="dark"] .face { --mono-c: rgba(255,255,255,.10); }
+.monogram { right: 6px !important; top: -38px !important; font: 700 200px/1 var(--font) !important; opacity: .45; }
+/* Subscription management: a grouped list, the industry pattern (status, plan, payment, history, codes, restore, refund, cancel). */
+.subm { display: grid; }
+.subm-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px; }
+.subm-head h3 { margin: 0; font-size: 15px; }
+.subm-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--fg2); }
+.mrow { display: grid; grid-template-columns: 30px 1fr auto 12px; gap: 12px; align-items: center; min-height: 52px; padding: 0 16px; border-top: 1px solid var(--line); font-size: 14px; }
+.mrow i { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--elev); color: var(--fg2); }
+.mrow i svg { width: 16px; height: 16px; }
+.mrow em { font-style: normal; font-size: 12.5px; color: var(--fg2); text-align: end; }
+.mrow .chev { width: 8px; height: 8px; border-right: 1.6px solid var(--fg3); border-top: 1.6px solid var(--fg3); rotate: 45deg; }
+.mrow.up i { background: var(--pri-soft); color: var(--pri); }
+.mrow.up span { font-weight: 600; }
+.mrow.up em { color: var(--pri); font-weight: 600; }
+.mrow.danger span { color: #e5484d; font-weight: 600; }
+.screen[data-app="light"] .mrow.danger span { color: #c4262c; }
+.mrow.danger i { background: color-mix(in oklab, #e5484d 14%, transparent); color: #e5484d; }
+.mrow small { display: block; font-size: 11.5px; color: var(--fg3); font-weight: 400; }
+/* Value panel */
+.valp { border-radius: 22px; overflow: hidden; border: 1px solid var(--line); background: var(--card); }
+.valp-head { padding: 16px 16px 14px; background: radial-gradient(90% 120% at 100% 0%, color-mix(in oklab, var(--hero-from) 30%, transparent), transparent 60%), linear-gradient(160deg, color-mix(in oklab, var(--hero-from) 16%, var(--card)), var(--card)); display: grid; gap: 4px; }
+.valp-head .k { font: 700 10px var(--font); letter-spacing: .22em; text-transform: uppercase; color: var(--fg2); }
+.valp-head h3 { margin: 0; font-size: 21px; letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance; }
+.valp-head h3 b { font-family: var(--mono); color: var(--pri); }
+.valp-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.vt { padding: 14px 16px; display: grid; gap: 8px; border-top: 1px solid var(--line); }
+.vt:nth-child(odd) { border-right: 1px solid var(--line); }
+.vt-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.vt-top b { font: 600 26px var(--mono); letter-spacing: -0.03em; }
+.vt-top small { font: 600 11px var(--mono); color: var(--pri); }
+.vt span.l { font-size: 12px; color: var(--fg2); }
+.vbar { position: relative; height: 6px; border-radius: 99px; background: var(--elev); }
+.vbar i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: linear-gradient(90deg, color-mix(in oklab, var(--pri) 55%, transparent), var(--pri)); }
+.vbar u { position: absolute; top: -4px; width: 2px; height: 14px; border-radius: 1px; background: var(--gold-hi); text-decoration: none; }
+.vbar-l { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--fg3); }
+.vbar-l b { color: var(--gold-hi); font-weight: 600; }
+.screen[data-app="light"] .vbar-l b { color: #9c7623; }
+/* Loyalty */
+.tierc .face { cursor: default; }
+.tprog { display: grid; gap: 6px; }
+.tprog .vbar i { background: linear-gradient(90deg, var(--gold-mid), var(--gold-hi)); }
+.tprog .row2 { display: flex; justify-content: space-between; font-size: 12px; color: var(--fg2); }
+.tprog .row2 b { color: var(--fg); font-family: var(--mono); font-weight: 600; }
+.streak { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; }
+.streak span { height: 26px; border-radius: 7px; background: var(--elev); border: 1px solid var(--line); }
+.streak span.on { background: linear-gradient(180deg, color-mix(in oklab, var(--pri) 85%, white 10%), var(--pri)); border-color: transparent; }
+.streak span.fz { background: repeating-linear-gradient(135deg, var(--elev) 0 4px, color-mix(in oklab, #8fd3ff 30%, var(--elev)) 4px 8px); }
+.ladder { display: grid; }
+.lrow { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
+.lrow:first-child { border-top: 0; }
+.lrow .ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font: 700 12px var(--mono); background: var(--elev); color: var(--fg2); border: 1px solid var(--line); }
+.lrow.done .ic { background: var(--pri-soft); color: var(--pri); border-color: transparent; }
+.lrow.cur { background: linear-gradient(90deg, color-mix(in oklab, var(--gold-hi) 9%, transparent), transparent 70%); }
+.lrow.cur .ic { background: color-mix(in oklab, var(--gold-hi) 18%, var(--elev)); color: var(--gold-hi); border-color: color-mix(in oklab, var(--gold-hi) 40%, transparent); }
+.screen[data-app="light"] .lrow.cur .ic { color: #9c7623; }
+.lrow h4 { margin: 0; font-size: 14.5px; }
+.lrow p { margin: 2px 0 0; font-size: 12px; color: var(--fg2); }
+.lrow em { font-style: normal; font: 600 11.5px var(--mono); color: var(--fg3); }
+.earn .row b { font-family: var(--mono); color: var(--pri); }
+.founder { position: relative; border-radius: 18px; padding: 16px 18px; overflow: hidden; color: #f3f7f6;
+  background: radial-gradient(90% 140% at 100% 0%, rgba(237,196,99,.22), transparent 60%), linear-gradient(160deg, #1a1712 0%, #0d0c0a 60%, #070706 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(237,196,99,.28), 0 18px 34px -16px rgba(0,0,0,.7); display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; }
+.founder::after { content: ""; position: absolute; top: 0; left: 12%; right: 12%; height: 1px; background: linear-gradient(90deg, transparent, #edc463, #f5d98a, #edc463, transparent); }
+.founder .fn { font: 600 30px var(--mono); letter-spacing: -0.02em; background: linear-gradient(112deg, #f5d98a, #edc463 40%, #b68e30 70%, #edc463); -webkit-background-clip: text; background-clip: text; color: transparent; grid-row: span 2; }
+.founder .ft { font: 700 10px var(--font); letter-spacing: .3em; color: #edc463; }
+.founder .fd { font-size: 12px; color: rgba(243,247,246,.7); }
+
+/* --- v7 ------------------------------------------------------------------- */
+/* Spotlight that fades into the page: the light lives on a layer the size of the stage and reaches zero before its edges. */
+.spot { background: none !important; overflow: visible !important; }
+.spot::after { content: ""; position: absolute; inset: -40px -18px -30px; pointer-events: none; z-index: 0;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--hero-from) 20%, transparent), color-mix(in oklab, var(--hero-from) 7%, transparent) 55%, transparent); }
+.screen[data-app="light"] .spot::after { background: radial-gradient(closest-side, color-mix(in oklab, var(--hero-from) 24%, transparent), color-mix(in oklab, var(--hero-from) 9%, transparent) 55%, transparent); }
+.screen[data-app="light"] .spot::before { background: conic-gradient(from 180deg at 50% 0%, transparent 152deg, rgba(14,147,132,.07) 167deg, rgba(14,147,132,.13) 180deg, rgba(14,147,132,.07) 193deg, transparent 208deg); }
+.spot > * { position: relative; z-index: 1; }
+/* Slim manage bar: four real actions in one row */
+.mbar4 { border-radius: 18px; background: var(--card); border: 1px solid var(--line); overflow: hidden; }
+.mbar4-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--fg2); border-bottom: 1px solid var(--line); }
+.mbar4-top b { color: var(--fg); font-weight: 600; }
+.mbar4-row { display: grid; grid-template-columns: repeat(4, 1fr); }
+.m4 { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 60px; padding: 8px 4px; border: 0; background: none; color: var(--fg); font: 600 11.5px var(--font); cursor: pointer; }
+.m4 + .m4 { box-shadow: -1px 0 0 var(--line); }
+.m4 svg { width: 18px; height: 18px; color: var(--fg2); }
+.m4.pri { color: var(--pri); }
+.m4.pri svg { color: var(--pri); }
+.m4:focus-visible { outline: 2px solid var(--pri); outline-offset: -2px; }
+/* Gold Most popular, and the extra packs */
+.pack .best { background: linear-gradient(112deg, var(--gold-lo), var(--gold-hi) 45%, var(--gold-mid)) !important; color: #2a1d04 !important; }
+.more-packs { display: flex; justify-content: center; }
+.more-packs button { border: 0; background: none; color: var(--pri); font: 600 13px var(--font); min-height: 36px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.more-packs button::after { content: ""; width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; rotate: 45deg; translate: 0 -2px; transition: rotate .2s; }
+.wallet.open .more-packs button::after { rotate: -135deg; translate: 0 2px; }
+.packs.extra { display: none; grid-template-columns: repeat(2, 1fr); }
+.wallet.open .packs.extra { display: grid; }
+.pack .eg { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--fg3); }
+/* Hot streak */
+.hot { border-radius: 18px; background: var(--card); border: 1px solid var(--line); padding: 14px 16px; display: grid; gap: 12px; }
+.hot-top { display: flex; align-items: center; gap: 12px; }
+.flame { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: none;
+  background: radial-gradient(70% 70% at 50% 70%, color-mix(in oklab, #ffb347 40%, transparent), transparent 75%), color-mix(in oklab, var(--gold-hi) 14%, var(--elev));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold-hi) 35%, transparent), 0 8px 20px -8px color-mix(in oklab, #ff9a3c 70%, transparent); }
+.flame svg { width: 22px; height: 22px; }
+.hot-top h4 { margin: 0; font-size: 16px; letter-spacing: -0.01em; }
+.hot-top h4 b { font-family: var(--mono); }
+.hot-top p { margin: 2px 0 0; font-size: 12px; color: var(--fg2); }
+.hot-top .pts { margin-inline-start: auto; text-align: end; }
+.hot-top .pts b { display: block; font: 600 18px var(--mono); color: var(--gold-hi); }
+.screen[data-app="light"] .hot-top .pts b { color: #9c7623; }
+.hot-top .pts span { font-size: 10.5px; color: var(--fg3); }
+.wk { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; align-items: end; }
+.wk span { height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--elev); border: 1px solid var(--line); }
+.wk span svg { width: 13px; height: 13px; }
+.wk span.on { background: linear-gradient(180deg, color-mix(in oklab, #ffb347 22%, var(--elev)), color-mix(in oklab, var(--gold-hi) 12%, var(--elev))); border-color: color-mix(in oklab, var(--gold-hi) 35%, transparent); }
+.wk span.fz { background: color-mix(in oklab, #8fd3ff 16%, var(--elev)); border-color: color-mix(in oklab, #8fd3ff 35%, transparent); color: #8fd3ff; }
+.wk span.now { height: 36px; box-shadow: 0 0 0 1.5px var(--gold-hi), 0 0 16px -2px color-mix(in oklab, #ff9a3c 70%, transparent); }
+.hot-foot { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--fg2); }
+.hot-foot b { color: var(--fg); font-weight: 600; }
+/* Current-app comparison */
+.shot { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; }
+.shot::-webkit-scrollbar { display: none; }
+.shot img { display: block; width: 100%; }
+.device.cur > span::after { content: " · in the app today"; color: var(--page-muted); font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+/* --- Tiers: framed rewards card, badges, founders signature ------------------------ */
+.tbadge { flex: none; display: inline-block; vertical-align: middle; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.45)); }
+/* Letterpress tier card: a thick, soft-touch card in the tier colour, the b blind-embossed, type foil-stamped. Same rig as the Pro card. */
+.screen[data-app] .face.lp { color: var(--lt); background: radial-gradient(120% 120% at 20% 0%, var(--l0), var(--l1));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), inset 0 -2px 0 rgba(0,0,0,.22), inset 0 0 0 1px rgba(0,0,0,.1),
+    0 1px 1px rgba(0,0,0,.45), 0 6px 12px -2px rgba(0,0,0,.35), 0 22px 40px -12px rgba(0,0,0,.6), 0 50px 80px -30px rgba(0,0,0,.7), 0 0 90px -30px var(--l0); }
+.screen[data-app="light"] .face.lp { box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -2px 0 rgba(0,0,0,.18), inset 0 0 0 1px rgba(0,0,0,.08),
+    0 1px 1px rgba(13,40,36,.12), 0 6px 12px -2px rgba(13,40,36,.14), 0 22px 36px -14px rgba(13,40,36,.3), 0 44px 70px -30px rgba(13,40,36,.4); }
+.face.lp::after { display: none; }
+.lp .paper { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: multiply; opacity: .3; pointer-events: none; }
+.lp .emb { position: absolute; right: -6px; top: -74px; font: 700 300px/1 var(--font); letter-spacing: -0.06em; color: transparent; pointer-events: none; user-select: none;
+  text-shadow: -1px -1px 1px rgba(0,0,0,.11), 1px 1px 1px rgba(255,255,255,.08); }
+.lp .foil { background: linear-gradient(112deg, var(--f0), var(--f1) 35%, var(--f2) 55%, var(--f1) 75%, var(--f0)); background-size: 220% 100%; background-position: calc(50% + var(--sx, 0%)) 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 1px 0 rgba(0,0,0,.28)); }
+.lp .lptier { font: 700 10px var(--font); letter-spacing: .34em; padding-left: .34em; }
+.lp .lppts { font: 600 15px var(--mono); }
+.lp .lppts small { font: 500 10px var(--font); opacity: .65; margin-left: 4px; }
+.lp .lpname { font: 700 23px var(--font); letter-spacing: -0.02em; line-height: 1.1; }
+.lp .lpbar { height: 2.5px; border-radius: 2px; background: rgba(0,0,0,.2); box-shadow: 0 1px 0 rgba(255,255,255,.14); overflow: hidden; margin-top: 10px; }
+.lp .lpbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--f2), var(--f0)); }
+.lp .lpfoot { display: flex; justify-content: space-between; gap: 8px; font: 500 10.5px var(--font); margin-top: 7px; opacity: .78; }
+.lp .rule { height: 1px; background: linear-gradient(90deg, var(--f1), transparent); opacity: .6; }
+.lp .blist li::before { border-color: var(--f1) !important; }
+.rig.locked .face { filter: saturate(.25) brightness(.6); }
+.rig .lockpill { position: absolute; z-index: 5; left: 50%; top: 50%; translate: -50% -50%; display: inline-flex; gap: 6px; align-items: center; padding: 7px 12px; border-radius: 999px; font: 600 12px var(--font); color: #fff; background: rgba(8,12,12,.72); box-shadow: 0 0 0 1px rgba(255,255,255,.18); pointer-events: none; }
+.rig .lockpill svg { width: 13px; height: 13px; }
+/* Ladder rows with badges */
+.lrow .ic.b { background: none; border: 0; }
+.lrow .pro { font: 700 9.5px var(--font); letter-spacing: .08em; padding: 2px 6px; border-radius: 6px; background: var(--pri-soft); color: var(--pri); margin-inline-start: 6px; vertical-align: middle; }
+/* Badge placements */
+.places { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.place { border-radius: 16px; border: 1px solid var(--line); background: var(--card); padding: 12px; display: grid; gap: 8px; align-content: start; }
+.place .cap { font-size: 11px; color: var(--fg3); }
+.avatarb { position: relative; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font: 700 15px var(--font); color: #fff; background: linear-gradient(160deg, var(--hero-from), var(--hero-to)); }
+.avatarb .tbadge { position: absolute; right: -6px; bottom: -4px; }
+.prow { display: flex; align-items: center; gap: 10px; }
+.prow b { font-size: 14px; } .prow small { display: block; font-size: 11.5px; color: var(--fg2); }
+.chead .tbadge { margin-inline-end: 6px; }
+/* Founders card with signature */
+.fcard { position: relative; border-radius: 22px; padding: 18px 20px 16px; overflow: hidden; color: #f3f7f6; display: grid; gap: 14px;
+  background: radial-gradient(90% 120% at 100% 0%, rgba(237,196,99,.20), transparent 55%), radial-gradient(70% 90% at 0% 100%, rgba(14,147,132,.18), transparent 60%), linear-gradient(160deg, #13110d 0%, #0a0c0b 60%, #060807 100%);
+  box-shadow: inset 0 0 0 1px rgba(237,196,99,.45), inset 0 1px 0 rgba(255,255,255,.12), 0 20px 40px -18px rgba(0,0,0,.8); }
+.fc-top { display: flex; justify-content: space-between; align-items: center; }
+.fc-mark { display: inline-flex; align-items: center; gap: 10px; font: 700 11px var(--font); letter-spacing: .3em; color: #edc463; }
+.fc-mark svg { width: 20px; height: 20px; }
+.fc-num { font: 600 40px var(--mono); letter-spacing: -0.03em; background: linear-gradient(112deg, #f5d98a, #edc463 40%, #b68e30 70%, #edc463); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fc-sig { font: 400 34px/1.1 'Pinyon Script', 'Snell Roundhand', cursive; color: #f5d98a; padding: 6px 0 2px; border-bottom: 1px solid rgba(237,196,99,.35); text-shadow: 0 1px 0 rgba(0,0,0,.6); }
+.fc-bot { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: end; }
+.fc-bot span { display: block; font-size: 10.5px; color: rgba(243,247,246,.6); }
+.fc-bot b { font: 600 15px var(--mono); }
+.fc-bot p { margin: 0; font-size: 11.5px; line-height: 1.45; color: rgba(243,247,246,.72); text-align: end; font-style: italic; }
+
+
+/* Hover light (from the titanium study): a streak and a soft spot that follow the pointer, on every card. */
+.glare { position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit; opacity: var(--ga, 0); transition: opacity .25s; mix-blend-mode: overlay;
+  background: linear-gradient(105deg, transparent calc(var(--mx, 50%) - 22%), rgba(255,255,255,.55) var(--mx, 50%), transparent calc(var(--mx, 50%) + 22%)), radial-gradient(70% 90% at var(--mx, 50%) var(--my, 30%), rgba(255,255,255,.4), transparent 65%); }
+.screen[data-app="light"] .face:not(.lp) .glare { mix-blend-mode: soft-light; }
+.cname .tbadge { margin-inline-start: 6px; translate: 0 -2px; }
+/* Founders card on the same rig */
+.screen[data-app] .face.fface { color: #f3f7f6;
+  background: radial-gradient(90% 120% at 100% 0%, rgba(237,196,99,.20), transparent 55%), radial-gradient(70% 90% at 0% 100%, rgba(14,147,132,.18), transparent 60%), linear-gradient(160deg, #13110d 0%, #0a0c0b 60%, #060807 100%);
+  box-shadow: inset 0 0 0 1px rgba(237,196,99,.45), inset 0 1px 0 rgba(255,255,255,.12), 0 1px 1px rgba(0,0,0,.5), 0 22px 40px -12px rgba(0,0,0,.7), 0 50px 80px -30px rgba(0,0,0,.8), 0 0 90px -30px rgba(237,196,99,.5); }
+.face.fface::after { left: 12%; right: 12%; background: linear-gradient(90deg, transparent, #edc463, #f5d98a, #edc463, transparent); }
+.fface .cin { gap: 10px; padding: 16px 18px 14px; }
+.fface .fc-num { font-size: 34px; }
+.fface .fc-sig { font-size: 30px; padding-top: 0; }
+.fface .blist li::before { border-color: #edc463 !important; }
+/* Founders page extras that already exist in the app */
+.credit { display: grid; gap: 8px; }
+.credit label { font-size: 14px; font-weight: 700; }
+.inp { min-height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--fg); padding: 0 14px; font: 500 14px var(--font); display: flex; align-items: center; }
+.inp.ph { color: var(--fg3); }
+.two { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.two .ghost { width: auto; padding: 0 16px; }
+.credits .row { justify-content: flex-start; gap: 14px; }
+.credits .row b { font-family: var(--mono); color: var(--gold-hi); min-width: 44px; }
+.credits .row span.anon { color: var(--fg3); }
+/* Profile badges */
+.prof { display: grid; gap: 12px; }
+.phead { border-radius: 20px; padding: 16px; display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--line); }
+.ava { position: relative; flex: none; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font: 700 20px var(--font); color: #fff; background: linear-gradient(160deg, var(--hero-from), var(--hero-to)); }
+.ava.sm { width: 40px; height: 40px; font-size: 13px; }
+.ava .protag { position: absolute; left: 50%; bottom: -7px; translate: -50% 0; font: 800 9px var(--font); letter-spacing: .16em; padding: 3px 7px 3px 8px; border-radius: 6px; color: #2a1d04;
+  background: linear-gradient(112deg, var(--gold-lo), var(--gold-hi) 45%, var(--gold-mid)); box-shadow: 0 0 0 2px var(--card), 0 2px 6px rgba(0,0,0,.35); }
+.ava.sm .protag { font-size: 7px; padding: 2px 5px 2px 6px; bottom: -6px; }
+.ava .tb-on { position: absolute; right: -4px; top: -4px; filter: drop-shadow(0 0 0 var(--card)); }
+.ava.founder::before { content: ""; position: absolute; inset: -4px; border-radius: 50%; padding: 2.5px; background: conic-gradient(from 200deg, #f5d98a, #b68e30, #0f6a49, #39d79a, #0f6a49, #b68e30, #f5d98a);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.ava.founder::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; box-shadow: 0 0 18px -2px rgba(237,196,99,.55); pointer-events: none; }
+.pname { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pname small { display: block; width: 100%; font-size: 12.5px; font-weight: 500; color: var(--fg2); letter-spacing: 0; }
+.fchip { display: inline-flex; align-items: center; gap: 4px; font: 700 10.5px var(--mono); padding: 3px 7px; border-radius: 7px; color: #edc463; background: linear-gradient(160deg, #1a160d, #0b0c0b); box-shadow: inset 0 0 0 1px rgba(237,196,99,.5); }
+.fchip svg { width: 11px; height: 11px; }
+.opt { font: 700 10.5px var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--fg3); margin: 4px 2px -4px; }
+.mini { display: grid; gap: 0; }
+.mini .row { justify-content: flex-start; gap: 12px; }
+.mini .row b { font-size: 14px; display: inline-flex; align-items: center; gap: 5px; }
+.mini .row small { display: block; font-size: 11.5px; color: var(--fg2); }
+@media (prefers-reduced-motion: reduce) { .glare { display: none; } }
+
+
+/* Economy plan */
+.econ { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 20px; padding: 24px; display: grid; gap: 22px; }
+.econ h2 { margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+.econ h3 { margin: 0 0 8px; font-size: 15px; }
+.econ p, .econ li { color: var(--page-muted); font-size: 14px; line-height: 1.55; margin: 0; }
+.econ b { color: var(--page-fg); }
+.econ ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 5px; }
+.econ .g2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+.econ .tw { overflow-x: auto; }
+.econ table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+.econ th, .econ td { text-align: start; padding: 9px 10px; border-top: 1px solid var(--page-line); vertical-align: top; color: var(--page-muted); }
+.econ th { color: var(--page-fg); font-weight: 700; border-top: 0; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.econ td:first-child { color: var(--page-fg); font-weight: 700; white-space: nowrap; }
+.econ td.n { font-family: var(--mono); white-space: nowrap; }
+.voice { border: 1px solid var(--page-line); border-radius: 14px; padding: 14px; display: grid; gap: 6px; }
+.voice h4 { margin: 0; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--page-fg); }
+.verdict { border-radius: 14px; padding: 16px; background: color-mix(in oklab, #0e9384 10%, var(--page-card)); border: 1px solid color-mix(in oklab, #0e9384 35%, var(--page-line)); }
+
+
+/* Invite a friend */
+.inv-hero { text-align: center; display: grid; gap: 6px; }
+.inv-hero h3 { margin: 0; font-size: 24px; letter-spacing: -0.025em; line-height: 1.12; text-wrap: balance; }
+.inv-hero h3 b { color: var(--pri); }
+.gift .cname strong { font-size: 21px; }
+.gift .code { font: 600 13px var(--mono); letter-spacing: .14em; }
+.linkrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 6px 6px 6px 14px; border-radius: 14px; border: 1px dashed var(--line); background: var(--card); }
+.linkrow span { font: 500 13px var(--mono); color: var(--fg2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linkrow button { min-height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: var(--elev); color: var(--fg); font: 600 13px var(--font); cursor: pointer; }
+.earned { border-radius: 18px; background: var(--card); border: 1px solid var(--line); padding: 14px 16px; display: grid; gap: 12px; }
+.earned-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.earned-top h4 { margin: 0; font-size: 16px; } .earned-top h4 b { font-family: var(--mono); color: var(--pri); }
+.earned-top span { font-size: 12px; color: var(--fg2); }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.slots i { height: 8px; border-radius: 99px; background: var(--elev); }
+.slots i.on { background: linear-gradient(90deg, var(--hero-from), var(--pri)); }
+.friend { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
+.friend:first-child { border-top: 0; }
+.friend .av { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font: 700 13px var(--font); color: #fff; background: linear-gradient(160deg, var(--hero-from), var(--hero-to)); }
+.friend b { font-size: 14px; display: block; } .friend small { font-size: 12px; color: var(--fg2); }
+.friend em { font: 700 12px var(--font); font-style: normal; color: var(--green); white-space: nowrap; }
+.friend em.wait { color: var(--amber); }
+.mini3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 5px; max-width: 90px; }
+.mini3 i { height: 4px; border-radius: 9px; background: var(--elev); } .mini3 i.on { background: var(--pri); }
+.steps3 { display: grid; gap: 0; }
+.steps3 .row { justify-content: flex-start; gap: 12px; }
+.steps3 .row > b { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--mono); background: var(--pri-soft); color: var(--pri); }
+.invcta { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 18px; border: 1px solid color-mix(in oklab, var(--pri) 35%, var(--line)); background: linear-gradient(120deg, var(--pri-soft), var(--card) 70%); }
+.invcta .gi { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--pri); color: var(--pri-ink); }
+.invcta .gi svg { width: 20px; height: 20px; }
+.invcta b { font-size: 14px; display: block; } .invcta small { font-size: 12px; color: var(--fg2); }
+.invcta .go { font: 700 12.5px var(--font); color: var(--pri); white-space: nowrap; }
+
+/* --- Notes ------------------------------------------------------------------ */
+.notes { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 20px; padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px; }
+.notes h2 { grid-column: 1 / -1; margin: 0; font-size: 20px; letter-spacing: -0.01em; }
+.notes h3 { margin: 0 0 6px; font-size: 14.5px; }
+.notes li { color: var(--page-muted); font-size: 14px; line-height: 1.5; }
+.notes ul { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+.notes b { color: var(--page-fg); }
+</style>
+
+<div class="shell">
+  <div class="top">
+    <div>
+      <h1>buddget Pro, Rewards and Founders</h1>
+      <p>Plan and billing, Rewards, Founders club, Profile and Usage, plus the audited rewards economy at the bottom. Pick an account state and a theme. Tap a card to view its details; on a computer, move the pointer over it to tilt it under the light.</p>
+    </div>
+    <div class="ctrls">
+      <div class="toggle" role="group" aria-label="Account state" id="stateT">
+        <button type="button" data-v="free">Free</button><button type="button" data-v="trial">Trial</button><button type="button" data-v="pro">Pro</button>
+      </div>
+      <div class="toggle" role="group" aria-label="Rewards tier" id="tierT">
+        <button type="button" data-v="platinum">Silver</button><button type="button" data-v="emerald">Emerald</button><button type="button" data-v="diamond">Diamond</button><button type="button" data-v="elite">Elite</button><button type="button" data-v="founder">Elite Founder</button>
+      </div>
+      <div class="toggle" role="group" aria-label="App theme" id="themeT">
+        <button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="device"><span>Plan and billing</span>
+      <div class="phone"><div class="screen" data-app="dark"><div class="island"></div><div class="status"><span class="mono">9:41</span><span>100%</span></div>
+        <div class="scroll" id="billing"></div>
+        <div class="navbar"><div><i></i>Flow</div><div><i></i>Accounts</div><div class="on"><i></i>Settings</div><div><i></i>Wealth</div><div><i></i>Debts</div></div>
+      </div></div>
+    </div>
+    <div class="device"><span>Rewards (loyalty tiers)</span>
+      <div class="phone"><div class="screen" data-app="dark"><div class="island"></div><div class="status"><span class="mono">9:41</span><span>100%</span></div>
+        <div class="scroll" id="loyalty"></div>
+        <div class="navbar"><div><i></i>Flow</div><div><i></i>Accounts</div><div class="on"><i></i>Settings</div><div><i></i>Wealth</div><div><i></i>Debts</div></div>
+      </div></div>
+    </div>
+    <div class="device"><span>Founders club</span>
+      <div class="phone"><div class="screen" data-app="dark"><div class="island"></div><div class="status"><span class="mono">9:41</span><span>100%</span></div>
+        <div class="scroll" id="founders"></div>
+        <div class="navbar"><div><i></i>Flow</div><div><i></i>Accounts</div><div class="on"><i></i>Settings</div><div><i></i>Wealth</div><div><i></i>Debts</div></div>
+      </div></div>
+    </div>
+    <div class="device"><span>Invite friends</span>
+      <div class="phone"><div class="screen" data-app="dark"><div class="island"></div><div class="status"><span class="mono">9:41</span><span>100%</span></div>
+        <div class="scroll" id="invite"></div>
+        <div class="navbar"><div><i></i>Flow</div><div><i></i>Accounts</div><div class="on"><i></i>Settings</div><div><i></i>Wealth</div><div><i></i>Debts</div></div>
+      </div></div>
+    </div>
+    <div class="device"><span>Profile badges</span>
+      <div class="phone"><div class="screen" data-app="dark"><div class="island"></div><div class="status"><span class="mono">9:41</span><span>100%</span></div>
+        <div class="scroll" id="profile"></div>
+        <div class="navbar"><div><i></i>Flow</div><div><i></i>Accounts</div><div class="on"><i></i>Settings</div><div><i></i>Wealth</div><div><i></i>Debts</div></div>
+      </div></div>
+    </div>
+    <div class="device"><span>Usage (with Sparks)</span>
+      <div class="phone"><div class="screen" data-app="dark"><div class="island"></div><div class="status"><span class="mono">9:41</span><span>100%</span></div>
+        <div class="scroll" id="usage"></div>
+        <div class="navbar"><div><i></i>Flow</div><div><i></i>Accounts</div><div class="on"><i></i>Settings</div><div><i></i>Wealth</div><div><i></i>Debts</div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <section class="notes">
+    <h2>What changes and why</h2>
+    <div><h3>Two pages, clear jobs</h3><ul>
+      <li><b>Plan and billing:</b> your member card, managing the subscription, billing history.</li>
+      <li><b>Usage:</b> the meters, the other limits, and Sparks. You buy Sparks where you run out.</li>
+      <li>Sparks receipts also show in billing history, so every payment is in one list.</li>
+    </ul></div>
+    <div><h3>The member card</h3><ul>
+      <li>Obsidian in dark, pearl in light. One hairline, fine grain, a faint teal bloom and a large blind-embossed "b". No gold, no avatar.</li>
+      <li>Front: your name, plan and billing period, member since, renewal date and member number.</li>
+      <li>Back: your Pro benefits and the billing line: store, price and next charge.</li>
+      <li>Tap to flip: it lifts toward you mid-turn, a light sweeps across and its shadow pulls in.</li>
+    </ul></div>
+    <div><h3>Free gets a showcase, not a locked card</h3><ul>
+      <li>The top of the page compares what you have with what Pro adds, side by side, with Pro raised and outlined.</li>
+      <li>One primary action, "Start 30 days free", with "No card" under it. Yearly is preselected with the monthly equivalent shown.</li>
+    </ul></div>
+    <div><h3>Rewards</h3><ul>
+      <li>Five tiers: Silver, Emerald, Diamond, Elite (Pro only) and Elite Founder (a founder who reaches Elite).</li>
+      <li>The tier card is letterpress: thick soft-touch stock in the tier colour, a blind-embossed b and foil-stamped type that catches the light. Tap it to see the tier's perks.</li>
+      <li>Your 12-week hot streak with freezes, the tier ladder, ways to earn, and your badge on your profile and in Settings.</li>
+    </ul></div>
+    <div><h3>Founders club</h3><ul>
+      <li>A black card with a gold hairline, your founder number and your name as a signature, with a line of thanks.</li>
+      <li>At most 100 founders; the window closes 60 days after launch.</li>
+    </ul></div>
+    <div><h3>Rules kept</h3><ul>
+      <li>Only the app's own tokens: brand teal, green and amber for states, DM Sans and JetBrains Mono.</li>
+      <li>Absolute dates, no countdowns or fake scarcity. Cancelling and payment changes go through the App Store.</li>
+    </ul></div>
+  </section>
+
+  <section class="econ" id="economy">
+    <h2>Sparks pricing and rewards economy: final</h2>
+    <p>How the app charges: 1 Spark per $0.001 of real model cost, rounded up on every call, so a Spark never costs us more than $0.001 (migration 0298). Prices include VAT (Egypt 14%, Saudi 15%, UAE 5%); the store keeps 15%; 54.5 EGP to the dollar. A Spark is counted at its full $0.001 even though rounding up makes most cost less, so every margin below is a floor.</p>
+
+    <div class="verdict"><p><b>Correction.</b> An earlier version of this page said packs lose money. That was wrong: it priced Sparks per feature (an old table the app no longer uses) at the wrong exchange rate. Your planning number holds: EGP 9.99 for 70 Sparks leaves <b>EGP 3.63</b> after VAT, the store and AI. Only the three larger Egypt packs and the Pro +25% bonus fell under a third.</p></div>
+
+    <div class="tw"><table>
+      <thead><tr><th>Pack</th><th>Egypt</th><th>UAE / Saudi / US</th><th>Kept per EGP 10, Free buyer</th><th>Pro buyer (+15%)</th><th>Worst market, Pro</th></tr></thead>
+      <tbody>
+        <tr><td>60 Sparks</td><td class="n">EGP 9.99</td><td class="n">Egypt only</td><td class="n">EGP 4.18 (42%)</td><td class="n">EGP 3.69 (37%)</td><td class="n">37%</td></tr>
+        <tr><td>125 Sparks</td><td class="n">EGP 19.99</td><td class="n">Egypt only</td><td class="n">EGP 4.05 (40%)</td><td class="n">EGP 3.54 (35%)</td><td class="n">35%</td></tr>
+        <tr><td>320 Sparks</td><td class="n">EGP 49.99</td><td class="n">AED 3.99 · SAR 3.99 · USD 0.99</td><td class="n">EGP 3.97 (40%)</td><td class="n">EGP 3.44 (34%)</td><td class="n">34% Egypt</td></tr>
+        <tr><td>650 Sparks</td><td class="n">EGP 99.99</td><td class="n">AED 7.99 · SAR 7.99 · USD 1.99</td><td class="n">EGP 3.91 (39%)</td><td class="n">EGP 3.38 (34%)</td><td class="n">34% Egypt</td></tr>
+        <tr><td>2,000 Sparks</td><td class="n">EGP 299.99</td><td class="n">AED 18.99 · SAR 21.99 · USD 4.99</td><td class="n">EGP 3.82 (38%)</td><td class="n">EGP 3.28 (33%)</td><td class="n">33% Egypt</td></tr>
+      </tbody>
+    </table></div>
+    <ul>
+      <li><b>What changed:</b> fewer Sparks per pack at the same prices (was 70 / 150 / 400 / 900 / 2,500), Saudi's largest pack moves to SAR 21.99, and Pro's pack bonus goes from +25% to +15%. Product IDs become <code>sparks_60</code>, <code>sparks_125</code>, <code>sparks_320</code>, <code>sparks_650</code>, <code>sparks_2000</code>; none are created in the stores yet, so nothing has to be migrated.</li>
+      <li><b>Bonuses never add together.</b> A buyer gets the bigger of the Pro bonus and the member bonus, so no buyer anywhere drops under 33%.</li>
+      <li><b>Currency rule:</b> if EGP passes 60 to the dollar, the 650 pack for Pro falls to 30%; re-size the Egypt packs at that point.</li>
+    </ul>
+
+    <h3>Rewards with cash value, like a Genius level</h3>
+    <p>Members see real money value for being consistent, and every benefit is paid out of a fixed retention budget: worst case under 25% of what that member earns us, expected under 10%.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Benefit</th><th>Silver</th><th>Emerald</th><th>Diamond</th><th>Elite (Pro)</th></tr></thead>
+      <tbody>
+        <tr><td>Member bonus on Sparks packs</td><td>–</td><td>+5%</td><td>+10%</td><td>Pro's +15%</td></tr>
+        <tr><td>Extra AI every week (Free)</td><td>–</td><td>+3 credits</td><td>+5 credits</td><td>Pro limits</td></tr>
+        <tr><td>Sparks gift on reaching the tier</td><td>–</td><td>30</td><td>60</td><td>150</td></tr>
+        <tr><td>Member price on Pro (Free, 8 real weeks)</td><td>–</td><td colspan="2">First year EGP 399 instead of 499 (20% off), store offer code</td><td>–</td></tr>
+        <tr><td>Free perks</td><td>Card, badge, streak, shop</td><td>Freeze every 4 weeks, app icon, monthly recap</td><td>Early access, app icon</td><td>Crimson card, app icon</td></tr>
+      </tbody>
+    </table></div>
+    <div class="g2">
+      <div><h3>Streak gifts</h3><ul>
+        <li>4 weeks 10 Sparks · 12 weeks 30 · 26 weeks 60 · 52 weeks 120.</li>
+        <li>Gifts expire after 60 days with a countdown chip; they are always spent before bought Sparks, which never expire.</li>
+      </ul></div>
+      <div><h3>Keeping members</h3><ul>
+        <li>Win-back: 30% off Pro monthly for 2 months, once per account.</li>
+        <li>Save offer: 10% off the next year, once, for members of 12 months or more who turn auto-renew off.</li>
+        <li>Founders: 20% off their first renewal (12 months); never a forever price.</li>
+      </ul></div>
+      <div><h3>Show the value</h3><ul>
+        <li>Pack sheet: "650 Sparks + 65 Diamond bonus (worth EGP 10)".</li>
+        <li>Monthly recap: "Diamond gave you EGP 48 this year", shareable as a letterpress card.</li>
+        <li>Tier-up moment: full-screen card, new app icon, the gift and its countdown. Monday: "Your Diamond credits are in".</li>
+      </ul></div>
+      <div><h3>What it costs (worst / expected per year)</h3><ul>
+        <li>A steady Free member reaching Diamond: $0.57 / $0.23. Covered if about 5 in 100 such members go Pro who would not have.</li>
+        <li>An Elite Pro member: $0.46 (10% of what they earn us) / $0.18 (4%).</li>
+        <li>Member price on Pro is an experiment: half of eligible members see it; it switches off unless at least 1.4 times as many buy (the break-even).</li>
+        <li>Win-back at 30% off still earns $0.49 a month after AI.</li>
+      </ul></div>
+    </div>
+
+    <h3>Council</h3>
+    <div class="g2">
+      <div class="voice"><h4>Skeptic</h4><p>Stacking bonuses broke the 33% floor by design, and heavy users who reach Elite are the costly ones. Keep pack bonuses to one, don't add weekly credits for Pro, and fix the yearly plan's heavy-user loss first.</p></div>
+      <div class="voice"><h4>Pragmatist</h4><p>Bonuses must never stack; show value in EGP, not Sparks; make tier-ups a moment with a countdown on the gift; spend cash perks only where someone is about to pay or leave.</p></div>
+      <div class="voice"><h4>Critic</h4><p>Saudi, not Egypt, was the tightest market on the old packs. Refunds after use need clawback of the bonus. Gifts need one account per device. Store 15% rates need enrolment. Tier offers need offer codes, not introductory offers.</p></div>
+      <div class="voice"><h4>Verdict</h4><p>All adopted: one bonus at a time, Pro +15%, no weekly credits for Pro, a once-per-account win-back and save offer, the Pro member price run as a measured experiment, and refund clawback on bonuses.</p></div>
+    </div>
+
+    <h3>Still for you to decide</h3>
+    <ul>
+      <li><b>Heavy Pro users on the yearly plan in Egypt.</b> A member who uses the whole weekly limit every week costs about $3.67 a year more than EGP 499 brings in (typical use leaves $4.73). Options: watch for 8 weeks of real data, or lower Egypt's weekly limit for yearly members to 120 credits.</li>
+      <li><b>Family Sharing</b> on Pro shares it with up to 6 people. Recommended off at launch.</li>
+      <li><b>Store enrolment:</b> confirm Apple Small Business and Google's 15% tier, which all of these numbers assume.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const S = { name: 'Layla Hassan' }
+const I = {
+  swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>',
+  store: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg>',
+  receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+  restore: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 3-6.3"/><path d="M4 4v4h4"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>',
+  gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M12 8c-2-4-6-4-6-1s6 1 6 1 6 2 6-1-4-3-6 1"/></svg>',
+  card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18M7 15h4"/></svg>',
+  help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff8a2a"/><stop offset=".55" stop-color="#f5b13c"/><stop offset="1" stop-color="#f5d98a"/></linearGradient></defs><path fill="url(#fl)" d="M12 2c.6 3.2-1.4 4.9-2.8 6.6C7.7 10.4 6.5 12.1 6.5 14.5A5.5 5.5 0 0 0 12 20a5.5 5.5 0 0 0 5.5-5.5c0-2.3-1.1-3.7-2-4.8-.2 1.4-.9 2.5-2 3 .4-2.9-.3-6.6-1.5-10.7z"/></svg>',
+  snow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/></svg>',
+  crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 17h16l1-9-5 4-4-6-4 6-5-4z"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  back: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+}
+const wm = () => '<span class="wm">bud<b>d</b>get</span>'
+const header = (t) => `<div class="bar"><span class="back">${I.back}</span><h2>${t}</h2></div>`
+const plansBlock = `<div class="plans">
+  <div class="plan sel"><span class="tagx goldtag">Best value · save 40%</span><span class="radio"></span><div style="flex:1"><h4>Yearly</h4><small>EGP 41.67 a month, billed yearly</small></div><div class="price"><s class="mono">EGP 839.88</s><b>EGP 499.99</b></div></div>
+  <div class="plan"><span class="radio"></span><div style="flex:1"><h4>Monthly</h4><small>Cancel any time</small></div><div class="price"><b>EGP 69.99</b></div></div>
+</div>`
+
+function memberCard(state) {
+  const trial = state === 'trial'
+  return `
+  <div class="rig" data-rig>
+    <div class="floor" aria-hidden="true"></div>
+    <div class="lift">
+      <button type="button" class="mcard" aria-label="Your buddget Pro membership card. Tap to flip">
+        <div class="face">
+          <div class="grain"></div><div class="monogram" aria-hidden="true">b</div>
+          <div class="cin">
+            <div class="chead">${wm()}<span class="goldmark">${trial ? 'PRO TRIAL' : 'PRO'}</span></div>
+            <div class="cname"><strong>${S.name}${tierBadge(view.tier, 20)}</strong><span>${trial ? '30-day trial · No card on file' : 'Pro Yearly · Billed by the App Store'}</span></div>
+            <div class="cfacts">
+              <div><span>Member since</span><b>17 NOV 2026</b></div>
+              <div><span>${trial ? 'Trial ends' : 'Renews'}</span><b>${trial ? '16 DEC 2026' : '17 NOV 2027'}</b></div>
+              <div><span>Member</span><b>0427</b></div>
+            </div>
+          </div>
+          <div class="sheen"></div>
+        </div>
+        <div class="face" style="transform:rotateY(180deg)">
+          <div class="grain"></div>
+          <div class="cin">
+            <div class="chead"><span class="goldmark">INCLUDED</span>${wm()}</div>
+            <ul class="blist"><li>About 10x the AI</li><li>The Buddgy Advisor</li><li>Unlimited plans and View balance</li><li>15% more Sparks in every pack</li></ul>
+            <div class="bill"><span>${trial ? 'Then EGP 499 / year, if you choose' : 'EGP 499 / year'}</span><span>${trial ? 'No charge yet' : 'Next 17 Nov 2027'}</span></div>
+          </div>
+          <div class="sheen"></div>
+        </div>
+      </button>
+    </div>
+  </div>`
+}
+
+function billing(state) {
+  if (state === 'free') return `${header('Plan and billing')}
+    <div class="showcase">
+      <div class="sc-head"><span class="pill pri" style="justify-self:center">You're on Free</span><h3>See what Pro adds to your money</h3><p class="sub">Same app. More AI, the Advisor, and no limits.</p></div>
+      <div class="duo">
+        <div class="col"><h4>Free <span class="now">Now</span></h4>
+          <div class="feat"><span>Buddgy and receipts</span><b>Limited</b></div>
+          <div class="feat"><span>Advisor</span><b>1 a month</b></div>
+          <div class="feat"><span>Budget plans</span><b>2</b></div>
+          <div class="feat"><span>View balance</span><b>10 a month</b></div>
+          <div class="feat"><span>Sparks packs</span><b>Standard</b></div>
+        </div>
+        <div class="col pro"><h4>Pro</h4>
+          <div class="feat"><span>Buddgy and receipts</span><b>About 10x more</b></div>
+          <div class="feat"><span>Advisor</span><b>Whenever you ask</b></div>
+          <div class="feat"><span>Budget plans</span><b>Unlimited</b></div>
+          <div class="feat"><span>View balance</span><b>Unlimited</b></div>
+          <div class="feat"><span>Sparks packs</span><b>+15% Sparks</b></div>
+        </div>
+      </div>
+      <p class="fine">SMS tracking stays free on every account.</p>
+    </div>
+    <div style="display:grid;gap:8px"><button class="cta" type="button">Start 30 days free</button><p class="fine">No card. On day 30 you move back to Free; nothing is charged.</p></div>
+    <h3 class="sec">Or choose a plan now</h3>${plansBlock}
+    <div style="display:grid;gap:8px"><button class="ghost" type="button">Continue with yearly</button><p class="fine">Billed through the App Store. Renews until you cancel in Settings → Apple Account. <u>Restore purchases</u> · <u>Terms</u> · <u>Privacy</u></p></div>`
+
+  const trial = state === 'trial'
+  const spot = `<div class="spot">${memberCard(state)}<span class="tap">Tap the card to view details</span></div>`
+  const mrow = (cls, icon, label, value = '', sub = '') => `<div class="mrow ${cls}"><i>${icon}</i><span>${label}${sub ? `<small>${sub}</small>` : ''}</span><em>${value}</em><span class="chev"></span></div>`
+  const manage = `<div class="mbar4" role="group" aria-label="Manage subscription">
+    <div class="mbar4-top"><span>${trial ? 'Trial · <b>no card on file</b>' : 'Renews <b>17 Nov 2027</b> · EGP 499 / yr'}</span>${trial ? '<span class="pill pri">Day 4 of 30</span>' : '<span class="pill">● Active</span>'}</div>
+    <div class="mbar4-row">
+      <button class="m4 pri" type="button">${I.swap}${trial ? 'Choose plan' : 'Change plan'}</button>
+      <button class="m4" type="button">${I.store}Manage</button>
+      <button class="m4" type="button">${I.restore}Restore</button>
+      <button class="m4" type="button">${I.receipt}Receipts</button>
+    </div>
+  </div>`
+  const vt = (n, label, cap, pct, delta) => `<div class="vt"><div class="vt-top"><b>${n}</b>${delta ? `<small>${delta}</small>` : ''}</div><span class="l">${label}</span><div class="vbar"><i style="width:100%"></i><u style="left:${pct}%"></u></div><div class="vbar-l"><span>You</span><span>Free stops at <b>${cap}</b></span></div></div>`
+  const recap = `<div class="valp">
+    <div class="valp-head"><span class="k">${trial ? 'So far with Pro' : 'Pro this month'}</span><h3>Pro went <b>${trial ? '3×' : '7×'}</b> further than Free would have</h3><p class="sub">${trial ? 'Four days in, and you’ve already passed three Free limits.' : 'You passed every Free limit, and nothing stopped you.'}</p></div>
+    <div class="valp-grid">
+      ${vt(trial ? 38 : 214, 'Buddgy answers', '≈30', trial ? 79 : 14, trial ? '' : '+18%')}
+      ${vt(trial ? 6 : 31, 'Receipts scanned', '≈6', trial ? 100 : 19, trial ? '' : '+9%')}
+      ${vt(trial ? 3 : 12, 'Advisor answers', '1', trial ? 33 : 8, trial ? '' : '+4')}
+      ${vt(trial ? 4 : 19, 'View balance', '10', trial ? 100 : 53, '')}
+    </div>
+  </div>`
+  if (trial) return `${header('Plan and billing')}${spot}${manage}
+    <div class="panel" style="padding:16px;display:grid;gap:14px">
+      <div><h3 class="sec">Keep Pro after 16 Dec</h3><p class="sub" style="margin-top:4px">On 16 December your account goes back to Free. Choose a plan and nothing changes.</p></div>
+      ${plansBlock}
+      <button class="cta" type="button">Keep Pro</button>
+      <p class="fine">Nothing is charged until you choose a plan. Billed through the App Store.</p>
+    </div>${recap}`
+  return `${header('Plan and billing')}${spot}${manage}${recap}
+    <div style="display:grid;gap:10px"><h3 class="sec">Billing history</h3>
+      <div class="panel history"><div class="rows">
+        <div class="row"><span>buddget Pro · Yearly<small>17 Nov 2026 · App Store</small></span><b class="mono">EGP 499</b></div>
+        <div class="row"><span>650 Sparks<small>30 Oct 2026 · App Store</small></span><b class="mono">EGP 99.99</b></div>
+        <div class="row"><span>buddget Pro · Monthly<small>17 Oct 2026 · App Store</small></span><b class="mono">EGP 69.99</b></div>
+      </div></div>
+      <p class="fine">Payment and cancellation are handled by the App Store, as Apple requires.</p>
+    </div>`
+}
+
+// Tiers: metal, frame weight and ornament grow with rank. Elite needs Pro; Elite Founder is a founder at Elite.
+const TIERS = {
+  platinum: { name: 'Silver', n: 1, pts: 0, next: 'emerald', g: ['#f4f7f8', '#a9b3b7', '#ffffff', '#7f898d', '#e3e9eb'], ink: '#d9e1e3', glyph: 'chevron' },
+  emerald:  { name: 'Emerald', n: 2, pts: 500, next: 'diamond', g: ['#0b3d2c', '#39d79a', '#0f6a49', '#8ff3c9', '#0a3a2a'], ink: '#6fe6b3', glyph: 'gem' },
+  diamond:  { name: 'Diamond', n: 3, pts: 1500, next: 'elite', g: ['#e6f8ff', '#8fd3ff', '#ffffff', '#b9a9ff', '#7cc8f0'], ink: '#bfe8ff', glyph: 'diamond' },
+  elite:    { name: 'Elite', n: 4, pts: 3000, next: 'founder', g: ['#4f0510', '#d0142f', '#ffc2c7', '#a80d24', '#3a030b'], ink: '#ff7a88', glyph: 'crown', pro: true },
+  founder:  { name: 'Elite Founder', n: 5, pts: 3000, next: null, g: ['#6b4f16', '#edc463', '#fff1c4', '#0f6a49', '#39d79a'], ink: '#edc463', glyph: 'crownstar', pro: true, founder: true },
+}
+const GLYPH = {
+  chevron: '<path d="M8 13.5l4-3.5 4 3.5" fill="none" stroke="#1b2224" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>',
+  gem: '<path d="M8.5 10.5h7l-3.5 5.5z M8.5 10.5l1.6-2h3.8l1.6 2" fill="none" stroke="#062a1e" stroke-width="1.3" stroke-linejoin="round" opacity=".8"/>',
+  diamond: '<path d="M12 7.5l4 4.5-4 4.5-4-4.5z M8 12h8 M12 7.5v9" fill="none" stroke="#28406a" stroke-width="1.2" stroke-linejoin="round" opacity=".7"/>',
+  crown: '<path d="M7.5 15.5h9l.8-6-3 2.4L12 8l-2.3 3.9-3 -2.4z" fill="#2b0207" opacity=".72"/>',
+  crownstar: '<path d="M7.5 15.5h9l.8-6-3 2.4L12 8l-2.3 3.9-3-2.4z" fill="#2a1d04" opacity=".72"/><circle cx="12" cy="13.4" r="1.1" fill="#39d79a"/>',
+}
+let badgeSeq = 0
+function tierBadge(key, size = 28) {
+  const t = TIERS[key], id = 'tb' + (++badgeSeq)
+  const ring = t.n >= 4 ? `<path d="M12 1.6l8.6 5v10.8L12 22.4 3.4 17.4V6.6z" fill="none" stroke="url(#${id}e)" stroke-width="1.1"/>` : ''
+  return `<svg class="tbadge" width="${size}" height="${size}" viewBox="0 0 24 24" role="img" aria-label="${t.name} tier">
+    <defs>
+      <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">${t.g.map((c, i) => `<stop offset="${i / (t.g.length - 1)}" stop-color="${c}"/>`).join('')}</linearGradient>
+      <linearGradient id="${id}e" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient>
+    </defs>
+    <path d="M12 2.6l7.8 4.5v9.8L12 21.4 4.2 16.9V7.1z" fill="url(#${id})" stroke="rgba(0,0,0,.35)" stroke-width=".6"/>
+    <path d="M12 2.6l7.8 4.5L12 11.6 4.2 7.1z" fill="#fff" opacity=".18"/>
+    ${ring}${GLYPH[t.glyph]}
+  </svg>`
+}
+// Letterpress colours: card stock (l), type colour (lt) and foil (f), per tier.
+const PRESS = {
+  platinum: { l: ['#ecebe6', '#cfccc4'], lt: '#2a2d2f', f: ['#9aa2a7', '#3a4146', '#1d2225'] },
+  emerald:  { l: ['#1f5a43', '#0d2e22'], lt: '#d9f5e8', f: ['#fff3c9', '#d9ab45', '#8c6a22'] },
+  diamond:  { l: ['#1f3a5a', '#0c1a2c'], lt: '#dcecfa', f: ['#ffffff', '#b9c7d2', '#6e7f8c'] },
+  elite:    { l: ['#7a1222', '#3a050d'], lt: '#ffe3e7', f: ['#fff3c9', '#d9ab45', '#8c6a22'] },
+  founder:  { l: ['#1b1915', '#090807'], lt: '#efe6cf', f: ['#fff3c9', '#e2b955', '#8c6a22'] },
+}
+const PERKS = {
+  platinum: ['Your badge after your name', 'Points and a streak for every real week', 'The points shop'],
+  emerald: ['A streak freeze every 4 weeks', 'Emerald app icon and monthly recap', 'Everything in Silver'],
+  diamond: ['Early access to new features', 'Diamond app icon and card', 'Everything in Emerald'],
+  elite: ['The crimson card and app icon', 'Your Elite waits if Pro pauses', 'Everything in Diamond'],
+  founder: ['Your founder number on the card', 'A say in what we build', 'Everything in Elite'],
+}
+function loyaltyCard(key, locked) {
+  const t = TIERS[key], c = PRESS[key]
+  const next = t.next ? TIERS[t.next] : null
+  const pts = { platinum: 320, emerald: 1240, diamond: 2210, elite: 3480, founder: 3480 }[key]
+  const pct = next && key !== 'elite' ? Math.min(100, Math.round(((pts - t.pts) / Math.max(1, next.pts - t.pts)) * 100)) : 100
+  const toNext = key === 'elite' ? 'The top tier for Pro members' : next ? `${(next.pts - pts).toLocaleString('en')} pts to ${next.name}` : 'The highest tier there is'
+  const vars = `--l0:${c.l[0]};--l1:${c.l[1]};--lt:${c.lt};--f0:${c.f[0]};--f1:${c.f[1]};--f2:${c.f[2]}`
+  const paper = '<svg class="paper" aria-hidden="true"><filter id="lpn"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#lpn)"/></svg>'
+  return `
+  <div class="rig ${locked ? 'locked' : ''}" data-rig style="${vars}">
+    <div class="floor" aria-hidden="true"></div>
+    <div class="lift">
+      <button type="button" class="mcard" aria-label="Your buddget rewards card, ${t.name} tier. Tap to see its perks">
+        <div class="face lp">${paper}<div class="emb" aria-hidden="true">b</div>
+          <div class="cin">
+            <div class="chead"><span class="lptier foil">${t.name.toUpperCase()}</span><span class="lppts">${pts.toLocaleString('en')}<small>pts</small></span></div>
+            <div><div class="lpname foil">${S.name}</div><div class="lpbar"><i style="width:${pct}%"></i></div><div class="lpfoot"><span>${toNext}</span><span>Tier ${t.n} of 5</span></div></div>
+          </div>
+          <div class="sheen"></div>
+        </div>
+        <div class="face lp" style="transform:rotateY(180deg)">${paper}
+          <div class="cin">
+            <div class="chead"><span class="lptier foil">${t.name.toUpperCase()} PERKS</span>${wm()}</div>
+            <ul class="blist">${PERKS[key].map((x) => `<li>${x}</li>`).join('')}</ul>
+            <div><div class="rule"></div><div class="lpfoot"><span>${t.founder ? 'Founder #023' : 'Member 0042'}</span><span>Since Nov 2026</span></div></div>
+          </div>
+          <div class="sheen"></div>
+        </div>
+      </button>
+      ${locked ? `<span class="lockpill">${I.lock} Pro members only</span>` : ''}
+    </div>
+  </div>
+  <p class="tap">Tap the card to see its perks</p>`
+}
+function founderCard() {
+  return `
+  <div class="rig" data-rig>
+    <div class="floor" aria-hidden="true"></div>
+    <div class="lift">
+      <button type="button" class="mcard" aria-label="Your founder card, number 23. Tap to flip">
+        <div class="face fface">
+          <div class="cin">
+            <div class="fc-top"><span class="fc-mark">${I.crown}<span>FOUNDER</span></span><span class="fc-num">#023</span></div>
+            <div class="fc-sig">${S.name}</div>
+            <div class="fc-bot"><div><span>Your number</span><b>#023</b></div><p>With thanks for building buddget with us from the very first weeks.</p></div>
+          </div>
+          <div class="sheen"></div>
+        </div>
+        <div class="face fface" style="transform:rotateY(180deg)">
+          <div class="cin">
+            <div class="fc-top"><span class="fc-mark">${I.crown}<span>FOUNDERS CLUB</span></span>${wm()}</div>
+            <ul class="blist"><li>Founder #023 of at most 100</li><li>Your name on the credits, if you want it</li><li>Asked first when we test something new</li><li>Elite Founder when you reach Elite</li></ul>
+            <div class="bill" style="color:rgba(243,247,246,.6)"><span>Joined 17 Nov 2026</span><span>Yours for good</span></div>
+          </div>
+          <div class="sheen"></div>
+        </div>
+      </button>
+    </div>
+  </div>
+  <p class="tap">Tap the card to flip it</p>`
+}
+
+function loyalty(state) {
+  const key = view.tier, t = TIERS[key]
+  const locked = t.pro && state === 'free'
+  const weeks = [1,1,0,1,1,2,1,1,1,1,1,3].map((v) => v === 1 ? `<span class="on">${I.flame}</span>` : v === 2 ? `<span class="fz">${I.snow}</span>` : v === 3 ? `<span class="on now">${I.flame}</span>` : '<span></span>').join('')
+  const order = ['platinum', 'emerald', 'diamond', 'elite', 'founder']
+  const perk = { platinum: 'Everyone starts here. Your card, badge and streak.', emerald: 'A freeze every 4 weeks, the emerald app icon and your monthly recap.', diamond: 'Early access to new features and the diamond app icon.', elite: 'Pro members only. The crimson card and app icon.', founder: 'Founders who reach Elite. The highest tier there is.' }
+  const ladder = order.map((k) => { const x = TIERS[k], i = order.indexOf(k), cur = order.indexOf(key); return `<div class="lrow ${i < cur ? 'done' : i === cur ? 'cur' : ''}"><span class="ic b">${tierBadge(k, 34)}</span><div><h4>${x.name}${x.pro ? '<span class="pro">PRO</span>' : ''}${i === cur ? ' · you’re here' : ''}</h4><p>${perk[k]}</p></div><em>${k === 'founder' ? 'Founder' : x.pts.toLocaleString('en')}</em></div>` }).join('')
+  return `${header('Rewards')}
+    <div class="spot">${loyaltyCard(key, locked)}</div>
+    <div class="hot">
+      <div class="hot-top"><span class="flame">${I.flame}</span><div><h4><b>6</b>-week streak</h4><p>Your best is 9 weeks</p></div><div class="pts"><b>+300</b><span>points this streak</span></div></div>
+      <div class="wk">${weeks}</div>
+      <div class="hot-foot"><span>Next bonus at <b>8 weeks</b> · +100</span><span><b>2</b> freezes left</span></div>
+    </div>
+    ${inviteCta()}
+    <div style="display:grid;gap:10px"><h3 class="sec">Tiers</h3><div class="panel ladder">${ladder}</div>
+      <p class="fine">Elite is part of Pro. A founder who reaches Elite becomes Elite Founder.</p></div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Your badge across buddget</h3>
+      <div class="places">
+        <div class="place"><span class="cap">Profile</span><div class="prow"><span class="avatarb">LH${tierBadge(key, 22)}</span><div><b>${S.name}</b><small>${t.name}</small></div></div></div>
+        <div class="place"><span class="cap">Settings row</span><div class="prow">${tierBadge(key, 28)}<div><b>Rewards</b><small>${t.name} · tier ${t.n} of 5</small></div></div></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Earn points</h3>
+      <div class="panel earn"><div class="rows">
+        <div class="row"><span>Keep your weekly check</span><b>+50</b></div>
+        <div class="row"><span>Confirm a bank text</span><b>+5</b></div>
+        <div class="row"><span>Four weeks in a row</span><b>+100</b></div>
+        <div class="row"><span>Hit a savings goal</span><b>+150</b></div>
+      </div></div>
+    </div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Spend points</h3>
+      <div class="panel earn"><div class="rows">
+        <div class="row"><span>Repair a missed week<small style="display:block;font-size:11.5px;color:var(--fg2)">Within 48 hours, keeps your streak</small></span><b>120 pts</b></div>
+        <div class="row"><span>A streak freeze</span><b>80 pts</b></div>
+        <div class="row"><span>A card finish</span><b>150 pts</b></div>
+        <div class="row"><span>A Buddgy look</span><b>120 pts</b></div>
+      </div></div>
+      <p class="fine">Spending points never lowers your tier. Tiers use the points you have earned in total.</p>
+    </div>`
+}
+function founders() {
+  return `${header('Founders club')}
+    <div class="spot">${founderCard()}</div>
+    <div style="display:grid;gap:10px"><h3 class="sec">What founders get</h3>
+      <div class="panel"><div class="rows">
+        <div class="row" style="display:block"><b style="display:block">Your number</b><span class="sub">A founder number that stays yours.</span></div>
+        <div class="row" style="display:block"><b style="display:block">Your name on the credits</b><span class="sub">If you want it. We approve each name first.</span></div>
+        <div class="row" style="display:block"><b style="display:block">A say in what we build</b><span class="sub">Founders are asked first when we test something new.</span></div>
+        <div class="row" style="display:block"><b style="display:block">Elite Founder</b><span class="sub">Reach Elite on Pro and your tier becomes Elite Founder.</span></div>
+      </div></div>
+      <p class="fine">At most 100 founders. The window closes 60 days after launch.</p>
+    </div>
+    <div class="credit"><label>Your name on the credits</label>
+      <div class="inp">Layla H.</div>
+      <div class="two"><button class="cta" type="button" style="min-height:48px">Send for approval</button><button class="ghost" type="button">Clear</button></div>
+      <p class="fine" style="text-align:start">Waiting for approval. We check every name before it shows.</p></div>
+    <button class="ghost" type="button">Share your card</button>
+    <div style="display:grid;gap:10px"><h3 class="sec">The credits</h3><p class="sub">Every founder, by number. Names show once approved.</p>
+      <div class="panel credits"><div class="rows">
+        <div class="row"><b>#001</b><span>Nour A.</span></div>
+        <div class="row"><b>#002</b><span class="anon">A founder</span></div>
+        <div class="row"><b>#003</b><span>Omar K.</span></div>
+        <div class="row"><b>#023</b><span>Layla H. · you</span></div>
+      </div></div></div>`
+}
+
+function profile(state) {
+  const key = view.tier, t = TIERS[key], pro = state !== 'free', founder = key === 'founder'
+  const tag = pro ? '<span class="protag">PRO</span>' : ''
+  const fchip = `<span class="fchip">${I.crown}#023</span>`
+  const head = (opt, ava, nameExtra, sub) => `<p class="opt">${opt}</p><div class="phead">${ava}<div class="pname">${S.name}${nameExtra}<small>${sub}</small></div></div>`
+  const sub = `${pro ? (state === 'trial' ? 'Pro trial' : 'buddget Pro') : 'Free'} · ${t.name}`
+  return `${header('Profile')}
+    <div class="prof">
+      ${head('Your profile', `<span class="ava${founder ? ' founder' : ''}">LH${tag}</span>`, tierBadge(key, 22) + (founder ? fchip : ''), sub)}
+    </div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Founders only</h3>
+      <p class="sub">A gold and emerald ring around the avatar and a numbered gold chip. Nobody else can earn either, so a founder is recognisable anywhere, on any tier.</p>
+      <div class="phead"><span class="ava founder">LH${tag}</span><div class="pname">${S.name}${tierBadge(key, 22)}${fchip}<small>Founder #023 · ${t.name}</small></div></div>
+    </div>
+    ${inviteCta()}
+    <div style="display:grid;gap:10px"><h3 class="sec">Smaller places</h3>
+      <div class="panel mini"><div class="rows">
+        <div class="row"><span class="ava sm${founder ? ' founder' : ''}">LH${tag}</span><span><b>${S.name}${tierBadge(key, 16)}</b><small>Settings banner</small></span></div>
+        <div class="row"><span class="ava sm">NA<span class="protag">PRO</span></span><span><b>Nour A.${tierBadge('diamond', 16)}</b><small>A Pro member at Diamond</small></span></div>
+        <div class="row"><span class="ava sm">OK</span><span><b>Omar K.${tierBadge('emerald', 16)}</b><small>A Free member at Emerald</small></span></div>
+      </div></div>
+      <p class="fine">Gold PRO sits on the avatar; the tier badge always follows the name; founders add the ring and the numbered chip.</p>
+    </div>`
+}
+
+const inviteCta = () => `<div class="invcta"><span class="gi">${I.gift}</span><div><b>Give 37 days of Pro, get a week</b><small>For every friend who sticks with buddget</small></div><span class="go">Invite ›</span></div>`
+function invite(state) {
+  const pro = state === 'pro'
+  const reward = pro ? '500 Sparks' : 'a week of Pro'
+  return `${header('Invite friends')}
+    <div class="inv-hero"><span class="pill pri" style="justify-self:center">Free for both of you</span>
+      <h3>Give <b>37 days of Pro</b>.<br>Get ${pro ? '<b>500 Sparks</b>' : '<b>a week</b>'} each time.</h3>
+      <p class="sub">Your friend gets the 30-day trial plus an extra week. You get ${reward} when they stick with it.</p></div>
+    <div class="spot"><div class="rig" data-rig>
+      <div class="floor" aria-hidden="true"></div>
+      <div class="lift"><button type="button" class="mcard gift" aria-label="Your invite pass. Tap to flip">
+        <div class="face"><div class="grain"></div><div class="monogram" aria-hidden="true">b</div>
+          <div class="cin">
+            <div class="chead">${wm()}<span class="goldmark">GUEST PASS</span></div>
+            <div class="cname"><strong>37 days of Pro, on ${S.name.split(' ')[0]}</strong><span>No card needed · For a new buddget account</span></div>
+            <div class="cfacts"><div><span>Invite code</span><b class="code">LAYLA-7K2</b></div><div><span>Friend gets</span><b>30 + 7 DAYS</b></div><div><span>You get</span><b>${pro ? '500 SPARKS' : '1 WEEK'}</b></div></div>
+          </div><div class="sheen"></div></div>
+        <div class="face" style="transform:rotateY(180deg)"><div class="grain"></div>
+          <div class="cin">
+            <div class="chead"><span class="goldmark">WHAT THEY GET</span>${wm()}</div>
+            <ul class="blist"><li>Bank texts tracked automatically</li><li>About 10x the AI, and the Advisor</li><li>37 days free, then Free or Pro: their choice</li></ul>
+            <div class="bill"><span>Code LAYLA-7K2</span><span>No card, no charge</span></div>
+          </div><div class="sheen"></div></div>
+      </button></div></div><span class="tap">Tap the pass to see what your friend gets</span></div>
+    <div style="display:grid;gap:8px"><button class="cta" type="button">Share your invite</button>
+      <div class="linkrow"><span>buddget.app/i/LAYLA-7K2</span><button type="button">Copy link</button></div></div>
+    <div class="earned">
+      <div class="earned-top"><h4>${pro ? '<b>1,000</b> Sparks earned' : '<b>2</b> weeks of Pro earned'}</h4><span>2 of 4 this month</span></div>
+      <div class="slots"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+      <div class="hot-foot"><span>${pro ? 'Added to your Sparks' : 'Starts when your trial or Pro time ends'}</span><span>Up to <b>12</b> a year</span></div>
+    </div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Your friends</h3>
+      <div class="panel">
+        <div class="friend"><span class="av">NA</span><div><b>Nour A.</b><small>Joined 3 Nov · stuck with it</small></div><em>+${pro ? '500 Sparks' : '1 week'}</em></div>
+        <div class="friend"><span class="av">OK</span><div><b>Omar K.</b><small>Joined 9 Nov · stuck with it</small></div><em>+${pro ? '500 Sparks' : '1 week'}</em></div>
+        <div class="friend"><span class="av">SM</span><div><b>Sara M.</b><small>Active 2 of 3 days</small><div class="mini3"><i class="on"></i><i class="on"></i><i></i></div></div><em class="wait">Almost there</em></div>
+        <div class="friend"><span class="av" style="background:var(--elev);color:var(--fg2)">+</span><div><b>Invite sent</b><small>Waiting for them to join</small></div><em class="wait">Pending</em></div>
+      </div>
+      <button class="ghost" type="button">Remind Sara</button></div>
+    <div style="display:grid;gap:10px"><h3 class="sec">How it works</h3>
+      <div class="panel steps3"><div class="rows">
+        <div class="row"><b>1</b><span>Share your link or code</span></div>
+        <div class="row"><b>2</b><span>Your friend joins and gets 37 days of Pro, no card</span></div>
+        <div class="row"><b>3</b><span>They use buddget on 3 days in their first 2 weeks: you get ${reward}</span></div>
+      </div></div></div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Invite milestones</h3>
+      <div class="panel earn"><div class="rows">
+        <div class="row"><span>3 friends</span><b>+50 pts</b></div>
+        <div class="row"><span>5 friends</span><b>+100 pts</b></div>
+        <div class="row"><span>10 friends</span><b>The Connector card finish</b></div>
+      </div></div>
+      <p class="fine">Up to 4 rewards a month and 12 a year. A friend counts once they have used buddget on 3 separate days and logged 5 transactions in their first 14 days. New accounts on a new phone only.</p></div>`
+}
+function usage(state) {
+  const pro = state !== 'free'
+  const s = pro ? { sp: 8, wk: 14, sl: '50 credits', wl: '150 credits' } : { sp: 68, wk: 84, sl: '6 credits', wl: '15 credits' }
+  const meter = (label, pct, foot) => `<div class="meter"><div class="mtop"><span>${label}</span><span class="mono">${pct}%</span></div><div class="track"><i class="${pct >= 80 ? 'warn' : ''}" style="width:${pct}%"></i></div><span class="mfoot">${foot}</span></div>`
+  return `${header('Usage')}
+    <div class="usage-hero">
+      <div class="uh-top"><span>${pro ? (state === 'trial' ? 'Pro trial' : 'buddget Pro') : 'Free plan'}</span><span class="pill">${pro ? 'About 10x the AI' : '84% of weekly limit'}</span></div>
+      <div class="panel">${meter('5-hour limit', s.sp, 'Refills at 18:40 · ' + s.sl + ' every 5 hours')}${meter('Weekly limit', s.wk, 'Refills Sat, 21 Nov · ' + s.wl + ' a week')}</div>
+    </div>
+    <div class="panel wallet">
+      <div class="w-top"><div style="display:flex;gap:10px;align-items:center"><span class="spark">${I.spark}</span><div><h3 class="sec">Sparks</h3><p class="sub">Used only after a limit. Never expire.</p></div></div><b>${pro ? 125 : 0}</b></div>
+      <div class="packs">
+        <div class="pack"><b>320</b><small>${pro ? '+48 Pro bonus' : 'Sparks'}</small><em class="mono">EGP 49.99</em></div>
+        <div class="pack sel"><span class="best">Most popular</span><b>650</b><small>${pro ? '+98 Pro bonus' : 'Sparks'}</small><em class="mono">EGP 99.99</em></div>
+        <div class="pack"><b>2000</b><small>${pro ? '+300 Pro bonus' : 'Sparks'}</small><em class="mono">EGP 299.99</em></div>
+      </div>
+      <div class="packs extra">
+        <div class="pack"><span class="eg">Egypt</span><b>60</b><small>${pro ? '+9 Pro bonus' : 'Sparks'}</small><em class="mono">EGP 9.99</em></div>
+        <div class="pack"><span class="eg">Egypt</span><b>125</b><small>${pro ? '+19 Pro bonus' : 'Sparks'}</small><em class="mono">EGP 19.99</em></div>
+      </div>
+      <div class="more-packs"><button type="button" data-more>More packs</button></div>
+      <button class="cta" type="button">${pro ? 'Get 748 Sparks' : 'Get 650 Sparks'}</button>
+      ${pro ? '<p class="fine">Pro adds 15% to every pack. Your Pro and member bonuses never add together; you always get the bigger one.</p>' : '<div class="bonus"><span>With Pro, this pack is 748 Sparks</span><a href="#">See Pro</a></div>'}
+    </div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Where your weekly limit went</h3>
+      <div class="panel featr"><div class="rows">
+        <div class="row"><span>Buddgy chat and voice</span><b>55%</b></div>
+        <div class="row"><span>Receipt scans</span><b>26%</b></div>
+        <div class="row"><span>AI budget</span><b>19%</b></div>
+        <div class="row never"><span>SMS tracking</span><b>Never counts</b></div>
+      </div></div></div>
+    <div style="display:grid;gap:10px"><h3 class="sec">Other limits</h3>
+      <div class="panel"><div class="rows">
+        <div class="row"><span>View balance</span><b>${pro ? 'Unlimited' : '<span class="mono">7 of 10</span>'}</b></div>
+        <div class="row"><span>Saved budget plans</span><b>${pro ? 'Unlimited' : '<span class="mono">2 of 2</span>'}</b></div>
+        <div class="row"><span>Advisor answers</span><b>${pro ? 'Included' : '<span class="mono">1 free this month</span>'}</b></div>
+      </div></div>
+      ${pro ? '' : '<button class="ghost" type="button">Remove these limits with Pro</button>'}
+    </div>`
+}
+
+// One loop for every card on screen: a damped spring turns the card, it lifts mid-turn, the pointer tilts it.
+let rigs = []
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches
+function setupRigs(roots) {
+  rigs = roots.flatMap((root) => [...root.querySelectorAll('[data-rig]')]).map((el) => {
+    const r = { lift: el.querySelector('.lift'), card: el.querySelector('.mcard'), floor: el.querySelector('.floor'), faces: [...el.querySelectorAll('.face')], flip: 0, flipV: 0, target: 0, tx: 0, ty: 0, px: 0, py: 0 }
+    r.card.addEventListener('click', () => { r.target = r.target === 0 ? 180 : 0 })
+    r.card.addEventListener('pointermove', (e) => { const b = r.card.getBoundingClientRect(); r.tx = ((e.clientX - b.left) / b.width - 0.5) * 2; r.ty = ((e.clientY - b.top) / b.height - 0.5) * 2; r.hov = 1 })
+    r.card.addEventListener('pointerleave', () => { r.tx = 0; r.ty = 0; r.hov = 0 })
+    r.faces.forEach((f) => { if (!f.querySelector('.glare')) f.insertAdjacentHTML('beforeend', '<span class="glare" aria-hidden="true"></span>') })
+    return r
+  })
+}
+const t0 = performance.now()
+function tick(now) {
+  const t = (now - t0) / 1000
+  for (const r of rigs) {
+    if (reduceMotion) r.flip = r.target
+    else { r.flipV += (r.target - r.flip) * 0.06; r.flipV *= 0.8; r.flip += r.flipV }
+    r.px += (r.tx - r.px) * 0.12; r.py += (r.ty - r.py) * 0.12
+    const turning = Math.sin((Math.min(180, Math.max(0, r.flip)) / 180) * Math.PI)
+    const float = reduceMotion ? 0 : Math.sin(t * 1.05) * 5
+    const dir = r.flip > 90 ? -1 : 1
+    r.lift.style.transform = `translateY(${float - turning * 14}px)`
+    r.card.style.transform = `rotateY(${r.flip + r.px * 11 * dir}deg) rotateX(${-r.py * 8 + (reduceMotion ? 0 : Math.sin(t * 0.8) * 1.6)}deg) scale(${1 + turning * 0.07})`
+    r.floor.style.transform = `translateX(-50%) scale(${(1 - turning * 0.35) * (1 - float / 70)}, ${1 - turning * 0.2})`
+    r.floor.style.opacity = String(0.9 - turning * 0.4)
+    const sweep = -60 + (r.flip / 180) * 120 + r.px * 15
+    const back = r.flip > 90
+    r.faces.forEach((f) => { f.style.setProperty('--sx', `${sweep}%`); f.style.setProperty('--sa', String(0.18 + turning * 0.7)); f.style.setProperty('--mx', `${50 + (back ? -r.px : r.px) * 45}%`); f.style.setProperty('--my', `${50 + r.py * 45}%`); f.style.setProperty('--ga', String(r.hov || 0)) })
+  }
+  requestAnimationFrame(tick)
+}
+requestAnimationFrame(tick)
+
+let view = { state: 'pro', theme: 'dark', tier: 'emerald' }
+try { Object.assign(view, JSON.parse(localStorage.getItem('pro-pages-view') || '{}')) } catch {}
+if (!['free', 'trial', 'pro'].includes(view.state)) view.state = 'pro'
+if (!['light', 'dark'].includes(view.theme)) view.theme = 'dark'
+if (!TIERS[view.tier]) view.tier = 'emerald'
+function render() {
+  document.querySelectorAll('#stateT button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view.state)))
+  document.querySelectorAll('#themeT button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view.theme)))
+  document.querySelectorAll('#tierT button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === view.tier)))
+  document.querySelectorAll('.screen').forEach((s) => (s.dataset.app = view.theme))
+  const fo = document.getElementById('founders'); fo.innerHTML = founders(); fo.scrollTop = 0
+  const pr = document.getElementById('profile'); pr.innerHTML = profile(view.state); pr.scrollTop = 0
+  const iv = document.getElementById('invite'); iv.innerHTML = invite(view.state); iv.scrollTop = 0
+  const b = document.getElementById('billing'), u = document.getElementById('usage')
+  const l = document.getElementById('loyalty')
+  b.innerHTML = billing(view.state); u.innerHTML = usage(view.state); l.innerHTML = loyalty(view.state); b.scrollTop = 0; u.scrollTop = 0; l.scrollTop = 0
+  setupRigs([b, l, fo, iv])
+  u.querySelectorAll('[data-more]').forEach((btn) => btn.addEventListener('click', () => { const w = btn.closest('.wallet'); w.classList.toggle('open'); btn.textContent = w.classList.contains('open') ? 'Fewer packs' : 'More packs' }))
+  try { localStorage.setItem('pro-pages-view', JSON.stringify(view)) } catch {}
+}
+document.querySelectorAll('#stateT button').forEach((b) => b.addEventListener('click', () => { view.state = b.dataset.v; render() }))
+document.querySelectorAll('#themeT button').forEach((b) => b.addEventListener('click', () => { view.theme = b.dataset.v; render() }))
+document.querySelectorAll('#tierT button').forEach((b) => b.addEventListener('click', () => { view.tier = b.dataset.v; render() }))
+render()
+</script>
