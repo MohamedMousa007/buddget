@@ -289,6 +289,7 @@ Start at Minimal. Move up when a message has proven itself, the reveal needs sto
 - Buddgy gender wording FINAL (2026-11-16): masculine grammatical wording where Arabic requires it, consistently; prefer the name; no gender as a marketing message; character and design unchanged. (Owner)
 - Copy craft (2026-11-16): Buddget speaks as "we" rather than "you" in Arabic copy; Batch 1 rewritten after a self-critique (cashier listicle cut, repeated insight removed, Buddgy only in post 3). Reviewer trial package prepared; reviewer NOT yet contacted or hired. Final campaign package: `stage2/campaign-package.html`.
 - Arabic wording of the Act 1 tagline for Egypt decided 2026-11-16: «فاضل كام فعلًا؟» (replaces «فاضل كام فعلًا؟»). English tagline unchanged. Applied to all documents and Day 1 assets; the native Egyptian reviewer may still suggest refinements. (Owner)
+- Audience-from-zero adjustment (2026-11-17): the page has no followers, so Stories, polls and question boxes are postponed until there is an audience; the first weeks lean on Reels and TikToks. Day 4 replaced by "The quiet charges"; the "Our questions" kit is parked. Plan items that depend on Stories results ("what we said" recaps, week 4 recap, Stories Q&A) wait for followers. (Owner observation; plan changed)
 - No fixed budget; lean organic Instagram and TikTok; AI-assisted production with owner approval; outsource editing and motion when needed; paid ads only as controlled experiments after promising content. (Owner, 2026-11-15)
 
 ## 14. Sources

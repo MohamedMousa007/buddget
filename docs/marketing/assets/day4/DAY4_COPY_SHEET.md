@@ -59,3 +59,6 @@ Duration: 3 days (assumption).
 
 ## Before publishing
 Native Egyptian review recorded · handles confirmed · no links · polls and stickers added in the apps · results reported honestly.
+
+## Status (2026-11-17)
+**Postponed.** This Stories and poll kit depends on an existing audience; a page with no followers has nobody to answer it. Use it later (about weeks 3 to 4, once there are followers) and replace Day 4 with `docs/marketing/assets/day4_quiet_charges/`.
