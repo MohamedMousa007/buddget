@@ -17,8 +17,8 @@ export interface SparksPackOption {
   bonus?: number
 }
 
-/** Bonus Sparks on a pack: Pro +15%, loyal Pro +20%, Free 0. Rounded to the nearest Spark, as the design shows (650 gives 98). */
-export const packBonusSparks = (sparks: number, percent: number): number => (percent > 0 ? Math.round((sparks * percent) / 100) : 0)
+/** Bonus Sparks on a pack: Pro +15%, loyal Pro +20%, Free 0. Rounded down, as the server grants it (migration 0306): 650 at 15% gives 97. */
+export const packBonusSparks = (sparks: number, percent: number): number => (percent > 0 ? Math.floor((sparks * percent) / 100) : 0)
 
 /** What the buyer receives: the pack plus its bonus. */
 export const packTotalSparks = (pack: Pick<SparksPackOption, 'sparks' | 'bonus'>, percent: number): number => pack.sparks + (pack.bonus ?? packBonusSparks(pack.sparks, percent))
@@ -47,14 +47,14 @@ export interface SparksPacksProps {
     popular: string
     /** "Sparks": under the amount when there is no bonus. */
     plain: string
-    /** "+98 Pro bonus". */
+    /** "+97 Pro bonus". */
     bonus: (sparks: number) => string
     more: string
     fewer: string
   }
-  /** The buy button under the packs: "Get 748 Sparks". */
+  /** The buy button under the packs: "Get 747 Sparks". */
   cta?: { label: ReactNode; onClick: () => void; disabled?: boolean; loading?: boolean }
-  /** Free: the tinted line that sells the Pro bonus, with its link ("With Pro, this pack is 748 Sparks" · "See Pro"). */
+  /** Free: the tinted line that sells the Pro bonus, with its link ("With Pro, this pack is 747 Sparks" · "See Pro"). */
   upsell?: { text: ReactNode; actionLabel: string; onAction: () => void }
   /** Pro: the fine print about bonuses. */
   finePrint?: ReactNode
