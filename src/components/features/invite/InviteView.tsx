@@ -93,7 +93,7 @@ export function InviteView({ me }: { me: BillingMe }) {
             mark: c.pass.mark,
             title: first ? c.pass.title(first) : c.pass.titleNoName,
             subtitle: c.pass.sub,
-            facts: [{ label: c.pass.code, value: code, code: true }, { label: c.pass.friendGets, value: <span className="whitespace-nowrap">{c.pass.friendValue}</span> }, { label: c.pass.youGet, value: <span className="whitespace-nowrap">{sparks ? c.pass.youSparks : c.pass.youWeek}</span> }],
+            facts: [{ label: c.pass.code, value: code, code: true }, { label: c.pass.friendGets, value: c.pass.friendValue }, { label: c.pass.youGet, value: sparks ? c.pass.youSparks : c.pass.youWeek }],
           }}
           back={{ mark: c.pass.backMark, benefits: c.pass.benefits, footer: [c.pass.codeLine(code), c.pass.noCharge] }}
         />

@@ -54,7 +54,7 @@
 .cnameGift strong { font-size: 21px; }
 .cfacts { display: grid; grid-template-columns: 1.15fr 1.15fr .7fr; gap: 8px; }
 .cfacts span { display: block; font-size: 6.5px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--c3); margin-bottom: 4px; }
-.cfacts b { font-family: var(--font-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; font-size: 11.5px; font-weight: 500; letter-spacing: .03em; }
+.cfacts b { font-family: var(--font-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; font-size: 11.5px; font-weight: 500; letter-spacing: .03em; white-space: nowrap; }
 .cfacts div:last-child { text-align: end; }
 .cfacts b.code { font-size: 13px; font-weight: 600; letter-spacing: .14em; }
 .blist { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }

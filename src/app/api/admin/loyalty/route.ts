@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   ])
   if (tiers.error) return bad('Could not load loyalty.', 500)
   const summary = (accounts.data ?? {}) as { by_tier?: Record<string, number>; members?: number; outstanding?: number }
-  return json({ tiers: tiers.data ?? [], byTier: summary.by_tier ?? {}, members: summary.members ?? 0, outstandingPoints: summary.outstanding ?? 0, ledger: ledger.data ?? [], programLive: false, founderCandidates: candidates.data ?? [], pendingFounders: (candidates.data ?? []).length, founders: founders.data ?? [], nextFounderNumber: nextNumber.data ?? null, billing: billing.data ?? null })
+  return json({ tiers: tiers.data ?? [], byTier: summary.by_tier ?? {}, members: summary.members ?? 0, outstandingPoints: summary.outstanding ?? 0, ledger: ledger.data ?? [], programLive: (tiers.data ?? []).some((t: { status?: string }) => t.status === 'active'), founderCandidates: candidates.data ?? [], pendingFounders: (candidates.data ?? []).length, founders: founders.data ?? [], nextFounderNumber: nextNumber.data ?? null, billing: billing.data ?? null })
 }
 
 export async function POST(req: Request) {
