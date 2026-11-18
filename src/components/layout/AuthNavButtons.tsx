@@ -48,7 +48,8 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
           stroke={3}
           track="var(--color-brand-border-strong)"
           arc="var(--color-brand-primary)"
-          className="pointer-events-none absolute inset-0"
+          // The frame is rem-sized and follows iOS text size; the ring fills it instead of keeping its 44px.
+          className="pointer-events-none absolute inset-0 size-full!"
         />
         <IconButton
           onClick={() => setOpen((v) => !v)}
