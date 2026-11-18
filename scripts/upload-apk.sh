@@ -4,8 +4,8 @@
 # Requires: rclone configured with a remote named "buddget-drive"
 # One-time setup: brew install rclone && rclone config (name the remote "buddget-drive")
 #
-# The APK is a debug-signed, debuggable build, so the link is private by default (a Drive file URL that only opens for the
-# signed-in owner). Set APK_PUBLIC_LINK=1 only to hand a build to someone else: it creates an "anyone with the link" share.
+# The link is always shared as "anyone with the link" (owner choice 2026-11-19). The APK is a debug-signed, debuggable
+# build, so treat the link like the build itself: send it only to testers.
 set -euo pipefail
 
 APK="${1:?usage: upload-apk.sh <apk-path>}"
@@ -17,10 +17,8 @@ FILENAME="$(basename "$APK")"
 
 rclone copy "$APK" "$REMOTE" --drive-use-trash=false --quiet
 
-if [ "${APK_PUBLIC_LINK:-0}" = 1 ]; then
-  rclone link "$REMOTE/$FILENAME" --drive-link-type=view
-else
-  ID="$(rclone lsjson --stat "$REMOTE/$FILENAME" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).ID")"
-  [[ "$ID" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "Could not read the Drive file id for $FILENAME." >&2; exit 1; }
-  echo "https://drive.google.com/file/d/$ID/view"
-fi
+ID="$(rclone lsjson --stat "$REMOTE/$FILENAME" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).ID")"
+[[ "$ID" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "Could not read the Drive file id for $FILENAME." >&2; exit 1; }
+# rclone link adds the reader permission for anyone with the link; print the usual file URL.
+rclone link "$REMOTE/$FILENAME" >/dev/null
+echo "https://drive.google.com/file/d/$ID/view"

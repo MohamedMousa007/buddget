@@ -152,19 +152,12 @@ describe('SUP-5 / SUP-6 / shell hardening', () => {
         spawnSync('bash', ['scripts/upload-apk.sh', ...args], { cwd: ROOT, encoding: 'utf8', env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, ...env } })
       return { run, apk, log, dir }
     }
-    it('returns a private Drive file link by default and never creates a public share', () => {
+    it('shares every upload with anyone with the link and prints the file URL', () => {
       const { run, apk, log } = setup()
       const r = run([apk])
       expect(r.status).toBe(0)
       expect(r.stdout.trim()).toBe('https://drive.google.com/file/d/FILEID_123/view')
-      expect(readFileSync(log, 'utf8')).not.toMatch(/^link /m)
-    })
-    it('creates the anyone-with-link share only with APK_PUBLIC_LINK=1', () => {
-      const { run, apk, log } = setup()
-      const r = run([apk], { APK_PUBLIC_LINK: '1' })
-      expect(r.status).toBe(0)
-      expect(r.stdout.trim()).toContain('PUBLIC')
-      expect(readFileSync(log, 'utf8')).toMatch(/^link .*--drive-link-type=view/m)
+      expect(readFileSync(log, 'utf8')).toMatch(/^link buddget-drive:buddget\/APKs\/buddget-android-vc1-test\.apk$/m)
     })
     it('rejects a missing file and an unexpected file name before touching Drive', () => {
       const { run, dir, log } = setup()
