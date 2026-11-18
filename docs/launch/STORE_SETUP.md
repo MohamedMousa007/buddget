@@ -45,7 +45,7 @@ Other territories are Apple's equalised price from USD. Rules the app must enfor
 ## Owner steps still open
 
 1. Vercel: `NEXT_PUBLIC_REVENUECAT_IOS_KEY` (public SDK key from the RevenueCat app page), `REVENUECAT_WEBHOOK_AUTH` (the Authorization header value set on the webhook in RevenueCat), `REVENUECAT_WEBHOOK_HMAC_SECRET` (the webhook signing secret). The server refuses every event until both webhook values are set.
-2. App Store Connect, app level: turn on the Billing Grace Period (16 days, all renewals); set the App Store Server Notifications V2 URL to the one RevenueCat shows on the iOS app page; confirm the Paid Apps agreement, banking and tax are active; confirm Small Business Program enrolment (the 15% the plan assumes).
+2. App Store Connect, app level: turn on the Billing Grace Period (3 days, all renewals, production and sandbox; owner choice 2026-11-18); set the App Store Server Notifications V2 URL to the one RevenueCat shows on the iOS app page; confirm the Paid Apps agreement, banking and tax are active; confirm Small Business Program enrolment (the 15% the plan assumes).
 3. Optional: upload `docs/design/pro-rewards/store/buddget-pro-*-card-1024.png` as each subscription's promotional image (Apple shows it in the App Store subscription list); decide Family Sharing (off; cannot be turned off again once on).
 4. Android: a Google Play service account in RevenueCat, then the same products in Play Console (`pro_monthly:monthly`, `pro_annual:annual`, the packs).
 5. Submit the in-app purchases with the next app version and run one sandbox purchase of each kind.

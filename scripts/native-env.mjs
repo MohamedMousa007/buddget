@@ -23,6 +23,8 @@ export const NATIVE_ENV_KEYS = [
   'NEXT_PUBLIC_OAUTH_GOOGLE',
   'NEXT_PUBLIC_OAUTH_APPLE',
   'NEXT_PUBLIC_SENTRY_DSN',
+  'NEXT_PUBLIC_REVENUECAT_IOS_KEY',
+  'NEXT_PUBLIC_REVENUECAT_ANDROID_KEY',
 ]
 
 export function parseEnvFile(text) {
@@ -79,6 +81,11 @@ export function assertNativeEnv({ exitOnError = false } = {}) {
   }
   if (!apiBase) missing.push('NEXT_PUBLIC_API_BASE_URL')
   if (!process.env.NEXT_PUBLIC_SENTRY_DSN?.trim()) missing.push('NEXT_PUBLIC_SENTRY_DSN')
+  // Billing is on: an iOS build without its RevenueCat key cannot sell anything. Android's key exists only once Google Play is set up.
+  if (!process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY?.trim()) missing.push('NEXT_PUBLIC_REVENUECAT_IOS_KEY')
+  if (!process.env.NEXT_PUBLIC_REVENUECAT_ANDROID_KEY?.trim()) {
+    console.warn('[native-env] NEXT_PUBLIC_REVENUECAT_ANDROID_KEY is not set: the Android build will not offer purchases.')
+  }
 
   if (missing.length > 0) {
     const msg = `[native-env] Missing in .env.local (see .env.example):\n${missing.map((k) => `  • ${k}`).join('\n')}\n`
