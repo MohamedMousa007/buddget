@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const h = vi.hoisted(() => ({
   native: true,
   platform: 'ios' as 'ios' | 'android' | 'web',
-  sdk: { configure: vi.fn(), logIn: vi.fn(), logOut: vi.fn(), getOfferings: vi.fn(), purchasePackage: vi.fn(), restorePurchases: vi.fn() },
+  sdk: { configure: vi.fn(), logIn: vi.fn(), logOut: vi.fn(), getOfferings: vi.fn(), purchasePackage: vi.fn(), restorePurchases: vi.fn(), getPromotionalOffer: vi.fn(), purchaseDiscountedPackage: vi.fn() },
 }))
 vi.mock('@/lib/native/isNative', () => ({ isNative: () => h.native, getPlatform: () => h.platform }))
 vi.mock('@revenuecat/purchases-capacitor', () => ({ Purchases: h.sdk }))
@@ -77,5 +77,32 @@ describe('with a key on a device', () => {
     expect(await m.restorePurchases()).toBe('restored')
     h.sdk.restorePurchases.mockRejectedValueOnce(new Error('x'))
     expect(await m.restorePurchases()).toBe('failed')
+  })
+})
+
+describe('purchaseWithOffer (stay offers, iOS only)', () => {
+  const pkg = { identifier: 'monthly', product: { identifier: 'pro_monthly', discounts: [{ identifier: 'stay30_2m' }] } } as never
+  it('signs the discount on the product and buys the package with it', async () => {
+    const m = await load({ ios: 'k' })
+    await m.startPurchases('u1')
+    h.sdk.getPromotionalOffer.mockResolvedValueOnce({ identifier: 'stay30_2m', signature: 'sig' })
+    h.sdk.purchaseDiscountedPackage.mockResolvedValueOnce({})
+    expect(await m.purchaseWithOffer(pkg, 'stay30_2m')).toBe('purchased')
+    expect(h.sdk.getPromotionalOffer).toHaveBeenCalledWith({ product: (pkg as { product: unknown }).product, discount: { identifier: 'stay30_2m' } })
+    expect(h.sdk.purchaseDiscountedPackage).toHaveBeenCalledWith({ aPackage: pkg, discount: { identifier: 'stay30_2m', signature: 'sig' } })
+  })
+  it('unavailable when the product lacks the offer, when signing returns nothing, or off iOS; cancelled and failed as the store says', async () => {
+    const m = await load({ ios: 'k' })
+    expect(await m.purchaseWithOffer(pkg, 'stay_annual_20')).toBe('unavailable')
+    h.sdk.getPromotionalOffer.mockResolvedValueOnce(undefined)
+    expect(await m.purchaseWithOffer(pkg, 'stay30_2m')).toBe('unavailable')
+    h.sdk.getPromotionalOffer.mockResolvedValue({ identifier: 'stay30_2m' })
+    h.sdk.purchaseDiscountedPackage.mockRejectedValueOnce({ userCancelled: true })
+    expect(await m.purchaseWithOffer(pkg, 'stay30_2m')).toBe('cancelled')
+    h.sdk.purchaseDiscountedPackage.mockRejectedValueOnce(new Error('declined'))
+    expect(await m.purchaseWithOffer(pkg, 'stay30_2m')).toBe('failed')
+    h.platform = 'android'
+    expect(await m.purchaseWithOffer(pkg, 'stay30_2m')).toBe('unavailable')
+    expect(h.sdk.purchaseDiscountedPackage).toHaveBeenCalledTimes(2)
   })
 })

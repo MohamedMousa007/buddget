@@ -5704,6 +5704,7 @@ export type Database = {
           product_id: string | null
           source: string
           status: string
+          stay_offer_redeemed_at: string | null
           store: string | null
           store_country: string | null
           store_original_txn: string | null
@@ -5726,6 +5727,7 @@ export type Database = {
           product_id?: string | null
           source?: string
           status?: string
+          stay_offer_redeemed_at?: string | null
           store?: string | null
           store_country?: string | null
           store_original_txn?: string | null
@@ -5748,6 +5750,7 @@ export type Database = {
           product_id?: string | null
           source?: string
           status?: string
+          stay_offer_redeemed_at?: string | null
           store?: string | null
           store_country?: string | null
           store_original_txn?: string | null
@@ -6917,6 +6920,10 @@ export type Database = {
       stable_uuid: {
         Args: { p_legacy: string; p_user_id: string }
         Returns: string
+      }
+      stay_offer_state: {
+        Args: { p_user: string }
+        Returns: Json
       }
       support_submit: {
         Args: {

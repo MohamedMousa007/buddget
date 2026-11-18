@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({
   rpc: vi.fn(),
+  stamp: vi.fn(),
   sourceRow: null as Record<string, unknown> | null,
 }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/supabase/service', () => ({
   createServiceRoleClient: () => ({
     rpc: h.rpc,
-    from: () => ({ select: () => ({ eq: () => Object.assign(Promise.resolve({ data: [], error: null }), { maybeSingle: async () => ({ data: h.sourceRow, error: null }) }) }) }),
+    from: () => ({
+      select: () => ({ eq: () => Object.assign(Promise.resolve({ data: [], error: null }), { maybeSingle: async () => ({ data: h.sourceRow, error: null }) }) }),
+      update: (row: Record<string, unknown>) => ({ eq: (_c: string, user: string) => ({ is: async (col: string, v: null) => { h.stamp(row, user, col, v); return { error: null } } }) }),
+    }),
   }),
 }))
 
@@ -37,6 +41,7 @@ beforeEach(() => {
   process.env.REVENUECAT_WEBHOOK_HMAC_SECRET = HMAC
   h.sourceRow = null
   h.rpc.mockReset().mockResolvedValue({ data: 'applied', error: null })
+  h.stamp.mockReset()
   vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
@@ -69,6 +74,14 @@ describe('POST /api/billing/revenuecat', () => {
     expect(args).toMatchObject({ p_user: USER, p_event_id: 'e1', p_type: 'INITIAL_PURCHASE', p_event_ms: NOW })
     expect(args.p_effect.entitlement).toMatchObject({ plan_key: 'plus', status: 'active', source: 'apple' })
     expect(args.p_effect.sparks).toMatchObject({ action: 'open', ref: 'store:monthly' })
+  })
+
+  it('stamps the stay offer redemption once, only when the event carries a stay offer', async () => {
+    await post(purchase)
+    expect(h.stamp).not.toHaveBeenCalled()
+    await post({ ...purchase, id: 'e9', type: 'RENEWAL', offer_code: 'stay30_2m' })
+    expect(h.stamp).toHaveBeenCalledTimes(1)
+    expect(h.stamp).toHaveBeenCalledWith({ stay_offer_redeemed_at: new Date(NOW).toISOString() }, USER, 'stay_offer_redeemed_at', null)
   })
 
   it('answers 200 to a replayed event and to a stale one, so the sender stops retrying', async () => {

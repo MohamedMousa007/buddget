@@ -67,5 +67,10 @@ export async function POST(request: Request) {
     console.error('[billing] apply failed', ev.id, ev.type, error.message)
     return NextResponse.json({ error: 'apply_failed' }, { status: 500 })
   }
+  if (effect.stayOffer) {
+    // One stay offer per account per lifetime: the first stamp wins; a replayed event changes nothing.
+    const { error: stampError } = await service.from('user_entitlements').update({ stay_offer_redeemed_at: new Date(ev.eventMs).toISOString() }).eq('user_id', effect.userId).is('stay_offer_redeemed_at', null)
+    if (stampError) console.error('[billing] stay offer stamp failed', ev.id, ev.type, stampError.message)
+  }
   return reply(String(data))
 }

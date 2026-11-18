@@ -16,6 +16,8 @@
  * the EXPIRATION that follows ends it), a pack purchase, TEST, a product that is not Plus, an anonymous app user.
  */
 
+import { isStayOffer, type StayOfferId } from './stayOffer'
+
 export type BillingStore = 'app_store' | 'play_store'
 
 export interface RcEvent {
@@ -38,6 +40,8 @@ export interface RcEvent {
   currency: string | null
   /** ISO 3166 alpha-2 store country (`country_code`); sets the Egypt Pro limits. */
   countryCode?: string | null
+  /** The store offer applied to this transaction (`offer_code`, else `discount_identifier`); null when none. */
+  offerId?: string | null
 }
 
 export interface EntitlementWrite {
@@ -77,6 +81,8 @@ export interface BillingEffect {
   transfer?: { from: string[] }
   /** The store country, stored on the entitlement (billing_apply). */
   country?: string
+  /** A stay offer seen on a purchase or renewal: the route stamps `stay_offer_redeemed_at` (one per account per lifetime). */
+  stayOffer?: StayOfferId
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -112,6 +118,7 @@ export function parseEvent(body: unknown): RcEvent | null {
     priceMicros: ((n) => (n === null ? null : Math.round(n * 1_000_000)))(num(e.price_in_purchased_currency)),
     currency: str(e.currency),
     countryCode: str(e.country_code),
+    offerId: str(e.offer_code) ?? str(e.discount_identifier),
   }
 }
 
@@ -176,11 +183,13 @@ function subscriptionEffect(ev: RcEvent, userId: string): BillingEffect | 'ignor
       if (ev.purchasedMs === null || ev.expirationMs === null) return 'ignore'
       const annual = isAnnual(ev.productId)
       const end = annual ? monthAfter(ev.purchasedMs, ev.expirationMs) : ev.expirationMs
+      const offerId = ev.offerId ?? null
       return {
         userId,
         entitlement: entitlementOf(ev, {}),
         sparks: { action: 'open', start: new Date(ev.purchasedMs).toISOString(), end: new Date(end).toISOString(), ref: annual ? 'store:annual' : 'store:monthly' },
         endTrial: true,
+        ...(isStayOffer(offerId) ? { stayOffer: offerId } : {}),
       }
     }
     case 'UNCANCELLATION':

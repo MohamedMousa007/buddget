@@ -75,6 +75,26 @@ export async function purchasePackage(aPackage: PurchasesPackage): Promise<Purch
   }
 }
 
+/**
+ * iOS only: buys the package with an App Store promotional offer (a stay offer, docs/launch/STORE_SETUP.md). The discount
+ * must be on the product the store returned; RevenueCat signs it, then the purchase runs with it applied.
+ * 'unavailable' when the store does not list the offer (another platform, or the offer is not on this product).
+ */
+export async function purchaseWithOffer(aPackage: PurchasesPackage, offerId: string): Promise<PurchaseOutcome | 'unavailable'> {
+  if (getPlatform() !== 'ios') return 'unavailable'
+  const discount = aPackage.product.discounts?.find((d) => d.identifier === offerId)
+  if (!discount) return 'unavailable'
+  try {
+    const purchases = await sdk()
+    const offer = await purchases.getPromotionalOffer({ product: aPackage.product, discount })
+    if (!offer) return 'unavailable'
+    await purchases.purchaseDiscountedPackage({ aPackage, discount: offer })
+    return 'purchased'
+  } catch (e) {
+    return (e as { userCancelled?: boolean }).userCancelled ? 'cancelled' : 'failed'
+  }
+}
+
 /** The Sparks packs the store can sell here: consumable products by id. A pack the store does not offer in this country is simply absent. */
 export async function loadSparksProducts(ids: readonly string[]): Promise<PurchasesStoreProduct[]> {
   if (configuredFor === null || ids.length === 0) return []

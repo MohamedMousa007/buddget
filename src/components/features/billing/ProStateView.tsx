@@ -21,9 +21,11 @@ import { PromptBanner } from '@/components/ui/PromptBanner'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { SheetBody } from '@/components/features/savings-v3/MoneySheetParts'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
-import { type BillingMe } from '@/lib/billing/billingStore'
+import { apiFetchAuth } from '@/lib/apiBase'
+import { type BillingMe, useBillingStore } from '@/lib/billing/billingStore'
 import { PRO_PACK_BONUS } from '@/lib/billing/packBonus'
-import { STORE_LINKS, openManageSubscription, purchasesAvailable } from '@/lib/billing/purchases'
+import { STORE_LINKS, openManageSubscription, purchaseWithOffer, purchasesAvailable } from '@/lib/billing/purchases'
+import type { StayOfferAnswer } from '@/lib/billing/stayOffer'
 import { subscriptionView, type SubscriptionView } from '@/lib/billing/subscriptionView'
 import { useLocale, useT } from '@/lib/i18n'
 import { intlTag } from '@/lib/i18n/dateFormat'
@@ -88,12 +90,16 @@ export function ProStateView({ me }: { me: BillingMe }) {
   const name = useFinanceStore((st) => st.profile.name) || t.common.user
   const [sheet, setSheet] = useState<Sheet>(null)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [stay, setStay] = useState<Extract<StayOfferAnswer, { eligible: true }> | null>(null)
+  const [stayBusy, setStayBusy] = useState(false)
+  const [stayNote, setStayNote] = useState<string | null>(null)
   const keepRef = useRef<HTMLDivElement>(null)
 
   const rewards = me.rewards ?? null
   const fromStore = !!me.subscription?.fromStore
   const store = purchasesAvailable()
   const android = getPlatform() === 'android'
+  const ios = getPlatform() === 'ios'
   const storeName = android ? c.plans.playStore : c.plans.appStore
   const links = android ? STORE_LINKS.android : STORE_LINKS.ios
   const history = me.history ?? []
@@ -113,6 +119,31 @@ export function ProStateView({ me }: { me: BillingMe }) {
   const bringBack = async () => {
     if (!store) return setNote(p.notYet)
     setNote((await restore()) ? s.restored : s.restoreNothing)
+  }
+
+  // "How to cancel": on iOS a store member is shown the stay offer first, once (the server decides); everyone else gets the steps.
+  const howCancel = async () => {
+    if (cancelOpen || stay) { setCancelOpen(false); setStay(null); return }
+    if (ios && store && fromStore) {
+      const answer: StayOfferAnswer = await apiFetchAuth('/api/billing/stay-offer').then((r) => r.json()).catch(() => ({ eligible: false }))
+      if (answer.eligible) { setStayNote(null); setStay(answer); return }
+    }
+    setCancelOpen(true)
+  }
+  const stayWithPro = async () => {
+    const option = stay && (plans.find((x) => x.kind === (stay.productId === 'pro_annual' ? 'annual' : 'monthly'))?.option ?? null)
+    if (!stay || !option) return setStayNote(b.stay.failed)
+    setStayBusy(true)
+    const out = await purchaseWithOffer(option.pkg, stay.offerId)
+    setStayBusy(false)
+    if (out === 'cancelled') return
+    if (out !== 'purchased') return setStayNote(b.stay.failed)
+    // Stamp now so the offer never shows again, even before the store's webhook lands.
+    await apiFetchAuth('/api/billing/stay-offer', { method: 'POST' }).catch(() => undefined)
+    void useBillingStore.getState().refresh()
+    setStay(null)
+    setSheet(null)
+    setNote(b.stay.done)
   }
 
   const actions: ManageAction[] = [
@@ -247,10 +278,18 @@ export function ProStateView({ me }: { me: BillingMe }) {
                   {trial ? <Sub>{s.trial.line(date(view.until))} {s.trial.noCard}</Sub> : null}
                   <SettingsSection>
                     {store && fromStore ? <SettingsRow icon={Settings2} title={b.manage(storeName)} subtitle={b.manageHint} onClick={() => void openManageSubscription()} settingId="manageSubscription" /> : null}
-                    <SettingsRow icon={CircleHelp} title={b.howCancel} subtitle={b.howCancelHint} onClick={() => setCancelOpen((v) => !v)} />
+                    <SettingsRow icon={CircleHelp} title={b.howCancel} subtitle={b.howCancelHint} onClick={() => void howCancel()} />
                     <SettingsRow icon={CircleHelp} title={b.problem} subtitle={b.problemBody(storeName)} onClick={() => window.open(links.problem, '_blank', 'noopener')} />
                   </SettingsSection>
-                  {cancelOpen ? (
+                  {stay ? (
+                    <Card padding="md" className="space-y-3">
+                      <p dir="auto" className="text-base font-bold leading-snug text-[var(--color-brand-text-primary)]">{stay.productId === 'pro_annual' ? b.stay.titleAnnual : b.stay.titleMonthly}</p>
+                      <p dir="auto" className="text-sm text-[var(--color-brand-text-secondary)]">{b.stay.keep(rewards?.streak.current ?? 0, rewards?.tier ? r.tiers[rewards.tier.key].name : null)}</p>
+                      {stayNote ? <p role="status" dir="auto" className="text-xs text-[var(--color-brand-text-secondary)]">{stayNote}</p> : null}
+                      <Button size="cta-block" loading={stayBusy} onClick={() => void stayWithPro()} className="font-bold">{b.stay.cta}</Button>
+                      <Button size="touch" variant="ghost" disabled={stayBusy} onClick={() => { setStay(null); setCancelOpen(true) }} className="w-full text-xs text-[var(--color-brand-text-secondary)] underline">{b.stay.cancelAnyway}</Button>
+                    </Card>
+                  ) : cancelOpen ? (
                     <Card padding="md" className="space-y-2">
                       {(android ? b.steps.playStore : b.steps.appStore).map((step, i) => (
                         <p key={step} dir="auto" className="flex items-start gap-3 text-sm text-[var(--color-brand-text-primary)]">

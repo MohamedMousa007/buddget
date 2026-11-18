@@ -38,7 +38,9 @@ Same terms in every market; Egypt is the thin one and stays above its AI cost ce
 
 Other territories are Apple's equalised price from USD. Rules the app must enforce (Apple does not): one redemption per account per lifetime, checked on the server; lapsed users only after 30 days away; shown once when someone taps to cancel, never stacked with points-shop discounts, no points for accepting. Offer terms cannot be edited: to change one, create a new id and delete the old. Deleted ids (`stay_half_3m`, `stay_annual_30`) can never be reused.
 
-**Not built yet:** the in-app screen that shows the offer before the user goes to Apple's cancel sheet (RevenueCat signs promotional offers with the In-App Purchase key already uploaded), and Apple's win-back offers for lapsed subscribers.
+**Built (migration 0317):** on iOS, "How to cancel" in the Manage sheet first asks `GET /api/billing/stay-offer`, which reads `stay_offer_state` (entitlement status, source, product, `user_entitlements.stay_offer_redeemed_at`, an EXPIRATION in the last 30 days) and applies the rule in `src/lib/billing/stayOffer.ts`. Eligible members see one card (title, what they keep, "Stay with Pro", "Cancel anyway"); the button signs the App Store discount through RevenueCat (`purchaseWithOffer`: `getPromotionalOffer` then `purchaseDiscountedPackage`). The redemption is stamped twice, idempotently: by the app right after the purchase (`POST /api/billing/stay-offer`) and by the webhook when a RENEWAL or INITIAL_PURCHASE carries the offer in `offer_code` or `discount_identifier`. Android and web go straight to the cancel steps.
+
+**Not built yet:** Apple's win-back offers for lapsed subscribers.
 
 ## Owner steps still open
 

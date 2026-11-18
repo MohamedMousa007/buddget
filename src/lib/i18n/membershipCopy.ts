@@ -63,6 +63,15 @@ export interface MembershipCopy {
     howCancel: string
     howCancelHint: string
     steps: { appStore: string[]; playStore: string[] }
+    stay: {
+      titleMonthly: string
+      titleAnnual: string
+      keep: (weeks: number, tier: string | null) => string
+      cta: string
+      cancelAnyway: string
+      done: string
+      failed: string
+    }
     restore: string
     purchases: string
     seeAll: string
@@ -245,6 +254,15 @@ const en: MembershipCopy = {
     steps: {
       appStore: ['Open Settings and tap your name.', 'Tap Subscriptions, then buddget Pro.', 'Tap Cancel Subscription.'],
       playStore: ['Open Google Play and tap your profile.', 'Tap Payments and subscriptions, then Subscriptions.', 'Choose buddget Pro, then Cancel.'],
+    },
+    stay: {
+      titleMonthly: 'Stay with Pro: 30% off your next 2 months',
+      titleAnnual: 'Stay with Pro: 20% off your next year',
+      keep: (weeks, tier) => (weeks > 0 ? `You keep your ${weeks}-week streak${tier ? `, your ${tier} progress` : ''} and all your Pro limits.` : `You keep your ${tier ? `${tier} progress, your ` : ''}points and all your Pro limits.`),
+      cta: 'Stay with Pro',
+      cancelAnyway: 'Cancel anyway',
+      done: 'Done. The offer is on your next bill.',
+      failed: 'The store did not finish the offer. Try again, or cancel below.',
     },
     restore: 'Restore purchases',
     purchases: 'Purchases in buddget',
@@ -470,6 +488,15 @@ const ar: MembershipCopy = {
     steps: {
       appStore: ['افتح الإعدادات واضغط على اسمك.', 'اضغط على الاشتراكات ثم buddget Pro.', 'اضغط على إلغاء الاشتراك.'],
       playStore: ['افتح Google Play واضغط على ملفك.', 'اضغط على المدفوعات والاشتراكات ثم الاشتراكات.', 'اختر buddget Pro ثم إلغاء.'],
+    },
+    stay: {
+      titleMonthly: 'ابقَ مع Pro: خصم 30% على الشهرين القادمين',
+      titleAnnual: 'ابقَ مع Pro: خصم 20% على سنتك القادمة',
+      keep: (weeks, tier) => (weeks > 0 ? `تحتفظ بسلسلتك (${weeks} أسابيع)${tier ? ` وتقدّمك في ${tier}` : ''} وكل حدود Pro.` : `تحتفظ ${tier ? `بتقدّمك في ${tier} و` : 'ب'}نقاطك وكل حدود Pro.`),
+      cta: 'ابقَ مع Pro',
+      cancelAnyway: 'إلغاء على أي حال',
+      done: 'تم. الخصم على فاتورتك القادمة.',
+      failed: 'لم يكمل المتجر العرض. حاول مرة أخرى أو ألغِ أدناه.',
     },
     restore: 'استعادة المشتريات',
     purchases: 'المشتريات في buddget',
