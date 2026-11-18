@@ -60,6 +60,15 @@ describe('with a key on a device', () => {
     expect(h.sdk.logOut).toHaveBeenCalledTimes(1)
   })
 
+  it('after a sign-out the next user logs in instead of configuring the SDK a second time', async () => {
+    const m = await load({ ios: 'k' })
+    await m.startPurchases('u1')
+    await m.stopPurchases()
+    await m.startPurchases('u2')
+    expect(h.sdk.configure).toHaveBeenCalledTimes(1)
+    expect(h.sdk.logIn).toHaveBeenCalledWith({ appUserID: 'u2' })
+  })
+
   it('purchase reports purchased, cancelled and failed', async () => {
     const m = await load({ ios: 'k' })
     const pkg = {} as never

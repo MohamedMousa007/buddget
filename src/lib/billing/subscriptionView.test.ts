@@ -40,3 +40,16 @@ describe('subscriptionView', () => {
     expect(subscriptionView(me({ status: 'canceled', subscription: sub({ willRenew: false }) }), NOW)).toMatchObject({ kind: 'canceled', proActive: true })
   })
 })
+
+describe('invite trial length', () => {
+  const now = Date.parse('2026-11-18T12:00:00Z')
+  const me = (daysLeft: number, trialDays?: number) => ({ planKey: 'plus_trial', planName: 'Pro trial', status: 'trialing', trialEndsAt: new Date(now + daysLeft * 86_400_000).toISOString(), trialDays, billingEnabled: true, sparks: null, subscription: null }) as never
+  it('counts a 37-day invite trial from day 1 to 37', () => {
+    expect(subscriptionView(me(37, 37), now)).toMatchObject({ kind: 'trial', trialDay: 1, trialTotal: 37 })
+    expect(subscriptionView(me(30, 37), now)).toMatchObject({ trialDay: 8, trialTotal: 37 })
+    expect(subscriptionView(me(1, 37), now)).toMatchObject({ trialDay: 37 })
+  })
+  it('keeps 30 days when the server sends nothing', () => {
+    expect(subscriptionView(me(30), now)).toMatchObject({ trialDay: 1, trialTotal: 30 })
+  })
+})

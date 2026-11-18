@@ -24,8 +24,11 @@ export async function GET(request: Request) {
   const usage = enabled ? (state?.usage ?? null) : null
   const sparks = usage && usage.sparksLeft > 0 ? { left: usage.sparksLeft, total: usage.sparksLeft, resetsAt: null } : null
   const rewards = state?.rewards ?? null
+  // An invite adds 7 days to the 30-day trial (referral_redeem). Only asked while trialing: one indexed row (referrals_invitee_id_key).
+  const trialDays = entitlements.status === 'trialing' ? await trialLength(service, uid) : null
   return NextResponse.json({
     ...entitlements,
+    trialDays,
     // `billingEnabled` is the one server-side switch for selling.
     billingEnabled: enabled,
     sparks,
@@ -50,6 +53,14 @@ export interface UsageState {
   advisor: { entitled: boolean; free_left: number; free_total: number }
   resetsUnseen: Array<'session' | 'week'>
   interest: string[]
+}
+
+const TRIAL_DAYS = 30
+const INVITE_TRIAL_BONUS_DAYS = 7
+
+async function trialLength(service: ReturnType<typeof createServiceRoleClient>, uid: string): Promise<number> {
+  const { data } = await service.from('referrals').select('id').eq('invitee_id', uid).eq('trial_bonus_applied', true).limit(1).maybeSingle()
+  return data ? TRIAL_DAYS + INVITE_TRIAL_BONUS_DAYS : TRIAL_DAYS
 }
 
 interface EntitlementsState {

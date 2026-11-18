@@ -37,6 +37,8 @@ async function sdk() {
   return (await import('@revenuecat/purchases-capacitor')).Purchases
 }
 
+// The SDK is configured once per app run; later users switch with logIn. Calling configure again replaces the shared instance.
+let configured = false
 let configuredFor: string | null = null
 
 /** Starts the SDK as the Supabase user, or switches the open session to them. Callers gate on `billingEnabled` first. */
@@ -44,8 +46,12 @@ export async function startPurchases(userId: string): Promise<boolean> {
   const key = apiKey()
   if (!isNative() || !key) return false
   const purchases = await sdk()
-  if (configuredFor === null) await purchases.configure({ apiKey: key, appUserID: userId })
-  else if (configuredFor !== userId) await purchases.logIn({ appUserID: userId })
+  if (!configured) {
+    await purchases.configure({ apiKey: key, appUserID: userId })
+    configured = true
+  } else if (configuredFor !== userId) {
+    await purchases.logIn({ appUserID: userId })
+  }
   configuredFor = userId
   return true
 }
