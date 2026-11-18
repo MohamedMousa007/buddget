@@ -47,4 +47,8 @@ describe('webhook marking', () => {
     expect(effect({})).not.toHaveProperty('stayOffer')
     expect(effect({ type: 'UNCANCELLATION', offer_code: 'stay30_2m' }).stayOffer).toBeUndefined()
   })
+  it("Apple's cancel-sheet retention offers count as the account's one stay offer", () => {
+    expect(effect({ offer_code: 'retain_monthly_30' }).stayOffer).toBe('retain_monthly_30')
+    expect(effect({ discount_identifier: 'retain_annual_20', product_id: 'pro_annual' }).stayOffer).toBe('retain_annual_20')
+  })
 })

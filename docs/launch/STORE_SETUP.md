@@ -40,6 +40,15 @@ Other territories are Apple's equalised price from USD. Rules the app must enfor
 
 **Built (migration 0317):** on iOS, "How to cancel" in the Manage sheet first asks `GET /api/billing/stay-offer`, which reads `stay_offer_state` (entitlement status, source, product, `user_entitlements.stay_offer_redeemed_at`, an EXPIRATION in the last 30 days) and applies the rule in `src/lib/billing/stayOffer.ts`. Eligible members see one card (title, what they keep, "Stay with Pro", "Cancel anyway"); the button signs the App Store discount through RevenueCat (`purchaseWithOffer`: `getPromotionalOffer` then `purchaseDiscountedPackage`). The redemption is stamped twice, idempotently: by the app right after the purchase (`POST /api/billing/stay-offer`) and by the webhook when a RENEWAL or INITIAL_PURCHASE carries the offer in `offer_code` or `discount_identifier`. Android and web go straight to the cancel steps.
 
+**Apple retention messaging (App Store Connect, 2026-11-18):** message `buddget pro` (Prepare for Submission, not yet added for review) is shown on Apple's own cancel sheet for both subscriptions. EN + AR header and body (benefits only, no prices, as Apple requires); no image yet (3840 x 2160 optional). Each subscription carries its own retention offer, same terms as the in-app stay offers; these are separate Apple objects with their own ids:
+
+| Product | Retention offer id | Terms | Egypt | AE/SA/QA | USD |
+|---|---|---|---|---|---|
+| `pro_monthly` | `retain_monthly_30` | pay as you go, 2 months | EGP 48.99 | 13.99 | 3.49 |
+| `pro_annual` | `retain_annual_20` | pay up front, 1 year | EGP 399.99 | 79.99 | 19.99 |
+
+Eligibility: paid for at least 1 month, 24 months between offers, all 175 territories. Apple's auto-conversion was wrong for our markets (it proposed EGP 999.99 and EGP 199.99, and Poland at full price), so those were set by hand; check every row after any edit. The webhook treats both ids as the account's one stay offer (`APPLE_RETENTION_OFFERS` in `stayOffer.ts`), so a member who takes Apple's offer never also gets the in-app one. Sparks packs are consumables and cannot have retention messages.
+
 **Not built yet:** Apple's win-back offers for lapsed subscribers.
 
 ## Owner steps still open

@@ -7,7 +7,11 @@
 export const STAY_OFFERS = { pro_monthly: 'stay30_2m', pro_annual: 'stay_annual_20' } as const
 export type StayOfferId = (typeof STAY_OFFERS)[keyof typeof STAY_OFFERS]
 
-const STAY_IDS: ReadonlySet<string> = new Set(Object.values(STAY_OFFERS))
+/** Apple's own cancel-sheet offers (App Store Connect retention messaging); a redemption counts against the same once-per-account rule. */
+export const APPLE_RETENTION_OFFERS = ['retain_monthly_30', 'retain_annual_20'] as const
+export type RedeemedOfferId = StayOfferId | (typeof APPLE_RETENTION_OFFERS)[number]
+
+const STAY_IDS: ReadonlySet<string> = new Set<string>([...Object.values(STAY_OFFERS), ...APPLE_RETENTION_OFFERS])
 
 /** The offer for a Plus product id (`pro_annual:base` on Play counts as annual); null for anything else. */
 export function stayOfferFor(productId: string | null): { offerId: StayOfferId; productId: 'pro_monthly' | 'pro_annual' } | null {
@@ -17,7 +21,7 @@ export function stayOfferFor(productId: string | null): { offerId: StayOfferId; 
   return null
 }
 
-export const isStayOffer = (id: string | null): id is StayOfferId => id !== null && STAY_IDS.has(id)
+export const isStayOffer = (id: string | null): id is RedeemedOfferId => id !== null && STAY_IDS.has(id)
 
 export interface StayOfferState {
   status: string | null

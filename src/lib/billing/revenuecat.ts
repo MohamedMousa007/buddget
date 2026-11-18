@@ -16,7 +16,7 @@
  * the EXPIRATION that follows ends it), a pack purchase, TEST, a product that is not Plus, an anonymous app user.
  */
 
-import { isStayOffer, type StayOfferId } from './stayOffer'
+import { isStayOffer, type RedeemedOfferId } from './stayOffer'
 
 export type BillingStore = 'app_store' | 'play_store'
 
@@ -82,7 +82,7 @@ export interface BillingEffect {
   /** The store country, stored on the entitlement (billing_apply). */
   country?: string
   /** A stay offer seen on a purchase or renewal: the route stamps `stay_offer_redeemed_at` (one per account per lifetime). */
-  stayOffer?: StayOfferId
+  stayOffer?: RedeemedOfferId
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
