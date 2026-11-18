@@ -50,6 +50,13 @@ Other territories are Apple's equalised price from USD. Rules the app must enfor
 4. Android: a Google Play service account in RevenueCat, then the same products in Play Console (`pro_monthly:monthly`, `pro_annual:annual`, the packs).
 5. Submit the in-app purchases with the next app version and run one sandbox purchase of each kind.
 
+## Android (Google Play): progress
+
+- Play Console developer account created (personal, trader declared); identity verification pending with Google, so creating the app is blocked until it clears.
+- Google Cloud project `Buddget` (`gen-lang-client-0929604237`, owned by the same Google account): Google Play Android Developer API, Google Play Developer Reporting API and Cloud Pub/Sub API enabled.
+- Service account `revenuecat@gen-lang-client-0929604237.iam.gserviceaccount.com` with Pub/Sub Admin and Monitoring Viewer only.
+- Next (owner): create its JSON key (Keys -> Add key -> JSON), keep it with the App Store keys. After Play verification: create the app, invite the service account in Play Console with View app information, View financial data, Manage orders and subscriptions; add a Play Store app in RevenueCat for `app.buddget` and upload the JSON; connect Google developer notifications and paste the topic in Play Console's Monetization setup.
+
 ## Re-running
 
 Prices and offers are read live from Apple with `get-product-store-state`; changes go through `create-product-store-state-plan` -> plan -> apply (review the diff first). Review screenshots: `upload-product-store-state-screenshot` reserves a slot, PUT the bytes to the returned URL, then set `screenshot_id` + MD5 in a plan.
