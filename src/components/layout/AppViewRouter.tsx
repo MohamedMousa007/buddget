@@ -24,6 +24,11 @@ import SettingsProfilePage from '@/app/(app)/settings/profile/page'
 import SettingsSmsPage from '@/app/(app)/settings/sms/page'
 import SettingsMemoryPage from '@/app/(app)/settings/memory/page'
 import SettingsSecurityPage from '@/app/(app)/settings/security/page'
+import SettingsProPage from '@/app/(app)/settings/pro/page'
+import SettingsProUsagePage from '@/app/(app)/settings/pro/usage/page'
+import SettingsRewardsPage from '@/app/(app)/settings/rewards/page'
+import SettingsFoundersPage from '@/app/(app)/settings/founders/page'
+import SettingsInvitePage from '@/app/(app)/settings/invite/page'
 
 const VIEW_MAP: Record<string, ComponentType> = {
   '/': FlowPage,
@@ -50,6 +55,11 @@ const VIEW_MAP: Record<string, ComponentType> = {
   '/settings/sms': SettingsSmsPage,
   '/settings/memory': SettingsMemoryPage,
   '/settings/security': SettingsSecurityPage,
+  '/settings/pro': SettingsProPage,
+  '/settings/pro/usage': SettingsProUsagePage,
+  '/settings/rewards': SettingsRewardsPage,
+  '/settings/founders': SettingsFoundersPage,
+  '/settings/invite': SettingsInvitePage,
 }
 
 /**

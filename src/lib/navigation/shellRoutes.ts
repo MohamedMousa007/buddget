@@ -31,6 +31,11 @@ export const SHELL_PATHS = [
   '/settings/sms',
   '/settings/memory',
   '/settings/security',
+  '/settings/pro',
+  '/settings/pro/usage',
+  '/settings/rewards',
+  '/settings/founders',
+  '/settings/invite',
 ] as const
 
 const SHELL_PATH_SET: ReadonlySet<string> = new Set(SHELL_PATHS)

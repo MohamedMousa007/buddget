@@ -21,6 +21,9 @@ describe('isShellPath', () => {
     expect(isShellPath('/expenses')).toBe(true)
     expect(isShellPath('/settings/memory')).toBe(true)
   })
+  it('keeps the plan and rewards screens in memory (a document load lands on home in the app WebView)', () => {
+    for (const p of ['/settings/pro', '/settings/pro/usage', '/settings/rewards', '/settings/founders', '/settings/invite']) expect(isShellPath(p)).toBe(true)
+  })
   it('rejects non-shell / special routes', () => {
     expect(isShellPath('/admin')).toBe(false)
     expect(isShellPath('/reset-password/confirm')).toBe(false)
