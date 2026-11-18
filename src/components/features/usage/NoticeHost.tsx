@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { AlertTriangle, CalendarClock, Crown, Info, Sparkles } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
-import { SparksPackPicker } from '@/components/features/usage/SparksPackPicker'
+import { SparksPackPicker, withProBonus } from '@/components/features/usage/SparksPackPicker'
 import { UsageMeter } from '@/components/features/usage/UsageMeter'
 import { SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -167,6 +167,7 @@ function LimitSheet({ notice, state, onClose }: { notice: Notice; state: NoticeS
   const billing = usePlanPurchase(notice.offers.includes('pro'), t)
   const packs = useSparksPacks(view)
   const end = useBillingStore((s) => s.me?.subscription?.renewsAt ?? null)
+  const bonus = useBillingStore((s) => s.me?.rewards?.packBonusPercent ?? 0)
   const d = dataFor(state, locale, state.billing.cancelledEndsAt ?? end ?? state.session.resetAt)
   const entry = copy.notices[notice.key]
   const paid = state.plan === 'pro' || state.plan === 'trial'
@@ -188,12 +189,12 @@ function LimitSheet({ notice, state, onClose }: { notice: Notice; state: NoticeS
             {!packs.available || packs.packs.length === 0 ? (
               <p role="status" dir="auto" className="text-sm text-[var(--color-brand-text-secondary)]">{packs.available && packs.loading ? t.loading : copy.packs.unavailable}</p>
             ) : (
-              <SparksPackPicker packs={packs.packs} selected={packs.selected} onSelect={packs.setSelected} pro={paid} disabled={packs.busy} />
+              <SparksPackPicker packs={packs.packs} selected={packs.selected} onSelect={packs.setSelected} bonusPercent={bonus} disabled={packs.busy} />
             )}
           </SheetBody>
           <SheetFooter safeArea>
             <Button size="cta-block" loading={packs.busy} disabled={!picked} onClick={() => void packs.buy().then((ok) => ok && setPacksOpen(false))} className="font-semibold">
-              {picked ? copy.packs.buy(paid ? picked.sparks + Math.floor(picked.sparks * 0.25) : picked.sparks, picked.price) : copy.sheet.sparksHead}
+              {picked ? copy.packs.buy(withProBonus(picked.sparks, bonus), picked.price) : copy.sheet.sparksHead}
             </Button>
             <Button size="touch" variant="ghost" disabled={packs.busy} onClick={() => void packs.restore()} className="w-full text-[var(--color-brand-text-muted)]">{t.restore}</Button>
           </SheetFooter>

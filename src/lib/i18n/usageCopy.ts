@@ -42,7 +42,7 @@ export interface UsageCopy {
   balance: { title: string; from: (time: string) => string; matches: string; differs: (amount: string) => string; left: (n: number) => string; usedOf: (used: number, limit: number) => string; blocked: string }
   packs: {
     title: string; aboutQuick: (n: number) => string; aboutScans: (n: number, scans: number) => string; weeks: (n: number) => string
-    more: string; buy: (sparks: number, price: string) => string; oneTime: (store: string) => string; withPro: (base: number) => string; unavailable: string
+    more: string; buy: (sparks: number, price: string) => string; oneTime: (store: string) => string; withPro: (base: number, percent: number) => string; unavailable: string
   }
 }
 
@@ -107,7 +107,7 @@ const en: UsageCopy = {
   balance: { title: 'Bank-confirmed balance', from: (time) => `From the bank’s SMS at ${time}`, matches: 'Matches your entries', differs: (amount) => `Differs by ${amount}`, left: (n) => `${n} live balance views left this month`, usedOf: (used, limit) => `${used} of ${limit} used this month`, blocked: 'Live balance views are used up for this month. Balances from your own entries stay free and visible.' },
   packs: {
     title: 'Sparks', aboutQuick: (n) => `About ${n} quick answers`, aboutScans: (n, scans) => `About ${n} quick answers or ${scans} receipt scans`, weeks: (n) => `About ${n} extra weeks of Pro-level use`,
-    more: 'More packs', buy: (sparks, price) => `Buy ${sparks} Sparks for ${price}`, oneTime: (store) => `One-time purchase through the ${store}.`, withPro: (base) => `+25% with Pro, base ${base}`, unavailable: 'Packs are not available right now. Try again shortly.',
+    more: 'More packs', buy: (sparks, price) => `Buy ${sparks} Sparks for ${price}`, oneTime: (store) => `One-time purchase through the ${store}.`, withPro: (base, percent) => `+${percent}% with Pro, base ${base}`, unavailable: 'Packs are not available right now. Try again shortly.',
   },
 }
 
@@ -172,7 +172,7 @@ const ar: UsageCopy = {
   balance: { title: 'الرصيد المؤكد من البنك', from: (time) => `من رسالة البنك الساعة ${time}`, matches: 'يطابق إدخالاتك', differs: (amount) => `يختلف بمقدار ${amount}`, left: (n) => `متبقٍّ ${n} عروض للرصيد المباشر هذا الشهر`, usedOf: (used, limit) => `استُخدمت ${used} من ${limit} هذا الشهر`, blocked: 'انتهت عروض الرصيد المباشر لهذا الشهر. الأرصدة من إدخالاتك تبقى مجانية ومرئية.' },
   packs: {
     title: 'Sparks', aboutQuick: (n) => `حوالي ${n} إجابة سريعة`, aboutScans: (n, scans) => `حوالي ${n} إجابة سريعة أو ${scans} مسح إيصال`, weeks: (n) => `حوالي ${n} أسابيع إضافية باستخدام بمستوى Pro`,
-    more: 'باقات أخرى', buy: (sparks, price) => `اشترِ ${sparks} Sparks بسعر ${price}`, oneTime: (store) => `عملية شراء لمرة واحدة عبر ${store}.`, withPro: (base) => `+25% مع Pro، الأساس ${base}`, unavailable: 'الباقات غير متاحة الآن. حاول بعد قليل.',
+    more: 'باقات أخرى', buy: (sparks, price) => `اشترِ ${sparks} Sparks بسعر ${price}`, oneTime: (store) => `عملية شراء لمرة واحدة عبر ${store}.`, withPro: (base, percent) => `+${percent}% مع Pro، الأساس ${base}`, unavailable: 'الباقات غير متاحة الآن. حاول بعد قليل.',
   },
 }
 

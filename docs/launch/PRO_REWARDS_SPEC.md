@@ -4,6 +4,7 @@ Owner sign-off: 2026-11-17 (night). This file is the single source of truth for 
 
 - **Design source (zero deviation):** `docs/design/pro-rewards/mockup.html`. Open it in a browser. It has six phones: Plan and billing, Rewards, Founders club, Invite friends, Profile badges, Usage. Toggles switch Free/Trial/Pro, the tier, and Light/Dark. Build the UI exactly as drawn in both themes. New components are allowed where the design needs them (the owner approved this in words), but build them as reusable components with tokens, 44px touch targets, RTL and Arabic copy, and `prefers-reduced-motion` fallbacks.
 - **Owner's price files:** `docs/design/pro-rewards/prices-monthly.csv` and `prices-annual.csv` (App Store price per country).
+- **Live store state (what exists in App Store Connect and RevenueCat, stay offers, owner steps):** `docs/launch/STORE_SETUP.md`.
 
 ## 0. Owner decisions that override earlier rules
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { bonusSparks } from '@/lib/billing/packBonus'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,8 +27,8 @@ export function packBlurb(sparks: number, copy: UsageCopy['packs']): string {
   return sparks >= 150 && sparks < 900 ? copy.aboutScans(quick, Math.round(sparks / SCAN_COST)) : copy.aboutQuick(quick)
 }
 
-/** Pro gets 25% more Sparks in every pack, added by the server when the purchase arrives; the picker shows the real amount. */
-export const withProBonus = (sparks: number): number => sparks + Math.floor(sparks * 0.25)
+/** Pro gets a bonus on every pack (15%, 20% for loyal Pro), added by the server when the purchase arrives; the picker shows the real amount. */
+export const withProBonus = (sparks: number, percent: number): number => sparks + bonusSparks(sparks, percent)
 
 /** The pack shown selected first: the middle of the ladder. */
 export const defaultPackId = (packs: readonly SparksPack[]): string | null => packs[Math.floor((packs.length - 1) / 2)]?.id ?? null
@@ -36,8 +37,8 @@ interface Props {
   packs: readonly SparksPack[]
   selected: string | null
   onSelect: (id: string) => void
-  /** Pro and trial members: the +25% is shown as already added. */
-  pro: boolean
+  /** The member's pack bonus in percent (`rewards.packBonusPercent`); 0 shows the plain amount. */
+  bonusPercent: number
   disabled?: boolean
 }
 
@@ -45,7 +46,7 @@ interface Props {
  * The Sparks packs as cards, not a free slider: each stop is its own store product. The middle pack is preselected, the largest sits
  * under "More". Every card says in plain words what the pack roughly buys.
  */
-export function SparksPackPicker({ packs, selected, onSelect, pro, disabled }: Props) {
+export function SparksPackPicker({ packs, selected, onSelect, bonusPercent, disabled }: Props) {
   const copy = useUsageCopy()
   const [more, setMore] = useState(false)
   const largest = packs.length > 4 ? packs[packs.length - 1]! : null
@@ -54,13 +55,13 @@ export function SparksPackPicker({ packs, selected, onSelect, pro, disabled }: P
     <div className="flex flex-col gap-2">
       <div role="radiogroup" aria-label={copy.packs.title} className="flex flex-col gap-2">
         {shown.map((p) => {
-          const real = pro ? withProBonus(p.sparks) : p.sparks
+          const real = withProBonus(p.sparks, bonusPercent)
           return (
             <SelectableCard key={p.id} selected={selected === p.id} onClick={() => onSelect(p.id)} disabled={disabled} surface="card" className="min-h-[64px] p-3.5">
               <span dir="auto" className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-2 text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">
                   <span dir="ltr" className="font-mono-numbers">{real}</span>
-                  {pro ? <Badge tone="brand" size="sm">{copy.packs.withPro(p.sparks)}</Badge> : null}
+                  {bonusPercent > 0 ? <Badge tone="brand" size="sm">{copy.packs.withPro(p.sparks, bonusPercent)}</Badge> : null}
                 </span>
                 <span className="mt-0.5 block text-[0.78125rem] leading-snug text-[var(--color-brand-text-secondary)]">{packBlurb(real, copy.packs)}</span>
               </span>

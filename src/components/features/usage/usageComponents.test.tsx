@@ -33,17 +33,18 @@ describe('SparksPackPicker', () => {
   const packs = [70, 150, 400, 900, 2500].map((s) => ({ id: `p${s}`, sparks: s, price: `$${s}` }))
   it('preselects the middle pack and keeps the largest under More', () => {
     expect(defaultPackId(packs)).toBe('p400')
-    const html = renderToStaticMarkup(createElement(SparksPackPicker, { packs, selected: 'p400', onSelect: () => {}, pro: false }))
+    const html = renderToStaticMarkup(createElement(SparksPackPicker, { packs, selected: 'p400', onSelect: () => {}, bonusPercent: 0 }))
     expect(html).toContain('More packs')
     expect(html).not.toContain('$2500')
     expect(html).toContain('aria-checked="true"')
   })
-  it('Pro sees the real amount with its +25% already added, with the base beside it', () => {
-    expect(withProBonus(70)).toBe(87)
-    expect(withProBonus(400)).toBe(500)
-    const html = renderToStaticMarkup(createElement(SparksPackPicker, { packs, selected: 'p400', onSelect: () => {}, pro: true }))
-    expect(html).toContain('87')
-    expect(html).toContain('+25% with Pro, base 70')
+  it('Pro sees the real amount with its bonus already added, with the base beside it', () => {
+    expect(withProBonus(70, 15)).toBe(80)
+    expect(withProBonus(650, 20)).toBe(780)
+    expect(withProBonus(400, 0)).toBe(400)
+    const html = renderToStaticMarkup(createElement(SparksPackPicker, { packs, selected: 'p400', onSelect: () => {}, bonusPercent: 15 }))
+    expect(html).toContain('80')
+    expect(html).toContain('+15% with Pro, base 70')
   })
   it('says in plain words what a pack buys, from the cost table', () => {
     const c = usageCopy.en.packs

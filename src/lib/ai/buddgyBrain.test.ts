@@ -20,6 +20,8 @@ const store = {
     { ...exp('4', '2026-09-05', 'Refunded shoes', 'Enjoyment', 300), refundKind: 'refunded' },
     exp('5', today, 'Talabat', 'Food', 55, 'pm-visa'),
     exp('6', today, 'Talabat dinner', 'Food', 65, 'pm-visa'),
+    // Three visa rows dated today keep the card the usual one whatever day the suite runs (the August rows leave the 90-day window).
+    exp('7', today, 'talabat', 'Food', 45, 'pm-visa'),
   ],
   incomeEvents: [],
   subscriptions: [],

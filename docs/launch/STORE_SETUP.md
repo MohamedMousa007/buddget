@@ -1,0 +1,53 @@
+# Store setup: App Store Connect and RevenueCat (iOS)
+
+State as of 2026-11-18. Everything below was created through RevenueCat's App Store Connect integration; nothing has been submitted to Apple's review yet (products go in with the next app version).
+
+## Identifiers
+
+| Thing | Id |
+|---|---|
+| RevenueCat project | `projb9480b99` (dashboard `b9480b99`) |
+| RevenueCat iOS app | `app5008c2628f`, bundle `app.buddget` (test store `app79df340a6c` keeps the two sample products) |
+| Entitlement | `buddget_pro` (`entlf059063abf`): `pro_monthly`, `pro_annual` and the two test-store products |
+| Offering | `default` (`ofrng2f566520c6`, current): `$rc_monthly` -> `pro_monthly`, `$rc_annual` -> `pro_annual` |
+| Webhook | `buddget server` -> `https://buddget.app/api/billing/revenuecat`, all events |
+| Subscription group | `Buddget Pro` (22586479), EN and AR group names |
+
+## Products (App Store Connect, all `READY_TO_SUBMIT`)
+
+| Store id | Type | Where | Base prices | RevenueCat id |
+|---|---|---|---|---|
+| `pro_monthly` | subscription 1M | all | EGP 69.99, AED/SAR/QAR 19.99, USD 4.99 (+ the price file) | `prodc5ccfbb979` |
+| `pro_annual` | subscription 1Y | all | EGP 499.99, AED/SAR/QAR 99.99, USD 24.99 | `prod0ad078c15f` |
+| `sparks_60` | consumable | Egypt only | EGP 9.99 | `prodd147bde401` |
+| `sparks_125` | consumable | Egypt only | EGP 19.99 | `prod1590e273c2` |
+| `sparks_320` | consumable | all | USD 0.99, EGP 49.99, AED 3.99, SAR 3.99 | `proda672624d98` |
+| `sparks_650` | consumable | all | USD 1.99, EGP 99.99, AED 7.99, SAR 7.99 | `prod6a4746ceae` |
+| `sparks_2000` | consumable | all | USD 4.99, EGP 299.99, AED 18.99, SAR 21.99 | `prod7d24d8173c` |
+
+Every product has EN + AR name and description, review notes, and a real review screenshot from the app (a stand-in member, `docs/design/pro-rewards/store/review/`). Both subscriptions have the privacy policy URL. No introductory offer on purpose: the 30-day trial is granted in-app without a card.
+
+## Stay (retention) offers, board 3-0 / council majority, 2026-11-18
+
+Same terms in every market; Egypt is the thin one and stays above its AI cost ceiling (USD 0.45 a month) in both cases.
+
+| Product | Offer id | Terms | Egypt | AE/SA/QA | USD |
+|---|---|---|---|---|---|
+| `pro_monthly` | `stay30_2m` | 30% off, pay as you go, 2 months | EGP 48.99 | 13.99 | 3.49 |
+| `pro_annual` | `stay_annual_20` | 20% off, one year paid upfront | EGP 399.99 | 79.99 | 19.99 |
+
+Other territories are Apple's equalised price from USD. Rules the app must enforce (Apple does not): one redemption per account per lifetime, checked on the server; lapsed users only after 30 days away; shown once when someone taps to cancel, never stacked with points-shop discounts, no points for accepting. Offer terms cannot be edited: to change one, create a new id and delete the old. Deleted ids (`stay_half_3m`, `stay_annual_30`) can never be reused.
+
+**Not built yet:** the in-app screen that shows the offer before the user goes to Apple's cancel sheet (RevenueCat signs promotional offers with the In-App Purchase key already uploaded), and Apple's win-back offers for lapsed subscribers.
+
+## Owner steps still open
+
+1. Vercel: `NEXT_PUBLIC_REVENUECAT_IOS_KEY` (public SDK key from the RevenueCat app page), `REVENUECAT_WEBHOOK_AUTH` (the Authorization header value set on the webhook in RevenueCat), `REVENUECAT_WEBHOOK_HMAC_SECRET` (the webhook signing secret). The server refuses every event until both webhook values are set.
+2. App Store Connect, app level: turn on the Billing Grace Period (16 days, all renewals); set the App Store Server Notifications V2 URL to the one RevenueCat shows on the iOS app page; confirm the Paid Apps agreement, banking and tax are active; confirm Small Business Program enrolment (the 15% the plan assumes).
+3. Optional: upload `docs/design/pro-rewards/store/buddget-pro-*-card-1024.png` as each subscription's promotional image (Apple shows it in the App Store subscription list); decide Family Sharing (off; cannot be turned off again once on).
+4. Android: a Google Play service account in RevenueCat, then the same products in Play Console (`pro_monthly:monthly`, `pro_annual:annual`, the packs).
+5. Submit the in-app purchases with the next app version and run one sandbox purchase of each kind.
+
+## Re-running
+
+Prices and offers are read live from Apple with `get-product-store-state`; changes go through `create-product-store-state-plan` -> plan -> apply (review the diff first). Review screenshots: `upload-product-store-state-screenshot` reserves a slot, PUT the bytes to the returned URL, then set `screenshot_id` + MD5 in a plan.
