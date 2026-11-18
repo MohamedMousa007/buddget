@@ -55,6 +55,8 @@ Other territories are Apple's equalised price from USD. Rules the app must enfor
 - Play Console developer account created (personal, trader declared); identity verification pending with Google, so creating the app is blocked until it clears.
 - Google Cloud project `Buddget` (`gen-lang-client-0929604237`, owned by the same Google account): Google Play Android Developer API, Google Play Developer Reporting API and Cloud Pub/Sub API enabled.
 - Service account `revenuecat@gen-lang-client-0929604237.iam.gserviceaccount.com` with Pub/Sub Admin and Monitoring Viewer only.
+- Service account JSON key created by the owner and kept offline (not in the repo).
+- RevenueCat Play Store app `app86a098cc89` (`buddget Android`, package `app.buddget`) created 2026-11-18; credentials not uploaded yet.
 - Next (owner): create its JSON key (Keys -> Add key -> JSON), keep it with the App Store keys. After Play verification: create the app, invite the service account in Play Console with View app information, View financial data, Manage orders and subscriptions; add a Play Store app in RevenueCat for `app.buddget` and upload the JSON; connect Google developer notifications and paste the topic in Play Console's Monetization setup.
 
 ## Re-running
