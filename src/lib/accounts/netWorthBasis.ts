@@ -11,6 +11,7 @@ export function accountsBasisFor(ledger: LedgerInput, base: string):
   const excluded = new Set(ledger.paymentMethods.filter((m) => m.excluded).map((m) => m.id))
   let total = 0
   for (const b of balances.values()) if (!excluded.has(b.id)) total += ledger.convert(b.balance, b.currency, base) ?? b.balance
-  const held = new Set(ledger.savingsAccounts.filter((p) => p.heldInPaymentMethodId && balances.has(p.heldInPaymentMethodId)).map((p) => p.id))
+  // A pocket inside a not-counted account is counted on its own (as zakat does): its holder's balance is not in the total.
+  const held = new Set(ledger.savingsAccounts.filter((p) => p.heldInPaymentMethodId && balances.has(p.heldInPaymentMethodId) && !excluded.has(p.heldInPaymentMethodId)).map((p) => p.id))
   return { accountsBasis: total, heldInPocketIds: held }
 }

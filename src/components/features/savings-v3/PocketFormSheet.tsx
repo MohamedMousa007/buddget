@@ -21,6 +21,9 @@ import { micro } from '@/lib/ui/microLabelStyle'
 import type { Currency, PaymentMethod } from '@/lib/store/types'
 import { OptionChip } from '@/components/ui/OptionChip'
 import { useT } from '@/lib/i18n'
+import { useAccounts } from '@/lib/accounts/useAccounts'
+import { pocketHolderId } from '@/lib/savings/pocketHolder'
+import { splitMoney } from '@/components/features/accounts/accountDisplay'
 
 export interface PocketFormSheetProps {
   open: boolean
@@ -34,11 +37,14 @@ export interface PocketFormSheetProps {
 }
 
 export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: PocketFormSheetProps) {
-  const sf = useT().savingsForms
+  const t = useT()
+  const sf = t.savingsForms
   const pf = sf.pocket
   const kindLabel = sf.pocketKinds[def.kind].label
   const addSavingsAccount = useFinanceStore((s) => s.addSavingsAccount)
   const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
+  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
+  const { accounts } = useAccounts()
 
   const has = (f: string) => def.fields.includes(f as never)
 
@@ -66,7 +72,13 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
     return [...new Set(ids.map((id) => PAYMENT_BRANDS[id].name))].slice(0, 10)
   }, [def.kind])
 
+  // From a tracked account the pocket is an earmark inside it: the money stays in the account, so it cannot exceed what is free there.
+  const holderId = linkedMethod ? pocketHolderId(linkedMethod, paymentMethods, currency) : undefined
+  const free = holderId ? accounts.find((a) => a.method.id === holderId)?.balance?.free : undefined
+  const overFree = free !== undefined && (parseFloat(balance) || 0) > free
+
   const create = () => {
+    if (overFree) return
     addSavingsAccount({
       name: name.trim() || kindLabel,
       category: 'savings',
@@ -79,6 +91,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
       ...(last4 ? { accountLast4: last4 } : {}),
       ...(maturity ? { maturityDate: maturity } : {}),
       ...(linkedMethod ? { linkedPaymentMethodId: linkedMethod.id } : {}),
+      ...(holderId ? { heldInPaymentMethodId: holderId } : {}),
     } as never)
     ;(onDone ?? onClose)()
   }
@@ -155,6 +168,11 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
               <label style={micro}>{pf.inItNow}</label>
               <AmountField value={balance} onChange={setBalance} currency={currency} placeholder="0.00"
                 className="mt-2 h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 font-mono-numbers" />
+              {overFree && (
+                <p role="alert" className="mt-2 text-[0.8125rem] text-[var(--color-brand-amber)]">
+                  {t.accountsPage.moreThanFree(splitMoney(free!, currency).int + splitMoney(free!, currency).dec)}
+                </p>
+              )}
             </div>
             <div style={{ width: 104 }}>
               <label style={micro}>{pf.currency}</label>
@@ -176,7 +194,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
         </div>
 
         <div className="px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))]">
-          <Button size="cta-block" onClick={create} className="font-semibold">
+          <Button size="cta-block" onClick={create} disabled={overFree} className="font-semibold">
             {pf.create}
           </Button>
         </div>

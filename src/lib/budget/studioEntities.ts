@@ -4,6 +4,7 @@ import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
 import type { FactDebt, FactGoal } from '@/lib/budget/facts'
 import { answeredDebts, answeredGoals } from '@/lib/budget/flow/toFacts'
 import type { FlowState } from '@/lib/budget/flow/types'
+import { isTracked } from '@/lib/accounts/kinds'
 
 export interface StudioEntityNames {
   income: string
@@ -14,7 +15,7 @@ export interface StudioEntityNames {
   goal: (kind: GoalCategory) => string
 }
 
-type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals' | 'incomeSources' | 'debts' | 'savingsAccounts'>
+type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals' | 'incomeSources' | 'debts' | 'savingsAccounts'> & Partial<Pick<FinanceStore, 'paymentMethods'>>
 
 const DEFAULT_PAYDAY = 25
 const MIN_INSTALMENT_MONTHS = 12
@@ -56,7 +57,9 @@ export function commitFlowEntities(state: FlowState, store: Actions, base: Curre
   }
 
   const savings = amountOf(a.savingsOnHand)
-  if (savings > 0 && !done.savings && store.savingsAccounts.length === 0) {
+  // The empty vault the app seeds itself tracks nothing; money in a tracked account is already on the balance sheet.
+  const tracksSavings = store.savingsAccounts.some((p) => !(p.type === 'vault' && !p.currentBalance)) || (store.paymentMethods ?? []).some(isTracked)
+  if (savings > 0 && !done.savings && !tracksSavings) {
     created.savings = store.addSavingsAccount({
       name: names.savings, category: 'savings', type: 'bank', currency: base, openingBalance: savings, isEmergencyCover: true,
     })

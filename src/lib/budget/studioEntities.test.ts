@@ -85,4 +85,17 @@ describe('commitFlowEntities', () => {
     expect(store.addGoal).not.toHaveBeenCalled()
     expect(store.addSavingsAccount).not.toHaveBeenCalled()
   })
+
+  it('QA-119: the empty vault the app seeds itself does not swallow the savings answer; a pocket that holds something does', () => {
+    const seeded = fakeStore({ savingsAccounts: [{ type: 'vault', currentBalance: 0 }] })
+    expect(commitFlowEntities(answered({ savingsOnHand: 5000 }), seeded as never, 'EGP', names, NOW).savings).toBe('pocket-1')
+    const real = fakeStore({ savingsAccounts: [{ type: 'vault', currentBalance: 10 }] })
+    expect(commitFlowEntities(answered({ savingsOnHand: 5000 }), real as never, 'EGP', names, NOW).savings).toBeUndefined()
+  })
+
+  it('QA-12: with a tracked account the described savings are already on the balance sheet, so no pocket is created', () => {
+    const store = { ...fakeStore(), paymentMethods: [{ id: 'b', type: 'bank_account', openingBalance: 9000, openingAt: '2026-01-01T00:00:00Z' }] }
+    expect(commitFlowEntities(answered({ savingsOnHand: 1400 }), store as never, 'EGP', names, NOW).savings).toBeUndefined()
+    expect(store.addSavingsAccount).not.toHaveBeenCalled()
+  })
 })

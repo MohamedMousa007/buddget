@@ -112,8 +112,13 @@ export function computeBalances(input: LedgerInput, asOf: number = Date.now()): 
     if (!t.paymentMethodId) continue
     const pocket = pockets.get(t.accountId)
     const target = resolveAccountId(t.paymentMethodId, pms)
-    if (pocket?.heldInPaymentMethodId && pocket.heldInPaymentMethodId === target) continue
-    apply(target, t.type === 'deposit' ? -t.amount : t.amount, t.currency, instantOf(t.occurredAt, t.date))
+    const holder = pocket?.heldInPaymentMethodId
+    if (holder && holder === target) continue
+    const leg = t.type === 'deposit' ? -t.amount : t.amount
+    const at = instantOf(t.occurredAt, t.date)
+    apply(target, leg, t.currency, at)
+    // The pocket's money sits inside its holding account: a move from or to another account is a transfer between the two.
+    if (holder) apply(holder, -leg, t.currency, at)
   }
 
   for (const j of input.adjustments) {
