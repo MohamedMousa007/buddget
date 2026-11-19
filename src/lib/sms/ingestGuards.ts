@@ -110,7 +110,12 @@ export function smsPlausibilityIssue(amount: number, day: string, nowMs: number 
  */
 export function resolveSmsDay(i: { bodyDay: string | null; captureDay: string | null; arrivalDay: string; nowMs?: number }): { day: string; unsure: boolean; source: 'body' | 'capture' | 'arrival' } {
   const nowMs = i.nowMs ?? Date.now()
-  if (i.bodyDay && isPlausibleDay(i.bodyDay, nowMs)) return { day: i.bodyDay, unsure: false, source: 'body' }
+  // A message is never received before its transaction: a printed day after the capture day is the bank's clock or
+  // posting date, not the purchase day (QA-47). ISO days compare as strings.
+  if (i.bodyDay && isPlausibleDay(i.bodyDay, nowMs)) {
+    if (i.captureDay && isPlausibleDay(i.captureDay, nowMs) && i.bodyDay > i.captureDay) return { day: i.captureDay, unsure: false, source: 'capture' }
+    return { day: i.bodyDay, unsure: false, source: 'body' }
+  }
   const printedDateFailed = i.bodyDay != null
   if (i.captureDay && isPlausibleDay(i.captureDay, nowMs)) return { day: i.captureDay, unsure: printedDateFailed, source: 'capture' }
   return { day: i.arrivalDay, unsure: printedDateFailed || i.captureDay != null, source: 'arrival' }

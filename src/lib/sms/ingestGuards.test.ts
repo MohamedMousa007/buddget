@@ -66,6 +66,9 @@ describe('resolveSmsDay (I6: a date never rejects)', () => {
   it('dates an undated message with no capture time by the arrival day without a flag', () => {
     expect(resolveSmsDay({ bodyDay: null, captureDay: null, arrivalDay, nowMs })).toEqual({ day: arrivalDay, unsure: false, source: 'arrival' })
   })
+  it('QA-47: a body day after the capture day is the bank clock, so the capture day wins', () => {
+    expect(resolveSmsDay({ bodyDay: '2026-10-27', captureDay: '2026-10-26', arrivalDay, nowMs })).toEqual({ day: '2026-10-26', unsure: false, source: 'capture' })
+  })
   it('keeps the existing bounds: 2 days ahead is fine, 3 is not, 400 days back (counted from noon) is the edge', () => {
     expect(resolveSmsDay({ bodyDay: '2026-10-29', captureDay: null, arrivalDay, nowMs }).unsure).toBe(false)
     expect(resolveSmsDay({ bodyDay: '2026-10-30', captureDay: null, arrivalDay, nowMs }).unsure).toBe(true)
