@@ -39,7 +39,6 @@ test('C1 debt > pay from a bank account > remaining debt > reports', async ({ pa
     await expect(page.locator('main')).toContainText('700')
   })
   await test.step('UI: QNB balance 5,000 -> 4,300', async () => {
-    knownBug('E2E-002', 'the debt-payment expense has no occurredAt, so balance.ts dates it 12:00 of its day; it is skipped as future before noon and as pre-opening for an account opened after noon')
     await goto(page, '/accounts')
     await expect(page.getByRole('button', { name: /QNB Alahli/ }).first()).toContainText('4,300.00', { timeout: 10_000 })
   })
@@ -51,7 +50,6 @@ test('C2 debt > pay from Cash reaches the server [QA-030 / SYNC-001]', async ({ 
   await expect.poll(() => stillOwed(page)).toBe(2500)
   const pay = await localWait(page, (s) => s.debtPayments.find((x: any) => x.debtId === debt.id && x.amountPaid === 500))
   test.info().annotations.push({ type: 'evidence', description: `local debtPayment ${pay.id} paymentMethodId=${pay.paymentMethodId}` })
-  knownBug('QA-030 / SYNC-001', 'Cash-funded debt payment is sent with payment_method_id pm_default_cash (400 22P02), parked, then marked delivered (SYNC-002)')
   try {
     await serverRows('debt_payments', user.id, `id=eq.${pay.id}`, (r) => r.length === 1, 25_000)
   } finally {

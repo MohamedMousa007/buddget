@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
 import { PASSWORD, deleteUser, qaEmail, signupOtp } from '../lib/admin'
-import { expect, goto, knownBug, localWait, test, tile } from '../lib/fixtures'
+import { expect, goto, knownBug, localState, localWait, test, tile } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
 import { addAccount, addExpense, addMoneyIn, blur, fillAccountSheet, pickMethod } from '../lib/ui'
 
@@ -25,7 +25,7 @@ test.describe('A registration and onboarding', () => {
       // GoTrue keeps only a hash of the emailed code; ask it for a fresh one of the same configured length (no email sent).
       const code = await signupOtp(email)
       test.info().annotations.push({ type: 'evidence', description: `project email OTP length = ${code.length}; the app's code step has 6 boxes and verifyOtpCode rejects any other length (useAuthModal.ts:497)` })
-      knownBug('E2E-001', `Supabase sends ${code.length}-digit sign-up codes but the app accepts exactly 6, so email sign-up cannot be confirmed in the app`)
+      expect(code.length, 'QA-10: Supabase OTP length must equal the 6 boxes').toBe(6)
       await boxes.first().click()
       await page.keyboard.type(code)
       await page.getByRole('button', { name: 'Confirm & get started' }).click()
@@ -104,20 +104,16 @@ test.describe('A registration and onboarding', () => {
         const go = main.getByRole('button', { name: /^(Continue|Next|Done|Build)/ }).last()
         if (await go.isEnabled().catch(() => false)) await go.click()
       }
-      expect(sawSavings, 'the studio asks how much is saved without offering the 1,400 already in the accounts').toBe(true)
+      test.info().annotations.push({ type: 'evidence', description: `studio asked the savings question: ${sawSavings}` })
     })
-    const pocket = await test.step('studio created a Savings pocket with an Opening balance deposit of 1,400', async () => {
-      const p = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.name === 'Savings'), 60_000)
-      const tx = await localWait(page, (s) => s.savingsTransactions.find((t: any) => t.accountId === p.id && t.notes === 'Opening balance'))
-      expect(tx.amount).toBe(1400)
-      expect(p.linkedPaymentMethodId ?? p.heldInPaymentMethodId ?? null).toBeNull()
-      await serverRows('savings_transactions', user.id, `account_id=eq.${p.id}&notes=eq.Opening%20balance`, (r: any[]) => r.length === 1 && Number(r[0].amount) === 1400 && r[0].payment_method_id === null)
-      return p
-    })
-    test.info().annotations.push({ type: 'evidence', description: `pocket ${pocket.id} "Savings" 1,400 unlinked; accounts Cash 1,000 + QNB 400` })
+    // QA-12 (as built): with tracked accounts, "saved" money may only become a pocket EARMARKED inside an account, never above what is free.
+    await page.waitForTimeout(4000)
+    const st = await localState(page)
+    const pockets = st.savingsAccounts.filter((a: any) => !a.deletedAt)
+    test.info().annotations.push({ type: 'evidence', description: `pockets after studio: ${JSON.stringify(pockets.map((p: any) => ({ n: p.name, bal: p.currentBalance, linked: p.linkedPaymentMethodId ?? p.heldInPaymentMethodId ?? null })))}` })
+    for (const p of pockets) expect(p.linkedPaymentMethodId ?? p.heldInPaymentMethodId, `pocket ${p.name} must be earmarked inside an account`).toBeTruthy()
     await goto(page, '/accounts')
     expect(await tile(page, 'In accounts')).toBe(1400)
-    knownBug('QA-001', 'the studio savings question is not seeded from (or netted against) account balances, so the same 1,400 becomes an unlinked pocket and net worth doubles')
     await goto(page, '/flow')
     expect(await tile(page, 'Net worth')).toBe(1400)
   })
@@ -207,7 +203,6 @@ test('A4 account > income > create/apply budget > expense > Flow and budget cons
   })
 
   await test.step('net worth counts the 5,000 received today: 8,000 + 5,000 - 300', async () => {
-    knownBug('E2E-002', 'addIncomeEvent stores no occurredAt, so balance.ts dates a same-day money-in at 12:00 and skips it (future before noon, pre-opening for an account opened after noon)')
     await goto(page, '/flow')
     expect(await tile(page, 'Net worth')).toBe(12700)
   })

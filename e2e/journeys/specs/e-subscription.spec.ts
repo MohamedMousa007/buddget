@@ -21,7 +21,7 @@ test('E subscription add > mark paid > pause > resume > cancel', async ({ page, 
     await d.getByRole('group', { name: 'Paid with' }).getByRole('button', { name: 'QNB Alahli' }).click()
     await d.getByRole('button', { name: 'Add Netflix Standard' }).click()
     await expect(d).toBeHidden()
-    expect(await tile(page, 'Monthly equivalent')).toBe(190)
+    expect(await tile(page, 'Per month')).toBe(190)
     const s = await localWait(page, (s) => s.subscriptions.find((x: any) => /Netflix/.test(x.name)))
     expect(s).toMatchObject({ amount: 190, paymentMethodId: qnb.id, status: 'active' })
     await serverRows('subscriptions', user.id, `id=eq.${s.id}`, (r: any[]) => r.length === 1 && r[0].status === 'active' && Number(r[0].amount) === 190)

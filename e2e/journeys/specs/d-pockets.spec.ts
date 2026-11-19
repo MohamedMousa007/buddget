@@ -83,6 +83,5 @@ test('D2 pocket created from an account you already have keeps net worth [QA-013
   await serverRows('savings_accounts', user.id, `id=eq.${pocket.id}`, (r) => r.length === 1)
   test.info().annotations.push({ type: 'evidence', description: `pocket ${pocket.id} linkedPaymentMethodId=${pocket.linkedPaymentMethodId} heldIn=${pocket.heldInPaymentMethodId ?? 'none'} balance=${pocket.currentBalance}` })
   expect(await qnbBalance(page)).toBe(5000)
-  knownBug('QA-013', 'a pocket that IS an existing account (linkedPaymentMethodId) is added on top of that account in net worth')
   expect(await netWorthFlow(page)).toBe(5000)
 })

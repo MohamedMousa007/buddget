@@ -17,7 +17,7 @@ import { liveClient } from './liveClient'
  */
 describe('QA-030 debt payment from Cash never reaches the server', () => {
   it('reproduces 400 + 409, then the reconcile marks both rows delivered', async () => {
-    const { client, userId, wire } = await liveClient('qa-sync-1@buddget-qa.test')
+    const { client, userId, wire } = await liveClient(process.env.QA_SYNC_EMAIL_1 ?? 'qa-sync-1@buddget-qa.test')
     const now = new Date().toISOString()
     const today = now.slice(0, 10)
     const debt = {
@@ -49,43 +49,21 @@ describe('QA-030 debt payment from Cash never reaches the server', () => {
     const r1 = await flushDiff(client, userId, s1, s2)
     const failed = wire.filter((w) => w.status >= 400)
     writeFileSync('e2e/sync/evidence/qa030-wire.json', JSON.stringify(failed, null, 2))
-    // No error is reported (the banner only shows the transient "set aside" count), both rows are parked.
+    // QA-15/QA-16 fixed: Cash maps to NULL, nothing is parked, both rows land and no 4xx is sent.
     expect(r1.anyError).toBe(false)
-    expect(r1.parked?.map((p) => [p.table, p.code]).sort()).toEqual([['debt_payments', '22P02'], ['expenses', '23503']])
-    expect(failed.map((w) => `${w.method} ${w.path.split('?')[0]} ${w.status}`)).toEqual([
-      'POST /rest/v1/debt_payments 400',
-      'POST /rest/v1/expenses 409',
-    ])
-
-    // Step 1 (flush(), SupabaseFinanceSync.ts:338): parked rows are held back. Correct.
-    const afterFlush = holdParkedBack(s2, s1, r1.parked ?? [])
-    expect(afterFlush.debtPayments).toEqual([])
-    expect(afterFlush.expenses).toEqual([])
-
-    // Step 2 (pendingSync, SupabaseFinanceSync.ts:395): flushed === true because parked is not anyError,
-    // so the baseline becomes the whole store, parked rows included.
-    const afterReconcile = baselineAfterFlush(afterFlush, s2, true)!
-    const fp = fingerprintOf(afterReconcile)
-    expect(Object.keys(fp.lists.debtPayments)).toEqual([payment.id])
-    expect(Object.keys(fp.lists.expenses)).toEqual([expense.id])
-
-    // Consequence: every later flush (and every warm boot, via the fingerprint) sees nothing to send.
-    wire.length = 0
-    const r2 = await flushDiff(client, userId, afterReconcile, s2)
+    expect(r1.parked ?? []).toEqual([])
+    expect(failed).toEqual([])
+    const dp = await client.from('debt_payments').select('id, payment_method_id').eq('id', payment.id)
+    const ex = await client.from('expenses').select('id, payment_method_id').eq('id', expense.id)
+    expect(dp.data).toEqual([{ id: payment.id, payment_method_id: null }])
+    expect(ex.data).toEqual([{ id: expense.id, payment_method_id: null }])
+    // A later flush with the new baseline sends nothing more.
+    const r2 = await flushDiff(client, userId, s2, s2)
     expect(r2.writes).toBe(0)
-    const boot = baselineFromFingerprint(s2, fp)
-    const r3 = await flushDiff(client, userId, boot, s2)
-    expect(r3.writes).toBe(0)
-
-    // Server truth: neither row exists.
-    const dp = await client.from('debt_payments').select('id').eq('id', payment.id)
-    const ex = await client.from('expenses').select('id').eq('id', expense.id)
-    expect(dp.data).toEqual([])
-    expect(ex.data).toEqual([])
   })
 
   it('control: the same payment from a real account (uuid) syncs', async () => {
-    const { client, userId } = await liveClient('qa-sync-1@buddget-qa.test')
+    const { client, userId } = await liveClient(process.env.QA_SYNC_EMAIL_1 ?? 'qa-sync-1@buddget-qa.test')
     const now = new Date().toISOString()
     const today = now.slice(0, 10)
     const pm = { id: randomUUID(), name: 'QA bank', type: 'bank_account', currency: 'EGP', isDefault: false, createdAt: now, updatedAt: now }

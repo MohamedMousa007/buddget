@@ -15,7 +15,7 @@ test('G Buddgy request > approve > verify > undo', async ({ page, user }) => {
   const before = await tile(page, 'Net worth')
 
   // The floating Buddgy button is labelled with the i18n key fabAskAi = "Set up your budget" (E2E-004).
-  await page.getByRole('button', { name: 'Set up your budget' }).click()
+  await page.getByRole('button', { name: 'Ask Buddgy' }).click()
   const chat = dialog(page, 'Buddgy')
   await chat.getByRole('textbox', { name: 'Ask or tell Buddgy…' }).fill('coffee 45')
   await chat.getByRole('button', { name: 'Send' }).click()
