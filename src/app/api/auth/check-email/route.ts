@@ -28,6 +28,8 @@ import { createServiceRoleClient } from '@/lib/supabase/service'
 const MIN_LATENCY_MS = 100
 const RATE_WINDOW_SECONDS = 60
 const RATE_MAX_HITS = 30
+const DAY_SECONDS = 86_400
+const DAY_MAX_HITS = 300
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -54,7 +56,11 @@ export async function POST(req: Request) {
     const ip = clientIp(req)
 
     const admin = createServiceRoleClient()
-    if (await isRateLimited(admin, `check-email:${ip}`, RATE_WINDOW_SECONDS, RATE_MAX_HITS, true)) {
+    // QA-99: the email-first modal needs the answer, so it stays; a daily cap bounds bulk enumeration, and a counter outage fails closed.
+    if (
+      (await isRateLimited(admin, `check-email:${ip}`, RATE_WINDOW_SECONDS, RATE_MAX_HITS)) ||
+      (await isRateLimited(admin, `check-email-day:${ip}`, DAY_SECONDS, DAY_MAX_HITS))
+    ) {
       await sleepUntil(deadline)
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }

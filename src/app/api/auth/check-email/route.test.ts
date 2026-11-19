@@ -21,6 +21,21 @@ describe('POST /api/auth/check-email', () => {
     expect(h.rpc).not.toHaveBeenCalled()
   })
 
+  it('QA-99: fails closed when the counter errors, without looking the email up', async () => {
+    h.rpc.mockImplementation(async (fn: string) => (fn === 'api_rate_hit' ? { data: null, error: { message: 'down' } } : { data: {}, error: null }))
+    expect((await call(JSON.stringify({ email: 'a@b.co' }))).status).toBe(429)
+    expect(h.rpc).not.toHaveBeenCalledWith('check_email_status', expect.anything())
+  })
+
+  it('QA-99: caps lookups per address per day', async () => {
+    h.rpc.mockImplementation(async (fn: string, args: { p_key?: string }) =>
+      fn === 'api_rate_hit' ? { data: !args.p_key?.startsWith('check-email-day:'), error: null } : { data: {}, error: null },
+    )
+    expect((await call(JSON.stringify({ email: 'a@b.co' }))).status).toBe(429)
+    expect(h.rpc).toHaveBeenCalledWith('api_rate_hit', { p_key: 'check-email-day:1.2.3.4', p_window_seconds: 86_400, p_max_hits: 300 })
+    expect(h.rpc).not.toHaveBeenCalledWith('check_email_status', expect.anything())
+  })
+
   it('answers a normal lookup with exists and verified', async () => {
     const res = await call(JSON.stringify({ email: 'a@b.co' }))
     expect(await res.json()).toEqual({ exists: true, verified: false })
