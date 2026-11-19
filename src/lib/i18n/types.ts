@@ -1975,6 +1975,8 @@ export interface Dictionary {
     errorPasswordWeakComposition: string
     errorSignUpGeneric: string
     errorEmailSendFailed: string
+    errorEmailHookSlow: string
+    errorSignInSlow: string
     errorOtpIncomplete: string
     passwordStrengthLabel: string
     passwordStrengthWeak: string

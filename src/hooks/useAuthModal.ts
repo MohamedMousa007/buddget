@@ -15,6 +15,7 @@ import { isNative } from '@/lib/native/isNative'
 import { MIN_PASSWORD_LEN } from '@/components/features/auth-modal/authModalTokens'
 import { markSessionEphemeral } from '@/hooks/useEphemeralSessionGuard'
 import { expectSignOut } from '@/lib/auth/intentionalSignOut'
+import { SIGNIN_TIMEOUT_MS, withTimeout } from '@/lib/auth/signInTimeout'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
 import { changePassword } from '@/lib/auth/changePassword'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
@@ -94,6 +95,8 @@ export function useAuthModal() {
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
+  /** Counts password sign-in attempts, so a late answer to an abandoned one knows whether a retry has replaced it. */
+  const signInAttemptRef = useRef(0)
   /** Set while `/api/auth/check-email` is resolving. Disables the email input + advance button. */
   const [emailAdvancePending, setEmailAdvancePending] = useState(false)
   const [error, setError] = useState('')
@@ -313,10 +316,25 @@ export function useAuthModal() {
     }
     setLoading(true)
     track(AUTH_EVENTS.passwordSubmitted, { intent: 'signin' })
-    const { error: e } = await supabase.auth.signInWithPassword({
+    const attemptId = ++signInAttemptRef.current
+    const attempt = supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     })
+    const answer = await withTimeout(attempt, SIGNIN_TIMEOUT_MS)
+    if (answer === 'timeout') {
+      // D-6: tell the user and let them retry. An abandoned attempt that still succeeds later never ran the device
+      // check below, so its session is ended locally, unless a newer attempt (the retry) owns the session by then.
+      void attempt.then(({ error: late }) => {
+        if (late || signInAttemptRef.current !== attemptId) return
+        expectSignOut()
+        void supabase.auth.signOut({ scope: 'local' })
+      })
+      setLoading(false)
+      setError(t.auth.errorSignInSlow)
+      return
+    }
+    const { error: e } = answer
     if (e) {
       setLoading(false)
       setError(mapAuthError(e, 'signin', t))
@@ -328,7 +346,7 @@ export function useAuthModal() {
     // session is ended (local scope), so the account's other devices stay signed in.
     let required: boolean | null = null
     try {
-      const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST' })
+      const deviceRes = await apiFetchAuth('/api/auth/device/check', { method: 'POST', signal: AbortSignal.timeout(SIGNIN_TIMEOUT_MS) })
       if (deviceRes.ok) {
         const body = (await deviceRes.json()) as { required?: boolean; deviceSecret?: string }
         required = body.required === true

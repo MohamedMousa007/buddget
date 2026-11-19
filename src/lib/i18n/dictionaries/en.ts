@@ -2095,6 +2095,8 @@ export const en: Dictionary = {
     errorPasswordWeakComposition: 'Your password needs at least one letter and one number.',
     errorSignUpGeneric: "Couldn\u2019t create your account. Try again.",
     errorEmailSendFailed: "Couldn\u2019t send the confirmation email. Try again in a moment.",
+    errorEmailHookSlow: 'Sending your code took too long. Wait a few seconds and try again.',
+    errorSignInSlow: 'Signing in is taking too long. Check your connection and try again.',
     errorOtpIncomplete: 'Enter the 6-digit code.',
     passwordStrengthLabel: 'Password strength',
     passwordStrengthWeak: 'Weak',

@@ -2103,6 +2103,8 @@ export const ar: Dictionary = {
     errorPasswordWeakComposition: 'يجب أن تحتوي كلمة المرور على حرف ورقم واحد على الأقل.',
     errorSignUpGeneric: 'تعذّر إنشاء حسابك. حاول مرة أخرى.',
     errorEmailSendFailed: 'تعذّر إرسال رسالة التأكيد. حاول مرة أخرى بعد لحظات.',
+    errorEmailHookSlow: 'استغرق إرسال الرمز وقتاً طويلاً. انتظر بضع ثوانٍ وحاول مرة أخرى.',
+    errorSignInSlow: 'تسجيل الدخول يستغرق وقتاً طويلاً. تحقق من الاتصال وحاول مرة أخرى.',
     errorOtpIncomplete: 'أدخل الرمز المكوّن من 6 أرقام.',
     passwordStrengthLabel: 'قوة كلمة المرور',
     passwordStrengthWeak: 'ضعيفة',
