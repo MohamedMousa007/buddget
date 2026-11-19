@@ -23,6 +23,9 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setDeviceSecret", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getDeviceSecret", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "removeDeviceSecret", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setSecureItem", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getSecureItem", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "removeSecureItem", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getStatus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "healthCheck", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "peekPendingQueue", returnType: CAPPluginReturnPromise),
@@ -93,6 +96,39 @@ public class SmsCapacitorPlugin: CAPInstancePlugin, CAPBridgedPlugin {
 
     @objc func removeDeviceSecret(_ call: CAPPluginCall) {
         SmsKeychain.delete("device_secret")
+        call.resolve()
+    }
+
+    /// Biometric sign-in / admin unlock secrets, same Keychain service. Only these names are accepted;
+    /// clearCredentials and clearState leave them alone.
+    private static let secureItemKeys: Set<String> = ["biometric_secret", "admin_biometric_secret"]
+
+    private func secureKey(_ call: CAPPluginCall) -> String? {
+        guard let key = call.getString("key"), Self.secureItemKeys.contains(key) else {
+            call.reject("unknown key")
+            return nil
+        }
+        return key
+    }
+
+    @objc func setSecureItem(_ call: CAPPluginCall) {
+        guard let key = secureKey(call) else { return }
+        guard let value = call.getString("value"), SmsKeychain.write(key, Data(value.utf8)) else {
+            call.reject("value could not be stored")
+            return
+        }
+        call.resolve()
+    }
+
+    @objc func getSecureItem(_ call: CAPPluginCall) {
+        guard let key = secureKey(call) else { return }
+        let value = SmsKeychain.read(key).flatMap { String(data: $0, encoding: .utf8) }
+        if let value { call.resolve(["value": value]) } else { call.resolve(["value": NSNull()]) }
+    }
+
+    @objc func removeSecureItem(_ call: CAPPluginCall) {
+        guard let key = secureKey(call) else { return }
+        SmsKeychain.delete(key)
         call.resolve()
     }
 

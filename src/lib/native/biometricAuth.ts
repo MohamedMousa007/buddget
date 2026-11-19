@@ -2,11 +2,13 @@
 
 import { isNative } from '@/lib/native/isNative'
 import { Preferences } from '@capacitor/preferences'
+import { readSecureItem, removeSecureItem, writeSecureItem } from '@/lib/native/secureItem'
 
 const SESSION_KEY = 'buddget.biometric.session'
 const ENABLED_KEY = 'buddget.biometric.enabled'
 const ACCOUNT_KEY = 'buddget.biometric.account'
-const SECRET_KEY = 'buddget.biometric.secret'
+/** Where builds before the secure store kept the secret; migrated on first read. */
+const LEGACY_SECRET_KEY = 'buddget.biometric.secret'
 const APPLOCK_KEY = 'buddget.biometric.applock'
 
 export type BiometryType = 'face' | 'fingerprint' | 'iris' | 'unknown' | null
@@ -247,7 +249,8 @@ export async function registerBiometric(email?: string, currentPassword?: string
       return body?.code === 'reauth_required' || body?.code === 'wrong_password' ? body.code : 'error'
     }
     if (!res.ok) return 'error'
-    await Preferences.set({ key: SECRET_KEY, value: secret })
+    // No plain-storage fallback: without the secure store biometric stays off.
+    if (!(await writeSecureItem('biometric_secret', LEGACY_SECRET_KEY, secret))) return 'error'
     await setEnabled(true, email)
     return 'ok'
   } catch (e) {
@@ -264,14 +267,14 @@ export async function unregisterBiometric(): Promise<void> {
   } catch (e) {
     console.warn('[biometric] unregisterBiometric request failed', e)
   }
-  try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
+  await removeSecureItem('biometric_secret', LEGACY_SECRET_KEY)
   await setAppLockEnabled(false)
   await setEnabled(false)
 }
 
 /** Forget this phone's biometric enrolment without asking the server: its binding is already gone (password changed, phone removed). */
 export async function clearLocalBiometric(): Promise<void> {
-  try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
+  await removeSecureItem('biometric_secret', LEGACY_SECRET_KEY)
   await setAppLockEnabled(false)
   await setEnabled(false)
 }
@@ -296,7 +299,7 @@ export async function unbindBiometricOnSignOut(): Promise<void> {
   } catch (e) {
     console.warn('[biometric] unbind on sign-out failed', e)
   }
-  try { await Preferences.remove({ key: SECRET_KEY }) } catch { /* noop */ }
+  await removeSecureItem('biometric_secret', LEGACY_SECRET_KEY)
   await setAppLockEnabled(false)
   await setEnabled(false)
 }
@@ -308,8 +311,12 @@ export async function unbindBiometricOnSignOut(): Promise<void> {
  */
 export async function biometricSignIn(reason?: string): Promise<boolean> {
   await authenticate(reason)
-  const { value: secret } = await Preferences.get({ key: SECRET_KEY })
-  if (!secret) return false
+  const secret = await readSecureItem('biometric_secret', LEGACY_SECRET_KEY)
+  // Nothing behind the toggle (keystore reset wiped the store): turn it off so it stops being offered.
+  if (!secret) {
+    await clearLocalBiometric()
+    return false
+  }
   const { apiFetchAuth } = await import('@/lib/apiBase')
   const res = await apiFetchAuth('/api/biometric/signin', {
     method: 'POST',

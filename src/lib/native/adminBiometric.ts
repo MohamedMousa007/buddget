@@ -1,10 +1,12 @@
 'use client'
 
-import { Preferences } from '@capacitor/preferences'
 import { authenticate, isAvailable } from '@/lib/native/biometricAuth'
 import { isNative } from '@/lib/native/isNative'
+import { readSecureItem, removeSecureItem, writeSecureItem } from '@/lib/native/secureItem'
 
-const SECRET_KEY = 'buddget.admin.biometric.secret'
+/** Where builds before the secure store kept the secret; migrated on first read. */
+const LEGACY_KEY = 'buddget.admin.biometric.secret'
+const KEY = 'admin_biometric_secret'
 
 function randomSecret(): string {
   const bytes = new Uint8Array(32)
@@ -24,11 +26,7 @@ export async function adminBiometricSupported(): Promise<boolean> {
 }
 
 export async function hasLocalAdminSecret(): Promise<boolean> {
-  try {
-    return !!(await Preferences.get({ key: SECRET_KEY })).value
-  } catch {
-    return false
-  }
+  return !!(await readSecureItem(KEY, LEGACY_KEY))
 }
 
 /** Mints a device secret and returns the hash to register server-side; the secret itself never leaves the device. */
@@ -37,21 +35,18 @@ export async function prepareAdminBiometric(): Promise<{ secretHash: string; com
   const secret = randomSecret()
   return {
     secretHash: await sha256Hex(secret),
-    commit: () => Preferences.set({ key: SECRET_KEY, value: secret }),
+    commit: async () => {
+      if (!(await writeSecureItem(KEY, LEGACY_KEY, secret))) throw new Error('Secure storage unavailable')
+    },
   }
 }
 
 /** Prompts for biometrics and returns the stored secret, or null if this device was never enrolled. */
 export async function readAdminSecretWithBiometric(): Promise<string | null> {
   await authenticate('Unlock the buddget admin portal')
-  const { value } = await Preferences.get({ key: SECRET_KEY })
-  return value || null
+  return readSecureItem(KEY, LEGACY_KEY)
 }
 
 export async function clearLocalAdminSecret(): Promise<void> {
-  try {
-    await Preferences.remove({ key: SECRET_KEY })
-  } catch {
-    /* nothing stored */
-  }
+  await removeSecureItem(KEY, LEGACY_KEY)
 }

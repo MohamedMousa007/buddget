@@ -39,6 +39,26 @@ describe('Android SMS bridge hardening (static)', () => {
     expect(swift).toContain('SmsKeychain.write("device_secret"')
     expect(swift.slice(swift.indexOf('static func clear()'))).not.toContain('device_secret')
   })
+
+  it('QA-21: both plugins keep the biometric secrets in the secure store, by allow-listed key, and the wipes leave them alone', () => {
+    const kt = read(`${A}/SmsCapacitorPlugin.kt`)
+    const swift = read('ios/App/App/SmsCapacitorPlugin.swift')
+    for (const m of ['setSecureItem', 'getSecureItem', 'removeSecureItem']) {
+      expect(kt).toContain(`fun ${m}(call: PluginCall)`)
+      expect(swift).toContain(`CAPPluginMethod(name: "${m}"`)
+      expect(swift).toContain(`@objc func ${m}(`)
+    }
+    for (const k of ['biometric_secret', 'admin_biometric_secret']) {
+      expect(kt).toContain(`"${k}"`)
+      expect(swift).toContain(`"${k}"`)
+    }
+    expect(kt.slice(kt.indexOf('fun clearState'), kt.indexOf('companion object'))).not.toContain('biometric')
+    expect(swift.slice(swift.indexOf('static func clear()'))).not.toContain('biometric')
+  })
+
+  it('QA-72: security-crypto is a stable release', () => {
+    expect(read('android/app/build.gradle')).toMatch(/androidx\.security:security-crypto:\d+\.\d+\.\d+"/)
+  })
 })
 
 describe('NAT-2: explicit sign-out disarms SMS forwarding', () => {

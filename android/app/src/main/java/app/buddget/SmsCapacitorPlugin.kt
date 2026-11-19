@@ -176,6 +176,31 @@ class SmsCapacitorPlugin : Plugin() {
         call.resolve()
     }
 
+    /** Biometric sign-in / admin unlock secrets, same encrypted store. Only these names are accepted; clearCredentials and clearState leave them alone. */
+    private fun secureKey(call: PluginCall): String? =
+        call.getString("key")?.takeIf { it in SECURE_ITEM_KEYS } ?: run { call.reject("unknown key"); null }
+
+    @PluginMethod
+    fun setSecureItem(call: PluginCall) {
+        val key = secureKey(call) ?: return
+        val value = call.getString("value") ?: run { call.reject("value required"); return }
+        if (!SmsStore.prefs(activity).edit().putString(key, value).commit()) { call.reject("value could not be stored"); return }
+        call.resolve()
+    }
+
+    @PluginMethod
+    fun getSecureItem(call: PluginCall) {
+        val key = secureKey(call) ?: return
+        call.resolve(JSObject().apply { put("value", SmsStore.prefs(activity).getString(key, null) ?: org.json.JSONObject.NULL) })
+    }
+
+    @PluginMethod
+    fun removeSecureItem(call: PluginCall) {
+        val key = secureKey(call) ?: return
+        SmsStore.prefs(activity).edit().remove(key).apply()
+        call.resolve()
+    }
+
     /** Full device wipe (forget device): also clears the queue + owner. */
     @PluginMethod
     fun clearState(call: PluginCall) {
@@ -189,5 +214,9 @@ class SmsCapacitorPlugin : Plugin() {
             .putBoolean("sms_enabled", false)
             .apply()
         call.resolve()
+    }
+
+    private companion object {
+        val SECURE_ITEM_KEYS = setOf("biometric_secret", "admin_biometric_secret")
     }
 }

@@ -5,6 +5,9 @@ import { withNativeFlow } from '@/lib/native/appLockPolicy'
 import { isAllowedSmsApiUrl } from '@/lib/native/smsApiUrl'
 import { isDue, loadRetryState, nextDelayMs, retryAfterMs, saveRetryState } from '@/lib/native/smsRetryState'
 
+/** Keys the native plugins accept for setSecureItem/getSecureItem/removeSecureItem. */
+export type SecureItemKey = 'biometric_secret' | 'admin_biometric_secret'
+
 export interface SmsBridgeStatus {
   tokenSaved: boolean
   /** Android: the secure store was recreated empty; re-save the ingest token on next open. */
@@ -72,6 +75,14 @@ export interface SmsCapacitorPlugin {
   setDeviceSecret(opts: { secret: string }): Promise<void>
   getDeviceSecret(): Promise<{ secret: string | null }>
   removeDeviceSecret(): Promise<void>
+  /** Biometric sign-in / admin unlock secrets, same secure store; only SecureItemKey names are accepted. Survive clearCredentials and clearState. */
+  setSecureItem(opts: { key: SecureItemKey; value: string }): Promise<void>
+  getSecureItem(opts: { key: SecureItemKey }): Promise<{ value: string | null }>
+  removeSecureItem(opts: { key: SecureItemKey }): Promise<void>
+  /** Biometric sign-in / admin unlock secrets, same secure store; only the SecureItemKey names are accepted. Survive clearCredentials and clearState. */
+  setSecureItem(opts: { key: SecureItemKey; value: string }): Promise<void>
+  getSecureItem(opts: { key: SecureItemKey }): Promise<{ value: string | null }>
+  removeSecureItem(opts: { key: SecureItemKey }): Promise<void>
   /** Per-device bridge state — authoritative for the UI. */
   getStatus(): Promise<SmsBridgeStatus>
   /** iOS only: GET /api/sms/health through the same native path the intent uses. */

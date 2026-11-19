@@ -6,6 +6,13 @@ vi.mock('@capacitor/preferences', () => ({
   Preferences: { set: vi.fn(async () => {}), get: vi.fn(async () => ({ value: null })), remove: vi.fn(async () => {}) },
 }))
 vi.mock('@/lib/native/isNative', () => ({ isNative: () => true }))
+vi.mock('@aparajita/capacitor-biometric-auth', () => ({ BiometricAuth: { authenticate: async () => {}, checkBiometry: async () => ({ isAvailable: true }) } }))
+const secure = vi.hoisted(() => new Map<string, string>())
+vi.mock('@/lib/native/smsTracker', () => ({
+  setSecureItem: async (k: string, v: string) => { secure.set(k, v); return true },
+  getSecureItem: async (k: string) => secure.get(k) ?? null,
+  removeSecureItem: async (k: string) => { secure.delete(k); return true },
+}))
 
 import { registerBiometric } from './biometricAuth'
 
@@ -40,6 +47,12 @@ describe('registerBiometric', () => {
     expect(await registerBiometric('a@b.c', 'x')).toBe('wrong_password')
     apiFetchAuth.mockResolvedValueOnce({ ok: false, status: 429 })
     expect(await registerBiometric('a@b.c', 'x')).toBe('rate_limited')
+  })
+  it('keeps the secret in the secure store, never in Preferences', async () => {
+    apiFetchAuth.mockResolvedValue({ ok: true, status: 200 })
+    expect(await registerBiometric('a@b.c')).toBe('ok')
+    expect(secure.get('biometric_secret')).toMatch(/^[0-9a-f]{64}$/)
+    expect(Preferences.set).not.toHaveBeenCalledWith(expect.objectContaining({ key: 'buddget.biometric.secret' }))
   })
   it('reports error on other failures', async () => {
     apiFetchAuth.mockResolvedValue({ ok: false, status: 500 })
@@ -81,5 +94,27 @@ describe('unbindBiometricOnSignOut', () => {
     await vi.advanceTimersByTimeAsync(5000)
     await expect(p).resolves.toBeUndefined()
     vi.useRealTimers()
+  })
+})
+
+import { biometricSignIn } from './biometricAuth'
+
+describe('biometricSignIn', () => {
+  beforeEach(() => { apiFetchAuth.mockReset(); secure.clear(); vi.mocked(Preferences.set).mockClear() })
+
+  it('turns biometric off when no secret is stored (e.g. the Android keystore was reset)', async () => {
+    vi.mocked(Preferences.get).mockImplementation((async () => ({ value: null })) as never)
+    expect(await biometricSignIn()).toBe(false)
+    expect(apiFetchAuth).not.toHaveBeenCalled()
+    expect(Preferences.set).toHaveBeenCalledWith({ key: 'buddget.biometric.enabled', value: '0' })
+  })
+  it('signs in with a secret an older build left in Preferences and moves it to the secure store', async () => {
+    const legacy = 'ef'.repeat(32)
+    vi.mocked(Preferences.get).mockImplementation((async ({ key }: { key: string }) => ({ value: key === 'buddget.biometric.secret' ? legacy : null })) as never)
+    apiFetchAuth.mockResolvedValue({ ok: false, status: 500 })
+    await biometricSignIn()
+    expect(JSON.parse(apiFetchAuth.mock.calls[0][1].body)).toEqual({ secret: legacy })
+    expect(secure.get('biometric_secret')).toBe(legacy)
+    expect(Preferences.remove).toHaveBeenCalledWith({ key: 'buddget.biometric.secret' })
   })
 })
