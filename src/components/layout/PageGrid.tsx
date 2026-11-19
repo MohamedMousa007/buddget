@@ -16,7 +16,7 @@ export interface PageGridProps {
 export const PAGE_HAIRLINE = 'border-[var(--color-hairline)]'
 
 /** Body shell from lg: capped column, 24px gutters. BODY_PT is the one shared gap under the hero band. */
-const SHELL = 'mx-auto w-full max-w-[var(--page-max-wide)] lg:px-6'
+const SHELL = 'mx-auto w-full max-w-[var(--page-max)] lg:max-w-[var(--page-max-wide)] lg:px-6'
 const BODY_PT = 'lg:pt-[var(--page-body-pt)]'
 
 /**

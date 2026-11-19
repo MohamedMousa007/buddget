@@ -19,3 +19,13 @@ describe('zakatBasis', () => {
     expect(withNisabBasis(null, 'gold').nisabBasisChosen).toBe(true)
   })
 })
+
+describe('zakatBasisQuestionNeeded (QA-117)', () => {
+  it('asks only between the silver and gold lines, and only until answered', async () => {
+    const { zakatBasisQuestionNeeded } = await import('./zakatBasis')
+    expect(zakatBasisQuestionNeeded('silverOnly', null)).toBe(true)
+    expect(zakatBasisQuestionNeeded('none', null)).toBe(false)
+    expect(zakatBasisQuestionNeeded('both', null)).toBe(false)
+    expect(zakatBasisQuestionNeeded('silverOnly', { holdsForTrading: false, nisabBasis: 'silver', nisabBasisChosen: true })).toBe(false)
+  })
+})

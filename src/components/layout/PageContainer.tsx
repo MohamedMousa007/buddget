@@ -25,7 +25,8 @@ export function PageContainer({ wide = false, as: Tag = 'div', className, childr
     <Tag
       className={cn(
         'mx-auto w-full px-4 lg:px-6',
-        wide ? 'max-w-[var(--page-max-wide)]' : 'max-w-[var(--page-max)]',
+        // Tablet (below lg) keeps the phone-width column, centred; the wide cap starts with the sidebar layout at lg.
+        wide ? 'max-w-[var(--page-max)] lg:max-w-[var(--page-max-wide)]' : 'max-w-[var(--page-max)]',
         className,
       )}
     >

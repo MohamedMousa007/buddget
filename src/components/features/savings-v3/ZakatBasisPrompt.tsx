@@ -3,7 +3,7 @@
 import { Moon } from 'lucide-react'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/usePromptStore'
-import { withNisabBasis, zakatBasisChosen } from '@/lib/savings/zakatBasis'
+import { withNisabBasis, zakatBasisQuestionNeeded } from '@/lib/savings/zakatBasis'
 import { useT } from '@/lib/i18n'
 
 export interface ZakatBasisPromptProps {
@@ -16,8 +16,8 @@ export interface ZakatBasisPromptProps {
 }
 
 /**
- * Registers the one-time "silver or gold?" question with the drop-down prompt stack.
- * Renders nothing itself; mount once on Wealth. It disappears for good as soon as the
+ * Registers the one-time "silver or gold?" question with the drop-down prompt stack, but only while the answer changes the
+ * result (see `zakatBasisQuestionNeeded`). Renders nothing itself; mount once on Wealth. It disappears for good as soon as the
  * basis is saved (`nisabBasisChosen`), and until then zakat is computed on gold.
  */
 export function ZakatBasisPrompt({ context, silverNisab, goldNisab, onPick }: ZakatBasisPromptProps) {
@@ -32,7 +32,7 @@ export function ZakatBasisPrompt({ context, silverNisab, goldNisab, onPick }: Za
   }
 
   const sub = context === 'silverOnly' ? t.subSilverOnly : context === 'both' ? t.subBoth : t.subNone
-  const prompts: Prompt[] = zakatBasisChosen(cfg)
+  const prompts: Prompt[] = !zakatBasisQuestionNeeded(context, cfg)
     ? []
     : [
         {

@@ -14,3 +14,12 @@ export function effectiveNisabBasis(cfg: ZakatConfig | null | undefined): 'silve
 export function withNisabBasis(cfg: ZakatConfig | null | undefined, nisabBasis: 'silver' | 'gold'): ZakatConfig {
   return { holdsForTrading: false, ...cfg, nisabBasis, nisabBasisChosen: true }
 }
+
+/**
+ * Whether the silver-or-gold question is worth asking: only when the choice changes the result, i.e. the wealth sits between
+ * the silver and the gold line (zakat is due on silver, not on gold). Under both lines nothing is due either way; over both,
+ * the same amount is due either way.
+ */
+export function zakatBasisQuestionNeeded(context: 'none' | 'silverOnly' | 'both', cfg: ZakatConfig | null | undefined): boolean {
+  return context === 'silverOnly' && !zakatBasisChosen(cfg)
+}
