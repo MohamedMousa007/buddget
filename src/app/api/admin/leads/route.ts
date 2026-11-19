@@ -4,14 +4,15 @@ import { auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 const KINDS = ['waitlist', 'contact'] as const
 const PAGE = 200
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Kept verbatim (microseconds): rounding to milliseconds could skip a row written in the same millisecond.
+const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/
 const PREVIEW_CHARS = 40
 
 const maskName = (name: string | null) => (name ? `${Array.from(name)[0]}***` : null)
 /** `<created_at ISO>|<id>` of the last row seen; null when absent or malformed (then the first page is served). */
 function parseCursor(raw: string | null): { ts: string; id: string } | null {
   const [ts, id] = (raw ?? '').split('|')
-  const ms = Date.parse(ts ?? '')
-  return Number.isFinite(ms) && id && UUID.test(id) ? { ts: new Date(ms).toISOString(), id } : null
+  return ts && TIMESTAMP.test(ts) && Number.isFinite(Date.parse(ts)) && id && UUID.test(id) ? { ts, id } : null
 }
 const maskMessage = (m: string | null) => (m && Array.from(m).length > PREVIEW_CHARS ? `${Array.from(m).slice(0, PREVIEW_CHARS).join('')}...` : m)
 
@@ -40,5 +41,5 @@ export async function GET(req: Request) {
     message: g.ctx.canSeePii ? r.message : maskMessage(r.message),
   }))
   const last = data?.[PAGE - 1]
-  return json({ rows, nextCursor: last ? `${new Date(last.created_at).toISOString()}|${last.id}` : null })
+  return json({ rows, nextCursor: last ? `${last.created_at}|${last.id}` : null })
 }

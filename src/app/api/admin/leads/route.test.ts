@@ -70,6 +70,13 @@ describe('GET /api/admin/leads', () => {
     expect(state.or).toBe('created_at.lt.2026-11-01T00:00:00.000Z,and(created_at.eq.2026-11-01T00:00:00.000Z,id.lt.00000000-0000-4000-8000-000000000199)')
   })
 
+  it('QA-58 keeps microseconds and the offset in the cursor', async () => {
+    state.guard = { ok: true, ctx: { service, canSeePii: true } }
+    const ts = '2026-11-01T00:00:00.123456+00:00'
+    await GET(new Request(`http://x?cursor=${encodeURIComponent(`${ts}|00000000-0000-4000-8000-000000000001`)}`))
+    expect(state.or).toBe(`created_at.lt.${ts},and(created_at.eq.${ts},id.lt.00000000-0000-4000-8000-000000000001)`)
+  })
+
   it('QA-58 ignores a malformed cursor', async () => {
     state.guard = { ok: true, ctx: { service, canSeePii: true } }
     await GET(new Request('http://x?cursor=x),id.gt.0|nope'))
