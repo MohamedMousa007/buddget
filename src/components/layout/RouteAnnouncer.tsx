@@ -17,7 +17,7 @@ export function RouteAnnouncer() {
   const navKey = sectionTitleNavKey(path)
   const sectionTitle = navKey ? t.nav[navKey] : null
   const sectionTitleRef = useRef(sectionTitle)
-  sectionTitleRef.current = sectionTitle
+  useEffect(() => { sectionTitleRef.current = sectionTitle }, [sectionTitle])
   const first = useRef(true)
   const [message, setMessage] = useState('')
 
