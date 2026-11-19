@@ -50,6 +50,8 @@ const badgeVariants = cva(
         /** Membership marks (S6 v2). Pro is the teal aurora, founder is gold on the dark floor, beta is a quiet outline. Gold is for founders only. */
         pro: "bg-[image:var(--member-aurora)] text-[var(--member-fg)] font-bold tracking-[0.12em]",
         founder: "bg-[image:var(--member-floor)] border-[color-mix(in_oklab,var(--member-gold-hi)_45%,transparent)] text-[var(--member-gold-hi)]",
+        /** The gold pill: a call to start Pro. Same gilt as the PRO tag on the avatar. */
+        gilt: "bg-[linear-gradient(112deg,var(--member-gilt-lo),var(--member-gilt-hi)_45%,var(--member-gilt-mid))] text-[var(--member-on-gilt)]",
         beta: "bg-[var(--color-brand-card)] border-[var(--color-brand-border-strong)] text-[var(--color-brand-text-secondary)]",
       },
       size: {

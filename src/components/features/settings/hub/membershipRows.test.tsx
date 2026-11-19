@@ -29,13 +29,16 @@ describe('the membership rows of the settings hub', () => {
     useBillingStore.setState({ me: me({ billingEnabled: false }) })
     expect(renderToStaticMarkup(createElement(MembershipRows))).toBe('')
   })
-  it('Rewards carries the tier badge and the tier line; Founders shows only for a founder', () => {
+  it('Pro row with its mark, Rewards with the tier badge, Invite friends; Founders shows only for a founder', () => {
     useBillingStore.setState({ me: me({}) })
     const html = renderToStaticMarkup(createElement(MembershipRows))
     expect(html).toContain('href="/settings/rewards"')
     expect(html).toContain('data-tier="emerald"')
     expect(html).toContain('Emerald · tier 2 of 5')
-    expect(html).toContain('href="/settings/pro/usage"')
+    expect(html).toContain('href="/settings/pro"')
+    expect(html).toContain('data-pro-mark="md"')
+    expect(html).toContain('href="/settings/invite"')
+    expect(html).not.toContain('/settings/pro/usage')
     expect(html).not.toContain('/settings/founders')
     useBillingStore.setState({ me: me({ rewards: rewards({ founder: { number: 23, cohort: 'beta', creditName: null, creditNameStatus: 'none' } }) }) })
     expect(renderToStaticMarkup(createElement(MembershipRows))).toContain('Founder #023')

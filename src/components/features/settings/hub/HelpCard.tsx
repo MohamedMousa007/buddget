@@ -126,21 +126,28 @@ function AboutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   )
 }
 
-/** Feedback (a popup with a bug / feature switch), the legal pages and About. */
-export function HelpCard() {
+/** `support`: feedback (a popup with a bug / feature switch), the ideas board and your requests. `about`: the legal pages and About. */
+export function HelpCard({ part }: { part: 'support' | 'about' }) {
   const copy = useSettingsHubCopy()
   const sheet = useSettingsStore((s) => s.settingsSheet)
   const openSheet = useSettingsStore((s) => s.openSettingsSheet)
   const tone = GROUP_TONE.help
   return (
     <>
-      <SettingsSection title={copy.help.title}>
-        <SettingsRow icon={SETTING_ICONS.help} tone={tone} title={copy.help.feedback} subtitle={copy.help.feedbackHint} onClick={() => openSheet('feedback')} settingId="feedback" />
-        <SettingsRow icon={ListChecks} tone={tone} title={copy.help.board} subtitle={copy.help.boardHint} onClick={() => openSheet('board')} settingId="board" />
-        <SettingsRow icon={Inbox} tone={tone} title={copy.help.inbox} subtitle={copy.help.inboxHint} onClick={() => openSheet('inbox')} settingId="inbox" />
-        <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.terms} href="/legal/terms" settingId="terms" />
-        <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.privacy} href="/legal/privacy" settingId="privacy" />
-        <SettingsRow icon={SETTING_ICONS.info} tone={tone} title={copy.help.about} subtitle={copy.help.aboutHint} onClick={() => openSheet('about')} settingId="about" />
+      <SettingsSection>
+        {part === 'support' ? (
+          <>
+            <SettingsRow icon={SETTING_ICONS.help} tone={tone} title={copy.help.feedback} subtitle={copy.help.feedbackHint} onClick={() => openSheet('feedback')} settingId="feedback" />
+            <SettingsRow icon={ListChecks} tone={tone} title={copy.help.board} subtitle={copy.help.boardHint} onClick={() => openSheet('board')} settingId="board" />
+            <SettingsRow icon={Inbox} tone={tone} title={copy.help.inbox} subtitle={copy.help.inboxHint} onClick={() => openSheet('inbox')} settingId="inbox" />
+          </>
+        ) : (
+          <>
+            <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.terms} href="/legal/terms" settingId="terms" />
+            <SettingsRow icon={SETTING_ICONS.file} tone={tone} title={copy.help.privacy} href="/legal/privacy" settingId="privacy" />
+            <SettingsRow icon={SETTING_ICONS.info} tone={tone} title={copy.help.about} subtitle={copy.help.aboutHint} onClick={() => openSheet('about')} settingId="about" />
+          </>
+        )}
       </SettingsSection>
       <FeedbackSheet open={sheet === 'feedback'} onClose={() => openSheet(null)} />
       <SupportBoardSheet open={sheet === 'board'} onClose={() => openSheet(null)} />

@@ -26,7 +26,7 @@ export function useOpenSetting() {
         case 'about':
         case 'export':
         case 'notCounted':
-          navigate('/settings')
+          navigate(entry.route)
           return openSheet(entry.action)
         case 'deleteAccount':
           navigate(entry.route)

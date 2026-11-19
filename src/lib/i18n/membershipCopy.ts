@@ -1,4 +1,5 @@
 import { useLocale } from '@/lib/i18n'
+import { arCount } from '@/lib/i18n/arPlural'
 import type { Locale } from '@/lib/i18n/types'
 
 /**
@@ -11,6 +12,7 @@ export interface MembershipCopy {
   proName: string
   hub: { freeLine: string; freeCta: string; trialDay: (day: number, total: number) => string; trialLine: string; renews: string; memberSince: (date: string) => string; ended: string; issue: string; since: string }
   menu: { label: string; renews: string }
+  row: { name: string; trialName: string; freeSub: string; freeMenuSub: string; renews: (date: string) => string; ends: (date: string) => string; trialLeft: (days: number) => string; issueSub: string; endedSub: (date: string) => string; tryFree: string; keepPro: string; fix: string; restart: string }
   plans: {
     yourPlan: string
     promise: string
@@ -189,6 +191,21 @@ const en: MembershipCopy = {
     since: 'Member since',
   },
   menu: { label: 'Plan and billing', renews: 'Renews' },
+  row: {
+    name: 'buddget Pro',
+    trialName: 'Pro trial',
+    freeSub: 'More Buddgy, unlimited budgets',
+    freeMenuSub: '30 days free, no card',
+    renews: (date) => `Renews ${date}`,
+    ends: (date) => `Ends ${date}`,
+    trialLeft: (days) => (days <= 1 ? 'Ends today' : `Ends in ${days} days`),
+    issueSub: 'Payment didn’t go through',
+    endedSub: (date) => `Ended ${date}`,
+    tryFree: 'Try free',
+    keepPro: 'Keep Pro',
+    fix: 'Fix',
+    restart: 'Restart',
+  },
   plans: {
     yourPlan: 'Your plan: Free',
     promise: 'Your money on autopilot. Buddgy does the work.',
@@ -423,6 +440,21 @@ const ar: MembershipCopy = {
     since: 'عضو منذ',
   },
   menu: { label: 'الخطة والفوترة', renews: 'يتجدد' },
+  row: {
+    name: 'buddget Pro',
+    trialName: 'تجربة Pro',
+    freeSub: 'Buddgy أكثر وميزانيات بلا حد',
+    freeMenuSub: '30 يوماً مجاناً بلا بطاقة',
+    renews: (date) => `يتجدد ${date}`,
+    ends: (date) => `ينتهي ${date}`,
+    trialLeft: (days) => (days <= 1 ? 'ينتهي اليوم' : `ينتهي خلال ${days} ${arCount(days, 'day')}`),
+    issueSub: 'لم تتم عملية الدفع',
+    endedSub: (date) => `انتهى ${date}`,
+    tryFree: 'جرّب مجاناً',
+    keepPro: 'استمر مع Pro',
+    fix: 'إصلاح',
+    restart: 'ابدأ من جديد',
+  },
   plans: {
     yourPlan: 'خطتك: المجاني',
     promise: 'أموالك على الوضع التلقائي. Buddgy يقوم بالعمل.',

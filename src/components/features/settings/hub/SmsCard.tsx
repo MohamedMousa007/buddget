@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
@@ -10,8 +11,8 @@ import { useSmsTracking } from '@/hooks/useSmsTracking'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { isIOS, isNative } from '@/lib/native/isNative'
 
-/** SMS tracking as one switch on the settings page. An iPhone opens the Shortcut guide first, and keeps a row back to it once set up. */
-export function SmsCard() {
+/** SMS tracking as one switch on the settings page; `children` are more rows of the same group. An iPhone opens the Shortcut guide first, and keeps a row back to it once set up. */
+export function SmsCard({ title, children }: { title?: string; children?: ReactNode }) {
   const copy = useSettingsHubCopy()
   const { isEnabled, isSetup, toggle, loading, error, permission } = useSmsTracking()
   const iosGuide = isNative() && isIOS()
@@ -20,7 +21,7 @@ export function SmsCard() {
   const tone = GROUP_TONE.autoTrack
 
   return (
-    <SettingsSection title={copy.groupName.autoTrack}>
+    <SettingsSection title={title ?? copy.groupName.autoTrack}>
       {needsGuide ? (
         <SettingsRow icon={SETTING_ICONS.message} tone={tone} title={copy.sms.title} subtitle={copy.sms.iosHint} value={copy.sms.guide} href="/settings/sms" settingId="sms" />
       ) : (
@@ -35,6 +36,7 @@ export function SmsCard() {
           <span>{notice}</span>
         </p>
       ) : null}
+      {children}
     </SettingsSection>
   )
 }

@@ -3,12 +3,9 @@
 import { useEffect, useRef, useCallback, useState, type ComponentType, type RefObject } from 'react'
 import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
-import {
-  BarChart3, Bell, CalendarClock, CircleHelp, CreditCard, LogIn, LogOut, Settings, ShieldCheck, Sparkles, Target, User,
-} from 'lucide-react'
+import { BarChart3, Bell, CalendarClock, CreditCard, LogIn, Settings, ShieldCheck, Target } from 'lucide-react'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
 import { ProgressRing } from '@/components/ui/ProgressRing'
-import { QuickActions } from '@/components/features/settings/QuickActions'
 import { Badge } from '@/components/ui/badge'
 import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
@@ -16,12 +13,9 @@ import { useStaffAccess } from '@/hooks/useStaffAccess'
 import { usePendingEntries } from '@/lib/alerts/usePending'
 import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
-import { subscriptionView } from '@/lib/billing/subscriptionView'
-import { AvatarBadge, FounderChip } from '@/components/features/membership/AvatarBadge'
-import { TierBadge } from '@/components/features/membership/TierBadge'
-import { useMemberMarks } from '@/components/features/rewards/useMemberMarks'
-import { useMembershipCopy } from '@/lib/i18n/membershipCopy'
+import { MemberHead } from '@/components/features/membership/MemberHead'
+import { ProPlanRow } from '@/components/features/membership/ProPlanRow'
+import { Button } from '@/components/ui/button'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { resolveProfileAvatarSrc } from '@/lib/profile/avatarDisplay'
@@ -30,7 +24,6 @@ import { navigate } from '@/lib/navigation/navigate'
 import { cn } from '@/lib/utils'
 import { localeInlineLabelClass, useLocale, useT } from '@/lib/i18n'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
-import { intlTag } from '@/lib/i18n/dateFormat'
 
 interface ProfileDropdownProps {
   open: boolean
@@ -53,15 +46,10 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
   const t = useT()
   const copy = useSettingsHubCopy()
   const { locale } = useLocale()
-  const { user, signOut, openAuthModal } = useAuth()
+  const { user, openAuthModal } = useAuth()
   const profile = useFinanceStore(useShallow((s) => s.profile))
   const setActiveModal = useSettingsStore((s) => s.setActiveModal)
   const isStaff = useStaffAccess()
-  const member = useMembershipCopy()
-  const marks = useMemberMarks()
-  const me = useBillingStore((st) => st.me)
-  const billing = billingOn(me)
-  const plan = subscriptionView(billing ? me : null)
   const prevPathname = useRef(pathname)
   const { pct } = useSetupProgress()
   const pendingCount = usePendingEntries().length
@@ -113,23 +101,13 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
     setTimeout(onClose, 100)
   }, [onClose])
 
-  const handleSignOut = async () => {
-    // signOut owns all teardown and drops us to the landing gate. Don't
-    // clearBudgetData() first (flips dataReady=false while authenticated → the
-    // logout loading splash) and don't push('/') (signOut already navigates).
-    await signOut()
-    onClose()
-  }
-
   if (!open && !setupOpen) return null
 
   const avatarSrc = resolveProfileAvatarSrc(profile)
-  const displayName = profile.name || t.common.user
-  const displayEmail = user?.email || profile.email || ''
-
+  const tile = 'flex min-h-[60px] w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl bg-[var(--color-brand-elevated)] px-0.5 py-1.5 text-center text-[0.625rem] font-medium leading-tight text-[var(--color-brand-text-secondary)] transition-colors hover:bg-[var(--color-brand-sunken)] hover:text-[var(--color-brand-text-primary)] [&_svg]:size-[19px] [&_svg]:text-[var(--color-brand-primary-ink)]'
   const link = (href: string, Icon: Glyph, label: string) => (
-    <Link key={href} href={href} onClick={delayedClose} className={itemClass} role="menuitem">
-      <Icon className="size-[18px] shrink-0" />
+    <Link key={href} href={href} onClick={delayedClose} className={tile} role="menuitem">
+      <Icon />
       <span className={localeInlineLabelClass(locale)}>{label}</span>
     </Link>
   )
@@ -159,44 +137,26 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             </>
           ) : null}
           {user ? (
-            <div className="flex items-center pe-3">
-            <Link
-              href="/settings/profile"
-              onClick={delayedClose}
-              role="menuitem"
-              className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-[var(--color-brand-elevated)]"
-            >
-              <AvatarBadge size="sm" proTag={marks.proTag} founder={!!marks.founderNumber}>
-                {avatarSrc ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarSrc} alt="" width={40} height={40} />
-                ) : (
-                  <User className="size-5" aria-hidden />
-                )}
-              </AvatarBadge>
-              <span className={cn('min-w-0 flex-1', locale === 'ar' && 'text-end')}>
-                <span className="flex items-center gap-2">
-                  <span className="truncate text-sm font-bold text-[var(--color-brand-text-primary)]">{displayName}</span>
-                  {isStaff ? <Badge variant="brand" size="xs">{copy.menu.admin}</Badge> : null}
-                  {marks.tier ? <TierBadge tier={marks.tier} size={16} label={marks.tierLabel} className="shrink-0" /> : null}
-                  {marks.founderNumber ? <FounderChip number={marks.founderNumber} className="shrink-0" /> : null}
-                </span>
-                {displayEmail ? <span className="block truncate text-xs text-[var(--color-brand-text-muted)]">{displayEmail}</span> : null}
-              </span>
-            </Link>
-            <Link
-              href="/notifications"
-              onClick={delayedClose}
-              role="menuitem"
-              aria-label={pendingCount > 0 ? `${t.notifications.title}, ${t.notifications.needsYouCount(pendingCount)}` : t.notifications.title}
-              className="relative flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--color-brand-text-secondary)] transition-colors hover:bg-[var(--color-brand-elevated)]"
-            >
-              <Bell className="size-5" />
-              {pendingCount > 0 ? (
-                <Badge tone="warn" size="xs" className="absolute -end-0.5 -top-0.5">{pendingCount}</Badge>
-              ) : null}
-            </Link>
-            </div>
+            <MemberHead
+              variant="menu"
+              name={profile.name}
+              avatarSrc={avatarSrc}
+              onNavigate={delayedClose}
+              trailing={
+                <Link
+                  href="/notifications"
+                  onClick={delayedClose}
+                  role="menuitem"
+                  aria-label={pendingCount > 0 ? `${t.notifications.title}, ${t.notifications.needsYouCount(pendingCount)}` : t.notifications.title}
+                  className="relative flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--color-brand-text-secondary)] transition-colors hover:bg-[var(--color-brand-elevated)]"
+                >
+                  <Bell className="size-5" />
+                  {pendingCount > 0 ? (
+                    <Badge tone="warn" size="xs" className="absolute -end-0.5 -top-0.5">{pendingCount}</Badge>
+                  ) : null}
+                </Link>
+              }
+            />
           ) : (
             <button
               type="button"
@@ -210,65 +170,40 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
             </button>
           )}
 
-          {user && billing ? (
-            <Link href="/settings/pro" onClick={delayedClose} role="menuitem" className={cn(itemClass, 'bg-[var(--color-brand-primary-soft)] font-bold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70')}>
-              <Sparkles className="size-[18px] shrink-0" />
-              <span className={cn('flex-1', localeInlineLabelClass(locale))}>{member.menu.label}</span>
-              {plan.kind === 'active' && plan.until ? (
-                <span className="text-xs font-medium text-[var(--color-brand-text-secondary)]">{member.menu.renews} {new Date(plan.until).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' })}</span>
-              ) : null}
-            </Link>
-          ) : null}
-
-          <QuickActions variant="menu" />
-          <Divider />
-
-          {link('/goals', Target, t.nav.goals)}
-          {link('/paydays', CalendarClock, t.nav.paydays)}
-          {link('/subscriptions', RotateCwClock, t.nav.subscriptions)}
-          <button
-            type="button"
-            data-raw-button-ok="menu row sharing itemClass with the other profile menu items"
-            onClick={() => { setActiveModal('paymentMethods'); onClose() }}
-            className={itemClass}
-            role="menuitem"
-          >
-            <CreditCard className="size-[18px] shrink-0" />
-            <span className={localeInlineLabelClass(locale)}>{t.paymentMethods.title}</span>
-          </button>
-          {link('/reports', BarChart3, t.nav.reports)}
-          <Divider />
-
-          {link('/settings', Settings, copy.menu.openSettings)}
-          {link('/settings/help', CircleHelp, copy.menu.helpFeedback)}
-          {isStaff ? (
-            <button
-              type="button"
-              data-raw-button-ok="menu row sharing itemClass with the other profile menu items"
-              onClick={() => { onClose(); navigate('/admin') }}
-              className={itemClass}
-              role="menuitem"
-            >
-              <ShieldCheck className="size-[18px] shrink-0" />
-              <span className={localeInlineLabelClass(locale)}>{copy.menu.adminPortal}</span>
-            </button>
-          ) : null}
-
-          {user ? (
+          {user && isStaff ? (
             <>
               <Divider />
-              <button
-                type="button"
-                data-raw-button-ok="menu row sharing itemClass, tinted as the destructive sign-out"
-                onClick={handleSignOut}
-                className={cn(itemClass, 'font-semibold text-[var(--color-brand-red)] hover:text-[var(--color-brand-red)]')}
-                role="menuitem"
-              >
-                <LogOut className="size-[18px] shrink-0" />
-                <span className={localeInlineLabelClass(locale)}>{t.common.signOut}</span>
-              </button>
+              <div className="flex items-center gap-2.5 bg-[var(--color-brand-primary-soft)] py-2 ps-3 pe-2.5">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-[7px] bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]"><ShieldCheck className="size-[13px]" aria-hidden /></span>
+                <span className={cn('min-w-0 flex-1 text-[0.6875rem] leading-tight text-[var(--color-brand-primary-ink)]', locale === 'ar' && 'text-end')}>
+                  <b className="block text-xs font-bold">{copy.page.staff}</b>
+                  {copy.page.staffRole}
+                </span>
+                <Button size="touch" role="menuitem" onClick={() => { onClose(); navigate('/admin') }} className="rounded-full px-3 text-[0.6875rem] font-bold">{copy.page.openPortal}</Button>
+              </div>
             </>
           ) : null}
+
+          {user ? <ProPlanRow variant="menu" onNavigate={delayedClose} /> : null}
+
+          <Divider />
+          <div className="grid grid-cols-3 gap-1.5 p-2.5">
+            {link('/goals', Target, t.nav.goals)}
+            {link('/paydays', CalendarClock, t.nav.paydays)}
+            {link('/subscriptions', RotateCwClock, t.nav.subscriptions)}
+            <button
+              type="button"
+              data-raw-button-ok="menu tile sharing the tile class with the other tools"
+              onClick={() => { setActiveModal('paymentMethods'); onClose() }}
+              className={tile}
+              role="menuitem"
+            >
+              <CreditCard />
+              <span className={localeInlineLabelClass(locale)}>{copy.page.cards}</span>
+            </button>
+            {link('/reports', BarChart3, t.nav.reports)}
+            {link('/settings', Settings, copy.menu.openSettings)}
+          </div>
         </div>
       ) : null}
     </>

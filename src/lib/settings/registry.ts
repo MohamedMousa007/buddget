@@ -43,6 +43,11 @@ const e = (
 const HUB = '/settings'
 const MEMORY = '/settings/memory'
 const SECURITY = '/settings/security'
+const AI = '/settings/ai'
+const NOTIFICATIONS = '/settings/notifications'
+const DATA = '/settings/data'
+const HELP = '/settings/help'
+const ABOUT = '/settings/about'
 
 export const SETTINGS_REGISTRY: readonly SettingEntry[] = [
   e('profile', 'profile', 'nav', '/settings/profile', 'user'),
@@ -58,26 +63,26 @@ export const SETTINGS_REGISTRY: readonly SettingEntry[] = [
   e('language', 'quick', 'toggle', HUB, 'globe'),
   e('showCents', 'quick', 'toggle', HUB, 'coins', { action: 'currencies' }),
   e('sms', 'autoTrack', 'toggle', HUB, 'message', { needsAuth: true }),
-  e('tips', 'ai', 'toggle', HUB, 'buddgy'),
-  e('learning', 'ai', 'toggle', HUB, 'brain'),
-  e('memories', 'ai', 'nav', MEMORY, 'brain'),
+  e('tips', 'ai', 'toggle', AI, 'buddgy'),
+  e('learning', 'ai', 'toggle', AI, 'brain'),
+  e('memories', 'ai', 'nav', AI, 'brain'),
   e('household', 'memory', 'nav', MEMORY, 'home', { action: 'household' }),
   e('lifestyle', 'memory', 'nav', MEMORY, 'home', { action: 'lifestyle' }),
   e('budgetEntryMode', 'memory', 'value', MEMORY, 'chart'),
   e('weekStart', 'memory', 'value', MEMORY, 'chart'),
   e('goldStrip', 'memory', 'toggle', MEMORY, 'coins'),
-  e('pushStatus', 'notifications', 'toggle', HUB, 'bell'),
-  e('subDueReminders', 'notifications', 'toggle', HUB, 'repeat'),
-  e('subPriceAlerts', 'notifications', 'toggle', HUB, 'repeat'),
-  e('goalProgressAlerts', 'notifications', 'toggle', HUB, 'target'),
-  e('goalAlerts', 'notifications', 'toggle', HUB, 'target'),
-  e('notCounted', 'data', 'nav', HUB, 'coins', { action: 'notCounted' }),
-  e('exportData', 'data', 'nav', HUB, 'download', { action: 'export' }),
-  e('restoreBackup', 'data', 'nav', HUB, 'upload', { action: 'export' }),
-  e('feedback', 'help', 'nav', HUB, 'help', { action: 'feedback' }),
+  e('pushStatus', 'notifications', 'toggle', NOTIFICATIONS, 'bell'),
+  e('subDueReminders', 'notifications', 'toggle', NOTIFICATIONS, 'repeat'),
+  e('subPriceAlerts', 'notifications', 'toggle', NOTIFICATIONS, 'repeat'),
+  e('goalProgressAlerts', 'notifications', 'toggle', NOTIFICATIONS, 'target'),
+  e('goalAlerts', 'notifications', 'toggle', NOTIFICATIONS, 'target'),
+  e('notCounted', 'data', 'nav', DATA, 'coins', { action: 'notCounted' }),
+  e('exportData', 'data', 'nav', DATA, 'download', { action: 'export' }),
+  e('restoreBackup', 'data', 'nav', DATA, 'upload', { action: 'export' }),
+  e('feedback', 'help', 'nav', HELP, 'help', { action: 'feedback' }),
   e('terms', 'help', 'nav', '/legal/terms', 'file'),
   e('privacy', 'help', 'nav', '/legal/privacy', 'file'),
-  e('about', 'help', 'nav', HUB, 'info', { action: 'about' }),
+  e('about', 'help', 'nav', ABOUT, 'info', { action: 'about' }),
 ]
 
 export const SETTING_BY_ID: Readonly<Record<SettingId, SettingEntry>> = Object.fromEntries(

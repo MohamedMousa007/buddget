@@ -1,0 +1,23 @@
+/*
+ * The Pro mark: a small tile cut from the Pro card's own face (pearl in light, obsidian in dark), a blind-embossed b and gold PRO.
+ * The face, the embossed b and the gold foil are the card's classes (cards.module.css); this file only sizes them for a tile.
+ * Everything scales from --pm, the tile's edge in px, so one rule set serves every size.
+ */
+.mark { composes: obsidian from './cards.module.css'; --gold-hi: var(--member-gilt-hi); --gold-mid: var(--member-gilt-mid); --gold-lo: var(--member-gilt-lo);
+  position: relative; display: grid; place-items: center; flex: none; overflow: hidden; width: var(--pm); height: var(--pm); border-radius: var(--pr); user-select: none;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(13, 26, 24, .12), inset 0 0 0 1px rgba(13, 26, 24, .13), 0 1px 1px rgba(13, 40, 36, .12), 0 6px 12px -6px rgba(13, 40, 36, .22); }
+:global(.dark) .mark { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 -1px 0 rgba(0, 0, 0, .6), inset 0 0 0 1px rgba(255, 255, 255, .06), 0 1px 1px rgba(0, 0, 0, .5), 0 8px 16px -8px rgba(0, 0, 0, .7); }
+
+.sm { --pm: 26px; --pr: 8px; }
+.md { --pm: 36px; --pr: 12px; }
+.lg { --pm: 64px; --pr: 16px; }
+
+.b { composes: emb from './cards.module.css'; z-index: 0; font-size: calc(var(--pm) * 1.46); right: calc(var(--pm) * -.115); top: calc(var(--pm) * -.31);
+  text-shadow: -1px -1px 1px rgba(13, 26, 24, .12), 1px 1px 1px rgba(255, 255, 255, .95); }
+:global(.dark) .b { text-shadow: -1px -1px 1px rgba(0, 0, 0, .5), 1px 1px 1px rgba(255, 255, 255, .1); }
+
+.pro { composes: goldmark from './cards.module.css'; position: relative; z-index: 1; font-size: calc(var(--pm) * .27); font-weight: 800; line-height: 1; letter-spacing: .08em; padding-inline-start: .08em; }
+.lg .pro { letter-spacing: .14em; padding-inline-start: .14em; }
+:global(html[data-locale='ar']) .pro { letter-spacing: .08em; padding-inline-start: .08em; }
+
+.faded { filter: saturate(.2); opacity: .6; }

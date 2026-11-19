@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { Award, Crown, Sparkles } from 'lucide-react'
+import { Award, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ProMark } from './ProMark'
 
 export type MemberKind = 'pro' | 'founder' | 'beta'
 export type MemberState = 'active' | 'grace' | 'expired'
@@ -26,14 +27,11 @@ const SURFACE: Record<MemberKind, string> = {
   beta: 'bg-[var(--color-brand-card)] border-[var(--color-brand-border-strong)] text-[var(--color-brand-text-primary)]',
 }
 
-const Glyph = { pro: Sparkles, founder: Crown, beta: Award } as const
-
 /**
  * The membership card: Pro (teal aurora), Founder (gold on the dark floor, numbered) and Beta tester (a quiet outline). A sibling of
  * the PaymentCardCarousel face. Layout stays left-to-right in both languages, like a physical card; text runs resolve their own direction.
  */
 export function MemberCard({ kind, state = 'active', mark, number, facts, size = 'full', className }: MemberCardProps) {
-  const Icon = Glyph[kind]
   const foil = 'bg-[image:var(--member-foil)] bg-clip-text text-transparent'
   const onSurface = kind === 'beta' ? 'text-[var(--color-brand-text-secondary)]' : 'text-[var(--member-fg-2)]'
   return (
@@ -52,7 +50,7 @@ export function MemberCard({ kind, state = 'active', mark, number, facts, size =
     >
       <div className={cn('flex items-center justify-between gap-2', size === 'mini' && 'contents')}>
         <span className={cn('inline-flex items-center gap-2 text-[0.6875rem] font-extrabold tracking-[0.16em]', size === 'mini' && 'order-1')}>
-          <Icon className={cn('size-[18px]', kind === 'founder' ? 'text-[var(--member-gold-hi)]' : kind === 'beta' ? 'text-[var(--color-brand-primary-ink)]' : '')} aria-hidden />
+          {kind === 'pro' ? <ProMark size="sm" /> : kind === 'founder' ? <Crown className="size-[18px] text-[var(--member-gold-hi)]" aria-hidden /> : <Award className="size-[18px] text-[var(--color-brand-primary-ink)]" aria-hidden />}
           <span className={cn(kind === 'founder' && foil)}>{mark}</span>
         </span>
         {size === 'full' && number ? <span className={cn('font-mono-numbers text-[2.5rem] font-semibold leading-none', foil)}>{number}</span> : null}

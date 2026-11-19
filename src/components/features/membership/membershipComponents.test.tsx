@@ -9,6 +9,8 @@ import { CardFace, FlipCardRig } from './FlipCardRig'
 import { TIER_BADGE, TIER_ORDER, TIER_PRESS, isTierLocked, ladderRowState, tierPressVars, tierProgressPct, tierRank } from './tiers'
 import { TierBadge } from './TierBadge'
 import { AvatarBadge } from './AvatarBadge'
+import { MemberCard } from './MemberCard'
+import { ProMark } from './ProMark'
 import { LetterpressTierCard } from './LetterpressTierCard'
 import { FounderSignatureFront } from './FounderSignatureCard'
 import { needsAppFont } from './cardParts'
@@ -276,5 +278,24 @@ describe('MembershipGallery', () => {
     const out = html(createElement(MembershipGallery, {}))
     for (const t of ['Pro card · Trial', 'Rewards card · Elite, locked', 'Founder card · Arabic name', 'Guest pass · Pro inviter', 'Sparks packs · Pro', 'Tier ladder · Elite Founder']) expect(out).toContain(t)
     expect(html(createElement(MembershipGallery, { dark: true }))).toContain('class="dark ')
+  })
+})
+
+describe('ProMark', () => {
+  it.each([['sm'], ['md'], ['lg']] as const)('renders the %s tile: the b, PRO, decorative', (size) => {
+    const html = renderToStaticMarkup(createElement(ProMark, { size }))
+    expect(html).toContain(`data-pro-mark="${size}"`)
+    expect(html).toContain('>b<')
+    expect(html).toContain('>PRO<')
+    expect(html).toContain('aria-hidden="true"')
+  })
+  it('a plan that has ended is faded, an active one is not', () => {
+    expect(renderToStaticMarkup(createElement(ProMark, { faded: true }))).toContain('data-faded="true"')
+    expect(renderToStaticMarkup(createElement(ProMark, {}))).not.toContain('data-faded')
+  })
+  it('stands in for the Sparkles on the Pro member card', () => {
+    const html = renderToStaticMarkup(createElement(MemberCard, { kind: 'pro', mark: 'PRO' }))
+    expect(html).toContain('data-pro-mark')
+    expect(html).not.toContain('lucide-sparkles')
   })
 })

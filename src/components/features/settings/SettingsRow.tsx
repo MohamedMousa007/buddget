@@ -10,6 +10,8 @@ export type RowTone = 1 | 2 | 3 | 4 | 5 | 6 | 'neutral'
 
 interface SettingsRowProps {
   icon?: ComponentType<{ className?: string }>
+  /** A custom lead (the Pro mark) in place of the icon chip. */
+  leading?: ReactNode
   tone?: RowTone
   title: string
   subtitle?: string
@@ -43,6 +45,7 @@ export function SettingsChip({ icon: Icon, tone = 'neutral', destructive = false
 
 export function SettingsRow({
   icon,
+  leading,
   tone = 'neutral',
   title,
   subtitle,
@@ -57,7 +60,7 @@ export function SettingsRow({
 
   const content = (
     <>
-      {icon ? <SettingsChip icon={icon} tone={tone} destructive={destructive} /> : null}
+      {leading ?? (icon ? <SettingsChip icon={icon} tone={tone} destructive={destructive} /> : null)}
       <span className="min-w-0 flex-1">
         <span className={cn('block text-[0.9375rem] font-semibold leading-tight', destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]')}>
           {title}

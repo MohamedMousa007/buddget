@@ -20,16 +20,6 @@ import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 
 type Profile = ReturnType<typeof useProfilePage>
 
-/** The way into the sign-in and security screen, on the settings page. */
-export function SecurityEntry() {
-  const copy = useSettingsHubCopy()
-  return (
-    <SettingsSection title={copy.groupName.security}>
-      <SettingsRow icon={SETTING_ICONS.shield} tone={GROUP_TONE.security} title={copy.security.title} subtitle={copy.security.subtitle} href="/settings/security" settingId="security" />
-    </SettingsSection>
-  )
-}
-
 /** Account email, password, two-step, biometrics and app lock: the content of the security screen. */
 export function SecurityBody({ p }: { p: Profile & { user: NonNullable<Profile['user']> } }) {
   const copy = useSettingsHubCopy()
