@@ -18,7 +18,7 @@ Re-checks (not re-filed):
 |---|---|---|---|---|
 | API `e2e/api/round2/pro-rewards/` (5 specs), final run | 77 | 77 | 0 | 10 of the passes are `test.fail` open bugs (S8G-01 to 06, 09, 10, 13, 14) that failed as expected. The first full run was 72 passed, 3 failed: A2 was a network blip (passed on re-run); F4 and F8 found S8G-14 and S8G-13 |
 | Unit, selling OFF (`unit/`, switch mocked) | 8 | 8 | 0 | S8G-11 is recorded as found behaviour |
-| Journeys `e2e/journeys/specs/round2/pro-rewards/`, mobile 375 | 9 | 9 | 0 | J1, J8 and J9 are `test.fail` (S8G-02, 07, 03) |
+| Journeys `e2e/journeys/specs/round2/pro-rewards/`, mobile 375 | 9 | 8, then 9 | 1, then 0 | J1, J8 and J9 are `test.fail` (S8G-02, 07, 03). In the final run J2 timed out at sign-in (the dev server served a blank page); it passed when re-run alone |
 | Journeys, desktop 1440 (`@desktop`: J2, J4, J5) | 3 | 3 | 0 | |
 | UI sweep `e2e/ui/pro-rewards-sweep.mjs` (6 screens x en/ar x light/dark x 375/1440) | 48 pages, 472 controls | 48 rendered, 0 errors, 0 horizontal scroll, 0 wrong redirects | see S8G-12 | axe and the 44 px hit test |
 | `EXPLAIN` (no ANALYZE) of the nightly job's queries | 4 | | | S8G-08 |
