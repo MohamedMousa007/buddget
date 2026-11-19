@@ -7,7 +7,6 @@ import { CurrencyConverter } from '@/components/features/settings/CurrencyConver
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
-import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { Switch } from '@/components/ui/switch'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
@@ -56,7 +55,6 @@ function ConverterBody() {
 export function PreferencesCard() {
   const copy = useSettingsHubCopy()
   const p = copy.page
-  const tone = GROUP_TONE.quick
   const { locale, setLocale } = useLocale()
   const { settings, rates, updateSettings } = useFinanceStore(
     useShallow((s) => ({ settings: s.settings, rates: s.exchangeRates, updateSettings: s.updateSettings })),
@@ -78,10 +76,10 @@ export function PreferencesCard() {
   return (
     <>
       <SettingsSection title={p.preferences}>
-        <SettingsRow icon={SETTING_ICONS.globe} tone={tone} title={copy.language} value={locale === 'ar' ? 'العربية' : 'English'} onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')} settingId="language" />
-        <SettingsRow icon={SETTING_ICONS.sun} tone={5} title={p.appearance} value={themeLabel} onClick={changeTheme} settingId="theme" />
-        <SettingsRow icon={SETTING_ICONS.coins} tone={tone} title={copy.currencyTile} value={`${settings.baseCurrency}${second ? ` + ${second}` : ''}`} onClick={() => openSheet('currencies')} settingId="baseCurrency" />
-        <SettingsRow icon={SETTING_ICONS.swap} tone={tone} title={copy.convertTitle} onClick={() => openSheet('converter')} settingId="converter" />
+        <SettingsRow icon={SETTING_ICONS.globe} tone={5} title={copy.language} value={locale === 'ar' ? 'العربية' : 'English'} onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')} settingId="language" />
+        <SettingsRow icon={SETTING_ICONS.sun} tone="neutral" title={p.appearance} value={themeLabel} onClick={changeTheme} settingId="theme" />
+        <SettingsRow icon={SETTING_ICONS.coins} tone={1} title={copy.currencyTile} value={`${settings.baseCurrency}${second ? ` + ${second}` : ''}`} onClick={() => openSheet('currencies')} settingId="baseCurrency" />
+        <SettingsRow icon={SETTING_ICONS.swap} tone={1} title={copy.convertTitle} onClick={() => openSheet('converter')} settingId="converter" />
         <SettingsRow icon={SETTING_ICONS.bell} tone={6} title={p.notifications} href="/settings/notifications" settingId="notifications" />
       </SettingsSection>
 

@@ -37,7 +37,7 @@ export function MembershipRows() {
         </Link>
       ) : null}
       {rewards?.invite.enabled ? (
-        <SettingsRow icon={Gift} tone={4} title={r.invite.title} subtitle={inviteReward(me) === 'sparks' ? r.invite.cta.titleSparks : r.invite.cta.title} href="/settings/invite" settingId="invite" />
+        <SettingsRow icon={Gift} tone={3} title={r.invite.title} subtitle={inviteReward(me) === 'sparks' ? r.invite.cta.titleSparks : r.invite.cta.title} href="/settings/invite" settingId="invite" />
       ) : null}
       {rewards?.founder || rewards?.betaTester ? (
         <SettingsRow icon={Crown} tone={2} title={c.founders.title} subtitle={rewards.founder ? r.profile.founder(formatFounderNumber(rewards.founder.number)) : c.founders.betaBadge} href="/settings/founders" settingId="founders" />
