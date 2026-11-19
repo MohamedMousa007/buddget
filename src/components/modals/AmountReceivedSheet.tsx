@@ -161,7 +161,7 @@ export function AmountReceivedSheet() {
       <div className="pt-1">
         <V3SheetHeader
           title={t.income.amountReceivedTitle}
-          subtitle={<span className="font-mono-numbers">{t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}</span>}
+          subtitle={<span dir="auto" className="font-mono-numbers">{t.income.amountSheetSubtitle(fmtDay(current.date), source.name, `${fmtNum(expected)} ${currency}`)}</span>}
           onClose={close}
         />
 

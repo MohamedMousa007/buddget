@@ -262,7 +262,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
                       {debtChips.map((d) => (
                         <SelectableCard key={d.id} layout="list" selected={debtId === d.id} onClick={() => { setDebtId(d.id); setDebtOpen(false) }}>
                           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-brand-text-primary)]">{d.name}</span>
-                          <span className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.left(fmtNum(d.left))}</span>
+                          <span dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.left(fmtNum(d.left))}</span>
                         </SelectableCard>
                       ))}
                     </div>

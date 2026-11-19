@@ -141,7 +141,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
           <div className="relative overflow-hidden rounded-2xl border p-4" style={{ borderColor: tint(accent, 35), background: tint(accent, 6) }}>
             <p className="text-sm font-semibold" style={{ color: accent }}>{result.due ? z.due : z.notDue}</p>
             <p className="mt-1 font-mono-numbers text-[30px] font-bold text-[var(--color-brand-text-primary)]">{result.due ? fmtNum(result.zakat) : '—'} <span className="text-base text-[var(--color-brand-text-muted)]">{unit}</span></p>
-            <p className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? z.zakatableLine('2.5%', fmtNum(result.zakatable), unit) : z.underLine(fmtNum(result.gap), unit)}</p>
+            <p dir="auto" className="mt-1 font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{result.due ? z.zakatableLine('2.5%', fmtNum(result.zakatable), unit) : z.underLine(fmtNum(result.gap), unit)}</p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--color-brand-sunken)' }}><div style={{ width: `${Math.min(100, result.nisab > 0 ? (result.zakatable / result.nisab) * 100 : 0)}%`, height: '100%', background: accent }} /></div>
             <div className="mt-2 flex justify-between font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]"><span>{z.nisab(fmtNum(result.nisab), unit)}</span><span>{z.hawlEnds(hawlDate)}</span></div>
           </div>

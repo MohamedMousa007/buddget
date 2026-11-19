@@ -30,7 +30,7 @@ export function AssignPaymentBanner({
     <PromptBanner
       icon={<Link2 aria-hidden />}
       title={t.assignTitle}
-      description={<span className="font-mono-numbers">{t.assignSub(`${fmtWhole(candidate.amount)} ${candidate.currency}`, candidate.method, candidate.date)}</span>}
+      description={<span dir="auto" className="font-mono-numbers">{t.assignSub(`${fmtWhole(candidate.amount)} ${candidate.currency}`, candidate.method, candidate.date)}</span>}
       confirmLabel={t.assignBtn}
       onConfirm={() => onAssign(candidate)}
       dismissLabel={t.notNow}

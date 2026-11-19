@@ -120,7 +120,7 @@ export function AddBorrowForm({ d, locked = false }: { d: AddDebtHook; locked?: 
             <div className={`${MICRO} mb-2`}>{t.fGrams}</div>
             <AmountField value={d.startingBalance} onChange={d.setStartingBalance} mode="decimal" decimalsFor="XAU" aria-label={t.fGrams} placeholder={t.fGramsPh} />
             {goldValue != null ? (
-              <p className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-gold)]">{t.fGoldValue(goldValue.toLocaleString('en-US'), GOLD_PRICE[d.goldKarat].toLocaleString('en-US'))}</p>
+              <p dir="auto" className="mt-2 px-0.5 font-mono-numbers text-[0.75rem] text-[var(--color-brand-gold)]">{t.fGoldValue(goldValue.toLocaleString('en-US'), GOLD_PRICE[d.goldKarat].toLocaleString('en-US'))}</p>
             ) : null}
           </div>
         </>

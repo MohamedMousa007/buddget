@@ -58,7 +58,7 @@ export function DateStepper({ value, now, onChange }: { value: string; now: Date
     <div className="flex min-h-14 items-center gap-2 rounded-[14px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] ps-3.5 pe-1.5">
       <div className="min-w-0 flex-1">
         <MonthYearPicker heroLabel monthFilter={value.slice(0, 7)} onChange={(m) => onChange(`${m}-01`)} />
-        <p className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.monthsAway(months)}</p>
+        <p dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.monthsAway(months)}</p>
       </div>
       <IconButton variant="outlined" aria-label={t.earlier} disabled={months <= 1} {...press(-1)}>
         <Minus />

@@ -53,7 +53,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
       >
         <V3SheetHeader.Title>{t.vaultTitle}</V3SheetHeader.Title>
         <V3SheetHeader.Subtitle>
-          <span className="font-mono-numbers">{t.vaultSummary(cleared.length, fmtWhole(sum), base)}</span>
+          <span dir="auto" className="font-mono-numbers">{t.vaultSummary(cleared.length, fmtWhole(sum), base)}</span>
         </V3SheetHeader.Subtitle>
       </V3SheetHeader>
 
@@ -78,7 +78,7 @@ export function ClearedVaultSheet({ open, onClose, cleared, base }: { open: bool
                     {fmtWhole(c.original)} <span className="text-sm text-[var(--color-brand-text-muted)]">{c.currency}</span>
                   </p>
                   <div className="mt-3 flex items-center justify-between border-t border-[var(--color-brand-border)] pt-2.5">
-                    <span className="font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.clearedMonth(c.clearedMonth)}</span>
+                    <span dir="auto" className="font-mono-numbers text-[0.75rem] text-[var(--color-brand-text-muted)]">{t.clearedMonth(c.clearedMonth)}</span>
                     {c.history.length > 0 ? (
                       <Button
                         variant="ghost"

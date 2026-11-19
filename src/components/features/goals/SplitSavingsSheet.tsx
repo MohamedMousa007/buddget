@@ -139,7 +139,7 @@ export function SplitSavingsSheet({ onClose }: { onClose: () => void }) {
           />
         ))}
       </Reorder.Group>
-      <p className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.total(total)}</p>
+      <p dir="auto" className="font-mono-numbers text-sm font-semibold text-[var(--color-brand-text-primary)]">{t.total(total)}</p>
       <div className="flex items-start gap-2.5 rounded-2xl bg-[var(--color-brand-primary-soft)] p-3.5">
         <BuddgyIcon size={24} />
         <p className="text-[0.8125rem] leading-[1.45] text-[var(--color-brand-text-primary)]">{total > 100 ? t.noteOver : t.noteFit}</p>

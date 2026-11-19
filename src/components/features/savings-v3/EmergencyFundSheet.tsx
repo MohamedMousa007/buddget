@@ -240,7 +240,7 @@ export function EmergencyFundSheet({ open, onClose, mode, onAddMoney }: Emergenc
           <Card padding="md" className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[0.9375rem] font-semibold text-[var(--color-brand-text-primary)]">{t.needed(targetMonths)}</p>
-              <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.neededSub(fmtNum(essentials), targetMonths)}</p>
+              <p dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.neededSub(fmtNum(essentials), targetMonths)}</p>
             </div>
             <span className="font-mono-numbers text-lg font-bold text-[var(--color-brand-text-primary)]">{fmtNum(needed)}</span>
           </Card>

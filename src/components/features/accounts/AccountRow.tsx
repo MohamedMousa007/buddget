@@ -56,7 +56,7 @@ export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix
                 {masked ? MASK : <>{money.int}<span className="opacity-45">{money.dec}</span></>}
               </span>
               {!masked && balance && balance.held > 0 ? (
-                <span className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(splitMoney(balance.free, cur).int)}</span>
+                <span dir="auto" className="mt-0.5 block font-mono-numbers text-[0.71875rem] font-semibold text-[var(--color-brand-primary-ink)]">{t.freeLabel(splitMoney(balance.free, cur).int)}</span>
               ) : null}
             </>
           ) : (

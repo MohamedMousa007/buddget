@@ -37,7 +37,7 @@ export default function GlobalError({
             <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{t.title}</h2>
             <p className="text-sm text-[var(--color-brand-text-muted)]">{t.body}</p>
             {reportId ? (
-              <p className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.report(reportId.slice(0, 8))}</p>
+              <p dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{t.report(reportId.slice(0, 8))}</p>
             ) : null}
             <Button size="touch" onClick={reset}>
               {t.retry}

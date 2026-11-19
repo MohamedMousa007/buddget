@@ -148,9 +148,9 @@ function CardBody({ vm, onEdit, onDelete, onPay, onCharges }: { vm: CreditCardVM
               {t.usedPct(vm.utilPct)}
             </p>
             {over ? (
-              <p className="mt-0.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{t.overByAmt(fmtWhole(vm.overBy))}</p>
+              <p dir="auto" className="mt-0.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{t.overByAmt(fmtWhole(vm.overBy))}</p>
             ) : vm.limit != null ? (
-              <p className="mt-0.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{t.freeAmt(fmtWhole(Math.max(0, vm.limit - vm.outstanding)))}</p>
+              <p dir="auto" className="mt-0.5 font-mono-numbers text-[0.6875rem] text-[var(--color-brand-text-muted)]">{t.freeAmt(fmtWhole(Math.max(0, vm.limit - vm.outstanding)))}</p>
             ) : null}
           </div>
         ) : null}
@@ -209,7 +209,7 @@ function InstallmentBody({ vm, onEdit, onDelete, onPay }: { vm: InstallmentVM } 
         {vm.onCardLast4 ? (
           <span className="flex h-9 items-center gap-1.5 rounded-[10px] border border-[var(--color-brand-border)] px-2.5 text-[0.6875rem] font-semibold text-[var(--color-brand-text-secondary)]">
             <CardIcon className="h-3.5 w-3.5" />
-            <span className="font-mono-numbers">{t.cardTag(vm.onCardLast4)}</span>
+            <span dir="auto" className="font-mono-numbers">{t.cardTag(vm.onCardLast4)}</span>
           </span>
         ) : null}
       </div>
