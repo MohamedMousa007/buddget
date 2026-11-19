@@ -108,6 +108,13 @@ describe('stale cursor (full pull)', () => {
     expect(out.expenses.map((e) => e.id).sort()).toEqual(['kept', 'offline'])
   })
 
+  it('QA-107: a delivered row edited after the stale cursor but gone from the server is dropped; an unsent one is kept', () => {
+    const sent = exp('sent', '2026-09-01T00:00:00Z')
+    const local = withExpenses([sent, exp('unsent', '2026-09-01T00:00:00Z')])
+    const out = applyDelta(local, noDelta({ staleBefore: '2026-08-01T00:00:00Z' }), withExpenses([sent]))
+    expect(out.expenses.map((e) => e.id)).toEqual(['unsent'])
+  })
+
   it('compares instants not strings, and never prunes budget plans or unparseable stamps', () => {
     const local = { ...withExpenses([exp('plus', '2026-06-01T00:00:00.000+00:00'), exp('bad', 'not-a-date')]), budgetPlans: [{ id: 'p1', updatedAt: '2026-01-01T00:00:00Z' }] } as unknown as Snapshot
     const out = applyDelta(local, noDelta({ staleBefore: '2026-08-01T00:00:00Z' }))

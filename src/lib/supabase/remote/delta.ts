@@ -152,7 +152,9 @@ function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefor
   const dead = new Set(d.deletedIds)
   const live = new Set(d.upserts.map((r) => r.id))
   const cutoff = staleBefore === null ? NaN : Date.parse(staleBefore)
-  const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && !!r.updatedAt && (serverInstant(r.updatedAt) ?? Infinity) <= cutoff
+  // With a delivered baseline, a row that is not pending reached the server (the flush ran first): absent from a full
+  // pull, it was deleted there, whatever its edit time. Without a baseline only the edit time can tell.
+  const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && (pending ? !pending.has(r.id) : !!r.updatedAt && (serverInstant(r.updatedAt) ?? Infinity) <= cutoff)
   return mergeList(local, d.upserts, pending).filter((r) => !dead.has(r.id) && !gone(r))
 }
 
