@@ -152,8 +152,8 @@ export function SegmentPage({ view, block, onBack, onSelect, onOpenLine, onAdd, 
             <LineIcon name={meta.icon} />
           </TintedTile>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xl font-bold leading-tight text-[var(--color-brand-text-primary)]">{name}</h2>
-            {pace ? <p className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.hero.perDayToSpend(money(pace.perDay))}</p> : null}
+            <h2 data-route-title className="truncate text-xl font-bold leading-tight text-[var(--color-brand-text-primary)]">{name}</h2>
+            {pace ? <p dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.hero.perDayToSpend(money(pace.perDay))}</p> : null}
           </div>
           {pace ? (
             <Badge tone={pace.state === 'ok' ? 'positive' : pace.state === 'ahead' ? 'warn' : 'negative'} size="md">

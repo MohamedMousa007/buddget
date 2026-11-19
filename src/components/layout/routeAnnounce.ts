@@ -1,5 +1,7 @@
 export const APP_TITLE = 'buddget'
 export const MAIN_ID = 'main-content'
+/** A view names itself with its h1, or with `data-route-title` on a sub-view heading that is an h2 under the shell's h1. */
+export const ROUTE_TITLE_SELECTOR = '[data-route-title], h1'
 
 /** Tab title for a view: its heading, then the app name; just the app name when it has no heading. */
 export function documentTitleFor(heading: string | null | undefined): string {

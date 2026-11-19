@@ -10,7 +10,7 @@ import { AuthOtpRow } from '@/components/features/auth-modal/AuthOtpRow'
 import { ColorSwatchRow } from './ColorSwatchRow'
 import { SegmentedControl } from './SegmentedControl'
 import { nextSegmentIndex } from './segmentedNav'
-import { documentTitleFor, headingFor, shouldMoveFocus } from '@/components/layout/routeAnnounce'
+import { ROUTE_TITLE_SELECTOR, documentTitleFor, headingFor, shouldMoveFocus } from '@/components/layout/routeAnnounce'
 import { RouteAnnouncer } from '@/components/layout/RouteAnnouncer'
 import { SkipLink } from '@/components/layout/SkipLink'
 import { WealthHeroBadges } from '@/components/features/savings-v3/WealthHeroBadges'
@@ -138,6 +138,14 @@ describe('A11-7 route announcements and skip link', () => {
     expect(headingFor('Rent plan', 'Budget')).toBe('Rent plan')
     expect(headingFor(null, null)).toBeNull()
     expect(documentTitleFor('')).toBe('buddget')
+  })
+
+  it('QA-115: budget sub-views keep h2 but name the tab through data-route-title', () => {
+    expect(ROUTE_TITLE_SELECTOR).toBe('[data-route-title], h1')
+    for (const f of ['PlanFlow', 'SegmentPage', 'builder/ManualBuilder']) {
+      expect(read(`components/features/budget/${f}.tsx`)).toMatch(/<h2[^>]*data-route-title/)
+    }
+    expect(read('components/layout/RouteAnnouncer.tsx')).toContain('ROUTE_TITLE_SELECTOR')
   })
 
   it('focus is only moved when no dialog is open and the user is not typing', () => {

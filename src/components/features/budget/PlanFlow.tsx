@@ -145,7 +145,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
           <IconButton variant="outlined" aria-label={b.close} onClick={onClose}>
             <ChevronLeft className="rtl:rotate-180" />
           </IconButton>
-          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{b.title}</h2>
+          <h2 data-route-title className="text-lg font-bold text-[var(--color-brand-text-primary)]">{b.title}</h2>
         </div>
         <Card padding="md" className="flex flex-col gap-3">
           <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">{t.build.useMyData}</p>
@@ -201,7 +201,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
         <IconButton variant="outlined" aria-label={b.close} onClick={onClose}>
           <ChevronLeft className="rtl:rotate-180" />
         </IconButton>
-        <h2 className="flex-1 truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{view.plan.name}</h2>
+        <h2 data-route-title className="flex-1 truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{view.plan.name}</h2>
       </div>
 
       <Card padding="md" className="flex flex-col gap-3">
@@ -211,7 +211,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
               <span className="text-xs text-[var(--color-brand-text-secondary)]">{t.build.plannedSoFar}</span>
               <span className="font-mono-numbers text-[32px] font-semibold leading-none text-[var(--color-brand-text-primary)]">{money(total)}</span>
             </div>
-            {view.income > 0 ? <span className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.hero.share(`${Math.round((total / view.income) * 100)}%`)}</span> : null}
+            {view.income > 0 ? <span dir="auto" className="font-mono-numbers text-xs text-[var(--color-brand-text-secondary)]">{t.hero.share(`${Math.round((total / view.income) * 100)}%`)}</span> : null}
           </div>
         ) : (
           <>
