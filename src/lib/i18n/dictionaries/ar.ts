@@ -2250,7 +2250,7 @@ export const ar: Dictionary = {
     fabAddIncome: 'أضف دخلاً',
     fabAddPayment: 'أضف طريقة دفع',
     fabTrackDebt: 'تتبع أو سدّد ديناً',
-    fabAskAi: 'إعداد الميزانية',
+    fabAskAi: 'اسأل Buddgy',
     fabRequireAuth: 'سجّل الدخول لتتبع أموالك والمزامنة بين الأجهزة.',
     fabRequireAuthAi: 'سجّل الدخول لفتح إعداد الميزانية.',
     sheetUnavailableOffline: 'غير متاح بدون اتصال. أعد الاتصال وحاول مرة أخرى.',

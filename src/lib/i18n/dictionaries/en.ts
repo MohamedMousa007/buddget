@@ -2243,7 +2243,7 @@ export const en: Dictionary = {
     fabAddIncome: 'Add income',
     fabAddPayment: 'Add payment method',
     fabTrackDebt: 'Track or pay debt',
-    fabAskAi: 'Set up your budget',
+    fabAskAi: 'Ask Buddgy',
     fabRequireAuth: 'Sign in to track your finances and sync across devices.',
     fabRequireAuthAi: 'Sign in to open Budget Setup.',
     sheetUnavailableOffline: 'Not available offline. Reconnect and try again.',

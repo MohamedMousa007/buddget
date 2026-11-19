@@ -12,3 +12,12 @@ describe('chat quota copy', () => {
     expect(buddgyChatCopy.ar.error(e)).toContain('شرارات')
   })
 })
+
+describe('floating Buddgy button label (QA-64)', () => {
+  it('names Buddgy, not the budget setup, in both languages', async () => {
+    const { en } = await import('./dictionaries/en')
+    const { ar } = await import('./dictionaries/ar')
+    expect(en.modals.fabAskAi).toContain('Buddgy')
+    expect(ar.modals.fabAskAi).toContain('Buddgy')
+  })
+})

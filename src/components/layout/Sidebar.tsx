@@ -80,7 +80,7 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
+      <nav aria-label={t.common.mainNavigation} className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
         {PRIMARY.map(renderItem)}
         <p className="px-3 pt-4 pb-1 text-[0.6875rem] font-semibold uppercase tracking-wide text-[var(--color-brand-text-muted)]">
           {t.nav.more}
