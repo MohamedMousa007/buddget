@@ -1380,6 +1380,7 @@ export const en: Dictionary = {
     outstandingPaidOf: (p, c) => `Outstanding · ${p} of ${c} paid`,
     installmentsLeft: (n, per) => `${n} × ${per} left`,
     nextCycle: 'Next cycle',
+    overdue: 'Overdue',
     payNextAmt: (a, c) => `Pay next · ${a} ${c}`,
     assignTitle: 'Assign a payment?',
     assignSub: (a, m, d) => `${a} · ${m} · ${d} · likely a plan`,

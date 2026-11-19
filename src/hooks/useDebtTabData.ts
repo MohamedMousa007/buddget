@@ -28,7 +28,7 @@ import {
 import { cardDue } from '@/lib/debt/cardDue'
 import { debtFreeBy, lastPaymentDate, paymentsToClear } from '@/lib/debts/heroStats'
 import { paidAsEntered } from '@/lib/debts/paymentAmounts'
-import { installmentPaymentsCompleted, nextInstallmentDueDate, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
+import { installmentOverdueDays, installmentPaymentsCompleted, nextInstallmentDueDate, nextInstallmentDueFormatted } from '@/lib/debts/installmentSchedule'
 import { findProviderBrand } from '@/lib/constants/installmentProviders'
 import { decomposePaymentMethodName, providerInitials } from '@/lib/payment/paymentMethodDefaults'
 import type { Currency, Debt, DebtGoal, DebtPayment, GoldKarat } from '@/lib/store/types'
@@ -88,6 +88,8 @@ export interface InstallmentVM {
   remaining: number
   currency: string
   next?: string
+  /** Local days the next unpaid instalment is past due; 0 when it is not. */
+  overdueDays: number
   method?: string
   onCardLast4?: string
 }
@@ -299,6 +301,7 @@ export function useDebtTabData() {
           remaining: calculateDebtRemaining(d, pays, balanceCtx),
           currency: d.currency,
           next: nextInstallmentDueFormatted(d, paid, locale) ?? undefined,
+          overdueDays: installmentOverdueDays(d, paid),
           method,
           onCardLast4: cardLast4 ?? undefined,
         }

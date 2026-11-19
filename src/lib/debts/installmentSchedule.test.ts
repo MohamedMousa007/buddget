@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Debt, DebtPayment } from '@/lib/store/types'
-import { installmentPaymentsCompleted, nextInstallmentDueFormatted } from './installmentSchedule'
+import { installmentOverdueDays, installmentPaymentsCompleted, nextInstallmentDueFormatted } from './installmentSchedule'
 
 const plan = { id: 'i1', debtType: 'installment', installmentCount: 12, installmentAmount: 100, installmentFrequency: 'monthly', startDate: '2026-01-15' } as Debt
 const pay = (amountPaid: number): DebtPayment => ({ id: String(Math.random()), debtId: 'i1', date: '2026-02-01', amountPaid, createdAt: '' })
@@ -34,5 +34,17 @@ describe('installment progress counts amounts, not rows (D7)', () => {
   })
   it('falls back to the row count when the plan has no per-installment amount', () => {
     expect(installmentPaymentsCompleted({ ...plan, installmentAmount: undefined }, [pay(1), pay(1)])).toBe(2)
+  })
+})
+
+describe('overdue instalments (QA-87)', () => {
+  const today = new Date('2026-01-17T12:00:00')
+  it('counts the local days past the next unpaid due date', () => {
+    expect(installmentOverdueDays(plan, 0, today)).toBe(2)
+  })
+  it('is 0 on the due day, before it, and when the plan is complete', () => {
+    expect(installmentOverdueDays(plan, 0, new Date('2026-01-15T23:00:00'))).toBe(0)
+    expect(installmentOverdueDays(plan, 0, new Date('2026-01-10T12:00:00'))).toBe(0)
+    expect(installmentOverdueDays(plan, 12, today)).toBe(0)
   })
 })

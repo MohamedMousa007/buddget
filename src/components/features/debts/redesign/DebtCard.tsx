@@ -241,7 +241,7 @@ function InstallmentBody({ vm, onEdit, onDelete, onPay }: { vm: InstallmentVM } 
         </div>
         {vm.next ? (
           <div className="shrink-0 pb-1 text-end">
-            <p className="text-[0.625rem] font-bold uppercase tracking-[0.07em] text-[var(--color-brand-text-muted)]">{t.nextCycle}</p>
+            <p className={`text-[0.625rem] font-bold uppercase tracking-[0.07em] ${vm.overdueDays > 0 ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-muted)]'}`}>{vm.overdueDays > 0 ? t.overdue : t.nextCycle}</p>
             <p className="mt-1 font-mono-numbers text-sm font-bold text-[var(--color-brand-text-primary)]">{vm.next}</p>
             {vm.method ? <p className="mt-0.5 truncate text-[0.6875rem] font-medium text-[var(--color-brand-text-muted)]">{vm.method}</p> : null}
           </div>

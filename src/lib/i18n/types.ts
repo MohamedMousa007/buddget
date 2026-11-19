@@ -1264,6 +1264,7 @@ export interface Dictionary {
     outstandingPaidOf: (paid: number, count: number) => string
     installmentsLeft: (n: number, per: string) => string
     nextCycle: string
+    overdue: string
     payNextAmt: (amt: string, cur: string) => string
     assignTitle: string
     assignSub: (amt: string, method: string, date: string) => string

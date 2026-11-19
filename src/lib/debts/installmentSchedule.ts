@@ -1,5 +1,5 @@
 import { formatLocalized, type AppLocale } from '@/lib/i18n/dateFormat'
-import { parseISO } from 'date-fns'
+import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { addCalendarMonths, addCalendarWeeks, addCalendarYears } from '@/lib/time/calendarDays'
 import type { Debt, DebtPayment } from '@/lib/store/types'
 
@@ -43,6 +43,12 @@ export function nextInstallmentDueDate(debt: Debt, completed: number): Date | nu
   }
   if (completed >= debt.installmentCount) return null
   return addByFrequency(parseISO(debt.startDate), debt.installmentFrequency, completed)
+}
+
+/** Whole local days the next unpaid instalment is past its due date; 0 when it is due today or later (or the plan is done). */
+export function installmentOverdueDays(debt: Debt, completed: number, today: Date = new Date()): number {
+  const due = nextInstallmentDueDate(debt, completed)
+  return due ? Math.max(0, differenceInCalendarDays(today, due)) : 0
 }
 
 export function nextInstallmentDueFormatted(debt: Debt, completed: number, locale: AppLocale = 'en'): string | null {

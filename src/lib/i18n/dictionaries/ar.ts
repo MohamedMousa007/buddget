@@ -1387,6 +1387,7 @@ export const ar: Dictionary = {
     outstandingPaidOf: (p, c) => `المتبقي · تم دفع ${p} من ${c}`,
     installmentsLeft: (n, per) => `${n} × ${per} متبقية`,
     nextCycle: 'الدورة التالية',
+    overdue: 'متأخر',
     payNextAmt: (a, c) => `سدّد التالي · ${a} ${c}`,
     assignTitle: 'ربط دفعة؟',
     assignSub: (a, m, d) => `${a} · ${m} · ${d} · غالبًا خطة أقساط`,
