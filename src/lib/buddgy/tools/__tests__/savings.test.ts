@@ -133,9 +133,20 @@ describe('list_savings and get_net_worth', () => {
       paymentMethods: [{ id: 'pm-b', name: 'QNB', provider: 'QNB', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 680, openingAt: '2026-01-01T00:00:00Z' } as never],
     })
     const r = read('get_net_worth') as Record<string, number>
-    expect(r.accounts).toBe(680)
+    expect(r.accounts_total).toBe(680)
     expect(r.month_flow).toBeUndefined()
-    expect(r.savings + r.investments + r.accounts - r.debt).toBe(r.net_worth)
+    expect(r.savings + r.investments + r.accounts_total - r.debt).toBe(r.net_worth)
+  })
+
+  it('every numeric key get_net_worth returns is redacted when hide-balances is on (QA-25)', async () => {
+    const { redactBalances, HIDDEN } = await import('@/lib/privacy/redact')
+    useFinanceStore.setState({
+      savingsAccounts: [account(A1, { currentBalance: 1600 })],
+      paymentMethods: [{ id: 'pm-b', name: 'QNB', provider: 'QNB', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 680, openingAt: '2026-01-01T00:00:00Z' } as never],
+    })
+    const r = redactBalances(read('get_net_worth') as Record<string, unknown>)
+    for (const [k, v] of Object.entries(r)) if (k !== 'currency') expect(v, k).not.toEqual(expect.any(Number))
+    expect(r.accounts_total).toBe(HIDDEN)
   })
 
   it('net worth counts money that arrived, not a payday still ahead this month', () => {
