@@ -66,7 +66,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
-  const csp = buildCsp(nonce)
+  const csp = buildCsp(nonce, pathname.startsWith('/admin'))
   request.headers.set('x-nonce', nonce)
 
   if (pathname.startsWith('/api')) {
