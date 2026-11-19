@@ -33,14 +33,14 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
     if (cleaned.length > 1) {
       const code = cleaned.slice(0, EMAIL_OTP_LENGTH)
       onChange(code)
-      refs.current[Math.min(code.length, 5)]?.focus()
+      refs.current[Math.min(code.length, EMAIL_OTP_LENGTH - 1)]?.focus()
       return
     }
     const padded = (digitsOnly + ' '.repeat(EMAIL_OTP_LENGTH)).slice(0, EMAIL_OTP_LENGTH).split('')
     padded[i] = cleaned || ' '
     const next = padded.join('').replace(/ /g, '')
     onChange(next)
-    if (cleaned && i < 5) refs.current[i + 1]?.focus()
+    if (cleaned && i < EMAIL_OTP_LENGTH - 1) refs.current[i + 1]?.focus()
   }
 
   const handleKeyDown = (i: number, e: KeyboardEvent<HTMLInputElement>) => {
@@ -59,7 +59,7 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
     e.preventDefault()
     const t = toLatinDigits(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, EMAIL_OTP_LENGTH)
     onChange(t)
-    refs.current[Math.min(t.length, 5)]?.focus()
+    refs.current[Math.min(t.length, EMAIL_OTP_LENGTH - 1)]?.focus()
   }
 
   return (
