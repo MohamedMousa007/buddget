@@ -1,0 +1,215 @@
+// Invite a friend: redeem statuses (invalid, self, too old, twice, parallel, device), loops and chains, the friend's 37-day trial,
+// activation (3 days and 5 records in 14 days), the inviter's reward once (banked Pro week, or 500 Sparks for a store subscriber),
+// caps, milestones, clawback when the friend deletes their account, and what the Invite page may show about a friend.
+import { randomUUID } from 'node:crypto'
+import { expect, test } from '@playwright/test'
+import { account, app, dropUser, ENV, makeUser, mask, PRO_ACTIVE, rewardSparks, rpc, SB_URL, setEntitlement, signIn, svc, svcPatch, svcRpc, TRIAL, type QaUser } from './lib'
+
+const made: QaUser[] = []
+const user = async (tag: string) => { const u = await makeUser(tag); made.push(u); return u }
+test.afterAll(async () => { for (const u of made) await dropUser(u).catch(() => undefined) })
+
+const codeOf = async (u: QaUser) => (await rpc(u.token, 'referral_my_summary')).json.code as string
+const redeem = (u: QaUser, code: string, device?: string) => rpc(u.token, 'referral_redeem', { p_code: code, p_device_id: device })
+const refOf = async (invitee: QaUser) => (await svc(`referrals?invitee_id=eq.${invitee.id}&select=id,status,reason,trial_bonus_applied,reward_kind,active_days,tx_count`)).json[0]
+const ent = async (u: QaUser) => (await svc(`user_entitlements?user_id=eq.${u.id}&select=plan_key,status,source,current_period_end,trial_ends_at`)).json[0]
+const svcHeaders = () => ({ apikey: ENV.SUPABASE_SECRET_KEY, Authorization: `Bearer ${ENV.SUPABASE_SECRET_KEY}`, 'Content-Type': 'application/json' })
+
+/** Makes a friend look active: signed up 5 days ago, `n` records created on `days` distinct days since. */
+async function activity(friend: QaUser, n: number, days: number) {
+  const r = await refOf(friend)
+  await svcPatch('referrals', `id=eq.${r.id}`, { invitee_created_at: new Date(Date.now() - 5 * 86_400_000).toISOString() })
+  const rows = Array.from({ length: n }, (_, i) => ({ id: randomUUID(), user_id: friend.id, amount: 5, currency: 'EGP', category: 'Food', description: 'qa pr act', expense_date: new Date().toISOString().slice(0, 10), created_at: new Date(Date.now() - (4 - (i % days)) * 86_400_000).toISOString() }))
+  const ins = await svc('expenses', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(rows) })
+  expect(ins.status, mask(ins.text)).toBeLessThan(300)
+  return r.id as number
+}
+const evaluate = (friend: QaUser) => svcRpc('referral_evaluate', { p_invitee: friend.id, p_limit: 1 })
+
+test('F1 redeem: junk code invalid, own code self_invite, lower case with spaces ok, a second code already_redeemed', async () => {
+  const inviter = await user('f1i'); const other = await user('f1o')
+  const code = await codeOf(inviter); const otherCode = await codeOf(other)
+  const friend = await user('f1f')
+  expect((await redeem(friend, 'ZZ-ZZZ')).json.status).toBe('invalid_code')
+  expect((await redeem(friend, "'; select 1;--")).json.status).toBe('invalid_code')
+  expect((await redeem(inviter, code)).json.status).toBe('self_invite')
+  expect((await redeem(friend, `  ${code.toLowerCase()} `)).json).toMatchObject({ status: 'ok', trialExtended: false })
+  expect((await redeem(friend, otherCode)).json.status).toBe('already_redeemed')
+  expect((await svc(`referral_codes?user_id=eq.${inviter.id}&select=invited_count`)).json[0].invited_count).toBe(1)
+})
+
+test('F2 only accounts created after the invite: a friend older than the code is refused', async () => {
+  const old = await user('f2old')
+  const inviter = await user('f2i')
+  const code = await codeOf(inviter)
+  expect((await redeem(old, code)).json.status).toBe('account_too_old')
+})
+
+test('F3 loops and chains: A invites B, B invites C; B cannot invite A back and C cannot also take A\'s code', async () => {
+  const A = await user('f3a'); const codeA = await codeOf(A)
+  const B = await user('f3b'); expect((await redeem(B, codeA)).json.status).toBe('ok')
+  const codeB = await codeOf(B)
+  const C = await user('f3c'); expect((await redeem(C, codeB)).json.status).toBe('ok')
+  expect((await redeem(A, codeB)).json.status).toBe('account_too_old')
+  expect((await redeem(C, codeA)).json.status).toBe('already_redeemed')
+})
+
+test('F4 double tap: 6 parallel redeems give one referral, one invite count and no 500', async () => {
+  const inviter = await user('f4i'); const code = await codeOf(inviter)
+  const friend = await user('f4f')
+  const all = await Promise.all(Array.from({ length: 6 }, () => redeem(friend, code)))
+  const st = all.map((r) => r.json?.status ?? `${r.status}:${r.json?.code ?? ''}`)
+  expect(st.filter((s) => s === 'ok').length, st.join(',')).toBe(1)
+  expect((await svc(`referrals?invitee_id=eq.${friend.id}&select=id`)).json.length).toBe(1)
+  expect((await svc(`referral_codes?user_id=eq.${inviter.id}&select=invited_count`)).json[0].invited_count).toBe(1)
+  expect.soft(all.every((r) => r.status === 200), `losers answer ${all.map((r) => r.status).join(',')}`).toBe(true)
+})
+
+test('F5 friend side: redeem then claim gives a 37-day trial; a friend already trialing gets +7 at once; /me says 37', async () => {
+  const inviter = await user('f5i'); const code = await codeOf(inviter)
+  const a = await user('f5a')
+  await redeem(a, code)
+  const t = await app('/api/entitlements/trial', { method: 'POST', token: a.token })
+  expect(t.json.status).toBe('granted')
+  expect(Math.round((Date.parse(t.json.trialEndsAt) - Date.now()) / 86_400_000)).toBe(37)
+  expect((await app('/api/entitlements/me', { token: a.token })).json.trialDays).toBe(37)
+  const b = await user('f5b')
+  const t2 = await app('/api/entitlements/trial', { method: 'POST', token: b.token })
+  expect(t2.json.status).toBe('granted')
+  expect((await redeem(b, code)).json).toMatchObject({ status: 'ok', trialExtended: true })
+  expect(Math.round((Date.parse((await ent(b)).trial_ends_at) - Date.now()) / 86_400_000)).toBe(37)
+  // The bonus is not paid twice: a second claim cannot happen and the flag is set.
+  expect((await refOf(b)).trial_bonus_applied).toBe(true)
+})
+
+test('F6 device guards: the inviter\'s own device is self_invite; a device that already brought a friend is device_used', async () => {
+  const inviter = await user('f6i'); const code = await codeOf(inviter)
+  const devI = `qa-dev-${randomUUID()}`
+  await svc('user_devices', { method: 'POST', body: JSON.stringify({ user_id: inviter.id, device_id: devI, platform: 'android', name: 'qa' }) })
+  const f1 = await user('f6a')
+  expect((await redeem(f1, code, devI)).json.status).toBe('self_invite')
+  const dev = `qa-dev-${randomUUID()}`
+  const f2 = await user('f6b'); expect((await redeem(f2, code, dev)).json.status).toBe('ok')
+  const f3 = await user('f6c'); expect((await redeem(f3, code, dev)).json.status).toBe('device_used')
+  expect((await refOf(f3)).status).toBe('rejected')
+})
+
+test('F7 S8G-06 without a device id (the web app) the device guard is skipped: one phone, many accounts, all count', async () => {
+  test.fail(true, 'S8G-06 open: web sign-ups send no device id, so "one reward per device" cannot hold there')
+  const inviter = await user('f7i'); const code = await codeOf(inviter)
+  const statuses: string[] = []
+  for (const tag of ['f7a', 'f7b']) {
+    const f = await user(tag)
+    statuses.push((await redeem(f, code)).json.status)
+    await activity(f, 5, 3)
+    await evaluate(f)
+    statuses.push((await refOf(f)).status)
+  }
+  expect(statuses).not.toEqual(['ok', 'rewarded', 'ok', 'rewarded'])
+})
+
+test('F8 activation: 4 records or 1 day stays pending; 5 records on 3 days activates and pays the inviter one banked week, once', async () => {
+  const inviter = await user('f8i'); const code = await codeOf(inviter)
+  const f = await user('f8f'); await redeem(f, code)
+  await activity(f, 4, 3)
+  await evaluate(f)
+  expect((await refOf(f)).status).toBe('pending')
+  const g = await user('f8g'); await redeem(g, code)
+  await activity(g, 6, 1)
+  await evaluate(g)
+  expect((await refOf(g)).status).toBe('pending')
+  await activity(f, 1, 1)
+  await Promise.all([evaluate(f), evaluate(f), evaluate(f)])
+  await evaluate(f)
+  const r = await refOf(f)
+  expect(r).toMatchObject({ status: 'rewarded', reward_kind: 'pro_week' })
+  const grants = (await svc(`pro_promo_grants?user_id=eq.${inviter.id}&select=days,started_at,source`)).json
+  expect(grants.length).toBe(1)
+  expect(grants[0].days).toBe(7)
+  // A Free inviter starts the week now.
+  const e = await ent(inviter)
+  expect(e).toMatchObject({ plan_key: 'plus', status: 'active', source: 'promo' })
+  expect(Math.round((Date.parse(e.current_period_end) - Date.now()) / 86_400_000)).toBe(7)
+  // The friend's own /me upkeep does not pay again.
+  await app('/api/entitlements/me', { token: f.token })
+  expect((await svc(`pro_promo_grants?user_id=eq.${inviter.id}&select=id`)).json.length).toBe(1)
+  expect((await svc(`referral_codes?user_id=eq.${inviter.id}&select=activated_count,rewards_count`)).json[0]).toEqual({ activated_count: 1, rewards_count: 1 })
+})
+
+test('F9 a trialing inviter banks the week (starts after the trial); a store subscriber gets 500 reward Sparks instead', async () => {
+  const t = await user('f9t'); await setEntitlement(t.id, TRIAL(10)); const ct = await codeOf(t)
+  const s = await user('f9s'); await setEntitlement(s.id, PRO_ACTIVE()); const cs = await codeOf(s)
+  const a = await user('f9a'); await redeem(a, ct); await activity(a, 5, 3); await evaluate(a)
+  const b = await user('f9b'); await redeem(b, cs); await activity(b, 5, 3); await evaluate(b)
+  const g = (await svc(`pro_promo_grants?user_id=eq.${t.id}&select=days,started_at`)).json
+  expect(g).toEqual([{ days: 7, started_at: null }])
+  expect((await ent(t)).plan_key).toBe('plus_trial')
+  const me = await app('/api/entitlements/me', { token: t.token })
+  expect(me.json.subscription.bankedProDays).toBe(7)
+  expect((await rewardSparks(s.id)).filter((x) => x.ref.startsWith('referral:')).map((x) => x.granted)).toEqual([500])
+  expect((await refOf(b)).reward_kind).toBe('sparks')
+  // Trial ends -> the banked week starts on the next upkeep.
+  await setEntitlement(t.id, { ...TRIAL(), trial_ends_at: new Date(Date.now() - 60_000).toISOString() })
+  await svcRpc('rewards_touch', { p_user: t.id })
+  expect(await ent(t)).toMatchObject({ plan_key: 'plus', source: 'promo', status: 'active' })
+})
+
+test('F10 caps: with 4 rewards this month the 5th activated friend is capped, not paid', async () => {
+  const inviter = await user('f10i'); const code = await codeOf(inviter)
+  const now = new Date().toISOString()
+  const fake = Array.from({ length: 4 }, () => ({ inviter_id: inviter.id, invitee_id: null, code, invitee_created_at: now, status: 'rewarded', rewarded_at: now }))
+  expect((await svc('referrals', { method: 'POST', body: JSON.stringify(fake) })).status).toBeLessThan(300)
+  const f = await user('f10f'); await redeem(f, code); await activity(f, 5, 3); await evaluate(f)
+  expect((await refOf(f))).toMatchObject({ status: 'capped', reason: 'month_cap' })
+  expect((await svc(`pro_promo_grants?user_id=eq.${inviter.id}&select=id`)).json).toEqual([])
+})
+
+test('F11 milestone: the 3rd activated friend pays +50 points once', async () => {
+  const inviter = await user('f11i'); const code = await codeOf(inviter)
+  await svcPatch('referral_codes', `user_id=eq.${inviter.id}`, { activated_count: 2 })
+  const f = await user('f11f'); await redeem(f, code); await activity(f, 5, 3); await evaluate(f); await evaluate(f)
+  const led = (await svc(`loyalty_ledger?user_id=eq.${inviter.id}&reason=eq.referral_milestone&select=delta,ref`)).json
+  expect(led).toEqual([{ delta: 50, ref: '3' }])
+  expect((await account(inviter.id)).lifetime_points).toBe(50)
+})
+
+test('F12 clawback: the friend deletes their account within 30 days -> the inviter\'s week comes off and the referral is clawed back', async () => {
+  const inviter = await user('f12i'); const code = await codeOf(inviter)
+  const f = await user('f12f'); await redeem(f, code); await activity(f, 5, 3); await evaluate(f)
+  const refId = (await refOf(f)).id
+  const before = Date.parse((await ent(inviter)).current_period_end)
+  await fetch(`${SB_URL}/auth/v1/admin/users/${f.id}`, { method: 'DELETE', headers: svcHeaders() })
+  const r = (await svc(`referrals?id=eq.${refId}&select=status,invitee_id`)).json[0]
+  expect(r).toEqual({ status: 'clawed_back', invitee_id: null })
+  const after = Date.parse((await ent(inviter)).current_period_end)
+  expect(Math.round((before - after) / 86_400_000)).toBe(7)
+  expect((await svc(`pro_promo_grants?user_id=eq.${inviter.id}&select=revoked_at`)).json[0].revoked_at).not.toBeNull()
+  await svc(`referrals?id=eq.${refId}`, { method: 'DELETE' })
+})
+
+test('F13 S8G-07 the same person (same mailbox) can be counted again after deleting a pending friend account', async () => {
+  test.fail(true, 'S8G-07 open: referral guards look at the account and device, not the mailbox')
+  const inviter = await user('f13i'); const code = await codeOf(inviter)
+  const f = await user('f13f'); await redeem(f, code)
+  await fetch(`${SB_URL}/auth/v1/admin/users/${f.id}`, { method: 'DELETE', headers: svcHeaders() })
+  const again = await fetch(`${SB_URL}/auth/v1/admin/users`, { method: 'POST', headers: svcHeaders(), body: JSON.stringify({ email: f.email, password: ENV.QA_PW, email_confirm: true }) }).then((r) => r.json())
+  const f2 = { id: again.id as string, email: f.email, token: await signIn(f.email) }
+  made.push(f2)
+  expect((await redeem(f2, code)).json.status).not.toBe('ok')
+})
+
+test('F14 the Invite page shows a friend by first name only, never their email or id; another user cannot see the list', async () => {
+  const inviter = await user('f14i'); const code = await codeOf(inviter)
+  const f = await user('f14f')
+  await svcPatch('profiles', `id=eq.${f.id}`, { display_name: 'Layla Hassan Omar' })
+  await redeem(f, code)
+  const s = (await rpc(inviter.token, 'referral_my_summary')).json
+  expect(s.friends.length).toBe(1)
+  expect(s.friends[0].name).toBe('Layla')
+  expect(JSON.stringify(s)).not.toContain(f.id)
+  expect(JSON.stringify(s)).not.toContain(f.email)
+  expect(s.counts).toEqual({ invited: 1, activated: 0, rewarded: 0 })
+  expect(s.caps).toMatchObject({ month: 4, year: 12 })
+  const other = await user('f14o')
+  expect((await rpc(other.token, 'referral_my_summary')).json.friends).toEqual([])
+})
