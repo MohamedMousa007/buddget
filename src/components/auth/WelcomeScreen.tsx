@@ -30,7 +30,7 @@ function tickerItemStyle(delaySeconds: number): CSSProperties {
   }
 }
 
-const ACCENT: CSSProperties = { fontWeight: 700, color: '#12B0A0' }
+const ACCENT: CSSProperties = { fontWeight: 700, color: 'var(--color-brand-primary-bright)' }
 
 export function WelcomeScreen() {
   const { user } = useAuth()
@@ -78,7 +78,7 @@ export function WelcomeScreen() {
           background:
             'radial-gradient(120% 55% at 50% -6%, rgba(31,195,178,.24) 0%, rgba(31,195,178,.06) 38%, rgba(10,16,15,0) 62%), var(--auth-floor)',
           overflow: 'hidden',
-          color: '#fff',
+          color: 'var(--color-brand-ink-light)',
           fontFamily: bodyFont,
           direction: isArabic ? 'rtl' : 'ltr',
           zIndex: 9999,
@@ -132,7 +132,7 @@ export function WelcomeScreen() {
             {name ? (
               <>
                 {isArabic ? ' ' : ', '}
-                <strong style={{ color: '#fff', fontWeight: 600 }}>{name}</strong>
+                <strong style={{ color: 'var(--color-brand-ink-light)', fontWeight: 600 }}>{name}</strong>
               </>
             ) : null}
           </p>

@@ -28,7 +28,7 @@ function tickerItemStyle(delaySeconds: number): CSSProperties {
   }
 }
 
-const ACCENT: CSSProperties = { fontWeight: 700, color: '#12B0A0' }
+const ACCENT: CSSProperties = { fontWeight: 700, color: 'var(--color-brand-primary-bright)' }
 
 /**
  * Pre-auth landing screen. Email-first morph form centred vertically on the
