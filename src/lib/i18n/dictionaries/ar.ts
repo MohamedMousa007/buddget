@@ -447,7 +447,7 @@ export const ar: Dictionary = {
     balances: 'الأرصدة',
     marketPriced: 'بسعر السوق',
     youValue: 'بتقديرك',
-    bankAccounts: 'حسابات بنكية',
+    bankAccounts: 'البنوك',
     vault: 'الخزنة',
     cash: 'نقد',
     other: 'أخرى',
