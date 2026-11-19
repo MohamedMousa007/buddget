@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import { PASSWORD, deleteUser, qaEmail, signupOtp } from '../lib/admin'
 import { expect, goto, knownBug, localWait, test, tile } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
-import { addAccount, addExpense, addMoneyIn, blur, fillAccountSheet, pickMethod } from '../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, fillAccountSheet, pickMethod } from '../lib/ui'
 
 test.describe('A registration and onboarding', () => {
   // onboarding_v1 is a 10% rollout; force it on so every fresh account gets the journey.
@@ -115,14 +115,47 @@ test.describe('A registration and onboarding', () => {
     })
   })
 
-  test('A3 onboarding "Cash" does not create a second Cash account [E2E-005]', async ({ page, user }) => {
+  test('A3 onboarding "Cash" shows one Cash in every picker [E2E-005 / QA-18]', async ({ page, user }) => {
     void user
     await onboardingAccounts(page)
+    // QA-18 decision: the real "Cash" row next to the built-in pm_default_cash is by design (the built-in one is never
+    // synced and holds no balance); what the user sees must be one Cash (fixed in 5240cfca, 6856ef0c).
     const methods = await localWait(page, (s) => s.paymentMethods.length >= 3 && s.paymentMethods)
     const cash = methods.filter((m: any) => m.type === 'cash' && !m.closedAt)
-    test.info().annotations.push({ type: 'evidence', description: `cash methods: ${JSON.stringify(cash.map((m: any) => ({ id: m.id, name: m.name, opening: m.openingBalance ?? null, isDefault: !!m.isDefault })))}` })
-    knownBug('E2E-005', 'onboarding adds a new "Cash" account next to the built-in pm_default_cash, so pickers show two "Cash" entries (QA-010)')
-    expect(cash).toHaveLength(1)
+    test.info().annotations.push({ type: 'evidence', description: `cash methods in the store: ${JSON.stringify(cash.map((m: any) => ({ id: m.id, opening: m.openingBalance ?? null, isDefault: !!m.isDefault })))}` })
+    await page.goto('/flow', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByRole('button', { name: 'Quick add' }).first()).toBeVisible({ timeout: 60_000 })
+
+    await test.step('expense method picker lists Cash once', async () => {
+      await page.getByRole('button', { name: 'Quick add' }).first().click()
+      await page.getByRole('dialog', { name: 'Add' }).getByRole('button', { name: /^Expense/ }).click()
+      const d = page.getByRole('dialog', { name: 'Add expense' })
+      await d.getByRole('button', { name: /EGP$/ }).filter({ hasNotText: 'Egyptian' }).last().click()
+      const sheet = page.getByRole('dialog', { name: 'Payment methods' })
+      const group = sheet.getByRole('group').first()
+      await group.focus()
+      for (let i = 0; i < 10; i++) await group.press('ArrowLeft')
+      const labels: string[] = []
+      for (let i = 0; i < 12; i++) {
+        const l = (await group.getAttribute('aria-label')) ?? ''
+        if (labels.at(-1) === l) break
+        labels.push(l)
+        await group.press('ArrowRight')
+      }
+      test.info().annotations.push({ type: 'evidence', description: `expense picker: ${labels.join(' | ')}` })
+      expect(labels.filter((l) => /^Cash\b/.test(l))).toHaveLength(1)
+      await page.keyboard.press('Escape')
+      await page.keyboard.press('Escape')
+    })
+    await test.step('pay-debt method chips list Cash once', async () => {
+      await page.goto('/flow', { waitUntil: 'domcontentloaded' })
+      await expect(page.getByRole('button', { name: 'Quick add' }).first()).toBeVisible({ timeout: 60_000 })
+      await addBorrow(page, { person: 'QA A3', what: 'QA A3 loan', amount: 100 })
+      await page.getByRole('button', { name: 'Pay QA A3 loan' }).click()
+      const pay = page.getByRole('dialog', { name: 'Make a payment' })
+      await expect(pay.getByRole('button', { name: 'QNB Alahli', exact: true }).first()).toBeVisible()
+      await expect(pay.getByRole('button', { name: 'Cash', exact: true })).toHaveCount(1)
+    })
   })
 })
 
