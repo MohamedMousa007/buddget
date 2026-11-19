@@ -104,7 +104,7 @@ function hasNonBalanceAmount(text: string): boolean {
   return (
     /(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE|(?<![a-z])SR)\s*[\d,]+(?:\.\d+)?/i.test(stripped) ||
     /[\d,]+(?:\.\d+)?\s*(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE|SR)\b/i.test(stripped) ||
-    /[\d,]+(?:\.\d+)?\s*جني[هة]/i.test(stripped)
+    /[\d,]+(?:\.\d+)?\s*(?:جني[هة]|ج\.\s?م)/i.test(stripped)
   )
 }
 

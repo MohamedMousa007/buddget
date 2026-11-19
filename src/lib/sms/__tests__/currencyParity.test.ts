@@ -30,3 +30,15 @@ describe('currency list parity (N10 parity)', () => {
     expect({ name, missing: required.filter((c) => !set.has(c)) }).toEqual({ name, missing: [] })
   })
 })
+
+describe('QA-105: the dotted Egyptian pound "ج.م"', () => {
+  it('is a currency token', async () => {
+    const { hasCurrencyToken } = await import('../patterns/currency')
+    expect(hasCurrencyToken('تم خصم 250 ج.م من حسابك')).toBe(true)
+    expect(hasCurrencyToken('تم خصم 250 ج. م من حسابك')).toBe(true)
+  })
+  it('counts as a transaction amount for the pre-filter', async () => {
+    const { isNonTransaction } = await import('../patterns/preFilter')
+    expect(isNonTransaction('تم خصم 250 ج.م من حسابك. الرصيد المتاح 1000 ج.م')).toBeNull()
+  })
+})

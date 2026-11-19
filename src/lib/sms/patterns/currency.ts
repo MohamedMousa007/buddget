@@ -13,7 +13,7 @@ export const CURRENCY_CODES = [
 ] as const
 
 /** Regex alternation of every code and abbreviation a ledger-signed amount may be written with. */
-export const CURRENCY_AMOUNT_ALT = [...CURRENCY_CODES, 'LE', 'SR', 'جم', 'ر\\.?\\s?س', 'د\\.?\\s?إ', 'د\\.?\\s?ك', 'ر\\.?\\s?ق', 'ر\\.?\\s?ع', 'د\\.?\\s?ب'].join('|')
+export const CURRENCY_AMOUNT_ALT = [...CURRENCY_CODES, 'LE', 'SR', 'جم', 'ج\\.\\s?م', 'ر\\.?\\s?س', 'د\\.?\\s?إ', 'د\\.?\\s?ك', 'ر\\.?\\s?ق', 'ر\\.?\\s?ع', 'د\\.?\\s?ب'].join('|')
 
 /**
  * Any currency token: ISO code (EGP/SAR/AED/…), the colloquial `LE`, or an
@@ -25,7 +25,7 @@ export const CURRENCY_AMOUNT_ALT = [...CURRENCY_CODES, 'LE', 'SR', 'جم', 'ر\\
  * code list: src/lib/sms/deviceOtpGate.ts, SmsGate.kt and SmsOtpGate in CatchBankSmsIntent.swift.
  */
 export const CURRENCY_TOKEN_RE =
-  /(?<![a-z])(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)(?![a-z])|(?<![a-z])SR(?=\s?\d)|(?<=\d\s?)SR(?![a-z])|جني[هة]|(?:^|[^\u0600-\u06FF])جم(?![\u0600-\u06FF])|ريال|درهم|دينار|ر\.?\s?س|د\.?\s?إ|د\.?\s?ك|ر\.?\s?ق|ر\.?\s?ع|د\.?\s?ب/i
+  /(?<![a-z])(?:EGP|SAR|AED|KWD|QAR|OMR|BHD|USD|EUR|GBP|LE)(?![a-z])|(?<![a-z])SR(?=\s?\d)|(?<=\d\s?)SR(?![a-z])|جني[هة]|(?:^|[^\u0600-\u06FF])ج(?:\.\s?)?م(?![\u0600-\u06FF])|ريال|درهم|دينار|ر\.?\s?س|د\.?\s?إ|د\.?\s?ك|ر\.?\s?ق|ر\.?\s?ع|د\.?\s?ب/i
 /**
  * Strong transaction-action keywords (EN + AR), Egypt + Gulf. "Strong" = the
  * presence of one means a real money movement, so the pre-filter treats these
