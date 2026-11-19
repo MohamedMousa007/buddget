@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { ageSeconds, buildInfo } from '@/lib/health/buildInfo'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { CRON_LAST_RUN_KEY, evaluateCronHealth } from '@/lib/server/cronHealth'
+import { isAuthorizedCron } from '@/lib/server/cronAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,6 +12,7 @@ export const dynamic = 'force-dynamic'
  * `degraded` means the app is up but a background job is not (missing CRON_SECRET, stale cron, dead outbox rows).
  * The whole answer is computed at most once a minute for every caller together (shared data cache), so polling it cannot load the database;
  * uptime monitors that only need "is the app up" should call the light `/api/health`. Reports status only, never data.
+ * The public gets `{ ok, degraded }`; the build, checks and cron detail need `Authorization: Bearer ${CRON_SECRET}` (QA-56).
  */
 async function readiness() {
   const started = Date.now()
@@ -39,12 +41,13 @@ async function readiness() {
 
 const cachedReadiness = unstable_cache(readiness, ['health-deep'], { revalidate: 60 })
 
-export async function GET() {
+export async function GET(request: Request) {
   let body: Awaited<ReturnType<typeof readiness>>
   try {
     body = await cachedReadiness()
   } catch {
     return NextResponse.json({ ok: false, error: 'database_unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
-  return NextResponse.json({ ...buildInfo(), ...body }, { status: body.ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } })
+  const answer = isAuthorizedCron(request) ? { ...buildInfo(), ...body } : { ok: body.ok, degraded: body.degraded }
+  return NextResponse.json(answer, { status: body.ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } })
 }
