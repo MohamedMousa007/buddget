@@ -172,7 +172,7 @@ export function answeredDebts(a: Answers): FactDebt[] {
   const carSeparate = a.carOverlap === 'separate' || a.carOwnership === 'financed' || a.carOwnership === 'leased'
   if (carSeparate && (num(a, 'carPayment') ?? 0) > 0)
     out.push({ id: 'answered-car', name: 'Car loan', kind: 'loan', balance: 0, minimum: num(a, 'carPayment') as number, apr: null })
-  return out.map((d) => (d.balance > 0 ? { ...d, minimum: debtMonthlyPayment(d) } : d))
+  return out.map((d) => (d.balance > 0 ? { ...d, minimum: debtMonthlyPayment(d), ...(d.minimum > 0 ? {} : { estimated: true }) } : d))
 }
 
 export function answeredGoals(a: Answers): FactGoal[] {

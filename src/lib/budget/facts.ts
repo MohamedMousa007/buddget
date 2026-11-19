@@ -112,6 +112,8 @@ export interface FactDebt {
   kind: 'credit_card' | 'installment' | 'loan' | 'personal'
   /** Yearly interest rate in percent when known; the engine orders payoff by it. */
   apr?: number | null
+  /** The payment was not stated; `minimum` is balance / 12, so the plan line says so. */
+  estimated?: boolean
 }
 
 export interface FactGoal {

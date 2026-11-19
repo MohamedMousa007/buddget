@@ -114,6 +114,14 @@ describe('QA-23: plan lines and debt records agree', () => {
     expect(answeredDebts(s.a).find((d) => d.id === 'answered-family')?.minimum).toBe(250)
   })
 
+  it('QA-23: a card or tax with no stated payment is flagged estimated; a stated minimum is used as given', () => {
+    const none = answeredDebts(answered({ debtKinds: ['card', 'tax'], cardBalance: 6000, cardMin: 0, taxOwed: 2400 }).a)
+    expect(none.map((d) => [d.id, d.minimum, d.estimated])).toEqual([['answered-card', 500, true], ['answered-tax', 200, true]])
+    const stated = answeredDebts(answered({ debtKinds: ['card'], cardBalance: 6000, cardMin: 300 }).a)
+    expect(stated[0].minimum).toBe(300)
+    expect(stated[0].estimated).toBeUndefined()
+  })
+
   it('a line for an answered debt links to the debt record created from it', () => {
     const out = relinkDraft(draft([line('Family', 'debts', ['answered-family']), line('Loan', 'debts', ['answered-loan'])]), { 'debt:answered-family': 'real-1', 'debt:answered-loan': 'real-2' })
     expect((out.lines as { linkIds: string[] }[]).map((l) => l.linkIds)).toEqual([['real-1'], ['real-2']])

@@ -172,7 +172,7 @@ function fixedLines(f: BudgetFacts, bench: Benchmark, income: number): DraftLine
         linkIds: [d.id],
         essential: true,
         expenseCategories: ['Debt'],
-        rationale: 'Monthly payment, always paid first',
+        rationale: d.estimated ? 'Estimated as the balance over 12 months. Edit it to your real payment' : 'Monthly payment, always paid first',
       })
     )
   }
