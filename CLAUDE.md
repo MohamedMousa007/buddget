@@ -43,6 +43,7 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Cache what does not change per request (settings, plans, prices) in the server with a TTL; do not read them on every call.
 - Diagnostics (`pg_stat_statements`, table sizes, ad-hoc analytics) run one at a time, off peak, with a `LIMIT`. Never run an untested heavy query "to see".
 - Details and the measured hot spots: `docs/DB_SCALING_PLAN.md`.
+- Queries on live return counts and ids, not emails, names or other personal data. Filter on an email pattern in the `WHERE` (for example `email like 'qa-e2e-%'`) and select `count(*)` or ids. Checks stay just as strong this way, and the safety check that otherwise stops a query in Auto mode stays quiet. When a task really needs personal data back, ask the owner first, say why, then run it.
 
 ## UI & design system
 - Read `docs/DESIGN_SYSTEM.md` before touching any UI. Tokens only: no hardcoded hex, inputs at standard heights, touch targets 44x44px minimum, safe-area classes.
