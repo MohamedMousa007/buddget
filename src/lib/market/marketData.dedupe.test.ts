@@ -5,6 +5,7 @@ vi.mock('@/lib/store/useFinanceStore', () => ({
     getState: () => ({
       updateRates: vi.fn(),
       updateGoldPrice: vi.fn(),
+      setGoldUnavailable: vi.fn(),
       settings: { baseCurrency: 'EGP' },
       exchangeRates: {},
     }),
@@ -25,6 +26,19 @@ describe('fetchExchangeRates in-flight dedupe', () => {
     await Promise.all(Array.from({ length: 8 }, () => fetchExchangeRates()))
     expect(fetchMock).toHaveBeenCalledTimes(1)
     await fetchExchangeRates()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('fetchGoldPrice in-flight dedupe', () => {
+  it('shares one /api/gold request across concurrent callers and allows a new one after settle', async () => {
+    fetchMock.mockReset()
+    fetchMock.mockImplementation(async () => ({ ok: true, json: async () => ({ available: false }) }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { fetchGoldPrice } = await import('./marketData')
+    await Promise.all([fetchGoldPrice(), fetchGoldPrice(), fetchGoldPrice()])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    await fetchGoldPrice()
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })

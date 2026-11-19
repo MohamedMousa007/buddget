@@ -54,8 +54,17 @@ async function requestExchangeRates(): Promise<void> {
   }
 }
 
+let goldInFlight: Promise<void> | null = null
+
 /** Fetch the authoritative spot gold price and apply to the store. Never throws. */
-export async function fetchGoldPrice(): Promise<void> {
+export function fetchGoldPrice(): Promise<void> {
+  goldInFlight ??= requestGoldPrice().finally(() => {
+    goldInFlight = null
+  })
+  return goldInFlight
+}
+
+async function requestGoldPrice(): Promise<void> {
   const store = useFinanceStore.getState()
   try {
     const { apiFetch } = await import('@/lib/apiBase')
