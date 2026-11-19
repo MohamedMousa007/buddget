@@ -388,6 +388,7 @@ export function useAuthModal() {
       return
     }
 
+    checkedAttemptRef.current = attemptId
     setLoading(false)
     // Skip router.refresh on native: there's no server to revalidate and it
     // desyncs the static-export App Router (navigateAfterAuth hard-loads anyway).
