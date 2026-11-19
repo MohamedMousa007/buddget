@@ -332,6 +332,13 @@ describe('pre-filter (non-transaction rejector)', () => {
     expect(isNonTransaction('Your available balance is EGP 12,450.00')).toBe('balance_only')
   })
 
+  it('QA-104: rejects "available balance on account <mask> is …", keeps a debit that ends with one', () => {
+    expect(isNonTransaction('Your available balance on account ***9044 is EGP 12,450.10')).toBe('balance_only')
+    expect(
+      isNonTransaction('Account ***9044 was debited EGP 50.00. Available balance on account ***9044 is EGP 100.00'),
+    ).toBeNull()
+  })
+
   it('NEVER rejects real transactions, even with marketing-ish words', () => {
     expect(isNonTransaction(HSBC_IPN_OUT)).toBeNull()
     expect(isNonTransaction(HSBC_IPN_IN)).toBeNull()

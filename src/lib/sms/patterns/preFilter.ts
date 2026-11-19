@@ -71,8 +71,8 @@ const BALANCE_ONLY_RE =
  * `lastIndex` or use `matchAll`, which does it for them.
  */
 export const BALANCE_CLAUSE_PATTERNS: readonly RegExp[] = [
-  // EN: "Your available/current/account/card balance/limit is EGP 36,183.18"
-  /(?:your\s+)?(?:available|current|account|card)\s+(?:international\s+)?(?:balance|limit)(?:\s+(?:to\s+use\s+)?is\s*|:?\s*)[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi,
+  // EN: "Your available/current/account/card balance/limit [on account ***9044] is EGP 36,183.18"
+  /(?:your\s+)?(?:available|current|account|card)\s+(?:international\s+)?(?:balance|limit)(?:\s+(?:on|in|of|for)\s+(?:your\s+)?(?:account|card|a\/c)\s+[\dX*\-]*)?(?:\s+(?:to\s+use\s+)?is\s*|:?\s*)[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi,
   // EN compact: "Avl Bal is AED 15,234.50" / "Avl Cr. Limit is AED 30,978.13"
   /\bavl?\.?\s*(?:cr\.?\s*)?(?:bal(?:ance)?|limit)\s+(?:is\s+)?[A-Z]{0,3}\s*[\d,]+(?:\.\d+)?/gi,
   // AR: "الرصيد المتاح / الحالي : EGP 2700.03" and "رصيدك المتاح : ..."
