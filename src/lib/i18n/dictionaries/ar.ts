@@ -3026,6 +3026,7 @@ export const ar: Dictionary = {
       finish: 'إنهاء',
       automationActive: 'الأتمتة مفعّلة',
       copied: (word) => `تم نسخ “${word}”`,
+      kwChipsLabel: 'كلمات أخرى قد يستخدمها بنكك · اضغط للتبديل والنسخ',
       openMessages: 'افتح الرسائل',
       testMessage: (kw) => `buddget test ${kw}`,
       doneMore: (kw) => `بعض الرسائل البنكية تكتب العملة *${kw}* بدلًا من ذلك. اضغط *إضافة أخرى* لإنشاء أتمتة أخرى بها حتى لا تفوتك أي رسالة.`,

@@ -2884,6 +2884,7 @@ export interface Dictionary {
       finish: string
       automationActive: string
       copied: (word: string) => string
+      kwChipsLabel: string
       openMessages: string
       testMessage: (keyword: string) => string
       doneMore: (keyword: string) => string

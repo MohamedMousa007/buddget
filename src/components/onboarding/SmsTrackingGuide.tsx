@@ -13,7 +13,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { getSmsBridgeStatus } from '@/lib/native/smsTracker'
 import { ShortcutsScene, type SceneId } from './sms/ShortcutsScenes'
-import { guideKeywords } from './sms/guideKeywords'
+import { allGuideKeywords, guideKeywords } from './sms/guideKeywords'
 
 type Step = { scene?: SceneId; test?: boolean; done?: boolean }
 
@@ -79,6 +79,23 @@ function Hero() {
   )
 }
 
+/** The autofilled keyword is the active chip; any other word is one tap away, and every tap also copies it. */
+function KeywordChips({ words, active, onPick }: { words: string[]; active: string; onPick: (k: string) => void }) {
+  const g = useT().smsTracking.guide
+  return (
+    <div className="mb-3">
+      <p className="mb-2 text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwChipsLabel}</p>
+      <div className="flex flex-wrap gap-2" dir="ltr">
+        {words.map((k) => (
+          <Button key={k} variant={k === active ? 'default' : 'outline'} size="sm" onClick={() => onPick(k)} aria-pressed={k === active} className="font-bold">
+            {k}<Copy className="size-3.5 opacity-60" aria-hidden />
+          </Button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Watches the device's last automation run: the intent stamps it on every run, even for a text it then skips. */
 function TestScreen({ keyword, onCopy }: { keyword: string; onCopy: (k: string) => void }) {
   const g = useT().smsTracking.guide
@@ -130,10 +147,13 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   const [index, setIndex] = useState(0)
   const [copied, setCopied] = useState<string | null>(null)
   // Each pass through the steps builds one automation; the next pass uses the next keyword.
-  const keywords = guideKeywords(useFinanceStore((s) => s.settings.baseCurrency))
-  const [round, setRound] = useState(0)
-  const keyword = keywords[Math.min(round, keywords.length - 1)]
-  const nextKeyword = keywords[round + 1]
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
+  const keywords = guideKeywords(baseCurrency)
+  const [used, setUsed] = useState<string[]>([])
+  // The guide pre-fills the keyword for the round; tapping another chip switches to it (and copies it, as a fallback).
+  const [picked, setPicked] = useState<string | null>(null)
+  const keyword = picked ?? keywords.find((k) => !used.includes(k)) ?? keywords[0]
+  const nextKeyword = keywords.find((k) => k !== keyword && !used.includes(k))
   const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const total = STEPS.length
@@ -150,7 +170,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   }, [])
   const close = useCallback(() => (onClose ? onClose() : window.history.back()), [onClose])
   const finish = useCallback(() => { onComplete?.(); close() }, [onComplete, close])
-  const restart = () => { setRound((r) => r + 1); setIndex(0) }
+  const restart = () => { setUsed((u) => [...u, keyword]); setPicked(null); setIndex(0) }
 
   return (
     <div className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[var(--color-brand-bg)]">
@@ -184,6 +204,9 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
             <div className="flex min-h-0 flex-1 items-center justify-center py-3" key={index}>
               {cur.test ? <TestScreen keyword={keyword} onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} keyword={keyword} />}
             </div>
+            {cur.scene === 'messageContains' ? (
+              <KeywordChips words={allGuideKeywords(baseCurrency)} active={keyword} onPick={(k) => { setPicked(k); onCopy(k) }} />
+            ) : null}
 
             <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
               <p className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{copy.title}</p>

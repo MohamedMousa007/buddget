@@ -3021,6 +3021,7 @@ export const en: Dictionary = {
       finish: 'Finish',
       automationActive: 'Automation active',
       copied: (word) => `Copied “${word}”`,
+      kwChipsLabel: 'Other words your bank may use · tap to switch and copy',
       openMessages: 'Open Messages',
       testMessage: (kw) => `buddget test ${kw}`,
       doneMore: (kw) => `Some bank texts write the currency as *${kw}* instead. Tap *Add another* to build one more automation with it, so nothing slips through.`,
