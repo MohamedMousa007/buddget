@@ -16,6 +16,12 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Parallel sessions can share this checkout: `git add` only your own paths, never `-A`.
 - After pushing, confirm it landed (`git log origin/main -1`). A denied push is the first line of the summary.
 
+## Tests run in the cloud (owner rule, 2026-11-19)
+- Every test run happens in a Claude Code cloud session, never on the owner's Mac: Playwright journeys, the API and UI suites in `e2e/`, the live sync and SMS suites, `npm run verify`, `npm test`. A session on the Mac does not start a dev server or a test runner. It hands the run to the cloud QA runner and waits for the result. Native builds stay local (see below).
+- Reuse one cloud QA runner. Find it with `list_sessions` (tag `qa-runner`) and send it the job with `send_message`: what to run, which branch, and what to report. Its checkout, `node_modules`, `.env.local` and dev-server setup are already there. Start a new cloud session only when no runner exists or it is archived, and tag it `qa-runner`. The runner fetches the asked branch before each job.
+- Test cases come from the suites first. Before writing a test, search `e2e/README.md`, the suite folders (`e2e/journeys/specs/**`, `e2e/api/**`, `e2e/ui/**`, `e2e/sync/**`, `e2e/sms/**`) and the latest reports in `docs/qa/round2/` for a case that already covers the need, and run that one. If none fits, add the new case to the matching suite folder, in the same style (fresh synthetic `qa-e2e-*` users, `test.fail` for an open bug with its id), and list it in `e2e/README.md`, so the next similar check reuses it.
+- Cloud QA method (from QA round 2): `next dev -p 3100 --webpack` with `NEXT_PUBLIC_DEV_AUTH_BYPASS=0` and an empty `NEXT_PUBLIC_API_BASE_URL`, `Africa/Cairo`, workers 1, specs in groups of about 6, a sign-in per run, a terse line reporter, screenshots only for flagged items, and every synthetic user deleted at the end (check that 0 are left).
+
 ## Database & migrations
 - New feature or domain change: check `supabase/migrations/` first.
 - Order: migration -> apply with `execute_sql` -> regenerate `database.types.ts` -> then code. Never write UI against a column the live DB lacks.
@@ -38,6 +44,7 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Cache what does not change per request (settings, plans, prices) in the server with a TTL; do not read them on every call.
 - Diagnostics (`pg_stat_statements`, table sizes, ad-hoc analytics) run one at a time, off peak, with a `LIMIT`. Never run an untested heavy query "to see".
 - Details and the measured hot spots: `docs/DB_SCALING_PLAN.md`.
+- Queries on live return counts and ids, not emails, names or other personal data. Filter on an email pattern in the `WHERE` (for example `email like 'qa-e2e-%'`) and select `count(*)` or ids. Checks stay just as strong this way, and the safety check that otherwise stops a query in Auto mode stays quiet. When a task really needs personal data back, ask the owner first, say why, then run it.
 
 ## UI & design system
 - Read `docs/DESIGN_SYSTEM.md` before touching any UI. Tokens only: no hardcoded hex, inputs at standard heights, touch targets 44x44px minimum, safe-area classes.
