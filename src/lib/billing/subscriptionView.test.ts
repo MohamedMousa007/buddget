@@ -53,3 +53,11 @@ describe('invite trial length', () => {
     expect(subscriptionView(me(30), now)).toMatchObject({ trialDay: 1, trialTotal: 30 })
   })
 })
+
+describe('an ended plan keeps a date to show', () => {
+  const ended = (sub: Record<string, unknown>) => ({ planKey: 'free', status: 'expired', subscription: { memberSince: '2026-01-01', ...sub } }) as never
+  it('uses the period end, or the cancel date when the store gave none', () => {
+    expect(subscriptionView(ended({ renewsAt: '2026-11-03T00:00:00Z' })).until).toBe('2026-11-03T00:00:00Z')
+    expect(subscriptionView(ended({ renewsAt: null, canceledAt: '2026-11-01T00:00:00Z' })).until).toBe('2026-11-01T00:00:00Z')
+  })
+})

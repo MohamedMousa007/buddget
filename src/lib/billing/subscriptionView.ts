@@ -29,7 +29,7 @@ export function subscriptionView(me: BillingMe | null, now = Date.now()): Subscr
   const paid = me.planKey !== 'free'
   if (!paid) {
     const wasMember = me.status === 'expired' && !!sub?.memberSince
-    return { ...base, kind: wasMember ? 'expired' : 'free', proActive: false, until: sub?.renewsAt ?? null }
+    return { ...base, kind: wasMember ? 'expired' : 'free', proActive: false, until: sub?.renewsAt ?? sub?.canceledAt ?? null }
   }
   if (me.status === 'trialing') {
     const end = me.trialEndsAt ? Date.parse(me.trialEndsAt) : NaN
