@@ -26,6 +26,7 @@ import { emitNotification } from '@/lib/server/emitNotification'
 import { getServerDictionary } from '@/lib/i18n/getServerDictionary'
 import { renderServerCopy } from '@/lib/notifications/serverCopy'
 import { goalMilestoneAlert, renderGoalAlert } from '@/lib/notifications/evaluateGoalAlerts'
+import { systemVaultId } from '@/lib/savings/pocketIdentity'
 
 type Service = ReturnType<typeof createServiceRoleClient>
 type Rates = Record<string, number>
@@ -138,10 +139,15 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
       pocketId = orphan.id
     } else {
       const name = dest.kind === 'create-goal-pocket' ? dest.name : 'Monthly Savings'
-      const { data: created } = must(await service.from('savings_accounts').insert({
-        user_id: userId, name, category: 'savings', type: 'vault', currency: base, current_balance: 0, opening_balance: 0, is_emergency_cover: false, held_in_payment_method_id: primaryId,
-      }).select('id').single(), 'create pocket')
-      pocketId = created!.id as string
+      const row = { user_id: userId, name, category: 'savings' as const, type: 'vault' as const, currency: base, current_balance: 0, opening_balance: 0, is_emergency_cover: false, held_in_payment_method_id: primaryId }
+      if (dest.kind === 'create-vault') {
+        // The system vault has one id per user, the same one the client seeds: a race with the app converges on one row.
+        pocketId = systemVaultId(userId)
+        must(await service.from('savings_accounts').upsert({ ...row, id: pocketId }, { onConflict: 'id', ignoreDuplicates: true }), 'create vault')
+      } else {
+        const { data: created } = must(await service.from('savings_accounts').insert(row).select('id').single(), 'create pocket')
+        pocketId = created!.id as string
+      }
     }
     if (dest.kind === 'create-vault') must(await service.from('profiles').update({ default_carry_pocket_id: pocketId }).eq('id', userId), 'default pocket')
     // The goal owns its pocket from now on, so the next cycle resolves to it instead of minting another.

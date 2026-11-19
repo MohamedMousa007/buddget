@@ -1301,7 +1301,7 @@ export interface FinanceStore {
   updateInvestmentHolding: (id: string, updates: Partial<InvestmentHolding>) => void
   deleteInvestmentHolding: (id: string) => void
   addSavingsAccount: (
-    a: Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & { openingBalance?: number }
+    a: Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & { openingBalance?: number; id?: string }
   ) => string
   updateSavingsAccount: (id: string, updates: Partial<SavingsAccount>) => void
   deleteSavingsAccount: (id: string) => void

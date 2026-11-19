@@ -31,7 +31,7 @@ import type { ParkedRow } from '@/lib/supabase/remote/sync'
 import { hasUnpersistedWrites, STORAGE_QUOTA_EVENT } from '@/lib/store/safeLocalStorage'
 import { cacheOwnerMismatch } from '@/lib/auth/cacheOwnerCheck'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
-import { markHydrated } from '@/hooks/remote/hydrateGuard'
+import { markHydrated, markPulled } from '@/hooks/remote/hydrateGuard'
 import { ensureMarketDataFresh } from '@/lib/market/marketData'
 import { isSecondFactorBlocked, onSecondFactorResolved, useSecondFactorGate } from '@/lib/auth/secondFactorGate'
 import { applyTheme } from '@/lib/theme/applyTheme'
@@ -752,6 +752,7 @@ function applyMerged(merged: Snapshot, userId: string): void {
   for (const slice of ['expenses','income','incomeEvents','debts','goals','savings','subscriptions','budget']) {
     markHydrated(userId, slice)
   }
+  markPulled(userId)
 }
 
 // ─── Slice-change detection ──────────────────────────────────────────────

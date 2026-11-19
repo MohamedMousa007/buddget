@@ -28,8 +28,27 @@ export function markHydrated(userId: string, slice: string): void {
   hydrated.add(keyOf(userId, slice))
 }
 
+const PULLED = 'serverPull'
+const pulledListeners = new Set<() => void>()
+
+/** The server's data has been merged into the store this session (a warm cache alone does not count). */
+export function hasPulled(userId: string): boolean {
+  return hydrated.has(keyOf(userId, PULLED))
+}
+
+export function markPulled(userId: string): void {
+  hydrated.add(keyOf(userId, PULLED))
+  pulledListeners.forEach((l) => l())
+}
+
+export function subscribePulled(cb: () => void): () => void {
+  pulledListeners.add(cb)
+  return () => { pulledListeners.delete(cb) }
+}
+
 /** Called by `clearBudgetData` on sign-out so the next sign-in hydrates
  *  from scratch. */
 export function resetHydrationGuard(): void {
   hydrated.clear()
+  pulledListeners.forEach((l) => l())
 }

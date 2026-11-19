@@ -1674,10 +1674,11 @@ export const useFinanceStore = create<FinanceStore>()(
       addSavingsAccount: (a) => {
         const input = a as Omit<SavingsAccount, 'id' | 'createdAt' | 'currentBalance'> & {
           openingBalance?: number
+          id?: string
         }
-        const { openingBalance: openingField, ...rest } = input
+        const { openingBalance: openingField, id: givenId, ...rest } = input
         const openingBalance = Math.max(0, Number(openingField) || 0)
-        const id = generateId()
+        const id = givenId ?? generateId()
         const today = localTodayISO()
         set((state) => {
           const row: SavingsAccount = {

@@ -94,7 +94,10 @@ describe('month-carry live run', () => {
     await GET(req())
     expect(h.deposits.length).toBeGreaterThan(0)
     expect(h.deposits.every((d) => d.pocketId !== 'gp')).toBe(true)
-    expect(writesTo('savings_accounts', 'insert')[0]?.row.name).toBe('Monthly Savings')
+    // The system vault is an upsert of a per-user id, so a client seed racing the cron converges on one row (QA-108).
+    const vault = writesTo('savings_accounts', 'upsert')[0]?.row
+    expect(vault?.name).toBe('Monthly Savings')
+    expect(vault?.id).toBeTruthy()
   })
 
   it('RPW-2: a null-figures cycle writes an empty summary and the newer cycles still run', async () => {

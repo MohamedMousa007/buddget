@@ -19,6 +19,15 @@ export function pocketColor(a: Pick<SavingsAccount, 'type' | 'color'>): string {
 /** The stored name of the vault the app creates for every user; shown translated, never rewritten. */
 export const SYSTEM_VAULT_NAME = 'Monthly Savings'
 
+/**
+ * The primary key of a user's system vault: the user's id read backwards. Every client and the month-carry cron derive the same
+ * id, so N concurrent seeds are N upserts of one row, not N vaults. Still a valid uuid; the reversed digits keep it unique per user.
+ */
+export function systemVaultId(userId: string): string {
+  const hex = userId.replace(/-/g, '').split('').reverse().join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 export function pocketDisplayName(a: Pick<SavingsAccount, 'type' | 'name'>, systemNames: SavingsFormsCopy['systemNames']): string {
   return a.type === 'vault' && a.name === SYSTEM_VAULT_NAME ? systemNames.monthlySavings : a.name
 }
