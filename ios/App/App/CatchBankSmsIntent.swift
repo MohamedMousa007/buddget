@@ -40,7 +40,7 @@ struct CatchBankSmsIntent: AppIntent {
             SmsCredentialStore.recordRun(result: "skipped_otp")
             return .result()
         }
-        // The guide's automation fires on any text containing "0", so personal texts reach this action too.
+        // Short keywords like "جم" also match everyday words, so personal texts can reach this action.
         // Only a text that names an amount with a currency (or states money moving) leaves the phone.
         guard SmsOtpGate.looksLikeBankMoney(message) else {
             SmsCredentialStore.recordRun(result: "skipped_not_money")

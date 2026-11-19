@@ -13,6 +13,7 @@ import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { getSmsBridgeStatus } from '@/lib/native/smsTracker'
 import { ShortcutsScene, type SceneId } from './sms/ShortcutsScenes'
+import { guideKeywords } from './sms/guideKeywords'
 
 type Step = { scene?: SceneId; test?: boolean; done?: boolean }
 
@@ -79,8 +80,9 @@ function Hero() {
 }
 
 /** Watches the device's last automation run: the intent stamps it on every run, even for a text it then skips. */
-function TestScreen({ onCopy }: { onCopy: (k: string) => void }) {
+function TestScreen({ keyword, onCopy }: { keyword: string; onCopy: (k: string) => void }) {
   const g = useT().smsTracking.guide
+  const text = g.testMessage(keyword)
   const [connected, setConnected] = useState(false)
   useEffect(() => {
     if (connected) return
@@ -95,8 +97,8 @@ function TestScreen({ onCopy }: { onCopy: (k: string) => void }) {
   }, [connected])
   return (
     <div className="mx-auto flex w-full max-w-[310px] flex-col items-center gap-4">
-      <div dir="ltr" className="max-w-[270px] self-end rounded-[16px_16px_4px_16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-primary)]">{g.testMessage}</div>
-      <Button variant="outline" size="sm" onClick={() => onCopy(g.testMessage)} className="font-bold">{g.copyTest}<Copy className="size-3.5 text-[var(--color-brand-text-muted)]" aria-hidden /></Button>
+      <div dir="ltr" className="max-w-[270px] self-end rounded-[16px_16px_4px_16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-primary)]">{text}</div>
+      <Button variant="outline" size="sm" onClick={() => onCopy(text)} className="font-bold">{g.copyTest}<Copy className="size-3.5 text-[var(--color-brand-text-muted)]" aria-hidden /></Button>
       <div role="status">
         {connected
           ? <Badge variant="positive" className="gap-1 px-3 py-1 text-[0.8125rem]"><Check className="size-3.5" aria-hidden />{g.testConnected}</Badge>
@@ -127,11 +129,17 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   const [phase, setPhase] = useState<'intro' | 'steps'>('intro')
   const [index, setIndex] = useState(0)
   const [copied, setCopied] = useState<string | null>(null)
+  // Each pass through the steps builds one automation; the next pass uses the next keyword.
+  const keywords = guideKeywords(useFinanceStore((s) => s.settings.baseCurrency))
+  const [round, setRound] = useState(0)
+  const keyword = keywords[Math.min(round, keywords.length - 1)]
+  const nextKeyword = keywords[round + 1]
   const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const total = STEPS.length
   const cur = STEPS[index]
   const copy = g.steps[index]
+  const desc = (cur.done && nextKeyword ? g.doneMore(nextKeyword) : copy.desc).replaceAll('{kw}', keyword)
   const isLast = index === total - 1
 
   const onCopy = useCallback((k: string) => {
@@ -142,7 +150,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   }, [])
   const close = useCallback(() => (onClose ? onClose() : window.history.back()), [onClose])
   const finish = useCallback(() => { onComplete?.(); close() }, [onComplete, close])
-  const restart = () => setIndex(0)
+  const restart = () => { setRound((r) => r + 1); setIndex(0) }
 
   return (
     <div className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[var(--color-brand-bg)]">
@@ -174,12 +182,12 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
             <p className="mt-2 text-[0.6875rem] font-semibold tabular-nums text-[var(--color-brand-text-muted)]">{g.stepOf(index + 1, total)}</p>
 
             <div className="flex min-h-0 flex-1 items-center justify-center py-3" key={index}>
-              {cur.test ? <TestScreen onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} />}
+              {cur.test ? <TestScreen keyword={keyword} onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} keyword={keyword} />}
             </div>
 
             <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
               <p className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{copy.title}</p>
-              <p className="mt-1 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]"><Emphasis text={copy.desc} /></p>
+              <p className="mt-1 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]"><Emphasis text={desc} /></p>
             </div>
 
             <div className="mt-3 flex gap-2.5">

@@ -26,7 +26,7 @@ export function carriesMoneyMovement(text: string): boolean {
   return hasAmount(text) && (VERB.test(text) || VERB_AR.some((w) => text.includes(w)))
 }
 
-/** iOS only (SmsOtpGate.looksLikeBankMoney): the automation fires on any text with a "0", so this decides what leaves the phone. */
+/** iOS only (SmsOtpGate.looksLikeBankMoney): keyword automations ("جم" matches everyday words too), so this decides what leaves the phone. */
 export function looksLikeBankMoney(text: string): boolean {
   return hasAmount(text) || carriesMoneyMovement(text)
 }

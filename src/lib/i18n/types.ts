@@ -2885,7 +2885,8 @@ export interface Dictionary {
       automationActive: string
       copied: (word: string) => string
       openMessages: string
-      testMessage: string
+      testMessage: (keyword: string) => string
+      doneMore: (keyword: string) => string
       copyTest: string
       testWaiting: string
       testConnected: string

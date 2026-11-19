@@ -3,6 +3,7 @@ import { STEPS } from './SmsTrackingGuide'
 import { en } from '@/lib/i18n/dictionaries/en'
 import { ar } from '@/lib/i18n/dictionaries/ar'
 import { looksLikeBankMoney } from '@/lib/sms/deviceOtpGate'
+import { guideKeywords } from './sms/guideKeywords'
 
 /**
  * STEPS (the illustrated scene per step) and the `steps` copy arrays are
@@ -31,11 +32,18 @@ describe('SMS guide step arrays stay aligned', () => {
       expect(s.scene ?? s.test ?? s.done, `STEPS[${i}] would render blank`).toBeTruthy()
     }
   })
-  it('the test text fires the "0" automation but never leaves the phone as money', () => {
-    for (const g of [en.smsTracking.guide, ar.smsTracking.guide]) {
-      expect(g.testMessage).toContain('0')
-      expect(looksLikeBankMoney(g.testMessage)).toBe(false)
+  it('the test text fires each keyword automation but never leaves the phone as money', () => {
+    for (const kw of [...guideKeywords('EGP'), ...guideKeywords('SAR'), 'USD']) {
+      for (const g of [en.smsTracking.guide, ar.smsTracking.guide]) {
+        expect(g.testMessage(kw)).toContain(kw)
+        expect(looksLikeBankMoney(g.testMessage(kw))).toBe(false)
+      }
     }
+  })
+  it('keywords follow the base currency, best first', () => {
+    expect(guideKeywords('EGP')).toEqual(['EGP', 'جم', 'جنيه'])
+    expect(guideKeywords('SAR')).toEqual(['SAR', 'SR'])
+    expect(guideKeywords('USD')).toEqual(['USD'])
   })
   it('no step still asks for the sender, which iOS never provides', () => {
     for (const t of [...en.smsTracking.guide.steps, ...ar.smsTracking.guide.steps]) expect(t.desc + t.title).not.toMatch(/pass the sender|Sender variable|مرر.*المرسل/i)
