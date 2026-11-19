@@ -19,8 +19,8 @@ const PER_DEVICE = 10
 const PER_IP = 40
 export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => null)) as { secret?: string } | null
-    const secret = body?.secret?.trim()
+    const body = (await request.json().catch(() => null)) as { secret?: unknown } | null
+    const secret = typeof body?.secret === 'string' ? body.secret.trim() : ''
     if (!secret) return NextResponse.json({ error: 'Missing secret' }, { status: 400 })
 
     const deviceId = await resolveDeviceId(request)

@@ -98,6 +98,9 @@ export async function POST(req: Request) {
     } catch {
       return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
     }
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Invalid request payload' }, { status: 400 })
+    }
     const { contents, generationConfig, grounded, systemInstruction, tier, stream } = body as {
       contents?: unknown[]
       generationConfig?: Record<string, unknown>

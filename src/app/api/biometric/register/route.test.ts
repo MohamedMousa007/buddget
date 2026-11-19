@@ -29,6 +29,11 @@ describe('POST /api/biometric/register', () => {
     h.verify.mockResolvedValue('reauth_required')
   })
 
+  it('answers a non-string secret_hash with 400, not 500', async () => {
+    expect((await call({ secret_hash: 5 })).status).toBe(400)
+    expect(h.inserted).not.toHaveBeenCalled()
+  })
+
   it('binds a device nobody owns after a fresh sign-in', async () => {
     h.inserted.mockResolvedValue({ data: [{ device_id: 'dev1' }], error: null })
     expect((await call()).status).toBe(200)

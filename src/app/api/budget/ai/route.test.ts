@@ -25,6 +25,12 @@ describe('POST /api/budget/ai', () => {
     vi.stubEnv('GEMINI_API_KEY', 'k')
   })
 
+  it('answers a JSON null body with 400, not 500', async () => {
+    const res = await POST(new Request('http://x/api/budget/ai', { method: 'POST', body: 'null' }) as never)
+    expect(res.status).toBe(400)
+    expect(h.fetch).not.toHaveBeenCalled()
+  })
+
   it('settles the tokens Google billed even when the model output is not valid JSON', async () => {
     h.fetch.mockResolvedValue(
       new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'not json' }] } }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } }), { status: 200 }),

@@ -20,6 +20,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   const type = typeof body.type === 'string' ? body.type : ''
   if (!(ONBOARDING_EVENTS as readonly string[]).includes(type)) return NextResponse.json({ error: 'Unknown event' }, { status: 400 })
   const raw = body.meta && typeof body.meta === 'object' && !Array.isArray(body.meta) ? (body.meta as Record<string, unknown>) : {}

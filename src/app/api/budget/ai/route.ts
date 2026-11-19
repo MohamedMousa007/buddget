@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 
   if (body.op === 'build') {
     const input = validateBuildInput(body)

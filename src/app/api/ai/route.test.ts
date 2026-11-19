@@ -74,6 +74,12 @@ describe('POST /api/ai', () => {
     expect(h.call).not.toHaveBeenCalled()
   })
 
+  it('answers a JSON null or array body with 400, not 500', async () => {
+    expect((await post('null')).status).toBe(400)
+    expect((await post('[]')).status).toBe(400)
+    expect(h.call).not.toHaveBeenCalled()
+  })
+
   it('bounds every upstream call with a deadline signal inside the function budget', async () => {
     await post({ contents })
     expect(h.call.mock.calls[0][4]).toBeInstanceOf(AbortSignal)

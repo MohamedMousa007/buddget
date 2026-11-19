@@ -26,6 +26,12 @@ describe('POST /api/biometric/signin', () => {
     h.unbind.mockReset().mockResolvedValue({ error: null })
   })
 
+  it('answers a non-string secret with 400, not 500', async () => {
+    const res = await POST(new Request('http://x', { method: 'POST', body: JSON.stringify({ secret: 5 }) }))
+    expect(res.status).toBe(400)
+    expect(h.limited).not.toHaveBeenCalled()
+  })
+
   it('throttles per device and per address before touching the secret', async () => {
     h.limited.mockResolvedValue(true)
     expect((await call()).status).toBe(429)

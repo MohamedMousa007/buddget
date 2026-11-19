@@ -22,8 +22,8 @@ export async function POST(request: Request) {
     const [identity, { user }] = await Promise.all([resolveRouteIdentity(request), resolveRouteUser(request)])
     if (!user || !identity || identity.id !== user.id) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
-    const body = (await request.json().catch(() => null)) as { secret_hash?: string; currentPassword?: string } | null
-    const secretHash = body?.secret_hash?.trim().toLowerCase()
+    const body = (await request.json().catch(() => null)) as { secret_hash?: unknown; currentPassword?: string } | null
+    const secretHash = typeof body?.secret_hash === 'string' ? body.secret_hash.trim().toLowerCase() : ''
     if (!secretHash || !SECRET_HASH_PATTERN.test(secretHash)) {
       return NextResponse.json({ error: 'Invalid secret_hash' }, { status: 400 })
     }

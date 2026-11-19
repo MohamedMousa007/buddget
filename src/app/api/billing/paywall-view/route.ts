@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   if (!identity) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   const service = createServiceRoleClient()
   if (!(await billingEnabled(service))) return NextResponse.json({ ok: true, recorded: false })
-  const body = (await request.json().catch(() => ({}))) as { platform?: string; source?: string }
+  const body = ((await request.json().catch(() => null)) ?? {}) as { platform?: string; source?: string }
   const { error } = await service.rpc('record_paywall_view', { p_user: identity.id, p_platform: String(body.platform ?? ''), p_source: String(body.source ?? '') })
   if (error) console.error('[paywall-view] failed', error.message)
   return NextResponse.json({ ok: !error, recorded: !error })

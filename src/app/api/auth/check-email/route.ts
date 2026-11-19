@@ -44,8 +44,8 @@ export async function POST(req: Request) {
   const deadline = startMs + MIN_LATENCY_MS
 
   try {
-    const body = (await req.json().catch(() => null)) as { email?: string } | null
-    const email = body?.email?.trim()
+    const body = (await req.json().catch(() => null)) as { email?: unknown } | null
+    const email = typeof body?.email === 'string' ? body.email.trim() : ''
     if (!email || !isValidEmail(email)) {
       await sleepUntil(deadline)
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
