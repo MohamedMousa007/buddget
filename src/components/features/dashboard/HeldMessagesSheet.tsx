@@ -44,9 +44,15 @@ export interface ReviewMatch {
  *  - provisional currency (transaction exists) → confirming locks the currency; dismissing only stops the question
  *  - add-failed rescue (nothing created yet)   → confirming creates it; dismissing means it is never added (Undo for 8 s)
  */
-/** The one line saying why a message waits, for the holds that come from a plan limit rather than from the message itself. */
-const heldReason = (code: string | null, s: { heldAccountCap: string; heldAiQuota: string }): string | null =>
-  code === 'sms_account_cap' ? s.heldAccountCap : code === AI_QUOTA_HOLD ? s.heldAiQuota : null
+/** The one line saying why a message waits, for holds the message text alone does not explain. */
+const HELD_REASON_KEY = {
+  sms_account_cap: 'heldAccountCap',
+  [AI_QUOTA_HOLD]: 'heldAiQuota',
+  unverified_reading: 'heldUnverifiedReading',
+  ai_credit_new_sender: 'heldNewSenderCredit',
+} as const
+const heldReason = (code: string | null, s: Record<(typeof HELD_REASON_KEY)[keyof typeof HELD_REASON_KEY], string>): string | null =>
+  code && code in HELD_REASON_KEY ? s[HELD_REASON_KEY[code as keyof typeof HELD_REASON_KEY]] : null
 
 export function HeldMessagesSheet({ open, onClose, items, confirmItem, dismissItem, onConfirmedMatch }: HeldMessagesSheetProps) {
   const shortDate = useShortDate()

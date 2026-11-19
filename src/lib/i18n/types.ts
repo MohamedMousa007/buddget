@@ -2790,6 +2790,8 @@ export interface Dictionary {
     groupUnverified: (count: number) => string
     heldAccountCap: string
     heldAiQuota: string
+    heldUnverifiedReading: string
+    heldNewSenderCredit: string
     seeMessage: string
     hideMessage: string
     confirmN: (count: number) => string
