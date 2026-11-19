@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { LOGO_POLICY } from './logoPolicy'
 import { BRAND_INITIALS, brandInitials, brandTileColors } from './brandTile'
 import { SUBSCRIPTION_CATALOG } from './subscriptionCatalog'
+import { INK_DARK, INK_DARK_HEX, INK_LIGHT, INK_LIGHT_HEX, contrastRatio, parseHex } from '@/lib/ui/contrast'
 
 describe('brand monograms', () => {
   const noLogo = SUBSCRIPTION_CATALOG.filter((b) => LOGO_POLICY[b.key] !== 'logo')
@@ -23,9 +24,22 @@ describe('brand monograms', () => {
     expect(brandInitials(null, 'my gym club')).toBe('MG')
     expect(brandInitials(null, 'netflix')).toBe('NE')
   })
-  it('uses the brand colour, with dark text on light fills', () => {
-    expect(brandTileColors('vodafone_eg')).toEqual({ bg: '#E60000', fg: 'white' })
-    expect(brandTileColors('snapchat_plus')?.fg).toBe('black')
+  it('uses the brand colour with the ink token that reads better on it', () => {
+    expect(brandTileColors('vodafone_eg')?.bg).toBe('#E60000')
+    expect([INK_LIGHT, INK_DARK]).toContain(brandTileColors('vodafone_eg')?.fg)
+    expect(brandTileColors('snapchat_plus')?.fg).toBe(INK_DARK)
     expect(brandTileColors(null)).toBeNull()
+  })
+  it('every monogram tile reaches 4:1 with the chosen ink, and the chosen ink is the better of the two (QA-110)', () => {
+    for (const b of noLogo) {
+      const t = brandTileColors(b.key)
+      if (!t) continue
+      const bg = parseHex(t.bg)!
+      const light = contrastRatio(parseHex(INK_LIGHT_HEX)!, bg)
+      const dark = contrastRatio(parseHex(INK_DARK_HEX)!, bg)
+      const chosen = t.fg === INK_LIGHT ? light : dark
+      expect(chosen, b.key).toBeGreaterThanOrEqual(Math.max(light, dark) - 1e-9)
+      expect(chosen, b.key).toBeGreaterThanOrEqual(4)
+    }
   })
 })

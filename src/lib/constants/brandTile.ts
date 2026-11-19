@@ -1,4 +1,5 @@
 import { findBrandByKey } from '@/lib/constants/subscriptionCatalog'
+import { inkFor } from '@/lib/ui/contrast'
 
 /**
  * Two-letter marks for brands whose logo we do not show (see `logoPolicy.ts`). Chosen by hand
@@ -33,19 +34,9 @@ export function brandInitials(brandKey: string | null | undefined, name: string)
   return mark.toLocaleUpperCase()
 }
 
-/** Relative luminance of `#rrggbb`, 0 (black) to 1 (white). */
-function luminance(hex: string): number {
-  const [r, g, b] = [1, 3, 5].map((i) => {
-    const c = Number.parseInt(hex.slice(i, i + 2), 16) / 255
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
-  })
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
-/** The brand's own colour as the tile fill, with whichever of white or black text reads better on it. Null for a custom service. */
+/** The brand's own colour as the tile fill, with whichever ink token reads better on it. Null for a custom service. */
 export function brandTileColors(brandKey: string | null | undefined): { bg: string; fg: string } | null {
   const color = findBrandByKey(brandKey ?? null)?.color
   if (!color || !/^#[0-9a-f]{6}$/i.test(color)) return null
-  // Black text beats white once the fill is light enough (yellow, light green).
-  return { bg: color, fg: luminance(color) > 0.4 ? 'black' : 'white' }
+  return { bg: color, fg: inkFor(color) }
 }
