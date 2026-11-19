@@ -12,6 +12,8 @@ import { POST as buddgyTurn } from '@/app/api/buddgy/turn/route'
 import { POST as budgetAi } from '@/app/api/budget/ai/route'
 import { POST as receiptScan } from '@/app/api/receipt/scan/route'
 import { POST as voice } from '@/app/api/voice/transcribe/route'
+import { POST as feedback } from '@/app/api/feedback/route'
+import { POST as boardVote } from '@/app/api/support/board/[number]/vote/route'
 import { NextRequest } from 'next/server'
 
 const post = () => new NextRequest('http://x/api', { method: 'POST', body: '{}', headers: { 'content-type': 'application/json' } })
@@ -28,5 +30,17 @@ describe('AUT-2: a suspended account is refused by every paid AI route', () => {
   it.each(routes)('%s lets an active account past the auth check', async (_name, handler) => {
     h.active = true
     expect((await handler(post())).status).not.toBe(401)
+  })
+})
+
+describe('QA-53: a suspended or deleted account cannot post feedback or vote on the board', () => {
+  it('feedback answers 401', async () => {
+    h.active = false
+    expect((await feedback(post())).status).toBe(401)
+  })
+
+  it('a board vote answers 401', async () => {
+    h.active = false
+    expect((await boardVote(post(), { params: Promise.resolve({ number: '1' }) })).status).toBe(401)
   })
 })

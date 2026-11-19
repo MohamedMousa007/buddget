@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/server/rateLimit'
-import { resolveRouteIdentity } from '@/lib/supabase/resolveRouteUser'
+import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
 const LINEAR_GRAPHQL = 'https://api.linear.app/graphql'
@@ -21,7 +21,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const user = await resolveRouteIdentity(request)
+  const user = await resolveActiveApiIdentity(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const apiKey = process.env.LINEAR_API_KEY

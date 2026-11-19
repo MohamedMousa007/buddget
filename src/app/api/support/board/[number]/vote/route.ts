@@ -1,7 +1,7 @@
 import { after, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
-import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
+import { resolveActiveApiUserId } from '@/lib/auth/resolveApiUser'
 import { drainOutbox } from '@/lib/server/integrations/outbox'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -14,7 +14,7 @@ const bodySchema = z.object({ value: z.union([z.literal(-1), z.literal(0), z.lit
 export async function POST(request: Request, { params }: { params: Promise<{ number: string }> }) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
-  const uid = await resolveApiUserId(request)
+  const uid = await resolveActiveApiUserId(request)
   if (!uid) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   const number = Number((await params).number)
   const parsed = bodySchema.safeParse(await request.json().catch(() => null))
