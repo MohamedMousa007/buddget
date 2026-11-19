@@ -38,6 +38,21 @@ describe('POST /api/entitlements/trial', () => {
     expect(h.rpc).toHaveBeenCalledWith('trial_claim', { p_user: 'u1', p_email_key: 'firstlast@gmail.com' })
   })
 
+  it('with TRIAL_CLAIM_KEY_SECRET set, claims under a keyed hash and names the old key so it is converted', async () => {
+    const { createHmac } = await import('node:crypto')
+    vi.stubEnv('TRIAL_CLAIM_KEY_SECRET', 'pepper')
+    try {
+      await call()
+      expect(h.rpc).toHaveBeenCalledWith('trial_claim', {
+        p_user: 'u1',
+        p_email_key: createHmac('sha256', 'pepper').update('firstlast@gmail.com').digest('hex'),
+        p_legacy_key: 'firstlast@gmail.com',
+      })
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('grants nothing to an unconfirmed email or an anonymous session', async () => {
     h.user = { email: 'a@example.com', email_confirmed_at: null, is_anonymous: false }
     expect(await (await call()).json()).toEqual({ status: 'unverified' })

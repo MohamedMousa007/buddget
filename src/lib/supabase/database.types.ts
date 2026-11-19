@@ -6954,7 +6954,7 @@ export type Database = {
         Returns: Json
       }
       trial_claim: {
-        Args: { p_email_key: string; p_user: string }
+        Args: { p_email_key: string; p_legacy_key?: string; p_user: string }
         Returns: Json
       }
       update_subscription_and_re: {
