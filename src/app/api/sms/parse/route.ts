@@ -55,7 +55,7 @@ import {
   type TemplateCandidate,
 } from '@/lib/sms/templateScope'
 import { SMS_SENDER_HELD_PUSH_KIND } from '@/lib/sms/pushKinds'
-import { MAX_SMS_BODY_CHARS, checkCreditSender, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, computeBodyHash, captureSecond, hasPostedTransaction, isClaimInFlight, isPlausibleAmount, isStaleClaim, maskOtpDigits, nonTransactionReason, resolveSmsDay, smsLocalDay } from '@/lib/sms/ingestGuards'
+import { MAX_SMS_BODY_CHARS, aiReadingGrounded, checkCreditSender, isCreditKind, senderKnownForUser, claimInProgressResponse, heldForConfirmation, computeLegacySmsHashes, computeNeighbourSmsHashes, computeSmsHash, computeBodyHash, captureSecond, hasPostedTransaction, isClaimInFlight, isPlausibleAmount, isStaleClaim, maskOtpDigits, nonTransactionReason, resolveSmsDay, smsLocalDay } from '@/lib/sms/ingestGuards'
 import { withSmsAiQuota } from '@/lib/sms/meteredAi'
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { senderCapReached } from '@/lib/sms/senderCap'
@@ -860,6 +860,8 @@ export async function POST(request: Request) {
   let txDay: string | null = null
   // AI template-learning outcome, persisted on the log row for admin visibility.
   let learnStatus: string | null = null
+  // Set when the AI reading may teach a template; the learning itself waits for the hold decision (QA-39).
+  let aiLearn: { key: string; apiKey: string } | null = null
   /** Set when a quarantined template had to stand in because AI was unavailable (C4). */
   let quarantinedFallback = false
 
@@ -995,10 +997,7 @@ export async function POST(request: Request) {
     if (!parsed.is_transaction) learnStatus = 'skipped_not_tx'
     else if (!learnKey) learnStatus = 'skipped_no_key'
     else if (parsed.confidence < PATTERN_LEARN_CONFIDENCE) learnStatus = 'skipped_low_conf'
-    else {
-      learnStatus = 'pending' // learnPattern overwrites with its real outcome
-      after(() => learnPattern(message, learnKey, parsed, service, apiKey, userId, logId, nowIso))
-    }
+    else aiLearn = { key: learnKey, apiKey }
   }
 
   // Which stage of the journey parsed this row — stamped for the admin audit loop.
@@ -1034,7 +1033,7 @@ export async function POST(request: Request) {
   // What a message the tiers called a transaction but that cannot be booked yet becomes: a row held for the user, in
   // the same shape as a credit held for its sender (parsed_ok, awaiting_confirmation), so the review list shows it and
   // /api/sms/confirm or /api/sms/dismiss settles it. Never an answer that makes the phone forget it (I6).
-  const holdForReview = async (code: 'null_amount' | 'low_confidence' | 'implausible_amount' | 'truncated_amount') => {
+  const holdForReview = async (code: 'null_amount' | 'low_confidence' | 'implausible_amount' | 'truncated_amount' | 'unverified_reading') => {
     const { error: holdErr } = await service.from('sms_parse_log')
       .update({
         status: 'logged',
@@ -1108,6 +1107,8 @@ export async function POST(request: Request) {
   if (!isPlausibleAmount(parsed.amount)) return holdForReview('implausible_amount')
   // The phone says it cut the message, so the amount may be a fragment: the user checks it (N6).
   if (truncated === true) return holdForReview('truncated_amount')
+  // The AI's reading must be backed by the message: its amount printed, money-in wording for a credit, no JSON (QA-14).
+  if (parseMethod === 'ai_new' && !aiReadingGrounded(parsed.amount, parsed.kind, message)) return holdForReview('unverified_reading')
 
   // Classify + persist via the shared dispatcher: own-account/transfer/FX
   // pairing → CC payoff → salary dedup → ATM → subscription → purchase. Posts
@@ -1133,7 +1134,11 @@ export async function POST(request: Request) {
   const paymentReferenceHash = referenceHash(userId, extractIpnReference(message))
   // The free plan tracks two bank accounts by SMS. A message for one the cap left untracked waits in the review list with a reason line.
   const capHeld = !senderHeld && await namesUntrackedAccount(service, userId, cleanLast4, { sender, bankName: parsed.bank_name, bankKey: provider.bankKey })
-  const tx: SmsTxResult = senderHeld || capHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
+  // Money in that only the AI read, from a sender this user has never had a booked message from, waits for one tap:
+  // a well-formed forgery passes the grounding check above (QA-14, decision 7.3).
+  const aiCreditHeld = !senderHeld && !capHeld && parseMethod === 'ai_new' && isCreditKind(parsed.kind)
+    && !(await senderKnownForUser(service, userId, senderKey))
+  const tx: SmsTxResult = senderHeld || capHeld || aiCreditHeld ? heldForConfirmation(parsed.kind) : await createSmsTransaction(service, {
     userId,
     amount: parsed.amount,
     currency: parsed.currency,
@@ -1247,6 +1252,17 @@ export async function POST(request: Request) {
 
   const preAck = !addFailed && !provisionalConfirm && postedSomething
 
+  // Learn a GLOBAL regex template only from a message that was booked with no hold, so a held message (an unverified
+  // reading, a new sender's money in, a sender mismatch) is never learned (QA-39). after() keeps the serverless
+  // function alive until it completes.
+  if (aiLearn) {
+    const { key: learnKey, apiKey } = aiLearn
+    if (preAck && !senderHeld && !capHeld && !aiCreditHeld) {
+      learnStatus = 'pending' // learnPattern overwrites with its real outcome
+      after(() => learnPattern(message, learnKey, parsed, service, apiKey, userId, logId, nowIso))
+    } else learnStatus = 'skipped_held'
+  }
+
   // Promote the log row with the full parse result + an HONEST add status.
   // add_failed keeps parsed_ok=true and awaiting_confirmation=true so the row
   // surfaces in the in-app rescue banner and is recoverable via /api/sms/confirm.
@@ -1259,7 +1275,7 @@ export async function POST(request: Request) {
       status: addFailed ? 'add_failed' : tx.outcome === 'transfer_paired' ? 'paired' : preAck ? 'confirmed' : 'logged',
       ...(preAck && tx.outcome !== 'transfer_paired' ? { acked_at: new Date().toISOString(), confirmed_at: new Date().toISOString() } : {}),
       harvested_at: new Date().toISOString(),
-      failure_code: senderHeld ? 'sender_mismatch' : capHeld ? 'sms_account_cap' : addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
+      failure_code: senderHeld ? 'sender_mismatch' : capHeld ? 'sms_account_cap' : aiCreditHeld ? 'ai_credit_new_sender' : addFailed ? 'insert_failed' : provisionalConfirm ? 'currency_provisional' : debtAwaitingUser ? 'debt_unassigned' : null,
       confidence: parsed.confidence,
       amount: parsed.amount,
       currency: parsed.currency,
@@ -1745,17 +1761,10 @@ function aiKind(kind: unknown): SmsExpenseKind {
 }
 
 async function callGemini(apiKey: string, message: string, exemplar?: string | null, onUsage?: (usage: TokenUsage) => void): Promise<ParsedTx> {
+  // The instructions travel as the system instruction; the user turn holds only data, the SMS inside markers (QA-14).
   const body = {
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { text: SMS_PARSER_SYSTEM_PROMPT },
-          ...(exemplar ? [{ text: exemplar }] : []),
-          { text: `\nSMS / notification text:\n${message}` },
-        ],
-      },
-    ],
+    systemInstruction: { parts: [{ text: SMS_PARSER_SYSTEM_PROMPT }, ...(exemplar ? [{ text: exemplar }] : [])] },
+    contents: [{ role: 'user', parts: [{ text: `<<<SMS\n${message.replace(/SMS>>>/g, 'SMS> >>')}\nSMS>>>` }] }],
     generationConfig: configFor(GEMINI_MODEL, {
       temperature: 0,
       responseMimeType: 'application/json',

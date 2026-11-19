@@ -22,6 +22,7 @@ describe('heldGroup', () => {
   })
   it('N6: a possibly cut-off amount needs a look and is never in Select all ready', () => {
     expect(heldGroup(row({ failure_code: 'truncated_amount' }))).toBe('check')
+    expect(heldGroup(row({ failure_code: 'unverified_reading' }))).toBe('check')
   })
   it('an unverified sender is locked, whatever else it is', () => {
     expect(heldGroup(row({ failure_code: 'sender_mismatch', kind: 'income' }))).toBe('locked')

@@ -205,3 +205,40 @@ export function heldForConfirmation(kind: SmsTxResult['kind']): SmsTxResult {
     confirmReason: null, matchedSourceId: null, linkedSubscriptionId: null, error: null,
   }
 }
+
+/** Text only a model's answer (or an injection imitating one) carries; no bank prints JSON. */
+const MODEL_OUTPUT_SYNTAX = /[{}]|"is_transaction"|"amount"\s*:/i
+/** Wording a money-in message prints; the AI's credit reading must be backed by one. */
+const MONEY_IN_WORDING =
+  /\b(?:credit(?:ed)?|received|deposit(?:ed)?|refund(?:ed)?|revers(?:ed|al)|added|incoming|inward|salary|cash\s*back)\b|تم\s*إيداع|تم\s*إضافة|إضافة|إيداع|استلام|استرداد|وارد|إلى\s+حسابك|لحسابك|لحسابكم/i
+
+/**
+ * Whether an AI reading is backed by the message itself (QA-14): the body carries no model-output syntax, the amount is
+ * a number the body prints, and a money-in reading has money-in wording and no debit ledger sign. Pure; a false
+ * result holds the message for the user, it never rejects it.
+ */
+export function aiReadingGrounded(amount: number, kind: string | null | undefined, message: string): boolean {
+  const body = normalizeDigits(message)
+  if (MODEL_OUTPUT_SYNTAX.test(body)) return false
+  const printed = [...body.matchAll(/\d[\d,]*(?:\.\d+)?/g)].map((m) => Number(m[0].replace(/,/g, '')))
+  if (!printed.some((n) => Math.abs(n - amount) < 0.005)) return false
+  if (kind && CREDIT_KINDS.has(kind)) {
+    if (/\d[\d,]*(?:\.\d+)?-(?!\d)/.test(body) && !/\d\+/.test(body)) return false
+    return MONEY_IN_WORDING.test(body)
+  }
+  return true
+}
+
+export const isCreditKind = (kind: string | null | undefined): boolean => !!kind && CREDIT_KINDS.has(kind)
+
+/**
+ * True when this user already had a booked message from this sender: the statistics drain records the sender's
+ * currency for every booked message under the same key (sms_sender_currency). No key means the sender is unknown.
+ */
+export async function senderKnownForUser(service: ServiceClient, userId: string, senderKey: string | null): Promise<boolean> {
+  if (!senderKey) return false
+  const { data, error } = await service.from('sms_sender_currency').select('sender').eq('user_id', userId).eq('sender', senderKey).limit(1)
+  // A failed read counts as unknown: the cost is one confirm tap, never a booked forgery.
+  if (error) return false
+  return (data?.length ?? 0) > 0
+}

@@ -22,7 +22,7 @@ export const isCurrencyOnly = (i: Pick<PendingConfirmation, 'expense_id' | 'inco
 
 export function heldGroup(i: Held): HeldGroup {
   if (i.failure_code === 'sender_mismatch') return 'locked'
-  if (isCredit(i) || isCurrencyOnly(i) || i.failure_code === 'truncated_amount' || i.failure_code === 'sms_account_cap' || i.failure_code === AI_QUOTA_HOLD) return 'check'
+  if (isCredit(i) || isCurrencyOnly(i) || i.failure_code === 'truncated_amount' || i.failure_code === 'unverified_reading' || i.failure_code === 'sms_account_cap' || i.failure_code === AI_QUOTA_HOLD) return 'check'
   return 'ready'
 }
 
