@@ -13,6 +13,10 @@ describe('accountsBasisFor', () => {
   it('is empty until an account has a starting balance', () => {
     expect(accountsBasisFor(ledger([{ ...bank, openingBalance: undefined } as PaymentMethod]), 'EGP')).toEqual({})
   })
+  it('leaves out an account with no rate to base and flags the basis incomplete (QA-88)', () => {
+    const jpy = { ...bank, id: 'j', currency: 'EUR', openingBalance: 500 } as PaymentMethod
+    expect(accountsBasisFor(ledger([bank, jpy]), 'EGP')).toMatchObject({ accountsBasis: 1000, accountsIncomplete: true })
+  })
   it('sums tracked balances in base currency and lists pockets held inside them', () => {
     const pocket = { id: 'p', heldInPaymentMethodId: 'b' } as SavingsAccount
     const r = accountsBasisFor(ledger([bank, usd], [pocket]), 'EGP')

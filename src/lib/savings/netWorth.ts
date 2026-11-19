@@ -23,6 +23,8 @@ export interface NetWorthInput {
    */
   accountsBasis?: number
   heldInPocketIds?: ReadonlySet<string>
+  /** A tracked account had no rate to the base currency and was left out of `accountsBasis`. */
+  accountsIncomplete?: boolean
 }
 
 export interface NetWorthResult {
@@ -55,7 +57,7 @@ export function computeNetWorth(i: NetWorthInput): NetWorthResult {
   let totalInvestments = 0
   // A null valuation means the asset can't be priced (no FX path). Exclude it and flag incomplete,
   // never count it at its raw unit value.
-  let valuationIncomplete = false
+  let valuationIncomplete = i.accountsIncomplete === true
   for (const a of i.savingsAccounts) {
     if (i.accountsBasis !== undefined && i.heldInPocketIds?.has(a.id)) continue
     const v = pocketBalanceInBase(a, base, exchangeRates, i.goldPricePerGram, goldOk, i.lookup)

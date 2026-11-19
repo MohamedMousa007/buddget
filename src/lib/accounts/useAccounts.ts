@@ -68,8 +68,12 @@ export function useAccounts(): AccountsModel {
     for (const a of accounts) {
       if (!a.balance || a.method.excluded) continue
       approx ||= a.balance.approx || String(a.method.currency) !== String(s.base)
-      totalInBase += tryConvertCurrency(a.balance.balance, a.balance.currency, s.base, rates) ?? a.balance.balance
-      heldInBase += tryConvertCurrency(a.balance.held, a.balance.currency, s.base, rates) ?? a.balance.held
+      const total = tryConvertCurrency(a.balance.balance, a.balance.currency, s.base, rates)
+      const held = tryConvertCurrency(a.balance.held, a.balance.currency, s.base, rates)
+      // No rate to base: leave the account out (as net worth does) and keep the figure marked approximate.
+      if (total === null || held === null) { approx = true; continue }
+      totalInBase += total
+      heldInBase += held
     }
     const accountIds = new Set(accounts.map((a) => a.method.id))
     const standaloneCards = s.paymentMethods.filter(
