@@ -48,3 +48,26 @@ Keychain-backed storage and under the same lock as the pending queue (`SmsCreden
 capture sent twice and collapses it. Text is normalised like the server's dedup hash (trim, collapse whitespace, lowercase). Two
 genuine identical messages more than 15 seconds apart still get separate captures. If the Keychain cannot be read the run mints
 a fresh identity, and the server's same-capture-time guard is the backstop.
+
+## Keywords from the base currency (2026-11-19)
+
+Apple gives apps no API to create a Shortcuts automation, so setup stays manual. This makes it shorter and data-led.
+
+- **Keyword from the currency** (`src/components/onboarding/sms/guideKeywords.ts`). Of 809 booked bank texts, Egyptian
+  banks write "EGP" (214) or, in Arabic, "جم" (233: CIB, NBE instant transfers); Vodafone Cash writes "جنيه" (10). The three
+  cover every Egyptian text in the sample. Saudi banks write "SAR" or "SR". The guide no longer asks the user to find a
+  keyword: it uses the first one for their base currency, and the done screen offers the next one ("Add another").
+- **On-device filter.** "جم" also matches everyday Arabic words. `SmsOtpGate.looksLikeBankMoney` sends a text only when it
+  names an amount with a currency, or states money moving; everything else is dropped on the phone (`skipped_not_money`).
+  The stricter `carriesMoneyMovement` alone missed 15 of 229 booked texts with raw text kept (transfers in, salary, card
+  payoff); the amount rule kept all 229. TS mirror and tests: `src/lib/sms/deviceOtpGate.ts`.
+- **Notify When Run off**, so the automation does not show a banner on every matching text.
+- **Bank Message pre-wired.** The parameter asks for `inputConnectionBehavior: .connectToPreviousIntentResult`. Whether
+  Shortcuts fills in Shortcut Input for the first action of a Message automation is unconfirmed, so the guide step says
+  "check it says Shortcut Input, and pick it if not".
+- **App Shortcut.** `BuddgetAppShortcuts` lists Catch Bank SMS under buddget in the Shortcuts app.
+- **Test step.** The user texts themself `buddget test <keyword>`. The action stamps `lastRunAt` before any gate, and the
+  guide polls `getStatus` and shows "Connected". The test text has no amount, so nothing is booked.
+
+Device checks still open: that a text to your own number fires the automation, the auto-wired input, whether "SR" also
+matches "SAR" (case and substring rules of Message Contains), and the Swift compiling on Xcode.
