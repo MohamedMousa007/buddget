@@ -6,7 +6,7 @@
  *
  * The generated regex is then verified against the REAL message on the server, so the real text never has to leave it.
  */
-import { EMAIL_RE, URL_PATH_RE, maskNames } from '@/lib/sms/maskPii'
+import { EMAIL_RE, URL_PATH_RE, findNameSlots, maskNames } from '@/lib/sms/maskPii'
 import { normalizeSmsText } from '@/lib/sms/normalizeDigits'
 import { hasPersonCounterparty } from '@/lib/sms/ownName'
 
@@ -91,4 +91,47 @@ export function maskForModel(
 
   message = replaceDigits(message, extracted.amount != null ? String(Math.trunc(extracted.amount)) : null, keepNumbers)
   return { message, merchant }
+}
+
+/** A digit run long enough to be an account, card, IBAN or reference number; no plausible amount is printed this long. */
+const IDENTIFIER_RUN_RE = /(?<!\d)\d{9,}(?!\d*[.,]\d)/g
+
+export interface ParseView {
+  message: string
+  /** Puts the real names back into text the model wrote from the masked message. */
+  restore: (text: string | null) => string | null
+}
+
+/**
+ * The message as the main AI parse sees it (QA-36): the counterparty name of a transfer becomes a stand-in, emails and
+ * URL paths are replaced, phone-like numbers and digit runs of 9+ become synthetic digits (keeping the last four).
+ * Merchants, amounts, balances, dates and short numbers stay: the model needs them to tell the amount from the balance.
+ * Everything read after the parse (own name, counterparty hash, reference, last four) still uses the real message.
+ */
+export function maskForParse(rawMessage: string): ParseView {
+  const text = normalizeSmsText(rawMessage).replace(EMAIL_RE, 'user@example.com').replace(URL_PATH_RE, '$1/path')
+  const names: Array<[string, string]> = []
+  let nth = 0
+  let out = ''
+  let at = 0
+  for (const slot of findNameSlots(text)) {
+    if (slot.start < at) continue
+    const original = text.slice(slot.start, slot.end)
+    const pool = slot.script === 'arabic' ? ARABIC_STANDINS : LATIN_STANDINS
+    const upper = slot.script === 'latin' && original === original.toUpperCase()
+    const standIn = original.split(/\s+/).filter(Boolean).map(() => {
+      const w = pool[nth++ % pool.length]!
+      return upper ? w.toUpperCase() : w
+    }).join(' ')
+    names.push([standIn, original])
+    out += text.slice(at, slot.start) + standIn
+    at = slot.end
+  }
+  let n = 0
+  const message = (out + text.slice(at))
+    .replace(PHONE_LIKE_RE, (m) => m.replace(/\d/g, () => DIGITS[n++ % DIGITS.length]!))
+    .replace(IDENTIFIER_RUN_RE, (run) => standInDigits(run.slice(0, -KEEP_LAST), n++) + run.slice(-KEEP_LAST))
+  const restore = (value: string | null): string | null =>
+    value == null ? value : names.reduce((acc, [standIn, original]) => acc.split(standIn).join(original), value)
+  return { message, restore }
 }

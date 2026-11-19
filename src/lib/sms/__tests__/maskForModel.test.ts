@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { maskForModel } from '../maskForModel'
+import { maskForModel, maskForParse } from '../maskForModel'
 import { maskTemplateSample, remaskTemplateRow } from '../templateSample'
 import { redactSample } from '../exportTemplates'
 import { sweepMaskedStores } from '../remaskStores'
@@ -120,5 +120,32 @@ describe('keepNumbers (adjudicator view)', () => {
     const m = maskForModel('Transfer from Hassan Sample EGP 50000 received', { merchant: 'Hassan Sample', kind: 'instant_transfer_in', amount: 50000 }, { keepNumbers: true }).message
     expect(m).not.toContain('Hassan')
     expect(m).toContain('50000')
+  })
+})
+
+describe('maskForParse (QA-36): what the main AI parse sees', () => {
+  // Real HSBC IPN wording (hsbc.ts) with a real-shaped phone and a 12-digit reference.
+  const IPN = 'Your HSBC Account ********0001 was debited with IPN outward transfer for EGP 3.50 on 10-06-2026 02:16 to SALMA SAMY ELSAYED with reference 3f5b5478. Call 01012345678 ref 123456789012'
+  const view = maskForParse(IPN)
+
+  it('hides the counterparty name, the phone and the long reference; keeps amount, date, last four and balance words', () => {
+    expect(view.message).not.toMatch(/SALMA|SAMY|ELSAYED/)
+    expect(view.message).not.toContain('01012345678')
+    expect(view.message).not.toContain('123456789012')
+    expect(view.message).toContain('9012')
+    expect(view.message).toContain('EGP 3.50')
+    expect(view.message).toContain('10-06-2026 02:16')
+    expect(view.message).toContain('********0001')
+  })
+
+  it('keeps a purchase merchant and a balance readable', () => {
+    const p = 'Your HSBC Account ****0001 was debited EGP 250.00 for purchase at Carrefour Egypt on 09-06-2026. Your available balance is EGP 36,183.18'
+    expect(maskForParse(p).message).toBe(p)
+  })
+
+  it('restores the real name in what the model returns', () => {
+    const standIn = view.message.match(/to (.+?) with reference/)![1]!
+    expect(view.restore(`Transfer to ${standIn}`)).toBe('Transfer to SALMA SAMY ELSAYED')
+    expect(view.restore(null)).toBeNull()
   })
 })

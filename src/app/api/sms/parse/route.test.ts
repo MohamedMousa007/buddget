@@ -341,3 +341,21 @@ describe('AI tier: reading checked against the message, money in held, held neve
     expect(h.dispatch).toHaveBeenCalled()
   })
 })
+
+describe('QA-36: the main AI parse sees no name, phone or long reference', () => {
+  it('masks them in the request and restores the name in the result', async () => {
+    const MSG = 'Transfer of EGP 3.50 sent to SALMA SAMY ELSAYED mobile 01012345678 ref 123456789012'
+    const fetchMock = vi.fn(async (_u: string, init: { body: string }) => {
+      const text = JSON.parse(init.body).contents[0].parts[0].text as string
+      const standIn = text.match(/to (.+?) mobile/)![1]
+      return geminiJson({ is_transaction: true, amount: 3.5, currency: 'EGP', merchant: standIn, bank_name: null, category: null, confidence: 0.95, kind: 'instant_transfer_out', cleanTitle: `Transfer to ${standIn}`, detectedAccountLast4: null, detectedCounterpartyLast4: null, merchantNormalized: null })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    h.dispatch.mockResolvedValue(BOOKED)
+    await post({ message: MSG, sender: 'TESTBANK', receivedAt: RECEIVED })
+    const sent = (fetchMock.mock.calls[0] as unknown as [string, { body: string }])[1].body
+    expect(sent).not.toMatch(/SALMA|SAMY|ELSAYED|01012345678|123456789012/)
+    expect(sent).toContain('EGP 3.50')
+    expect(h.dispatch.mock.calls[0]?.[1]).toMatchObject({ merchant: 'SALMA SAMY ELSAYED', cleanTitle: 'Transfer to SALMA SAMY ELSAYED' })
+  })
+})

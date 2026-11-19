@@ -36,7 +36,7 @@ import { applyMappingRules, type MappingRules } from '@/lib/sms/templateApply'
 import { isSmsExpenseKind } from '@/lib/sms/smsKinds'
 import { namesUntrackedAccount, type SmsExpenseKind } from '@/lib/sms/createSmsExpense'
 import { guardWordsIn, storedGuardWords, wordingGuardDiverts, WORDING_GUARD_ENFORCED } from '@/lib/sms/wordingGuard'
-import { maskForModel, type ModelView } from '@/lib/sms/maskForModel'
+import { maskForModel, maskForParse, type ModelView } from '@/lib/sms/maskForModel'
 import { maskTemplateSample } from '@/lib/sms/templateSample'
 import { execBounded } from '@/lib/sms/boundedRegex'
 import { isSafeRegexPattern, MAX_TEMPLATE_INPUT_CHARS } from '@/lib/sms/safeRegex'
@@ -977,7 +977,12 @@ export async function POST(request: Request) {
 
     // Call Gemini.
     try {
-      parsed = await callGemini(apiKey, message, exemplar, (u) => { usage = u })
+      // Names, phones and account/reference numbers never leave the server; balances stay (QA-36).
+      const view = maskForParse(message)
+      parsed = await callGemini(apiKey, view.message, exemplar, (u) => { usage = u })
+      parsed.merchant = view.restore(parsed.merchant)
+      parsed.cleanTitle = view.restore(parsed.cleanTitle)
+      parsed.merchantNormalized = view.restore(parsed.merchantNormalized)
       await settleSms('ok')
     } catch (e) {
       await settleSms('error')
@@ -1194,7 +1199,7 @@ export async function POST(request: Request) {
         if (!exp || !mayServerCategorise(exp)) return
         const merchant = (exp.description as string | null) ?? parsed.merchant
         if (!merchant) return
-        const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, () => aiCategorizeMerchant(geminiKey, merchant, message))
+        const metered = await withSmsAiQuota(userId, SMS_PARSE_UNITS, GEMINI_MODEL, () => aiCategorizeMerchant(geminiKey, merchant, maskForModel(message, { merchant, kind: parsed.kind, amount: parsed.amount }).message))
         if (metered.denied || !metered.value) return
         const cat = metered.value
         await applyAiCategory(service, { userId, expenseId, merchant, category: cat })
