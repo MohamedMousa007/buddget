@@ -49,31 +49,33 @@ export const HSBC_PATTERNS: BankPatternSet = {
       verified: true,
     },
     {
-      // ATM withdrawal variant of the account-debit structure.
+      // "09NOV26 ATM Cash Withdrawal from 103-104***-001 EGP 300.00- Your available balance is EGP 116.63"
+      // Three real samples (QA-103). The digits after the stars are the account's visible tail.
       id: 'hsbc-atm-withdrawal',
-      regex: /Account\s+\*+(\d{4})\s+was\s+debited(?:\s+with)?\s+(?:an?\s+)?ATM\s+(?:cash\s+)?withdrawal\s+(?:of|for)\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)/i,
+      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+ATM\s+Cash\s+Withdrawal\s+from\s+[\d\-]*\*+-?(\d{2,6})\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)-/i,
       kind: 'atm_withdrawal',
-      groups: { last4: 1, currency: 2, amount: 3 },
+      groups: { datetime: 1, last4: 2, currency: 3, amount: 4 },
       paymentInstrument: 'account',
-      verified: false,
+      verified: true,
     },
     {
       // "20JUN26 Phone Banking Transfer to 103-104***-001 EGP 9,968.00+ Your available balance is EGP 11,349.68"
-      // '+' suffix = credit leg of own-account FX (USD→EGP). Paired by dispatch with the 'from' debit leg.
+      // '+' suffix = credit leg of own-account FX (USD→EGP). The account after 'to' is the user's own account credited,
+      // so its visible tail is last4 (QA-37). Paired by dispatch with the 'from' debit leg.
       id: 'hsbc-phone-banking-fx-credit',
-      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+to\s+([\d\-*]+)\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)\+/i,
+      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+to\s+[\d\-]*\*+-?(\d{2,6})\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)\+/i,
       kind: 'currency_exchange',
-      groups: { datetime: 1, counterparty: 2, currency: 3, amount: 4 },
+      groups: { datetime: 1, last4: 2, currency: 3, amount: 4 },
       paymentInstrument: 'account',
       verified: true,
     },
     {
       // "20JUN26 Phone Banking Transfer from 103-104***-110 USD 200.00- Your available balance is USD 2,172.73"
-      // '-' suffix = debit leg of own-account FX. Paired by dispatch with the 'to' credit leg.
+      // '-' suffix = debit leg of own-account FX; the account after 'from' is the user's own account debited.
       id: 'hsbc-phone-banking-fx-debit',
-      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+from\s+([\d\-*]+)\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)-/i,
+      regex: /(\d{1,2}[A-Z]{3}\d{2,4})\s+Phone\s+Banking\s+Transfer\s+from\s+[\d\-]*\*+-?(\d{2,6})\s+([A-Z]{3})\s+([\d,]+(?:\.\d+)?)-/i,
       kind: 'currency_exchange',
-      groups: { datetime: 1, counterparty: 2, currency: 3, amount: 4 },
+      groups: { datetime: 1, last4: 2, currency: 3, amount: 4 },
       paymentInstrument: 'account',
       verified: true,
     },

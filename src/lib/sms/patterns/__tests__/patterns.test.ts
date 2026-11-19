@@ -202,7 +202,8 @@ describe('Vodafone Cash + generic bank patterns', () => {
     expect(m?.kind).toBe('currency_exchange')
     expect(m?.amount).toBe(30000.48)
     expect(m?.currency).toBe('EGP')
-    expect(m?.counterparty).toBe('103-104***-001')
+    expect(m?.counterparty).toBeNull()
+    expect(m?.last4).toBe('001')
     expect(m?.txDay).toBe('2026-06-13')
     expect(m?.paymentInstrument).toBe('account')
   })
@@ -214,8 +215,24 @@ describe('Vodafone Cash + generic bank patterns', () => {
     expect(m?.kind).toBe('currency_exchange')
     expect(m?.amount).toBe(200)
     expect(m?.currency).toBe('USD')
-    expect(m?.counterparty).toBe('103-104***-110')
+    expect(m?.counterparty).toBeNull()
+    expect(m?.last4).toBe('110')
     expect(m?.txDay).toBe('2026-06-20')
+  })
+
+  // QA-103: the three real HSBC ATM withdrawals (docs/qa/SMS_REAL_SAMPLES.md section B).
+  it.each([
+    ['From HSBC: 09NOV26 ATM Cash Withdrawal from 103-104***-001 EGP 300.00- Your available balance is EGP 116.63', 300, '2026-11-09'],
+    ['From HSBC: 31OCT26 ATM Cash Withdrawal from 103-104***-001 EGP 1,000.00- Your available balance is EGP 3,270.17', 1000, '2026-10-31'],
+    ['From HSBC: 12NOV26 ATM Cash Withdrawal from 103-104***-001 EGP 300.00- Your available balance is EGP 2,877.27', 300, '2026-11-12'],
+  ])('parses a real HSBC ATM withdrawal: %s', (body, amount, day) => {
+    const m = matchCuratedPattern(body, null)
+    expect(m?.patternId).toBe('hsbc-atm-withdrawal')
+    expect(m?.kind).toBe('atm_withdrawal')
+    expect(m?.amount).toBe(amount)
+    expect(m?.currency).toBe('EGP')
+    expect(m?.last4).toBe('001')
+    expect(m?.txDay).toBe(day)
   })
 
   it('HSBC Phone Banking Transfer without +/- falls back to instant_transfer_out', () => {
