@@ -23,6 +23,12 @@ export function pickablePaymentMethods(methods: readonly PaymentMethod[], keepId
   return methods.filter((m) => m.id === keepId || (!m.closedAt && !(realCash && m.id === DEFAULT_CASH_ID)))
 }
 
+/** Methods a filter may offer: closed ones stay (old rows still carry them); the cash sentinel hides once a real Cash exists. */
+export function filterablePaymentMethods(methods: readonly PaymentMethod[]): PaymentMethod[] {
+  const realCash = methods.some((m) => m.type === 'cash' && m.id !== DEFAULT_CASH_ID && !m.closedAt)
+  return methods.filter((m) => !(realCash && m.id === DEFAULT_CASH_ID))
+}
+
 /** A provisional account (created from a bank message, not yet confirmed) never carries a balance or reaches net worth. */
 export const isTracked = (pm: PaymentMethod): boolean =>
   holdsBalance(pm.type) && pm.openingBalance != null && pm.openingAt != null && !pm.provisional

@@ -109,3 +109,40 @@ describe('QA-41: a delete can only be undone by an action newer than the delete'
     expect(refusedUndos(['e1'])).toEqual([])
   })
 })
+
+describe('an undone budget delete clears its tombstone too', () => {
+  const sub = { id: 's1', name: 'Rent', amount: 100 }
+  const cat = { id: 'c1', name: 'Home', subcategories: [sub] }
+  const plan = (categories: unknown[]) => ({ id: 'p1', name: 'Plan', categories, updatedAt: '2026-10-10T00:00:00Z' })
+  const snap = (plans: unknown[], acts: unknown[] = []) => ({ ...emptySnapshot(), budgetPlans: plans, budgetPlanActivations: acts }) as never
+  const act = { id: 'a1', planId: 'p1', effectiveFrom: '2026-10-01', createdAt: '2026-10-01T00:00:00Z' }
+
+  function tables() {
+    const sent = new Map<string, Record<string, unknown>[]>()
+    const client = {
+      from: (table: string) => ({
+        upsert: (rows: Record<string, unknown>[]) => {
+          sent.set(table, [...(sent.get(table) ?? []), ...rows])
+          return Promise.resolve({ error: null })
+        },
+        update: () => ({ in: () => Promise.resolve({ error: null }) }),
+      }),
+    }
+    return { client, sent }
+  }
+
+  it('a re-added plan, line, sub-line and activation are sent with deleted_at null', async () => {
+    const { client, sent } = tables()
+    await flushDiff(client as never, 'u1', emptySnapshot(), snap([plan([cat])], [act]))
+    for (const table of ['budget_plans', 'budget_categories', 'budget_subcategories', 'budget_plan_activations']) {
+      expect(sent.get(table)?.[0], table).toMatchObject({ deleted_at: null })
+    }
+  })
+
+  it('a line put back into a plan that stayed is sent with deleted_at null; the edited plan is not', async () => {
+    const { client, sent } = tables()
+    await flushDiff(client as never, 'u1', snap([plan([])]), snap([{ ...plan([cat]), updatedAt: '2026-10-11T00:00:00Z' }]))
+    expect(sent.get('budget_categories')?.[0]).toMatchObject({ id: 'c1', deleted_at: null })
+    expect(sent.get('budget_plans')?.[0]).not.toHaveProperty('deleted_at')
+  })
+})

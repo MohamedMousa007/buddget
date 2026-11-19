@@ -366,7 +366,10 @@ export async function flushDiff(
   const freshRunner = new OpRunner(client)
   freshRunner.upsert(
     'budget_plan_activations',
-    [...activationDiff.inserts, ...activationDiff.updates].map((a) => withEditTime(activationToRow(a, userId), a)),
+    [
+      ...activationDiff.inserts.map((a) => withEditTime({ ...activationToRow(a, userId), deleted_at: null }, a)),
+      ...activationDiff.updates.map((a) => withEditTime(activationToRow(a, userId), a)),
+    ],
     'budget_plan_activations.upsert'
   )
   const freshResult = await freshRunner.drain()
@@ -386,7 +389,11 @@ function mergeResults(results: FlushResult[]): FlushResult {
 
 function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunner, OpRunner], userId: string, prev: Snapshot, next: Snapshot, baseCurrency: Currency) {
   const planDiff = diffLists(next.budgetPlans, prev.budgetPlans)
-  const planRows = [...planDiff.inserts, ...planDiff.updates].map((p) => withEditTime(budgetPlanToRow(p, userId), p))
+  // As in emitList: a re-added row (an undone delete) clears its tombstone, a plain edit leaves it alone.
+  const planRows = [
+    ...planDiff.inserts.map((p) => withEditTime({ ...budgetPlanToRow(p, userId), deleted_at: null }, p)),
+    ...planDiff.updates.map((p) => withEditTime(budgetPlanToRow(p, userId), p)),
+  ]
   // Categories and subcategories have no stamp of their own: they carry their plan's edit time (every edit of one stamps the plan).
   const planStamp = new Map(next.budgetPlans.map((p) => [p.id, p.updatedAt]))
   plans.upsert('budget_plans', planRows, 'budget_plans.upsert')
@@ -399,9 +406,11 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
     p.categories.map((c, idx) => ({ ...c, _planId: p.id, _sortOrder: idx }))
   )
   const catDiff = diffLists(nextCats, prevCats)
-  const catRows = [...catDiff.inserts, ...catDiff.updates].map((c) =>
-    withEditTime(budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency), c, planStamp.get(c._planId))
-  )
+  const catRow = (c: (typeof nextCats)[number]) => budgetCategoryToRow(c, c._planId, userId, c._sortOrder, baseCurrency)
+  const catRows = [
+    ...catDiff.inserts.map((c) => withEditTime({ ...catRow(c), deleted_at: null }, c, planStamp.get(c._planId))),
+    ...catDiff.updates.map((c) => withEditTime(catRow(c), c, planStamp.get(c._planId))),
+  ]
   categories.upsert('budget_categories', catRows, 'budget_categories.upsert', undefined, (row) => row.plan_id)
   categories.tombstone('budget_categories', catDiff.deletes, 'budget_categories.tombstone')
 
@@ -413,9 +422,11 @@ function flushBudgetPlans([plans, categories, subcategories]: [OpRunner, OpRunne
   )
   const subDiff = diffLists(nextSubs, prevSubs)
   const planOfCategory = new Map(next.budgetPlans.flatMap((p) => p.categories.map((c) => [c.id, p.id] as const)))
-  const subRows = [...subDiff.inserts, ...subDiff.updates].map((s) =>
-    withEditTime(budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder), s, planStamp.get(planOfCategory.get(s._catId) ?? ''))
-  )
+  const subStamp = (s: (typeof nextSubs)[number]) => planStamp.get(planOfCategory.get(s._catId) ?? '')
+  const subRows = [
+    ...subDiff.inserts.map((s) => withEditTime({ ...budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder), deleted_at: null }, s, subStamp(s))),
+    ...subDiff.updates.map((s) => withEditTime(budgetSubcategoryToRow(s, s._catId, userId, s._sortOrder), s, subStamp(s))),
+  ]
   subcategories.upsert('budget_subcategories', subRows, 'budget_subcategories.upsert', undefined, (row) => planOfCategory.get(row.category_id) ?? row.category_id)
   subcategories.tombstone('budget_subcategories', subDiff.deletes, 'budget_subcategories.tombstone')
 }

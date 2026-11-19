@@ -33,6 +33,7 @@ import { compareFlowItems, instantOf } from '@/components/features/flow/flowOrde
 import { useLocale, useT } from '@/lib/i18n'
 import { useWeekStart } from '@/hooks/useWeekStart'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
+import { storedMethodId } from '@/lib/accounts/resolve'
 import { applyPassThrough, labelledPassThroughPairs, rememberedYesPairs } from '@/lib/spending/passThrough'
 import { firstOpenFlag, type FlagRowKind } from '@/lib/sms/flagPrompts'
 import type { SmsFlag } from '@/lib/sms/smsFlags'
@@ -474,12 +475,12 @@ export function useFlowLedger() {
           // The segment filters first; a category then narrows spending (it never empties In).
           if (filters.segment !== 'in' && filters.cats.length && (i.dir !== 'out' || !filters.cats.includes(i.facet))) return false
           if (filters.segment === 'in' && filters.incomeTypes.length && !filters.incomeTypes.includes(i.facet)) return false
-          if (filters.methods.length && !filters.methods.includes(i.methodId ?? '')) return false
+          if (filters.methods.length && !filters.methods.includes(storedMethodId(i.methodId ?? '', paymentMethods))) return false
           if (amountOn && !amountInRange(i.amountBase, filters.amtMin, filters.amtMax)) return false
           return true
         })
         .sort(compareFlowItems),
-    [all, filters, amountOn],
+    [all, filters, amountOn, paymentMethods],
   )
 
   const groups = useMemo<FlowLedgerGroup[]>(() => {

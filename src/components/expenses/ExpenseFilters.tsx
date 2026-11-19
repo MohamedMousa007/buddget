@@ -18,6 +18,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { RANGE_PRESETS, resolveRange, type RangePreset } from '@/lib/expenses/dateRange'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
+import { filterablePaymentMethods } from '@/lib/accounts/kinds'
 import { paymentTypeIcon } from '@/lib/constants/categoryGrid'
 import { methodLabel } from '@/components/features/flow/useFlowLedger'
 import { formatWhole } from '@/lib/utils/formatters'
@@ -313,7 +314,7 @@ export function ExpenseFilters({
   currency: string
 }) {
   const t = useT()
-  const paymentMethods = useFinanceStore((s) => s.paymentMethods)
+  const paymentMethods = filterablePaymentMethods(useFinanceStore((s) => s.paymentMethods))
   const { cats, methodsSel, incomeSel, amtMin, amtMax, toggleCat, toggleMethod, toggleIncomeType, reset } = useExpenseFilterStore(
     useShallow((s) => ({
       cats: s.cats,
