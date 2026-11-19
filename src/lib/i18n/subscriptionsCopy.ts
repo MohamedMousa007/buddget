@@ -207,7 +207,7 @@ export interface SubscriptionsCopy {
 export const subscriptionsCopyEn: SubscriptionsCopy = {
   hero: {
     label: 'Due in the next 30 days',
-    monthlyEquivalent: 'Monthly equivalent',
+    monthlyEquivalent: 'Per month',
     perYear: 'Per year',
     nextCharge: 'Next charge',
     paid: (a) => `Paid ${a}`,
@@ -437,7 +437,7 @@ export const subscriptionsCopyEn: SubscriptionsCopy = {
 export const subscriptionsCopyAr: SubscriptionsCopy = {
   hero: {
     label: 'مستحق خلال 30 يومًا القادمة',
-    monthlyEquivalent: 'المعادل الشهري',
+    monthlyEquivalent: 'شهريًا',
     perYear: 'في السنة',
     nextCharge: 'الخصم القادم',
     paid: (a) => `مدفوع ${a}`,

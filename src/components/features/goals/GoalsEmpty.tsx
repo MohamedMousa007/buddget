@@ -95,8 +95,8 @@ export function GoalsEmpty({ onStart }: { onStart: (seed: StartGoalSeed) => void
                   <Icon className="size-[18px]" />
                 </span>
                 <span className="flex min-w-0 flex-col text-start">
-                  <span className="truncate text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{t.moments[key].title}</span>
-                  <span className="truncate text-[0.6875rem] text-[var(--color-brand-text-secondary)]">{t.moments[key].sub}</span>
+                  <span dir="auto" className="truncate text-[0.8125rem] font-semibold text-[var(--color-brand-text-primary)]">{t.moments[key].title}</span>
+                  <span dir="auto" className="line-clamp-2 text-[0.6875rem] leading-tight text-[var(--color-brand-text-secondary)]">{t.moments[key].sub}</span>
                 </span>
               </SelectableCard>
             )

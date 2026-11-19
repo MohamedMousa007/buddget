@@ -29,7 +29,7 @@ export function BalancePrivacyCard() {
     <SettingsSection title={t.privacyTitle}>
       <div className="space-y-3 px-4 py-3">
         <p className="text-xs text-[var(--color-brand-text-muted)]">{t.privacyHint}</p>
-        <SegmentedControl ariaLabel={t.privacyTitle} value={preset} onChange={setPreset}
+        <SegmentedControl density="compact" ariaLabel={t.privacyTitle} value={preset} onChange={setPreset}
           options={[{ value: 'off', label: t.presetOff }, { value: 'hero', label: t.presetHero }, { value: 'all', label: t.presetAll }, { value: 'custom', label: t.presetCustom }]} />
       </div>
       {(preset === 'custom' ? SURFACES : (['notifications'] as PrivacySurface[])).map((s) => (

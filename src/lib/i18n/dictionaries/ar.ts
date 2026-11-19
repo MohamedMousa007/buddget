@@ -425,7 +425,7 @@ export const ar: Dictionary = {
     privacyHint: 'اختر أين تظهر المبالغ كنقاط. متوقف افتراضيًا.',
     presetOff: 'متوقف',
     presetHero: 'اللافتات',
-    presetAll: 'في كل مكان',
+    presetAll: 'الكل',
     presetCustom: 'مخصص',
     surfaceHero: 'اللافتات العلوية',
     surfaceLists: 'القوائم والحسابات',

@@ -27,6 +27,8 @@ export interface SegmentedControlProps<T extends string> {
   ariaLabel: string
   /** `field` matches a 52px AmountField it sits beside (e.g. amount + unit); default is the 44px bar. */
   size?: 'default' | 'field'
+  /** `compact` trims each segment's side padding (px-2) so four short labels fit a phone; default unchanged. */
+  density?: 'default' | 'compact'
   className?: string
 }
 
@@ -49,6 +51,7 @@ export function SegmentedControl<T extends string>({
   fill = true,
   ariaLabel,
   size = 'default',
+  density = 'default',
   className,
 }: SegmentedControlProps<T>) {
   const group = useRef<HTMLDivElement>(null)
@@ -87,7 +90,8 @@ export function SegmentedControl<T extends string>({
               // h-9 inside a 3px-padded 44px-tall track keeps the whole control
               // on the 44px tap minimum without each segment looking oversized.
               HIT_AREA,
-              'inline-flex min-w-0 items-center justify-center gap-1.5 px-4 text-[0.84375rem] font-semibold transition-colors outline-none',
+              'inline-flex min-w-0 items-center justify-center gap-1.5 text-[0.84375rem] font-semibold transition-colors outline-none',
+              density === 'compact' ? 'px-2' : 'px-4',
               size === 'field' ? 'h-full rounded-[11px]' : 'h-9 rounded-[9px]',
               'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)]',
               fill && 'flex-1',

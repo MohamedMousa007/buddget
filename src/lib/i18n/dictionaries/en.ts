@@ -423,7 +423,7 @@ export const en: Dictionary = {
     privacyHint: 'Choose where amounts show as dots. Off by default.',
     presetOff: 'Off',
     presetHero: 'Banners',
-    presetAll: 'Everywhere',
+    presetAll: 'All',
     presetCustom: 'Custom',
     surfaceHero: 'Top banners',
     surfaceLists: 'Lists and accounts',
