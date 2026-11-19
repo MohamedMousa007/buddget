@@ -54,9 +54,12 @@ export function PrivacyDataSections() {
           <strong className="text-[var(--color-brand-text-primary)]">
             SMS transaction data (opt-in only):
           </strong>{' '}
-          When you enable SMS auto-tracking, the text content of bank notification SMS messages you
-          authorize is transmitted to our servers for parsing, and the expense data extracted from it
-          (amount, merchant, date, category) is stored with your account. We keep the raw message for
+          When you enable SMS auto-tracking, the text content of the SMS messages you authorize is
+          transmitted to our servers for parsing: messages from business senders (such as banks,
+          wallets and other companies) that contain a number, and other messages that look like a
+          transaction. Messages that turn out not to be transactions are rejected and deleted within 7
+          days; for transactions, the expense data extracted (amount, merchant, date, category) is
+          stored with your account. We keep the raw message for
           at most 30 days (7 days for messages that are rejected or contain a one-time code; up to
           60 days for a message still waiting for you to confirm it), then delete it. After that only a masked version, with numbers, names and account details
           removed, is kept to improve how messages are parsed. Learned message patterns
@@ -99,8 +102,8 @@ export function PrivacyDataSections() {
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">SMS Bridge (opt-in):</strong> When
-          you configure and activate the iOS Shortcut or Android background service to forward bank SMS
-          messages to our ingest endpoint. You must explicitly enable this feature and authorize an
+          you configure and activate the iOS Shortcut or Android background service to forward the SMS
+          messages described above to our ingest endpoint. You must explicitly enable this feature and authorize an
           access token.
         </p>
         <p>

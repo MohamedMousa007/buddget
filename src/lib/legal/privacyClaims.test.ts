@@ -27,4 +27,14 @@ describe('SLG-6 / SLG-7 / SLG-12: the privacy policy matches the deployment and 
     expect(read('ar/PrivacyDataSections.tsx')).not.toContain('الرسائل النصية أو الإشعارات')
     expect(read('ar/PrivacyTechSections.tsx')).not.toContain('الرسائل النصية والإشعارات')
   })
+
+  it('QA-71: says which SMS leave the phone (business senders with a number, or transaction-like), not only bank SMS, EN and AR', () => {
+    const en = read('PrivacyDataSections.tsx')
+    const ar = read('ar/PrivacyDataSections.tsx')
+    expect(en).toMatch(/messages from business\s+senders/)
+    expect(en).toMatch(/look like a\s+transaction/)
+    expect(en).not.toMatch(/bank notification SMS|forward bank SMS/)
+    expect(ar).toContain('رسائل الجهات التجارية')
+    expect(ar).not.toMatch(/رسائل إشعارات البنك|رسائل البنك النصية/)
+  })
 })

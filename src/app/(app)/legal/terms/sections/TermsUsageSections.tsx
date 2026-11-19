@@ -87,8 +87,9 @@ export function TermsUsageSections() {
         <p>By enabling this feature, you:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
-            Consent to transmitting the text content of bank notification SMS messages to buddget&apos;s
-            servers for AI-powered parsing and expense logging
+            Consent to transmitting the text content of SMS messages from business senders (such as banks
+            and wallets) and of messages that look like a transaction to buddget&apos;s servers for
+            AI-powered parsing and expense logging
           </li>
           <li>
             Confirm that you are the authorized recipient of the SMS messages you forward and that doing
