@@ -9,6 +9,7 @@ const h = vi.hoisted(() => {
     storeReset: vi.fn(),
     from: vi.fn((): unknown => { throw new Error('no table mock') }),
     cleanups: [] as Array<() => void>,
+    online: true,
   }
 })
 
@@ -53,7 +54,7 @@ vi.mock('@/lib/supabase/remote', () => ({
 vi.mock('@/lib/auth/cacheOwnerCheck', () => ({ cacheOwnerMismatch: () => false }))
 vi.mock('@/lib/auth/clearBudgetData', () => ({ clearBudgetData: vi.fn() }))
 vi.mock('@/hooks/useNetworkStatus', () => ({
-  isOnline: () => true,
+  isOnline: () => h.online,
   networkReady: Promise.resolve(),
   subscribeNetwork: vi.fn(() => vi.fn()),
 }))
@@ -110,7 +111,7 @@ describe('finance sync flush / re-baseline', () => {
 
   it('a throwing flush is recorded, resolves, and does not advance the baseline either', async () => {
     h.flushDiff.mockRejectedValue(new Error('network down'))
-    await expect(flushFinanceNow()).resolves.toBeUndefined()
+    await expect(flushFinanceNow()).resolves.toBe(false)
     await flushFinanceNow()
     const [first, second] = calls()
     expect(first![2]).toBe(second![2])
@@ -141,6 +142,21 @@ describe('finance sync flush / re-baseline', () => {
     await syncFinanceNow()
     const [first, second] = calls()
     expect(first![2]).toBe(second![2])
+  })
+
+  it('D-2: offline, the final flush sends nothing and reports the edits as not acknowledged', async () => {
+    h.online = false
+    try {
+      await expect(flushFinanceNow()).resolves.toBe(false)
+      expect(h.flushDiff).not.toHaveBeenCalled()
+    } finally {
+      h.online = true
+    }
+  })
+
+  it('D-2: a refused flush reports the edits as not acknowledged', async () => {
+    h.flushDiff.mockResolvedValue(failed)
+    await expect(flushFinanceNow()).resolves.toBe(false)
   })
 
   it('after suspendFinanceSync a pending flush is dropped, not sent', async () => {

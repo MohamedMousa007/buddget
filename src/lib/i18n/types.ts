@@ -2005,7 +2005,7 @@ export interface Dictionary {
     signOutUnsentTitle: string
     signOutUnsentBody: string
     signOutAnyway: string
-    signOutKeepWaiting: string
+    signOutStay: string
     rememberMe: string
     emailCheckInFlight: string
     showPassword: string

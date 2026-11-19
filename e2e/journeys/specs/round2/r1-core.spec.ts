@@ -263,7 +263,8 @@ test('R13 sign out with an unsent edit asks before wiping (QA-65)', async ({ pag
   const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ')
   const stored = await page.evaluate(() => localStorage.getItem('buddget-storage') ?? '')
   const wiped = !stored.includes('QA R13 unsent')
-  const asked = /unsent|not saved|not synced|still waiting|lose/i.test(body)
+  // The warning is a dialog that closes on "Sign out anyway": what it said is in `seen`, not in the final body.
+  const asked = /unsent|not saved|not synced|still waiting|lose|lost/i.test(`${body} ${seen.join(' ')}`)
   test.info().annotations.push({ type: 'evidence', description: `offline sign-out: asked=${asked} wiped=${wiped}; server rows=${(await rows('expenses', user.id, 'description=eq.QA R13 unsent')).length}` })
   // Money rule: an unsent expense may only be wiped after the user was asked.
   expect(wiped && !asked, 'unsent expense wiped with no warning').toBe(false)
