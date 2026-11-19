@@ -168,7 +168,7 @@ export function RewardsView({ rewards }: { rewards: RewardsState }) {
                   data-shop={item.key}
                   data-state={state}
                   data-raw-button-ok="a shop row: the points list row, pressable as a whole"
-                  className={cn(m.row, 'min-h-11 w-full bg-transparent text-start outline-none hover:bg-[var(--color-brand-elevated)] focus-visible:bg-[var(--color-brand-elevated)] disabled:opacity-60', state === 'unavailable' && 'opacity-60')}
+                  className={cn(m.row, 'min-h-11 w-full bg-transparent text-start outline-none hover:bg-[var(--color-brand-elevated)] focus-visible:bg-[var(--color-brand-elevated)] disabled:opacity-60', state === 'unavailable' && '[&_b]:text-[var(--color-brand-text-muted)] [&_span]:text-[var(--color-brand-text-muted)]')}
                 >
                   <span dir="auto" className={m.rowLabel}>{shopLabel(item)}{item.kind === 'repair' ? <small>{c.shop.repairHint}</small> : null}</span>
                   <b dir="auto" className={m.rowValue}>{state === 'owned' ? c.owned : state === 'in_use' ? c.inUse : c.cost(item.cost)}</b>

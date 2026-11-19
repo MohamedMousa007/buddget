@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { PlanPending } from '@/components/features/billing/PlanPending'
 import { PlansView } from '@/components/features/billing/PlansView'
 import { ProStateView, WelcomeToPro } from '@/components/features/billing/ProStateView'
 import { useUsageStore } from '@/lib/usage/usageStore'
@@ -32,7 +33,7 @@ export default function ProPage() {
   if (me && !on) return null
   return (
     <SettingsSubPageShell title={c.state.title} lead={<ProMark size="lg" faded={me ? subscriptionView(me).kind === 'expired' : false} className="me-2" />}>
-      {!me ? <p role="status" className="text-sm text-[var(--color-brand-text-muted)]">{c.state.loading}</p> : welcome && subscriptionView(me).proActive ? <WelcomeToPro me={me} back={welcome === 'back'} onDone={() => setWelcome(null)} /> : planPageStateOf(me) === 'free' ? <PlansView /> : <ProStateView me={me} />}
+      {!me ? <PlanPending rows={3} /> : welcome && subscriptionView(me).proActive ? <WelcomeToPro me={me} back={welcome === 'back'} onDone={() => setWelcome(null)} /> : planPageStateOf(me) === 'free' ? <PlansView /> : <ProStateView me={me} />}
       {me ? <SettingsSection><SettingsRow icon={Gauge} tone={2} title={usage.page.title} href="/settings/pro/usage" settingId="usage" /></SettingsSection> : null}
     </SettingsSubPageShell>
   )

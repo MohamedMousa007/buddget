@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, ChevronLeft, Coffee, Copy, MessageSquare, Plus, ShieldCheck, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -11,12 +11,11 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { getSmsBridgeStatus } from '@/lib/native/smsTracker'
 import { ShortcutsScene, type SceneId } from './sms/ShortcutsScenes'
+import { allGuideKeywords, guideKeywords } from './sms/guideKeywords'
 
-const KW_EN = ['EGP', 'USD', 'charged', 'debited', 'purchase']
-const KW_AR = ['جنيه', 'دولار', 'خصم', 'شراء', 'عملية']
-
-type Step = { scene?: SceneId; keyword?: boolean; done?: boolean }
+type Step = { scene?: SceneId; test?: boolean; done?: boolean }
 
 /**
  * PARALLEL to the `steps` copy arrays in the dictionaries: index N here pairs with index N there.
@@ -25,11 +24,11 @@ type Step = { scene?: SceneId; keyword?: boolean; done?: boolean }
 export const STEPS: Step[] = [
   { scene: 'automationTab' },
   { scene: 'pickMessage' },
-  { keyword: true },
   { scene: 'messageContains' },
   { scene: 'runImmediately' },
   { scene: 'searchAction' },
   { scene: 'shortcutInput' },
+  { test: true },
   { done: true },
 ]
 
@@ -37,9 +36,9 @@ async function copyText(text: string) {
   try { const { Clipboard } = await import('@capacitor/clipboard'); await Clipboard.write({ string: text }); return } catch { /* web fallback */ }
   try { await navigator.clipboard.writeText(text) } catch { /* nothing else to try */ }
 }
-async function openShortcuts() {
-  try { const { AppLauncher } = await import('@capacitor/app-launcher'); await AppLauncher.openUrl({ url: 'shortcuts://' }); return } catch { /* web fallback */ }
-  window.location.href = 'shortcuts://'
+async function openApp(url: 'shortcuts://' | 'sms:') {
+  try { const { AppLauncher } = await import('@capacitor/app-launcher'); await AppLauncher.openUrl({ url }); return } catch { /* web fallback */ }
+  window.location.href = url
 }
 
 /** *segments* in a description render as teal emphasis. */
@@ -80,33 +79,47 @@ function Hero() {
   )
 }
 
-const Highlight = ({ children, ar }: { children: ReactNode; ar?: boolean }) => (
-  <span className={cn('rounded-[5px] bg-[var(--color-brand-primary-soft)] px-1.5 py-px font-extrabold text-[var(--color-brand-primary-ink)]', !ar && 'font-mono-numbers')}>{children}</span>
-)
-const Bubble = ({ rtl, children }: { rtl?: boolean; children: ReactNode }) => (
-  <div dir={rtl ? 'rtl' : 'ltr'} className={cn('max-w-[270px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-primary)]', rtl ? 'self-end rounded-[16px_16px_4px_16px]' : 'self-start rounded-[16px_16px_16px_4px]')}>{children}</div>
-)
-
-function KeywordScreen({ onCopy }: { onCopy: (k: string) => void }) {
+/** The autofilled keyword is the active chip; any other word is one tap away, and every tap also copies it. */
+function KeywordChips({ words, active, onPick }: { words: string[]; active: string; onPick: (k: string) => void }) {
   const g = useT().smsTracking.guide
-  const chip = (k: string, ar?: boolean) => (
-    <Button key={k} variant="outline" size="sm" onClick={() => onCopy(k)} className={cn('font-bold', !ar && 'font-mono-numbers')}>{k}<Copy className="size-3.5 text-[var(--color-brand-text-muted)]" aria-hidden /></Button>
-  )
   return (
-    <div className="mx-auto flex w-full max-w-[330px] flex-col gap-4">
-      <div>
-        <h2 className="text-[19px] font-bold leading-tight tracking-[-0.02em] text-[var(--color-brand-text-primary)]">{g.kwHeaderTitle}</h2>
-        <p className="mt-1 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]">{g.kwHeaderBody}</p>
+    <div className="mb-3">
+      <p className="mb-2 text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwChipsLabel}</p>
+      <div className="flex flex-wrap gap-2" dir="ltr">
+        {words.map((k) => (
+          <Button key={k} variant={k === active ? 'default' : 'outline'} size="sm" onClick={() => onPick(k)} aria-pressed={k === active} className="font-bold">
+            {k}<Copy className="size-3.5 opacity-60" aria-hidden />
+          </Button>
+        ))}
       </div>
-      <div className="flex flex-col gap-2">
-        <p className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwSentLabel}</p>
-        <Bubble>{g.kwEnPre}<Highlight>{g.kwEnHl}</Highlight>{g.kwEnPost}</Bubble>
-        <Bubble rtl>{g.kwArPre}<Highlight ar>{g.kwArHl}</Highlight>{g.kwArPost}</Bubble>
-      </div>
-      <div className="flex flex-col gap-2">
-        <p className="text-[0.625rem] font-bold uppercase tracking-[0.08em] text-[var(--color-brand-text-muted)]">{g.kwCommonLabel}</p>
-        <div className="flex flex-wrap gap-2">{KW_EN.map((k) => chip(k))}</div>
-        <div className="flex flex-wrap gap-2" dir="rtl">{KW_AR.map((k) => chip(k, true))}</div>
+    </div>
+  )
+}
+
+/** Watches the device's last automation run: the intent stamps it on every run, even for a text it then skips. */
+function TestScreen({ keyword, onCopy }: { keyword: string; onCopy: (k: string) => void }) {
+  const g = useT().smsTracking.guide
+  const text = g.testMessage(keyword)
+  const [connected, setConnected] = useState(false)
+  useEffect(() => {
+    if (connected) return
+    // lastRunAt has whole-second precision, so allow a second of slack.
+    const since = Date.now() - 1000
+    const tick = async () => {
+      const at = (await getSmsBridgeStatus())?.lastRunAt
+      if (at && Date.parse(at) >= since) setConnected(true)
+    }
+    const id = setInterval(tick, 2000)
+    return () => clearInterval(id)
+  }, [connected])
+  return (
+    <div className="mx-auto flex w-full max-w-[310px] flex-col items-center gap-4">
+      <div dir="ltr" className="max-w-[270px] self-end rounded-[16px_16px_4px_16px] border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3 py-2.5 font-mono-numbers text-[0.8125rem] text-[var(--color-brand-text-primary)]">{text}</div>
+      <Button variant="outline" size="sm" onClick={() => onCopy(text)} className="font-bold">{g.copyTest}<Copy className="size-3.5 text-[var(--color-brand-text-muted)]" aria-hidden /></Button>
+      <div role="status">
+        {connected
+          ? <Badge variant="positive" className="gap-1 px-3 py-1 text-[0.8125rem]"><Check className="size-3.5" aria-hidden />{g.testConnected}</Badge>
+          : <Badge className="px-3 py-1 text-[0.8125rem]">{g.testWaiting}</Badge>}
       </div>
     </div>
   )
@@ -133,11 +146,20 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   const [phase, setPhase] = useState<'intro' | 'steps'>('intro')
   const [index, setIndex] = useState(0)
   const [copied, setCopied] = useState<string | null>(null)
+  // Each pass through the steps builds one automation; the next pass uses the next keyword.
+  const baseCurrency = useFinanceStore((s) => s.settings.baseCurrency)
+  const keywords = guideKeywords(baseCurrency)
+  const [used, setUsed] = useState<string[]>([])
+  // The guide pre-fills the keyword for the round; tapping another chip switches to it (and copies it, as a fallback).
+  const [picked, setPicked] = useState<string | null>(null)
+  const keyword = picked ?? keywords.find((k) => !used.includes(k)) ?? keywords[0]
+  const nextKeyword = keywords.find((k) => k !== keyword && !used.includes(k))
   const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const total = STEPS.length
   const cur = STEPS[index]
   const copy = g.steps[index]
+  const desc = (cur.done && nextKeyword ? g.doneMore(nextKeyword) : copy.desc).replaceAll('{kw}', keyword)
   const isLast = index === total - 1
 
   const onCopy = useCallback((k: string) => {
@@ -148,7 +170,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
   }, [])
   const close = useCallback(() => (onClose ? onClose() : window.history.back()), [onClose])
   const finish = useCallback(() => { onComplete?.(); close() }, [onComplete, close])
-  const restart = () => setIndex(0)
+  const restart = () => { setUsed((u) => [...u, keyword]); setPicked(null); setIndex(0) }
 
   return (
     <div className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[var(--color-brand-bg)]">
@@ -180,15 +202,16 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
             <p className="mt-2 text-[0.6875rem] font-semibold tabular-nums text-[var(--color-brand-text-muted)]">{g.stepOf(index + 1, total)}</p>
 
             <div className="flex min-h-0 flex-1 items-center justify-center py-3" key={index}>
-              {cur.keyword ? <KeywordScreen onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} />}
+              {cur.test ? <TestScreen keyword={keyword} onCopy={onCopy} /> : cur.done ? <DoneScene /> : <ShortcutsScene id={cur.scene!} keyword={keyword} />}
             </div>
-
-            {!cur.keyword ? (
-              <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
-                <p className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{copy.title}</p>
-                <p className="mt-1 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]"><Emphasis text={copy.desc} /></p>
-              </div>
+            {cur.scene === 'messageContains' ? (
+              <KeywordChips words={allGuideKeywords(baseCurrency)} active={keyword} onPick={(k) => { setPicked(k); onCopy(k) }} />
             ) : null}
+
+            <div className="rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] p-4">
+              <p className="text-[0.9375rem] font-bold text-[var(--color-brand-text-primary)]">{copy.title}</p>
+              <p className="mt-1 text-[0.8125rem] leading-relaxed text-[var(--color-brand-text-secondary)]"><Emphasis text={desc} /></p>
+            </div>
 
             <div className="mt-3 flex gap-2.5">
               {cur.done ? (
@@ -198,7 +221,7 @@ export default function SmsTrackingGuide({ onClose, onComplete }: SmsTrackingGui
                 </>
               ) : (
                 <>
-                  <Button variant="outline" size="cta" onClick={openShortcuts} className="font-semibold">{g.openShortcuts}</Button>
+                  <Button variant="outline" size="cta" onClick={() => openApp(cur.test ? 'sms:' : 'shortcuts://')} className="font-semibold">{cur.test ? g.openMessages : g.openShortcuts}</Button>
                   <Button size="cta" onClick={() => setIndex((i) => Math.min(total - 1, i + 1))} disabled={isLast} className="flex-1 font-bold">{g.ariaNext}</Button>
                 </>
               )}

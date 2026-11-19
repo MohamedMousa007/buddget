@@ -120,7 +120,6 @@ test('J7 errors: a failed invite list offers Try again and recovers', async ({ p
 })
 
 test('J8 S8G-07 a 500 (or offline) on /api/entitlements/me shows a message and a retry, not an endless skeleton', async ({ page, qa }) => {
-  test.fail(true, 'S8G-07 open: billingStore.refresh keeps me=null on a failed read, so the four pages stay on the skeleton with no message')
   const u = await qa('j8')
   await signInUi(page, u.email)
   await page.route(/\/api\/entitlements\/me/, (route) => route.fulfill({ status: 500, body: '{"error":"boom"}' }))

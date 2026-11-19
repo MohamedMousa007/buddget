@@ -37,7 +37,7 @@ export interface UsageCopy {
     byFeature: string; features: { chat: string; receipt: string; budget: string; goals: string; other: string }; smsNever: string
     otherLimits: string; plans: string; plansValue: (used: number, limit: number | null) => string; views: string; viewsValue: (used: number, limit: number | null, resets: string) => string
     advisor: string; advisorValue: (left: number) => string; advisorIncluded: string; included: string; unlimited: string
-    loading: string; errorTitle: string; errorBody: string; bonusAdded: string
+    loading: string; errorTitle: string; errorBody: string; planErrorTitle: string; planErrorBody: string; bonusAdded: string
   }
   balance: { title: string; from: (time: string) => string; matches: string; differs: (amount: string) => string; left: (n: number) => string; usedOf: (used: number, limit: number) => string; blocked: string }
   packs: {
@@ -102,7 +102,7 @@ const en: UsageCopy = {
     otherLimits: 'Other limits', plans: 'Budget plans', plansValue: (used, limit) => (limit === null ? 'Unlimited' : `${used} of ${limit}`),
     views: 'Live balance views', viewsValue: (used, limit, resets) => (limit === null ? 'Included' : `${used} of ${limit}, resets ${resets}`),
     advisor: 'Advisor', advisorValue: (left) => (left > 0 ? `${left} free answer this month` : 'Free answer used this month'), advisorIncluded: 'Included', included: 'Included', unlimited: 'Unlimited',
-    loading: 'Loading your usage…', errorTitle: 'Couldn’t load your usage', errorBody: 'Check your connection and try again. Your limits haven’t changed.', bonusAdded: 'Your +25% is already added',
+    loading: 'Loading your usage…', errorTitle: 'Couldn’t load your usage', errorBody: 'Check your connection and try again. Your limits haven’t changed.', planErrorTitle: 'Couldn’t load your plan', planErrorBody: 'Check your connection and try again.', bonusAdded: 'Your +25% is already added',
   },
   balance: { title: 'Bank-confirmed balance', from: (time) => `From the bank’s SMS at ${time}`, matches: 'Matches your entries', differs: (amount) => `Differs by ${amount}`, left: (n) => `${n} live balance views left this month`, usedOf: (used, limit) => `${used} of ${limit} used this month`, blocked: 'Live balance views are used up for this month. Balances from your own entries stay free and visible.' },
   packs: {
@@ -167,7 +167,7 @@ const ar: UsageCopy = {
     otherLimits: 'حدود أخرى', plans: 'خطط الميزانية', plansValue: (used, limit) => (limit === null ? 'بلا حد' : `${used} من ${limit}`),
     views: 'عروض الرصيد المباشر', viewsValue: (used, limit, resets) => (limit === null ? 'مضمّن' : `${used} من ${limit}، تتجدد ${resets}`),
     advisor: 'المستشار', advisorValue: (left) => (left > 0 ? 'إجابة مجانية واحدة هذا الشهر' : 'استُخدمت الإجابة المجانية هذا الشهر'), advisorIncluded: 'مضمّن', included: 'مضمّن', unlimited: 'بلا حد',
-    loading: 'جارٍ تحميل استخدامك…', errorTitle: 'تعذّر تحميل استخدامك', errorBody: 'تحقق من الاتصال وحاول مجدداً. حدودك لم تتغير.', bonusAdded: 'الـ 25% الإضافية مضافة بالفعل',
+    loading: 'جارٍ تحميل استخدامك…', errorTitle: 'تعذّر تحميل استخدامك', errorBody: 'تحقق من الاتصال وحاول مجدداً. حدودك لم تتغير.', planErrorTitle: 'تعذّر تحميل خطتك', planErrorBody: 'تحقق من الاتصال وحاول مجدداً.', bonusAdded: 'الـ 25% الإضافية مضافة بالفعل',
   },
   balance: { title: 'الرصيد المؤكد من البنك', from: (time) => `من رسالة البنك الساعة ${time}`, matches: 'يطابق إدخالاتك', differs: (amount) => `يختلف بمقدار ${amount}`, left: (n) => `متبقٍّ ${n} عروض للرصيد المباشر هذا الشهر`, usedOf: (used, limit) => `استُخدمت ${used} من ${limit} هذا الشهر`, blocked: 'انتهت عروض الرصيد المباشر لهذا الشهر. الأرصدة من إدخالاتك تبقى مجانية ومرئية.' },
   packs: {

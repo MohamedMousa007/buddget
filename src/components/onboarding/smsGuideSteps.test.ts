@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { STEPS } from './SmsTrackingGuide'
 import { en } from '@/lib/i18n/dictionaries/en'
 import { ar } from '@/lib/i18n/dictionaries/ar'
+import { looksLikeBankMoney } from '@/lib/sms/deviceOtpGate'
+import { allGuideKeywords, guideKeywords } from './sms/guideKeywords'
 
 /**
  * STEPS (the illustrated scene per step) and the `steps` copy arrays are
@@ -25,10 +27,31 @@ describe('SMS guide step arrays stay aligned', () => {
     expect(en.smsTracking.guide.steps[STEPS.length]).toBeUndefined()
   })
 
-  it('every step renders something: a scene, the keyword screen or the done screen', () => {
+  it('every step renders something: a scene, the test screen or the done screen', () => {
     for (const [i, s] of STEPS.entries()) {
-      expect(s.scene ?? s.keyword ?? s.done, `STEPS[${i}] would render blank`).toBeTruthy()
+      expect(s.scene ?? s.test ?? s.done, `STEPS[${i}] would render blank`).toBeTruthy()
     }
+  })
+  it('the test text fires each keyword automation but never leaves the phone as money', () => {
+    // "debited" is itself a money-movement word, so a test text with it is forwarded; the server finds no amount and drops it.
+    const keywords = [...allGuideKeywords('EGP'), ...allGuideKeywords('SAR'), ...allGuideKeywords('AED'), ...allGuideKeywords('USD')].filter((k) => k !== 'debited')
+    for (const kw of keywords) {
+      for (const g of [en.smsTracking.guide, ar.smsTracking.guide]) {
+        expect(g.testMessage(kw)).toContain(kw)
+        expect(looksLikeBankMoney(g.testMessage(kw))).toBe(false)
+      }
+    }
+  })
+  it('keywords follow the base currency, best first', () => {
+    expect(guideKeywords('EGP')).toEqual(['EGP', 'جم', 'جنيه'])
+    expect(guideKeywords('SAR')).toEqual(['SAR', 'SR', 'ريال'])
+    expect(guideKeywords('JPY')).toEqual(['JPY'])
+  })
+  it('the tap options keep the old common words and never repeat one', () => {
+    const all = allGuideKeywords('EGP')
+    expect(all.slice(0, 3)).toEqual(guideKeywords('EGP'))
+    expect(new Set(all).size).toBe(all.length)
+    for (const w of ['USD', 'دولار', 'charged', 'خصم']) expect(all).toContain(w)
   })
   it('no step still asks for the sender, which iOS never provides', () => {
     for (const t of [...en.smsTracking.guide.steps, ...ar.smsTracking.guide.steps]) expect(t.desc + t.title).not.toMatch(/pass the sender|Sender variable|مرر.*المرسل/i)

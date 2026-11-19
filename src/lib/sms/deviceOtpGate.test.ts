@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { isNonTransaction } from '@/lib/sms/patterns/preFilter'
-import { shouldDropOtp } from './deviceOtpGate'
+import { looksLikeBankMoney, shouldDropOtp } from './deviceOtpGate'
 
 describe('device OTP gate (mirror of SmsGate.kt / SmsOtpGate)', () => {
   it('forwards the server fixture: a card purchase with a never-share footer', () => {
@@ -33,5 +33,16 @@ describe('device OTP gate (mirror of SmsGate.kt / SmsOtpGate)', () => {
   })
   it('never drops text without OTP wording', () => {
     expect(shouldDropOtp('EGP 100 debited at Shop')).toBe(false)
+  })
+})
+
+describe('iOS bank-money gate (mirror of SmsOtpGate.looksLikeBankMoney)', () => {
+  it('keeps bank texts the stricter money-movement rule missed', () => {
+    expect(looksLikeBankMoney('Instant transfer of EGP 2,500.00 to your account 1234 from AHMED')).toBe(true)
+    expect(looksLikeBankMoney('تم تحويل مرتب 15000 جنيه على حسابك')).toBe(true)
+  })
+  it('drops personal texts that only contain a 0', () => {
+    expect(looksLikeBankMoney('See you at 10:30 tomorrow')).toBe(false)
+    expect(looksLikeBankMoney('Call me on 0100 123 4567')).toBe(false)
   })
 })
