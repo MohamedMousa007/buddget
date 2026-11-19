@@ -794,6 +794,7 @@ export const ar: Dictionary = {
     saveChanges: 'حفظ التغييرات',
     cueAmount: 'أدخل مبلغًا للمتابعة',
     cueDescription: 'أضف وصفًا للمتابعة',
+    cueCategory: 'اختر فئة للمتابعة',
     splitInstallments: 'تقسيم إلى أقساط',
     installmentFirstDue: 'أول قسط مستحق',
     installmentPayFrom: 'سداد الأقساط من',

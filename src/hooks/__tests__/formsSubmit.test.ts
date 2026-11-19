@@ -55,7 +55,7 @@ beforeEach(() => {
 describe('a second Save from the same open sheet writes nothing (FRM-4, FRM-5)', () => {
   it('add expense: the stale handler an exiting sheet still holds is refused', () => {
     const h = renderLite(() => useAddExpenseSheet())
-    h.act(() => { h.result.current.setAmount('5'); h.result.current.setDescription('x') })
+    h.act(() => { h.result.current.setCategory('Food'); h.result.current.setAmount('5'); h.result.current.setDescription('x') })
     const frozen = h.result.current.handleSubmit
     h.act(() => frozen())
     h.act(() => frozen())
@@ -63,16 +63,16 @@ describe('a second Save from the same open sheet writes nothing (FRM-4, FRM-5)',
   })
   it('add expense: re-opening the sheet re-arms Save', () => {
     const h = renderLite(() => useAddExpenseSheet())
-    h.act(() => { h.result.current.setAmount('5'); h.result.current.setDescription('x') })
+    h.act(() => { h.result.current.setCategory('Food'); h.result.current.setAmount('5'); h.result.current.setDescription('x') })
     h.act(() => h.result.current.handleSubmit())
     h.act(() => useSettingsStore.setState({ activeModal: 'addExpense' } as never))
-    h.act(() => { h.result.current.setAmount('7'); h.result.current.setDescription('y') })
+    h.act(() => { h.result.current.setCategory('Food'); h.result.current.setAmount('7'); h.result.current.setDescription('y') })
     h.act(() => h.result.current.handleSubmit())
     expect(rows().map((e) => e.amount)).toEqual([5, 7])
   })
   it('add expense: a refused Save (blank description) does not arm the guard', () => {
     const h = renderLite(() => useAddExpenseSheet())
-    h.act(() => { h.result.current.setAmount('5'); h.result.current.setDescription('   ') })
+    h.act(() => { h.result.current.setCategory('Food'); h.result.current.setAmount('5'); h.result.current.setDescription('   ') })
     h.act(() => h.result.current.handleSubmit())
     h.act(() => h.result.current.setDescription('x'))
     h.act(() => h.result.current.handleSubmit())
@@ -116,14 +116,14 @@ describe('a second Save from the same open sheet writes nothing (FRM-4, FRM-5)',
 describe('amount entry on the expense sheet (FRM-9, FRM-10, FRM-12)', () => {
   it('3-decimal text does not outlive a switch from KWD to EGP', () => {
     const h = renderLite(() => useAddExpenseSheet())
-    h.act(() => { h.result.current.setCurrency('KWD' as never); h.result.current.setAmount('1.234'); h.result.current.setDescription('x') })
+    h.act(() => { h.result.current.setCurrency('KWD' as never); h.result.current.setCategory('Food'); h.result.current.setAmount('1.234'); h.result.current.setDescription('x') })
     h.act(() => h.result.current.setCurrency('EGP' as never))
     expect(h.result.current.amount).toBe('1.23')
     h.act(() => h.result.current.handleSubmit())
     expect(rows()[0].amount).toBe(1.23)
   })
   it('a prefilled amount goes through the parser: grouped digits, rounding to the currency', () => {
-    useSettingsStore.setState({ expensePrefill: { amount: '1,250.50', description: 'x', currency: 'EGP' } } as never)
+    useSettingsStore.setState({ expensePrefill: { amount: '1,250.50', description: 'x', currency: 'EGP', category: 'Food' } } as never)
     const h = renderLite(() => useAddExpenseSheet())
     h.act(() => h.result.current.handleSubmit())
     expect(rows()[0]?.amount).toBe(1250.5)
@@ -135,14 +135,24 @@ describe('amount entry on the expense sheet (FRM-9, FRM-10, FRM-12)', () => {
     expect(rows()).toHaveLength(0)
   })
   it('a 4-decimal prefill is rounded to the currency', () => {
-    useSettingsStore.setState({ expensePrefill: { amount: '12.3456', description: 'x', currency: 'EGP' } } as never)
+    useSettingsStore.setState({ expensePrefill: { amount: '12.3456', description: 'x', currency: 'EGP', category: 'Food' } } as never)
     const h = renderLite(() => useAddExpenseSheet())
     h.act(() => h.result.current.handleSubmit())
     expect(rows()[0]?.amount).toBe(12.35)
   })
+  it('a save with no category is refused until one is picked (QA-89)', () => {
+    const h = renderLite(() => useAddExpenseSheet())
+    expect(h.result.current.category).toBe('')
+    h.act(() => { h.result.current.setAmount('5'); h.result.current.setDescription('x') })
+    h.act(() => h.result.current.handleSubmit())
+    expect(rows()).toHaveLength(0)
+    h.act(() => h.result.current.setCategory('Groceries'))
+    h.act(() => h.result.current.handleSubmit())
+    expect(rows().map((e) => e.category)).toEqual(['Groceries'])
+  })
   it('the description is saved trimmed', () => {
     const h = renderLite(() => useAddExpenseSheet())
-    h.act(() => { h.result.current.setAmount('5'); h.result.current.setDescription('  Coffee  ') })
+    h.act(() => { h.result.current.setCategory('Food'); h.result.current.setAmount('5'); h.result.current.setDescription('  Coffee  ') })
     h.act(() => h.result.current.handleSubmit())
     expect(rows()[0].description).toBe('Coffee')
   })

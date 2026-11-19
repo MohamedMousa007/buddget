@@ -701,6 +701,7 @@ export interface Dictionary {
     saveChanges: string
     cueAmount: string
     cueDescription: string
+    cueCategory: string
     splitInstallments: string
     installmentFirstDue: string
     installmentPayFrom: string

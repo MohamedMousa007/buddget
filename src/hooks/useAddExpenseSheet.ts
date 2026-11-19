@@ -53,14 +53,14 @@ export function useAddExpenseSheet() {
     )
   const { activeModal, setActiveModal, expensePrefill, setExpensePrefill } = useSettingsStore()
   const isOpen = activeModal === 'addExpense'
-  const { categoryChipOptions, defaultCategory } = usePlanCategories()
+  const { categoryChipOptions } = usePlanCategories()
   const submit = useSubmitOnce(isOpen)
 
   const [date, setDate] = useState(localTodayISO())
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>(settings.baseCurrency)
-  const [category, setCategory] = useState<string>(defaultCategory)
+  const [category, setCategory] = useState<string>('')
   const [subcategory, setSubcategory] = useState<string | undefined>(undefined)
   const [paymentMethodId, setPaymentMethodId] = useState(
     defaultMethodId(paymentMethods)
@@ -132,7 +132,7 @@ export function useAddExpenseSheet() {
     setDescription('')
     setAmount('')
     setCurrency(settings.baseCurrency)
-    setCategory(defaultCategory)
+    setCategory('')
     setSubcategory(undefined)
     setPaymentMethodId(defaultMethodId(paymentMethods))
     setNotes('')
@@ -143,7 +143,7 @@ export function useAddExpenseSheet() {
     setInstallmentCount(4)
     setInstallmentFirstDue(firstOfNextMonth())
     setFundingMethodId(nonBnplDefaultId(paymentMethods))
-  }, [paymentMethods, settings.baseCurrency, defaultCategory])
+  }, [paymentMethods, settings.baseCurrency])
 
   // A 3-decimal amount (KWD 1.234) must not outlive a switch to a 2-decimal currency.
   const changeCurrency = useCallback((next: Currency) => {
@@ -162,7 +162,8 @@ export function useAddExpenseSheet() {
     const cur = expensePrefill?.currency === currency ? currency : clampFiatToAllowed(settings, currency)
     const parsedAmount = parseLocalizedAmount(amount, cur)
     const title = description.trim()
-    if (!title || !(parsedAmount > 0)) return
+    // No category is preselected (a fast save must not file as the first one), so saving needs a pick.
+    if (!title || !(parsedAmount > 0) || !category) return
     if (splitError) return
     if (!submit.claim()) return
     setSubmitError('')

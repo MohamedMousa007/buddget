@@ -790,6 +790,7 @@ export const en: Dictionary = {
     saveChanges: 'Save changes',
     cueAmount: 'Enter an amount to continue',
     cueDescription: 'Add a description to continue',
+    cueCategory: 'Pick a category to continue',
     splitInstallments: 'Split into installments',
     installmentFirstDue: 'First payment due',
     installmentPayFrom: 'Pay installments from',

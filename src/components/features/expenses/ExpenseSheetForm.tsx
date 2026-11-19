@@ -154,7 +154,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
   const addOnExcludedMethod = mode === 'add' && isMethodExcluded(paymentMethods, paymentMethodId)
   const amountNum = parseFloat(amount)
   const submitDisabled =
-    !amount.trim() || Number.isNaN(amountNum) || amountNum <= 0 || !description.trim()
+    !amount.trim() || Number.isNaN(amountNum) || amountNum <= 0 || !description.trim() || (mode === 'add' && !category)
 
   const setAmt = (v: string) => {
     if (/^[0-9]*\.?[0-9]*$/.test(v)) setAmount(v)
@@ -518,7 +518,9 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             <p className="mb-2 text-center text-xs font-medium text-[var(--color-brand-text-muted)]" role="status">
               {!amount.trim() || Number.isNaN(amountNum) || amountNum <= 0
                 ? t.expenseForm.cueAmount
-                : t.expenseForm.cueDescription}
+                : !description.trim()
+                  ? t.expenseForm.cueDescription
+                  : t.expenseForm.cueCategory}
             </p>
           ) : null}
           <Button
