@@ -35,6 +35,7 @@ import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { consumeExpectedSignOut } from '@/lib/auth/intentionalSignOut'
 import { DialogProvider, useConfirm, type ConfirmOptions } from '@/components/ui/dialog/DialogProvider'
 import { settleBeforeWipe } from '@/lib/auth/signOutFlush'
+import { takePasswordUpdatedHint } from '@/components/auth/passwordUpdatedHint'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -68,6 +69,7 @@ function PasswordUpdatedCookieSync() {
   useEffect(() => {
     if (handled.current) return
     handled.current = true
+    if (!takePasswordUpdatedHint()) return
     void (async () => {
       try {
         const { apiFetch } = await import('@/lib/apiBase')

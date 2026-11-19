@@ -12,6 +12,7 @@ import { AuthPrimaryButton } from '@/components/features/auth-modal/AuthPrimaryB
 import { AuthPasswordField } from '@/components/features/auth-modal/AuthPasswordField'
 import { changePassword } from '@/lib/auth/changePassword'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
+import { setPasswordUpdatedHint } from '@/components/auth/passwordUpdatedHint'
 
 type ValidationTone = 'neutral' | 'valid' | 'error'
 
@@ -150,6 +151,7 @@ export default function ResetPasswordConfirmPage() {
     await supabase.auth.signOut({ scope: 'local' })
     setLoading(false)
     // Leaves the bare reset-password context → full load into the app shell.
+    setPasswordUpdatedHint()
     window.location.replace('/')
   }
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { checkAIStatus } from '@/lib/ai/gemini'
+import { useOptionalAuth } from '@/components/auth/auth-context'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
@@ -54,9 +55,12 @@ export function AIChatBubble({ onOpen }: AIChatBubbleProps) {
   const [nudge, setNudge] = useState<BuddgyNudge | null>(null)
   const [talking, setTalking] = useState(false)
 
+  // Signed out the orb cannot open (it goes through requireAuth), so there is nothing to ask the server.
+  const signedIn = Boolean(useOptionalAuth()?.user)
   useEffect(() => {
+    if (!signedIn) return
     checkAIStatus().then((status) => setAiEnabled(status.enabled))
-  }, [])
+  }, [signedIn])
 
   // A tip talks for a beat, then holds its expression until it times out.
   useEffect(() => {
