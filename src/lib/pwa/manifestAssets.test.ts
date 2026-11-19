@@ -19,3 +19,20 @@ describe('OFS-10 / OFS-11 icon and shortcut references', () => {
     for (const s of JSON.parse(manifest).shortcuts as { url: string }[]) expect(s.url).not.toContain('action=addExpense')
   })
 })
+
+describe('QA-76 / QA-77 install manifest', () => {
+  const m = JSON.parse(readFileSync(join(root, 'public/manifest.json'), 'utf8')) as Record<string, unknown>
+
+  it('keeps the status bar visible: display_override starts with standalone, no fullscreen', () => {
+    expect((m.display_override as string[])[0]).toBe('standalone')
+    expect(m.display_override).not.toContain('fullscreen')
+  })
+  it('has a stable install id equal to the current start_url, so existing installs keep their identity', () => {
+    expect(m.id).toBe('/flow')
+    expect(m.start_url).toBe('/flow')
+  })
+  it('describes its own strings and category, and does not lock orientation', () => {
+    expect(m).toMatchObject({ lang: 'en', dir: 'ltr', categories: ['finance'] })
+    expect(m).not.toHaveProperty('orientation')
+  })
+})

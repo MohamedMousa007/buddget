@@ -1,18 +1,22 @@
 {
   "name": "buddget",
+  "id": "/flow",
   "short_name": "buddget",
   "description": "Your money, finally makes sense.",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "finance"
+  ],
   "start_url": "/flow",
   "scope": "/",
   "display_override": [
-    "fullscreen",
     "standalone",
     "minimal-ui"
   ],
   "display": "standalone",
   "background_color": "#0A100F",
   "theme_color": "#12B0A0",
-  "orientation": "portrait",
   "shortcuts": [
     {
       "name": "Budget Setup",
