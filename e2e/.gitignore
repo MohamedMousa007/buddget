@@ -1,0 +1,5 @@
+# Generated run output: traces, responses, evidence dumps, sweep results.
+**/test-results/
+**/evidence/
+**/out/
+ui/*.json
