@@ -73,9 +73,11 @@ export function commitFlowEntities(state: FlowState, store: Actions, base: Curre
   }
 
   const savings = amountOf(a.savingsOnHand)
-  // The empty vault the app seeds itself tracks nothing; money in a tracked account is already on the balance sheet.
-  const tracksSavings = store.savingsAccounts.some((p) => !(p.type === 'vault' && !p.currentBalance)) || (store.paymentMethods ?? []).some(isTracked)
-  if (savings > 0 && !done.savings && !tracksSavings) {
+  // The empty vault the app seeds itself tracks nothing.
+  const hasPockets = store.savingsAccounts.some((p) => !(p.type === 'vault' && !p.currentBalance))
+  // Money inside a tracked account is already on the balance sheet: only money the user says is kept elsewhere becomes a pocket.
+  const alreadyCounted = (store.paymentMethods ?? []).some(isTracked) && a.savingsInTracked !== false
+  if (savings > 0 && !done.savings && !hasPockets && !alreadyCounted) {
     created.savings = store.addSavingsAccount({
       name: names.savings, category: 'savings', type: 'bank', currency: base, openingBalance: savings, isEmergencyCover: true,
     })

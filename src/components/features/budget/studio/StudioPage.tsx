@@ -20,7 +20,8 @@ import { draftToCategories } from '@/lib/budget/draftToPlan'
 import { repairDraft } from '@/lib/budget/validate'
 import { acceptDescribed, answer, createFlow, flowReadiness, nextQuestion, pruneInapplicable, skip, STAGES, stageOf } from '@/lib/budget/flow/flow'
 import { get } from '@/lib/budget/flow/derive'
-import { knownFromStore, trackedMoneyOnHand } from '@/lib/budget/flow/known'
+import { knownFromStore } from '@/lib/budget/flow/known'
+import { isTracked } from '@/lib/accounts/kinds'
 import { NODES, NODE_BY_ID } from '@/lib/budget/flow/nodes'
 import { PROFILE_ANSWERS, profilePatch } from '@/lib/budget/flow/profile'
 import { applyAnswers } from '@/lib/budget/flow/toFacts'
@@ -54,7 +55,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
   const store = useFinanceStore
   const facts = useMemo(() => buildFactsFromStore(store.getState(), new Date()), [store])
   const [state, setState] = useState<FlowState>(
-    () => resumeStudioDraft(useSettingsStore.getState().budgetStudioDraft, intent, Date.now()) ?? createFlow((intent ?? 'mixed') as FlowIntent, knownFromStore(facts, store.getState().profile.financialProfile, trackedMoneyOnHand(store.getState()))),
+    () => resumeStudioDraft(useSettingsStore.getState().budgetStudioDraft, intent, Date.now()) ?? createFlow((intent ?? 'mixed') as FlowIntent, knownFromStore(facts, store.getState().profile.financialProfile, store.getState().paymentMethods.some(isTracked))),
   )
   const [saved, setSaved] = useState(false)
   const [focusId, setFocusId] = useState<string | null>(null)

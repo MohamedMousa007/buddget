@@ -137,7 +137,7 @@ type Known = Record<string, FlowValue>
 const PROFILES: Record<string, Known> = {
   blank: {},
   history: { income: 12000, hasHistory: true, knownBillCount: 3, knownSubCount: 2, savingsOnHand: 15000, housing: 'rent', rent: 3500, household: 'couple' },
-  debtsKnown: { income: 9000, knownDebtCount: 2, knownDebtMinimum: 1500, knownDebtBalance: 40000, knownHighApr: true, knownBillCount: 2, knownSubCount: 1 },
+  debtsKnown: { income: 9000, tracksAccounts: true, knownDebtCount: 2, knownDebtMinimum: 1500, knownDebtBalance: 40000, knownHighApr: true, knownBillCount: 2, knownSubCount: 1 },
   rich: { income: 20000, hasHistory: true, knownBillCount: 4, knownSubCount: 3, savingsOnHand: 80000, housing: 'rent', rent: 5000, rentConflict: true, household: 'couple', partnerRole: 'shares', partnerSharePct: 60, transportMode: 'public', foodFrequency: 'sometimes', lifestyle: 'balanced', healthCover: 'full', supportsOthers: false, emergencyMonths: 3, retirement: 'employer', annualKinds: [] },
   goalsKnown: { income: 15000, knownGoalCount: 2, knownBillCount: 4, knownSubCount: 3, hasHistory: true, savingsOnHand: 30000 },
 }

@@ -6,7 +6,8 @@ import { computeNetWorth } from '@/lib/savings/netWorth'
 import { pocketHolderId } from '@/lib/savings/pocketHolder'
 import { commitFlowEntities } from '@/lib/budget/studioEntities'
 import { answer, createFlow } from '@/lib/budget/flow/flow'
-import { trackedMoneyOnHand, knownFromStore } from '@/lib/budget/flow/known'
+import { knownFromStore } from '@/lib/budget/flow/known'
+import { NODE_BY_ID } from '@/lib/budget/flow/nodes'
 import type { PaymentMethod, SavingsAccount } from '@/lib/store/types'
 
 const S = () => useFinanceStore.getState()
@@ -72,22 +73,51 @@ describe('QA-13 / QA-122 / QA-12: money a tracked account already holds is never
     expect(netWorth()).toBe(1100)
   })
 
-  it('Budget Studio: with tracked accounts the question is already answered from the balance sheet and no pocket is created', () => {
-    createFromAccount(S().paymentMethods[0], 100)
-    useFinanceStore.setState({ savingsAccounts: [...S().savingsAccounts, { id: 'out', name: 'Safe', category: 'savings', type: 'cash', currency: 'EGP', currentBalance: 50, createdAt: '2026-01-01' } as SavingsAccount] })
-    expect(trackedMoneyOnHand(S())).toBe(1050)
-    expect(knownFromStore({ liquidSavings: 150, bills: [], debts: [], goals: [], dependents: 0 } as never, null, 1050).savingsOnHand).toBe(1050)
-    seed([pm('qnb')])
-    const add = vi.fn(() => 'pocket-1')
-    const store = { ...S(), addSavingsAccount: add }
-    const created = commitFlowEntities(answer(createFlow('mixed'), 'savingsOnHand', 1400), store as never, 'EGP', { income: 'i', savings: 's', debt: () => 'd', goal: () => 'g' })
-    expect(add).not.toHaveBeenCalled()
-    expect(created.savings).toBeUndefined()
-    expect(netWorth()).toBe(1000)
-  })
+  describe('Budget Studio with tracked accounts: the user says where the saved money is', () => {
+    const facts = (liquidSavings: number) => ({ liquidSavings, bills: [], debts: [], goals: [], dependents: 0 }) as never
+    const names = { income: 'i', savings: 's', debt: () => 'd', goal: () => 'g' }
+    const commit = (inTracked?: boolean) => {
+      const add = vi.fn(() => 'pocket-1')
+      let flow = answer(createFlow('mixed', { tracksAccounts: true }), 'savingsOnHand', 1400)
+      if (inTracked !== undefined) flow = answer(flow, 'savingsInTracked', inTracked)
+      return { add, created: commitFlowEntities(flow, { ...S(), addSavingsAccount: add } as never, 'EGP', names) }
+    }
 
-  it('no tracked account: nothing is known up front and the studio still creates the pocket', () => {
-    seed([pm('qnb', { openingBalance: undefined, openingAt: undefined })])
-    expect(trackedMoneyOnHand(S())).toBeUndefined()
+    it('asks the amount instead of assuming the account balances, even when an old answer is remembered', () => {
+      const known = knownFromStore(facts(0), { budgetProfile: { savingsOnHand: 900, savingsInTracked: true } } as never, true)
+      expect(known.savingsOnHand).toBeUndefined()
+      expect(known.savingsInTracked).toBeUndefined()
+      expect(known.tracksAccounts).toBe(true)
+    })
+
+    it('existing pockets still answer it, and without tracked accounts nothing changes', () => {
+      expect(knownFromStore(facts(150), null, true).savingsOnHand).toBe(150)
+      expect(knownFromStore(facts(0), { budgetProfile: { savingsOnHand: 900 } } as never, false).savingsOnHand).toBe(900)
+    })
+
+    it('asks where it is only after an amount, and only with tracked accounts', () => {
+      const where = NODE_BY_ID.get('savingsInTracked')!
+      expect(where.when!(answer(createFlow('mixed', { tracksAccounts: true }), 'savingsOnHand', 1400))).toBe(true)
+      expect(where.when!(answer(createFlow('mixed', { tracksAccounts: true }), 'savingsOnHand', 0))).toBe(false)
+      expect(where.when!(answer(createFlow('mixed'), 'savingsOnHand', 1400))).toBe(false)
+    })
+
+    it('inside a tracked account: nothing is created and net worth does not move', () => {
+      const { add, created } = commit(true)
+      expect(add).not.toHaveBeenCalled()
+      expect(created.savings).toBeUndefined()
+      expect(netWorth()).toBe(1000)
+    })
+
+    it('kept outside: a pocket of its own is created', () => {
+      const { add, created } = commit(false)
+      expect(add).toHaveBeenCalledWith(expect.objectContaining({ openingBalance: 1400 }))
+      expect(add.mock.calls[0]).not.toEqual([expect.objectContaining({ heldInPaymentMethodId: expect.anything() })])
+      expect(created.savings).toBe('pocket-1')
+    })
+
+    it('not answered: nothing is created (the safe side of a double count)', () => {
+      expect(commit().add).not.toHaveBeenCalled()
+    })
   })
 })
