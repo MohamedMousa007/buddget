@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { accountIdentifier, accountSubtitle, sharesProvider } from './accountDisplay'
+import { accountIdentifier, accountSubtitle, moneyFlex, sharesProvider } from './accountDisplay'
 
 describe('accountIdentifier', () => {
   it('shows the label in place of the digits, and the digits when there is no label', () => {
@@ -24,5 +24,13 @@ describe('same-provider accounts', () => {
   })
   it('keeps the digits beside a custom label when shared', () => {
     expect(accountSubtitle({ label: 'Salary', last4: '1234', currency: 'USD' } as never, true)).toBe('USD · Salary · •• 1234')
+  })
+})
+
+describe('moneyFlex (QA-121)', () => {
+  it('keeps decimals when the value is not whole, so -15,219.99 never prints as -15,219', () => {
+    expect(moneyFlex(-15219.99, 'EGP')).toBe('−15,219.99')
+    expect(moneyFlex(1500, 'EGP')).toBe('1,500')
+    expect(moneyFlex(1499.996, 'EGP')).toBe('1,500')
   })
 })

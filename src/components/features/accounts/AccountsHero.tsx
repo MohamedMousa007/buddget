@@ -7,7 +7,7 @@ import { IconButton } from '@/components/ui/IconButton'
 import { MASK } from '@/lib/privacy/mask'
 import { useT } from '@/lib/i18n'
 import type { AccountsModel } from '@/lib/accounts/useAccounts'
-import { splitMoney } from './accountDisplay'
+import { moneyFlex, splitMoney } from './accountDisplay'
 
 const TONES = ['var(--flow-band-fg)', 'var(--color-brand-gold)', 'color-mix(in oklab, var(--flow-band-fg) 62%, transparent)', 'color-mix(in oklab, var(--flow-band-fg) 40%, transparent)']
 
@@ -24,7 +24,7 @@ interface AccountsHeroProps {
 export function AccountsHero({ model, currency, netWorth, creditOwed, hidden, onToggleHidden }: AccountsHeroProps) {
   const t = useT().accountsPage
   const free = Math.max(0, model.totalInBase - model.heldInBase)
-  const fmt = (n: number) => (hidden ? MASK : splitMoney(n, currency).int)
+  const fmt = (n: number) => (hidden ? MASK : moneyFlex(n, currency))
   const big = splitMoney(free, currency)
   const tracked = model.accounts.filter((a) => a.balance)
   const segs = tracked

@@ -53,7 +53,7 @@ import { effectiveNisabBasis } from '@/lib/savings/zakatBasis'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { InvestmentAssetType, SavingsAccount } from '@/lib/store/types'
-import { formatWhole } from '@/lib/utils/formatters'
+import { formatSignedFlex, formatWhole } from '@/lib/utils/formatters'
 
 /** Past this scroll the band's detail has left the viewport: collapse into the sticky strip. */
 const COLLAPSE_AT = 150
@@ -234,7 +234,7 @@ export default function WealthPage() {
   const brandNew = model.rows.length === 0
   const unpricedGrams = model.rows.filter((r) => r.cat === 'gold' && r.amount == null).reduce((s, r) => s + (r.quantity ?? 0), 0)
   const totalText = formatWhole(model.total)
-  const netWorthText = formatWhole(nw.netWorth)
+  const netWorthText = formatSignedFlex(nw.netWorth)
   const hasZakat = zakatResult.due && zakatResult.nisab > 0
   const rate = savingsRatePct(stats.savingsThisMonth, stats.totalIncome, stats.totalExpenseBudget)
 

@@ -46,6 +46,12 @@ export function splitMoney(n: number, currency: string): { int: string; dec: str
   return { int: (n < 0 ? '−' : '') + s.slice(0, k), dec: s.slice(k) }
 }
 
+/** Hero cell figure: whole when whole, else with its decimals, so a cell never truncates what the big number shows. */
+export function moneyFlex(n: number, currency: string): string {
+  const { int, dec } = splitMoney(n, currency)
+  return /^\.0+$/.test(dec) ? int : int + dec
+}
+
 /** "CIB ••2016" is stored as one name; the list shows the provider and the digits separately. */
 export function accountTitle(m: PaymentMethod): string {
   return decomposePaymentMethodName(m.name, m.last4).provider

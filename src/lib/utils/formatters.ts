@@ -193,6 +193,12 @@ export function formatFlex(n: number): string {
   return Number.isInteger(r) ? formatWhole(r) : formatFixed2(r)
 }
 
+/** `formatFlex` with a true minus for negatives: "−15,219.99". */
+export function formatSignedFlex(raw: number): string {
+  const r = Math.round(finite(raw) * 100) / 100
+  return `${r < 0 ? '\u2212' : ''}${formatFlex(r)}`
+}
+
 /** Signed with a true minus: "+21,436" / "−5,131" / "0". `digits` 0 or 2. */
 export function formatSigned(raw: number, digits: 0 | 2 = 0): string {
   const n = finite(raw)
