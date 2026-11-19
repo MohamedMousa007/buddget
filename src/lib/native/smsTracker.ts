@@ -323,6 +323,18 @@ export async function removeSecureDeviceSecret(): Promise<boolean> {
   return callNative('removeDeviceSecret', async (p) => { await p.removeDeviceSecret(); return true }, false)
 }
 
+export async function setSecureItem(key: SecureItemKey, value: string): Promise<boolean> {
+  return callNative('setSecureItem', async (p) => { await p.setSecureItem({ key, value }); return true }, false)
+}
+
+export async function getSecureItem(key: SecureItemKey): Promise<string | null> {
+  return callNative('getSecureItem', async (p) => (await p.getSecureItem({ key })).value ?? null, null)
+}
+
+export async function removeSecureItem(key: SecureItemKey): Promise<boolean> {
+  return callNative('removeSecureItem', async (p) => { await p.removeSecureItem({ key }); return true }, false)
+}
+
 /** Full device wipe (forget this device): clears token, queue, setupCompleted, enabled. */
 export async function clearSmsNative(): Promise<void> {
   await callNative('clearState', (p) => p.clearState(), undefined)
