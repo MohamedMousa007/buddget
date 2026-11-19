@@ -11,9 +11,12 @@ export function baselineAfterFlush(previous: Snapshot | null, current: Snapshot,
   return parked.length > 0 ? holdParkedBack(current, previous ?? emptySnapshot(), parked) : current
 }
 
-const RETRY_DELAYS_MS = [2_000, 6_000, 15_000]
+const RETRY_DELAYS_MS = [2_000, 6_000, 15_000, 30_000, 60_000]
 
-/** Backoff before re-flushing a failed diff; null once the bounded retries are spent. */
-export function flushRetryDelay(attempt: number): number | null {
-  return RETRY_DELAYS_MS[attempt] ?? null
+/**
+ * Backoff before re-flushing a failed diff. D-4: it never gives up while the app is open and online; after the ramp it
+ * retries once a minute, so a late failure in a long session still lands without waiting for the next edit.
+ */
+export function flushRetryDelay(attempt: number): number {
+  return RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)]
 }

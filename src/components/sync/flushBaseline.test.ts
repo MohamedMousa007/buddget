@@ -25,8 +25,9 @@ describe('baselineAfterFlush', () => {
 })
 
 describe('flushRetryDelay', () => {
-  it('backs off for three attempts then stops', () => {
-    expect([0, 1, 2].map(flushRetryDelay)).toEqual([2_000, 6_000, 15_000])
-    expect(flushRetryDelay(3)).toBeNull()
+  it('D-4: backs off, then keeps retrying once a minute instead of giving up', () => {
+    expect([0, 1, 2, 3, 4].map(flushRetryDelay)).toEqual([2_000, 6_000, 15_000, 30_000, 60_000])
+    expect(flushRetryDelay(5)).toBe(60_000)
+    expect(flushRetryDelay(500)).toBe(60_000)
   })
 })

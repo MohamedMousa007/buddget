@@ -287,7 +287,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     const scheduleRetry = () => {
       if (retryTimer) return
       const delay = flushRetryDelay(retryAttempt)
-      if (delay === null || !isOnline()) return
+      if (!isOnline()) return
       retryAttempt++
       retryTimer = setTimeout(() => {
         retryTimer = null

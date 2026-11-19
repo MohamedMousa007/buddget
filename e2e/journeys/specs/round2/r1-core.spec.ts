@@ -270,6 +270,45 @@ test('R13 sign out with an unsent edit asks before wiping (QA-65)', async ({ pag
   expect(wiped && !asked, 'unsent expense wiped with no warning').toBe(false)
 })
 
+const isRestWrite = (method: string, url: string) => method !== 'GET' && method !== 'HEAD' && /\/rest\/v1\/(?!rpc\/)/.test(url)
+
+test('R16 S7a: when the server refuses every write the user sees "not saved", and the retry lands it once the server is back', async ({ page, user }) => {
+  await withQnb(page, 1000)
+  await goto(page, '/flow')
+  await page.route(/\/rest\/v1\//, (route) => (isRestWrite(route.request().method(), route.request().url())
+    ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"qa forced failure"}' })
+    : route.fallback()))
+  await addExpense(page, { amount: 60, description: 'QA R16 refused', category: 'Food', method: /QNB/ })
+  await expect(page.getByText(/not saved/i).first(), 'a refused save must say so on screen').toBeVisible({ timeout: 15_000 })
+  await page.unroute(/\/rest\/v1\//)
+  // D-4: the backoff retries on its own, no further edit needed.
+  await serverRows('expenses', user.id, 'description=eq.QA R16 refused&deleted_at=is.null', (r) => r.length === 1, 45_000)
+  await expect(page.getByText(/not saved/i)).toHaveCount(0, { timeout: 15_000 })
+})
+
+test('R17 S8d-6: a reload with no edit sends no writes', async ({ page, user }) => {
+  await withQnb(page, 1000)
+  await goto(page, '/flow')
+  await addExpense(page, { amount: 15, description: 'QA R17 seed', category: 'Food', method: /QNB/ })
+  await serverRows('expenses', user.id, 'description=eq.QA R17 seed&deleted_at=is.null', (r) => r.length === 1)
+  await page.waitForTimeout(4000)
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (!isRestWrite(r.method(), r.url())) return
+    const table = new URL(r.url()).pathname.split('/').pop()
+    let keys = ''
+    try { const b = r.postDataJSON(); keys = Object.keys(Array.isArray(b) ? b[0] ?? {} : b ?? {}).sort().join('|') } catch { /* no body */ }
+    writes.push(`${r.method()} ${table} [${keys}]`)
+  })
+  for (let i = 0; i < 2; i++) {
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.locator('main')).toContainText('QA R17 seed', { timeout: 30_000 })
+    await page.waitForTimeout(8000)
+  }
+  test.info().annotations.push({ type: 'evidence', description: `writes on reload: ${JSON.stringify(writes)}` })
+  expect(writes, 'writes on a reload without an edit').toEqual([])
+})
+
 test.describe('two devices', () => {
   test('R14 two devices: add, offline add, offline delete, reconnect; nothing lost, duplicated or revived', async ({ page, browser, user }) => {
     await withQnb(page, 3000)
