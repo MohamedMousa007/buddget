@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads the untyped persisted store */
 import type { Page } from '@playwright/test'
 import { expect, goto as gotoTab, localWait, test } from '../lib/fixtures'
-import { addBorrow, addExpense, addMoneyIn, blur, dialog } from '../lib/ui'
+import { addAccount, addBorrow, addExpense, addMoneyIn, blur, dialog } from '../lib/ui'
 
 /** The Add sheet's tiles, top-left to bottom-right, as the accessible name starts. */
 const TILES = [/^Expense/, /^Money in/, /^Receipt/, /^Pay debt/, /^Savings/, /^Subscription/, /^Add by voice/]
@@ -65,19 +65,34 @@ test('Q2 Expense and Money in save from the Add sheet', async ({ page, user }) =
   await localWait(page, (s) => (s.incomeEvents ?? []).find((e: any) => /QA Q refund/.test(e.name ?? e.label ?? e.description ?? '')) ?? null)
 })
 
-test('Q3 Savings opens Add money directly on Wealth, once', async ({ page, user }) => {
+test('Q3 Savings opens Add money directly on Wealth, once, and saves', async ({ page, user }) => {
   void user
-  await goto(page, '/settings')
-  await openTile(page, /^Savings/)
-  await expect(page).toHaveURL(/\/wealth$/)
-  const d = dialog(page, 'Add money')
-  await expect(d).toBeVisible()
-  await closeAll(page)
+  await test.step('brand-new account: the sheet still opens and offers a way forward', async () => {
+    await goto(page, '/settings')
+    await openTile(page, /^Savings/)
+    await expect(page).toHaveURL(/\/wealth$/)
+    await expect(dialog(page, 'Add money')).toBeVisible()
+    await page.waitForTimeout(600)
+    await page.screenshot({ path: test.info().outputPath('savings-new-user.png') })
+    await closeAll(page)
+  })
   await test.step('leaving and coming back does not reopen it', async () => {
     await goto(page, '/flow')
     await goto(page, '/wealth')
     await page.waitForTimeout(1000)
+    await expect(dialog(page, 'Add money')).toBeHidden()
+  })
+  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 5000 })
+  await test.step('with an account: deposit 500 from the + on another screen', async () => {
+    await goto(page, '/reports')
+    await openTile(page, /^Savings/)
+    const d = dialog(page, 'Add money')
+    await d.getByRole('radio').first().click()
+    await d.getByRole('textbox', { name: 'Amount' }).fill('500')
+    await blur(page)
+    await d.getByRole('button', { name: /^Add [\d,]+ to / }).click()
     await expect(d).toBeHidden()
+    await localWait(page, (s) => (s.savingsTransactions ?? s.savingsDeposits ?? []).find((t: any) => Number(t.amount) === 500) ?? (s.savingsAccounts ?? []).find((a: any) => Number(a.balance ?? a.currentBalance) === 500))
   })
 })
 
@@ -106,22 +121,31 @@ test('Q4 Pay debt: empty state leads to adding one; with a debt it pays', async 
   })
 })
 
-test('Q5 Subscription, Receipt scan and voice open their sheets from a page with no add button', async ({ page, user, context }) => {
+test('Q5 Subscription, Receipt and voice work from a page with no add button', async ({ page, user, context }) => {
   void user
   await context.grantPermissions(['microphone', 'camera'])
-  await goto(page, '/budget-history')
-  await test.step('Subscription lands on Subscriptions with the add sheet open', async () => {
+  await addAccount(page, { kind: 'Bank', provider: /QNB Alahli/, balance: 3000 })
+  await test.step('Subscription lands on Subscriptions with the add sheet open, and saves', async () => {
+    await goto(page, '/budget-history')
     await openTile(page, /^Subscription/)
     await expect(page).toHaveURL(/\/subscriptions$/)
-    await expect(childSheet(page)).toBeVisible()
-    await closeAll(page)
+    const picker = childSheet(page)
+    await expect(picker).toBeVisible()
+    await picker.getByRole('button', { name: /^Netflix/ }).first().click()
+    const d = dialog(page, 'Add Netflix Standard')
+    await d.getByRole('group', { name: 'Paid with' }).getByRole('button', { name: 'QNB Alahli' }).click()
+    await d.getByRole('button', { name: 'Add Netflix Standard' }).click()
+    await expect(d).toBeHidden()
+    await localWait(page, (s) => (s.subscriptions ?? []).find((x: any) => /Netflix/.test(x.name ?? '')))
   })
-  for (const tile of [/^Receipt/, /^Add by voice/]) {
-    await test.step(`${tile} opens its sheet (stops before any AI call)`, async () => {
+  for (const [tile, shot] of [[/^Receipt/, 'receipt'], [/^Add by voice/, 'voice']] as const) {
+    await test.step(`${shot} opens its sheet; Escape cancels before any AI call`, async () => {
       await goto(page, '/reports')
       await openTile(page, tile)
       await expect(addSheet(page)).toBeHidden()
       await expect(childSheet(page)).toBeVisible()
+      await page.waitForTimeout(700)
+      await page.screenshot({ path: test.info().outputPath(`${shot}-sheet.png`) })
       await closeAll(page)
     })
   }

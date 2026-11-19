@@ -95,13 +95,13 @@ export function QuickAddFAB() {
     const Icon = tile.icon
     return (
       <div key={tile.id} className={tiles.length % 2 === 1 && index === tiles.length - 1 ? 'col-span-2 min-w-0' : 'min-w-0'}>
-        <SelectableCard as="action" surface="elevated" layout="row" onClick={() => runTile(tile.id)} className="w-full min-w-0">
+        <SelectableCard as="action" surface="elevated" layout="row" onClick={() => runTile(tile.id)} className="h-full w-full min-w-0">
           <span className="flex w-full min-w-0 items-center gap-2.5 overflow-hidden text-start">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px]" style={{ background: tile.bg, color: tile.fg }}>
               <Icon className="size-[19px]" strokeWidth={1.75} aria-hidden />
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-px">
-              <span className="truncate text-[0.8125rem] min-[380px]:text-sm font-bold leading-[1.25] text-[var(--color-brand-text-primary)]">{tile.label}</span>
+              <span className="truncate text-[0.8125rem] min-[380px]:text-sm lg:text-[0.8125rem] font-bold leading-[1.25] text-[var(--color-brand-text-primary)]">{tile.label}</span>
               <span className="line-clamp-2 text-[0.71875rem] leading-[1.3] text-[var(--color-brand-text-secondary)]">{tile.hint}</span>
             </span>
           </span>
