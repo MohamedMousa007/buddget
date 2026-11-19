@@ -18,6 +18,11 @@ export function RouteAnnouncer() {
   const sectionTitle = navKey ? t.nav[navKey] : null
   const sectionTitleRef = useRef(sectionTitle)
   useEffect(() => { sectionTitleRef.current = sectionTitle }, [sectionTitle])
+  const titleRef = useRef<string | null>(null)
+  const setTitle = (title: string) => {
+    titleRef.current = title
+    document.title = title
+  }
   const first = useRef(true)
   const [message, setMessage] = useState('')
 
@@ -28,7 +33,7 @@ export function RouteAnnouncer() {
     const id = window.setTimeout(() => {
       const main = document.getElementById(MAIN_ID)
       const heading = headingFor(main?.querySelector(ROUTE_TITLE_SELECTOR)?.textContent, sectionTitleRef.current)
-      document.title = documentTitleFor(heading)
+      setTitle(documentTitleFor(heading))
       if (initial) return
       setMessage(heading ?? '')
       const active = document.activeElement
@@ -39,8 +44,17 @@ export function RouteAnnouncer() {
   }, [path])
 
   useEffect(() => {
-    document.title = documentTitleFor(headingFor(document.getElementById(MAIN_ID)?.querySelector(ROUTE_TITLE_SELECTOR)?.textContent, sectionTitle))
+    setTitle(documentTitleFor(headingFor(document.getElementById(MAIN_ID)?.querySelector(ROUTE_TITLE_SELECTOR)?.textContent, sectionTitle)))
   }, [sectionTitle])
+
+  // On a first load the framework writes its default <title> after hydration; keep the view's own title.
+  useEffect(() => {
+    const obs = new MutationObserver(() => {
+      if (titleRef.current && document.title !== titleRef.current) document.title = titleRef.current
+    })
+    obs.observe(document.head, { childList: true, subtree: true, characterData: true })
+    return () => obs.disconnect()
+  }, [])
 
   return <div role="status" aria-live="polite" className="sr-only">{message}</div>
 }

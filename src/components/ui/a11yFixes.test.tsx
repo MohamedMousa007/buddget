@@ -148,6 +148,10 @@ describe('A11-7 route announcements and skip link', () => {
     expect(read('components/layout/RouteAnnouncer.tsx')).toContain('ROUTE_TITLE_SELECTOR')
   })
 
+  it('QA-115: the announcer keeps its title when the framework rewrites the head after a first load', () => {
+    expect(read('components/layout/RouteAnnouncer.tsx')).toMatch(/new MutationObserver[\s\S]*observe\(document\.head/)
+  })
+
   it('focus is only moved when no dialog is open and the user is not typing', () => {
     expect(shouldMoveFocus({ dialogOpen: false, typing: false })).toBe(true)
     expect(shouldMoveFocus({ dialogOpen: true, typing: false })).toBe(false)
