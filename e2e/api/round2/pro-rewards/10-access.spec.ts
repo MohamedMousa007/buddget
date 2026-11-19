@@ -42,15 +42,15 @@ test('G2 a user JWT cannot run any service-only rewards, billing or admin RPC', 
   }
 })
 
-test('G3 S8G-14 anon holds EXECUTE on no rewards helper (0315: anon must hold nothing)', async () => {
-  test.fail(true, 'S8G-14 open: entitlement_grants, loyalty_local_day, loyalty_week_start are executable by anon')
+test('G3 S8G-10 anon holds EXECUTE on no rewards helper (0315: anon must hold nothing)', async () => {
+  test.fail(true, 'S8G-10 open: entitlement_grants, loyalty_local_day, loyalty_week_start are executable by anon')
   // PostgREST answers 404 for a function the role cannot execute, so the helpers that answer anon are exactly the ones granted.
   const helpers: Array<[string, object]> = [['entitlement_grants', { p_status: 'active', p_trial_ends: null, p_period_end: null, p_grace_ends: null, p_now: '2026-11-19T00:00:00Z' }],
     ['loyalty_local_day', { p_ts: '2026-11-19T00:00:00Z', p_tz: 'Africa/Cairo' }], ['loyalty_week_start', { p_day: '2026-11-19', p_week_start: 6 }]]
   const open: string[] = []
   for (const [fn, body] of helpers) if ((await rpc(null, fn, body)).status === 200) open.push(fn)
-  test.info().annotations.push({ type: 'S8G-14', description: `anon can execute: ${open.join(', ') || 'none'}` })
-  expect(open, 'S8G-14: pure helpers still executable by anon').toEqual([])
+  test.info().annotations.push({ type: 'S8G-10', description: `anon can execute: ${open.join(', ') || 'none'}` })
+  expect(open, 'S8G-10: pure helpers still executable by anon').toEqual([])
 })
 
 test('R1 RLS: B cannot read A\'s loyalty, referral, promo, member number, owned items or Sparks rows', async () => {

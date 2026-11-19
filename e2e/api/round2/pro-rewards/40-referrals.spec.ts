@@ -62,7 +62,18 @@ test('F4 double tap: 6 parallel redeems give one referral, one invite count and 
   expect(st.filter((s) => s === 'ok').length, st.join(',')).toBe(1)
   expect((await svc(`referrals?invitee_id=eq.${friend.id}&select=id`)).json.length).toBe(1)
   expect((await svc(`referral_codes?user_id=eq.${inviter.id}&select=invited_count`)).json[0].invited_count).toBe(1)
-  expect.soft(all.every((r) => r.status === 200), `losers answer ${all.map((r) => r.status).join(',')}`).toBe(true)
+  })
+
+test('F4b S8G-14 a double-tapped redeem answers the losing call with a clean status, not a 409', async () => {
+  test.fail(true, 'S8G-14 open: the losing parallel insert hits referrals_invitee_id_key and PostgREST answers 409')
+  // A race: one round in four shows it, so try up to six rounds of ten parallel taps.
+  const inviter = await user('f4bi'); const code = await codeOf(inviter)
+  const seen: number[] = []
+  for (let round = 0; round < 6 && !seen.some((s) => s !== 200); round++) {
+    const friend = await user(`f4bf${round}`)
+    seen.push(...(await Promise.all(Array.from({ length: 10 }, () => redeem(friend, code)))).map((r) => r.status))
+  }
+  expect(seen.filter((s) => s !== 200)).toEqual([])
 })
 
 test('F5 friend side: redeem then claim gives a 37-day trial; a friend already trialing gets +7 at once; /me says 37', async () => {
@@ -94,8 +105,8 @@ test('F6 device guards: the inviter\'s own device is self_invite; a device that 
   expect((await refOf(f3)).status).toBe('rejected')
 })
 
-test('F7 S8G-06 without a device id (the web app) the device guard is skipped: one phone, many accounts, all count', async () => {
-  test.fail(true, 'S8G-06 open: web sign-ups send no device id, so "one reward per device" cannot hold there')
+test('F7 S8G-05 without a device id (the web app) the device guard is skipped: one phone, many accounts, all count', async () => {
+  test.fail(true, 'S8G-05 open: web sign-ups send no device id, so "one reward per device" cannot hold there')
   const inviter = await user('f7i'); const code = await codeOf(inviter)
   const statuses: string[] = []
   for (const tag of ['f7a', 'f7b']) {
@@ -119,7 +130,7 @@ test('F8 activation: 4 records or 1 day stays pending; 5 records on 3 days activ
   await evaluate(g)
   expect((await refOf(g)).status).toBe('pending')
   await activity(f, 1, 1)
-  await Promise.all([evaluate(f), evaluate(f), evaluate(f)])
+  await evaluate(f)
   await evaluate(f)
   const r = await refOf(f)
   expect(r).toMatchObject({ status: 'rewarded', reward_kind: 'pro_week' })
@@ -134,6 +145,18 @@ test('F8 activation: 4 records or 1 day stays pending; 5 records on 3 days activ
   await app('/api/entitlements/me', { token: f.token })
   expect((await svc(`pro_promo_grants?user_id=eq.${inviter.id}&select=id`)).json.length).toBe(1)
   expect((await svc(`referral_codes?user_id=eq.${inviter.id}&select=activated_count,rewards_count`)).json[0]).toEqual({ activated_count: 1, rewards_count: 1 })
+})
+
+test('F8b S8G-13 parallel activation checks pay the inviter once (the friend on two devices, or the cron at the same time)', async () => {
+  test.fail(true, 'S8G-13 open: concurrent referral_evaluate calls re-activate a rewarded referral and pay it again')
+  const inviter = await user('f8bi'); const code = await codeOf(inviter)
+  const f = await user('f8bf'); await redeem(f, code)
+  await activity(f, 5, 3)
+  await Promise.all(Array.from({ length: 8 }, () => evaluate(f)))
+  const grants = (await svc(`pro_promo_grants?user_id=eq.${inviter.id}&select=days`)).json
+  const counts = (await svc(`referral_codes?user_id=eq.${inviter.id}&select=activated_count,rewards_count`)).json[0]
+  test.info().annotations.push({ type: 'S8G-13', description: `grants ${grants.length}, counts ${JSON.stringify(counts)}` })
+  expect({ grants: grants.length, ...counts }).toEqual({ grants: 1, activated_count: 1, rewards_count: 1 })
 })
 
 test('F9 a trialing inviter banks the week (starts after the trial); a store subscriber gets 500 reward Sparks instead', async () => {
@@ -187,8 +210,8 @@ test('F12 clawback: the friend deletes their account within 30 days -> the invit
   await svc(`referrals?id=eq.${refId}`, { method: 'DELETE' })
 })
 
-test('F13 S8G-07 the same person (same mailbox) can be counted again after deleting a pending friend account', async () => {
-  test.fail(true, 'S8G-07 open: referral guards look at the account and device, not the mailbox')
+test('F13 S8G-06 the same person (same mailbox) can be counted again after deleting a pending friend account', async () => {
+  test.fail(true, 'S8G-06 open: referral guards look at the account and device, not the mailbox')
   const inviter = await user('f13i'); const code = await codeOf(inviter)
   const f = await user('f13f'); await redeem(f, code)
   await fetch(`${SB_URL}/auth/v1/admin/users/${f.id}`, { method: 'DELETE', headers: svcHeaders() })

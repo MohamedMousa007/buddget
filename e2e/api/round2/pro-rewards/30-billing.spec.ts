@@ -111,7 +111,7 @@ test.describe('RevenueCat webhook', () => {
   })
 
   test('H7 absurd but signed values answer 4xx, not a 500 that RevenueCat retries for days', async () => {
-    test.fail(true, 'S8G-13: an overflowing price or timestamp reaches billing_apply and answers 500')
+    test.fail(true, 'S8G-09: an overflowing price or timestamp reaches billing_apply and answers 500')
     const u = await user('h7')
     const r1 = await rcPost(ev(u, { price_in_purchased_currency: 1e30 }))
     const r2 = await rcPost(ev(u, { event_timestamp_ms: 1e20 }))
@@ -167,8 +167,8 @@ test.describe('trial', () => {
     expect((await app('/api/entitlements/trial', { method: 'POST', token: u.token })).json.status).toBe('already_entitled')
   })
 
-  test('X5 S8G-04 a lapsed Pro member can still start the 30-day "new member" trial', async () => {
-    test.fail(true, 'S8G-04 open: trial_claim lets an account whose paid Pro expired take a first trial')
+  test('X5 S8G-03 a lapsed Pro member can still start the 30-day "new member" trial', async () => {
+    test.fail(true, 'S8G-03 open: trial_claim lets an account whose paid Pro expired take a first trial')
     const u = await user('x5')
     await setEntitlement(u.id, { ...PRO_LAPSED(), source: 'apple' })
     const r = await app('/api/entitlements/trial', { method: 'POST', token: u.token })
@@ -201,8 +201,8 @@ test.describe('stay offer, paywall view, seen resets', () => {
     expect((await app('/api/billing/stay-offer', { token: u.token })).json.eligible).toBe(false)
   })
 
-  test('O3 S8G-05 the stay-offer stamp needs no purchase: any member can burn their once-only offer with one POST', async () => {
-    test.fail(true, 'S8G-05 open: POST /api/billing/stay-offer stamps stay_offer_redeemed_at without checking a discounted purchase')
+  test('O3 S8G-04 the stay-offer stamp needs no purchase: any member can burn their once-only offer with one POST', async () => {
+    test.fail(true, 'S8G-04 open: POST /api/billing/stay-offer stamps stay_offer_redeemed_at without checking a discounted purchase')
     const u = await user('o3')
     await setEntitlement(u.id, PRO_ACTIVE())
     await app('/api/billing/stay-offer', { method: 'POST', token: u.token })

@@ -24,7 +24,9 @@ export { expect }
 
 export async function signInUi(page: Page, email: string) {
   await page.goto('/flow', { waitUntil: 'domcontentloaded' })
-  await page.getByRole('textbox', { name: 'Email' }).fill(email)
+  // The dev server sometimes serves a blank first paint while it compiles; reload once if the form is not there.
+  if (!(await page.getByRole('textbox', { name: 'Email' }).isVisible({ timeout: 30_000 }).catch(() => false))) await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('textbox', { name: 'Email' }).fill(email, { timeout: 60_000 })
   await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('textbox', { name: 'Password' }).fill(PW)
   await page.getByRole('button', { name: 'Sign me in' }).click()
@@ -37,7 +39,7 @@ export async function signInUi(page: Page, email: string) {
 /** Opens a settings sub-page and waits until the plan state has loaded (no skeleton). */
 export async function openLoaded(page: Page, path: string) {
   await page.goto(path, { waitUntil: 'domcontentloaded' })
-  await expect(page.locator('main h2').first()).toBeVisible({ timeout: 60_000 })
+  await expect.poll(async () => (await page.locator('main').first().innerText().catch(() => '')).trim().length, { timeout: 60_000 }).toBeGreaterThan(20)
   await expect(page.locator('main .animate-pulse')).toHaveCount(0, { timeout: 45_000 })
   await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => undefined)
 }
