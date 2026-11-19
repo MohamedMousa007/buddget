@@ -129,6 +129,12 @@ export function emergencyState(monthlyEssentials: number, atOrAboveTarget: boole
   return atOrAboveTarget ? 'secured' : 'needsMoney'
 }
 
+/** "Plans to save X%": the plan's own figures (projected income minus budget over projected income). Null on a closed month, where nothing is planned. */
+export function plannedSavingsRatePct(s: { projectedIncome: number; totalExpenseBudget: number; monthClosed: boolean }): number | null {
+  if (s.monthClosed) return null
+  return savingsRatePct(Math.max(0, s.projectedIncome - s.totalExpenseBudget), s.projectedIncome, s.totalExpenseBudget)
+}
+
 /**
  * Share of this month's income the plan sets aside; null when there is no income to compare to or no budget
  * (without a budget the plan figure is just expected income over itself: always 100%).

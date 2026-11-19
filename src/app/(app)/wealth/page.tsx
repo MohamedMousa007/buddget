@@ -44,7 +44,7 @@ import { parseDateOnly } from '@/lib/time/calendarDays'
 import { deriveHawl } from '@/lib/savings/hawl'
 import { deriveSimpleMonth } from '@/lib/savings/simpleMonth'
 import { savingsAccountBalanceInBase } from '@/lib/savings/savingsConversions'
-import { buildWealth, emergencyState, savingsRatePct, type CatKey, type WealthRowVM } from '@/lib/savings/wealthModel'
+import { buildWealth, emergencyState, plannedSavingsRatePct, type CatKey, type WealthRowVM } from '@/lib/savings/wealthModel'
 import { computeZakat } from '@/lib/savings/zakat'
 import { deriveZakatBase } from '@/lib/savings/zakatInputs'
 import { zakatAccountsFromLedger } from '@/lib/savings/zakatAccounts'
@@ -236,7 +236,7 @@ export default function WealthPage() {
   const totalText = formatWhole(model.total)
   const netWorthText = formatSignedFlex(nw.netWorth)
   const hasZakat = zakatResult.due && zakatResult.nisab > 0
-  const rate = savingsRatePct(stats.savingsThisMonth, stats.totalIncome, stats.totalExpenseBudget)
+  const rate = plannedSavingsRatePct(stats)
 
   const askDelete = async (r: WealthRowVM) => {
     const a = r.account

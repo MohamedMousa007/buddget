@@ -11,6 +11,19 @@ const gold = (o: Partial<InvestmentHolding> = {}): InvestmentHolding => ({
 const lookup = (s: string) => (s === 'XAU_21K' ? { price: 6000, asOf: '2026-10-16', confidence: null } : null)
 const base = { baseCurrency: 'EGP' as const, rates: {}, goldPricePerGram: 0, goldOk: false }
 
+describe('plannedSavingsRatePct (QA-86)', () => {
+  it('uses projected income on both sides: expected 10,000, budget 7,000 is 30% even if 12,000 arrived', async () => {
+    const { plannedSavingsRatePct } = await import('./wealthModel')
+    expect(plannedSavingsRatePct({ projectedIncome: 10000, totalExpenseBudget: 7000, monthClosed: false })).toBe(30)
+  })
+  it('is hidden with no budget, no projected income, or on a closed month', async () => {
+    const { plannedSavingsRatePct } = await import('./wealthModel')
+    expect(plannedSavingsRatePct({ projectedIncome: 10000, totalExpenseBudget: 0, monthClosed: false })).toBeNull()
+    expect(plannedSavingsRatePct({ projectedIncome: 0, totalExpenseBudget: 500, monthClosed: false })).toBeNull()
+    expect(plannedSavingsRatePct({ projectedIncome: 10000, totalExpenseBudget: 7000, monthClosed: true })).toBeNull()
+  })
+})
+
 describe('wealth model', () => {
   it('maps accounts to categories', () => {
     expect(catForAccount(acct({ type: 'vault' }))).toBe('vault')
