@@ -129,7 +129,7 @@ const get_net_worth: ReadImpl = () => {
     savings: r0(nw.totalSavings),
     investments: r0(nw.totalInvestments),
     debt: r0(nw.totalDebt),
-    month_flow: r0(nw.monthlyFlow),
+    ...(nw.accountsTotal !== null ? { accounts: r0(nw.accountsTotal) } : { month_flow: r0(nw.monthlyFlow) }),
     ...(nw.netWorthIncomplete ? { incomplete: true } : {}),
   }
 }

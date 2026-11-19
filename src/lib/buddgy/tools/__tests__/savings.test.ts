@@ -84,6 +84,7 @@ const price = (symbol: string, currency: string, p: number) => [`${symbol}:${cur
 beforeEach(() => {
   useAssetPricesStore.setState({ prices: {}, lastFetch: null })
   useFinanceStore.setState({
+    paymentMethods: [],
     savingsAccounts: [account(A1), account(A2, { name: 'Cash', type: 'cash', currentBalance: 200 })],
     savingsTransactions: [],
     recurringSavingsDeposits: [],
@@ -126,6 +127,16 @@ describe('list_savings and get_net_worth', () => {
     expect(read('get_net_worth')).toMatchObject({ currency: 'EGP', net_worth: 41200, savings: 1200, investments: 40000, debt: 0, month_flow: 0 })
   })
 
+  it('net worth parts add up with a tracked account (accounts replaces month_flow)', () => {
+    useFinanceStore.setState({
+      savingsAccounts: [account(A1, { currentBalance: 1600 })],
+      paymentMethods: [{ id: 'pm-b', name: 'QNB', provider: 'QNB', type: 'bank_account', currency: 'EGP', isDefault: false, openingBalance: 680, openingAt: '2026-01-01T00:00:00Z' } as never],
+    })
+    const r = read('get_net_worth') as Record<string, number>
+    expect(r.accounts).toBe(680)
+    expect(r.month_flow).toBeUndefined()
+    expect(r.savings + r.investments + r.accounts - r.debt).toBe(r.net_worth)
+  })
 
   it('net worth counts money that arrived, not a payday still ahead this month', () => {
     useSettingsStore.setState({ monthFilter: '2026-10' })

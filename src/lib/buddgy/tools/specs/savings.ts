@@ -16,7 +16,7 @@ export const savingsSpecs: ToolSpec[] = [
     name: 'get_net_worth',
     domain: 'savings',
     kind: 'read',
-    description: 'Net worth with savings, investments, debt and this month flow.',
+    description: "Net worth and its parts: savings, investments, accounts (or this month's flow when no account is tracked), minus debt. The parts add up to net_worth.",
     params: obj({}),
   },
   {
