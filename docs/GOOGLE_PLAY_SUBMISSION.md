@@ -75,10 +75,19 @@ After `npx cap add android`, merge the following into
 <!-- SMS auto-tracking: restricted, needs the Play Console declaration (section 3).
      RECEIVE_SMS only. The app never reads the inbox, so there is no READ_SMS. -->
 <uses-permission android:name="android.permission.RECEIVE_SMS" />
+
+<!-- Receipt scan and SMS tracking are opt-in: no camera or telephony required to install -->
+<uses-feature android:name="android.hardware.camera" android:required="false" />
+<uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+<uses-feature android:name="android.hardware.telephony" android:required="false" />
 ```
 
 There is no Notification Listener service and no location, contacts, advertising-ID
-or storage permission anywhere in the app. If the manifest changes, update this
+or storage permission anywhere in the app. The social-login plugin would merge the
+Facebook SDK's `AD_ID` and `ACCESS_ADSERVICES_*` permissions in; the app has no Facebook
+sign-in, so `capacitor.config.ts` sets `SocialLogin.providers.facebook: false` (the plugin's
+`cap sync` hook turns it into `socialLogin.facebook.include=false`) and the merged manifest
+carries none of them. If the manifest changes, update this
 block and `docs/STORE_PRIVACY.md` in the same commit.
 
 Make sure Capacitor's `<application>` block carries `android:usesCleartextTraffic="false"`,

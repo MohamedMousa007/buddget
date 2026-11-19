@@ -56,6 +56,12 @@ describe('Android SMS bridge hardening (static)', () => {
     expect(swift.slice(swift.indexOf('static func clear()'))).not.toContain('biometric')
   })
 
+  it('QA-67: camera and telephony are optional features', () => {
+    const manifest = read('android/app/src/main/AndroidManifest.xml')
+    for (const f of ['android.hardware.camera', 'android.hardware.camera.autofocus', 'android.hardware.telephony'])
+      expect(manifest).toContain(`<uses-feature android:name="${f}" android:required="false" />`)
+  })
+
   it('QA-72: security-crypto is a stable release', () => {
     expect(read('android/app/build.gradle')).toMatch(/androidx\.security:security-crypto:\d+\.\d+\.\d+"/)
   })

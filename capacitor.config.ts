@@ -48,6 +48,11 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
+    // The cap sync hook of @capgo/capacitor-social-login writes this into its gradle.properties. No Facebook sign-in:
+    // leaving the Facebook SDK out also drops the AD_ID / ACCESS_ADSERVICES_* permissions it merges into the Android manifest.
+    SocialLogin: {
+      providers: { facebook: false },
+    },
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#0A100F',
