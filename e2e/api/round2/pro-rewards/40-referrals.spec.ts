@@ -252,21 +252,23 @@ test('F14 the Invite page shows a friend by first name only, never their email o
   expect((await rpc(other.token, 'referral_my_summary')).json.friends).toEqual([])
 })
 
-test('F15 network review signals: a second friend of one inviter from the same /24 is held for review until staff approve', async () => {
+test('F15 network review signals: a third friend of one inviter from the same /24 is held for review until staff approve (0331)', async () => {
   const inviter = await user('f15i'); const code = await codeOf(inviter)
   const viaIp = (u: QaUser, ip: string) => svcRpc('referral_redeem', { p_user: u.id, p_code: code, p_ip: ip, p_mailbox_key: `${u.id}@qa.test` })
   const a = await user('f15a'); expect((await viaIp(a, '41.33.10.7')).json.status).toBe('ok')
   const b = await user('f15b'); expect((await viaIp(b, '41.33.10.99')).json.status).toBe('ok')
   const c = await user('f15c'); expect((await viaIp(c, '197.32.4.1')).json.status).toBe('ok')
+  const d = await user('f15d'); expect((await viaIp(d, '41.33.10.200')).json.status).toBe('ok')
   const signals = async (u: QaUser) => (await svc(`referrals?invitee_id=eq.${u.id}&select=review_signals,invitee_net`)).json[0]
   expect((await signals(a)).review_signals).toBeNull()
-  expect((await signals(b)).review_signals).toEqual(['repeat_network'])
+  expect((await signals(b)).review_signals).toBeNull()
   expect((await signals(c)).review_signals).toBeNull()
+  expect((await signals(d)).review_signals).toEqual(['repeat_network'])
   expect((await signals(a)).invitee_net).toMatch(/^[0-9a-f]{64}$/)
-  await native(b); await activity(b, 5, 3); await evaluate(b)
-  expect(await refOf(b)).toMatchObject({ status: 'activated', reason: 'review' })
+  await native(d); await activity(d, 5, 3); await evaluate(d)
+  expect(await refOf(d)).toMatchObject({ status: 'activated', reason: 'review' })
   expect((await svc(`pro_promo_grants?user_id=eq.${inviter.id}&select=id`)).json).toEqual([])
-  expect((await svcRpc('referral_reward', { p_id: (await refOf(b)).id, p_force: true })).json).toBe('rewarded')
+  expect((await svcRpc('referral_reward', { p_id: (await refOf(d)).id, p_force: true })).json).toBe('rewarded')
 })
 
 test('F16 the mailbox key: the same normalised person on two accounts is invited once', async () => {
