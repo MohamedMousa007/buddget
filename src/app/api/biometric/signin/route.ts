@@ -2,7 +2,8 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import { clientIp } from '@/lib/server/clientIp'
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
-import { resolveDeviceId } from '@/lib/auth/resolveDeviceId'
+import { readDeviceCookie } from '@/lib/auth/deviceCookie'
+import { DEVICE_ID_HEADER, DEVICE_ID_PATTERN } from '@/lib/auth/deviceIdConstants'
 import { isRateLimited } from '@/lib/server/rateLimit'
 
 /**
@@ -23,14 +24,17 @@ export async function POST(request: Request) {
     const secret = typeof body?.secret === 'string' ? body.secret.trim() : ''
     if (!secret) return NextResponse.json({ error: 'Missing secret' }, { status: 400 })
 
-    const deviceId = await resolveDeviceId(request)
     const admin = createServiceRoleClient()
-
     const ip = clientIp(request)
-    if (
-      (await isRateLimited(admin, `bio-signin-dev:${deviceId}`, ATTEMPT_WINDOW_SECONDS, PER_DEVICE)) ||
-      (await isRateLimited(admin, `bio-signin-ip:${ip}`, ATTEMPT_WINDOW_SECONDS, PER_IP))
-    ) {
+    if (await isRateLimited(admin, `bio-signin-ip:${ip}`, ATTEMPT_WINDOW_SECONDS, PER_IP)) {
+      return NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 })
+    }
+
+    // QA-54: read the id, never mint one. A fresh id cannot match a binding, so it is a 404 without a counter row.
+    const fromHeader = request.headers.get(DEVICE_ID_HEADER)?.trim()
+    const deviceId = fromHeader && DEVICE_ID_PATTERN.test(fromHeader) ? fromHeader : await readDeviceCookie()
+    if (!deviceId) return NextResponse.json({ error: 'No biometric account on this device' }, { status: 404 })
+    if (await isRateLimited(admin, `bio-signin-dev:${deviceId}`, ATTEMPT_WINDOW_SECONDS, PER_DEVICE)) {
       return NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 })
     }
 
