@@ -74,7 +74,7 @@ export function WealthList({ rows, categories, filter, onFilter, onRowPress, onA
       </div>
 
       {categories.length > 1 ? (
-        <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto px-4 lg:px-0">
+        <div className="hide-scrollbar mt-3 flex gap-2 overflow-x-auto px-4 lg:px-0">
           <OptionChip surface="card" selected={filter === null} onClick={() => onFilter(null)}>
             {t.all}
             <span className="font-mono-numbers text-xs text-[var(--color-brand-text-muted)]">{rows.length}</span>

@@ -230,7 +230,7 @@ export function ZakatSheet({ open, onClose, base, hawlDate }: ZakatSheetProps) {
               affordance={null}
               onClick={() => setYearPickerOpen(true)}
             />
-            <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+            <div className="mt-2 flex gap-2 overflow-x-auto hide-scrollbar">
               <OptionChip selected={yearStart === todayIso} onClick={() => pickYear(todayIso)}>{t.today}</OptionChip>
               <OptionChip selected={yearStart === janIso} onClick={() => pickYear(janIso)}>{t.startOfYear}</OptionChip>
             </div>

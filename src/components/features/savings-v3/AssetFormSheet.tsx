@@ -97,7 +97,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
           {type === 'gold' && (
             <>
               <Field label={a.karat}>
-                <div className="flex gap-2.5 overflow-x-auto no-scrollbar">
+                <div className="flex gap-2.5 overflow-x-auto hide-scrollbar">
                   {([24, 21, 18] as GoldKarat[]).map((k) => {
                     const price = sagha != null && ounceUsd != null ? egyptKaratPrice(ounceUsd, sagha, k) : null
                     const pure = k === 24 ? '999' : k === 21 ? '875' : '750'
@@ -129,7 +129,7 @@ export function AssetFormSheet({ open, type, onClose, onDone }: AssetFormSheetPr
           {type === 'crypto' && (
             <>
               <Field label={a.coin}>
-                <div className="flex gap-2.5 overflow-x-auto no-scrollbar">
+                <div className="flex gap-2.5 overflow-x-auto hide-scrollbar">
                   {Object.keys(COINGECKO_IDS).map((c) => {
                     const p = lookup(c, 'USD')?.price ?? null
                     return <PriceCard key={c} on={symbol === c} onClick={() => setSymbol(c)} title={c} sub={p != null ? `$${fmtNum(p)}` : a.livePrice} />

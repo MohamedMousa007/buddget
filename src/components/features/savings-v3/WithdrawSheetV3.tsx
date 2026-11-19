@@ -276,7 +276,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
           {!moveOn && reason === 'transfer' && (
             <Card padding="sm">
               <p className="mb-2 text-[0.8125rem] font-bold text-[var(--color-brand-text-primary)]">{t.whichAsset}</p>
-              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
                 {INVEST_CLASSES.map((c) => {
                   const target = topupByClass.get(c.type)
                   const on = assetClass === c.type
@@ -298,7 +298,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
 
           {moveOn && (
             <LabeledBlock label={t.moveTo}>
-              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar">
                 {pockets.filter((p) => p.account.id !== fromId).map((p) => (
                   <OptionChip key={p.account.id} selected={moveToId === p.account.id} onClick={() => setMoveToId(p.account.id)}>
                     {pocketDisplayName(p.account, sf.systemNames)}
@@ -313,7 +313,7 @@ export function WithdrawSheetV3({ open, onClose, pockets, defaultAccountId, onNe
               <SettingsSwitchRow label={t.logExpense} hint={t.logExpenseHint} checked={logExpense} onChange={setLogExpense} />
               {logExpense && (
                 <LabeledBlock label={t.expenseCategory}>
-                  <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                  <div className="flex gap-2 overflow-x-auto hide-scrollbar">
                     {EXPENSE_CATEGORY_GRID.filter((c) => !c.nonspend).map((c) => (
                       <OptionChip key={c.id} selected={expenseCategory === c.id} onClick={() => setExpenseCategory(c.id)}>
                         {categoryLabels[c.id] ?? c.id}

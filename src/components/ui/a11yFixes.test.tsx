@@ -82,6 +82,10 @@ describe('A11-5 ColorSwatchRow selection', () => {
     expect(radios.map((b) => b.getAttribute('aria-checked'))).toEqual(['false', 'true', 'false'])
   })
 
+  it('hides the scrollbar (QA-123)', () => {
+    expect(all(html, 'div')[0].getAttribute('class')).toContain('hide-scrollbar')
+  })
+
   it('every swatch keeps its colour name; the selected one shows a check and a token ring', () => {
     radios.forEach((b, i) => expect(b.getAttribute('aria-label')).toBe(en.a11y.colour(colors[i])))
     expect(radios.map((b) => b.getElementsByTagName('svg').length)).toEqual([0, 1, 0])

@@ -129,7 +129,7 @@ export function PocketFormSheet({ open, onClose, onDone, def, linkedMethod }: Po
           {has('provider') && !fromPM && (
             <div>
               <label style={micro}>{pf.provider}</label>
-              <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+              <div className="mt-2 flex gap-2 overflow-x-auto hide-scrollbar">
                 {providerNames.map((p) => (
                   <OptionChip key={p} selected={provider === p} onClick={() => setProvider(p)}>
                     {p}

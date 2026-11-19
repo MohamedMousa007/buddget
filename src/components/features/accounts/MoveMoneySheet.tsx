@@ -74,7 +74,7 @@ export function MoveMoneySheet({ open, onClose, accounts, initialAccountId, init
             <p className="text-sm text-[var(--color-brand-text-muted)]">{t.noPockets}</p>
           ) : (
             <div>
-              <div className="flex gap-2 overflow-x-auto no-scrollbar" role="radiogroup" aria-label={t.setAsideAction}>
+              <div className="flex gap-2 overflow-x-auto hide-scrollbar" role="radiogroup" aria-label={t.setAsideAction}>
                 {pockets.map((p) => <OptionChip key={p.id} selected={p.id === pocket?.id} onClick={() => setPocketId(p.id)}>{p.name}</OptionChip>)}
               </div>
               <p className="mt-2 text-xs text-[var(--color-brand-text-muted)]">{held ? t.staysInAccount : t.movesOut}</p>
