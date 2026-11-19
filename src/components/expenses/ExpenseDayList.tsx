@@ -21,7 +21,7 @@ import { formatCurrency } from '@/lib/utils/formatters'
 import type { Expense } from '@/lib/store/types'
 import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
-import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { decomposePaymentMethodName, methodDisplayName } from '@/lib/payment/paymentMethodDefaults'
 import { accountIdentifier } from '@/components/features/accounts/accountDisplay'
 import { smsAccountLabelKind } from '@/lib/accounts/unplacedSms'
 import { Button } from '@/components/ui/button'
@@ -184,8 +184,8 @@ export function ExpenseDayList({ expenses }: { expenses: Expense[] }) {
                       }
                       subtitle={
                         method && accountIdentifier(method) ? (
-                          <><span className="truncate">{decomposePaymentMethodName(method.name, method.last4).provider}</span><span className="ms-1 shrink-0">{accountIdentifier(method)}</span></>
-                        ) : (method?.name || (unassigned ? t.common.unassigned : t.common.unknown))
+                          <><span className="truncate">{decomposePaymentMethodName(methodDisplayName(method, t.accountsPage.typeCash), method.last4).provider}</span><span className="ms-1 shrink-0">{accountIdentifier(method)}</span></>
+                        ) : (method ? methodDisplayName(method, t.accountsPage.typeCash) : (unassigned ? t.common.unassigned : t.common.unknown))
                       }
                       amount={<span className={netZero ? 'line-through' : ''}>−{fmtNum(baseVal)}</span>}
                       amountColor={netZero ? 'var(--color-brand-text-secondary)' : nonSpend ? 'var(--color-brand-text-muted)' : 'var(--color-brand-text-primary)'}

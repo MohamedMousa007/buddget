@@ -1,4 +1,5 @@
 import type { PaymentMethodType } from '@/lib/store/types'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 
 /** Per-type metadata (handoff §3 / v4). Icons resolve to Lucide via {@link paymentTypeIcon}. */
 export const PAYMENT_TYPE_META: Record<
@@ -467,4 +468,12 @@ export function decomposePaymentMethodName(
   const sep = name.indexOf(' · ')
   if (sep !== -1) return { provider: name.slice(0, sep), tag: name.slice(sep + 3) }
   return { provider: name, tag: '' }
+}
+
+/**
+ * What to print for a method's name. The built-in Cash is stored as the English word and shown in the user's language;
+ * a renamed Cash or any other method keeps what the user typed. Display only: the stored name is never rewritten.
+ */
+export function methodDisplayName(m: { id: string; name: string }, cashLabel: string): string {
+  return m.id === DEFAULT_CASH_ID && m.name === 'Cash' ? cashLabel : m.name
 }

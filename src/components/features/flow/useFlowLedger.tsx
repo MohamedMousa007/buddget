@@ -24,7 +24,7 @@ import { convertCurrency } from '@/lib/utils/currency'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
 import { formatCurrency, formatFixed2, formatSigned } from '@/lib/utils/formatters'
 import { useShortDate } from '@/hooks/useShortDate'
-import { decomposePaymentMethodName } from '@/lib/payment/paymentMethodDefaults'
+import { decomposePaymentMethodName, methodDisplayName } from '@/lib/payment/paymentMethodDefaults'
 import { incomeSourceTypeLabel } from '@/lib/i18n/incomeSourceLabels'
 import { usePendingSmsPreviews } from '@/hooks/usePendingSmsPreviews'
 import { catalogCategory, merchantCategoryKey } from '@/lib/sms/merchantCategoryCache'
@@ -62,9 +62,10 @@ export interface FlowItem {
 }
 
 /** Payment-method label as the ledger shows it: "Visa •• 4417". */
-export function methodLabel(pm: PaymentMethod | undefined): string | null {
+export function methodLabel(pm: PaymentMethod | undefined, cashLabel?: string): string | null {
   if (!pm) return null
-  return pm.last4 ? `${decomposePaymentMethodName(pm.name, pm.last4).provider} •• ${pm.last4}` : pm.name
+  const name = cashLabel ? methodDisplayName(pm, cashLabel) : pm.name
+  return pm.last4 ? `${decomposePaymentMethodName(name, pm.last4).provider} •• ${pm.last4}` : name
 }
 
 function inRange(iso: string, { start, end }: ResolvedRange): boolean {
@@ -203,7 +204,7 @@ export function useFlowLedger() {
       const nonSpend = isNonSpendExpense(e)
       const dim = Boolean(e.refundKind)
       const statusDate = shortDate(e.refundedAt ?? e.date)
-      const pmLabel = smsAccountLabelKind(e) === 'unassigned' ? t.common.unassigned : methodLabel(pmById.get(e.paymentMethodId)) ?? t.common.unknown
+      const pmLabel = smsAccountLabelKind(e) === 'unassigned' ? t.common.unassigned : methodLabel(pmById.get(e.paymentMethodId), t.accountsPage.typeCash) ?? t.common.unknown
       return {
         id: e.id,
         dir: 'out',

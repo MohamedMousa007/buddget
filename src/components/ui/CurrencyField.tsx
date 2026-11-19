@@ -6,6 +6,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { CurrencySign, hasCurrencySign } from '@/components/ui/CurrencyMark'
 import { CurrencySheet } from '@/components/ui/CurrencySheet'
 import { CURRENCY_META } from '@/lib/constants/currencyMeta'
+import { useCurrencyName } from '@/components/ui/CurrencyList'
 import { cn } from '@/lib/utils'
 import type { Currency, DebtCurrency } from '@/lib/store/types'
 
@@ -34,6 +35,7 @@ export function CurrencyField({ value, onChange, className, id, includeGold = fa
   const base = useFinanceStore((s) => s.settings.baseCurrency)
   const [open, setOpen] = useState(false)
   const meta = CURRENCY_META[value]
+  const currencyName = useCurrencyName()
 
   return (
     <>
@@ -58,7 +60,7 @@ export function CurrencyField({ value, onChange, className, id, includeGold = fa
           </span>
           {!compact && meta?.name && (
             <span className="truncate text-xs text-[var(--color-brand-text-muted)]">
-              {meta.name}
+              {currencyName(value)}
             </span>
           )}
         </span>

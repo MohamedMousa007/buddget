@@ -239,6 +239,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
               <CurrencyField
                 value={currency}
                 onChange={setCurrency}
+                compact
                 className="h-12 w-full rounded-xl border border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] px-3.5 text-base font-semibold"
               />
             </div>
