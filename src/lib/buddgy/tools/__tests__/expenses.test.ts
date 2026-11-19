@@ -3,6 +3,7 @@ import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { sansStamp } from './sansStamp'
 import type { Expense, PaymentMethod } from '@/lib/store/types'
 
 const SALARY = { id: 'i1', name: 'Salary', amount: 100000, currency: 'EGP', isRecurring: true, recurringFrequency: 'monthly', dayOfMonth: 1, paydayDays: [1], sourceType: 'salary', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z' } as never
@@ -187,7 +188,7 @@ describe('delete_expense', () => {
     useFinanceStore.getState().updateExpense(E1, { description: 'Edited later' })
     applied.undo?.()
     const after = useFinanceStore.getState().expenses
-    expect(after.find((e) => e.id === E2)).toEqual(before.find((e) => e.id === E2))
+    expect(sansStamp(after.find((e) => e.id === E2))).toEqual(sansStamp(before.find((e) => e.id === E2)))
     expect(after.find((e) => e.id === E1)?.description).toBe('Edited later')
   })
 })

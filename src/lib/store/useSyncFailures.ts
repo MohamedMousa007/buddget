@@ -34,6 +34,8 @@ export interface SyncFailure {
   attemptCount: number
 }
 
+export type SyncNotice = 'undoRefused' | 'editReplaced'
+
 interface SyncFailuresState {
   failures: SyncFailure[]
   /**
@@ -41,6 +43,12 @@ interface SyncFailuresState {
    * these are set aside and offered again on the next flush. Holds where they are, never what they contain.
    */
   setAside: Array<{ table: string; id: string; code: string }>
+  /**
+   * Something the sync did on this device's behalf that the user should know: an Undo that lost to a later delete made
+   * elsewhere, or edits replaced by a newer edit from another device. Shown once, until dismissed.
+   */
+  notice: SyncNotice | null
+  setNotice: (notice: SyncNotice | null) => void
   /** Replace the set-aside list with the latest flush's. */
   recordSetAside: (rows: ReadonlyArray<{ table: string; id: string; code: string }>) => void
   /**
@@ -65,6 +73,8 @@ function parseLabel(raw: string): { label: string; message: string } {
 export const useSyncFailures = create<SyncFailuresState>((set) => ({
   failures: [],
   setAside: [],
+  notice: null,
+  setNotice: (notice) => set({ notice }),
   recordSetAside: (rows) => set((state) => (rows.length === 0 && state.setAside.length === 0 ? state : { setAside: rows.map(({ table, id, code }) => ({ table, id, code })) })),
   recordFailures: (errors) => {
     set((state) => {
@@ -84,5 +94,5 @@ export const useSyncFailures = create<SyncFailuresState>((set) => ({
       return { failures: next }
     })
   },
-  clear: () => set({ failures: [], setAside: [] }),
+  clear: () => set({ failures: [], setAside: [], notice: null }),
 }))

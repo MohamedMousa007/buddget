@@ -273,7 +273,7 @@ const adjust_budget: WriteImpl = {
         if (!current) return
         const untouched = current.categories.filter((l) => !addedIds.has(l.id) || JSON.stringify(l) !== JSON.stringify(result.lines.find((x) => x.id === l.id)))
         const reverted = revertRows(untouched, before, result.lines, ['name', 'amount', 'block', 'locked'])
-        fin().replaceBudgetPlanCategories(plan.id, restoreRows(reverted, before, removedIds))
+        fin().replaceBudgetPlanCategories(plan.id, restoreRows(reverted, before, removedIds, false))
       },
     }
   },

@@ -4,6 +4,7 @@ import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { sansStamp } from './sansStamp'
 import type { IncomeEvent, IncomeSource, PaymentMethod } from '@/lib/store/types'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
@@ -114,7 +115,7 @@ describe('add_income', () => {
     const applied = del.apply(p.proposal, ctx)
     if (!applied.ok) throw new Error('apply failed')
     applied.undo?.()
-    expect(state().incomeSources).toEqual([only])
+    expect(sansStamp(state().incomeSources)).toEqual(sansStamp([only]))
     expect(state().settings.noIncomeDeclared).toBe(false)
   })
 
@@ -252,7 +253,7 @@ describe('delete_income', () => {
     state().updateIncomeSource(FREELANCE, { name: 'Edited later' })
     applied.undo?.()
     expect(state().incomeSources.map((i) => i.id).sort()).toEqual([SALARY, FREELANCE, LATER].sort())
-    expect(state().incomeSources.find((i) => i.id === LATER)).toEqual(source(LATER, { name: 'Rent out', amount: 5000, dayOfMonth: 22, recurringFrequency: 'biweekly', paydayDays: [22, 27] }))
+    expect(sansStamp(state().incomeSources.find((i) => i.id === LATER))).toEqual(sansStamp(source(LATER, { name: 'Rent out', amount: 5000, dayOfMonth: 22, recurringFrequency: 'biweekly', paydayDays: [22, 27] })))
     expect(state().incomeSources.find((i) => i.id === FREELANCE)?.name).toBe('Edited later')
   })
 

@@ -200,6 +200,8 @@ export const en: Dictionary = {
     oneDidntSync: '1 change didn\u2019t sync',
     manyDidntSync: (count) => `${count} changes didn\u2019t sync`,
     setAside: (count) => (count === 1 ? '1 item can\u2019t be saved to the cloud and was set aside' : `${count} items can\u2019t be saved to the cloud and were set aside`),
+    undoRefused: 'Undo didn\u2019t apply: it was deleted on another device afterwards',
+    editReplaced: 'A newer edit from another device replaced yours',
     autoRetryNote: 'We\u2019ll keep trying automatically in the background.',
     expand: 'Show details',
     collapse: 'Hide details',

@@ -4,6 +4,7 @@ import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import type { BudgetPlan, BudgetPlanCategory, Expense } from '@/lib/store/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { sansStamp } from './sansStamp'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
@@ -335,7 +336,7 @@ describe('delete_budget_plan', () => {
     expect(state().budgetPlanActivations.some((a) => a.planId === P1)).toBe(false)
     expect(applied.undo).toBeTypeOf('function')
     applied.undo?.()
-    expect({ plans: state().budgetPlans, active: state().activeBudgetPlanId, log: state().budgetPlanActivations }).toEqual(pre)
+    expect(sansStamp({ plans: state().budgetPlans, active: state().activeBudgetPlanId, log: state().budgetPlanActivations })).toEqual(sansStamp(pre))
   })
 
   it('undo does not discard a plan created after the delete', () => {

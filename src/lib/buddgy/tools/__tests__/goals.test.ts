@@ -3,6 +3,7 @@ import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { sansStamp } from './sansStamp'
 import type { Goal, SavingsAccount } from '@/lib/store/types'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
@@ -331,7 +332,7 @@ describe('delete_goal', () => {
     const pre = [goal(G1), goal(G2, { name: 'Trip', category: 'vacation', targetAmount: 5000, linkedSavingsAccountIds: [P2], priority: 1 })]
     st().updateGoal(G2, { notes: 'later edit' })
     applied.undo?.()
-    expect(st().goals.find((g) => g.id === G1)).toEqual(pre[0])
+    expect(sansStamp(st().goals.find((g) => g.id === G1))).toEqual(sansStamp(pre[0]))
     expect(st().goals.map((g) => g.id).sort()).toEqual([G1, G2].sort())
     expect(st().goals.find((g) => g.id === G2)?.notes).toBe('later edit')
   })

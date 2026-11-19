@@ -202,6 +202,8 @@ export const ar: Dictionary = {
     oneDidntSync: 'تغيير واحد لم يُحفظ سحابياً',
     manyDidntSync: (count) => `${arCount(count, 'change')} لم تُحفظ سحابياً`,
     setAside: (count) => (count === 1 ? 'عنصر واحد تعذّر حفظه سحابياً وتم تجاوزه' : `${arCount(count, 'item')} تعذّر حفظها سحابياً وتم تجاوزها`),
+    undoRefused: 'لم يُطبَّق التراجع: حُذف العنصر على جهاز آخر بعد ذلك',
+    editReplaced: 'تعديل أحدث من جهاز آخر استبدل تعديلك',
     autoRetryNote: 'سنتابع المحاولة تلقائياً في الخلفية.',
     expand: 'عرض التفاصيل',
     collapse: 'إخفاء التفاصيل',

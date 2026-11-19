@@ -3,6 +3,7 @@ import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
+import { sansStamp } from './sansStamp'
 import type { Debt, DebtPayment, Goal, PaymentMethod, RecurringDebtPayment } from '@/lib/store/types'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
@@ -412,7 +413,7 @@ describe('delete_debt', () => {
     expect(st().goals).toHaveLength(0)
     expect(st().expenses).toHaveLength(1)
     if (applied.ok) applied.undo?.()
-    expect(slices()).toEqual(before)
+    expect(sansStamp(slices())).toEqual(sansStamp(before))
     expect(afterApply.debts).toHaveLength(0)
   })
 
@@ -457,7 +458,7 @@ describe('delete_debt_payment', () => {
     expect(st().debts[0]).toMatchObject({ status: 'active' })
     expect(applied.ok && typeof applied.undo).toBe('function')
     if (applied.ok) applied.undo?.()
-    expect({ debts: st().debts, debtPayments: st().debtPayments, goals: st().goals }).toEqual(before)
+    expect(sansStamp({ debts: st().debts, debtPayments: st().debtPayments, goals: st().goals })).toEqual(sansStamp(before))
   })
 
   it('fails on an unknown ref', () => {

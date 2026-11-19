@@ -1,3 +1,5 @@
+import { noteRestored } from '@/lib/store/undoWatch'
+
 /**
  * Puts saved rows back by id. A restored row gets a fresh `updatedAt` when `stamp` is set:
  * the change it undoes was already synced with a newer stamp, so an old one would lose the
@@ -14,12 +16,19 @@ export const putBack = <T extends { id: string }>(current: T[], saved: T[], stam
 const sameRow = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b)
 
 /** Puts deleted rows back under their original ids and positions; rows added or edited since stay as they are. */
-export const restoreRows = <T extends { id: string }>(current: T[], before: T[], removedIds: ReadonlySet<string>): T[] => {
+export const restoreRows = <T extends { id: string }>(current: T[], before: T[], removedIds: ReadonlySet<string>, synced = true): T[] => {
   const live = new Map(current.map((r) => [r.id, r]))
   const known = new Set(before.map((r) => r.id))
+  // A fresh edit time on what comes back: the server clears a tombstone only for an action newer than the delete.
+  // `synced` is false for rows that have no stamp of their own (budget lines carry their plan's).
+  const stamp = new Date().toISOString()
   const restored = before.flatMap((r) => {
     const now = live.get(r.id)
-    return now ? [now] : removedIds.has(r.id) ? [r] : []
+    if (now) return [now]
+    if (!removedIds.has(r.id)) return []
+    if (!synced) return [r]
+    noteRestored(r.id)
+    return [{ ...r, updatedAt: stamp }]
   })
   return [...restored, ...current.filter((r) => !known.has(r.id))]
 }

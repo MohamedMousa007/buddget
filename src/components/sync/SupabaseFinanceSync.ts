@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
 import { baselineAfterFlush, flushRetryDelay } from './flushBaseline'
+import { countReplaced, sentRows, type SentRows } from './replacedEdits'
+import { refusedUndos } from '@/lib/store/undoWatch'
 import { baselineForBoot, saveFingerprint } from './flushedFingerprint'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import {
@@ -292,6 +294,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }, delay)
     }
 
+    // What a flush sent when the server skipped some of it (its copy was newer): checked after the pull that follows.
+    let skippedSent: SentRows | null = null
     // Rows the server set aside in the last flush: they stay out of every baseline until a flush gets them through.
     let parkedNow: readonly ParkedRow[] = []
 
@@ -352,6 +356,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           persistBaseline(userId, prevSnap.current)
           retryAttempt = 0
           // The server skipped writes (its copy was newer): pull so this device converges on the newer edit.
+          if (result.skippedWrites) skippedSent = sentRows(prev, next)
           if (result.skippedWrites) void pendingSync?.().catch((e) => console.error('[finance sync] stale-write re-pull failed', e))
         } else {
           console.error('[finance sync] per-table flush errors:', result.errors)
@@ -440,6 +445,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           }
           const flushed = await flush()
           const incoming = await runFullSync(supabase, userId, prevSnap.current, stillCurrent)
+          // Newest edit wins: tell the device whose edit was the older one.
+          if (skippedSent && countReplaced(skippedSent, snapshot(useFinanceStore.getState())) > 0) useSyncFailures.getState().setNotice('editReplaced')
+          skippedSent = null
           prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed, parkedNow)
           persistBaseline(userId, prevSnap.current)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
@@ -627,6 +635,11 @@ async function runFullSync(
     // The account was reset elsewhere: our copy is stale, and merging it would bring the erased data back.
     if (delta.profile && wipeOnReset(userId, delta.profile.extras.dataResetAt ?? null)) return runFullSync(supabase, userId, null, stillCurrent)
     // Re-snapshot right before the merge so edits made during the round-trip aren't clobbered.
+    // An Undo made here that a later delete elsewhere has beaten: the row goes away again, so say why.
+    const deleted = [delta.expenses, delta.incomeSources, delta.incomeEvents, delta.debtPayments, delta.debts, delta.subscriptions, delta.recurringExpenses,
+      delta.recurringDebtPayments, delta.savingsAccounts, delta.savingsTransactions, delta.recurringSavingsDeposits, delta.investmentHoldings, delta.goals,
+      delta.paymentMethods].flatMap((l) => l?.deletedIds ?? [])
+    if (deleted.length > 0 && refusedUndos(deleted).length > 0) useSyncFailures.getState().setNotice('undoRefused')
     const merged = applyDelta(snapshot(useFinanceStore.getState()), delta, delivered)
     applyMerged(merged, userId)
     // A cursor ahead of the stored copy would skip rows after a restart: while saves are being refused, the next pull stays a full one.

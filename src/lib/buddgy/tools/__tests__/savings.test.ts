@@ -5,6 +5,7 @@ import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useAssetPricesStore } from '@/lib/store/useAssetPricesStore'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { sansStamp } from './sansStamp'
 import type { Goal, InvestmentHolding, SavingsAccount } from '@/lib/store/types'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
@@ -384,9 +385,9 @@ describe('delete_savings_account', () => {
     expect(st().goals[0].linkedSavingsAccountIds).toEqual([])
     if (!applied.ok) return
     applied.undo?.()
-    expect(st().savingsAccounts).toEqual(pre.savingsAccounts)
-    expect(st().savingsTransactions).toEqual(pre.savingsTransactions)
-    expect(st().recurringSavingsDeposits).toEqual(pre.recurringSavingsDeposits)
+    expect(sansStamp(st().savingsAccounts)).toEqual(sansStamp(pre.savingsAccounts))
+    expect(sansStamp(st().savingsTransactions)).toEqual(sansStamp(pre.savingsTransactions))
+    expect(sansStamp(st().recurringSavingsDeposits)).toEqual(sansStamp(pre.recurringSavingsDeposits))
     expect(st().goals).toEqual(pre.goals)
   })
 
@@ -508,7 +509,7 @@ describe('investment holdings', () => {
     expect(st().investmentHoldings).toHaveLength(0)
     if (!applied.ok) return
     applied.undo?.()
-    expect(st().investmentHoldings).toEqual([holding(H1)])
+    expect(sansStamp(st().investmentHoldings)).toEqual(sansStamp([holding(H1)]))
   })
 })
 

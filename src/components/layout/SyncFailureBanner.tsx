@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Info } from 'lucide-react'
 import { useSyncFailures } from '@/lib/store/useSyncFailures'
 import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 import { useHiddenStatus } from '@/hooks/useHiddenStatus'
@@ -19,10 +19,16 @@ import { useT } from '@/lib/i18n'
 export function SyncFailureBanner() {
   const failures = useSyncFailures((s) => s.failures)
   const setAside = useSyncFailures((s) => s.setAside)
+  const notice = useSyncFailures((s) => s.notice)
+  const setNotice = useSyncFailures((s) => s.setNotice)
   const { online } = useNetworkStatus()
   const [hidden, hide] = useHiddenStatus('sync')
   const t = useT()
 
+  // A one-off notice (an undo or an edit that lost to another device) shows while nothing is failing; swiping it away ends it.
+  if (failures.length === 0 && setAside.length === 0 && notice) {
+    return <StatusPill icon={<Info strokeWidth={2} />} label={t.syncFailures[notice]} onHide={() => setNotice(null)} />
+  }
   if ((failures.length === 0 && setAside.length === 0) || !online) return null
 
   const label =

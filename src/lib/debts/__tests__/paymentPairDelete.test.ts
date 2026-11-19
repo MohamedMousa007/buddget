@@ -42,8 +42,8 @@ describe('deleteDebtPayment pairs with its expense', () => {
     const expense = st().expenses[0]
     const snap = st().deleteDebtPayment(payment.id)!
     st().restoreDebtPayment(snap)
-    expect(st().debtPayments[0]).toEqual(payment)
-    expect(st().expenses[0]).toEqual(expense)
+    expect({ ...st().debtPayments[0], updatedAt: undefined }).toEqual({ ...payment, updatedAt: undefined })
+    expect({ ...st().expenses[0], updatedAt: undefined }).toEqual({ ...expense, updatedAt: undefined })
     expect(st().debts[0].status).toBe('cleared')
     expect(st().recurringDebtPayments[0].isActive).toBe(false)
   })

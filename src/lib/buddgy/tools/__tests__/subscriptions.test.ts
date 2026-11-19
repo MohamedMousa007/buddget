@@ -4,6 +4,7 @@ import { refOf } from '@/lib/buddgy/tools/refs'
 import type { ToolContext } from '@/lib/buddgy/tools/types'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import type { Expense, PaymentMethod, Subscription } from '@/lib/store/types'
+import { sansStamp } from './sansStamp'
 import { buildRecurringExpenseFromSubscription } from '@/lib/subscriptions/subscriptionRecurring'
 
 const ctx: ToolContext = { now: new Date('2026-10-19T12:00:00'), locale: 'en' }
@@ -348,7 +349,7 @@ describe('delete_subscription', () => {
     expect(st().expenses).toHaveLength(1)
     expect(applied.ok && typeof applied.undo).toBe('function')
     if (applied.ok) applied.undo?.()
-    expect({ subscriptions: st().subscriptions, recurringExpenses: st().recurringExpenses, expenses: st().expenses }).toEqual(before)
+    expect(sansStamp({ subscriptions: st().subscriptions, recurringExpenses: st().recurringExpenses, expenses: st().expenses })).toEqual(sansStamp(before))
   })
 
   it('rejects a stale apply and an unknown ref', () => {

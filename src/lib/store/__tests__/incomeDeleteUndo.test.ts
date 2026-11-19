@@ -30,7 +30,7 @@ describe('income delete and undo', () => {
     st().deleteIncomeEvent('ev1')
     expect(st().incomeEvents).toHaveLength(0)
     st().restoreIncomeEvent(event)
-    expect(st().incomeEvents[0]).toEqual(event)
+    expect({ ...st().incomeEvents[0], updatedAt: undefined }).toEqual({ ...event, updatedAt: undefined })
   })
 
   it('restoreIncomeEvent removes exactly the reversal deposit its delete created, even after a rename', () => {

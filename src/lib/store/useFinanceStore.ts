@@ -72,9 +72,16 @@ import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
 import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_payment_resend'
+import { noteRestored } from '@/lib/store/undoWatch'
 import { dropMistypedFields } from '@/lib/store/persistShape'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 23
+
+/** A row put back by Undo: a fresh edit time (the server clears a tombstone only for an action newer than the delete), and watched in case the undo still loses. */
+const restoredNow = <T extends { id: string }>(row: T): T => {
+  noteRestored(row.id)
+  return { ...row, updatedAt: new Date().toISOString() }
+}
 
 /** Today's entries carry the exact time; back-dated ones stay day-level (the balance reads them at noon). */
 const occurredNow = (date: string, given?: string): string | undefined =>
@@ -360,7 +367,9 @@ export const useFinanceStore = create<FinanceStore>()(
           ? restoreExpenseReceipt(expense.receiptId, (r) => set((state) => (state.receipts.some((x) => x.id === r.id) ? state : { receipts: [...state.receipts, r] })))
           : false
         const dangling = !!expense.receiptId && !restored && !get().receipts.some((r) => r.id === expense.receiptId)
-        const back = dangling ? { ...expense, receiptId: undefined } : expense
+        // A fresh edit time: the server only clears a tombstone for an action newer than the delete.
+        const back = { ...(dangling ? { ...expense, receiptId: undefined } : expense), updatedAt: new Date().toISOString() }
+        noteRestored(back.id)
         set((state) =>
           state.expenses.some((e) => e.id === back.id)
             ? state
@@ -460,7 +469,7 @@ export const useFinanceStore = create<FinanceStore>()(
           state.incomeSources.some((s) => s.id === source.id)
             ? state
             : {
-                incomeSources: [...state.incomeSources, source],
+                incomeSources: [...state.incomeSources, restoredNow(source)],
                 settings: { ...state.settings, noIncomeDeclared: false },
               },
         ),
@@ -469,7 +478,7 @@ export const useFinanceStore = create<FinanceStore>()(
         let restored = false
         set((state) => {
           if (state.incomeEvents.some((e) => e.id === event.id)) return state
-          const incomeEvents = [...state.incomeEvents, event]
+          const incomeEvents = [...state.incomeEvents, restoredNow(event)]
           const settings = { ...state.settings, noIncomeDeclared: false }
           // Deleting a withdrawal-linked event put the money back as a reversal deposit: take that back.
           const reversalId = reversalDepositByEvent.get(event.id)
@@ -979,10 +988,10 @@ export const useFinanceStore = create<FinanceStore>()(
           const pocket = retake ? state.savingsAccounts.find((a) => a.id === retake.accountId) : undefined
           if (retake && (!pocket || pocket.currentBalance + balanceEpsilon(pocket.currency) < retake.amount)) return state
           restored = true
-          const debtPayments = [...state.debtPayments, snapshot.payment]
+          const debtPayments = [...state.debtPayments, restoredNow(snapshot.payment)]
           const expenses = [
             ...state.expenses,
-            ...snapshot.expenses.filter((x) => !state.expenses.some((e) => e.id === x.id)),
+            ...snapshot.expenses.filter((x) => !state.expenses.some((e) => e.id === x.id)).map(restoredNow),
           ]
           const recurringDebtPayments = snapshot.schedule
             ? state.recurringDebtPayments.map((r) => (r.id === snapshot.schedule!.id ? snapshot.schedule! : r))

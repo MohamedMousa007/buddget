@@ -90,6 +90,8 @@ export interface Dictionary {
     oneDidntSync: string
     manyDidntSync: (count: number) => string
     setAside: (count: number) => string
+    undoRefused: string
+    editReplaced: string
     autoRetryNote: string
     expand: string
     collapse: string

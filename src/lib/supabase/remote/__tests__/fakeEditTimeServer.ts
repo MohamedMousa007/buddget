@@ -10,8 +10,9 @@ const TOLERANCE_MS = 3000
 export type Row = Record<string, unknown> & { id: string; amount: number; edited_at: string; updated_at: string; deleted_at: string | null }
 
 /**
- * The `expenses` table with migration 0241 behind it: `a0_stamp_insert` (updated_at = now(), edited_at clamped to now()),
- * `a0_reject_stale_write` (edit-time guard, stale revive keeps content) and `set_updated_at`, plus the 2-minute delta window.
+ * The `expenses` table with migrations 0241 and 0319 behind it: `a0_stamp_insert` (updated_at = now(), edited_at clamped to now()),
+ * `a0_reject_stale_write` (edit-time guard; a tombstone is cleared only by a write whose edit time is after the delete)
+ * and `set_updated_at`, plus the 2-minute delta window.
  */
 export function fakeEditTimeServer(clock: { now: number }) {
   const rows = new Map<string, Row>()
@@ -31,6 +32,8 @@ export function fakeEditTimeServer(clock: { now: number }) {
     }
     const oldEdit = Date.parse(old.edited_at)
     const { edited_at: _e, updated_at: _u, ...content } = incoming as Record<string, unknown>
+    // 0319: a delete is undone only by an action newer than the delete.
+    if (old.deleted_at && content.deleted_at === null && !(sentEdit !== undefined && sentEdit > Date.parse(old.deleted_at))) delete content.deleted_at
     if (sentEdit === undefined || sentEdit === oldEdit) {
       rows.set(old.id, { ...old, ...content, deleted_at: 'deleted_at' in content ? (content.deleted_at as string | null) : old.deleted_at, updated_at: pgTime(clock.now) } as Row)
       return true
