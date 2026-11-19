@@ -2884,16 +2884,11 @@ export interface Dictionary {
       finish: string
       automationActive: string
       copied: (word: string) => string
-      kwHeaderTitle: string
-      kwHeaderBody: string
-      kwSentLabel: string
-      kwEnPre: string
-      kwEnHl: string
-      kwEnPost: string
-      kwArPre: string
-      kwArHl: string
-      kwArPost: string
-      kwCommonLabel: string
+      openMessages: string
+      testMessage: string
+      copyTest: string
+      testWaiting: string
+      testConnected: string
       ariaClose: string
       ariaBack: string
       ariaPrev: string

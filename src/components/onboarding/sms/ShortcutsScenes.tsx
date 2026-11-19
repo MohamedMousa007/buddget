@@ -83,7 +83,7 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
         <Focus className="rounded-none">
           <div className="flex min-h-11 items-center gap-2 px-3.5 text-[0.9375rem]">
             <span className="flex-1 text-[var(--color-brand-text-primary)]">Message Contains</span>
-            <span className="rounded-md bg-[var(--color-brand-primary-soft)] px-2 py-0.5 font-mono-numbers text-sm font-bold text-[var(--color-brand-primary-ink)]">EGP</span>
+            <span className="rounded-md bg-[var(--color-brand-primary-soft)] px-2 py-0.5 font-mono-numbers text-sm font-bold text-[var(--color-brand-primary-ink)]">0</span>
           </div>
         </Focus>
       </Group>
@@ -92,7 +92,7 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
   ),
   runImmediately: () => (
     <Phone>
-      <Title>{"When I Get a Message Containing 'EGP'"}</Title>
+      <Title>{"When I Get a Message Containing '0'"}</Title>
       <Group>
         <Row label="Run After Confirmation" chevron={false} />
         <Focus className="rounded-none">
@@ -101,6 +101,7 @@ const SCENES: Record<SceneId, (c: Captions) => ReactNode> = {
             <Check className="size-4 text-[var(--color-brand-primary-ink)]" aria-hidden />
           </div>
         </Focus>
+        <Row label="Notify When Run" value="Off" chevron={false} />
       </Group>
       <div className="mt-3 flex justify-end"><span className="rounded-full bg-[var(--color-brand-primary)] px-4 py-1.5 text-sm font-semibold text-[var(--color-brand-on-primary)]">Next</span></div>
     </Phone>

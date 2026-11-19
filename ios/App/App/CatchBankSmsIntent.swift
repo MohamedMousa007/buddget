@@ -13,7 +13,8 @@ struct CatchBankSmsIntent: AppIntent {
     )
     static var openAppWhenRun: Bool = false
 
-    @Parameter(title: "Bank Message")
+    /// Asks Shortcuts to wire this to the automation's input on its own, so the user need not pick Shortcut Input.
+    @Parameter(title: "Bank Message", inputConnectionBehavior: .connectToPreviousIntentResult)
     var message: String
 
     /// Kept only so Shortcuts already built with the old two-field action keep running. iOS never hands an app the
@@ -37,6 +38,12 @@ struct CatchBankSmsIntent: AppIntent {
         // unless the text also states an actual money movement.
         guard !SmsOtpGate.shouldDrop(message) else {
             SmsCredentialStore.recordRun(result: "skipped_otp")
+            return .result()
+        }
+        // The guide's automation fires on any text containing "0", so personal texts reach this action too.
+        // Only a text that names an amount with a currency (or states money moving) leaves the phone.
+        guard SmsOtpGate.looksLikeBankMoney(message) else {
+            SmsCredentialStore.recordRun(result: "skipped_not_money")
             return .result()
         }
 
@@ -166,16 +173,32 @@ enum SmsOtpGate {
         r.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) != nil
     }
 
+    private static func hasAmount(_ message: String) -> Bool {
+        matches(currency, message) || (message.contains("جنيه") && message.contains(where: { $0.isNumber }))
+    }
+
     /// An amount with a currency AND a verb for money that moved; "never share" boilerplate alone is not an OTP.
     static func carriesMoneyMovement(_ message: String) -> Bool {
         if matches(txn, message) || txnArabic.contains(where: { message.contains($0) }) { return true }
-        let hasAmount = matches(currency, message) || (message.contains("جنيه") && message.contains(where: { $0.isNumber }))
-        return hasAmount && (matches(moneyVerb, message) || moneyVerbArabic.contains { message.contains($0) })
+        return hasAmount(message) && (matches(moneyVerb, message) || moneyVerbArabic.contains { message.contains($0) })
+    }
+
+    /// Worth sending to the server at all. Looser than carriesMoneyMovement on purpose: that rule missed 15 of 229
+    /// booked bank texts (transfers in, salary, card payoff), while an amount with a currency caught all 229.
+    static func looksLikeBankMoney(_ message: String) -> Bool {
+        hasAmount(message) || carriesMoneyMovement(message)
     }
 
     static func shouldDrop(_ message: String) -> Bool {
         let isOtp = matches(otp, message) || otpArabic.contains { message.contains($0) }
         let isMarketing = matches(marketing, message) || marketingArabic.contains { message.contains($0) }
         return (isOtp || isMarketing) && !carriesMoneyMovement(message)
+    }
+}
+
+/// Lists Catch Bank SMS under buddget in the Shortcuts app, with the app's icon, so it is easy to find.
+struct BuddgetAppShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(intent: CatchBankSmsIntent(), phrases: ["Catch a bank SMS with \(.applicationName)"])
     }
 }

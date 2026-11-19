@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { STEPS } from './SmsTrackingGuide'
 import { en } from '@/lib/i18n/dictionaries/en'
 import { ar } from '@/lib/i18n/dictionaries/ar'
+import { looksLikeBankMoney } from '@/lib/sms/deviceOtpGate'
 
 /**
  * STEPS (the illustrated scene per step) and the `steps` copy arrays are
@@ -25,9 +26,15 @@ describe('SMS guide step arrays stay aligned', () => {
     expect(en.smsTracking.guide.steps[STEPS.length]).toBeUndefined()
   })
 
-  it('every step renders something: a scene, the keyword screen or the done screen', () => {
+  it('every step renders something: a scene, the test screen or the done screen', () => {
     for (const [i, s] of STEPS.entries()) {
-      expect(s.scene ?? s.keyword ?? s.done, `STEPS[${i}] would render blank`).toBeTruthy()
+      expect(s.scene ?? s.test ?? s.done, `STEPS[${i}] would render blank`).toBeTruthy()
+    }
+  })
+  it('the test text fires the "0" automation but never leaves the phone as money', () => {
+    for (const g of [en.smsTracking.guide, ar.smsTracking.guide]) {
+      expect(g.testMessage).toContain('0')
+      expect(looksLikeBankMoney(g.testMessage)).toBe(false)
     }
   })
   it('no step still asks for the sender, which iOS never provides', () => {

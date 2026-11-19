@@ -19,10 +19,16 @@ const CURRENCY = new RegExp(
 const VERB = /(?<![a-z])(used (?:for|at)|approved|authori[sz]ed|paid|payment|received|refund(?:ed)?|debit(?:ed)?|credit(?:ed)?|purchase|spent|withdr(?:awn|awal)|transfer(?:red)?|deposit(?:ed)?|charged|sent)(?![a-z])/i
 const VERB_AR = ['تم الدفع', 'دفع', 'خصم', 'تحويل', 'شراء', 'سحب', 'إيداع', 'استلام', 'استرداد']
 
+const hasAmount = (text: string) => CURRENCY.test(text) || (text.includes('جنيه') && /\d/.test(text))
+
 export function carriesMoneyMovement(text: string): boolean {
   if (STRONG.test(text) || STRONG_AR.some((w) => text.includes(w))) return true
-  const hasAmount = CURRENCY.test(text) || (text.includes('جنيه') && /\d/.test(text))
-  return hasAmount && (VERB.test(text) || VERB_AR.some((w) => text.includes(w)))
+  return hasAmount(text) && (VERB.test(text) || VERB_AR.some((w) => text.includes(w)))
+}
+
+/** iOS only (SmsOtpGate.looksLikeBankMoney): the automation fires on any text with a "0", so this decides what leaves the phone. */
+export function looksLikeBankMoney(text: string): boolean {
+  return hasAmount(text) || carriesMoneyMovement(text)
 }
 
 export function shouldDropOtp(text: string): boolean {
