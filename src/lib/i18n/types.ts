@@ -1990,6 +1990,10 @@ export interface Dictionary {
     biometricSignInFingerprint: string
     oauthProviderDisabled: string
     sessionExpired: string
+    signOutUnsentTitle: string
+    signOutUnsentBody: string
+    signOutAnyway: string
+    signOutKeepWaiting: string
     rememberMe: string
     emailCheckInFlight: string
     showPassword: string

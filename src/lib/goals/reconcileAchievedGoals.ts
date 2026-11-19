@@ -23,7 +23,8 @@ export function reconcileAchievedGoals(
     const progress = computeGoalProgress(g, ctx)
     if (progress + EPS < target) return g
     newlyAchievedIds.push(g.id)
-    return { ...g, status: 'achieved' as const, achievedAt: g.achievedAt ?? iso }
+    // A new edit time: without it a pull that still carries the active server copy ties and wins.
+    return { ...g, status: 'achieved' as const, achievedAt: g.achievedAt ?? iso, updatedAt: iso }
   })
   return { goals: next, newlyAchievedIds }
 }

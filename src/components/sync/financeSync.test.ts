@@ -6,6 +6,8 @@ const h = vi.hoisted(() => {
     snapshot: vi.fn(() => ({ marker: ++n })),
     flushDiff: vi.fn(),
     recordFailures: vi.fn(),
+    storeReset: vi.fn(),
+    from: vi.fn((): unknown => { throw new Error('no table mock') }),
     cleanups: [] as Array<() => void>,
   }
 })
@@ -17,10 +19,10 @@ vi.mock('react', () => ({
     if (cleanup) h.cleanups.push(cleanup)
   },
 }))
-vi.mock('@/lib/supabase/client', () => ({ createClient: vi.fn(() => ({ auth: {} })) }))
+vi.mock('@/lib/supabase/client', () => ({ createClient: vi.fn(() => ({ auth: {}, from: h.from })) }))
 vi.mock('@/lib/store/useFinanceStore', () => ({
   useFinanceStore: {
-    getState: vi.fn(() => ({ profile: { id: 'u1' }, setDataReady: vi.fn() })),
+    getState: vi.fn(() => ({ profile: { id: 'u1' }, setDataReady: vi.fn(), reset: h.storeReset })),
     setState: vi.fn(),
     subscribe: vi.fn(() => vi.fn()),
     persist: { getOptions: () => ({ version: 1 }) },
@@ -60,6 +62,8 @@ vi.mock('@/lib/market/marketData', () => ({ ensureMarketDataFresh: vi.fn(async (
 vi.mock('@/lib/theme/applyTheme', () => ({ applyTheme: vi.fn() }))
 
 import { SupabaseFinanceSync, flushFinanceNow, suspendFinanceSync, syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+import { applyDelta, decideReset, pullDelta } from '@/lib/supabase/remote'
+import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
 const ok = { anyError: false, errors: [] as string[] }
 const failed = { anyError: true, errors: ['expenses: boom'] }
@@ -79,6 +83,10 @@ describe('finance sync flush / re-baseline', () => {
     h.flushDiff.mockReset()
     h.recordFailures.mockReset()
     h.snapshot.mockClear()
+    h.storeReset.mockReset()
+    h.from.mockReset()
+    h.from.mockImplementation(() => { throw new Error('no table mock') })
+    vi.mocked(applyDelta).mockClear()
     h.flushDiff.mockResolvedValue(ok)
     vi.spyOn(console, 'error').mockImplementation(() => {})
     await mount()
@@ -139,5 +147,58 @@ describe('finance sync flush / re-baseline', () => {
     suspendFinanceSync()
     await flushFinanceNow()
     expect(h.flushDiff).not.toHaveBeenCalled()
+  })
+
+  it('QA-19: two flushes asked for at once send their writes one after the other, the second from the first one\'s result', async () => {
+    let release!: (v: typeof ok) => void
+    h.flushDiff.mockReturnValueOnce(new Promise((r) => { release = r })).mockResolvedValue(ok)
+    const first = flushFinanceNow()
+    const second = flushFinanceNow()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(h.flushDiff).toHaveBeenCalledTimes(1)
+    release(ok)
+    await Promise.all([first, second])
+    const [a, b] = calls()
+    expect(h.flushDiff).toHaveBeenCalledTimes(2)
+    expect(b![2]).toBe(a![3])
+  })
+
+  it('QA-65: a pull that answers after suspendFinanceSync does not write to the store', async () => {
+    let answer!: (v: unknown) => void
+    vi.mocked(pullDelta).mockReturnValueOnce(new Promise((r) => { answer = r }) as never)
+    const sync = syncFinanceNow()
+    await vi.advanceTimersByTimeAsync(0)
+    suspendFinanceSync()
+    vi.mocked(useFinanceStore.setState).mockClear()
+    answer({ profile: null, expenses: { upserts: [] }, cursor: 'c' })
+    await sync
+    expect(applyDelta).not.toHaveBeenCalled()
+    expect(useFinanceStore.setState).not.toHaveBeenCalled()
+  })
+
+  it('QA-42: after an account reset a stale device wipes its copy instead of pushing its unsent edits', async () => {
+    h.from.mockReturnValue({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { data_reset_at: '2026-11-19T00:00:00Z' } }) }) }) })
+    vi.mocked(decideReset).mockReturnValueOnce('wipe')
+    // The real reset() puts the default profile (id 'local') back.
+    h.storeReset.mockImplementation(() => vi.mocked(useFinanceStore.getState).mockReturnValue({ profile: { id: 'local' }, setDataReady: vi.fn(), reset: h.storeReset } as never))
+    await syncFinanceNow()
+    vi.mocked(useFinanceStore.getState).mockReturnValue({ profile: { id: 'u1' }, setDataReady: vi.fn(), reset: h.storeReset } as never)
+    expect(h.storeReset).toHaveBeenCalled()
+    expect(h.flushDiff).not.toHaveBeenCalled()
+  })
+
+  it('QA-22: a sync asked for while the first pull is in flight waits for it instead of downloading everything twice', async () => {
+    h.cleanups.splice(0).forEach((c) => c())
+    vi.mocked(useFinanceStore.getState).mockReturnValue({ profile: { id: 'local' }, setDataReady: vi.fn(), reset: h.storeReset } as never)
+    vi.mocked(pullDelta).mockClear()
+    let answer!: (v: unknown) => void
+    vi.mocked(pullDelta).mockReturnValueOnce(new Promise((r) => { answer = r }) as never)
+    await mount()
+    void syncFinanceNow()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(pullDelta).toHaveBeenCalledTimes(1)
+    answer(null)
+    await vi.advanceTimersByTimeAsync(0)
+    vi.mocked(useFinanceStore.getState).mockReturnValue({ profile: { id: 'u1' }, setDataReady: vi.fn(), reset: h.storeReset } as never)
   })
 })

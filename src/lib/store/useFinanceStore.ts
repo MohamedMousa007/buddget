@@ -1404,7 +1404,7 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           goals: state.goals.map((g) =>
             g.id === id
-              ? { ...g, status: 'achieved', achievedAt: new Date().toISOString() }
+              ? { ...g, status: 'achieved', achievedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
               : g
           ),
         })),

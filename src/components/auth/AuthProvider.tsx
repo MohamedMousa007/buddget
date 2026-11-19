@@ -33,7 +33,8 @@ import { DevAuthBypassSeed } from '@/components/auth/DevAuthBypassSeed'
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen'
 import { useEphemeralSessionGuard } from '@/hooks/useEphemeralSessionGuard'
 import { consumeExpectedSignOut } from '@/lib/auth/intentionalSignOut'
-import { DialogProvider } from '@/components/ui/dialog/DialogProvider'
+import { DialogProvider, useConfirm, type ConfirmOptions } from '@/components/ui/dialog/DialogProvider'
+import { settleBeforeWipe } from '@/lib/auth/signOutFlush'
 
 /**
  * Minimal centered splash rendered while the initial auth check is in flight.
@@ -254,6 +255,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const t = useT()
   useEffect(() => { if (isNative()) void attachPushListeners() }, [])
   const sessionExpiredRef = useRef(t.auth.sessionExpired)
+  // signOut is created above the DialogProvider it renders, so the confirm function is handed up through a ref.
+  const confirmRef = useRef<((o: ConfirmOptions) => Promise<boolean>) | null>(null)
+  const unsentCopyRef = useRef(t.auth)
+  useEffect(() => { unsentCopyRef.current = t.auth }, [t.auth])
   useEffect(() => { sessionExpiredRef.current = t.auth.sessionExpired }, [t.auth.sessionExpired])
   const wasAuthedRef = useRef(false)
   /** Set by `signOut()` just before telling Supabase to end the session.
@@ -455,7 +460,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // getSession() restores it and the "signed-out" user is logged back in.
     // Flush pending writes first (token still valid). Local scope clears storage
     // with NO network round-trip, so it can't hang on a slow link.
-    try { await finalFlush } catch (e) { console.error('[auth] flush before signOut failed', e) }
+    // Send, then wipe; a stalled request never holds the wipe: after a short wait the user decides.
+    const u = unsentCopyRef.current
+    await settleBeforeWipe(finalFlush, () =>
+      confirmRef.current?.({ title: u.signOutUnsentTitle, body: u.signOutUnsentBody, confirmLabel: u.signOutAnyway, cancelLabel: u.signOutKeepWaiting, destructive: true }) ?? Promise.resolve(true))
     // Explicit sign-out only (session expiry never reaches here): free this device's biometric binding while the token is still valid.
     try { await unbindBiometricOnSignOut() } catch (e) { console.error('[auth] biometric unbind failed', e) }
     try { await supabase.auth.signOut({ scope: 'local' }) } catch (e) { console.error('[auth] signOut failed', e) }
@@ -663,6 +671,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       <DialogProvider>
+        <ConfirmBridge intoRef={confirmRef} />
         <Suspense fallback={null}>
           <AuthNextQuerySync configured={configured} />
         </Suspense>
@@ -707,3 +716,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export { useAuth, useOptionalAuth } from '@/components/auth/auth-context'
+
+function ConfirmBridge({ intoRef }: { intoRef: React.MutableRefObject<((o: ConfirmOptions) => Promise<boolean>) | null> }) {
+  const confirm = useConfirm()
+  useEffect(() => {
+    intoRef.current = confirm
+    return () => { intoRef.current = null }
+  }, [confirm, intoRef])
+  return null
+}

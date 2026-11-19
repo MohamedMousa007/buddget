@@ -172,6 +172,8 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
   // replaces the old `dataReady=false` gate as the "don't double-diff" lock.
   const reconciling = useRef(false)
   const runAgain = useRef(false)
+  // The first (cold) pull, while it runs: a reconcile asked for meanwhile waits for it instead of pulling everything again.
+  const coldPull = useRef<Promise<unknown> | null>(null)
 
   useEffect(() => {
     hydrated.current = false
@@ -244,11 +246,14 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       try {
         // Pull before flipping dataReady, even on a warm start: lifting the splash on cached numbers and then
         // merging server rows visibly changes the dashboard totals. The pull is one small delta request.
-        incoming = await runFullSync(supabase, userId, null)
+        const first = runFullSync(supabase, userId, null, () => !cancelled)
+        coldPull.current = first.catch(() => undefined)
+        incoming = await first
         pulled = true
       } catch (e) {
         console.error('[finance sync] pull failed', e)
       } finally {
+        coldPull.current = null
         // Await the market fetch started above — by now it's been running in
         // parallel with pullAll so it's likely already done or nearly done.
         try { await marketPromise } catch { /* keep cached/default rates */ }
@@ -300,7 +305,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }, Math.max(0, suppressUntil - Date.now()) + 50)
     }
 
-    const flush = async (): Promise<boolean> => {
+    const flushOnce = async (): Promise<boolean> => {
       if (!hydrated.current) return true
       // Offline: don't attempt a doomed flush that would raise the sync-failure
       // banner. prevSnap doesn't advance, so the reconnect flush (or the next
@@ -364,6 +369,35 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }
     }
 
+    // One flush in flight: overlapping full-row profile upserts could land out of order and leave the older one on the
+    // server. A call that arrives meanwhile makes the running flush go once more, from a fresh snapshot.
+    let flushing: Promise<boolean> | null = null
+    let flushAgain = false
+    const flush = (): Promise<boolean> => {
+      if (flushing) {
+        flushAgain = true
+        return flushing
+      }
+      flushing = (async () => {
+        let sent: boolean
+        do {
+          flushAgain = false
+          sent = await flushOnce()
+        } while (flushAgain)
+        return sent
+      })().finally(() => { flushing = null })
+      return flushing
+    }
+
+    let disposed = false
+    const stillCurrent = () => !disposed
+    /** Unsent edits exist when a tracked slice is no longer the object the last delivered baseline holds. */
+    const hasUnsent = () => {
+      const base = prevSnap.current as Record<string, unknown> | null
+      const now = useFinanceStore.getState() as unknown as Record<string, unknown>
+      return !base || TRACKED_SLICES.some((k) => now[k] !== base[k])
+    }
+
     // The device refused a save: push what is unsent now, so the server holds it if the app is closed before space frees up.
     const onQuota = () => {
       clearSyncCursors()
@@ -398,8 +432,14 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       try {
         for (let pass = 0; pass < 3; pass++) {
           runAgain.current = false
+          if (coldPull.current) await coldPull.current
+          // An account reset elsewhere must be seen before the flush, or the upsert writes this device's stale edits back.
+          if (hasUnsent() && (await wipeIfReset(supabase, userId))) {
+            prevSnap.current = snapshot(useFinanceStore.getState())
+            parkedNow = []
+          }
           const flushed = await flush()
-          const incoming = await runFullSync(supabase, userId, prevSnap.current)
+          const incoming = await runFullSync(supabase, userId, prevSnap.current, stillCurrent)
           prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed, parkedNow)
           persistBaseline(userId, prevSnap.current)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
@@ -530,6 +570,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     })
 
     return () => {
+      disposed = true
       stopResume()
       unsub()
       stopStamping()
@@ -568,32 +609,23 @@ async function runFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   delivered: Snapshot | null,
+  stillCurrent: () => boolean = () => true,
 ): Promise<Expense[]> {
+  // Sign-out (or a new mount) while a request was in flight: its answer must not be written back into a wiped store.
+  const stale = () => syncSuspended || !stillCurrent()
   // A cursor only means something next to a store that holds this account's data.
   const hasLocalCopy = useFinanceStore.getState().profile.id === userId
   const since = hasLocalCopy ? readSyncCursor(userId, storeVersion()) : null
   try {
     // One cheap probe first: when nothing changed since the last pull, skip the full pull (any doubt answers "changed").
     if (since && !(await hasChangesSince(supabase, since))) {
-      useSettingsStore.getState().markServerSynced(userId)
+      if (!stale()) useSettingsStore.getState().markServerSynced(userId)
       return []
     }
     const delta = await pullDelta(supabase, since)
-    if (!delta) return []
-    if (delta.profile) {
-      const at = delta.profile.extras.dataResetAt ?? null
-      const verdict = decideReset(readResetSeen(userId), at)
-      if (verdict !== 'none') writeResetSeen(userId, at)
-      if (verdict === 'wipe') {
-        // The account was reset elsewhere: our copy is stale, and merging it would bring the erased data back.
-        useFinanceStore.getState().reset()
-        useSettingsStore.getState().reset()
-        clearSyncCursors()
-        clearNetWorthStamps()
-        void clearSmsQueueAfterReset(userId, at)
-        return runFullSync(supabase, userId, null)
-      }
-    }
+    if (!delta || stale()) return []
+    // The account was reset elsewhere: our copy is stale, and merging it would bring the erased data back.
+    if (delta.profile && wipeOnReset(userId, delta.profile.extras.dataResetAt ?? null)) return runFullSync(supabase, userId, null, stillCurrent)
     // Re-snapshot right before the merge so edits made during the round-trip aren't clobbered.
     const merged = applyDelta(snapshot(useFinanceStore.getState()), delta, delivered)
     applyMerged(merged, userId)
@@ -605,7 +637,31 @@ async function runFullSync(
   } catch (e) {
     console.warn('[finance sync] delta pull failed, using the full pull', e)
     clearSyncCursors()
-    return runLegacyFullSync(supabase, userId)
+    if (stale()) return []
+    return runLegacyFullSync(supabase, userId, stale)
+  }
+}
+
+/** Honours a reset stamp from the server: true when the local copy was stale and has been wiped. */
+function wipeOnReset(userId: string, at: string | null): boolean {
+  const verdict = decideReset(readResetSeen(userId), at)
+  if (verdict !== 'none') writeResetSeen(userId, at)
+  if (verdict !== 'wipe') return false
+  useFinanceStore.getState().reset()
+  useSettingsStore.getState().reset()
+  clearSyncCursors()
+  clearNetWorthStamps()
+  void clearSmsQueueAfterReset(userId, at)
+  return true
+}
+
+/** One primary-key read of the account's reset stamp. A failed read counts as "no reset", so it never blocks a flush. */
+async function wipeIfReset(supabase: ReturnType<typeof createClient>, userId: string): Promise<boolean> {
+  try {
+    const { data: stamp } = await supabase.from('profiles').select('data_reset_at').eq('id', userId).maybeSingle()
+    return wipeOnReset(userId, stamp?.data_reset_at ?? null)
+  } catch {
+    return false
   }
 }
 
@@ -621,21 +677,14 @@ function clearSmsQueueAfterReset(userId: string, resetAt: string | null): Promis
 async function runLegacyFullSync(
   supabase: ReturnType<typeof createClient>,
   userId: string,
+  stale: () => boolean = () => false,
 ): Promise<Expense[]> {
   // The fallback path must honour a reset too, or it would merge the stale local copy back in.
   const { data: stamp } = await supabase.from('profiles').select('data_reset_at').eq('id', userId).maybeSingle()
-  const at = stamp?.data_reset_at ?? null
-  const verdict = decideReset(readResetSeen(userId), at)
-  if (verdict !== 'none') writeResetSeen(userId, at)
-  if (verdict === 'wipe') {
-    useFinanceStore.getState().reset()
-    useSettingsStore.getState().reset()
-    clearSyncCursors()
-    clearNetWorthStamps()
-    void clearSmsQueueAfterReset(userId, at)
-  }
+  if (stale()) return []
+  wipeOnReset(userId, stamp?.data_reset_at ?? null)
   const server = await pullAll(supabase, userId)
-  if (!server) return []
+  if (!server || stale()) return []
   applyMerged(mergeSnapshots(snapshot(useFinanceStore.getState()), server), userId)
   useSettingsStore.getState().markServerSynced(userId)
   return server.expenses

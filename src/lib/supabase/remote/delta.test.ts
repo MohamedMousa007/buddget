@@ -175,3 +175,27 @@ describe('hasChangesSince', () => {
     expect(await hasChangesSince({ rpc: vi.fn().mockRejectedValue(new Error('offline')) } as never, 'c0')).toBe(true)
   })
 })
+
+describe('QA-19: an undelivered profile or settings edit survives a pull', () => {
+  const server = { profile: { id: 'u1', name: 'Sara', createdAt: 'x', onboardingStep: 0 }, extras: { financialGoalsNotes: '', activeBudgetPlanId: null, baseCurrency: 'EGP', secondaryCurrency: null } } as never
+  const delivered = { ...emptySnapshot(), profile: { id: 'u1', name: 'Sara', createdAt: 'x', onboardingStep: 0 } } as unknown as Snapshot
+
+  it('keeps a local profile edit the server has not received when an older server profile comes down', () => {
+    const local = { ...delivered, profile: { ...delivered.profile, name: 'Sara M', onboardingStep: 2 } } as unknown as Snapshot
+    const out = applyDelta(local, noDelta({ profile: server }), delivered)
+    expect(out.profile).toBe(local.profile)
+  })
+
+  it('still takes the server profile when this device has nothing unsent', () => {
+    const out = applyDelta(delivered, noDelta({ profile: { ...(server as object), profile: { id: 'u1', name: 'Other device', createdAt: 'x' } } as never }), delivered)
+    expect(out.profile.name).toBe('Other device')
+  })
+
+  it('keeps an unsent settings toggle, and takes the server settings otherwise', () => {
+    const flipped = delivered.settings.theme === 'dark' ? 'light' : 'dark'
+    const serverSettings = { ...delivered.settings, hideAmounts: 'from-server' } as never
+    const local = { ...delivered, settings: { ...delivered.settings, theme: flipped } } as unknown as Snapshot
+    expect(applyDelta(local, noDelta({ settings: serverSettings }), delivered).settings).toBe(local.settings)
+    expect(applyDelta(delivered, noDelta({ settings: serverSettings }), delivered).settings).toMatchObject({ hideAmounts: 'from-server' })
+  })
+})

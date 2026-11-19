@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import type { AppSettings, BudgetPlan, BudgetPlanActivation } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
-import { diffLists } from './diff'
+import { deepEqual, diffLists } from './diff'
 import { mergeList } from './merge'
 import { noteServerTime, serverInstant } from './serverClock'
 import type { Snapshot } from './snapshot'
@@ -173,10 +173,19 @@ function pendingIds<T extends WithId>(now: readonly T[], delivered: readonly T[]
  * without it the newer edit time decides for every row.
  */
 export function applyDelta(local: Snapshot, d: MappedDelta, delivered?: Snapshot | null): Snapshot {
-  const profileResult = d.profile
+  // An edit made after the flush snapshot (or still in flight) is not on the server yet: the copy that comes down is
+  // older, so the local one stays and goes out with the next flush.
+  const profilePending = !!delivered && !(
+    deepEqual(local.profile, delivered.profile) && local.financialGoalsNotes === delivered.financialGoalsNotes && local.activeBudgetPlanId === delivered.activeBudgetPlanId
+    && local.settings.baseCurrency === delivered.settings.baseCurrency && (local.settings.secondaryCurrency ?? null) === (delivered.settings.secondaryCurrency ?? null)
+  )
+  const settingsPending = !!delivered && !deepEqual(local.settings, delivered.settings)
+  const profileResult = profilePending ? null : d.profile
   const baseCurrency = profileResult?.extras.baseCurrency ?? local.settings.baseCurrency
   const secondaryCurrency = profileResult ? (profileResult.extras.secondaryCurrency ?? null) : (local.settings.secondaryCurrency ?? null)
-  const settings: AppSettings = d.settings
+  const settings: AppSettings = settingsPending
+    ? local.settings
+    : d.settings
     ? { ...d.settings, weekStartDay: d.settings.weekStartDay ?? local.settings.weekStartDay, baseCurrency, secondaryCurrency }
     : profileResult
       ? { ...local.settings, baseCurrency, secondaryCurrency }
