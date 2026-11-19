@@ -49,7 +49,7 @@ vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null
 vi.mock('@/lib/server/emitNotification', () => ({ emitNotification: async () => undefined }))
 vi.mock('@/lib/server/userDictionary', () => ({ getUserDictionary: async () => ({}) }))
 
-import { DELETE as rotate, GET as getToken } from '@/app/api/sms/setup-token/route'
+import { DELETE as rotate, POST as getToken } from '@/app/api/sms/setup-token/route'
 import { POST as revokeToken } from '@/app/api/sms/revoke-token/route'
 import { POST as registerPush } from '@/app/api/push/register/route'
 import { POST as heartbeat } from '@/app/api/devices/route'
@@ -83,7 +83,7 @@ describe('SST-1: a removed phone that drops every device identifier', () => {
   beforeEach(() => seed(true))
 
   it('setup-token GET and DELETE refuse a header-less request once the account has removed a phone', async () => {
-    expect((await getToken(req('GET'))).status).toBe(403)
+    expect((await getToken(req('POST'))).status).toBe(403)
     expect((await rotate(req('DELETE'))).status).toBe(403)
     expect(active('tok-other')).toBe(true)
     expect(active('tok-phone')).toBe(true)
@@ -96,7 +96,7 @@ describe('SST-1: a removed phone that drops every device identifier', () => {
   })
 
   it('a live phone that names itself still works', async () => {
-    expect((await getToken(req('GET', { 'x-buddget-device-id': PHONE }))).status).toBe(200)
+    expect((await getToken(req('POST', { 'x-buddget-device-id': PHONE }))).status).toBe(200)
     const res = await registerPush(req('POST', { 'x-buddget-device-id': PHONE }, { token: 'x'.repeat(20), platform: 'ios', deviceId: PHONE }))
     expect(res.status).toBe(200)
   })
@@ -106,7 +106,7 @@ describe('SST-1: accounts that never removed a phone are not locked out', () => 
   beforeEach(() => seed(false))
 
   it('header-less setup-token GET keeps working', async () => {
-    const res = await getToken(req('GET'))
+    const res = await getToken(req('POST'))
     expect(res.status).toBe(200)
     expect((await res.json()).token).toMatch(/^[0-9a-f-]{36}$/)
   })

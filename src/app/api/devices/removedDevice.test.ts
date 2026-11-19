@@ -43,7 +43,7 @@ vi.mock('@/lib/server/clientGate', () => ({ gateOutdatedClient: async () => null
 vi.mock('@/lib/server/emitNotification', () => ({ emitNotification: async () => undefined }))
 vi.mock('@/lib/server/userDictionary', () => ({ getUserDictionary: async () => ({}) }))
 
-import { DELETE as rotate, GET as getToken } from '@/app/api/sms/setup-token/route'
+import { DELETE as rotate, POST as getToken } from '@/app/api/sms/setup-token/route'
 import { POST as registerPush } from '@/app/api/push/register/route'
 import { DELETE as removeDevice } from '@/app/api/devices/[id]/route'
 
@@ -66,7 +66,7 @@ beforeEach(seed)
 
 describe('API-1 sms/setup-token: DELETE skips the revoked-device check that GET enforces', () => {
   it('GET refuses a removed phone (control, passes)', async () => {
-    expect((await getToken(req('GET', { 'x-buddget-device-id': REVOKED }))).status).toBe(403)
+    expect((await getToken(req('POST', { 'x-buddget-device-id': REVOKED }))).status).toBe(403)
   })
   it('DELETE (rotate) must refuse too', async () => {
     expect((await rotate(req('DELETE', { 'x-buddget-device-id': REVOKED }))).status).toBe(403)

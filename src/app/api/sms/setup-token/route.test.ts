@@ -61,12 +61,12 @@ vi.mock('@/lib/supabase/service', () => ({
   }),
 }))
 
-import { DELETE, GET } from './route'
+import { DELETE, GET, POST } from './route'
 import { hashIngestToken } from '@/lib/sms/ingestToken'
 
-const get = () => GET(new Request('http://x/api/sms/setup-token'))
+const get = () => POST(new Request('http://x/api/sms/setup-token', { method: 'POST' }))
 
-describe('GET /api/sms/setup-token', () => {
+describe('POST /api/sms/setup-token', () => {
   beforeEach(() => {
     h.limited.mockReset().mockResolvedValue(false)
     h.tokens = []
@@ -95,6 +95,28 @@ describe('GET /api/sms/setup-token', () => {
     expect(h.tokens.map((t) => t.token_hash)).toEqual([hashIngestToken(first.token), hashIngestToken(second.token)])
     expect(JSON.stringify(h.tokens)).not.toContain(first.token)
     expect(h.tokens.every((t) => t.is_active)).toBe(true)
+  })
+})
+
+describe('GET /api/sms/setup-token (QA-102)', () => {
+  beforeEach(() => {
+    h.limited.mockReset().mockResolvedValue(false)
+    h.tokens = []
+    h.inserts = 0
+  })
+
+  it('refuses a cookie-only GET with 405 and issues nothing, so a cross-site link cannot retire tokens', async () => {
+    const res = await GET(new Request('http://x/api/sms/setup-token'))
+    expect(res.status).toBe(405)
+    expect(res.headers.get('allow')).toBe('POST')
+    expect(h.inserts).toBe(0)
+  })
+
+  it('still issues on a Bearer GET, which installed native builds send', async () => {
+    const res = await GET(new Request('http://x/api/sms/setup-token', { headers: { authorization: 'Bearer jwt' } }))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('cache-control')).toBe('no-store')
+    expect(h.inserts).toBe(1)
   })
 })
 

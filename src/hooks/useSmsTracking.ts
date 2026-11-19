@@ -103,7 +103,7 @@ export function useSmsTracking() {
     if (!isEnabled) return
 
     const fetchTokenOnMount = async () => {
-      const res = await apiFetchAuth('/api/sms/setup-token')
+      const res = await apiFetchAuth('/api/sms/setup-token', { method: 'POST' })
       if (res.ok) {
         const data = await res.json() as TokenInfo
         setTokenInfo(data)
@@ -195,7 +195,7 @@ export function useSmsTracking() {
           // Arm only if the token actually lands — mirror the Android guard, so a
           // failed fetch never flips the switch green over an absent/stale token.
           const uid = await currentUserId()
-          const res = await apiFetchAuth('/api/sms/setup-token')
+          const res = await apiFetchAuth('/api/sms/setup-token', { method: 'POST' })
           if (!res.ok || !uid) {
             setError('SMS tracking failed to start. Please check your connection and try again.')
             return
@@ -234,7 +234,7 @@ export function useSmsTracking() {
     setLoading(true)
     try {
       const uid = await currentUserId()
-      const res = await apiFetchAuth('/api/sms/setup-token')
+      const res = await apiFetchAuth('/api/sms/setup-token', { method: 'POST' })
       if (res.ok && uid) {
         const data = await res.json() as TokenInfo
         setTokenInfo(data)
@@ -252,7 +252,7 @@ export function useSmsTracking() {
 
   const fetchToken = useCallback(async () => {
     const uid = await currentUserId()
-    const res = await apiFetchAuth('/api/sms/setup-token')
+    const res = await apiFetchAuth('/api/sms/setup-token', { method: 'POST' })
     if (res.ok) {
       const data = await res.json() as TokenInfo
       setTokenInfo(data)

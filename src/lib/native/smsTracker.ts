@@ -220,6 +220,7 @@ export async function ensureIngestToken(accessToken: string, userId: string): Pr
       // ingest token to THIS device (per-device rotation/revocation). The explicit
       // Authorization wins over the session lookup inside buildAuthHeaders.
       const res = await apiFetchAuth('/api/sms/setup-token', {
+        method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (res.ok) {

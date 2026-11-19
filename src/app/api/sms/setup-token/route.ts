@@ -1,11 +1,13 @@
 /**
- * GET /api/sms/setup-token
+ * POST /api/sms/setup-token
  *
- * Returns the caller's active ingest token (creating one if it doesn't exist).
- * Used by the Settings page to populate the iOS Shortcut setup card and the
- * Android Bridge QR code.
+ * Issues the caller's ingest token. Used by the Settings page to populate the iOS Shortcut setup card and the
+ * Android Bridge QR code, and by the native shell to arm SMS capture.
  *
- * Auth: session cookie (user must be signed in).
+ * Auth: session cookie (web) or Bearer JWT (native).
+ * GET is kept only for a Bearer caller (installed native builds); a cookie-only GET answers 405, because Lax cookies
+ * ride a cross-site link and each issue retires the oldest device-less token (QA-102). Drop GET once the minimum app
+ * version is past the build that sends POST.
  */
 
 import { isRateLimited } from '@/lib/server/rateLimit'
@@ -40,7 +42,16 @@ async function deviceRefusal(service: ReturnType<typeof createServiceRoleClient>
   return null
 }
 
+const noStore = { 'Cache-Control': 'no-store' }
+
 export async function GET(request: Request) {
+  if (!/^Bearer\s/i.test(request.headers.get('authorization') ?? '')) {
+    return NextResponse.json({ error: 'Use POST' }, { status: 405, headers: { Allow: 'POST' } })
+  }
+  return POST(request)
+}
+
+export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
   if (outdated) return outdated
   const userId = await resolveActiveApiUserId(request)
@@ -75,7 +86,7 @@ export async function GET(request: Request) {
   await capActiveIngestTokens(serviceClient, userId, deviceId)
   await trimRetiredIngestTokens(serviceClient, userId)
 
-  return NextResponse.json({ token: fresh.token })
+  return NextResponse.json({ token: fresh.token }, { headers: noStore })
 }
 
 /** DELETE — rotates the token (deactivates current, issues new). */
@@ -123,5 +134,5 @@ export async function DELETE(request: Request) {
   }
   await trimRetiredIngestTokens(serviceClient, userId)
 
-  return NextResponse.json({ token: fresh.token, rotated: true })
+  return NextResponse.json({ token: fresh.token, rotated: true }, { headers: noStore })
 }
