@@ -98,6 +98,9 @@ describe('month-carry live run', () => {
     const vault = writesTo('savings_accounts', 'upsert')[0]?.row
     expect(vault?.name).toBe('Monthly Savings')
     expect(vault?.id).toBeTruthy()
+    // A soft-deleted system vault is revived (only that row, only while deleted), never deposited into while deleted (QA-108).
+    const revive = writesTo('savings_accounts', 'update').find((w) => (w.row as Record<string, unknown>).deleted_at === null)
+    expect(revive).toBeTruthy()
   })
 
   it('RPW-2: a null-figures cycle writes an empty summary and the newer cycles still run', async () => {

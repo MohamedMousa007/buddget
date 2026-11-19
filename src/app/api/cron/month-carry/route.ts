@@ -144,6 +144,8 @@ async function carryCycle(service: Service, s: UserSettingsRow, monthKey: string
         // The system vault has one id per user, the same one the client seeds: a race with the app converges on one row.
         pocketId = systemVaultId(userId)
         must(await service.from('savings_accounts').upsert({ ...row, id: pocketId }, { onConflict: 'id', ignoreDuplicates: true }), 'create vault')
+        // Duplicates are ignored so a live vault keeps its balance; a soft-deleted one must come back or the carry lands in a deleted pocket.
+        must(await service.from('savings_accounts').update({ deleted_at: null }).eq('id', pocketId).eq('user_id', userId).not('deleted_at', 'is', null), 'revive vault')
       } else {
         const { data: created } = must(await service.from('savings_accounts').insert(row).select('id').single(), 'create pocket')
         pocketId = created!.id as string
