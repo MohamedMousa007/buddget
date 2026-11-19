@@ -1544,6 +1544,7 @@ export interface Dictionary {
       monthHint: string
       monthEmpty: string
       moneyIn: string
+      received: string
       moneyOut: string
       saved: string
       pieTitle: string

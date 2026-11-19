@@ -1670,6 +1670,7 @@ export const ar: Dictionary = {
       monthHint: 'دخلك وإنفاقك وادخارك لكل شهر في نظرة واحدة.',
       monthEmpty: 'لا توجد بيانات بعد — أضف بعض المعاملات لترى اتجاهاتك',
       moneyIn: 'الداخل',
+      received: 'المستلم',
       moneyOut: 'الخارج',
       saved: 'المدّخر',
       pieTitle: 'أين يذهب المال',

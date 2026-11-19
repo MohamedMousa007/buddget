@@ -10,3 +10,14 @@ describe('axisTick', () => {
     expect(axisTick(-2000)).toBe('-2k')
   })
 })
+
+describe('chart animation honours reduced motion (QA-82)', () => {
+  it.each(['MonthlyChart.tsx', 'CategoryPieChart.tsx'])('%s passes isAnimationActive={!reduced}', async (f) => {
+    const { readFileSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    const src = readFileSync(join(__dirname, f), 'utf8')
+    expect(src).toContain('useReducedMotion()')
+    expect(src).not.toMatch(/isAnimationActive=\{(true|false)\}/)
+    expect(src).toContain('isAnimationActive={!reduced}')
+  })
+})

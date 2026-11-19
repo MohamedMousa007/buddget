@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { ChartDataTable } from '@/components/reports/ChartDataTable'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface MonthlyChartProps {
-  data: { month: string; income: number; expenses: number; savings: number }[]
+  data: { month: string; income: number; received: number; expenses: number; savings: number }[]
   currency: string
 }
 
@@ -21,6 +22,7 @@ export function axisTick(v: number): string {
 export function MonthlyChart({ data, currency }: MonthlyChartProps) {
   const t = useT()
   const c = t.reports.chart
+  const reduced = useReducedMotion()
   const [mounted, setMounted] = useState(false)
   const rafRef = useRef<number | undefined>(undefined)
   useEffect(() => {
@@ -71,17 +73,18 @@ export function MonthlyChart({ data, currency }: MonthlyChartProps) {
               <Legend
                 wrapperStyle={{ color: 'var(--color-brand-text-secondary)', fontSize: 12 }}
               />
-              <Bar dataKey="income" fill="var(--color-brand-green)" radius={[4, 4, 0, 0]} name={c.moneyIn} />
-              <Bar dataKey="expenses" fill="var(--color-brand-primary)" radius={[4, 4, 0, 0]} name={c.moneyOut} />
-              <Bar dataKey="savings" fill="var(--color-brand-gold)" radius={[4, 4, 0, 0]} name={c.saved} />
+              <Bar dataKey="income" fill="var(--color-brand-green)" fillOpacity={0.45} radius={[4, 4, 0, 0]} name={t.reports.kpiTotalInExpected} isAnimationActive={!reduced} />
+              <Bar dataKey="received" fill="var(--color-brand-green)" radius={[4, 4, 0, 0]} name={c.received} isAnimationActive={!reduced} />
+              <Bar dataKey="expenses" fill="var(--color-brand-primary)" radius={[4, 4, 0, 0]} name={c.moneyOut} isAnimationActive={!reduced} />
+              <Bar dataKey="savings" fill="var(--color-brand-gold)" radius={[4, 4, 0, 0]} name={c.saved} isAnimationActive={!reduced} />
             </BarChart>
             </ResponsiveContainer>
           ) : null}
         </div>
         <ChartDataTable
           caption={c.monthTitle}
-          headers={[c.monthColumn, c.moneyIn, c.moneyOut, c.saved]}
-          rows={data.map((d) => [d.month, formatCurrency(d.income, currency), formatCurrency(d.expenses, currency), formatCurrency(d.savings, currency)])}
+          headers={[c.monthColumn, t.reports.kpiTotalInExpected, c.received, c.moneyOut, c.saved]}
+          rows={data.map((d) => [d.month, formatCurrency(d.income, currency), formatCurrency(d.received, currency), formatCurrency(d.expenses, currency), formatCurrency(d.savings, currency)])}
         />
         </>
       )}

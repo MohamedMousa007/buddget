@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import { ChartDataTable } from '@/components/reports/ChartDataTable'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { formatCurrency } from '@/lib/utils/formatters'
@@ -24,6 +25,7 @@ export function foldTail(data: { name: string; value: number }[], otherName = 'O
 
 export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
   const c = useT().reports.chart
+  const reduced = useReducedMotion()
   const [mounted, setMounted] = useState(false)
   const rafRef = useRef<number | undefined>(undefined)
   useEffect(() => {
@@ -59,6 +61,7 @@ export function CategoryPieChart({ data, currency }: CategoryPieChartProps) {
                 outerRadius={100}
                 paddingAngle={2}
                 dataKey="value"
+                isAnimationActive={!reduced}
               >
                 {slices.map((d, index) => (
                   <Cell key={index} fill={d.folded ? OTHER_COLOR : COLORS[index]} />

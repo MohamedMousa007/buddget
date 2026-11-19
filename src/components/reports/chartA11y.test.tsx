@@ -17,11 +17,15 @@ const dom = (html: string) => new DOMParser().parseFromString(`<root>${html}</ro
 
 describe('A11-14 report charts have a name and a data table', () => {
   it('monthly chart: role=img with a summary, plus a table of every month', () => {
-    const doc = dom(renderToStaticMarkup(h(MonthlyChart, { currency: 'EGP', data: [{ month: 'Oct', income: 100, expenses: 40, savings: 10 }, { month: 'Nov', income: 90, expenses: 50, savings: 0 }] })))
+    const doc = dom(renderToStaticMarkup(h(MonthlyChart, { currency: 'EGP', data: [{ month: 'Oct', income: 100, received: 80, expenses: 40, savings: 10 }, { month: 'Nov', income: 90, received: 90, expenses: 50, savings: 0 }] })))
     const img = Array.from(doc.getElementsByTagName('div')).find((d) => d.getAttribute('role') === 'img')!
     expect(img.getAttribute('aria-label')).toBe(en.reports.chart.monthSummary(2))
     expect(doc.getElementsByTagName('tbody')[0].getElementsByTagName('tr').length).toBe(2)
-    expect(doc.getElementsByTagName('th').length).toBeGreaterThanOrEqual(4)
+    expect(doc.getElementsByTagName('th').length).toBeGreaterThanOrEqual(5)
+    const heads = Array.from(doc.getElementsByTagName('th')).map((x) => x.textContent)
+    expect(heads).toContain(en.reports.kpiTotalInExpected)
+    expect(heads).toContain(en.reports.chart.received)
+    expect(heads).not.toContain(en.reports.chart.moneyIn)
   })
   it('pie chart: role=img naming the largest slice, plus a table row per slice', () => {
     const doc = dom(renderToStaticMarkup(h(CategoryPieChart, { currency: 'EGP', data: [{ name: 'Food', value: 300 }, { name: 'Rent', value: 200 }] })))

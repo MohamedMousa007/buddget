@@ -114,6 +114,7 @@ export function useReportsPage() {
       return {
         month: formatLocalized(window.start, 'MMM yyyy', locale),
         income: incomeForCycle(cycle, false),
+        received: incomeForCycle(cycle, true),
         expenses: expSum,
         savings: cashSavingsDepositsInBaseForMonth(savingsTransactions, cycle, monthStartDay, baseCurrency, exchangeRates, gold),
       }

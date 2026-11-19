@@ -1661,6 +1661,7 @@ export const en: Dictionary = {
       monthHint: 'Your income, spending, and savings for each month at a glance.',
       monthEmpty: 'Nothing here yet — add some transactions to see your trends',
       moneyIn: 'Money in',
+      received: 'Received',
       moneyOut: 'Money out',
       saved: 'Saved',
       pieTitle: 'Where It Goes',
