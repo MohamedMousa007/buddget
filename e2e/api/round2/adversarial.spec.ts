@@ -135,7 +135,7 @@ test.describe('sessions and tokens', () => {
     expect((await rest(none, 'expenses?select=id&limit=1')).status).toBe(401)
   })
 
-  test('S8C-02 (fixed 0330): a revoked session fails on the app API routes too, not only on PostgREST', async ({ request }) => {
+  test('S8C-02 (fixed 0332): a revoked session fails on the app API routes too, not only on PostgREST', async ({ request }) => {
     const t = await signIn('A')
     await fetch(`${SB_URL}/auth/v1/logout?scope=local`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${t}` } })
     expect((await rest(t, 'expenses?select=id&limit=1')).status).toBe(401)
@@ -200,12 +200,12 @@ test.describe('inputs: NaN, Infinity, boundary dates', () => {
     }
   })
 
-  test('S8C-03 (fixed 0330): debts.amount refuses NaN', async () => {
+  test('S8C-03 (fixed 0332): debts.amount refuses NaN', async () => {
     const r = await rest(A, 'debts', { method: 'POST', body: JSON.stringify({ id: crypto.randomUUID(), user_id: USERS.A.id, name: 'qa s8c nan debt', amount: 'NaN', currency: 'EGP', direction: 'i_owe' }) })
     expect(r.status).toBe(400)
   })
 
-  test('S8C-04 (fixed 0330): expense and income dates far outside 2000..2099 are refused', async () => {
+  test('S8C-04 (fixed 0332): expense and income dates far outside 2000..2099 are refused', async () => {
     const r = await rest(A, 'expenses', { method: 'POST', body: JSON.stringify({ id: crypto.randomUUID(), user_id: USERS.A.id, amount: 1, currency: 'EGP', category: 'Food', description: 'qa s8c 2999', expense_date: '2999-01-01' }) })
     expect(code(r)).toBe('23514')
     const ok = await rest(A, 'expenses', { method: 'POST', body: JSON.stringify({ id: crypto.randomUUID(), user_id: USERS.A.id, amount: 1, currency: 'EGP', category: 'Food', description: 'qa s8c 2000', expense_date: '2000-01-01' }) })

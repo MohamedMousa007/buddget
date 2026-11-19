@@ -10,7 +10,7 @@ const user = async (tag: string) => { const u = await makeUser(tag); made.push(u
 test.afterAll(async () => { for (const u of made) await dropUser(u).catch(() => undefined) })
 
 const codeOf = async (u: QaUser) => (await rpc(u.token, 'referral_my_summary')).json.code as string
-// 0330: redeem goes through the app route (mailbox, address and rate limits are server-side).
+// 0332: redeem goes through the app route (mailbox, address and rate limits are server-side).
 const redeem = (u: QaUser, code: string, device?: string) => app('/api/referrals/redeem', { method: 'POST', token: u.token, body: JSON.stringify({ code, deviceId: device ?? null }) })
 /** The friend signs in on a phone: a native device row of their own (INVITE_ANTI_ABUSE: no inviter reward before that). */
 const native = async (u: QaUser, device = `qa-dev-${randomUUID()}`) => {
@@ -71,7 +71,7 @@ test('F4 double tap: 6 parallel redeems give one referral, one invite count and 
   expect((await svc(`referral_codes?user_id=eq.${inviter.id}&select=invited_count`)).json[0].invited_count).toBe(1)
   })
 
-test('F4b S8G-14 (fixed 0330) a double-tapped redeem answers the losing call with a clean status, not a 409', async () => {
+test('F4b S8G-14 (fixed 0332) a double-tapped redeem answers the losing call with a clean status, not a 409', async () => {
   // A race: one round in four shows it, so try up to six rounds of ten parallel taps.
   const inviter = await user('f4bi'); const code = await codeOf(inviter)
   const seen: number[] = []
@@ -111,7 +111,7 @@ test('F6 device guards: the inviter\'s own device is self_invite; a device that 
   expect((await refOf(f3)).status).toBe('rejected')
 })
 
-test('F7 S8G-05 (fixed 0330) web friends earn nothing until they sign in on a phone; one phone, two accounts, one reward', async () => {
+test('F7 S8G-05 (fixed 0332) web friends earn nothing until they sign in on a phone; one phone, two accounts, one reward', async () => {
   const inviter = await user('f7i'); const code = await codeOf(inviter)
   const statuses: string[] = []
   const friends: QaUser[] = []
@@ -164,7 +164,7 @@ test('F8 activation: 4 records or 1 day stays pending; 5 records on 3 days activ
   expect((await svc(`referral_codes?user_id=eq.${inviter.id}&select=activated_count,rewards_count`)).json[0]).toEqual({ activated_count: 1, rewards_count: 1 })
 })
 
-test('F8b S8G-13 (fixed 0330) parallel activation checks pay the inviter once (the friend on two devices, or the cron at the same time)', async () => {
+test('F8b S8G-13 (fixed 0332) parallel activation checks pay the inviter once (the friend on two devices, or the cron at the same time)', async () => {
   const inviter = await user('f8bi'); const code = await codeOf(inviter)
   const f = await user('f8bf'); await redeem(f, code); await native(f)
   await activity(f, 5, 3)
@@ -226,7 +226,7 @@ test('F12 clawback: the friend deletes their account within 30 days -> the invit
   await svc(`referrals?id=eq.${refId}`, { method: 'DELETE' })
 })
 
-test('F13 S8G-06 (fixed 0330) the same person (same mailbox) is not counted again after deleting a pending friend account', async () => {
+test('F13 S8G-06 (fixed 0332) the same person (same mailbox) is not counted again after deleting a pending friend account', async () => {
   const inviter = await user('f13i'); const code = await codeOf(inviter)
   const f = await user('f13f'); await redeem(f, code)
   await fetch(`${SB_URL}/auth/v1/admin/users/${f.id}`, { method: 'DELETE', headers: svcHeaders() })
@@ -252,7 +252,7 @@ test('F14 the Invite page shows a friend by first name only, never their email o
   expect((await rpc(other.token, 'referral_my_summary')).json.friends).toEqual([])
 })
 
-test('F15 network review signals: a third friend of one inviter from the same /24 is held for review until staff approve (0331)', async () => {
+test('F15 network review signals: a third friend of one inviter from the same /24 is held for review until staff approve (0333)', async () => {
   const inviter = await user('f15i'); const code = await codeOf(inviter)
   const viaIp = (u: QaUser, ip: string) => svcRpc('referral_redeem', { p_user: u.id, p_code: code, p_ip: ip, p_mailbox_key: `${u.id}@qa.test` })
   const a = await user('f15a'); expect((await viaIp(a, '41.33.10.7')).json.status).toBe('ok')

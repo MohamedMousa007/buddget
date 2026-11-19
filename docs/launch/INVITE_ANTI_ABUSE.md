@@ -1,6 +1,6 @@
 # Invite a friend: anti-abuse design (S8G-05, S8G-06)
 
-Owner decision, 2026-11-19: invite anti-abuse goes to an industry-standard, secure level. This file is the design. Migration 0330, `POST /api/referrals/redeem` and `src/lib/referrals/` build it. The rules users see are unchanged: friend +7 trial days, inviter one Pro week or 500 Sparks, 4 per month and 12 per year.
+Owner decision, 2026-11-19: invite anti-abuse goes to an industry-standard, secure level. This file is the design. Migration 0332, `POST /api/referrals/redeem` and `src/lib/referrals/` build it. The rules users see are unchanged: friend +7 trial days, inviter one Pro week or 500 Sparks, 4 per month and 12 per year.
 
 ## Threats
 
@@ -13,7 +13,7 @@ Owner decision, 2026-11-19: invite anti-abuse goes to an industry-standard, secu
 | Unverified sign-ups | Could redeem | Redeem needs a confirmed email (`unverified`), like the trial |
 | Code guessing, scripted redeems | No limit | 20 redeems per user per 10 min, 300 per network per hour (429, the app retries later) |
 | Inviter's own second phone or account | Rejected only when the device id matched | Rejected when any of the friend's devices is one of the inviter's (`self_device`) |
-| Inviter farms from one place (same Wi-Fi, same flat) | Not seen | A third friend of one inviter from the same network within 30 days (0331; two on one carrier range or campus Wi-Fi are normal), or a friend on the inviter's own network, is held for manual review |
+| Inviter farms from one place (same Wi-Fi, same flat) | Not seen | A third friend of one inviter from the same network within 30 days (0333; two on one carrier range or campus Wi-Fi are normal), or a friend on the inviter's own network, is held for manual review |
 | Parallel double taps (S8G-14) and parallel checks (S8G-13) | 409s; double payment | Per-user lock, `unique_violation` answered as `already_redeemed`; evaluation locks rows `FOR UPDATE SKIP LOCKED` and re-checks status |
 
 ## Rules, in the order they run

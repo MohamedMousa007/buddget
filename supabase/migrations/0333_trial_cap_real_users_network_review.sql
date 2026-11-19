@@ -1,4 +1,4 @@
--- Round 2 runner fixes for 0330.
+-- Round 2 runner fixes for 0332.
 -- 1. Trial daily cap counts only real, live accounts: a claim whose account was deleted (user_id set null) or whose
 --    address is on the reserved .test domain (QA accounts, RFC 2606; no real mailbox can confirm one) no longer
 --    takes a slot. The claim row stays, so the mailbox still cannot claim twice. Bounded by trial_claims_day_idx

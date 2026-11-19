@@ -6,7 +6,7 @@ import { account, freeFounderNumber, PRO_ACTIVE, PRO_LAPSED, rpc, setEntitlement
 
 const main = (page: import('@playwright/test').Page) => page.locator('main')
 
-test('J1 S8G-02 (fixed 0330) a brand-new account sees its Silver card on Rewards, not "Rewards are resting"', async ({ page, qa }) => {
+test('J1 S8G-02 (fixed 0332) a brand-new account sees its Silver card on Rewards, not "Rewards are resting"', async ({ page, qa }) => {
   const u = await qa('j1')
   await signInUi(page, u.email)
   await openLoaded(page, '/settings/rewards')
@@ -131,7 +131,7 @@ test('J8 S8G-07 a 500 (or offline) on /api/entitlements/me shows a message and a
   await expect(main(page).getByRole('button', { name: /try again|retry/i })).toBeVisible()
 })
 
-test('J9 S8G-03 (fixed 0330) a lapsed Pro member who never had a trial stays lapsed when opening the app (no new-member trial)', async ({ page, qa }) => {
+test('J9 S8G-03 (fixed 0332) a lapsed Pro member who never had a trial stays lapsed when opening the app (no new-member trial)', async ({ page, qa }) => {
   const u = await qa('j9')
   await setEntitlement(u.id, PRO_LAPSED())
   await signInUi(page, u.email)

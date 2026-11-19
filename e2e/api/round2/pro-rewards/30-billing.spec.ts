@@ -166,7 +166,7 @@ test.describe('trial', () => {
     expect((await app('/api/entitlements/trial', { method: 'POST', token: u.token })).json.status).toBe('already_entitled')
   })
 
-  test('X5 S8G-03 (fixed 0330) a lapsed store member, or an account with a past Pro purchase, cannot take the new-member trial', async () => {
+  test('X5 S8G-03 (fixed 0332) a lapsed store member, or an account with a past Pro purchase, cannot take the new-member trial', async () => {
     const u = await user('x5')
     await setEntitlement(u.id, { ...PRO_LAPSED(), source: 'apple' })
     const r = await app('/api/entitlements/trial', { method: 'POST', token: u.token })
@@ -210,7 +210,7 @@ test.describe('stay offer, paywall view, seen resets', () => {
     expect((await app('/api/billing/stay-offer', { token: u.token })).json.eligible).toBe(false)
   })
 
-  test('O3 S8G-04 (fixed 0330) a stay-offer POST with no purchase behind it keeps the once-only offer', async () => {
+  test('O3 S8G-04 (fixed 0332) a stay-offer POST with no purchase behind it keeps the once-only offer', async () => {
     const u = await user('o3')
     await setEntitlement(u.id, PRO_ACTIVE())
     await app('/api/billing/stay-offer', { method: 'POST', token: u.token })
@@ -231,7 +231,7 @@ test.describe('stay offer, paywall view, seen resets', () => {
 })
 
 test.describe('/api/entitlements/me by state', () => {
-  test('M0 S8G-02 (fixed 0330) a brand-new account starts at Silver (spec: "Everyone starts here")', async () => {
+  test('M0 S8G-02 (fixed 0332) a brand-new account starts at Silver (spec: "Everyone starts here")', async () => {
     const u = await user('m0')
     const me = (await app('/api/entitlements/me', { token: u.token })).json
     expect(me.rewards.tier?.key).toBe('silver')
