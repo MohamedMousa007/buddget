@@ -12,6 +12,7 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Gate: `npm run verify` must pass before pushing to dev/main and before any native build (lint, types, tests in Cairo with coverage floor and New York, migration check, dependency audit, production build with dummy Supabase env). Lint errors in `src/` block commit; warnings are fine.
 - Plus a diff audit for correctness bugs before every push.
 - GitHub Actions is not relied on.
+- `e2e/` (Playwright journeys and API specs) is test-only: excluded from `tsconfig.json`, so it never affects type-checking or `npm run build`, and it needs `@playwright/test` only when someone runs those suites on purpose.
 - Parallel sessions can share this checkout: `git add` only your own paths, never `-A`.
 - After pushing, confirm it landed (`git log origin/main -1`). A denied push is the first line of the summary.
 
