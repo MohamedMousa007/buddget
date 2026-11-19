@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks -- Playwright fixtures call use() */
 // S8g browser fixture: a fresh synthetic user (qa-e2e-pr-*) per test, its state set with service-role writes to its own rows,
 // signed in through the UI. Deleted with the extra non-cascading rows afterwards (see e2e/api/round2/pro-rewards/lib.ts dropUser).
 import { test as base, expect, type Page } from '@playwright/test'

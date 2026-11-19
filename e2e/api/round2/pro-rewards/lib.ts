@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped PostgREST JSON */
 // S8g (QA round 2): Pro, Rewards, Invite and Founders. Synthetic users only (qa-e2e-pr-*@buddget-qa.test), created and
 // deleted here. Never logs tokens, keys, emails or UUIDs: everything printed goes through mask().
 import { createHmac, randomUUID } from 'node:crypto'
