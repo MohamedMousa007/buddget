@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSmsTransaction } from './dispatch'
 import type { SmsRowData } from './createSmsExpense'
+import { referenceHash } from './ownTransferDecision'
 
 /**
  * Account-to-account IPN transfer between the user's OWN two accounts (HSBC ••0001 → QNB
@@ -20,6 +21,7 @@ interface Log {
   id: string; kind: string; amount: number; raw_body: string; account_last4: string | null
   expense_id: string | null; income_id: string | null; paired: boolean
   device_id?: string | null; received_at?: string | null; counterparty_hash?: string | null; own_transfer_verdict?: string | null
+  reference_hash?: string | null
 }
 interface State {
   registeredLast4: string[]
@@ -35,8 +37,12 @@ function makeService(state: State) {
     const ref = (p.p_reference as string | null) ?? null
     const selfId = p.p_log_id as string
 
+    const windowMs = (p.p_window_seconds as number) * 1000
+    const at = Date.parse(p.p_received_at as string)
     const hit = state.logs.find((l) => {
       if (l.paired || l.id === selfId || !kinds.includes(l.kind)) return false
+      if (p.p_sibling_id && l.id !== p.p_sibling_id) return false
+      if (l.received_at && Math.abs(Date.parse(l.received_at) - at) > windowMs) return false
       if (ref) return l.raw_body.includes(ref)
       return l.amount === amount
     })
@@ -107,7 +113,11 @@ function makeService(state: State) {
       let cols = ''
       let excluded: string | null = null
       let unpairedOnly = false
+      let since: string | null = null
+      let until: string | null = null
       const c = chain({})
+      c.gte = (col: string, v: string) => { if (col === 'received_at') since = v; return c }
+      c.lte = (col: string, v: string) => { if (col === 'received_at') until = v; return c }
       c.select = (s: string) => { cols = s; return c }
       c.eq = (col: string, v: unknown) => { eqs[col] = v; return c }
       c.in = (_col: string, v: string[]) => { kinds = v; return c }
@@ -127,7 +137,9 @@ function makeService(state: State) {
       c.then = (r: (v: unknown) => unknown) => {
         const hits = state.logs.filter((l) =>
           (!kinds || kinds.includes(l.kind)) && l.id !== excluded && (!unpairedOnly || !l.paired) &&
-          (eqs.account_last4 === undefined || l.account_last4 === eqs.account_last4) && (eqs.amount === undefined || l.amount === eqs.amount))
+          (eqs.account_last4 === undefined || l.account_last4 === eqs.account_last4) && (eqs.amount === undefined || l.amount === eqs.amount) &&
+          (eqs.reference_hash === undefined || l.reference_hash === eqs.reference_hash) &&
+          (!l.received_at || ((!since || l.received_at >= since) && (!until || l.received_at <= until))))
         return r({
           data: cols.includes('device_id')
             ? hits.map((l) => ({ id: l.id, amount: l.amount, account_last4: l.account_last4, device_id: l.device_id ?? null, counterparty_hash: l.counterparty_hash ?? null, raw_body: l.raw_body, received_at: l.received_at ?? null, own_transfer_verdict: l.own_transfer_verdict ?? null }))
@@ -218,6 +230,29 @@ describe('IPN own-account transfer — reference match (1b)', () => {
     const b = await createSmsTransaction(svc, inLeg(), opts)
     expect(b.outcome).toBe('transfer_paired')
     expectSettledAsTransfer()
+  })
+})
+
+describe('QA-38: a shared reference widens the pairing window', () => {
+  const ref = referenceHash('u1', 'b3abc23b')
+  const late = (min: number) => new Date(Date.parse('2026-07-18T18:55:51Z') + min * 60_000).toISOString()
+
+  it('the outbound leg 6 minutes after the inbound one, same device and reference → one Transfer, no income', async () => {
+    const svc = makeService(state)
+    const a = await createSmsTransaction(svc, inLeg({ referenceHash: ref }), opts)
+    persist(state, inLeg({ referenceHash: ref }), a)
+    const b = await createSmsTransaction(svc, outLeg({ referenceHash: ref, receivedAtIso: late(6) }), opts)
+    expect(b.outcome).toBe('transfer_paired')
+    expectSettledAsTransfer()
+    // QA-48: one non-spend Transfer and no income row, so month spend and income are unchanged.
+  })
+
+  it('without a shared reference, 6 minutes apart stays income plus spend', async () => {
+    const svc = makeService(state)
+    const a = await createSmsTransaction(svc, inLeg({ rawBody: IN_REF.replace(' Ref# b3abc23b.', '') }), opts)
+    persist(state, inLeg({ rawBody: IN_REF.replace(' Ref# b3abc23b.', '') }), a)
+    await createSmsTransaction(svc, outLeg({ amount: 2000, rawBody: OUT_REF.replace(' with reference b3abc23b', ' with reference zz99zz99'), receivedAtIso: late(6) }), opts)
+    expectBothLegsStay()
   })
 })
 

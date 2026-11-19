@@ -21,6 +21,8 @@ import {
 } from '@/lib/payment/paymentMethodDefaults'
 
 export const PAIR_WINDOW_SECONDS = 300
+/** How far apart two legs sharing a payment reference may arrive (QA-38): a bank's second message can lag minutes. */
+export const REFERENCE_PAIR_WINDOW_SECONDS = 24 * 3600
 
 /**
  * True when the opposite leg of the same amount sits on the SAME account within the pass-through window: money that
@@ -84,27 +86,35 @@ export interface OwnTransferCandidate {
  */
 export async function findOwnTransferCandidate(
   service: ServiceClient,
-  p: { userId: string; logId: string; receivedAtIso: string; amount: number; kind: SmsExpenseKind; reference: string | null },
+  p: { userId: string; logId: string; receivedAtIso: string; amount: number; kind: SmsExpenseKind; reference: string | null; referenceHash?: string | null },
 ): Promise<OwnTransferCandidate | null> {
   const at = new Date(p.receivedAtIso).getTime()
   if (!Number.isFinite(at)) return null
-  try {
-    const { data } = await service
+  const read = (windowSeconds: number, byReferenceHash: string | null, limit: number) => {
+    let q = service
       .from('sms_parse_log')
       .select('id, amount, account_last4, device_id, counterparty_hash, raw_body, received_at, own_transfer_verdict')
       .eq('user_id', p.userId)
+    if (byReferenceHash) q = q.eq('reference_hash', byReferenceHash)
+    return q
       .eq('parsed_ok', true)
       .eq('is_duplicate', false)
       .is('paired_log_id', null)
       .in('kind', p.kind === 'instant_transfer_out' ? ['instant_transfer_in', 'own_transfer'] : ['instant_transfer_out', 'own_transfer'])
       .neq('id', p.logId)
-      .gte('received_at', new Date(at - PAIR_WINDOW_SECONDS * 1000).toISOString())
-      .lte('received_at', new Date(at + PAIR_WINDOW_SECONDS * 1000).toISOString())
-      .limit(20)
+      .gte('received_at', new Date(at - windowSeconds * 1000).toISOString())
+      .lte('received_at', new Date(at + windowSeconds * 1000).toISOString())
+      .limit(limit)
+  }
+  try {
+    let { data } = await read(PAIR_WINDOW_SECONDS, null, 20)
+    // Nothing inside the window: a leg sharing this payment reference may still be waiting, up to a day apart (QA-38).
+    const byHash = !data?.length && !!p.reference && !!p.referenceHash
+    if (byHash) ({ data } = await read(REFERENCE_PAIR_WINDOW_SECONDS, p.referenceHash!, 5))
     const rows = ((data ?? []) as Array<{ id: string; amount: number | null; account_last4: string | null; device_id: string | null; counterparty_hash: string | null; raw_body: string | null; received_at: string | null; own_transfer_verdict: string | null }>)
       // A pair the user already said no to is never offered again.
       .filter((r) => r.amount != null && r.own_transfer_verdict !== 'undone' && r.own_transfer_verdict !== 'declined')
-      .map((r) => ({ r, sameReference: !!p.reference && (r.raw_body ?? '').toLowerCase().includes(p.reference.toLowerCase()), gap: Math.abs(new Date(r.received_at ?? p.receivedAtIso).getTime() - at) }))
+      .map((r) => ({ r, sameReference: byHash || (!!p.reference && (r.raw_body ?? '').toLowerCase().includes(p.reference.toLowerCase())), gap: Math.abs(new Date(r.received_at ?? p.receivedAtIso).getTime() - at) }))
       .filter((c) => c.sameReference || Math.abs((c.r.amount as number) - p.amount) <= transferFeeTolerance(Math.max(c.r.amount as number, p.amount)))
       .sort((x, y) => Number(y.sameReference) - Number(x.sameReference) || x.gap - y.gap)
     const best = rows[0]
@@ -565,6 +575,8 @@ export async function tryPairLeg(
     referenceHash?: string | null
     /** Claim only this sibling: the one the caller read and decided on. */
     siblingId?: string
+    /** The claim's time window; wider only for a sibling found by its shared reference (QA-38). */
+    windowSeconds?: number
     /** The fee tolerance applies to the amounts: set only with `siblingId`, for a wallet top-up whose two legs the caller proved (migration 0277). */
     feeProven?: boolean
   },
@@ -587,7 +599,7 @@ export async function tryPairLeg(
     p_user_id: params.userId,
     p_log_id: params.logId,
     p_received_at: params.receivedAtIso,
-    p_window_seconds: PAIR_WINDOW_SECONDS,
+    p_window_seconds: params.windowSeconds ?? PAIR_WINDOW_SECONDS,
     p_amount: params.amount,
     p_require_equal_amount: requireEqual,
     p_match_kinds: matchKinds,

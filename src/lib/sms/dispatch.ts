@@ -52,6 +52,7 @@ import {
   claimSibling,
   unpairLegs,
   PAIR_WINDOW_SECONDS,
+  REFERENCE_PAIR_WINDOW_SECONDS,
   legDirectionOfKind,
   reconcileSibling,
   readCcPayoffFundingLeg,
@@ -451,7 +452,7 @@ export async function createSmsTransaction(
     // Two legs arriving together each look before the other has persisted anything: publish this leg first, and
     // look a second time after a short pause when the first look finds nothing.
     await publishTransferLeg(service, { logId: row.logId, kind, amount: row.amount, accountLast4: row.last4 ?? null, ...legFacts, legDirection })
-    const lookFor = { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, kind, reference }
+    const lookFor = { userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount, kind, reference, referenceHash: row.referenceHash ?? null }
     const candidate = (await findOwnTransferCandidate(service, lookFor)) ?? (await pauseForSibling().then(() => findOwnTransferCandidate(service, lookFor)))
     const mine = row.last4 ?? null
     const theirs = candidate?.accountLast4 ?? null
@@ -487,8 +488,9 @@ export async function createSmsTransaction(
         // Only the leg that was read and decided on may be claimed.
         siblingId: candidate.id,
         publishKind: kind,
-        // By reference when both legs carry it (the amounts may differ by the fee); otherwise the exact amount.
-        ...(candidate.sameReference && reference ? { kind, reference } : { kind: 'own_transfer' as const }),
+        // By reference when both legs carry it (the amounts may differ by the fee), in the reference's wider window;
+        // otherwise the exact amount.
+        ...(candidate.sameReference && reference ? { kind, reference, windowSeconds: REFERENCE_PAIR_WINDOW_SECONDS } : { kind: 'own_transfer' as const }),
       })
     }
 
