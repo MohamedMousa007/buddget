@@ -104,3 +104,6 @@ ios/App/App/GoogleService-Info.plist
 /public/worker-*.js
 /public/fallback-*.js
 /supabase/.temp/
+
+# /brag launch-video runs (brag-output/ and timestamped brag-output-*/)
+/brag-output*/
