@@ -45,6 +45,10 @@ describe('system Cash (SYSTEM_CASH_PLAN phase 1)', () => {
     expect(realCash()[0].openingBalance).toBe(750)
   })
 
+  it('matches the SQL derivation in migration 0329 (translate each hex digit to 15 minus it)', () => {
+    expect(systemCashId('0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0')).toBe('f0e1d2c3-b4a5-9687-7869-5a4b3c2d1e0f')
+  })
+
   it('the fixed id is a uuid and differs per user', () => {
     expect(systemCashId(USER)).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
     expect(systemCashId(USER)).not.toBe(systemCashId('11111111-2222-3333-4444-555555555555'))

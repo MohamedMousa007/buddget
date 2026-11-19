@@ -94,6 +94,19 @@ export default function AccountsPage() {
       onAddCard={() => setSheet({ kind: 'card', id: a.method.id })} />
   )
 
+  // Every user has a Cash; until it has a balance it waits here, on the empty page too (docs/SYSTEM_CASH_PLAN.md).
+  const cashRow = model.needsCash ? (
+          <button type="button" onClick={() => setSheet({ kind: 'add', cash: true })} data-raw-button-ok="a whole-row tap target, sized by its content"
+            className="flex min-h-[72px] w-full items-center gap-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 text-start">
+            <BrandMark name="Cash" color="var(--color-brand-sunken)" icon={createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true })} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-semibold text-[var(--color-brand-text-primary)]">{t.typeCash}</span>
+              <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.addBalanceToInclude}</span>
+            </span>
+            <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
+          </button>
+  ) : null
+
   if (model.accounts.length === 0) {
     return (
       <PageContainer>
@@ -102,6 +115,7 @@ export default function AccountsPage() {
             <Button size="cta-block" onClick={() => setSheet({ kind: 'found' })} className="font-semibold">{t.findMyAccounts}</Button>
             <Button variant="outline" size="cta-block" onClick={() => setSheet({ kind: 'add' })}>{t.addOneMyself}</Button>
           </div>} />
+        {cashRow}
         <DetectedAccountsSheet open={foundSheetOpen} onClose={close} onManual={() => setSheet({ kind: 'add' })} />
         <AddAccountSheet key={addKey} open={addOpen} prefill={accountPrefill ?? undefined} onClose={close} onAddCard={(id) => setSheet({ kind: 'card', id })} />
       </PageContainer>
@@ -134,17 +148,7 @@ export default function AccountsPage() {
             <Card padding="none" className="divide-y divide-[var(--color-brand-border)] overflow-hidden rounded-2xl">{wallets.map(renderRow)}</Card>
           </section>
         ) : null}
-        {model.needsCash ? (
-          <button type="button" onClick={() => setSheet({ kind: 'add', cash: true })} data-raw-button-ok="a whole-row tap target, sized by its content"
-            className="flex min-h-[72px] w-full items-center gap-3.5 rounded-2xl border border-[var(--color-brand-border)] bg-[var(--color-brand-card)] px-4 text-start">
-            <BrandMark name="Cash" color="var(--color-brand-sunken)" icon={createElement(paymentTypeIcon('cash'), { className: 'size-5', 'aria-hidden': true })} />
-            <span className="min-w-0 flex-1">
-              <span className="block text-base font-semibold text-[var(--color-brand-text-primary)]">{t.typeCash}</span>
-              <span className="block text-[0.8125rem] text-[var(--color-brand-text-muted)]">{t.addBalanceToInclude}</span>
-            </span>
-            <span className="text-sm font-semibold text-[var(--color-brand-primary-ink)]">{t.setBalance}</span>
-          </button>
-        ) : null}
+        {cashRow}
       </PageContainer>
 
       {open ? (

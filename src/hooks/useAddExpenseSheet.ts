@@ -8,6 +8,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { computeCreditCardOutstanding } from '@/lib/debt/computeCreditCardBalance'
 import { formatCurrency } from '@/lib/utils/formatters'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
+import { shouldAskCashOnHand } from '@/lib/accounts/cashOnHand'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import type { Currency, PaymentMethod, SpendExclusion } from '@/lib/store/types'
@@ -215,7 +216,8 @@ export function useAddExpenseSheet() {
 
     showToast(t.common.toastExpenseLogged)
     resetForm()
-    setActiveModal(null)
+    // The first cash expense asks once how much cash the user holds (docs/SYSTEM_CASH_PLAN.md).
+    setActiveModal(shouldAskCashOnHand(paymentMethods, paymentMethodId, useSettingsStore.getState().dismissedBanners) ? 'askCashOnHand' : null)
   }, [
     expensePrefill?.currency,
     splitError,

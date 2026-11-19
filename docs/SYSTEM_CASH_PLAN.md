@@ -40,10 +40,18 @@ The brief that every seat saw is the section "Facts" below. There were six indep
 5. Cash can never be closed or deleted (`removePaymentMethod` already refuses).
 6. The one user with two untracked Cash rows: the duplicate's rows are re-pointed to the oldest row and the duplicate is closed, in a migration file with the ids recorded.
 
-## Phase 2 (when every installed build is phase 1 or newer)
-Trigger: no device on a build older than phase 1 has synced for 30 days (check `user_devices`).
-- Backfill NULL to the user's system Cash id, in batches with a per-user balance check before and after.
-- Drop `pm_default_cash` from the store, the mappers and the pickers.
+## Owner follow-up (same day): testers' data changed now, and Cash asks once
+The owner ruled that every user is a tester, so their data can change now, and chose "ask once" over opt-in tracking.
+- **Migration 0329 (applied):** every user without an open Cash got the system Cash (the same id the app derives). 87 expenses and 4 recurring expenses that carried no method and that the app reads as Cash moved onto it. Result: 55 of 55 users have exactly one open Cash, the 5 tracked balances are untouched, and per-user expense counts and totals are unchanged (checked inside the migration).
+- **Kept as they are, on purpose:**
+  - 214 expenses from bank SMS that named no account. They are "Unassigned", not Cash.
+  - 91 income events and 4 debt payments with no method. The engine reads those as "no account", and moving them would add money to Cash that may never have been cash.
+- **Ask once:** after the first expense paid with an untracked Cash, a sheet asks "How much cash do you have right now?" (Save / Not now). It is never asked again (`dismissBanner('cash-on-hand-ask')`; Settings > restore dismissed prompts brings it back). An answer starts Cash's balance as an estimate.
+- **Cash always visible:** the Accounts page shows the Cash "Set balance" row on its empty state too.
+
+## Still to do (phase 3)
+- Drop `pm_default_cash` from the store, the mappers and the pickers once no device runs an older build. New rows already carry the real id; older builds still write NULL, which the app reads as Cash.
+- An occasional "Still about X?" nudge for a tracked Cash, reusing Update balance. Not built yet.
 
 ## Not covered
 - A second Cash in another currency (USD cash). `ensureCashAccount` always returns the one Cash. That limitation predates this change.
