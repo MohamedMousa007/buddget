@@ -4,6 +4,7 @@
  * whose destination is the credited one. The credited account is never booked as the account the money left.
  */
 import type { MoneyDirection } from './directionGuard'
+import { tryConvertCurrency } from '@/lib/utils/currency'
 
 export type FxLegAction =
   /** No row exists yet: post it, with this message's account in the named role. */
@@ -18,4 +19,22 @@ export type FxLegAction =
 export function fxLegAction(direction: MoneyDirection | null, siblingHasRow: boolean): FxLegAction {
   const side = direction === 'credit' ? 'destination' : 'source'
   return siblingHasRow ? { type: 'complete', set: side } : { type: 'post', role: side }
+}
+
+/** How far the two legs of one exchange may sit from the reference rate (bank spread plus the rate's age). */
+export const FX_PAIR_RATE_MARGIN = 0.03
+
+export interface FxLegFacts { amount: number; currency: string | null; last4: string | null }
+
+/**
+ * True when two opposite legs can be one exchange: they name different accounts, and one amount converted at the
+ * reference rate lands within FX_PAIR_RATE_MARGIN of the other. With no rate for the two currencies the amounts
+ * cannot be judged and the pair stands, as before (QA-37).
+ */
+export function fxLegsAgree(a: FxLegFacts, b: FxLegFacts, rates: Record<string, number>): boolean {
+  if (a.last4 && b.last4 && a.last4 === b.last4) return false
+  if (!a.currency || !b.currency || !(b.amount > 0)) return true
+  const converted = tryConvertCurrency(a.amount, a.currency, b.currency, rates)
+  if (converted == null) return true
+  return Math.abs(converted - b.amount) / b.amount <= FX_PAIR_RATE_MARGIN
 }

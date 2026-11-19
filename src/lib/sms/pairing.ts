@@ -20,7 +20,7 @@ import {
   resolvePaymentBrandKey,
 } from '@/lib/payment/paymentMethodDefaults'
 
-const PAIR_WINDOW_SECONDS = 300
+export const PAIR_WINDOW_SECONDS = 300
 
 /**
  * True when the opposite leg of the same amount sits on the SAME account within the pass-through window: money that

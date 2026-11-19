@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createSmsTransaction, type SmsTxResult } from './dispatch'
 import { detectLegDirection } from './directionGuard'
-import { fxLegAction } from './fxEvent'
+import { fxLegAction, fxLegsAgree } from './fxEvent'
 import type { SmsRowData } from './createSmsExpense'
 
 /**
@@ -33,6 +33,7 @@ function makeService() {
     const dir = (p.p_direction as string | undefined) ?? null
     const cur = (p.p_currency as string | undefined) ?? null
     const candidates = logs
+      .filter((l) => !p.p_sibling_id || l.id === p.p_sibling_id)
       .filter((l) => l.id !== self.id && !l.paired && l.parsed_ok && l.kind === 'currency_exchange'
         && dir && l.leg_direction && l.leg_direction !== dir && cur && l.currency && l.currency !== cur)
       .sort((a, b) => Math.abs(a.received - self.received) - Math.abs(b.received - self.received))
@@ -43,17 +44,29 @@ function makeService() {
     return { data: [{ sibling_id: hit.id, sibling_kind: hit.kind, sibling_expense_id: `exp-${hit.id}`, sibling_income_id: null, sibling_status: 'logged' }], error: null }
   })
   const from = (table: string) => {
+    let idEq: string | null = null
+    const eqs: Record<string, string> = {}
+    let neqId: string | null = null
     const c: Record<string, unknown> = {
-      select: () => c, eq: () => c, neq: () => c, in: () => c, is: () => c, not: () => c, gte: () => c, lte: () => c, order: () => c, limit: () => c,
-      maybeSingle: () => Promise.resolve({ data: null, error: null }),
-      then: (r: (v: unknown) => unknown) => r({ data: table === 'payment_methods' ? methods : [], error: null }),
+      select: () => c, eq: (col: string, v: string) => { if (col === 'id') idEq = v; eqs[col] = v; return c }, neq: (_c: string, v: string) => { neqId = v; return c }, in: () => c, is: () => c, not: () => c, gte: () => c, lte: () => c, order: () => c, limit: () => c,
+      maybeSingle: () => Promise.resolve({ data: table === 'sms_parse_log' && idEq ? logs.find((l) => l.id === idEq) ?? null : null, error: null }),
+      then: (r: (v: unknown) => unknown) => r({
+        data: table === 'payment_methods'
+          ? methods
+          : table === 'sms_parse_log'
+            ? logs
+                .filter((l) => l.id !== neqId && !l.paired && l.parsed_ok && (!eqs.kind || l.kind === eqs.kind) && (!eqs.leg_direction || l.leg_direction === eqs.leg_direction))
+                .map((l) => ({ ...l, received_at: new Date(Date.UTC(2026, 6, 18, 12, 0, l.received)).toISOString() }))
+            : [],
+        error: null,
+      }),
       insert: (row: Record<string, unknown>) => {
         if (table === 'expenses') { expenses++; inserted.push(row) }
         return { select: () => ({ single: () => Promise.resolve({ data: { id: `e${expenses}` }, error: null }) }), then: (r: (v: unknown) => unknown) => r({ data: null, error: null }) }
       },
       update: (patch: Record<string, unknown>) => ({
         eq: (_c: string, id: string) => {
-          if (table === 'sms_parse_log') Object.assign(logs.find((l) => l.id === id) ?? {}, patch)
+          if (table === 'sms_parse_log') Object.assign(logs.find((l) => l.id === id) ?? {}, patch, 'paired_log_id' in patch ? { paired: patch.paired_log_id !== null } : {})
           if (table === 'expenses') patched.push({ id, patch })
           return Promise.resolve({ error: null, data: null })
         },
@@ -89,7 +102,8 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers() })
 
 async function arrive(svc: SupabaseClient, row: SmsRowData): Promise<SmsTxResult> {
-  const p = createSmsTransaction(svc, row, { exchangeRates: {} })
+  // The synthetic legs below convert at 48 EGP per USD; the amounts must agree at the rate given (QA-37).
+  const p = createSmsTransaction(svc, row, { exchangeRates: { USD_EGP: 48 } })
   await vi.advanceTimersByTimeAsync(1000)
   return p
 }
@@ -195,5 +209,61 @@ describe('fxLegAction', () => {
   it('only completes the row the other leg posted', () => {
     expect(fxLegAction('credit', true)).toEqual({ type: 'complete', set: 'destination' })
     expect(fxLegAction('debit', true)).toEqual({ type: 'complete', set: 'source' })
+  })
+})
+
+// QA-37: the two real HSBC own-account USD→EGP pairs (docs/qa/SMS_REAL_SAMPLES.md section C).
+describe('HSBC own-account FX pairs (QA-37)', () => {
+  const HSBC = (body: string) => `From HSBC: ${body} Your available balance is EGP 1.00`
+  const USD = { id: 'usd', name: 'HSBC Egypt USD', last4: '0110', last4_aliases: [] }
+  const EGP = { id: 'egp', name: 'HSBC Egypt EGP', last4: '0001', last4_aliases: [] }
+  const rates = { USD_EGP: 53.1 }
+  const hsbcLeg = (id: string, body: string, amount: number, currency: string, at: number, last4: string) =>
+    ({ ...leg(id, HSBC(body), amount, currency, at), last4, bankName: 'HSBC Egypt' })
+  const arriveAt = async (svc: SupabaseClient, row: SmsRowData) => {
+    const p = createSmsTransaction(svc, row, { exchangeRates: rates })
+    await vi.advanceTimersByTimeAsync(1000)
+    return p
+  }
+  beforeEach(() => { methods = [USD, EGP] })
+
+  it('pair 1 (credit first, 61 s): one exchange row, both accounts set, both legs carry the category', async () => {
+    const svc = makeService()
+    const c = await arriveAt(svc, hsbcLeg('c1', '05NOV26 Phone Banking Transfer to 103-104***-001 EGP 28,705.71+', 28705.71, 'EGP', 0, '001'))
+    const d = await arriveAt(svc, hsbcLeg('d1', '05NOV26 Phone Banking Transfer from 103-104***-110 USD 532.87-', 532.87, 'USD', 61, '110'))
+    expect([c.outcome, d.outcome]).toEqual(['transfer_single', 'transfer_paired'])
+    expect([c.category, d.category]).toEqual(['Currency Exchange', 'Currency Exchange'])
+    expect(inserted).toHaveLength(1)
+    expect({ ...inserted[0], ...patched[0]?.patch }).toMatchObject({ payment_method_id: 'usd', to_payment_method_id: 'egp', amount: 532.87, currency: 'USD' })
+  })
+
+  it('pair 2 (debit first, 7 s) pairs too', async () => {
+    const svc = makeService()
+    await arriveAt(svc, hsbcLeg('d1', '10NOV26 Phone Banking Transfer from 103-104***-110 USD 567.07-', 567.07, 'USD', 0, '110'))
+    const c = await arriveAt(svc, hsbcLeg('c1', '10NOV26 Phone Banking Transfer to 103-104***-001 EGP 30,196.48+', 30196.48, 'EGP', 7, '001'))
+    expect(c.outcome).toBe('transfer_paired')
+    expect(inserted).toHaveLength(1)
+  })
+
+  it('amounts outside the rate margin do not pair: the claim is released and each leg stands alone', async () => {
+    const svc = makeService()
+    await arriveAt(svc, hsbcLeg('d1', '05NOV26 Phone Banking Transfer from 103-104***-110 USD 532.87-', 532.87, 'USD', 0, '110'))
+    const c = await arriveAt(svc, hsbcLeg('c1', '10NOV26 Phone Banking Transfer to 103-104***-001 EGP 30,196.48+', 30196.48, 'EGP', 7, '001'))
+    expect(c.outcome).toBe('transfer_single')
+    expect(inserted).toHaveLength(2)
+    expect(logs.find((l) => l.id === 'd1')?.paired).toBe(false)
+  })
+})
+
+describe('fxLegsAgree', () => {
+  const r = { USD_EGP: 53.1 }
+  it('accepts the real pairs within 3 % of the rate, refuses a mismatch and the same account', () => {
+    expect(fxLegsAgree({ amount: 532.87, currency: 'USD', last4: '110' }, { amount: 28705.71, currency: 'EGP', last4: '001' }, r)).toBe(true)
+    expect(fxLegsAgree({ amount: 30196.48, currency: 'EGP', last4: '001' }, { amount: 567.07, currency: 'USD', last4: '110' }, r)).toBe(true)
+    expect(fxLegsAgree({ amount: 532.87, currency: 'USD', last4: null }, { amount: 30196.48, currency: 'EGP', last4: null }, r)).toBe(false)
+    expect(fxLegsAgree({ amount: 532.87, currency: 'USD', last4: '001' }, { amount: 28705.71, currency: 'EGP', last4: '001' }, r)).toBe(false)
+  })
+  it('keeps the pair when no rate is known for the currencies', () => {
+    expect(fxLegsAgree({ amount: 100, currency: 'JPY', last4: null }, { amount: 4800, currency: 'EGP', last4: null }, {})).toBe(true)
   })
 })

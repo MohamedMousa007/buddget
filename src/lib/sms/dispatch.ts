@@ -51,6 +51,7 @@ import {
   tryPairLeg,
   claimSibling,
   unpairLegs,
+  PAIR_WINDOW_SECONDS,
   legDirectionOfKind,
   reconcileSibling,
   readCcPayoffFundingLeg,
@@ -63,7 +64,7 @@ import { NO_OWN_ACCOUNT, oneLegTails, readOwnAccount } from './ownAccounts'
 import { loadedTheCard, plainKindForModelOwnTransfer, plainKindForModelRepayment } from './kindProvenance'
 import { detectLegDirection, guardDirection, type MoneyDirection } from './directionGuard'
 import { cashDepositVerdict } from './cashDeposit'
-import { fxLegAction } from './fxEvent'
+import { fxLegAction, fxLegsAgree } from './fxEvent'
 import { decideOwnTransfer } from './ownTransferDecision'
 import { namesUnregisteredWallet } from './walletBrand'
 import { isDeclineMessage, findDeclineTwin, findRefundOriginal, adoptEarlierUnmatchedRefund } from './refundMatch'
@@ -508,7 +509,7 @@ export async function createSmsTransaction(
   //     destination, whichever message arrives first; the credit leg never books the account the money left.
   if (kind === 'currency_exchange') {
     const direction = detectLegDirection(normalizeDigits(row.rawBody))
-    const sibling = row.logId && row.receivedAtIso
+    let sibling = row.logId && row.receivedAtIso
       ? await claimSibling(service, {
           userId: row.userId,
           logId: row.logId,
@@ -522,10 +523,26 @@ export async function createSmsTransaction(
           direction,
         })
       : null
+    // The claim knows direction and currency only; the amounts must also agree at the day's rate (QA-37). The nearest
+    // leg in time can belong to another exchange: release it and claim the leg that does agree, if one is waiting.
+    if (sibling && row.logId && row.receivedAtIso) {
+      const rates = await fxRates(service, opts.exchangeRates)
+      if (!(await fxSiblingAgrees(service, row, sibling.siblingId, rates))) {
+        await unpairLegs(service, row.logId, sibling.siblingId)
+        const agreeing = await findAgreeingFxLeg(service, row, direction, rates)
+        sibling = agreeing
+          ? await claimSibling(service, {
+              userId: row.userId, logId: row.logId, receivedAtIso: row.receivedAtIso, amount: row.amount,
+              accountLast4: row.last4 ?? null, ...legFacts, currency: row.currency, kind, direction, siblingId: agreeing,
+            })
+          : null
+      }
+    }
     const action = fxLegAction(direction, !!sibling?.siblingExpenseId)
     if (sibling?.siblingExpenseId && action.type === 'complete') {
       await completeFxEvent(service, row, sibling.siblingExpenseId, action.set)
-      return base('transfer_paired', kind)
+      // Both legs' log rows carry the category, not only the one that posted the row.
+      return { ...base('transfer_paired', kind), category: 'Currency Exchange' }
     }
     // A sibling that was booked as income is retracted; this leg then posts the one row.
     const retracted = sibling && row.logId ? (await reconcileSibling(service, sibling, row.logId)).needsPost : false
@@ -820,4 +837,55 @@ export async function createSmsTransaction(
     linkedSubscriptionId,
     error: res.error,
   }
+}
+
+/** The caller's rates, with USD/EGP replaced by the live official rate the price cron stores when it has one. */
+async function fxRates(service: ServiceClient, exchangeRates: Record<string, number>): Promise<Record<string, number>> {
+  const { data } = await service.from('asset_prices').select('price').eq('symbol', 'OFFICIAL_USD').eq('currency', 'EGP').maybeSingle()
+  const live = Number(data?.price)
+  return Number.isFinite(live) && live > 0 ? { ...exchangeRates, USD_EGP: live } : exchangeRates
+}
+
+const fxFacts = (r: { amount: unknown; currency: unknown; account_last4: unknown }) => ({
+  amount: Number(r.amount),
+  currency: (r.currency as string | null) ?? null,
+  last4: (r.account_last4 as string | null) ?? null,
+})
+
+/** Reads the claimed sibling leg and checks the two legs are one exchange. A missing row leaves the pair standing. */
+async function fxSiblingAgrees(service: ServiceClient, row: SmsRowData, siblingId: string, rates: Record<string, number>): Promise<boolean> {
+  const { data: other } = await service.from('sms_parse_log').select('amount, currency, account_last4').eq('id', siblingId).maybeSingle()
+  if (!other) return true
+  return fxLegsAgree({ amount: row.amount, currency: row.currency, last4: row.last4 ?? null }, fxFacts(other), rates)
+}
+
+/**
+ * The unpaired opposite leg within the pairing window whose amount agrees at the rate, nearest in time first.
+ * ponytail: reads at most 10 legs in the pairing window; a user converts a handful of times a day at most.
+ */
+async function findAgreeingFxLeg(
+  service: ServiceClient,
+  row: SmsRowData,
+  direction: string | null,
+  rates: Record<string, number>,
+): Promise<string | null> {
+  if (!direction || !row.logId || !row.receivedAtIso) return null
+  const at = new Date(row.receivedAtIso).getTime()
+  const { data } = await service
+    .from('sms_parse_log')
+    .select('id, amount, currency, account_last4, received_at')
+    .eq('user_id', row.userId)
+    .eq('kind', 'currency_exchange')
+    .eq('leg_direction', direction === 'credit' ? 'debit' : 'credit')
+    .is('paired_log_id', null)
+    .neq('id', row.logId)
+    .gte('received_at', new Date(at - PAIR_WINDOW_SECONDS * 1000).toISOString())
+    .lte('received_at', new Date(at + PAIR_WINDOW_SECONDS * 1000).toISOString())
+    .limit(10)
+  const self = { amount: row.amount, currency: row.currency, last4: row.last4 ?? null }
+  const hit = ((data ?? []) as Array<{ id: string; amount: unknown; currency: unknown; account_last4: unknown; received_at: string }>)
+    .filter((r) => r.currency && self.currency && String(r.currency).toUpperCase() !== self.currency.toUpperCase())
+    .filter((r) => fxLegsAgree(self, fxFacts(r), rates))
+    .sort((a, b) => Math.abs(new Date(a.received_at).getTime() - at) - Math.abs(new Date(b.received_at).getTime() - at))[0]
+  return hit?.id ?? null
 }
