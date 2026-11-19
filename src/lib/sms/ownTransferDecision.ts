@@ -53,7 +53,8 @@ export function ownTransferSignals(f: PairFacts): OwnTransferSignal[] {
 }
 
 /**
- * Strong (the pair on one device plus a decisive signal) settles. Any signal short of that asks the user once.
+ * Strong (the pair on one device plus a decisive signal, or a remembered "both mine" for the two accounts) settles.
+ * Any signal short of that asks the user once.
  * No signal, the same account on both legs, or an earlier "no" does nothing, except that an earlier "no" for a pair
  * whose legs share a payment reference asks again (a shared reference is strong evidence the answer was about
  * another transfer).
@@ -63,6 +64,9 @@ export function decideOwnTransfer(f: PairFacts): { verdict: OwnTransferVerdict; 
   if (f.answered === false) return f.sameReference ? { verdict: 'ask', signals: ownTransferSignals(f) } : { verdict: 'none', signals: [] }
   const signals = ownTransferSignals(f)
   if (signals.includes('device') && signals.some((s) => DECISIVE.has(s))) return { verdict: 'settle', signals }
+  // The user already said these two accounts are both theirs: a later pair between them settles without asking again,
+  // even across two phones, when the amounts match as the device pair requires (QA-34).
+  if (f.answered === true && f.differentAccounts && (f.amountsEqual || (f.withinFee && f.sameReference))) return { verdict: 'settle', signals }
   // A pair that only "looks close" (similar amounts, no shared device, no other signal) is a coincidence until shown otherwise.
   return { verdict: signals.length > 0 ? 'ask' : 'none', signals }
 }

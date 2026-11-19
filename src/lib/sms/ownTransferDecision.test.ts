@@ -36,6 +36,16 @@ describe('decideOwnTransfer', () => {
     expect(ownTransferSignals(facts({ amountsEqual: false, withinFee: false, sameReference: true }))).not.toContain('device')
   })
 
+  it('QA-34: an earlier "both mine" for these two accounts settles a pair seen on two phones', () => {
+    expect(decideOwnTransfer(facts({ sameDevice: false, answered: true })).verdict).toBe('settle')
+    expect(decideOwnTransfer(facts({ sameDevice: false, answered: true, amountsEqual: false, sameReference: true })).verdict).toBe('settle')
+  })
+
+  it('QA-34: the remembered answer still needs two different accounts and matching amounts', () => {
+    expect(decideOwnTransfer(facts({ sameDevice: false, answered: true, differentAccounts: false })).verdict).toBe('ask')
+    expect(decideOwnTransfer(facts({ sameDevice: false, answered: true, amountsEqual: false })).verdict).toBe('ask')
+  })
+
   it('does nothing with no signal at all', () => {
     expect(decideOwnTransfer(facts({ sameDevice: false }))).toEqual({ verdict: 'none', signals: [] })
   })
