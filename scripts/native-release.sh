@@ -31,7 +31,8 @@ sentry-cli releases list >/dev/null 2>&1 || { echo "sentry-cli cannot reach Sent
 # The build must be what is on GitHub: nothing uncommitted, nothing unpushed.
 if [ -n "$(git status --porcelain)" ]; then echo "Working tree is not clean. Commit or stash first." >&2; exit 1; fi
 git fetch -q origin main
-git merge-base --is-ancestor HEAD origin/main || { echo "origin/main does not contain HEAD ($(git rev-parse --short HEAD)). Push to dev and main first." >&2; exit 1; }
+git merge-base --is-ancestor HEAD origin/main || { echo "origin/main does not contain HEAD ($(git rev-parse --short HEAD)). Merge its PR into main first." >&2; exit 1; }
+command -v gh >/dev/null || { echo "gh (GitHub CLI) is missing: it opens the version bump PR." >&2; exit 1; }
 
 IOS_CUR=$(grep -m1 -oE "CURRENT_PROJECT_VERSION = [0-9]+;" "$PBX" | grep -oE "[0-9]+")
 IOS_NEW=$((IOS_CUR + 1))
@@ -85,9 +86,14 @@ BUMPED=0
 git commit -q -m "chore(release): iOS ${IOS_NEW}, Android vc${AND_NEW} (local)
 
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
-git push -q origin "HEAD:dev"
-git push -q origin "HEAD:main"
+# Never push to dev or main: the bump goes on its own branch and into a PR the user merges.
+BRANCH="claude/release-ios${IOS_NEW}-vc${AND_NEW}"
+git push -q origin "HEAD:refs/heads/${BRANCH}"
+PR_URL="$(gh pr create --base main --head "$BRANCH" --title "chore(release): iOS ${IOS_NEW}, Android vc${AND_NEW}" \
+  --body "Version bumps from a local native release (iOS build ${IOS_NEW}, Android vc${AND_NEW}).")" \
+  || PR_URL="(PR not opened: run gh pr create --base main --head ${BRANCH})"
 
 echo
 echo "iOS build ${IOS_NEW} uploaded to TestFlight (processing takes a few minutes in App Store Connect)."
 echo "Android vc${AND_NEW} (debug-signed build): ${LINK}"
+echo "Version bump PR: ${PR_URL}"

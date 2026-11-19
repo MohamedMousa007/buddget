@@ -1,4 +1,4 @@
-{
+﻿{
   "extraKnownMarketplaces": {
     "neonwatty-qa": {
       "source": {
@@ -29,8 +29,63 @@
     "discernment-nudge@anthropic-agent-skills": true
   },
   "permissions": {
-    "allow": [
+    "deny": [
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push * dev)",
+      "Bash(git push * dev *)",
+      "Bash(git push * *:main)",
+      "Bash(git push * *:main *)",
+      "Bash(git push * *:dev)",
+      "Bash(git push * *:dev *)",
+      "Bash(git push * *:refs/heads/main*)",
+      "Bash(git push * *:refs/heads/dev*)",
+      "Bash(git push -f*)",
+      "Bash(git push --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push * --force*)",
+      "Bash(gh pr merge*)",
+      "PowerShell(git push * main)",
+      "PowerShell(git push * main *)",
+      "PowerShell(git push * dev)",
+      "PowerShell(git push * dev *)",
+      "PowerShell(git push * *:main)",
+      "PowerShell(git push * *:main *)",
+      "PowerShell(git push * *:dev)",
+      "PowerShell(git push * *:dev *)",
+      "PowerShell(git push * *:refs/heads/main*)",
+      "PowerShell(git push * *:refs/heads/dev*)",
+      "PowerShell(git push -f*)",
+      "PowerShell(git push --force*)",
+      "PowerShell(git push * -f*)",
+      "PowerShell(git push * --force*)",
+      "PowerShell(gh pr merge*)"
+    ],
+    "ask": [
       "mcp__Supabase__execute_sql",
+      "mcp__Supabase__apply_migration",
+      "mcp__Supabase__deploy_edge_function",
+      "mcp__Supabase__create_edge_function_secret",
+      "mcp__Supabase__create_branch",
+      "mcp__Supabase__delete_branch",
+      "mcp__Supabase__merge_branch",
+      "mcp__Supabase__reset_branch",
+      "mcp__Supabase__rebase_branch",
+      "mcp__Supabase__pause_project",
+      "mcp__Supabase__restore_project",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__execute_sql",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__apply_migration",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__deploy_edge_function",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__create_edge_function_secret",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__create_branch",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__delete_branch",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__merge_branch",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__reset_branch",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__rebase_branch",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__pause_project",
+      "mcp__8091367c-4b89-49d7-bb2e-1a800eca19fe__restore_project"
+    ],
+    "allow": [
       "mcp__Supabase__list_tables",
       "mcp__Supabase__list_migrations",
       "mcp__Supabase__list_extensions",
