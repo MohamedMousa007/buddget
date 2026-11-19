@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useNavPath } from '@/lib/navigation/navStore'
-import { MAIN_ID, documentTitleFor, shouldMoveFocus } from './routeAnnounce'
+import { useT } from '@/lib/i18n'
+import { sectionTitleNavKey } from '@/lib/navigation/bottomNavConfig'
+import { MAIN_ID, documentTitleFor, headingFor, shouldMoveFocus } from './routeAnnounce'
 
 /**
  * The in-memory view shell swaps whole screens without a page load, so the browser never updates the
@@ -11,6 +13,11 @@ import { MAIN_ID, documentTitleFor, shouldMoveFocus } from './routeAnnounce'
  */
 export function RouteAnnouncer() {
   const path = useNavPath()
+  const t = useT()
+  const navKey = sectionTitleNavKey(path)
+  const sectionTitle = navKey ? t.nav[navKey] : null
+  const sectionTitleRef = useRef(sectionTitle)
+  sectionTitleRef.current = sectionTitle
   const first = useRef(true)
   const [message, setMessage] = useState('')
 
@@ -20,7 +27,7 @@ export function RouteAnnouncer() {
     // Wait a tick so the new view's heading is mounted.
     const id = window.setTimeout(() => {
       const main = document.getElementById(MAIN_ID)
-      const heading = main?.querySelector('h1')?.textContent ?? null
+      const heading = headingFor(main?.querySelector('h1')?.textContent, sectionTitleRef.current)
       document.title = documentTitleFor(heading)
       if (initial) return
       setMessage(heading ?? '')
@@ -30,6 +37,10 @@ export function RouteAnnouncer() {
     }, 80)
     return () => window.clearTimeout(id)
   }, [path])
+
+  useEffect(() => {
+    document.title = documentTitleFor(headingFor(document.getElementById(MAIN_ID)?.querySelector('h1')?.textContent, sectionTitle))
+  }, [sectionTitle])
 
   return <div role="status" aria-live="polite" className="sr-only">{message}</div>
 }

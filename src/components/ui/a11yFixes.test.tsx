@@ -10,7 +10,7 @@ import { AuthOtpRow } from '@/components/features/auth-modal/AuthOtpRow'
 import { ColorSwatchRow } from './ColorSwatchRow'
 import { SegmentedControl } from './SegmentedControl'
 import { nextSegmentIndex } from './segmentedNav'
-import { documentTitleFor, shouldMoveFocus } from '@/components/layout/routeAnnounce'
+import { documentTitleFor, headingFor, shouldMoveFocus } from '@/components/layout/routeAnnounce'
 import { RouteAnnouncer } from '@/components/layout/RouteAnnouncer'
 import { SkipLink } from '@/components/layout/SkipLink'
 
@@ -131,6 +131,11 @@ describe('A11-7 route announcements and skip link', () => {
     expect(documentTitleFor('Flow')).toBe('Flow · buddget')
     expect(documentTitleFor('  Net   worth ')).toBe('Net worth · buddget')
     expect(documentTitleFor(null)).toBe('buddget')
+    // QA-45: a main tab has no heading inside <main>; the shell's section title names it.
+    expect(documentTitleFor(headingFor(null, 'Debts'))).toBe('Debts · buddget')
+    expect(headingFor('', 'Debts')).toBe('Debts')
+    expect(headingFor('Rent plan', 'Budget')).toBe('Rent plan')
+    expect(headingFor(null, null)).toBeNull()
     expect(documentTitleFor('')).toBe('buddget')
   })
 
