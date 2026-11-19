@@ -12,7 +12,19 @@ vi.mock('@/lib/supabase/service', () => ({
     rpc: h.rpc,
     from: () => ({
       select: () => ({ eq: () => Object.assign(Promise.resolve({ data: [], error: null }), { maybeSingle: async () => ({ data: h.sourceRow, error: null }) }) }),
-      update: (row: Record<string, unknown>) => ({ eq: (_c: string, user: string) => ({ is: async (col: string, v: null) => { h.stamp(row, user, col, v); return { error: null } } }) }),
+      update: (row: Record<string, unknown>) => ({
+        eq: (_c: string, user: string) => ({
+          is: (col: string, v: null) => {
+            let claim: string[] | null = null
+            const q = {
+              gte: (_k: string, a: string) => { claim = [a]; return q },
+              lte: (_k: string, b: string) => { claim?.push(b); return q },
+              then: (done: (r: { error: null }) => unknown) => { h.stamp(...(claim ? [row, user, col, v, claim] : [row, user, col, v])); return Promise.resolve({ error: null }).then(done) },
+            }
+            return q
+          },
+        }),
+      }),
     }),
   }),
 }))
@@ -76,12 +88,14 @@ describe('POST /api/billing/revenuecat', () => {
     expect(args.p_effect.sparks).toMatchObject({ action: 'open', ref: 'store:monthly' })
   })
 
-  it('stamps the stay offer redemption once, only when the event carries a stay offer', async () => {
+  it('S8G-04 spends the stay offer only on a purchase: one naming the offer, or one within an hour of the app\'s claim', async () => {
+    const row = { stay_offer_redeemed_at: new Date(NOW).toISOString() }
     await post(purchase)
-    expect(h.stamp).not.toHaveBeenCalled()
+    expect(h.stamp).toHaveBeenCalledWith(row, USER, 'stay_offer_redeemed_at', null, [new Date(NOW - 3_600_000).toISOString(), new Date(NOW + 3_600_000).toISOString()])
+    h.stamp.mockClear()
     await post({ ...purchase, id: 'e9', type: 'RENEWAL', offer_code: 'stay30_2m' })
     expect(h.stamp).toHaveBeenCalledTimes(1)
-    expect(h.stamp).toHaveBeenCalledWith({ stay_offer_redeemed_at: new Date(NOW).toISOString() }, USER, 'stay_offer_redeemed_at', null)
+    expect(h.stamp).toHaveBeenCalledWith(row, USER, 'stay_offer_redeemed_at', null)
   })
 
   it('answers 200 to a replayed event and to a stale one, so the sender stops retrying', async () => {

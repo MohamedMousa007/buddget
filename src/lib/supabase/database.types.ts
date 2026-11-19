@@ -3721,6 +3721,7 @@ export type Database = {
           code: string
           created_at: string
           invited_count: number
+          owner_net: string | null
           rewards_count: number
           user_id: string
         }
@@ -3729,6 +3730,7 @@ export type Database = {
           code: string
           created_at?: string
           invited_count?: number
+          owner_net?: string | null
           rewards_count?: number
           user_id: string
         }
@@ -3737,6 +3739,7 @@ export type Database = {
           code?: string
           created_at?: string
           invited_count?: number
+          owner_net?: string | null
           rewards_count?: number
           user_id?: string
         }
@@ -3753,8 +3756,11 @@ export type Database = {
           id: number
           invitee_created_at: string
           invitee_id: string | null
+          invitee_mailbox: string | null
+          invitee_net: string | null
           inviter_id: string | null
           reason: string | null
+          review_signals: string[] | null
           reward_kind: string | null
           rewarded_at: string | null
           status: string
@@ -3771,8 +3777,11 @@ export type Database = {
           id?: never
           invitee_created_at: string
           invitee_id?: string | null
+          invitee_mailbox?: string | null
+          invitee_net?: string | null
           inviter_id?: string | null
           reason?: string | null
+          review_signals?: string[] | null
           reward_kind?: string | null
           rewarded_at?: string | null
           status?: string
@@ -3789,8 +3798,11 @@ export type Database = {
           id?: never
           invitee_created_at?: string
           invitee_id?: string | null
+          invitee_mailbox?: string | null
+          invitee_net?: string | null
           inviter_id?: string | null
           reason?: string | null
+          review_signals?: string[] | null
           reward_kind?: string | null
           rewarded_at?: string | null
           status?: string
@@ -5704,6 +5716,7 @@ export type Database = {
           product_id: string | null
           source: string
           status: string
+          stay_offer_claimed_at: string | null
           stay_offer_redeemed_at: string | null
           store: string | null
           store_country: string | null
@@ -5727,6 +5740,7 @@ export type Database = {
           product_id?: string | null
           source?: string
           status?: string
+          stay_offer_claimed_at?: string | null
           stay_offer_redeemed_at?: string | null
           store?: string | null
           store_country?: string | null
@@ -5750,6 +5764,7 @@ export type Database = {
           product_id?: string | null
           source?: string
           status?: string
+          stay_offer_claimed_at?: string | null
           stay_offer_redeemed_at?: string | null
           store?: string | null
           store_country?: string | null
@@ -6541,7 +6556,7 @@ export type Database = {
         }
         Returns: number
       }
-      loyalty_close_periods: { Args: never; Returns: number }
+      loyalty_close_periods: { Args: { p_user?: string }; Returns: number }
       loyalty_credits: {
         Args: never
         Returns: {
@@ -6563,7 +6578,7 @@ export type Database = {
         Returns: number
       }
       loyalty_founder_bar: {
-        Args: never
+        Args: { p_users: string[] }
         Returns: {
           action_days: number
           qualified_at: string
@@ -6683,7 +6698,14 @@ export type Database = {
       }
       referral_my_summary: { Args: never; Returns: Json }
       referral_redeem: {
-        Args: { p_code: string; p_device_id?: string }
+        Args: {
+          p_code: string
+          p_device_id?: string
+          p_ip?: string
+          p_legacy_key?: string
+          p_mailbox_key?: string
+          p_user: string
+        }
         Returns: Json
       }
       referral_reward: {
@@ -6721,6 +6743,7 @@ export type Database = {
         Args: { p_amr: Json; p_session: string; p_user: string }
         Returns: boolean
       }
+      session_is_live: { Args: { p_session: string }; Returns: boolean }
       site_stat_bump: {
         Args: {
           p_event: string
@@ -6921,10 +6944,8 @@ export type Database = {
         Args: { p_legacy: string; p_user_id: string }
         Returns: string
       }
-      stay_offer_state: {
-        Args: { p_user: string }
-        Returns: Json
-      }
+      stay_offer_claim: { Args: { p_user: string }; Returns: Json }
+      stay_offer_state: { Args: { p_user: string }; Returns: Json }
       support_submit: {
         Args: {
           p_area: string

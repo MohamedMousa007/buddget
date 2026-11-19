@@ -8,6 +8,8 @@ export const runtime = 'nodejs'
 const FOREIGN_KEY_VIOLATION = '23503'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const reply = (outcome: string) => NextResponse.json({ ok: true, outcome })
+const STAY_PURCHASE_TYPES = new Set(['INITIAL_PURCHASE', 'RENEWAL', 'PRODUCT_CHANGE'])
+const STAY_CLAIM_WINDOW_MS = 3_600_000
 
 /**
  * RevenueCat webhook (S5c items 13 and 14). Service role only; no user session. Order of work: verify both the
@@ -67,9 +69,16 @@ export async function POST(request: Request) {
     console.error('[billing] apply failed', ev.id, ev.type, error.message)
     return NextResponse.json({ error: 'apply_failed' }, { status: 500 })
   }
-  if (effect.stayOffer) {
-    // One stay offer per account per lifetime: the first stamp wins; a replayed event changes nothing.
-    const { error: stampError } = await service.from('user_entitlements').update({ stay_offer_redeemed_at: new Date(ev.eventMs).toISOString() }).eq('user_id', effect.userId).is('stay_offer_redeemed_at', null)
+  // One stay offer per account per lifetime: the first stamp wins; a replayed event changes nothing. Spent when the event names
+  // the offer, or when it is a purchase within an hour of the app saying it bought the offer (S8G-04, stay_offer_claim).
+  const stamp = () => service.from('user_entitlements').update({ stay_offer_redeemed_at: new Date(ev.eventMs).toISOString() }).eq('user_id', effect.userId).is('stay_offer_redeemed_at', null)
+  const stayStamp = effect.stayOffer
+    ? stamp()
+    : STAY_PURCHASE_TYPES.has(ev.type)
+      ? stamp().gte('stay_offer_claimed_at', new Date(ev.eventMs - STAY_CLAIM_WINDOW_MS).toISOString()).lte('stay_offer_claimed_at', new Date(ev.eventMs + STAY_CLAIM_WINDOW_MS).toISOString())
+      : null
+  if (stayStamp) {
+    const { error: stampError } = await stayStamp
     if (stampError) console.error('[billing] stay offer stamp failed', ev.id, ev.type, stampError.message)
   }
   return reply(String(data))

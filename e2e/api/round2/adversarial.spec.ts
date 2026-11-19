@@ -135,13 +135,15 @@ test.describe('sessions and tokens', () => {
     expect((await rest(none, 'expenses?select=id&limit=1')).status).toBe(401)
   })
 
-  test('S8C-02: a revoked session still passes the app API routes that verify locally', async ({ request }) => {
+  test('S8C-02 (fixed 0330): a revoked session fails on the app API routes too, not only on PostgREST', async ({ request }) => {
     const t = await signIn('A')
     await fetch(`${SB_URL}/auth/v1/logout?scope=local`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: `Bearer ${t}` } })
     expect((await rest(t, 'expenses?select=id&limit=1')).status).toBe(401)
-    // Write routes that resolve the active account ask Auth for the user, not the session.
-    test.fail(true, 'S8C-02: resolveActiveApiUserId checks the user, not auth.sessions; the revoked session can still mint an SMS ingest token')
+    // Every app route checks the JWT's session is still live (session_is_live), reads and writes alike.
     expect((await request.post('/api/sms/setup-token', { headers: auth(t), data: {} })).status()).toBe(401)
+    expect((await request.post('/api/entitlements/trial', { headers: auth(t) })).status()).toBe(401)
+    expect((await request.post('/api/billing/paywall-view', { headers: auth(t), data: {} })).status()).toBe(401)
+    expect((await request.get('/api/notifications', { headers: auth(t) })).status()).toBe(401)
   })
 
   test('SMS ingest token: garbage refused, valid token accepted, revoked token refused', async ({ request }) => {
@@ -198,16 +200,18 @@ test.describe('inputs: NaN, Infinity, boundary dates', () => {
     }
   })
 
-  test('S8C-03: debts.amount refuses NaN', async () => {
-    test.fail(true, 'S8C-03: debts has no NaN/range CHECK (0323 covered five tables)')
+  test('S8C-03 (fixed 0330): debts.amount refuses NaN', async () => {
     const r = await rest(A, 'debts', { method: 'POST', body: JSON.stringify({ id: crypto.randomUUID(), user_id: USERS.A.id, name: 'qa s8c nan debt', amount: 'NaN', currency: 'EGP', direction: 'i_owe' }) })
     expect(r.status).toBe(400)
   })
 
-  test('S8C-04: expense and income dates far outside 2000..2099 are refused', async () => {
-    test.fail(true, 'S8C-04: the QA-62 date bound covers savings_transactions only')
+  test('S8C-04 (fixed 0330): expense and income dates far outside 2000..2099 are refused', async () => {
     const r = await rest(A, 'expenses', { method: 'POST', body: JSON.stringify({ id: crypto.randomUUID(), user_id: USERS.A.id, amount: 1, currency: 'EGP', category: 'Food', description: 'qa s8c 2999', expense_date: '2999-01-01' }) })
     expect(code(r)).toBe('23514')
+    const ok = await rest(A, 'expenses', { method: 'POST', body: JSON.stringify({ id: crypto.randomUUID(), user_id: USERS.A.id, amount: 1, currency: 'EGP', category: 'Food', description: 'qa s8c 2000', expense_date: '2000-01-01' }) })
+    expect(ok.status).toBe(201)
+    const inc = await rest(A, 'income_events', { method: 'POST', body: JSON.stringify({ user_id: USERS.A.id, name: 'qa s8c 1900', amount: 1, currency: 'EGP', received_date: '1900-01-01' }) })
+    expect(code(inc)).toBe('23514')
   })
 
   test('savings/carry month keys: NaN and out-of-range are 4xx', async ({ request }) => {

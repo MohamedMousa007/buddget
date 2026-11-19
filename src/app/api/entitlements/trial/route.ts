@@ -1,5 +1,5 @@
-import { createHmac } from 'node:crypto'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
+import { mailboxKeyArgs } from '@/lib/billing/mailboxKey'
 import { NextResponse } from 'next/server'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
 import { normalizeEmailKey, type TrialStatus } from '@/lib/entitlements/trial'
@@ -26,12 +26,10 @@ export async function POST(request: Request) {
   const emailKey = normalizeEmailKey(user.email)
   if (!emailKey) return reply('invalid_email')
 
-  // QA-59: with the secret, the stored key is a keyed hash; the plain key is passed only so the database can find and
-  // convert the row it hashed without a key (migration 0324). Without the secret the database hashes it (SHA-256).
-  const secret = process.env.TRIAL_CLAIM_KEY_SECRET
-  const args = secret
-    ? { p_user: identity.id, p_email_key: createHmac('sha256', secret).update(emailKey).digest('hex'), p_legacy_key: emailKey }
-    : { p_user: identity.id, p_email_key: emailKey }
+  const mailbox = mailboxKeyArgs(emailKey)
+  const args = mailbox.legacy
+    ? { p_user: identity.id, p_email_key: mailbox.key, p_legacy_key: mailbox.legacy }
+    : { p_user: identity.id, p_email_key: mailbox.key }
   const { data, error } = await service.rpc('trial_claim', args)
   if (error || !data) {
     console.error('[trial] claim failed', error?.message)

@@ -107,8 +107,7 @@ test('QA-60: NaN and Infinity are refused on every money column', async () => {
   }
 })
 
-test('S8C-01 (QA-60 gap): payment_methods.opening_balance refuses NaN', async () => {
-  test.fail(true, 'S8C-01: payment_methods has no money CHECK; NaN is stored and served by sync_pull_v2')
+test('S8C-01 (QA-60 gap, fixed 0330): payment_methods.opening_balance refuses NaN', async () => {
   const r = await rest(A, 'payment_methods', { method: 'POST', body: JSON.stringify({ id: crypto.randomUUID(), user_id: USERS.A.id, name: 'qa nan pm', type: 'cash', currency: 'EGP', opening_balance: 'NaN' }) })
   expect(r.status).toBe(400)
 })

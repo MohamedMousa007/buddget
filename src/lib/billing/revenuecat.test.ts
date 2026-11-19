@@ -24,6 +24,14 @@ describe('parseEvent', () => {
   it('refuses a body with no type, id or timestamp', () => {
     for (const bad of [null, {}, { event: {} }, { event: { type: 'RENEWAL', id: 'e' } }, { event: { type: 'RENEWAL', event_timestamp_ms: 1 } }]) expect(parseEvent(bad)).toBeNull()
   })
+  it('S8G-09 refuses an overflowing price or timestamp (a 400, not a 500 that is retried for days)', () => {
+    const ok = { type: 'RENEWAL', id: 'e1', app_user_id: USER, event_timestamp_ms: T0, price_in_purchased_currency: 4.99 }
+    expect(parseEvent({ event: ok })).not.toBeNull()
+    expect(parseEvent({ event: { ...ok, price_in_purchased_currency: -4.99 } })).not.toBeNull()
+    for (const over of [{ price_in_purchased_currency: 1e30 }, { event_timestamp_ms: 1e20 }, { expiration_at_ms: 1e20 }, { purchased_at_ms: -1 }, { grace_period_expiration_at_ms: Date.UTC(2100, 0, 1) }, { expiration_at_ms: 'soon' }]) {
+      expect(parseEvent({ event: { ...ok, ...over } }), JSON.stringify(over)).toBeNull()
+    }
+  })
 })
 
 describe('first purchase and renewal', () => {

@@ -40,7 +40,8 @@ export function forgeSub(jwt, sub) {
   return `${h}.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.${s}`
 }
 
-const REDACT = [/eyJ[\w-]+\.[\w-]+\.[\w-]*/g, /[\w.+-]+@[\w-]+\.[\w.]+/g, /\b[0-9a-f]{32,}\b/g]
+// S8C-08: UUIDs too (SMS ingest tokens are UUIDs).
+const REDACT = [/eyJ[\w-]+\.[\w-]+\.[\w-]*/g, /[\w.+-]+@[\w-]+\.[\w.]+/g, /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, /\b[0-9a-f]{32,}\b/gi]
 export function redact(s) {
   let out = String(s)
   for (const re of REDACT) out = out.replace(re, '<redacted>')

@@ -92,12 +92,18 @@ const isPlus = (product: string | null): boolean => !!product && (product.starts
 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null)
+const MS_FIELDS = ['event_timestamp_ms', 'purchased_at_ms', 'expiration_at_ms', 'grace_period_expiration_at_ms'] as const
+const MAX_MS = Date.UTC(2100, 0, 1)
+const MAX_PRICE = 1e9
 const ids = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
 
 /** Reads the `event` object of a RevenueCat webhook body; null when it lacks a type, an id or a timestamp. */
 export function parseEvent(body: unknown): RcEvent | null {
   const e = (body as { event?: Record<string, unknown> } | null)?.event
   if (!e || typeof e !== 'object') return null
+  // S8G-09: a signed but absurd value would overflow the database and answer 500, which RevenueCat retries for days.
+  for (const k of MS_FIELDS) if (e[k] != null && !((num(e[k]) ?? -1) >= 0 && (num(e[k]) ?? 0) < MAX_MS)) return null
+  if (e.price_in_purchased_currency != null && !(Math.abs(num(e.price_in_purchased_currency) ?? Infinity) < MAX_PRICE)) return null
   const type = str(e.type)
   const id = str(e.id)
   const eventMs = num(e.event_timestamp_ms)

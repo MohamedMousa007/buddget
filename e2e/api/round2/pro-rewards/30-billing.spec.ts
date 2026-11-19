@@ -111,12 +111,11 @@ test.describe('RevenueCat webhook', () => {
   })
 
   test('H7 absurd but signed values answer 4xx, not a 500 that RevenueCat retries for days', async () => {
-    test.fail(true, 'S8G-09: an overflowing price or timestamp reaches billing_apply and answers 500')
     const u = await user('h7')
     const r1 = await rcPost(ev(u, { price_in_purchased_currency: 1e30 }))
     const r2 = await rcPost(ev(u, { event_timestamp_ms: 1e20 }))
-    expect(r1.status).toBeLessThan(500)
-    expect(r2.status).toBeLessThan(500)
+    expect(r1.status).toBe(400)
+    expect(r2.status).toBe(400)
   })
 })
 
@@ -167,12 +166,20 @@ test.describe('trial', () => {
     expect((await app('/api/entitlements/trial', { method: 'POST', token: u.token })).json.status).toBe('already_entitled')
   })
 
-  test('X5 S8G-03 a lapsed Pro member can still start the 30-day "new member" trial', async () => {
-    test.fail(true, 'S8G-03 open: trial_claim lets an account whose paid Pro expired take a first trial')
+  test('X5 S8G-03 (fixed 0330) a lapsed store member, or an account with a past Pro purchase, cannot take the new-member trial', async () => {
     const u = await user('x5')
     await setEntitlement(u.id, { ...PRO_LAPSED(), source: 'apple' })
     const r = await app('/api/entitlements/trial', { method: 'POST', token: u.token })
-    expect(r.json.status).not.toBe('granted')
+    expect(r.json.status).toBe('already_claimed')
+    // The plan row was later reset to Free, but the store purchase is on record.
+    const v = await user('x5b')
+    await setEntitlement(v.id, FREE())
+    await svc('billing_events', { method: 'POST', body: JSON.stringify({ provider: 'revenuecat', event_id: `qa-s8g-${randomUUID()}`, type: 'EXPIRATION', user_id: v.id, product_id: 'pro_monthly', event_at: new Date(Date.now() - 40 * 86_400_000).toISOString(), outcome: 'applied' }) })
+    expect((await app('/api/entitlements/trial', { method: 'POST', token: v.token })).json.status).toBe('already_claimed')
+    // A Sparks pack buyer was never a member: still offered the trial.
+    const w = await user('x5c')
+    await svc('billing_events', { method: 'POST', body: JSON.stringify({ provider: 'revenuecat', event_id: `qa-s8g-${randomUUID()}`, type: 'NON_RENEWING_PURCHASE', user_id: w.id, product_id: 'sparks_650', event_at: new Date().toISOString(), outcome: 'applied' }) })
+    expect((await app('/api/entitlements/trial', { method: 'POST', token: w.token })).json.status).toBe('granted')
   })
 })
 
@@ -189,6 +196,8 @@ test.describe('stay offer, paywall view, seen resets', () => {
     await setEntitlement(u.id, { ...PRO_ACTIVE(), source: 'promo' })
     expect((await app('/api/billing/stay-offer', { token: u.token })).json.eligible).toBe(false)
     await setEntitlement(u.id, PRO_ACTIVE())
+    // S8G-04: the claim spends the offer only next to a real store purchase.
+    await svc('billing_events', { method: 'POST', body: JSON.stringify({ provider: 'revenuecat', event_id: `qa-s8g-${randomUUID()}`, type: 'RENEWAL', user_id: u.id, product_id: 'pro_monthly', event_at: new Date().toISOString(), outcome: 'applied' }) })
     const stamps = await Promise.all([1, 2, 3].map(() => app('/api/billing/stay-offer', { method: 'POST', token: u.token })))
     expect(stamps.every((s) => s.json.ok)).toBe(true)
     expect((await app('/api/billing/stay-offer', { token: u.token })).json.eligible).toBe(false)
@@ -201,8 +210,7 @@ test.describe('stay offer, paywall view, seen resets', () => {
     expect((await app('/api/billing/stay-offer', { token: u.token })).json.eligible).toBe(false)
   })
 
-  test('O3 S8G-04 the stay-offer stamp needs no purchase: any member can burn their once-only offer with one POST', async () => {
-    test.fail(true, 'S8G-04 open: POST /api/billing/stay-offer stamps stay_offer_redeemed_at without checking a discounted purchase')
+  test('O3 S8G-04 (fixed 0330) a stay-offer POST with no purchase behind it keeps the once-only offer', async () => {
     const u = await user('o3')
     await setEntitlement(u.id, PRO_ACTIVE())
     await app('/api/billing/stay-offer', { method: 'POST', token: u.token })
@@ -223,8 +231,7 @@ test.describe('stay offer, paywall view, seen resets', () => {
 })
 
 test.describe('/api/entitlements/me by state', () => {
-  test('M0 S8G-02 a brand-new account starts at Silver (spec: "Everyone starts here")', async () => {
-    test.fail(true, 'S8G-02 open: accounts created after 0310 have no loyalty_accounts row, so rewards.tier is null until the first points')
+  test('M0 S8G-02 (fixed 0330) a brand-new account starts at Silver (spec: "Everyone starts here")', async () => {
     const u = await user('m0')
     const me = (await app('/api/entitlements/me', { token: u.token })).json
     expect(me.rewards.tier?.key).toBe('silver')

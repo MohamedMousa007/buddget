@@ -79,9 +79,25 @@ export async function verifyBearerJwt(bearer: string): Promise<RouteIdentity | n
 }
 
 /**
- * Who is calling, without asking the Auth server: the JWT's signature and expiry are checked locally against the
- * project's published signing key. Use it wherever only the id (and email) matter. Sensitive or admin-mutating
- * paths keep `resolveRouteUser`, which asks the Auth server and so also notices a revoked session at once.
+ * False only when the database says the JWT's Auth session is gone (signed out, device removed, password changed): the
+ * same `auth.sessions` lookup PostgREST runs per request (0325). Fails open on any error, like that gate.
+ */
+export async function sessionLive(sessionId: string | null): Promise<boolean> {
+  if (!sessionId) return true
+  try {
+    const { data, error } = await createServiceRoleClient().rpc('session_is_live', { p_session: sessionId })
+    return error ? true : data !== false
+  } catch {
+    return true
+  }
+}
+
+const live = async (identity: RouteIdentity | null): Promise<RouteIdentity | null> => (identity && (await sessionLive(identity.sessionId)) ? identity : null)
+
+/**
+ * Who is calling: the JWT's signature and expiry are checked locally against the project's published signing key, and
+ * its session must still exist (S8C-02: a revoked session was accepted until the JWT expired). Sensitive or
+ * admin-mutating paths keep `resolveRouteUser`, which asks the Auth server.
  */
 export async function resolveRouteIdentity(request: Request): Promise<RouteIdentity | null> {
   const auth = request.headers.get('authorization') ?? ''
@@ -89,12 +105,12 @@ export async function resolveRouteIdentity(request: Request): Promise<RouteIdent
   if (bearer) {
     if (!looksLikeJwt(bearer)) return null
     const id = await verifyBearerJwt(bearer)
-    if (id) return id
+    if (id) return live(id)
   }
   try {
     const supabase = await createServerSupabase()
     const { data } = await supabase.auth.getClaims()
-    return identityOf(data?.claims)
+    return live(identityOf(data?.claims))
   } catch {
     return null
   }

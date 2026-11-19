@@ -33,7 +33,6 @@ test('QA-53: a deleted account cannot create feedback, support, votes, tokens or
 })
 
 test('S8C-05: support/submit from a deleted account answers 4xx and stores nothing', async ({ request }) => {
-  test.fail(true, 'S8C-05: resolveApiUserId accepts the deleted JWT; support_submit then hits support_tickets_user_id_fkey and the route answers 500')
   const sup = await request.post('/api/support/submit', { headers: auth(C), data: { chosen: 'question', title: 'qa s8c deleted account' } })
   const orphan = (await serviceGet(`support_tickets?user_id=eq.${USERS.C.id}&select=number&limit=5`)).json as Array<{ number: number }>
   if (orphan.length) await serviceDelete(`support_tickets?user_id=eq.${USERS.C.id}`)

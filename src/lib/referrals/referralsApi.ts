@@ -1,3 +1,4 @@
+import { apiFetchAuth } from '@/lib/apiBase'
 import { createClient } from '@/lib/supabase/client'
 import type { ReferralStatus } from './rules'
 
@@ -27,7 +28,8 @@ export interface ReferralSummary {
   friends: ReferralFriend[]
 }
 
-export type RedeemStatus = 'ok' | 'disabled' | 'invalid_code' | 'self_invite' | 'account_too_old' | 'already_redeemed' | 'device_used' | 'error'
+export type RedeemStatus =
+  | 'ok' | 'disabled' | 'invalid_code' | 'self_invite' | 'account_too_old' | 'already_redeemed' | 'device_used' | 'unverified' | 'disposable_email' | 'error'
 
 /** The Invite page in one call. Null on any failure. */
 export async function fetchReferralSummary(): Promise<ReferralSummary | null> {
@@ -40,7 +42,11 @@ export async function fetchReferralSummary(): Promise<ReferralSummary | null> {
  * one. `trialExtended` is true when a running trial got its 7 extra days now; otherwise the trial claim adds them.
  */
 export async function redeemInviteCode(code: string, deviceId?: string | null): Promise<{ status: RedeemStatus; trialExtended?: boolean }> {
-  const { data, error } = await createClient().rpc('referral_redeem', { p_code: code, p_device_id: deviceId ?? undefined })
-  if (error || !data) return { status: 'error' }
-  return data as unknown as { status: RedeemStatus; trialExtended?: boolean }
+  try {
+    const res = await apiFetchAuth('/api/referrals/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, deviceId: deviceId ?? null }) })
+    if (!res.ok) return { status: 'error' }
+    return (await res.json()) as { status: RedeemStatus; trialExtended?: boolean }
+  } catch {
+    return { status: 'error' }
+  }
 }

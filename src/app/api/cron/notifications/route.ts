@@ -37,6 +37,41 @@ const PAGE = 500
 const CONCURRENCY = 8
 const PREFETCH = 96 // a multiple of CONCURRENCY, so each chunk starts on a batch boundary
 const TIME_BUDGET_MS = 48_000
+const BULK = 1000 // PostgREST answers at most this many rows (Supabase max-rows), so bulk reads page through it
+const IN_LIST = 100 // ids per `in (...)` filter, to keep each request URL short
+
+type Rows = Record<string, unknown>[]
+type Page = PromiseLike<{ data: unknown[] | null; error: unknown }>
+
+/** Every row of a bulk read, a page at a time (the read must order by a unique key). Stops at the first error. */
+async function allRows(read: (from: number, to: number) => Page): Promise<Rows> {
+  const out: Rows = []
+  for (let from = 0; ; from += BULK) {
+    const { data, error } = await read(from, from + BULK - 1)
+    if (error) {
+      console.error('[cron/notifications] bulk read failed', error instanceof Error ? error.message : error)
+      return out
+    }
+    out.push(...((data ?? []) as Rows))
+    if (!data || data.length < BULK) return out
+  }
+}
+
+/** `allRows` over an id list cut into URL-sized pieces. */
+async function allRowsIn(ids: string[], read: (part: string[], from: number, to: number) => Page): Promise<Rows> {
+  const parts: string[][] = []
+  for (let i = 0; i < ids.length; i += IN_LIST) parts.push(ids.slice(i, i + IN_LIST))
+  return (await Promise.all(parts.map((part) => allRows((from, to) => read(part, from, to))))).flat()
+}
+
+const groupBy = (rows: Rows, key: string) => {
+  const m = new Map<string, Rows>()
+  for (const r of rows) {
+    const k = r[key] as string
+    m.set(k, [...(m.get(k) ?? []), r])
+  }
+  return m
+}
 
 export async function GET(request: Request) {
   if (!isAuthorizedCron(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -69,35 +104,48 @@ export async function GET(request: Request) {
     }
     if (!settingsRows || settingsRows.length === 0) break
 
-    type Rows = Record<string, unknown>[]
-    const byUser = (rows: Rows | null) => {
-      const m = new Map<string, Rows>()
-      for (const r of rows ?? []) {
-        const k = r.user_id as string
-        m.set(k, [...(m.get(k) ?? []), r])
-      }
-      return m
-    }
-    // One query per table for a chunk of users instead of one per user.
-    let recurringBy = new Map<string, Rows>()
-    let debtsBy = new Map<string, Rows>()
-    let subsBy = new Map<string, Rows>()
+    // S8C-07: every read is one query per table for a chunk of users (paged and id-chunked), never one per user.
+    const none = () => new Map<string, Rows>()
+    let recurringBy = none()
+    let debtsBy = none()
+    let subsBy = none()
+    let subExpensesBy = none()
+    let goalsBy = none()
+    let runsByGoalId = none()
+    let summariesBy = none()
+    let accountsBy = none()
+    let depositsByAccount = none()
     const prefetch = async (rows: typeof settingsRows) => {
-      const ids = rows.filter((r) => r.is_candidate).map((r) => r.user_id)
+      const ids = rows.filter((r) => r.is_candidate).map((r) => r.user_id as string)
       if (ids.length === 0) {
-        recurringBy = new Map()
-        debtsBy = new Map()
-        subsBy = new Map()
+        recurringBy = debtsBy = subsBy = subExpensesBy = goalsBy = runsByGoalId = summariesBy = accountsBy = depositsByAccount = none()
         return
       }
-      const [rec, debts, subs] = await Promise.all([
-        service.from('recurring_debt_payments').select('id, user_id, debt_id, amount, currency, next_due_date, is_active').in('user_id', ids).eq('is_active', true),
-        service.from('debts').select('id, user_id, name').in('user_id', ids),
-        service.from('subscriptions').select('*').in('user_id', ids).is('deleted_at', null).in('status', ['active', 'trial']),
+      const summarySince = format(new Date(utcNow.getTime() - 731 * 86_400_000), 'yyyy-MM')
+      const [rec, debts, subs, goals, summaries, accounts] = await Promise.all([
+        allRowsIn(ids, (p, a, b) => service.from('recurring_debt_payments').select('id, user_id, debt_id, amount, currency, next_due_date, is_active').in('user_id', p).eq('is_active', true).order('id').range(a, b)),
+        allRowsIn(ids, (p, a, b) => service.from('debts').select('id, user_id, name').in('user_id', p).order('id').range(a, b)),
+        allRowsIn(ids, (p, a, b) => service.from('subscriptions').select('*').in('user_id', p).is('deleted_at', null).in('status', ['active', 'trial']).order('id').range(a, b)),
+        allRowsIn(ids, (p, a, b) => service.from('goals').select('*').in('user_id', p).is('deleted_at', null).eq('status', 'active').neq('funding_mode', 'manual').order('id').range(a, b)),
+        allRowsIn(ids, (p, a, b) => service.from('savings_month_summary').select('user_id, month_key, saved, currency').in('user_id', p).gte('month_key', summarySince).order('user_id').order('month_key', { ascending: false }).range(a, b)),
+        allRowsIn(ids, (p, a, b) => service.from('savings_accounts').select('id, user_id, current_balance, currency').in('user_id', p).is('deleted_at', null).order('id').range(a, b)),
       ])
-      recurringBy = byUser(rec.data as Rows | null)
-      debtsBy = byUser(debts.data as Rows | null)
-      subsBy = byUser(subs.data as Rows | null)
+      const since = format(new Date(utcNow.getTime() - 401 * 86_400_000), 'yyyy-MM-dd')
+      const linked = [...new Set(goals.flatMap((g) => goalFromRow(g as never).linkedSavingsAccountIds))]
+      const [subExpenses, runs, deposits] = await Promise.all([
+        allRowsIn(subs.map((r) => r.id as string), (p, a, b) => service.from('expenses').select('*').in('linked_subscription_id', p).is('deleted_at', null).gte('expense_date', since).order('id').range(a, b)),
+        allRowsIn(goals.map((g) => g.id as string), (p, a, b) => service.from('goal_allocation_runs').select('id, goal_id, period, planned, amount').in('goal_id', p).order('id').range(a, b)),
+        allRowsIn(linked, (p, a, b) => service.from('savings_transactions').select('id, account_id, amount, currency, transaction_date, source, kind').in('account_id', p).eq('kind', 'deposit').is('deleted_at', null).order('id').range(a, b)),
+      ])
+      recurringBy = groupBy(rec, 'user_id')
+      debtsBy = groupBy(debts, 'user_id')
+      subsBy = groupBy(subs, 'user_id')
+      subExpensesBy = groupBy(subExpenses, 'user_id')
+      goalsBy = groupBy(goals, 'user_id')
+      runsByGoalId = groupBy(runs, 'goal_id')
+      summariesBy = groupBy(summaries, 'user_id')
+      accountsBy = groupBy(accounts, 'user_id')
+      depositsByAccount = groupBy(deposits, 'account_id')
     }
 
     const handleUser = async (s: (typeof settingsRows)[number]) => {
@@ -139,17 +187,11 @@ export async function GET(request: Request) {
       const subRows = full ? (subsBy.get(userId) ?? []) : []
       if (subRows.length > 0) {
         const since = format(new Date(now.getTime() - 400 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
-        const { data: expRows } = await service
-          .from('expenses')
-          .select('*')
-          .eq('user_id', userId)
-          .is('deleted_at', null)
-          .in('linked_subscription_id', subRows.map((r) => r.id as string))
-          .gte('expense_date', since)
+        const expRows = (subExpensesBy.get(userId) ?? []).filter((e) => (e.expense_date as string) >= since)
         const subAlerts = evaluateSubscriptionAlerts({
           today: now,
           subscriptions: subRows.map((r) => subscriptionFromRow(r as never)),
-          expenses: (expRows ?? []).map(expenseFromRow),
+          expenses: expRows.map((r) => expenseFromRow(r as never)),
           dueReminders: (s.sub_due_reminders as boolean | null) ?? true,
           priceAlerts: (s.sub_price_alerts as boolean | null) ?? true,
         })
@@ -170,24 +212,17 @@ export async function GET(request: Request) {
 
       // Behind-plan goals: one alert a month, after the second missed cycle.
       if (full && ((s.goal_alerts as boolean | null) ?? true)) {
-        const { data: goalRows } = await service
-          .from('goals').select('*').eq('user_id', userId).is('deleted_at', null).eq('status', 'active').neq('funding_mode', 'manual')
-        if (goalRows && goalRows.length > 0) {
-          const ids = goalRows.map((g) => g.id as string)
-          const [runsR, summaryR, accR] = await Promise.all([
-            service.from('goal_allocation_runs').select('goal_id, period, planned, amount').in('goal_id', ids),
-            service.from('savings_month_summary').select('saved, currency').eq('user_id', userId).order('month_key', { ascending: false }).limit(3),
-            service.from('savings_accounts').select('id, current_balance, currency').eq('user_id', userId).is('deleted_at', null),
-          ])
-          const summaries = summaryR.data ?? []
+        const goalRows = goalsBy.get(userId) ?? []
+        if (goalRows.length > 0) {
+          const runsR = { data: goalRows.flatMap((g) => runsByGoalId.get(g.id as string) ?? []) }
+          const accR = { data: accountsBy.get(userId) ?? [] }
+          const summaries = (summariesBy.get(userId) ?? []).slice(0, 3)
           // Run figures are in the user's base currency (summary currency); no FX here, so only same-currency goals.
           const baseCcy = (summaries[0]?.currency as string | undefined) ?? null
-          const goals = goalRows.map(goalFromRow).filter((g) => g.currency === baseCcy)
+          const goals = goalRows.map((g) => goalFromRow(g as never)).filter((g) => g.currency === baseCcy)
           const linked = [...new Set(goals.flatMap((g) => g.linkedSavingsAccountIds))]
-          const { data: txRows } = linked.length
-            ? await service.from('savings_transactions').select('account_id, amount, currency, transaction_date, source, kind').in('account_id', linked).eq('kind', 'deposit').eq('currency', baseCcy as never).is('deleted_at', null).limit(5000)
-            : { data: [] }
-          const txs = (txRows ?? []).map((t) => ({
+          const txRows = linked.flatMap((id) => depositsByAccount.get(id) ?? []).filter((t) => t.currency === baseCcy)
+          const txs = txRows.map((t) => ({
             id: '', accountId: t.account_id as string, type: 'deposit' as const, amount: Number(t.amount),
             currency: t.currency as never, date: t.transaction_date as string, source: (t.source as string | null) ?? undefined,
           }))

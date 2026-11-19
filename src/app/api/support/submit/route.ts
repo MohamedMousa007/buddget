@@ -47,7 +47,9 @@ export async function POST(request: Request) {
   if (await isRateLimited(service, `support-submit:${uid}`, 3600, PER_HOUR)) return NextResponse.json({ error: 'Too many requests, try again later' }, { status: 429 })
 
   // The signed-in address is verified; the profile email is a field the user can type anything into, so it is only a fallback.
-  const { data: authUser } = await service.auth.admin.getUserById(uid)
+  const { data: authUser, error: authError } = await service.auth.admin.getUserById(uid)
+  // S8C-05: a deleted account's unexpired token must not reach the insert (it failed on the user foreign key with a 500).
+  if (!authUser?.user && (authError?.status === 404 || authError?.code === 'user_not_found')) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   const { data: profile } = authUser?.user?.email ? { data: null } : await service.from('profiles').select('email').eq('id', uid).maybeSingle()
   const requesterEmail = authUser?.user?.email ?? profile?.email ?? ''
   const t = triage({ chosen, title, body: description })

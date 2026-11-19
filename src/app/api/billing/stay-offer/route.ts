@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { resolveActiveApiIdentity } from '@/lib/auth/resolveApiUser'
+import { billingEnabled } from '@/lib/entitlements/billingSwitch'
 import { stayEligibility, type StayOfferState } from '@/lib/billing/stayOffer'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -9,7 +10,10 @@ export const runtime = 'nodejs'
 export async function GET(request: Request) {
   const identity = await resolveActiveApiIdentity(request)
   if (!identity) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  const { data, error } = await createServiceRoleClient().rpc('stay_offer_state', { p_user: identity.id })
+  const service = createServiceRoleClient()
+  // S8G-11: nothing is offered while selling is off, like every other billing route.
+  if (!(await billingEnabled(service))) return NextResponse.json({ eligible: false })
+  const { data, error } = await service.rpc('stay_offer_state', { p_user: identity.id })
   if (error) {
     console.error('[stay-offer] state failed', error.message)
     return NextResponse.json({ eligible: false })
@@ -18,13 +22,13 @@ export async function GET(request: Request) {
 }
 
 /**
- * The app bought the discounted package: stamp the redemption now, before the webhook lands (Apple does not always put the
- * offer id on the event). Idempotent: the first stamp wins.
+ * The app bought the discounted package. S8G-04: this only records the claim; the offer is spent when a store purchase is
+ * seen within an hour of it (here, or in the webhook), so a tap that never became a purchase keeps the offer.
  */
 export async function POST(request: Request) {
   const identity = await resolveActiveApiIdentity(request)
   if (!identity) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  const { error } = await createServiceRoleClient().from('user_entitlements').update({ stay_offer_redeemed_at: new Date().toISOString() }).eq('user_id', identity.id).is('stay_offer_redeemed_at', null)
-  if (error) console.error('[stay-offer] stamp failed', error.message)
+  const { error } = await createServiceRoleClient().rpc('stay_offer_claim', { p_user: identity.id })
+  if (error) console.error('[stay-offer] claim failed', error.message)
   return NextResponse.json({ ok: !error })
 }

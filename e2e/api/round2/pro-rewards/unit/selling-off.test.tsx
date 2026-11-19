@@ -47,11 +47,11 @@ describe('routes with selling OFF', () => {
     const { POST } = await import('@/app/api/entitlements/trial/route')
     expect((await (await POST(new Request('http://x', { method: 'POST' }))).json()).status).toBe('billing_off')
   })
-  it('OFF4 S8G-11 /api/billing/stay-offer does not check the switch (it answers from the plan alone)', async () => {
+  it('OFF4 S8G-11 /api/billing/stay-offer offers nothing while selling is off, even to a store subscriber', async () => {
     h.rpc.mockImplementation(async () => ({ data: { status: 'active', source: 'apple', product_id: 'pro_monthly', redeemed_at: null, lapsed_recently: false }, error: null }))
     const { GET } = await import('@/app/api/billing/stay-offer/route')
     const body = await (await GET(new Request('http://x'))).json()
-    // Recorded as found: with selling off a store subscriber is still offered a discount. Expected by the plan: no offer while off.
-    expect(body.eligible).toBe(true)
+    expect(body.eligible).toBe(false)
+    expect(h.rpc.mock.calls.filter(([f]) => f === 'stay_offer_state')).toHaveLength(0)
   })
 })

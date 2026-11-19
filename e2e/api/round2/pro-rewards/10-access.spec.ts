@@ -9,7 +9,7 @@ test.afterAll(async () => { for (const u of [A, B]) if (u) await dropUser(u) })
 
 const USER_RPCS: Array<[string, object]> = [
   ['loyalty_record_week_check', { p_week: '2026-11-15' }], ['loyalty_week_summary', {}], ['loyalty_shop_buy', { p_item: 'streak_freeze' }],
-  ['loyalty_apply_cosmetic', { p_kind: 'card_finish', p_key: 'standard' }], ['referral_redeem', { p_code: 'AB-123' }], ['referral_my_summary', {}],
+  ['loyalty_apply_cosmetic', { p_kind: 'card_finish', p_key: 'standard' }], ['referral_my_summary', {}],
   ['loyalty_credits', {}], ['loyalty_request_credit_name', { p_name: 'x' }],
 ]
 const SERVICE_RPCS: Array<[string, object]> = [
@@ -26,6 +26,9 @@ const SERVICE_RPCS: Array<[string, object]> = [
   ['admin_rewards_platform_switch', { p_actor: '00000000-0000-4000-8000-000000000000', p_key: 'nope', p_enabled: true }],
   ['admin_rewards_founder_set', { p_actor: '00000000-0000-4000-8000-000000000000', p_user: '00000000-0000-4000-8000-000000000000' }],
   ['loyalty_close_periods', {}], ['loyalty_grant_founders', {}], ['loyalty_refresh_pro_tiers', {}], ['referral_ensure_code', { p_user: '00000000-0000-4000-8000-000000000000' }],
+  // 0330: redeem runs only through POST /api/referrals/redeem; the stay-offer claim, session check and founder bar are server-only.
+  ['referral_redeem', { p_user: '00000000-0000-4000-8000-000000000000', p_code: 'AB-123' }], ['stay_offer_claim', { p_user: '00000000-0000-4000-8000-000000000000' }],
+  ['session_is_live', { p_session: '00000000-0000-4000-8000-000000000000' }], ['loyalty_founder_bar', { p_users: [] }],
 ]
 
 test('G1 anon gets no EXECUTE on any user or service rewards RPC', async () => {
@@ -42,8 +45,7 @@ test('G2 a user JWT cannot run any service-only rewards, billing or admin RPC', 
   }
 })
 
-test('G3 S8G-10 anon holds EXECUTE on no rewards helper (0315: anon must hold nothing)', async () => {
-  test.fail(true, 'S8G-10 open: entitlement_grants, loyalty_local_day, loyalty_week_start are executable by anon')
+test('G3 S8G-10 (fixed 0330) anon holds EXECUTE on no rewards helper (0315: anon must hold nothing)', async () => {
   // PostgREST answers 404 for a function the role cannot execute, so the helpers that answer anon are exactly the ones granted.
   const helpers: Array<[string, object]> = [['entitlement_grants', { p_status: 'active', p_trial_ends: null, p_period_end: null, p_grace_ends: null, p_now: '2026-11-19T00:00:00Z' }],
     ['loyalty_local_day', { p_ts: '2026-11-19T00:00:00Z', p_tz: 'Africa/Cairo' }], ['loyalty_week_start', { p_day: '2026-11-19', p_week_start: 6 }]]
