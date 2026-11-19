@@ -135,6 +135,8 @@ export interface SmsRowData {
    * late paycheck fills the wrong month's payday. Only meaningful alongside `templateId`.
    */
   occurrenceDate?: string | null
+  /** A hand-marked income event this message becomes (QA-49): updated with the bank's facts instead of a new insert. */
+  adoptEventId?: string | null
   /** Force a specific category (overrides kind/hint mapping). */
   categoryOverride?: ExpenseCategory | null
   /** The device that captured the message, when the app reported one. */
@@ -551,6 +553,27 @@ export async function createSmsExpense(
   const smsFlags = row.smsFlags?.length ? row.smsFlags : null
 
   if (isIncomeKind(row.kind) && !row.unmatchedRefund) {
+    if (row.adoptEventId) {
+      // Only an event still without an SMS link is taken over; the account is set only when the message names one.
+      const accountId = await resolveCreditAccount(service, row)
+      const { data: adopted, error: adoptErr } = await service
+        .from('income_events')
+        .update({
+          amount: row.amount,
+          sms_log_id: row.logId ?? null,
+          occurred_at: row.occurredAtIso ?? row.receivedAtIso ?? null,
+          ...(accountId ? { payment_method_id: accountId } : {}),
+        })
+        .eq('id', row.adoptEventId)
+        .eq('user_id', row.userId)
+        .is('sms_log_id', null)
+        .is('deleted_at', null)
+        .select('id')
+        .maybeSingle()
+      if (adopted?.id || adoptErr) return { ...emptyResult(), incomeId: adopted?.id ?? null, error: adoptErr }
+      // Someone linked or deleted it meanwhile: book as a plain credit, as before.
+      row = { ...row, adoptEventId: null, templateId: null, occurrenceDate: null }
+    }
     // A salary match links the event to its recurring template (source_type 'salary');
     // otherwise it's a standalone credit in the events ledger.
     const linked = !!row.templateId

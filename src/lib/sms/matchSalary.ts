@@ -25,7 +25,10 @@ import type { Currency, IncomeRecurringFrequency, IncomeSource } from '@/lib/sto
 
 export type SalaryDecision =
   | { outcome: 'matched'; sourceId: string; occurrenceDate: string }
-  | { outcome: 'confirm'; sourceId: string; occurrenceDate: string | null }
+  /** `eventId`: the hand-marked event on that payday, replaced by the bank's amount once the user confirms (QA-49). */
+  | { outcome: 'confirm'; sourceId: string; occurrenceDate: string | null; eventId?: string }
+  /** The payday was marked received by hand: the bank's message becomes that event, not a second income (QA-49). */
+  | { outcome: 'adopt'; sourceId: string; occurrenceDate: string; eventId: string }
   | { outcome: 'create' }
 
 const EXACT_TOLERANCE = 0.02 // ±2% → auto-match
@@ -186,7 +189,25 @@ export async function matchSalary(
   // Never claim a payday that already holds an event: a second credit inside the same window
   // is a bonus or a correction, not the same paycheck arriving twice. If every payday in
   // range is settled, this is genuinely new money and stays an unlinked one-time credit.
-  const free = best.paydays.length ? await firstUnfilledPayday(service, params.userId, best.row.id, best.paydays) : null
+  const slots = best.paydays.length ? await paydaySlots(service, params.userId, best.row.id, best.paydays) : null
+  const free = slots?.free ?? null
+
+  // The nearest payday was marked received by hand: this message is that paycheck arriving, not a second income.
+  // Within 2% (and paycheck evidence) it takes the event over; up to 15% the existing salary prompt asks first.
+  const manual = slots?.manual
+  if (manual && manual.currency === params.currency) {
+    const pass = best.diff <= EXACT_TOLERANCE && best.sameCurrency && scoreSalaryEvidence({
+      body: params.body,
+      counterparty: params.counterparty,
+      knownCounterparties: await linkedCounterparties(service, params.userId, best.row.id),
+      amountDiff: best.diff,
+      amount: params.amount,
+      paydayInWindow: true,
+    }).pass
+    return pass
+      ? { outcome: 'adopt', sourceId: best.row.id, occurrenceDate: manual.occurrenceDate, eventId: manual.eventId }
+      : { outcome: 'confirm', sourceId: best.row.id, occurrenceDate: manual.occurrenceDate, eventId: manual.eventId }
+  }
   if (best.paydays.length > 0 && free === null) return { outcome: 'create' }
 
   // Auto-link on evidence, not on amount: the amount must be right to the cent-ish and the
@@ -225,26 +246,32 @@ async function linkedCounterparties(service: ServiceClient, userId: string, temp
 }
 
 /**
- * The nearest candidate payday with no event already stamped on it.
+ * The nearest candidate payday with no event already stamped on it, and the hand-marked event (no SMS link) holding
+ * the nearest payday, if one does.
  *
  * ponytail: the half-gap cap means the window can normally hold only ONE payday, so this
  * usually decides between one candidate and none. It still walks the list because an even
  * gap admits an exact midpoint tie — cheap to handle, wrong to assume away.
  */
-async function firstUnfilledPayday(
+async function paydaySlots(
   service: ServiceClient,
   userId: string,
   templateId: string,
   paydays: string[],
-): Promise<string | null> {
+): Promise<{ free: string | null; manual: { eventId: string; occurrenceDate: string; currency: string } | null }> {
   const { data } = await service
     .from('income_events')
-    .select('occurrence_date')
+    .select('id, occurrence_date, sms_log_id, currency')
     .eq('user_id', userId)
     .eq('template_id', templateId)
     .is('deleted_at', null)
     .in('occurrence_date', paydays)
 
-  const taken = new Set((data ?? []).map((r) => r.occurrence_date as string))
-  return paydays.find((p) => !taken.has(p)) ?? null
+  const rows = (data ?? []) as Array<{ id?: string; occurrence_date: string; sms_log_id?: string | null; currency?: string }>
+  const taken = new Set(rows.map((r) => r.occurrence_date))
+  const nearest = rows.find((r) => r.occurrence_date === paydays[0])
+  const manual = nearest?.id && nearest.sms_log_id === null && nearest.currency
+    ? { eventId: nearest.id, occurrenceDate: nearest.occurrence_date, currency: nearest.currency }
+    : null
+  return { free: paydays.find((p) => !taken.has(p)) ?? null, manual }
 }

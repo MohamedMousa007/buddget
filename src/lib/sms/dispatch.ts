@@ -767,6 +767,11 @@ export async function createSmsTransaction(
       body: row.rawBody,
       counterparty: row.merchant ?? null,
     })
+    // A payday marked received by hand becomes this message (after the salary prompt when the amounts differ).
+    if (decision.outcome === 'adopt' || (decision.outcome === 'confirm' && decision.eventId && opts.userConfirmed)) {
+      const res = await createSmsExpense(service, { ...row, kind, templateId: decision.sourceId, occurrenceDate: decision.occurrenceDate, adoptEventId: decision.eventId })
+      return { ...base('income', kind), incomeId: res.incomeId, matchedSourceId: decision.sourceId, error: res.error }
+    }
     if (decision.outcome === 'matched' || (decision.outcome === 'confirm' && opts.userConfirmed)) {
       // Stamping the payday is what makes the event pair deterministically. Without it
       // `buildOccurrences` falls back to POSITIONAL pairing, and a paycheck banked days

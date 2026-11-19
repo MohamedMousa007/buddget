@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { matchSalary } from './matchSalary'
+import { createSmsExpense, type SmsRowData } from './createSmsExpense'
 import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 
 /**
@@ -9,7 +10,7 @@ import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
  */
 type SalaryRow = Record<string, unknown>
 
-function fakeService(sources: SalaryRow[], filledOccurrences: string[] = [], prefs: SalaryRow | null = null) {
+function fakeService(sources: SalaryRow[], filledOccurrences: Array<string | SalaryRow> = [], prefs: SalaryRow | null = null) {
   const chain = (result: unknown) => {
     const self: Record<string, unknown> = {}
     for (const m of ['select', 'eq', 'is', 'in']) {
@@ -26,7 +27,7 @@ function fakeService(sources: SalaryRow[], filledOccurrences: string[] = [], pre
       if (table === 'user_settings') return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: prefs }) }) }) }
       return table === 'income_sources'
         ? chain({ data: sources })
-        : chain({ data: filledOccurrences.map((d) => ({ occurrence_date: d })) })
+        : chain({ data: filledOccurrences.map((d) => (typeof d === 'string' ? { occurrence_date: d } : d)) })
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
@@ -51,7 +52,7 @@ const MONTHLY_30 = { ...BIWEEKLY, id: 'src-mo30', recurring_frequency: 'monthly'
 const MONTHLY_25 = { ...BIWEEKLY, id: 'src-mo25', recurring_frequency: 'monthly', payday_days: null, day_of_month: 25 }
 const WEEKLY = { ...BIWEEKLY, id: 'src-wk', recurring_frequency: 'weekly', payday_days: [4, 11, 18, 25], day_of_month: 4 }
 
-const call = (sources: SalaryRow[], day: string, over: Partial<{ amount: number; currency: string }> = {}, filled: string[] = [], prefs: SalaryRow | null = null) =>
+const call = (sources: SalaryRow[], day: string, over: Partial<{ amount: number; currency: string }> = {}, filled: Array<string | SalaryRow> = [], prefs: SalaryRow | null = null) =>
   matchSalary(fakeService(sources, filled, prefs), {
     userId: 'u1',
     amount: over.amount ?? 70000,
@@ -202,5 +203,60 @@ describe('matchSalary — evidence, not amount alone', () => {
 
   it('auto-links Arabic salary wording', async () => {
     await expect(withBody('تم إضافة مبلغ 70,000.00 جم إلى حسابك - راتب شهر يوليو')).resolves.toMatchObject({ outcome: 'matched' })
+  })
+})
+
+// QA-49: a payday the user marked received by hand (the real persisted shape: template + occurrence, sms_log_id null).
+describe('matchSalary — a payday already marked received by hand', () => {
+  const manual = { id: 'ev-hand', occurrence_date: '2026-07-20', sms_log_id: null, currency: 'EGP' }
+  const SALARY_BODY = 'Your account was credited with EGP 70,000.00 salary from ACME TECHNOLOGIES LTD'
+  const callWith = (amount: number, filled: SalaryRow[]) =>
+    matchSalary(fakeService([BIWEEKLY], filled), { userId: 'u1', amount, currency: 'EGP', day: '2026-07-20', exchangeRates: DEFAULT_MARKET_RATES, body: SALARY_BODY, counterparty: 'ACME TECHNOLOGIES LTD' })
+
+  it('the salary SMS of the same amount takes over the hand-marked event instead of a second income', async () => {
+    await expect(callWith(70000, [manual])).resolves.toEqual({ outcome: 'adopt', sourceId: 'src-bi', occurrenceDate: '2026-07-20', eventId: 'ev-hand' })
+  })
+
+  it('an amount 2-15 % off asks first, naming the event it would replace', async () => {
+    await expect(callWith(75000, [manual])).resolves.toEqual({ outcome: 'confirm', sourceId: 'src-bi', occurrenceDate: '2026-07-20', eventId: 'ev-hand' })
+  })
+
+  it('a payday held by an SMS-linked event still books the new credit apart', async () => {
+    await expect(callWith(70000, [{ ...manual, sms_log_id: 'log-1' }])).resolves.toEqual({ outcome: 'create' })
+  })
+})
+
+describe('createSmsExpense — adopting a hand-marked payday (QA-49)', () => {
+  it('updates that event with the bank amount and the SMS link instead of inserting a second income', async () => {
+    const updates: Array<{ patch: Record<string, unknown>; filters: Array<[string, unknown]> }> = []
+    let inserts = 0
+    const svc = {
+      from: (table: string) => {
+        const filters: Array<[string, unknown]> = []
+        let patch: Record<string, unknown> | null = null
+        const c: Record<string, unknown> = {}
+        for (const m of ['select', 'neq', 'in', 'not', 'gte', 'lte', 'order', 'limit', 'ilike']) c[m] = () => c
+        c.eq = (k: string, v: unknown) => { filters.push([k, v]); return c }
+        c.is = (k: string, v: unknown) => { filters.push([`is:${k}`, v]); return c }
+        c.update = (p: Record<string, unknown>) => { patch = p; return c }
+        c.insert = () => { inserts++; return c }
+        c.maybeSingle = async () => {
+          if (table === 'income_events' && patch) { updates.push({ patch, filters }); return { data: { id: 'ev-hand' }, error: null } }
+          return { data: null, error: null }
+        }
+        c.single = async () => ({ data: null, error: null })
+        c.then = (r: (v: unknown) => unknown) => r({ data: [], error: null })
+        return c
+      },
+    } as unknown as Parameters<typeof createSmsExpense>[0]
+    const res = await createSmsExpense(svc, {
+      userId: 'u1', amount: 70500, currency: 'EGP', day: '2026-07-20', kind: 'income', cleanTitle: null, merchantNormalized: null,
+      merchant: null, bankName: null, categoryHint: null, source: 'sms', rawBody: 'credited EGP 70,500.00 salary', last4: null, counterpartyLast4: null,
+      receivedAtIso: '2026-07-20T09:00:00Z', logId: 'log-1', templateId: 'src-bi', occurrenceDate: '2026-07-20', adoptEventId: 'ev-hand',
+    } as SmsRowData)
+    expect(res.incomeId).toBe('ev-hand')
+    expect(inserts).toBe(0)
+    expect(updates[0].patch).toMatchObject({ amount: 70500, sms_log_id: 'log-1' })
+    expect(updates[0].filters).toEqual(expect.arrayContaining([['id', 'ev-hand'], ['user_id', 'u1'], ['is:sms_log_id', null]]))
   })
 })
