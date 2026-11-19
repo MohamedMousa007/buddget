@@ -9,7 +9,7 @@ import { liveClient } from './liveClient'
 /** SYNC-003: which other mappers forward the `pm_default_cash` sentinel into a uuid column. */
 describe('Cash sentinel in other uuid columns', () => {
   it('pocket held in Cash and a deposit from Cash', async () => {
-    const { client, userId } = await liveClient('qa-sync-1@buddget-qa.test')
+    const { client, userId } = await liveClient(process.env.QA_SYNC_EMAIL_1 ?? 'qa-sync-1@buddget-qa.test')
     const now = new Date().toISOString()
     const pocket = { id: randomUUID(), name: 'QA pocket', category: 'savings', type: 'bank', currency: 'EGP', currentBalance: 0, createdAt: now, updatedAt: now } as unknown as SavingsAccount
     const heldInCash = { ...pocket, id: randomUUID(), name: 'QA pocket in cash', heldInPaymentMethodId: DEFAULT_CASH_ID } as SavingsAccount
@@ -19,7 +19,12 @@ describe('Cash sentinel in other uuid columns', () => {
     const r2 = await flushDiff(client, userId, s1, { ...s1, savingsTransactions: [deposit] })
     const out = { pocketFlush: { errors: r1.errors, parked: r1.parked, heldInCashId: heldInCash.id }, depositFlush: { errors: r2.errors, parked: r2.parked } }
     writeFileSync('e2e/sync/evidence/cash-sentinel-scope.json', JSON.stringify(out, null, 2))
-    expect(r1.parked?.map((p) => p.id)).toEqual([heldInCash.id])
-    expect(r2.parked?.map((p) => [p.table, p.code])).toEqual([['savings_transactions', '22P02']])
+    // QA-40 fixed: the Cash sentinel goes to the server as NULL, nothing is parked, both rows land.
+    expect(r1.parked ?? []).toEqual([])
+    expect(r2.parked ?? []).toEqual([])
+    const a = await client.from('savings_accounts').select('id, held_in_payment_method_id').eq('id', heldInCash.id)
+    const t = await client.from('savings_transactions').select('id, payment_method_id').eq('id', deposit.id)
+    expect(a.data).toEqual([{ id: heldInCash.id, held_in_payment_method_id: null }])
+    expect(t.data).toEqual([{ id: deposit.id, payment_method_id: null }])
   })
 })

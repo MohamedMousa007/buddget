@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test code reads untyped store and PostgREST JSON */
 import type { Page } from '@playwright/test'
 import { PASSWORD, deleteUser, qaEmail, signupOtp } from '../lib/admin'
-import { expect, goto, knownBug, localWait, test, tile } from '../lib/fixtures'
+import { expect, goto, knownBug, localState, localWait, test, tile } from '../lib/fixtures'
 import { serverRows } from '../lib/server'
 import { addAccount, addBorrow, addExpense, addMoneyIn, blur, fillAccountSheet, pickMethod } from '../lib/ui'
 
@@ -25,6 +25,7 @@ test.describe('A registration and onboarding', () => {
       // GoTrue keeps only a hash of the emailed code; ask it for a fresh one of the same configured length (no email sent).
       const code = await signupOtp(email)
       test.info().annotations.push({ type: 'evidence', description: `project email OTP length = ${code.length}; the app's code step has 6 boxes and verifyOtpCode rejects any other length (useAuthModal.ts:497)` })
+      expect(code.length, 'QA-10: Supabase OTP length must equal the 6 boxes').toBe(6)
       await boxes.first().click()
       await page.keyboard.type(code)
       await page.getByRole('button', { name: 'Confirm & get started' }).click()
@@ -103,16 +104,18 @@ test.describe('A registration and onboarding', () => {
         const go = main.getByRole('button', { name: /^(Continue|Next|Done|Build)/ }).last()
         if (await go.isEnabled().catch(() => false)) await go.click()
       }
-      expect(sawSavings, 'the studio asks how much is saved without offering the 1,400 already in the accounts').toBe(true)
+      test.info().annotations.push({ type: 'evidence', description: `studio asked the savings question: ${sawSavings}` })
     })
-    // QA-001 fixed (af3c39e9, 0fde3fc1): the studio asks whether the saved money sits in the tracked accounts, and a pocket
-    // made from an account is an earmark inside it. Whatever pocket the answers produce, the money entered is counted once.
-    await test.step('net worth stays at the 1,400 entered: accounts are not doubled by the studio', async () => {
-      await goto(page, '/accounts')
-      expect(await tile(page, 'In accounts')).toBe(1400)
-      await goto(page, '/flow')
-      await expect.poll(() => tile(page, 'Net worth'), { timeout: 30_000 }).toBe(1400)
-    })
+    // QA-12 (as built): with tracked accounts, "saved" money may only become a pocket EARMARKED inside an account, never above what is free.
+    await page.waitForTimeout(4000)
+    const st = await localState(page)
+    const pockets = st.savingsAccounts.filter((a: any) => !a.deletedAt)
+    test.info().annotations.push({ type: 'evidence', description: `pockets after studio: ${JSON.stringify(pockets.map((p: any) => ({ n: p.name, bal: p.currentBalance, linked: p.linkedPaymentMethodId ?? p.heldInPaymentMethodId ?? null })))}` })
+    for (const p of pockets) expect(p.linkedPaymentMethodId ?? p.heldInPaymentMethodId, `pocket ${p.name} must be earmarked inside an account`).toBeTruthy()
+    await goto(page, '/accounts')
+    expect(await tile(page, 'In accounts')).toBe(1400)
+    await goto(page, '/flow')
+    expect(await tile(page, 'Net worth')).toBe(1400)
   })
 
   test('A3 onboarding "Cash" shows one Cash in every picker [E2E-005 / QA-18]', async ({ page, user }) => {
