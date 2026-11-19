@@ -36,7 +36,7 @@ export function DesktopHeaderBar() {
 
       {/* ─── Mobile header (<lg) ─── Flow and Paydays draw their own. */}
       {ownsHeader(pathname) ? (
-        sectionTitle ? <h1 className="sr-only lg:hidden">{sectionTitle}</h1> : null
+        sectionTitle ? <header className="sr-only lg:hidden"><h1>{sectionTitle}</h1></header> : null
       ) : (
       <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-bg)] border-b border-[var(--color-brand-border)] safe-area-top">
         <div className="flex h-14 shrink-0 items-center gap-2.5 px-5">
