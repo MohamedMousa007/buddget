@@ -2,12 +2,12 @@ import type { ServiceClient } from '@/lib/supabase/service'
 import type { EmailLocale } from '@/lib/email/scenarios'
 import type { RenderableTemplate } from '@/lib/email/render'
 
-const TTL_MS = 30_000
+const TTL_MS = 5 * 60_000
 
 interface Entry { at: number; template: RenderableTemplate | null }
 const cache = new Map<string, Entry>()
 
-/** Called on publish so this instance serves the new version at once; other instances catch up within the TTL. */
+/** Called on publish so this instance serves the new version at once; other instances catch up within the TTL (5 min: a cold hook must not wait on the DB twice). */
 export function invalidateTemplate(key: string): void {
   for (const k of cache.keys()) if (k.startsWith(`${key}:`)) cache.delete(k)
 }
