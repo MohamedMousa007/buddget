@@ -1,5 +1,6 @@
 import type { SavingsTransaction, Currency } from '@/lib/store/types'
 import type { SavingsTransactionRow, SavingsTransactionInsert } from '@/lib/supabase/remote/types'
+import { serverPaymentMethodId } from './serverPaymentMethodId'
 
 export function savingsTransactionToRow(
   t: SavingsTransaction,
@@ -20,7 +21,7 @@ export function savingsTransactionToRow(
     is_auto_save: t.isAutoSave ?? false,
     transfer_group_id: t.transferGroupId ?? null,
     occurred_at: t.occurredAt ?? null,
-    payment_method_id: t.paymentMethodId ?? null,
+    payment_method_id: serverPaymentMethodId(t.paymentMethodId),
   }
 }
 

@@ -1,5 +1,6 @@
 import type { DebtPayment, Currency } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
+import { serverPaymentMethodId } from './serverPaymentMethodId'
 import type { DebtPaymentRow, DebtPaymentInsert } from '@/lib/supabase/remote/types'
 
 export function debtPaymentToRow(p: DebtPayment, userId: string): DebtPaymentInsert {
@@ -7,7 +8,7 @@ export function debtPaymentToRow(p: DebtPayment, userId: string): DebtPaymentIns
     id: p.id,
     user_id: userId,
     debt_id: p.debtId,
-    payment_method_id: p.paymentMethodId ?? null,
+    payment_method_id: serverPaymentMethodId(p.paymentMethodId),
     // Legacy pair: debt units labelled with the paying currency. Old builds read only these.
     amount: p.amountPaid,
     currency: (p.paymentCurrency as Currency) ?? DEFAULT_SETTINGS.baseCurrency,

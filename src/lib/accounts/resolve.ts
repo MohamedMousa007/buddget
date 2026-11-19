@@ -14,6 +14,18 @@ export function cashAccountId(methods: readonly PaymentMethod[]): string | undef
   return methods.some((m) => m.id === DEFAULT_CASH_ID) ? DEFAULT_CASH_ID : undefined
 }
 
+/** The id to store for a chosen method: the real Cash account when the choice is the in-store sentinel and one exists. */
+export function storedMethodId(id: string, methods: readonly PaymentMethod[]): string {
+  return id === DEFAULT_CASH_ID ? (cashAccountId(methods) ?? id) : id
+}
+
+/** The method a form preselects: the default open one (else the first open one), never the sentinel once a real Cash exists. */
+export function defaultMethodId(methods: readonly PaymentMethod[]): string {
+  const open = methods.filter((m) => !m.closedAt)
+  const pick = open.find((m) => m.isDefault) ?? open[0]
+  return pick ? storedMethodId(pick.id, methods) : ''
+}
+
 /**
  * Which account's balance a payment method moves. null = it moves none
  * (credit card / BNPL / other accrue debt; a debit card with no parent is untracked).

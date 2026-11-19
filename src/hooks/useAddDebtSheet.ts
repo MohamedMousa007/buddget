@@ -36,6 +36,7 @@ import type {
 import { goalAmountPerPayment, goalDurationFromTarget, goalTargetDate, type GoalFrequency, type GoalUnit } from '@/lib/debts/borrowGoal'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
+import { defaultMethodId, storedMethodId } from '@/lib/accounts/resolve'
 import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
 
 type NewDebtPayload = Omit<Debt, 'id' | 'createdAt'>
@@ -146,7 +147,7 @@ export function useAddDebtSheet() {
   const [paymentDate, setPaymentDate] = useState(localTodayISO())
   const [paymentNotes, setPaymentNotes] = useState('')
   const [paymentMethodId, setPaymentMethodId] = useState(
-    () => paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+    () => defaultMethodId(paymentMethods)
   )
   const [paymentRateError, setPaymentRateError] = useState('')
   const [paymentScheduleMode, setPaymentScheduleMode] = useState<'one_time' | 'recurring'>('one_time')
@@ -322,7 +323,7 @@ export function useAddDebtSheet() {
     } else if (!debtSheetPaymentOnly && !isPayDebtFlow) {
       setMode('new')
     }
-    setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
+    setPaymentMethodId(defaultMethodId(paymentMethods))
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, debtSheetPaymentOnly, debtSheetPrefillDebtId, paymentMethods, isPayDebtFlow])
 
@@ -578,7 +579,7 @@ export function useAddDebtSheet() {
 
     if (paymentScheduleMode === 'recurring') {
       if (!submit.claim()) return
-      const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+      const pmId = storedMethodId(paymentMethodId || defaultMethodId(paymentMethods), paymentMethods)
       addRecurringDebtPayment({
         debtId: selectedDebtId,
         amount,
@@ -613,7 +614,7 @@ export function useAddDebtSheet() {
     }
     if (!submit.claim()) return
     const { amountInDebtUnit, amountInBase, rateAtEntry } = computed
-    const pmId = paymentMethodId || paymentMethods.find((m) => m.isDefault && !m.closedAt)?.id || paymentMethods.find((m) => !m.closedAt)?.id || ''
+    const pmId = storedMethodId(paymentMethodId || defaultMethodId(paymentMethods), paymentMethods)
     if (settlesWithoutExpense(selectedDebt)) {
       addDebtPayment({
         debtId: selectedDebtId,

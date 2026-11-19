@@ -62,4 +62,18 @@ describe('savings funding link (WLT9)', () => {
     expect(debtPaymentFromRow(row).fundedFromSavingsTxId).toBe('tx-1')
     expect(debtPaymentFromRow({ ...row, funded_from_savings_tx_id: null }).fundedFromSavingsTxId).toBeUndefined()
   })
+
+  it('QA-15/40: the Cash sentinel or an empty method never reaches a uuid column', async () => {
+    const { debtToRow } = await import('./debtMapper')
+    const { savingsAccountToRow } = await import('./savingsAccountMapper')
+    const { savingsTransactionToRow } = await import('./savingsTransactionMapper')
+    for (const id of ['pm_default_cash', '']) {
+      expect(debtPaymentToRow({ ...crossCurrency, paymentMethodId: id }, 'u1').payment_method_id).toBeNull()
+      expect(debtToRow({ id: 'd', name: 'n', linkedPaymentMethodId: id } as never, 'u1').linked_payment_method_id).toBeNull()
+      const acct = savingsAccountToRow({ id: 's', name: 'n', type: 'bank', category: 'savings', linkedPaymentMethodId: id, heldInPaymentMethodId: id } as never, 'u1')
+      expect([acct.linked_payment_method_id, acct.held_in_payment_method_id]).toEqual([null, null])
+      expect(savingsTransactionToRow({ id: 't', accountId: 's', type: 'deposit', amount: 1, paymentMethodId: id } as never, 'u1').payment_method_id).toBeNull()
+    }
+    expect(debtPaymentToRow({ ...crossCurrency, paymentMethodId: 'real-uuid' }, 'u1').payment_method_id).toBe('real-uuid')
+  })
 })

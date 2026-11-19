@@ -1,5 +1,6 @@
 import type { SavingsAccount, Currency, SavingsAccountCategory, SavingsType } from '@/lib/store/types'
 import type { SavingsAccountRow, SavingsAccountInsert } from '@/lib/supabase/remote/types'
+import { serverPaymentMethodId } from './serverPaymentMethodId'
 
 function toDbSavingsType(t: SavingsType): SavingsAccountInsert['type'] {
   // DB enum: bank | cash | gold | crypto | stock | bond | real_estate | other | stablecoin
@@ -43,8 +44,8 @@ export function savingsAccountToRow(a: SavingsAccount, userId: string): SavingsA
     notes: a.notes ?? null,
     color: a.color ?? null,
     is_emergency_cover: a.isEmergencyCover ?? false,
-    linked_payment_method_id: a.linkedPaymentMethodId ?? null,
-    held_in_payment_method_id: a.heldInPaymentMethodId ?? null,
+    linked_payment_method_id: serverPaymentMethodId(a.linkedPaymentMethodId),
+    held_in_payment_method_id: serverPaymentMethodId(a.heldInPaymentMethodId),
     metadata: metadata as SavingsAccountInsert['metadata'],
     created_at: a.createdAt,
   }

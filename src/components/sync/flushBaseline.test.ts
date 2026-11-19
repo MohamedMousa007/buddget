@@ -13,6 +13,15 @@ describe('baselineAfterFlush', () => {
   it('keeps the old baseline after a failed flush so the diff is retried', () => {
     expect(baselineAfterFlush(previous, current, false)).toBe(previous)
   })
+
+  it('QA-16: a row the server set aside stays out of the new baseline, so the next flush offers it again', () => {
+    const delivered = { ...emptySnapshot(), expenses: [{ id: 'old', amount: 1 }] } as never
+    const store = { ...emptySnapshot(), expenses: [{ id: 'old', amount: 2 }, { id: 'ok', amount: 3 }], debtPayments: [{ id: 'new' }] } as never
+    const parked = [{ table: 'debt_payments', id: 'new', rootId: 'new', code: '22P02' }, { table: 'expenses', id: 'old', rootId: 'old', code: '23503' }] as never
+    const next = baselineAfterFlush(delivered, store, true, parked)!
+    expect(next.debtPayments).toEqual([])
+    expect(next.expenses).toEqual([{ id: 'old', amount: 1 }, { id: 'ok', amount: 3 }])
+  })
 })
 
 describe('flushRetryDelay', () => {

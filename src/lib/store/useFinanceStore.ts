@@ -71,9 +71,10 @@ import { withGoalDefaults } from '@/lib/goals/goalDefaults'
 import { resolveAccountLeg, incomeEventIdForTx } from '@/lib/savings/accountLeg'
 import { dropExpenseReceipt, restoreExpenseReceipt } from '@/lib/receipt/receiptCascade'
 import { migrateIdsToUuid } from '@/lib/store/migrations/v17_uuid_remap'
+import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_payment_resend'
 import { dropMistypedFields } from '@/lib/store/persistShape'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
-const PERSIST_VERSION = 22
+const PERSIST_VERSION = 23
 const PERSIST_WRITE_DEBOUNCE_MS = 150
 
 const persistStorage = createDebouncedJsonStorage<FinanceStore>(() => createSafeLocalStorage(), PERSIST_WRITE_DEBOUNCE_MS)
@@ -2187,6 +2188,7 @@ export const useFinanceStore = create<FinanceStore>()(
           persistedState && typeof persistedState === 'object'
             ? (persistedState as Record<string, unknown>)
             : {}
+        if (fromVersion < 23) resendCashDebtPayments(base, new Date().toISOString())
         // v22: cached rates may carry per-troy-ounce XAU keys; gold grams are priced from the gram price only.
         if (fromVersion < 22 && base.exchangeRates && typeof base.exchangeRates === 'object') {
           base.exchangeRates = withoutGoldRates(base.exchangeRates as Record<string, number>)

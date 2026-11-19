@@ -25,6 +25,7 @@ import {
 } from '@/lib/supabase/remote'
 import { stampEdits } from '@/lib/supabase/remote/stampEdits'
 import { holdParkedBack } from '@/lib/supabase/remote/parkedRows'
+import type { ParkedRow } from '@/lib/supabase/remote/sync'
 import { hasUnpersistedWrites, STORAGE_QUOTA_EVENT } from '@/lib/store/safeLocalStorage'
 import { cacheOwnerMismatch } from '@/lib/auth/cacheOwnerCheck'
 import { clearBudgetData } from '@/lib/auth/clearBudgetData'
@@ -286,6 +287,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }, delay)
     }
 
+    // Rows the server set aside in the last flush: they stay out of every baseline until a flush gets them through.
+    let parkedNow: readonly ParkedRow[] = []
+
     let gateTimer: ReturnType<typeof setTimeout> | null = null
     const retryAfterSuppress = () => {
       const { open, suppressUntil } = useSecondFactorGate.getState()
@@ -330,6 +334,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
         // clears any previously-displayed banner.
         useSyncFailures.getState().recordFailures(result.anyError ? result.errors : [])
         useSyncFailures.getState().recordSetAside(result.parked ?? [])
+        if (!result.anyError) parkedNow = result.parked ?? []
         const adopted = new Set(result.adoptedPaydays ?? [])
         if (adopted.size > 0) {
           // Another device's row won the payday: drop our duplicate; the next pull brings the live one.
@@ -395,7 +400,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
           runAgain.current = false
           const flushed = await flush()
           const incoming = await runFullSync(supabase, userId, prevSnap.current)
-          prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed)
+          prevSnap.current = baselineAfterFlush(prevSnap.current, snapshot(useFinanceStore.getState()), flushed, parkedNow)
           persistBaseline(userId, prevSnap.current)
           lastScheduleSnap.current = sliceRefs(useFinanceStore.getState())
           dropAdoptedLogged(incoming)

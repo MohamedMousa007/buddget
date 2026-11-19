@@ -9,6 +9,7 @@ import type {
   InstallmentProvider,
 } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
+import { serverPaymentMethodId } from './serverPaymentMethodId'
 import type { DebtRow, DebtInsert } from '@/lib/supabase/remote/types'
 
 function toDbDebtKind(k: DebtKind | undefined): DebtInsert['debt_type'] {
@@ -76,7 +77,7 @@ export function debtToRow(d: Debt, userId: string): DebtInsert {
       : null,
     installment_provider_name: d.installmentProviderName ?? null,
     linked_credit_card_debt_id: d.linkedCreditCardDebtId ?? null,
-    linked_payment_method_id: d.linkedPaymentMethodId ?? null,
+    linked_payment_method_id: serverPaymentMethodId(d.linkedPaymentMethodId),
     credit_limit: d.creditLimit ?? null,
     // Drive the billing cycle / next due date / minimum payment. Without these the card
     // is unusable on a second device — getCurrentBillingCycleExpenses bails and the card
