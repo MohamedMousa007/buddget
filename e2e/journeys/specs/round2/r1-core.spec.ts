@@ -242,12 +242,12 @@ test('R12 Quick add lists its entries; scan receipt and voice entry reachable on
 
 test('R13 sign out with an unsent edit asks before wiping (QA-65)', async ({ page, context, user }) => {
   await withQnb(page, 1000)
-  await goto(page, '/flow')
+  // The profile menu redesign (b69d8b3a) moved Sign out to the foot of Settings; load it while online, then go offline there.
+  await goto(page, '/settings')
   await context.setOffline(true)
   await addExpense(page, { amount: 40, description: 'QA R13 unsent', category: 'Food', method: /QNB/ })
   await localWait(page, (s) => s.expenses.find((x: any) => x.description === 'QA R13 unsent'))
-  await page.getByRole('button', { name: /^Profile menu/ }).click()
-  await page.getByRole('menuitem', { name: 'Sign out' }).click()
+  await page.getByRole('button', { name: 'Sign out', exact: true }).first().click()
   const seen: string[] = []
   for (let i = 0; i < 16; i++) {
     const dlg = page.getByRole('alertdialog').or(page.getByRole('dialog')).last()
@@ -298,14 +298,31 @@ test('R17 S8d-6: a reload with no edit sends no writes', async ({ page, user }) 
     const table = new URL(r.url()).pathname.split('/').pop()
     let keys = ''
     try { const b = r.postDataJSON(); keys = Object.keys(Array.isArray(b) ? b[0] ?? {} : b ?? {}).sort().join('|') } catch { /* no body */ }
-    writes.push(`${r.method()} ${table} [${keys}]`)
+    writes.push(`${r.method()} ${table} [${keys}] ${(r.postData() ?? '').slice(0, 700)}`)
   })
+  page.on('response', async (res) => {
+    if (!isRestWrite(res.request().method(), res.url())) return
+    writes.push(`  -> ${res.status()} ${new URL(res.url()).pathname.split('/').pop()} ${(await res.text().catch(() => '')).slice(0, 300)}`)
+  })
+  const boot: string[] = []
   for (let i = 0; i < 2; i++) {
+    // What the next boot diffs against: the stored fingerprint and the persisted rows (synthetic user, no personal data).
+    boot.push(await page.evaluate((uid) => {
+      const raw = localStorage.getItem(`buddget:flushed:${uid}`)
+      const fp = raw ? JSON.parse(raw) : null
+      const st = JSON.parse(localStorage.getItem('buddget-storage') ?? '{}').state ?? {}
+      return JSON.stringify({
+        fp: fp && { v: fp.v, singles: Object.keys(fp.singles ?? {}), lists: Object.fromEntries(Object.entries(fp.lists ?? {}).map(([k, v]) => [k, Object.keys(v as object)])) },
+        cache: { profileId: st.profile?.id, paymentMethods: (st.paymentMethods ?? []).map((m: any) => m.id), expenses: (st.expenses ?? []).map((e: any) => e.id) },
+        store: { profile: st.profile, settings: st.settings, paymentMethods: st.paymentMethods, expenses: st.expenses },
+      }).slice(0, 6000)
+    }, user.id))
     await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.locator('main')).toContainText('QA R17 seed', { timeout: 30_000 })
     await page.waitForTimeout(8000)
   }
   test.info().annotations.push({ type: 'evidence', description: `writes on reload: ${JSON.stringify(writes)}` })
+  test.info().annotations.push({ type: 'evidence', description: `state before each reload: ${JSON.stringify(boot)}` })
   expect(writes, 'writes on a reload without an edit').toEqual([])
 })
 
