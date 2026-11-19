@@ -35,6 +35,6 @@ for(const vp of vps)for(const theme of themes)for(const loc of locs){
     }catch(e){out.push({tag,error:String(e).slice(0,200)})}
   }
   await c.close()
-  fs.writeFileSync('e2e/ui/sweep-'+(process.env.OUT||'all')+'.json',JSON.stringify(out,null,1))
+  fs.writeFileSync('e2e/ui/out/sweep-'+(process.env.OUT||'all')+'.json',JSON.stringify(out,null,1))
 }
 await b.close()

@@ -13,6 +13,8 @@ interface SettingsRowProps {
   /** A custom lead (the Pro mark) in place of the icon chip. */
   leading?: ReactNode
   tone?: RowTone
+  /** A vivid chip: the hue as a solid fill with the on-fill glyph colour, instead of the soft tint. */
+  solid?: boolean
   title: string
   subtitle?: string
   /** Current value, shown mono at the end of the row before the chevron. */
@@ -25,17 +27,21 @@ interface SettingsRowProps {
   settingId?: string
 }
 
-export function SettingsChip({ icon: Icon, tone = 'neutral', destructive = false }: { icon: ComponentType<{ className?: string }>; tone?: RowTone; destructive?: boolean }) {
+export function SettingsChip({ icon: Icon, tone = 'neutral', destructive = false, solid = false }: { icon: ComponentType<{ className?: string }>; tone?: RowTone; destructive?: boolean; solid?: boolean }) {
   const hue = destructive ? 'var(--color-brand-red)' : tone === 'neutral' ? undefined : `var(--color-cat-${tone})`
   const style: CSSProperties | undefined = hue
-    ? { color: hue, background: `color-mix(in oklab, ${hue} 15%, var(--color-brand-card))` }
-    : undefined
+    ? solid
+      ? { color: 'var(--color-brand-on-primary)', background: hue }
+      : { color: hue, background: `color-mix(in oklab, ${hue} 15%, var(--color-brand-card))` }
+    : solid
+      ? { color: 'var(--color-brand-on-primary)', background: 'var(--color-brand-text-secondary)' }
+      : undefined
   return (
     <span
       style={style}
       className={cn(
         'flex size-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] group-hover/row:-rotate-6 group-hover/row:scale-110',
-        !hue && 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
+        !hue && !solid && 'bg-[var(--color-brand-elevated)] text-[var(--color-brand-text-secondary)]',
       )}
     >
       <Icon className="size-[19px]" />
@@ -47,6 +53,7 @@ export function SettingsRow({
   icon,
   leading,
   tone = 'neutral',
+  solid = false,
   title,
   subtitle,
   value,
@@ -60,7 +67,7 @@ export function SettingsRow({
 
   const content = (
     <>
-      {leading ?? (icon ? <SettingsChip icon={icon} tone={tone} destructive={destructive} /> : null)}
+      {leading ?? (icon ? <SettingsChip icon={icon} tone={tone} destructive={destructive} solid={solid} /> : null)}
       <span className="min-w-0 flex-1">
         <span className={cn('block text-[0.9375rem] font-semibold leading-tight', destructive ? 'text-[var(--color-brand-red)]' : 'text-[var(--color-brand-text-primary)]')}>
           {title}

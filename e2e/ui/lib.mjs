@@ -1,8 +1,10 @@
-import { chromium } from '@playwright/test'
+import { chromium as pwChromium } from '@playwright/test'
+// Cloud sandboxes ship a Chromium that differs from the pinned Playwright build: PW_CHROMIUM_EXECUTABLE points at it.
+export const chromium={launch:(o={})=>pwChromium.launch({...(process.env.PW_CHROMIUM_EXECUTABLE?{executablePath:process.env.PW_CHROMIUM_EXECUTABLE,args:['--no-sandbox']}:{}),...o})}
 export const BASE='http://localhost:3100'
-export const SHOTS='docs/qa/comprehensive-audit/screens/'
+export const SHOTS='e2e/ui/out/'
 export const PW='QaUi!Pass-7391xZ'
-export const VP={mobile:{width:390,height:844},tablet:{width:768,height:1024},desktop:{width:1440,height:900}}
+export const VP={mobile:{width:375,height:812},tablet:{width:768,height:1024},landscape:{width:1024,height:768},desktop:{width:1440,height:900}}
 export async function login(p,email){
   await p.goto(BASE+'/flow',{waitUntil:'networkidle'})
   await p.fill('input[type=email]',email)
@@ -17,7 +19,6 @@ export async function ctx(b,vp,{dark=false,locale='en'}={}){
   await c.route('https://buddget.app/api/**',async r=>{try{const u=r.request().url().replace('https://buddget.app',BASE);const res=await r.fetch({url:u});await r.fulfill({response:res})}catch{}})
   return c
 }
-export {chromium}
 
 import fs from 'node:fs'
 export async function session(b,vp,opts={}){

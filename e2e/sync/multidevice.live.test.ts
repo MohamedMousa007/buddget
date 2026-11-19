@@ -7,7 +7,7 @@ import type { DebtPayment, Expense, Debt } from '@/lib/store/types'
 import { liveClient } from './liveClient'
 
 /** Two "devices" = two independently signed-in clients for the same synthetic user, each with its own snapshot and baseline. */
-const EMAIL = 'qa-sync-2@buddget-qa.test'
+const EMAIL = process.env.QA_SYNC_EMAIL_2 ?? 'qa-sync-2@buddget-qa.test'
 const evidence: Record<string, unknown> = {}
 const iso = (ms = 0) => new Date(Date.now() + ms).toISOString()
 
@@ -109,7 +109,7 @@ describe('multi-device consistency (live, synthetic user)', () => {
     expect(d.expenses.upserts.map((x) => x.id)).toContain(e1.id)
   })
 
-  it('debt payment funded by a real account still syncs; Cash fails (scope of SYNC-001)', async () => {
+  it('debt payment funded by a real account and by Cash both sync (QA-15 fixed)', async () => {
     const A = await liveClient(EMAIL)
     const now = iso()
     const debt = { id: randomUUID(), name: 'QA scope', person: 'QA', startingBalance: 1000, currency: 'EGP', isGold: false, createdAt: now, updatedAt: now } as unknown as Debt
@@ -119,7 +119,9 @@ describe('multi-device consistency (live, synthetic user)', () => {
     const cash = { ...none, id: randomUUID(), paymentMethodId: DEFAULT_CASH_ID }
     const r = await flushDiff(A.client, A.userId, s1, { ...s1, debtPayments: [none, cash] })
     evidence.scope = r.parked
-    expect(r.parked?.map((p) => p.id)).toEqual([cash.id])
+    expect(r.parked ?? []).toEqual([])
+    const got = await A.client.from('debt_payments').select('id').in('id', [none.id, cash.id])
+    expect((got.data ?? []).map((x) => x.id).sort()).toEqual([none.id, cash.id].sort())
     mkdirSync('e2e/sync/evidence', { recursive: true })
     writeFileSync('e2e/sync/evidence/multidevice.json', JSON.stringify(evidence, null, 2))
   })

@@ -31,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "src/worker", "design", ".claude", "android", "ios", "out"]
+  "exclude": ["node_modules", "src/worker", "design", ".claude", "android", "ios", "out", "e2e"]
 }

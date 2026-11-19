@@ -245,6 +245,9 @@ export interface Dictionary {
     setBalance: string
     cashEstimate: string
     cashEstimateHint: string
+    cashAskTitle: string
+    cashAskSub: string
+    cashAskSkip: string
     addBalanceToInclude: string
     cardsCount: (n: number) => string
     addACard: string

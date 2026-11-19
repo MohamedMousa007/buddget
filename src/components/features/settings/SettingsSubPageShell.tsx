@@ -47,7 +47,7 @@ export function SettingsSubPageShell({ title, children, backHref = '/settings', 
     <div ref={bodyRef}>
       <PageBody narrow className="space-y-4">
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="touch" onClick={() => navigate(backHref)} aria-label={t.common.back} className="-ms-2 px-2">
+          <Button variant="ghost" size="touch" onClick={() => navigate(backHref)} aria-label={t.common.back} className="-ms-3 -me-0.5 min-w-11 px-2">
             <ChevronLeft className="size-5 rtl:rotate-180" />
           </Button>
           {lead}

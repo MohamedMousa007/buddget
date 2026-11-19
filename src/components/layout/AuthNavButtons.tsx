@@ -57,7 +57,8 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
           size="sm"
           shape="round"
           className={cn(
-            'size-9 hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
+            // The visible avatar is 36px; the pseudo-element lifts the tap area to the 44px frame around it and no further (the budget button sits beside it).
+            'relative size-9 before:absolute before:-inset-1 before:content-[""] hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
             'border-transparent',
             className
           )}

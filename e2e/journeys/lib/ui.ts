@@ -40,6 +40,12 @@ export async function addExpense(page: Page, o: { amount: number; description: s
   await blur(page)
   await d.getByRole('button', { name: 'Save expense' }).click()
   await expect(d).toBeHidden()
+  // The first expense paid with Cash asks once how much cash the user has (S1 covers answering it).
+  const ask = dialog(page, 'How much cash do you have right now?')
+  if (await ask.isVisible({ timeout: 1500 }).catch(() => false)) {
+    await ask.getByRole('button', { name: 'Not now' }).click()
+    await expect(ask).toBeHidden()
+  }
 }
 
 export async function addMoneyIn(page: Page, o: { amount: number; name: string; method?: RegExp }) {

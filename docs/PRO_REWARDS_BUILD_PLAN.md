@@ -1,5 +1,7 @@
 # Pro, Rewards and Founders: build plan (final, for execution)
 
+> **Superseded (owner, 2026-11-19).** `docs/launch/PRO_REWARDS_SPEC.md` (signed off 2026-11-17 night, after the financial review) replaces this plan. Where they differ, the spec and the shipped code are right: tier gifts 10/20/30 Sparks, streak gifts 10/20/40 at 12/26/52 weeks, 12-month gift life, no Free pack bonus, Pro pack bonus 15% (20% at Diamond), no per-tier Free AI credits, no member price, a pack refund zeroes only what is left. QA finding S8G-01 is closed by this note.
+
 Status: final draft for owner sign-off (2026-11-17). Design source: the "buddget Pro, Rewards and Founders" mockup v13.
 Billing stays behind `billing.enabled`; every surface below is hidden until it is on.
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowLeftRight, Moon, Monitor, Search, Sun } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { BaseCurrencyChangeSheet } from '@/components/features/settings/BaseCurrencyChangeSheet'
@@ -20,6 +21,32 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import type { Currency } from '@/lib/store/types'
 
 const NEXT_THEME = { light: 'dark', dark: 'system', system: 'light' } as const
+
+interface TileProps {
+  /** Glyph inside the button: an icon, or a short mark such as the language's initials. */
+  children: React.ReactNode
+  /** Names the tile and its current value for assistive tech and as a tooltip. */
+  label: string
+  onClick: () => void
+  settingId?: string
+}
+
+/** One quick-settings button: a single glyph, named for assistive tech and as a tooltip. */
+function Tile({ children, label, onClick, settingId }: TileProps) {
+  return (
+    <button
+      type="button"
+      data-setting-id={settingId}
+      data-raw-button-ok="quick-settings button: a compact glyph-only toggle, not a text button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-xl bg-[var(--color-brand-elevated)] text-sm font-bold text-[var(--color-brand-text-primary)] transition-colors hover:bg-[var(--color-brand-sunken)] active:scale-[0.96] [&_svg]:size-5"
+    >
+      {children}
+    </button>
+  )
+}
 
 function CentsRow() {
   const copy = useSettingsHubCopy()
@@ -49,10 +76,11 @@ function ConverterBody() {
 }
 
 /**
- * The few things people change most, as rows: language, appearance, currency (main and optional second, in one picker), the converter
- * and the way into Notifications. Search and Buddgy can ask for the currency and converter sheets.
+ * The few things people change most, as one row of glyph tiles like a phone's quick settings: language, appearance (light, dark, system),
+ * currencies (main and optional second, in one picker), the converter and search; Notifications is the labelled row under it.
+ * Search and Buddgy can ask for the currency and converter sheets.
  */
-export function PreferencesCard() {
+export function PreferencesCard({ onSearch }: { onSearch: () => void }) {
   const copy = useSettingsHubCopy()
   const p = copy.page
   const { locale, setLocale } = useLocale()
@@ -76,11 +104,24 @@ export function PreferencesCard() {
   return (
     <>
       <SettingsSection title={p.preferences}>
-        <SettingsRow icon={SETTING_ICONS.globe} tone={5} title={copy.language} value={locale === 'ar' ? 'العربية' : 'English'} onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')} settingId="language" />
-        <SettingsRow icon={SETTING_ICONS.sun} tone="neutral" title={p.appearance} value={themeLabel} onClick={changeTheme} settingId="theme" />
-        <SettingsRow icon={SETTING_ICONS.coins} tone={1} title={copy.currencyTile} value={`${settings.baseCurrency}${second ? ` + ${second}` : ''}`} onClick={() => openSheet('currencies')} settingId="baseCurrency" />
-        <SettingsRow icon={SETTING_ICONS.swap} tone={1} title={copy.convertTitle} onClick={() => openSheet('converter')} settingId="converter" />
-        <SettingsRow icon={SETTING_ICONS.bell} tone={6} title={p.notifications} href="/settings/notifications" settingId="notifications" />
+        <div className="flex gap-2 p-3" role="group" aria-label={copy.quickTitle}>
+          <Tile settingId="language" label={`${copy.language}: ${locale === 'ar' ? 'العربية' : 'English'}`} onClick={() => setLocale(locale === 'ar' ? 'en' : 'ar')}>
+            <span className="font-mono-numbers">{locale === 'ar' ? 'ع' : 'EN'}</span>
+          </Tile>
+          <Tile settingId="theme" label={`${p.appearance}: ${themeLabel}`} onClick={changeTheme}>
+            {settings.theme === 'dark' ? <Moon /> : settings.theme === 'light' ? <Sun /> : <Monitor />}
+          </Tile>
+          <Tile settingId="baseCurrency" label={`${copy.currencyTile}: ${settings.baseCurrency}${second ? ` + ${second}` : ''}`} onClick={() => openSheet('currencies')}>
+            <span className="font-mono-numbers">{settings.baseCurrency}</span>
+          </Tile>
+          <Tile settingId="converter" label={copy.convertTitle} onClick={() => openSheet('converter')}>
+            <ArrowLeftRight />
+          </Tile>
+          <Tile label={copy.searchLabel} onClick={onSearch}>
+            <Search />
+          </Tile>
+        </div>
+        <SettingsRow icon={SETTING_ICONS.bell} tone={3} solid title={p.notifications} href="/settings/notifications" settingId="notifications" />
       </SettingsSection>
 
       <CurrencySheet

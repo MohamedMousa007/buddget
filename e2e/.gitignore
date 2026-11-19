@@ -3,3 +3,5 @@
 **/evidence/
 **/out/
 ui/*.json
+ui/.seed-email*
+ui/.st*.json
