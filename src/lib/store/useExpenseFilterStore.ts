@@ -32,6 +32,9 @@ interface ExpenseFilterState {
   amtMin: number
   amtMax: number
   range: ExpenseRange
+  /** Show own-account moves (ATM, transfers, top-ups, exchanges), hidden by default. Not a narrowing filter, so it is not counted. */
+  showMoves: boolean
+  toggleMoves: () => void
   setSegment: (segment: FlowSegment) => void
   toggleCat: (id: string) => void
   /** The budget-chip row is single-select: tap = only this category, tap again = none. */
@@ -55,6 +58,8 @@ export const useExpenseFilterStore = create<ExpenseFilterState>((set) => ({
   amtMin: AMOUNT_MIN,
   amtMax: AMOUNT_MAX,
   range: DEFAULT_RANGE,
+  showMoves: false,
+  toggleMoves: () => set((s) => ({ showMoves: !s.showMoves })),
   setSegment: (segment) => set({ segment }),
   selectCat: (id) => set({ cats: id ? [id] : [] }),
   toggleIncomeType: (id) =>
@@ -74,7 +79,7 @@ export const useExpenseFilterStore = create<ExpenseFilterState>((set) => ({
       // this can be called from an effect without looping.
       return next.length === s.cats.length ? s : { cats: next }
     }),
-  reset: () => set({ cats: [], incomeTypes: [], methods: [], amtMin: AMOUNT_MIN, amtMax: AMOUNT_MAX, range: DEFAULT_RANGE }),
+  reset: () => set({ cats: [], incomeTypes: [], methods: [], amtMin: AMOUNT_MIN, amtMax: AMOUNT_MAX, range: DEFAULT_RANGE, showMoves: false }),
 }))
 
 /** True when the amount range is narrower than the full span. */

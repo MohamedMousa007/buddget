@@ -26,6 +26,14 @@ export const NON_SPEND_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory
   'Installment',
 ])
 
+/**
+ * Money that only moves between the user's own places (ATM cash-out, own-account transfer, top-up, currency exchange).
+ * Flow hides these by default behind its "Not counted" chip. Card payoffs and instalments stay listed: they are payments made.
+ */
+export const INTERNAL_MOVE_CATEGORIES: ReadonlySet<string> = new Set<ExpenseCategory>(['ATM Cash Withdrawal', 'Transfer', 'Currency Exchange', 'Top up'])
+
+export const isInternalMoveCategory = (category: string | null | undefined): boolean => category != null && INTERNAL_MOVE_CATEGORIES.has(category)
+
 /** True when a category is a money-movement (excluded from spend totals/budgets/charts). */
 export function isNonSpendCategory(category: string | null | undefined): boolean {
   return category != null && NON_SPEND_CATEGORIES.has(category)

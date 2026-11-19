@@ -18,7 +18,7 @@ import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { amountInRange, amountIsFiltered, ONE_TIME_INCOME, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
 import { resolveRange, type ResolvedRange } from '@/lib/expenses/dateRange'
 import { categoryChipColors } from '@/lib/expenses/categoryChip'
-import { isNonSpendExpense } from '@/lib/constants/categoryMeta'
+import { isInternalMoveCategory, isNonSpendExpense } from '@/lib/constants/categoryMeta'
 import { expenseAmountInBase } from '@/lib/utils/calculations'
 import { convertCurrency } from '@/lib/utils/currency'
 import { eventDaysLate } from '@/lib/utils/incomeOccurrences'
@@ -56,6 +56,8 @@ export interface FlowItem {
   /** Category (out) or income-type chip value (in). */
   facet: string
   methodId?: string
+  /** An own-account move (ATM, transfer, top-up, exchange): listed only while the Not counted chip is on. */
+  internal?: boolean
   row: FlowLedgerRow
 }
 
@@ -126,6 +128,7 @@ export function useFlowLedger() {
       amtMin: s.amtMin,
       amtMax: s.amtMax,
       range: s.range,
+      showMoves: s.showMoves,
     })),
   )
   const previews = usePendingSmsPreviews()
@@ -208,6 +211,7 @@ export function useFlowLedger() {
         at: instantOf(e.occurredAt, date),
         amountBase: gross,
         counted: !dim && !nonSpend,
+        internal: !dim && isInternalMoveCategory(e.category),
         facet: e.category,
         methodId: e.paymentMethodId,
         row: {
@@ -463,6 +467,7 @@ export function useFlowLedger() {
     () =>
       all
         .filter((i) => {
+          if (i.internal && !filters.showMoves) return false
           if (filters.segment === 'in' && i.dir !== 'in') return false
           if (filters.segment === 'out' && i.dir !== 'out') return false
           // The segment filters first; a category then narrows spending (it never empties In).

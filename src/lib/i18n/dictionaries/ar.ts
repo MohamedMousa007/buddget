@@ -3118,6 +3118,9 @@ export const ar: Dictionary = {
     resultsWord: (n: number) => (n === 1 ? 'نتيجة' : 'نتائج'),
     removeFilter: (label: string) => `إزالة مرشّح ${label}`,
     showOnly: (label: string) => `عرض ${label} فقط`,
+    notCountedChip: (n: number) => `غير محتسب · ${n}`,
+    showNotCounted: (n: number) => `عرض ${n} من التحويلات بين حساباتك، غير محتسبة`,
+    hideNotCounted: 'إخفاء التحويلات بين حساباتك',
     budgetAria: (label: string) => `ميزانية ${label}`,
     // TODO(ar-review)
     chipBudgetedAria: (label: string, pct: number) => `${label}، ${pct}% من الميزانية مستخدم`,

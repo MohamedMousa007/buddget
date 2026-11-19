@@ -2963,6 +2963,10 @@ export interface Dictionary {
     resultsWord: (n: number) => string
     removeFilter: (label: string) => string
     showOnly: (label: string) => string
+    /** Chip that reveals own-account moves (ATM, transfers) hidden from the ledger; carries their count. */
+    notCountedChip: (n: number) => string
+    showNotCounted: (n: number) => string
+    hideNotCounted: string
     budgetAria: (label: string) => string
     chipBudgetedAria: (label: string, pct: number) => string
     chipUnassignedAria: (label: string, spent: string) => string

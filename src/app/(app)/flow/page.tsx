@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
+import { CircleSlash } from 'lucide-react'
 import { useSmsArmed } from '@/hooks/useSmsTracking'
 import { FlowSetupState } from '@/components/features/onboarding/FlowSetupState'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
@@ -70,6 +71,8 @@ export default function FlowPage() {
       rangePreset: s.range.preset,
       setRangePreset: s.setRangePreset,
       setSegment: s.setSegment,
+      showMoves: s.showMoves,
+      toggleMoves: s.toggleMoves,
       selectCat: s.selectCat,
       toggleCat: s.toggleCat,
       toggleMethod: s.toggleMethod,
@@ -180,11 +183,28 @@ export default function FlowPage() {
     }))
   }, [all, incomeSources, filters, t])
 
+  // Own-account moves (ATM, transfers, top-ups, exchanges) are hidden until this chip is on; the count says nothing is lost.
+  const movesCount = useMemo(() => all.filter((i) => i.internal).length, [all])
+  const movesChip = useMemo<FlowChip[]>(
+    () =>
+      movesCount === 0
+        ? []
+        : [{
+            key: 'moves',
+            label: t.flow.notCountedChip(movesCount),
+            icon: <CircleSlash className="size-4" aria-hidden />,
+            selected: filters.showMoves,
+            ariaLabel: filters.showMoves ? t.flow.hideNotCounted : t.flow.showNotCounted(movesCount),
+            onPress: filters.toggleMoves,
+          }],
+    [movesCount, filters.showMoves, filters.toggleMoves, t],
+  )
+
   const chipRowCatOnly = filterCount === 1 && budgetChips.some((c) => c.selected)
   const chips: FlowChip[] =
     segment === 'in'
       ? incomeChips
-      : filterCount === 0 || chipRowCatOnly
+      : [...movesChip, ...(filterCount === 0 || chipRowCatOnly
         ? budgetChips
         : [
             ...filters.cats.map((c) => ({ key: `c-${c}`, label: catLabel(c), icon: <CategoryGlyph category={c} className="size-4" />, selected: true, onPress: () => filters.toggleCat(c) })),
@@ -192,7 +212,7 @@ export default function FlowPage() {
             ...(amountOn
               ? [{ key: 'amt', label: amountLabel, selected: true, onPress: () => { filters.setAmtMin(AMOUNT_MIN); filters.setAmtMax(AMOUNT_MAX) } }]
               : []),
-          ]
+          ])]
 
   const countSum = items.filter((i) => i.counted).reduce((s, i) => s + (i.dir === 'in' ? i.amountBase : -i.amountBase), 0)
   const showCount = filterCount > 0
