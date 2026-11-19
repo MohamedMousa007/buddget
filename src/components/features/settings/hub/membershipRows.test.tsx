@@ -34,6 +34,7 @@ describe('the membership rows of the settings hub', () => {
     const html = renderToStaticMarkup(createElement(MembershipRows))
     expect(html).toContain('href="/settings/rewards"')
     expect(html).toContain('data-tier="emerald"')
+    expect(html).toMatch(/data-testid="rewards-chip"[^>]*class="[^"]*size-9[^"]*rounded-xl/)
     expect(html).toContain('Emerald · tier 2 of 5')
     expect(html).toContain('href="/settings/pro"')
     expect(html).toContain('data-pro-mark="md"')

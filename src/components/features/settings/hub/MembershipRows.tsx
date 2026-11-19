@@ -3,7 +3,7 @@
 import { ChevronLeft, ChevronRight, Crown } from 'lucide-react'
 import { ProPlanRow } from '@/components/features/membership/ProPlanRow'
 import { TierBadge } from '@/components/features/membership/TierBadge'
-import { tierRank } from '@/components/features/membership/tiers'
+import { TIER_BADGE, tierRank } from '@/components/features/membership/tiers'
 import { InviteCta } from '@/components/features/invite/InviteCta'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { AppLink as Link } from '@/components/ui/AppLink'
@@ -34,7 +34,13 @@ export function MembershipRows() {
         <ProPlanRow variant="settings" />
         {tier ? (
           <Link href="/settings/rewards" data-setting-id="rewards" className="group/row flex min-h-14 w-full items-center gap-3 px-4 py-2 text-start transition-[background-color,transform] duration-200 hover:bg-[var(--color-brand-elevated)] active:scale-[0.985]">
-            <span className="flex size-9 shrink-0 items-center justify-center"><TierBadge tier={tier} size={28} /></span>
+            <span
+              data-testid="rewards-chip"
+              style={{ background: `color-mix(in oklab, ${TIER_BADGE[tier].metal[1]} 18%, var(--color-brand-card))` }}
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] group-hover/row:-rotate-6 group-hover/row:scale-110"
+            >
+              <TierBadge tier={tier} size={24} />
+            </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[0.9375rem] font-semibold leading-tight text-[var(--color-brand-text-primary)]">{r.rewards.hubRow}</span>
               <span className="mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]">{r.rewards.rowSub(r.tiers[tier].name, tierRank(tier))}</span>
