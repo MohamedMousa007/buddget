@@ -1,0 +1,118 @@
+{
+  "total": 236,
+  "beforeSignInClick": 224,
+  "sinceSignInClick": 12,
+  "topComponentsByRenders": [
+    [
+      "i | button.inline-flex shrink-0 items-center justif | function i({className:e,size:t,selected:r,surface:a,as:d=\"toggle\",type",
+      155
+    ],
+    [
+      "d | button.inline-flex shrink-0 items-center justif | function d({chip:e}){let t=(0,c.kj)(),a=e.ariaLabel??(e.selected?t.flo",
+      150
+    ],
+    [
+      "M | span.inline-flex shrink-0 | function M({category:e,className:t}){return(0,s.jsx)(\"span\",{\"aria-hid",
+      150
+    ],
+    [
+      "x |  | ({children:t,custom:e,initial:i=!0,onExitComplete:l,presenceAffectsLay",
+      125
+    ],
+    [
+      "C |  | function C({open:e,onBackdropClick:t,children:r,zIndexClassName:i,pane",
+      82
+    ],
+    [
+      "d | button.relative inline-flex shrink-0 items-cent | function d({className:e,variant:t,size:r,shape:a,hitArea:s=!0,type:l=\"",
+      30
+    ],
+    [
+      "ts |  | function ts({configured:e}){let t=(0,i.useSearchParams)(),n=(0,i.usePa",
+      24
+    ],
+    [
+      "tr |  | function tr(){let e=(0,i.useSearchParams)(),t=(0,i.usePathname)(),n=(0",
+      23
+    ],
+    [
+      "i |  | function i({children:e}){return(0,r.use)((0,n.browser)(s)),e}",
+      23
+    ],
+    [
+      "ti |  | function ti(){let e=(0,i.useSearchParams)(),t=(0,i.usePathname)(),n=(0",
+      22
+    ],
+    [
+      "rB |  | function rB({error:e}){let t=(0,t2.$)(),a=(0,U.kj)();return(0,n.useEff",
+      22
+    ],
+    [
+      "s | button.group/button inline-flex shrink-0 items- | function s({className:e,variant:t=\"default\",size:r=\"default\",loading:l",
+      19
+    ],
+    [
+      "n |  | ()=>null",
+      18
+    ],
+    [
+      "s | div.inline-flex gap-0.5 border border-[var(- | function s({options:e,value:r,onChange:t,fill:i=!0,ariaLabel:c,size:d=",
+      15
+    ],
+    [
+      "et | span.flex items-baseline justify-center gap-1 | function et({month:e,year:t}){return(0,n.jsxs)(\"span\",{className:\"flex",
+      15
+    ],
+    [
+      "__next_viewport_boundary__ | meta. | function({children:e}){return e}",
+      13
+    ],
+    [
+      "__next_metadata_boundary__ | div. | function({children:e}){return e}",
+      13
+    ],
+    [
+      "motion.div | div. | function l(i,n){var l;let x,M,E,V={...(0,a.useContext)(p.Q),...i,layou",
+      13
+    ],
+    [
+      "E |  | function E({session:e}){let t=(0,u.be)(e=>e.settings.language),i=(0,r.",
+      11
+    ],
+    [
+      "I |  | function I({open:e,onClose:t,otherPhones:n=null}){let i=(0,j.o)().auto",
+      11
+    ],
+    [
+      "LoadableComponent |  | function d(e){let i=l?(0,r.jsx)(l,{isLoading:!0,pastDelay:!0,error:nul",
+      11
+    ],
+    [
+      "to |  | function to({children:e}){var t;let m=(0,i.usePathname)(),h=(0,r.useRe",
+      10
+    ],
+    [
+      "b |  | function b({children:e}){let t=(0,p.kj)(),[n,y]=(0,r.useState)([]),f=n",
+      10
+    ],
+    [
+      "tl |  | function tl({intoRef:e}){let t=(0,e7.SC)();return(0,r.useEffect)(()=>(",
+      10
+    ],
+    [
+      "ta |  | function ta(){let{openAuthModal:e}=(0,$.As)(),t=(0,B.kj)(),a=(0,r.useR",
+      10
+    ]
+  ],
+  "perSecond": {
+    "2": 211,
+    "3": 5,
+    "4": 5,
+    "30": 1,
+    "31": 3,
+    "33": 1,
+    "35": 4,
+    "41": 1,
+    "42": 5
+  }
+}

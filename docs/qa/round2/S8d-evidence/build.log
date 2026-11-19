@@ -1,0 +1,205 @@
+
+> buddget@0.1.0 build
+> next build --webpack
+
+▲ Next.js 16.4.5 (webpack)
+- Environments: .env.local
+✓ Running next.config.ts took 32ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+  Creating an optimized production build ...
+(node:634) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/user/buddget/tailwind.config.ts?id=1795074550293 is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/user/buddget/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✓ Compiled successfully in 77s
+  Running TypeScript ...
+  Finished TypeScript in 48s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/202) ...
+  Generating static pages using 3 workers (50/202) 
+  Generating static pages using 3 workers (100/202) 
+  Generating static pages using 3 workers (151/202) 
+✓ Generating static pages using 3 workers (202/202) in 2.6s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[...slug]
+├ ƒ /accounts
+├ ƒ /admin
+├ ƒ /admin/accept
+├ ƒ /api/account/delete
+├ ƒ /api/admin/access
+├ ƒ /api/admin/ai/cost
+├ ƒ /api/admin/analytics
+├ ƒ /api/admin/analytics/onboarding
+├ ƒ /api/admin/audit
+├ ƒ /api/admin/auth/biometric
+├ ƒ /api/admin/auth/biometric/device
+├ ƒ /api/admin/auth/code
+├ ƒ /api/admin/auth/login
+├ ƒ /api/admin/auth/logout
+├ ƒ /api/admin/auth/password
+├ ƒ /api/admin/auth/sessions
+├ ƒ /api/admin/auth/setup
+├ ƒ /api/admin/auth/setup/confirm
+├ ƒ /api/admin/auth/status
+├ ƒ /api/admin/crashes
+├ ƒ /api/admin/emails
+├ ƒ /api/admin/emails/log
+├ ƒ /api/admin/emails/setup
+├ ƒ /api/admin/flags
+├ ƒ /api/admin/leads
+├ ƒ /api/admin/loyalty
+├ ƒ /api/admin/overview
+├ ƒ /api/admin/plans
+├ ƒ /api/admin/platform
+├ ƒ /api/admin/rewards/switches
+├ ƒ /api/admin/sms/health
+├ ƒ /api/admin/sms/logs
+├ ƒ /api/admin/sms/pattern-review
+├ ƒ /api/admin/sms/promotion
+├ ƒ /api/admin/sms/push-health
+├ ƒ /api/admin/sms/queue-health
+├ ƒ /api/admin/sms/templates
+├ ƒ /api/admin/staff
+├ ƒ /api/admin/support/macros
+├ ƒ /api/admin/support/tickets
+├ ƒ /api/admin/support/tickets/[id]
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/users/[id]/activity
+├ ƒ /api/admin/users/[id]/export
+├ ƒ /api/admin/users/[id]/financial
+├ ƒ /api/admin/users/[id]/rewards
+├ ƒ /api/admin/users/[id]/sms
+├ ƒ /api/ai
+├ ƒ /api/analytics/onboarding
+├ ƒ /api/app-config
+├ ƒ /api/auth/check-email
+├ ƒ /api/auth/device/check
+├ ƒ /api/auth/device/trust
+├ ƒ /api/auth/email-hook
+├ ƒ /api/auth/password-updated
+├ ƒ /api/auth/password/change
+├ ƒ /api/auth/second-factor
+├ ƒ /api/auth/two-factor
+├ ƒ /api/auth/welcome
+├ ƒ /api/billing/paywall-view
+├ ƒ /api/billing/revenuecat
+├ ƒ /api/billing/stay-offer
+├ ƒ /api/biometric/register
+├ ƒ /api/biometric/signin
+├ ƒ /api/buddgy/turn
+├ ƒ /api/buddgy/usage
+├ ƒ /api/budget/ai
+├ ƒ /api/cron/data-retention
+├ ƒ /api/cron/integrations
+├ ƒ /api/cron/ios-crashes
+├ ƒ /api/cron/loyalty
+├ ƒ /api/cron/month-carry
+├ ƒ /api/cron/notifications
+├ ƒ /api/cron/prices
+├ ƒ /api/cron/sms-canary
+├ ƒ /api/cron/sms-harvest
+├ ƒ /api/devices
+├ ƒ /api/devices/[id]
+├ ƒ /api/entitlements/me
+├ ƒ /api/entitlements/seen-resets
+├ ƒ /api/entitlements/trial
+├ ƒ /api/feedback
+├ ƒ /api/flags
+├ ƒ /api/gold
+├ ƒ /api/health
+├ ƒ /api/health/deep
+├ ƒ /api/notifications
+├ ƒ /api/prices/refresh
+├ ƒ /api/push/register
+├ ƒ /api/push/send
+├ ƒ /api/rates
+├ ƒ /api/receipt/scan
+├ ƒ /api/savings/carry
+├ ƒ /api/site/event
+├ ƒ /api/site/lead
+├ ƒ /api/sms/ack
+├ ƒ /api/sms/confirm
+├ ƒ /api/sms/dismiss
+├ ƒ /api/sms/flag-action
+├ ƒ /api/sms/health
+├ ƒ /api/sms/own-transfer
+├ ƒ /api/sms/parse
+├ ƒ /api/sms/revoke-token
+├ ƒ /api/sms/setup-token
+├ ƒ /api/sms/undo
+├ ƒ /api/support/board
+├ ƒ /api/support/board/[number]/vote
+├ ƒ /api/support/submit
+├ ƒ /api/support/tickets
+├ ƒ /api/support/tickets/[number]
+├ ƒ /api/voice/transcribe
+├ ƒ /api/webhooks/linear
+├ ƒ /api/webhooks/resend
+├ ƒ /api/webhooks/sentry
+├   /ar/[[...slug]]
+│ ├ ● /ar
+│ ├ ● /ar/features
+│ ├ ● /ar/features/bank-text-tracking
+│ └ ● [+29 more paths]
+├ ○ /ar/legal/privacy
+├ ○ /ar/legal/terms
+├ ƒ /auth/callback
+├ ƒ /budget-history
+├ ƒ /budget-setup
+├ ƒ /debts
+├   /en/[[...slug]]
+│ ├ ● /en
+│ ├ ● /en/features
+│ ├ ● /en/features/bank-text-tracking
+│ └ ● [+29 more paths]
+├ ƒ /expenses
+├ ƒ /flow
+├ ƒ /goals
+├ ƒ /i/[code]
+├ ƒ /income
+├ ƒ /investment
+├ ƒ /legal/privacy
+├ ƒ /legal/terms
+├ ƒ /notifications
+├ ƒ /offline
+├ ƒ /paydays
+├ ƒ /privacy
+├ ƒ /profile
+├ ƒ /reports
+├ ƒ /reset-password/confirm
+├ ○ /robots.txt
+├ ƒ /savings
+├ ƒ /settings
+├ ƒ /settings/founders
+├ ƒ /settings/invite
+├ ƒ /settings/memory
+├ ƒ /settings/pro
+├ ƒ /settings/pro/usage
+├ ƒ /settings/profile
+├ ƒ /settings/rewards
+├ ƒ /settings/security
+├ ƒ /settings/sms
+├ ○ /sitemap.xml
+├ ƒ /start
+├ ƒ /subscriptions
+├ ƒ /terms
+└ ƒ /wealth
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

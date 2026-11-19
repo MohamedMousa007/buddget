@@ -1,0 +1,118 @@
+{
+  "total": 463,
+  "beforeSignInClick": 455,
+  "sinceSignInClick": 8,
+  "topComponentsByRenders": [
+    [
+      "i | button.inline-flex shrink-0 items-center justif | function i({className:e,size:t,selected:r,surface:a,as:d=\"toggle\",type",
+      124
+    ],
+    [
+      "d | button.inline-flex shrink-0 items-center justif | function d({chip:e}){let t=(0,c.kj)(),a=e.ariaLabel??(e.selected?t.flo",
+      120
+    ],
+    [
+      "M | span.inline-flex shrink-0 | function M({category:e,className:t}){return(0,s.jsx)(\"span\",{\"aria-hid",
+      120
+    ],
+    [
+      "x |  | ({children:t,custom:e,initial:i=!0,onExitComplete:l,presenceAffectsLay",
+      75
+    ],
+    [
+      "C |  | function C({open:e,onBackdropClick:t,children:r,zIndexClassName:i,pane",
+      45
+    ],
+    [
+      "rB |  | function rB({error:e}){let t=(0,t2.$)(),a=(0,U.kj)();return(0,n.useEff",
+      37
+    ],
+    [
+      "d | button.relative inline-flex shrink-0 items-cent | function d({className:e,variant:t,size:r,shape:a,hitArea:s=!0,type:l=\"",
+      24
+    ],
+    [
+      "ts |  | function ts({configured:e}){let t=(0,i.useSearchParams)(),n=(0,i.usePa",
+      20
+    ],
+    [
+      "tr |  | function tr(){let e=(0,i.useSearchParams)(),t=(0,i.usePathname)(),n=(0",
+      19
+    ],
+    [
+      "ti |  | function ti(){let e=(0,i.useSearchParams)(),t=(0,i.usePathname)(),n=(0",
+      18
+    ],
+    [
+      "s | button.group/button inline-flex shrink-0 items- | function s({className:e,variant:t=\"default\",size:r=\"default\",loading:l",
+      17
+    ],
+    [
+      "n |  | ()=>null",
+      15
+    ],
+    [
+      "s | div.inline-flex gap-0.5 border border-[var(- | function s({options:e,value:r,onChange:t,fill:i=!0,ariaLabel:c,size:d=",
+      14
+    ],
+    [
+      "motion.div | div. | function l(i,n){var l;let x,M,E,V={...(0,a.useContext)(p.Q),...i,layou",
+      12
+    ],
+    [
+      "et | span.flex items-baseline justify-center gap-1 | function et({month:e,year:t}){return(0,n.jsxs)(\"span\",{className:\"flex",
+      12
+    ],
+    [
+      "LoadableComponent |  | function d(e){let i=l?(0,r.jsx)(l,{isLoading:!0,pastDelay:!0,error:nul",
+      11
+    ],
+    [
+      "l | svg.h-auto w-[clamp(180px,52vw,240px)] sm:w- | function l({height:e=24,mono:t=!1,className:n,title:r=\"buddget\"}){retu",
+      10
+    ],
+    [
+      "d | button.inline-flex shrink-0 items-center justif | function d({className:e,variant:t,size:r,shape:a,hitArea:s=!0,type:l=\"",
+      10
+    ],
+    [
+      "eW | div.inline-flex gap-0.5 border border-[var(- | function eW({className:e,compact:t=!1}){let{locale:n,setLocale:r}=(0,B",
+      10
+    ],
+    [
+      "Globe | svg.lucide lucide-globe | ({className:t,...s},i)=>(0,o.createElement)(a.A,{ref:i,iconNode:r,clas",
+      10
+    ],
+    [
+      "MoonStar | svg.lucide lucide-moon-star | ({className:t,...s},i)=>(0,o.createElement)(a.A,{ref:i,iconNode:r,clas",
+      10
+    ],
+    [
+      "x | div.space-y-3 | ({children:t,custom:e,initial:i=!0,onExitComplete:l,presenceAffectsLay",
+      9
+    ],
+    [
+      "m | div.space-y-3 | ({children:t,initial:e,isPresent:i,onExitComplete:r,custom:a,presenceA",
+      9
+    ],
+    [
+      "p | div.space-y-3 | function p({children:t,isPresent:e,anchorX:i,anchorY:r,root:o,pop:a}){",
+      9
+    ],
+    [
+      "c | div.space-y-3 | class c extends s.Component{getSnapshotBeforeUpdate(t){let e=this.prop",
+      9
+    ]
+  ],
+  "perSecond": {
+    "2": 442,
+    "3": 9,
+    "4": 1,
+    "18": 2,
+    "19": 2,
+    "24": 1,
+    "26": 1,
+    "32": 2,
+    "33": 3
+  }
+}
