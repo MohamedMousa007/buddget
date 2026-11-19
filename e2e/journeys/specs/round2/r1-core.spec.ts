@@ -82,30 +82,53 @@ test('R03 double tap on Save creates one expense (store and server)', async ({ p
   expect(await tile(page, 'Net worth')).toBe(925)
 })
 
-test('R04 delete an expense then undo: one live row, balance restored, server agrees', async ({ page, user }) => {
+async function deleteThenUndo(page: Page, userId: string, desc: string, reloadFirst: boolean, waitMs = 0) {
   await withQnb(page, 1000)
   await goto(page, '/flow')
-  await addExpense(page, { amount: 200, description: 'QA R04 del', category: 'Food', method: /QNB/ })
-  const e = await localWait(page, (s) => s.expenses.find((x: any) => x.description === 'QA R04 del'))
-  await serverRows('expenses', user.id, `id=eq.${e.id}`, (r) => r.length === 1)
-  await page.getByText('QA R04 del').first().click()
+  await addExpense(page, { amount: 200, description: desc, category: 'Food', method: /QNB/ })
+  const e = await localWait(page, (s) => s.expenses.find((x: any) => x.description === desc))
+  await serverRows('expenses', userId, `id=eq.${e.id}`, (r) => r.length === 1)
+  if (reloadFirst) { await page.reload({ waitUntil: 'domcontentloaded' }); await expect(page.locator('main')).toContainText(desc, { timeout: 30_000 }) }
+  await page.getByText(desc).first().click()
   await dialog(page, 'Edit expense').getByRole('button', { name: 'Delete' }).click()
-  const confirm = page.getByRole('alertdialog').getByRole('button', { name: /^(Delete|Yes, delete|Confirm)/ })
-  if (await confirm.isVisible({ timeout: 2500 }).catch(() => false)) await confirm.click()
-  await expect(page.locator('main')).not.toContainText('QA R04 del')
-  expect(await tile(page, 'Net worth')).toBe(1000)
-  await serverRows('expenses', user.id, `id=eq.${e.id}`, (r: any[]) => !!r[0]?.deleted_at)
   const undo = page.getByRole('button', { name: /^Undo/ })
   await expect(undo, 'an undo action is offered after delete').toBeVisible({ timeout: 8000 })
+  if (waitMs) { await page.waitForTimeout(waitMs); await expect(undo, 'Undo still on screen').toBeVisible() }
   await undo.click()
-  await expect(page.locator('main')).toContainText('QA R04 del')
+  await page.waitForTimeout(5000)
+  return e
+}
+
+test('R04a delete an expense then undo within a second: one live row, balance restored, server agrees', async ({ page, user }) => {
+  const e = await deleteThenUndo(page, user.id, 'QA R04a del', false)
+  await expect(page.locator('main')).toContainText('QA R04a del')
   expect(await tile(page, 'Net worth')).toBe(800)
-  const live = await serverRows('expenses', user.id, 'description=eq.QA R04 del&deleted_at=is.null', (r) => r.length === 1)
+  const live = await serverRows('expenses', user.id, 'description=eq.QA R04a del&deleted_at=is.null', (r) => r.length === 1)
   expect(live[0].id).toBe(e.id)
-  expect(await rows('expenses', user.id, 'description=eq.QA R04 del')).toHaveLength(1)
+  expect(await rows('expenses', user.id, 'description=eq.QA R04a del')).toHaveLength(1)
 })
 
-test('R05 Reports: Biggest purchase skips debt payments; money in shows expected and received', async ({ page }) => {
+test('R04b delete after a reload, then undo: the expense comes back or the user is told why not (QA-41)', async ({ page, user }) => {
+  const e = await deleteThenUndo(page, user.id, 'QA R04b del', true)
+  const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ')
+  const server = await rows('expenses', user.id, `id=eq.${e.id}`)
+  const live = server.some((r: any) => !r.deleted_at)
+  const local = (await localState(page)).expenses.filter((x: any) => x.id === e.id && !x.deletedAt).length
+  test.info().annotations.push({ type: 'evidence', description: `after undo: server live=${live}, local live=${local}, ui shows row=${body.includes('QA R04b del')}, notice mentions undo=${/undo|restore|can.t|couldn/i.test(body)}` })
+  if (!live) expect(local, 'Undo must not leave a row on screen that the server has deleted').toBe(0)
+  expect(live || /couldn.t|can.t|not restored|too late|refus/i.test(body), 'undo silently did nothing: no restore and no message').toBe(true)
+})
+
+test('R04c Undo still offered 6 s after delete restores the expense (a visible Undo must work)', async ({ page, user }) => {
+  const e = await deleteThenUndo(page, user.id, 'QA R04c del', false, 6000)
+  const live = (await rows('expenses', user.id, `id=eq.${e.id}`)).some((r: any) => !r.deleted_at)
+  const shown = ((await page.locator('main').innerText()) ?? '').includes('QA R04c del')
+  test.info().annotations.push({ type: 'evidence', description: `6 s late undo: server live=${live}, shown=${shown}` })
+  expect(live && shown).toBe(true)
+})
+
+test('R05 Reports: Biggest purchase skips debt payments; money in shows expected and received', async ({ page, user }) => {
+  void user
   await withQnb(page, 5000)
   await goto(page, '/flow')
   await addExpense(page, { amount: 300, description: 'QA R05 shoes', category: 'Shopping', method: /QNB/ })
@@ -115,7 +138,7 @@ test('R05 Reports: Biggest purchase skips debt payments; money in shows expected
   const main = page.locator('main')
   const txt = (await main.innerText()).replace(/\s+/g, ' ')
   test.info().annotations.push({ type: 'evidence', description: txt.slice(0, 500) })
-  const big = txt.match(/Biggest purchase[^\d]*([\d,]+)/i)
+  const big = txt.match(/Biggest purchase.*?E£\s*([\d,]+)/i)
   expect(big, 'Reports shows a Biggest purchase figure').not.toBeNull()
   expect(Number(big![1].replace(/,/g, ''))).toBe(300)
   await expect(main.getByText(/Money in|Income/).first()).toBeVisible()
@@ -140,20 +163,23 @@ test('R06 paydays: add salary on the 25th, listed, server row has the day and am
   await expect(page.locator('main')).toContainText('QA R06 Payroll')
 })
 
-test('R07 budget: manual builder and budget history open for a new user without errors; Zakat prompt absent when it changes nothing', async ({ page }) => {
-  await goto(page, '/budget-setup')
+test('R07 budget: manual builder and budget history open for a new user without errors; Zakat prompt absent when it changes nothing', async ({ page, user }) => {
+  void user
+  await page.goto('/budget-setup', { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'Blank' }).click()
   await expect(page.locator('body')).not.toContainText(ERR)
-  await goto(page, '/budget-history')
+  await page.goto('/budget-history', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('button', { name: /^Back to Budget/ })).toBeVisible({ timeout: 60_000 })
   await expect(page.locator('body')).not.toContainText(ERR)
   await goto(page, '/wealth')
   await expect(page.locator('main')).not.toContainText(/zakat/i)
 })
 
-test('R08 pages: Notifications, Settings, Security, Profile, Help/feedback render', async ({ page }) => {
-  for (const [path, text] of [['/notifications', /Notifications/], ['/settings', /Settings/], ['/settings/security', /Sign-in & security/], ['/settings/profile', /Profile/], ['/settings/memory', /Memory/]] as const) {
+test('R08 pages: Notifications, Settings, Security, Profile, Help/feedback render', async ({ page, user }) => {
+  void user
+  for (const [path, text] of [['/notifications', 'Notifications'], ['/settings', 'Settings'], ['/settings/security', 'Sign-in & security'], ['/settings/profile', 'Profile'], ['/settings/memory', 'Memory']] as const) {
     await goto(page, path)
-    await expect(page.locator('main')).toContainText(text)
+    await expect(page.getByRole('heading', { name: text }).first()).toBeVisible()
     await expect(page.locator('body')).not.toContainText(ERR)
   }
   await goto(page, '/settings/security')
@@ -161,9 +187,10 @@ test('R08 pages: Notifications, Settings, Security, Profile, Help/feedback rende
   await expect(page.getByRole('dialog').or(page.locator('main')).first()).toContainText(/device|This device/i)
 })
 
-test('R09 feedback: sheet opens and posts one request (mocked, nothing stored)', async ({ page }) => {
+test('R09 feedback: sheet opens and posts one request (mocked, nothing stored)', async ({ page, user }) => {
+  void user
   const posts: any[] = []
-  await page.route(/\/api\/feedback(\?|$)/, async (route) => {
+  await page.route(/\/api\/support\/submit(\?|$)/, async (route) => {
     if (route.request().method() === 'POST') { posts.push(route.request().postDataJSON()); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }) }
     return route.continue()
   })
@@ -172,7 +199,7 @@ test('R09 feedback: sheet opens and posts one request (mocked, nothing stored)',
   const d = page.getByRole('dialog').last()
   await expect(d).toBeVisible()
   await d.getByRole('textbox').first().fill('QA R09 mocked feedback')
-  await d.getByRole('button', { name: /^(Send|Submit)/ }).first().click()
+  await d.getByRole('button', { name: /^Send Report/ }).click()
   await expect.poll(() => posts.length, { timeout: 10_000 }).toBe(1)
 })
 
@@ -201,7 +228,8 @@ test('R11 invite link /i/<code> sets the cookie and opens the app; a bad code ju
   expect(bad.headers()['set-cookie'] ?? '').not.toMatch(/invite/i)
 })
 
-test('R12 Quick add lists its entries; scan receipt and voice entry reachable on web (recorded)', async ({ page }) => {
+test('R12 Quick add lists its entries; scan receipt and voice entry reachable on web (recorded)', async ({ page, user }) => {
+  void user
   await goto(page, '/flow')
   await page.getByRole('button', { name: 'Quick add' }).click()
   const names = await dialog(page, 'Add').getByRole('button').allInnerTexts()

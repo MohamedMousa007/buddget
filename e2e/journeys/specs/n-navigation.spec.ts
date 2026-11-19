@@ -103,8 +103,8 @@ test('N3 data survives reload and sign-out/sign-in @desktop', async ({ page, use
     const confirm = page.getByRole('button', { name: /^Sign out$/ }).last()
     if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) await confirm.click()
     await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible({ timeout: 30_000 })
-    const left = await page.evaluate(() => localStorage.getItem('buddget-storage') ?? '')
-    expect(left.includes('QA N persist'), 'signed-out device still holds the expense in localStorage').toBe(false)
+    // The wipe follows the final flush (up to 3 s): allow it, but the copy must be gone shortly after the sign-in screen.
+    await expect.poll(async () => (await page.evaluate(() => localStorage.getItem('buddget-storage') ?? '')).includes('QA N persist'), { timeout: 10_000, message: 'signed-out device still holds the expense in localStorage' }).toBe(false)
   })
   await test.step('sign back in: the server copy comes back', async () => {
     await signIn(page, user.email)
