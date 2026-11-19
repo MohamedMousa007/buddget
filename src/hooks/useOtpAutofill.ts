@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
 import { isAndroid } from '@/lib/native/isNative'
 
 /**
@@ -30,7 +31,7 @@ export function useOtpAutofill(onCode: (code: string) => void, enabled = true) {
         const { Clipboard } = await import('@capacitor/clipboard')
         const { value, type } = await Clipboard.read()
         if (cancelled || (type && !type.includes('text'))) return
-        const m = (value ?? '').match(/\b(\d{6})\b/)
+        const m = (value ?? '').match(new RegExp(`\\b(\\d{${EMAIL_OTP_LENGTH}})\\b`))
         if (m) cb.current(m[1])
       } catch {
         /* clipboard unavailable */

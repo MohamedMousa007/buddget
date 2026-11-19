@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { toLatinDigits } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { useOtpAutofill } from '@/hooks/useOtpAutofill'
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
 import { inputFocus, inputStyle } from '@/components/features/auth-modal/authModalTokens'
 
 export interface AuthOtpRowProps {
@@ -19,23 +20,23 @@ export interface AuthOtpRowProps {
 export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
   const a = useT().a11y
   const refs = useRef<(HTMLInputElement | null)[]>([])
-  const digitsOnly = toLatinDigits(value).replace(/\D/g, '').slice(0, 6)
-  const chars = (digitsOnly + '      ').slice(0, 6).split('')
+  const digitsOnly = toLatinDigits(value).replace(/\D/g, '').slice(0, EMAIL_OTP_LENGTH)
+  const chars = (digitsOnly + ' '.repeat(EMAIL_OTP_LENGTH)).slice(0, EMAIL_OTP_LENGTH).split('')
 
   // Android: pull a freshly-copied code from the clipboard on resume. iOS fills
   // via the input's one-time-code autocomplete (handled as multi-char below).
-  useOtpAutofill((code) => onChange(code), digitsOnly.length < 6)
+  useOtpAutofill((code) => onChange(code), digitsOnly.length < EMAIL_OTP_LENGTH)
 
   const setDigit = (i: number, raw: string) => {
     const cleaned = toLatinDigits(raw).replace(/\D/g, '')
     // Autofill / QuickType inserts the whole code into one box — distribute it.
     if (cleaned.length > 1) {
-      const code = cleaned.slice(0, 6)
+      const code = cleaned.slice(0, EMAIL_OTP_LENGTH)
       onChange(code)
       refs.current[Math.min(code.length, 5)]?.focus()
       return
     }
-    const padded = (digitsOnly + '      ').slice(0, 6).split('')
+    const padded = (digitsOnly + ' '.repeat(EMAIL_OTP_LENGTH)).slice(0, EMAIL_OTP_LENGTH).split('')
     padded[i] = cleaned || ' '
     const next = padded.join('').replace(/ /g, '')
     onChange(next)
@@ -56,14 +57,14 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
 
   const onPaste = (e: ClipboardEvent) => {
     e.preventDefault()
-    const t = toLatinDigits(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, 6)
+    const t = toLatinDigits(e.clipboardData.getData('text')).replace(/\D/g, '').slice(0, EMAIL_OTP_LENGTH)
     onChange(t)
     refs.current[Math.min(t.length, 5)]?.focus()
   }
 
   return (
     <div role="group" aria-label={a.otpCode} className="flex justify-center gap-2 sm:gap-2.5" onPaste={onPaste}>
-      {Array.from({ length: 6 }).map((_, i) => (
+      {Array.from({ length: EMAIL_OTP_LENGTH }).map((_, i) => (
         <input
           key={i}
           ref={(el) => {
@@ -71,7 +72,7 @@ export function AuthOtpRow({ value, onChange, disabled }: AuthOtpRowProps) {
           }}
           inputMode="numeric"
           autoComplete="one-time-code"
-          aria-label={a.otpDigit(i + 1, 6)}
+          aria-label={a.otpDigit(i + 1, EMAIL_OTP_LENGTH)}
           disabled={disabled}
           value={chars[i]?.trim() ? chars[i] : ''}
           onChange={(e) => setDigit(i, e.target.value)}

@@ -3,7 +3,9 @@ import { sendTemplatedEmail } from '@/lib/server/email/send'
 import type { ServiceClient } from '@/lib/supabase/service'
 import { requireSupabasePublishableKey, requireSupabaseUrl } from '@/lib/supabase/env'
 
-export const EMAIL_CODE_LENGTH = 6
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
+
+export const EMAIL_CODE_LENGTH = EMAIL_OTP_LENGTH
 
 /** A non-persisting client: sending and checking a code must never create or replace a browser session. */
 function probe() {

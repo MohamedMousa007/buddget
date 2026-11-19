@@ -13,6 +13,7 @@ import { cardStyle } from '@/components/features/auth-modal/authModalTokens'
 import { Scrim } from '@/components/ui/Scrim'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
 import { Button } from '@/components/ui/button'
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
 import { toLatinDigits } from '@/lib/utils/formatters'
 
 /**
@@ -58,8 +59,8 @@ function Challenge() {
   }, [cooldown])
 
   const verify = async () => {
-    const token = toLatinDigits(otp).replace(/\D/g, '').slice(0, 6)
-    if (token.length !== 6) {
+    const token = toLatinDigits(otp).replace(/\D/g, '').slice(0, EMAIL_OTP_LENGTH)
+    if (token.length !== EMAIL_OTP_LENGTH) {
       setError(t.auth.errorOtpIncomplete)
       return
     }

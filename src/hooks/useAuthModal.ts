@@ -18,6 +18,7 @@ import { expectSignOut } from '@/lib/auth/intentionalSignOut'
 import { AUTH_EVENTS, track } from '@/lib/analytics/events'
 import { changePassword } from '@/lib/auth/changePassword'
 import { useAuthSecurityCopy } from '@/lib/i18n/authSecurityCopy'
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
 import { toLatinDigits } from '@/lib/utils/formatters'
 
 export type AuthStep = 'form' | 'verify' | 'forgot' | 'reset-new-password'
@@ -495,8 +496,8 @@ export function useAuthModal() {
       return
     }
     setError('')
-    const token = toLatinDigits(otp).replace(/\D/g, '').slice(0, 6)
-    if (token.length !== 6) {
+    const token = toLatinDigits(otp).replace(/\D/g, '').slice(0, EMAIL_OTP_LENGTH)
+    if (token.length !== EMAIL_OTP_LENGTH) {
       setError(t.auth.errorOtpIncomplete)
       return
     }

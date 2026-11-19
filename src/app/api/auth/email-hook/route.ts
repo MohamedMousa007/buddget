@@ -5,7 +5,10 @@ import { authHookIdempotencyKey } from '@/lib/server/email/suppression'
 import { verifySignedWebhook } from '@/lib/server/email/webhook'
 import { requireSupabaseUrl } from '@/lib/supabase/env'
 
-const fail = (message: string, status: number) => NextResponse.json({ error: { http_code: status, message } }, { status })
+const fail = (message: string, status: number) => {
+  console.error('[auth-email-hook]', status, message)
+  return NextResponse.json({ error: { http_code: status, message } }, { status })
+}
 
 /**
  * Supabase "Send Email" auth hook: our templates and mailer replace Supabase's. Enable it under Authentication >

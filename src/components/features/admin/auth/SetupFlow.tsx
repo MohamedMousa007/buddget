@@ -8,6 +8,7 @@ import { Notice } from '../ui/Panel'
 import { Field } from '../ui/Field'
 import { adminPost, errorMessage, setAdminToken } from '../adminClient'
 import { AuthFrame } from './AuthFrame'
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
 import { EmailCodeInput } from './EmailCodeInput'
 
 const SETUP = '/api/admin/auth/setup'
@@ -72,7 +73,7 @@ export function SetupFlow({ onDone, onBack }: { onDone: () => void; onBack: () =
           <Input size="brand" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         </Field>
         {error ? <Notice tone="negative">{error}</Notice> : null}
-        <Button type="submit" size="cta-block" loading={busy} disabled={code.replace(/\D/g, '').length < 6 || !password || !confirm}><KeyRound />Enter the portal</Button>
+        <Button type="submit" size="cta-block" loading={busy} disabled={code.replace(/\D/g, '').length < EMAIL_OTP_LENGTH || !password || !confirm}><KeyRound />Enter the portal</Button>
         <Button type="button" variant="ghost" size="touch" className="w-full" onClick={onBack}>Already set up? Sign in</Button>
       </form>
     </AuthFrame>

@@ -11,6 +11,7 @@ import { Notice } from '../ui/Panel'
 import { Field } from '../ui/Field'
 import { adminPost, errorMessage, setAdminToken } from '../adminClient'
 import { AuthFrame } from './AuthFrame'
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
 import { EmailCodeInput } from './EmailCodeInput'
 
 interface SignedIn { token: string; expiresAt: string }
@@ -91,7 +92,7 @@ export function SignInScreen({ biometricEnrolled, onSignedIn, onSetup }: { biome
         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void signIn() }}>
           <EmailCodeInput value={code} onChange={setCode} email={email} alreadySent disabled={busy} body={{ email, password }} />
           {error ? <Notice tone="negative">{error}</Notice> : null}
-          <Button type="submit" size="cta-block" loading={busy} disabled={code.replace(/\D/g, '').length < 6}><Lock />Sign in</Button>
+          <Button type="submit" size="cta-block" loading={busy} disabled={code.replace(/\D/g, '').length < EMAIL_OTP_LENGTH}><Lock />Sign in</Button>
           <Button type="button" variant="ghost" size="touch" className="w-full" onClick={() => { setStep('details'); setError(null) }}>Use a different email or password</Button>
         </form>
       </AuthFrame>

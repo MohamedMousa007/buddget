@@ -5,6 +5,7 @@ import { ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmailCodeInput } from '../auth/EmailCodeInput'
+import { EMAIL_OTP_LENGTH } from '@/lib/auth/otp'
 import { AdminSheet } from './AdminSheet'
 
 /** What the server's `stepUp` accepts: a fresh emailed code or the admin password. Spread it into the request body. */
@@ -42,7 +43,7 @@ export function StepUpProvider({ children }: { children: ReactNode }) {
     setReason(null)
   }
 
-  const ready = usePassword ? password.length > 0 : code.replace(/\D/g, '').length === 6
+  const ready = usePassword ? password.length > 0 : code.replace(/\D/g, '').length === EMAIL_OTP_LENGTH
 
   return (
     <StepUpContext.Provider value={ask}>
