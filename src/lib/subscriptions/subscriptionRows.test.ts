@@ -115,6 +115,9 @@ describe('nudges and rail', () => {
   it('falls back to a monthly still-using nudge', () => {
     expect(pickNudge([row(sub(), [paidSep()])], today, new Set())?.kind).toBe('still')
   })
+  it('does not ask "still using it?" about a subscription added today', () => {
+    expect(pickNudge([row(sub({ createdAt: '2026-10-17T09:00:00Z' }), [paidSep()])], today, new Set())).toBeNull()
+  })
   it('caps rail insights at two, price before trial', () => {
     const rows = [
       row(sub({ id: 'p1' }), [exp('p1', '2026-10-01', 250)]),

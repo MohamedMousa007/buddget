@@ -4,6 +4,9 @@ import { chargeAmount, scheduledDates } from './subscriptionForecast'
 import { trackingAction } from './subscriptionTracking'
 import type { RowModel } from './subscriptionRows'
 
+/** A subscription added to the app less than one billing cycle ago is not asked "still using it?". */
+const STILL_MIN_AGE_DAYS = 30
+
 export type NudgeKind = 'ask' | 'price' | 'trial' | 'plan' | 'still'
 
 export interface Nudge {
@@ -54,7 +57,7 @@ export function pickNudge(rows: RowModel[], today: Date, dismissed: ReadonlySet<
   }
 
   const monthly = rows
-    .filter((r) => r.life === 'active' && r.sub.billingCycle === 'monthly')
+    .filter((r) => r.life === 'active' && r.sub.billingCycle === 'monthly' && differenceInCalendarDays(now, parseISO(r.sub.createdAt)) >= STILL_MIN_AGE_DAYS)
     .sort((a, b) => b.amount - a.amount)[0]
   if (monthly) {
     candidates.push({ kind: 'still', row: monthly, key: `subnudge:still:${monthly.sub.id}:${monthKey(now)}` })
