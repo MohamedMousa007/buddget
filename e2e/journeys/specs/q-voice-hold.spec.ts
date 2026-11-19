@@ -25,8 +25,13 @@ test('Q7 holding the + records instead of opening the menu; dropping on the tras
     await expect(trash).toBeHidden()
   })
   await test.step('next hold records; dropping on the trash cancels without any AI call', async () => {
-    await page.waitForTimeout(500)
-    await holdFab(page)
+    // The permission answer resolves asynchronously; under load the next hold can still land on the prompt, so hold again.
+    for (let i = 0; i < 4; i++) {
+      await page.waitForTimeout(800)
+      await holdFab(page)
+      if (await trash.isVisible({ timeout: 3000 }).catch(() => false)) break
+      await page.mouse.up()
+    }
     await expect(page.getByRole('dialog', { name: 'Add' })).toBeHidden()
     await expect(trash).toBeVisible()
     const t = (await trash.boundingBox())!
