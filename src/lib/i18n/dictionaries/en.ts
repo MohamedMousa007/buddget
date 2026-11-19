@@ -2948,7 +2948,7 @@ export const en: Dictionary = {
     sectionTitle: 'SMS Auto-Tracking',
     sectionSubtitle: 'Automatically detect and record bank transactions from incoming SMS messages.',
     toggleLabel: 'Enable SMS tracking',
-    toggleHint: 'When on, bank SMS messages forwarded by your device will be parsed and added to your expenses automatically.',
+    toggleHint: 'When on, SMS from banks, wallets and other businesses, and messages that look like a transaction, are sent to buddget, read, and added to your expenses automatically.',
     statusConnected: (bank: string, time: string) => `Last received from ${bank} at ${time}`,
     statusNeverConnected: 'No SMS received yet. Complete setup below.',
     pendingQueued: (count: number) =>
