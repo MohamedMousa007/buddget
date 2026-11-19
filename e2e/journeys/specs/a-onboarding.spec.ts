@@ -25,7 +25,6 @@ test.describe('A registration and onboarding', () => {
       // GoTrue keeps only a hash of the emailed code; ask it for a fresh one of the same configured length (no email sent).
       const code = await signupOtp(email)
       test.info().annotations.push({ type: 'evidence', description: `project email OTP length = ${code.length}; the app's code step has 6 boxes and verifyOtpCode rejects any other length (useAuthModal.ts:497)` })
-      knownBug('E2E-001', `Supabase sends ${code.length}-digit sign-up codes but the app accepts exactly 6, so email sign-up cannot be confirmed in the app`)
       await boxes.first().click()
       await page.keyboard.type(code)
       await page.getByRole('button', { name: 'Confirm & get started' }).click()
@@ -106,20 +105,14 @@ test.describe('A registration and onboarding', () => {
       }
       expect(sawSavings, 'the studio asks how much is saved without offering the 1,400 already in the accounts').toBe(true)
     })
-    const pocket = await test.step('studio created a Savings pocket with an Opening balance deposit of 1,400', async () => {
-      const p = await localWait(page, (s) => s.savingsAccounts.find((a: any) => a.name === 'Savings'), 60_000)
-      const tx = await localWait(page, (s) => s.savingsTransactions.find((t: any) => t.accountId === p.id && t.notes === 'Opening balance'))
-      expect(tx.amount).toBe(1400)
-      expect(p.linkedPaymentMethodId ?? p.heldInPaymentMethodId ?? null).toBeNull()
-      await serverRows('savings_transactions', user.id, `account_id=eq.${p.id}&notes=eq.Opening%20balance`, (r: any[]) => r.length === 1 && Number(r[0].amount) === 1400 && r[0].payment_method_id === null)
-      return p
+    // QA-001 fixed (af3c39e9, 0fde3fc1): the studio asks whether the saved money sits in the tracked accounts, and a pocket
+    // made from an account is an earmark inside it. Whatever pocket the answers produce, the money entered is counted once.
+    await test.step('net worth stays at the 1,400 entered: accounts are not doubled by the studio', async () => {
+      await goto(page, '/accounts')
+      expect(await tile(page, 'In accounts')).toBe(1400)
+      await goto(page, '/flow')
+      await expect.poll(() => tile(page, 'Net worth'), { timeout: 30_000 }).toBe(1400)
     })
-    test.info().annotations.push({ type: 'evidence', description: `pocket ${pocket.id} "Savings" 1,400 unlinked; accounts Cash 1,000 + QNB 400` })
-    await goto(page, '/accounts')
-    expect(await tile(page, 'In accounts')).toBe(1400)
-    knownBug('QA-001', 'the studio savings question is not seeded from (or netted against) account balances, so the same 1,400 becomes an unlinked pocket and net worth doubles')
-    await goto(page, '/flow')
-    expect(await tile(page, 'Net worth')).toBe(1400)
   })
 
   test('A3 onboarding "Cash" does not create a second Cash account [E2E-005]', async ({ page, user }) => {
@@ -207,7 +200,6 @@ test('A4 account > income > create/apply budget > expense > Flow and budget cons
   })
 
   await test.step('net worth counts the 5,000 received today: 8,000 + 5,000 - 300', async () => {
-    knownBug('E2E-002', 'addIncomeEvent stores no occurredAt, so balance.ts dates a same-day money-in at 12:00 and skips it (future before noon, pre-opening for an account opened after noon)')
     await goto(page, '/flow')
     expect(await tile(page, 'Net worth')).toBe(12700)
   })

@@ -70,6 +70,18 @@ describe('pay debt (FRM-4)', () => {
   })
 })
 
+describe('pay debt keeps the chosen account (C1)', () => {
+  it('a payment-methods update while the sheet is open (a sync, a balance refresh) does not switch the payment back to the default', () => {
+    useFinanceStore.setState({ paymentMethods: [{ id: 'pm1', name: 'Cash', type: 'cash', isDefault: true }, { id: 'pm2', name: 'QNB', type: 'bank' }] as never })
+    const h = renderLite(() => useAddDebtSheet())
+    h.act(() => { h.result.current.selectDebtForPayFlow('d1'); h.result.current.setPaymentAmount('40'); h.result.current.setPaymentMethodId('pm2') })
+    h.act(() => useFinanceStore.setState({ paymentMethods: st().paymentMethods.map((m) => ({ ...m })) }))
+    h.act(() => h.result.current.handleAddPayment())
+    expect(st().debtPayments).toHaveLength(1)
+    expect(st().debtPayments[0].paymentMethodId).toBe('pm2')
+  })
+})
+
 describe('new installment plan (FRM-11)', () => {
   const setup = (count: string) => {
     useSettingsStore.setState({ activeModal: 'addDebt', debtSheetPaymentOnly: false } as never)

@@ -32,10 +32,10 @@ test('N1 navigation: every main tab, header Budget, profile menu pages @desktop'
     await expect(page).toHaveURL(/budget-setup/)
     await healthy(page)
   })
-  await test.step('profile menu > Payment methods opens its sheet', async () => {
+  await test.step('profile menu > Cards opens the payment methods sheet', async () => {
     await goto(page, '/flow')
     await page.getByRole('button', { name: /^Profile menu/ }).click()
-    await page.getByRole('menuitem', { name: 'Payment methods', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Cards', exact: true }).click()
     await expect(page.getByRole('dialog').or(page.getByRole('heading', { name: /Payment methods/ })).first()).toBeVisible()
     await page.keyboard.press('Escape')
   })
@@ -94,13 +94,16 @@ test('N3 data survives reload and sign-out/sign-in @desktop', async ({ page, use
     expect(await tile(page, 'Net worth')).toBe(nw)
   })
   await test.step('sign out clears the device copy', async () => {
-    await page.getByRole('button', { name: /^Profile menu/ }).click()
-    await page.getByRole('menuitem', { name: 'Sign out' }).click()
+    // The profile menu redesign (b69d8b3a) moved Sign out to the foot of Settings.
+    await goto(page, '/settings')
+    await page.getByRole('button', { name: 'Sign out', exact: true }).first().click()
     const confirm = page.getByRole('button', { name: /^Sign out$/ }).last()
     if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) await confirm.click()
     await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible({ timeout: 30_000 })
-    const left = await page.evaluate(() => localStorage.getItem('buddget-storage') ?? '')
-    expect(left.includes('QA N persist'), 'signed-out device still holds the expense in localStorage').toBe(false)
+    // The sign-in screen shows at once; the final flush then runs before the wipe (AuthProvider.signOut), so wait for it.
+    await expect.poll(() => page.evaluate(() => (localStorage.getItem('buddget-storage') ?? '').includes('QA N persist')), {
+      message: 'signed-out device still holds the expense in localStorage', timeout: 15_000,
+    }).toBe(false)
   })
   await test.step('sign back in: the server copy comes back', async () => {
     await signIn(page, user.email)
