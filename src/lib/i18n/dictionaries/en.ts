@@ -1308,7 +1308,7 @@ export const en: Dictionary = {
     heroNext: 'Next payment',
     heroMonth: 'This month',
     heroMonthHint: 'paid of due',
-    heroDebtFreeBy: 'Debt-free by',
+    heroDebtFreeBy: 'Last payment',
     heroDebtFreeSince: 'Free since',
     heroOnSchedule: 'On schedule',
     heroWithoutPlan: (n) => `${n} without a plan`,

@@ -111,7 +111,7 @@ export const budgetSegmentCopyEn: BudgetSegmentCopy = {
       ready: 'Ready to activate',
       over: (a) => `Over income by ${a} · fix before activating`,
     },
-    fact: { by: (m) => `Debt-free by ${m}`, around: (m) => `Debt-free around ${m}`, unknown: 'No debt-free date yet' },
+    fact: { by: (m) => `Debt-free by ${m} on this plan`, around: (m) => `Debt-free around ${m} on this plan`, unknown: 'No debt-free date yet' },
     askBuddgy: 'Ask Buddgy to change',
   },
   build: {
@@ -179,7 +179,7 @@ export const budgetSegmentCopyAr: BudgetSegmentCopy = {
       ready: 'جاهزة للتفعيل',
       over: (a) => `أعلى من الدخل بمقدار ${a} · عالجها قبل التفعيل`,
     },
-    fact: { by: (m) => `خالٍ من الديون بحلول ${m}`, around: (m) => `خالٍ من الديون نحو ${m}`, unknown: 'لا موعد للخلو من الديون بعد' },
+    fact: { by: (m) => `خالٍ من الديون بحلول ${m} وفق الخطة`, around: (m) => `خالٍ من الديون نحو ${m} وفق الخطة`, unknown: 'لا موعد للخلو من الديون بعد' },
     askBuddgy: 'اطلب من بادجي التعديل',
   },
   build: {

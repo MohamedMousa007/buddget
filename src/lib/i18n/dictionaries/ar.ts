@@ -1315,7 +1315,7 @@ export const ar: Dictionary = {
     // TODO(ar-review)
     heroMonth: 'هذا الشهر',
     heroMonthHint: 'المسدد من المستحق',
-    heroDebtFreeBy: 'خالٍ من الديون',
+    heroDebtFreeBy: 'آخر دفعة',
     heroDebtFreeSince: 'خالٍ منذ',
     heroOnSchedule: 'حسب الخطة',
     heroWithoutPlan: (n) => `${n} بلا خطة`,
