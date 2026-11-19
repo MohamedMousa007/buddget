@@ -3122,6 +3122,7 @@ export const ar: Dictionary = {
     removeFilter: (label: string) => `إزالة مرشّح ${label}`,
     showOnly: (label: string) => `عرض ${label} فقط`,
     notCountedChip: (n: number) => `غير محتسب · ${n}`,
+    excludesMoves: (n: number) => `الإجماليات لا تشمل ${n} من التحويلات بين حساباتك`,
     showNotCounted: (n: number) => `عرض ${n} من التحويلات بين حساباتك، غير محتسبة`,
     hideNotCounted: 'إخفاء التحويلات بين حساباتك',
     budgetAria: (label: string) => `ميزانية ${label}`,

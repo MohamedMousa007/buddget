@@ -255,6 +255,9 @@ export default function FlowPage() {
       <CarryStalePrompt />
 
       <FlowSummaryBand {...band} />
+      {movesCount > 0 && !filters.showMoves ? (
+        <p className="px-4 pt-2 text-xs text-[var(--color-brand-text-muted)] lg:px-6">{t.flow.excludesMoves(movesCount)}</p>
+      ) : null}
 
       <PageGrid
           secondary={<div className="lg:-me-4"><FlowChipRail title={segment === 'in' ? t.flow.railIncomeTypes : t.flow.railCategories} chips={chips} /></div>}

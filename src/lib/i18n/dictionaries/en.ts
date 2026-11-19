@@ -3113,6 +3113,7 @@ export const en: Dictionary = {
     removeFilter: (label: string) => `Remove ${label} filter`,
     showOnly: (label: string) => `Show only ${label}`,
     notCountedChip: (n: number) => `Not counted · ${n}`,
+    excludesMoves: (n: number) => `Totals exclude ${n} ${n === 1 ? 'move' : 'moves'} between your own accounts`,
     showNotCounted: (n: number) => `Show ${n} moves between your own accounts, not counted`,
     hideNotCounted: 'Hide moves between your own accounts',
     budgetAria: (label: string) => `${label} budget`,
