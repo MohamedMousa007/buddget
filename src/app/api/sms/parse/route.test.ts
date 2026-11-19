@@ -335,6 +335,13 @@ describe('AI tier: reading checked against the message, money in held, held neve
     expect(templateInserts()).toHaveLength(0)
   })
 
+  it('learns from a message that settled as the second leg of a pair (booked, no row of its own)', async () => {
+    h.dispatch.mockResolvedValue({ ...BOOKED, outcome: 'transfer_paired', kind: 'instant_transfer_out', expenseId: null })
+    const out = { ...income(5000), kind: 'instant_transfer_out' }
+    await run('Your account 1234 was debited with EGP 5,000.00 transfer to ACME LTD', out)
+    expect(h.ops.some((o) => o.table === 'sms_parse_log' && o.op === 'update' && o.values?.learn_status === 'skipped_held')).toBe(false)
+  })
+
   it('books a grounded AI credit from a known sender', async () => {
     h.dispatch.mockResolvedValue({ ...BOOKED, outcome: 'income_created', kind: 'income', expenseId: null, incomeId: 'i1' })
     await run(CREDIT, income(5000))

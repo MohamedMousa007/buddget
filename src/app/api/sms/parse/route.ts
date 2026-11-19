@@ -1265,7 +1265,10 @@ export async function POST(request: Request) {
   // function alive until it completes.
   if (aiLearn) {
     const { key: learnKey, apiKey } = aiLearn
-    if (preAck && !senderHeld && !capHeld && !aiCreditHeld) {
+    // Booked means a row was posted or the message settled as the second leg of a pair; every hold is excluded.
+    const bookedNoHold = !addFailed && !senderHeld && !capHeld && !aiCreditHeld && !debtAwaitingUser && !salaryAwaitingUser
+      && (postedSomething || intentionalNoPost)
+    if (bookedNoHold) {
       learnStatus = 'pending' // learnPattern overwrites with its real outcome
       after(() => learnPattern(message, learnKey, parsed, service, apiKey, userId, logId, nowIso))
     } else learnStatus = 'skipped_held'
