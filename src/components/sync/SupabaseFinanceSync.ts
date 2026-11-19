@@ -46,14 +46,34 @@ const DEBOUNCE_MS = 500
 const RESUME_THROTTLE_MS = 30_000
 
 const fingerprintTimers = new Map<string, ReturnType<typeof setTimeout>>()
+/** The newest delivered baseline per user that is not yet written as a fingerprint. */
+const pendingFingerprints = new Map<string, Snapshot>()
+function savePendingFingerprint(userId: string, snap: Snapshot): void {
+  if (pendingFingerprints.get(userId) !== snap) return
+  pendingFingerprints.delete(userId)
+  // Signed out meanwhile: the wipe already removed this user's fingerprint, and nothing of theirs may come back.
+  if (syncSuspended) return
+  saveFingerprint(userId, snap)
+}
+/**
+ * S8d-6: a reload inside the idle delay booted on the previous fingerprint and re-sent rows the server already had.
+ * Leaving the page writes the pending fingerprint at once.
+ */
+export function flushPendingFingerprints(): void {
+  for (const [userId, snap] of [...pendingFingerprints]) {
+    clearTimeout(fingerprintTimers.get(userId))
+    savePendingFingerprint(userId, snap)
+  }
+}
 /** Remembers what the server has received, so edits still unsent when the app closes are found at the next start. */
 function persistBaseline(userId: string, snap: Snapshot | null): void {
   if (!snap) return
+  pendingFingerprints.set(userId, snap)
   clearTimeout(fingerprintTimers.get(userId))
   fingerprintTimers.set(userId, setTimeout(() => {
     // Hashing a large store is main-thread work: do it when the UI is idle, but never later than the next burst.
-    if (typeof requestIdleCallback === 'function') requestIdleCallback(() => saveFingerprint(userId, snap), { timeout: 1500 })
-    else saveFingerprint(userId, snap)
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(() => savePendingFingerprint(userId, snap), { timeout: 1500 })
+    else savePendingFingerprint(userId, snap)
   }, 300))
 }
 
@@ -507,6 +527,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // desktop reload, mobile background, iOS app-switch. `visibilitychange`
     // fires BEFORE unload so fetches have a chance to complete.
     const onHide = () => {
+      flushPendingFingerprints()
       if (timer.current) {
         clearTimeout(timer.current)
         timer.current = null

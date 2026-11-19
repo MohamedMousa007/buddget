@@ -10,6 +10,7 @@ const h = vi.hoisted(() => {
     from: vi.fn((): unknown => { throw new Error('no table mock') }),
     cleanups: [] as Array<() => void>,
     online: true,
+    saveFingerprint: vi.fn(),
   }
 })
 
@@ -61,8 +62,9 @@ vi.mock('@/hooks/useNetworkStatus', () => ({
 vi.mock('@/hooks/remote/hydrateGuard', () => ({ markHydrated: vi.fn(), resetHydrationGuard: vi.fn() }))
 vi.mock('@/lib/market/marketData', () => ({ ensureMarketDataFresh: vi.fn(async () => {}) }))
 vi.mock('@/lib/theme/applyTheme', () => ({ applyTheme: vi.fn() }))
+vi.mock('@/components/sync/flushedFingerprint', () => ({ baselineForBoot: (_u: string, cache: unknown) => cache, saveFingerprint: h.saveFingerprint }))
 
-import { SupabaseFinanceSync, flushFinanceNow, suspendFinanceSync, syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
+import { SupabaseFinanceSync, flushFinanceNow, flushPendingFingerprints, suspendFinanceSync, syncFinanceNow } from '@/components/sync/SupabaseFinanceSync'
 import { applyDelta, decideReset, pullDelta } from '@/lib/supabase/remote'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 
@@ -157,6 +159,16 @@ describe('finance sync flush / re-baseline', () => {
   it('D-2: a refused flush reports the edits as not acknowledged', async () => {
     h.flushDiff.mockResolvedValue(failed)
     await expect(flushFinanceNow()).resolves.toBe(false)
+  })
+
+  it('S8d-6: leaving the page writes the delivered baseline\'s fingerprint at once, not after the idle delay', async () => {
+    await flushFinanceNow()
+    const delivered = calls()[0]![3]
+    h.saveFingerprint.mockClear()
+    flushPendingFingerprints()
+    expect(h.saveFingerprint).toHaveBeenCalledWith('u1', delivered)
+    flushPendingFingerprints()
+    expect(h.saveFingerprint).toHaveBeenCalledTimes(1)
   })
 
   it('after suspendFinanceSync a pending flush is dropped, not sent', async () => {
