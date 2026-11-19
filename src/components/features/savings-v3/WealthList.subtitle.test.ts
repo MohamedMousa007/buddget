@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { subtitle } from './WealthList'
 import { en } from '@/lib/i18n/dictionaries/en'
-import type { WealthRowVM } from './types'
+import type { WealthRowVM } from '@/lib/savings/wealthModel'
 
 const row = (account: Record<string, unknown>) => ({ account } as unknown as WealthRowVM)
 const sub = (r: WealthRowVM, goal?: string) => subtitle(r, en.wealthPage, en.savingsForms.identity, 'en', goal)
