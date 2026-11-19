@@ -130,7 +130,8 @@ export function AmountReceivedSheet() {
     savingRef.current = true
     const status = meetsExpected ? 'confirmed' : 'partial'
     if (targetEventId) {
-      updateIncomeEvent(targetEventId, { amount: amt, status, receivedDate, occurrenceDate: current.dueDate })
+      // Marked received today: carry the exact time, as a new entry does, so the balance counts it at once.
+      updateIncomeEvent(targetEventId, { amount: amt, status, receivedDate, occurrenceDate: current.dueDate, ...(receivedDate === localTodayISO() ? { occurredAt: new Date().toISOString() } : {}) })
     } else {
       addIncomeEvent({
         templateId: source.id,

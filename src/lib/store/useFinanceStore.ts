@@ -75,6 +75,10 @@ import { resendCashDebtPayments } from '@/lib/store/migrations/v23_cash_debt_pay
 import { dropMistypedFields } from '@/lib/store/persistShape'
 import { decomposePaymentMethodName, normalizePaymentMethodType } from '@/lib/payment/paymentMethodDefaults'
 const PERSIST_VERSION = 23
+
+/** Today's entries carry the exact time; back-dated ones stay day-level (the balance reads them at noon). */
+const occurredNow = (date: string, given?: string): string | undefined =>
+  given ?? (date === localTodayISO() ? new Date().toISOString() : undefined)
 const PERSIST_WRITE_DEBOUNCE_MS = 150
 
 const persistStorage = createDebouncedJsonStorage<FinanceStore>(() => createSafeLocalStorage(), PERSIST_WRITE_DEBOUNCE_MS)
@@ -275,8 +279,7 @@ export const useFinanceStore = create<FinanceStore>()(
             {
               ...expense,
               spendExclusion: expense.spendExclusion ?? (isMethodExcluded(get().paymentMethods, expense.paymentMethodId) ? ('method' as const) : undefined),
-              // Today's entries carry the exact time; back-dated ones stay day-level (read at noon).
-              occurredAt: expense.occurredAt ?? (expense.date === localTodayISO() ? new Date().toISOString() : undefined),
+              occurredAt: occurredNow(expense.date, expense.occurredAt),
               amountInBaseCurrency,
               id: expense.id ?? generateId(),
               createdAt: new Date().toISOString(),
@@ -412,6 +415,7 @@ export const useFinanceStore = create<FinanceStore>()(
               currency: cur,
               sourceType: 'debt' as IncomeSourceType,
               receivedDate: iso.slice(0, 10),
+              occurredAt: iso,
               status: 'confirmed' as const,
               paymentMethodId: income.paymentMethodId,
               linkedDebtId: debtId,
@@ -505,7 +509,7 @@ export const useFinanceStore = create<FinanceStore>()(
           return {
             incomeEvents: [
               ...state.incomeEvents,
-              { ...event, id: generateId(), createdAt: now, updatedAt: now },
+              { ...event, occurredAt: occurredNow(event.receivedDate, event.occurredAt), id: generateId(), createdAt: now, updatedAt: now },
             ],
             settings: { ...state.settings, noIncomeDeclared: false },
           }
@@ -825,18 +829,21 @@ export const useFinanceStore = create<FinanceStore>()(
         const amountInBaseCurrency = converted ?? 0
 
         const paymentId = generateId()
+        // One time for both rows: the expense is the row the balance counts.
+        const occurredAt = occurredNow(payment.date, payment.occurredAt ?? expense.occurredAt)
         set((state) => {
           if (overpaysDebt(state, payment)) return state
           const nextState: FinanceStore = {
             ...state,
             debtPayments: [
               ...state.debtPayments,
-              { ...payment, id: paymentId, createdAt: new Date().toISOString() },
+              { ...payment, occurredAt, id: paymentId, createdAt: new Date().toISOString() },
             ],
             expenses: [
               ...state.expenses,
               {
                 ...expense,
+                occurredAt,
                 amountInBaseCurrency,
                 linkedDebtPaymentId: paymentId,
                 id: generateId(),
@@ -861,7 +868,7 @@ export const useFinanceStore = create<FinanceStore>()(
             ...state,
             debtPayments: [
               ...state.debtPayments,
-              { ...payment, id: generateId(), createdAt: new Date().toISOString() },
+              { ...payment, occurredAt: occurredNow(payment.date, payment.occurredAt), id: generateId(), createdAt: new Date().toISOString() },
             ],
           }
           return {
