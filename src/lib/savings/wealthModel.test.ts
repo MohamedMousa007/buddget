@@ -39,5 +39,7 @@ describe('wealth model', () => {
     expect(emergencyState(100, true)).toBe('secured')
     expect(savingsRatePct(14, 100)).toBe(14)
     expect(savingsRatePct(5, 0)).toBeNull()
+    expect(savingsRatePct(100, 100, 0)).toBeNull()
+    expect(savingsRatePct(40, 100, 60)).toBe(40)
   })
 })

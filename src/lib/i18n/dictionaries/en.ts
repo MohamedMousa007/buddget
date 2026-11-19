@@ -448,7 +448,7 @@ export const en: Dictionary = {
     cash: 'Cash',
     other: 'Other',
     netWorth: 'Net worth',
-    savesPct: (n) => `Saves ${n}% of income`,
+    savesPct: (n) => `Plans to save ${n}% of income`,
     atLeast: 'At least',
     addMoney: 'Add money',
     withdraw: 'Withdraw',

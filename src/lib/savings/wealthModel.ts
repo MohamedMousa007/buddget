@@ -129,7 +129,10 @@ export function emergencyState(monthlyEssentials: number, atOrAboveTarget: boole
   return atOrAboveTarget ? 'secured' : 'needsMoney'
 }
 
-/** Share of this month's income that was saved; null when there is no income to compare to. */
-export function savingsRatePct(savedThisMonth: number, incomeThisMonth: number): number | null {
-  return incomeThisMonth > 0 ? Math.max(0, Math.round((savedThisMonth / incomeThisMonth) * 100)) : null
+/**
+ * Share of this month's income the plan sets aside; null when there is no income to compare to or no budget
+ * (without a budget the plan figure is just expected income over itself: always 100%).
+ */
+export function savingsRatePct(savedThisMonth: number, incomeThisMonth: number, expenseBudget = 1): number | null {
+  return incomeThisMonth > 0 && expenseBudget > 0 ? Math.max(0, Math.round((savedThisMonth / incomeThisMonth) * 100)) : null
 }

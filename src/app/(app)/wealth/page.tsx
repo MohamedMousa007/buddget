@@ -236,7 +236,7 @@ export default function WealthPage() {
   const totalText = formatWhole(model.total)
   const netWorthText = formatWhole(nw.netWorth)
   const hasZakat = zakatResult.due && zakatResult.nisab > 0
-  const rate = savingsRatePct(stats.savingsThisMonth, stats.totalIncome)
+  const rate = savingsRatePct(stats.savingsThisMonth, stats.totalIncome, stats.totalExpenseBudget)
 
   const askDelete = async (r: WealthRowVM) => {
     const a = r.account

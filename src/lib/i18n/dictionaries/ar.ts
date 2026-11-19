@@ -451,7 +451,7 @@ export const ar: Dictionary = {
     cash: 'نقد',
     other: 'أخرى',
     netWorth: 'صافي الثروة',
-    savesPct: (n) => `تدّخر ${n}% من الدخل`,
+    savesPct: (n) => `تخطط لادخار ${n}% من الدخل`,
     atLeast: 'على الأقل',
     addMoney: 'إضافة مال',
     withdraw: 'سحب',
