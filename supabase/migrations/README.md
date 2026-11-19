@@ -1,6 +1,9 @@
 # Migrations: numbering and the live ledger
 
-Project `ydihurtbcnoflhormgzi`. Files here are applied by hand (SQL editor / MCP `execute_sql` or `apply_migration`), not by `supabase db push`.
+Project `tzioppxwsljhlglyducm` (Frankfurt; the Singapore `ydihurtbcnoflhormgzi` is retired). Files here are applied by hand (SQL editor / MCP `execute_sql` or `apply_migration`), not by `supabase db push`.
+
+## The folder is the record (QA-61, 2026-11-19)
+This folder, in numeric-prefix order, is the record of what the live database has. The ledger table below is informational: files applied with `execute_sql` (the workflow in `CLAUDE.md`) never write it, so it lags the folder (66 applied files had no row on 2026-11-18) and must not be used to decide what is applied. Check the object itself (`pg_proc`, `pg_constraint`, `information_schema`) instead.
 
 ## Ledger (`supabase_migrations.schema_migrations`)
 - Format: `version` is a 14-digit timestamp (`YYYYMMDDHHMMSS`), `name` is the file stem (`0150_accounts_core`) or, for the oldest rows, the bare description (`sms_v2_regex_first` for `0059_sms_v2_regex_first.sql`). `statements` and `created_by` stay NULL on rows written without the CLI.
