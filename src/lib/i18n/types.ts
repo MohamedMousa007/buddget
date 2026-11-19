@@ -2123,13 +2123,12 @@ export interface Dictionary {
     fabVoiceExpense: string
     fabScanReceipt: string
     fabLongPressTip: string
-    fabVoiceTip: string
+    fabTileVoice: string
     fabTileScan: string
     fabTileExpense: string
     fabTileIncome: string
     fabTileDebt: string
     fabTileWealth: string
-    fabTileMethod: string
     fabLogPurchase: string
     fabAddIncome: string
     fabAddPayment: string
@@ -3321,7 +3320,7 @@ export interface Dictionary {
     hintScan: string
     hintDebt: string
     hintWealth: string
-    hintMethod: string
+    hintVoice: string
     hintSubscription: string
   }
 

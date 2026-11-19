@@ -2,7 +2,7 @@ import {chromium,open,SHOTS,BASE} from './lib.mjs'
 const b=await chromium.launch(); const c=await open(b,'mobile'); const p=await c.newPage()
 await p.goto(BASE+'/flow',{waitUntil:'networkidle'}); await p.waitForTimeout(1500)
 const desc=()=>p.evaluate(()=>{const a=document.activeElement;return a?(a.tagName+':'+(a.getAttribute('aria-label')||a.innerText||a.id||'').replace(/\s+/g,' ').slice(0,30)+(a.closest('[role=dialog]')?' [in-dialog]':' [OUTSIDE]')):'none'})
-const sheets=[['Quick add',null],['Quick add','Expense'],['Quick add','Money in'],['Quick add','Pay debt'],['Quick add','Wealth'],['Quick add','Subscription'],['Quick add','Pay method'],['Quick add','Receipt scan']]
+const sheets=[['Quick add',null],['Quick add','Expense'],['Quick add','Money in'],['Quick add','Pay debt'],['Quick add','Savings'],['Quick add','Subscription'],['Quick add','Receipt'],['Quick add','Add by voice']]
 for(const [fab,item] of sheets){
   await p.goto(BASE+'/flow',{waitUntil:'networkidle'}); await p.waitForTimeout(1000)
   const trig=p.getByRole('button',{name:fab}).first()

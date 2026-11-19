@@ -79,6 +79,9 @@ interface SettingsState {
   /** The add-subscription sheet on the Subscriptions page (Quick add opens it). Not persisted. */
   subscriptionAddOpen: boolean
   setSubscriptionAddOpen: (open: boolean) => void
+  /** Quick add asked the Wealth page to open its add-money sheet once it mounts. Not persisted. */
+  wealthAddRequested: boolean
+  setWealthAddRequested: (requested: boolean) => void
   /** The SMS review sheet on the Subscriptions page (opened by the detection prompt). Not persisted. */
   subscriptionReviewOpen: boolean
   setSubscriptionReviewOpen: (open: boolean) => void
@@ -224,6 +227,8 @@ export const useSettingsStore = create<SettingsState>()(
       accountPrefill: null,
       subscriptionAddOpen: false,
       setSubscriptionAddOpen: (open) => set({ subscriptionAddOpen: open }),
+      wealthAddRequested: false,
+      setWealthAddRequested: (requested) => set({ wealthAddRequested: requested }),
       subscriptionReviewOpen: false,
       setSubscriptionReviewOpen: (open) => set({ subscriptionReviewOpen: open }),
       accountsFoundOpen: false,
@@ -355,6 +360,7 @@ export const useSettingsStore = create<SettingsState>()(
           pmPrefill: null,
           accountPrefill: null,
           subscriptionAddOpen: false,
+          wealthAddRequested: false,
           subscriptionReviewOpen: false,
           accountsFoundOpen: false,
           monthFilter: getCurrentMonth(),

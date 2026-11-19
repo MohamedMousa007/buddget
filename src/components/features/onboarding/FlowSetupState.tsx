@@ -86,7 +86,7 @@ export function FlowSetupState({ className }: { className?: string }) {
         description={c.flow.firstBody}
         action={
           <div className="flex w-full gap-2">
-            <Button size="cta" className="flex-[1.3]" onClick={() => setActiveModal('quickAdd')}><Plus aria-hidden />{c.flow.addExpense}</Button>
+            <Button size="cta" className="flex-[1.3]" onClick={() => setActiveModal('addExpense')}><Plus aria-hidden />{c.flow.addExpense}</Button>
             {done.has('sms') ? null : <Button size="cta" variant="outline" className="flex-1" onClick={() => navigate('/settings/sms')}>{c.flow.bankTexts}</Button>}
           </div>
         }

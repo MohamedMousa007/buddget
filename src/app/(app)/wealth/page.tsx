@@ -104,6 +104,10 @@ export default function WealthPage() {
   const [menu, setMenu] = useState<{ row: WealthRowVM; anchor: DOMRect } | null>(null)
   const [emergencyOpen, setEmergencyOpen] = useState(false)
   const [zakatOpen, setZakatOpen] = useState(false)
+  // Quick add > Savings lands here asking for the add-money sheet (auth was checked at the tile).
+  const wealthAddRequested = useSettingsStore((s) => s.wealthAddRequested)
+  const showAdd = addOpen || wealthAddRequested
+  useEffect(() => () => useSettingsStore.getState().setWealthAddRequested(false), [])
   const [filter, setFilter] = useState<CatKey | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [feedHidden, hideFeed] = useHiddenStatus('gold-prices')
@@ -352,8 +356,8 @@ export default function WealthPage() {
         )
       })()}
 
-      {addOpen && (
-        <AddSavingsSheetV3 open onClose={() => { setAddOpen(false); setPrefillId(null) }} pockets={pocketVMs} defaultAccountId={prefillId} leftToSpend={stats.leftToSpend} />
+      {showAdd && (
+        <AddSavingsSheetV3 open onClose={() => { setAddOpen(false); setPrefillId(null); useSettingsStore.getState().setWealthAddRequested(false) }} pockets={pocketVMs} defaultAccountId={prefillId} leftToSpend={stats.leftToSpend} />
       )}
       {withdrawOpen && (
         <WithdrawSheetV3

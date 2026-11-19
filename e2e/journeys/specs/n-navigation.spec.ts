@@ -59,7 +59,7 @@ test('N2 global + opens every entry from every main tab @desktop', async ({ page
     [/^Expense/, 'Add expense'],
     [/^Pay debt/, /debt|payment/i],
     [/^Subscription/, /subscription/i],
-    [/^Pay method/, /method|account|card/i],
+    [/^Savings/, 'Add money'],
   ]
   for (const tab of ['/flow', '/accounts', '/wealth', '/debts']) {
     await test.step(`from ${tab}`, async () => {
@@ -75,10 +75,6 @@ test('N2 global + opens every entry from every main tab @desktop', async ({ page
         await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: 10_000 })
         await healthy(page)
       }
-      await page.getByRole('button', { name: 'Quick add' }).click()
-      await dialog(page, 'Add').getByRole('button', { name: /^Wealth/ }).click()
-      await expect(page).toHaveURL(/\/wealth$/)
-      await healthy(page)
     })
   }
 })

@@ -1,7 +1,7 @@
 'use client'
 
 import type { LucideIcon } from 'lucide-react'
-import { Plus, X, BanknoteArrowDown, BanknoteArrowUp, ScanLine, CreditCard, Coins, Mic, Wallet } from 'lucide-react'
+import { Plus, X, BanknoteArrowDown, BanknoteArrowUp, ScanLine, CreditCard, Coins, Mic } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { navigate } from '@/lib/navigation/navigate'
 import { ModalShell } from '@/components/modals/ModalShell'
@@ -37,15 +37,16 @@ export function QuickAddFAB() {
   const voiceOpen = activeModal === 'voiceExpense'
   const scanOpen = activeModal === 'scanReceipt'
 
-  // Under the "Add" title every tile is a noun, so each reads as "Add …".
+  // Under the "Add" title every tile is a noun, so each reads as "Add …". Ordered by how often people reach for them;
+  // the odd last tile (voice) spans the row. Payment methods are not here: every method picker has its own "Add method".
   const tiles: QuickAddTile[] = [
-    { id: 'addIncome', label: t.modals.fabTileIncome, hint: t.quickAdd.hintIncome, icon: BanknoteArrowDown, fg: 'var(--color-brand-green)', bg: 'var(--color-brand-green-soft)' },
     { id: 'addExpense', label: t.modals.fabTileExpense, hint: t.quickAdd.hintExpense, icon: BanknoteArrowUp, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
+    { id: 'addIncome', label: t.modals.fabTileIncome, hint: t.quickAdd.hintIncome, icon: BanknoteArrowDown, fg: 'var(--color-brand-green)', bg: 'var(--color-brand-green-soft)' },
     { id: 'scanReceipt', label: t.modals.fabTileScan, hint: t.quickAdd.hintScan, icon: ScanLine, ...tint('var(--color-cat-4)') },
     { id: 'payDebt', label: t.modals.fabTileDebt, hint: t.quickAdd.hintDebt, icon: CreditCard, ...tint('var(--color-cat-5)') },
-    { id: 'wealth', label: t.modals.fabTileWealth, hint: t.quickAdd.hintWealth, icon: Coins, ...tint('var(--color-brand-gold)') },
-    { id: 'addSubscription', label: t.subscriptions.ui.quickAdd.subscription, hint: t.quickAdd.hintSubscription, icon: RotateCwClock, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
-    { id: 'addPaymentMethod', label: t.modals.fabTileMethod, hint: t.quickAdd.hintMethod, icon: Wallet, ...tint('var(--color-cat-2)') },
+    { id: 'savings', label: t.modals.fabTileWealth, hint: t.quickAdd.hintWealth, icon: Coins, ...tint('var(--color-brand-gold)') },
+    { id: 'addSubscription', label: t.subscriptions.ui.quickAdd.subscription, hint: t.quickAdd.hintSubscription, icon: RotateCwClock, ...tint('var(--color-cat-2)') },
+    { id: 'voice', label: t.modals.fabTileVoice, hint: t.quickAdd.hintVoice, icon: Mic, fg: 'var(--color-brand-primary-ink)', bg: 'var(--color-brand-primary-soft)' },
   ]
 
   const openVoice = () => {
@@ -72,11 +73,16 @@ export function QuickAddFAB() {
       }, msg)
       return
     }
-    if (tileId === 'wealth') {
+    if (tileId === 'savings') {
       requireAuth(() => {
         setActiveModal(null)
+        useSettingsStore.getState().setWealthAddRequested(true)
         navigate('/wealth')
       }, msg)
+      return
+    }
+    if (tileId === 'voice') {
+      openVoice()
       return
     }
     requireAuth(() => {
@@ -95,7 +101,7 @@ export function QuickAddFAB() {
               <Icon className="size-[19px]" strokeWidth={1.75} aria-hidden />
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-px">
-              <span className="truncate text-sm font-bold leading-[1.25] text-[var(--color-brand-text-primary)]">{tile.label}</span>
+              <span className="truncate text-[0.8125rem] min-[380px]:text-sm font-bold leading-[1.25] text-[var(--color-brand-text-primary)]">{tile.label}</span>
               <span className="line-clamp-2 text-[0.71875rem] leading-[1.3] text-[var(--color-brand-text-secondary)]">{tile.hint}</span>
             </span>
           </span>
@@ -103,11 +109,6 @@ export function QuickAddFAB() {
       </div>
     )
   }
-
-  // "Tip:" leads the sentence in bold ink; the rest stays secondary.
-  const tipCut = t.modals.fabVoiceTip.indexOf(':') + 1
-  const tipLead = t.modals.fabVoiceTip.slice(0, tipCut)
-  const tipRest = t.modals.fabVoiceTip.slice(tipCut)
 
   useEscapeClose(isOpen, () => setActiveModal(null))
 
@@ -127,6 +128,8 @@ export function QuickAddFAB() {
       <button data-raw-button-ok="the floating action button itself, with its own press choreography"
         type="button"
         {...handlers}
+        // Keyboard and screen-reader activation is a click with no pointer (detail 0); the hold gesture never sees it.
+        onClick={(e) => { if (e.detail === 0) setActiveModal(isOpen ? null : 'quickAdd') }}
         className={`hidden lg:flex fixed bottom-8 end-8 ${isOpen ? 'z-[110]' : 'z-50'} items-center justify-center h-[54px] w-[54px] rounded-[18px] bg-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-hover)] text-[var(--color-brand-on-primary)] shadow-[0_8px_20px_-6px_color-mix(in_srgb,var(--color-brand-primary)_60%,transparent)] transition-all duration-200 active:scale-95 cursor-pointer touch-none select-none`}
         aria-label={isOpen ? t.common.close : t.nav.quickAdd}
         aria-expanded={isOpen}
@@ -145,14 +148,6 @@ export function QuickAddFAB() {
         <div className="flex min-w-0 flex-col gap-3 px-4 pb-[max(env(safe-area-inset-bottom,0px),20px)]">
           <ModalTitle>{t.quickAdd.title}</ModalTitle>
           <div className="grid min-w-0 grid-cols-2 gap-2">{tiles.map(renderTile)}</div>
-          {/* Plain centred text — not a button or a pill. */}
-          <p className="mt-0.5 flex items-center justify-center gap-[7px] text-center text-[0.78125rem] leading-[1.4] text-[var(--color-brand-text-secondary)]">
-            <Mic className="size-[15px] shrink-0 text-[var(--color-brand-primary-ink)]" strokeWidth={2} aria-hidden />
-            <span className="min-w-0">
-              <b className="font-bold text-[var(--color-brand-primary-ink)]">{tipLead}</b>
-              {tipRest}
-            </span>
-          </p>
         </div>
       </ModalShell>
 
