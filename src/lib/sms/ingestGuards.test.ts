@@ -14,8 +14,11 @@ describe('parseSmsDay year boundary', () => {
 
 describe('computeSmsHash', () => {
   const body = 'Debited EGP 99.00 for NETFLIX'
-  it('same body inside one bucket hashes the same (retry)', () => {
-    expect(computeSmsHash(body, '2026-10-01T10:00:10Z')).toBe(computeSmsHash(body, '2026-10-01T10:00:50Z'))
+  it('a retry carries the same capture second and hashes the same', () => {
+    expect(computeSmsHash(body, '2026-10-01T10:00:10.100Z')).toBe(computeSmsHash(body, '2026-10-01T10:00:10.900Z'))
+  })
+  it('QA-31: with no capture id, the same text captured 40 s later is another message', () => {
+    expect(computeSmsHash(body, '2026-10-01T10:00:10Z')).not.toBe(computeSmsHash(body, '2026-10-01T10:00:50Z'))
   })
   it('same body a month later hashes differently', () => {
     expect(computeSmsHash(body, '2026-10-01T10:00:00Z')).not.toBe(computeSmsHash(body, '2026-11-01T10:00:00Z'))
@@ -136,12 +139,12 @@ describe('nonTransactionReason (S11)', () => {
 
 describe('computeNeighbourSmsHashes', () => {
   const body = 'Debited EGP 99.00 for NETFLIX'
-  it('two forwards straddling a bucket edge find each other through the neighbours', () => {
-    const early = '2026-10-01T10:01:59Z'
-    const late = '2026-10-01T10:02:01Z'
-    expect(computeSmsHash(body, early)).not.toBe(computeSmsHash(body, late))
-    expect(computeNeighbourSmsHashes(body, late)).toContain(computeSmsHash(body, early))
-    expect(computeNeighbourSmsHashes(body, early)).toContain(computeSmsHash(body, late))
+  it('are the old 2-minute-bucket hashes (this bucket and both neighbours), never the new capture hash', () => {
+    const at = '2026-10-01T10:01:59Z'
+    const near = computeNeighbourSmsHashes(body, at)
+    expect(near).toHaveLength(3)
+    expect(near).not.toContain(computeSmsHash(body, at))
+    expect(computeNeighbourSmsHashes(body, at, '00000000-0000-4000-8000-000000000001')).toEqual([])
   })
   it('has no neighbours without a client timestamp', () => {
     expect(computeNeighbourSmsHashes(body)).toEqual([])

@@ -160,6 +160,25 @@ describe('I5 rule 1: the same capture is never booked twice', () => {
   })
 })
 
+describe('QA-31: a capture with no capture id', () => {
+  const at = (s: number) => new Date(Date.parse('2026-10-27T09:00:00Z') + s * 1000).toISOString()
+
+  it('a second identical purchase 100 s later is booked and flagged, not dropped', async () => {
+    await post({ message: PLAIN, receivedAt: at(0) })
+    const second = await (await post({ message: PLAIN, receivedAt: at(100) })).json()
+    expect(second.duplicate).toBeUndefined()
+    expect(h.dispatch).toHaveBeenCalledTimes(2)
+    expect(h.dispatch.mock.calls[1][1].smsFlags).toEqual(['possible_duplicate'])
+  })
+
+  it('a retry with the same capture time still collapses', async () => {
+    await post({ message: PLAIN, receivedAt: at(0) })
+    const retry = await (await post({ message: PLAIN, receivedAt: at(0) })).json()
+    expect(retry.duplicate).toBe(true)
+    expect(h.dispatch).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('I5 rule 3: a possible second copy', () => {
   const at = (s: number) => new Date(Date.parse('2026-10-27T09:00:00Z') + s * 1000).toISOString()
 

@@ -26,7 +26,13 @@ export const MAX_SMS_BODY_CHARS = 2000
  * Without a client timestamp only the body is hashed: the server clock would differ on every retry.
  */
 export function computeSmsHash(message: string, receivedAt?: string, eventId?: string): string {
-  return eventId ? hashForEvent(message, eventId) : hashForBucket(message, receivedAt, 0)
+  if (eventId) return hashForEvent(message, eventId)
+  // QA-31: with no capture id the retry identity is the capture second, not a 2-minute bucket, so a second identical
+  // text captured at another time gets its own claim and reaches the book-and-flag rule (I5) instead of being dropped.
+  const second = captureSecond(receivedAt)
+  return second
+    ? crypto.createHash('sha256').update(`${foldBody(message)}|cap:${second}`).digest('hex')
+    : hashForBucket(message, undefined, 0)
 }
 
 const foldBody = (message: string): string => message.trim().replace(/\s+/g, ' ').toLowerCase()
@@ -69,11 +75,14 @@ export function computeLegacySmsHashes(rawMessage: string, receivedAt?: string):
   return legacy === rawMessage ? [] : [hashForBucket(legacy, receivedAt, 0)]
 }
 
-/** Hashes of the buckets next to the current one: a retry straddling a bucket edge hashes into a neighbour. */
+/**
+ * The 2-minute-bucket hashes rows stored before QA-31 carry for this text (this bucket and its neighbours). The caller
+ * accepts a match only for the same capture second, so they recognise a retry of an old row and nothing else.
+ */
 export function computeNeighbourSmsHashes(message: string, receivedAt?: string, eventId?: string): string[] {
   if (eventId) return []
   if (!receivedAt || !Number.isFinite(Date.parse(receivedAt))) return []
-  return [-1, 1].map((offset) => hashForBucket(message, receivedAt, offset))
+  return [-1, 0, 1].map((offset) => hashForBucket(message, receivedAt, offset))
 }
 
 /** Calendar day (yyyy-MM-dd) of an instant in the given timezone. */

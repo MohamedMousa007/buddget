@@ -761,12 +761,15 @@ export async function POST(request: Request) {
   // Older builds hashed the digit-normalised text: their row for this SMS is the same SMS.
   const neighbours = [...computeNeighbourSmsHashes(rawMessage, receivedAt, eventId ?? undefined), ...computeLegacySmsHashes(rawMessage, receivedAt)]
   if (neighbours.length > 0) {
-    const { data: near } = await service
+    let nearQuery = service
       .from('sms_parse_log')
       .select('expense_id, income_id, status, parsed_at')
       .eq('user_id', userId)
       .in('sms_hash', neighbours)
       .eq('is_duplicate', false)
+    // Without a capture id an old bucket hash is the same message only for the same capture second (QA-31).
+    if (!eventId && capturedAt) nearQuery = nearQuery.eq('captured_at', capturedAt)
+    const { data: near } = await nearQuery
     const live = (near ?? []).find((r) => !isStaleClaim(r.status, r.parsed_at))
     if (live) {
       if (isClaimInFlight(live.status)) return claimInProgressResponse()
