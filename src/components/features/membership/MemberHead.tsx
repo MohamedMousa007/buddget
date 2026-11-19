@@ -35,7 +35,7 @@ export function MemberHead({ variant, name, avatarSrc, hint, trailing, onNavigat
   const shown = displayName(full, NAME_BUDGET[variant === 'menu' ? 'menu' : 'row'])
   const ar = locale === 'ar'
   const founder = marks.founderNumber ? (
-    <Link href="/settings/founders" onClick={onNavigate} role={variant === 'menu' ? 'menuitem' : undefined} aria-label={marks.line} className="pointer-events-auto relative z-10 -my-3 flex min-h-11 items-center">
+    <Link href="/settings/founders" onClick={onNavigate} role={variant === 'menu' ? 'menuitem' : undefined} aria-label={marks.line} className="pointer-events-auto relative z-10 -my-3 flex min-h-11 shrink-0 items-center">
       <FounderChip number={marks.founderNumber} />
     </Link>
   ) : null

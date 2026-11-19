@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Search } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { PageBody } from '@/components/layout/PageContainer'
 import { MembershipRows } from '@/components/features/settings/hub/MembershipRows'
@@ -12,7 +11,6 @@ import { SmsCard } from '@/components/features/settings/hub/SmsCard'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
-import { Button } from '@/components/ui/button'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
 import { useT } from '@/lib/i18n'
@@ -51,27 +49,22 @@ export default function SettingsPage() {
 
   if (!dataReady) return <div className="p-4"><SkeletonList rows={8} /></div>
 
-  const aiRow = <SettingsRow icon={SETTING_ICONS.buddgy} tone={6} title={p.buddgyAi} href="/settings/ai" />
+  const aiRow = <SettingsRow icon={SETTING_ICONS.buddgy} tone={6} solid title={p.buddgyAi} href="/settings/ai" />
 
   return (
     <div ref={bodyRef}>
       <PageBody narrow className="space-y-4">
-        <div className="flex justify-end">
-          <Button variant="ghost" size="touch" aria-label={copy.searchLabel} onClick={() => setSearching(true)} className="-me-2 px-2">
-            <Search className="size-5" />
-          </Button>
-        </div>
         <ProfileBanner />
         {user ? <MembershipRows /> : null}
-        <PreferencesCard />
-        {user ? <SmsCard title={p.tracking}>{aiRow}</SmsCard> : <SettingsSection title={p.tracking}>{aiRow}</SettingsSection>}
+        <PreferencesCard onSearch={() => setSearching(true)} />
+        {user ? <SmsCard title={p.tracking} vivid>{aiRow}</SmsCard> : <SettingsSection title={p.tracking}>{aiRow}</SettingsSection>}
         <SettingsSection title={p.privacy}>
-          {user ? <SettingsRow icon={SETTING_ICONS.shield} tone="neutral" title={copy.security.title} value={twoFactor ? p.twoFactorOn : undefined} href="/settings/security" settingId="security" /> : null}
-          <SettingsRow icon={SETTING_ICONS.download} tone={5} title={p.dataBackup} href="/settings/data" />
+          {user ? <SettingsRow icon={SETTING_ICONS.shield} tone={4} solid title={copy.security.title} value={twoFactor ? p.twoFactorOn : undefined} href="/settings/security" settingId="security" /> : null}
+          <SettingsRow icon={SETTING_ICONS.download} tone={5} solid title={p.dataBackup} href="/settings/data" />
         </SettingsSection>
         <SettingsSection title={p.support}>
-          <SettingsRow icon={SETTING_ICONS.help} tone={3} title={p.helpFeedback} href="/settings/help" />
-          <SettingsRow icon={SETTING_ICONS.file} tone="neutral" title={p.aboutLegal} href="/settings/about" />
+          <SettingsRow icon={SETTING_ICONS.help} tone={2} solid title={p.helpFeedback} href="/settings/help" />
+          <SettingsRow icon={SETTING_ICONS.file} tone="neutral" solid title={p.aboutLegal} href="/settings/about" />
         </SettingsSection>
         {user ? (
           <SettingsSection>
