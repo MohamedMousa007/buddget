@@ -19,11 +19,13 @@ export async function installApiShim(ctx: BrowserContext) {
     }
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
     const url = req.url().replace(/^https:\/\/(www\.)?buddget\.app/, LOCAL)
+    // Awaited inside the try: a page that navigates away mid-request disposes the response, and an un-awaited
+    // fulfill would reject outside this catch and fail the test (Q6 under parallel load).
     try {
       const res = await route.fetch({ url, timeout: 60_000 })
-      return route.fulfill({ response: res, headers: { ...res.headers(), ...cors } })
+      return await route.fulfill({ response: res, headers: { ...res.headers(), ...cors } })
     } catch {
-      return route.abort('failed')
+      return route.abort('failed').catch(() => undefined)
     }
   })
 }

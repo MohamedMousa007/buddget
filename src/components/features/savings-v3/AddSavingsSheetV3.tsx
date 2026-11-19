@@ -10,6 +10,7 @@ import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
 import { AccountLegRow, AmountCurrencyRow, LabeledBlock, NoteField, PocketRadioList, SheetBody, SheetFooter } from '@/components/features/savings-v3/MoneySheetParts'
 import { useLegAccount } from '@/components/features/savings-v3/useLegAccount'
 import type { PocketVM } from '@/components/features/savings-v3/types'
+import { selectedPocket } from '@/components/features/savings-v3/selectedPocket'
 import { formatWhole as fmtNum } from '@/lib/utils/formatters'
 import { useT } from '@/lib/i18n'
 import { pocketDisplayName } from '@/lib/savings/pocketIdentity'
@@ -46,7 +47,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
   const [note, setNote] = useState('')
 
   const amountNum = parseFloat(amount) || 0
-  const selected = pockets.find((p) => p.account.id === selectedId)
+  const selected = selectedPocket(pockets, selectedId, defaultAccountId)
   const canSubmit = amountNum > 0 && !!selected
   const leg = useLegAccount(selected?.account, selected?.account.currency ?? currency)
 
@@ -72,7 +73,7 @@ export function AddSavingsSheetV3({ open, onClose, pockets, defaultAccountId }: 
 
         <SheetBody>
           <LabeledBlock label={t.into}>
-            <PocketRadioList pockets={pockets} value={selectedId} onChange={pickPocket} label={t.into} />
+            <PocketRadioList pockets={pockets} value={selected?.account.id ?? null} onChange={pickPocket} label={t.into} />
           </LabeledBlock>
 
           <AmountCurrencyRow
