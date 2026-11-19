@@ -336,6 +336,8 @@ export const ar: Dictionary = {
     addAccountAndCard: 'إضافة الحساب وبطاقة',
     freeLabel: (a) => `${a} متاح`,
     setBalance: 'حدد الرصيد',
+    cashEstimate: 'تقديري',
+    cashEstimateHint: 'تقدير مما تسجّله. حدّثه عندما تعدّ نقودك.',
     addBalanceToInclude: 'أضف رصيدًا لتضمينه',
     cardsCount: (n) => arCount(n, 'card'),
     addACard: 'أضف بطاقة',

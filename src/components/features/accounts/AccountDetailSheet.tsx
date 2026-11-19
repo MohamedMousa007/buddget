@@ -111,8 +111,9 @@ export function AccountDetailSheet({ open, onClose, account, masked, onMove, onU
                   <p className="text-[0.8125rem] font-semibold text-[var(--color-brand-text-secondary)]">{t.balance}</p>
                   <p className="font-mono-numbers text-[36px] font-semibold leading-[1.05] tracking-[-0.04em] text-[var(--color-brand-text-primary)]">{fmt(balance.balance)}</p>
                 </div>
-                {balance.balance < 0 ? <Badge variant="warning">{t.overdrawn}</Badge> : null}
+                {balance.balance < 0 ? <Badge variant="warning">{t.overdrawn}</Badge> : method.type === 'cash' ? <Badge variant="muted">{t.cashEstimate}</Badge> : null}
               </div>
+              {method.type === 'cash' ? <p className="mt-1 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">{t.cashEstimateHint}</p> : null}
               {balance.held > 0 ? (
                 <>
                   <div className="mt-3.5 flex h-1.5 overflow-hidden rounded-full bg-[var(--color-brand-sunken)]" aria-hidden>

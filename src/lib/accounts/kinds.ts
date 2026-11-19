@@ -38,6 +38,9 @@ export const isTracked = (pm: PaymentMethod): boolean =>
 /** A provisional account waits in the detected-accounts sheet for the user's answer before it joins the list. */
 export const isOpenAccount = (pm: PaymentMethod): boolean => holdsBalance(pm.type) && !pm.closedAt && pm.id !== DEFAULT_CASH_ID && !pm.provisional
 
+/** An account the user has set up: every open account except a Cash with no balance tracked (every user has one). */
+export const isSetUpAccount = (pm: PaymentMethod): boolean => isOpenAccount(pm) && (pm.type !== 'cash' || isTracked(pm))
+
 /** Whether any ledger row points at this account. */
 export function hasAccountHistory(
   s: { expenses: readonly { paymentMethodId?: string; toPaymentMethodId?: string }[]; incomeEvents: readonly { paymentMethodId?: string }[]; debtPayments: readonly { paymentMethodId?: string }[]; savingsTransactions: readonly { paymentMethodId?: string }[]; accountAdjustments: readonly { paymentMethodId: string }[] },

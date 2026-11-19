@@ -255,3 +255,5 @@ Adopted from the cloud QA campaign: scripted Playwright specs, not click-by-clic
 - Fable burns the 5-hour window mid-batch: idempotent batches, checkpoint files, commit per slice.
 - Store review: SMS permission and IAP rules can reject or delay; H0 starts the clocks now.
 - Parallel sessions share one checkout: use separate worktrees for S5/S6/S7 and never `git add -A`.
+
+- 2026-11-19: every user gets a real Cash account, untracked by default, an estimate when tracked: `docs/SYSTEM_CASH_PLAN.md` (phase 2 waits for old builds to leave).

@@ -7,7 +7,7 @@ import { useRates } from '@/hooks/useRates'
 import { tryConvertCurrency } from '@/lib/utils/currency'
 import type { PaymentMethod } from '@/lib/store/types'
 import { computeBalances, type AccountBalance, type LedgerInput } from './balance'
-import { DEFAULT_CASH_ID, isOpenAccount, isTracked } from './kinds'
+import { isSetUpAccount, isTracked } from './kinds'
 
 export interface AccountView {
   method: PaymentMethod
@@ -26,7 +26,7 @@ export interface AccountsModel {
   /** Sum of held-in pockets in base currency. */
   heldInBase: number
   approx: boolean
-  /** No real Cash account yet: the page offers to start tracking cash. */
+  /** No tracked Cash yet (every user has an untracked one): the page offers to start tracking cash. */
   needsCash: boolean
 }
 
@@ -56,7 +56,7 @@ export function useAccounts(): AccountsModel {
 
   return useMemo(() => {
     const balances = computeBalances(s)
-    const open = s.paymentMethods.filter((m) => isOpenAccount(m) && !m.parentId)
+    const open = s.paymentMethods.filter((m) => isSetUpAccount(m) && !m.parentId)
     const accounts = open.map((m) => ({
       method: m,
       cards: s.paymentMethods.filter((c) => c.parentId === m.id && !c.closedAt),
@@ -79,7 +79,7 @@ export function useAccounts(): AccountsModel {
     const standaloneCards = s.paymentMethods.filter(
       (m) => !m.closedAt && m.type !== 'cash' && !accountIds.has(m.id) && !(m.parentId && accountIds.has(m.parentId)),
     )
-    const needsCash = !s.paymentMethods.some((m) => m.type === 'cash' && m.id !== DEFAULT_CASH_ID && !m.closedAt)
+    const needsCash = !s.paymentMethods.some((m) => m.type === 'cash' && isSetUpAccount(m))
     return { accounts, standaloneCards, totalInBase, heldInBase, approx, needsCash }
   }, [s, rates])
 }

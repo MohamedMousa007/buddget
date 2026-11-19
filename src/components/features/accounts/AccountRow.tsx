@@ -46,6 +46,7 @@ export function AccountRow({ account, masked, gap, shared = false, onOpen, onFix
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="truncate text-base font-semibold tracking-[-0.01em] text-[var(--color-brand-text-primary)]">{accountTitle(method)}</span>
             {shared ? null : <Badge variant="muted" size="xs" className="font-mono-numbers">{cur}</Badge>}
+            {isCash && balance ? <Badge variant="muted" size="xs">{t.cashEstimate}</Badge> : null}
           </span>
           <span className={`mt-0.5 block truncate text-[0.8125rem] ${hasGap ? 'font-semibold text-[var(--color-brand-amber)]' : 'text-[var(--color-brand-text-muted)]'}`}>{sub}</span>
         </span>

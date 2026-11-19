@@ -243,6 +243,8 @@ export interface Dictionary {
     addAccountAndCard: string
     freeLabel: (amount: string) => string
     setBalance: string
+    cashEstimate: string
+    cashEstimateHint: string
     addBalanceToInclude: string
     cardsCount: (n: number) => string
     addACard: string

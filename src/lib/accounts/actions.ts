@@ -12,15 +12,41 @@ export function setOpeningBalance(accountId: string, balance: number, at: Date =
   store().updatePaymentMethod(accountId, { openingBalance: balance, openingAt: at.toISOString() })
 }
 
+/** The user's system Cash id: fixed per user, so every device creates the same row (docs/SYSTEM_CASH_PLAN.md). */
+export function systemCashId(userId: string): string {
+  const hex = userId.replace(/-/g, '').toLowerCase().split('').map((c) => (15 - parseInt(c, 16)).toString(16)).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`
+}
+
 /**
- * The Cash account as a real, syncable row. The in-store cash sentinel cannot carry a balance
- * (its id is not a uuid), so the first time Cash is tracked a real "Cash" method is created.
+ * An edit time older than any real edit: the server keeps the newest edit (migration 0241), so a late create from
+ * another device can never overwrite a balance the user set on this row.
+ */
+const SEED_EDIT_AT = '2000-01-01T00:00:00.000Z'
+
+/**
+ * The Cash account as a real, syncable row: the user's existing real Cash, else the system Cash created untracked
+ * (no opening balance, so it stays out of net worth). Signed out there is no user id, and a random id is used.
  */
 export function ensureCashAccount(): string {
-  const { paymentMethods, settings, addPaymentMethod } = store()
+  const { paymentMethods, settings, profile, addPaymentMethod } = store()
   const existing = cashAccountId(paymentMethods)
   if (existing && existing !== DEFAULT_CASH_ID) return existing
-  return addPaymentMethod({ name: 'Cash', type: 'cash', currency: settings.baseCurrency, isDefault: false, color: '#C9C9D4' })
+  if (!profile.id) return addPaymentMethod({ name: 'Cash', type: 'cash', currency: settings.baseCurrency, isDefault: false, color: '#C9C9D4' })
+  const id = systemCashId(profile.id)
+  const row: PaymentMethod = { id, name: 'Cash', type: 'cash', currency: settings.baseCurrency, isDefault: false, color: '#C9C9D4', createdAt: SEED_EDIT_AT, updatedAt: SEED_EDIT_AT }
+  useFinanceStore.setState((s) => (s.paymentMethods.some((m) => m.id === id) ? {} : { paymentMethods: [...s.paymentMethods, row] }))
+  return id
+}
+
+/** Gives a user without a real Cash their system Cash. Call only once the server's data is merged. Returns whether it created one. */
+export function seedSystemCash(): boolean {
+  const { paymentMethods, profile } = store()
+  if (!profile.id) return false
+  const existing = cashAccountId(paymentMethods)
+  if (existing && existing !== DEFAULT_CASH_ID) return false
+  ensureCashAccount()
+  return true
 }
 
 /** Cash out: money leaves the account and becomes Cash. One non-spend row, two balance deltas. */

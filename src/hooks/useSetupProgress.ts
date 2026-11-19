@@ -5,7 +5,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { effectivePlanCategoryAmount } from '@/lib/budget/budgetPlans'
 import { useSmsArmed } from '@/hooks/useSmsTracking'
-import { isOpenAccount } from '@/lib/accounts/kinds'
+import { isSetUpAccount } from '@/lib/accounts/kinds'
 
 export type SetupStepId = 'accounts' | 'sms' | 'payday' | 'budget' | 'expense'
 
@@ -46,7 +46,7 @@ export function useSetupProgress(): SetupProgress {
   const smsArmed = useSmsArmed()
   const snap = useFinanceStore(
     useShallow((s) => ({
-      hasAccount: s.paymentMethods.some(isOpenAccount),
+      hasAccount: s.paymentMethods.some(isSetUpAccount),
       hasPayday: s.incomeSources.some((i) => i.isRecurring),
       hasBudget: s.budgetPlans.filter(isLivePlan).some((p) => p.categories.some((c) => effectivePlanCategoryAmount(c) > 0)),
       hasTransaction: s.expenses.length + s.incomeEvents.length > 0,

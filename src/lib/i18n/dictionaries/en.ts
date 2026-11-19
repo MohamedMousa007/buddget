@@ -334,6 +334,8 @@ export const en: Dictionary = {
     addAccountAndCard: 'Add account and a card',
     freeLabel: (a) => `${a} free`,
     setBalance: 'Set balance',
+    cashEstimate: 'Estimate',
+    cashEstimateHint: 'An estimate from what you log. Update it when you count your cash.',
     addBalanceToInclude: 'Add a balance to include it',
     cardsCount: (n) => `${n} ${n === 1 ? 'card' : 'cards'}`,
     addACard: 'Add a card',
