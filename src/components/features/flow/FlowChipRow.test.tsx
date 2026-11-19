@@ -1,23 +1,18 @@
-// @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest'
-import { render } from '@testing-library/react'
-
-vi.mock('@/lib/i18n', () => ({ useT: () => ({ flow: { removeFilter: (l: string) => `Remove ${l}`, showOnly: (l: string) => `Show ${l}` } }) }))
-
+import { describe, expect, it } from 'vitest'
 import { FlowChipItem, type FlowChip } from './FlowChipRow'
 
-let renders = 0
-const Probe = () => { renders += 1; return <i /> }
-const chip = (over: Partial<FlowChip> = {}): FlowChip => ({ key: 'b-food', label: 'Food', selected: false, onPress: () => {}, icon: <Probe />, ...over })
+const chip = (over: Partial<FlowChip> = {}): FlowChip => ({ key: 'b-food', label: 'Food', selected: false, onPress: () => {}, icon: null, ...over })
+const same = (a: FlowChip, b: FlowChip) => (FlowChipItem as unknown as { compare: (x: unknown, y: unknown) => boolean }).compare({ chip: a }, { chip: b })
 
-describe('FlowChipItem (QA-84)', () => {
-  it('skips a re-render when the page hands it an equal chip object, redraws when what it shows changes', () => {
-    renders = 0
-    const { rerender } = render(<FlowChipItem chip={chip()} />)
-    expect(renders).toBe(1)
-    rerender(<FlowChipItem chip={chip()} />)
-    expect(renders).toBe(1)
-    rerender(<FlowChipItem chip={chip({ label: 'Fuel' })} />)
-    expect(renders).toBe(2)
+describe('FlowChipItem memo (QA-84)', () => {
+  it('treats a rebuilt but equal chip as unchanged', () => {
+    expect(same(chip(), chip())).toBe(true)
+    expect(same(chip({ budget: { kind: 'budgeted', pct: 0.4 } }), chip({ budget: { kind: 'budgeted', pct: 0.4 } }))).toBe(true)
+  })
+  it('redraws when what the chip shows changes', () => {
+    expect(same(chip(), chip({ selected: true }))).toBe(false)
+    expect(same(chip(), chip({ label: 'Fuel' }))).toBe(false)
+    expect(same(chip({ budget: { kind: 'budgeted', pct: 0.4 } }), chip({ budget: { kind: 'budgeted', pct: 0.5 } }))).toBe(false)
+    expect(same(chip({ budget: { kind: 'unassigned' } }), chip())).toBe(false)
   })
 })
