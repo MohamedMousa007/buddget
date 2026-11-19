@@ -184,6 +184,14 @@ describe('linked lines and drift', () => {
     expect(v.blocks.debts.lines.map((l) => l.status.kind)).toEqual(['ok', 'ok'])
   })
 
+  it('two debt lines without ids are not each compared with the total of all debts (QA-23)', () => {
+    const a = line('Family and friends', 0, { block: 'debts', linkType: 'debts', linkIds: [] })
+    const b = line('Instalments', 500, { block: 'debts', linkType: 'debts', linkIds: [] })
+    const v = buildPlanView(input(plan([a, b]), { debts: [debt('d1', { minimum: 1250 }), debt('d2', { minimum: 500 })] }))
+    expect(v.blocks.debts.lines.map((l) => l.liveAmount)).toEqual([null, null])
+    expect(v.blocks.debts.lines.map((l) => l.status.kind)).not.toContain('drifted')
+  })
+
   it('goal lines follow the goal draw', () => {
     const g = line('House', 500, { block: 'goals', linkType: 'goal', linkIds: ['g1'] })
     const v = buildPlanView(input(plan([g]), { goals: [goal('g1', 400)] }))

@@ -146,6 +146,13 @@ export function applyAnswers(base: BudgetFacts, a: Answers, intent?: 'save' | 'g
   return f
 }
 
+/** Months a debt with no stated monthly payment is spread over, by the plan line and the debt record alike. */
+export const UNSTATED_PAYMENT_MONTHS = 12
+
+/** One payment rule for the plan line and the debt record made from the same answer: what was said, else balance / 12. */
+export const debtMonthlyPayment = (d: { minimum: number; balance: number }): number =>
+  d.minimum > 0 ? d.minimum : Math.ceil(d.balance / UNSTATED_PAYMENT_MONTHS)
+
 export function answeredDebts(a: Answers): FactDebt[] {
   const kinds = list(a, 'debtKinds')
   const out: FactDebt[] = []
@@ -165,7 +172,7 @@ export function answeredDebts(a: Answers): FactDebt[] {
   const carSeparate = a.carOverlap === 'separate' || a.carOwnership === 'financed' || a.carOwnership === 'leased'
   if (carSeparate && (num(a, 'carPayment') ?? 0) > 0)
     out.push({ id: 'answered-car', name: 'Car loan', kind: 'loan', balance: 0, minimum: num(a, 'carPayment') as number, apr: null })
-  return out
+  return out.map((d) => (d.balance > 0 ? { ...d, minimum: debtMonthlyPayment(d) } : d))
 }
 
 export function answeredGoals(a: Answers): FactGoal[] {

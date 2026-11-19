@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
+import { answeredDebts } from '@/lib/budget/flow/toFacts'
 import { answer, createFlow } from '@/lib/budget/flow/flow'
-import { commitFlowEntities, createdIds, type StudioEntityNames } from '@/lib/budget/studioEntities'
+import { commitFlowEntities, createdIds, relinkDraft, type StudioEntityNames } from '@/lib/budget/studioEntities'
 import type { FlowValue } from '@/lib/budget/flow/types'
 
 const names: StudioEntityNames = { income: 'Salary', savings: 'Savings', debt: (id) => `debt:${id}`, goal: (k) => `goal:${k}` }
@@ -97,5 +98,29 @@ describe('commitFlowEntities', () => {
     const store = { ...fakeStore(), paymentMethods: [{ id: 'b', type: 'bank_account', openingBalance: 9000, openingAt: '2026-01-01T00:00:00Z' }] }
     expect(commitFlowEntities(answered({ savingsOnHand: 1400 }), store as never, 'EGP', names, NOW).savings).toBeUndefined()
     expect(store.addSavingsAccount).not.toHaveBeenCalled()
+  })
+})
+
+describe('QA-23: plan lines and debt records agree', () => {
+  const line = (name: string, linkType: 'debts' | 'goal' | 'none', linkIds: string[], amount = 100) =>
+    ({ block: 'debts', name, icon: 'wallet', amount, linkType, linkIds, dueDay: null, essential: true, isSavings: false, expenseCategories: [], rationale: '', confidence: 'high' }) as never
+  const draft = (lines: unknown[]) => ({ name: 'p', intent: 'balanced', income: 1, lines, reasons: [], risks: [], free: 0 }) as never
+
+  it('a family debt with no monthly amount is planned at balance / 12, the same as its record', () => {
+    const store = fakeStore()
+    const s = answered({ debtKinds: ['family'], familyOwed: 3000, familyMonthly: 0 })
+    commitFlowEntities(s, store as never, 'EGP', names, NOW)
+    expect(store.addDebt).toHaveBeenCalledWith(expect.objectContaining({ installmentAmount: 250 }))
+    expect(answeredDebts(s.a).find((d) => d.id === 'answered-family')?.minimum).toBe(250)
+  })
+
+  it('a line for an answered debt links to the debt record created from it', () => {
+    const out = relinkDraft(draft([line('Family', 'debts', ['answered-family']), line('Loan', 'debts', ['answered-loan'])]), { 'debt:answered-family': 'real-1', 'debt:answered-loan': 'real-2' })
+    expect((out.lines as { linkIds: string[] }[]).map((l) => l.linkIds)).toEqual([['real-1'], ['real-2']])
+  })
+
+  it('an answer with no record leaves its line unlinked; other lines are untouched', () => {
+    const out = relinkDraft(draft([line('Family', 'debts', ['answered-family']), line('Fun', 'none', [])]), {})
+    expect((out.lines as { linkType: string; linkIds: string[] }[]).map((l) => [l.linkType, l.linkIds])).toEqual([['none', []], ['none', []]])
   })
 })

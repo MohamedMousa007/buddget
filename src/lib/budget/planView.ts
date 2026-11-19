@@ -92,6 +92,9 @@ interface LiveSources {
   /** Live totals of debts and goals no line names, for lines linked without ids. */
   unclaimedDebts: number
   unclaimedGoals: number
+  /** How many debt / goal lines are linked without ids. More than one cannot each be compared with the same leftover total. */
+  idlessDebtLines: number
+  idlessGoalLines: number
 }
 
 function liveSources(i: PlanViewInput): LiveSources {
@@ -99,12 +102,15 @@ function liveSources(i: PlanViewInput): LiveSources {
     new Set(i.plan.categories.filter((c) => c.linkType === type).flatMap((c) => c.linkIds ?? []))
   const claimedDebts = claimed('debts')
   const claimedGoals = claimed('goal')
+  const idless = (type: 'debts' | 'goal') => i.plan.categories.filter((c) => c.linkType === type && !(c.linkIds ?? []).length).length
   return {
     subscriptionsMonthly: i.subscriptions.monthly,
     debts: new Map(i.debts.map((d) => [d.id, d.minimum])),
     goals: new Map(i.goals.map((g) => [g.id, g.monthly])),
     unclaimedDebts: sum(i.debts.filter((d) => !claimedDebts.has(d.id)).map((d) => d.minimum)),
     unclaimedGoals: sum(i.goals.filter((g) => !claimedGoals.has(g.id)).map((g) => g.monthly)),
+    idlessDebtLines: idless('debts'),
+    idlessGoalLines: idless('goal'),
   }
 }
 
@@ -113,8 +119,8 @@ function liveAmountOf(c: BudgetPlanCategory, live: LiveSources): number | null {
   const ids = c.linkIds ?? []
   switch (c.linkType) {
     case 'subscriptions': return live.subscriptionsMonthly
-    case 'debts': return ids.length ? sum(ids.map((id) => live.debts.get(id) ?? 0)) : live.unclaimedDebts
-    case 'goal': return ids.length ? sum(ids.map((id) => live.goals.get(id) ?? 0)) : live.unclaimedGoals
+    case 'debts': return ids.length ? sum(ids.map((id) => live.debts.get(id) ?? 0)) : live.idlessDebtLines > 1 ? null : live.unclaimedDebts
+    case 'goal': return ids.length ? sum(ids.map((id) => live.goals.get(id) ?? 0)) : live.idlessGoalLines > 1 ? null : live.unclaimedGoals
     default: return null
   }
 }

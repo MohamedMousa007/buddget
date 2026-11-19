@@ -13,7 +13,7 @@ import { buildFactsFromStore } from '@/lib/budget/factsFromStore'
 import { buildPlan, ENGINE_VERSION } from '@/lib/budget/engine'
 import { refineDraft } from '@/lib/budget/budgetAiClient'
 import { applyRefinement } from '@/lib/budget/budgetAi'
-import { commitFlowEntities, createdIds } from '@/lib/budget/studioEntities'
+import { commitFlowEntities, createdIds, relinkDraft } from '@/lib/budget/studioEntities'
 import { recordBuild } from '@/lib/budget/learnHooks'
 import { isOnline } from '@/hooks/useNetworkStatus'
 import { draftToCategories } from '@/lib/budget/draftToPlan'
@@ -154,7 +154,7 @@ export function StudioPage({ intent, onClose, onBuilt }: StudioPageProps) {
         const refined = await refineDraft(merged, base0, controller.signal)
         if (cancelled) return
         const folded = refined.ok ? applyRefinement(base0, refined.data) : null
-        const final = folded ? repairDraft(folded, ctx(folded)).draft : base0
+        const final = relinkDraft(folded ? repairDraft(folded, ctx(folded)).draft : base0, created.current)
         const s = store.getState()
         const id = s.addBudgetPlan(page.planNames.fresh, {
           status: 'draft',

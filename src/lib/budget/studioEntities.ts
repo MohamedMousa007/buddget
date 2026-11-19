@@ -1,8 +1,8 @@
 import type { Currency, FinanceStore, GoalCategory, IncomeRecurringFrequency, IncomeSourceType } from '@/lib/store/types'
 import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 import { GOAL_CATEGORIES } from '@/lib/constants/goalCategories'
-import type { FactDebt, FactGoal } from '@/lib/budget/facts'
-import { answeredDebts, answeredGoals } from '@/lib/budget/flow/toFacts'
+import type { FactDebt, FactGoal, PlanDraft } from '@/lib/budget/facts'
+import { answeredDebts, answeredGoals, debtMonthlyPayment } from '@/lib/budget/flow/toFacts'
 import type { FlowState } from '@/lib/budget/flow/types'
 import { isTracked } from '@/lib/accounts/kinds'
 
@@ -18,7 +18,6 @@ export interface StudioEntityNames {
 type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals' | 'incomeSources' | 'debts' | 'savingsAccounts'> & Partial<Pick<FinanceStore, 'paymentMethods'>>
 
 const DEFAULT_PAYDAY = 25
-const MIN_INSTALMENT_MONTHS = 12
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const amountOf = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0)
 
@@ -32,6 +31,23 @@ const SOURCE_OF_TYPE: Record<string, IncomeSourceType> = {
 /** Ids of the debts and goals created from these answers, so the plan can use the richer fact (with its interest rate) instead of counting both. */
 export const createdIds = (created: Record<string, string>): Set<string> =>
   new Set(Object.entries(created).filter(([k]) => k.startsWith('debt:') || k.startsWith('goal:')).map(([, id]) => id))
+
+/**
+ * The plan was built from the answered debts and goals (`answered-…` ids); once the real records exist the lines must point
+ * at them, because the store maps only real ids and a line left on `answered-…` would read as "debts, no ids". An answer with
+ * no record (the user already tracked that kind) leaves its line unlinked.
+ */
+export function relinkDraft(draft: PlanDraft, created: Record<string, string>): PlanDraft {
+  const target = (type: string, id: string) => created[`${type === 'debts' ? 'debt' : 'goal'}:${id}`]
+  return {
+    ...draft,
+    lines: draft.lines.map((l) => {
+      if ((l.linkType !== 'debts' && l.linkType !== 'goal') || !l.linkIds.some((id) => id.startsWith('answered-'))) return l
+      const linkIds = l.linkIds.flatMap((id) => (id.startsWith('answered-') ? [target(l.linkType, id)].filter(Boolean) : [id]))
+      return linkIds.length ? { ...l, linkIds } : { ...l, linkType: 'none' as const, linkIds: [] }
+    }),
+  }
+}
 
 /**
  * Turns what the user told the studio into the real records the rest of the app reads, so the plan never
@@ -67,7 +83,7 @@ export function commitFlowEntities(state: FlowState, store: Actions, base: Curre
 
   if (store.debts.length === 0) {
     for (const d of answeredDebts(a).filter((x: FactDebt) => x.balance > 0 && !done[`debt:${x.id}`])) {
-      const payment = d.minimum > 0 ? d.minimum : Math.ceil(d.balance / MIN_INSTALMENT_MONTHS)
+      const payment = debtMonthlyPayment(d)
       created[`debt:${d.id}`] = store.addDebt({
         name: names.debt(d.id), person: '', startingBalance: d.balance, currency: base, isGold: false, direction: 'i_owe',
         debtType: 'installment', installmentCount: Math.max(1, Math.ceil(d.balance / payment)), installmentFrequency: 'monthly',
