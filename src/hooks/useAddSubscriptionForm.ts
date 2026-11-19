@@ -16,16 +16,13 @@ import { localTodayISO } from '@/lib/utils/localDate'
 import { convertCurrency, tryConvertCurrency } from '@/lib/utils/currency'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
+import { defaultMethodId } from '@/lib/accounts/resolve'
 import { catalogGrid, catalogRegionOf, defaultPlan, type AddCategory } from '@/lib/subscriptions/catalogDisplay'
 import {
   committedImpact,
   draftToSubscription,
   type SubscriptionDraft,
 } from '@/lib/subscriptions/subscriptionDraft'
-
-function defaultPmId(pms: { id: string; isDefault: boolean }[]): string {
-  return pms.find((m) => m.isDefault)?.id || pms[0]?.id || ''
-}
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -78,7 +75,7 @@ export function useAddSubscriptionForm(editing: Subscription | null, onClose: ()
         notes: editing.notes ?? '',
       }
     }
-    const blank = blankDraft(base, defaultPmId(paymentMethods), today)
+    const blank = blankDraft(base, defaultMethodId(paymentMethods), today)
     const seed = findBrandByKey(seedBrandKey)
     const plan = seed && defaultPlan(seed, region)
     if (!seed) return blank

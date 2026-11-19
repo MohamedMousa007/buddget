@@ -13,6 +13,7 @@ import { SelectField } from '@/components/ui/SelectField'
 import { CategoryGlyph } from '@/components/dashboard/CategoryIcon'
 import { useT, type Dictionary } from '@/lib/i18n'
 import { IconButton } from '@/components/ui/IconButton'
+import { pickablePaymentMethods } from '@/lib/accounts/kinds'
 import { useTypedAmount } from '@/hooks/useTypedAmount'
 
 export interface VoiceRecapEditorProps {
@@ -198,7 +199,7 @@ export function VoiceRecapEditor({
                       {pmValue && !paymentMethods.some((m) => m.name === pmValue) ? (
                         <option value={pmValue}>{pmValue}</option>
                       ) : null}
-                      {paymentMethods.map((m) => (
+                      {pickablePaymentMethods(paymentMethods).map((m) => (
                         <option key={m.id} value={m.name}>{m.name}</option>
                       ))}
                     </select>

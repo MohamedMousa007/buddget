@@ -45,9 +45,11 @@ const PREPOSITIONS = 'on|for|in|at|from|to|with|by|using|في|على|ع|ل|ب|م
 const leadingOf = (source: string) =>
   new RegExp(`^(?:${foldArabic(source)})(?![\\p{L}\\d])\\s*`, 'iu')
 const LEADING_NOISE = leadingOf(
-  `i|we|spent|spend|paid me|paid|pay|bought|buy|got|received|earned|استلمت|قبضت|صرفت|دفعت|اشتريت|جبت|${PREPOSITIONS}`,
+  `i|we|add|log|record|spent|spend|paid me|paid|pay|bought|buy|got|received|earned|ضيف|اضف|سجل|استلمت|قبضت|صرفت|دفعت|اشتريت|جبت|${PREPOSITIONS}`,
 )
-const TRAILING = new RegExp(`\\s(?:${PREPOSITIONS})$`, 'iu')
+// An article only before a space, so a name like "A&W" keeps its first letter.
+const LEADING_ARTICLE = /^an?\s+/i
+const TRAILING =new RegExp(`\\s(?:${PREPOSITIONS})$`, 'iu')
 const EDGE_PUNCTUATION = /^[\s,،;:!.\-–—_/()"']+|[\s,،;:!.\-–—_/()"']+$/g
 
 function extractCurrency(
@@ -93,22 +95,25 @@ function extractMethod(
     .filter((m) => m.name.trim())
     .map((m) => {
       const name = escapeRe(m.name.trim())
-      const re = boundedRe(`(?:(?:with|using|by|on|via|عن طريق)\\s+|بـ|ب\\s?)${name}`)
+      const re = boundedRe(`(?:(?:(?:paid|pay)\\s+)?(?:with|using|by|on|via|عن طريق)\\s+|بـ|ب\\s?)${name}`)
       return { ...m, re, match: text.match(re) }
     })
     .filter((h) => h.match)
   const longest = hits.filter(
     (h) => !hits.some((o) => o !== h && o.name.length > h.name.length && o.name.toLowerCase().includes(h.name.toLowerCase())),
   )
-  if (longest.length !== 1) return { rest: text }
-  return { ref: longest[0].ref, rest: stripAll(text, longest[0].re) }
+  if (longest.length === 0) return { rest: text }
+  // Two methods with the same name: the phrase is still not part of the description, but no method is guessed.
+  const sameName = longest.every((h) => h.name.trim().toLowerCase() === longest[0].name.trim().toLowerCase())
+  if (!sameName) return { rest: text }
+  return { ref: longest.length === 1 ? longest[0].ref : undefined, rest: stripAll(text, longest[0].re) }
 }
 
 function tidy(text: string): string {
   let out = text.replace(/\s+/g, ' ').replace(EDGE_PUNCTUATION, '')
   for (let prev = ''; prev !== out; ) {
     prev = out
-    out = out.replace(LEADING_NOISE, '').replace(TRAILING, '').replace(EDGE_PUNCTUATION, '')
+    out = out.replace(LEADING_NOISE, '').replace(LEADING_ARTICLE, '').replace(TRAILING, '').replace(EDGE_PUNCTUATION, '')
   }
   return out.slice(0, MAX_DESCRIPTION).trim()
 }

@@ -17,6 +17,7 @@ import { useActionToast } from '@/components/ui/ActionToast'
 import { useT } from '@/lib/i18n'
 import { bnplPlanDebt, bnplSplitIssue } from '@/lib/debts/bnplSplit'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
+import { defaultMethodId } from '@/lib/accounts/resolve'
 import { canonicalAmount, currencyDecimals, parseLocalizedAmount } from '@/lib/ui/amountParse'
 
 /** Default BNPL first-installment due: same day next month. */
@@ -62,7 +63,7 @@ export function useAddExpenseSheet() {
   const [category, setCategory] = useState<string>(defaultCategory)
   const [subcategory, setSubcategory] = useState<string | undefined>(undefined)
   const [paymentMethodId, setPaymentMethodId] = useState(
-    paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+    defaultMethodId(paymentMethods)
   )
   const [notes, setNotes] = useState('')
   const [spendExclusion, setSpendExclusion] = useState<SpendExclusion | undefined>(undefined)
@@ -133,7 +134,7 @@ export function useAddExpenseSheet() {
     setCurrency(settings.baseCurrency)
     setCategory(defaultCategory)
     setSubcategory(undefined)
-    setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
+    setPaymentMethodId(defaultMethodId(paymentMethods))
     setNotes('')
     setSpendExclusion(undefined)
     setOwedBy('')

@@ -182,3 +182,19 @@ describe('parseQuickAdd rejects', () => {
     expect(run('lunch 12 pounds', { knownCurrencies: ['GBP', 'EGP'] })).toBeNull()
   })
 })
+
+describe('QA-26: a spoken command does not end up as the description', () => {
+  it('strips the command words and the method phrase, and sets the method', () => {
+    const r = run('Add a coffee for 45 paid with cash')
+    expect(r?.args).toMatchObject({ description: 'coffee', amount: 45, method: 'pm_cash' })
+  })
+  it('two methods with the same name: the phrase is still stripped, no method is guessed', () => {
+    const r = run('Add a coffee for 45 paid with cash', { paymentMethodNames: [{ ref: 'a', name: 'Cash' }, { ref: 'b', name: 'Cash' }] })
+    expect(r?.args.description).toBe('coffee')
+    expect(r?.args.method).toBeUndefined()
+  })
+  it('keeps a merchant that only looks like a command word', () => {
+    expect(run('A&W 90')?.args.description).toBe('A&W')
+    expect(run('سجل قهوة 45')?.args.description).toBe('قهوة')
+  })
+})

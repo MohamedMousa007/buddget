@@ -12,6 +12,7 @@ import { useT } from '@/lib/i18n'
 import type { Currency } from '@/lib/store/types'
 import { fmtWhole, soft } from './heroCardShared'
 import { OptionChip } from '@/components/ui/OptionChip'
+import { pickablePaymentMethods } from '@/lib/accounts/kinds'
 import { Switch } from '@/components/ui/switch'
 
 const MICRO = 'font-semibold text-[0.625rem] tracking-[0.08em] uppercase text-[var(--color-brand-text-muted)]'
@@ -67,7 +68,7 @@ export function PayDebtForm({ d }: { d: AddDebtHook }) {
       <div>
         <div className={`${MICRO} mb-2`}>{t.fPaymentMethod}</div>
         <div className="native-scroll -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
-          {d.paymentMethods.map((m) => {
+          {pickablePaymentMethods(d.paymentMethods, d.paymentMethodId).map((m) => {
             const on = d.paymentMethodId === m.id
             const c = m.color || defaultColorForPaymentMethodType(m.type)
             const Icon = paymentTypeIcon(m.type)

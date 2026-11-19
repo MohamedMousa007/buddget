@@ -28,6 +28,7 @@ import { IncomePaydayGrid } from '@/components/features/income/IncomePaydayGrid'
 import { deriveDefaultPaydays, paydaysPerMonth } from '@/lib/utils/paydaySchedule'
 import { MODAL_BODY_SCROLL_CLASS, MODAL_CONTROL_CLASS, MODAL_LABEL_CLASS } from '@/lib/modals/modalFormClasses'
 import { V3SheetHeader } from '@/components/features/savings-v3/V3SheetHeader'
+import { defaultMethodId } from '@/lib/accounts/resolve'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 
 const FREQS: IncomeRecurringFrequency[] = ['monthly', 'biweekly', 'weekly']
@@ -84,7 +85,7 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   )
   const t = useT()
   const [assignOpen, setAssignOpen] = useState(false)
-  const defaultPmId = paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+  const defaultPmId = defaultMethodId(paymentMethods)
   const seedPaydays = () =>
     source?.paydayDays?.length
       ? [...source.paydayDays].sort((a, b) => a - b)

@@ -23,6 +23,7 @@ import { addCategoryOf } from '@/lib/subscriptions/catalogDisplay'
 import { useLocale, useT } from '@/lib/i18n'
 import type { SubscriptionBillingCycle, SubscriptionTracking } from '@/lib/store/types'
 import { cn } from '@/lib/utils'
+import { pickablePaymentMethods } from '@/lib/accounts/kinds'
 import { formatFixed2, formatWhole } from '@/lib/utils/formatters'
 
 const FIELD = 'h-12 rounded-xl border-[var(--color-brand-border)] bg-[var(--color-brand-elevated)] font-mono-numbers text-[17px] font-semibold'
@@ -162,7 +163,7 @@ export function AddConfigureStep({ form }: { form: AddSubscriptionFormReturn }) 
         <div className="flex flex-col gap-2">
           <FieldLabel>{ui.add.paidWith}</FieldLabel>
           <div role="group" aria-label={ui.add.paidWith} className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 md:-mx-6 md:px-6">
-            {form.paymentMethods.map((m) => (
+            {pickablePaymentMethods(form.paymentMethods, draft.paymentMethodId ?? undefined).map((m) => (
               <OptionChip key={m.id} size="sm" selected={draft.paymentMethodId === m.id} onClick={() => patch({ paymentMethodId: m.id })}>
                 {decomposePaymentMethodName(m.name, m.last4).provider}
                 {m.last4 ? <span className="font-mono-numbers">••{m.last4}</span> : null}

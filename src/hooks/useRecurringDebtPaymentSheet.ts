@@ -18,6 +18,7 @@ import {
 } from '@/lib/utils/currencyPickerOptions'
 import { selectedPayableDebtId } from '@/lib/debt/selectedPayableDebtId'
 import type { Currency, DebtRecurringFrequency } from '@/lib/store/types'
+import { defaultMethodId } from '@/lib/accounts/resolve'
 import { recurringDueDayFor } from '@/lib/utils/recurringDebtPayments'
 
 export function useRecurringDebtPaymentSheet() {
@@ -61,7 +62,7 @@ export function useRecurringDebtPaymentSheet() {
   const [frequency, setFrequency] = useState<DebtRecurringFrequency>('monthly')
   const [nextDueDate, setNextDueDate] = useState(() => localTodayISO())
   const [paymentMethodId, setPaymentMethodId] = useState(
-    () => paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || ''
+    () => defaultMethodId(paymentMethods)
   )
   const [isActive, setIsActive] = useState(true)
   const [notes, setNotes] = useState('')
@@ -84,7 +85,7 @@ export function useRecurringDebtPaymentSheet() {
     setPaymentCurrency(settings.baseCurrency)
     setFrequency('monthly')
     setNextDueDate(localTodayISO())
-    setPaymentMethodId(paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '')
+    setPaymentMethodId(defaultMethodId(paymentMethods))
     setIsActive(true)
     setNotes('')
     setError('')
@@ -105,7 +106,7 @@ export function useRecurringDebtPaymentSheet() {
       }
     }
     setPaymentMethodId((current) =>
-      paymentMethods.some((m) => m.id === current) ? current : paymentMethods.find((m) => m.isDefault)?.id || paymentMethods[0]?.id || '',
+      paymentMethods.some((m) => m.id === current) ? current : defaultMethodId(paymentMethods),
     )
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isOpen, payableDebts, debts, debtPayments, debtBalanceCtx, selectedDebtId, paymentMethods])

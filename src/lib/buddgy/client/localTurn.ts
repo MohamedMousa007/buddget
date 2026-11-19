@@ -9,6 +9,7 @@ import { TOOLS } from '@/lib/buddgy/tools/exec'
 import { refOf } from '@/lib/buddgy/tools/refs'
 import { fin } from '@/lib/buddgy/tools/stores'
 import { FIAT_CURRENCIES } from '@/lib/constants/finance'
+import { pickablePaymentMethods } from '@/lib/accounts/kinds'
 import { localTodayISO } from '@/lib/utils/localDate'
 
 /** Below this the parse is a guess, and a wrong entry is worse than asking the model. */
@@ -38,7 +39,7 @@ export function runLocal(text: string, locale: BuddgyLocale, now: Date): LocalRe
   const parsed = parseQuickAdd(text, {
     baseCurrency: s.settings.baseCurrency,
     knownCurrencies: [...FIAT_CURRENCIES],
-    paymentMethodNames: s.paymentMethods.map((m) => ({ ref: refOf(m.id), name: m.name })),
+    paymentMethodNames: pickablePaymentMethods(s.paymentMethods).map((m) => ({ ref: refOf(m.id), name: m.name })),
     today: localTodayISO(now),
     locale,
   })
