@@ -29,6 +29,6 @@ for(const cb of combos){const [vp,theme,loc]=cb.split(':')
       await p.keyboard.press('Escape'); await p.waitForTimeout(600); if(await p.locator('[role=dialog]').count()){await p.keyboard.press('Escape');await p.waitForTimeout(500)}; if(await p.locator('[role=dialog]').count()){await p.goto(BASE+'/flow',{waitUntil:'load'});await p.waitForTimeout(2500)}
     }catch(e){out.push({tag,error:String(e).slice(0,120)}); await p.goto(BASE+'/flow',{waitUntil:'load'}); await p.waitForTimeout(2500)}
   }
-  await c.close(); fs.writeFileSync('e2e/ui/sheets.json',JSON.stringify(out,null,1))
+  await c.close(); fs.writeFileSync('e2e/ui/out/sheets.json',JSON.stringify(out,null,1))
 }
 await b.close()

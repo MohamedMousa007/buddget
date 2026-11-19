@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-const all=['mobile','tablet','desktop'].flatMap(v=>JSON.parse(fs.readFileSync(`e2e/ui/sweep-${v}.json`)))
+const all=(process.env.VPS||'mobile,tablet,landscape,desktop').split(',').flatMap(v=>JSON.parse(fs.readFileSync(`e2e/ui/out/sweep-${v}.json`)))
 console.log('records',all.length,'errors',all.filter(x=>x.error).length)
 console.log('redirected:',[...new Set(all.filter(x=>!x.error&&x.tag.split('-').slice(3).join('-').replace(/_/g,'/')!==x.url.slice(1)).map(x=>x.tag.split('-').slice(3).join('-')+'->'+x.url))].join(' ; '))
 console.log('hOverflow:',all.filter(x=>x.hOverflow).map(x=>x.tag+'('+x.sw+'>'+x.cw+')').join('\n'))
