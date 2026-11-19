@@ -23,6 +23,7 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - A restore, project copy or region move resets every grant to the platform default (it happened on the Frankfurt move). After one, re-apply `0315_function_lockdown.sql` and `0316_table_grants_restore.sql` (both are safe to run again), then check `get_advisors`.
 - New tables get nothing for `anon` by default (0316); grant only what a policy needs.
 - New functions get no `EXECUTE` for `anon`/`authenticated` by default (migration 0315). Grant it in the same migration, to the narrowest role that calls it; server-only functions get `service_role` only.
+- `net.*` (pg_net) stays executable by `PUBLIC`: the objects belong to `supabase_admin`, so our revoke is a no-op (tried 2026-11-19, QA-101, accepted). Never add `net` to the exposed API schemas in the dashboard.
 
 ## Database load (the live database is a small instance; protect it)
 - Test before you run: `EXPLAIN` (no `ANALYZE`) every new or changed query on the live DB first. No sequential scan on a table that grows with users or events; add the index in the same migration.
