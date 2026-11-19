@@ -8,8 +8,10 @@
  * 'initials' = RED, UNASSESSED or low-confidence YELLOW: render the initials tile. Unlisted brands
  *              are 'initials' too, so a new brand never ships a logo by accident.
  *
- * Restricted PNGs are kept out of /public in assets/restricted-subscription-icons/ so they are not
- * bundled. To promote a brand: move its PNG back to public/subscription-icons/ and flip it here.
+ * 2026-11-19 owner decision: every brand that has an image ships its real logo, including the ones
+ * the research rated RED, accepting the trademark-complaint risk. Keep them out of marketing and
+ * store assets. The source PNGs stay in assets/restricted-subscription-icons/; a brand with no image
+ * renders initials. To pull one back: delete its WebP from public/subscription-icons/ and flip it here.
  */
 export type LogoPolicy = 'logo' | 'initials'
 
@@ -52,84 +54,84 @@ export const LOGO_POLICY: Record<string, LogoPolicy> = {
   watchit: 'logo', // YELLOW USE_LOGO_WITH_CONDITIONS
   weyyak: 'logo', // YELLOW USE_LOGO_WITH_CONDITIONS
   yango_play: 'logo', // YELLOW USE_LOGO_WITH_CONDITIONS
-  adobe_creative_cloud: 'initials', // RED USE_INITIALS
-  anghami: 'initials', // YELLOW USE_INITIALS
-  apple_arcade: 'initials', // RED USE_INITIALS
-  apple_fitness: 'initials', // RED USE_INITIALS
-  apple_music: 'initials', // RED USE_INITIALS
-  apple_tv_plus: 'initials', // RED USE_INITIALS
-  audible: 'initials', // YELLOW USE_INITIALS
-  aws: 'initials', // RED USE_INITIALS
-  breadfast: 'initials', // YELLOW USE_INITIALS
-  bumble: 'initials', // YELLOW USE_INITIALS
-  calm: 'initials', // RED USE_INITIALS
-  canva: 'initials', // RED USE_INITIALS
-  careem_plus: 'initials', // YELLOW USE_INITIALS
-  carrefour_mylo: 'initials', // YELLOW USE_INITIALS
-  chefaa: 'initials', // YELLOW USE_INITIALS
-  claude_pro: 'initials', // RED USE_INITIALS
-  cloudflare: 'initials', // RED USE_INITIALS
-  coursera: 'initials', // YELLOW USE_INITIALS
-  deezer: 'initials', // YELLOW USE_INITIALS
-  digitalocean: 'initials', // RED USE_INITIALS
-  du_home: 'initials', // UNASSESSED USE_INITIALS
-  du_mobile: 'initials', // UNASSESSED USE_INITIALS
-  duolingo: 'initials', // YELLOW USE_INITIALS
-  ea_play: 'initials', // YELLOW USE_INITIALS
-  economist: 'initials', // RED USE_INITIALS
-  elmenus: 'initials', // YELLOW USE_INITIALS
-  etisalat_eg: 'initials', // YELLOW USE_INITIALS
-  etisalat_uae: 'initials', // UNASSESSED USE_INITIALS
-  fortnite_crew: 'initials', // YELLOW USE_INITIALS
-  github_copilot: 'initials', // YELLOW USE_INITIALS
-  godaddy: 'initials', // RED USE_INITIALS
+  adobe_creative_cloud: 'logo', // RED owner decision 2026-11-19: real logo
+  anghami: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  apple_arcade: 'logo', // RED owner decision 2026-11-19: real logo
+  apple_fitness: 'logo', // RED owner decision 2026-11-19: real logo
+  apple_music: 'logo', // RED owner decision 2026-11-19: real logo
+  apple_tv_plus: 'logo', // RED owner decision 2026-11-19: real logo
+  audible: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  aws: 'logo', // RED owner decision 2026-11-19: real logo
+  breadfast: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  bumble: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  calm: 'logo', // RED owner decision 2026-11-19: real logo
+  canva: 'logo', // RED owner decision 2026-11-19: real logo
+  careem_plus: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  carrefour_mylo: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  chefaa: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  claude_pro: 'logo', // RED owner decision 2026-11-19: real logo
+  cloudflare: 'logo', // RED owner decision 2026-11-19: real logo
+  coursera: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  deezer: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  digitalocean: 'logo', // RED owner decision 2026-11-19: real logo
+  du_home: 'logo', // UNASSESSED owner decision 2026-11-19: real logo
+  du_mobile: 'logo', // UNASSESSED owner decision 2026-11-19: real logo
+  duolingo: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  ea_play: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  economist: 'logo', // RED owner decision 2026-11-19: real logo
+  elmenus: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  etisalat_eg: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  etisalat_uae: 'logo', // UNASSESSED owner decision 2026-11-19: real logo
+  fortnite_crew: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  github_copilot: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  godaddy: 'logo', // RED owner decision 2026-11-19: real logo
   golds_gym: 'initials', // YELLOW USE_INITIALS
-  google_gemini: 'initials', // RED USE_INITIALS
-  google_one: 'initials', // RED USE_INITIALS
-  google_play_pass: 'initials', // RED USE_INITIALS
-  gym: 'initials', // GREEN USE_INITIALS
-  headspace: 'initials', // YELLOW USE_INITIALS
-  hulu: 'initials', // UNASSESSED USE_INITIALS
-  icloud: 'initials', // RED USE_INITIALS
-  instashop: 'initials', // YELLOW USE_INITIALS
-  kindle_unlimited: 'initials', // YELLOW USE_INITIALS
-  linkedin_premium: 'initials', // YELLOW USE_INITIALS
-  masterclass: 'initials', // YELLOW USE_INITIALS
-  microsoft_365: 'initials', // RED USE_INITIALS
-  mrsool: 'initials', // YELLOW USE_INITIALS
-  myfitnesspal: 'initials', // YELLOW USE_INITIALS
-  nintendo_switch_online: 'initials', // RED USE_INITIALS
-  noon_one: 'initials', // YELLOW USE_INITIALS
-  nordvpn: 'initials', // RED USE_INITIALS
-  nytimes: 'initials', // RED USE_INITIALS
-  orange_eg: 'initials', // YELLOW USE_INITIALS
-  paramount_plus: 'initials', // UNASSESSED USE_INITIALS
-  peacock: 'initials', // UNASSESSED USE_INITIALS
-  playstation_plus: 'initials', // YELLOW USE_INITIALS
-  prime_video: 'initials', // RED USE_INITIALS
-  rabbit: 'initials', // YELLOW USE_INITIALS
-  roblox_premium: 'initials', // RED USE_INITIALS
-  scribd: 'initials', // YELLOW USE_INITIALS
-  skillshare: 'initials', // YELLOW USE_INITIALS
-  snapchat_plus: 'initials', // YELLOW USE_INITIALS
-  storytel: 'initials', // YELLOW USE_INITIALS
-  strava: 'initials', // YELLOW USE_INITIALS
-  surfshark: 'initials', // RED USE_INITIALS
-  talabat_pro: 'initials', // YELLOW USE_INITIALS
-  telegram_premium: 'initials', // YELLOW USE_INITIALS
-  tinder: 'initials', // YELLOW USE_INITIALS
-  twitch: 'initials', // YELLOW USE_INITIALS
-  uber_one: 'initials', // RED USE_INITIALS
-  ubisoft_plus: 'initials', // YELLOW USE_INITIALS
-  udemy: 'initials', // RED USE_INITIALS
-  vezeeta: 'initials', // YELLOW USE_INITIALS
-  vodafone_eg: 'initials', // YELLOW USE_INITIALS
-  we_internet: 'initials', // YELLOW USE_INITIALS
-  x_premium: 'initials', // YELLOW USE_INITIALS
-  xbox_gamepass: 'initials', // RED USE_INITIALS
-  youtube_music: 'initials', // YELLOW USE_INITIALS
-  youtube_premium: 'initials', // RED USE_INITIALS
-  zoom_pro: 'initials', // RED USE_INITIALS
+  google_gemini: 'logo', // RED owner decision 2026-11-19: real logo
+  google_one: 'logo', // RED owner decision 2026-11-19: real logo
+  google_play_pass: 'logo', // RED owner decision 2026-11-19: real logo
+  gym: 'logo', // GREEN owner decision 2026-11-19: real logo
+  headspace: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  hulu: 'logo', // UNASSESSED owner decision 2026-11-19: real logo
+  icloud: 'logo', // RED owner decision 2026-11-19: real logo
+  instashop: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  kindle_unlimited: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  linkedin_premium: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  masterclass: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  microsoft_365: 'logo', // RED owner decision 2026-11-19: real logo
+  mrsool: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  myfitnesspal: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  nintendo_switch_online: 'logo', // RED owner decision 2026-11-19: real logo
+  noon_one: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  nordvpn: 'logo', // RED owner decision 2026-11-19: real logo
+  nytimes: 'logo', // RED owner decision 2026-11-19: real logo
+  orange_eg: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  paramount_plus: 'logo', // UNASSESSED owner decision 2026-11-19: real logo
+  peacock: 'logo', // UNASSESSED owner decision 2026-11-19: real logo
+  playstation_plus: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  prime_video: 'logo', // RED owner decision 2026-11-19: real logo
+  rabbit: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  roblox_premium: 'logo', // RED owner decision 2026-11-19: real logo
+  scribd: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  skillshare: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  snapchat_plus: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  storytel: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  strava: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  surfshark: 'logo', // RED owner decision 2026-11-19: real logo
+  talabat_pro: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  telegram_premium: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  tinder: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  twitch: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  uber_one: 'logo', // RED owner decision 2026-11-19: real logo
+  ubisoft_plus: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  udemy: 'logo', // RED owner decision 2026-11-19: real logo
+  vezeeta: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  vodafone_eg: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  we_internet: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  x_premium: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  xbox_gamepass: 'logo', // RED owner decision 2026-11-19: real logo
+  youtube_music: 'logo', // YELLOW owner decision 2026-11-19: real logo
+  youtube_premium: 'logo', // RED owner decision 2026-11-19: real logo
+  zoom_pro: 'logo', // RED owner decision 2026-11-19: real logo
 }
 
 export function logoAllowed(brandKey: string | null | undefined): boolean {

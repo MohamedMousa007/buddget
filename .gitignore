@@ -107,3 +107,4 @@ ios/App/App/GoogleService-Info.plist
 
 # /brag launch-video runs (brag-output/ and timestamped brag-output-*/)
 /brag-output*/
+docs/launch/*.local.md

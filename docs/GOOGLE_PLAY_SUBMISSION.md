@@ -14,7 +14,11 @@ first and treats UAE / GCC as expansion markets.
 
 ## 1. App identity
 
-- **App name (Play Console title):** buddget — Budget & Expense Tracker
+> **Superseded copy.** The live Play listing uses the title and descriptions in
+> `docs/launch/S6-store-listing.md` (billing is ON, so "Free. No ads." below is stale).
+> Play Console app: "buddget: AI Budget Tracker", `app.buddget`, created 2026-11-19.
+
+- **App name (Play Console title):** buddget: AI Budget Tracker
 - **Short description (80 chars):**
   `Built for Egypt. Track EGP / AED spend by voice, receipt, and SMS.`
 - **Long description:**
@@ -52,6 +56,7 @@ After `npx cap add android`, merge the following into
 ```xml
 <!-- ── PERMISSIONS (exactly what android/app/src/main/AndroidManifest.xml declares) ── -->
 <uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="com.android.vending.BILLING" />
 
 <!-- Push (FCM) -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

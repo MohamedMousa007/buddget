@@ -30,7 +30,9 @@ export function PrivacyDataSections() {
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Financial data:</strong> Expenses,
           income sources, debts, savings balances, budget plans, payment methods, subscriptions, and
-          financial goals you create within the app.
+          financial goals you create within the app. This means the figures and labels you enter or
+          approve, such as transaction amounts, merchant names, dates, categories and balances. We do
+          not connect to your bank, and we never ask for your bank login or password.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">Voice data:</strong> Audio
@@ -54,7 +56,10 @@ export function PrivacyDataSections() {
           <strong className="text-[var(--color-brand-text-primary)]">
             SMS transaction data (opt-in only):
           </strong>{' '}
-          When you enable SMS auto-tracking, the text content of the SMS messages you authorize is
+          SMS tracking is optional and off by default. It stays off until you choose to turn it on
+          yourself in the app&apos;s settings and allow the SMS permission on your device, and you can
+          turn it off or revoke the permission at any time. When you enable SMS auto-tracking, the
+          text content of the SMS messages you authorize is
           transmitted to our servers for parsing: messages from business senders (such as banks,
           wallets and other companies) that contain a number, and other messages that look like a
           transaction. Messages that turn out not to be transactions are rejected and deleted within 7
@@ -65,7 +70,9 @@ export function PrivacyDataSections() {
           removed, is kept to improve how messages are parsed. Learned message patterns
           that are seen rarely are deleted after 180 days; patterns that recur across many messages
           and contain no personal details are kept so parsing keeps working. No raw message is ever
-          kept longer than 60 days.
+          kept longer than 60 days. SMS data is encrypted in transit and at rest, is used only to
+          provide this feature and improve its accuracy, is never sold, and is never used for
+          advertising.
         </p>
         <p>
           <strong className="text-[var(--color-brand-text-primary)]">AI query data:</strong>{' '}

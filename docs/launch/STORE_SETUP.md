@@ -66,6 +66,7 @@ Eligibility: paid for at least 1 month, 24 months between offers, all 175 territ
 - Service account `revenuecat@gen-lang-client-0929604237.iam.gserviceaccount.com` with Pub/Sub Admin and Monitoring Viewer only.
 - Service account JSON key created by the owner and kept offline (not in the repo).
 - RevenueCat Play Store app `app86a098cc89` (`buddget Android`, package `app.buddget`) created 2026-11-18; credentials not uploaded yet.
+- 2026-11-19: Play identity verification cleared. App created in Play Console ("buddget: AI Budget Tracker", `app.buddget`, personal account, Free). App content done: privacy policy, ads (none), content rating (Everyone / PEGI 3), government (no), financial features (none), advertising ID (no), health (none), trader (yes + terms URL), Data safety. Open: Sign in details (reviewer demo account), Target audience, store listing, release AAB, SMS permission declaration, monetization products, closed test (personal account: 12 testers for 14 days before production).
 - Next (owner): create its JSON key (Keys -> Add key -> JSON), keep it with the App Store keys. After Play verification: create the app, invite the service account in Play Console with View app information, View financial data, Manage orders and subscriptions; add a Play Store app in RevenueCat for `app.buddget` and upload the JSON; connect Google developer notifications and paste the topic in Play Console's Monetization setup.
 
 ## Re-running

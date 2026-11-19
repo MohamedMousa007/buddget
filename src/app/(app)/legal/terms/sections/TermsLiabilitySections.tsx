@@ -30,6 +30,12 @@ export function TermsLiabilitySections() {
           associated logos are trademarks of the Operator.
         </p>
         <p>
+          Names and logos of third-party services, banks and brands shown in the Service are
+          trademarks of their respective owners. They appear only to help you identify your own
+          subscriptions and accounts. buddget is not affiliated with, endorsed by, or sponsored by
+          those owners.
+        </p>
+        <p>
           You may not copy, reproduce, distribute, modify, create derivative works from, publicly
           display, republish, or transmit any part of the Service except as reasonably necessary to use
           the Service for its intended purpose.

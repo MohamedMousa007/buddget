@@ -9,19 +9,12 @@ import { inkFor } from '@/lib/ui/contrast'
  * monograms. `brandTile.test.ts` fails if two brands share a mark.
  */
 export const BRAND_INITIALS: Record<string, string> = {
-  youtube_premium: 'YT', youtube_music: 'YM', apple_music: 'AM', apple_tv_plus: 'AT', apple_fitness: 'AF',
-  apple_arcade: 'AA', icloud: 'IC', google_one: 'GO', google_gemini: 'GE', prime_video: 'PV', claude_pro: 'CP',
-  gym: 'GM', golds_gym: 'GG', playstation_plus: 'PS', xbox_gamepass: 'XG', nordvpn: 'NV', we_internet: 'WE', vodafone_eg: 'VE',
-  orange_eg: 'OE', etisalat_eg: 'ET', du_home: 'DH', etisalat_uae: 'EU', du_mobile: 'DU', stc: 'SC', stc_tv: 'TV',
-  stc_home: 'SH', mobily: 'MO', mobily_home: 'MH', zain_ksa: 'ZK', zain_home: 'ZH', hulu: 'HU', paramount_plus: 'PP',
-  peacock: 'PE', anghami: 'AN', github_copilot: 'GH', microsoft_365: 'MS', myfitnesspal: 'MP', strava: 'SR',
-  zoom_pro: 'ZM', kindle_unlimited: 'KU', audible: 'AD', scribd: 'SD', surfshark: 'SF', nintendo_switch_online: 'NO',
-  ea_play: 'EA', storytel: 'ST', deezer: 'DZ', fortnite_crew: 'FN', ubisoft_plus: 'UB', twitch: 'TW', canva: 'CV',
-  adobe_creative_cloud: 'AC', duolingo: 'DL', linkedin_premium: 'LI', coursera: 'CO', skillshare: 'SK',
-  masterclass: 'MC', calm: 'CM', headspace: 'HS', fitness_time: 'FT', anytime_fitness: 'AY', fitness_first: 'FF',
-  gymnation: 'GN', classpass: 'CL', nytimes: 'NY', economist: 'EC', telegram_premium: 'TG', x_premium: 'XP',
-  snapchat_plus: 'SN', tinder: 'TI', bumble: 'BU', talabat_pro: 'TB', noon_one: 'NN', careem_plus: 'CA',
-  uber_one: 'UO', jahez: 'JA', hungerstation: 'HG', deliveroo_plus: 'DR', salam_ksa: 'SA', virgin_ksa: 'VK',
+  golds_gym: 'GG',
+  stc: 'SC', stc_tv: 'TV',
+  stc_home: 'SH', mobily: 'MO', mobily_home: 'MH', zain_ksa: 'ZK', zain_home: 'ZH',
+  fitness_time: 'FT', anytime_fitness: 'AY', fitness_first: 'FF',
+  gymnation: 'GN', classpass: 'CL',
+  jahez: 'JA', hungerstation: 'HG', deliveroo_plus: 'DR', salam_ksa: 'SA', virgin_ksa: 'VK',
   virgin_uae: 'VU', lebara_ksa: 'LB',
 }
 
