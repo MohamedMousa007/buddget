@@ -282,7 +282,7 @@ export const useSettingsStore = create<SettingsState>()(
       debtSheetPrefillDebtId: null,
       debtSheetPresetFamily: null,
       debtSheetGoalIntent: false,
-      buddgyOrb: { side: 'right', top: 620 },
+      buddgyOrb: { side: 'left', top: 620 },
       setBuddgyOrb: (pos) => set({ buddgyOrb: pos }),
       buddgyActive: {},
       setBuddgyMood: (mood, active) =>
