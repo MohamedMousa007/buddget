@@ -95,8 +95,9 @@ export function useAuthModal() {
   const [password, setPassword] = useState('')
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
-  /** Counts password sign-in attempts, so a late answer to an abandoned one knows whether a retry has replaced it. */
+  /** Counts password sign-in attempts; the second ref holds the last one that passed the device check. */
   const signInAttemptRef = useRef(0)
+  const checkedAttemptRef = useRef(0)
   /** Set while `/api/auth/check-email` is resolving. Disables the email input + advance button. */
   const [emailAdvancePending, setEmailAdvancePending] = useState(false)
   const [error, setError] = useState('')
@@ -324,9 +325,9 @@ export function useAuthModal() {
     const answer = await withTimeout(attempt, SIGNIN_TIMEOUT_MS)
     if (answer === 'timeout') {
       // D-6: tell the user and let them retry. An abandoned attempt that still succeeds later never ran the device
-      // check below, so its session is ended locally, unless a newer attempt (the retry) owns the session by then.
+      // check below, so its session is ended locally, unless a newer attempt has passed that check by then.
       void attempt.then(({ error: late }) => {
-        if (late || signInAttemptRef.current !== attemptId) return
+        if (late || checkedAttemptRef.current > attemptId) return
         expectSignOut()
         void supabase.auth.signOut({ scope: 'local' })
       })
