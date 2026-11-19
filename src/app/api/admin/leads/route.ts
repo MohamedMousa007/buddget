@@ -3,10 +3,16 @@ import { auditPiiRead } from '@/lib/server/admin/staffActionGuards'
 
 const KINDS = ['waitlist', 'contact'] as const
 const PAGE = 200
-const MAX_OFFSET = 100_000
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const PREVIEW_CHARS = 40
 
 const maskName = (name: string | null) => (name ? `${Array.from(name)[0]}***` : null)
+/** `<created_at ISO>|<id>` of the last row seen; null when absent or malformed (then the first page is served). */
+function parseCursor(raw: string | null): { ts: string; id: string } | null {
+  const [ts, id] = (raw ?? '').split('|')
+  const ms = Date.parse(ts ?? '')
+  return Number.isFinite(ms) && id && UUID.test(id) ? { ts: new Date(ms).toISOString(), id } : null
+}
 const maskMessage = (m: string | null) => (m && Array.from(m).length > PREVIEW_CHARS ? `${Array.from(m).slice(0, PREVIEW_CHARS).join('')}...` : m)
 
 /** Contact messages and waitlist sign-ups from the public website (`site_leads`), newest first. Read-only; rows expire after 180 days. */
@@ -15,9 +21,12 @@ export async function GET(req: Request) {
   if (!g.ok) return g.res
   const params = new URL(req.url).searchParams
   const kind = params.get('kind')
-  const offset = Math.min(Math.max(Math.floor(Number(params.get('offset'))) || 0, 0), MAX_OFFSET)
+  const cursor = parseCursor(params.get('cursor'))
 
-  let q = g.ctx.service.from('site_leads').select('id, kind, email, name, message, locale, created_at').order('created_at', { ascending: false }).range(offset, offset + PAGE - 1)
+  // QA-58: keyset on (created_at, id), so a lead arriving between pages neither repeats nor skips a row.
+  let q = g.ctx.service.from('site_leads').select('id, kind, email, name, message, locale, created_at')
+    .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(PAGE)
+  if (cursor) q = q.or(`created_at.lt.${cursor.ts},and(created_at.eq.${cursor.ts},id.lt.${cursor.id})`)
   if (kind && (KINDS as readonly string[]).includes(kind)) q = q.eq('kind', kind)
   const { data, error } = await q
   if (error) return bad('Could not load website leads.', 500)
@@ -30,5 +39,6 @@ export async function GET(req: Request) {
     name: g.ctx.canSeePii ? r.name : maskName(r.name),
     message: g.ctx.canSeePii ? r.message : maskMessage(r.message),
   }))
-  return json({ rows, nextOffset: rows.length === PAGE ? offset + PAGE : null })
+  const last = data?.[PAGE - 1]
+  return json({ rows, nextCursor: last ? `${new Date(last.created_at).toISOString()}|${last.id}` : null })
 }

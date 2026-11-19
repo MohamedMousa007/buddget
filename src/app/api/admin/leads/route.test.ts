@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const state = vi.hoisted(() => ({ guard: null as unknown, rows: [] as unknown[], kindFilter: null as string | null, range: null as number[] | null }))
+const state = vi.hoisted(() => ({ guard: null as unknown, rows: [] as unknown[], kindFilter: null as string | null, range: null as number[] | null, or: null as string | null, limit: null as number | null }))
 
 vi.mock('@/lib/server/admin/guard', async () => {
   const actual = await vi.importActual<typeof import('@/lib/server/admin/guard')>('@/lib/server/admin/guard')
@@ -15,6 +15,8 @@ const service = {
     const c: Record<string, unknown> = {}
     for (const m of ['select', 'order', 'limit', 'range']) c[m] = () => c
     c.range = (a: number, b: number) => { state.range = [a, b]; return c }
+    c.limit = (n: number) => { state.limit = n; return c }
+    c.or = (f: string) => { state.or = f; return c }
     c.eq = (_col: string, v: string) => { state.kindFilter = v; return c }
     c.then = (res: (v: unknown) => unknown) => Promise.resolve({ data: state.rows, error: null }).then(res)
     return c
@@ -24,6 +26,9 @@ const service = {
 beforeEach(() => {
   state.rows = [{ id: 'l1', kind: 'contact', email: 'jane.doe@example.com', name: 'Jane', message: 'hi', locale: 'en', created_at: '2026-11-01T00:00:00Z' }]
   state.kindFilter = null
+  state.range = null
+  state.or = null
+  state.limit = null
 })
 
 describe('GET /api/admin/leads', () => {
@@ -53,11 +58,21 @@ describe('GET /api/admin/leads', () => {
     expect((await (await GET(new Request('http://x'))).json()).rows[0].message).toContain('Nile')
   })
 
-  it('ADS-3 pages with offset and reports the next one', async () => {
+  it('QA-58 pages with a created_at|id cursor, never an offset', async () => {
     state.guard = { ok: true, ctx: { service, canSeePii: true } }
-    state.rows = Array.from({ length: 200 }, (_, i) => ({ id: `l${i}`, kind: 'waitlist', email: 'a@b.co', name: null, message: null, locale: 'en', created_at: 'x' }))
-    const body = await (await GET(new Request('http://x?offset=200'))).json()
-    expect(state.range).toEqual([200, 399])
-    expect(body.nextOffset).toBe(400)
+    state.rows = Array.from({ length: 200 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, kind: 'waitlist', email: 'a@b.co', name: null, message: null, locale: 'en', created_at: '2026-11-01T00:00:00.000Z' }))
+    const first = await (await GET(new Request('http://x'))).json()
+    expect(state.range).toBeNull()
+    expect(state.or).toBeNull()
+    expect(state.limit).toBe(200)
+    expect(first.nextCursor).toBe('2026-11-01T00:00:00.000Z|00000000-0000-4000-8000-000000000199')
+    await GET(new Request(`http://x?cursor=${encodeURIComponent(first.nextCursor)}`))
+    expect(state.or).toBe('created_at.lt.2026-11-01T00:00:00.000Z,and(created_at.eq.2026-11-01T00:00:00.000Z,id.lt.00000000-0000-4000-8000-000000000199)')
+  })
+
+  it('QA-58 ignores a malformed cursor', async () => {
+    state.guard = { ok: true, ctx: { service, canSeePii: true } }
+    await GET(new Request('http://x?cursor=x),id.gt.0|nope'))
+    expect(state.or).toBeNull()
   })
 })

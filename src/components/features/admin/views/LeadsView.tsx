@@ -18,19 +18,19 @@ const KIND_FILTERS = [{ value: '', label: 'All' }, { value: 'contact', label: 'M
 export default function LeadsView() {
   const [kind, setKind] = useState('')
   const [open, setOpen] = useState<Lead | null>(null)
-  const { data, error, loading } = useAdminQuery<{ rows: Lead[]; nextOffset: number | null }>(`/api/admin/leads${kind ? `?kind=${kind}` : ''}`)
-  const [more, setMore] = useState<{ kind: string; rows: Lead[]; next: number | null; error: string | null } | null>(null)
+  const { data, error, loading } = useAdminQuery<{ rows: Lead[]; nextCursor: string | null }>(`/api/admin/leads${kind ? `?kind=${kind}` : ''}`)
+  const [more, setMore] = useState<{ kind: string; rows: Lead[]; next: string | null; error: string | null } | null>(null)
   const extra = more?.kind === kind ? more : null
   const rows = [...(data?.rows ?? []), ...(extra?.rows ?? [])]
-  const next = extra ? extra.next : (data?.nextOffset ?? null)
+  const next = extra ? extra.next : (data?.nextCursor ?? null)
   const [paging, setPaging] = useState(false)
 
   const loadMore = async () => {
     if (next === null || paging) return
     setPaging(true)
     try {
-      const res = await adminFetch<{ rows: Lead[]; nextOffset: number | null }>(`/api/admin/leads?offset=${next}${kind ? `&kind=${kind}` : ''}`)
-      setMore({ kind, rows: [...(extra?.rows ?? []), ...res.rows], next: res.nextOffset, error: null })
+      const res = await adminFetch<{ rows: Lead[]; nextCursor: string | null }>(`/api/admin/leads?cursor=${encodeURIComponent(next)}${kind ? `&kind=${kind}` : ''}`)
+      setMore({ kind, rows: [...(extra?.rows ?? []), ...res.rows], next: res.nextCursor, error: null })
     } catch (e) {
       setMore({ kind, rows: extra?.rows ?? [], next, error: errorMessage(e) })
     } finally {
