@@ -84,7 +84,7 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
           </p>
           {side ? (
             <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${FG2}`}>
-              <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{side}</b>
+              <b dir="auto" className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{side}</b>
               {sideSub}
             </p>
           ) : null}
@@ -110,9 +110,9 @@ export function FlowSummaryBand({ variant, label, status, setBudget, big, of, si
             ) : null}
           </div>
           <BandScale>
-            <span className="shrink-0 whitespace-nowrap">{scale[0]}</span>
-            <span className="min-w-0 truncate whitespace-nowrap">{scale[1]}</span>
-            <span className="min-w-0 truncate whitespace-nowrap">{scale[2]}</span>
+            <span dir="auto" className="shrink-0 whitespace-nowrap">{scale[0]}</span>
+            <span dir="auto" className="min-w-0 truncate whitespace-nowrap">{scale[1]}</span>
+            <span dir="auto" className="min-w-0 truncate whitespace-nowrap">{scale[2]}</span>
           </BandScale>
         </>
       )}

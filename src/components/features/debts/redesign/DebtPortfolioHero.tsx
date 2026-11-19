@@ -60,7 +60,7 @@ export function DebtPortfolioHero({
   const month = monthProgress(paidThisMonth, dueThisMonth)
   const monthCell: HeroBandCell =
     dueThisMonth > 0
-      ? { label: t.heroMonth, value: `${compact(month.paid)} / ${compact(month.total)}` }
+      ? { label: t.heroMonth, value: `${compact(month.paid)}/${compact(month.total)}` }
       : { label: t.heroMonth, value: paidThisMonth > 0 ? money(paidThisMonth) : dash }
 
   const cells: [HeroBandCell, HeroBandCell, HeroBandCell] =
@@ -88,7 +88,7 @@ export function DebtPortfolioHero({
           </p>
           {progressing ? (
             <p className={`shrink-0 text-end text-[0.71875rem] leading-[1.3] ${BAND_FG2}`}>
-              <b className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{t.heroClearedPct(clearedPct)}</b>
+              <b dir="auto" className="block font-mono-numbers text-[0.9375rem] text-[var(--flow-band-fg)]">{t.heroClearedPct(clearedPct)}</b>
               {t.heroPaidOfTotal(fmtWhole(paidOff), fmtWhole(borrowedTotal))}
             </p>
           ) : null}
@@ -102,12 +102,13 @@ export function DebtPortfolioHero({
             ) : null}
           </div>
           <BandScale>
-            <span className="min-w-0 truncate whitespace-nowrap">{progressing ? t.heroBorrowedTotal(money(borrowedTotal)) : t.heroDebtFree}</span>
-            {secondaryText ? <span className="min-w-0 shrink-0 truncate whitespace-nowrap">≈ {hidden ? MASK : secondaryText}</span> : null}
+            <span dir="auto" className="min-w-0 truncate whitespace-nowrap">{progressing ? t.heroBorrowedTotal(money(borrowedTotal)) : t.heroDebtFree}</span>
+            {secondaryText ? <span dir="auto" className="min-w-0 shrink-0 truncate whitespace-nowrap">≈ {hidden ? MASK : secondaryText}</span> : null}
           </BandScale>
         </>
       }
       cells={cells}
+      fitCells
     />
   )
 }

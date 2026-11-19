@@ -89,7 +89,7 @@ export function SavingsHero({
                 </span>
               ))}
             </span>
-            {savingsRate != null ? <span className="min-w-0 truncate whitespace-nowrap">{t.savesPct(savingsRate)}</span> : null}
+            {savingsRate != null ? <span dir="auto" className="min-w-0 truncate whitespace-nowrap">{t.savesPct(savingsRate)}</span> : null}
           </BandScale>
         </>
       }
