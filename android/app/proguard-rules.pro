@@ -33,3 +33,5 @@
 -keep class com.google.mlkit.** { *; }
 -dontwarn org.slf4j.**
 -dontwarn javax.annotation.**
+
+-dontwarn com.google.firebase.ktx.Firebase
