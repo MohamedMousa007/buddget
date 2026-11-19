@@ -42,7 +42,7 @@ export function ReportsNetWorthPanel() {
               <span>{t.reports.netWorthGoldIncomplete}</span>
             </span>
           ) : null}
-          {t.reports.netWorthHint}
+          {nw.accountsTotal != null ? t.reports.netWorthHintAccounts : t.reports.netWorthHint}
         </>
       }
     />

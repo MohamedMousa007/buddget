@@ -1663,6 +1663,7 @@ export const ar: Dictionary = {
     savingsNet: 'صافي للمدخرات',
     moneyFlowHint: 'حركات المدخرات ليست مصروفات أو دخل. تظهر هنا فقط.',
     netWorthTitle: 'صافي الثروة',
+    netWorthHintAccounts: 'الحسابات المتتبَّعة + المدخرات والاستثمارات − الدين النشط.',
     netWorthHint: 'أرصدة الحسابات + تدفق الشهر − الدين النشط (التفاصيل في المدخرات).',
     netWorthGoldIncomplete: 'صافي الثروة قد يكون غير مكتمل — سعر الذهب غير متاح.',
     chart: {

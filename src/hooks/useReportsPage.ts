@@ -22,10 +22,24 @@ import { useLocale, useT } from '@/lib/i18n'
 import { formatLocalized } from '@/lib/i18n/dateFormat'
 import type { DateRange } from '@/components/reports/ReportFilters'
 import type { ExpenseDebtFilterMode } from '@/components/reports/ReportExpenseDebtFilter'
-import type { Expense } from '@/lib/store/types'
+import type { Currency, Expense } from '@/lib/store/types'
 
 function isDebtLinkedExpense(e: Expense): boolean {
   return e.category === 'Debt' || e.isDebtPayment === true || Boolean(e.linkedDebtId)
+}
+
+/** The biggest single purchase in the list: a debt payment is paying back, not a purchase, so it never wins. */
+export function largestPurchase(
+  rows: readonly Expense[],
+  base: Currency,
+  rates: Record<string, number>,
+): Expense | null {
+  let best: Expense | null = null
+  for (const e of rows) {
+    if (isDebtLinkedExpense(e)) continue
+    if (!best || expenseAmountInBase(e, base, rates) > expenseAmountInBase(best, base, rates)) best = e
+  }
+  return best
 }
 
 /**
@@ -127,15 +141,7 @@ export function useReportsPage() {
   )
 
   const largestExpense = useMemo(
-    () =>
-      filteredExpenses.length > 0
-        ? filteredExpenses.reduce((max, e) =>
-            expenseAmountInBase(e, baseCurrency, exchangeRates) >
-            expenseAmountInBase(max, baseCurrency, exchangeRates)
-              ? e
-              : max
-          )
-        : null,
+    () => largestPurchase(filteredExpenses, baseCurrency, exchangeRates),
     [filteredExpenses, baseCurrency, exchangeRates],
   )
   const mostUsedMethod =

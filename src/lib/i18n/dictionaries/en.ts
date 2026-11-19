@@ -1654,6 +1654,7 @@ export const en: Dictionary = {
     savingsNet: 'Net to savings',
     moneyFlowHint: 'Savings moves are not expenses or income. They appear only here.',
     netWorthTitle: 'Net worth',
+    netWorthHintAccounts: 'Tracked accounts + savings and investments − active debt.',
     netWorthHint: 'Account balances + this month’s cash flow − active debt (see Savings for detail).',
     netWorthGoldIncomplete: 'Net worth may be incomplete — gold price unavailable.',
     chart: {

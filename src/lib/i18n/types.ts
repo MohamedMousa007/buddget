@@ -1538,6 +1538,7 @@ export interface Dictionary {
     moneyFlowHint: string
     netWorthTitle: string
     netWorthHint: string
+    netWorthHintAccounts: string
     netWorthGoldIncomplete: string
     chart: {
       monthTitle: string
