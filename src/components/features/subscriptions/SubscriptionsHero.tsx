@@ -5,7 +5,7 @@ import { BAND_FG2, BAND_MIX, BandScale, HeroBand, type HeroBandCell } from '@/co
 import { useSubscriptionDates } from '@/hooks/useSubscriptionDates'
 import { useT } from '@/lib/i18n'
 import type { HeroNumbers } from '@/lib/subscriptions/subscriptionForecast'
-import { formatFixed2, formatWhole } from '@/lib/utils/formatters'
+import { formatFixed2, formatFlex } from '@/lib/utils/formatters'
 
 /**
  * Subscriptions' hero is the shared `HeroBand` (Flow, Wealth and Debts use it too), so its
@@ -23,8 +23,8 @@ export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers |
   const pct = total > 0 && hero ? Math.min(100, (hero.paid / total) * 100) : 0
 
   const cells: [HeroBandCell, HeroBandCell, HeroBandCell] = [
-    { label: ui.monthlyEquivalent, value: blank || empty ? dash : formatWhole(hero.monthlyEquivalent) },
-    { label: ui.perYear, value: blank || empty ? dash : formatWhole(hero.perYear) },
+    { label: ui.monthlyEquivalent, value: blank || empty ? dash : formatFlex(hero.monthlyEquivalent) },
+    { label: ui.perYear, value: blank || empty ? dash : formatFlex(hero.perYear) },
     {
       label: ui.nextCharge,
       value: blank || !hero.next ? dash : shortDate(format(hero.next.due, 'yyyy-MM-dd')),
@@ -48,12 +48,13 @@ export function SubscriptionsHero({ hero, base, loading }: { hero: HeroNumbers |
             <div className="h-full rounded-full bg-[var(--flow-band-fg)]" style={{ width: `${pct}%` }} />
           </div>
           <BandScale>
-            <span className="min-w-0 truncate whitespace-nowrap">{ui.paid(blank ? '0' : formatWhole(hero.paid))}</span>
-            <span className="min-w-0 shrink-0 truncate whitespace-nowrap">{ui.left(blank ? '0' : formatWhole(hero.left))}</span>
+            <span className="min-w-0 truncate whitespace-nowrap">{ui.paid(blank ? '0' : formatFlex(hero.paid))}</span>
+            <span className="min-w-0 shrink-0 truncate whitespace-nowrap">{ui.left(blank ? '0' : formatFlex(hero.left))}</span>
           </BandScale>
         </>
       }
       cells={cells}
+      fitCells
     />
   )
 }

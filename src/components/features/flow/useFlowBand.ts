@@ -10,7 +10,7 @@ import { useNetWorth } from '@/hooks/useNetWorth'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { amountIsFiltered, useExpenseFilterStore } from '@/lib/store/useExpenseFilterStore'
-import { formatFixed2 as fixed2, formatSigned as signed, formatWhole as whole } from '@/lib/utils/formatters'
+import { formatFixed2 as fixed2, formatFlex as flex, formatSignedAuto, formatSignedFlex as signedFlexNum, formatWhole as whole } from '@/lib/utils/formatters'
 import { MASK } from '@/lib/privacy/mask'
 import { useMask } from '@/lib/privacy/useMask'
 import { shortDate } from '@/lib/utils/shortDate'
@@ -77,7 +77,9 @@ export function useFlowBand({
   return useMemo(() => {
     const formatWhole = (n: number) => (hidden ? MASK : whole(n))
     const formatFixed2 = (n: number) => (hidden ? MASK : fixed2(n))
-    const formatSigned = (n: number) => (hidden ? MASK : signed(n))
+    const formatFlex = (n: number) => (hidden ? MASK : flex(n))
+    const formatSignedFlex = (n: number) => (hidden ? MASK : signedFlexNum(n))
+    const signedFlex = (n: number) => (hidden ? MASK : formatSignedAuto(n))
     const monthDate = new Date(`${monthFilter}-01T00:00:00`)
     const monthName = new Intl.DateTimeFormat(intlTag(locale), { month: 'long' }).format(monthDate)
     const startLabel = shortDate(format(resolved.start, 'yyyy-MM-dd'), locale)
@@ -95,9 +97,9 @@ export function useFlowBand({
     const totalDays = totalDaysInMonth(monthFilter, monthStartDay)
     const tick = (Math.min(stats.daysElapsed, totalDays) / totalDays) * 100
     const allStats = (v?: string) => [
-      { label: t.flow.moneyIn, value: v ?? formatSigned(moneyIn), dir: 'in' as const },
-      { label: t.flow.moneyOut, value: v ?? formatSigned(-spent), dir: 'out' as const },
-      { label: t.flow.netWorth, value: v ?? formatWhole(netWorth) },
+      { label: t.flow.moneyIn, value: v ?? signedFlex(moneyIn), dir: 'in' as const },
+      { label: t.flow.moneyOut, value: v ?? signedFlex(-spent), dir: 'out' as const },
+      { label: t.flow.netWorth, value: v ?? formatSignedFlex(netWorth) },
     ]
 
     if (loading) {
@@ -144,7 +146,7 @@ export function useFlowBand({
           bar: { pct: (outSum / cap) * 100, tick },
           scale: [startLabel, over ? t.flow.scaleOverBy(gap) : t.flow.scaleLeft(gap), endLabel],
           stats: [
-            { label: t.flow.statSpent, value: formatWhole(outSum) },
+            { label: t.flow.statSpent, value: formatFlex(outSum) },
             { label: over ? t.flow.statOverBy : t.flow.statLeft, value: gap },
             { label: t.flow.statShareOfOut, value: share },
           ],
@@ -168,7 +170,7 @@ export function useFlowBand({
           bar: { pct: 0, tick, ghost: true },
           scale: dayScale,
           stats: [
-            { label: t.flow.statSpent, value: formatWhole(outSum) },
+            { label: t.flow.statSpent, value: formatFlex(outSum) },
             { label: t.flow.statShareOfOut, value: share },
             { label: t.flow.statAvgPerTx, value: formatWhole(out.length ? outSum / out.length : 0) },
           ],
@@ -198,12 +200,12 @@ export function useFlowBand({
           scale: withBudget ? ['0', t.flow.categoryBudget(catName, formatWhole(soleCap)), ''] : [startLabel, '', t.flow.noSingleBudget],
           stats: withBudget
             ? [
-                { label: t.flow.statSpent, value: formatWhole(outSum) },
+                { label: t.flow.statSpent, value: formatFlex(outSum) },
                 { label: t.flow.statBudget, value: formatWhole(soleCap) },
                 { label: over ? t.flow.statOverBy : t.flow.statLeft, value: gap },
               ]
             : [
-                { label: t.flow.statSpent, value: formatWhole(outSum) },
+                { label: t.flow.statSpent, value: formatFlex(outSum) },
                 { label: t.flow.statTransactions, value: String(out.length) },
                 { label: t.flow.statPeriod, value: periodText(resolved, (iso) => shortDate(iso, locale)) },
               ],
@@ -227,7 +229,7 @@ export function useFlowBand({
           scale: dayScale,
           stats: allStats(),
         },
-        sticky: { primary: formatFixed2(spent), secondary: t.flow.stickySpent, right: [formatSigned(moneyIn), formatSigned(-spent)] },
+        sticky: { primary: formatFixed2(spent), secondary: t.flow.stickySpent, right: [signedFlex(moneyIn), signedFlex(-spent)] },
       }
     }
 
@@ -261,7 +263,7 @@ export function useFlowBand({
       sticky: {
         primary: formatFixed2(hero.amount),
         secondary: isOver ? t.flow.stickyOver(formatWhole(budget)) : t.flow.stickyLeft(formatWhole(budget)),
-        right: [formatSigned(moneyIn), formatSigned(-spent)],
+        right: [signedFlex(moneyIn), signedFlex(-spent)],
       },
     }
   }, [

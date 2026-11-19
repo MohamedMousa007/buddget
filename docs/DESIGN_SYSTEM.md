@@ -405,6 +405,8 @@ New for the Accounts tab; everything else on those screens reuses existing primi
 | `AccountPicker` | Collapsing "From" list: one row, tap to unfold the other accounts in place | Not `SelectField` (that does not expand inline) |
 | `GapTimeline` | Dot-and-line history; bank-confirmed points teal, the unexplained stretch dashed amber | Amber, never red: red is destructive only |
 
+Rounding on hero bands: figures that restate the hero amount on the same band (cells, scale lines, sticky strip) use `formatFlex` / `formatSignedFlex` / `formatSignedAuto` (whole when whole, else two decimals), never `formatWhole`, so 19.99 does not sit beside 20. Bands that can show cents pass `fitCells`.
+
 Money display on these screens: integer part normal, decimals at 45% opacity; negative uses a real minus (`-`) and amber, never red.
 
 ## Resolve sheets and pending rows (`src/components/modals/ResolveSheet.tsx`, `src/components/ui/PendingRow.tsx`)

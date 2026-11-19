@@ -207,6 +207,12 @@ export function formatSigned(raw: number, digits: 0 | 2 = 0): string {
   return `${n > 0 ? '+' : '\u2212'}${body}`
 }
 
+/** `formatSigned` that shows cents only when the value is not whole: "+21,436" / "−619.99". */
+export function formatSignedAuto(raw: number): string {
+  const n = finite(raw)
+  return formatSigned(n, Number.isInteger(Math.round(n * 100) / 100) ? 0 : 2)
+}
+
 export function groupByDate(dateStr: string): string {
   const date = parseISO(dateStr)
   if (isToday(date)) return 'Today'

@@ -66,6 +66,15 @@ describe('half-amount rounding is symmetric', () => {
   })
 })
 
+describe('formatSignedAuto (QA-91)', () => {
+  it('cents only when not whole', async () => {
+    const { formatSignedAuto } = await import('./formatters')
+    expect(formatSignedAuto(-619.99)).toBe('\u2212619.99')
+    expect(formatSignedAuto(1200)).toBe('+1,200')
+    expect(formatSignedAuto(0)).toBe('0')
+  })
+})
+
 describe('formatSignedFlex (QA-121)', () => {
   it('whole when whole, cents when not, true minus for negatives', async () => {
     const { formatSignedFlex } = await import('./formatters')

@@ -78,6 +78,7 @@ export function AccountsHero({ model, currency, netWorth, creditOwed, hidden, on
         { label: t.setAside, value: fmt(model.heldInBase) },
         { label: t.creditOwed, value: fmt(creditOwed) },
       ]}
+      fitCells
     />
   )
 }
