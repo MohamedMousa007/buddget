@@ -6,7 +6,7 @@ import type { PersistStorage, StateStorage, StorageValue } from 'zustand/middlew
  * main-thread stall per write. The newest value is flushed when the page is hidden or closed,
  * so a backgrounded app never loses the last edit.
  */
-export type DebouncedPersistStorage<S> = PersistStorage<S> & { cancelPending: () => void }
+export type DebouncedPersistStorage<S> = PersistStorage<S> & { cancelPending: () => void; hasPending: () => boolean }
 
 export function createDebouncedJsonStorage<S>(
   getStorage: () => StateStorage,
@@ -34,6 +34,7 @@ export function createDebouncedJsonStorage<S>(
   }
 
   return {
+    hasPending: () => pending.size > 0,
     cancelPending: () => {
       if (timer) clearTimeout(timer)
       timer = null

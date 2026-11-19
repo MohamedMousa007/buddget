@@ -72,4 +72,23 @@ describe('OFS-7: two tabs of the persisted finance store', () => {
     expect(a.store.getState().expenses).toHaveLength(1)
     expect(b.store.getState().goldPricePerGram).toBe(11)
   })
+
+  it('QA-43: an edit made in this tab just before the other tab\'s write lands is kept, not dropped with the rehydrate', async () => {
+    const { data, open, as } = openTabs()
+    const a = await open()
+    const b = await open()
+    as(a)
+    a.store.setState({ expenses: [expense] })
+    await vi.advanceTimersByTimeAsync(50)
+    // Tab B edits inside its own 150 ms write window; nothing of B is in storage yet. addExpense stamps updatedAt.
+    const mine = { ...(expense as object), id: '22222222-2222-4222-8222-222222222222', updatedAt: new Date().toISOString() } as never
+    b.store.setState((s) => ({ expenses: [...s.expenses, mine] }))
+    await vi.advanceTimersByTimeAsync(100) // tab A's write lands now
+    await vi.advanceTimersByTimeAsync(0)
+    expect(b.store.getState().expenses.map((e) => e.id).sort()).toEqual(['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'])
+    as(b)
+    await vi.advanceTimersByTimeAsync(400)
+    expect(JSON.parse(data.get('buddget-storage') as string).state.expenses).toHaveLength(2)
+    expect(a.store.getState().expenses).toHaveLength(2)
+  })
 })

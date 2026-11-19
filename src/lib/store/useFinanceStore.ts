@@ -2479,8 +2479,39 @@ export const useFinanceStore = create<FinanceStore>()(
 )
 
 // Another tab saved: take its copy instead of writing a stale whole-blob over it on our next change. Our own queued
-// write (at most one debounce window old) is dropped in favour of it; the sync layer re-sends anything undelivered.
+// write (at most one debounce window old) is dropped in favour of it, but the rows it held are folded back in: the
+// sync flush reads the live store, so an edit dropped here would never be sent.
 watchForeignWrites('buddget-storage', () => {
+  const unsaved = persistStorage.hasPending() ? useFinanceStore.getState() : null
   persistStorage.cancelPending()
-  void useFinanceStore.persist.rehydrate()
+  void Promise.resolve(useFinanceStore.persist.rehydrate()).then(() => {
+    if (unsaved) useFinanceStore.setState((stored) => foldUnsavedRows(unsaved, stored))
+  })
 })
+
+type StampedRow = { id: string; updatedAt?: string }
+
+/**
+ * The list rows of `mine` (this tab, before the rehydrate) that the other tab's copy lacks, or holds an older edit of.
+ * Union by id; a tie or a row with no stamp goes to the stored copy. A delete made in this tab inside the same window
+ * is undone by the union (before this, the whole edit was lost).
+ */
+function foldUnsavedRows(mine: FinanceStore, stored: FinanceStore): Partial<FinanceStore> {
+  const patch: Record<string, StampedRow[]> = {}
+  for (const key of Object.keys(stored) as (keyof FinanceStore)[]) {
+    const theirs = stored[key]
+    const ours = mine[key]
+    if (!Array.isArray(theirs) || !Array.isArray(ours) || theirs === ours) continue
+    if (!(ours as unknown[]).every((r) => r && typeof r === 'object' && typeof (r as StampedRow).id === 'string')) continue
+    const byId = new Map((theirs as StampedRow[]).map((r) => [r.id, r]))
+    let changed = false
+    for (const row of ours as StampedRow[]) {
+      const other = byId.get(row.id)
+      if (other && !(row.updatedAt && Date.parse(row.updatedAt) > Date.parse(other.updatedAt ?? ''))) continue
+      byId.set(row.id, row)
+      changed = true
+    }
+    if (changed) patch[key as string] = [...byId.values()]
+  }
+  return patch as Partial<FinanceStore>
+}
