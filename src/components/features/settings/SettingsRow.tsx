@@ -66,7 +66,7 @@ export function SettingsRow({
           {title}
         </span>
         {subtitle ? (
-          <span className={cn('mt-0.5 block text-xs leading-snug text-[var(--color-brand-text-muted)]')}>
+          <span dir="auto" className={cn('mt-0.5 block text-left text-xs leading-snug text-[var(--color-brand-text-muted)]')}>
             {subtitle}
           </span>
         ) : null}

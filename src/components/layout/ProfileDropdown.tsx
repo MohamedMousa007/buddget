@@ -5,7 +5,6 @@ import { AppLink as Link } from '@/components/ui/AppLink'
 import { useNavPath } from '@/lib/navigation/navStore'
 import { BarChart3, Bell, CalendarClock, CreditCard, LogIn, Settings, ShieldCheck, Target } from 'lucide-react'
 import { RotateCwClock } from '@/components/ui/icons/RotateCwClock'
-import { ProgressRing } from '@/components/ui/ProgressRing'
 import { Badge } from '@/components/ui/badge'
 import { SetupChecklistSheet } from '@/components/features/setup/SetupProgressChip'
 import { useSetupProgress } from '@/hooks/useSetupProgress'
@@ -130,8 +129,9 @@ export function ProfileDropdown({ open, onClose, containerRef }: ProfileDropdown
                 className={cn(itemClass, 'min-h-11 bg-[var(--color-brand-primary-soft)] font-semibold text-[var(--color-brand-primary-ink)] hover:bg-[var(--color-brand-primary-soft)]/70')}
                 role="menuitem"
               >
-                <ProgressRing pct={pct} size={20} stroke={3} track="var(--color-brand-border-strong)" arc="var(--color-brand-primary)" />
-                <span className={cn('flex-1', localeInlineLabelClass(locale))}>{t.setup.chipLabel} · <span className="font-mono-numbers">{pct}%</span></span>
+                <span className={localeInlineLabelClass(locale)}>{t.setup.chipLabel}</span>
+                <span aria-hidden className="h-1 flex-1 overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--color-brand-primary)_22%,transparent)]"><span className="block h-full bg-[var(--color-brand-primary)]" style={{ width: `${pct}%` }} /></span>
+                <span className="font-mono-numbers text-xs">{pct}%</span>
               </button>
               <Divider />
             </>

@@ -35,7 +35,7 @@ export function ProPlanRow({ variant, onNavigate }: { variant: 'settings' | 'men
   if (variant === 'menu' && !menuShowsProRow(state)) return null
 
   const r = c.row
-  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(intlTag(locale), { day: 'numeric', month: 'short' }) : '')
+  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(intlTag(locale), { day: '2-digit', month: 'short' }) : '')
   const title = state === 'trial' || state === 'trialEnding' ? r.trialName : r.name
   const sub =
     state === 'free' ? (variant === 'menu' ? r.freeMenuSub : r.freeSub)

@@ -12,7 +12,6 @@ import { SmsCard } from '@/components/features/settings/hub/SmsCard'
 import { SettingsRow } from '@/components/features/settings/SettingsRow'
 import { SettingsSection } from '@/components/features/settings/SettingsSection'
 import { SETTING_ICONS } from '@/components/features/settings/settingIcons'
-import { GROUP_TONE } from '@/components/features/settings/groupMeta'
 import { Button } from '@/components/ui/button'
 import { SkeletonList } from '@/components/ui/SkeletonList'
 import { useSettingsHubCopy } from '@/lib/i18n/settingsHubCopy'
@@ -52,7 +51,7 @@ export default function SettingsPage() {
 
   if (!dataReady) return <div className="p-4"><SkeletonList rows={8} /></div>
 
-  const aiRow = <SettingsRow icon={SETTING_ICONS.buddgy} tone={GROUP_TONE.ai} title={p.buddgyAi} href="/settings/ai" />
+  const aiRow = <SettingsRow icon={SETTING_ICONS.buddgy} tone={6} title={p.buddgyAi} href="/settings/ai" />
 
   return (
     <div ref={bodyRef}>
@@ -67,12 +66,12 @@ export default function SettingsPage() {
         <PreferencesCard />
         {user ? <SmsCard title={p.tracking}>{aiRow}</SmsCard> : <SettingsSection title={p.tracking}>{aiRow}</SettingsSection>}
         <SettingsSection title={p.privacy}>
-          {user ? <SettingsRow icon={SETTING_ICONS.shield} tone={GROUP_TONE.security} title={copy.security.title} value={twoFactor ? p.twoFactorOn : undefined} href="/settings/security" settingId="security" /> : null}
-          <SettingsRow icon={SETTING_ICONS.download} tone={GROUP_TONE.data} title={p.dataBackup} href="/settings/data" />
+          {user ? <SettingsRow icon={SETTING_ICONS.shield} tone="neutral" title={copy.security.title} value={twoFactor ? p.twoFactorOn : undefined} href="/settings/security" settingId="security" /> : null}
+          <SettingsRow icon={SETTING_ICONS.download} tone={5} title={p.dataBackup} href="/settings/data" />
         </SettingsSection>
         <SettingsSection title={p.support}>
-          <SettingsRow icon={SETTING_ICONS.help} tone={GROUP_TONE.help} title={p.helpFeedback} href="/settings/help" />
-          <SettingsRow icon={SETTING_ICONS.file} tone={GROUP_TONE.help} title={p.aboutLegal} href="/settings/about" />
+          <SettingsRow icon={SETTING_ICONS.help} tone={3} title={p.helpFeedback} href="/settings/help" />
+          <SettingsRow icon={SETTING_ICONS.file} tone="neutral" title={p.aboutLegal} href="/settings/about" />
         </SettingsSection>
         {user ? (
           <SettingsSection>

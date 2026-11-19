@@ -447,7 +447,7 @@ const ar: MembershipCopy = {
     freeMenuSub: '30 يوماً مجاناً بلا بطاقة',
     renews: (date) => `يتجدد ${date}`,
     ends: (date) => `ينتهي ${date}`,
-    trialLeft: (days) => (days <= 1 ? 'ينتهي اليوم' : `ينتهي خلال ${days} ${arCount(days, 'day')}`),
+    trialLeft: (days) => (days <= 1 ? 'ينتهي اليوم' : `ينتهي خلال ${arCount(days, 'day')}`),
     issueSub: 'لم تتم عملية الدفع',
     endedSub: (date) => `انتهى ${date}`,
     tryFree: 'جرّب مجاناً',

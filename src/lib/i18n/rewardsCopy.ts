@@ -745,7 +745,7 @@ const ar: RewardsCopy = {
     rank: (n) => `المستوى ${n} من 5`,
     perksTitle: (name) => `مزايا ${name}`,
     member: (n) => `العضو ${n}`,
-    founder: (n) => `المؤسس ${n}`,
+    founder: (n) => `المؤسس رقم ${String(n).replace('#', '')}`,
     since: (date) => `منذ ${date}`,
     lock: 'لأعضاء Pro فقط',
     tap: 'اضغط على البطاقة لعرض مزاياها',
@@ -895,7 +895,7 @@ const ar: RewardsCopy = {
     loadError: 'تعذّر تحميل دعواتك. حاول مرة أخرى.',
     tryAgain: 'حاول مرة أخرى',
   },
-  profile: { proTag: 'PRO', free: 'المجاني', trial: 'تجربة Pro', pro: 'buddget Pro', founder: (n) => `المؤسس ${n}` },
+  profile: { proTag: 'PRO', free: 'المجاني', trial: 'تجربة Pro', pro: 'buddget Pro', founder: (n) => `المؤسس رقم ${String(n).replace('#', '')}` },
   signup: {
     haveCode: 'لديك رمز دعوة؟',
     label: 'رمز الدعوة',

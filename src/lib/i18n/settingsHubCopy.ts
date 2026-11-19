@@ -581,7 +581,7 @@ const ar: SettingsHubCopy = {
     privacy: { label: 'سياسة الخصوصية', keywords: 'legal data privacy خصوصية' },
     about: { label: 'حول بادجت', keywords: 'version story contact social about حول الإصدار' },
   },
-  page: { editProfile: 'تعديل الملف', membership: 'العضوية', preferences: 'التفضيلات', tracking: 'التتبع وBuddgy', privacy: 'الخصوصية والبيانات', support: 'الدعم', appearance: 'المظهر', themeSystem: 'النظام', notifications: 'الإشعارات', buddgyAi: 'Buddgy والذكاء الاصطناعي', dataBackup: 'البيانات والنسخ الاحتياطي', helpFeedback: 'المساعدة والملاحظات', aboutLegal: 'حول التطبيق والخصوصية والشروط', twoFactorOn: 'الخطوتان مفعّلتان', staff: 'فريق buddget', staffRole: 'مسؤول', openPortal: 'فتح اللوحة', cards: 'البطاقات' },
+  page: { editProfile: 'تعديل الملف الشخصي', membership: 'العضوية', preferences: 'التفضيلات', tracking: 'التتبع وBuddgy', privacy: 'الخصوصية والبيانات', support: 'الدعم', appearance: 'المظهر', themeSystem: 'النظام', notifications: 'الإشعارات', buddgyAi: 'Buddgy والذكاء الاصطناعي', dataBackup: 'البيانات والنسخ الاحتياطي', helpFeedback: 'المساعدة والملاحظات', aboutLegal: 'حول التطبيق والخصوصية والشروط', twoFactorOn: 'مفعّل', staff: 'فريق buddget', staffRole: 'مسؤول', openPortal: 'فتح اللوحة', cards: 'البطاقات' },
   menu: { helpFeedback: 'المساعدة والملاحظات', openSettings: 'الإعدادات', signIn: 'تسجيل الدخول', closeMenu: 'إغلاق القائمة', adminPortal: 'لوحة الإدارة', admin: 'مسؤول' },
   currency: {
     pickTitle: 'العملة الأساسية',
