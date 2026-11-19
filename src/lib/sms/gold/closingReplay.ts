@@ -18,6 +18,7 @@ import { findRefundOriginal, isDeclineMessage, type RefundRule } from '@/lib/sms
 import { pairGuardsAllow, type PairLegFacts } from '@/lib/sms/pairing'
 import type { SmsFlag } from '@/lib/sms/smsFlags'
 import type { ServiceClient } from '@/lib/supabase/service'
+import { DEFAULT_MARKET_RATES } from '@/lib/store/defaultFinanceData'
 
 export type Row = Record<string, unknown>
 
@@ -123,7 +124,7 @@ interface Store {
 
 /**
  * Tables `createSmsTransaction` reads that the export does not carry. They answer empty ON PURPOSE and are reported:
- * the user's salary templates, subscriptions, own names and merchant memory are not in the export; asset_prices empty means the caller's FX rates.
+ * the user's salary templates, subscriptions, own names and merchant memory are not in the export; asset_prices empty means the routes' DEFAULT_MARKET_RATES, as in production with no live rate.
  */
 const UNEXPORTED_EMPTY_TABLES = ['merchant_category_overrides', 'merchant_categories', 'income_sources', 'user_settings', 'profiles', 'subscriptions', 'asset_prices']
 const IMPLEMENTED_TABLES = ['sms_parse_log', 'expenses', 'income_events', 'payment_methods', 'debts', 'debt_payments', 'sms_own_transfer_answers']
@@ -578,13 +579,13 @@ async function replayOne(run: ReplayRun, svc: ServiceClient, user: string, l: Lo
 
   const bumpsBefore = run.store.rpcLog.filter((r) => r.fn === 'bump_sms_template_failure').length
   let confirmedPass = false
-  let tx = await drive(createSmsTransaction(svc, row, { exchangeRates: {} }), opts.tick).catch((e: unknown) => {
+  let tx = await drive(createSmsTransaction(svc, row, { exchangeRates: DEFAULT_MARKET_RATES }), opts.tick).catch((e: unknown) => {
     throw new Error(`closingReplay: dispatch of ${l.id} failed: ${e instanceof Error ? e.message : String(e)}`)
   })
   // A row the user answered ("tapped" in the stored status) is dispatched again as confirmed, as /confirm does.
   if (tx.outcome === 'awaiting_confirmation' && l.status === 'tapped') {
     confirmedPass = true
-    tx = await drive(createSmsTransaction(svc, row, { exchangeRates: {}, userConfirmed: true }), opts.tick)
+    tx = await drive(createSmsTransaction(svc, row, { exchangeRates: DEFAULT_MARKET_RATES, userConfirmed: true }), opts.tick)
   }
   if (run.store.rpcLog.filter((r) => r.fn === 'bump_sms_template_failure').length > bumpsBefore) run.templateOverrides.push(l.id)
 

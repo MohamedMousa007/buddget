@@ -79,5 +79,5 @@ describe.skipIf(!existsSync(EXPORT))('learned templates against the live export'
       })
     console.log(lines.join('\n'))
     expect(lines.length).toBeGreaterThan(0)
-  })
+  }, 60_000) // reads the whole local export; past 15 s when the full suite runs alongside
 })
