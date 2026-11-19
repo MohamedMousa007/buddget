@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { blockingVulnerabilities } from '../../../../scripts/audit-gate-lib.mjs'
-import { applyAppleProviderCancel } from '../../../../scripts/patch-android-plugins.mjs'
+import { applyAppleProviderCancel, applyNoFacebookPackage } from '../../../../scripts/patch-android-plugins.mjs'
 
 const ROOT = path.resolve(__dirname, '../../../..')
 const read = (rel: string) => readFileSync(path.join(ROOT, rel), 'utf8')
@@ -54,6 +54,25 @@ describe('SUP-17 plugin patch script fails loudly', () => {
     expect(patched.content).toContain('setOnCancelListener')
     expect(applyAppleProviderCancel(patched.content).status).toBe('already-patched')
     expect(applyAppleProviderCancel('class B {}').status).toBe('anchor-missing')
+  })
+  it('drops the Facebook SDK from the social-login Package.swift (iOS, no Facebook sign-in)', () => {
+    const pkg = [
+      'dependencies: [',
+      '    // FBSDKCoreKit and FBSDKLoginKit',
+      '    .package(url: "https://github.com/facebook/facebook-ios-sdk.git", .upToNextMajor(from: "18.0.3")),',
+      '    .package(url: "https://github.com/google/GoogleSignIn-iOS.git", .upToNextMajor(from: "9.0.0")),',
+      '],',
+      '    .product(name: "FacebookCore", package: "facebook-ios-sdk"),',
+      '    .product(name: "FacebookLogin", package: "facebook-ios-sdk"),',
+      '    .product(name: "GoogleSignIn", package: "GoogleSignIn-iOS"),',
+      '',
+    ].join('\n')
+    const patched = applyNoFacebookPackage(pkg)
+    expect(patched.status).toBe('patched')
+    expect(patched.content).not.toMatch(/facebook|FBSDK/i)
+    expect(patched.content).toContain('GoogleSignIn-iOS')
+    expect(applyNoFacebookPackage(patched.content).status).toBe('already-patched')
+    expect(applyNoFacebookPackage('.package(url: "https://github.com/facebook/facebook-ios-sdk.git")').status).toBe('anchor-missing')
   })
   it('no longer carries the dead capacitor-sms-retriever entries and exits 1 on a missing anchor', () => {
     const s = read('scripts/patch-android-plugins.mjs')
