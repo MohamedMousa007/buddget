@@ -8,6 +8,7 @@
 	<array>
 		<string>webcredentials:buddget.app</string>
 		<string>webcredentials:my.buddget.app</string>
+		<string>applinks:buddget.app</string>
 	</array>
 	<key>com.apple.developer.applesignin</key>
 	<array>

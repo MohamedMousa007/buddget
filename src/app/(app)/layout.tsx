@@ -14,6 +14,7 @@ import { ActionToastProvider } from '@/components/ui/ActionToast'
 import { MotionConfigRoot } from '@/components/layout/MotionConfigRoot'
 import { THEME_INIT_SCRIPT } from '@/lib/theme/applyTheme'
 import { PlatformBodyClass } from '@/lib/native/PlatformBodyClass'
+import { NativeInviteLinks } from '@/lib/native/inviteLinks'
 import { CrashReporter } from '@/lib/crash/CrashReporter'
 
 // One variable-weight file serves body and headings (was 8 static weight files).
@@ -150,6 +151,7 @@ export default async function RootLayout({
         className={`${dmSans.variable} ${jetbrainsMono.variable} ${ibmPlexArabic.variable} font-sans antialiased`}
       >
         <PlatformBodyClass />
+        <NativeInviteLinks />
         <TooltipProvider>
           <LocaleProvider>
             <ActionToastProvider>

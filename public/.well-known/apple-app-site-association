@@ -1,4 +1,19 @@
 {
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "9PK34RL9DN.app.buddget"
+        ],
+        "components": [
+          {
+            "/": "/i/*",
+            "comment": "Invite links only (QA-66)"
+          }
+        ]
+      }
+    ]
+  },
   "webcredentials": {
     "apps": [
       "9PK34RL9DN.app.buddget"

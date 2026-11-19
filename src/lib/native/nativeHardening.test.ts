@@ -72,6 +72,17 @@ describe('Android SMS bridge hardening (static)', () => {
     expect(read('capacitor.config.ts')).toMatch(/SocialLogin: \{\s*providers: \{ facebook: false \}/)
   })
 
+  it('QA-66: only invite links (/i/) open the app, verified on both platforms', () => {
+    const manifest = read('android/app/src/main/AndroidManifest.xml')
+    expect(manifest).toContain('<intent-filter android:autoVerify="true">')
+    expect([...manifest.matchAll(/<data [^>]*>/g)].map((m) => m[0])).toEqual(['<data android:scheme="https" android:host="buddget.app" android:pathPrefix="/i/" />'])
+    expect(read('ios/App/App/App.entitlements')).toContain('<string>applinks:buddget.app</string>')
+    const aasa = JSON.parse(read('public/.well-known/apple-app-site-association'))
+    expect(aasa.applinks.details).toEqual([{ appIDs: ['9PK34RL9DN.app.buddget'], components: [{ '/': '/i/*', comment: expect.any(String) }] }])
+    expect(aasa.webcredentials.apps).toEqual(['9PK34RL9DN.app.buddget'])
+    expect(read('public/.well-known/assetlinks.json')).toContain('delegate_permission/common.handle_all_urls')
+  })
+
   it('QA-72: security-crypto is a stable release', () => {
     expect(read('android/app/build.gradle')).toMatch(/androidx\.security:security-crypto:\d+\.\d+\.\d+"/)
   })
