@@ -13,6 +13,7 @@ import { nextSegmentIndex } from './segmentedNav'
 import { documentTitleFor, headingFor, shouldMoveFocus } from '@/components/layout/routeAnnounce'
 import { RouteAnnouncer } from '@/components/layout/RouteAnnouncer'
 import { SkipLink } from '@/components/layout/SkipLink'
+import { WealthHeroBadges } from '@/components/features/savings-v3/WealthHeroBadges'
 
 const SRC = join(__dirname, '../..')
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8')
@@ -219,5 +220,25 @@ describe('QA-115 landmarks and headings', () => {
     for (const f of ['components/features/budget/SegmentPage.tsx', 'components/features/budget/PlanFlow.tsx', 'components/features/budget/builder/ManualBuilder.tsx']) {
       expect(read(f)).not.toMatch(/<h1[\s>]/)
     }
+  })
+})
+
+describe('QA-46 touch targets keep their 44px area', () => {
+  it('the Wealth pills centre their overlay (no inherited half-pill offset)', () => {
+    const html = renderToStaticMarkup(h(WealthHeroBadges, { emergency: { state: 'unset' }, zakat: { amount: '1', due: '2' }, onOpenEmergency: () => {}, onOpenZakat: () => {} }))
+    const classes = all(html, 'button').map((b) => b.getAttribute('class') ?? '')
+    expect(classes).toHaveLength(2)
+    for (const c of classes) {
+      expect(c).toContain('after:translate-x-0')
+      expect(c).not.toContain('after:-translate-x-1/2')
+      expect(c).not.toContain('after:-translate-y-1/2')
+    }
+  })
+  it('no IconButton / OptionChip clips its own tap area with overflow-hidden', () => {
+    const offenders = walk(join(SRC, 'components')).filter((f) => /\.tsx$/.test(f) && !/\.test\./.test(f)).filter((f) => {
+      const src = readFileSync(f, 'utf8')
+      return /<(IconButton|OptionChip)\b[^>]*overflow-hidden/.test(src)
+    })
+    expect(offenders.map((f) => f.replace(SRC, ''))).toEqual([])
   })
 })

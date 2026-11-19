@@ -57,7 +57,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
           size="sm"
           shape="round"
           className={cn(
-            'size-9 overflow-hidden hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
+            'size-9 hover:ring-2 hover:ring-[var(--color-brand-primary)]/40',
             'border-transparent',
             className
           )}
@@ -67,7 +67,7 @@ function ProfileAvatarWithMenu({ className }: { className?: string }) {
         >
           {src ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt="" className="w-full h-full object-cover" width={36} height={36} />
+            <img src={src} alt="" className="h-full w-full rounded-full object-cover" width={36} height={36} />
           ) : (
             <User className="w-5 h-5 text-[var(--color-brand-text-secondary)]" />
           )}

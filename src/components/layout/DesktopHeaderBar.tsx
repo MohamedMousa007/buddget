@@ -40,7 +40,7 @@ export function DesktopHeaderBar() {
       ) : (
       <header className="flex lg:hidden fixed top-0 start-0 end-0 z-40 min-h-[calc(var(--app-header-h)+env(safe-area-inset-top,0px))] flex-col bg-[var(--color-brand-bg)] border-b border-[var(--color-brand-border)] safe-area-top">
         <div className="flex h-14 shrink-0 items-center gap-2.5 px-5">
-          <Link href="/" aria-label={t.common.homeLink} className={cn('shrink-0 outline-none', HIT_AREA, 'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)] rounded-sm')}>
+          <Link href="/" aria-label={t.common.homeLink} className={cn('shrink-0 py-2.5 outline-none', HIT_AREA, 'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)] rounded-sm')}>
             <BuddgetWordmark height={24} />
           </Link>
           {sectionTitle && (
