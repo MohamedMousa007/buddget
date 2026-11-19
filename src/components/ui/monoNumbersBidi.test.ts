@@ -23,3 +23,11 @@ describe('QA-27: mono-number elements that hold words set dir', () => {
     expect(bad).toEqual([])
   })
 })
+
+describe('QA-27: shared text holders resolve their own direction in Arabic', () => {
+  it('Badge and the settings hint set it (a number between two Arabic words scrambles under a forced ltr base)', () => {
+    expect(readFileSync('src/components/ui/badge.tsx', 'utf8')).toContain('[unicode-bidi:plaintext]')
+    expect(readFileSync('src/components/features/settings/SettingsSwitchRow.tsx', 'utf8')).toMatch(/<span dir="auto"[^>]*>\{hint\}/)
+  })
+})
+
