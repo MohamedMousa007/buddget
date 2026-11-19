@@ -123,9 +123,9 @@ interface Store {
 
 /**
  * Tables `createSmsTransaction` reads that the export does not carry. They answer empty ON PURPOSE and are reported:
- * the user's salary templates, subscriptions, own names and merchant memory are not in the export.
+ * the user's salary templates, subscriptions, own names and merchant memory are not in the export; asset_prices empty means the caller's FX rates.
  */
-const UNEXPORTED_EMPTY_TABLES = ['merchant_category_overrides', 'merchant_categories', 'income_sources', 'user_settings', 'profiles', 'subscriptions']
+const UNEXPORTED_EMPTY_TABLES = ['merchant_category_overrides', 'merchant_categories', 'income_sources', 'user_settings', 'profiles', 'subscriptions', 'asset_prices']
 const IMPLEMENTED_TABLES = ['sms_parse_log', 'expenses', 'income_events', 'payment_methods', 'debts', 'debt_payments', 'sms_own_transfer_answers']
 
 interface PgError { code: string; message: string }
