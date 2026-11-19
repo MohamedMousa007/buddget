@@ -242,3 +242,22 @@ describe('QA-46 touch targets keep their 44px area', () => {
     expect(offenders.map((f) => f.replace(SRC, ''))).toEqual([])
   })
 })
+
+describe('QA-109 / QA-116 chips keep their tap area; the two money sheets share gutters', () => {
+  it('clipped chip scrollers carry vertical padding for the 44px overlay', () => {
+    expect(read('components/features/subscriptions/AddCatalogStep.tsx')).toMatch(/-my-1[^"]*overflow-x-auto[^"]*py-1/)
+    expect(read('components/features/payments/PaymentMethodSetupSheet.tsx')).toMatch(/-my-1 flex gap-1\.5 overflow-x-auto py-1/)
+    expect(read('components/reports/ReportFilters.tsx')).toMatch(/-my-1 flex gap-2 overflow-x-auto[^"]*py-1/)
+    expect(read('components/ui/ColorSwatchRow.tsx')).toContain('py-[5px]')
+  })
+  it('Money in uses the expense sheet pattern: px-5 gutters, an OptionChip date trigger, the amount helper', () => {
+    const src = read('components/modals/IncomeSheetForm.tsx')
+    expect(src).not.toContain('DatePickerField')
+    expect(src).toContain('<OptionChip as="trigger" size="sm"')
+    expect(src).not.toMatch(/\bpx-4\b/)
+    expect(src).toContain('t.expenseForm.cueAmount')
+  })
+  it('Add note is a touch-size link', () => {
+    expect(read('components/features/expenses/ExpenseSheetForm.tsx')).toMatch(/variant="link"\s+size="touch"\s+onClick=\{\(\) => setNoteOpen\(true\)\}/)
+  })
+})

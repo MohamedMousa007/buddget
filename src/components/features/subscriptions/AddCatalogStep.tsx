@@ -47,7 +47,7 @@ export function AddCatalogStep({ form }: { form: AddSubscriptionFormReturn }) {
           className="ps-10"
         />
       </div>
-      <div role="group" aria-label={t.subscriptions.ui.add.category} className="hide-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 md:-mx-6 md:px-6">
+      <div role="group" aria-label={t.subscriptions.ui.add.category} className="hide-scrollbar -mx-5 -my-1 flex gap-2 overflow-x-auto px-5 py-1 md:-mx-6 md:px-6">
         {ADD_CATEGORIES.map((c) => {
           const Icon = CATEGORY_ICON[c]
           return (

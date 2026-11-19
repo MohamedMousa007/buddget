@@ -4,12 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSubmitOnce } from '@/hooks/useSubmitOnce'
 import { localTodayISO } from '@/lib/utils/localDate'
 import { useShallow } from 'zustand/react/shallow'
-import { ChevronDown, Link2, Trash2 } from 'lucide-react'
+import { Calendar, ChevronDown, Link2, Trash2 } from 'lucide-react'
 import { useEscapeClose } from '@/hooks/useEscapeClose'
 import { ModalShell } from '@/components/modals/ModalShell'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { clampFiatToAllowed } from '@/lib/utils/currencyPickerOptions'
-import { useT } from '@/lib/i18n'
+import { useT, useLocale } from '@/lib/i18n'
 import { useActionToast } from '@/components/ui/ActionToast'
 import { useConfirm } from '@/components/ui/dialog/DialogProvider'
 import type { Currency, IncomeRecurringFrequency, IncomeSource, IncomeSourceType } from '@/lib/store/types'
@@ -20,7 +20,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { FiatCurrencyField } from '@/components/ui/CurrencyField'
-import { DatePickerField } from '@/components/ui/DatePickerField'
+import { OptionChip } from '@/components/ui/OptionChip'
+import { UnifiedDatePicker, formatDatePillLabel } from '@/components/ui/UnifiedDatePicker'
 import { PaymentMethodPicker } from '@/components/features/payments/PaymentMethodPicker'
 import { AssignIncomeSheet } from '@/components/modals/AssignIncomeSheet'
 import { IncomeTypeChipSlider } from '@/components/features/income/IncomeTypeChipSlider'
@@ -101,6 +102,8 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
   const [paydays, setPaydays] = useState<number[]>(seedPaydays)
   const driftDays = source?.paydayDriftDays ?? null
   const [receivedDate, setReceivedDate] = useState(() => localTodayISO())
+  const [calOpen, setCalOpen] = useState(false)
+  const { locale } = useLocale()
   const [assigned, setAssigned] = useState<{ templateId: string; date: string } | null>(null)
   const [paymentMethodId, setPaymentMethodId] = useState(source?.paymentMethodId ?? defaultPmId)
   const [notes, setNotes] = useState(source?.notes ?? '')
@@ -221,12 +224,15 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
           {!isRecurring ? <V3SheetHeader.Subtitle>{t.addIncome.addSubtitleOneTime}</V3SheetHeader.Subtitle> : null}
           {!isRecurring ? (
             <V3SheetHeader.Extra>
-              <DatePickerField value={receivedDate} onChange={setReceivedDate} className="!h-8 !w-auto shrink-0 rounded-full !px-3 text-xs" />
+              <OptionChip as="trigger" size="sm" onClick={() => setCalOpen(true)} aria-haspopup="dialog" aria-expanded={calOpen}>
+                <Calendar className="size-3.5 text-[var(--color-brand-text-muted)]" />
+                {formatDatePillLabel(receivedDate, locale, t.expenseForm.today)}
+              </OptionChip>
             </V3SheetHeader.Extra>
           ) : null}
         </V3SheetHeader>
 
-        <div className={`${MODAL_BODY_SCROLL_CLASS.replace('gap-5', 'gap-4')} px-4 pb-6`}>
+        <div className={`${MODAL_BODY_SCROLL_CLASS.replace('gap-5', 'gap-4')} px-5 pb-6`}>
           {/* Amount + currency */}
           <div className="grid grid-cols-[1fr_auto] items-end gap-3">
             <div className="min-w-0">
@@ -370,7 +376,12 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
 
         {/* Pinned footer: full-width Save CTA, with Delete as a distinct, less
             prominent action directly below it (edit only, non-shared sources). */}
-        <div className="sheet-cta shrink-0 px-4 pb-5 pt-4">
+        <div className="sheet-cta shrink-0 px-5 pb-5 pt-4">
+          {!amtValid ? (
+            <p className="mb-2 text-center text-xs font-medium text-[var(--color-brand-text-muted)]" role="status">
+              {t.expenseForm.cueAmount}
+            </p>
+          ) : null}
           <Button
             type="button"
             onClick={handleSubmit}
@@ -406,6 +417,8 @@ export function IncomeSheetForm({ open, onClose, mode, source, prefill }: Props)
           zIndexClassName="z-[120]"
         />
       ) : null}
+
+      {calOpen ? <UnifiedDatePicker open value={receivedDate} onConfirm={setReceivedDate} onClose={() => setCalOpen(false)} /> : null}
     </ModalShell>
   )
 }

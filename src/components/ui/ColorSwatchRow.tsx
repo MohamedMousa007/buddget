@@ -25,7 +25,7 @@ export interface ColorSwatchRowProps {
 export function ColorSwatchRow({ value, onChange, colors = CARD_COLORS, className }: ColorSwatchRowProps) {
   const a = useT().a11y
   return (
-    <div role="radiogroup" aria-label={a.colourGroup} className={`native-scroll hide-scrollbar flex gap-2.5 overflow-x-auto px-1 py-1 ${className ?? ''}`}>
+    <div role="radiogroup" aria-label={a.colourGroup} className={`native-scroll hide-scrollbar -my-px flex gap-2.5 overflow-x-auto px-1 py-[5px] ${className ?? ''}`}>
       {colors.map((c) => {
         const selected = value === c
         return (

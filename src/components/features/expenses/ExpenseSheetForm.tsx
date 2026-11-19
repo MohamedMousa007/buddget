@@ -459,7 +459,7 @@ export function ExpenseSheetForm(props: ExpenseSheetFormProps) {
             ) : (
               <Button
                 variant="link"
-                size="sm"
+                size="touch"
                 onClick={() => setNoteOpen(true)}
                 className="self-start font-semibold text-[var(--color-brand-text-secondary)] no-underline hover:text-[var(--color-brand-text-primary)] hover:underline"
               >

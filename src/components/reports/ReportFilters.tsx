@@ -20,7 +20,7 @@ export function ReportFilters({ selected, onSelect }: ReportFiltersProps) {
     { value: 'thisYear', label: t.reports.rangeThisYear },
   ]
   return (
-    <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+    <div className="-my-1 flex gap-2 overflow-x-auto hide-scrollbar py-1">
       {options.map((opt) => (
         <OptionChip
           key={opt.value}

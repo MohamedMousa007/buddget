@@ -318,7 +318,7 @@ export function PaymentMethodSetupSheet({
                     <Lock className="h-3.5 w-3.5 opacity-70" />
                   </div>
                 ) : (
-                  <div className="native-scroll flex gap-1.5 overflow-x-auto pb-0.5">
+                  <div className="native-scroll -my-1 flex gap-1.5 overflow-x-auto py-1">
                     {offeredTypes.map((tp) => {
                       const meta = PAYMENT_TYPE_META[tp]
                       const activeChip = type === tp
