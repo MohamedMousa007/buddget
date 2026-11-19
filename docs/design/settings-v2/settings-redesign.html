@@ -1,0 +1,342 @@
+<title>buddget Settings Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a review sheet. Each decision is a band: the verdict, then phone frames side by side (today vs proposed). */
+:root {
+  --bg: #F3F6F5; --ink: #0F1B19; --ink-2: #4C5E5A; --ink-3: #7F8F8B;
+  --card: #FFFFFF; --line: #E2E8E6; --elev: #F6F8F7;
+  --teal: #0E9384; --teal-soft: #E3F5F2; --teal-ink: #0A6E63;
+  --gold-hi: #EDC463; --gold-mid: #B68E30;
+  --red: #D14343; --red-soft: #FBE3E3; --amber: #B36D0C; --amber-soft: #FBF0DD;
+  --phone: #FFFFFF; --phone-edge: #D5DDDA; --scrim: rgba(5, 12, 10, .28);
+  --display: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #070B0A; --ink: #EEF4F2; --ink-2: #A6B5B1; --ink-3: #74837F;
+  --card: #111917; --line: #1F2A27; --elev: #16201E;
+  --teal-soft: #0F2A26; --teal-ink: #5FE0D1;
+  --red-soft: #2E1515; --amber: #E7A94A; --amber-soft: #2A2111; --phone: #0A100F; --phone-edge: #24302D; --scrim: rgba(0, 0, 0, .45); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #070B0A; --ink: #EEF4F2; --ink-2: #A6B5B1; --ink-3: #74837F;
+  --card: #111917; --line: #1F2A27; --elev: #16201E;
+  --teal-soft: #0F2A26; --teal-ink: #5FE0D1;
+  --red-soft: #2E1515; --amber: #E7A94A; --amber-soft: #2A2111; --phone: #0A100F; --phone-edge: #24302D; --scrim: rgba(0, 0, 0, .45); color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--display); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px }
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 56px }
+header h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); line-height: 1.1; margin: 0 0 8px; letter-spacing: -0.02em; text-wrap: balance }
+header p { margin: 0; color: var(--ink-2); max-width: 62ch }
+.eyebrow { font: 600 0.75rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--teal-ink); margin-bottom: 10px }
+section h2 { font-size: 1.375rem; margin: 0 0 6px; letter-spacing: -0.01em; text-wrap: balance }
+.lede { color: var(--ink-2); margin: 0 0 18px; max-width: 70ch }
+.verdict { display: grid; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 22px }
+.verdict b { font-weight: 600 }
+.vote { display: flex; flex-wrap: wrap; gap: 6px }
+.vote span { font: 500 0.75rem/1 var(--mono); padding: 6px 8px; border-radius: 999px; background: var(--elev); color: var(--ink-2) }
+.vote span.yes { background: var(--teal-soft); color: var(--teal-ink) }
+.decide { display: inline-flex; align-items: center; gap: 6px; font: 600 0.75rem/1.2 var(--mono); padding: 6px 9px; border-radius: 999px; background: var(--amber-soft); color: var(--amber); width: fit-content }
+.decide.no { background: var(--teal-soft); color: var(--teal-ink) }
+.row-frames { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start }
+figure { margin: 0; display: grid; gap: 10px; min-width: 0 }
+figcaption { font-size: 0.8125rem; color: var(--ink-2); max-width: 300px }
+figcaption b { color: var(--ink); display: block; font-size: 0.875rem }
+.tag { font: 600 0.6875rem/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 4px 7px; border-radius: 6px; width: fit-content }
+.tag.old { background: var(--elev); color: var(--ink-3) }
+.tag.new { background: var(--teal-soft); color: var(--teal-ink) }
+
+.phone { width: 300px; max-width: 100%; background: var(--phone); border: 1px solid var(--phone-edge); border-radius: 34px; padding: 14px 12px 18px; box-shadow: 0 30px 60px -30px rgba(10, 30, 26, .35) }
+.status { display: flex; justify-content: space-between; font: 600 0.6875rem/1 var(--mono); color: var(--ink-2); padding: 2px 10px 12px }
+.ptitle { font-size: 1.375rem; font-weight: 700; padding: 0 6px 10px; letter-spacing: -0.01em }
+.group-h { font: 600 0.6875rem/1 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding: 14px 10px 6px }
+.list { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden }
+.r { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px; font-size: 0.8125rem }
+.r + .r { border-top: 1px solid var(--line) }
+.r .t { flex: 1; min-width: 0 }
+.r .t small { display: block; color: var(--ink-3); font-size: 0.6875rem; line-height: 1.3 }
+.r .v { color: var(--ink-3); font-size: 0.75rem; white-space: nowrap }
+.r .chev { color: var(--ink-3); font-size: 0.875rem }
+.r.sub { padding-inline-start: 48px }
+.r.red .t { color: var(--red); font-weight: 600; text-align: center }
+.ic { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; flex: none; color: #fff }
+.ic svg { width: 15px; height: 15px }
+.c1 { background: #3D7BE0 } .c2 { background: var(--teal) } .c3 { background: #7A5AE0 } .c4 { background: #D9702E } .c5 { background: #5B6B67 } .c6 { background: #D14343 }
+.ic.ghost { background: var(--elev); color: var(--ink-2) }
+.sw { width: 34px; height: 20px; border-radius: 999px; background: var(--teal); position: relative; flex: none }
+.sw::after { content: ""; position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(140deg, #CFE7E2, #8CC9BF); display: grid; place-items: center; font-weight: 700; color: #0A3D37; position: relative; flex: none }
+.protag { position: absolute; bottom: -3px; right: -6px; font: 700 0.5rem/1 var(--mono); padding: 2px 4px; border-radius: 4px; background: linear-gradient(115deg, var(--gold-hi), var(--gold-mid)); color: #2A1D04; letter-spacing: .06em }
+
+.seal { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; background: #0A100F; box-shadow: inset 0 0 0 1px rgba(237, 196, 99, .55), 0 4px 10px -6px rgba(0, 0, 0, .6) }
+.seal svg { width: 16px; height: 16px }
+.seal.dim { opacity: .55 }
+.pro .t b { font-weight: 600 }
+.pill { font: 600 0.6875rem/1 var(--display); padding: 7px 10px; border-radius: 999px; white-space: nowrap }
+.pill.teal { background: var(--teal-soft); color: var(--teal-ink) }
+.pill.amber { background: var(--amber-soft); color: var(--amber) }
+.pill.red { background: var(--red-soft); color: var(--red) }
+.mono { font-family: var(--mono); font-size: 0.6875rem }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); display: inline-block; margin-inline-end: 4px; vertical-align: 1px }
+
+.aurora { border-radius: 16px; min-height: 64px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: #fff;
+  background: radial-gradient(70% 55% at 92% 0%, rgba(110, 230, 200, .45), transparent 70%), radial-gradient(60% 60% at 0% 18%, rgba(30, 150, 135, .7), transparent 72%), linear-gradient(165deg, #0C6E63 0%, #0B4F48 45%, #073531 100%) }
+.aurora .k { font: 800 0.625rem/1 var(--display); letter-spacing: .16em }
+.aurora .f { margin-inline-start: auto; text-align: end; font-size: 0.6875rem }
+.aurora .f + .f { margin-inline-start: 0 }
+.aurora .f small { display: block; opacity: .8; font-size: 0.5625rem }
+.tiles { display: flex; gap: 6px; padding: 10px }
+.tiles i { flex: 1; height: 40px; border-radius: 12px; background: var(--elev) }
+.cta { border-radius: 14px; padding: 12px; background: var(--teal-soft); color: var(--teal-ink); font-size: 0.75rem; font-weight: 600 }
+.gap { height: 10px }
+
+.scrim { background: var(--scrim); border-radius: 22px; padding: 46px 8px 8px; min-height: 420px }
+.menu { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 20px 40px -18px rgba(0, 0, 0, .4); overflow: hidden; margin-inline-start: auto; width: 252px; max-width: 100% }
+.menu > * + * { border-top: 1px solid var(--line) }
+.grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px }
+.gt { display: grid; place-items: center; gap: 4px; min-height: 58px; border-radius: 12px; background: var(--elev); font-size: 0.625rem; color: var(--ink-2); text-align: center; padding: 6px 2px }
+.gt svg { width: 18px; height: 18px; color: var(--teal-ink) }
+.oldmenu .r { min-height: 30px; padding-block: 4px; font-size: 0.75rem }
+.oldmenu .r.tint { background: var(--teal-soft); color: var(--teal-ink); font-weight: 700 }
+.oldmenu .r svg { width: 14px; height: 14px; color: var(--ink-2); flex: none }
+.oldmenu .r.tint svg { color: var(--teal-ink) }
+
+.states { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px }
+.state { display: grid; gap: 8px }
+.state > span { font: 600 0.6875rem/1 var(--mono); color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 18px }
+.note { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 0.8125rem; color: var(--ink-2) }
+.note b { color: var(--ink); display: block; margin-bottom: 2px }
+.choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px }
+.opt { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 12px; align-content: start; min-width: 0 }
+.opt h3 { margin: 0; font-size: 1rem }
+.opt.rec { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal) }
+.opt ul { margin: 0; padding-inline-start: 18px; font-size: 0.8125rem; color: var(--ink-2); display: grid; gap: 4px }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6DC92"/><stop offset=".5" stop-color="#EDC463"/><stop offset="1" stop-color="#B68E30"/></linearGradient>
+    <symbol id="i-seal" viewBox="0 0 24 24"><path d="M12 2.8l2.2 2.1 3-.4.5 3 2.6 1.6-1.2 2.8 1.2 2.8-2.6 1.6-.5 3-3-.4L12 21.2l-2.2-2.1-3 .4-.5-3-2.6-1.6 1.2-2.8-1.2-2.8 2.6-1.6.5-3 3 .4z" fill="none" stroke="url(#gold)" stroke-width="1.6"/><path d="M8.6 12.2l2.3 2.2 4.5-4.6" fill="none" stroke="url(#gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" fill="currentColor"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><path d="M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-2-3-5-3-5-1s3 1 5 1c2 0 5 1 5-1s-3-2-5 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 4h10v5a5 5 0 01-10 0zM9 20h6M12 14v6M7 6H4a3 3 0 003 4M17 6h3a3 3 0 01-3 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19 14.5A7.5 7.5 0 019.5 5a7.5 7.5 0 109.5 9.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14.5 9.5c-.5-1-1.4-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.6 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1.2 0-2.1-.5-2.6-1.5M12 6.5v11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15zM10 20.5h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 4v4M9.5 13h.01M14.5 13h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6.5" rx="7" ry="2.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 6.5v11c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8v-11M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9.5a2.5 2.5 0 014.8.8c0 1.7-2.4 2-2.4 3.7M12 16.8h.01" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7zM14 3.5v4h4M10 12.5h5M10 16h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 3.5l3 3-3 3M20 6.5H8a4 4 0 00-4 4M7 20.5l-3-3 3-3M4 17.5h12a4 4 0 004-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10.5h18M7 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 19.5V11M10 19.5V5M15 19.5v-6M20 19.5V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4.5H6.5a2 2 0 00-2 2v11a2 2 0 002 2H14M10 12h10M17 8.5l3.5 3.5-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Settings redesign · for review</div>
+  <h1>Pro row, Settings order and profile menu</h1>
+  <p>Mockups for the three layout points you raised, after a design critique and a four-voice council (Skeptic, Pragmatist, Critic, Founder). Each section shows today next to the proposal, and says whether it needs your decision. Phone frames are a 375 pt screen drawn at 300 px.</p>
+</header>
+
+<section>
+  <div class="eyebrow">1 · Pro entry</div>
+  <h2>Replace the aurora card with one membership row</h2>
+  <p class="lede">Three problems came up. The Sparkles icon means AI everywhere else in the app. The teal aurora is the same gradient as the page heroes, so Pro looks like another hero, not a membership. And a 76 px card at the top makes Settings open like an ad. The proposal is one row with a dark seal edged in gold, the only gold on the page, so it still reads as premium. The words on the right change with your plan.</p>
+  <div class="verdict">
+    <div><b>Council: all four voices agree.</b> Remove the card, keep Sparkles for AI only, and make Pro a row whose status changes with the plan. A tab was ruled out: Pro is a state of your account, not a place you visit.</div>
+    <div class="vote"><span class="yes">Skeptic: row</span><span class="yes">Pragmatist: row</span><span class="yes">Critic: row</span><span class="yes">Founder: row with a gold seal</span></div>
+    <span class="decide">Needs your decision: approve the look</span>
+  </div>
+  <div class="states">
+    <div class="state"><span>Free</span><div class="list"><div class="r pro"><span class="seal"><svg><use href="#i-seal"/></svg></span><span class="t"><b>buddget Pro</b><small>More Buddgy, unlimited budgets, export</small></span><span class="pill teal">Try free</span></div></div></div>
+    <div class="state"><span>Trial</span><div class="list"><div class="r pro"><span class="seal"><svg><use href="#i-seal"/></svg></span><span class="t"><b>Pro trial</b><small><span class="mono">12</span> days left</small></span><span class="chev">›</span></div></div></div>
+    <div class="state"><span>Trial, last 3 days</span><div class="list"><div class="r pro"><span class="seal"><svg><use href="#i-seal"/></svg></span><span class="t"><b>Pro trial</b><small>Ends in <span class="mono">2</span> days</small></span><span class="pill amber">Keep Pro</span></div></div></div>
+    <div class="state"><span>Active</span><div class="list"><div class="r pro"><span class="seal"><svg><use href="#i-seal"/></svg></span><span class="t"><b>buddget Pro</b><small>Renews <span class="mono">12 Dec</span></small></span><span class="chev">›</span></div></div></div>
+    <div class="state"><span>Payment issue</span><div class="list"><div class="r pro"><span class="seal"><svg><use href="#i-seal"/></svg></span><span class="t"><b>buddget Pro</b><small><span class="dot"></span>Payment didn't go through</small></span><span class="pill red">Fix payment</span></div></div></div>
+    <div class="state"><span>Ended</span><div class="list"><div class="r pro"><span class="seal dim"><svg><use href="#i-seal"/></svg></span><span class="t"><b>buddget Pro</b><small>Ended <span class="mono">3 Nov</span></small></span><span class="pill teal">Restart</span></div></div></div>
+  </div>
+  <div class="notes">
+    <div class="note"><b>The flip card stays</b>The full member card stays on the Pro page itself, where it belongs. Only the Settings and menu entries change.</div>
+    <div class="note"><b>Sparkles means AI</b>The profile menu's Pro row gets the same seal. Sparkles stays only on Buddgy and AI features.</div>
+    <div class="note"><b>Calm selling</b>From the Founder voice: trials start at locked features and limits, not at a loud banner. Compare trial starts before and after.</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">2 · Settings page</div>
+  <h2>A grouped list in the order people expect</h2>
+  <p class="lede">The order follows iOS Settings, WhatsApp and Revolut: you, then your plan, then how the app behaves, then privacy and data, then help. Today the page mixes five kinds of block (banner, gradient card, call-to-action card, tile row, lists). That mix is what makes it feel crowded, more than the number of rows. The proposal uses one kind: rows in titled groups. The quick tiles become ordinary rows under Preferences, and the invite card becomes a row.</p>
+  <div class="verdict">
+    <div><b>Council: all four voices gave the same grouping.</b> Usage moves inside the Pro page. Founders Club appears only for founders. Sign out moves to the bottom of Settings.</div>
+    <div class="vote"><span class="yes">Skeptic</span><span class="yes">Pragmatist</span><span class="yes">Critic</span><span class="yes">Founder</span></div>
+    <span class="decide no">No decision needed: this is the common pattern (say if you want another order)</span>
+  </div>
+  <div class="row-frames">
+    <figure>
+      <span class="tag old">Today</span>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="ptitle">Settings</div>
+        <div class="list"><div class="r"><span class="avatar">LH</span><span class="t"><b>Layla Hassan</b><small>Edit profile</small></span></div></div>
+        <div class="gap"></div>
+        <div class="aurora"><svg width="16" height="16"><use href="#i-spark"/></svg><span class="k">BUDDGET PRO</span><span class="f"><small>Member since</small>2 Oct</span><span class="f"><small>Renews</small>2 Dec</span></div>
+        <div class="gap"></div>
+        <div class="list"><div class="r"><span class="t">Rewards</span></div><div class="r"><span class="t">Usage</span></div></div>
+        <div class="gap"></div>
+        <div class="cta">Give 37 days of Pro, get a week ›</div>
+        <div class="gap"></div>
+        <div class="list tiles"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="group-h">Security</div><div class="list"><div class="r"><span class="t">Security</span></div></div>
+        <div class="group-h">Auto-track</div><div class="list"><div class="r"><span class="t">SMS tracking</span><span class="sw"></span></div></div>
+        <div class="group-h">AI · Notifications · Data · Help …</div>
+      </div>
+      <figcaption><b>Five kinds of block</b>Banner, gradient card, rows, call-to-action card and a tile row, all before the first real setting.</figcaption>
+    </figure>
+
+    <figure>
+      <span class="tag new">Proposed</span>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="ptitle">Settings</div>
+        <div class="list"><div class="r"><span class="avatar">LH<span class="protag">PRO</span></span><span class="t"><b>Layla Hassan</b><small>layla@example.com</small></span><span class="chev">›</span></div></div>
+
+        <div class="group-h">Membership</div>
+        <div class="list">
+          <div class="r pro"><span class="seal"><svg><use href="#i-seal"/></svg></span><span class="t"><b>buddget Pro</b><small>Renews <span class="mono">12 Dec</span></small></span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c2"><svg><use href="#i-trophy"/></svg></span><span class="t">Rewards<small>Emerald · <span class="mono">540</span> points</small></span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c4"><svg><use href="#i-gift"/></svg></span><span class="t">Invite friends<small>Give 37 days, get a week</small></span><span class="chev">›</span></div>
+        </div>
+
+        <div class="group-h">Preferences</div>
+        <div class="list">
+          <div class="r"><span class="ic c1"><svg><use href="#i-globe"/></svg></span><span class="t">Language</span><span class="v">English</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c5"><svg><use href="#i-moon"/></svg></span><span class="t">Appearance</span><span class="v">System</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c2"><svg><use href="#i-coin"/></svg></span><span class="t">Currency</span><span class="v mono">EGP</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c6"><svg><use href="#i-bell"/></svg></span><span class="t">Notifications</span><span class="chev">›</span></div>
+        </div>
+
+        <div class="group-h">Tracking &amp; Buddgy</div>
+        <div class="list">
+          <div class="r"><span class="ic c2"><svg><use href="#i-msg"/></svg></span><span class="t">SMS tracking<small>Tracking bank texts</small></span><span class="sw"></span></div>
+          <div class="r sub"><span class="t">Setup guide<small>Redo or check the Shortcut steps</small></span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c3"><svg><use href="#i-bot"/></svg></span><span class="t">Buddgy &amp; AI</span><span class="chev">›</span></div>
+        </div>
+
+        <div class="group-h">Privacy &amp; data</div>
+        <div class="list">
+          <div class="r"><span class="ic c5"><svg><use href="#i-lock"/></svg></span><span class="t">Security</span><span class="v">2FA on</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c1"><svg><use href="#i-db"/></svg></span><span class="t">Data &amp; backup</span><span class="chev">›</span></div>
+        </div>
+
+        <div class="group-h">Support</div>
+        <div class="list">
+          <div class="r"><span class="ic c4"><svg><use href="#i-help"/></svg></span><span class="t">Help &amp; feedback</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c5"><svg><use href="#i-doc"/></svg></span><span class="t">About, privacy, terms</span><span class="chev">›</span></div>
+        </div>
+        <div style="height:14px"></div>
+        <div class="list"><div class="r red"><span class="t">Sign out</span></div></div>
+      </div>
+      <figcaption><b>One kind of block</b>Titled groups of 44 px rows. Data and Help open their own screens instead of listing every action on the main page.</figcaption>
+    </figure>
+  </div>
+  <div class="notes">
+    <div class="note"><b>Search keeps working</b>Each row keeps its search id, so settings search still scrolls to it and highlights it. A row that moved into a sub-screen opens that screen.</div>
+    <div class="note"><b>SMS guide (already fixed)</b>On an iPhone that is already set up, a Setup guide row now sits under the switch. That part is built and tested.</div>
+    <div class="note"><b>Converter</b>The currency converter moves to the Currency screen and stays one tap away in the profile menu.</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">3 · Profile menu</div>
+  <h2>A short menu, not a second Settings page</h2>
+  <p class="lede">Today the menu is about 15 rows tall and repeats Settings: the quick tiles, Help and the Pro row are in both places. Goals, Paydays, Subscriptions, Payment methods and Reports have no other way in, so they can't simply be dropped.</p>
+  <div class="verdict">
+    <div><b>Council: split on the shape.</b> All four agree to remove the duplicates (tiles, Help). The Critic ruled out a side drawer: it fights the Android back gesture and the edge swipe, and Arabic keeps a left-to-right layout. The Pragmatist and Critic want a short dropdown. The Skeptic wants the avatar to open a full page. The Founder wants a sheet.</div>
+    <div class="vote"><span class="yes">Pragmatist: short menu</span><span class="yes">Critic: short menu</span><span>Skeptic: full page</span><span>Founder: sheet</span></div>
+    <span class="decide">Needs your decision: pick A or B</span>
+  </div>
+  <div class="choice">
+    <div class="opt">
+      <span class="tag old">Today</span>
+      <h3>About 15 rows</h3>
+      <div class="scrim">
+        <div class="menu oldmenu">
+          <div class="r tint"><span class="t">Finish setup · 60%</span></div>
+          <div class="r"><span class="avatar" style="width:30px;height:30px;font-size:.625rem">LH</span><span class="t"><b>Layla Hassan</b></span><svg><use href="#i-bell"/></svg></div>
+          <div class="r tint"><svg><use href="#i-spark"/></svg><span class="t">buddget Pro</span></div>
+          <div class="tiles"><i></i><i></i><i></i><i></i></div>
+          <div class="r"><svg><use href="#i-target"/></svg><span class="t">Goals</span></div>
+          <div class="r"><svg><use href="#i-cal"/></svg><span class="t">Paydays</span></div>
+          <div class="r"><svg><use href="#i-repeat"/></svg><span class="t">Subscriptions</span></div>
+          <div class="r"><svg><use href="#i-card"/></svg><span class="t">Payment methods</span></div>
+          <div class="r"><svg><use href="#i-chart"/></svg><span class="t">Reports</span></div>
+          <div class="r"><svg><use href="#i-cog"/></svg><span class="t">Settings</span></div>
+          <div class="r"><svg><use href="#i-help"/></svg><span class="t">Help &amp; feedback</span></div>
+          <div class="r" style="color:var(--red)"><svg><use href="#i-out"/></svg><span class="t">Sign out</span></div>
+        </div>
+      </div>
+      <ul><li>Fills most of the screen and scrolls on an iPhone SE.</li><li>Tiles, Help and Pro are all repeated in Settings.</li></ul>
+    </div>
+    <div class="opt rec">
+      <span class="tag new">A · Recommended</span>
+      <h3>Short menu with a tool grid</h3>
+      <div class="scrim">
+        <div class="menu">
+          <div class="r"><span class="avatar">LH<span class="protag">PRO</span></span><span class="t"><b>Layla Hassan</b><small>Emerald</small></span><span class="ic ghost"><svg><use href="#i-bell"/></svg></span></div>
+          <div class="r pro"><span class="seal"><svg><use href="#i-seal"/></svg></span><span class="t"><b>buddget Pro</b><small>Renews <span class="mono">12 Dec</span></small></span><span class="chev">›</span></div>
+          <div class="grid6">
+            <span class="gt"><svg><use href="#i-target"/></svg>Goals</span>
+            <span class="gt"><svg><use href="#i-cal"/></svg>Paydays</span>
+            <span class="gt"><svg><use href="#i-repeat"/></svg>Subscriptions</span>
+            <span class="gt"><svg><use href="#i-card"/></svg>Cards</span>
+            <span class="gt"><svg><use href="#i-chart"/></svg>Reports</span>
+            <span class="gt"><svg><use href="#i-coin"/></svg>Converter</span>
+          </div>
+          <div class="r"><span class="ic c5"><svg><use href="#i-cog"/></svg></span><span class="t">Settings</span><span class="chev">›</span></div>
+        </div>
+      </div>
+      <ul>
+        <li>About half today's height: 3 rows and a 2 × 3 grid, no scrolling on an iPhone SE.</li>
+        <li>Every money tool is still one tap away. Help and Sign out move to the bottom of Settings.</li>
+        <li>Smallest change: it reuses the menu, the rows and the existing tile style.</li>
+        <li>The setup checklist shows as one slim row, only until setup is done.</li>
+      </ul>
+    </div>
+    <div class="opt">
+      <span class="tag old">B</span>
+      <h3>The avatar opens a full page</h3>
+      <div class="phone" style="width:100%;border-radius:22px">
+        <div class="ptitle" style="padding-top:6px">You</div>
+        <div class="list"><div class="r"><span class="avatar">LH<span class="protag">PRO</span></span><span class="t"><b>Layla Hassan</b><small>Emerald · renews 12 Dec</small></span><span class="chev">›</span></div></div>
+        <div class="group-h">Money tools</div>
+        <div class="list">
+          <div class="r"><span class="ic c2"><svg><use href="#i-target"/></svg></span><span class="t">Goals</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c1"><svg><use href="#i-cal"/></svg></span><span class="t">Paydays</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c3"><svg><use href="#i-repeat"/></svg></span><span class="t">Subscriptions</span><span class="chev">›</span></div>
+          <div class="r"><span class="ic c4"><svg><use href="#i-chart"/></svg></span><span class="t">Reports</span><span class="chev">›</span></div>
+        </div>
+        <div class="group-h">Then the Settings groups</div>
+      </div>
+      <ul>
+        <li>One place for everything, like the WhatsApp "You" tab. Nothing repeated.</li>
+        <li>A full screen opens each time, so Goals or Paydays take longer to reach.</li>
+        <li>The bell and setup checklist need new homes (the top bar, and a card on Home).</li>
+        <li>Bigger change: a new page, back behaviour, deep links and tests.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+</div>

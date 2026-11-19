@@ -80,6 +80,13 @@ describe('FlipCardRig', () => {
     expect(out).toContain('aria-pressed="true"')
     expect(out).toMatch(/aria-hidden="true"[^>]*><div[^>]*>FRONT/)
   })
+  it('the tap target sits outside the turning card, so a moving 3D layer cannot swallow taps', () => {
+    const out = rig()
+    const button = out.indexOf('<button')
+    expect(button).toBeGreaterThan(out.lastIndexOf('BACK'))
+    // Closes the back face, its slot, the card and the lift before the button: it is a child of the flat rig.
+    expect(count(out.slice(out.lastIndexOf('BACK'), button), '</div>')).toBe(4)
+  })
   it('every face carries the sheen and the hover light', () => {
     expect(count(html(<CardFace finish="founder">x</CardFace>), 'aria-hidden="true"')).toBe(2)
   })

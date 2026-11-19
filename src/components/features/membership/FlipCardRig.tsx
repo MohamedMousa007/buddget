@@ -102,7 +102,7 @@ export function FlipCardRig({ front, back, label, dimmed, overlay, defaultFlippe
     wakeRef.current()
   }
   // Tilt and the hover light are for a mouse: a finger resting on the card should not skew it.
-  const onMove = (e: PointerEvent<HTMLDivElement>) => {
+  const onMove = (e: PointerEvent<HTMLButtonElement>) => {
     if (e.pointerType !== 'mouse') return
     Object.assign(rig.current, pointerTilt(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect()), { hover: 1 })
   }
@@ -112,13 +112,14 @@ export function FlipCardRig({ front, back, label, dimmed, overlay, defaultFlippe
     <div ref={root} className={cn(s.rig, dimmed && s.dimmed, className)} style={style} data-flipped={flipped} data-dimmed={dimmed || undefined}>
       <div ref={floor} className={s.floor} aria-hidden />
       <div ref={lift} className={s.lift}>
-        <div ref={card} dir="ltr" className={s.mcard} onClick={flip} onPointerMove={onMove} onPointerLeave={onLeave} style={defaultFlipped ? { transform: 'rotateY(180deg)' } : undefined}>
+        <div ref={card} dir="ltr" className={s.mcard} style={defaultFlipped ? { transform: 'rotateY(180deg)' } : undefined}>
           <div ref={frontSlot} className={s.slot} aria-hidden={flipped || undefined}>{front}</div>
           <div ref={backSlot} className={cn(s.slot, s.slotBack)} aria-hidden={!flipped || undefined}>{back}</div>
-          <button type="button" className={s.hit} aria-label={label} aria-pressed={flipped} data-raw-button-ok="the whole card is the control; it has no visual of its own" />
         </div>
         {overlay ? <div className={s.overlay}>{overlay}</div> : null}
       </div>
+      {/* Flat and outside the turning 3D tree: WebKit hit-tests a card that moves every frame unreliably, so taps on the card itself were dropped. */}
+      <button type="button" className={s.hit} onClick={flip} onPointerMove={onMove} onPointerLeave={onLeave} aria-label={label} aria-pressed={flipped} data-raw-button-ok="the whole card is the control; it has no visual of its own" />
     </div>
   )
 }
