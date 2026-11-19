@@ -20,7 +20,9 @@ class MainActivity : BridgeActivity() {
         // Capacitor's default WebChromeClient does not do this, so we override it.
         bridge.webView.webChromeClient = object : BridgeWebChromeClient(bridge) {
             override fun onPermissionRequest(request: PermissionRequest) {
-                if (request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+                if (request.resources.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE) &&
+                    WebViewOrigin.isAppOrigin(request.origin?.toString())
+                ) {
                     runOnUiThread {
                         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) ==
                             PackageManager.PERMISSION_GRANTED

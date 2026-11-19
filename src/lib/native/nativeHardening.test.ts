@@ -62,6 +62,16 @@ describe('Android SMS bridge hardening (static)', () => {
       expect(manifest).toContain(`<uses-feature android:name="${f}" android:required="false" />`)
   })
 
+  it('QA-69: the WebView microphone grant is limited to the bundled app origin', () => {
+    const activity = read(`${A}/MainActivity.kt`)
+    expect(activity.indexOf('WebViewOrigin.isAppOrigin(request.origin')).toBeGreaterThan(-1)
+    expect(activity.indexOf('WebViewOrigin.isAppOrigin(request.origin')).toBeLessThan(activity.indexOf('request.grant('))
+  })
+
+  it('no Facebook SDK, so no advertising-ID permissions are merged in', () => {
+    expect(read('capacitor.config.ts')).toMatch(/SocialLogin: \{\s*providers: \{ facebook: false \}/)
+  })
+
   it('QA-72: security-crypto is a stable release', () => {
     expect(read('android/app/build.gradle')).toMatch(/androidx\.security:security-crypto:\d+\.\d+\.\d+"/)
   })
