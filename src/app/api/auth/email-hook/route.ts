@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { planAuthEmails, type HookPayload } from '@/lib/server/email/authHook'
 import { sendTemplatedEmail } from '@/lib/server/email/send'
 import { authHookIdempotencyKey } from '@/lib/server/email/suppression'
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   const fullName = user.user_metadata?.full_name ?? user.user_metadata?.name
   const results = await Promise.all(
     plan.emails.map((e) =>
-      sendTemplatedEmail(e.key, { email: e.to, id: user.id ?? null, fullName, firstName: fullName?.split(' ')[0] }, e.vars, { source: 'auth_hook', idempotencyKey: authHookIdempotencyKey(webhookId, e.key, e.to) }),
+      sendTemplatedEmail(e.key, { email: e.to, id: user.id ?? null, fullName, firstName: fullName?.split(' ')[0] }, e.vars, { source: 'auth_hook', idempotencyKey: authHookIdempotencyKey(webhookId, e.key, e.to), defer: after }),
     ),
   )
   return results.every((r) => r.ok) ? NextResponse.json({}) : fail('Could not send the email', 502)
