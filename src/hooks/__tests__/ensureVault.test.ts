@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { markPulled, resetHydrationGuard } from '@/hooks/remote/hydrateGuard'
 import { seedMonthlySavingsVault } from '@/hooks/useEnsureMonthlySavingsVault'
+import { resolveCarryDestination } from '@/lib/savings/monthCarry'
 import { systemVaultId } from '@/lib/savings/pocketIdentity'
 
 const USER = '3f2b8c1e-9d4a-4e7b-8a21-5c6d7e8f9a0b'
@@ -38,5 +39,16 @@ describe('Monthly Savings vault seeding', () => {
     markPulled(USER)
     useFinanceStore.getState().updateProfile({ defaultCarryPocketId: 'existing' })
     expect(seedMonthlySavingsVault()).toBe(false)
+  })
+
+  it('QA-108: a user whose vault predates the derived id keeps it: no second vault is seeded or created by the cron', () => {
+    markPulled(USER)
+    const legacyId = useFinanceStore.getState().addSavingsAccount({
+      name: 'Monthly Savings', category: 'savings', type: 'vault', currency: 'EGP', openingBalance: 0, isEmergencyCover: false,
+    } as never)
+    expect(legacyId).not.toBe(systemVaultId(USER))
+    expect(seedMonthlySavingsVault()).toBe(false)
+    const { savingsAccounts, goals } = useFinanceStore.getState()
+    expect(resolveCarryDestination(undefined, savingsAccounts, goals)).toEqual({ kind: 'pocket', pocketId: legacyId })
   })
 })
