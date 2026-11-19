@@ -145,7 +145,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
           <IconButton variant="outlined" aria-label={b.close} onClick={onClose}>
             <ChevronLeft className="rtl:rotate-180" />
           </IconButton>
-          <h1 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{b.title}</h1>
+          <h2 className="text-lg font-bold text-[var(--color-brand-text-primary)]">{b.title}</h2>
         </div>
         <Card padding="md" className="flex flex-col gap-3">
           <p className="text-base font-semibold text-[var(--color-brand-text-primary)]">{t.build.useMyData}</p>
@@ -201,7 +201,7 @@ export function PlanFlow({ planId, mode, flagEmpty = false, initialSkipped = [],
         <IconButton variant="outlined" aria-label={b.close} onClick={onClose}>
           <ChevronLeft className="rtl:rotate-180" />
         </IconButton>
-        <h1 className="flex-1 truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{view.plan.name}</h1>
+        <h2 className="flex-1 truncate text-lg font-bold text-[var(--color-brand-text-primary)]">{view.plan.name}</h2>
       </div>
 
       <Card padding="md" className="flex flex-col gap-3">

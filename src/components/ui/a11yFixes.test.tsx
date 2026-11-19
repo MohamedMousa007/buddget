@@ -203,3 +203,21 @@ describe('A11-1 no hard-white label on a solid semantic fill', () => {
     expect(src).toContain('text-[var(--color-brand-on-green)]')
   })
 })
+
+describe('QA-115 landmarks and headings', () => {
+  it('the desktop sidebar nav has an accessible name', () => {
+    expect(read('components/layout/Sidebar.tsx')).toMatch(/<nav aria-label=\{t\.common\.mainNavigation\}/)
+  })
+  it('the prompt and status layer is a named region', () => {
+    const src = read('components/layout/TopNoticeRegion.tsx')
+    expect(src).toContain('role="region"')
+    expect(src).toContain('aria-label={t.common.notices}')
+    expect(en.common.notices).toBeTruthy()
+    expect(ar.common.notices).toBeTruthy()
+  })
+  it('budget sub-views render no h1 of their own (the shell title is the one h1)', () => {
+    for (const f of ['components/features/budget/SegmentPage.tsx', 'components/features/budget/PlanFlow.tsx', 'components/features/budget/builder/ManualBuilder.tsx']) {
+      expect(read(f)).not.toMatch(/<h1[\s>]/)
+    }
+  })
+})

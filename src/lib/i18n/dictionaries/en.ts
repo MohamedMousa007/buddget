@@ -224,6 +224,7 @@ export const en: Dictionary = {
     close: 'Close',
     moreActions: 'More actions',
     mainNavigation: 'Main navigation',
+    notices: 'Notices',
     homeLink: 'buddget home',
     voiceSheetLabel: 'Voice expense',
     receiptSheetLabel: 'Scan receipt',

@@ -86,7 +86,7 @@ export function ManualBuilder({ planId, startEmpty = false, onExit, onFinish }: 
           <ChevronLeft className="rtl:rotate-180" />
         </IconButton>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold leading-tight text-[var(--color-brand-text-primary)]">{c.title}</h1>
+          <h2 className="text-lg font-bold leading-tight text-[var(--color-brand-text-primary)]">{c.title}</h2>
           <p className="truncate text-xs text-[var(--color-brand-text-secondary)]">{c.subtitle(view.plan.name)}</p>
         </div>
         <Button size="touch" variant="ghost" onClick={onExit}>

@@ -226,6 +226,7 @@ export const ar: Dictionary = {
     close: 'إغلاق',
     moreActions: 'إجراءات أخرى',
     mainNavigation: 'التنقل الرئيسي',
+    notices: 'التنبيهات',
     homeLink: 'الصفحة الرئيسية لبدجت',
     voiceSheetLabel: 'مصروف صوتي',
     receiptSheetLabel: 'مسح إيصال',

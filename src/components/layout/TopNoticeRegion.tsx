@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
+import { useT } from '@/lib/i18n'
 
 // The status slot element, handed over by the region's ref; pills subscribe to it.
 let statusSlot: HTMLElement | null = null
@@ -16,6 +17,7 @@ const setStatusSlot = (el: HTMLDivElement | null) => {
  * `--top-notices-h` so toasts sit below whatever is showing.
  */
 export function TopNoticeRegion({ children }: { children: ReactNode }) {
+  const t = useT()
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = ref.current
@@ -32,6 +34,8 @@ export function TopNoticeRegion({ children }: { children: ReactNode }) {
     <div
       ref={ref}
       data-inert-exempt
+      role="region"
+      aria-label={t.common.notices}
       className="pointer-events-none fixed inset-x-2.5 top-[calc(env(safe-area-inset-top,0px)+3px)] z-[58] mx-auto flex max-w-[620px] flex-col items-center gap-2 lg:start-[calc(var(--sidebar-w)+0.625rem)] lg:top-[calc(var(--app-header-h-lg)+8px)]"
     >
       <div ref={setStatusSlot} className="flex flex-col items-center gap-2 empty:hidden" />

@@ -130,6 +130,7 @@ export interface Dictionary {
     moreActions: string
     /** Accessible names: bottom tab bar landmark, header logo link. */
     mainNavigation: string
+    notices: string
     homeLink: string
     voiceSheetLabel: string
     receiptSheetLabel: string
