@@ -73,7 +73,8 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden lg:flex flex-col w-[var(--sidebar-w)] bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 inset-y-0 z-40 overflow-hidden">
+    // Named so it is distinct from the page rail <aside> (axe landmark-unique); the logo link above the <nav> stays inside a landmark.
+    <aside aria-label={t.common.mainNavigation} className="hidden lg:flex flex-col w-[var(--sidebar-w)] bg-[var(--color-brand-card)] border-e border-[var(--color-brand-border)] fixed start-0 inset-y-0 z-40 overflow-hidden">
       <div className="p-4">
         <Link href="/flow" aria-label={t.common.homeLink} className={cn('flex items-center gap-2 outline-none', HIT_AREA, 'focus-visible:ring-2 focus-visible:ring-[var(--color-brand-focus)] rounded-sm')}>
           <BuddgetWordmark height={24} />

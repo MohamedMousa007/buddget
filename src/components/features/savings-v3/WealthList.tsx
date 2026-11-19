@@ -37,8 +37,13 @@ export interface WealthListProps {
   goalLines?: Record<string, string>
 }
 
-function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], identity: ReturnType<typeof useT>['savingsForms']['identity'], locale: AppLocale, goal?: string): string {
-  if (row.account) return [pocketIdentity(row.account, identity, locale), goal].filter(Boolean).join(' · ')
+export function subtitle(row: WealthRowVM, t: ReturnType<typeof useT>['wealthPage'], identity: ReturnType<typeof useT>['savingsForms']['identity'], locale: AppLocale, goal?: string): string {
+  if (row.account) {
+    // `pocketIdentity` falls back to the stored name when a pocket has no institution or type line; the row title already shows it
+    // (translated), so repeating it printed "Monthly Savings" twice, and in English even on an Arabic screen.
+    const id = pocketIdentity(row.account, identity, locale)
+    return [id === row.account.name ? '' : id, goal].filter(Boolean).join(' · ')
+  }
   const h = row.holding!
   const unit = h.assetType === 'gold' ? ' g' : h.assetType === 'property' ? ' m²' : ''
   if (row.unitPrice == null) {
