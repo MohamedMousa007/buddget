@@ -22,4 +22,12 @@ describe('POST /api/billing/paywall-view', () => {
     expect(res.status).toBe(200)
     expect(recorded()[0]?.[1]).toMatchObject({ p_platform: '', p_source: '' })
   })
+
+  it('stops recording past the per-user hourly cap, without an error', async () => {
+    h.rpc.mockImplementation(async (fn: string) => ({ data: fn === 'api_rate_hit' ? false : null, error: null }))
+    const res = await call('{"platform":"ios"}')
+    expect(await res.json()).toEqual({ ok: true, recorded: false })
+    expect(recorded()).toHaveLength(0)
+    expect(h.rpc).toHaveBeenCalledWith('api_rate_hit', { p_key: 'paywall-view:u1', p_window_seconds: 3600, p_max_hits: 20 })
+  })
 })
