@@ -51,8 +51,8 @@ export async function PATCH(request: Request, { params }: Params) {
  *
  * The phone's heartbeat records the Auth session it arrived on (`user_devices.session_id`, migration 0245). Removing the phone
  * deletes exactly that `auth.sessions` row (its refresh tokens cascade), so it can no longer mint access JWTs; the access JWT
- * it already holds keeps working until it expires (at most the project's JWT lifetime, one hour by default), and every route
- * that checks `revoked_at` per device (SMS, push) refuses it at once. A phone registered before 0245 has no recorded session
+ * it already holds is refused by PostgREST at once (`session_revoked`, migration 0325) and by every route that checks
+ * `revoked_at` per device (SMS, push); app routes that only verify the JWT locally accept it until it expires. A phone registered before 0245 has no recorded session
  * until its next heartbeat; removing such a phone cannot end its session, so the user should also change the password
  * (which signs out every other session). Everything scoped to the device id is revoked in any case: SMS ingest tokens, push
  * tokens, the biometric binding and trusted-device 2-step skip.
