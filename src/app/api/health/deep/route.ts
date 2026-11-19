@@ -8,8 +8,9 @@ import { isAuthorizedCron } from '@/lib/server/cronAuth'
 export const dynamic = 'force-dynamic'
 
 /**
- * Readiness for a monitor and the portal: one cheap database read, the metrics cache, the last notification cron run and the integration outbox.
- * `degraded` means the app is up but a background job is not (missing CRON_SECRET, stale cron, dead outbox rows).
+ * Readiness for a monitor and the portal: one cheap database read, the metrics cache and the last notification cron run.
+ * `degraded` means the app is up but a background job is not (missing CRON_SECRET, stale cron). The Linear outbox is not
+ * checked while that integration is postponed (QA-57).
  * The whole answer is computed at most once a minute for every caller together (shared data cache), so polling it cannot load the database;
  * uptime monitors that only need "is the app up" should call the light `/api/health`. Reports status only, never data.
  * The public gets `{ ok, degraded }`; the build, checks and cron detail need `Authorization: Bearer ${CRON_SECRET}` (QA-56).
@@ -17,19 +18,16 @@ export const dynamic = 'force-dynamic'
 async function readiness() {
   const started = Date.now()
   const service = createServiceRoleClient()
-  const [db, cache, lastRun, outboxPending, outboxDead, outboxOldest] = await Promise.all([
+  const [db, cache, lastRun] = await Promise.all([
     service.from('platform_settings').select('key').limit(1),
     service.from('admin_metrics_cache').select('computed_at').order('computed_at', { ascending: false }).limit(1),
     service.from('platform_settings').select('value').eq('key', CRON_LAST_RUN_KEY).maybeSingle(),
-    service.from('integration_outbox').select('id', { count: 'exact', head: true }).in('status', ['pending', 'failed']),
-    service.from('integration_outbox').select('id', { count: 'exact', head: true }).eq('status', 'dead'),
-    service.from('integration_outbox').select('created_at').in('status', ['pending', 'failed']).order('created_at', { ascending: true }).limit(1),
   ])
   const cronHealth = evaluateCronHealth({
     secretSet: Boolean(process.env.CRON_SECRET),
     lastRunAt: (lastRun.data?.value as { at?: string } | null)?.at ?? null,
     nowMs: Date.now(),
-    outbox: outboxPending.error || outboxDead.error ? null : { pending: outboxPending.count ?? 0, dead: outboxDead.count ?? 0, oldestPendingAt: outboxOldest.data?.[0]?.created_at ?? null },
+    outbox: null,
   })
   const dbOk = !db.error
   const cacheAge = ageSeconds(cache.data?.[0]?.computed_at, Date.now())

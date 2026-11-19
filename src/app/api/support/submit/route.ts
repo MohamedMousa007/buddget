@@ -1,8 +1,7 @@
-import { NextResponse, after } from 'next/server'
+import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { gateOutdatedClient } from '@/lib/server/clientGate'
 import { resolveApiUserId } from '@/lib/auth/resolveApiUser'
-import { drainOutbox } from '@/lib/server/integrations/outbox'
 import { triage } from '@/lib/support/triage'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
@@ -25,8 +24,8 @@ const bodySchema = z.object({
 })
 
 /**
- * Support, bug reports and ideas from inside the app. One request creates the ticket, its first message and, for
- * bugs we are sure of, the outbox row Linear is fed from. Nothing here waits on a third party.
+ * Support, bug reports and ideas from inside the app. One request creates the ticket and its first message; staff
+ * read them in the admin portal. Escalation to Linear is postponed (QA-57), so nothing is queued for it.
  */
 export async function POST(request: Request) {
   const outdated = await gateOutdatedClient(request)
@@ -68,14 +67,12 @@ export async function POST(request: Request) {
     p_platform: platform ?? '',
     p_version: version ?? '',
     p_context: { route: context.route, locale: context.locale, device: context.device },
-    p_to_linear: t.toLinear,
+    p_to_linear: false,
   })
   const row = data?.[0]
   if (error || !row) {
     console.error('[support/submit] failed', error?.message)
     return NextResponse.json({ error: 'Could not send that. Try again.' }, { status: 500 })
   }
-  // Send the bug to Linear right away; if that fails the row stays queued and the daily sweep retries it.
-  if (t.toLinear) after(() => drainOutbox(service, process.env.LINEAR_API_KEY, 1))
   return NextResponse.json({ ok: true, number: row.ticket_number })
 }
