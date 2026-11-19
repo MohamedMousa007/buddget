@@ -115,6 +115,13 @@ describe('stale cursor (full pull)', () => {
     expect(out.expenses.map((e) => e.id)).toEqual(['unsent'])
   })
 
+  it('QA-107: the built-in Cash method, which is never sent, survives a stale-cursor full pull', () => {
+    const cash = { id: 'pm_default_cash', name: 'Cash', type: 'cash', isDefault: true, updatedAt: '2026-09-01T00:00:00Z' }
+    const local = { ...emptySnapshot(), paymentMethods: [cash] } as unknown as Snapshot
+    const out = applyDelta(local, noDelta({ staleBefore: '2026-08-01T00:00:00Z' }), local)
+    expect(out.paymentMethods.map((m) => m.id)).toEqual(['pm_default_cash'])
+  })
+
   it('compares instants not strings, and never prunes budget plans or unparseable stamps', () => {
     const local = { ...withExpenses([exp('plus', '2026-06-01T00:00:00.000+00:00'), exp('bad', 'not-a-date')]), budgetPlans: [{ id: 'p1', updatedAt: '2026-01-01T00:00:00Z' }] } as unknown as Snapshot
     const out = applyDelta(local, noDelta({ staleBefore: '2026-08-01T00:00:00Z' }))

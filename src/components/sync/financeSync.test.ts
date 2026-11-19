@@ -163,6 +163,17 @@ describe('finance sync flush / re-baseline', () => {
     expect(b![2]).toBe(a![3])
   })
 
+  it('sign-out: a final flush that queued behind a running one is still sent after the suspension', async () => {
+    let release!: (v: typeof ok) => void
+    h.flushDiff.mockReturnValueOnce(new Promise((r) => { release = r })).mockResolvedValue(ok)
+    void flushFinanceNow()
+    const final = flushFinanceNow()
+    suspendFinanceSync()
+    release(ok)
+    await final
+    expect(h.flushDiff).toHaveBeenCalledTimes(2)
+  })
+
   it('QA-65: a pull that answers after suspendFinanceSync does not write to the store', async () => {
     let answer!: (v: unknown) => void
     vi.mocked(pullDelta).mockReturnValueOnce(new Promise((r) => { answer = r }) as never)

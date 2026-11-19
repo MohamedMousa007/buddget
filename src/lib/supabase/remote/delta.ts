@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/database.types'
 import type { AppSettings, BudgetPlan, BudgetPlanActivation } from '@/lib/store/types'
 import { DEFAULT_SETTINGS } from '@/lib/store/defaultFinanceData'
+import { DEFAULT_CASH_ID } from '@/lib/store/migrations/v17_uuid_remap'
 import { deepEqual, diffLists } from './diff'
 import { mergeList } from './merge'
 import { noteServerTime, serverInstant } from './serverClock'
@@ -153,8 +154,10 @@ function applyListWith<T extends WithId>(local: T[], d: ListDelta<T>, staleBefor
   const live = new Set(d.upserts.map((r) => r.id))
   const cutoff = staleBefore === null ? NaN : Date.parse(staleBefore)
   // With a delivered baseline, a row that is not pending reached the server (the flush ran first): absent from a full
-  // pull, it was deleted there, whatever its edit time. Without a baseline only the edit time can tell.
-  const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && (pending ? !pending.has(r.id) : !!r.updatedAt && (serverInstant(r.updatedAt) ?? Infinity) <= cutoff)
+  // pull, it was deleted there, whatever its edit time. Without a baseline only the edit time can tell. A row with no
+  // edit time is never dropped (the built-in Cash method is never sent, so the server never returns it).
+  const gone = (r: T) => !Number.isNaN(cutoff) && !live.has(r.id) && !!r.updatedAt && r.id !== DEFAULT_CASH_ID
+    && (pending ? !pending.has(r.id) : (serverInstant(r.updatedAt) ?? Infinity) <= cutoff)
   return mergeList(local, d.upserts, pending).filter((r) => !dead.has(r.id) && !gone(r))
 }
 

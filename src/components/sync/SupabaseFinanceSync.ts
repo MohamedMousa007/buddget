@@ -309,7 +309,7 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       }, Math.max(0, suppressUntil - Date.now()) + 50)
     }
 
-    const flushOnce = async (): Promise<boolean> => {
+    const flushOnce = async (askedBeforeSuspend = false): Promise<boolean> => {
       if (!hydrated.current) return true
       // Offline: don't attempt a doomed flush that would raise the sync-failure
       // banner. prevSnap doesn't advance, so the reconnect flush (or the next
@@ -318,7 +318,9 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
       // A stale debounce timer can fire after suspendFinanceSync() is called
       // during sign-out. At that point the store has already been reset to
       // empty defaults, and flushing would soft-delete all server-side data.
-      if (syncSuspended) return true
+      // The one exception: a flush asked for before the suspension (sign-out's final flush) that had to queue behind a
+      // running one. Sign-out waits for it before wiping; after a wipe the profile check below stops it.
+      if (syncSuspended && !askedBeforeSuspend) return true
       if (useFinanceStore.getState().profile.id === 'local') return true
       // Never push rows to the server under a different user than the cache owner.
       if (ownedByAnother(userId)) return true
@@ -378,17 +380,21 @@ export function SupabaseFinanceSync({ userId }: { userId: string }) {
     // server. A call that arrives meanwhile makes the running flush go once more, from a fresh snapshot.
     let flushing: Promise<boolean> | null = null
     let flushAgain = false
+    let queuedBeforeSuspend = false
     const flush = (): Promise<boolean> => {
       if (flushing) {
         flushAgain = true
+        if (!syncSuspended) queuedBeforeSuspend = true
         return flushing
       }
       flushing = (async () => {
-        let sent: boolean
-        do {
+        let sent = await flushOnce()
+        while (flushAgain) {
           flushAgain = false
-          sent = await flushOnce()
-        } while (flushAgain)
+          const asked = queuedBeforeSuspend
+          queuedBeforeSuspend = false
+          sent = await flushOnce(asked)
+        }
         return sent
       })().finally(() => { flushing = null })
       return flushing
