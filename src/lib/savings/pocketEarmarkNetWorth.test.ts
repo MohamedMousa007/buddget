@@ -102,11 +102,25 @@ describe('QA-13 / QA-122 / QA-12: money a tracked account already holds is never
       expect(where.when!(answer(createFlow('mixed'), 'savingsOnHand', 1400))).toBe(false)
     })
 
-    it('inside a tracked account: nothing is created and net worth does not move', () => {
-      const { add, created } = commit(true)
-      expect(add).not.toHaveBeenCalled()
-      expect(created.savings).toBeUndefined()
+    it('inside a tracked account: an earmarked pocket in that account, and net worth does not move', () => {
+      const flow = answer(answer(createFlow('mixed', { tracksAccounts: true }), 'savingsOnHand', 400), 'savingsInTracked', true)
+      const created = commitFlowEntities(flow, S() as never, 'EGP', names)
+      expect(S().savingsAccounts.find((p) => p.id === created.savings)).toMatchObject({ heldInPaymentMethodId: 'qnb', currentBalance: 400 })
+      expect(computeBalances(ledger()).get('qnb')).toMatchObject({ balance: 1000, held: 400, free: 600 })
       expect(netWorth()).toBe(1000)
+    })
+
+    it('goes into the account with the most free money and never above what is free there', () => {
+      seed([pm('qnb'), pm('cib', { openingBalance: 3000 }), pm('usd', { currency: 'USD', openingBalance: 9000 })])
+      const flow = answer(answer(createFlow('mixed', { tracksAccounts: true }), 'savingsOnHand', 5000), 'savingsInTracked', true)
+      const created = commitFlowEntities(flow, S() as never, 'EGP', names)
+      expect(S().savingsAccounts.find((p) => p.id === created.savings)).toMatchObject({ heldInPaymentMethodId: 'cib', currentBalance: 3000 })
+      expect(netWorth()).toBe(13000)
+    })
+
+    it('nothing free in any account: nothing is created', () => {
+      seed([pm('qnb', { openingBalance: 0 })])
+      expect(commit(true).add).not.toHaveBeenCalled()
     })
 
     it('kept outside: a pocket of its own is created', () => {

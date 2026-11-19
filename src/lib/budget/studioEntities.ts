@@ -5,6 +5,8 @@ import type { FactDebt, FactGoal, PlanDraft } from '@/lib/budget/facts'
 import { answeredDebts, answeredGoals, debtMonthlyPayment } from '@/lib/budget/flow/toFacts'
 import type { FlowState } from '@/lib/budget/flow/types'
 import { isTracked } from '@/lib/accounts/kinds'
+import { computeBalances } from '@/lib/accounts/balance'
+import { tryConvertCurrency } from '@/lib/utils/currency'
 
 export interface StudioEntityNames {
   income: string
@@ -15,7 +17,7 @@ export interface StudioEntityNames {
   goal: (kind: GoalCategory) => string
 }
 
-type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals' | 'incomeSources' | 'debts' | 'savingsAccounts'> & Partial<Pick<FinanceStore, 'paymentMethods'>>
+type Actions = Pick<FinanceStore, 'addIncomeSource' | 'addDebt' | 'addGoal' | 'addSavingsAccount' | 'goals' | 'incomeSources' | 'debts' | 'savingsAccounts'> & Partial<Pick<FinanceStore, 'paymentMethods' | 'expenses' | 'incomeEvents' | 'debtPayments' | 'savingsTransactions' | 'accountAdjustments' | 'exchangeRates'>>
 
 const DEFAULT_PAYDAY = 25
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -26,6 +28,21 @@ const GOAL_OF_KIND: Record<string, GoalCategory> = {
 }
 const SOURCE_OF_TYPE: Record<string, IncomeSourceType> = {
   salary: 'salary', freelance: 'side_hustle', business: 'side_hustle', seasonal: 'side_hustle', mixed: 'salary', benefits: 'other', allowance: 'other',
+}
+
+/** The open, counted, tracked account in the plan's currency with the most free money: where "it is in my accounts" is set aside. */
+function roomiestAccount(store: Actions, base: Currency) {
+  const methods = store.paymentMethods ?? []
+  const balances = computeBalances({
+    paymentMethods: methods, expenses: store.expenses ?? [], incomeEvents: store.incomeEvents ?? [], debtPayments: store.debtPayments ?? [], debts: store.debts,
+    savingsTransactions: store.savingsTransactions ?? [], savingsAccounts: store.savingsAccounts, adjustments: store.accountAdjustments ?? [],
+    convert: (amount, from, to) => tryConvertCurrency(amount, from, to, store.exchangeRates ?? {}),
+  })
+  return methods
+    .filter((m) => isTracked(m) && !m.closedAt && !m.excluded && String(m.currency) === base)
+    .flatMap((m) => balances.get(m.id) ?? [])
+    .filter((b) => b.free > 0)
+    .sort((x, y) => y.free - x.free)[0]
 }
 
 /** Ids of the debts and goals created from these answers, so the plan can use the richer fact (with its interest rate) instead of counting both. */
@@ -75,12 +92,20 @@ export function commitFlowEntities(state: FlowState, store: Actions, base: Curre
   const savings = amountOf(a.savingsOnHand)
   // The empty vault the app seeds itself tracks nothing.
   const hasPockets = store.savingsAccounts.some((p) => !(p.type === 'vault' && !p.currentBalance))
-  // Money inside a tracked account is already on the balance sheet: only money the user says is kept elsewhere becomes a pocket.
-  const alreadyCounted = (store.paymentMethods ?? []).some(isTracked) && a.savingsInTracked !== false
-  if (savings > 0 && !done.savings && !hasPockets && !alreadyCounted) {
-    created.savings = store.addSavingsAccount({
-      name: names.savings, category: 'savings', type: 'bank', currency: base, openingBalance: savings, isEmergencyCover: true,
-    })
+  // Money inside a tracked account is already on the balance sheet: it becomes an earmark inside that account (never above
+  // what is free there), and only money the user says is kept elsewhere becomes a pocket of its own. Unanswered = nothing.
+  const pocket = { name: names.savings, category: 'savings', type: 'bank', currency: base, isEmergencyCover: true } as const
+  if (savings > 0 && !done.savings && !hasPockets) {
+    if (!(store.paymentMethods ?? []).some(isTracked) || a.savingsInTracked === false) {
+      created.savings = store.addSavingsAccount({ ...pocket, openingBalance: savings })
+    } else if (a.savingsInTracked === true) {
+      const holder = roomiestAccount(store, base)
+      if (holder) {
+        created.savings = store.addSavingsAccount({
+          ...pocket, openingBalance: Math.min(savings, holder.free), linkedPaymentMethodId: holder.id, heldInPaymentMethodId: holder.id,
+        })
+      }
+    }
   }
 
   if (store.debts.length === 0) {

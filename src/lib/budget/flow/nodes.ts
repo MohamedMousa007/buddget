@@ -97,7 +97,7 @@ const ALL: readonly FlowNode[] = [
   follow('saveCustom', 'security', 'amount', 'How much?', 'Your own target.', (s) => is(s, 'saveTarget', 'custom'), { stake: 0.6 }),
   n('saveObstacle', 'security', 'multi', 'What makes saving hard right now?', 'We tighten those areas first.', { tier: 'core', stake: 0.5, opts: ['dining', 'shopping', 'bills', 'irregular', 'debt', 'unplanned'], when: (s) => s.intent === 'save' }),
   n('savingsOnHand', 'security', 'amount', 'How much do you have saved right now?', 'Decides how urgent the safety net is.', { tier: 'core', stake: 0.5 }),
-  follow('savingsInTracked', 'security', 'toggle', 'Is it in the accounts you track here?', 'If it is, it is already counted. If not, we add it as a pocket.', (s) => s.known.tracksAccounts === true && num(s, 'savingsOnHand') > 0, { stake: 0.5 }),
+  follow('savingsInTracked', 'security', 'toggle', 'Is it in the accounts you track here?', 'If it is, we set it aside inside that account. If not, we add it as a pocket of its own.', (s) => s.known.tracksAccounts === true && num(s, 'savingsOnHand') > 0, { stake: 0.5 }),
   n('emergencyMonths', 'security', 'stepper', 'How many months of costs should your safety net cover?', 'Three is standard. Six if your income or family needs more.', { stake: 0.25, min: 1, max: 12 }),
   n('lifeInsurance', 'security', 'toggle', 'Do you have life or income-protection cover?', 'Dependants rely on your income.', { stake: 0.45, when: (s) => num(s, 'dependents') > 0 || is(s, 'partnerRole', 'no_income') }),
   follow('insurancePremium', 'security', 'amount', 'What is the monthly premium?', 'A fixed cost.', (s) => is(s, 'lifeInsurance', true), { stake: 0.25 }),
