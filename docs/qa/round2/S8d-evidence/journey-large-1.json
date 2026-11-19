@@ -1,0 +1,749 @@
+{
+  "metrics": {
+    "cold_signedout_form_ready_ms": 3752,
+    "cold_signedout_fcp_ms": 3384,
+    "cold_signedout_lcp_ms": 3384,
+    "signin_to_shell_ms": 6491,
+    "signin_to_synced_ms": 6690,
+    "signin_to_settled_ms": 7944,
+    "signin_longtask_ms": 2751,
+    "reload_to_shell_ms": 4006,
+    "reload_fcp_ms": 2916,
+    "reload_lcp_ms": 2916,
+    "tab_accounts_ms": 448,
+    "tab_accounts_longtask_ms": 0,
+    "tab_wealth_ms": 426,
+    "tab_wealth_longtask_ms": 60,
+    "tab_debts_ms": 260,
+    "tab_debts_longtask_ms": 0,
+    "tab_flow_ms": 1899,
+    "tab_flow_longtask_ms": 310,
+    "reports_ms": 2905,
+    "reports_longtask_ms": 565,
+    "wealth_ms": 1738,
+    "wealth_longtask_ms": 0,
+    "back_to_flow_ms": 1520,
+    "back_to_flow_longtask_ms": 184,
+    "open_add_sheet_ms": 1634,
+    "open_add_sheet_longtask_ms": 0,
+    "save_expense_sheet_closed_ms": 978,
+    "save_expense_longtask_ms": 0,
+    "save_expense_row_visible_after_ms": 75
+  },
+  "net": {
+    "cold_load_signed_out": {
+      "dataRequests": 1,
+      "staticRequests": 72,
+      "staticBytes": 1460469,
+      "dataBytes": 2,
+      "byKind": {
+        "document": 1,
+        "static": 71,
+        "api": 1
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 1
+      }
+    },
+    "signin_to_flow": {
+      "dataRequests": 25,
+      "staticRequests": 13,
+      "staticBytes": 112428,
+      "dataBytes": 166468,
+      "byKind": {
+        "api": 16,
+        "auth": 1,
+        "rpc": 4,
+        "document": 2,
+        "static": 11,
+        "rest": 4
+      },
+      "duplicates": [
+        {
+          "key": "GET http://localhost:3100/api/entitlements/me ",
+          "n": 2
+        }
+      ],
+      "endpoints": {
+        "POST /api/auth/check-email": 1,
+        "POST /auth/v1/token": 1,
+        "POST /api/auth/device/check": 1,
+        "GET /api/flags": 1,
+        "GET /api/rates": 1,
+        "GET /api/gold": 1,
+        "POST /api/auth/welcome": 1,
+        "POST /rest/v1/rpc/sync_pull_v2": 2,
+        "POST /api/4512324513431632/envelope/": 3,
+        "GET /rest/v1/profiles": 1,
+        "POST /rest/v1/user_settings": 1,
+        "GET /api/ai": 1,
+        "GET /api/notifications": 1,
+        "GET /api/savings/carry": 1,
+        "GET /api/entitlements/me": 2,
+        "GET /rest/v1/sms_parse_log": 1,
+        "GET /rest/v1/asset_prices": 1,
+        "POST /rest/v1/rpc/sync_changed_since": 1,
+        "POST /api/prices/refresh": 1,
+        "POST /api/entitlements/trial": 1,
+        "POST /rest/v1/rpc/loyalty_week_summary": 1
+      }
+    },
+    "reload_signed_in": {
+      "dataRequests": 23,
+      "staticRequests": 82,
+      "staticBytes": -44140,
+      "dataBytes": 8288,
+      "byKind": {
+        "document": 1,
+        "static": 81,
+        "api": 10,
+        "rest": 6,
+        "rpc": 7
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 3,
+        "GET /api/ai": 1,
+        "GET /api/notifications": 1,
+        "GET /api/savings/carry": 1,
+        "GET /api/entitlements/me": 1,
+        "GET /api/flags": 1,
+        "POST /api/auth/welcome": 1,
+        "GET /rest/v1/sms_parse_log": 1,
+        "GET /rest/v1/asset_prices": 1,
+        "GET /rest/v1/profiles": 1,
+        "POST /rest/v1/rpc/sync_changed_since": 3,
+        "POST /api/entitlements/trial": 1,
+        "POST /rest/v1/rpc/loyalty_week_summary": 1,
+        "POST /rest/v1/rpc/sync_pull_v2": 3,
+        "POST /rest/v1/user_settings": 1,
+        "POST /rest/v1/profiles": 2
+      }
+    },
+    "tab_accounts": {
+      "dataRequests": 3,
+      "staticRequests": 0,
+      "staticBytes": 0,
+      "dataBytes": 6,
+      "byKind": {
+        "api": 2,
+        "rpc": 1
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 2,
+        "POST /rest/v1/rpc/latest_balance_reports": 1
+      }
+    },
+    "tab_wealth": {
+      "dataRequests": 6,
+      "staticRequests": 0,
+      "staticBytes": 0,
+      "dataBytes": 44,
+      "byKind": {
+        "api": 2,
+        "rest": 4
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 2,
+        "POST /rest/v1/savings_accounts": 1,
+        "POST /rest/v1/profiles": 1,
+        "POST /rest/v1/net_worth_snapshots": 1,
+        "GET /rest/v1/net_worth_snapshots": 1
+      }
+    },
+    "tab_debts": {
+      "dataRequests": 2,
+      "staticRequests": 0,
+      "staticBytes": 0,
+      "dataBytes": 4,
+      "byKind": {
+        "api": 2
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 2
+      }
+    },
+    "tab_flow": {
+      "dataRequests": 3,
+      "staticRequests": 0,
+      "staticBytes": 0,
+      "dataBytes": 6,
+      "byKind": {
+        "api": 2,
+        "rest": 1
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 2,
+        "GET /rest/v1/sms_parse_log": 1
+      }
+    },
+    "reports": {
+      "dataRequests": 2,
+      "staticRequests": 5,
+      "staticBytes": -3360,
+      "dataBytes": 4,
+      "byKind": {
+        "api": 2,
+        "static": 5
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 2
+      }
+    },
+    "wealth": {
+      "dataRequests": 3,
+      "staticRequests": 0,
+      "staticBytes": 0,
+      "dataBytes": 44,
+      "byKind": {
+        "api": 2,
+        "rest": 1
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 2,
+        "GET /rest/v1/net_worth_snapshots": 1
+      }
+    },
+    "back_to_flow": {
+      "dataRequests": 3,
+      "staticRequests": 0,
+      "staticBytes": 0,
+      "dataBytes": 6,
+      "byKind": {
+        "api": 2,
+        "rest": 1
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /api/4512324513431632/envelope/": 2,
+        "GET /rest/v1/sms_parse_log": 1
+      }
+    },
+    "save_expense": {
+      "dataRequests": 1,
+      "staticRequests": 0,
+      "staticBytes": 0,
+      "dataBytes": 0,
+      "byKind": {
+        "rest": 1
+      },
+      "duplicates": [],
+      "endpoints": {
+        "POST /rest/v1/expenses": 1
+      }
+    }
+  },
+  "requests": [
+    {
+      "step": "cold_load_signed_out",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "http://localhost:3100/api/auth/check-email",
+      "status": 200,
+      "bytes": 42
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/auth/v1/token?grant_type=password",
+      "status": 200,
+      "bytes": 1086
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "http://localhost:3100/api/auth/device/check",
+      "status": 200,
+      "bytes": 94
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/flags?platform=web",
+      "status": 200,
+      "bytes": 44
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/rates",
+      "status": 200,
+      "bytes": 4559
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/gold",
+      "status": 200,
+      "bytes": 230
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "http://localhost:3100/api/auth/welcome",
+      "status": 502,
+      "bytes": 24
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_pull_v2",
+      "status": 200,
+      "bytes": 149630
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "/rest/v1/profiles?select=data_reset_at&id=eq.a0845da0-3c58-4d72-a380-6a5470df734e",
+      "status": 200,
+      "bytes": 24
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/rest/v1/user_settings?columns=%22user_id%22%2C%22theme%22%2C%22language%22%2C%22enable_ai%22%2C%22ai_provider%22%2C%22month_start_day%22%2C%22timezone%22%2C%22budget_entry_mode%22%2C%22show_secondary_currency%22%2C%22show_cents_in_dashboard%22%2C%22show_all_currencies_in_forms%22%2C%22no_income_declared%22%2C%22dashboard_layout%22%2C%22wealth_gold_strip%22%2C%22tutorials_completed%22%2C%22tutorial_current_step%22%2C%22sms_tracking_enabled%22%2C%22sub_due_reminders%22%2C%22sub_price_alerts%22%2C%22goal_progress_alerts%22%2C%22goal_alerts%22%2C%22privacy%22",
+      "status": 200,
+      "bytes": 0
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/ai",
+      "status": 200,
+      "bytes": 38
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/notifications",
+      "status": 200,
+      "bytes": 47
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/savings/carry",
+      "status": 200,
+      "bytes": 23
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/entitlements/me",
+      "status": 200,
+      "bytes": 4372
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "/rest/v1/sms_parse_log?select=id%2Camount%2Ccurrency%2Creceived_at%2Cown_transfer_verdict%2Ccounterparty_last4%2Cpaired_log_id&or=%28and%28own_transfer_verdict.in.%28ask%2Csettle%29%2Cexpense_id.not.is.null%29%2Cown_transfer_verdict.eq.ask_account%29&received_at=gte.2026-10-20T08%3A01%3A12.604Z&order=received_at.desc&limit=20",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "/rest/v1/asset_prices?select=symbol%2Ccurrency%2Cprice%2Cas_of%2Casset_class%2Cconfidence",
+      "status": 200,
+      "bytes": 491
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_changed_since",
+      "status": 200,
+      "bytes": 4
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_pull_v2",
+      "status": 200,
+      "bytes": 934
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "http://localhost:3100/api/prices/refresh",
+      "status": 200,
+      "bytes": 61
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "http://localhost:3100/api/entitlements/trial",
+      "status": 200,
+      "bytes": 80
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "POST",
+      "url": "/rest/v1/rpc/loyalty_week_summary",
+      "status": 200,
+      "bytes": 195
+    },
+    {
+      "step": "signin_to_flow",
+      "method": "GET",
+      "url": "http://localhost:3100/api/entitlements/me",
+      "status": 200,
+      "bytes": 4482
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "http://localhost:3100/api/ai",
+      "status": 200,
+      "bytes": 38
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "http://localhost:3100/api/notifications",
+      "status": 200,
+      "bytes": 47
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "http://localhost:3100/api/savings/carry",
+      "status": 200,
+      "bytes": 23
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "http://localhost:3100/api/entitlements/me",
+      "status": 200,
+      "bytes": 4482
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "http://localhost:3100/api/flags?platform=web",
+      "status": 200,
+      "bytes": 44
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "http://localhost:3100/api/auth/welcome",
+      "status": 502,
+      "bytes": 24
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "/rest/v1/sms_parse_log?select=id%2Camount%2Ccurrency%2Creceived_at%2Cown_transfer_verdict%2Ccounterparty_last4%2Cpaired_log_id&or=%28and%28own_transfer_verdict.in.%28ask%2Csettle%29%2Cexpense_id.not.is.null%29%2Cown_transfer_verdict.eq.ask_account%29&received_at=gte.2026-10-20T08%3A01%3A21.222Z&order=received_at.desc&limit=20",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "/rest/v1/asset_prices?select=symbol%2Ccurrency%2Cprice%2Cas_of%2Casset_class%2Cconfidence",
+      "status": 200,
+      "bytes": 491
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "GET",
+      "url": "/rest/v1/profiles?select=data_reset_at&id=eq.a0845da0-3c58-4d72-a380-6a5470df734e",
+      "status": 200,
+      "bytes": 24
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_changed_since",
+      "status": 200,
+      "bytes": 4
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "http://localhost:3100/api/entitlements/trial",
+      "status": 200,
+      "bytes": 39
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/rpc/loyalty_week_summary",
+      "status": 200,
+      "bytes": 195
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_pull_v2",
+      "status": 200,
+      "bytes": 933
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/user_settings?columns=%22user_id%22%2C%22theme%22%2C%22language%22%2C%22enable_ai%22%2C%22ai_provider%22%2C%22month_start_day%22%2C%22timezone%22%2C%22budget_entry_mode%22%2C%22show_secondary_currency%22%2C%22show_cents_in_dashboard%22%2C%22show_all_currencies_in_forms%22%2C%22no_income_declared%22%2C%22dashboard_layout%22%2C%22wealth_gold_strip%22%2C%22tutorials_completed%22%2C%22tutorial_current_step%22%2C%22sms_tracking_enabled%22%2C%22sub_due_reminders%22%2C%22sub_price_alerts%22%2C%22goal_progress_alerts%22%2C%22goal_alerts%22%2C%22privacy%22",
+      "status": 200,
+      "bytes": 0
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/profiles?columns=%22id%22%2C%22name%22%2C%22email%22%2C%22phone%22%2C%22city%22%2C%22country%22%2C%22base_currency%22%2C%22secondary_currency%22%2C%22avatar_emoji%22%2C%22avatar_image_path%22%2C%22gender%22%2C%22financial_goals_notes%22%2C%22active_budget_plan_id%22%2C%22active_shared_budget_id%22%2C%22default_shared_budget_plan_id%22%2C%22household%22%2C%22lifestyle_tier%22%2C%22food_frequency%22%2C%22transport_mode%22%2C%22monthly_rent%22%2C%22rent_includes_utilities%22%2C%22default_carry_pocket_id%22",
+      "status": 200,
+      "bytes": 0
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_changed_since",
+      "status": 200,
+      "bytes": 4
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_pull_v2",
+      "status": 200,
+      "bytes": 963
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/profiles?columns=%22id%22%2C%22name%22%2C%22email%22%2C%22phone%22%2C%22city%22%2C%22country%22%2C%22base_currency%22%2C%22secondary_currency%22%2C%22avatar_emoji%22%2C%22avatar_image_path%22%2C%22gender%22%2C%22financial_goals_notes%22%2C%22active_budget_plan_id%22%2C%22active_shared_budget_id%22%2C%22default_shared_budget_plan_id%22%2C%22household%22%2C%22lifestyle_tier%22%2C%22food_frequency%22%2C%22transport_mode%22%2C%22monthly_rent%22%2C%22rent_includes_utilities%22%2C%22default_carry_pocket_id%22",
+      "status": 200,
+      "bytes": 0
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_changed_since",
+      "status": 200,
+      "bytes": 4
+    },
+    {
+      "step": "reload_signed_in",
+      "method": "POST",
+      "url": "/rest/v1/rpc/sync_pull_v2",
+      "status": 200,
+      "bytes": 965
+    },
+    {
+      "step": "tab_accounts",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_accounts",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_accounts",
+      "method": "POST",
+      "url": "/rest/v1/rpc/latest_balance_reports",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_wealth",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_wealth",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_wealth",
+      "method": "POST",
+      "url": "/rest/v1/savings_accounts?columns=%22id%22%2C%22user_id%22%2C%22name%22%2C%22category%22%2C%22type%22%2C%22icon%22%2C%22emoji%22%2C%22target_amount%22%2C%22currency%22%2C%22opening_balance%22%2C%22current_balance%22%2C%22notes%22%2C%22color%22%2C%22is_emergency_cover%22%2C%22linked_payment_method_id%22%2C%22held_in_payment_method_id%22%2C%22metadata%22%2C%22created_at%22%2C%22deleted_at%22",
+      "status": 201,
+      "bytes": 0
+    },
+    {
+      "step": "tab_wealth",
+      "method": "POST",
+      "url": "/rest/v1/profiles?columns=%22id%22%2C%22name%22%2C%22email%22%2C%22phone%22%2C%22city%22%2C%22country%22%2C%22base_currency%22%2C%22secondary_currency%22%2C%22avatar_emoji%22%2C%22avatar_image_path%22%2C%22gender%22%2C%22financial_goals_notes%22%2C%22active_budget_plan_id%22%2C%22active_shared_budget_id%22%2C%22default_shared_budget_plan_id%22%2C%22household%22%2C%22lifestyle_tier%22%2C%22food_frequency%22%2C%22transport_mode%22%2C%22monthly_rent%22%2C%22rent_includes_utilities%22%2C%22default_carry_pocket_id%22",
+      "status": 200,
+      "bytes": 0
+    },
+    {
+      "step": "tab_wealth",
+      "method": "POST",
+      "url": "/rest/v1/net_worth_snapshots?on_conflict=user_id%2Cday",
+      "status": 201,
+      "bytes": 0
+    },
+    {
+      "step": "tab_wealth",
+      "method": "GET",
+      "url": "/rest/v1/net_worth_snapshots?select=day%2Cnet_worth&currency=eq.EGP&basis=eq.legacy&day=gte.2026-10-20&order=day.asc",
+      "status": 200,
+      "bytes": 40
+    },
+    {
+      "step": "tab_debts",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_debts",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_flow",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_flow",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "tab_flow",
+      "method": "GET",
+      "url": "/rest/v1/sms_parse_log?select=id%2Camount%2Ccurrency%2Creceived_at%2Cown_transfer_verdict%2Ccounterparty_last4%2Cpaired_log_id&or=%28and%28own_transfer_verdict.in.%28ask%2Csettle%29%2Cexpense_id.not.is.null%29%2Cown_transfer_verdict.eq.ask_account%29&received_at=gte.2026-10-20T08%3A01%3A37.989Z&order=received_at.desc&limit=20",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "reports",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "reports",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "wealth",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "wealth",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "wealth",
+      "method": "GET",
+      "url": "/rest/v1/net_worth_snapshots?select=day%2Cnet_worth&currency=eq.EGP&basis=eq.legacy&day=gte.2026-10-20&order=day.asc",
+      "status": 200,
+      "bytes": 40
+    },
+    {
+      "step": "back_to_flow",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "back_to_flow",
+      "method": "POST",
+      "url": "/api/4512324513431632/envelope/?sentry_version=7&sentry_key=60af8585ec546b95e3b705ecd74f3fc7&sentry_client=sentry.javascript.react%2F10.69.0",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "back_to_flow",
+      "method": "GET",
+      "url": "/rest/v1/sms_parse_log?select=id%2Camount%2Ccurrency%2Creceived_at%2Cown_transfer_verdict%2Ccounterparty_last4%2Cpaired_log_id&or=%28and%28own_transfer_verdict.in.%28ask%2Csettle%29%2Cexpense_id.not.is.null%29%2Cown_transfer_verdict.eq.ask_account%29&received_at=gte.2026-10-20T08%3A01%3A49.587Z&order=received_at.desc&limit=20",
+      "status": 200,
+      "bytes": 2
+    },
+    {
+      "step": "save_expense",
+      "method": "POST",
+      "url": "/rest/v1/expenses?columns=%22id%22%2C%22user_id%22%2C%22description%22%2C%22category%22%2C%22category_label%22%2C%22subcategory%22%2C%22shared_plan_id%22%2C%22is_recurring%22%2C%22amount%22%2C%22currency%22%2C%22expense_date%22%2C%22payment_method_id%22%2C%22linked_subscription_id%22%2C%22linked_debt_payment_id%22%2C%22funded_from_savings_tx_id%22%2C%22linked_debt_id%22%2C%22is_debt_payment%22%2C%22notes%22%2C%22receipt_id%22%2C%22sms_log_id%22%2C%22sms_flags_ack%22%2C%22refunded_at%22%2C%22refund_kind%22%2C%22occurred_at%22%2C%22spend_exclusion%22%2C%22category_source%22%2C%22owed_by%22%2C%22owed_settled_at%22%2C%22to_payment_method_id%22%2C%22created_at%22%2C%22deleted_at%22%2C%22edited_at%22",
+      "status": 201,
+      "bytes": 0
+    }
+  ]
+}
