@@ -45,6 +45,11 @@ Extends the global master at `~/.claude/CLAUDE.md` (behaviour, token economy, co
 - Never reshape an existing component. Variation = additive variant/prop with unchanged default. Allowed edits: bug, accessibility and token fixes, with tests, same default look, and a note to the user.
 - A component's 3rd or 4th variant: propose promoting it to its own component.
 
+## Cloud sessions
+- A cloud session clones the starting session's branch. Push it first (`git push origin HEAD`), or the start fails with "requested branch or commit was not found". Verify with `git ls-remote --heads origin <branch>`.
+- Keep the brief to one line of goal plus "follow `docs/QA_CLOUD.md`"; the recipe and the `__qa` seed helpers carry the setup, so the session spends no tokens on it.
+- Cloud sessions are for QA and read-only checks; they push nothing and never run native builds.
+
 ## Native builds (Capacitor)
 - Do native edits (AndroidManifest, Gradle, Info.plist, Kotlin/Swift) yourself; never delegate them to the user.
 - Web bundle for native comes from `npm run cap:build`, never bare `npx cap sync`.

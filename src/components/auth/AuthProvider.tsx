@@ -27,7 +27,7 @@ import { readSplashDone, writeSplashDone } from '@/lib/auth/splashLatch'
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useT } from '@/lib/i18n'
 import { LandingGate } from '@/components/auth/LandingGate'
-import { DevAuthBypassSeed } from '@/components/auth/DevAuthBypassSeed'
+import { DevAuthBypassSeed, devQaUser } from '@/components/auth/DevAuthBypassSeed'
 // Static import: lazy() made the FIRST sign-in suspend on the chunk fetch,
 // flashing the spinner splash before the welcome screen painted.
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen'
@@ -556,7 +556,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             mode,
           }
         : {
-            user: null,
+            user: devBypass ? devQaUser() : null,
             session: null,
             loading: false,
             signOut: noopSignOut,
@@ -572,6 +572,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
     [
       configured,
+      devBypass,
       user,
       session,
       loading,
