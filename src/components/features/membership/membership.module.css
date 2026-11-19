@@ -91,8 +91,8 @@
   background: radial-gradient(70% 70% at 50% 70%, color-mix(in oklab, var(--ember) 40%, transparent), transparent 75%), color-mix(in oklab, var(--member-gilt-hi) 14%, var(--color-brand-elevated));
   box-shadow: 0 0 0 1px color-mix(in oklab, var(--member-gilt-hi) 35%, transparent), 0 8px 20px -8px color-mix(in oklab, var(--ember-deep) 70%, transparent); }
 .flame svg { width: 22px; height: 22px; }
-.hotTop h4 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; color: var(--color-brand-text-primary); }
-.hotTop h4 b { font-family: var(--font-mono), ui-monospace, monospace; }
+.hotTop h3 { margin: 0; font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; color: var(--color-brand-text-primary); }
+.hotTop h3 b { font-family: var(--font-mono), ui-monospace, monospace; }
 .hotTop p { margin: 2px 0 0; font-size: .75rem; color: var(--color-brand-text-secondary); }
 .pts { margin-inline-start: auto; text-align: end; flex: none; }
 .pts b { display: block; font-family: var(--font-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; font-size: 1.125rem; font-weight: 600; color: var(--color-brand-gold); }

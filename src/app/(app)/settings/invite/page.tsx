@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { InviteView } from '@/components/features/invite/InviteView'
 import { SettingsSubPageShell } from '@/components/features/settings/SettingsSubPageShell'
-import { SkeletonList } from '@/components/ui/SkeletonList'
+import { PlanPending } from '@/components/features/billing/PlanPending'
 import { billingOn, useBillingStore } from '@/lib/billing/billingStore'
 import { useRewardsCopy } from '@/lib/i18n/rewardsCopy'
 import { navigate } from '@/lib/navigation/navigate'
@@ -21,7 +21,7 @@ export default function InvitePage() {
   if (me && !on) return null
   return (
     <SettingsSubPageShell title={c.title}>
-      {me ? <InviteView me={me} /> : <SkeletonList rows={5} />}
+      {me ? <InviteView me={me} /> : <PlanPending />}
     </SettingsSubPageShell>
   )
 }

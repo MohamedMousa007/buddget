@@ -63,3 +63,17 @@ Everything above was re-run after the fix on a fresh session (axe clean on Repor
 ## Suite changes (`e2e/ui/`)
 
 `seed.ts` and `seedEmpty.ts` (synthetic users, state saved to `.st1.json`, `.st2.json`), `tap.mjs`, `tapSheets.mjs`, `states.mjs`, `offline.mjs`, `recheck.mjs`, `merge.mjs`; `lib.mjs` takes `PW_CHROMIUM_EXECUTABLE`, adds the 375 and 1024 landscape viewports and writes to `e2e/ui/out/`.
+
+## S7a follow-up: UI and speed findings (branch claude/elastic-poitras-06d803)
+
+Done in code, NOT yet run: this Mac session does not run tests, `npm run verify` or a dev server (owner rule, 2026-11-19), and no cloud `qa-runner` session exists. The cloud run, the signed-in visual check and the push to dev/main are still to do.
+
+| Finding | Change | Check |
+|---|---|---|
+| S8G-07 | `billingStore.error` (set on a failed `/api/entitlements/me`, cleared on the next try); `PlanPending` shows the skeleton or "Couldn't load your plan" + Try again on Pro, Usage, Rewards, Invite, Founders | `billingStore.test.ts` (new case); J8 `test.fail` removed in `10-screens.spec.ts` |
+| S8G-12 | Locked shop rows use the muted token instead of `opacity-60`; streak card title is an `h3` | rerun `e2e/ui/pro-rewards-sweep.mjs` (axe) |
+| D-7 | Founders shows its title and skeleton while `me` is missing | J8 / sweep |
+| S8d index | `0330_sync_probe_updated_at_indexes.sql`, applied live. `EXPLAIN` for the `sync_changed_since` probe on `expenses`: before Seq Scan cost 55.5, after Index Only Scan `idx_expenses_user_updated` cost 8.8 (user held 301 rows; the earlier 3k-row synthetic user is gone). Also income_events, savings_transactions, receipts, debt_payments | rerun `get_advisors` |
+| QA-84 | `FlowChipItem` memoised on key, label, selected, aria label and budget state (the page rebuilds chips every render and mounts each twice) | `FlowChipRow.test.tsx` (new) |
+
+Not done: Reports long tasks and the signed-out `/flow` LCP (no cheap fix identified without profiling; needs the cloud run); the signed-out Settings search icon (needs to be seen in a browser); the signed-in visual check.
