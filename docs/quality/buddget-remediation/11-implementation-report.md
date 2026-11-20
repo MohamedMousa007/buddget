@@ -157,7 +157,7 @@ All four flipping cards (Guest pass, Pro member, Letterpress tier, Founder) shar
 
 | Item | Files | Status |
 |---|---|---|
-| One face at a time, switching at 90 degrees | `flipPhysics.ts`, `FlipCardRig.tsx`, `cards.module.css` | Unit test written, **not yet run** (`membershipComponents.test.tsx`) |
+| One face at a time, switching at 90 degrees | `flipPhysics.ts`, `FlipCardRig.tsx`, `cards.module.css` | **Automated verification** (runner jobs 9–11; `membershipComponents.test.tsx`) |
 | The back on an iPhone | | **Native verification required** (flip the invite, Pro, rewards and founder cards; the back shows only back text) |
 
 ## Step 8: Claude-style chats (BDG-013, owner ruling; spec `claude-style-chats.md`)
@@ -176,7 +176,7 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Item | Files | Status |
 |---|---|---|
 | Server: chats continue | `supabase/migrations/0340_ai_chats_continue.sql` | Proven on live in a rolled-back transaction (a chat idle 2 hours continued: same chat, `new_chat` false), then applied. All 3 plans show 43200. |
-| Saved chats, restore, caps, groups, search, account wipe | `savedChats.ts`, `useBuddgyChats.ts`, `useBuddgyChat.ts`, `clearBudgetData.ts` | Unit tests written, **not yet run** (`savedChats.test.ts`) |
+| Saved chats, restore, caps, groups, search, account wipe | `savedChats.ts`, `useBuddgyChats.ts`, `useBuddgyChat.ts`, `clearBudgetData.ts` | **Automated verification** (runner jobs 9–11; `savedChats.test.ts`) |
 | Chat list in the pop-up | `AIChatList.tsx`, `AIChat.tsx`, `AIChatHeader.tsx` (optional `onShowChats`, default unchanged), `buddgyChatCopy.ts` | **Manual verification required** (list, search, open, delete, Memory, reopen after closing the app) |
 
 ## Step 10: streak from join week (owner-approved design `S9-Final12Weeks`)
@@ -193,7 +193,7 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 | Item | Files | Status |
 |---|---|---|
 | Strip logic and week number from join date | `rewardsState.ts` (`weekSinceJoin`, `streakStrip`), `RewardsView.tsx` | Unit tests written in `rewardsState.test.ts` for: joined this week, week 3, week 9 with a freeze, week 14 showing 3–14, a missed week, pre-join weeks hidden, and the week-boundary dates, a September sign-up clamped to the launch week. **Not yet run** (cloud runner). |
-| Dashed cells and caption | `HotStreakCard.tsx`, `membership.module.css`, `rewardsCopy.ts` | Render test in `membershipComponents.test.tsx`, **not yet run**. **Manual verification required**: look in en and ar, height. |
+| Dashed cells and caption | `HotStreakCard.tsx`, `membership.module.css`, `rewardsCopy.ts` | **Automated verification** (runner jobs 10–11). **Manual verification required**: look in en and ar, height. |
 
 ## Step 9: card faces (owner-approved design "0 · Final cards in the app")
 
@@ -216,7 +216,7 @@ Buddgy chats now work like ChatGPT and Claude, inside the same pop-up.
 
 | Item | Files | Status |
 |---|---|---|
-| Themes, contrast, nearest-theme mapping, abbreviation | `src/lib/payment/cardThemes.ts`, `cardThemes.test.ts` | **Automated verification (pending runner)**: all 16 themes ≥4.5:1 on both stops (lowest is copper at 4.96, checked by hand), old colours map, abbreviation table and max length. |
-| Mini card layout (abbreviation left, type right, ••last4, 88×56) | `CardFaceChip.tsx`, `CardStrip.tsx`, `AccountRow.tsx`, `accounts.render.test.ts` | **Automated verification (pending runner)**. **Manual verification required**: look in en and ar. |
+| Themes, contrast, nearest-theme mapping, abbreviation | `src/lib/payment/cardThemes.ts`, `cardThemes.test.ts` | **Automated verification** (runner jobs 10–11): all 16 themes ≥4.5:1 on both stops (lowest is copper at 4.96, checked by hand), old colours map, abbreviation table and max length. |
+| Mini card layout (abbreviation left, type right, ••last4, 88×56) | `CardFaceChip.tsx`, `CardStrip.tsx`, `AccountRow.tsx`, `accounts.render.test.ts` | **Automated verification** (runner jobs 10–11). **Manual verification required**: look in en and ar. |
 | Storage | `0341_payment_method_card_look.sql`, `database.types.ts`, `paymentMethodMapper.ts`, `types.ts` | Applied on live; both columns are nullable, `authenticated` can select and update them, `anon` cannot. `sync_pull` sends whole rows (`to_jsonb`), so the new columns sync. |
 | Large face, carousel, setup sheet (Metal \| Bank-issued + 16-theme picker), Paid with | `CardFace.tsx`, `CardThemePicker.tsx`, `PaymentCardCarousel.tsx`, `PaymentMethodSetupSheet.tsx`, `PaymentMethodPicker.tsx` (additive `variant="card"`), `ExpenseSheetForm.tsx`, i18n | **Manual verification required** (screenshot from the cloud runner). **Native verification required**: the faces in the iOS/Android WebView. |

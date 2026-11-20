@@ -90,3 +90,7 @@ The targeted run passed: Buddgy, hooks, ai-chat and membership, 866 of 866. `npm
 - **`npm run verify`:** 1 failure, at `a11yFixes.test.tsx:188` (A11-8). Eight `text-[Npx]` font sizes in the new card faces don't follow the iOS text size. Converted to rem in `1749eeb1`; at the default size they look the same. Lint, types, migration check (306), audit and build passed.
 - **Screenshots:** 12 taken (6 English, 6 Arabic): Accounts strip, wallet carousel, add-card sheet top and themes, expense sheet, Rewards streak. They went to the owner for the visual check.
 - **Synthetic users:** 0 left on live.
+
+## Runner job 11 (2026-11-20, commit `ccbf5a4c`)
+
+`npm run verify` passed: 6,658 passed and 0 failed in Cairo and New York, coverage above the floor, lint, types, migration check (306), audit and build OK. Card faces, the streak strip, Claude-style chats and BDG-003 are now **Automated verification**; their look stays with the owner (screenshots from job 10) and the device checks.
