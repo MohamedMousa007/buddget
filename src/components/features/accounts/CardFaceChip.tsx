@@ -38,12 +38,12 @@ export function CardFaceChip({ method, parent, selected = false }: { method: Pay
       ) : null}
       <i aria-hidden className="absolute inset-0" style={{ background: `linear-gradient(115deg, transparent 30%, rgba(255,255,255,${f.metal ? '.16' : '.07'}) 48%, transparent 64%)` }} />
       <span className="relative flex items-baseline justify-between gap-1">
-        <span data-slot="bank" className="shrink-0 text-[10px] font-bold leading-3 tracking-[0.01em]" style={{ textShadow: engrave }}>{bank}</span>
-        <span data-slot="kind" className="min-w-0 truncate text-[8.5px] font-extrabold uppercase leading-[11px] tracking-[0.08em]" style={{ textShadow: engrave }}>{kind}</span>
+        <span data-slot="bank" className="shrink-0 text-[0.625rem] font-bold leading-3 tracking-[0.01em]" style={{ textShadow: engrave }}>{bank}</span>
+        <span data-slot="kind" className="min-w-0 truncate text-[0.53125rem] font-extrabold uppercase leading-[11px] tracking-[0.08em]" style={{ textShadow: engrave }}>{kind}</span>
       </span>
       <span className="relative mt-auto flex items-center justify-between gap-1">
         <i aria-hidden className="h-2.5 w-[13px] shrink-0 rounded-[2.5px]" style={{ background: chip, boxShadow: 'inset 0 0 0 .75px rgba(0,0,0,.3)' }} />
-        <span data-slot="digits" className="font-mono-numbers text-[11px] font-semibold leading-3 tracking-[0.04em]" style={{ textShadow: engrave }}>
+        <span data-slot="digits" className="font-mono-numbers text-[0.6875rem] font-semibold leading-3 tracking-[0.04em]" style={{ textShadow: engrave }}>
           {method.last4 ? `••${method.last4}` : '••••'}
         </span>
       </span>

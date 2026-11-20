@@ -93,7 +93,7 @@ export function CardFace({
             >
               {bank}
             </span>
-            <span className="mt-0.5 block text-[9.5px] font-bold uppercase tracking-[0.16em]" style={{ textShadow: engrave }}>{kind}</span>
+            <span className="mt-0.5 block text-[0.59375rem] font-bold uppercase tracking-[0.16em]" style={{ textShadow: engrave }}>{kind}</span>
           </div>
           {selected ? (
             <span className="grid size-[26px] shrink-0 place-items-center rounded-full bg-[var(--color-brand-green)] text-[var(--color-brand-on-green)] shadow-[0_2px_6px_rgba(0,0,0,.25)]">
@@ -102,7 +102,7 @@ export function CardFace({
           ) : reserveTopRight ? (
             <span aria-hidden className="size-8 shrink-0" />
           ) : currency ? (
-            <span className="font-mono-numbers text-[11px] font-semibold" style={{ textShadow: engrave }}>{currency}</span>
+            <span className="font-mono-numbers text-[0.6875rem] font-semibold" style={{ textShadow: engrave }}>{currency}</span>
           ) : null}
         </div>
         <div className="relative mt-4 flex items-center gap-3">
@@ -114,7 +114,7 @@ export function CardFace({
           ) : null}
           {defaultLabel ? (
             <span
-              className="ms-auto rounded-full px-[9px] py-[3px] text-[10px] font-bold uppercase tracking-[0.06em]"
+              className="ms-auto rounded-full px-[9px] py-[3px] text-[0.625rem] font-bold uppercase tracking-[0.06em]"
               style={{ background: f.lightInk ? 'rgba(0,0,0,.28)' : 'rgba(255,255,255,.55)' }}
             >
               {defaultLabel}
@@ -129,10 +129,10 @@ export function CardFace({
             {numberText}
           </span>
           <div className="mt-2 flex min-h-[30px] items-end justify-between gap-2.5">
-            <span className="truncate text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ textShadow: engrave }}>{holder ?? ''}</span>
+            <span className="truncate text-[0.6875rem] font-semibold uppercase tracking-[0.12em]" style={{ textShadow: engrave }}>{holder ?? ''}</span>
             {network ? (
               <span
-                className="grid h-[30px] min-w-[52px] shrink-0 place-items-center rounded-md px-1 text-[7px] font-extrabold tracking-[0.1em]"
+                className="grid h-[30px] min-w-[52px] shrink-0 place-items-center rounded-md px-1 text-[0.4375rem] font-extrabold tracking-[0.1em]"
                 style={{ border: `1px solid ${f.lightInk ? 'rgba(255,255,255,.45)' : 'rgba(4,32,28,.4)'}` }}
               >
                 {network}
