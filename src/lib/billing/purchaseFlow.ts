@@ -11,6 +11,13 @@ export function shelfOf(available: boolean, sdk: PurchasesStatus, packages: Purc
   return packages.length > 0 ? 'ready' : 'unavailable'
 }
 
+/** What the line under the buy button says: the store still confirming, else the result of the last tap, else why it cannot sell. */
+export function buyLineKind(shelf: Shelf, pending: boolean, note: string | null): 'pending' | 'note' | 'unavailable' | null {
+  if (pending) return 'pending'
+  if (note) return 'note'
+  return shelf === 'unavailable' ? 'unavailable' : null
+}
+
 /**
  * A purchase is `confirmed` only once the server shows Pro from a store. The webhook usually lands within the short poll; when it
  * does not, the server is asked once to read RevenueCat itself, and a miss there leaves the buyer `pending` ("Confirming with the store").

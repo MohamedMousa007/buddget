@@ -5,7 +5,7 @@ vi.mock('@/lib/apiBase', () => ({ apiFetchAuth: h.fetch }))
 vi.mock('./purchases', () => ({ purchasePackage: h.purchase, restorePurchases: h.restore }))
 
 import { storeConfirmed, useBillingStore, type BillingMe } from './billingStore'
-import { completePurchase, completeRestore, shelfOf } from './purchaseFlow'
+import { buyLineKind, completePurchase, completeRestore, shelfOf } from './purchaseFlow'
 
 const FUTURE = '2099-01-01T00:00:00Z'
 const trial = (): BillingMe => ({ planKey: 'plus_trial', planName: 'Pro', status: 'trialing', trialEndsAt: FUTURE, billingEnabled: true, sparks: null, subscription: { fromStore: false, billingIssue: false, graceEndsAt: null, willRenew: null, renewsAt: null, productId: null, memberSince: null } })
@@ -51,6 +51,16 @@ describe('shelfOf: the buy button never waits forever and never sells nothing', 
     expect(shelfOf(true, 'ready', [])).toBe('unavailable')
   })
   it('ready with packages', () => expect(shelfOf(true, 'ready', some)).toBe('ready'))
+})
+
+describe('buyLineKind: every tap answers under the button that caused it', () => {
+  it('confirming beats everything, then the last note, then why it cannot sell', () => {
+    expect(buyLineKind('unavailable', true, 'x')).toBe('pending')
+    expect(buyLineKind('unavailable', false, 'Trial already used')).toBe('note')
+    expect(buyLineKind('unavailable', false, null)).toBe('unavailable')
+    expect(buyLineKind('ready', false, null)).toBeNull()
+    expect(buyLineKind('loading', false, null)).toBeNull()
+  })
 })
 
 describe('completePurchase', () => {

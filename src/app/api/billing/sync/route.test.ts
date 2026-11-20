@@ -58,13 +58,14 @@ describe('POST /api/billing/sync (BDG-019 on-demand store read)', () => {
     expect(args.p_type).toBe('SYNC_PURCHASE')
     expect(['INITIAL_PURCHASE', 'RENEWAL']).not.toContain(args.p_type)
     expect(args.p_event_ms).toBe(Date.parse(PURCHASED))
-    expect(args.p_event_id).toBe(`sync:${USER}:pro_monthly:${Date.parse(PURCHASED)}`)
+    expect(args.p_event_id).toBe(`sync:${USER}:pro_monthly:${Date.parse(PURCHASED)}:active`)
     expect(args.p_effect).toMatchObject({
       entitlement: { plan_key: 'plus', status: 'active', source: 'apple', store: 'app_store', will_renew: true, current_period_end: '2026-12-20T11:58:00.000Z' },
-      sparks: { action: 'open', start: '2026-11-20T11:58:00.000Z' },
-      endTrial: true,
+      endTrial: false,
       receipt: { price_micros: 4_990_000, currency: 'USD' },
     })
+    // Sparks stay with the webhook: a second-precision purchase date would open a second period beside the webhook's.
+    expect(args.p_effect.sparks).toBeUndefined()
   })
 
   it('a repeat tap sends the same event id, so billing_apply answers duplicate and grants nothing twice', async () => {
@@ -89,9 +90,11 @@ describe('POST /api/billing/sync (BDG-019 on-demand store read)', () => {
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => customer({ pro_annual: sub({ unsubscribe_detected_at: '2026-11-20T11:59:00Z' }) }) })
     await call()
     expect(applied()[0].p_effect.entitlement).toMatchObject({ status: 'canceled', will_renew: false, canceled_at: '2026-11-20T11:59:00.000Z' })
+    expect(applied()[0].p_event_id).toMatch(/:canceled$/)
     fetchMock.mockResolvedValueOnce({ ok: true, json: async () => customer({ pro_monthly: sub({ billing_issues_detected_at: '2026-11-20T11:59:00Z', grace_period_expires_date: '2026-11-26T00:00:00Z' }) }) })
     await call()
     expect(applied()[1].p_effect.entitlement).toMatchObject({ status: 'past_due', grace_ends_at: '2026-11-26T00:00:00.000Z' })
+    expect(applied()[1].p_event_id).toMatch(/:issue$/)
   })
 
   it('honours REVENUECAT_IGNORE_SANDBOX like the webhook', async () => {

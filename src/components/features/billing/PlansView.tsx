@@ -19,6 +19,7 @@ import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useUsageStore } from '@/lib/usage/usageStore'
 import { PlansBlock } from './PlansBlock'
 import { planDisplays, priceRegion } from './planBilling'
+import { buyLineKind } from '@/lib/billing/purchaseFlow'
 
 /** The plans a person can choose and the purchase behind them: the store's packages when it answers, the owner's prices until then. */
 export function usePlanChoice() {
@@ -30,13 +31,20 @@ export function usePlanChoice() {
   const plans = planDisplays(priceRegion(country, baseCurrency), purchase.options)
   const chosen = plans.find((x) => x.kind === purchase.picked) ?? plans[0]!
   const checkAgain = async () => { if (await purchase.confirm()) useUsageStore.getState().setWelcome('new') }
-  // The line under the buy button: why it cannot sell (with Retry where a retry can help), the store still confirming, or the last note.
-  const line: BuyLineState | null = purchase.shelf === 'unavailable'
-    ? { text: p.notYet, action: purchasesAvailable() ? { label: t.common.tryAgain, onClick: purchase.retry } : undefined }
-    : purchase.pending
-      ? { text: t.billing.confirming, action: { label: t.billing.checkAgain, onClick: () => void checkAgain() } }
-      : purchase.note ? { text: purchase.note } : null
-  return { ...purchase, plans, chosen, line }
+  const kind = buyLineKind(purchase.shelf, purchase.pending, purchase.note)
+  const line: BuyLineState | null = kind === 'pending'
+    ? { text: t.billing.confirming, action: { label: t.billing.checkAgain, onClick: () => void checkAgain() } }
+    : kind === 'note' ? { text: purchase.note! }
+      : kind === 'unavailable' ? { text: p.notYet, action: purchasesAvailable() ? { label: t.common.tryAgain, onClick: purchase.retry } : undefined }
+        : null
+  /** The buy button's tap. Resolves true once the store's Pro shows; a tap that cannot buy always says why under the button. */
+  const purchaseChosen = async (): Promise<boolean> => {
+    if (chosen.option) return purchase.buy(chosen.option)
+    if (purchase.shelf === 'unavailable') purchase.retry()
+    else purchase.setNote(p.notYet)
+    return false
+  }
+  return { ...purchase, plans, chosen, line, purchaseChosen }
 }
 
 export interface BuyLineState { text: string; action?: { label: string; onClick: () => void } }
@@ -71,7 +79,7 @@ export function StoreLinks({ onRestore, disabled }: { onRestore: () => void; dis
  */
 export function PlansView() {
   const p = useRewardsCopy().plan
-  const { plans, chosen, picked, setPicked, busy, setNote, buy, restore, shelf, retry, line } = usePlanChoice()
+  const { plans, chosen, picked, setPicked, busy, setNote, restore, shelf, line, purchaseChosen } = usePlanChoice()
   const refresh = useBillingStore((s) => s.refresh)
   const [starting, setStarting] = useState(false)
   const android = getPlatform() === 'android'
@@ -90,8 +98,7 @@ export function PlansView() {
     setStarting(false)
   }
   const purchase = async () => {
-    if (!chosen.option) return retry()
-    if (await buy(chosen.option)) useUsageStore.getState().setWelcome('new')
+    if (await purchaseChosen()) useUsageStore.getState().setWelcome('new')
   }
   const bringBack = async () => {
     if (!purchasesAvailable()) return setNote(p.notYet)

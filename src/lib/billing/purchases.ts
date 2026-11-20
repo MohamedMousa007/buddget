@@ -46,6 +46,15 @@ let wanted: string | null = null
 export type PurchasesStatus = 'idle' | 'starting' | 'ready' | 'failed'
 let status: PurchasesStatus = 'idle'
 const listeners = new Set<() => void>()
+/** A store call that never answers ends as a failure, so no button spins forever. */
+async function within<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([work, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('store timeout')), ms) })])
+  } finally {
+    clearTimeout(timer)
+  }
+}
 const setStatus = (next: PurchasesStatus) => {
   status = next
   listeners.forEach((fn) => fn())
@@ -66,10 +75,10 @@ export async function startPurchases(userId: string): Promise<boolean> {
   try {
     const purchases = await sdk()
     if (!configured) {
-      await purchases.configure({ apiKey: key, appUserID: userId })
+      await within(purchases.configure({ apiKey: key, appUserID: userId }), 20_000)
       configured = true
     } else if (configuredFor !== userId) {
-      await purchases.logIn({ appUserID: userId })
+      await within(purchases.logIn({ appUserID: userId }), 20_000)
     }
     configuredFor = userId
     setStatus('ready')
@@ -104,7 +113,7 @@ export async function loadPackages(attempts = 3, delayMs = 1500): Promise<Purcha
   for (let i = 0; i < attempts; i++) {
     if (configuredFor === null) return []
     try {
-      const offerings = await (await sdk()).getOfferings()
+      const offerings = await within((await sdk()).getOfferings(), 12_000)
       const found = offerings.current?.availablePackages ?? []
       if (found.length > 0) return found
     } catch (e) {

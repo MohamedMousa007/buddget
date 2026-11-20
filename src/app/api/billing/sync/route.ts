@@ -15,8 +15,9 @@ const reply = (outcome: string, status = 200) => NextResponse.json(status === 20
  * "Confirming with the store": the buyer asks the server to read their RevenueCat customer now, for a webhook that never came
  * (BDG-019). User-triggered only, never on a plain read; the signed-in user is the only customer it reads. A live Pro
  * subscription goes through the same `planEffects` and `billing_apply` as the webhook, stamped at its purchase time with an id
- * that repeats for the same period, so a repeat tap is `duplicate`, the real webhook still applies after it, and the Sparks
- * period opens once (`spark_allowances` is unique on its start). It never removes access.
+ * that repeats for the same period and state, so a repeat tap is `duplicate` and the real webhook still applies after it.
+ * It grants access only: no Sparks and no trial end, which stay with the webhook (RevenueCat's `purchase_date` is whole
+ * seconds, the webhook's `purchased_at_ms` is not, so the two would open two Sparks periods). It never removes access.
  */
 export async function POST(request: Request) {
   const identity = await resolveActiveApiIdentity(request)
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     p_event_id: found.ev.id,
     p_type: SYNC_EVENT_TYPE,
     p_event_ms: found.ev.eventMs,
-    p_effect: JSON.parse(JSON.stringify({ entitlement: { ...effect.entitlement, ...found.patch }, sparks: effect.sparks ?? undefined, endTrial: effect.endTrial ?? false, receipt: effect.receipt })),
+    p_effect: JSON.parse(JSON.stringify({ entitlement: { ...effect.entitlement, ...found.patch }, endTrial: false, receipt: effect.receipt })),
   })
   if (error) {
     console.error('[billing] sync apply failed', found.ev.id, error.message)

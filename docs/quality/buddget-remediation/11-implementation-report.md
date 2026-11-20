@@ -94,14 +94,16 @@ Branch `claude/heuristic-williamson-2cfe0c`, cut from `origin/main` (`50927050`)
 
 Client code reaches phones only with the next native build. The new route works when this branch is deployed **and** the owner sets `REVENUECAT_SECRET_KEY` on Vercel. Without the key, the route answers 503 and the app keeps showing "Confirming with the store…". Installed builds (iOS 146, Android vc180) never call the route, so nothing changes for them.
 
-| Item | What changed | Files | Status |
+Until the runner reports, no row below is **Automated verification**; the runner job is "job 1.4-A" in the hand-over.
+
+| Item | What changed | Files | Label |
 |---|---|---|---|
-| Packages after configure, with retry | The SDK now reports `idle`, `starting`, `ready` or `failed` to listeners. The buy screens load packages when it becomes `ready`, and again on each later `ready` (for example after a user switch). They no longer load once on mount. An empty or failed offerings answer is asked again twice, with a delay, before giving up. | `purchases.ts`, `usePlanPurchase.ts` | Unit tests written; **pending runner** |
-| Configure failure surfaced | A refused `configure` or `logIn` is thrown, logged to the console as `[billing] store setup failed` (it appears in the Xcode device log), and reported to Sentry under `billing.configure`. The SDK is left `failed`, and the screen shows that state. It is no longer swallowed. | `billingSession.ts`, `purchases.ts` | Unit tests written; **pending runner** |
-| Button and status line | The buy button (trial "Keep Pro", Change plan sheet, Free plans) shows its spinner while the store is starting or the packages are loading. When it cannot sell, the line directly under it says "Buying isn't available on this device yet…". Retry appears there wherever a retry can help (the store key is present): it starts the SDK again if it failed, otherwise it asks for the packages again. Restore and stay-offer results stay under the manage bar that started them. | `PlansView.tsx` (`usePlanChoice`, new `BuyLine`), `ProStateView.tsx` | Logic: unit tests written, **pending runner**. Look: **Manual verification required** |
-| "Welcome to Pro" only from a store | Success means `/me` shows `subscription.fromStore` **and** Pro still active (`storeConfirmed`). A lapsed store row and a trial do not count. `refreshUntilPaid` stopped at any plan other than Free, so a trial passed it at once. It is replaced by `refreshUntilStore`, and `isPaidPlan` is removed (it had no other user). If the webhook is not there after about 4 seconds, the app asks the new route once. On a miss the buyer sees "Payment received. Confirming with the store…" with **Check again**, never Welcome. The Pro page also gates Welcome on `storeConfirmed`. Welcome hides the empty "Member since" fact until the webhook's row gives it a date. | `billingStore.ts`, `purchaseFlow.ts`, `usePlanPurchase.ts`, `settings/pro/page.tsx`, `ProStateView.tsx` | Unit tests written; **pending runner** |
-| Restore | Restore asks the route to read RevenueCat. It says "Restored" only when store Pro shows now and did not before the tap, and "Nothing to restore." otherwise (new copy, en and ar). | `purchaseFlow.ts`, `membershipCopy.ts`, dictionaries | Unit tests written; **pending runner** |
-| On-demand store read | New `POST /api/billing/sync` (details below). | `src/app/api/billing/sync/route.ts`, `src/lib/billing/revenuecatSync.ts`, `.env.example` | Route tests written; **pending runner** |
+| Packages after configure, with retry | The SDK now reports `idle`, `starting`, `ready` or `failed` to listeners. The buy screens load packages when it becomes `ready`, and again on each later `ready` (for example after a user switch). They no longer load once on mount. An empty or failed offerings answer is asked again twice before giving up. A configure, log-in or offerings call that never answers ends as a failure after 20 or 12 seconds, so no button spins forever. | `purchases.ts`, `usePlanPurchase.ts` | Logic: **Automated verification** once job 1.4-A passes. Whether this was the cause on the owner's phone: **Native verification required** (RevenueCat debug log) |
+| Configure failure surfaced | A refused `configure` or `logIn` is thrown, logged to the console as `[billing] store setup failed` (it appears in the Xcode device log), and reported to Sentry under `billing.configure`. The SDK is left `failed`, and the screen shows that state. It is no longer swallowed. | `billingSession.ts`, `purchases.ts` | Same as above |
+| Button and status line | The buy button (trial "Keep Pro", Change plan sheet, Free plans) shows its spinner while the store is starting or the packages are loading. Under the button, one line says, in this order: "Confirming with the store…" with Check again; else the result of the last tap; else "Buying isn't available on this device yet…" with Retry, where a retry can help (the store key is present). Retry starts the SDK again if it failed, otherwise it asks for the packages again. A tap on a plan the store did not list says so instead of nothing. Restore answers under the manage bar on the page, and under the buy button inside the plans sheet. | `PlansView.tsx` (`usePlanChoice`, new `BuyLine`), `ProStateView.tsx`, `purchaseFlow.ts` (`buyLineKind`) | Order: **Automated verification** once job 1.4-A passes. Look and placement: **Manual verification required** |
+| "Welcome to Pro" only from a store | Success means `/me` shows `subscription.fromStore` **and** Pro still active (`storeConfirmed`). A lapsed store row and a trial do not count. `refreshUntilPaid` stopped at any plan other than Free, so a trial passed it at once. It is replaced by `refreshUntilStore`, and `isPaidPlan` is removed (it had no other user). If the webhook is not there after about 4 seconds, the app asks the new route once. On a miss the buyer sees "Payment received. Confirming with the store…" with **Check again**, never Welcome. The Pro page also gates Welcome on `storeConfirmed`. Welcome hides the empty "Member since" fact until the webhook's row gives it a date. | `billingStore.ts`, `purchaseFlow.ts`, `usePlanPurchase.ts`, `settings/pro/page.tsx`, `ProStateView.tsx` | **Automated verification** once job 1.4-A passes |
+| Restore | Restore asks the route to read RevenueCat. It says "Restored" only when store Pro shows now and did not before the tap, and "Nothing to restore." otherwise (new copy, en and ar). | `purchaseFlow.ts`, `membershipCopy.ts`, dictionaries | **Automated verification** once job 1.4-A passes |
+| On-demand store read | New `POST /api/billing/sync` (details below). | `src/app/api/billing/sync/route.ts`, `src/lib/billing/revenuecatSync.ts`, `.env.example` | Route: **Automated verification** once job 1.4-A passes. Against RevenueCat: **Blocked** until the owner sets the key |
 | End-to-end sandbox purchase | Not run | | **Native verification required** (next build, owner's phone, RevenueCat debug log) |
 
 How `POST /api/billing/sync` works:
@@ -111,19 +113,26 @@ How `POST /api/billing/sync` works:
 - **Limits:** 6 calls a minute per user (fails open, so a counter outage cannot strand a buyer). Answers `billing_off` while selling is off.
 - **What counts:** only a live Pro subscription from App Store or Play, not expired and not refunded. It goes through the webhook's own `planEffects` and `billing_apply`.
 - **Never removes access.** No live subscription means no write, so a trial is never ended by it. Expiries and refunds still come only from the webhook.
+- **Access only, no Sparks.** It writes the Pro entitlement. It does not open a Sparks period and does not end the trial's Sparks; both stay with the webhook. RevenueCat's `purchase_date` is whole seconds and the webhook's `purchased_at_ms` is not. Two periods with starts a few milliseconds apart would both be granted, because `spark_allowances` is unique on the exact start.
 - **Repeat taps:**
-  - The event is stamped at the purchase time, with id `sync:<user>:<product>:<purchase ms>`.
-  - A repeat tap is therefore `duplicate`.
-  - The real webhook still applies after it, since its timestamp is later.
-  - The Sparks period opens once, because `spark_allowances` is unique on its start.
+  - The event is stamped at the purchase time, with id `sync:<user>:<product>:<purchase ms>:<active|canceled|issue>`.
+  - A repeat tap in the same state is `duplicate`.
+  - A later read of the same period in another state applies, unless a webhook has already written something newer (then it is `stale`, and the webhook's state stands).
+  - The real webhook still applies after a sync, since its timestamp is later.
 - **Billing log:** the event's type is `SYNC_PURCHASE`, which the history (`INITIAL_PURCHASE`, `RENEWAL`) does not list. When the webhook lands, its own row is the one shown.
-- **Store state:** a cancelled renewal and a billing problem are written as the store shows them.
 - **Sandbox:** `REVENUECAT_IGNORE_SANDBOX` is honoured as in the webhook.
 
 Known limits:
 - **Field names not checked against a live customer.** The subscriber fields used are `subscriptions.<product>.purchase_date`, `expires_date`, `store`, `is_sandbox`, `unsubscribe_detected_at`, `billing_issues_detected_at`, `grace_period_expires_date`, `refunded_at`, `price`, and `request_date_ms`. They come from RevenueCat's REST v1 shape; the test fixture copies it. No buddget customer with a purchase exists yet, so the first sandbox buy is the check.
-- **No country or original transaction from this path.** Until the webhook lands, the Egypt limits and `store_original_txn` come only from the webhook. Member since and the receipt row show only once the webhook lands.
+- **Until the webhook lands, a buyer has Pro but not everything else.** Missing: the plan's Sparks, the Egypt limits (store country), `store_original_txn`, the receipt row, and "Member since". If webhooks stay broken, Pro works but Sparks never arrive. The webhook secrets are the fix for that, not this route.
+- **This is not a reconcile.** BDG-020's "cancelled only once the store confirms" needs a path that also takes access away. This route never does, so BDG-020 cannot reuse it as is.
 - **The cancelled banner's "Keep Pro"** (store page, `managementURL`) is BDG-020, not this step.
+
+Sandbox checklist for the owner's device run:
+1. With RevenueCat debug logging on, open Settings > buddget Pro as a trial user. The log must show `configure`, then offerings with two packages. The button spins, then sells.
+2. Buy in sandbox. Welcome to Pro appears only after the server shows store Pro. `billing_events` gets an `INITIAL_PURCHASE` row (webhook) or a `SYNC_PURCHASE` row (this route).
+3. After the webhook lands, `spark_allowances` holds exactly one `plan` row for this user and period.
+4. Tap Restore again: "Nothing to restore."
 
 Owner actions:
 1. Set `REVENUECAT_SECRET_KEY` on Vercel. In RevenueCat: Project settings > API keys > new secret key, v1, read access to customers.
@@ -132,14 +141,15 @@ Owner actions:
 ## Tests for step 1.4
 | File | Case | Result |
 |---|---|---|
-| `src/lib/billing/purchaseFlow.test.ts` (new, row 36 of `08-playwright-test-plan.md`) | `storeConfirmed`: trial no, lapsed store row no, active store row yes | **pending runner** |
-| same | `shelfOf`: loading only while starting or fetching; unavailable for no store, a failed SDK, or no packages | **pending runner** |
-| same | a trial that stays a trial on the server is `pending`, not confirmed (failed before this change) | **pending runner** |
-| same | confirmed by the webhook without a store read; a missed webhook recovered by one store read; cancelled and failed touch nothing | **pending runner** |
-| same | Restore: "nothing" for a trial when the store has nothing, "nothing" when store Pro was already there, "restored" when the read brings it, a failed restore asks nothing | **pending runner** |
-| `src/lib/billing/purchases.test.ts` | status `starting` then `ready`, `idle` after sign-out; a refused configure throws and leaves `failed`; Retry configures again as the same user; retry with nobody does nothing; empty or failed offerings asked again, then give up | **pending runner** |
-| `src/components/features/billing/billingGate.test.tsx` | a refused configure is reported to `captureAppError('billing.configure')` | **pending runner** |
-| `src/lib/billing/billingStore.test.ts` | `refreshUntilStore` replaces `refreshUntilPaid`. Changed on purpose: a trial no longer ends the wait. | **pending runner** |
-| `src/app/api/billing/sync/route.test.ts` (new) | 401 without a session; 503 without the key; reads only the signed-in customer; event at the purchase time, typed `SYNC_PURCHASE`, with the purchase effect; repeat tap is the same id (`duplicate`); nothing written for expired, refunded, promotional or other products; cancelled and billing issue kept; sandbox ignored on request; 429, 502, billing off | **pending runner** |
+| `src/lib/billing/purchaseFlow.test.ts` (new, row 36 of `08-playwright-test-plan.md`) | `storeConfirmed`: trial no, lapsed store row no, active store row yes | not run yet (job 1.4-A) |
+| same | `shelfOf`: loading only while starting or fetching; unavailable for no store, a failed SDK, or no packages | not run yet (job 1.4-A) |
+| same | `buyLineKind`: confirming first, then the last tap's note, then "not available" | not run yet (job 1.4-A) |
+| same | a trial that stays a trial on the server is `pending`, not confirmed (failed before this change) | not run yet (job 1.4-A) |
+| same | confirmed by the webhook without a store read; a missed webhook recovered by one store read; cancelled and failed touch nothing | not run yet (job 1.4-A) |
+| same | Restore: "nothing" for a trial when the store has nothing, "nothing" when store Pro was already there, "restored" when the read brings it, a failed restore asks nothing | not run yet (job 1.4-A) |
+| `src/lib/billing/purchases.test.ts` | status `starting` then `ready`, `idle` after sign-out; a refused configure throws and leaves `failed`; Retry configures again as the same user; retry with nobody does nothing; empty or failed offerings asked again, then give up | not run yet (job 1.4-A) |
+| `src/components/features/billing/billingGate.test.tsx` | a refused configure is reported to `captureAppError('billing.configure')` | not run yet (job 1.4-A) |
+| `src/lib/billing/billingStore.test.ts` | `refreshUntilStore` replaces `refreshUntilPaid`. Changed on purpose: a trial no longer ends the wait. | not run yet (job 1.4-A) |
+| `src/app/api/billing/sync/route.test.ts` (new) | 401 without a session; 503 without the key; reads only the signed-in customer; event at the purchase time, typed `SYNC_PURCHASE`, access only (no Sparks, no trial end); same state repeats the id, other states get their own; nothing written for expired, refunded, promotional or other products; cancelled and billing issue kept; sandbox ignored on request; 429, 502, billing off | not run yet (job 1.4-A) |
 
 Checked on the Mac (no test runner): `tsc --noEmit` clean and `eslint` clean on the changed folders.

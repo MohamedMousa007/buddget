@@ -86,7 +86,7 @@ export function ProStateView({ me }: { me: BillingMe }) {
   const { user } = useAuth()
   const view: SubscriptionView = subscriptionView(me)
   const trial = view.kind === 'trial'
-  const { plans, chosen, picked, setPicked, busy, setNote, buy, restore, shelf, retry, line } = usePlanChoice()
+  const { plans, chosen, picked, setPicked, busy, setNote, restore, shelf, line, purchaseChosen } = usePlanChoice()
   const name = useFinanceStore((st) => st.profile.name) || t.common.user
   const [sheet, setSheet] = useState<Sheet>(null)
   const [cancelOpen, setCancelOpen] = useState(false)
@@ -115,14 +115,15 @@ export function ProStateView({ me }: { me: BillingMe }) {
   const ending = view.kind === 'canceled' || view.kind === 'issue'
 
   const purchase = async () => {
-    if (!chosen.option) return retry()
-    if (await buy(chosen.option)) { setSheet(null); useUsageStore.getState().setWelcome('new') }
+    if (await purchaseChosen()) { setSheet(null); useUsageStore.getState().setWelcome('new') }
   }
   const bringBack = async () => {
     if (!store) return setBarNote(p.notYet)
-    const restored = await restore()
+    const said = (await restore()) ? s.restored : s.restoreNothing
+    // In the plans sheet the answer sits under its buy button, next to Restore; on the page, under the manage bar.
+    if (sheet === 'plans') return setNote(said)
     setNote(null)
-    setBarNote(restored ? s.restored : s.restoreNothing)
+    setBarNote(said)
   }
 
   // "How to cancel": on iOS a store member is shown the stay offer first, once (the server decides); everyone else gets the steps.

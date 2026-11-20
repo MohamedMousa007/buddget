@@ -24,7 +24,7 @@ const ms = (v: unknown): number | null => {
 }
 
 export interface SyncedPurchase {
-  /** A purchase event for `planEffects`, stamped at the purchase time with an id that repeats for the same period. */
+  /** A purchase event for `planEffects`, stamped at the purchase time with an id that repeats for the same period and state. */
   ev: RcEvent
   /** What the subscriber shows beyond a purchase: a cancelled renewal or a billing problem. */
   patch: Partial<EntitlementWrite>
@@ -49,9 +49,12 @@ export function syncedPurchase(body: unknown, userId: string, nowMs: number): Sy
   if (!best) return null
   const { productId, sub, purchasedMs, expirationMs } = best
   const amount = typeof sub.price?.amount === 'number' && Number.isFinite(sub.price.amount) ? sub.price.amount : null
+  const issue = sub.billing_issues_detected_at != null
+  const unsubscribed = ms(sub.unsubscribe_detected_at)
+  const state = issue ? 'issue' : unsubscribed !== null ? 'canceled' : 'active'
   const ev: RcEvent = {
     type: 'INITIAL_PURCHASE',
-    id: `sync:${userId}:${productId}:${purchasedMs}`,
+    id: `sync:${userId}:${productId}:${purchasedMs}:${state}`,
     appUserId: userId,
     eventMs: purchasedMs,
     productId,
@@ -68,8 +71,6 @@ export function syncedPurchase(body: unknown, userId: string, nowMs: number): Sy
     currency: sub.price?.currency ?? null,
     sandbox: sub.is_sandbox === true,
   }
-  const issue = sub.billing_issues_detected_at != null
-  const unsubscribed = ms(sub.unsubscribe_detected_at)
   const patch: Partial<EntitlementWrite> = issue
     ? { status: 'past_due', grace_ends_at: ev.graceMs === null ? null : new Date(ev.graceMs).toISOString() }
     : unsubscribed !== null ? { status: 'canceled', will_renew: false, canceled_at: new Date(unsubscribed).toISOString() } : {}
