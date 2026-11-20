@@ -28,13 +28,20 @@ describe('sync probe parity', () => {
 })
 
 describe('AI credit windows', () => {
-  it('ai_credit_windows and ai_quota_settle_core are the 0298 plain-sum versions again (no maintained counter)', () => {
-    for (const fn of ['ai_credit_windows', 'ai_quota_settle_core']) {
-      const original = functionBodies(migrations, fn).find((b) => b.file.startsWith('0298_'))
-      expect(original, `0298 defines ${fn}`).toBeDefined()
-      expect(squash(latest(fn))).toBe(squash(original!.body))
-      expect(latest(fn)).not.toMatch(/ai_credit_counters|ai_credit_bump/i)
-    }
+  it('ai_credit_windows is the 0298 plain-sum version again (no maintained counter)', () => {
+    const original = functionBodies(migrations, 'ai_credit_windows').find((b) => b.file.startsWith('0298_'))
+    expect(original, '0298 defines ai_credit_windows').toBeDefined()
+    expect(squash(latest('ai_credit_windows'))).toBe(squash(original!.body))
+    expect(latest('ai_credit_windows')).not.toMatch(/ai_credit_counters|ai_credit_bump/i)
+  })
+
+  // 0337 (BDG-011) changed ai_quota_settle_core on purpose: a call that showed the user nothing is logged, not charged.
+  it('ai_quota_settle_core keeps no maintained counter and charges nothing for error or aborted_empty', () => {
+    const body = squash(latest('ai_quota_settle_core'))
+    expect(body).not.toMatch(/ai_credit_counters|ai_credit_bump/)
+    expect(body).toContain("p_status in ('error', 'aborted_empty')")
+    expect(body).toContain('r.advisor_free or v_free')
+    expect(body).toContain('units = units + v_units')
   })
 
   it('the credit sums count every non-sms, non-exempt event since the window cut', () => {

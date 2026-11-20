@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const h = vi.hoisted(() => ({ reserve: vi.fn(), settle: vi.fn(), call: vi.fn() }))
 vi.mock('server-only', () => ({}))
@@ -11,6 +11,9 @@ vi.mock('@/lib/entitlements/billingSwitch', () => ({ billingEnabled: async () =>
 vi.mock('@/lib/entitlements/server', () => ({ getUserEntitlements: async () => ({ planKey: 'free' }) }))
 
 import { POST } from './route'
+
+// The mocks are shared across tests; each test sees only its own calls.
+beforeEach(() => vi.clearAllMocks())
 
 const sseBody = (frames: unknown[]) => {
   const enc = new TextEncoder()
