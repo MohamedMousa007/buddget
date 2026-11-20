@@ -89,6 +89,10 @@ export function mapAuthError(err: unknown, context: 'signin' | 'signup' | 'otp' 
   if (m.includes('rate limit') || m.includes('too many') || m.includes('over_email_send_rate_limit')) {
     return t.auth.errorRateLimit
   }
+  // D-1: Supabase gives the Send Email hook 5 s (fixed); a slow mail send fails the whole sign-up with this.
+  if (m.includes('reach hook') || m.includes('hook_timeout') || (err as { code?: unknown })?.code === 'hook_timeout') {
+    return t.auth.errorEmailHookSlow
+  }
   if (m.includes('sending confirmation email') || m.includes('error sending')) {
     return t.auth.errorEmailSendFailed
   }

@@ -240,6 +240,43 @@ function withEditTime<R>(row: R, item: HasId, at: string | undefined = (item as 
   return at ? ({ ...row, edited_at: toServerTime(at) } as R) : row
 }
 
+const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/
+
+/**
+ * R17 / S8d-6: two row payloads the server would store identically. Timestamps are compared as instants (a device
+ * `...Z` and the server's `...+00:00` name the same moment) and `server_rev` is ignored (the server owns it).
+ */
+export function sameOnServer(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (typeof a === 'string' && typeof b === 'string' && ISO_INSTANT.test(a) && ISO_INSTANT.test(b)) return Date.parse(a) === Date.parse(b)
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false
+  if (Array.isArray(a) !== Array.isArray(b)) return false
+  if (Array.isArray(a)) return a.length === (b as unknown[]).length && a.every((x, i) => sameOnServer(x, (b as unknown[])[i]))
+  const ao = a as Record<string, unknown>
+  const bo = b as Record<string, unknown>
+  const keys = new Set([...Object.keys(ao), ...Object.keys(bo)])
+  for (const k of keys) {
+    if (k === 'server_rev') continue
+    if (!sameOnServer(ao[k] ?? null, bo[k] ?? null)) return false
+  }
+  return true
+}
+
+/**
+ * Updates whose server row would not change are dropped: code that reshapes a row locally (a recomputed display
+ * amount, a re-stamped system row, a server stamp re-read in another format) is not a user edit and must not write,
+ * or the write comes back on the next pull and the cycle repeats every boot. A row the boot fingerprint flagged as
+ * unsent (`__unsynced`) is always sent: its baseline copy is the cache's, not the server's.
+ */
+function serverChanged<T extends HasId, R>(updates: readonly T[], prev: readonly T[], toRow: (x: T) => R): T[] {
+  if (updates.length === 0) return []
+  const before = new Map(prev.map((p) => [p.id, p]))
+  return updates.filter((x) => {
+    const p = before.get(x.id)
+    return !p || (p as { __unsynced?: boolean }).__unsynced === true || !sameOnServer(toRow(x), toRow(p))
+  })
+}
+
 function emitList<T extends HasId, TN extends TableName>(
   runner: OpRunner,
   table: TN,
@@ -253,7 +290,8 @@ function emitList<T extends HasId, TN extends TableName>(
   // (re-adding the row) comes back live. Plain updates leave `deleted_at` alone: an edit made
   // offline must not resurrect a row another device deleted.
   const revived = diff.inserts.map((x) => withEditTime({ ...toRow(x, userId), deleted_at: null }, x) as Database['public']['Tables'][TN]['Insert'])
-  const writes = [...revived, ...diff.updates.map((x) => withEditTime(toRow(x, userId), x))]
+  const updates = serverChanged(diff.updates, prev, (x) => toRow(x, userId))
+  const writes = [...revived, ...updates.map((x) => withEditTime(toRow(x, userId), x))]
   runner.upsert(table, writes, `${String(table)}.upsert`)
   // User-owned tables soft-delete: stamp `deleted_at = now()` so the
   // deletion is reconcilable across devices. Hydrate filters
@@ -272,7 +310,8 @@ function emitSavingsAccounts(
   prev: readonly SavingsAccount[],
   userId: string
 ) {
-  const diff = diffLists(next, prev)
+  const raw = diffLists(next, prev)
+  const diff = { ...raw, updates: serverChanged(raw.updates, prev, (x) => savingsAccountToRow(x, userId)) }
   const prevById = new Map(prev.map((a) => [a.id, a]))
   const balanceKept = (a: SavingsAccount) => prevById.get(a.id)?.currentBalance === a.currentBalance
   const inserts = diff.inserts.map((x) => withEditTime({ ...savingsAccountToRow(x, userId), deleted_at: null }, x))
@@ -322,11 +361,13 @@ export async function flushDiff(
     },
   }
   const nextProfileSig = { profile: next.profile, extras: profileExtras }
-  if (diffSingleton(nextProfileSig, prevProfileSig) != null) {
-    level3.upsert('profiles', [profileToRow(next.profile, profileExtras, userId)], 'profiles.upsert')
+  const nextProfileRow = profileToRow(next.profile, profileExtras, userId)
+  if (diffSingleton(nextProfileSig, prevProfileSig) != null && !sameOnServer(nextProfileRow, profileToRow(prev.profile, prevProfileSig.extras, userId))) {
+    level3.upsert('profiles', [nextProfileRow], 'profiles.upsert')
   }
-  if (diffSingleton(next.settings, prev.settings) != null) {
-    roots.upsert('user_settings', [settingsToRow(next.settings, userId)], 'user_settings.upsert')
+  const nextSettingsRow = settingsToRow(next.settings, userId)
+  if (diffSingleton(next.settings, prev.settings) != null && !sameOnServer(nextSettingsRow, settingsToRow(prev.settings, userId))) {
+    roots.upsert('user_settings', [nextSettingsRow], 'user_settings.upsert')
   }
 
   // Array slices — the built-in `pm_default_cash` sentinel is kept in-store

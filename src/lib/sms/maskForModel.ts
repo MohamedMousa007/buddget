@@ -129,7 +129,12 @@ export function maskForParse(rawMessage: string): ParseView {
   }
   let n = 0
   const message = (out + text.slice(at))
-    .replace(PHONE_LIKE_RE, (m) => m.replace(/\d/g, () => DIGITS[n++ % DIGITS.length]!))
+    // The tail stays (S8A M-2): the parse reads account and counterparty last four from this text, and a wallet named by its
+    // mobile number is matched to the user's own account by those four.
+    .replace(PHONE_LIKE_RE, (m) => {
+      let left = m.replace(/\D/g, '').length - KEEP_LAST
+      return m.replace(/\d/g, (d) => (left-- > 0 ? DIGITS[n++ % DIGITS.length]! : d))
+    })
     .replace(IDENTIFIER_RUN_RE, (run) => standInDigits(run.slice(0, -KEEP_LAST), n++) + run.slice(-KEEP_LAST))
   const restore = (value: string | null): string | null =>
     value == null ? value : names.reduce((acc, [standIn, original]) => acc.split(standIn).join(original), value)

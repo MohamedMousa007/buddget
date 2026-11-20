@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { clientIp } from '@/lib/server/clientIp'
+import { clientIp, rateBucketIp } from '@/lib/server/clientIp'
 import { isRateLimited } from '@/lib/server/rateLimit'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
     }
 
-    const ip = clientIp(req)
+    const ip = rateBucketIp(clientIp(req))
 
     const admin = createServiceRoleClient()
     // QA-99: the email-first modal needs the answer, so it stays; a daily cap bounds bulk enumeration, and a counter outage fails closed.

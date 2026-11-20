@@ -84,4 +84,13 @@ describe('counterpartyHash', () => {
     expect(counterpartyHash('u1', 'Sample')).toBeNull()
     expect(counterpartyHash('u1', null)).toBeNull()
   })
+  it('D-3: legs from two of the user\'s phones settle only with both the shared reference and the same name', () => {
+    const two = { sameDevice: false, bothOnUsersDevices: true }
+    expect(decideOwnTransfer(facts({ ...two, sameReference: true, sameCounterpartyHash: true })).verdict).toBe('settle')
+    expect(decideOwnTransfer(facts({ ...two, sameReference: true })).verdict).toBe('ask')
+    expect(decideOwnTransfer(facts({ ...two, sameCounterpartyHash: true })).verdict).toBe('ask')
+    expect(decideOwnTransfer(facts({ ...two, sameReference: true, sameCounterpartyHash: true, differentAccounts: false })).verdict).toBe('ask')
+    expect(decideOwnTransfer(facts({ ...two, sameReference: true, sameCounterpartyHash: true, sameAccount: true })).verdict).toBe('none')
+    expect(decideOwnTransfer(facts({ ...two, sameReference: true, sameCounterpartyHash: true, answered: false })).verdict).toBe('ask')
+  })
 })
