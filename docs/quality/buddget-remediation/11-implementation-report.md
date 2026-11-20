@@ -110,7 +110,7 @@ No Keyboard plugin, no change to native config.
 
 | Item | Files | Status |
 |---|---|---|
-| Geometry and keyboard rule | `src/components/features/ai-chat/panelGeometry.ts` (new), `AIChat.tsx` | Unit test written, **not yet run**. Five cases: no keyboard is unchanged, the panel sits above the iOS keyboard, it follows a panned view, Android stops reserving the tab bar, desktop is untouched. |
+| Geometry and keyboard rule | `src/components/features/ai-chat/panelGeometry.ts` (new), `AIChat.tsx` | **Automated verification** (runner job 6). Five cases: no keyboard is unchanged, the panel sits above the iOS keyboard, it follows a panned view, Android stops reserving the tab bar, desktop is untouched. |
 | Orb keeps its place | `src/components/ai/AIChatBubble.tsx` | **Native verification required** (Android: open the keyboard in chat, close it, the orb stays put) |
 | How it looks on a phone | | **Native verification required** (iPhone and Android: tap the composer, the header and composer both stay in view) |
 
@@ -125,5 +125,5 @@ While dragged, the orb follows the finger on both axes, kept inside the screen. 
 
 | Item | Files | Status |
 |---|---|---|
-| Snap side, dead zone, screen limits | `panelGeometry.ts` (`snapSide`, `dragLeft`), `AIChatBubble.tsx` | Unit test written, **not yet run** |
+| Snap side, dead zone, screen limits | `panelGeometry.ts` (`snapSide`, `dragLeft`), `AIChatBubble.tsx` | **Automated verification** (runner job 6) |
 | How the drag feels | | **Native verification required** (drag sideways on a phone, release near the middle, release past it) |

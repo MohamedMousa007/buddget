@@ -71,3 +71,7 @@ The failure was an older test, `usageNotices.test.ts:170`, that expected a block
 | `node e2e/api/buddgy-turns.mjs` (real route, live PostgREST) | 9 of 9: turn id logged, answered turn charged, Retry free (units 0, exempt), re-run used up once shown, no turn id billed per request, 0 unsettled reservations, 0 synthetic users left |
 
 Step 3 (BDG-011 slice 2) is now **Automated verification**; Retry on a phone stays **Native verification required**.
+
+## Runner job 6 (2026-11-20, commit `0e35780b`)
+
+`vitest` on `src/components/features/ai-chat`: 14 passed (geometry and orb 10 of 10, composer 4 of 4). `npm run verify` passed: 6,599 passed and 0 failed in Cairo and New York, coverage above the floor, migration check, audit and build OK. BDG-014 and BDG-018 logic is now **Automated verification**; the look on a phone stays **Native verification required**.
