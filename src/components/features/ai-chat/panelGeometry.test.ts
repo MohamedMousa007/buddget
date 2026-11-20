@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { ORB_INSET, ORB_SIZE, computePanel, dragLeft, keyboardOpen, snapSide } from './panelGeometry'
+import { describe, expect, it, vi } from 'vitest'
+import { ORB_INSET, ORB_SIZE, computePanel, dragLeft, keyboardOpen, pressGate, snapSide } from './panelGeometry'
 
 // BDG-014: the chat panel must sit inside what the user can see, above the keyboard, so the composer is never covered.
 const notch = { top: 47, bottom: 34, left: 0, right: 0 }
@@ -62,5 +62,31 @@ describe('orb drag', () => {
     expect(dragLeft(-50, 390)).toBe(ORB_INSET)
     expect(dragLeft(900, 390)).toBe(390 - ORB_SIZE - ORB_INSET)
     expect(dragLeft(195, 390)).toBe(195 - ORB_SIZE / 2)
+  })
+})
+
+// Journey G: Send was pressed with the text field focused; focus left the field, the panel dropped its keyboard layout
+// (64px shorter at 390x844) before the release, and the click never reached Send.
+describe('pressGate', () => {
+  it('a focus change during a press waits for the release, then lays out once', () => {
+    const apply = vi.fn()
+    const gate = pressGate(apply)
+    gate.press()
+    gate.focusChanged()
+    gate.focusChanged()
+    expect(apply).not.toHaveBeenCalled()
+    gate.release()
+    expect(apply).toHaveBeenCalledTimes(1)
+    gate.release()
+    expect(apply).toHaveBeenCalledTimes(1)
+  })
+  it('a focus change with nothing pressed (typing, Tab, the keyboard) lays out at once', () => {
+    const apply = vi.fn()
+    const gate = pressGate(apply)
+    gate.focusChanged()
+    expect(apply).toHaveBeenCalledTimes(1)
+    gate.press()
+    gate.release()
+    expect(apply).toHaveBeenCalledTimes(1)
   })
 })

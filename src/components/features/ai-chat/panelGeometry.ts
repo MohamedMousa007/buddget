@@ -59,6 +59,30 @@ export function readViewport(): Viewport | null {
   return { width: window.innerWidth, height, offsetTop, keyboard: keyboardOpen(window.innerHeight, height, offsetTop, textFieldFocused()) }
 }
 
+/**
+ * Holds a focus-driven re-layout while a press is down. Pressing a button moves focus off the text field, which changes
+ * the keyboard geometry; laid out at once, the panel moves between press and release, the button slides away and the
+ * click never lands (journey G). The held re-layout runs on release, after the click has its target.
+ */
+export function pressGate(apply: () => void) {
+  let down = false
+  let pending = false
+  return {
+    press: () => { down = true },
+    release: () => {
+      down = false
+      if (pending) {
+        pending = false
+        apply()
+      }
+    },
+    focusChanged: () => {
+      if (down) pending = true
+      else apply()
+    },
+  }
+}
+
 /** Resolved safe-area insets in px (mirrored from CSS env via custom props). */
 export function safeAreaInsets(): Insets {
   if (typeof window === 'undefined') return { top: 0, bottom: 0, left: 0, right: 0 }

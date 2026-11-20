@@ -22,7 +22,7 @@ import { useChatVoice } from '@/hooks/useChatVoice'
 import { NoticeBanners } from '@/components/features/usage/NoticeHost'
 import { useDismissable } from '@/hooks/useDismissable'
 import { useDialogFocus } from '@/hooks/useDialogFocus'
-import { computePanel, readViewport, safeAreaInsets, type PanelGeometry } from '@/components/features/ai-chat/panelGeometry'
+import { computePanel, pressGate, readViewport, safeAreaInsets, type PanelGeometry } from '@/components/features/ai-chat/panelGeometry'
 
 /**
  * Buddgy assistant panel. Opens anchored to the draggable Buddgy orb's
@@ -54,18 +54,25 @@ export function AIChat() {
       if (view) setPanel(computePanel(orb, view, safeAreaInsets()))
     }
     recompute()
+    const gate = pressGate(recompute)
+    // Released after the click is dispatched, so the click lands on the button that was pressed.
+    const release = () => setTimeout(gate.release, 0)
     const vv = window.visualViewport
     window.addEventListener('resize', recompute)
     vv?.addEventListener('resize', recompute)
     vv?.addEventListener('scroll', recompute)
-    document.addEventListener('focusin', recompute)
-    document.addEventListener('focusout', recompute)
+    document.addEventListener('mousedown', gate.press, true)
+    document.addEventListener('mouseup', release, true)
+    document.addEventListener('focusin', gate.focusChanged)
+    document.addEventListener('focusout', gate.focusChanged)
     return () => {
       window.removeEventListener('resize', recompute)
       vv?.removeEventListener('resize', recompute)
       vv?.removeEventListener('scroll', recompute)
-      document.removeEventListener('focusin', recompute)
-      document.removeEventListener('focusout', recompute)
+      document.removeEventListener('mousedown', gate.press, true)
+      document.removeEventListener('mouseup', release, true)
+      document.removeEventListener('focusin', gate.focusChanged)
+      document.removeEventListener('focusout', gate.focusChanged)
     }
   }, [orb])
 
