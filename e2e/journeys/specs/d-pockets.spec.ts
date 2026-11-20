@@ -127,5 +127,6 @@ test('D3 money leaving a pocket held in an account moves the account [S-2]', asy
     await expect(d).toBeHidden()
     expect(await qnbBalance(page)).toBe(accountBefore - 100)
     expect(await netWorthFlow(page)).toBe(before)
+    await serverRows('savings_accounts', user.id, `id=eq.${pocket.id}`, (r: any[]) => Number(r[0]?.current_balance) === 200)
   })
 })

@@ -20,13 +20,22 @@ export const test = base.extend<{ shim: void; user: QaUser; keepUser: boolean; o
     await forceFlags(context, { onboarding_v1: onboarding })
     await use()
   }, { auto: true }],
-  user: async ({ page, keepUser }, use, info) => {
+  user: async ({ page, context, keepUser }, use, info) => {
     const email = qaEmail(info.title.match(/^([A-Z][0-9]?)/)?.[1]?.toLowerCase() ?? 'j')
     const id = await createConfirmedUser(email)
     info.annotations.push({ type: 'qa-user', description: `${email} ${id}` })
     await signIn(page, email)
     await use({ email, id })
-    if (!keepUser && !process.env.QA_KEEP_USERS) await deleteUser(email).catch((e) => { throw new Error(`synthetic user ${email} (${id}) was not deleted, remove it by hand: ${e}`) })
+    if (keepUser || process.env.QA_KEEP_USERS) return
+    // The open page keeps pushing writes; a delete that races them fails with a 500. Stop the app first, then retry.
+    await context.close()
+    let failure: unknown
+    for (const waitMs of [0, 1000, 3000, 6000]) {
+      await new Promise((r) => setTimeout(r, waitMs))
+      failure = await deleteUser(email).then(() => undefined, (e) => e)
+      if (!failure) return
+    }
+    throw new Error(`synthetic user ${email} (${id}) was not deleted, remove it by hand: ${failure}`)
   },
 })
 export { expect }
