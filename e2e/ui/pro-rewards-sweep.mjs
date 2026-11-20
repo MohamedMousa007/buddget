@@ -51,18 +51,20 @@ try {
         const tag = `${vw}/${loc}/${theme}/${r}`
         try {
           await p.goto(`${BASE}/${r}`, { waitUntil: 'domcontentloaded', timeout: 90000 })
+          await p.waitForFunction((l) => document.documentElement.lang.startsWith(l) && document.documentElement.dir === (l === 'ar' ? 'rtl' : 'ltr'), loc, { timeout: 30000 })
           await p.waitForFunction(() => (document.querySelector('main')?.innerText.trim().length ?? 0) > 20 && !document.querySelector('main .animate-pulse'), null, { timeout: 60000 }).catch(() => undefined)
           await p.waitForTimeout(2500)
           await p.addStyleTag({ content: 'nextjs-portal{display:none!important}' })
           const facts = await p.evaluate(() => ({ dir: document.documentElement.dir, dark: document.documentElement.classList.contains('dark'), url: location.pathname, hscroll: document.documentElement.scrollWidth > innerWidth + 1 }))
           await p.addScriptTag({ content: axeSrc })
           const axe = await p.evaluate(async () => (await window.axe.run(document, { resultTypes: ['violations'], exclude: [['nextjs-portal']] })).violations.map((v) => ({ id: v.id, impact: v.impact, n: v.nodes.length, ex: v.nodes.slice(0, 2).map((x) => x.target.join(' ').slice(0, 90)) })))
-          const tap = await p.evaluate(() => {
+          const tap = await p.evaluate(async () => {
+            const frame = () => new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res)))
             const els = [...document.querySelectorAll('main button,main a[href],main [role=button],main [role=switch],main [role=tab],main input:not([type=hidden])')].filter((e) => { const r = e.getBoundingClientRect(), s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && !e.closest('[aria-hidden=true]') && !e.disabled })
             const bad = []
             for (const e of els) {
-              e.scrollIntoView({ block: 'center', inline: 'center' })
-              const r = e.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue
+              e.scrollIntoView({ block: 'center', inline: 'center' }); await frame()
+              const r = e.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) continue // not fully on screen: skip, never measure an off-screen box
               const cx = r.x + r.width / 2, cy = r.y + r.height / 2, dx = 21, dy = 21
               let miss = 0; const tgt = new Set()
               for (const [x, y] of [[cx - dx, cy - dy], [cx + dx, cy - dy], [cx - dx, cy + dy], [cx + dx, cy + dy]]) { const t = document.elementFromPoint(Math.max(1, Math.min(innerWidth - 1, x)), Math.max(1, Math.min(innerHeight - 1, y))); if (!(t && (t === e || e.contains(t)))) { miss++; tgt.add(t ? (t.tagName + '.' + String(t.className || '').split(' ')[0]).slice(0, 40) + (t.closest('button,a,[role=button]') ? '(ctl)' : '') : 'none') } }
