@@ -49,7 +49,7 @@ const en: BuddgyPlanCopy = {
     more: (n) => `${n} more ${n === 1 ? 'line' : 'lines'}`,
     review: 'Review and save in the builder',
     change: 'Change an answer',
-    note: 'Nothing is saved until you review it in the builder.',
+    note: 'Your plan is saved only after you review it in the builder.',
     handed: 'Opened in the builder to review and save.',
   },
 }
@@ -78,7 +78,7 @@ const ar: BuddgyPlanCopy = {
     more: (n) => `${arPlural(n, { one: 'بند', two: 'بندين', few: 'بنود', many: 'بندًا' })} أخرى`,
     review: 'راجع واحفظ في المنشئ',
     change: 'غيّر إجابة',
-    note: 'لا يُحفظ شيء حتى تراجعه في المنشئ.',
+    note: 'لا تُحفظ خطتك إلا بعد أن تراجعها في المنشئ.',
     handed: 'فُتحت في المنشئ للمراجعة والحفظ.',
   },
 }
