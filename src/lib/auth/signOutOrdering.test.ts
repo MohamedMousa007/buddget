@@ -45,6 +45,14 @@ describe('AuthProvider.signOut — source invariants', () => {
     expect(setSessionPos).toBeLessThan(iifePos)
   })
 
+  it('D-2: the unsent-edit decision comes before any teardown (suspend, setUser(null), clearBudgetData)', () => {
+    const decidePos = signOutBody.indexOf('settleBeforeWipe(flushFinanceNow()')
+    expect(decidePos).toBeGreaterThan(-1)
+    expect(decidePos).toBeLessThan(signOutBody.indexOf('suspendFinanceSync()'))
+    expect(decidePos).toBeLessThan(signOutBody.indexOf('setUser(null)'))
+    expect(signOutBody).toMatch(/if \(!wipe\) return/)
+  })
+
   it('flushFinanceNow is called before clearBudgetData (pending writes land while the token is valid)', () => {
     const flushPos = signOutBody.indexOf('flushFinanceNow()')
     const clearPos = signOutBody.indexOf('clearBudgetData()')

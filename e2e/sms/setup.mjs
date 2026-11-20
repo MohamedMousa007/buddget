@@ -4,7 +4,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { admin, writeState } from './lib.mjs'
 
 const db = admin()
-const email = 'qa-sms-1@buddget-qa.test'
+// A fresh synthetic address per run (qa-e2e-*), so the end-of-run check for leftover QA users finds it.
+const email = `qa-e2e-sms-${Date.now().toString(36)}@buddget-qa.test`
 const { data: created, error } = await db.auth.admin.createUser({ email, password: randomUUID() + 'Aa1!', email_confirm: true })
 if (error) throw error
 const userId = created.user.id

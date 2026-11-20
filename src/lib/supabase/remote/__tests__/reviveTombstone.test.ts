@@ -95,6 +95,15 @@ describe('QA-41: a delete can only be undone by an action newer than the delete'
     expect(s.rows.get('e1')?.deleted_at).toBeNull()
   })
 
+  it('D-5: an undo whose stamp reads up to 3 s before the delete (device clock a moment behind) still brings the row back', async () => {
+    const { s, clock, row } = await deletedOnServer()
+    const undone = { ...row, updatedAt: new Date(clock.now - 2000).toISOString() }
+    clock.now += 500
+    vi.setSystemTime(clock.now)
+    await flushDiff(s.client as never, 'u', emptySnapshot(), withExpenses(undone))
+    expect(s.rows.get('e1')?.deleted_at).toBeNull()
+  })
+
   it('an undo that is older than a later delete elsewhere is refused, and the device is told once', async () => {
     const { s, clock, row } = await deletedOnServer()
     const { noteRestored, refusedUndos } = await import('@/lib/store/undoWatch')
