@@ -1,5 +1,5 @@
 import { useLocale } from '@/lib/i18n'
-import { intlTag } from '@/lib/i18n/dateFormat'
+import { resetLabel } from '@/lib/usage/format'
 import type { Locale } from '@/lib/i18n/types'
 import type { ChatError } from '@/lib/buddgy/client/chatTypes'
 import type { ToolRisk } from '@/lib/buddgy/tools/spec'
@@ -35,6 +35,8 @@ export interface BuddgyChatCopy {
   error: (e: ChatError) => string
   stopped: string
   localTag: string
+  /** How a reply was made (BDG-010). */
+  mode: { quick: string; thinking: string }
   quickAddLead: string
   quickAddDone: string
   usage: {
@@ -47,25 +49,27 @@ export interface BuddgyChatCopy {
   }
 }
 
-const hhmm = (iso: string | null, locale: Locale) =>
-  iso ? new Date(iso).toLocaleTimeString(intlTag(locale), { hour: 'numeric', minute: '2-digit' }) : null
+// BDG-012: a reset on another day names the day and date, not only a clock time.
+const at = (iso: string | null, locale: Locale) => resetLabel(iso, locale) || null
 
 function quotaEn(layer: string, resetAt: string | null): string {
   if (layer === 'sparks') return quotaDeniedMessage(layer, resetAt, 'en')
-  const at = hhmm(resetAt, 'en')
-  if (layer === 'chats_hour' || layer === 'chats_day') return `That's a lot of fresh chats. Let's pick this up${at ? ` after ${at}` : ' a bit later'}.`
+  const when = at(resetAt, 'en')
+  if (layer === 'rate') return "That's a lot at once. Give me a minute, then try again."
+  if (layer === 'chats_hour' || layer === 'chats_day') return `That's a lot of fresh chats. Let's pick this up${when ? ` after ${when}` : ' a bit later'}.`
   if (layer === 'feature_disabled') return 'Buddgy chat is switched off for your plan right now.'
   if (layer === 'unavailable') return 'Buddgy is resting for a moment. Try again shortly.'
-  return `I've talked your ear off for now. I'll be back${at ? ` around ${at}` : ' soon'}.`
+  return `I've talked your ear off for now. I'll be back${when ? ` at ${when}` : ' soon'}.`
 }
 
 function quotaAr(layer: string, resetAt: string | null): string {
   if (layer === 'sparks') return quotaDeniedMessage(layer, resetAt, 'ar')
-  const at = hhmm(resetAt, 'ar')
-  if (layer === 'chats_hour' || layer === 'chats_day') return `بدأنا محادثات كثيرة. نكمل${at ? ` بعد ${at}` : ' بعد قليل'}.`
+  const when = at(resetAt, 'ar')
+  if (layer === 'rate') return 'رسائل كثيرة دفعة واحدة. انتظر دقيقة ثم جرّب مرة أخرى.'
+  if (layer === 'chats_hour' || layer === 'chats_day') return `بدأنا محادثات كثيرة. نكمل${when ? ` بعد ${when}` : ' بعد قليل'}.`
   if (layer === 'feature_disabled') return 'محادثة بادجي متوقفة في باقتك حاليًا.'
   if (layer === 'unavailable') return 'بادجي يرتاح قليلًا. جرّب بعد لحظات.'
-  return `خلّصت رصيد الكلام مؤقتًا. أرجع${at ? ` حوالي ${at}` : ' قريبًا'}.`
+  return `خلّصت رصيد الكلام مؤقتًا. أرجع${when ? ` ${when}` : ' قريبًا'}.`
 }
 
 const en: BuddgyChatCopy = {
@@ -103,6 +107,7 @@ const en: BuddgyChatCopy = {
     : "Couldn\u2019t finish that. Try again.",
   stopped: 'Stopped',
   localTag: 'Instant',
+  mode: { quick: 'Quick', thinking: 'Thinking' },
   quickAddLead: 'Got it. Here is what I will add:',
   quickAddDone: 'Got it.',
   usage: {
@@ -150,6 +155,7 @@ const ar: BuddgyChatCopy = {
     : 'تعذّر إكمال ذلك. حاول مرة أخرى.',
   stopped: 'تم الإيقاف',
   localTag: 'فوري',
+  mode: { quick: 'سريع', thinking: 'تفكير' },
   quickAddLead: 'تمام. ده اللي هضيفه:',
   quickAddDone: 'تمام.',
   usage: {

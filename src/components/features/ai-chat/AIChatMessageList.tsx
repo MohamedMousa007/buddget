@@ -91,7 +91,7 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
                 <div className="flex w-full items-start gap-2 rounded-xl border border-[var(--color-brand-border)] px-3 py-2.5 text-[0.8125rem] text-[var(--color-brand-text-secondary)]">
                   <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--color-brand-amber)]" aria-hidden />
                   <span className="min-w-0 flex-1">{copy.error(item.error)}</span>
-                  {last && item.error.kind !== 'quota' ? (
+                  {last && (item.error.kind !== 'quota' || item.error.layer === 'rate') ? (
                     <Button variant="ghost" size="touch" onClick={onRetry} className="-my-1.5 shrink-0 px-3 text-[0.8125rem]">
                       <RotateCw aria-hidden />
                       {copy.retry}
@@ -117,10 +117,12 @@ export function AIChatMessageList({ items, step, onApply, onDismiss, onRevise, o
                 </div>
               ) : null}
 
-              {item.status === 'done' && (item.reads.length > 0 || item.local) ? (
-                <p className="flex items-center gap-1 px-1 text-[0.6875rem] text-[var(--color-brand-text-muted)]">
+              {item.status === 'done' && (item.reads.length > 0 || item.local || item.mode) ? (
+                <p dir="auto" className="flex items-center gap-1 px-1 text-[0.6875rem] text-[var(--color-brand-text-muted)]">
                   {item.local ? <Zap className="size-3" aria-hidden /> : null}
-                  {item.local ? copy.localTag : `${copy.checked}: ${[...new Set(item.reads.map((r) => r.label))].join(' · ')}`}
+                  {item.local
+                    ? copy.localTag
+                    : [item.mode ? copy.mode[item.mode] : '', item.reads.length > 0 ? `${copy.checked}: ${[...new Set(item.reads.map((r) => r.label))].join(' · ')}` : ''].filter(Boolean).join(' · ')}
                 </p>
               ) : null}
             </div>

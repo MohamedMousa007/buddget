@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BDG-007 Streak strip at zero: before and after</title>
+<style>
+  /* Token values copied from src/app/globals.css and membership.module.css. Mockup only. */
+  .light { --bg:#F4F7F6; --card:#FFFFFF; --elev:#ECF1F0; --border:#DDE6E4; --t1:#0D1A18; --t2:#566B68; --t3:#5F6968; --gold:#896617; --gilt:#C99A35; --ink:#0B7568; }
+  .dark  { --bg:#0A100F; --card:#111917; --elev:#18211F; --border:#25302E; --t1:#EAF2F0; --t2:#9BABA8; --t3:#879592; --gold:#EDC463; --gilt:#EDC463; --ink:#7FE6DA; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 -apple-system, "Segoe UI", Inter, system-ui, sans-serif; background:#F4F7F6; color:#0D1A18; }
+  main { max-width:1180px; margin:0 auto; padding:20px 16px 48px; }
+  h1 { font-size:20px; margin:0 0 4px; } h2 { font-size:15px; margin:0 0 2px; }
+  p.lead { margin:0 0 18px; color:#566B68; max-width:70ch; }
+  .cols { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; }
+  @media (max-width:900px) { .cols { grid-template-columns:1fr; } }
+  .col { background:var(--bg); border:1px solid var(--border); border-radius:20px; padding:14px; display:grid; gap:12px; align-content:start; color:var(--t1); }
+  .col > header p { margin:2px 0 0; font-size:12.5px; color:var(--t2); }
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--elev); color:var(--t2); margin-bottom:6px; }
+  .tag.rec { background:#E3F6F3; color:#0B7568; }
+  .state { font-size:11.5px; color:var(--t3); margin:4px 0 -6px; }
+
+  .hot { --ember:#ffb347; --ember-deep:#ff9a3c; --frost:#8fd3ff; border-radius:18px; background:var(--card); border:1px solid var(--border); padding:14px 16px; display:grid; gap:12px; }
+  .top { display:flex; align-items:center; gap:12px; }
+  .flame { width:42px; height:42px; border-radius:14px; display:grid; place-items:center; flex:none;
+    background:radial-gradient(70% 70% at 50% 70%, color-mix(in oklab, var(--ember) 40%, transparent), transparent 75%), color-mix(in oklab, var(--gilt) 14%, var(--elev));
+    box-shadow:0 0 0 1px color-mix(in oklab, var(--gilt) 35%, transparent), 0 8px 20px -8px color-mix(in oklab, var(--ember-deep) 70%, transparent); }
+  .flame.cold { background:var(--elev); box-shadow:0 0 0 1px var(--border); }
+  .flame.cold svg { filter:grayscale(1); opacity:.45; }
+  .flame svg { width:22px; height:22px; }
+  .top h3 { margin:0; font-size:16px; font-weight:700; letter-spacing:-.01em; }
+  .top h3 b { font-family:ui-monospace, Menlo, monospace; }
+  .top p { margin:2px 0 0; font-size:12px; color:var(--t2); }
+  .pts { margin-inline-start:auto; text-align:end; flex:none; }
+  .pts b { display:block; font-family:ui-monospace, Menlo, monospace; font-size:18px; font-weight:600; color:var(--gold); }
+  .pts span { font-size:10.5px; color:var(--t3); }
+  .wk { display:grid; grid-template-columns:repeat(12, 1fr); gap:4px; align-items:end; }
+  .wk span { height:30px; border-radius:8px; display:grid; place-items:center; background:var(--elev); border:1px solid var(--border); }
+  .wk span svg { width:13px; height:13px; }
+  .wk .on { background:linear-gradient(180deg, color-mix(in oklab, var(--ember) 22%, var(--elev)), color-mix(in oklab, var(--gilt) 12%, var(--elev))); border-color:color-mix(in oklab, var(--gilt) 35%, transparent); }
+  .wk .fz { background:color-mix(in oklab, var(--frost) 16%, var(--elev)); border-color:color-mix(in oklab, var(--frost) 35%, transparent); color:var(--frost); }
+  .wk .now { height:36px; box-shadow:0 0 0 1.5px var(--gilt), 0 0 16px -2px color-mix(in oklab, var(--ember-deep) 70%, transparent); }
+  .wk .open { border-style:dashed; border-color:var(--t3); }            /* new: this week, nothing to continue yet */
+  .cap { display:flex; justify-content:space-between; font-size:10.5px; color:var(--t3); margin-top:-8px; }
+  .foot { display:flex; justify-content:space-between; gap:8px; font-size:11.5px; color:var(--t2); }
+  .foot b { color:var(--t1); font-weight:600; }
+  .darkrow { margin-top:22px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Streak strip at zero weeks (BDG-007)</h1>
+  <p class="lead">Left: what the Rewards page shows today. Middle and right: two ways to fix it. Each column shows the same five streak lengths: 0, 1, 9 (with one frozen week), 11 and 14. Only the strip and the flame change; the card, copy and tokens are the existing ones.</p>
+
+  <div class="cols light" id="light"></div>
+
+  <h2 class="darkrow">Dark mode, zero weeks</h2>
+  <div class="cols dark" id="dark" style="margin-top:10px"></div>
+</main>
+
+<script>
+const FLAME = id => `<svg viewBox="0 0 24 24"><defs><linearGradient id="${id}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff8a2a"/><stop offset=".55" stop-color="#f5b13c"/><stop offset="1" stop-color="#f5d98a"/></linearGradient></defs><path fill="url(#${id})" d="M12 2c.6 3.2-1.4 4.9-2.8 6.6C7.7 10.4 6.5 12.1 6.5 14.5A5.5 5.5 0 0 0 12 20a5.5 5.5 0 0 0 5.5-5.5c0-2.3-1.1-3.7-2-4.8-.2 1.4-.9 2.5-2 3 .4-2.9-.3-6.6-1.5-10.7z"/></svg>`;
+const SNOW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/></svg>`;
+let n = 0;
+// cell codes: m empty, k kept, f frozen, c this week kept, p this week open (ringed), o this week open (dashed, no ring)
+function card({ weeks, pts, cells, cold, cap, next }) {
+  const cell = ch => {
+    const cls = { m:'', k:'on', f:'fz', c:'on now', p:'now', o:'open' }[ch];
+    const glyph = ch === 'k' || ch === 'c' ? FLAME('g' + (n++)) : ch === 'f' ? SNOW : '';
+    return `<span class="${cls}">${glyph}</span>`;
+  };
+  return `<div class="hot">
+    <div class="top"><span class="flame${cold ? ' cold' : ''}">${FLAME('g' + (n++))}</span>
+      <div><h3><b>${weeks}</b>-week streak</h3><p>Your best is ${Math.max(weeks, 9)} weeks</p></div>
+      <div class="pts"><b>+${pts}</b><span>points this streak</span></div></div>
+    <div class="wk">${[...cells].map(cell).join('')}</div>
+    ${cap ? `<div class="cap"><span>${cap[0]}</span><span>${cap[1]}</span></div>` : ''}
+    <div class="foot"><span>${next}</span><span><b>0</b> freezes left</span></div>
+  </div>`;
+}
+const NEXT = { 0:'Next bonus at <b>4 weeks</b> · x1.5', 1:'Next bonus at <b>4 weeks</b> · x1.5', 9:'Top bonus <b>x2</b>', 11:'Top bonus <b>x2</b>', 14:'Top bonus <b>x2</b>' };
+const PTS = { 0:0, 1:10, 9:130, 11:170, 14:230 };
+const TODAY = { 0:'mmmmmmmmmmmp', 1:'mmmmmmmmmmkp', 9:'mmkkkkfkkkkp', 11:'kkkkkkkkkkkp', 14:'kkkkkkkkkkkc' };
+const OPT_A = { ...TODAY, 0:'mmmmmmmmmmmo' };
+const OPT_B = { 0:'pmmmmmmmmmmm', 1:'kpmmmmmmmmmm', 9:'kkkkfkkkkpmm', 11:'kkkkkkkkkkkp', 14:'kkkkkkkkkkkc' };
+
+function column(theme, kind, lengths) {
+  const head = {
+    today: `<span class="tag">Before · today</span><h2>The last cell is always ringed</h2><p>The strip is a 12-week calendar, newest on the right. At zero the only highlight is the last cell, so it reads as progress at the end.</p>`,
+    a: `<span class="tag rec">After · option A (recommended)</span><h2>Calendar, quiet at zero</h2><p>Same calendar. At zero: no ring or glow, the open week is a dashed cell, and the flame is unlit. A caption under the strip says which end is "this week". From 1 week on, nothing changes from today.</p>`,
+    b: `<span class="tag">After · option B</span><h2>Progress meter</h2><p>Cells fill from the start by streak length; the ring marks the week you are on. At zero the first cell is ringed. Past 12 the strip stays full. Missed weeks before the streak are no longer shown.</p>`,
+  }[kind];
+  const data = { today: TODAY, a: OPT_A, b: OPT_B }[kind];
+  const cards = lengths.map(w => `<div class="state">${w} week${w === 1 ? '' : 's'}</div>` + card({
+    weeks: w, pts: PTS[w], cells: data[w], next: NEXT[w],
+    cold: kind !== 'today' && w === 0,
+    cap: kind === 'a' ? ['12 weeks ago', 'This week'] : kind === 'b' ? ['Week 1', 'Week 12'] : null,
+  })).join('');
+  return `<section class="col ${theme}"><header>${head}</header>${cards}</section>`;
+}
+document.getElementById('light').innerHTML = ['today', 'a', 'b'].map(k => column('light', k, [0, 1, 9, 11, 14])).join('');
+document.getElementById('dark').innerHTML = ['today', 'a', 'b'].map(k => column('dark', k, [0])).join('');
+</script>
+</body>
+</html>

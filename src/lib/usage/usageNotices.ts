@@ -19,6 +19,7 @@ export type NoticeKey =
   | 'advisor_free' | 'advisor_used' | 'advisor_locked' | 'plan3' | 'plans_ro' | 'views7' | 'views10'
   | 'reset_granted' | 'reset_back' | 'grace' | 'cancelled' | 'expired'
   | 'trial.d3' | 'trial.d10' | 'trial.d23' | 'trial.d28' | 'trial.d37'
+  | 'usage_view'
 
 export interface NoticeState {
   plan: 'free' | 'trial' | 'pro' | 'expired'
@@ -89,7 +90,11 @@ const limitOffers = (s: NoticeState): NoticeOffer[] => (isPaid(s) ? ['sparks'] :
 /** Under 20 Sparks, or under 20% of the last pack, whichever is higher. */
 export const sparksLowThreshold = (lastPack: number | null): number => Math.max(20, Math.ceil((lastPack ?? 0) * 0.2))
 
-function limitEvent(s: NoticeState, layer: 'session' | 'week' | 'both'): Notice {
+/** The usage ring in the chat (BDG-009): the same sheet as a limit, opened on request, with the offers a limit would make. */
+export const usageViewNotice = (s: NoticeState): Notice => make('usage_view', 'info', { surface: 'sheet', tone: 'brand', offers: limitOffers(s) })
+
+/** In the chat a blocked turn shows the sheet every time (BDG-012): the person is trying to use the thing that is blocked. */
+function limitEvent(s: NoticeState, layer: 'session' | 'week' | 'both', inChat: boolean): Notice {
   if (s.sparksLeft > 0) return make('session_sparks', 'info', { oncePerSession: true })
   const key: NoticeKey =
     !s.signals.firstLimitSeen ? 'session_block_first'
@@ -99,7 +104,7 @@ function limitEvent(s: NoticeState, layer: 'session' | 'week' | 'both'): Notice 
     : layer === 'both' ? 'both_block'
     : layer === 'week' ? 'week_block'
     : 'session_block'
-  return make(key, 'blocked', { offers: limitOffers(s), once: key === 'session_block_first' })
+  return make(key, 'blocked', { offers: limitOffers(s), once: key === 'session_block_first', oncePerSession: !inChat })
 }
 
 /** The notices that apply to this state, this screen and this moment. Offline shows none; money entry is held by the presenter. */
@@ -111,7 +116,7 @@ export function usageNotices(s: NoticeState, ctx: NoticeContext): Notice[] {
   const inChat = ctx.screen === 'chat'
 
   // Events: something just happened.
-  if (e?.type === 'limit') out.push(limitEvent(s, e.layer))
+  if (e?.type === 'limit') out.push(limitEvent(s, e.layer, inChat))
   if (e?.type === 'turn_done' && (reached(s.session) || reached(s.week)) && s.sparksLeft > 0) out.push(make('session_sparks', 'info', { oncePerSession: true }))
   if (e?.type === 'plan_create' && s.plans.limit !== null && s.plans.used >= s.plans.limit) out.push(make('plan3', 'blocked', { offers: ['pro'] }))
   if (e?.type === 'views_open' && s.balanceViews.limit !== null && s.balanceViews.used >= s.balanceViews.limit) out.push(make('views10', 'blocked', { offers: ['pro'] }))

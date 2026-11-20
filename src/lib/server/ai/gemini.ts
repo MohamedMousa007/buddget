@@ -27,13 +27,19 @@ export function geminiUrl(model: string, stream: boolean): string {
   return `${API_BASE}/models/${model}:${method}`
 }
 
+/** A thinking budget at or under this runs at the minimal level on 3.x models, the same as no thinking. */
+export const MINIMAL_THINKING_MAX = 512
+
+/** What a person is told about how a reply was made (BDG-010): only a budget above the minimal level is "Thinking". */
+export const thinkingMode = (budget: number): 'quick' | 'thinking' => (budget > MINIMAL_THINKING_MAX ? 'thinking' : 'quick')
+
 /** 2.x models speak `thinkingBudget`; 3.x speak `thinkingLevel`. */
 export function configFor(model: string, config: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
   if (!model.startsWith('gemini-2.')) {
     const budget = (config?.thinkingConfig as { thinkingBudget?: number } | undefined)?.thinkingBudget
     if (typeof budget !== 'number') return config
     // ponytail: two levels only; minimal and medium are the ones every 3.x Flash model documents.
-    return { ...config, thinkingConfig: { thinkingLevel: budget <= 512 ? 'minimal' : 'medium' } }
+    return { ...config, thinkingConfig: { thinkingLevel: budget <= MINIMAL_THINKING_MAX ? 'minimal' : 'medium' } }
   }
   const thinking = config?.thinkingConfig as { thinkingLevel?: string } | undefined
   if (!thinking?.thinkingLevel) return config

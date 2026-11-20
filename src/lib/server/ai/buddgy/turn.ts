@@ -37,8 +37,12 @@ const IDLE_TIMEOUT_MS = 25_000
 export interface TurnOutcome {
   usage: TokenUsage
   finish: string
-  status: 'ok' | 'error' | 'aborted'
+  /** `aborted_empty`: cut or stopped before any text reached the user, so it is not charged (migration 0337). */
+  status: 'ok' | 'error' | 'aborted' | 'aborted_empty'
 }
+
+/** Gemini reports output tokens only at the end; a stream cut mid-answer still delivered what it sent. */
+const estimateOutputTokens = (chars: number) => Math.ceil(chars / 4)
 
 const encoder = new TextEncoder()
 const frame = (e: TurnEvent) => encoder.encode(`data: ${JSON.stringify(e)}\n\n`)
@@ -55,6 +59,11 @@ export function turnEventStream(
   let settled = false
   // Shared with cancel(): an aborted request still settles whatever Gemini had reported.
   let usage = EMPTY_USAGE
+  let textChars = 0
+  const aborted = (finish: string): TurnOutcome =>
+    textChars === 0
+      ? { usage, finish, status: 'aborted_empty' }
+      : { usage: { ...usage, outputTokens: Math.max(usage.outputTokens, estimateOutputTokens(textChars)) }, finish, status: 'aborted' }
   const settle = async (o: TurnOutcome) => {
     if (settled) return
     settled = true
@@ -67,7 +76,6 @@ export function turnEventStream(
       let buffer = ''
       let finish = 'STOP'
       let blocked = false
-      let sawText = false
       const parts: unknown[] = []
       const calls: WireToolCall[] = []
 
@@ -86,7 +94,7 @@ export function turnEventStream(
         for (const part of content.parts) {
           if (!isRecord(part) || part.thought === true) continue
           if (typeof part.text === 'string' && part.text.length > 0) {
-            sawText = true
+            textChars += part.text.length
             controller.enqueue(frame({ t: 'text', d: part.text }))
             const last = parts[parts.length - 1]
             if (isRecord(last) && typeof last.text === 'string' && !part.thoughtSignature && !last.thoughtSignature) last.text += part.text
@@ -130,7 +138,7 @@ export function turnEventStream(
         }
         if (calls.length > 0) {
           controller.enqueue(frame({ t: 'calls', parts, calls }))
-        } else if (!sawText) {
+        } else if (textChars === 0) {
           controller.enqueue(frame({ t: 'error', code: blocked || finish === 'SAFETY' ? 'blocked' : 'empty' }))
           await settle({ usage, finish, status: 'error' })
           controller.close()
@@ -147,12 +155,12 @@ export function turnEventStream(
         } catch {
           // client already went away
         }
-        await settle({ usage, finish, status: 'aborted' })
+        await settle(aborted(finish))
       }
     },
     cancel() {
       void reader.cancel().catch(() => undefined)
-      void settle({ usage, finish: 'ABORTED', status: 'aborted' })
+      void settle(aborted('ABORTED'))
     },
   })
 }

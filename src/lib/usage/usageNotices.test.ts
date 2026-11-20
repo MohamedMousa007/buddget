@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { byPriority, sparksLowThreshold, usageNotices, visibleNotices, type NoticeContext, type NoticeState } from './usageNotices'
+import { byPriority, sparksLowThreshold, usageNotices, usageViewNotice, visibleNotices, type NoticeContext, type NoticeState } from './usageNotices'
 
 const NOW = Date.UTC(2026, 10, 16, 12)
 const base: NoticeState = {
@@ -28,6 +28,20 @@ describe('AI usage warnings', () => {
   })
   it('a reached limit is not an 80% warning', () => {
     expect(keys(st({ session: { pct: 100, resetAt: null } }), { screen: 'chat' })).toEqual([])
+  })
+})
+
+// BDG-009 and BDG-012: the usage ring opens the limit sheet on request; a blocked chat turn shows it every time.
+describe('usage sheet from the chat', () => {
+  it('the usage view offers Sparks and Pro on Free, Sparks only on Pro and trial, and is never once-only', () => {
+    expect(usageViewNotice(st())).toMatchObject({ key: 'usage_view', surface: 'sheet', offers: ['sparks', 'pro'], oncePerSession: false, once: false })
+    expect(usageViewNotice(st({ plan: 'pro' })).offers).toEqual(['sparks'])
+    expect(usageViewNotice(st({ plan: 'trial', trialDay: 5 })).offers).toEqual(['sparks'])
+  })
+  it('a blocked turn in the chat is not limited to once a session; elsewhere it still is', () => {
+    const limit = { type: 'limit', layer: 'session' } as const
+    expect(one(st(), { screen: 'chat', event: limit })).toMatchObject({ key: 'session_block', oncePerSession: false })
+    expect(one(st(), { screen: 'flow', event: limit })).toMatchObject({ key: 'session_block', oncePerSession: true })
   })
 })
 
@@ -152,8 +166,12 @@ describe('visibleNotices and priority', () => {
     expect(visibleNotices(banner, mem({ snoozed: { 'usage:session80': new Date(NOW - 1000).toISOString() } }), NOW)).toHaveLength(1)
     const once = usageNotices(st({ plan: 'expired' }), { screen: 'flow' })
     expect(visibleNotices(once, mem({ settled: ['usage:expired'] }), NOW)).toEqual([])
-    const sheet = usageNotices(st(), { screen: 'chat', event: { type: 'limit', layer: 'session' } })
-    expect(visibleNotices(sheet, mem({ shownThisSession: new Set(['usage:session_block']) }), NOW)).toEqual([])
+    // Outside the chat a shown sheet waits for the next session; in the chat it shows on every blocked turn (BDG-012).
+    const shown = mem({ shownThisSession: new Set(['usage:session_block']) })
+    const sheet = usageNotices(st(), { screen: 'flow', event: { type: 'limit', layer: 'session' } })
+    expect(visibleNotices(sheet, shown, NOW)).toEqual([])
+    const inChat = usageNotices(st(), { screen: 'chat', event: { type: 'limit', layer: 'session' } })
+    expect(visibleNotices(inChat, shown, NOW).map((n) => n.key)).toEqual(['session_block'])
   })
   it('blocked sorts before warnings before information', () => {
     const all = usageNotices(st({ session: { pct: 90, resetAt: null }, resetsUnseen: ['week'] }), { screen: 'chat', event: { type: 'limit', layer: 'session' } })

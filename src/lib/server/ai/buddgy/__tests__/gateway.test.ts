@@ -122,7 +122,8 @@ describe('turnEventStream', () => {
     }
   })
 
-  it('gives up on a stalled upstream stream and settles it as aborted', async () => {
+  // BDG-011: a stream that put nothing in front of the user settles as `aborted_empty`, which 0337 does not charge.
+  it('gives up on a stalled upstream stream; with no text yet it settles as aborted_empty', async () => {
     let outcome!: TurnOutcome
     const stalled = new ReadableStream<Uint8Array>({ start() {} })
     const stream = turnEventStream(stalled, { t: 'meta', chatId: null, newChat: false, rolled: false, soft: false, tier: 'fast' }, (o) => {
@@ -130,6 +131,46 @@ describe('turnEventStream', () => {
     }, 20)
     const text = await new Response(stream).text()
     expect(text).toContain('"code":"upstream"')
+    expect(outcome.status).toBe('aborted_empty')
+  })
+
+  it('a stall after text settles as aborted, with output estimated from the text sent', async () => {
+    let outcome!: TurnOutcome
+    const reply = 'x'.repeat(40)
+    const enc = new TextEncoder()
+    const stalledAfterText = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(enc.encode(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: reply }] } }] })}\n\n`))
+      },
+    })
+    const stream = turnEventStream(stalledAfterText, { t: 'meta', chatId: null, newChat: false, rolled: false, soft: false, tier: 'fast' }, (o) => {
+      outcome = o
+    }, 20)
+    await new Response(stream).text()
     expect(outcome.status).toBe('aborted')
+    expect(outcome.usage.outputTokens).toBe(10)
+  })
+
+  it('a user Stop before any text is aborted_empty; after text it is aborted', async () => {
+    const enc = new TextEncoder()
+    const run = async (sendText: boolean) => {
+      let outcome!: TurnOutcome
+      const upstream = new ReadableStream<Uint8Array>({
+        start(c) {
+          if (sendText) c.enqueue(enc.encode(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Hi' }] } }] })}\n\n`))
+        },
+      })
+      const reader = turnEventStream(upstream, { t: 'meta', chatId: null, newChat: false, rolled: false, soft: false, tier: 'fast' }, (o) => {
+        outcome = o
+      }).getReader()
+      await reader.read()
+      if (sendText) await reader.read()
+      await reader.cancel()
+      return outcome
+    }
+    expect((await run(false)).status).toBe('aborted_empty')
+    const afterText = await run(true)
+    expect(afterText.status).toBe('aborted')
+    expect(afterText.usage.outputTokens).toBeGreaterThan(0)
   })
 })

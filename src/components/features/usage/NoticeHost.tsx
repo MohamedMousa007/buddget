@@ -25,7 +25,7 @@ import { PROMPT_PRIORITY, useRegisterPrompts, type Prompt } from '@/lib/store/us
 import { useFinanceStore } from '@/lib/store/useFinanceStore'
 import { useSettingsStore } from '@/lib/store/useSettingsStore'
 import { settlePrompt, settledKeys } from '@/lib/prompts/settle'
-import { noticeData, weekdayDate } from '@/lib/usage/format'
+import { noticeData, resetLabel } from '@/lib/usage/format'
 import { useNoticeState } from '@/lib/usage/useNoticeState'
 import { MONEY_ENTRY_MODALS, useUsageStore } from '@/lib/usage/usageStore'
 import { byPriority, usageNotices, visibleNotices, type Notice, type NoticeScreen, type NoticeState } from '@/lib/usage/usageNotices'
@@ -174,7 +174,20 @@ function LimitSheet({ notice, state, onClose }: { notice: Notice; state: NoticeS
   const yearly = billing.options.find((o) => o.kind === 'annual')
   const first = notice.key === 'session_block_first'
   const showMeters = notice.offers.includes('sparks') || notice.key === 'week_block'
-  const dateLine = (iso: string | null) => (iso ? weekdayDate(iso, locale) : '')
+  // BDG-012: at the limit the meter still says when it is back, with the day when that is not today.
+  const meterNote = (w: { pct: number; resetAt: string | null }) => {
+    const when = resetLabel(w.resetAt, locale)
+    const back = when ? copy.meter.resets(when) : ''
+    return w.pct >= 100 ? [copy.meter.reached, back].filter(Boolean).join(' · ') : back
+  }
+  // From inside the chat, a page opens with the chat closed, never behind it (BDG-009, BDG-016).
+  const leaveTo = (path: string) => {
+    onClose()
+    if (useSettingsStore.getState().activeModal === 'aiChat') useSettingsStore.getState().setActiveModal(null)
+    navigate(path)
+  }
+  const usageView = notice.key === 'usage_view'
+  const planLine = state.plan === 'pro' ? copy.page.proPlan : state.plan === 'trial' && state.trialDay !== null ? copy.page.trialPlan(state.trialDay) : copy.page.freePlan
   const picked = packs.packs.find((p) => p.id === packs.selected)
 
   if (view) {
@@ -208,14 +221,14 @@ function LimitSheet({ notice, state, onClose }: { notice: Notice; state: NoticeS
       <div className="flex min-h-0 flex-1 flex-col">
         <V3SheetHeader onClose={onClose}>
           <V3SheetHeader.Title>{entry.title(d)}</V3SheetHeader.Title>
-          {entry.body ? <V3SheetHeader.Subtitle>{entry.body(d)}</V3SheetHeader.Subtitle> : null}
+          {entry.body ? <V3SheetHeader.Subtitle>{entry.body(d)}</V3SheetHeader.Subtitle> : usageView ? <V3SheetHeader.Subtitle>{planLine}</V3SheetHeader.Subtitle> : null}
         </V3SheetHeader>
         <SheetBody className="space-y-4 pt-1">
           {showMeters && state.session.pct !== null ? (
-            <UsageMeter label={copy.meter.session} pct={state.session.pct} value={copy.meter.pct(Math.round(state.session.pct))} note={state.session.pct >= 100 ? copy.meter.reached : copy.meter.resets(dateLine(state.session.resetAt))} />
+            <UsageMeter label={copy.meter.session} pct={state.session.pct} value={copy.meter.pct(Math.round(state.session.pct))} note={meterNote({ pct: state.session.pct, resetAt: state.session.resetAt })} />
           ) : null}
           {showMeters && state.week.pct !== null ? (
-            <UsageMeter label={copy.meter.week} pct={state.week.pct} value={copy.meter.pct(Math.round(state.week.pct))} note={state.week.pct >= 100 ? copy.meter.reached : copy.meter.resets(dateLine(state.week.resetAt))} />
+            <UsageMeter label={copy.meter.week} pct={state.week.pct} value={copy.meter.pct(Math.round(state.week.pct))} note={meterNote({ pct: state.week.pct, resetAt: state.week.resetAt })} />
           ) : null}
           {notice.key === 'views10' && state.balanceViews.limit !== null ? (
             <UsageMeter kind="count" label={copy.meter.viewsLabel} used={state.balanceViews.used} limit={state.balanceViews.limit} value={copy.meter.viewsOf(state.balanceViews.used, state.balanceViews.limit)} />
@@ -242,12 +255,13 @@ function LimitSheet({ notice, state, onClose }: { notice: Notice; state: NoticeS
                 <span dir="auto" className="text-base font-extrabold leading-tight">{copy.sheet.proTitle}</span>
                 {yearly ? <span dir="auto" className="text-[0.8125rem] font-semibold"><span dir="ltr" className="font-mono-numbers">{copy.sheet.proPrice(yearly.price)}</span>{yearly.perMonth ? ` · ${copy.sheet.proPerMonth(yearly.perMonth)}` : ''}</span> : null}
                 <ul dir="auto" className="flex flex-col gap-1 text-[0.78125rem] text-[var(--member-fg-2)]">{copy.sheet.proLines.map((l) => <li key={l}>{l}</li>)}</ul>
-                <Button size="touch" variant="secondary" className="mt-auto w-full font-semibold" onClick={() => { onClose(); navigate('/settings/pro') }}>{copy.actions.goPro}</Button>
+                <Button size="touch" variant="secondary" className="mt-auto w-full font-semibold" onClick={() => leaveTo('/settings/pro')}>{copy.actions.goPro}</Button>
               </div>
             ) : null}
           </div>
         </SheetBody>
         <SheetFooter safeArea>
+          {usageView ? <Button size="touch" variant="secondary" className="w-full font-semibold" onClick={() => leaveTo('/settings/pro/usage')}>{copy.actions.fullUsage}</Button> : null}
           <Button size="touch" variant="ghost" className="w-full font-semibold text-[var(--color-brand-text-secondary)]" onClick={onClose}>{copy.actions.notNow}</Button>
         </SheetFooter>
       </div>
@@ -273,7 +287,8 @@ export function NoticeHost() {
   const setSheet = useUsageStore((s) => s.setSheet)
   const end = useBillingStore(noticeDate)
   const holding = activeModal !== null && MONEY_ENTRY_MODALS.has(activeModal)
-  const screen = screenOf(path)
+  // The chat is an overlay: while it is open the person is in the chat, whatever page is underneath.
+  const screen: NoticeScreen = activeModal === 'aiChat' ? 'chat' : screenOf(path)
 
   useStackCards(state, end)
 

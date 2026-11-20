@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { SPEC_BY_NAME, ALL_SPECS } from '@/lib/buddgy/tools/specs'
 import { toGeminiDeclaration } from '@/lib/buddgy/tools/spec'
 import { requireAiUser } from '@/lib/server/ai/auth'
-import { callGeminiResilient, TIER_MODELS } from '@/lib/server/ai/gemini'
+import { callGeminiResilient, thinkingMode, TIER_MODELS } from '@/lib/server/ai/gemini'
 import { INTENT_CONFIG, SYSTEM_PROMPT } from '@/lib/server/ai/buddgy/prompt'
 import { advisorGate } from '@/lib/server/ai/buddgy/advisor'
 import { FREE_ADVISOR_THINKING_BUDGET, MAX_HOPS, hopsDone, resolveAdvisor, trimContext } from '@/lib/server/ai/buddgy/plan'
@@ -105,10 +105,14 @@ export async function POST(req: Request) {
 
   const stream = turnEventStream(
     upstream.body,
-    { t: 'meta', chatId: quota.chatId, newChat: quota.newChat, rolled: quota.rolled, soft: quota.soft, tier: cfg.tier, maxHops, ...(advisor.mode === 'free' || advisor.mode === 'locked' ? { advisor: advisor.mode } : {}) },
+    // `soft` is always false: passing the spend line used to cut the history sent to 2 items and show "this chat is
+    // getting long" (BDG-013). Sent from the server so builds already installed stop forgetting too.
+    { t: 'meta', chatId: quota.chatId, newChat: quota.newChat, rolled: quota.rolled, soft: false, tier: cfg.tier, mode: thinkingMode(cfg.thinkingBudget), maxHops, ...(advisor.mode === 'free' || advisor.mode === 'locked' ? { advisor: advisor.mode } : {}) },
     async (outcome) => {
-      // An abort before Gemini reported usage still consumed the prompt; never settle it as free.
-      const usage = outcome.usage.promptTokens === 0 && outcome.status === 'aborted' ? { promptTokens: estInputTokens, cachedTokens: 0, outputTokens: 0 } : outcome.usage
+      // An abort before Gemini reported usage still consumed the prompt: log its cost. Whether it is charged is the
+      // status's call (0337): `aborted` (text reached the user) is, `aborted_empty` is not.
+      const cut = outcome.status === 'aborted' || outcome.status === 'aborted_empty'
+      const usage = outcome.usage.promptTokens === 0 && cut ? { ...outcome.usage, promptTokens: estInputTokens } : outcome.usage
       await settleAiQuota(quota, { model: usedModel, tier: cfg.tier, latencyMs: Date.now() - started, usage, status: outcome.status })
       console.info(`[buddgy] user=${auth.userId} tier=${cfg.tier} units=${computeUnits(usage)} finish=${outcome.finish}`)
     },

@@ -23,6 +23,7 @@ export interface UsageCopy {
   actions: {
     seeUsage: string; later: string; seePro: string; goPro: string; getSparks: string; notNow: string; tryAgain: string; updatePayment: string
     askAdvisor: string; scanReceipt: string; seePlans: string; keepPro: string; manage: string; rejoin: string; howLimitsWork: string; dismiss: string
+    fullUsage: string
   }
   sheet: {
     sparksHead: string; sparksTitle: string; sparksFrom: (price: string) => string; sparksLines: [string, string, string]
@@ -80,10 +81,12 @@ const en: UsageCopy = {
     'trial.d23': { title: () => '7 days of Pro left', body: (d) => `On ${d.date} you move to Free; nothing is deleted.` },
     'trial.d28': { title: () => '2 days of Pro left', body: (d) => `On ${d.date} your limits move to Free. Nothing is deleted.` },
     'trial.d37': { title: () => 'Only if you want Pro back', body: () => 'This is the last reminder.' },
+    usage_view: { title: () => 'Your Buddgy usage' },
   },
   actions: {
     seeUsage: 'See usage', later: 'Later', seePro: 'See Pro', goPro: 'Go Pro', getSparks: 'Get Sparks', notNow: 'Not now', tryAgain: 'Try again', updatePayment: 'Update payment',
     askAdvisor: 'Ask the Advisor', scanReceipt: 'Scan a receipt', seePlans: 'See plans', keepPro: 'Keep Pro', manage: 'Manage', rejoin: 'Rejoin Pro', howLimitsWork: 'How limits work', dismiss: 'Dismiss',
+    fullUsage: 'See all usage',
   },
   sheet: {
     sparksHead: 'Sparks', sparksTitle: 'Keep going now', sparksFrom: (price) => `From ${price}`, sparksLines: ['About 230 quick answers', 'Use them right away', 'Never expire'],
@@ -145,10 +148,12 @@ const ar: UsageCopy = {
     'trial.d23': { title: () => 'تبقّى 7 أيام من Pro', body: (d) => `في ${d.date} تنتقل إلى المجاني؛ لن يُحذف شيء.` },
     'trial.d28': { title: () => 'تبقّى يومان من Pro', body: (d) => `في ${d.date} تنتقل حدودك إلى المجاني. لن يُحذف شيء.` },
     'trial.d37': { title: () => 'فقط إن أردت عودة Pro', body: () => 'هذا آخر تذكير.' },
+    usage_view: { title: () => 'استخدامك لـ Buddgy' },
   },
   actions: {
     seeUsage: 'عرض الاستخدام', later: 'لاحقاً', seePro: 'اعرف Pro', goPro: 'انتقل إلى Pro', getSparks: 'احصل على Sparks', notNow: 'ليس الآن', tryAgain: 'حاول مجدداً', updatePayment: 'تحديث الدفع',
     askAdvisor: 'اسأل المستشار', scanReceipt: 'امسح إيصالاً', seePlans: 'عرض الخطط', keepPro: 'احتفظ بـ Pro', manage: 'إدارة', rejoin: 'انضم إلى Pro من جديد', howLimitsWork: 'كيف تعمل الحدود', dismiss: 'إغلاق',
+    fullUsage: 'عرض كل الاستخدام',
   },
   sheet: {
     sparksHead: 'Sparks', sparksTitle: 'تابع الآن', sparksFrom: (price) => `من ${price}`, sparksLines: ['حوالي 230 إجابة سريعة', 'استخدمها فوراً', 'لا تنتهي صلاحيتها'],
