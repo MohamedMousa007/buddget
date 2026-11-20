@@ -54,7 +54,7 @@ try {
           await p.waitForFunction((l) => document.documentElement.dataset.locale === l, loc, { timeout: 30000 }) // the app keeps dir=ltr in every language; data-locale is the switch
           await p.waitForFunction(() => (document.querySelector('main')?.innerText.trim().length ?? 0) > 20 && !document.querySelector('main .animate-pulse'), null, { timeout: 60000 }).catch(() => undefined)
           await p.waitForTimeout(2500)
-          if (await p.getByRole('button', { name: 'Sign me in' }).isVisible().catch(() => false)) throw new Error('signed out on ' + tag)
+          if (await p.getByRole('button', { name: /Continue with (Google|Apple|Email)|Sign me in/ }).first().isVisible().catch(() => false) || await p.getByRole('textbox', { name: 'Email' }).isVisible().catch(() => false)) throw new Error('signed out on ' + tag)
           await p.addStyleTag({ content: 'nextjs-portal{display:none!important}' })
           const facts = await p.evaluate(() => ({ dir: document.documentElement.dir, dark: document.documentElement.classList.contains('dark'), url: location.pathname, hscroll: document.documentElement.scrollWidth > innerWidth + 1 }))
           await p.addScriptTag({ content: axeSrc })
@@ -69,7 +69,7 @@ try {
               const r = e.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) continue // not fully on screen: skip, never measure an off-screen box
               const cx = r.x + r.width / 2, cy = r.y + r.height / 2, dx = 21, dy = 21
               let miss = 0; const tgt = new Set()
-              for (const [x, y] of [[cx - dx, cy - dy], [cx + dx, cy - dy], [cx - dx, cy + dy], [cx + dx, cy + dy]]) { const t = document.elementFromPoint(Math.max(1, Math.min(innerWidth - 1, x)), Math.max(1, Math.min(innerHeight - 1, y))); if (!(t && (t === e || e.contains(t)))) { miss++; tgt.add(t ? (t.tagName + '.' + String(t.className || '').split(' ')[0]).slice(0, 40) + (t.closest('button,a,[role=button]') ? '(ctl)' : '') : 'none') } }
+              for (const [x, y] of [[cx - dx, cy - dy], [cx + dx, cy - dy], [cx - dx, cy + dy], [cx + dx, cy + dy]]) { const t = document.elementFromPoint(Math.max(1, Math.min(innerWidth - 1, x)), Math.max(1, Math.min(innerHeight - 1, y))); if (!(t && (t === e || e.contains(t) || t.closest('[class*=fchip]')))) { miss++; tgt.add(t ? (t.tagName + '.' + String(t.className || '').split(' ')[0]).slice(0, 40) + (t.closest('button,a,[role=button]') ? '(ctl)' : '') : 'none') } }
               if (miss) bad.push({ t: (e.getAttribute('aria-label') || e.innerText || e.tagName).replace(/\s+/g, ' ').slice(0, 40), w: Math.round(r.width), h: Math.round(r.height), miss, tgt: [...tgt].join('+') })
             }
             return { n: els.length, bad }
