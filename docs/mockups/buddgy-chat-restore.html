@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BDG-013 Buddgy chat after a reload and after 30 idle minutes</title>
+<style>
+  /* Token values copied from src/app/globals.css (brand light and dark). Mockup only. */
+  .light { --bg:#F4F7F6; --card:#FFFFFF; --elev:#ECF1F0; --border:#DDE6E4; --t1:#0D1A18; --t2:#566B68; --t3:#5F6968; --pri:#0D8578; --onpri:#FFFFFF; --amber:#8C5E0A; }
+  .dark  { --bg:#0A100F; --card:#111917; --elev:#18211F; --border:#25302E; --t1:#EAF2F0; --t2:#9BABA8; --t3:#879592; --pri:#1FC3B2; --onpri:#04201C; --amber:#EDB24A; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 -apple-system, "Segoe UI", Inter, system-ui, sans-serif; background:#F4F7F6; color:#0D1A18; }
+  main { max-width:1180px; margin:0 auto; padding:20px 16px 48px; }
+  h1 { font-size:20px; margin:0 0 4px; } h2 { font-size:15px; margin:22px 0 10px; }
+  p.lead { margin:0 0 18px; color:#566B68; max-width:75ch; }
+  .cols { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; }
+  @media (max-width:900px) { .cols { grid-template-columns:1fr; } }
+  .col > header { margin-bottom:8px; color:#0D1A18; }
+  .col > header p { margin:2px 0 0; font-size:12.5px; color:#566B68; }
+  .tag { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:#ECF1F0; color:#566B68; margin-bottom:6px; }
+  .tag.new { background:#E3F6F3; color:#0B7568; }
+
+  .phone { background:var(--bg); color:var(--t1); border:1px solid var(--border); border-radius:28px; height:560px; display:flex; flex-direction:column; overflow:hidden; }
+  .bar { display:flex; align-items:center; gap:8px; padding:14px 14px 10px; border-bottom:1px solid var(--border); }
+  .bar b { font-size:15px; } .bar .sp { flex:1; }
+  .pill { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); color:var(--t2); min-height:32px; display:inline-flex; align-items:center; }
+  .x { width:32px; height:32px; border-radius:999px; display:grid; place-items:center; background:var(--elev); color:var(--t2); }
+  .log { flex:1; overflow:hidden; padding:12px; display:flex; flex-direction:column; gap:10px; justify-content:flex-end; }
+  .u { align-self:flex-end; max-width:85%; background:var(--pri); color:var(--onpri); padding:9px 14px; border-radius:18px 18px 6px 18px; font-size:13px; }
+  .b { align-self:flex-start; display:flex; gap:8px; max-width:92%; }
+  .face { width:24px; height:24px; border-radius:999px; background:var(--elev); flex:none; display:grid; place-items:center; font-size:12px; }
+  .bub { background:var(--elev); padding:9px 14px; border-radius:18px 18px 18px 6px; font-size:13px; }
+  .meta { font-size:11px; color:var(--t3); padding:2px 4px 0; }
+  .card { margin-top:6px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:10px 12px; font-size:12.5px; }
+  .card b { display:block; font-size:13px; }
+  .card .stale { margin-top:8px; font-size:12px; color:var(--amber); }
+  .old { opacity:.55; display:flex; flex-direction:column; gap:10px; }
+  .div { display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--t3); margin:4px 0; }
+  .div::before, .div::after { content:""; flex:1; height:1px; background:var(--border); }
+  .hello { align-self:center; text-align:center; color:var(--t2); font-size:13px; margin:auto 0; }
+  .hello b { display:block; color:var(--t1); font-size:15px; margin-bottom:2px; }
+  .comp { margin:0 12px 14px; min-height:44px; border:1px solid var(--border); border-radius:22px; display:flex; align-items:center; padding:0 14px; color:var(--t3); font-size:13px; background:var(--card); }
+  .note { font-size:12px; color:#566B68; margin:8px 2px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Buddgy chat after a reload and after 30 idle minutes (BDG-013)</h1>
+  <p class="lead">Left: what happens today: iOS closes the app, and the chat is gone when you come back. Middle: after a reload or kill, the same chat comes back. A change that was waiting for you turns stale and can no longer be applied. Right: after 30 idle minutes, the earlier messages stay readable above a divider, and Buddgy starts a fresh chat. The bubbles, card, stale copy and tokens all exist today. The only new parts are the divider line and the dimmed earlier messages.</p>
+
+  <div class="cols light">
+    <section class="col">
+      <header><span class="tag">Today</span><h2 style="margin:0">After a reload</h2><p>Everything is gone, including a change you had not approved yet.</p></header>
+      <div class="phone">
+        <div class="bar"><b>Buddgy</b><span class="sp"></span><span class="pill">New chat</span><span class="x">✕</span></div>
+        <div class="log"><div class="hello"><b>Hi, what can I do?</b>Ask or tell Buddgy anything about your money.</div></div>
+        <div class="comp">Ask or tell Buddgy…</div>
+      </div>
+    </section>
+
+    <section class="col">
+      <header><span class="tag new">Proposed</span><h2 style="margin:0">After a reload</h2><p>The chat is back, and Buddgy still remembers it. The waiting change is now out of date, and you ask again to redo it.</p></header>
+      <div class="phone">
+        <div class="bar"><b>Buddgy</b><span class="sp"></span><span class="pill">New chat</span><span class="x">✕</span></div>
+        <div class="log">
+          <div class="u">How much did I spend on food this week?</div>
+          <div class="b"><span class="face">◡</span><div><div class="bub">EGP 1,240 on food so far, about 60% of your weekly line.</div><div class="meta">Quick · Checked: This month's spending</div></div></div>
+          <div class="u">Add coffee 45</div>
+          <div class="b"><span class="face">◡</span><div><div class="bub">Here is what I will add:</div>
+            <div class="card"><b>Coffee · EGP 45</b>Food · Cash · Today<div class="stale">Out of date, ask me again</div></div></div></div>
+        </div>
+        <div class="comp">Ask or tell Buddgy…</div>
+      </div>
+      <p class="note">The card loses its Add and Not now buttons. It uses the existing stale status, so nothing can be applied twice.</p>
+    </section>
+
+    <section class="col">
+      <header><span class="tag new">Proposed</span><h2 style="margin:0">After 30 idle minutes</h2><p>The earlier messages stay readable but are dimmed. Below the divider, Buddgy starts fresh with a short recap, as it does today.</p></header>
+      <div class="phone">
+        <div class="bar"><b>Buddgy</b><span class="sp"></span><span class="pill">New chat</span><span class="x">✕</span></div>
+        <div class="log">
+          <div class="old">
+            <div class="u">How much did I spend on food this week?</div>
+            <div class="b"><span class="face">◡</span><div><div class="bub">EGP 1,240 on food so far, about 60% of your weekly line.</div><div class="meta">Quick · Checked: This month's spending</div></div></div>
+          </div>
+          <div class="div">Earlier today · Buddgy starts fresh below</div>
+          <div class="u">And transport?</div>
+          <div class="b"><span class="face">◡</span><div><div class="bub">EGP 310 on transport this week.</div><div class="meta">Quick · Checked: This month's spending</div></div></div>
+        </div>
+        <div class="comp">Ask or tell Buddgy…</div>
+      </div>
+      <p class="note">The earlier part is cleared on sign-out or account switch. Balances in it follow your current privacy setting.</p>
+    </section>
+  </div>
+
+  <h2>Dark mode, after 30 idle minutes</h2>
+  <div class="cols dark">
+    <section class="col" style="grid-column:2">
+      <div class="phone">
+        <div class="bar"><b>Buddgy</b><span class="sp"></span><span class="pill">New chat</span><span class="x">✕</span></div>
+        <div class="log">
+          <div class="old">
+            <div class="u">How much did I spend on food this week?</div>
+            <div class="b"><span class="face">◡</span><div><div class="bub">EGP 1,240 on food so far, about 60% of your weekly line.</div></div></div>
+          </div>
+          <div class="div">Earlier today · Buddgy starts fresh below</div>
+          <div class="u">And transport?</div>
+          <div class="b"><span class="face">◡</span><div><div class="bub">EGP 310 on transport this week.</div></div></div>
+        </div>
+        <div class="comp">Ask or tell Buddgy…</div>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
